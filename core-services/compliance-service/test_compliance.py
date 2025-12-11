@@ -41,7 +41,7 @@ class TestScreening:
         })
         assert response.status_code == 200
         data = response.json()
-        assert data["is_clear"] == True
+        assert data["is_clear"] is True
         assert data["overall_risk"] == "low"
         assert len(data["matches"]) == 0
     
@@ -57,7 +57,7 @@ class TestScreening:
         })
         assert response.status_code == 200
         data = response.json()
-        assert data["is_clear"] == False
+        assert data["is_clear"] is False
         assert len(data["matches"]) > 0
         assert data["overall_risk"] in ["medium", "high", "critical"]
     
@@ -109,7 +109,7 @@ class TestMonitoringRules:
         data = response.json()
         assert data["name"] == "Test Rule"
         assert data["risk_score"] == 25
-        assert data["is_active"] == True
+        assert data["is_active"] is True
     
     def test_update_monitoring_rule(self):
         """Test updating a monitoring rule"""
@@ -131,7 +131,7 @@ class TestMonitoringRules:
         assert response.status_code == 200
         data = response.json()
         assert data["risk_score"] == 50
-        assert data["is_active"] == False
+        assert data["is_active"] is False
 
 
 class TestTransactionAnalysis:
