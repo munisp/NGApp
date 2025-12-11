@@ -1,4 +1,7 @@
-FROM python:3.11-slim
+FROM python:3.12-slim-bookworm
+
+# Update system packages to patch OS-level vulnerabilities
+RUN apt-get update && apt-get upgrade -y && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
