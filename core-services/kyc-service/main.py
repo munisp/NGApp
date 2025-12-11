@@ -12,6 +12,8 @@ from enum import Enum
 import uuid
 from decimal import Decimal
 
+from property_transaction_kyc import router as property_kyc_router
+
 app = FastAPI(
     title="Tiered KYC Service",
     description="""
@@ -37,8 +39,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Import and include property transaction KYC router
-from property_transaction_kyc import router as property_kyc_router
 app.include_router(property_kyc_router)
 
 
