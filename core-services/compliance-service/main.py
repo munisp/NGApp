@@ -46,11 +46,18 @@ from sanctions_provider import get_sanctions_provider, ScreeningRequest as Sanct
 try:
     from logging_config import setup_logging, LoggingMiddleware, get_correlation_id
     from rate_limiter import RateLimitMiddleware, RateLimitConfig
-    from secrets import get_secrets_manager
+    from secrets_manager import get_secrets_manager
     COMMON_MODULES_AVAILABLE = True
 except ImportError:
     COMMON_MODULES_AVAILABLE = False
     logging.basicConfig(level=logging.INFO)
+
+# Import repository layer for database operations
+try:
+    import repository
+    REPOSITORY_AVAILABLE = True
+except ImportError:
+    REPOSITORY_AVAILABLE = False
 
 # Setup logging
 if COMMON_MODULES_AVAILABLE:
@@ -1031,12 +1038,46 @@ async def get_compliance_stats():
     }
 
 
+# Startup event to initialize database
+@app.on_event("startup")
+async def startup_event():
+    """Initialize database and default rules on startup"""
+    try:
+        # Initialize database tables
+        init_db()
+        logger.info("Database tables initialized")
+        
+        # Initialize default monitoring rules in database
+        if REPOSITORY_AVAILABLE:
+            from database import get_db_context
+            with get_db_context() as db:
+                count = repository.initialize_default_rules_in_db(db, DEFAULT_RULES)
+                if count > 0:
+                    logger.info(f"Initialized {count} default monitoring rules in database")
+        else:
+            # Fall back to in-memory initialization
+            initialize_default_rules()
+            logger.info("Initialized default monitoring rules in memory")
+    except Exception as e:
+        logger.warning(f"Database initialization failed, using in-memory storage: {e}")
+        initialize_default_rules()
+
+
 # Health check
 @app.get("/health")
 async def health_check():
+    """Health check endpoint with database connectivity verification"""
+    db_healthy = False
+    try:
+        db_healthy = check_db_connection()
+    except Exception:
+        pass
+    
     return {
-        "status": "healthy",
+        "status": "healthy" if db_healthy else "degraded",
         "service": "compliance",
+        "database": "connected" if db_healthy else "disconnected",
+        "repository_available": REPOSITORY_AVAILABLE,
         "timestamp": datetime.utcnow().isoformat()
     }
 
