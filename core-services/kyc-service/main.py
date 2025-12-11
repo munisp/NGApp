@@ -14,8 +14,19 @@ from decimal import Decimal
 
 app = FastAPI(
     title="Tiered KYC Service",
-    description="Multi-tier KYC verification with progressive limits and requirements",
-    version="1.0.0"
+    description="""
+    Multi-tier KYC verification with progressive limits and requirements.
+    
+    Includes:
+    - Standard KYC tiers (Tier 0-4) with progressive verification
+    - Property Transaction KYC for high-value real estate purchases
+    - Seller/Counterparty KYC (closed loop ecosystem)
+    - Source of Funds verification
+    - Bank statement validation (3-month requirement)
+    - Income document verification (W-2, PAYE, etc.)
+    - Purchase agreement validation
+    """,
+    version="2.0.0"
 )
 
 app.add_middleware(
@@ -25,6 +36,10 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Import and include property transaction KYC router
+from property_transaction_kyc import router as property_kyc_router
+app.include_router(property_kyc_router)
 
 
 class KYCTier(str, Enum):
@@ -44,16 +59,45 @@ class VerificationStatus(str, Enum):
 
 
 class DocumentType(str, Enum):
+    # Identity Documents
     NATIONAL_ID = "national_id"
     PASSPORT = "passport"
     DRIVERS_LICENSE = "drivers_license"
     VOTERS_CARD = "voters_card"
     NIN_SLIP = "nin_slip"
     BVN = "bvn"
+    
+    # Address Verification
     UTILITY_BILL = "utility_bill"
+    
+    # Financial Documents
     BANK_STATEMENT = "bank_statement"
+    BANK_STATEMENT_3_MONTHS = "bank_statement_3_months"  # NEW: 3-month requirement
+    
+    # Income Documents (W-2 equivalents)
     EMPLOYMENT_LETTER = "employment_letter"
     TAX_CERTIFICATE = "tax_certificate"
+    W2_FORM = "w2_form"  # NEW: US W-2
+    PAYE_RECORD = "paye_record"  # NEW: Nigeria PAYE
+    PAYSLIP = "payslip"  # NEW: Monthly payslip
+    TAX_RETURN = "tax_return"  # NEW: Annual tax return
+    BUSINESS_REGISTRATION = "business_registration"  # NEW: For business owners
+    AUDITED_ACCOUNTS = "audited_accounts"  # NEW: Business financial statements
+    
+    # Property Transaction Documents
+    PURCHASE_AGREEMENT = "purchase_agreement"  # NEW: Signed purchase agreement
+    DEED_OF_ASSIGNMENT = "deed_of_assignment"  # NEW: Property deed
+    CERTIFICATE_OF_OCCUPANCY = "certificate_of_occupancy"  # NEW: C of O (Nigeria)
+    SURVEY_PLAN = "survey_plan"  # NEW: Property survey
+    GOVERNORS_CONSENT = "governors_consent"  # NEW: Governor's consent (Nigeria)
+    PROPERTY_VALUATION = "property_valuation"  # NEW: Property valuation report
+    
+    # Source of Funds Documents
+    SOURCE_OF_FUNDS_DECLARATION = "source_of_funds_declaration"  # NEW
+    GIFT_DECLARATION = "gift_declaration"  # NEW: For gift-funded purchases
+    LOAN_AGREEMENT = "loan_agreement"  # NEW: For loan-funded purchases
+    
+    # Biometric
     SELFIE = "selfie"
     LIVENESS_CHECK = "liveness_check"
 
