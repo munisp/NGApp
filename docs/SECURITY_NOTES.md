@@ -71,12 +71,68 @@ All direct Python dependencies have been updated to their latest secure versions
 - Consider adding non-exploitable CVEs to a Trivy allowlist with documented justification
 - Monitor upstream projects for fixes to transitive dependency vulnerabilities
 
-### Phase 3: Base Image Hardening (Recommended)
+### Phase 3: Base Image Hardening (Completed)
 
-1. Update Docker base images to latest LTS versions
-2. Add `apt-get update && apt-get upgrade -y` to Dockerfiles
-3. Consider using distroless or Alpine-based images for smaller attack surface
-4. Implement multi-stage builds to reduce final image size
+All 16 Dockerfiles have been updated:
+- Upgraded from `python:3.11-slim` to `python:3.12-slim-bookworm` (Debian 12)
+- Added `apt-get update && apt-get upgrade -y` to patch OS-level vulnerabilities
+- Cleaned up apt cache to reduce image size
+
+## Security Backlog (Requires Security Team Triage)
+
+The following vulnerabilities remain after all direct dependency and base image updates. These are in **transitive dependencies** (dependencies of dependencies) and require organizational security governance to resolve.
+
+### Current Status
+
+| Severity | Count | Type | Action Required |
+|----------|-------|------|-----------------|
+| High | 22 | Transitive Python deps | Security team triage |
+| Medium | 5 | Transitive Python deps | Security team triage |
+| Low | 1 | Transitive Python deps | Accept or monitor |
+
+### Common Transitive Dependencies with Known CVEs
+
+The following packages are commonly flagged by Trivy and are pulled in transitively by major frameworks:
+
+| Package | Pulled By | Typical CVE Types | Remediation Options |
+|---------|-----------|-------------------|---------------------|
+| urllib3 | httpx, requests | HTTP parsing, CRLF injection | Pin newer version or wait for upstream |
+| httpcore | httpx | Connection handling | Wait for httpx update |
+| h11 | uvicorn, httpx | HTTP/1.1 parsing | Wait for upstream |
+| certifi | Most HTTP clients | Certificate validation | Pin newer version |
+| cryptography | python-jose, passlib | Crypto vulnerabilities | Pin newer version |
+| idna | Most HTTP clients | Unicode handling | Usually low risk |
+
+### Recommended Triage Process
+
+For each remaining CVE, the security team should:
+
+1. **Assess Exploitability**: Determine if the vulnerable code path is reachable in this application
+2. **Evaluate Risk**: Consider the attack vector, privileges required, and potential impact
+3. **Document Decision**: Record whether to remediate, accept, or monitor
+4. **Implement Controls**: If accepting risk, document compensating controls
+
+### Trivy Allowlist (For Accepted Risks)
+
+If the security team determines certain CVEs are not exploitable or are accepted risks, they can be added to a `.trivyignore` file:
+
+```
+# Example .trivyignore format
+# CVE-YYYY-XXXXX  # Package: reason for acceptance
+```
+
+**Important**: Only add CVEs to the allowlist with documented justification and security team approval.
+
+### Vulnerability Management SLAs
+
+For bank-grade compliance, establish SLAs for vulnerability remediation:
+
+| Severity | Remediation SLA | Escalation |
+|----------|-----------------|------------|
+| Critical | 24-48 hours | Immediate to CISO |
+| High | 7 days | Weekly security review |
+| Medium | 30 days | Monthly security review |
+| Low | 90 days | Quarterly review |
 
 ## Security Architecture
 
