@@ -155,7 +155,7 @@ def get_monitoring_rules(db: Session, active_only: bool = True) -> List[Monitori
     """Get all monitoring rules"""
     query = db.query(MonitoringRuleModel)
     if active_only:
-        query = query.filter(MonitoringRuleModel.is_active == True)
+        query = query.filter(MonitoringRuleModel.is_active.is_(True))
     return query.all()
 
 
@@ -513,7 +513,7 @@ def get_compliance_stats(db: Session) -> Dict[str, Any]:
     """Get compliance statistics"""
     total_screenings = db.query(ScreeningResultModel).count()
     screenings_with_matches = db.query(ScreeningResultModel).filter(
-        ScreeningResultModel.is_clear == False
+        ScreeningResultModel.is_clear.is_(False)
     ).count()
     
     open_alerts = db.query(TransactionAlertModel).filter(
@@ -535,7 +535,7 @@ def get_compliance_stats(db: Session) -> Dict[str, Any]:
         UserRiskProfileModel.risk_level.in_(["high", "critical"])
     ).count()
     enhanced_monitoring_users = db.query(UserRiskProfileModel).filter(
-        UserRiskProfileModel.is_enhanced_monitoring == True
+        UserRiskProfileModel.is_enhanced_monitoring.is_(True)
     ).count()
     
     return {
