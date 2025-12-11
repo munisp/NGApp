@@ -279,9 +279,9 @@ const Airtime: React.FC = () => {
         <button
           type="submit"
           className="btn-primary w-full py-3"
-          disabled={!selectedNetwork || !phoneNumber || (activeTab === 'airtime' ? !amount : !selectedBundle)}
+          disabled={isSubmitting || !selectedNetwork || !phoneNumber || (activeTab === 'airtime' ? !amount : !selectedBundle)}
         >
-          {activeTab === 'airtime' ? 'Buy Airtime' : 'Buy Data'}
+          {isSubmitting ? 'Processing...' : (activeTab === 'airtime' ? 'Buy Airtime' : 'Buy Data')}
         </button>
       </form>
 

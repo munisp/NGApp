@@ -258,8 +258,8 @@ const BillPayment: React.FC = () => {
             </div>
           </div>
 
-          <button type="submit" className="btn-primary w-full py-3">
-            Pay Bill
+          <button type="submit" className="btn-primary w-full py-3" disabled={isSubmitting}>
+            {isSubmitting ? 'Processing...' : 'Pay Bill'}
           </button>
         </form>
       )}

@@ -60,17 +60,6 @@ interface PurchaseAgreement {
   isSigned: boolean;
 }
 
-interface PropertyTransaction {
-  id: string;
-  buyerKyc: PartyIdentity;
-  sellerKyc: PartyIdentity;
-  sourceOfFunds: SourceOfFunds;
-  bankStatements: BankStatement[];
-  incomeDocuments: IncomeDocument[];
-  purchaseAgreement: PurchaseAgreement;
-  status: 'DRAFT' | 'BUYER_KYC' | 'SELLER_KYC' | 'SOURCE_OF_FUNDS' | 'DOCUMENTS' | 'REVIEW' | 'APPROVED' | 'REJECTED';
-}
-
 const STEPS = [
   { id: 1, name: 'Buyer KYC', description: 'Verify buyer identity' },
   { id: 2, name: 'Seller KYC', description: 'Verify seller identity' },
@@ -128,7 +117,7 @@ const emptyPartyIdentity: PartyIdentity = {
 const PropertyKYC: React.FC = () => {
   const navigate = useNavigate();
   const isOnline = useIsOnline();
-  const { cacheData, getCachedData } = useOfflineStore();
+  const { cacheData } = useOfflineStore();
 
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
