@@ -8,7 +8,7 @@ interface EnhancedExchangeRatesItem {
 }
 
 export const EnhancedExchangeRates: React.FC = () => {
-  const [items, setItems] = useState<EnhancedExchangeRatesItem[]>([]);
+  const [items, _setItems] = useState<EnhancedExchangeRatesItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {

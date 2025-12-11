@@ -8,7 +8,7 @@ interface WiseInternationalTransferItem {
 }
 
 export const WiseInternationalTransfer: React.FC = () => {
-  const [items, setItems] = useState<WiseInternationalTransferItem[]>([]);
+  const [items, _setItems] = useState<WiseInternationalTransferItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {

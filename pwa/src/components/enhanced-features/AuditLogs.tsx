@@ -8,7 +8,7 @@ interface AuditLogsItem {
 }
 
 export const AuditLogs: React.FC = () => {
-  const [items, setItems] = useState<AuditLogsItem[]>([]);
+  const [items, _setItems] = useState<AuditLogsItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {

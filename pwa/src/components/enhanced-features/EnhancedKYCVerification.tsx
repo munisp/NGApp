@@ -8,7 +8,7 @@ interface EnhancedKYCVerificationItem {
 }
 
 export const EnhancedKYCVerification: React.FC = () => {
-  const [items, setItems] = useState<EnhancedKYCVerificationItem[]>([]);
+  const [items, _setItems] = useState<EnhancedKYCVerificationItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {

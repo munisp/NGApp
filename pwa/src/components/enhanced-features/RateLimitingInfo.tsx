@@ -8,7 +8,7 @@ interface RateLimitingInfoItem {
 }
 
 export const RateLimitingInfo: React.FC = () => {
-  const [items, setItems] = useState<RateLimitingInfoItem[]>([]);
+  const [items, _setItems] = useState<RateLimitingInfoItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {

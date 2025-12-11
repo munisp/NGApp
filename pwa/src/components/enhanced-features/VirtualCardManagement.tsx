@@ -8,7 +8,7 @@ interface VirtualCardManagementItem {
 }
 
 export const VirtualCardManagement: React.FC = () => {
-  const [items, setItems] = useState<VirtualCardManagementItem[]>([]);
+  const [items, _setItems] = useState<VirtualCardManagementItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {

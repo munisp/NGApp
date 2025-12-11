@@ -8,7 +8,7 @@ interface MPesaIntegrationItem {
 }
 
 export const MPesaIntegration: React.FC = () => {
-  const [items, setItems] = useState<MPesaIntegrationItem[]>([]);
+  const [items, _setItems] = useState<MPesaIntegrationItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {

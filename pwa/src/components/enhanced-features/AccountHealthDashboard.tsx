@@ -8,7 +8,7 @@ interface AccountHealthDashboardItem {
 }
 
 export const AccountHealthDashboard: React.FC = () => {
-  const [items, setItems] = useState<AccountHealthDashboardItem[]>([]);
+  const [items, _setItems] = useState<AccountHealthDashboardItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {

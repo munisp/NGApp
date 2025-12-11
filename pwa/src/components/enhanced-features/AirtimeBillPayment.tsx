@@ -8,7 +8,7 @@ interface AirtimeBillPaymentItem {
 }
 
 export const AirtimeBillPayment: React.FC = () => {
-  const [items, setItems] = useState<AirtimeBillPaymentItem[]>([]);
+  const [items, _setItems] = useState<AirtimeBillPaymentItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {

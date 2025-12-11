@@ -8,7 +8,7 @@ interface EnhancedWalletItem {
 }
 
 export const EnhancedWallet: React.FC = () => {
-  const [items, setItems] = useState<EnhancedWalletItem[]>([]);
+  const [items, _setItems] = useState<EnhancedWalletItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {

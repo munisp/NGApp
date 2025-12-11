@@ -8,7 +8,7 @@ interface TransactionAnalyticsItem {
 }
 
 export const TransactionAnalytics: React.FC = () => {
-  const [items, setItems] = useState<TransactionAnalyticsItem[]>([]);
+  const [items, _setItems] = useState<TransactionAnalyticsItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {

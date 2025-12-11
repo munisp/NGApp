@@ -8,7 +8,7 @@ interface EnhancedVirtualAccountItem {
 }
 
 export const EnhancedVirtualAccount: React.FC = () => {
-  const [items, setItems] = useState<EnhancedVirtualAccountItem[]>([]);
+  const [items, _setItems] = useState<EnhancedVirtualAccountItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {

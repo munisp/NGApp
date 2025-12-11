@@ -8,7 +8,7 @@ interface MultiChannelPaymentItem {
 }
 
 export const MultiChannelPayment: React.FC = () => {
-  const [items, setItems] = useState<MultiChannelPaymentItem[]>([]);
+  const [items, _setItems] = useState<MultiChannelPaymentItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {

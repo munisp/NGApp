@@ -163,7 +163,7 @@ export const offlineFetch = async (
 /**
  * Hook for offline-aware data fetching with caching
  */
-export const useOfflineData = <T>(
+export const useOfflineData = <T,>(
   key: string,
   fetcher: () => Promise<T>,
   ttlMinutes: number = 60

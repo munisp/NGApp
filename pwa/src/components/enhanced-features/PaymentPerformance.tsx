@@ -8,7 +8,7 @@ interface PaymentPerformanceItem {
 }
 
 export const PaymentPerformance: React.FC = () => {
-  const [items, setItems] = useState<PaymentPerformanceItem[]>([]);
+  const [items, _setItems] = useState<PaymentPerformanceItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
