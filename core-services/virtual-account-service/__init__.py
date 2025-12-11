@@ -1,1 +1,1 @@
-"""Virtual account generation service"""\n
+"""Virtual account generation service"""

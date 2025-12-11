@@ -233,7 +233,7 @@ class BillPaymentService:
         payment = payments_db[payment_id]
         
         if payment.status != PaymentStatus.PROCESSING:
-            raise HTTPException(status_code=400, detail=f"Payment not processing")
+            raise HTTPException(status_code=400, detail="Payment not processing")
         
         payment.status = PaymentStatus.COMPLETED
         payment.completed_at = datetime.utcnow()

@@ -1,1 +1,1 @@
-"""Payment processing service"""\n
+"""Payment processing service"""

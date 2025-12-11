@@ -88,7 +88,7 @@ class AuditEncryption:
                     # Try to parse as JSON
                     try:
                         decrypted_data[field] = json.loads(decrypted)
-                    except:
+                    except Exception:
                         decrypted_data[field] = decrypted
                 except Exception as e:
                     logger.warning(f"Failed to decrypt field {field}: {e}")
@@ -152,7 +152,7 @@ class HashChain:
         is_valid = hmac.compare_digest(computed_hash, stored_hash)
         
         if not is_valid:
-            logger.warning(f"Hash verification failed for audit entry")
+            logger.warning("Hash verification failed for audit entry")
         
         return is_valid
     

@@ -441,7 +441,7 @@ class ProviderManager:
             result = await provider.purchase_airtime(phone_number, network, amount, reference)
             if result.get("success"):
                 return result
-            logger.warning(f"Primary provider failed, trying fallback")
+            logger.warning("Primary provider failed, trying fallback")
         
         # Try other providers
         for provider_type, provider in self.providers.items():
@@ -470,7 +470,7 @@ class ProviderManager:
             result = await provider.purchase_data(phone_number, network, bundle_id, reference)
             if result.get("success"):
                 return result
-            logger.warning(f"Primary provider failed, trying fallback")
+            logger.warning("Primary provider failed, trying fallback")
         
         # Try other providers
         for provider_type, provider in self.providers.items():

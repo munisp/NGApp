@@ -127,13 +127,13 @@ class AuditSearchEngine:
             elif field_spec.operator == SearchOperator.GREATER_THAN:
                 try:
                     match = field_value > field_spec.value
-                except:
+                except Exception:
                     match = False
             
             elif field_spec.operator == SearchOperator.LESS_THAN:
                 try:
                     match = field_value < field_spec.value
-                except:
+                except Exception:
                     match = False
             
             elif field_spec.operator == SearchOperator.IN:
@@ -171,7 +171,7 @@ class AuditSearchEngine:
                     continue
                 
                 filtered.append(entry)
-            except:
+            except Exception:
                 continue
         
         return filtered
@@ -192,7 +192,7 @@ class AuditSearchEngine:
                 reverse=reverse
             )
             return sorted_entries
-        except:
+        except Exception:
             logger.warning(f"Failed to sort by {sort_by}, returning unsorted")
             return entries
     

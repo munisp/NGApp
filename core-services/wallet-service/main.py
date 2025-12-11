@@ -143,12 +143,12 @@ class TransactionHistory(BaseModel):
 
 # In-memory storage (replace with database in produc# Storage
 wallets_db: Dict[str, Wallet] = {}
-transactions_db: Dict[str, Transaction] = {}
+transactions_db: Dict[str, WalletTransaction] = {}
 user_wallets_index: Dict[str, List[str]] = {}
 
 # Initialize managers
 currency_converter = CurrencyConverter()
-transfer_manager = TransferManager()defaultdict(list)
+transfer_manager = TransferManager()
 wallet_transactions_index: Dict[str, List[str]] = defaultdict(list)
 
 # Service class
