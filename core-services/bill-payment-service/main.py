@@ -1,10 +1,20 @@
 """
 Bill Payment Service - Production Implementation
 Utility bill payments for electricity, water, internet, TV, etc.
+
+Production-ready version with:
+- Structured logging with correlation IDs
+- Rate limiting
+- Environment-driven CORS configuration
 """
 
+import os
+import sys
+
+# Add common modules to path
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'common'))
+
 from fastapi import FastAPI, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from typing import List, Optional, Dict
 from datetime import datetime
@@ -12,16 +22,28 @@ from enum import Enum
 from decimal import Decimal
 import uvicorn
 import uuid
-import logging
 
 # Import new modules
 from providers import BillPaymentManager
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+# Import common modules for production readiness
+try:
+    from service_init import configure_service
+    COMMON_MODULES_AVAILABLE = True
+except ImportError:
+    COMMON_MODULES_AVAILABLE = False
+    import logging
+    logging.basicConfig(level=logging.INFO)
 
 app = FastAPI(title="Bill Payment Service", version="2.0.0")
-app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
+
+# Configure service with production-ready middleware
+if COMMON_MODULES_AVAILABLE:
+    logger = configure_service(app, "bill-payment-service")
+else:
+    from fastapi.middleware.cors import CORSMiddleware
+    app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
+    logger = logging.getLogger(__name__)
 
 # Enums
 class BillCategory(str, Enum):

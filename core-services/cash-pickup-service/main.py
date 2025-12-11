@@ -1,10 +1,20 @@
 """
 Cash Pickup Network Service
 Manages cash pickup locations, agent networks, and cash-out transactions.
+
+Production-ready version with:
+- Structured logging with correlation IDs
+- Rate limiting
+- Environment-driven CORS configuration
 """
 
+import os
+import sys
+
+# Add common modules to path
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'common'))
+
 from fastapi import FastAPI, HTTPException, Depends, Query
-from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from typing import Optional, List, Dict, Any
 from datetime import datetime, timedelta
@@ -13,19 +23,28 @@ import uuid
 from decimal import Decimal
 import math
 
+# Import common modules for production readiness
+try:
+    from service_init import configure_service
+    COMMON_MODULES_AVAILABLE = True
+except ImportError:
+    COMMON_MODULES_AVAILABLE = False
+    import logging
+    logging.basicConfig(level=logging.INFO)
+
 app = FastAPI(
     title="Cash Pickup Network Service",
     description="Manages cash pickup locations, agent networks, and cash-out transactions",
-    version="1.0.0"
+    version="2.0.0"
 )
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# Configure service with production-ready middleware
+if COMMON_MODULES_AVAILABLE:
+    logger = configure_service(app, "cash-pickup-service")
+else:
+    from fastapi.middleware.cors import CORSMiddleware
+    app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
+    logger = logging.getLogger(__name__)
 
 
 class AgentStatus(str, Enum):

@@ -1,10 +1,20 @@
 """
 Developer Portal Service
 Provides API documentation, sandbox environment, API key management, and webhooks.
+
+Production-ready version with:
+- Structured logging with correlation IDs
+- Rate limiting
+- Environment-driven CORS configuration
 """
 
+import os
+import sys
+
+# Add common modules to path
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'common'))
+
 from fastapi import FastAPI, HTTPException, Depends, Query, Header, Request
-from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel, Field
 from typing import Optional, List, Dict, Any
@@ -17,19 +27,28 @@ import hmac
 import json
 import httpx
 
+# Import common modules for production readiness
+try:
+    from service_init import configure_service
+    COMMON_MODULES_AVAILABLE = True
+except ImportError:
+    COMMON_MODULES_AVAILABLE = False
+    import logging
+    logging.basicConfig(level=logging.INFO)
+
 app = FastAPI(
     title="Developer Portal",
     description="API management, documentation, sandbox, and webhook services for B2B integrations",
-    version="1.0.0"
+    version="2.0.0"
 )
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# Configure service with production-ready middleware
+if COMMON_MODULES_AVAILABLE:
+    logger = configure_service(app, "developer-portal")
+else:
+    from fastapi.middleware.cors import CORSMiddleware
+    app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
+    logger = logging.getLogger(__name__)
 
 
 class APIKeyType(str, Enum):
