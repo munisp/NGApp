@@ -1,9 +1,23 @@
 """
 Compliance Service - AML/Sanctions Screening Engine
 Handles transaction monitoring, sanctions screening, case management, and compliance reporting.
+
+Production-ready version with:
+- PostgreSQL persistence (replaces in-memory storage)
+- Pluggable sanctions provider (supports external providers like World-Check, Dow Jones)
+- Rate limiting
+- Structured logging with correlation IDs
+- Proper CORS configuration
 """
 
-from fastapi import FastAPI, HTTPException, Depends, Query, BackgroundTasks
+import os
+import sys
+import logging
+
+# Add common modules to path
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'common'))
+
+from fastapi import FastAPI, HTTPException, Depends, Query, BackgroundTasks, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from typing import Optional, List, Dict, Any
@@ -14,19 +28,62 @@ import re
 import hashlib
 from decimal import Decimal
 
+# Import database and models
+from database import get_db, init_db, check_db_connection, SessionLocal
+from models import (
+    ScreeningResult as ScreeningResultModel,
+    ScreeningMatch as ScreeningMatchModel,
+    MonitoringRule as MonitoringRuleModel,
+    TransactionAlert as TransactionAlertModel,
+    ComplianceCase as ComplianceCaseModel,
+    SuspiciousActivityReport as SARModel,
+    UserRiskProfile as UserRiskProfileModel,
+    Base
+)
+from sanctions_provider import get_sanctions_provider, ScreeningRequest as SanctionsScreeningRequest
+
+# Import common modules (with fallback for standalone operation)
+try:
+    from logging_config import setup_logging, LoggingMiddleware, get_correlation_id
+    from rate_limiter import RateLimitMiddleware, RateLimitConfig
+    from secrets import get_secrets_manager
+    COMMON_MODULES_AVAILABLE = True
+except ImportError:
+    COMMON_MODULES_AVAILABLE = False
+    logging.basicConfig(level=logging.INFO)
+
+# Setup logging
+if COMMON_MODULES_AVAILABLE:
+    logger = setup_logging("compliance-service")
+else:
+    logger = logging.getLogger("compliance-service")
+
+# Get allowed origins from environment
+ALLOWED_ORIGINS = os.getenv("CORS_ALLOWED_ORIGINS", "http://localhost:3000,http://localhost:5173").split(",")
+if os.getenv("ENVIRONMENT") == "development":
+    ALLOWED_ORIGINS.append("*")
+
 app = FastAPI(
     title="Compliance Service",
     description="AML/Sanctions Screening, Transaction Monitoring, and Case Management",
-    version="1.0.0"
+    version="2.0.0"
 )
+
+# Add middleware
+if COMMON_MODULES_AVAILABLE:
+    app.add_middleware(LoggingMiddleware, service_name="compliance-service")
+    app.add_middleware(RateLimitMiddleware, config=RateLimitConfig.from_env())
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Initialize sanctions provider
+sanctions_provider = get_sanctions_provider()
 
 
 class RiskLevel(str, Enum):
