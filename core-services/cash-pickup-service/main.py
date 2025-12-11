@@ -254,18 +254,18 @@ async def list_locations(
     """List all cash pickup locations with filters."""
     locations = list(locations_db.values())
     
-    locations = [l for l in locations if l.country == country and l.status == AgentStatus.ACTIVE]
+    locations = [loc for loc in locations if loc.country == country and loc.status == AgentStatus.ACTIVE]
     
     if city:
-        locations = [l for l in locations if l.city.lower() == city.lower()]
+        locations = [loc for loc in locations if loc.city.lower() == city.lower()]
     if state:
-        locations = [l for l in locations if l.state.lower() == state.lower()]
+        locations = [loc for loc in locations if loc.state.lower() == state.lower()]
     if partner_network:
-        locations = [l for l in locations if l.partner_network == partner_network]
+        locations = [loc for loc in locations if loc.partner_network == partner_network]
     if location_type:
-        locations = [l for l in locations if l.location_type == location_type]
+        locations = [loc for loc in locations if loc.location_type == location_type]
     if min_amount:
-        locations = [l for l in locations if l.max_payout_amount >= min_amount]
+        locations = [loc for loc in locations if loc.max_payout_amount >= min_amount]
     
     return locations
 
@@ -278,7 +278,7 @@ async def find_nearby_locations(
     limit: int = Query(default=20, le=50)
 ):
     """Find nearby cash pickup locations."""
-    locations = [l for l in locations_db.values() if l.status == AgentStatus.ACTIVE]
+    locations = [loc for loc in locations_db.values() if loc.status == AgentStatus.ACTIVE]
     
     nearby = []
     for location in locations:
@@ -600,13 +600,13 @@ async def list_partner_networks():
     networks = {}
     
     for network in PartnerNetwork:
-        locations = [l for l in locations_db.values() if l.partner_network == network]
+        locations = [loc for loc in locations_db.values() if loc.partner_network == network]
         networks[network.value] = {
             "name": network.value.replace("_", " ").title(),
             "total_locations": len(locations),
-            "cities": list(set(l.city for l in locations)),
-            "states": list(set(l.state for l in locations)),
-            "max_payout": max((l.max_payout_amount for l in locations), default=Decimal("0"))
+            "cities": list(set(loc.city for loc in locations)),
+            "states": list(set(loc.state for loc in locations)),
+            "max_payout": max((loc.max_payout_amount for loc in locations), default=Decimal("0"))
         }
     
     return networks
@@ -615,7 +615,7 @@ async def list_partner_networks():
 @app.get("/networks/{network}/locations", response_model=List[CashPickupLocation])
 async def get_network_locations(network: PartnerNetwork):
     """Get all locations for a partner network."""
-    return [l for l in locations_db.values() if l.partner_network == network and l.status == AgentStatus.ACTIVE]
+    return [loc for loc in locations_db.values() if loc.partner_network == network and loc.status == AgentStatus.ACTIVE]
 
 
 # Statistics Endpoints
@@ -626,18 +626,18 @@ async def get_location_stats():
     
     return {
         "total_locations": len(locations),
-        "active_locations": len([l for l in locations if l.status == AgentStatus.ACTIVE]),
+        "active_locations": len([loc for loc in locations if loc.status == AgentStatus.ACTIVE]),
         "by_type": {
-            lt.value: len([l for l in locations if l.location_type == lt])
+            lt.value: len([loc for loc in locations if loc.location_type == lt])
             for lt in LocationType
         },
         "by_network": {
-            pn.value: len([l for l in locations if l.partner_network == pn])
+            pn.value: len([loc for loc in locations if loc.partner_network == pn])
             for pn in PartnerNetwork
         },
         "by_state": {
-            state: len([l for l in locations if l.state == state])
-            for state in set(l.state for l in locations)
+            state: len([loc for loc in locations if loc.state == state])
+            for state in set(loc.state for loc in locations)
         }
     }
 

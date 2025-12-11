@@ -315,7 +315,7 @@ async def complete_referral(
         user_id=referral.referrer_id,
         reward_type=RewardType.CASH,
         amount=referral.referrer_reward or Decimal("5.00"),
-        description=f"Referral bonus for inviting a friend",
+        description="Referral bonus for inviting a friend",
         source="referral",
         reference_id=referral_id,
         expires_at=datetime.utcnow() + timedelta(days=30)
@@ -326,7 +326,7 @@ async def complete_referral(
         user_id=referral.referee_id,
         reward_type=RewardType.CASH,
         amount=referral.referee_reward or Decimal("5.00"),
-        description=f"Welcome bonus for joining via referral",
+        description="Welcome bonus for joining via referral",
         source="referral",
         reference_id=referral_id,
         expires_at=datetime.utcnow() + timedelta(days=30)

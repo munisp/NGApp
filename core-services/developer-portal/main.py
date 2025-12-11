@@ -638,13 +638,13 @@ async def get_usage_stats(
     
     cutoff = datetime.utcnow() - timedelta(days=days)
     logs = [
-        l for l in api_usage_logs_db.values()
-        if l.api_key_id in key_ids and l.created_at >= cutoff
+        log for log in api_usage_logs_db.values()
+        if log.api_key_id in key_ids and log.created_at >= cutoff
     ]
     
     total_requests = len(logs)
-    successful = len([l for l in logs if l.status_code < 400])
-    avg_response_time = sum(l.response_time_ms for l in logs) / max(1, total_requests)
+    successful = len([log for log in logs if log.status_code < 400])
+    avg_response_time = sum(log.response_time_ms for log in logs) / max(1, total_requests)
     
     # Group by endpoint
     by_endpoint: Dict[str, int] = {}
