@@ -18,6 +18,7 @@ const BillPayment = lazy(() => import('./pages/BillPayment'));
 const VirtualAccount = lazy(() => import('./pages/VirtualAccount'));
 const Cards = lazy(() => import('./pages/Cards'));
 const KYC = lazy(() => import('./pages/KYC'));
+const PropertyKYC = lazy(() => import('./pages/PropertyKYC'));
 const Settings = lazy(() => import('./pages/Settings'));
 const Profile = lazy(() => import('./pages/Profile'));
 const Support = lazy(() => import('./pages/Support'));
@@ -63,8 +64,9 @@ const App: React.FC = () => {
           <Route path="bills" element={<BillPayment />} />
           <Route path="virtual-account" element={<VirtualAccount />} />
           <Route path="cards" element={<Cards />} />
-          <Route path="kyc" element={<KYC />} />
-          <Route path="settings" element={<Settings />} />
+                    <Route path="kyc" element={<KYC />} />
+                    <Route path="property-kyc" element={<PropertyKYC />} />
+                    <Route path="settings" element={<Settings />} />
           <Route path="profile" element={<Profile />} />
           <Route path="support" element={<Support />} />
         </Route>

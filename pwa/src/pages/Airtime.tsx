@@ -1,11 +1,23 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useOfflineStore, useIsOnline, usePendingCount } from '../stores/offlineStore';
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 
 const Airtime: React.FC = () => {
+  const navigate = useNavigate();
+  const isOnline = useIsOnline();
+  const pendingCount = usePendingCount();
+  const { addPendingTransaction } = useOfflineStore();
+
   const [activeTab, setActiveTab] = useState<'airtime' | 'data'>('airtime');
   const [selectedNetwork, setSelectedNetwork] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [amount, setAmount] = useState('');
   const [selectedBundle, setSelectedBundle] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   const networks = [
     { id: 'mtn', name: 'MTN', color: 'bg-yellow-400' },
@@ -25,14 +37,102 @@ const Airtime: React.FC = () => {
     { id: '6', name: '20GB', validity: '30 Days', price: 5000 },
   ];
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    alert(`${activeTab === 'airtime' ? 'Airtime' : 'Data'} purchase initiated!`);
+    setIsSubmitting(true);
+    setError(null);
+
+    const purchaseData = {
+      phone: phoneNumber,
+      provider: selectedNetwork,
+      type: activeTab,
+      amount: activeTab === 'airtime' ? parseFloat(amount) : dataBundles.find(b => b.id === selectedBundle)?.price || 0,
+      planId: activeTab === 'data' ? selectedBundle : undefined,
+    };
+
+    try {
+      if (!isOnline) {
+        const txnId = addPendingTransaction({ type: 'airtime', data: purchaseData });
+        setSuccessMessage(`Purchase queued for processing. Reference: ${txnId}`);
+        setTimeout(() => navigate('/transactions'), 2000);
+        return;
+      }
+
+      const response = await fetch(`${API_BASE_URL}/airtime/purchase`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(purchaseData),
+        signal: AbortSignal.timeout(30000),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setSuccessMessage(`${activeTab === 'airtime' ? 'Airtime' : 'Data'} purchase successful! Reference: ${data.reference}`);
+        setTimeout(() => navigate('/transactions'), 2000);
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Purchase failed');
+      }
+    } catch (err) {
+      if (!isOnline || (err instanceof Error && err.name === 'AbortError')) {
+        const txnId = addPendingTransaction({ type: 'airtime', data: purchaseData });
+        setSuccessMessage(`You're offline. Purchase queued. Reference: ${txnId}`);
+        setTimeout(() => navigate('/transactions'), 2000);
+      } else {
+        setError(err instanceof Error ? err.message : 'Failed to process purchase');
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
-      <h1 className="page-title">Airtime & Data</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold text-gray-900">Airtime & Data</h1>
+        {!isOnline && (
+          <div className="flex items-center px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm">
+            <span className="w-2 h-2 bg-yellow-500 rounded-full mr-2 animate-pulse" />
+            Offline Mode
+          </div>
+        )}
+      </div>
+
+      {pendingCount > 0 && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-center justify-between">
+          <div className="flex items-center">
+            <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-3">
+              <span className="text-blue-600 font-semibold">{pendingCount}</span>
+            </div>
+            <div>
+              <p className="text-sm font-medium text-blue-900">Pending Transactions</p>
+              <p className="text-xs text-blue-700">Will sync when you're back online</p>
+            </div>
+          </div>
+          <button onClick={() => navigate('/transactions?filter=pending')} className="text-sm text-blue-600 hover:text-blue-800 font-medium">View</button>
+        </div>
+      )}
+
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start">
+          <svg className="w-5 h-5 text-red-500 mr-3 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <div>
+            <p className="text-sm font-medium text-red-800">{error}</p>
+            <button onClick={() => setError(null)} className="text-xs text-red-600 hover:text-red-800 mt-1">Dismiss</button>
+          </div>
+        </div>
+      )}
+
+      {successMessage && (
+        <div className="bg-green-50 border border-green-200 rounded-lg p-4 flex items-start">
+          <svg className="w-5 h-5 text-green-500 mr-3 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <p className="text-sm font-medium text-green-800">{successMessage}</p>
+        </div>
+      )}
 
       {/* Tab Selection */}
       <div className="flex bg-gray-100 rounded-lg p-1">
