@@ -2,7 +2,7 @@
 Transaction Service Database Models
 """
 
-from sqlalchemy import Column, String, Numeric, DateTime, Enum as SQLEnum, JSON, Index
+from sqlalchemy import Column, String, Numeric, DateTime, Enum as SQLEnum, JSON, Index, Integer
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.sql import func
 from datetime import datetime
@@ -69,8 +69,44 @@ class IdempotencyRecord(Base):
     
     idempotency_key = Column(String(100), primary_key=True, index=True)
     transaction_id = Column(String(36), nullable=False)
+    user_id = Column(String(36), nullable=False, index=True)
+    response_data = Column(JSON, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     expires_at = Column(DateTime(timezone=True), nullable=False, index=True)
     
+    __table_args__ = (
+        Index('idx_user_idempotency', 'user_id', 'idempotency_key'),
+    )
+    
     def __repr__(self):
         return f"<IdempotencyRecord(key={self.idempotency_key}, txn={self.transaction_id})>"
+
+
+class PendingTransaction(Base):
+    """
+    Stores transactions that were created offline and need to be synced.
+    Used by mobile apps and PWA when connectivity is restored.
+    """
+    __tablename__ = "pending_transactions"
+    
+    id = Column(String(36), primary_key=True, index=True)
+    user_id = Column(String(36), nullable=False, index=True)
+    idempotency_key = Column(String(100), nullable=False, unique=True, index=True)
+    
+    transaction_type = Column(String(50), nullable=False)
+    payload = Column(JSON, nullable=False)
+    
+    status = Column(String(20), nullable=False, default='pending', index=True)
+    retry_count = Column(Integer, default=0)
+    last_error = Column(String(500), nullable=True)
+    
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now(), nullable=True)
+    synced_at = Column(DateTime(timezone=True), nullable=True)
+    
+    __table_args__ = (
+        Index('idx_pending_user_status', 'user_id', 'status'),
+    )
+    
+    def __repr__(self):
+        return f"<PendingTransaction(id={self.id}, status={self.status})>"
