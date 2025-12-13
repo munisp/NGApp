@@ -22,6 +22,14 @@ const PropertyKYC = lazy(() => import('./pages/PropertyKYC'));
 const Settings = lazy(() => import('./pages/Settings'));
 const Profile = lazy(() => import('./pages/Profile'));
 const Support = lazy(() => import('./pages/Support'));
+const Beneficiaries = lazy(() => import('./pages/Beneficiaries'));
+const MPesa = lazy(() => import('./pages/MPesa'));
+const WiseTransfer = lazy(() => import('./pages/WiseTransfer'));
+const Notifications = lazy(() => import('./pages/Notifications'));
+const Security = lazy(() => import('./pages/Security'));
+const AuditLogs = lazy(() => import('./pages/AuditLogs'));
+const AccountHealth = lazy(() => import('./pages/AccountHealth'));
+const PaymentPerformance = lazy(() => import('./pages/PaymentPerformance'));
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -67,9 +75,17 @@ const App: React.FC = () => {
                     <Route path="kyc" element={<KYC />} />
                     <Route path="property-kyc" element={<PropertyKYC />} />
                     <Route path="settings" element={<Settings />} />
-          <Route path="profile" element={<Profile />} />
-          <Route path="support" element={<Support />} />
-        </Route>
+                  <Route path="profile" element={<Profile />} />
+                  <Route path="support" element={<Support />} />
+                  <Route path="beneficiaries" element={<Beneficiaries />} />
+                  <Route path="mpesa" element={<MPesa />} />
+                  <Route path="wise" element={<WiseTransfer />} />
+                  <Route path="notifications" element={<Notifications />} />
+                  <Route path="security" element={<Security />} />
+                                  <Route path="audit-logs" element={<AuditLogs />} />
+                                  <Route path="account-health" element={<AccountHealth />} />
+                                  <Route path="payment-performance" element={<PaymentPerformance />} />
+                                </Route>
         
         <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
