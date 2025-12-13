@@ -17,7 +17,7 @@ Architecture:
 
 from fastapi import FastAPI, HTTPException, Request, Header
 from pydantic import BaseModel
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 from datetime import datetime, timedelta
 from enum import Enum
 import httpx
@@ -35,10 +35,14 @@ app = FastAPI(
 )
 
 # Configuration
+USER_SERVICE_URL = os.getenv("USER_SERVICE_URL", "http://user-service:8000")
 WALLET_SERVICE_URL = os.getenv("WALLET_SERVICE_URL", "http://wallet-service:8000")
 TRANSACTION_SERVICE_URL = os.getenv("TRANSACTION_SERVICE_URL", "http://transaction-service:8000")
 AIRTIME_SERVICE_URL = os.getenv("AIRTIME_SERVICE_URL", "http://airtime-service:8000")
 SESSION_TTL_MINUTES = int(os.getenv("SESSION_TTL_MINUTES", "5"))
+
+# HTTP client for service calls
+http_client = httpx.AsyncClient(timeout=30.0)
 
 
 class USSDRequest(BaseModel):
@@ -102,8 +106,8 @@ class USSDSession:
         return len(expired)
 
 
-# Mock user data (in production, fetch from user service)
-MOCK_USERS = {
+# Fallback mock user data (used when user-service is unavailable)
+FALLBACK_MOCK_USERS = {
     "+2348012345678": {
         "user_id": "user-001",
         "name": "Adebayo Okonkwo",
@@ -124,13 +128,157 @@ MOCK_USERS = {
 }
 
 
-def get_user_by_phone(phone: str) -> Optional[Dict[str, Any]]:
-    """Get user data by phone number"""
-    # Normalize phone number
+def normalize_phone(phone: str) -> str:
+    """Normalize phone number to international format"""
     normalized = phone.replace(" ", "").replace("-", "")
     if not normalized.startswith("+"):
         normalized = "+234" + normalized.lstrip("0")
-    return MOCK_USERS.get(normalized)
+    return normalized
+
+
+async def get_user_from_service(phone: str) -> Optional[Dict[str, Any]]:
+    """Fetch user data from user-service API"""
+    try:
+        normalized = normalize_phone(phone)
+        response = await http_client.get(
+            f"{USER_SERVICE_URL}/api/v1/users/phone/{normalized}"
+        )
+        if response.status_code == 200:
+            user_data = response.json()
+            logger.info(f"User found in user-service: {user_data.get('user_id')}")
+            return user_data
+        elif response.status_code == 404:
+            logger.info(f"User not found in user-service: {normalized}")
+            return None
+        else:
+            logger.warning(f"User-service error: {response.status_code}")
+            return None
+    except Exception as e:
+        logger.error(f"Failed to fetch user from user-service: {e}")
+        return None
+
+
+async def get_wallet_balance(user_id: str) -> Optional[Dict[str, Any]]:
+    """Fetch wallet balance from wallet-service"""
+    try:
+        response = await http_client.get(
+            f"{WALLET_SERVICE_URL}/api/v1/wallets/{user_id}/balance"
+        )
+        if response.status_code == 200:
+            return response.json()
+        return None
+    except Exception as e:
+        logger.error(f"Failed to fetch wallet balance: {e}")
+        return None
+
+
+async def get_beneficiaries(user_id: str) -> List[Dict[str, Any]]:
+    """Fetch beneficiaries from user-service"""
+    try:
+        response = await http_client.get(
+            f"{USER_SERVICE_URL}/api/v1/users/{user_id}/beneficiaries"
+        )
+        if response.status_code == 200:
+            return response.json().get("beneficiaries", [])
+        return []
+    except Exception as e:
+        logger.error(f"Failed to fetch beneficiaries: {e}")
+        return []
+
+
+async def get_recent_transactions(user_id: str, limit: int = 5) -> List[Dict[str, Any]]:
+    """Fetch recent transactions from transaction-service"""
+    try:
+        response = await http_client.get(
+            f"{TRANSACTION_SERVICE_URL}/api/v1/transactions/history",
+            params={"user_id": user_id, "limit": limit}
+        )
+        if response.status_code == 200:
+            return response.json()
+        return []
+    except Exception as e:
+        logger.error(f"Failed to fetch transactions: {e}")
+        return []
+
+
+async def verify_pin(user_id: str, pin: str) -> bool:
+    """Verify user PIN via user-service"""
+    try:
+        response = await http_client.post(
+            f"{USER_SERVICE_URL}/api/v1/users/{user_id}/verify-pin",
+            json={"pin": pin}
+        )
+        return response.status_code == 200
+    except Exception as e:
+        logger.error(f"Failed to verify PIN: {e}")
+        return False
+
+
+async def create_transfer(user_id: str, beneficiary_id: str, amount: float, idempotency_key: str) -> Dict[str, Any]:
+    """Create transfer via transaction-service with idempotency"""
+    try:
+        response = await http_client.post(
+            f"{TRANSACTION_SERVICE_URL}/api/v1/transactions/transfer",
+            json={
+                "user_id": user_id,
+                "beneficiary_id": beneficiary_id,
+                "amount": amount,
+                "source_currency": "NGN",
+                "destination_currency": "NGN"
+            },
+            headers={"Idempotency-Key": idempotency_key, "X-User-ID": user_id}
+        )
+        return response.json()
+    except Exception as e:
+        logger.error(f"Failed to create transfer: {e}")
+        return {"error": str(e)}
+
+
+async def purchase_airtime(user_id: str, phone: str, amount: float, idempotency_key: str) -> Dict[str, Any]:
+    """Purchase airtime via airtime-service with idempotency"""
+    try:
+        response = await http_client.post(
+            f"{AIRTIME_SERVICE_URL}/api/v1/airtime/purchase",
+            json={
+                "user_id": user_id,
+                "phone_number": phone,
+                "amount": amount
+            },
+            headers={"Idempotency-Key": idempotency_key}
+        )
+        return response.json()
+    except Exception as e:
+        logger.error(f"Failed to purchase airtime: {e}")
+        return {"error": str(e)}
+
+
+async def get_user_by_phone(phone: str) -> Optional[Dict[str, Any]]:
+    """
+    Get user data by phone number.
+    First tries user-service, falls back to mock data if unavailable.
+    """
+    normalized = normalize_phone(phone)
+    
+    # Try user-service first
+    user = await get_user_from_service(normalized)
+    if user:
+        # Enrich with wallet balance and beneficiaries
+        wallet = await get_wallet_balance(user.get("user_id", ""))
+        if wallet:
+            user["balance"] = wallet.get("balance", 0)
+            user["currency"] = wallet.get("currency", "NGN")
+        
+        beneficiaries = await get_beneficiaries(user.get("user_id", ""))
+        user["beneficiaries"] = beneficiaries
+        
+        transactions = await get_recent_transactions(user.get("user_id", ""))
+        user["recent_transactions"] = transactions
+        
+        return user
+    
+    # Fallback to mock data for demo/testing
+    logger.info(f"Using fallback mock data for {normalized}")
+    return FALLBACK_MOCK_USERS.get(normalized)
 
 
 def format_currency(amount: float, currency: str = "NGN") -> str:

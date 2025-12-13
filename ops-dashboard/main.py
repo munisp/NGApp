@@ -828,6 +828,429 @@ async def get_sla_metrics():
     }
 
 
+# ==================== Unified Transaction Search ====================
+
+class TransactionSearchResult(BaseModel):
+    transaction_id: str
+    reference: str
+    user_id: str
+    user_name: Optional[str] = None
+    amount: Decimal
+    currency: str
+    status: str
+    transaction_type: str
+    corridor: Optional[str] = None
+    risk_score: Optional[int] = None
+    risk_decision: Optional[str] = None
+    created_at: datetime
+    completed_at: Optional[datetime] = None
+
+
+class RiskFlag(BaseModel):
+    id: str
+    user_id: str
+    flag_type: str
+    severity: str
+    description: str
+    triggered_at: datetime
+    resolved: bool = False
+    resolved_at: Optional[datetime] = None
+    resolved_by: Optional[str] = None
+
+
+class CorridorHealth(BaseModel):
+    corridor: str
+    status: str
+    success_rate: float
+    avg_latency_ms: int
+    last_transaction_at: Optional[datetime] = None
+    error_count_24h: int
+    volume_24h: Decimal
+
+
+class AccountAction(BaseModel):
+    id: str
+    user_id: str
+    action_type: str
+    reason: str
+    performed_by: str
+    performed_at: datetime
+    expires_at: Optional[datetime] = None
+    notes: Optional[str] = None
+
+
+# In-memory storage for new features
+transactions_db: Dict[str, TransactionSearchResult] = {}
+risk_flags_db: Dict[str, RiskFlag] = {}
+account_actions_db: Dict[str, AccountAction] = {}
+
+# Mock corridor health data
+corridor_health_db: Dict[str, CorridorHealth] = {
+    "mojaloop": CorridorHealth(
+        corridor="mojaloop",
+        status="healthy",
+        success_rate=98.5,
+        avg_latency_ms=450,
+        last_transaction_at=datetime.utcnow() - timedelta(minutes=5),
+        error_count_24h=12,
+        volume_24h=Decimal("15000000")
+    ),
+    "papss": CorridorHealth(
+        corridor="papss",
+        status="healthy",
+        success_rate=97.2,
+        avg_latency_ms=620,
+        last_transaction_at=datetime.utcnow() - timedelta(minutes=2),
+        error_count_24h=28,
+        volume_24h=Decimal("42000000")
+    ),
+    "upi": CorridorHealth(
+        corridor="upi",
+        status="degraded",
+        success_rate=94.1,
+        avg_latency_ms=890,
+        last_transaction_at=datetime.utcnow() - timedelta(minutes=15),
+        error_count_24h=67,
+        volume_24h=Decimal("8500000")
+    ),
+    "pix": CorridorHealth(
+        corridor="pix",
+        status="healthy",
+        success_rate=99.1,
+        avg_latency_ms=320,
+        last_transaction_at=datetime.utcnow() - timedelta(minutes=1),
+        error_count_24h=5,
+        volume_24h=Decimal("22000000")
+    ),
+    "nibss": CorridorHealth(
+        corridor="nibss",
+        status="healthy",
+        success_rate=99.5,
+        avg_latency_ms=180,
+        last_transaction_at=datetime.utcnow() - timedelta(seconds=30),
+        error_count_24h=3,
+        volume_24h=Decimal("125000000")
+    )
+}
+
+
+@app.get("/transactions/search", response_model=List[TransactionSearchResult])
+async def search_transactions(
+    query: Optional[str] = None,
+    user_id: Optional[str] = None,
+    status: Optional[str] = None,
+    corridor: Optional[str] = None,
+    min_amount: Optional[float] = None,
+    max_amount: Optional[float] = None,
+    risk_decision: Optional[str] = None,
+    start_date: Optional[datetime] = None,
+    end_date: Optional[datetime] = None,
+    limit: int = Query(default=50, le=500)
+):
+    """
+    Unified transaction search across all corridors.
+    Search by transaction ID, reference, user ID, phone, or email.
+    Filter by status, corridor, amount range, risk decision, and date range.
+    """
+    # Generate mock transactions for demo
+    if not transactions_db:
+        import random
+        corridors = ["mojaloop", "papss", "upi", "pix", "nibss", "internal"]
+        statuses = ["completed", "pending", "failed", "processing"]
+        risk_decisions = ["allow", "review", "block"]
+        
+        for i in range(100):
+            txn_id = f"TXN-{uuid.uuid4().hex[:8].upper()}"
+            transactions_db[txn_id] = TransactionSearchResult(
+                transaction_id=txn_id,
+                reference=f"REF-{uuid.uuid4().hex[:8].upper()}",
+                user_id=f"USR-{random.randint(1000, 9999)}",
+                user_name=f"User {random.randint(1, 100)}",
+                amount=Decimal(str(random.uniform(1000, 500000))),
+                currency="NGN",
+                status=random.choice(statuses),
+                transaction_type=random.choice(["transfer", "payment", "withdrawal"]),
+                corridor=random.choice(corridors),
+                risk_score=random.randint(0, 100),
+                risk_decision=random.choice(risk_decisions),
+                created_at=datetime.utcnow() - timedelta(hours=random.randint(0, 168)),
+                completed_at=datetime.utcnow() - timedelta(hours=random.randint(0, 168)) if random.random() > 0.2 else None
+            )
+    
+    results = list(transactions_db.values())
+    
+    # Apply filters
+    if query:
+        query_lower = query.lower()
+        results = [t for t in results if 
+                   query_lower in t.transaction_id.lower() or
+                   query_lower in t.reference.lower() or
+                   query_lower in t.user_id.lower() or
+                   (t.user_name and query_lower in t.user_name.lower())]
+    if user_id:
+        results = [t for t in results if t.user_id == user_id]
+    if status:
+        results = [t for t in results if t.status == status]
+    if corridor:
+        results = [t for t in results if t.corridor == corridor]
+    if min_amount:
+        results = [t for t in results if float(t.amount) >= min_amount]
+    if max_amount:
+        results = [t for t in results if float(t.amount) <= max_amount]
+    if risk_decision:
+        results = [t for t in results if t.risk_decision == risk_decision]
+    if start_date:
+        results = [t for t in results if t.created_at >= start_date]
+    if end_date:
+        results = [t for t in results if t.created_at <= end_date]
+    
+    results.sort(key=lambda x: x.created_at, reverse=True)
+    return results[:limit]
+
+
+@app.get("/transactions/{transaction_id}")
+async def get_transaction_details(transaction_id: str):
+    """Get detailed transaction information including risk assessment."""
+    if transaction_id not in transactions_db:
+        raise HTTPException(status_code=404, detail="Transaction not found")
+    
+    txn = transactions_db[transaction_id]
+    return {
+        "transaction": txn,
+        "risk_assessment": {
+            "score": txn.risk_score,
+            "decision": txn.risk_decision,
+            "factors": [
+                {"factor": "velocity_check", "triggered": txn.risk_score > 50, "score": 20},
+                {"factor": "new_device", "triggered": txn.risk_score > 70, "score": 15},
+                {"factor": "large_amount", "triggered": float(txn.amount) > 100000, "score": 10}
+            ]
+        },
+        "related_tickets": [],
+        "related_disputes": []
+    }
+
+
+# ==================== Risk Flags Management ====================
+
+@app.get("/risk/flags", response_model=List[RiskFlag])
+async def list_risk_flags(
+    user_id: Optional[str] = None,
+    severity: Optional[str] = None,
+    resolved: Optional[bool] = None,
+    limit: int = Query(default=50, le=200)
+):
+    """List risk flags with optional filters."""
+    # Generate mock risk flags for demo
+    if not risk_flags_db:
+        severities = ["low", "medium", "high", "critical"]
+        flag_types = ["velocity_exceeded", "new_device", "high_risk_corridor", "unusual_time", "large_amount"]
+        
+        for i in range(30):
+            flag_id = str(uuid.uuid4())
+            risk_flags_db[flag_id] = RiskFlag(
+                id=flag_id,
+                user_id=f"USR-{1000 + i}",
+                flag_type=flag_types[i % len(flag_types)],
+                severity=severities[i % len(severities)],
+                description=f"Risk flag triggered for user activity",
+                triggered_at=datetime.utcnow() - timedelta(hours=i * 2),
+                resolved=i > 20
+            )
+    
+    flags = list(risk_flags_db.values())
+    
+    if user_id:
+        flags = [f for f in flags if f.user_id == user_id]
+    if severity:
+        flags = [f for f in flags if f.severity == severity]
+    if resolved is not None:
+        flags = [f for f in flags if f.resolved == resolved]
+    
+    flags.sort(key=lambda x: x.triggered_at, reverse=True)
+    return flags[:limit]
+
+
+@app.post("/risk/flags/{flag_id}/resolve")
+async def resolve_risk_flag(flag_id: str, agent_id: str, notes: str):
+    """Resolve a risk flag."""
+    if flag_id not in risk_flags_db:
+        raise HTTPException(status_code=404, detail="Risk flag not found")
+    
+    flag = risk_flags_db[flag_id]
+    flag.resolved = True
+    flag.resolved_at = datetime.utcnow()
+    flag.resolved_by = agent_id
+    
+    return {"message": "Risk flag resolved", "flag": flag}
+
+
+# ==================== Corridor Health Monitoring ====================
+
+@app.get("/corridors/health", response_model=List[CorridorHealth])
+async def get_corridor_health():
+    """Get health status of all payment corridors."""
+    return list(corridor_health_db.values())
+
+
+@app.get("/corridors/{corridor}/health", response_model=CorridorHealth)
+async def get_single_corridor_health(corridor: str):
+    """Get health status of a specific corridor."""
+    if corridor not in corridor_health_db:
+        raise HTTPException(status_code=404, detail="Corridor not found")
+    return corridor_health_db[corridor]
+
+
+@app.post("/corridors/{corridor}/circuit-breaker")
+async def toggle_circuit_breaker(corridor: str, action: str, agent_id: str, reason: str):
+    """Open or close circuit breaker for a corridor."""
+    if corridor not in corridor_health_db:
+        raise HTTPException(status_code=404, detail="Corridor not found")
+    
+    if action not in ["open", "close"]:
+        raise HTTPException(status_code=400, detail="Action must be 'open' or 'close'")
+    
+    health = corridor_health_db[corridor]
+    health.status = "circuit_open" if action == "open" else "healthy"
+    
+    return {
+        "message": f"Circuit breaker {action}ed for {corridor}",
+        "corridor": corridor,
+        "status": health.status,
+        "performed_by": agent_id,
+        "reason": reason
+    }
+
+
+# ==================== Account Actions ====================
+
+@app.post("/accounts/{user_id}/freeze")
+async def freeze_account(
+    user_id: str,
+    agent_id: str,
+    reason: str,
+    duration_hours: Optional[int] = None
+):
+    """Freeze a user account."""
+    action_id = str(uuid.uuid4())
+    expires_at = datetime.utcnow() + timedelta(hours=duration_hours) if duration_hours else None
+    
+    action = AccountAction(
+        id=action_id,
+        user_id=user_id,
+        action_type="freeze",
+        reason=reason,
+        performed_by=agent_id,
+        performed_at=datetime.utcnow(),
+        expires_at=expires_at
+    )
+    account_actions_db[action_id] = action
+    
+    return {
+        "message": f"Account {user_id} frozen",
+        "action": action,
+        "expires_at": expires_at
+    }
+
+
+@app.post("/accounts/{user_id}/unfreeze")
+async def unfreeze_account(user_id: str, agent_id: str, reason: str):
+    """Unfreeze a user account."""
+    action_id = str(uuid.uuid4())
+    
+    action = AccountAction(
+        id=action_id,
+        user_id=user_id,
+        action_type="unfreeze",
+        reason=reason,
+        performed_by=agent_id,
+        performed_at=datetime.utcnow()
+    )
+    account_actions_db[action_id] = action
+    
+    return {"message": f"Account {user_id} unfrozen", "action": action}
+
+
+@app.post("/transactions/{transaction_id}/cancel")
+async def cancel_transaction(transaction_id: str, agent_id: str, reason: str):
+    """Cancel a pending transaction."""
+    if transaction_id not in transactions_db:
+        raise HTTPException(status_code=404, detail="Transaction not found")
+    
+    txn = transactions_db[transaction_id]
+    if txn.status not in ["pending", "processing"]:
+        raise HTTPException(status_code=400, detail=f"Cannot cancel transaction in {txn.status} status")
+    
+    txn.status = "cancelled"
+    
+    return {
+        "message": f"Transaction {transaction_id} cancelled",
+        "transaction": txn,
+        "cancelled_by": agent_id,
+        "reason": reason
+    }
+
+
+@app.get("/accounts/{user_id}/actions", response_model=List[AccountAction])
+async def get_account_actions(user_id: str):
+    """Get action history for a user account."""
+    actions = [a for a in account_actions_db.values() if a.user_id == user_id]
+    actions.sort(key=lambda x: x.performed_at, reverse=True)
+    return actions
+
+
+# ==================== Control Tower Dashboard ====================
+
+@app.get("/control-tower/summary")
+async def get_control_tower_summary():
+    """Get unified control tower summary for ops team."""
+    # Transaction stats
+    txns = list(transactions_db.values())
+    pending_txns = len([t for t in txns if t.status == "pending"])
+    failed_txns_24h = len([t for t in txns if t.status == "failed" and t.created_at > datetime.utcnow() - timedelta(hours=24)])
+    
+    # Risk stats
+    flags = list(risk_flags_db.values())
+    unresolved_flags = len([f for f in flags if not f.resolved])
+    critical_flags = len([f for f in flags if f.severity == "critical" and not f.resolved])
+    
+    # Corridor stats
+    corridors = list(corridor_health_db.values())
+    degraded_corridors = len([c for c in corridors if c.status != "healthy"])
+    
+    # Ticket stats
+    tickets = list(tickets_db.values())
+    open_tickets = len([t for t in tickets if t.status in [TicketStatus.OPEN, TicketStatus.IN_PROGRESS]])
+    escalated_tickets = len([t for t in tickets if t.status == TicketStatus.ESCALATED])
+    
+    return {
+        "transactions": {
+            "pending": pending_txns,
+            "failed_24h": failed_txns_24h,
+            "total_volume_24h": sum(float(t.amount) for t in txns if t.created_at > datetime.utcnow() - timedelta(hours=24))
+        },
+        "risk": {
+            "unresolved_flags": unresolved_flags,
+            "critical_flags": critical_flags,
+            "blocked_transactions_24h": len([t for t in txns if t.risk_decision == "block" and t.created_at > datetime.utcnow() - timedelta(hours=24)])
+        },
+        "corridors": {
+            "total": len(corridors),
+            "healthy": len(corridors) - degraded_corridors,
+            "degraded": degraded_corridors
+        },
+        "support": {
+            "open_tickets": open_tickets,
+            "escalated": escalated_tickets,
+            "avg_response_time_hours": 2.5
+        },
+        "alerts": [
+            {"type": "warning", "message": "UPI corridor experiencing elevated latency"} if any(c.status == "degraded" for c in corridors) else None,
+            {"type": "critical", "message": f"{critical_flags} critical risk flags require attention"} if critical_flags > 0 else None
+        ]
+    }
+
+
 # Health check
 @app.get("/health")
 async def health_check():
