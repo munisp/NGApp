@@ -405,7 +405,7 @@ class CorridorRouter:
         if config.corridor == Corridor.PAPSS:
             reasons.append("intra-Africa corridor")
         
-        return f"Selected {config.corridor.value}: " + ", ".join(reasons) if reasons else f"Best available option"
+        return f"Selected {config.corridor.value}: " + ", ".join(reasons) if reasons else "Best available option"
 
 
 # Singleton router instance
