@@ -103,29 +103,27 @@ export const useSettingsStore = create<SettingsState>()(
       ...defaultSettings,
 
       setWeakNetworkMode: (enabled: boolean) => {
-        set((state) => {
-          // When enabling weak network mode, also adjust related settings
-          if (enabled) {
-            return {
-              weakNetworkMode: true,
-              autoRefreshEnabled: false,
-              showCharts: false,
-              imageQuality: 'low',
-              animationsEnabled: false,
-              prefetchEnabled: false,
-            };
-          } else {
-            // When disabling, restore defaults for related settings
-            return {
-              weakNetworkMode: false,
-              autoRefreshEnabled: true,
-              showCharts: true,
-              imageQuality: 'high',
-              animationsEnabled: true,
-              prefetchEnabled: true,
-            };
-          }
-        });
+        // When enabling weak network mode, also adjust related settings
+        if (enabled) {
+          set({
+            weakNetworkMode: true,
+            autoRefreshEnabled: false,
+            showCharts: false,
+            imageQuality: 'low',
+            animationsEnabled: false,
+            prefetchEnabled: false,
+          });
+        } else {
+          // When disabling, restore defaults for related settings
+          set({
+            weakNetworkMode: false,
+            autoRefreshEnabled: true,
+            showCharts: true,
+            imageQuality: 'high',
+            animationsEnabled: true,
+            prefetchEnabled: true,
+          });
+        }
       },
 
       setDataSaverMode: (enabled: boolean) => {
