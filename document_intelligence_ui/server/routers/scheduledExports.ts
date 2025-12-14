@@ -116,7 +116,7 @@ export const scheduledExportsRouter = router({
         }
       }
 
-      const result = await db.insert(scheduledExports).values({
+      const [inserted] = await db.insert(scheduledExports).values({
         userId: ctx.user.id,
         name: input.name,
         description: input.description || null,
@@ -133,15 +133,10 @@ export const scheduledExportsRouter = router({
         emailBody: input.emailBody || null,
         isActive: 1,
         runCount: 0,
-      });
-
-      // Get the inserted ID from the result
-      const insertedId = Array.isArray(result) && result.length > 0 && typeof result[0] === 'object' && 'insertId' in result[0]
-        ? Number(result[0].insertId)
-        : 0;
+      }).returning({ id: scheduledExports.id });
 
       return {
-        id: insertedId,
+        id: inserted?.id ?? 0,
         message: "Scheduled export created successfully",
       };
     }),
@@ -210,7 +205,7 @@ export const scheduledExportsRouter = router({
 
       await db
         .update(scheduledExports)
-        .set(updateData)
+        .set({ ...updateData, updatedAt: new Date() })
         .where(eq(scheduledExports.id, input.id));
 
       return { success: true, message: "Scheduled export updated successfully" };
@@ -279,7 +274,7 @@ export const scheduledExportsRouter = router({
 
       await db
         .update(scheduledExports)
-        .set({ isActive: input.isActive ? 1 : 0 })
+        .set({ isActive: input.isActive ? 1 : 0, updatedAt: new Date() })
         .where(eq(scheduledExports.id, input.id));
 
       return {
@@ -358,7 +353,7 @@ export const scheduledExportsRouter = router({
       // For now, just update nextRunAt to trigger on next scheduler run
       await db
         .update(scheduledExports)
-        .set({ nextRunAt: new Date() })
+        .set({ nextRunAt: new Date(), updatedAt: new Date() })
         .where(eq(scheduledExports.id, input.id));
 
       return {

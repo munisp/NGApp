@@ -114,7 +114,7 @@ export const customTemplatesRouter = router({
       const db = await getDb();
       if (!db) throw new Error("Database not available");
 
-      const result = await db.insert(customTemplates).values({
+      const [inserted] = await db.insert(customTemplates).values({
         userId: ctx.user.id,
         name: input.name,
         description: input.description || null,
@@ -125,14 +125,10 @@ export const customTemplatesRouter = router({
         isPublic: input.isPublic ? 1 : 0,
         isActive: 1,
         useCount: 0,
-      });
-
-      const insertedId = Array.isArray(result) && result.length > 0 && typeof result[0] === 'object' && 'insertId' in result[0]
-        ? Number(result[0].insertId)
-        : 0;
+      }).returning({ id: customTemplates.id });
 
       return {
-        id: insertedId,
+        id: inserted?.id ?? 0,
         message: "Custom template created successfully",
       };
     }),
@@ -189,7 +185,7 @@ export const customTemplatesRouter = router({
 
       await db
         .update(customTemplates)
-        .set(updateData)
+        .set({ ...updateData, updatedAt: new Date() })
         .where(eq(customTemplates.id, input.id));
 
       return { success: true, message: "Template updated successfully" };
@@ -262,7 +258,7 @@ export const customTemplatesRouter = router({
       const original = result[0];
 
       // Create a copy
-      const insertResult = await db.insert(customTemplates).values({
+      const [duplicated] = await db.insert(customTemplates).values({
         userId: ctx.user.id,
         name: `${original.name} (Copy)`,
         description: original.description,
@@ -273,14 +269,10 @@ export const customTemplatesRouter = router({
         isPublic: 0, // Always create as private
         isActive: 1,
         useCount: 0,
-      });
-
-      const duplicatedId = Array.isArray(insertResult) && insertResult.length > 0 && typeof insertResult[0] === 'object' && 'insertId' in insertResult[0]
-        ? Number(insertResult[0].insertId)
-        : 0;
+      }).returning({ id: customTemplates.id });
 
       return {
-        id: duplicatedId,
+        id: duplicated?.id ?? 0,
         message: "Template duplicated successfully",
       };
     }),
@@ -352,7 +344,7 @@ export const customTemplatesRouter = router({
 
       const { templateData } = input;
 
-      const result = await db.insert(customTemplates).values({
+      const [imported] = await db.insert(customTemplates).values({
         userId: ctx.user.id,
         name: templateData.name,
         description: templateData.description || null,
@@ -363,10 +355,10 @@ export const customTemplatesRouter = router({
         isPublic: 0, // Always import as private
         isActive: 1,
         useCount: 0,
-      });
+      }).returning({ id: customTemplates.id });
 
       return {
-        id: Array.isArray(result) && result.length > 0 && typeof result[0] === 'object' && 'insertId' in result[0] ? Number(result[0].insertId) : 0,
+        id: imported?.id ?? 0,
         message: "Template imported successfully",
       };
     }),
@@ -396,6 +388,7 @@ export const customTemplatesRouter = router({
         .set({
           useCount: currentTemplate[0].useCount + 1,
           lastUsedAt: new Date(),
+          updatedAt: new Date(),
         })
         .where(eq(customTemplates.id, input.id));
 

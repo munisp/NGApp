@@ -136,7 +136,7 @@ export async function updateDocumentStatus(
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   
-  await db.update(documents).set({ status }).where(eq(documents.id, id));
+  await db.update(documents).set({ status, updatedAt: new Date() }).where(eq(documents.id, id));
 }
 
 /**
@@ -213,7 +213,7 @@ export async function updateBatchProgress(
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   
-  await db.update(batches).set(updates).where(eq(batches.id, id));
+  await db.update(batches).set({ ...updates, updatedAt: new Date() }).where(eq(batches.id, id));
 }
 
 /**
