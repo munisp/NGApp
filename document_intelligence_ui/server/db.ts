@@ -1,5 +1,5 @@
 import { eq, desc, and, isNull, or, sql } from "drizzle-orm";
-import { drizzle } from "drizzle-orm/mysql2";
+import { drizzle } from "drizzle-orm/node-postgres";
 import { InsertUser, users } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
@@ -68,7 +68,8 @@ export async function upsertUser(user: InsertUser): Promise<void> {
       updateSet.lastSignedIn = new Date();
     }
 
-    await db.insert(users).values(values).onDuplicateKeyUpdate({
+    await db.insert(users).values(values).onConflictDoUpdate({
+      target: users.openId,
       set: updateSet,
     });
   } catch (error) {
@@ -98,13 +99,10 @@ export async function createDocument(doc: InsertDocument): Promise<Document> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   
-  const result = await db.insert(documents).values(doc);
-  const insertedId = Number(result[0].insertId);
+  const [inserted] = await db.insert(documents).values(doc).returning();
+  if (!inserted) throw new Error("Failed to retrieve inserted document");
   
-  const inserted = await db.select().from(documents).where(eq(documents.id, insertedId)).limit(1);
-  if (inserted.length === 0) throw new Error("Failed to retrieve inserted document");
-  
-  return inserted[0];
+  return inserted;
 }
 
 /**
@@ -148,13 +146,10 @@ export async function createOcrResult(result: InsertOcrResult): Promise<OcrResul
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   
-  const insertResult = await db.insert(ocrResults).values(result);
-  const insertedId = Number(insertResult[0].insertId);
+  const [inserted] = await db.insert(ocrResults).values(result).returning();
+  if (!inserted) throw new Error("Failed to retrieve inserted OCR result");
   
-  const inserted = await db.select().from(ocrResults).where(eq(ocrResults.id, insertedId)).limit(1);
-  if (inserted.length === 0) throw new Error("Failed to retrieve inserted OCR result");
-  
-  return inserted[0];
+  return inserted;
 }
 
 /**
@@ -177,13 +172,10 @@ export async function createBatch(batch: InsertBatch): Promise<Batch> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   
-  const result = await db.insert(batches).values(batch);
-  const insertedId = Number(result[0].insertId);
+  const [inserted] = await db.insert(batches).values(batch).returning();
+  if (!inserted) throw new Error("Failed to retrieve inserted batch");
   
-  const inserted = await db.select().from(batches).where(eq(batches.id, insertedId)).limit(1);
-  if (inserted.length === 0) throw new Error("Failed to retrieve inserted batch");
-  
-  return inserted[0];
+  return inserted;
 }
 
 /**
@@ -270,12 +262,8 @@ export async function createNotification(notification: InsertNotification): Prom
   }
 
   try {
-    const result = await db.insert(notifications).values(notification);
-    const insertId = Number(result[0].insertId);
-    
-    // Fetch the created notification
-    const created = await db.select().from(notifications).where(eq(notifications.id, insertId)).limit(1);
-    return created[0] || null;
+    const [created] = await db.insert(notifications).values(notification).returning();
+    return created || null;
   } catch (error) {
     console.error("[Database] Failed to create notification:", error);
     return null;
@@ -451,16 +439,17 @@ export async function cleanupExpiredNotifications(): Promise<number> {
   }
 
   try {
-    const result = await db
+    const deleted = await db
       .delete(notifications)
       .where(
         and(
           sql`${notifications.expiresAt} IS NOT NULL`,
-          sql`${notifications.expiresAt} < NOW()`
+          sql`${notifications.expiresAt} < now()`
         )
-      );
+      )
+      .returning({ id: notifications.id });
     
-    return result[0].affectedRows || 0;
+    return deleted.length;
   } catch (error) {
     console.error("[Database] Failed to cleanup expired notifications:", error);
     return 0;
