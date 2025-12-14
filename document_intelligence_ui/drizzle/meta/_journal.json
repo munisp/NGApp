@@ -1,0 +1,55 @@
+{
+  "version": "7",
+  "dialect": "mysql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "5",
+      "when": 1762561211596,
+      "tag": "0000_outstanding_firestar",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "5",
+      "when": 1762561261312,
+      "tag": "0001_dazzling_beyonder",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1762564080634,
+      "tag": "0002_chief_freak",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "5",
+      "when": 1762568807625,
+      "tag": "0003_old_randall_flagg",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "5",
+      "when": 1764335003921,
+      "tag": "0004_keen_stature",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "5",
+      "when": 1764335152751,
+      "tag": "0005_goofy_human_torch",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "5",
+      "when": 1764337823859,
+      "tag": "0006_little_umar",
+      "breakpoints": true
+    }
+  ]
+}

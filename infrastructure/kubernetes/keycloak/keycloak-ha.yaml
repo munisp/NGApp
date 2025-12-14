@@ -1,0 +1,230 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: keycloak-config
+  namespace: document-intelligence-infra
+data:
+  KC_CACHE: ispn
+  KC_CACHE_STACK: kubernetes
+  KC_HEALTH_ENABLED: "true"
+  KC_METRICS_ENABLED: "true"
+  KC_HTTP_ENABLED: "true"
+  KC_HOSTNAME_STRICT: "false"
+  KC_PROXY: edge
+  JAVA_OPTS_APPEND: "-Djgroups.dns.query=keycloak-headless"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: keycloak-secrets
+  namespace: document-intelligence-infra
+type: Opaque
+stringData:
+  KEYCLOAK_ADMIN: admin
+  KEYCLOAK_ADMIN_PASSWORD: admin
+  KC_DB_USERNAME: keycloak
+  KC_DB_PASSWORD: keycloak
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: keycloak
+  namespace: document-intelligence-infra
+  labels:
+    app: keycloak
+spec:
+  ports:
+  - port: 8080
+    name: http
+  - port: 8443
+    name: https
+  selector:
+    app: keycloak
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: keycloak-headless
+  namespace: document-intelligence-infra
+  labels:
+    app: keycloak
+spec:
+  ports:
+  - port: 8080
+    name: http
+  - port: 7800
+    name: jgroups
+  clusterIP: None
+  selector:
+    app: keycloak
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: keycloak
+  namespace: document-intelligence-infra
+spec:
+  serviceName: keycloak-headless
+  replicas: 3
+  selector:
+    matchLabels:
+      app: keycloak
+  template:
+    metadata:
+      labels:
+        app: keycloak
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - keycloak
+            topologyKey: kubernetes.io/hostname
+      containers:
+      - name: keycloak
+        image: quay.io/keycloak/keycloak:24.0.4
+        args:
+        - start
+        - --cache=ispn
+        - --cache-stack=kubernetes
+        - --db=postgres
+        - --db-url-host=postgresql
+        - --db-url-database=keycloak
+        ports:
+        - containerPort: 8080
+          name: http
+        - containerPort: 8443
+          name: https
+        - containerPort: 7800
+          name: jgroups
+        envFrom:
+        - configMapRef:
+            name: keycloak-config
+        - secretRef:
+            name: keycloak-secrets
+        env:
+        - name: KC_DB_URL_HOST
+          value: postgresql
+        - name: KC_DB_URL_DATABASE
+          value: keycloak
+        - name: JAVA_OPTS_APPEND
+          value: "-Djgroups.dns.query=keycloak-headless.document-intelligence-infra.svc.cluster.local"
+        resources:
+          requests:
+            cpu: 500m
+            memory: 1Gi
+          limits:
+            cpu: 2000m
+            memory: 2Gi
+        livenessProbe:
+          httpGet:
+            path: /health/live
+            port: 8080
+          initialDelaySeconds: 60
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /health/ready
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        volumeMounts:
+        - name: keycloak-data
+          mountPath: /opt/keycloak/data
+  volumeClaimTemplates:
+  - metadata:
+      name: keycloak-data
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      storageClassName: standard
+      resources:
+        requests:
+          storage: 5Gi
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: keycloak-pdb
+  namespace: document-intelligence-infra
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: keycloak
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: keycloak-hpa
+  namespace: document-intelligence-infra
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: StatefulSet
+    name: keycloak
+  minReplicas: 3
+  maxReplicas: 6
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: keycloak-realm-config
+  namespace: document-intelligence-infra
+data:
+  document-intelligence-realm.json: |
+    {
+      "realm": "document-intelligence",
+      "enabled": true,
+      "sslRequired": "external",
+      "registrationAllowed": false,
+      "loginWithEmailAllowed": true,
+      "duplicateEmailsAllowed": false,
+      "resetPasswordAllowed": true,
+      "editUsernameAllowed": false,
+      "bruteForceProtected": true,
+      "permanentLockout": false,
+      "maxFailureWaitSeconds": 900,
+      "minimumQuickLoginWaitSeconds": 60,
+      "waitIncrementSeconds": 60,
+      "quickLoginCheckMilliSeconds": 1000,
+      "maxDeltaTimeSeconds": 43200,
+      "failureFactor": 5,
+      "roles": {
+        "realm": [
+          {"name": "admin", "description": "Administrator"},
+          {"name": "user", "description": "Regular user"},
+          {"name": "reviewer", "description": "Document reviewer"},
+          {"name": "auditor", "description": "Audit access"}
+        ]
+      },
+      "clients": [
+        {
+          "clientId": "document-intelligence-ui",
+          "enabled": true,
+          "publicClient": true,
+          "redirectUris": ["*"],
+          "webOrigins": ["*"],
+          "standardFlowEnabled": true,
+          "directAccessGrantsEnabled": true
+        },
+        {
+          "clientId": "document-intelligence-api",
+          "enabled": true,
+          "publicClient": false,
+          "bearerOnly": true
+        }
+      ],
+      "defaultRoles": ["user"],
+      "passwordPolicy": "length(8) and upperCase(1) and lowerCase(1) and digits(1) and specialChars(1)"
+    }

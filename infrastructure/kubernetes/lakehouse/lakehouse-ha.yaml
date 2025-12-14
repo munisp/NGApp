@@ -1,0 +1,567 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: spark-config
+  namespace: document-intelligence-infra
+data:
+  spark-defaults.conf: |
+    # Spark Configuration for Delta Lake
+    spark.sql.extensions=io.delta.sql.DeltaSparkSessionExtension
+    spark.sql.catalog.spark_catalog=org.apache.spark.sql.delta.catalog.DeltaCatalog
+    
+    # Performance tuning
+    spark.sql.shuffle.partitions=200
+    spark.sql.adaptive.enabled=true
+    spark.sql.adaptive.coalescePartitions.enabled=true
+    spark.sql.adaptive.skewJoin.enabled=true
+    
+    # Memory configuration
+    spark.driver.memory=4g
+    spark.executor.memory=4g
+    spark.executor.cores=2
+    spark.executor.instances=3
+    
+    # Delta Lake optimizations
+    spark.databricks.delta.retentionDurationCheck.enabled=false
+    spark.databricks.delta.vacuum.parallelDelete.enabled=true
+    spark.databricks.delta.optimize.maxFileSize=134217728
+    spark.databricks.delta.autoCompact.enabled=true
+    spark.databricks.delta.autoOptimize.optimizeWrite=true
+    
+    # S3/MinIO configuration
+    spark.hadoop.fs.s3a.impl=org.apache.hadoop.fs.s3a.S3AFileSystem
+    spark.hadoop.fs.s3a.path.style.access=true
+    spark.hadoop.fs.s3a.connection.ssl.enabled=false
+    
+    # History server
+    spark.eventLog.enabled=true
+    spark.eventLog.dir=s3a://spark-logs/
+    spark.history.fs.logDirectory=s3a://spark-logs/
+    
+  log4j2.properties: |
+    rootLogger.level=WARN
+    rootLogger.appenderRef.stdout.ref=console
+    appender.console.type=Console
+    appender.console.name=console
+    appender.console.target=SYSTEM_ERR
+    appender.console.layout.type=PatternLayout
+    appender.console.layout.pattern=%d{yy/MM/dd HH:mm:ss} %p %c{1}: %m%n
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: spark-master
+  namespace: document-intelligence-infra
+  labels:
+    app: spark-master
+spec:
+  ports:
+  - port: 7077
+    name: spark
+  - port: 8080
+    name: webui
+  - port: 6066
+    name: rest
+  selector:
+    app: spark-master
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: spark-master-headless
+  namespace: document-intelligence-infra
+  labels:
+    app: spark-master
+spec:
+  ports:
+  - port: 7077
+    name: spark
+  clusterIP: None
+  selector:
+    app: spark-master
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: spark-master
+  namespace: document-intelligence-infra
+spec:
+  serviceName: spark-master-headless
+  replicas: 1
+  selector:
+    matchLabels:
+      app: spark-master
+  template:
+    metadata:
+      labels:
+        app: spark-master
+    spec:
+      containers:
+      - name: spark-master
+        image: bitnami/spark:3.5.1
+        ports:
+        - containerPort: 7077
+          name: spark
+        - containerPort: 8080
+          name: webui
+        - containerPort: 6066
+          name: rest
+        env:
+        - name: SPARK_MODE
+          value: master
+        - name: SPARK_MASTER_HOST
+          value: spark-master
+        - name: SPARK_MASTER_PORT
+          value: "7077"
+        - name: SPARK_MASTER_WEBUI_PORT
+          value: "8080"
+        volumeMounts:
+        - name: config
+          mountPath: /opt/bitnami/spark/conf/spark-defaults.conf
+          subPath: spark-defaults.conf
+        - name: config
+          mountPath: /opt/bitnami/spark/conf/log4j2.properties
+          subPath: log4j2.properties
+        resources:
+          requests:
+            cpu: 500m
+            memory: 2Gi
+          limits:
+            cpu: 2000m
+            memory: 4Gi
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 8080
+          initialDelaySeconds: 60
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 5
+      volumes:
+      - name: config
+        configMap:
+          name: spark-config
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: spark-worker
+  namespace: document-intelligence-infra
+spec:
+  serviceName: spark-worker-headless
+  replicas: 3
+  selector:
+    matchLabels:
+      app: spark-worker
+  template:
+    metadata:
+      labels:
+        app: spark-worker
+    spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - spark-worker
+              topologyKey: kubernetes.io/hostname
+      containers:
+      - name: spark-worker
+        image: bitnami/spark:3.5.1
+        ports:
+        - containerPort: 8081
+          name: webui
+        env:
+        - name: SPARK_MODE
+          value: worker
+        - name: SPARK_MASTER_URL
+          value: spark://spark-master:7077
+        - name: SPARK_WORKER_MEMORY
+          value: 4G
+        - name: SPARK_WORKER_CORES
+          value: "2"
+        volumeMounts:
+        - name: config
+          mountPath: /opt/bitnami/spark/conf/spark-defaults.conf
+          subPath: spark-defaults.conf
+        - name: config
+          mountPath: /opt/bitnami/spark/conf/log4j2.properties
+          subPath: log4j2.properties
+        - name: work
+          mountPath: /opt/bitnami/spark/work
+        resources:
+          requests:
+            cpu: 1000m
+            memory: 4Gi
+          limits:
+            cpu: 2000m
+            memory: 6Gi
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 8081
+          initialDelaySeconds: 60
+          periodSeconds: 10
+      volumes:
+      - name: config
+        configMap:
+          name: spark-config
+  volumeClaimTemplates:
+  - metadata:
+      name: work
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      storageClassName: standard
+      resources:
+        requests:
+          storage: 50Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: spark-worker-headless
+  namespace: document-intelligence-infra
+spec:
+  ports:
+  - port: 8081
+    name: webui
+  clusterIP: None
+  selector:
+    app: spark-worker
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: spark-history-server
+  namespace: document-intelligence-infra
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: spark-history-server
+  template:
+    metadata:
+      labels:
+        app: spark-history-server
+    spec:
+      containers:
+      - name: spark-history-server
+        image: bitnami/spark:3.5.1
+        command: ["/opt/bitnami/spark/sbin/start-history-server.sh"]
+        ports:
+        - containerPort: 18080
+          name: webui
+        env:
+        - name: SPARK_HISTORY_OPTS
+          value: "-Dspark.history.fs.logDirectory=s3a://spark-logs/"
+        volumeMounts:
+        - name: config
+          mountPath: /opt/bitnami/spark/conf/spark-defaults.conf
+          subPath: spark-defaults.conf
+        resources:
+          requests:
+            cpu: 200m
+            memory: 1Gi
+          limits:
+            cpu: 1000m
+            memory: 2Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: spark-history-server
+  namespace: document-intelligence-infra
+spec:
+  ports:
+  - port: 18080
+    name: webui
+  selector:
+    app: spark-history-server
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: minio
+  namespace: document-intelligence-infra
+spec:
+  serviceName: minio-headless
+  replicas: 4
+  selector:
+    matchLabels:
+      app: minio
+  template:
+    metadata:
+      labels:
+        app: minio
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - minio
+            topologyKey: kubernetes.io/hostname
+      containers:
+      - name: minio
+        image: minio/minio:RELEASE.2024-05-01T01-11-10Z
+        args:
+        - server
+        - http://minio-{0...3}.minio-headless.document-intelligence-infra.svc.cluster.local/data
+        - --console-address
+        - ":9001"
+        ports:
+        - containerPort: 9000
+          name: api
+        - containerPort: 9001
+          name: console
+        env:
+        - name: MINIO_ROOT_USER
+          valueFrom:
+            secretKeyRef:
+              name: minio-secrets
+              key: root-user
+        - name: MINIO_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: minio-secrets
+              key: root-password
+        volumeMounts:
+        - name: data
+          mountPath: /data
+        resources:
+          requests:
+            cpu: 500m
+            memory: 1Gi
+          limits:
+            cpu: 2000m
+            memory: 2Gi
+        livenessProbe:
+          httpGet:
+            path: /minio/health/live
+            port: 9000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /minio/health/ready
+            port: 9000
+          initialDelaySeconds: 10
+          periodSeconds: 5
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      storageClassName: standard
+      resources:
+        requests:
+          storage: 100Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: minio
+  namespace: document-intelligence-infra
+  labels:
+    app: minio
+spec:
+  ports:
+  - port: 9000
+    name: api
+  - port: 9001
+    name: console
+  selector:
+    app: minio
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: minio-headless
+  namespace: document-intelligence-infra
+  labels:
+    app: minio
+spec:
+  ports:
+  - port: 9000
+    name: api
+  clusterIP: None
+  selector:
+    app: minio
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: minio-secrets
+  namespace: document-intelligence-infra
+type: Opaque
+stringData:
+  root-user: minio
+  root-password: minio123
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: spark-worker-pdb
+  namespace: document-intelligence-infra
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: spark-worker
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: minio-pdb
+  namespace: document-intelligence-infra
+spec:
+  minAvailable: 3
+  selector:
+    matchLabels:
+      app: minio
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: lakehouse-api-config
+  namespace: document-intelligence-infra
+data:
+  config.yaml: |
+    server:
+      host: 0.0.0.0
+      port: 8002
+      workers: 4
+    
+    spark:
+      master: spark://spark-master:7077
+      app_name: document-intelligence-lakehouse
+      executor_memory: 4g
+      executor_cores: 2
+      executor_instances: 3
+    
+    delta:
+      warehouse_path: s3a://lakehouse/warehouse
+      bronze_path: s3a://lakehouse/bronze
+      silver_path: s3a://lakehouse/silver
+      gold_path: s3a://lakehouse/gold
+    
+    minio:
+      endpoint: http://minio:9000
+      access_key: minio
+      secret_key: minio123
+      bucket: lakehouse
+    
+    tables:
+      documents:
+        path: s3a://lakehouse/bronze/documents
+        partition_by: [category, year, month]
+      ocr_results:
+        path: s3a://lakehouse/silver/ocr_results
+        partition_by: [category, status]
+      analytics:
+        path: s3a://lakehouse/gold/analytics
+        partition_by: [date]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: lakehouse-api
+  namespace: document-intelligence-infra
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: lakehouse-api
+  template:
+    metadata:
+      labels:
+        app: lakehouse-api
+    spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - lakehouse-api
+              topologyKey: kubernetes.io/hostname
+      containers:
+      - name: lakehouse-api
+        image: document-intelligence/lakehouse-api:latest
+        ports:
+        - containerPort: 8002
+          name: http
+        volumeMounts:
+        - name: config
+          mountPath: /app/config
+        resources:
+          requests:
+            cpu: 500m
+            memory: 1Gi
+          limits:
+            cpu: 2000m
+            memory: 2Gi
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8002
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8002
+          initialDelaySeconds: 10
+          periodSeconds: 5
+      volumes:
+      - name: config
+        configMap:
+          name: lakehouse-api-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: lakehouse-api
+  namespace: document-intelligence-infra
+spec:
+  ports:
+  - port: 8002
+    name: http
+  selector:
+    app: lakehouse-api
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: lakehouse-api-hpa
+  namespace: document-intelligence-infra
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: lakehouse-api
+  minReplicas: 3
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70

@@ -1,0 +1,535 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: temporal-config
+  namespace: document-intelligence-infra
+data:
+  config_template.yaml: |
+    log:
+      stdout: true
+      level: info
+    
+    persistence:
+      defaultStore: default
+      visibilityStore: visibility
+      numHistoryShards: 512
+      datastores:
+        default:
+          sql:
+            pluginName: postgres
+            databaseName: temporal
+            connectAddr: "postgresql:5432"
+            connectProtocol: tcp
+            user: temporal
+            password: temporal
+            maxConns: 20
+            maxIdleConns: 20
+            maxConnLifetime: 1h
+        visibility:
+          sql:
+            pluginName: postgres
+            databaseName: temporal_visibility
+            connectAddr: "postgresql:5432"
+            connectProtocol: tcp
+            user: temporal
+            password: temporal
+            maxConns: 10
+            maxIdleConns: 10
+            maxConnLifetime: 1h
+    
+    global:
+      membership:
+        maxJoinDuration: 30s
+        broadcastAddress: ""
+      pprof:
+        port: 7936
+      metrics:
+        prometheus:
+          timerType: histogram
+          listenAddress: "0.0.0.0:9090"
+    
+    services:
+      frontend:
+        rpc:
+          grpcPort: 7233
+          membershipPort: 6933
+          bindOnLocalHost: false
+          bindOnIP: "0.0.0.0"
+      
+      history:
+        rpc:
+          grpcPort: 7234
+          membershipPort: 6934
+          bindOnLocalHost: false
+          bindOnIP: "0.0.0.0"
+      
+      matching:
+        rpc:
+          grpcPort: 7235
+          membershipPort: 6935
+          bindOnLocalHost: false
+          bindOnIP: "0.0.0.0"
+      
+      worker:
+        rpc:
+          grpcPort: 7239
+          membershipPort: 6939
+          bindOnLocalHost: false
+          bindOnIP: "0.0.0.0"
+    
+    clusterMetadata:
+      enableGlobalNamespace: false
+      failoverVersionIncrement: 10
+      masterClusterName: active
+      currentClusterName: active
+      clusterInformation:
+        active:
+          enabled: true
+          initialFailoverVersion: 1
+          rpcName: frontend
+          rpcAddress: "temporal-frontend:7233"
+    
+    dcRedirectionPolicy:
+      policy: noop
+    
+    archival:
+      history:
+        state: disabled
+      visibility:
+        state: disabled
+    
+    namespaceDefaults:
+      archival:
+        history:
+          state: disabled
+        visibility:
+          state: disabled
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: temporal-frontend
+  namespace: document-intelligence-infra
+  labels:
+    app: temporal
+    component: frontend
+spec:
+  ports:
+  - port: 7233
+    name: grpc
+  - port: 9090
+    name: metrics
+  selector:
+    app: temporal
+    component: frontend
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: temporal-frontend-headless
+  namespace: document-intelligence-infra
+  labels:
+    app: temporal
+    component: frontend
+spec:
+  ports:
+  - port: 7233
+    name: grpc
+  - port: 6933
+    name: membership
+  clusterIP: None
+  selector:
+    app: temporal
+    component: frontend
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: temporal-frontend
+  namespace: document-intelligence-infra
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: temporal
+      component: frontend
+  template:
+    metadata:
+      labels:
+        app: temporal
+        component: frontend
+    spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - temporal
+              topologyKey: kubernetes.io/hostname
+      containers:
+      - name: temporal-frontend
+        image: temporalio/server:1.24.2
+        ports:
+        - containerPort: 7233
+          name: grpc
+        - containerPort: 6933
+          name: membership
+        - containerPort: 9090
+          name: metrics
+        env:
+        - name: SERVICES
+          value: frontend
+        - name: DB
+          value: postgresql
+        - name: DB_PORT
+          value: "5432"
+        - name: POSTGRES_USER
+          value: temporal
+        - name: POSTGRES_PWD
+          value: temporal
+        - name: POSTGRES_SEEDS
+          value: postgresql
+        - name: DYNAMIC_CONFIG_FILE_PATH
+          value: /etc/temporal/config/dynamicconfig/dynamic_config.yaml
+        - name: ENABLE_ES
+          value: "false"
+        volumeMounts:
+        - name: config
+          mountPath: /etc/temporal/config/dynamicconfig
+        resources:
+          requests:
+            cpu: 200m
+            memory: 512Mi
+          limits:
+            cpu: 1000m
+            memory: 1Gi
+        livenessProbe:
+          tcpSocket:
+            port: 7233
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          tcpSocket:
+            port: 7233
+          initialDelaySeconds: 10
+          periodSeconds: 5
+      volumes:
+      - name: config
+        configMap:
+          name: temporal-dynamic-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: temporal-history-headless
+  namespace: document-intelligence-infra
+spec:
+  ports:
+  - port: 7234
+    name: grpc
+  - port: 6934
+    name: membership
+  clusterIP: None
+  selector:
+    app: temporal
+    component: history
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: temporal-history
+  namespace: document-intelligence-infra
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: temporal
+      component: history
+  template:
+    metadata:
+      labels:
+        app: temporal
+        component: history
+    spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - temporal
+              topologyKey: kubernetes.io/hostname
+      containers:
+      - name: temporal-history
+        image: temporalio/server:1.24.2
+        ports:
+        - containerPort: 7234
+          name: grpc
+        - containerPort: 6934
+          name: membership
+        env:
+        - name: SERVICES
+          value: history
+        - name: DB
+          value: postgresql
+        - name: DB_PORT
+          value: "5432"
+        - name: POSTGRES_USER
+          value: temporal
+        - name: POSTGRES_PWD
+          value: temporal
+        - name: POSTGRES_SEEDS
+          value: postgresql
+        - name: NUM_HISTORY_SHARDS
+          value: "512"
+        volumeMounts:
+        - name: config
+          mountPath: /etc/temporal/config/dynamicconfig
+        resources:
+          requests:
+            cpu: 500m
+            memory: 1Gi
+          limits:
+            cpu: 2000m
+            memory: 2Gi
+      volumes:
+      - name: config
+        configMap:
+          name: temporal-dynamic-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: temporal-matching-headless
+  namespace: document-intelligence-infra
+spec:
+  ports:
+  - port: 7235
+    name: grpc
+  - port: 6935
+    name: membership
+  clusterIP: None
+  selector:
+    app: temporal
+    component: matching
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: temporal-matching
+  namespace: document-intelligence-infra
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: temporal
+      component: matching
+  template:
+    metadata:
+      labels:
+        app: temporal
+        component: matching
+    spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - temporal
+              topologyKey: kubernetes.io/hostname
+      containers:
+      - name: temporal-matching
+        image: temporalio/server:1.24.2
+        ports:
+        - containerPort: 7235
+          name: grpc
+        - containerPort: 6935
+          name: membership
+        env:
+        - name: SERVICES
+          value: matching
+        - name: DB
+          value: postgresql
+        - name: DB_PORT
+          value: "5432"
+        - name: POSTGRES_USER
+          value: temporal
+        - name: POSTGRES_PWD
+          value: temporal
+        - name: POSTGRES_SEEDS
+          value: postgresql
+        volumeMounts:
+        - name: config
+          mountPath: /etc/temporal/config/dynamicconfig
+        resources:
+          requests:
+            cpu: 200m
+            memory: 512Mi
+          limits:
+            cpu: 1000m
+            memory: 1Gi
+      volumes:
+      - name: config
+        configMap:
+          name: temporal-dynamic-config
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: temporal-worker
+  namespace: document-intelligence-infra
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: temporal
+      component: worker
+  template:
+    metadata:
+      labels:
+        app: temporal
+        component: worker
+    spec:
+      containers:
+      - name: temporal-worker
+        image: temporalio/server:1.24.2
+        ports:
+        - containerPort: 7239
+          name: grpc
+        - containerPort: 6939
+          name: membership
+        env:
+        - name: SERVICES
+          value: worker
+        - name: DB
+          value: postgresql
+        - name: DB_PORT
+          value: "5432"
+        - name: POSTGRES_USER
+          value: temporal
+        - name: POSTGRES_PWD
+          value: temporal
+        - name: POSTGRES_SEEDS
+          value: postgresql
+        volumeMounts:
+        - name: config
+          mountPath: /etc/temporal/config/dynamicconfig
+        resources:
+          requests:
+            cpu: 200m
+            memory: 512Mi
+          limits:
+            cpu: 1000m
+            memory: 1Gi
+      volumes:
+      - name: config
+        configMap:
+          name: temporal-dynamic-config
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: temporal-dynamic-config
+  namespace: document-intelligence-infra
+data:
+  dynamic_config.yaml: |
+    # Dynamic configuration for Temporal
+    frontend.enableClientVersionCheck:
+      - value: true
+        constraints: {}
+    history.defaultActivityRetryPolicy:
+      - value:
+          InitialIntervalInSeconds: 1
+          MaximumIntervalCoefficient: 100.0
+          BackoffCoefficient: 2.0
+          MaximumAttempts: 0
+        constraints: {}
+    limit.maxIDLength:
+      - value: 1000
+        constraints: {}
+    system.forceSearchAttributesCacheRefreshOnRead:
+      - value: true
+        constraints: {}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: temporal-ui
+  namespace: document-intelligence-infra
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: temporal-ui
+  template:
+    metadata:
+      labels:
+        app: temporal-ui
+    spec:
+      containers:
+      - name: temporal-ui
+        image: temporalio/ui:2.26.2
+        ports:
+        - containerPort: 8080
+        env:
+        - name: TEMPORAL_ADDRESS
+          value: temporal-frontend:7233
+        - name: TEMPORAL_CORS_ORIGINS
+          value: "*"
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 500m
+            memory: 256Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: temporal-ui
+  namespace: document-intelligence-infra
+spec:
+  ports:
+  - port: 8080
+    name: http
+  selector:
+    app: temporal-ui
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: temporal-frontend-pdb
+  namespace: document-intelligence-infra
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: temporal
+      component: frontend
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: temporal-history-pdb
+  namespace: document-intelligence-infra
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: temporal
+      component: history

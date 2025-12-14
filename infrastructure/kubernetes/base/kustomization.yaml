@@ -1,0 +1,48 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: document-intelligence-infra
+
+resources:
+  - namespace.yaml
+  - postgresql-ha.yaml
+  - ../redis/redis-ha.yaml
+  - ../kafka/kafka-ha.yaml
+  - ../temporal/temporal-ha.yaml
+  - ../keycloak/keycloak-ha.yaml
+  - ../permify/permify-ha.yaml
+  - ../apisix/apisix-ha.yaml
+  - ../tigerbeetle/tigerbeetle-ha.yaml
+  - ../dapr/dapr-ha.yaml
+  - ../fluvio/fluvio-ha.yaml
+  - ../lakehouse/lakehouse-ha.yaml
+  - ../openappsec/openappsec-ha.yaml
+
+commonLabels:
+  app.kubernetes.io/part-of: document-intelligence-platform
+  app.kubernetes.io/managed-by: kustomize
+
+configMapGenerator:
+  - name: platform-config
+    literals:
+      - ENVIRONMENT=production
+      - LOG_LEVEL=info
+      - ENABLE_METRICS=true
+      - ENABLE_TRACING=true
+
+secretGenerator:
+  - name: platform-secrets
+    literals:
+      - JWT_SECRET=change-me-in-production
+      - API_KEY_SALT=change-me-in-production
+      - HMAC_SECRET=change-me-in-production
+
+images:
+  - name: document-intelligence/backend-api
+    newTag: latest
+  - name: document-intelligence/frontend
+    newTag: latest
+  - name: document-intelligence/ocr-service
+    newTag: latest
+  - name: document-intelligence/lakehouse-api
+    newTag: latest

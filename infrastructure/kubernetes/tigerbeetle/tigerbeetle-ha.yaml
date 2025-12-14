@@ -1,0 +1,225 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tigerbeetle-config
+  namespace: document-intelligence-infra
+data:
+  cluster_id: "0"
+  replica_count: "3"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: tigerbeetle
+  namespace: document-intelligence-infra
+  labels:
+    app: tigerbeetle
+spec:
+  ports:
+  - port: 3000
+    name: tigerbeetle
+  selector:
+    app: tigerbeetle
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: tigerbeetle-headless
+  namespace: document-intelligence-infra
+  labels:
+    app: tigerbeetle
+spec:
+  ports:
+  - port: 3000
+    name: tigerbeetle
+  - port: 3001
+    name: replication
+  clusterIP: None
+  selector:
+    app: tigerbeetle
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: tigerbeetle
+  namespace: document-intelligence-infra
+spec:
+  serviceName: tigerbeetle-headless
+  replicas: 3
+  podManagementPolicy: Parallel
+  selector:
+    matchLabels:
+      app: tigerbeetle
+  template:
+    metadata:
+      labels:
+        app: tigerbeetle
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - tigerbeetle
+            topologyKey: kubernetes.io/hostname
+      initContainers:
+      - name: init-data
+        image: ghcr.io/tigerbeetle/tigerbeetle:0.15.6
+        command:
+        - /bin/sh
+        - -c
+        - |
+          REPLICA_ID=${HOSTNAME##*-}
+          if [ ! -f /data/0_${REPLICA_ID}.tigerbeetle ]; then
+            /tigerbeetle format --cluster=0 --replica=${REPLICA_ID} --replica-count=3 /data/0_${REPLICA_ID}.tigerbeetle
+          fi
+        volumeMounts:
+        - name: data
+          mountPath: /data
+      containers:
+      - name: tigerbeetle
+        image: ghcr.io/tigerbeetle/tigerbeetle:0.15.6
+        ports:
+        - containerPort: 3000
+          name: tigerbeetle
+        - containerPort: 3001
+          name: replication
+        command:
+        - /bin/sh
+        - -c
+        - |
+          REPLICA_ID=${HOSTNAME##*-}
+          ADDRESSES=""
+          for i in $(seq 0 2); do
+            if [ $i -gt 0 ]; then
+              ADDRESSES="${ADDRESSES},"
+            fi
+            ADDRESSES="${ADDRESSES}tigerbeetle-${i}.tigerbeetle-headless:3001"
+          done
+          exec /tigerbeetle start --addresses=${ADDRESSES} /data/0_${REPLICA_ID}.tigerbeetle
+        volumeMounts:
+        - name: data
+          mountPath: /data
+        resources:
+          requests:
+            cpu: 500m
+            memory: 1Gi
+          limits:
+            cpu: 2000m
+            memory: 4Gi
+        livenessProbe:
+          tcpSocket:
+            port: 3000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          tcpSocket:
+            port: 3000
+          initialDelaySeconds: 10
+          periodSeconds: 5
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      storageClassName: standard
+      resources:
+        requests:
+          storage: 50Gi
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: tigerbeetle-pdb
+  namespace: document-intelligence-infra
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: tigerbeetle
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tigerbeetle-client-config
+  namespace: document-intelligence-infra
+data:
+  client.js: |
+    // TigerBeetle client configuration for Node.js
+    const { createClient } = require('tigerbeetle-node');
+    
+    const client = createClient({
+      cluster_id: 0n,
+      replica_addresses: [
+        'tigerbeetle-0.tigerbeetle-headless:3000',
+        'tigerbeetle-1.tigerbeetle-headless:3000',
+        'tigerbeetle-2.tigerbeetle-headless:3000',
+      ],
+    });
+    
+    // Account types for document intelligence platform
+    const ACCOUNT_TYPES = {
+      DOCUMENT_PROCESSING: 1,
+      OCR_CREDITS: 2,
+      STORAGE_USAGE: 3,
+      API_CALLS: 4,
+      AUDIT_TRAIL: 5,
+    };
+    
+    // Create accounts for tracking
+    async function createAccounts() {
+      const accounts = [
+        {
+          id: 1n,
+          debits_pending: 0n,
+          debits_posted: 0n,
+          credits_pending: 0n,
+          credits_posted: 0n,
+          user_data_128: 0n,
+          user_data_64: 0n,
+          user_data_32: 0,
+          reserved: 0,
+          ledger: ACCOUNT_TYPES.DOCUMENT_PROCESSING,
+          code: 1,
+          flags: 0,
+          timestamp: 0n,
+        },
+      ];
+      
+      const errors = await client.createAccounts(accounts);
+      return errors;
+    }
+    
+    // Record document processing transaction
+    async function recordDocumentProcessing(userId, documentId, credits) {
+      const transfers = [
+        {
+          id: BigInt(Date.now()),
+          debit_account_id: BigInt(userId),
+          credit_account_id: 1n,
+          amount: BigInt(credits),
+          pending_id: 0n,
+          user_data_128: BigInt(documentId),
+          user_data_64: 0n,
+          user_data_32: 0,
+          timeout: 0,
+          ledger: ACCOUNT_TYPES.DOCUMENT_PROCESSING,
+          code: 1,
+          flags: 0,
+          timestamp: 0n,
+        },
+      ];
+      
+      const errors = await client.createTransfers(transfers);
+      return errors;
+    }
+    
+    module.exports = {
+      client,
+      ACCOUNT_TYPES,
+      createAccounts,
+      recordDocumentProcessing,
+    };

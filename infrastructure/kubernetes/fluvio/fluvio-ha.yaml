@@ -1,0 +1,335 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: fluvio
+  labels:
+    app.kubernetes.io/name: fluvio
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: fluvio-config
+  namespace: document-intelligence-infra
+data:
+  sc-config.yaml: |
+    # Fluvio Streaming Controller Configuration
+    version: 0.1.0
+    
+    sc:
+      public_endpoint: "fluvio-sc.document-intelligence-infra:9003"
+      private_endpoint: "0.0.0.0:9004"
+      
+    tls:
+      enabled: false
+    
+    replication:
+      min_in_sync_replicas: 2
+      default_replication_factor: 3
+    
+    storage:
+      log_dir: /var/lib/fluvio/data
+      segment_max_bytes: 1073741824
+      index_max_bytes: 10485760
+      index_max_interval_bytes: 4096
+      
+    retention:
+      segment_ms: 604800000
+      retention_bytes: 10737418240
+    
+    performance:
+      batch_size: 16384
+      linger_ms: 5
+      compression: lz4
+      
+  spu-config.yaml: |
+    # Fluvio Streaming Processing Unit Configuration
+    version: 0.1.0
+    
+    spu:
+      id: -1
+      public_endpoint: "0.0.0.0:9005"
+      private_endpoint: "0.0.0.0:9006"
+      sc_endpoint: "fluvio-sc.document-intelligence-infra:9004"
+    
+    storage:
+      log_dir: /var/lib/fluvio/data
+      segment_max_bytes: 1073741824
+      index_max_bytes: 10485760
+    
+    replication:
+      max_bytes: 1048576
+      
+    performance:
+      batch_size: 16384
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: fluvio-sc
+  namespace: document-intelligence-infra
+  labels:
+    app: fluvio-sc
+spec:
+  ports:
+  - port: 9003
+    name: public
+  - port: 9004
+    name: private
+  selector:
+    app: fluvio-sc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: fluvio-sc-headless
+  namespace: document-intelligence-infra
+  labels:
+    app: fluvio-sc
+spec:
+  ports:
+  - port: 9003
+    name: public
+  - port: 9004
+    name: private
+  clusterIP: None
+  selector:
+    app: fluvio-sc
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: fluvio-sc
+  namespace: document-intelligence-infra
+spec:
+  serviceName: fluvio-sc-headless
+  replicas: 3
+  selector:
+    matchLabels:
+      app: fluvio-sc
+  template:
+    metadata:
+      labels:
+        app: fluvio-sc
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - fluvio-sc
+            topologyKey: kubernetes.io/hostname
+      containers:
+      - name: fluvio-sc
+        image: infinyon/fluvio:0.11.9
+        command: ["fluvio-sc"]
+        args:
+        - "--bind-public"
+        - "0.0.0.0:9003"
+        - "--bind-private"
+        - "0.0.0.0:9004"
+        ports:
+        - containerPort: 9003
+          name: public
+        - containerPort: 9004
+          name: private
+        volumeMounts:
+        - name: data
+          mountPath: /var/lib/fluvio
+        - name: config
+          mountPath: /etc/fluvio
+        resources:
+          requests:
+            cpu: 200m
+            memory: 256Mi
+          limits:
+            cpu: 1000m
+            memory: 512Mi
+        livenessProbe:
+          tcpSocket:
+            port: 9003
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          tcpSocket:
+            port: 9003
+          initialDelaySeconds: 10
+          periodSeconds: 5
+      volumes:
+      - name: config
+        configMap:
+          name: fluvio-config
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      storageClassName: standard
+      resources:
+        requests:
+          storage: 10Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: fluvio-spu-headless
+  namespace: document-intelligence-infra
+  labels:
+    app: fluvio-spu
+spec:
+  ports:
+  - port: 9005
+    name: public
+  - port: 9006
+    name: private
+  clusterIP: None
+  selector:
+    app: fluvio-spu
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: fluvio-spu
+  namespace: document-intelligence-infra
+spec:
+  serviceName: fluvio-spu-headless
+  replicas: 3
+  podManagementPolicy: Parallel
+  selector:
+    matchLabels:
+      app: fluvio-spu
+  template:
+    metadata:
+      labels:
+        app: fluvio-spu
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - fluvio-spu
+            topologyKey: kubernetes.io/hostname
+      containers:
+      - name: fluvio-spu
+        image: infinyon/fluvio:0.11.9
+        command: ["fluvio-spu"]
+        args:
+        - "--sc-addr"
+        - "fluvio-sc:9004"
+        - "--bind-public"
+        - "0.0.0.0:9005"
+        - "--bind-private"
+        - "0.0.0.0:9006"
+        ports:
+        - containerPort: 9005
+          name: public
+        - containerPort: 9006
+          name: private
+        env:
+        - name: SPU_ID
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        volumeMounts:
+        - name: data
+          mountPath: /var/lib/fluvio
+        - name: config
+          mountPath: /etc/fluvio
+        resources:
+          requests:
+            cpu: 500m
+            memory: 1Gi
+          limits:
+            cpu: 2000m
+            memory: 2Gi
+        livenessProbe:
+          tcpSocket:
+            port: 9005
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          tcpSocket:
+            port: 9005
+          initialDelaySeconds: 10
+          periodSeconds: 5
+      volumes:
+      - name: config
+        configMap:
+          name: fluvio-config
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      storageClassName: standard
+      resources:
+        requests:
+          storage: 50Gi
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: fluvio-sc-pdb
+  namespace: document-intelligence-infra
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: fluvio-sc
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: fluvio-spu-pdb
+  namespace: document-intelligence-infra
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: fluvio-spu
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: fluvio-topics
+  namespace: document-intelligence-infra
+data:
+  create-topics.sh: |
+    #!/bin/bash
+    fluvio topic create document-uploaded --partitions 6 --replication 3 || true
+    fluvio topic create document-processed --partitions 6 --replication 3 || true
+    fluvio topic create ocr-completed --partitions 6 --replication 3 || true
+    fluvio topic create validation-completed --partitions 6 --replication 3 || true
+    fluvio topic create notification-events --partitions 3 --replication 3 || true
+    fluvio topic create audit-events --partitions 3 --replication 3 || true
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: fluvio-topic-init
+  namespace: document-intelligence-infra
+spec:
+  template:
+    spec:
+      containers:
+      - name: topic-creator
+        image: infinyon/fluvio:0.11.9
+        command: ["/bin/bash", "/scripts/create-topics.sh"]
+        env:
+        - name: FLUVIO_CLUSTER
+          value: "fluvio-sc:9003"
+        volumeMounts:
+        - name: scripts
+          mountPath: /scripts
+      volumes:
+      - name: scripts
+        configMap:
+          name: fluvio-topics
+          defaultMode: 0755
+      restartPolicy: OnFailure

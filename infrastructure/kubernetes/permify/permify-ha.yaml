@@ -1,0 +1,293 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: permify-config
+  namespace: document-intelligence-infra
+data:
+  config.yaml: |
+    server:
+      rate_limit: 100
+      http:
+        enabled: true
+        port: 3476
+      grpc:
+        port: 3478
+        tls:
+          enabled: false
+    
+    logger:
+      level: info
+      output: stdout
+      format: json
+    
+    profiler:
+      enabled: true
+      port: 6060
+    
+    authn:
+      enabled: true
+      method: preshared
+      preshared:
+        keys:
+          - "secret-key-1"
+          - "secret-key-2"
+    
+    tracer:
+      enabled: true
+      exporter: otlp
+      endpoint: "otel-collector:4317"
+      insecure: true
+    
+    meter:
+      enabled: true
+      exporter: otlp
+      endpoint: "otel-collector:4317"
+    
+    service:
+      circuit_breaker: true
+      watch:
+        enabled: true
+      schema:
+        cache:
+          number_of_counters: 1000
+          max_cost: "10MiB"
+      permission:
+        bulk_limit: 100
+        concurrency_limit: 100
+        cache:
+          number_of_counters: 10000
+          max_cost: "10MiB"
+      relationship:
+        cache:
+          number_of_counters: 10000
+          max_cost: "10MiB"
+    
+    database:
+      engine: postgres
+      uri: "postgres://permify:permify@postgresql:5432/permify?sslmode=disable"
+      auto_migrate: true
+      max_open_connections: 20
+      max_idle_connections: 5
+      max_connection_lifetime: 300s
+      max_connection_idle_time: 60s
+      garbage_collection:
+        enabled: true
+        interval: 3h
+        window: 720h
+        timeout: 5m
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: permify-secrets
+  namespace: document-intelligence-infra
+type: Opaque
+stringData:
+  PERMIFY_DATABASE_URI: "postgres://permify:permify@postgresql:5432/permify?sslmode=disable"
+  PERMIFY_AUTHN_PRESHARED_KEYS: "secret-key-1,secret-key-2"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: permify
+  namespace: document-intelligence-infra
+  labels:
+    app: permify
+spec:
+  ports:
+  - port: 3476
+    name: http
+  - port: 3478
+    name: grpc
+  selector:
+    app: permify
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: permify-headless
+  namespace: document-intelligence-infra
+  labels:
+    app: permify
+spec:
+  ports:
+  - port: 3476
+    name: http
+  - port: 3478
+    name: grpc
+  clusterIP: None
+  selector:
+    app: permify
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: permify
+  namespace: document-intelligence-infra
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: permify
+  template:
+    metadata:
+      labels:
+        app: permify
+    spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - permify
+              topologyKey: kubernetes.io/hostname
+      containers:
+      - name: permify
+        image: ghcr.io/permify/permify:v0.9.9
+        args:
+        - serve
+        - --config=/etc/permify/config.yaml
+        ports:
+        - containerPort: 3476
+          name: http
+        - containerPort: 3478
+          name: grpc
+        - containerPort: 6060
+          name: profiler
+        envFrom:
+        - secretRef:
+            name: permify-secrets
+        volumeMounts:
+        - name: config
+          mountPath: /etc/permify
+        resources:
+          requests:
+            cpu: 200m
+            memory: 256Mi
+          limits:
+            cpu: 1000m
+            memory: 512Mi
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 3476
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /healthz
+            port: 3476
+          initialDelaySeconds: 10
+          periodSeconds: 5
+      volumes:
+      - name: config
+        configMap:
+          name: permify-config
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: permify-pdb
+  namespace: document-intelligence-infra
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: permify
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: permify-hpa
+  namespace: document-intelligence-infra
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: permify
+  minReplicas: 3
+  maxReplicas: 6
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: permify-schema
+  namespace: document-intelligence-infra
+data:
+  schema.perm: |
+    entity user {}
+    
+    entity organization {
+      relation admin @user
+      relation member @user
+      
+      permission manage = admin
+      permission view = admin or member
+    }
+    
+    entity document {
+      relation owner @user
+      relation organization @organization
+      relation viewer @user
+      relation editor @user
+      relation reviewer @user
+      
+      permission view = owner or viewer or editor or reviewer or organization.member
+      permission edit = owner or editor or organization.admin
+      permission delete = owner or organization.admin
+      permission review = reviewer or organization.admin
+      permission manage = owner or organization.admin
+    }
+    
+    entity batch {
+      relation owner @user
+      relation organization @organization
+      
+      permission view = owner or organization.member
+      permission manage = owner or organization.admin
+      permission delete = owner or organization.admin
+    }
+    
+    entity template {
+      relation owner @user
+      relation organization @organization
+      relation public @user
+      
+      permission view = owner or organization.member or public
+      permission edit = owner or organization.admin
+      permission delete = owner or organization.admin
+    }
+    
+    entity export {
+      relation owner @user
+      relation organization @organization
+      
+      permission view = owner or organization.member
+      permission execute = owner or organization.admin
+      permission manage = owner or organization.admin
+    }
+    
+    entity notification {
+      relation recipient @user
+      
+      permission view = recipient
+      permission dismiss = recipient
+    }
+    
+    entity audit_log {
+      relation organization @organization
+      
+      permission view = organization.admin
+    }

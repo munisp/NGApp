@@ -1,0 +1,251 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kafka-config
+  namespace: document-intelligence-infra
+data:
+  server.properties: |
+    # Kafka HA Configuration
+    broker.id=-1
+    
+    # Listeners
+    listeners=PLAINTEXT://:9092,CONTROLLER://:9093
+    advertised.listeners=PLAINTEXT://:9092
+    listener.security.protocol.map=PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT
+    
+    # KRaft mode (no Zookeeper)
+    process.roles=broker,controller
+    controller.listener.names=CONTROLLER
+    
+    # Log configuration
+    log.dirs=/var/lib/kafka/data
+    num.partitions=3
+    default.replication.factor=3
+    min.insync.replicas=2
+    
+    # Retention
+    log.retention.hours=168
+    log.retention.bytes=10737418240
+    log.segment.bytes=1073741824
+    log.retention.check.interval.ms=300000
+    
+    # Performance
+    num.network.threads=8
+    num.io.threads=16
+    socket.send.buffer.bytes=102400
+    socket.receive.buffer.bytes=102400
+    socket.request.max.bytes=104857600
+    
+    # Replication
+    replica.lag.time.max.ms=30000
+    replica.fetch.max.bytes=1048576
+    
+    # Transaction
+    transaction.state.log.replication.factor=3
+    transaction.state.log.min.isr=2
+    
+    # Compression
+    compression.type=producer
+    
+    # Auto topic creation
+    auto.create.topics.enable=false
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kafka-headless
+  namespace: document-intelligence-infra
+  labels:
+    app: kafka
+spec:
+  ports:
+  - port: 9092
+    name: kafka
+  - port: 9093
+    name: controller
+  clusterIP: None
+  selector:
+    app: kafka
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kafka
+  namespace: document-intelligence-infra
+  labels:
+    app: kafka
+spec:
+  ports:
+  - port: 9092
+    name: kafka
+  selector:
+    app: kafka
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: kafka
+  namespace: document-intelligence-infra
+spec:
+  serviceName: kafka-headless
+  replicas: 3
+  podManagementPolicy: Parallel
+  selector:
+    matchLabels:
+      app: kafka
+  template:
+    metadata:
+      labels:
+        app: kafka
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - kafka
+            topologyKey: kubernetes.io/hostname
+      securityContext:
+        fsGroup: 1000
+      initContainers:
+      - name: init-config
+        image: apache/kafka:3.7.0
+        command:
+        - /bin/bash
+        - -c
+        - |
+          NODE_ID=${HOSTNAME##*-}
+          LISTENERS="PLAINTEXT://:9092,CONTROLLER://:9093"
+          ADVERTISED_LISTENERS="PLAINTEXT://${HOSTNAME}.kafka-headless:9092"
+          CONTROLLER_QUORUM_VOTERS=""
+          for i in $(seq 0 2); do
+            if [[ $i != 0 ]]; then
+              CONTROLLER_QUORUM_VOTERS="${CONTROLLER_QUORUM_VOTERS},"
+            fi
+            CONTROLLER_QUORUM_VOTERS="${CONTROLLER_QUORUM_VOTERS}${i}@kafka-${i}.kafka-headless:9093"
+          done
+          
+          mkdir -p /var/lib/kafka/data
+          
+          cat > /var/lib/kafka/data/server.properties << EOF
+          node.id=${NODE_ID}
+          process.roles=broker,controller
+          listeners=${LISTENERS}
+          advertised.listeners=${ADVERTISED_LISTENERS}
+          controller.listener.names=CONTROLLER
+          listener.security.protocol.map=PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT
+          controller.quorum.voters=${CONTROLLER_QUORUM_VOTERS}
+          log.dirs=/var/lib/kafka/data
+          num.partitions=3
+          default.replication.factor=3
+          min.insync.replicas=2
+          log.retention.hours=168
+          log.segment.bytes=1073741824
+          num.network.threads=8
+          num.io.threads=16
+          socket.send.buffer.bytes=102400
+          socket.receive.buffer.bytes=102400
+          socket.request.max.bytes=104857600
+          transaction.state.log.replication.factor=3
+          transaction.state.log.min.isr=2
+          auto.create.topics.enable=false
+          EOF
+        volumeMounts:
+        - name: data
+          mountPath: /var/lib/kafka/data
+      containers:
+      - name: kafka
+        image: apache/kafka:3.7.0
+        ports:
+        - containerPort: 9092
+          name: kafka
+        - containerPort: 9093
+          name: controller
+        command:
+        - /bin/bash
+        - -c
+        - |
+          if [ ! -f /var/lib/kafka/data/meta.properties ]; then
+            /opt/kafka/bin/kafka-storage.sh format -t $(cat /proc/sys/kernel/random/uuid) -c /var/lib/kafka/data/server.properties
+          fi
+          exec /opt/kafka/bin/kafka-server-start.sh /var/lib/kafka/data/server.properties
+        volumeMounts:
+        - name: data
+          mountPath: /var/lib/kafka/data
+        resources:
+          requests:
+            cpu: 500m
+            memory: 2Gi
+          limits:
+            cpu: 2000m
+            memory: 4Gi
+        livenessProbe:
+          tcpSocket:
+            port: 9092
+          initialDelaySeconds: 60
+          periodSeconds: 10
+        readinessProbe:
+          tcpSocket:
+            port: 9092
+          initialDelaySeconds: 30
+          periodSeconds: 5
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      storageClassName: standard
+      resources:
+        requests:
+          storage: 50Gi
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: kafka-pdb
+  namespace: document-intelligence-infra
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: kafka
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kafka-topics
+  namespace: document-intelligence-infra
+data:
+  create-topics.sh: |
+    #!/bin/bash
+    /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic document.uploaded --partitions 6 --replication-factor 3
+    /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic document.processed --partitions 6 --replication-factor 3
+    /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic ocr.completed --partitions 6 --replication-factor 3
+    /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic validation.completed --partitions 6 --replication-factor 3
+    /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic notification.events --partitions 3 --replication-factor 3
+    /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic audit.events --partitions 3 --replication-factor 3
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: kafka-topic-init
+  namespace: document-intelligence-infra
+spec:
+  template:
+    spec:
+      containers:
+      - name: topic-creator
+        image: apache/kafka:3.7.0
+        command: ["/bin/bash", "/scripts/create-topics.sh"]
+        volumeMounts:
+        - name: scripts
+          mountPath: /scripts
+      volumes:
+      - name: scripts
+        configMap:
+          name: kafka-topics
+          defaultMode: 0755
+      restartPolicy: OnFailure

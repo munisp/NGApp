@@ -1,0 +1,301 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: dapr-system
+  labels:
+    app.kubernetes.io/name: dapr
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: dapr-config
+  namespace: document-intelligence-infra
+data:
+  config.yaml: |
+    apiVersion: dapr.io/v1alpha1
+    kind: Configuration
+    metadata:
+      name: document-intelligence-config
+    spec:
+      tracing:
+        samplingRate: "1"
+        otel:
+          endpointAddress: "otel-collector:4317"
+          isSecure: false
+          protocol: grpc
+      
+      metric:
+        enabled: true
+        rules:
+          - name: dapr_runtime_component_loaded
+            labels:
+              - name: app_id
+              - name: component_name
+              - name: component_type
+      
+      mtls:
+        enabled: true
+        workloadCertTTL: 24h
+        allowedClockSkew: 15m
+      
+      accessControl:
+        defaultAction: deny
+        trustDomain: "document-intelligence"
+        policies:
+          - appId: document-api
+            defaultAction: allow
+            trustDomain: "document-intelligence"
+            namespace: "document-intelligence"
+          - appId: ocr-service
+            defaultAction: allow
+            trustDomain: "document-intelligence"
+            namespace: "document-intelligence"
+          - appId: orchestration-service
+            defaultAction: allow
+            trustDomain: "document-intelligence"
+            namespace: "document-intelligence"
+      
+      features:
+        - name: ServiceInvocationStreaming
+          enabled: true
+        - name: AppHealthCheck
+          enabled: true
+        - name: HotReload
+          enabled: true
+---
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: statestore
+  namespace: document-intelligence
+spec:
+  type: state.redis
+  version: v1
+  metadata:
+  - name: redisHost
+    value: "redis.document-intelligence-infra:6379"
+  - name: redisPassword
+    value: ""
+  - name: actorStateStore
+    value: "true"
+  - name: keyPrefix
+    value: "document-intelligence"
+  - name: enableTLS
+    value: "false"
+  - name: failover
+    value: "true"
+  - name: sentinelMasterName
+    value: "mymaster"
+  scopes:
+  - document-api
+  - ocr-service
+  - orchestration-service
+---
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: pubsub
+  namespace: document-intelligence
+spec:
+  type: pubsub.kafka
+  version: v1
+  metadata:
+  - name: brokers
+    value: "kafka-0.kafka-headless.document-intelligence-infra:9092,kafka-1.kafka-headless.document-intelligence-infra:9092,kafka-2.kafka-headless.document-intelligence-infra:9092"
+  - name: consumerGroup
+    value: "document-intelligence"
+  - name: clientID
+    value: "document-intelligence-dapr"
+  - name: authType
+    value: "none"
+  - name: maxMessageBytes
+    value: "10485760"
+  - name: consumeRetryInterval
+    value: "100ms"
+  - name: version
+    value: "3.0.0"
+  scopes:
+  - document-api
+  - ocr-service
+  - orchestration-service
+---
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: secretstore
+  namespace: document-intelligence
+spec:
+  type: secretstores.kubernetes
+  version: v1
+  metadata: []
+---
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: binding-cron
+  namespace: document-intelligence
+spec:
+  type: bindings.cron
+  version: v1
+  metadata:
+  - name: schedule
+    value: "@every 1m"
+  scopes:
+  - orchestration-service
+---
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: lockstore
+  namespace: document-intelligence
+spec:
+  type: lock.redis
+  version: v1
+  metadata:
+  - name: redisHost
+    value: "redis.document-intelligence-infra:6379"
+  - name: redisPassword
+    value: ""
+  scopes:
+  - document-api
+  - orchestration-service
+---
+apiVersion: dapr.io/v1alpha1
+kind: Subscription
+metadata:
+  name: document-uploaded-subscription
+  namespace: document-intelligence
+spec:
+  topic: document.uploaded
+  route: /api/events/document-uploaded
+  pubsubname: pubsub
+  scopes:
+  - ocr-service
+---
+apiVersion: dapr.io/v1alpha1
+kind: Subscription
+metadata:
+  name: ocr-completed-subscription
+  namespace: document-intelligence
+spec:
+  topic: ocr.completed
+  route: /api/events/ocr-completed
+  pubsubname: pubsub
+  scopes:
+  - document-api
+  - orchestration-service
+---
+apiVersion: dapr.io/v1alpha1
+kind: Subscription
+metadata:
+  name: validation-completed-subscription
+  namespace: document-intelligence
+spec:
+  topic: validation.completed
+  route: /api/events/validation-completed
+  pubsubname: pubsub
+  scopes:
+  - document-api
+---
+apiVersion: dapr.io/v1alpha1
+kind: Resiliency
+metadata:
+  name: document-intelligence-resiliency
+  namespace: document-intelligence
+spec:
+  policies:
+    timeouts:
+      general: 30s
+      important: 60s
+      ocr-processing: 120s
+    
+    retries:
+      pubsubRetry:
+        policy: constant
+        duration: 5s
+        maxRetries: 3
+      
+      serviceRetry:
+        policy: exponential
+        maxInterval: 15s
+        maxRetries: 5
+      
+      stateRetry:
+        policy: exponential
+        maxInterval: 10s
+        maxRetries: 3
+    
+    circuitBreakers:
+      pubsubCB:
+        maxRequests: 1
+        interval: 30s
+        timeout: 60s
+        trip: consecutiveFailures >= 5
+      
+      serviceCB:
+        maxRequests: 1
+        interval: 30s
+        timeout: 60s
+        trip: consecutiveFailures >= 3
+  
+  targets:
+    apps:
+      ocr-service:
+        timeout: ocr-processing
+        retry: serviceRetry
+        circuitBreaker: serviceCB
+      
+      document-api:
+        timeout: general
+        retry: serviceRetry
+        circuitBreaker: serviceCB
+    
+    components:
+      pubsub:
+        outbound:
+          retry: pubsubRetry
+          circuitBreaker: pubsubCB
+      
+      statestore:
+        outbound:
+          retry: stateRetry
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dapr-dashboard
+  namespace: dapr-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: dapr-dashboard
+  template:
+    metadata:
+      labels:
+        app: dapr-dashboard
+    spec:
+      containers:
+      - name: dapr-dashboard
+        image: daprio/dashboard:0.14.0
+        ports:
+        - containerPort: 8080
+        resources:
+          requests:
+            cpu: 50m
+            memory: 64Mi
+          limits:
+            cpu: 200m
+            memory: 128Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dapr-dashboard
+  namespace: dapr-system
+spec:
+  ports:
+  - port: 8080
+    name: http
+  selector:
+    app: dapr-dashboard

@@ -1,0 +1,553 @@
+{
+  "info": {
+    "name": "Document Intelligence - tRPC API",
+    "description": "Comprehensive Postman collection for testing the Node.js tRPC backend API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "document-intelligence-ui"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3000",
+      "type": "string"
+    },
+    {
+      "key": "auth_token",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{auth_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Get Current User",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/trpc/auth.me",
+              "host": ["{{base_url}}"],
+              "path": ["api", "trpc", "auth.me"]
+            },
+            "description": "Get the currently authenticated user information"
+          },
+          "response": []
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/trpc/auth.logout",
+              "host": ["{{base_url}}"],
+              "path": ["api", "trpc", "auth.logout"]
+            },
+            "description": "Logout the current user and clear session"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Documents",
+      "item": [
+        {
+          "name": "List All Documents",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/trpc/documents.list",
+              "host": ["{{base_url}}"],
+              "path": ["api", "trpc", "documents.list"]
+            },
+            "description": "Get all documents for the authenticated user"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Document by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/trpc/documents.get?input={\"id\":1}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "trpc", "documents.get"],
+              "query": [
+                {
+                  "key": "input",
+                  "value": "{\"id\":1}",
+                  "description": "Document ID"
+                }
+              ]
+            },
+            "description": "Get a specific document by ID with OCR results"
+          },
+          "response": []
+        },
+        {
+          "name": "Upload Single Document",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"filename\": \"passport.jpg\",\n  \"category\": \"citizenship_identity\",\n  \"fileData\": \"<BASE64_ENCODED_FILE>\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/trpc/documents.upload",
+              "host": ["{{base_url}}"],
+              "path": ["api", "trpc", "documents.upload"]
+            },
+            "description": "Upload a single document for OCR processing"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Document",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": 1\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/trpc/documents.delete",
+              "host": ["{{base_url}}"],
+              "path": ["api", "trpc", "documents.delete"]
+            },
+            "description": "Delete a document by ID"
+          },
+          "response": []
+        },
+        {
+          "name": "Export Document Results (JSON)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/trpc/documents.export?input={\"id\":1,\"format\":\"json\"}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "trpc", "documents.export"],
+              "query": [
+                {
+                  "key": "input",
+                  "value": "{\"id\":1,\"format\":\"json\"}"
+                }
+              ]
+            },
+            "description": "Export document OCR results as JSON"
+          },
+          "response": []
+        },
+        {
+          "name": "Export Document Results (CSV)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/trpc/documents.export?input={\"id\":1,\"format\":\"csv\"}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "trpc", "documents.export"],
+              "query": [
+                {
+                  "key": "input",
+                  "value": "{\"id\":1,\"format\":\"csv\"}"
+                }
+              ]
+            },
+            "description": "Export document OCR results as CSV"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Batch Processing",
+      "item": [
+        {
+          "name": "List All Batches",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/trpc/batches.list",
+              "host": ["{{base_url}}"],
+              "path": ["api", "trpc", "batches.list"]
+            },
+            "description": "Get all batch uploads for the authenticated user"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Batch by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/trpc/batches.get?input={\"id\":1}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "trpc", "batches.get"],
+              "query": [
+                {
+                  "key": "input",
+                  "value": "{\"id\":1}"
+                }
+              ]
+            },
+            "description": "Get batch details with all documents and their statuses"
+          },
+          "response": []
+        },
+        {
+          "name": "Create Batch Upload",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Health Insurance Documents - January 2025\",\n  \"files\": [\n    {\n      \"filename\": \"insurance_card_front.jpg\",\n      \"category\": \"health_coverage\",\n      \"fileData\": \"<BASE64_ENCODED_FILE_1>\"\n    },\n    {\n      \"filename\": \"insurance_card_back.jpg\",\n      \"category\": \"health_coverage\",\n      \"fileData\": \"<BASE64_ENCODED_FILE_2>\"\n    },\n    {\n      \"filename\": \"coverage_letter.pdf\",\n      \"category\": \"health_coverage\",\n      \"fileData\": \"<BASE64_ENCODED_FILE_3>\"\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/trpc/batches.create",
+              "host": ["{{base_url}}"],
+              "path": ["api", "trpc", "batches.create"]
+            },
+            "description": "Create a new batch upload with multiple documents"
+          },
+          "response": []
+        },
+        {
+          "name": "Retry Failed Documents in Batch",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"batchId\": 1\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/trpc/batches.retryFailed",
+              "host": ["{{base_url}}"],
+              "path": ["api", "trpc", "batches.retryFailed"]
+            },
+            "description": "Retry all failed documents in a batch"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Batch",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": 1\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/trpc/batches.delete",
+              "host": ["{{base_url}}"],
+              "path": ["api", "trpc", "batches.delete"]
+            },
+            "description": "Delete a batch and all its documents"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Test Cases by Category",
+      "item": [
+        {
+          "name": "Upload - Citizenship Document",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"filename\": \"passport.jpg\",\n  \"category\": \"citizenship_identity\",\n  \"fileData\": \"<BASE64_ENCODED_PASSPORT>\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/trpc/documents.upload",
+              "host": ["{{base_url}}"],
+              "path": ["api", "trpc", "documents.upload"]
+            },
+            "description": "Test upload of citizenship/identity documents"
+          },
+          "response": []
+        },
+        {
+          "name": "Upload - Immigration Document",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"filename\": \"visa.jpg\",\n  \"category\": \"immigration_status\",\n  \"fileData\": \"<BASE64_ENCODED_VISA>\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/trpc/documents.upload",
+              "host": ["{{base_url}}"],
+              "path": ["api", "trpc", "documents.upload"]
+            },
+            "description": "Test upload of immigration status documents"
+          },
+          "response": []
+        },
+        {
+          "name": "Upload - Income Document",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"filename\": \"w2_form.pdf\",\n  \"category\": \"income_employment\",\n  \"fileData\": \"<BASE64_ENCODED_W2>\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/trpc/documents.upload",
+              "host": ["{{base_url}}"],
+              "path": ["api", "trpc", "documents.upload"]
+            },
+            "description": "Test upload of income/employment documents"
+          },
+          "response": []
+        },
+        {
+          "name": "Upload - Health Coverage Document",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"filename\": \"insurance_card.jpg\",\n  \"category\": \"health_coverage\",\n  \"fileData\": \"<BASE64_ENCODED_INSURANCE>\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/trpc/documents.upload",
+              "host": ["{{base_url}}"],
+              "path": ["api", "trpc", "documents.upload"]
+            },
+            "description": "Test upload of health coverage documents"
+          },
+          "response": []
+        },
+        {
+          "name": "Upload - Tribal/AIAN Document",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"filename\": \"tribal_enrollment.pdf\",\n  \"category\": \"tribal_aian\",\n  \"fileData\": \"<BASE64_ENCODED_TRIBAL>\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/trpc/documents.upload",
+              "host": ["{{base_url}}"],
+              "path": ["api", "trpc", "documents.upload"]
+            },
+            "description": "Test upload of tribal/AIAN documents"
+          },
+          "response": []
+        },
+        {
+          "name": "Upload - Household Document",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"filename\": \"marriage_certificate.jpg\",\n  \"category\": \"household_relationship\",\n  \"fileData\": \"<BASE64_ENCODED_MARRIAGE>\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/trpc/documents.upload",
+              "host": ["{{base_url}}"],
+              "path": ["api", "trpc", "documents.upload"]
+            },
+            "description": "Test upload of household/relationship documents"
+          },
+          "response": []
+        },
+        {
+          "name": "Upload - Supporting Document",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"filename\": \"bank_statement.pdf\",\n  \"category\": \"other_supporting\",\n  \"fileData\": \"<BASE64_ENCODED_BANK_STATEMENT>\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/trpc/documents.upload",
+              "host": ["{{base_url}}"],
+              "path": ["api", "trpc", "documents.upload"]
+            },
+            "description": "Test upload of other supporting documents"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Batch Test Cases",
+      "item": [
+        {
+          "name": "Batch - Mixed Document Types",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Complete Application Package\",\n  \"files\": [\n    {\n      \"filename\": \"passport.jpg\",\n      \"category\": \"citizenship_identity\",\n      \"fileData\": \"<BASE64_1>\"\n    },\n    {\n      \"filename\": \"w2.pdf\",\n      \"category\": \"income_employment\",\n      \"fileData\": \"<BASE64_2>\"\n    },\n    {\n      \"filename\": \"insurance_card.jpg\",\n      \"category\": \"health_coverage\",\n      \"fileData\": \"<BASE64_3>\"\n    },\n    {\n      \"filename\": \"bank_statement.pdf\",\n      \"category\": \"other_supporting\",\n      \"fileData\": \"<BASE64_4>\"\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/trpc/batches.create",
+              "host": ["{{base_url}}"],
+              "path": ["api", "trpc", "batches.create"]
+            },
+            "description": "Test batch upload with mixed document categories"
+          },
+          "response": []
+        },
+        {
+          "name": "Batch - Same Category Documents",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Income Verification Package\",\n  \"files\": [\n    {\n      \"filename\": \"paystub_jan.pdf\",\n      \"category\": \"income_employment\",\n      \"fileData\": \"<BASE64_1>\"\n    },\n    {\n      \"filename\": \"paystub_feb.pdf\",\n      \"category\": \"income_employment\",\n      \"fileData\": \"<BASE64_2>\"\n    },\n    {\n      \"filename\": \"paystub_mar.pdf\",\n      \"category\": \"income_employment\",\n      \"fileData\": \"<BASE64_3>\"\n    },\n    {\n      \"filename\": \"w2_2024.pdf\",\n      \"category\": \"income_employment\",\n      \"fileData\": \"<BASE64_4>\"\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/trpc/batches.create",
+              "host": ["{{base_url}}"],
+              "path": ["api", "trpc", "batches.create"]
+            },
+            "description": "Test batch upload with same category documents"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "System",
+      "item": [
+        {
+          "name": "Notify Owner",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"New Document Uploaded\",\n  \"content\": \"User uploaded a new passport document for processing\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/trpc/system.notifyOwner",
+              "host": ["{{base_url}}"],
+              "path": ["api", "trpc", "system.notifyOwner"]
+            },
+            "description": "Send notification to platform owner"
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

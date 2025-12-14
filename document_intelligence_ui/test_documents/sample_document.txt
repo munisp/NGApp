@@ -1,0 +1,18 @@
+This directory contains sample documents for testing OCR functionality.
+
+To test the platform:
+1. Use any image file (PNG, JPG) or PDF with text
+2. Recommended: passport, driver's license, or document scan
+3. Ensure good quality (300+ DPI, clear text, good lighting)
+
+Sample test scenarios:
+- Upload a passport photo
+- Upload a driver's license scan
+- Upload a utility bill
+- Upload a tax form (W-2, 1040)
+
+Expected results:
+- Processing time: ~425ms
+- Confidence score: 85-98%
+- Extracted text visible
+- Document categorized correctly

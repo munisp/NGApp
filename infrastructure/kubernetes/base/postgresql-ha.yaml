@@ -1,0 +1,253 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgresql-config
+  namespace: document-intelligence-infra
+data:
+  postgresql.conf: |
+    # PostgreSQL HA Configuration
+    listen_addresses = '*'
+    port = 5432
+    max_connections = 200
+    shared_buffers = 256MB
+    effective_cache_size = 768MB
+    maintenance_work_mem = 64MB
+    checkpoint_completion_target = 0.9
+    wal_buffers = 16MB
+    default_statistics_target = 100
+    random_page_cost = 1.1
+    effective_io_concurrency = 200
+    work_mem = 1310kB
+    min_wal_size = 1GB
+    max_wal_size = 4GB
+    max_worker_processes = 4
+    max_parallel_workers_per_gather = 2
+    max_parallel_workers = 4
+    max_parallel_maintenance_workers = 2
+    
+    # Replication
+    wal_level = replica
+    max_wal_senders = 10
+    max_replication_slots = 10
+    hot_standby = on
+    hot_standby_feedback = on
+    
+    # Logging
+    logging_collector = on
+    log_directory = 'pg_log'
+    log_filename = 'postgresql-%Y-%m-%d_%H%M%S.log'
+    log_statement = 'ddl'
+    log_min_duration_statement = 1000
+    
+  pg_hba.conf: |
+    # TYPE  DATABASE        USER            ADDRESS                 METHOD
+    local   all             all                                     trust
+    host    all             all             127.0.0.1/32            trust
+    host    all             all             ::1/128                 trust
+    host    all             all             0.0.0.0/0               md5
+    host    replication     all             0.0.0.0/0               md5
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: postgresql-secrets
+  namespace: document-intelligence-infra
+type: Opaque
+stringData:
+  POSTGRES_USER: postgres
+  POSTGRES_PASSWORD: postgres
+  POSTGRES_DB: document_intelligence
+  REPLICATION_USER: replicator
+  REPLICATION_PASSWORD: replicator
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgresql
+  namespace: document-intelligence-infra
+  labels:
+    app: postgresql
+spec:
+  ports:
+  - port: 5432
+    name: postgresql
+  selector:
+    app: postgresql
+    role: primary
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgresql-headless
+  namespace: document-intelligence-infra
+  labels:
+    app: postgresql
+spec:
+  ports:
+  - port: 5432
+    name: postgresql
+  clusterIP: None
+  selector:
+    app: postgresql
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgresql-read
+  namespace: document-intelligence-infra
+  labels:
+    app: postgresql
+spec:
+  ports:
+  - port: 5432
+    name: postgresql
+  selector:
+    app: postgresql
+    role: replica
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgresql
+  namespace: document-intelligence-infra
+spec:
+  serviceName: postgresql-headless
+  replicas: 3
+  selector:
+    matchLabels:
+      app: postgresql
+  template:
+    metadata:
+      labels:
+        app: postgresql
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - postgresql
+            topologyKey: kubernetes.io/hostname
+      initContainers:
+      - name: init-permissions
+        image: busybox:1.36
+        command:
+        - sh
+        - -c
+        - |
+          chown -R 999:999 /var/lib/postgresql/data
+        volumeMounts:
+        - name: data
+          mountPath: /var/lib/postgresql/data
+      containers:
+      - name: postgresql
+        image: postgres:16-alpine
+        ports:
+        - containerPort: 5432
+          name: postgresql
+        envFrom:
+        - secretRef:
+            name: postgresql-secrets
+        env:
+        - name: PGDATA
+          value: /var/lib/postgresql/data/pgdata
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        volumeMounts:
+        - name: data
+          mountPath: /var/lib/postgresql/data
+        - name: config
+          mountPath: /etc/postgresql
+        resources:
+          requests:
+            cpu: 500m
+            memory: 1Gi
+          limits:
+            cpu: 2000m
+            memory: 2Gi
+        livenessProbe:
+          exec:
+            command:
+            - pg_isready
+            - -U
+            - postgres
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          exec:
+            command:
+            - pg_isready
+            - -U
+            - postgres
+          initialDelaySeconds: 5
+          periodSeconds: 5
+      volumes:
+      - name: config
+        configMap:
+          name: postgresql-config
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      storageClassName: standard
+      resources:
+        requests:
+          storage: 50Gi
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: postgresql-pdb
+  namespace: document-intelligence-infra
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: postgresql
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: postgresql-init-databases
+  namespace: document-intelligence-infra
+spec:
+  template:
+    spec:
+      containers:
+      - name: init-databases
+        image: postgres:16-alpine
+        command:
+        - /bin/bash
+        - -c
+        - |
+          until pg_isready -h postgresql -U postgres; do
+            echo "Waiting for PostgreSQL..."
+            sleep 2
+          done
+          
+          PGPASSWORD=postgres psql -h postgresql -U postgres << EOF
+          -- Create databases for all services
+          CREATE DATABASE IF NOT EXISTS temporal;
+          CREATE DATABASE IF NOT EXISTS temporal_visibility;
+          CREATE DATABASE IF NOT EXISTS keycloak;
+          CREATE DATABASE IF NOT EXISTS permify;
+          CREATE DATABASE IF NOT EXISTS document_intelligence;
+          
+          -- Create users
+          CREATE USER IF NOT EXISTS temporal WITH PASSWORD 'temporal';
+          CREATE USER IF NOT EXISTS keycloak WITH PASSWORD 'keycloak';
+          CREATE USER IF NOT EXISTS permify WITH PASSWORD 'permify';
+          
+          -- Grant privileges
+          GRANT ALL PRIVILEGES ON DATABASE temporal TO temporal;
+          GRANT ALL PRIVILEGES ON DATABASE temporal_visibility TO temporal;
+          GRANT ALL PRIVILEGES ON DATABASE keycloak TO keycloak;
+          GRANT ALL PRIVILEGES ON DATABASE permify TO permify;
+          EOF
+      restartPolicy: OnFailure

@@ -1,0 +1,372 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: openappsec
+  labels:
+    app.kubernetes.io/name: openappsec
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: openappsec-config
+  namespace: document-intelligence-infra
+data:
+  local_policy.yaml: |
+    policies:
+      - name: document-intelligence-policy
+        mode: prevent-learn
+        practices:
+          - web-attacks
+          - snort-signatures
+          - api-attacks
+        triggers:
+          - log
+          - web-body
+        exceptions: []
+        
+    practices:
+      - name: web-attacks
+        web-attacks:
+          override-mode: prevent-learn
+          minimum-confidence: medium
+          max-body-size-kb: 10240
+          max-header-size-kb: 64
+          max-object-depth: 40
+          max-url-size-kb: 32
+          
+      - name: snort-signatures
+        snort-signatures:
+          override-mode: prevent-learn
+          
+      - name: api-attacks
+        api-attacks:
+          override-mode: prevent-learn
+          
+    triggers:
+      - name: log
+        log:
+          verbosity: extended
+          extended-logging: true
+          log-destination:
+            - syslog
+            - cloud
+          
+      - name: web-body
+        web-body:
+          log-body: true
+          max-body-size-kb: 1024
+          
+    assets:
+      - name: document-api
+        asset-type: web-api
+        urls:
+          - /api/*
+        practices:
+          - web-attacks
+          - api-attacks
+        triggers:
+          - log
+          
+      - name: frontend
+        asset-type: web-application
+        urls:
+          - /*
+        practices:
+          - web-attacks
+        triggers:
+          - log
+          
+  agent-settings.yaml: |
+    agent-settings:
+      fog:
+        fog-address: "https://inext-agents.checkpoint.com"
+        
+      orchestration:
+        orchestration-mode: online-mode
+        
+      logging:
+        log-level: info
+        
+      metrics:
+        prometheus-enabled: true
+        prometheus-port: 9090
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: openappsec-secrets
+  namespace: document-intelligence-infra
+type: Opaque
+stringData:
+  agent-token: "your-openappsec-token"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: openappsec
+  namespace: document-intelligence-infra
+  labels:
+    app: openappsec
+spec:
+  ports:
+  - port: 80
+    name: http
+    targetPort: 80
+  - port: 443
+    name: https
+    targetPort: 443
+  - port: 9090
+    name: metrics
+    targetPort: 9090
+  selector:
+    app: openappsec
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: openappsec-agent
+  namespace: document-intelligence-infra
+spec:
+  selector:
+    matchLabels:
+      app: openappsec
+  template:
+    metadata:
+      labels:
+        app: openappsec
+    spec:
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      containers:
+      - name: openappsec-agent
+        image: ghcr.io/openappsec/agent:latest
+        securityContext:
+          privileged: true
+          capabilities:
+            add:
+            - NET_ADMIN
+            - SYS_PTRACE
+        ports:
+        - containerPort: 80
+          name: http
+        - containerPort: 443
+          name: https
+        - containerPort: 9090
+          name: metrics
+        env:
+        - name: AGENT_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: openappsec-secrets
+              key: agent-token
+        - name: SHARED_STORAGE_HOST
+          value: "openappsec-storage"
+        volumeMounts:
+        - name: config
+          mountPath: /etc/cp/conf
+        - name: logs
+          mountPath: /var/log/nano_agent
+        - name: shared-storage
+          mountPath: /etc/cp/data
+        resources:
+          requests:
+            cpu: 200m
+            memory: 512Mi
+          limits:
+            cpu: 1000m
+            memory: 1Gi
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 9090
+          initialDelaySeconds: 60
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 9090
+          initialDelaySeconds: 30
+          periodSeconds: 10
+      volumes:
+      - name: config
+        configMap:
+          name: openappsec-config
+      - name: logs
+        emptyDir: {}
+      - name: shared-storage
+        persistentVolumeClaim:
+          claimName: openappsec-shared-storage
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: openappsec-shared-storage
+  namespace: document-intelligence-infra
+spec:
+  accessModes:
+  - ReadWriteMany
+  storageClassName: standard
+  resources:
+    requests:
+      storage: 10Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: openappsec-management
+  namespace: document-intelligence-infra
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: openappsec-management
+  template:
+    metadata:
+      labels:
+        app: openappsec-management
+    spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - openappsec-management
+              topologyKey: kubernetes.io/hostname
+      containers:
+      - name: openappsec-management
+        image: ghcr.io/openappsec/smartsync:latest
+        ports:
+        - containerPort: 8080
+          name: http
+        env:
+        - name: AGENT_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: openappsec-secrets
+              key: agent-token
+        volumeMounts:
+        - name: config
+          mountPath: /etc/cp/conf
+        resources:
+          requests:
+            cpu: 100m
+            memory: 256Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: openappsec-management
+  namespace: document-intelligence-infra
+spec:
+  ports:
+  - port: 8080
+    name: http
+  selector:
+    app: openappsec-management
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: document-intelligence-ingress
+  namespace: document-intelligence
+  annotations:
+    kubernetes.io/ingress.class: openappsec
+    openappsec.io/policy: document-intelligence-policy
+spec:
+  rules:
+  - host: api.document-intelligence.local
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: backend-api
+            port:
+              number: 8001
+  - host: app.document-intelligence.local
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: frontend
+            port:
+              number: 3000
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: openappsec-waf-rules
+  namespace: document-intelligence-infra
+data:
+  custom-rules.yaml: |
+    custom-rules:
+      - name: block-sql-injection
+        description: Block SQL injection attempts
+        severity: high
+        action: prevent
+        conditions:
+          - type: request-body
+            pattern: "(?i)(union|select|insert|update|delete|drop|truncate|exec|execute)"
+          - type: request-query
+            pattern: "(?i)(union|select|insert|update|delete|drop|truncate|exec|execute)"
+            
+      - name: block-xss
+        description: Block XSS attempts
+        severity: high
+        action: prevent
+        conditions:
+          - type: request-body
+            pattern: "(?i)(<script|javascript:|on\\w+=)"
+          - type: request-query
+            pattern: "(?i)(<script|javascript:|on\\w+=)"
+            
+      - name: block-path-traversal
+        description: Block path traversal attempts
+        severity: high
+        action: prevent
+        conditions:
+          - type: request-uri
+            pattern: "(\\.\\./|\\.\\.\\\\)"
+            
+      - name: rate-limit-api
+        description: Rate limit API requests
+        severity: medium
+        action: rate-limit
+        rate-limit:
+          requests: 100
+          period: 60
+        conditions:
+          - type: request-uri
+            pattern: "^/api/"
+            
+      - name: block-large-uploads
+        description: Block excessively large file uploads
+        severity: medium
+        action: prevent
+        conditions:
+          - type: request-header
+            header: content-length
+            operator: greater-than
+            value: 52428800
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: openappsec-management-pdb
+  namespace: document-intelligence-infra
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: openappsec-management
