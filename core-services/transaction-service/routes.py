@@ -17,6 +17,20 @@ from .service import TransactionServiceService
 from .database import get_db
 from .idempotency import IdempotencyService
 from .lakehouse_publisher import publish_transaction_to_lakehouse
+from .risk_client import (
+    assess_transaction_risk,
+    is_transaction_blocked,
+    requires_manual_review,
+    RiskServiceUnavailable
+)
+from .limits_client import (
+    check_transaction_limits,
+    record_transaction_usage,
+    determine_corridor,
+    determine_user_tier,
+    LimitsServiceUnavailable,
+    UserTier
+)
 
 logger = logging.getLogger(__name__)
 
@@ -125,6 +139,55 @@ async def create_transfer(
         fee = transfer.fee or 0.0
         total_amount = transfer.amount + fee
         
+        # Determine corridor and user tier for limit checks
+        corridor = determine_corridor(transfer.source_currency, transfer.destination_currency)
+        user_tier = request.headers.get("X-User-Tier", "tier_1")
+        user_tier_enum = determine_user_tier(user_tier)
+        
+        # 1. Risk Assessment - MUST pass before creating transaction
+        try:
+            risk_result = await assess_transaction_risk(
+                user_id=user_id,
+                amount=transfer.amount,
+                source_currency=transfer.source_currency,
+                destination_currency=transfer.destination_currency,
+                is_new_beneficiary=transfer.recipient_account is not None
+            )
+            
+            if is_transaction_blocked(risk_result):
+                logger.warning(f"Transaction blocked by risk: user={user_id}, score={risk_result.risk_score}")
+                raise HTTPException(
+                    status_code=403,
+                    detail=f"Transaction blocked by risk assessment: {risk_result.recommended_actions[0] if risk_result.recommended_actions else 'High risk score'}"
+                )
+            
+            if requires_manual_review(risk_result):
+                logger.info(f"Transaction requires review: user={user_id}, score={risk_result.risk_score}")
+        except RiskServiceUnavailable as e:
+            logger.error(f"Risk service unavailable: {e}")
+            raise HTTPException(status_code=503, detail="Risk assessment service unavailable. Please try again later.")
+        
+        # 2. Limits Check - MUST pass before creating transaction
+        try:
+            limits_result = await check_transaction_limits(
+                user_id=user_id,
+                user_tier=user_tier_enum,
+                corridor=corridor,
+                amount=transfer.amount,
+                currency=transfer.source_currency
+            )
+            
+            if not limits_result.allowed:
+                logger.warning(f"Transaction exceeds limits: user={user_id}, reason={limits_result.message}")
+                raise HTTPException(
+                    status_code=403,
+                    detail=f"Transaction limit exceeded: {limits_result.message}"
+                )
+        except LimitsServiceUnavailable as e:
+            logger.error(f"Limits service unavailable: {e}")
+            raise HTTPException(status_code=503, detail="Limits service unavailable. Please try again later.")
+        
+        # 3. Create transaction (only if risk and limits passed)
         transaction_data = {
             "user_id": user_id,
             "transaction_type": "transfer",
@@ -140,8 +203,10 @@ async def create_transfer(
             "recipient_account": transfer.recipient_account,
             "delivery_method": transfer.delivery_method,
             "note": transfer.note,
-            "status": "pending",
-            "idempotency_key": idempotency_key
+            "status": "pending" if not requires_manual_review(risk_result) else "review",
+            "idempotency_key": idempotency_key,
+            "risk_score": risk_result.risk_score,
+            "corridor": corridor.value
         }
         
         result = await service.create(transaction_data)
@@ -215,7 +280,7 @@ async def get_transaction_history(
     """Get transaction history for the authenticated user."""
     user_id = get_user_id_from_request(request)
     service = TransactionServiceService()
-    return await service.list(skip, limit)
+    return await service.list_by_user(user_id, skip, limit)
 
 
 # ==================== Legacy Endpoints ====================
