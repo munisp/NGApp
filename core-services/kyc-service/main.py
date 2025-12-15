@@ -23,6 +23,7 @@ import uuid
 from decimal import Decimal
 
 from property_transaction_kyc import router as property_kyc_router
+from lakehouse_publisher import publish_kyc_to_lakehouse
 
 # Import common modules for production readiness
 try:

@@ -26,6 +26,7 @@ import uuid
 # Import new modules
 from multi_currency import CurrencyConverter
 from transfer_manager import TransferManager
+from lakehouse_publisher import publish_wallet_to_lakehouse
 import asyncio
 from collections import defaultdict
 

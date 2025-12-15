@@ -18,6 +18,7 @@ from enum import Enum
 import logging
 import uuid
 import os
+from lakehouse_publisher import publish_reconciliation_to_lakehouse
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -372,6 +373,22 @@ async def start_reconciliation(
     report.completed_at = datetime.utcnow()
     
     logger.info(f"Reconciliation completed: {job_id}, discrepancies={len(discrepancies)}")
+    
+    # Publish reconciliation event to lakehouse (fire-and-forget)
+    await publish_reconciliation_to_lakehouse(
+        reconciliation_id=job_id,
+        event_type="completed",
+        recon_data={
+            "corridor": request.corridor.value,
+            "date": request.start_date.isoformat(),
+            "total_transactions": report.total_internal_records,
+            "matched_count": report.matched_records,
+            "unmatched_count": report.discrepancy_count,
+            "discrepancy_amount": report.amount_variance,
+            "status": report.status.value,
+            "settlement_amount": report.total_provider_amount
+        }
+    )
     
     return report
 

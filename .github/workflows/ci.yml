@@ -34,6 +34,10 @@ jobs:
           - kyc-service
           - lakehouse-service
           - analytics-service
+          - dispute-service
+          - limits-service
+          - risk-service
+          - reconciliation-service
     
     steps:
       - name: Checkout code
@@ -120,6 +124,10 @@ jobs:
           - kyc-service
           - lakehouse-service
           - analytics-service
+          - dispute-service
+          - limits-service
+          - risk-service
+          - reconciliation-service
     
     steps:
       - name: Checkout code

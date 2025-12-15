@@ -18,6 +18,7 @@ from enum import Enum
 import hashlib
 import logging
 import os
+from .lakehouse_publisher import publish_risk_to_lakehouse
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -367,6 +368,23 @@ async def assess_transaction_risk(request: TransactionRiskRequest):
     })
     
     logger.info(f"Risk assessment: user={request.user_id}, score={total_score}, decision={decision}")
+    
+    # Publish risk event to lakehouse for analytics (fire-and-forget)
+    await publish_risk_to_lakehouse(
+        request_id=request_id,
+        user_id=request.user_id,
+        event_type="assessment",
+        risk_data={
+            "decision": decision.value,
+            "risk_score": total_score,
+            "factors": [f.dict() for f in all_factors],
+            "corridor": corridor,
+            "amount": request.amount,
+            "currency": request.source_currency,
+            "requires_review": decision == RiskDecision.REVIEW,
+            "recommended_actions": recommended_actions
+        }
+    )
     
     return RiskAssessmentResponse(
         request_id=request_id,
