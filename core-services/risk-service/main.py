@@ -282,7 +282,7 @@ async def assess_transaction_risk(request: TransactionRiskRequest):
                 factor=RiskFactor.NEW_DEVICE,
                 triggered=True,
                 score=20,
-                details=f"Transaction from new/unknown device"
+                details="Transaction from new/unknown device"
             ))
             recommended_actions.append("Verify device via OTP or security question")
             
