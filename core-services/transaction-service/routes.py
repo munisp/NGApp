@@ -16,6 +16,7 @@ from .models import TransactionServiceModel
 from .service import TransactionServiceService
 from .database import get_db
 from .idempotency import IdempotencyService
+from .lakehouse_publisher import publish_transaction_to_lakehouse
 
 logger = logging.getLogger(__name__)
 
@@ -165,6 +166,14 @@ async def create_transfer(
             user_id=user_id,
             transaction_id=transaction_id,
             response_data=response_data
+        )
+        
+        # Publish transaction event to lakehouse for analytics (fire-and-forget)
+        await publish_transaction_to_lakehouse(
+            transaction_id=transaction_id,
+            user_id=user_id,
+            event_type="created",
+            transaction_data=transaction_data
         )
         
         return TransferResponse(**response_data, is_duplicate=False)
