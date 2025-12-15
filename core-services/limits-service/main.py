@@ -381,13 +381,13 @@ async def list_limits(
     limits = list(limits_db.values())
     
     if active_only:
-        limits = [l for l in limits if l.is_active]
+        limits = [lim for lim in limits if lim.is_active]
     if scope:
-        limits = [l for l in limits if l.scope == scope]
+        limits = [lim for lim in limits if lim.scope == scope]
     if corridor:
-        limits = [l for l in limits if l.corridor == corridor]
+        limits = [lim for lim in limits if lim.corridor == corridor]
     if user_tier:
-        limits = [l for l in limits if l.user_tier == user_tier]
+        limits = [lim for lim in limits if lim.user_tier == user_tier]
     
     return limits
 
@@ -464,7 +464,7 @@ async def set_user_custom_limit(user_id: str, request: SetUserLimitRequest):
 async def get_user_limits(user_id: str, user_tier: UserTier):
     """Get all applicable limits for a user"""
     custom_limits = user_custom_limits_db.get(user_id, {})
-    tier_limits = [l for l in limits_db.values() if l.user_tier == user_tier and l.is_active]
+    tier_limits = [lim for lim in limits_db.values() if lim.user_tier == user_tier and lim.is_active]
     
     return {
         "user_id": user_id,
@@ -484,14 +484,14 @@ async def get_user_usage_stats(user_id: str):
 @app.get("/corridors/{corridor}/limits")
 async def get_corridor_limits(corridor: Corridor):
     """Get all limits for a specific corridor"""
-    corridor_limits = [l for l in limits_db.values() if l.corridor == corridor and l.is_active]
+    corridor_limits = [lim for lim in limits_db.values() if lim.corridor == corridor and lim.is_active]
     return {"corridor": corridor, "limits": corridor_limits}
 
 
 @app.get("/regulatory")
 async def get_regulatory_limits():
     """Get all regulatory limits"""
-    regulatory = [l for l in limits_db.values() if l.scope == LimitScope.REGULATORY and l.is_active]
+    regulatory = [lim for lim in limits_db.values() if lim.scope == LimitScope.REGULATORY and lim.is_active]
     return {"regulatory_limits": regulatory}
 
 
