@@ -30,6 +30,7 @@ const Security = lazy(() => import('./pages/Security'));
 const AuditLogs = lazy(() => import('./pages/AuditLogs'));
 const AccountHealth = lazy(() => import('./pages/AccountHealth'));
 const PaymentPerformance = lazy(() => import('./pages/PaymentPerformance'));
+const Disputes = lazy(() => import('./pages/Disputes'));
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -82,10 +83,11 @@ const App: React.FC = () => {
                   <Route path="wise" element={<WiseTransfer />} />
                   <Route path="notifications" element={<Notifications />} />
                   <Route path="security" element={<Security />} />
-                                  <Route path="audit-logs" element={<AuditLogs />} />
-                                  <Route path="account-health" element={<AccountHealth />} />
-                                  <Route path="payment-performance" element={<PaymentPerformance />} />
-                                </Route>
+                                                                  <Route path="audit-logs" element={<AuditLogs />} />
+                                                                  <Route path="account-health" element={<AccountHealth />} />
+                                                                  <Route path="payment-performance" element={<PaymentPerformance />} />
+                                                                  <Route path="disputes" element={<Disputes />} />
+                                                                </Route>
         
         <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

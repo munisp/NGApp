@@ -6,7 +6,7 @@ when clients retry failed requests (critical for offline-first architecture).
 """
 
 from fastapi import APIRouter, HTTPException, Depends, Header, Request
-from typing import List, Optional, Dict, Any
+from typing import List, Optional
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 import uuid
@@ -25,12 +25,34 @@ from .risk_client import (
 )
 from .limits_client import (
     check_transaction_limits,
-    record_transaction_usage,
     determine_corridor,
     determine_user_tier,
-    LimitsServiceUnavailable,
-    UserTier
+    LimitsServiceUnavailable
 )
+from .kyc_client import (
+    verify_user_kyc,
+    is_kyc_blocked,
+    requires_kyc_upgrade,
+    KYCServiceUnavailable
+)
+from .compliance_client import (
+    check_transaction_compliance,
+    is_compliance_blocked,
+    requires_compliance_review,
+    ComplianceServiceUnavailable
+)
+
+import sys
+import os
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'common'))
+try:
+    from audit_client import (
+        audit_transaction_created,
+        audit_compliance_check
+    )
+    AUDIT_AVAILABLE = True
+except ImportError:
+    AUDIT_AVAILABLE = False
 
 logger = logging.getLogger(__name__)
 
@@ -143,8 +165,72 @@ async def create_transfer(
         corridor = determine_corridor(transfer.source_currency, transfer.destination_currency)
         user_tier = request.headers.get("X-User-Tier", "tier_1")
         user_tier_enum = determine_user_tier(user_tier)
+        user_name = request.headers.get("X-User-Name", "Unknown User")
+        destination_country = request.headers.get("X-Destination-Country", "NG")
         
-        # 1. Risk Assessment - MUST pass before creating transaction
+        # 1. KYC Verification - MUST pass before creating transaction (bank-grade requirement)
+        try:
+            kyc_result = await verify_user_kyc(
+                user_id=user_id,
+                amount=transfer.amount,
+                transaction_type="international_transfer" if destination_country != "NG" else "transfer",
+                destination_country=destination_country
+            )
+            
+            if is_kyc_blocked(kyc_result):
+                logger.warning(f"Transaction blocked by KYC: user={user_id}, tier={kyc_result.current_tier}")
+                raise HTTPException(
+                    status_code=403,
+                    detail=f"KYC verification required: {kyc_result.missing_requirements}"
+                )
+            
+            if requires_kyc_upgrade(kyc_result):
+                logger.info(f"KYC upgrade required: user={user_id}, current={kyc_result.current_tier}, required={kyc_result.required_tier}")
+                raise HTTPException(
+                    status_code=403,
+                    detail=f"KYC tier upgrade required. Current: {kyc_result.current_tier.value}, Required: {kyc_result.required_tier.value if kyc_result.required_tier else 'higher'}"
+                )
+        except KYCServiceUnavailable as e:
+            logger.error(f"KYC service unavailable: {e}")
+            raise HTTPException(status_code=503, detail="KYC verification service unavailable. Please try again later.")
+        
+        # 2. Compliance Check (AML/Sanctions) - MUST pass before creating transaction (bank-grade requirement)
+        try:
+            compliance_result = await check_transaction_compliance(
+                user_id=user_id,
+                user_name=user_name,
+                amount=transfer.amount,
+                source_currency=transfer.source_currency,
+                destination_currency=transfer.destination_currency,
+                destination_country=destination_country,
+                beneficiary_name=transfer.recipient_name,
+                beneficiary_country=destination_country
+            )
+            
+            if is_compliance_blocked(compliance_result):
+                logger.warning(f"Transaction blocked by compliance: user={user_id}, risk={compliance_result.risk_level}")
+                # Log audit event for compliance block
+                if AUDIT_AVAILABLE:
+                    await audit_compliance_check(
+                        service_name="transaction-service",
+                        user_id=user_id,
+                        transaction_id="blocked",
+                        passed=False,
+                        risk_level=compliance_result.risk_level.value,
+                        details={"matches": len(compliance_result.matches)}
+                    )
+                raise HTTPException(
+                    status_code=403,
+                    detail="Transaction blocked by compliance screening. Please contact support."
+                )
+            
+            if requires_compliance_review(compliance_result):
+                logger.info(f"Compliance review required: user={user_id}, risk={compliance_result.risk_level}")
+        except ComplianceServiceUnavailable as e:
+            logger.error(f"Compliance service unavailable: {e}")
+            raise HTTPException(status_code=503, detail="Compliance screening service unavailable. Please try again later.")
+        
+        # 3. Risk Assessment - MUST pass before creating transaction
         try:
             risk_result = await assess_transaction_risk(
                 user_id=user_id,
@@ -240,6 +326,23 @@ async def create_transfer(
             event_type="created",
             transaction_data=transaction_data
         )
+        
+        # Log audit event for transaction creation (fire-and-forget)
+        if AUDIT_AVAILABLE:
+            await audit_transaction_created(
+                service_name="transaction-service",
+                transaction_id=transaction_id,
+                user_id=user_id,
+                amount=transfer.amount,
+                currency=transfer.source_currency,
+                transaction_type="transfer",
+                details={
+                    "recipient_name": transfer.recipient_name,
+                    "corridor": corridor.value,
+                    "risk_score": risk_result.risk_score,
+                    "compliance_risk": compliance_result.risk_level.value
+                }
+            )
         
         return TransferResponse(**response_data, is_duplicate=False)
         
