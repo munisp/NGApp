@@ -573,9 +573,9 @@ class LakehouseStorage:
             return list(self.tables.get(layer, {}).keys())
         
         all_tables = []
-        for l in TableLayer:
-            for table_name in self.tables.get(l, {}).keys():
-                all_tables.append(f"{l.value}.{table_name}")
+        for layer in TableLayer:
+            for table_name in self.tables.get(layer, {}).keys():
+                all_tables.append(f"{layer.value}.{table_name}")
         return all_tables
 
 

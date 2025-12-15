@@ -10,6 +10,8 @@ import os
 from datetime import datetime
 from typing import Dict, List, Optional
 import httpx
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -204,9 +206,6 @@ class SimulatedKafkaConsumer:
 
 
 # HTTP-based event receiver (alternative to Kafka for services that prefer HTTP)
-from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
-
 app = FastAPI(title="Lakehouse Ingestion Pipeline", version="1.0.0")
 
 pipeline = KafkaIngestionPipeline()
