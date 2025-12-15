@@ -188,14 +188,181 @@ mock_provider_records: Dict[str, List[ProviderRecord]] = {}
 
 # ==================== Helper Functions ====================
 
-def generate_mock_data(corridor: CorridorType, start_date: date, end_date: date):
-    """Generate mock data for reconciliation testing"""
+TRANSACTION_SERVICE_URL = os.getenv("TRANSACTION_SERVICE_URL", "http://transaction-service:8000")
+LEDGER_SERVICE_URL = os.getenv("LEDGER_SERVICE_URL", "http://tigerbeetle-service:8000")
+USE_MOCK_DATA = os.getenv("USE_MOCK_DATA", "false").lower() == "true"
+
+
+async def fetch_internal_transactions(
+    corridor: CorridorType,
+    start_date: date,
+    end_date: date
+) -> List[TransactionRecord]:
+    """Fetch transactions from transaction-service"""
+    import httpx
+    
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            response = await client.get(
+                f"{TRANSACTION_SERVICE_URL}/api/v1/transactions/",
+                params={
+                    "corridor": corridor.value,
+                    "start_date": start_date.isoformat(),
+                    "end_date": end_date.isoformat()
+                }
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                return [
+                    TransactionRecord(
+                        transaction_id=t.get("id", ""),
+                        reference=t.get("reference_number", ""),
+                        amount=t.get("amount", 0),
+                        currency=t.get("currency", "NGN"),
+                        status=t.get("status", "unknown"),
+                        created_at=datetime.fromisoformat(t.get("created_at", datetime.utcnow().isoformat())),
+                        completed_at=datetime.fromisoformat(t["completed_at"]) if t.get("completed_at") else None,
+                        corridor=t.get("corridor", corridor.value)
+                    )
+                    for t in data
+                ]
+            else:
+                logger.warning(f"Failed to fetch transactions: {response.status_code}")
+                return []
+    except Exception as e:
+        logger.error(f"Error fetching transactions: {e}")
+        return []
+
+
+async def fetch_ledger_records(
+    transaction_ids: List[str]
+) -> List[LedgerRecord]:
+    """Fetch ledger entries from TigerBeetle service"""
+    import httpx
+    
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            response = await client.post(
+                f"{LEDGER_SERVICE_URL}/api/v1/ledger/lookup",
+                json={"transaction_ids": transaction_ids}
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                return [
+                    LedgerRecord(
+                        ledger_id=entry.get("id", ""),
+                        transaction_id=entry.get("transaction_id", ""),
+                        debit_account=entry.get("debit_account", ""),
+                        credit_account=entry.get("credit_account", ""),
+                        amount=entry.get("amount", 0),
+                        currency=entry.get("currency", "NGN"),
+                        timestamp=datetime.fromisoformat(entry.get("timestamp", datetime.utcnow().isoformat())),
+                        pending=entry.get("pending", False)
+                    )
+                    for entry in data.get("entries", [])
+                ]
+            else:
+                logger.warning(f"Failed to fetch ledger records: {response.status_code}")
+                return []
+    except Exception as e:
+        logger.error(f"Error fetching ledger records: {e}")
+        return []
+
+
+async def fetch_provider_records(
+    corridor: CorridorType,
+    start_date: date,
+    end_date: date
+) -> List[ProviderRecord]:
+    """Fetch settlement records from corridor provider"""
+    provider_urls = {
+        CorridorType.MOJALOOP: os.getenv("MOJALOOP_SETTLEMENT_URL", "http://mojaloop:8000/settlements"),
+        CorridorType.PAPSS: os.getenv("PAPSS_SETTLEMENT_URL", "http://papss:8000/settlements"),
+        CorridorType.UPI: os.getenv("UPI_SETTLEMENT_URL", "http://upi:8000/settlements"),
+        CorridorType.PIX: os.getenv("PIX_SETTLEMENT_URL", "http://pix:8000/settlements"),
+        CorridorType.NIBSS: os.getenv("NIBSS_SETTLEMENT_URL", "http://nibss:8000/settlements"),
+        CorridorType.INTERNAL: None
+    }
+    
+    provider_url = provider_urls.get(corridor)
+    if not provider_url:
+        logger.info(f"No provider URL configured for corridor {corridor}")
+        return []
+    
+    import httpx
+    
+    try:
+        async with httpx.AsyncClient(timeout=60.0) as client:
+            response = await client.get(
+                provider_url,
+                params={
+                    "start_date": start_date.isoformat(),
+                    "end_date": end_date.isoformat()
+                }
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                return [
+                    ProviderRecord(
+                        provider_reference=p.get("reference", ""),
+                        internal_reference=p.get("internal_reference"),
+                        amount=p.get("amount", 0),
+                        currency=p.get("currency", "NGN"),
+                        status=p.get("status", "unknown"),
+                        settlement_date=datetime.fromisoformat(p.get("settlement_date", datetime.utcnow().isoformat()))
+                    )
+                    for p in data.get("settlements", [])
+                ]
+            else:
+                logger.warning(f"Failed to fetch provider records: {response.status_code}")
+                return []
+    except Exception as e:
+        logger.error(f"Error fetching provider records: {e}")
+        return []
+
+
+async def get_reconciliation_data(
+    corridor: CorridorType,
+    start_date: date,
+    end_date: date
+) -> tuple:
+    """
+    Get reconciliation data from real services or mock data.
+    
+    In production (USE_MOCK_DATA=false):
+    - Fetches from transaction-service, TigerBeetle, and corridor providers
+    
+    In development (USE_MOCK_DATA=true):
+    - Returns mock data for testing
+    """
+    if USE_MOCK_DATA:
+        logger.info("Using mock data for reconciliation (USE_MOCK_DATA=true)")
+        return _generate_mock_data(corridor, start_date, end_date)
+    
+    logger.info(f"Fetching real data for reconciliation: corridor={corridor}, dates={start_date} to {end_date}")
+    
+    internal = await fetch_internal_transactions(corridor, start_date, end_date)
+    
+    transaction_ids = [t.transaction_id for t in internal]
+    ledger = await fetch_ledger_records(transaction_ids) if transaction_ids else []
+    
+    provider = await fetch_provider_records(corridor, start_date, end_date)
+    
+    logger.info(f"Fetched: {len(internal)} transactions, {len(ledger)} ledger entries, {len(provider)} provider records")
+    
+    return internal, ledger, provider
+
+
+def _generate_mock_data(corridor: CorridorType, start_date: date, end_date: date):
+    """Generate mock data for reconciliation testing (development only)"""
     import random
     
-    # Generate internal transactions
     transactions = []
     for i in range(100):
-        txn_date = start_date + timedelta(days=random.randint(0, (end_date - start_date).days))
+        txn_date = start_date + timedelta(days=random.randint(0, max(1, (end_date - start_date).days)))
         transactions.append(TransactionRecord(
             transaction_id=f"TXN-{uuid.uuid4().hex[:8].upper()}",
             reference=f"REF-{uuid.uuid4().hex[:8].upper()}",
@@ -207,7 +374,6 @@ def generate_mock_data(corridor: CorridorType, start_date: date, end_date: date)
             corridor=corridor.value
         ))
     
-    # Generate ledger records (95% match rate)
     ledger_records = []
     for txn in transactions[:95]:
         ledger_records.append(LedgerRecord(
@@ -215,19 +381,18 @@ def generate_mock_data(corridor: CorridorType, start_date: date, end_date: date)
             transaction_id=txn.transaction_id,
             debit_account="WALLET-001",
             credit_account="SETTLEMENT-001",
-            amount=txn.amount if random.random() > 0.05 else txn.amount * 1.01,  # 5% amount mismatch
+            amount=txn.amount if random.random() > 0.05 else txn.amount * 1.01,
             currency=txn.currency,
             timestamp=txn.created_at,
             pending=txn.status == "pending"
         ))
     
-    # Generate provider records (90% match rate)
     provider_records = []
     for txn in transactions[:90]:
         provider_records.append(ProviderRecord(
             provider_reference=f"PRV-{uuid.uuid4().hex[:8].upper()}",
             internal_reference=txn.reference,
-            amount=txn.amount if random.random() > 0.03 else txn.amount * 0.99,  # 3% amount mismatch
+            amount=txn.amount if random.random() > 0.03 else txn.amount * 0.99,
             currency=txn.currency,
             status="settled" if txn.status == "completed" else txn.status,
             settlement_date=txn.created_at
@@ -339,9 +504,8 @@ async def start_reconciliation(
     
     reconciliation_jobs[job_id] = report
     
-    # Run reconciliation (in production, this would be a background task)
-    # For demo, we'll run it synchronously with mock data
-    internal, ledger, provider = generate_mock_data(
+    # Fetch reconciliation data from real services (or mock if USE_MOCK_DATA=true)
+    internal, ledger, provider = await get_reconciliation_data(
         request.corridor, request.start_date, request.end_date
     )
     
@@ -488,18 +652,20 @@ async def schedule_daily_reconciliation(corridor: CorridorType):
     """Schedule daily reconciliation for a corridor (called by cron)"""
     yesterday = date.today() - timedelta(days=1)
     
-    request = ReconciliationRequest(
+    recon_request = ReconciliationRequest(
         corridor=corridor,
         start_date=yesterday,
         end_date=yesterday
     )
     
-    # In production, this would add to a job queue
     logger.info(f"Scheduled daily reconciliation for {corridor} on {yesterday}")
     
     return {
         "message": f"Daily reconciliation scheduled for {corridor}",
-        "date": yesterday.isoformat()
+        "date": yesterday.isoformat(),
+        "corridor": recon_request.corridor.value,
+        "start_date": recon_request.start_date.isoformat(),
+        "end_date": recon_request.end_date.isoformat()
     }
 
 
