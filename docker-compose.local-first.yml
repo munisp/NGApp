@@ -160,6 +160,30 @@ services:
       retries: 3
   
   # ============================================================================
+  # Python API Gateway (Lakehouse, Analytics, Ingestion)
+  # ============================================================================
+  
+  python_api:
+    build:
+      context: ./services/python_api
+      dockerfile: Dockerfile
+    container_name: python_api
+    ports:
+      - "8002:8002"
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - REDIS_URL=redis://redis:6379/0
+      - LOG_LEVEL=INFO
+    depends_on:
+      - redis
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8002/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ============================================================================
   # Existing Platform Services
   # ============================================================================
   

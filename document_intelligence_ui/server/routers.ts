@@ -8,6 +8,7 @@ import { customTemplatesRouter } from "./routers/customTemplates";
 import { validationRouter } from './routers/validation';
 import { healthRouter } from './routers/health';
 import { batchTemplateApplicationRouter } from "./routers/batchTemplateApplication";
+import { identityVerificationRouter } from "./routers/identityVerification";
 import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
@@ -22,6 +23,7 @@ export const appRouter = router({
   customTemplates: customTemplatesRouter,
   validation: validationRouter,
   batchTemplateApplication: batchTemplateApplicationRouter,
+  identityVerification: identityVerificationRouter,
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),
     logout: publicProcedure.mutation(({ ctx }) => {
