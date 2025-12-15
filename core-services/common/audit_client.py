@@ -83,6 +83,12 @@ class AuditEventType(str, Enum):
     SERVICE_STARTED = "service_started"
     SERVICE_STOPPED = "service_stopped"
     ERROR_OCCURRED = "error_occurred"
+    
+    # Authorization/PBAC events
+    AUTHORIZATION_CHECK = "authorization_check"
+    AUTHORIZATION_DENIED = "authorization_denied"
+    POLICY_EVALUATED = "policy_evaluated"
+    POLICY_UPDATED = "policy_updated"
 
 
 class AuditSeverity(str, Enum):
