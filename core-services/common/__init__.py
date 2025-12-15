@@ -3,8 +3,11 @@ Common utilities for core services.
 
 This module provides shared functionality across all microservices including:
 - Circuit breaker pattern for resilient service calls
-- Retry logic with exponential backoff
-- Common error handling
+- Database connection and session management
+- OAuth2/JWT authentication middleware
+- Prometheus metrics instrumentation
+- Kafka event publishing
+- Vault secrets management
 """
 
 from .circuit_breaker import (
@@ -18,6 +21,7 @@ from .circuit_breaker import (
 )
 
 __all__ = [
+    # Circuit Breaker
     "CircuitBreaker",
     "CircuitBreakerConfig",
     "CircuitBreakerError",
