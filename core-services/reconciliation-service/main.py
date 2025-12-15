@@ -246,7 +246,7 @@ def compare_records(
     
     # Create lookup maps
     internal_by_id = {t.transaction_id: t for t in internal}
-    ledger_by_txn = {l.transaction_id: l for l in ledger}
+    ledger_by_txn = {entry.transaction_id: entry for entry in ledger}
     provider_by_ref = {p.internal_reference: p for p in provider if p.internal_reference}
     
     # Check internal vs ledger
@@ -359,7 +359,7 @@ async def start_reconciliation(
     report.matched_records = len(internal) - len([d for d in discrepancies if d.type == DiscrepancyType.MISSING_IN_LEDGER])
     
     report.total_internal_amount = sum(t.amount for t in internal)
-    report.total_ledger_amount = sum(l.amount for l in ledger)
+    report.total_ledger_amount = sum(entry.amount for entry in ledger)
     report.total_provider_amount = sum(p.amount for p in provider)
     
     report.discrepancies = discrepancies
