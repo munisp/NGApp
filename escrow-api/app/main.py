@@ -3062,3 +3062,47 @@ try:
     logger.info("Persistent storage router included")
 except ImportError as e:
     logger.warning(f"Persistent storage router not available: {e}")
+
+# ============================================
+# INCENTIVE SYSTEM ROUTERS
+# ============================================
+
+# Seller Tiers Router (Bronze/Silver/Gold/Platinum tiers, automatic upgrades)
+try:
+    from app.seller_tiers import router as seller_tiers_router
+    app.include_router(seller_tiers_router)
+    logger.info("Seller tiers router included")
+except ImportError as e:
+    logger.warning(f"Seller tiers router not available: {e}")
+
+# Loyalty Points Router (Buyer points, rewards, status levels)
+try:
+    from app.loyalty_points import router as loyalty_router
+    app.include_router(loyalty_router)
+    logger.info("Loyalty points router included")
+except ImportError as e:
+    logger.warning(f"Loyalty points router not available: {e}")
+
+# Growth Wallet Router (Seller rebates, wallet services)
+try:
+    from app.growth_wallet import router as growth_wallet_router
+    app.include_router(growth_wallet_router)
+    logger.info("Growth wallet router included")
+except ImportError as e:
+    logger.warning(f"Growth wallet router not available: {e}")
+
+# Viral Sharing Router (Badges, receipts, shareable links)
+try:
+    from app.viral_sharing import router as viral_sharing_router
+    app.include_router(viral_sharing_router)
+    logger.info("Viral sharing router included")
+except ImportError as e:
+    logger.warning(f"Viral sharing router not available: {e}")
+
+# Partner Rewards Router (Telco, logistics, banking partner rewards)
+try:
+    from app.partner_rewards import router as partner_rewards_router
+    app.include_router(partner_rewards_router)
+    logger.info("Partner rewards router included")
+except ImportError as e:
+    logger.warning(f"Partner rewards router not available: {e}")
