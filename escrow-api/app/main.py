@@ -3106,3 +3106,47 @@ try:
     logger.info("Partner rewards router included")
 except ImportError as e:
     logger.warning(f"Partner rewards router not available: {e}")
+
+# ============================================
+# COMPETITIVE FEATURE ROUTERS
+# ============================================
+
+# Seller Storefront Router (Catalog, inventory, orders, CRM)
+try:
+    from app.seller_storefront import router as storefront_router
+    app.include_router(storefront_router)
+    logger.info("Seller storefront router included")
+except ImportError as e:
+    logger.warning(f"Seller storefront router not available: {e}")
+
+# Returns & Refunds Router (RMA, reverse logistics, refund processing)
+try:
+    from app.returns_refunds import router as returns_router
+    app.include_router(returns_router)
+    logger.info("Returns & refunds router included")
+except ImportError as e:
+    logger.warning(f"Returns & refunds router not available: {e}")
+
+# Proof of Delivery Router (Logistics integration, POD capture)
+try:
+    from app.proof_of_delivery import router as pod_router
+    app.include_router(pod_router)
+    logger.info("Proof of delivery router included")
+except ImportError as e:
+    logger.warning(f"Proof of delivery router not available: {e}")
+
+# Marketplace Discovery Router (Search, listings, seller profiles)
+try:
+    from app.marketplace_discovery import router as marketplace_router
+    app.include_router(marketplace_router)
+    logger.info("Marketplace discovery router included")
+except ImportError as e:
+    logger.warning(f"Marketplace discovery router not available: {e}")
+
+# Dispute Operations Router (SLAs, evidence, arbitration)
+try:
+    from app.dispute_ops import router as dispute_ops_router
+    app.include_router(dispute_ops_router)
+    logger.info("Dispute operations router included")
+except ImportError as e:
+    logger.warning(f"Dispute operations router not available: {e}")
