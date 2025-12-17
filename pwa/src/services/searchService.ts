@@ -322,7 +322,7 @@ export const searchService = {
 // Search Hooks for React components
 import { useState, useCallback, useEffect, useRef } from 'react';
 
-export interface UseSearchOptions<T> {
+export interface UseSearchOptions {
   index?: SearchIndex | SearchIndex[];
   debounceMs?: number;
   minQueryLength?: number;
@@ -348,7 +348,7 @@ export interface UseSearchResult<T> {
 }
 
 export function useSearch<T = unknown>(
-  options: UseSearchOptions<T> = {}
+  options: UseSearchOptions = {}
 ): UseSearchResult<T> {
   const {
     index,
@@ -368,7 +368,7 @@ export function useSearch<T = unknown>(
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [aggregations, setAggregations] = useState<Record<string, SearchAggregation[]>>({});
 
-  const debounceRef = useRef<NodeJS.Timeout>();
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>();
 
   const search = useCallback(async () => {
     if (query.length < minQueryLength) {

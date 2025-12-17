@@ -1,7 +1,6 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { SearchBar } from '../components/SearchBar';
-import { searchService, BeneficiarySearchResult, SearchFilters } from '../services/searchService';
 
 interface Beneficiary {
   id: string;

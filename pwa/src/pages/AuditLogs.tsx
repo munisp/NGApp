@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { SearchBar } from '../components/SearchBar';
-import { searchService, AuditLogSearchResult, SearchFilters as OpenSearchFilters } from '../services/searchService';
 
 interface AuditLog {
   id: string;
