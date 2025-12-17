@@ -300,6 +300,18 @@ class NIBSSAdapter(BankAdapterInterface):
         self.secret_key = BankConfig.NIBSS_SECRET_KEY
         self.institution_code = BankConfig.NIBSS_INSTITUTION_CODE
         
+        # Production mode check
+        self.production_mode = os.getenv("PRODUCTION_MODE", "false").lower() == "true"
+        self.is_configured = bool(self.api_key and self.secret_key)
+    
+    def _check_production_configured(self, operation: str):
+        """Fail fast if not configured in production mode"""
+        if self.production_mode and not self.is_configured:
+            raise RuntimeError(
+                f"NIBSS {operation} failed: API credentials not configured. "
+                "Set NIBSS_API_KEY and NIBSS_SECRET_KEY environment variables for production."
+            )
+        
     def _generate_signature(self, data: str) -> str:
         """Generate HMAC signature for NIBSS requests"""
         return hmac.new(
@@ -323,8 +335,7 @@ class NIBSSAdapter(BankAdapterInterface):
     
     async def name_enquiry(self, account_number: str, bank_code: str) -> NameEnquiryResult:
         """Perform name enquiry via NIBSS NIP"""
-        # In production, this would call NIBSS API
-        # For POC, simulate response
+        self._check_production_configured("name_enquiry")
         
         logger.info(f"Name enquiry for {account_number} at bank {bank_code}")
         
@@ -354,6 +365,7 @@ class NIBSSAdapter(BankAdapterInterface):
     
     async def verify_bvn(self, bvn: str) -> BVNVerificationResult:
         """Verify BVN via NIBSS"""
+        self._check_production_configured("verify_bvn")
         logger.info(f"BVN verification for {bvn[:4]}****{bvn[-2:]}")
         
         # In production: POST to {base_url}/bvn/verify
@@ -395,6 +407,7 @@ class NIBSSAdapter(BankAdapterInterface):
     
     async def initiate_transfer(self, request: TransferRequest) -> TransferResponse:
         """Initiate NIP transfer"""
+        self._check_production_configured("initiate_transfer")
         logger.info(f"Initiating NIP transfer: {request.reference} - {request.amount} NGN")
         
         # In production: POST to {base_url}/nip/transfer
