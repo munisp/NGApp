@@ -731,6 +731,183 @@ class RedisCacheManager:
         return None
 
 
+# ============================================
+# Marketplace Repository (Sellers, Listings, Reviews)
+# ============================================
+
+class MarketplaceRepository:
+    """Repository for marketplace entities using Redis + PostgreSQL"""
+    
+    def __init__(self, cache_manager: RedisCacheManager):
+        self.cache = cache_manager
+    
+    async def get_seller(self, seller_id: str) -> Optional[Dict[str, Any]]:
+        """Get seller profile from cache or database"""
+        cached = await self.cache.get_json(f"seller:{seller_id}")
+        if cached:
+            return cached
+        # Fallback to database query if needed
+        return None
+    
+    async def save_seller(self, seller_id: str, data: Dict[str, Any], ttl: int = 3600):
+        """Save seller profile to cache"""
+        await self.cache.set_json(f"seller:{seller_id}", data, ttl)
+    
+    async def get_listing(self, listing_id: str) -> Optional[Dict[str, Any]]:
+        """Get listing from cache"""
+        return await self.cache.get_json(f"listing:{listing_id}")
+    
+    async def save_listing(self, listing_id: str, data: Dict[str, Any], ttl: int = 3600):
+        """Save listing to cache"""
+        await self.cache.set_json(f"listing:{listing_id}", data, ttl)
+    
+    async def get_reviews(self, seller_id: str) -> List[Dict[str, Any]]:
+        """Get seller reviews"""
+        data = await self.cache.get_json(f"reviews:{seller_id}")
+        return data if data else []
+    
+    async def add_review(self, seller_id: str, review: Dict[str, Any]):
+        """Add review for seller"""
+        reviews = await self.get_reviews(seller_id)
+        reviews.append(review)
+        await self.cache.set_json(f"reviews:{seller_id}", reviews, ttl=86400)
+
+
+# ============================================
+# Growth Wallet Repository
+# ============================================
+
+class GrowthWalletRepository:
+    """Repository for growth wallet data"""
+    
+    def __init__(self, cache_manager: RedisCacheManager):
+        self.cache = cache_manager
+    
+    async def get_wallet(self, user_id: str) -> Optional[Dict[str, Any]]:
+        """Get user's growth wallet"""
+        return await self.cache.get_json(f"wallet:{user_id}")
+    
+    async def save_wallet(self, user_id: str, data: Dict[str, Any]):
+        """Save wallet data (no TTL - persistent)"""
+        await self.cache.set_json(f"wallet:{user_id}", data)
+    
+    async def get_active_services(self, user_id: str) -> Dict[str, Any]:
+        """Get user's active services"""
+        data = await self.cache.get_json(f"services:{user_id}")
+        return data if data else {}
+    
+    async def save_active_services(self, user_id: str, services: Dict[str, Any]):
+        """Save active services"""
+        await self.cache.set_json(f"services:{user_id}", services)
+
+
+# ============================================
+# Loyalty Points Repository
+# ============================================
+
+class LoyaltyRepository:
+    """Repository for loyalty points and buyer profiles"""
+    
+    def __init__(self, cache_manager: RedisCacheManager):
+        self.cache = cache_manager
+    
+    async def get_buyer_profile(self, buyer_id: str) -> Optional[Dict[str, Any]]:
+        """Get buyer loyalty profile"""
+        return await self.cache.get_json(f"loyalty:{buyer_id}")
+    
+    async def save_buyer_profile(self, buyer_id: str, data: Dict[str, Any]):
+        """Save buyer loyalty profile"""
+        await self.cache.set_json(f"loyalty:{buyer_id}", data)
+    
+    async def get_redemption(self, redemption_id: str) -> Optional[Dict[str, Any]]:
+        """Get redemption record"""
+        return await self.cache.get_json(f"redemption:{redemption_id}")
+    
+    async def save_redemption(self, redemption_id: str, data: Dict[str, Any]):
+        """Save redemption record"""
+        await self.cache.set_json(f"redemption:{redemption_id}", data)
+    
+    async def add_points(self, buyer_id: str, points: int, reason: str):
+        """Add points to buyer profile"""
+        profile = await self.get_buyer_profile(buyer_id) or {"points": 0, "history": []}
+        profile["points"] = profile.get("points", 0) + points
+        profile["history"] = profile.get("history", [])
+        profile["history"].append({
+            "points": points,
+            "reason": reason,
+            "timestamp": datetime.utcnow().isoformat()
+        })
+        await self.save_buyer_profile(buyer_id, profile)
+
+
+# ============================================
+# Session Repository (WhatsApp, USSD)
+# ============================================
+
+class SessionRepository:
+    """Repository for session data (WhatsApp, USSD) using Redis"""
+    
+    def __init__(self, cache_manager: RedisCacheManager):
+        self.cache = cache_manager
+    
+    async def get_whatsapp_session(self, phone: str) -> Optional[Dict[str, Any]]:
+        """Get WhatsApp session"""
+        return await self.cache.get_json(f"wa_session:{phone}")
+    
+    async def save_whatsapp_session(self, phone: str, data: Dict[str, Any], ttl: int = 3600):
+        """Save WhatsApp session (1 hour TTL)"""
+        await self.cache.set_json(f"wa_session:{phone}", data, ttl)
+    
+    async def delete_whatsapp_session(self, phone: str):
+        """Delete WhatsApp session"""
+        await self.cache.delete(f"wa_session:{phone}")
+    
+    async def get_ussd_session(self, session_id: str) -> Optional[Dict[str, Any]]:
+        """Get USSD session"""
+        return await self.cache.get_json(f"ussd_session:{session_id}")
+    
+    async def save_ussd_session(self, session_id: str, data: Dict[str, Any], ttl: int = 300):
+        """Save USSD session (5 minute TTL)"""
+        await self.cache.set_json(f"ussd_session:{session_id}", data, ttl)
+    
+    async def delete_ussd_session(self, session_id: str):
+        """Delete USSD session"""
+        await self.cache.delete(f"ussd_session:{session_id}")
+
+
+# ============================================
+# Agent Network Repository
+# ============================================
+
+class AgentRepository:
+    """Repository for agent network data"""
+    
+    def __init__(self, cache_manager: RedisCacheManager):
+        self.cache = cache_manager
+    
+    async def get_agent(self, agent_id: str) -> Optional[Dict[str, Any]]:
+        """Get agent profile"""
+        return await self.cache.get_json(f"agent:{agent_id}")
+    
+    async def save_agent(self, agent_id: str, data: Dict[str, Any]):
+        """Save agent profile"""
+        await self.cache.set_json(f"agent:{agent_id}", data)
+    
+    async def get_cash_transaction(self, txn_id: str) -> Optional[Dict[str, Any]]:
+        """Get cash transaction"""
+        return await self.cache.get_json(f"cash_txn:{txn_id}")
+    
+    async def save_cash_transaction(self, txn_id: str, data: Dict[str, Any]):
+        """Save cash transaction"""
+        await self.cache.set_json(f"cash_txn:{txn_id}", data)
+    
+    async def find_nearby_agents(self, lat: float, lon: float, radius_km: float = 5.0) -> List[Dict[str, Any]]:
+        """Find agents near a location (simplified - in production use PostGIS)"""
+        # This is a simplified implementation
+        # In production, use PostGIS or a geospatial index
+        return []
+
+
 # Global instances
 user_repo = UserRepository()
 escrow_repo = EscrowRepository()
@@ -740,6 +917,53 @@ fraud_alert_repo = FraudAlertRepository()
 ledger_repo = LedgerRepository()
 audit_log_repo = AuditLogRepository()
 cache = RedisCacheManager()
+
+# Additional repositories (initialized after cache)
+marketplace_repo: Optional[MarketplaceRepository] = None
+growth_wallet_repo: Optional[GrowthWalletRepository] = None
+loyalty_repo: Optional[LoyaltyRepository] = None
+session_repo: Optional[SessionRepository] = None
+agent_repo: Optional[AgentRepository] = None
+
+
+def get_marketplace_repo() -> MarketplaceRepository:
+    """Get marketplace repository (lazy initialization)"""
+    global marketplace_repo
+    if marketplace_repo is None:
+        marketplace_repo = MarketplaceRepository(cache)
+    return marketplace_repo
+
+
+def get_growth_wallet_repo() -> GrowthWalletRepository:
+    """Get growth wallet repository (lazy initialization)"""
+    global growth_wallet_repo
+    if growth_wallet_repo is None:
+        growth_wallet_repo = GrowthWalletRepository(cache)
+    return growth_wallet_repo
+
+
+def get_loyalty_repo() -> LoyaltyRepository:
+    """Get loyalty repository (lazy initialization)"""
+    global loyalty_repo
+    if loyalty_repo is None:
+        loyalty_repo = LoyaltyRepository(cache)
+    return loyalty_repo
+
+
+def get_session_repo() -> SessionRepository:
+    """Get session repository (lazy initialization)"""
+    global session_repo
+    if session_repo is None:
+        session_repo = SessionRepository(cache)
+    return session_repo
+
+
+def get_agent_repo() -> AgentRepository:
+    """Get agent repository (lazy initialization)"""
+    global agent_repo
+    if agent_repo is None:
+        agent_repo = AgentRepository(cache)
+    return agent_repo
 
 
 # ============================================
