@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import { SearchBar } from '../components/SearchBar';
+import { searchService, AuditLogSearchResult, SearchFilters as OpenSearchFilters } from '../services/searchService';
 
 interface AuditLog {
   id: string;
@@ -304,12 +306,11 @@ export default function AuditLogs() {
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Search</label>
-            <input
-              type="text"
-              value={filters.search}
-              onChange={(e) => setFilters({ ...filters, search: e.target.value })}
-              className="input-field"
+            <SearchBar
               placeholder="Search logs..."
+              index="audit_logs"
+              onSearch={(query) => setFilters({ ...filters, search: query })}
+              className="w-full"
             />
           </div>
           <div>

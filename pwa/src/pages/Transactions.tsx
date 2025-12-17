@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { SearchBar } from '../components/SearchBar';
+import { searchService, TransactionSearchResult, SearchFilters } from '../services/searchService';
 
 interface Transaction {
   id: string;
@@ -11,25 +13,98 @@ interface Transaction {
   reference: string;
 }
 
+// Mock data for fallback when API is unavailable
+const mockTransactions: Transaction[] = [
+  { id: '1', type: 'sent', amount: 50000, currency: 'NGN', status: 'completed', description: 'Transfer to John Doe', date: '2024-01-15 14:30', reference: 'TXN001234' },
+  { id: '2', type: 'received', amount: 25000, currency: 'NGN', status: 'completed', description: 'From Jane Smith', date: '2024-01-14 10:15', reference: 'TXN001233' },
+  { id: '3', type: 'airtime', amount: 2000, currency: 'NGN', status: 'completed', description: 'MTN Airtime', date: '2024-01-13 09:00', reference: 'TXN001232' },
+  { id: '4', type: 'bill', amount: 15000, currency: 'NGN', status: 'completed', description: 'IKEDC Electricity', date: '2024-01-12 16:45', reference: 'TXN001231' },
+  { id: '5', type: 'exchange', amount: 100, currency: 'USD', status: 'completed', description: 'USD to NGN', date: '2024-01-11 11:20', reference: 'TXN001230' },
+  { id: '6', type: 'sent', amount: 75000, currency: 'NGN', status: 'pending', description: 'Transfer to Mike Johnson', date: '2024-01-10 08:30', reference: 'TXN001229' },
+  { id: '7', type: 'received', amount: 100000, currency: 'NGN', status: 'completed', description: 'From Sarah Williams', date: '2024-01-09 15:00', reference: 'TXN001228' },
+];
+
 const Transactions: React.FC = () => {
   const [filter, setFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [transactions, setTransactions] = useState<Transaction[]>(mockTransactions);
+  const [isLoading, setIsLoading] = useState(false);
+  const [total, setTotal] = useState(mockTransactions.length);
+  const [page, setPage] = useState(1);
+  const [useOpenSearch, setUseOpenSearch] = useState(true);
+  const pageSize = 20;
 
-  const transactions: Transaction[] = [
-    { id: '1', type: 'sent', amount: 50000, currency: 'NGN', status: 'completed', description: 'Transfer to John Doe', date: '2024-01-15 14:30', reference: 'TXN001234' },
-    { id: '2', type: 'received', amount: 25000, currency: 'NGN', status: 'completed', description: 'From Jane Smith', date: '2024-01-14 10:15', reference: 'TXN001233' },
-    { id: '3', type: 'airtime', amount: 2000, currency: 'NGN', status: 'completed', description: 'MTN Airtime', date: '2024-01-13 09:00', reference: 'TXN001232' },
-    { id: '4', type: 'bill', amount: 15000, currency: 'NGN', status: 'completed', description: 'IKEDC Electricity', date: '2024-01-12 16:45', reference: 'TXN001231' },
-    { id: '5', type: 'exchange', amount: 100, currency: 'USD', status: 'completed', description: 'USD to NGN', date: '2024-01-11 11:20', reference: 'TXN001230' },
-    { id: '6', type: 'sent', amount: 75000, currency: 'NGN', status: 'pending', description: 'Transfer to Mike Johnson', date: '2024-01-10 08:30', reference: 'TXN001229' },
-    { id: '7', type: 'received', amount: 100000, currency: 'NGN', status: 'completed', description: 'From Sarah Williams', date: '2024-01-09 15:00', reference: 'TXN001228' },
-  ];
-
-  const filteredTransactions = transactions.filter((tx) => {
-    if (filter !== 'all' && tx.type !== filter) return false;
-    if (searchQuery && !tx.description.toLowerCase().includes(searchQuery.toLowerCase()) && !tx.reference.toLowerCase().includes(searchQuery.toLowerCase())) return false;
-    return true;
+  // Map search results to Transaction interface
+  const mapSearchResultToTransaction = (result: TransactionSearchResult): Transaction => ({
+    id: result.id,
+    type: (result.type as Transaction['type']) || 'sent',
+    amount: result.amount,
+    currency: result.currency,
+    status: (result.status as Transaction['status']) || 'completed',
+    description: result.description || result.recipient || result.sender || 'Transaction',
+    date: result.createdAt,
+    reference: result.reference,
   });
+
+  // Search transactions using OpenSearch
+  const searchTransactions = useCallback(async (query: string, typeFilter: string) => {
+    if (!useOpenSearch) {
+      // Fallback to local filtering
+      const filtered = mockTransactions.filter((tx) => {
+        if (typeFilter !== 'all' && tx.type !== typeFilter) return false;
+        if (query && !tx.description.toLowerCase().includes(query.toLowerCase()) && !tx.reference.toLowerCase().includes(query.toLowerCase())) return false;
+        return true;
+      });
+      setTransactions(filtered);
+      setTotal(filtered.length);
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      const filters: SearchFilters = {};
+      if (typeFilter !== 'all') {
+        filters.type = typeFilter;
+      }
+
+      const response = await searchService.searchTransactions(
+        query || '*',
+        filters,
+        { page, size: pageSize }
+      );
+
+      const mappedTransactions = response.hits.map(hit => mapSearchResultToTransaction(hit.source));
+      setTransactions(mappedTransactions);
+      setTotal(response.total);
+    } catch (err) {
+      console.error('OpenSearch failed, falling back to local data:', err);
+      setUseOpenSearch(false);
+      // Fallback to local filtering
+      const filtered = mockTransactions.filter((tx) => {
+        if (typeFilter !== 'all' && tx.type !== typeFilter) return false;
+        if (query && !tx.description.toLowerCase().includes(query.toLowerCase()) && !tx.reference.toLowerCase().includes(query.toLowerCase())) return false;
+        return true;
+      });
+      setTransactions(filtered);
+      setTotal(filtered.length);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [page, useOpenSearch]);
+
+  // Effect to search when filter or page changes
+  useEffect(() => {
+    searchTransactions(searchQuery, filter);
+  }, [filter, page, searchTransactions, searchQuery]);
+
+  // Handle search from SearchBar
+  const handleSearch = (query: string) => {
+    setSearchQuery(query);
+    setPage(1);
+  };
+
+  const filteredTransactions = transactions;
 
   const getTypeIcon = (type: string) => {
     switch (type) {
@@ -72,12 +147,11 @@ const Transactions: React.FC = () => {
             ))}
           </div>
           <div className="flex gap-2">
-            <input
-              type="text"
+            <SearchBar
               placeholder="Search transactions..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="input-field w-full md:w-64"
+              index="transactions"
+              onSearch={handleSearch}
+              className="w-full md:w-64"
             />
             <button className="btn-secondary">Export</button>
           </div>
@@ -87,7 +161,12 @@ const Transactions: React.FC = () => {
       {/* Transaction List */}
       <div className="card">
         <div className="space-y-4">
-          {filteredTransactions.length === 0 ? (
+          {isLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+              <span className="ml-3 text-gray-500">Searching...</span>
+            </div>
+          ) : filteredTransactions.length === 0 ? (
             <div className="text-center py-8 text-gray-500">
               No transactions found
             </div>
@@ -128,11 +207,24 @@ const Transactions: React.FC = () => {
         {/* Pagination */}
         <div className="flex items-center justify-between mt-6 pt-4 border-t">
           <p className="text-sm text-gray-500">
-            Showing {filteredTransactions.length} of {transactions.length} transactions
+            Showing {filteredTransactions.length} of {total} transactions
+            {!useOpenSearch && <span className="text-yellow-600 ml-2">(offline mode)</span>}
           </p>
           <div className="flex gap-2">
-            <button className="btn-secondary" disabled>Previous</button>
-            <button className="btn-secondary">Next</button>
+            <button 
+              className="btn-secondary" 
+              disabled={page <= 1}
+              onClick={() => setPage(p => Math.max(1, p - 1))}
+            >
+              Previous
+            </button>
+            <button 
+              className="btn-secondary"
+              disabled={page * pageSize >= total}
+              onClick={() => setPage(p => p + 1)}
+            >
+              Next
+            </button>
           </div>
         </div>
       </div>
