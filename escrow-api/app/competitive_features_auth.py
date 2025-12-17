@@ -74,6 +74,7 @@ class UpdateInventoryRequest(BaseModel):
 
 class CreateReturnRequest(BaseModel):
     order_id: str
+    escrow_id: Optional[str] = None  # Used to look up seller_id
     reason: str
     description: Optional[str] = None
     items: List[Dict[str, Any]]
@@ -321,31 +322,64 @@ async def create_return_request_secure(
     user: AuthenticatedUser = Depends(get_current_user)
 ):
     """Create a return request (authenticated buyer)"""
+    from app.repositories import EscrowRepository
+    
     if user.role not in [UserRole.BUYER, UserRole.MERCHANT, UserRole.ADMIN]:
         raise HTTPException(status_code=403, detail="Only buyers can create return requests")
     
     buyer_id = user.buyer_id or user.user_id
     
-    # TODO: Validate order belongs to buyer and get seller_id from order
-    # For now, we'll require seller_id in the request
+    # Look up seller_id from escrow record
+    seller_id = None
+    original_amount_ngn = 0
+    escrow_id = request.escrow_id
+    
+    if escrow_id:
+        escrow_repo = EscrowRepository()
+        escrow = await escrow_repo.get(escrow_id)
+        if escrow:
+            # Validate escrow belongs to this buyer
+            if escrow.buyer_id != buyer_id and user.role != UserRole.ADMIN:
+                raise HTTPException(status_code=403, detail="Escrow does not belong to this buyer")
+            seller_id = escrow.seller_id
+            original_amount_ngn = int(escrow.amount)
+        else:
+            raise HTTPException(status_code=404, detail="Escrow not found")
+    
+    # If no escrow_id provided, calculate from items (fallback)
+    if not seller_id:
+        # For returns without escrow reference, require seller_id in items
+        if request.items and request.items[0].get("seller_id"):
+            seller_id = request.items[0].get("seller_id")
+        else:
+            raise HTTPException(
+                status_code=400, 
+                detail="Either escrow_id or seller_id in items is required"
+            )
+    
+    if original_amount_ngn == 0:
+        original_amount_ngn = sum(item.get("price", 0) * item.get("quantity", 1) for item in request.items)
     
     return_req = await return_request_repo.create({
         "buyer_id": buyer_id,
-        "seller_id": request.order_id,  # This should come from order lookup
+        "seller_id": seller_id,
         "order_id": request.order_id,
+        "escrow_id": escrow_id,
         "reason": request.reason,
         "description": request.description,
         "items": request.items,
         "photos": request.photos,
         "videos": request.videos,
-        "original_amount_ngn": sum(item.get("price", 0) * item.get("quantity", 1) for item in request.items),
+        "original_amount_ngn": original_amount_ngn,
     })
     
-    logger.info(f"Return request {return_req.rma_number} created by buyer {buyer_id}")
+    logger.info(f"Return request {return_req.rma_number} created by buyer {buyer_id} for seller {seller_id}")
     return {
         "return_id": return_req.id,
         "rma_number": return_req.rma_number,
         "status": return_req.status.value,
+        "seller_id": seller_id,
+        "original_amount_ngn": original_amount_ngn,
         "approval_deadline": return_req.approval_deadline.isoformat() if return_req.approval_deadline else None,
     }
 

@@ -75,28 +75,79 @@ class Job:
 
 
 # =============================================================================
-# Job Queue (In-Memory for POC, should use Redis/PostgreSQL in production)
+# Job Queue - Uses Durable PostgreSQL-backed Queue in Production
 # =============================================================================
 
+# Import durable job queue from production hardening module
+try:
+    from app.production_hardening import (
+        DurableJobQueue, DurableJobWorker, DurableJobScheduler,
+        durable_job_queue, distributed_lock_manager
+    )
+    DURABLE_QUEUE_AVAILABLE = True
+except ImportError:
+    DURABLE_QUEUE_AVAILABLE = False
+    logger.warning("Production hardening module not available, using in-memory fallback")
+
+
 class JobQueue:
-    """Simple in-memory job queue with persistence hooks"""
+    """
+    Job queue that uses PostgreSQL-backed durable queue in production.
+    Falls back to in-memory queue only in development.
+    """
     
-    def __init__(self):
-        self.pending: List[Job] = []
-        self.processing: Dict[str, Job] = {}
-        self.completed: List[Job] = []
-        self.dead_letter: List[Job] = []
-        self._lock = asyncio.Lock()
+    def __init__(self, use_durable: bool = True):
+        self.use_durable = use_durable and DURABLE_QUEUE_AVAILABLE
+        
+        if self.use_durable:
+            self._durable_queue = DurableJobQueue()
+            logger.info("Using PostgreSQL-backed durable job queue")
+        else:
+            # In-memory fallback for development only
+            self.pending: List[Job] = []
+            self.processing: Dict[str, Job] = {}
+            self.completed: List[Job] = []
+            self.dead_letter: List[Job] = []
+            self._lock = asyncio.Lock()
+            logger.warning("Using in-memory job queue - NOT SUITABLE FOR PRODUCTION")
     
     async def enqueue(self, job: Job) -> str:
         """Add job to queue"""
+        if self.use_durable:
+            return await self._durable_queue.enqueue(
+                job_type=job.job_type.value,
+                payload=job.payload,
+                scheduled_at=job.scheduled_at,
+                idempotency_key=f"{job.job_type.value}:{job.id}",
+                max_attempts=job.max_attempts
+            )
+        
+        # In-memory fallback
         async with self._lock:
             self.pending.append(job)
-            logger.info(f"Job {job.id} ({job.job_type.value}) enqueued")
+            logger.info(f"Job {job.id} ({job.job_type.value}) enqueued (in-memory)")
             return job.id
     
     async def dequeue(self) -> Optional[Job]:
         """Get next job from queue"""
+        if self.use_durable:
+            durable_job = await self._durable_queue.dequeue()
+            if durable_job:
+                # Convert to Job dataclass for handler compatibility
+                return Job(
+                    id=durable_job.id,
+                    job_type=JobType(durable_job.job_type),
+                    payload=durable_job.payload,
+                    status=JobStatus(durable_job.status.value),
+                    attempts=durable_job.attempts,
+                    max_attempts=durable_job.max_attempts,
+                    created_at=durable_job.created_at,
+                    scheduled_at=durable_job.scheduled_at,
+                    started_at=durable_job.started_at,
+                )
+            return None
+        
+        # In-memory fallback
         async with self._lock:
             now = datetime.utcnow()
             for i, job in enumerate(self.pending):
@@ -111,6 +162,11 @@ class JobQueue:
     
     async def complete(self, job_id: str, result: Dict[str, Any] = None):
         """Mark job as completed"""
+        if self.use_durable:
+            await self._durable_queue.complete(job_id, result)
+            return
+        
+        # In-memory fallback
         async with self._lock:
             if job_id in self.processing:
                 job = self.processing.pop(job_id)
@@ -122,6 +178,11 @@ class JobQueue:
     
     async def fail(self, job_id: str, error: str):
         """Mark job as failed, retry or move to dead letter"""
+        if self.use_durable:
+            await self._durable_queue.fail(job_id, error)
+            return
+        
+        # In-memory fallback
         async with self._lock:
             if job_id in self.processing:
                 job = self.processing.pop(job_id)
@@ -142,16 +203,42 @@ class JobQueue:
     
     async def get_stats(self) -> Dict[str, int]:
         """Get queue statistics"""
+        if self.use_durable:
+            return await self._durable_queue.get_stats()
+        
         return {
             "pending": len(self.pending),
             "processing": len(self.processing),
             "completed": len(self.completed),
             "dead_letter": len(self.dead_letter),
         }
+    
+    async def get_dead_letter_jobs(self, limit: int = 100):
+        """Get jobs in dead letter queue"""
+        if self.use_durable:
+            return await self._durable_queue.get_dead_letter_jobs(limit)
+        return self.dead_letter[-limit:]
+    
+    async def retry_dead_letter(self, job_id: str) -> bool:
+        """Retry a dead letter job"""
+        if self.use_durable:
+            return await self._durable_queue.retry_dead_letter(job_id)
+        
+        # In-memory fallback
+        for i, job in enumerate(self.dead_letter):
+            if job.id == job_id:
+                self.dead_letter.pop(i)
+                job.status = JobStatus.PENDING
+                job.attempts = 0
+                job.error = None
+                job.scheduled_at = datetime.utcnow()
+                await self.enqueue(job)
+                return True
+        return False
 
 
-# Global job queue instance
-job_queue = JobQueue()
+# Global job queue instance - uses durable queue by default
+job_queue = JobQueue(use_durable=True)
 
 
 # =============================================================================
@@ -634,17 +721,29 @@ job_worker = JobWorker(job_queue)
 # =============================================================================
 
 class JobScheduler:
-    """Schedule recurring jobs"""
+    """
+    Schedule recurring jobs with distributed locking for multi-replica safety.
+    Only one instance will schedule jobs at a time (leader election).
+    """
     
     def __init__(self, queue: JobQueue):
         self.queue = queue
         self.running = False
         self._task: Optional[asyncio.Task] = None
+        self.instance_id = f"scheduler-{uuid.uuid4().hex[:8]}"
+        self.lock_name = "job_scheduler_leader"
+        self.lock_ttl = 30  # seconds
         
         # Schedule configuration (interval in seconds)
         self.schedules = {
             JobType.SLA_CHECK: 300,  # Every 5 minutes
         }
+        
+        # Distributed lock manager (if available)
+        self._lock_manager = None
+        if DURABLE_QUEUE_AVAILABLE:
+            from app.production_hardening import DistributedLockManager
+            self._lock_manager = DistributedLockManager(self.instance_id)
     
     async def start(self):
         """Start the scheduler"""
@@ -653,7 +752,7 @@ class JobScheduler:
         
         self.running = True
         self._task = asyncio.create_task(self._run())
-        logger.info("Job scheduler started")
+        logger.info(f"Job scheduler {self.instance_id} started")
     
     async def stop(self):
         """Stop the scheduler"""
@@ -664,37 +763,58 @@ class JobScheduler:
                 await self._task
             except asyncio.CancelledError:
                 pass
-        logger.info("Job scheduler stopped")
+        
+        # Release leader lock if held
+        if self._lock_manager:
+            await self._lock_manager.release(self.lock_name)
+        
+        logger.info(f"Job scheduler {self.instance_id} stopped")
     
     async def _run(self):
-        """Main scheduler loop"""
+        """Main scheduler loop with leader election"""
         last_run: Dict[JobType, datetime] = {}
         
         while self.running:
             try:
-                now = datetime.utcnow()
+                # Try to acquire leader lock (if distributed locking available)
+                is_leader = True
+                if self._lock_manager:
+                    is_leader = await self._lock_manager.acquire(
+                        self.lock_name,
+                        ttl_seconds=self.lock_ttl
+                    )
                 
-                for job_type, interval in self.schedules.items():
-                    last = last_run.get(job_type)
+                if is_leader:
+                    now = datetime.utcnow()
                     
-                    if not last or (now - last).total_seconds() >= interval:
-                        # Schedule the job
-                        await self.queue.enqueue(Job(
-                            id=str(uuid.uuid4()),
-                            job_type=job_type,
-                            payload={"scheduled": True, "timestamp": now.isoformat()}
-                        ))
-                        last_run[job_type] = now
-                        logger.info(f"Scheduled {job_type.value} job")
+                    for job_type, interval in self.schedules.items():
+                        last = last_run.get(job_type)
+                        
+                        if not last or (now - last).total_seconds() >= interval:
+                            # Schedule the job with idempotency key to prevent duplicates
+                            idempotency_key = f"scheduled:{job_type.value}:{now.strftime('%Y%m%d%H%M')}"
+                            await self.queue.enqueue(Job(
+                                id=idempotency_key,  # Use idempotency key as ID
+                                job_type=job_type,
+                                payload={"scheduled": True, "timestamp": now.isoformat()}
+                            ))
+                            last_run[job_type] = now
+                            logger.info(f"Scheduled {job_type.value} job")
+                    
+                    # Extend lock if we're the leader
+                    if self._lock_manager:
+                        await self._lock_manager.extend(self.lock_name, self.lock_ttl)
+                else:
+                    logger.debug(f"Scheduler {self.instance_id} is not leader, skipping")
                 
-                # Check every minute
-                await asyncio.sleep(60)
+                # Check every 10 seconds
+                await asyncio.sleep(10)
                 
             except asyncio.CancelledError:
                 break
             except Exception as e:
                 logger.error(f"Scheduler error: {e}")
-                await asyncio.sleep(60)
+                await asyncio.sleep(10)
 
 
 # Global scheduler instance
@@ -763,35 +883,45 @@ async def get_job_stats():
 @jobs_router.get("/dead-letter")
 async def get_dead_letter_jobs(limit: int = Query(default=50, le=100)):
     """Get jobs in dead letter queue"""
-    jobs = job_queue.dead_letter[-limit:]
-    return {
-        "jobs": [
-            {
+    jobs = await job_queue.get_dead_letter_jobs(limit)
+    
+    # Handle both durable jobs and in-memory jobs
+    job_list = []
+    for j in jobs:
+        if hasattr(j, 'job_type'):
+            # In-memory Job dataclass
+            job_list.append({
                 "id": j.id,
-                "job_type": j.job_type.value,
-                "status": j.status.value,
+                "job_type": j.job_type.value if hasattr(j.job_type, 'value') else j.job_type,
+                "status": j.status.value if hasattr(j.status, 'value') else j.status,
                 "attempts": j.attempts,
                 "error": j.error,
-                "created_at": j.created_at.isoformat(),
-            }
-            for j in jobs
-        ],
-        "count": len(jobs)
+                "created_at": j.created_at.isoformat() if j.created_at else None,
+            })
+        else:
+            # DurableJob from PostgreSQL
+            job_list.append({
+                "id": j.id,
+                "job_type": j.job_type,
+                "status": j.status.value if hasattr(j.status, 'value') else j.status,
+                "attempts": j.attempts,
+                "error": j.error,
+                "created_at": j.created_at.isoformat() if j.created_at else None,
+            })
+    
+    return {
+        "jobs": job_list,
+        "count": len(job_list)
     }
 
 
 @jobs_router.post("/dead-letter/{job_id}/retry")
 async def retry_dead_letter_job(job_id: str):
     """Retry a job from dead letter queue"""
-    for i, job in enumerate(job_queue.dead_letter):
-        if job.id == job_id:
-            job_queue.dead_letter.pop(i)
-            job.status = JobStatus.PENDING
-            job.attempts = 0
-            job.error = None
-            job.scheduled_at = datetime.utcnow()
-            await job_queue.enqueue(job)
-            return {"message": "Job requeued", "job_id": job_id}
+    success = await job_queue.retry_dead_letter(job_id)
+    
+    if success:
+        return {"message": "Job requeued", "job_id": job_id}
     
     raise HTTPException(status_code=404, detail="Job not found in dead letter queue")
 

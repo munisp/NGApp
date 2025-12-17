@@ -62,6 +62,24 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.error(f"Failed to initialize competitive features database: {e}")
     
+    # Initialize production hardening infrastructure (durable jobs, distributed locks, etc.)
+    try:
+        from app.production_hardening import init_production_hardening, check_production_readiness
+        await init_production_hardening()
+        
+        # Check production readiness and log warnings
+        readiness = await check_production_readiness()
+        if readiness.get("warnings"):
+            for warning in readiness["warnings"]:
+                logger.warning(f"Production readiness warning: {warning}")
+        if readiness.get("errors"):
+            for error in readiness["errors"]:
+                logger.error(f"Production readiness error: {error}")
+        
+        logger.info(f"Production hardening initialized - ready: {readiness.get('ready', False)}")
+    except Exception as e:
+        logger.error(f"Failed to initialize production hardening: {e}")
+    
     # Initialize background job infrastructure
     try:
         from app.competitive_features_jobs import init_background_jobs
@@ -290,10 +308,42 @@ async def persistence_health():
         health["tigerbeetle"]["status"] = "unavailable"
         health["tigerbeetle"]["error"] = str(e)
     
-    # Overall health
+    # Check production mode requirements
+    import os
+    production_mode = os.getenv("PRODUCTION_MODE", "false").lower() == "true"
+    require_postgres = os.getenv("REQUIRE_POSTGRES", "false").lower() == "true"
+    require_redis = os.getenv("REQUIRE_REDIS", "false").lower() == "true"
+    require_tigerbeetle = os.getenv("REQUIRE_TIGERBEETLE", "false").lower() == "true"
+    
+    health["production_mode"] = production_mode
+    health["requirements"] = {
+        "postgres": require_postgres,
+        "redis": require_redis,
+        "tigerbeetle": require_tigerbeetle
+    }
+    
+    # Overall health - in production mode, fallback is NOT acceptable for required services
     db_ok = health["database"]["status"] == "healthy"
-    redis_ok = health["redis"]["status"] in ["healthy", "fallback"]
-    tb_ok = health["tigerbeetle"]["status"] in ["healthy", "fallback"]
+    
+    # In production mode with requirements, fallback is NOT healthy
+    if production_mode and require_redis:
+        redis_ok = health["redis"]["status"] == "healthy"
+    else:
+        redis_ok = health["redis"]["status"] in ["healthy", "fallback"]
+    
+    if production_mode and require_tigerbeetle:
+        tb_ok = health["tigerbeetle"]["status"] == "healthy"
+    else:
+        tb_ok = health["tigerbeetle"]["status"] in ["healthy", "fallback"]
+    
+    # Add warnings for fallback usage in production
+    if production_mode:
+        if health["redis"]["status"] == "fallback":
+            health["warnings"] = health.get("warnings", [])
+            health["warnings"].append("Redis using in-memory fallback in production mode")
+        if health["tigerbeetle"]["status"] == "fallback":
+            health["warnings"] = health.get("warnings", [])
+            health["warnings"].append("TigerBeetle using in-memory fallback in production mode - DANGEROUS for money flows")
     
     if db_ok and redis_ok and tb_ok:
         health["overall"] = "healthy"
