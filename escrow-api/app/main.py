@@ -3277,3 +3277,23 @@ try:
     logger.info("Background jobs router included")
 except ImportError as e:
     logger.warning(f"Background jobs router not available: {e}")
+
+# ============================================
+# EVENT STREAMING & LAKEHOUSE ANALYTICS
+# ============================================
+
+# Event Streaming Router (Kafka event publishing)
+try:
+    from app.event_streaming import event_router
+    app.include_router(event_router)
+    logger.info("Event streaming router included")
+except ImportError as e:
+    logger.warning(f"Event streaming router not available: {e}")
+
+# Lakehouse Analytics Router (Iceberg tables, Trino queries)
+try:
+    from app.lakehouse_pipeline import analytics_router
+    app.include_router(analytics_router)
+    logger.info("Lakehouse analytics router included")
+except ImportError as e:
+    logger.warning(f"Lakehouse analytics router not available: {e}")
