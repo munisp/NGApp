@@ -436,6 +436,23 @@ async def create_escrow(
         idempotency_storage = get_idempotency_storage()
         await idempotency_storage.check_and_set(x_idempotency_key, response)
     
+    # Publish escrow created event to lakehouse
+    try:
+        from app.event_streaming import get_event_service
+        event_service = get_event_service()
+        await event_service.publish_escrow_created(
+            escrow_id=escrow_id,
+            buyer_id=current_user.user_id if hasattr(current_user, 'user_id') else "anonymous",
+            seller_id=request.listing.seller.username,
+            amount=amount,
+            currency=request.listing.currency,
+            description=request.listing.title,
+            items=[{"title": request.listing.title, "price": amount}],
+            correlation_id=escrow_id,
+        )
+    except Exception as e:
+        logger.warning(f"Failed to publish escrow created event: {e}")
+    
     return response
 
 @app.get("/api/v1/escrow/{escrow_id}")
@@ -622,6 +639,20 @@ async def confirm_delivery(
     # Calculate payout
     payout_amount = escrow["amount"] * 0.98  # 2% fee deducted
     
+    # Publish escrow released event to lakehouse
+    try:
+        from app.event_streaming import get_event_service
+        event_service = get_event_service()
+        await event_service.publish_escrow_released(
+            escrow_id=request.escrow_id,
+            amount=payout_amount,
+            released_to=escrow.get("listing", {}).get("seller", {}).get("username", "unknown"),
+            release_reason="buyer_confirmed_delivery",
+            correlation_id=request.escrow_id,
+        )
+    except Exception as e:
+        logger.warning(f"Failed to publish escrow released event: {e}")
+    
     return {
         "success": True,
         "escrow_id": request.escrow_id,
@@ -668,6 +699,25 @@ async def open_dispute(
         await escrow_storage.update(escrow_id, escrow)
     else:
         escrow_db[escrow_id] = escrow
+    
+    # Publish dispute opened event to lakehouse
+    try:
+        from app.event_streaming import get_event_service
+        event_service = get_event_service()
+        dispute_id = f"DSP-{escrow_id}"
+        await event_service.publish_dispute_opened(
+            dispute_id=dispute_id,
+            escrow_id=escrow_id,
+            complainant_id=current_user.user_id if hasattr(current_user, 'user_id') else "anonymous",
+            respondent_id=escrow.get("listing", {}).get("seller", {}).get("username", "unknown"),
+            dispute_type="general",
+            amount_disputed=escrow.get("amount", 0),
+            reason=reason,
+            evidence_urls=[],
+            correlation_id=escrow_id,
+        )
+    except Exception as e:
+        logger.warning(f"Failed to publish dispute opened event: {e}")
     
     return {
         "success": True,
