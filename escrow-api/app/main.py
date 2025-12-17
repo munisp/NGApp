@@ -53,7 +53,32 @@ async def lifespan(app: FastAPI):
         logger.info("Persistence layers initialized successfully")
     except Exception as e:
         logger.error(f"Failed to initialize persistence: {e}")
+    
+    # Initialize competitive features database tables
+    try:
+        from app.competitive_features_persistence import init_competitive_features_db
+        await init_competitive_features_db()
+        logger.info("Competitive features database initialized successfully")
+    except Exception as e:
+        logger.error(f"Failed to initialize competitive features database: {e}")
+    
+    # Initialize background job infrastructure
+    try:
+        from app.competitive_features_jobs import init_background_jobs
+        await init_background_jobs()
+        logger.info("Background job infrastructure initialized successfully")
+    except Exception as e:
+        logger.error(f"Failed to initialize background jobs: {e}")
+    
     yield
+    
+    # Shutdown background jobs
+    try:
+        from app.competitive_features_jobs import shutdown_background_jobs
+        await shutdown_background_jobs()
+        logger.info("Background job infrastructure shutdown successfully")
+    except Exception as e:
+        logger.error(f"Failed to shutdown background jobs: {e}")
 
 app = FastAPI(title="EscrowProtect API", version="1.0.0", lifespan=lifespan)
 
@@ -3150,3 +3175,55 @@ try:
     logger.info("Dispute operations router included")
 except ImportError as e:
     logger.warning(f"Dispute operations router not available: {e}")
+
+# ============================================
+# PRODUCTION-HARDENED ROUTERS (with auth & persistence)
+# ============================================
+
+# Authenticated Storefront Router (PostgreSQL persistence + auth middleware)
+try:
+    from app.competitive_features_auth import storefront_auth_router
+    app.include_router(storefront_auth_router)
+    logger.info("Authenticated storefront router included")
+except ImportError as e:
+    logger.warning(f"Authenticated storefront router not available: {e}")
+
+# Authenticated Returns Router (PostgreSQL persistence + auth middleware)
+try:
+    from app.competitive_features_auth import returns_auth_router
+    app.include_router(returns_auth_router)
+    logger.info("Authenticated returns router included")
+except ImportError as e:
+    logger.warning(f"Authenticated returns router not available: {e}")
+
+# Authenticated Delivery Router (PostgreSQL persistence + auth middleware)
+try:
+    from app.competitive_features_auth import delivery_auth_router
+    app.include_router(delivery_auth_router)
+    logger.info("Authenticated delivery router included")
+except ImportError as e:
+    logger.warning(f"Authenticated delivery router not available: {e}")
+
+# Authenticated Marketplace Router (PostgreSQL persistence + auth middleware)
+try:
+    from app.competitive_features_auth import marketplace_auth_router
+    app.include_router(marketplace_auth_router)
+    logger.info("Authenticated marketplace router included")
+except ImportError as e:
+    logger.warning(f"Authenticated marketplace router not available: {e}")
+
+# Authenticated Disputes Router (PostgreSQL persistence + auth middleware)
+try:
+    from app.competitive_features_auth import disputes_auth_router
+    app.include_router(disputes_auth_router)
+    logger.info("Authenticated disputes router included")
+except ImportError as e:
+    logger.warning(f"Authenticated disputes router not available: {e}")
+
+# Background Jobs Router (SLA monitoring, refund processing)
+try:
+    from app.competitive_features_jobs import jobs_router
+    app.include_router(jobs_router)
+    logger.info("Background jobs router included")
+except ImportError as e:
+    logger.warning(f"Background jobs router not available: {e}")
