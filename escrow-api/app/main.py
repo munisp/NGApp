@@ -88,6 +88,14 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.error(f"Failed to initialize background jobs: {e}")
     
+    # Initialize platform optimizations (caching, connection pooling, rate limiting)
+    try:
+        from app.optimizations import init_optimizations
+        await init_optimizations()
+        logger.info("Platform optimizations initialized successfully")
+    except Exception as e:
+        logger.error(f"Failed to initialize optimizations: {e}")
+    
     yield
     
     # Shutdown background jobs
@@ -97,6 +105,14 @@ async def lifespan(app: FastAPI):
         logger.info("Background job infrastructure shutdown successfully")
     except Exception as e:
         logger.error(f"Failed to shutdown background jobs: {e}")
+    
+    # Shutdown optimizations (close connection pools, clear caches)
+    try:
+        from app.optimizations import shutdown_optimizations
+        await shutdown_optimizations()
+        logger.info("Platform optimizations shutdown successfully")
+    except Exception as e:
+        logger.error(f"Failed to shutdown optimizations: {e}")
 
 app = FastAPI(title="EscrowProtect API", version="1.0.0", lifespan=lifespan)
 
@@ -3347,3 +3363,53 @@ try:
     logger.info("Lakehouse analytics router included")
 except ImportError as e:
     logger.warning(f"Lakehouse analytics router not available: {e}")
+
+# ============================================
+# PERFORMANCE MONITORING ENDPOINTS
+# ============================================
+
+@app.get("/api/v1/performance/metrics")
+async def get_performance_metrics():
+    """Get platform performance metrics (response times, cache hit rates, etc.)"""
+    try:
+        from app.optimizations import PerformanceMonitor
+        return {
+            "metrics": PerformanceMonitor.get_all_stats(),
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        return {"error": str(e), "metrics": {}}
+
+@app.get("/api/v1/performance/cache")
+async def get_cache_stats():
+    """Get cache statistics"""
+    try:
+        from app.optimizations import user_cache, escrow_cache, bank_cache
+        from app.repositories import cache as redis_cache
+        
+        return {
+            "memory_caches": {
+                "user_cache": {"size": len(user_cache._cache), "max_size": user_cache.max_size},
+                "escrow_cache": {"size": len(escrow_cache._cache), "max_size": escrow_cache.max_size},
+                "bank_cache": {"size": len(bank_cache._cache), "max_size": bank_cache.max_size},
+            },
+            "redis": {
+                "connected": redis_cache.connected if redis_cache else False,
+            },
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.get("/api/v1/performance/rate-limits")
+async def get_rate_limit_status():
+    """Get rate limiter status"""
+    try:
+        from app.optimizations import api_rate_limiter, auth_rate_limiter
+        return {
+            "api": {"rate": api_rate_limiter.rate, "burst": api_rate_limiter.burst},
+            "auth": {"rate": auth_rate_limiter.rate, "burst": auth_rate_limiter.burst},
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        return {"error": str(e)}
