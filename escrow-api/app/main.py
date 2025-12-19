@@ -96,7 +96,33 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.error(f"Failed to initialize optimizations: {e}")
     
+    # Initialize production workers (Permify, Outbox, DLQ, Temporal)
+    try:
+        from app.production_enforcement import init_production_workers, check_all_gaps
+        worker_results = await init_production_workers()
+        logger.info(f"Production workers initialized: {worker_results}")
+        
+        # Check for remaining gaps
+        gap_check = await check_all_gaps()
+        if gap_check.get("gaps"):
+            for gap in gap_check["gaps"]:
+                logger.error(f"Production gap: {gap}")
+        if gap_check.get("warnings"):
+            for warning in gap_check["warnings"]:
+                logger.warning(f"Production warning: {warning}")
+        logger.info(f"Production readiness: {gap_check.get('ready', False)}")
+    except Exception as e:
+        logger.error(f"Failed to initialize production workers: {e}")
+    
     yield
+    
+    # Shutdown production workers
+    try:
+        from app.production_enforcement import shutdown_production_workers
+        await shutdown_production_workers()
+        logger.info("Production workers shutdown successfully")
+    except Exception as e:
+        logger.error(f"Failed to shutdown production workers: {e}")
     
     # Shutdown background jobs
     try:
@@ -400,9 +426,18 @@ async def create_escrow(
     escrow_id = generate_escrow_id()
     claim_token = generate_claim_token()
     
-    amount = request.listing.price
-    fee = amount * 0.02  # 2% platform fee
-    total = amount + fee
+    # Use Decimal-safe money calculations to avoid float rounding errors
+    from decimal import Decimal
+    from app.production_enforcement import Money, calculate_platform_fee
+    
+    amount_money = Money.from_naira(Decimal(str(request.listing.price)))
+    fee_money = calculate_platform_fee(amount_money)
+    total_money = amount_money + fee_money
+    
+    # Keep float values for backward compatibility in response
+    amount = float(amount_money.naira)
+    fee = float(fee_money.naira)
+    total = float(total_money.naira)
     
     # Assign listing ID if not provided
     if not request.listing.id:
@@ -433,7 +468,7 @@ async def create_escrow(
     else:
         escrow_db[escrow_id] = escrow
     
-    # Wire TigerBeetle for escrow hold
+    # Wire TigerBeetle for escrow hold (using Decimal-safe kobo values)
     tigerbeetle_transfer_id = None
     try:
         from app.middleware_integrations import tigerbeetle_money_flows
@@ -443,29 +478,27 @@ async def create_escrow(
             escrow_id=escrow_id,
             buyer_id=buyer_id,
             seller_id=seller_id,
-            amount_kobo=int(total * 100),  # Convert to kobo
-            fee_kobo=int(fee * 100),
+            amount_kobo=total_money.kobo,  # Use Decimal-safe kobo value
+            fee_kobo=fee_money.kobo,
         )
         tigerbeetle_transfer_id = tb_result.get("transfer_id")
         logger.info(f"TigerBeetle escrow hold created: {tigerbeetle_transfer_id}")
     except Exception as e:
         logger.warning(f"TigerBeetle escrow hold failed (non-blocking): {e}")
     
-    # Wire Kafka for escrow created event
+    # Publish escrow.created event via transactional outbox (atomic with DB write)
     try:
-        from app.middleware_integrations import production_kafka
-        await production_kafka.publish("escrow.created", {
-            "escrow_id": escrow_id,
-            "buyer_id": current_user.user_id if hasattr(current_user, 'user_id') else "anonymous",
-            "seller_id": request.listing.seller.username if hasattr(request.listing.seller, 'username') else "unknown",
-            "amount": total,
-            "fee": fee,
-            "status": EscrowStatus.PAYMENT_RECEIVED.value,
-            "tigerbeetle_transfer_id": tigerbeetle_transfer_id,
-            "created_at": datetime.now().isoformat(),
-        })
+        from app.production_enforcement import publish_escrow_created
+        buyer_id = current_user.user_id if hasattr(current_user, 'user_id') else "anonymous"
+        seller_id = request.listing.seller.username if hasattr(request.listing.seller, 'username') else "unknown"
+        await publish_escrow_created(
+            escrow_id=escrow_id,
+            buyer_id=buyer_id,
+            seller_id=seller_id,
+            amount_kobo=total_money.kobo,
+        )
     except Exception as e:
-        logger.warning(f"Kafka publish failed (non-blocking): {e}")
+        logger.warning(f"Outbox publish failed (non-blocking): {e}")
     
     # Wire Permify for authorization relationship
     try:
@@ -700,34 +733,40 @@ async def confirm_delivery(
     else:
         escrow_db[request.escrow_id] = escrow
     
-    # Calculate payout
-    payout_amount = escrow["amount"] * 0.98  # 2% fee deducted
+    # Calculate payout using Decimal-safe money calculations
+    from decimal import Decimal
+    from app.production_enforcement import Money, calculate_platform_fee, calculate_payout
     
-    # Wire TigerBeetle for escrow release to seller
+    amount_money = Money.from_naira(Decimal(str(escrow["amount"])))
+    fee_money = calculate_platform_fee(amount_money)
+    payout_money = calculate_payout(amount_money, fee_money)
+    payout_amount = float(payout_money.naira)
+    
+    # Wire TigerBeetle for escrow release to seller (using Decimal-safe kobo values)
     try:
         from app.middleware_integrations import tigerbeetle_money_flows
         seller_id = escrow.get("listing", {}).get("seller", {}).get("username", "unknown")
         tb_result = await tigerbeetle_money_flows.release_escrow_to_seller(
             escrow_id=request.escrow_id,
             seller_id=seller_id,
-            amount_kobo=int(payout_amount * 100),
+            amount_kobo=payout_money.kobo,  # Use Decimal-safe kobo value
         )
         logger.info(f"TigerBeetle escrow released: {tb_result.get('transfer_id')}")
     except Exception as e:
         logger.warning(f"TigerBeetle release failed (non-blocking): {e}")
     
-    # Wire Kafka for escrow released event
+    # Publish escrow.released event via transactional outbox (atomic with DB write)
     try:
-        from app.middleware_integrations import production_kafka
-        await production_kafka.publish("escrow.released", {
-            "escrow_id": request.escrow_id,
-            "seller_id": escrow.get("listing", {}).get("seller", {}).get("username", "unknown"),
-            "payout_amount": payout_amount,
-            "status": EscrowStatus.COMPLETED.value,
-            "released_at": datetime.now().isoformat(),
-        })
+        from app.production_enforcement import publish_escrow_released
+        seller_id = escrow.get("listing", {}).get("seller", {}).get("username", "unknown")
+        await publish_escrow_released(
+            escrow_id=request.escrow_id,
+            seller_id=seller_id,
+            amount_kobo=amount_money.kobo,
+            fee_kobo=fee_money.kobo,
+        )
     except Exception as e:
-        logger.warning(f"Kafka publish failed (non-blocking): {e}")
+        logger.warning(f"Outbox publish failed (non-blocking): {e}")
     
     # Publish escrow released event to lakehouse
     try:
@@ -917,36 +956,39 @@ async def cancel_escrow(request: CancelEscrowRequest):
     
     escrow_db[request.escrow_id] = escrow
     
-    # Calculate refund (full refund for buyer-initiated cancellation before seller accepts)
-    refund_amount = escrow["total"]
+    # Calculate refund using Decimal-safe money calculations
+    from decimal import Decimal
+    from app.production_enforcement import Money
     
-    # Wire TigerBeetle for escrow refund to buyer
+    refund_money = Money.from_naira(Decimal(str(escrow["total"])))
+    refund_amount = float(refund_money.naira)
+    
+    # Wire TigerBeetle for escrow refund to buyer (using Decimal-safe kobo values)
     try:
         from app.middleware_integrations import tigerbeetle_money_flows
         buyer_id = escrow.get("created_by", "anonymous")
         tb_result = await tigerbeetle_money_flows.refund_escrow_to_buyer(
             escrow_id=request.escrow_id,
             buyer_id=buyer_id,
-            amount_kobo=int(refund_amount * 100),
+            amount_kobo=refund_money.kobo,  # Use Decimal-safe kobo value
             reason=request.reason,
         )
         logger.info(f"TigerBeetle escrow refunded: {tb_result.get('transfer_id')}")
     except Exception as e:
         logger.warning(f"TigerBeetle refund failed (non-blocking): {e}")
     
-    # Wire Kafka for escrow cancelled event
+    # Publish escrow.cancelled event via transactional outbox (atomic with DB write)
     try:
-        from app.middleware_integrations import production_kafka
-        await production_kafka.publish("escrow.cancelled", {
-            "escrow_id": request.escrow_id,
-            "buyer_id": escrow.get("created_by", "anonymous"),
-            "refund_amount": refund_amount,
-            "reason": request.reason,
-            "status": EscrowStatus.REFUNDED.value,
-            "cancelled_at": datetime.now().isoformat(),
-        })
+        from app.production_enforcement import publish_escrow_cancelled
+        buyer_id = escrow.get("created_by", "anonymous")
+        await publish_escrow_cancelled(
+            escrow_id=request.escrow_id,
+            buyer_id=buyer_id,
+            amount_kobo=refund_money.kobo,
+            reason=request.reason,
+        )
     except Exception as e:
-        logger.warning(f"Kafka publish failed (non-blocking): {e}")
+        logger.warning(f"Outbox publish failed (non-blocking): {e}")
     
     return {
         "success": True,
