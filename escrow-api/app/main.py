@@ -3365,6 +3365,107 @@ except ImportError as e:
     logger.warning(f"Lakehouse analytics router not available: {e}")
 
 # ============================================
+# COMPREHENSIVE MIDDLEWARE INTEGRATIONS
+# ============================================
+
+# Full Lakehouse Router (Delta Lake, Spark, Flink, DataFusion, Ray, Sedona)
+try:
+    from app.lakehouse_full import lakehouse_router
+    app.include_router(lakehouse_router)
+    logger.info("Full lakehouse router included (Delta Lake, Spark, Flink, DataFusion, Ray, Sedona)")
+except ImportError as e:
+    logger.warning(f"Full lakehouse router not available: {e}")
+
+# Middleware Health Check Endpoint
+@app.get("/api/v1/middleware/health")
+async def middleware_health():
+    """Check health of all middleware components"""
+    try:
+        from app.middleware_integrations import check_all_middleware_health
+        return await check_all_middleware_health()
+    except ImportError as e:
+        return {"error": f"Middleware integrations not available: {e}"}
+    except Exception as e:
+        return {"error": str(e)}
+
+# TigerBeetle Money Flows Status
+@app.get("/api/v1/middleware/tigerbeetle/status")
+async def tigerbeetle_status():
+    """Get TigerBeetle money flows status"""
+    try:
+        from app.middleware_integrations import tigerbeetle_money_flows
+        return {
+            "connected": tigerbeetle_money_flows.connected,
+            "connection_attempts": tigerbeetle_money_flows._connection_attempts,
+            "using_production": True
+        }
+    except ImportError as e:
+        return {"error": f"TigerBeetle integration not available: {e}"}
+    except Exception as e:
+        return {"error": str(e)}
+
+# Temporal Workflow Status
+@app.get("/api/v1/middleware/temporal/status")
+async def temporal_status():
+    """Get Temporal workflow engine status"""
+    try:
+        from app.middleware_integrations import temporal_client
+        return {
+            "connected": temporal_client.connected,
+            "namespace": temporal_client.namespace,
+            "task_queue": temporal_client.task_queue
+        }
+    except ImportError as e:
+        return {"error": f"Temporal integration not available: {e}"}
+    except Exception as e:
+        return {"error": str(e)}
+
+# Permify Authorization Status
+@app.get("/api/v1/middleware/permify/status")
+async def permify_status():
+    """Get Permify authorization status"""
+    try:
+        from app.middleware_integrations import permify_client
+        return {
+            "connected": permify_client.connected,
+            "tenant_id": permify_client.tenant_id
+        }
+    except ImportError as e:
+        return {"error": f"Permify integration not available: {e}"}
+    except Exception as e:
+        return {"error": str(e)}
+
+# OpenSearch Logging Status
+@app.get("/api/v1/middleware/opensearch/status")
+async def opensearch_status():
+    """Get OpenSearch centralized logging status"""
+    try:
+        from app.middleware_integrations import opensearch_client
+        return {
+            "connected": opensearch_client.connected,
+            "index_prefix": opensearch_client.index_prefix
+        }
+    except ImportError as e:
+        return {"error": f"OpenSearch integration not available: {e}"}
+    except Exception as e:
+        return {"error": str(e)}
+
+# Dapr Service Mesh Status
+@app.get("/api/v1/middleware/dapr/status")
+async def dapr_status():
+    """Get Dapr service mesh status"""
+    try:
+        from app.middleware_integrations import dapr_client
+        return {
+            "connected": dapr_client.connected,
+            "app_id": dapr_client.app_id
+        }
+    except ImportError as e:
+        return {"error": f"Dapr integration not available: {e}"}
+    except Exception as e:
+        return {"error": str(e)}
+
+# ============================================
 # PERFORMANCE MONITORING ENDPOINTS
 # ============================================
 

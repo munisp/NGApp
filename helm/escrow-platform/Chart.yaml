@@ -1,0 +1,28 @@
+apiVersion: v2
+name: escrow-platform
+description: EscrowProtect Platform - Complete Social Commerce Escrow Solution
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+keywords:
+  - escrow
+  - fintech
+  - social-commerce
+  - nigeria
+  - africa
+maintainers:
+  - name: EscrowProtect Team
+    email: team@escrowprotect.com
+dependencies:
+  - name: postgresql
+    version: "12.x.x"
+    repository: https://charts.bitnami.com/bitnami
+    condition: postgresql.enabled
+  - name: redis
+    version: "17.x.x"
+    repository: https://charts.bitnami.com/bitnami
+    condition: redis.enabled
+  - name: kafka
+    version: "26.x.x"
+    repository: https://charts.bitnami.com/bitnami
+    condition: kafka.enabled

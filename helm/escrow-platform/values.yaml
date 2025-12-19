@@ -1,0 +1,482 @@
+# EscrowProtect Platform Helm Values
+# Default configuration for production deployment
+
+# Global settings
+global:
+  environment: production
+  domain: escrowprotect.com
+  imageRegistry: ghcr.io/escrowprotect
+
+# API Backend
+api:
+  replicaCount: 3
+  image:
+    repository: escrow-api
+    tag: latest
+    pullPolicy: IfNotPresent
+  resources:
+    requests:
+      cpu: 500m
+      memory: 512Mi
+    limits:
+      cpu: 2000m
+      memory: 2Gi
+  autoscaling:
+    enabled: true
+    minReplicas: 3
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 80
+  env:
+    PRODUCTION_MODE: "true"
+    REQUIRE_POSTGRES: "true"
+    REQUIRE_REDIS: "true"
+    REQUIRE_TIGERBEETLE: "true"
+    REQUIRE_KAFKA: "true"
+  service:
+    type: ClusterIP
+    port: 8000
+  ingress:
+    enabled: true
+    className: nginx
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-prod
+      nginx.ingress.kubernetes.io/rate-limit: "100"
+      nginx.ingress.kubernetes.io/rate-limit-window: "1m"
+    hosts:
+      - host: api.escrowprotect.com
+        paths:
+          - path: /
+            pathType: Prefix
+    tls:
+      - secretName: api-tls
+        hosts:
+          - api.escrowprotect.com
+
+# PWA Frontend
+pwa:
+  replicaCount: 2
+  image:
+    repository: escrow-pwa
+    tag: latest
+    pullPolicy: IfNotPresent
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 256Mi
+  service:
+    type: ClusterIP
+    port: 80
+  ingress:
+    enabled: true
+    className: nginx
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-prod
+    hosts:
+      - host: app.escrowprotect.com
+        paths:
+          - path: /
+            pathType: Prefix
+    tls:
+      - secretName: pwa-tls
+        hosts:
+          - app.escrowprotect.com
+
+# PostgreSQL
+postgresql:
+  enabled: true
+  auth:
+    postgresPassword: ""  # Set via secret
+    username: escrow
+    password: ""  # Set via secret
+    database: escrow
+  primary:
+    persistence:
+      enabled: true
+      size: 100Gi
+      storageClass: gp3
+    resources:
+      requests:
+        cpu: 1000m
+        memory: 2Gi
+      limits:
+        cpu: 4000m
+        memory: 8Gi
+  readReplicas:
+    replicaCount: 2
+    persistence:
+      enabled: true
+      size: 100Gi
+  metrics:
+    enabled: true
+
+# Redis
+redis:
+  enabled: true
+  architecture: replication
+  auth:
+    enabled: true
+    password: ""  # Set via secret
+  master:
+    persistence:
+      enabled: true
+      size: 10Gi
+    resources:
+      requests:
+        cpu: 250m
+        memory: 256Mi
+      limits:
+        cpu: 1000m
+        memory: 1Gi
+  replica:
+    replicaCount: 2
+    persistence:
+      enabled: true
+      size: 10Gi
+  metrics:
+    enabled: true
+
+# Kafka
+kafka:
+  enabled: true
+  replicaCount: 3
+  persistence:
+    enabled: true
+    size: 50Gi
+  resources:
+    requests:
+      cpu: 500m
+      memory: 1Gi
+    limits:
+      cpu: 2000m
+      memory: 4Gi
+  zookeeper:
+    enabled: true
+    replicaCount: 3
+  metrics:
+    kafka:
+      enabled: true
+    jmx:
+      enabled: true
+
+# TigerBeetle
+tigerbeetle:
+  enabled: true
+  replicaCount: 3
+  image:
+    repository: ghcr.io/tigerbeetle/tigerbeetle
+    tag: 0.15.3
+  persistence:
+    enabled: true
+    size: 50Gi
+    storageClass: gp3-iops
+  resources:
+    requests:
+      cpu: 2000m
+      memory: 4Gi
+    limits:
+      cpu: 4000m
+      memory: 8Gi
+  clusterId: 0
+
+# APISIX Gateway
+apisix:
+  enabled: true
+  replicaCount: 2
+  image:
+    repository: apache/apisix
+    tag: 3.7.0-debian
+  resources:
+    requests:
+      cpu: 500m
+      memory: 512Mi
+    limits:
+      cpu: 2000m
+      memory: 2Gi
+  gateway:
+    type: LoadBalancer
+    http:
+      enabled: true
+      servicePort: 80
+    https:
+      enabled: true
+      servicePort: 443
+  admin:
+    enabled: true
+    type: ClusterIP
+    port: 9180
+  plugins:
+    - jwt-auth
+    - key-auth
+    - limit-req
+    - limit-count
+    - prometheus
+    - opentelemetry
+
+# OpenAppSec WAF
+openappsec:
+  enabled: true
+  replicaCount: 2
+  image:
+    repository: ghcr.io/openappsec/openappsec
+    tag: latest
+  resources:
+    requests:
+      cpu: 500m
+      memory: 512Mi
+    limits:
+      cpu: 2000m
+      memory: 2Gi
+  mode: prevent  # detect or prevent
+
+# Wazuh SIEM
+wazuh:
+  enabled: true
+  manager:
+    replicaCount: 1
+    resources:
+      requests:
+        cpu: 1000m
+        memory: 2Gi
+      limits:
+        cpu: 2000m
+        memory: 4Gi
+    persistence:
+      enabled: true
+      size: 100Gi
+  indexer:
+    replicaCount: 3
+    resources:
+      requests:
+        cpu: 1000m
+        memory: 2Gi
+      limits:
+        cpu: 2000m
+        memory: 4Gi
+    persistence:
+      enabled: true
+      size: 200Gi
+  dashboard:
+    replicaCount: 1
+    resources:
+      requests:
+        cpu: 500m
+        memory: 1Gi
+
+# OpenCTI Threat Intelligence
+opencti:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: opencti/platform
+    tag: 5.12.0
+  resources:
+    requests:
+      cpu: 1000m
+      memory: 2Gi
+    limits:
+      cpu: 2000m
+      memory: 4Gi
+  persistence:
+    enabled: true
+    size: 50Gi
+  elasticsearch:
+    enabled: true
+  rabbitmq:
+    enabled: true
+  redis:
+    enabled: true
+  minio:
+    enabled: true
+
+# OpenSearch (for centralized logging)
+opensearch:
+  enabled: true
+  replicas: 3
+  resources:
+    requests:
+      cpu: 1000m
+      memory: 2Gi
+    limits:
+      cpu: 2000m
+      memory: 4Gi
+  persistence:
+    enabled: true
+    size: 200Gi
+  dashboards:
+    enabled: true
+    replicaCount: 1
+
+# Permify Authorization
+permify:
+  enabled: true
+  replicaCount: 2
+  image:
+    repository: ghcr.io/permify/permify
+    tag: latest
+  resources:
+    requests:
+      cpu: 250m
+      memory: 256Mi
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+  database:
+    engine: postgres  # Uses main PostgreSQL
+
+# Temporal Workflow Engine
+temporal:
+  enabled: true
+  server:
+    replicaCount: 3
+    resources:
+      requests:
+        cpu: 500m
+        memory: 1Gi
+      limits:
+        cpu: 2000m
+        memory: 4Gi
+  web:
+    enabled: true
+    replicaCount: 1
+  admintools:
+    enabled: true
+  cassandra:
+    enabled: false
+  postgresql:
+    enabled: true  # Uses main PostgreSQL
+
+# Kubecost
+kubecost:
+  enabled: true
+  prometheus:
+    enabled: true
+  grafana:
+    enabled: true
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+
+# Monitoring
+monitoring:
+  prometheus:
+    enabled: true
+    retention: 30d
+    storageSize: 100Gi
+  grafana:
+    enabled: true
+    adminPassword: ""  # Set via secret
+    dashboards:
+      - escrow-overview
+      - financial-metrics
+      - fraud-detection
+      - sla-monitoring
+  alertmanager:
+    enabled: true
+    config:
+      receivers:
+        - name: slack
+          slack_configs:
+            - channel: "#alerts"
+        - name: pagerduty
+          pagerduty_configs:
+            - service_key: ""  # Set via secret
+
+# Lakehouse (Data Platform)
+lakehouse:
+  enabled: true
+  spark:
+    enabled: true
+    master:
+      replicaCount: 1
+      resources:
+        requests:
+          cpu: 1000m
+          memory: 2Gi
+    worker:
+      replicaCount: 3
+      resources:
+        requests:
+          cpu: 2000m
+          memory: 4Gi
+  flink:
+    enabled: true
+    jobmanager:
+      replicaCount: 1
+      resources:
+        requests:
+          cpu: 1000m
+          memory: 2Gi
+    taskmanager:
+      replicaCount: 3
+      resources:
+        requests:
+          cpu: 2000m
+          memory: 4Gi
+  trino:
+    enabled: true
+    coordinator:
+      replicaCount: 1
+    worker:
+      replicaCount: 3
+  iceberg:
+    catalog:
+      type: hive
+      uri: thrift://hive-metastore:9083
+  storage:
+    type: s3
+    bucket: escrow-lakehouse
+    region: af-south-1
+
+# Network Policies
+networkPolicies:
+  enabled: true
+  defaultDeny: true
+  allowedNamespaces:
+    - kube-system
+    - monitoring
+
+# Pod Security
+podSecurityPolicy:
+  enabled: true
+  runAsNonRoot: true
+  readOnlyRootFilesystem: true
+
+# Service Mesh (Dapr)
+dapr:
+  enabled: true
+  components:
+    pubsub:
+      name: kafka-pubsub
+      type: pubsub.kafka
+    statestore:
+      name: redis-statestore
+      type: state.redis
+    secretstore:
+      name: kubernetes-secrets
+      type: secretstores.kubernetes
+
+# Secrets (references to external secrets)
+secrets:
+  externalSecrets:
+    enabled: true
+    secretStore: aws-secrets-manager
+  keys:
+    - name: database-credentials
+      key: escrow/database
+    - name: redis-password
+      key: escrow/redis
+    - name: kafka-credentials
+      key: escrow/kafka
+    - name: tigerbeetle-cluster
+      key: escrow/tigerbeetle
+    - name: paystack-api-key
+      key: escrow/paystack
+    - name: flutterwave-api-key
+      key: escrow/flutterwave
+    - name: jwt-secret
+      key: escrow/jwt

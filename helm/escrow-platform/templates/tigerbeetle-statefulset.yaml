@@ -1,0 +1,95 @@
+{{- if .Values.tigerbeetle.enabled }}
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "escrow-platform.fullname" . }}-tigerbeetle
+  labels:
+    {{- include "escrow-platform.labels" . | nindent 4 }}
+    app.kubernetes.io/component: tigerbeetle
+spec:
+  serviceName: {{ include "escrow-platform.fullname" . }}-tigerbeetle
+  replicas: {{ .Values.tigerbeetle.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "escrow-platform.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: tigerbeetle
+  template:
+    metadata:
+      labels:
+        {{- include "escrow-platform.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: tigerbeetle
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+      containers:
+        - name: tigerbeetle
+          image: "{{ .Values.tigerbeetle.image.repository }}:{{ .Values.tigerbeetle.image.tag }}"
+          args:
+            - start
+            - --addresses=0.0.0.0:3000
+            - /data/0_0.tigerbeetle
+          ports:
+            - name: tb
+              containerPort: 3000
+              protocol: TCP
+          livenessProbe:
+            tcpSocket:
+              port: tb
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            tcpSocket:
+              port: tb
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          resources:
+            {{- toYaml .Values.tigerbeetle.resources | nindent 12 }}
+          volumeMounts:
+            - name: data
+              mountPath: /data
+      initContainers:
+        - name: init-tigerbeetle
+          image: "{{ .Values.tigerbeetle.image.repository }}:{{ .Values.tigerbeetle.image.tag }}"
+          command:
+            - /bin/sh
+            - -c
+            - |
+              if [ ! -f /data/0_0.tigerbeetle ]; then
+                tigerbeetle format --cluster={{ .Values.tigerbeetle.clusterId }} --replica=0 --replica-count={{ .Values.tigerbeetle.replicaCount }} /data/0_0.tigerbeetle
+              fi
+          volumeMounts:
+            - name: data
+              mountPath: /data
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        {{- if .Values.tigerbeetle.persistence.storageClass }}
+        storageClassName: {{ .Values.tigerbeetle.persistence.storageClass }}
+        {{- end }}
+        resources:
+          requests:
+            storage: {{ .Values.tigerbeetle.persistence.size }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "escrow-platform.fullname" . }}-tigerbeetle
+  labels:
+    {{- include "escrow-platform.labels" . | nindent 4 }}
+    app.kubernetes.io/component: tigerbeetle
+spec:
+  type: ClusterIP
+  clusterIP: None
+  ports:
+    - port: 3000
+      targetPort: tb
+      protocol: TCP
+      name: tb
+  selector:
+    {{- include "escrow-platform.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: tigerbeetle
+{{- end }}

@@ -1,0 +1,405 @@
+{{- if .Values.apisix.enabled }}
+---
+# APISIX Configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "escrow-platform.fullname" . }}-apisix-config
+  labels:
+    {{- include "escrow-platform.labels" . | nindent 4 }}
+    app.kubernetes.io/component: apisix
+data:
+  config.yaml: |
+    apisix:
+      node_listen: 9080
+      enable_ipv6: false
+      enable_admin: true
+      admin_key:
+        - name: admin
+          key: "${APISIX_ADMIN_KEY}"
+          role: admin
+    
+    etcd:
+      host:
+        - "http://{{ include "escrow-platform.fullname" . }}-etcd:2379"
+      prefix: "/apisix"
+      timeout: 30
+    
+    plugins:
+      - jwt-auth
+      - key-auth
+      - limit-req
+      - limit-count
+      - prometheus
+      - opentelemetry
+      - cors
+      - ip-restriction
+      - consumer-restriction
+    
+    plugin_attr:
+      prometheus:
+        export_addr:
+          ip: "0.0.0.0"
+          port: 9091
+      opentelemetry:
+        trace_id_source: x-request-id
+        resource:
+          service.name: escrow-api-gateway
+        collector:
+          address: "{{ include "escrow-platform.fullname" . }}-otel-collector:4317"
+  
+  routes.yaml: |
+    routes:
+      - uri: /api/v1/*
+        name: escrow-api
+        upstream:
+          type: roundrobin
+          nodes:
+            "{{ include "escrow-platform.fullname" . }}-api:8000": 1
+        plugins:
+          jwt-auth: {}
+          limit-req:
+            rate: 100
+            burst: 50
+            key: remote_addr
+          prometheus:
+            prefer_name: true
+      
+      - uri: /api/v1/auth/*
+        name: auth-api
+        upstream:
+          type: roundrobin
+          nodes:
+            "{{ include "escrow-platform.fullname" . }}-api:8000": 1
+        plugins:
+          limit-req:
+            rate: 20
+            burst: 10
+            key: remote_addr
+          ip-restriction:
+            blacklist:
+              - "0.0.0.0/0"  # Placeholder - configure actual blacklist
+{{- end }}
+
+{{- if .Values.openappsec.enabled }}
+---
+# OpenAppSec WAF Configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "escrow-platform.fullname" . }}-openappsec-config
+  labels:
+    {{- include "escrow-platform.labels" . | nindent 4 }}
+    app.kubernetes.io/component: openappsec
+data:
+  local_policy.yaml: |
+    policies:
+      - name: escrow-api-policy
+        mode: {{ .Values.openappsec.mode }}
+        practices:
+          - web-attacks
+          - api-attacks
+          - bot-detection
+        triggers:
+          - log
+          {{- if eq .Values.openappsec.mode "prevent" }}
+          - block
+          {{- end }}
+        
+        web-attacks:
+          minimum-confidence: medium
+          protections:
+            - sql-injection
+            - cross-site-scripting
+            - command-injection
+            - path-traversal
+            - ldap-injection
+            - xml-injection
+        
+        api-attacks:
+          schema-validation: true
+          rate-limiting:
+            enabled: true
+            requests-per-minute: 1000
+        
+        bot-detection:
+          enabled: true
+          bad-bots: block
+          unknown-bots: detect
+        
+        exceptions:
+          - source-ip: 10.0.0.0/8
+            action: allow
+          - source-ip: 172.16.0.0/12
+            action: allow
+{{- end }}
+
+{{- if .Values.wazuh.enabled }}
+---
+# Wazuh SIEM Configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "escrow-platform.fullname" . }}-wazuh-config
+  labels:
+    {{- include "escrow-platform.labels" . | nindent 4 }}
+    app.kubernetes.io/component: wazuh
+data:
+  ossec.conf: |
+    <ossec_config>
+      <global>
+        <jsonout_output>yes</jsonout_output>
+        <alerts_log>yes</alerts_log>
+        <logall>no</logall>
+        <logall_json>no</logall_json>
+        <email_notification>yes</email_notification>
+        <smtp_server>smtp.escrowprotect.com</smtp_server>
+        <email_from>wazuh@escrowprotect.com</email_from>
+        <email_to>security@escrowprotect.com</email_to>
+        <email_maxperhour>12</email_maxperhour>
+      </global>
+      
+      <alerts>
+        <log_alert_level>3</log_alert_level>
+        <email_alert_level>10</email_alert_level>
+      </alerts>
+      
+      <remote>
+        <connection>secure</connection>
+        <port>1514</port>
+        <protocol>tcp</protocol>
+        <queue_size>131072</queue_size>
+      </remote>
+      
+      <syscheck>
+        <disabled>no</disabled>
+        <frequency>43200</frequency>
+        <scan_on_start>yes</scan_on_start>
+        <directories check_all="yes" realtime="yes">/etc,/usr/bin,/usr/sbin</directories>
+        <directories check_all="yes" realtime="yes">/bin,/sbin,/boot</directories>
+        <ignore>/etc/mtab</ignore>
+        <ignore>/etc/hosts.deny</ignore>
+        <ignore>/etc/mail/statistics</ignore>
+        <ignore>/etc/random-seed</ignore>
+        <ignore>/etc/adjtime</ignore>
+        <ignore>/etc/httpd/logs</ignore>
+        <ignore>/etc/utmpx</ignore>
+        <ignore>/etc/wtmpx</ignore>
+        <ignore>/etc/cups/certs</ignore>
+        <ignore>/etc/dumpdates</ignore>
+        <ignore>/etc/svc/volatile</ignore>
+      </syscheck>
+      
+      <rootcheck>
+        <disabled>no</disabled>
+        <check_files>yes</check_files>
+        <check_trojans>yes</check_trojans>
+        <check_dev>yes</check_dev>
+        <check_sys>yes</check_sys>
+        <check_pids>yes</check_pids>
+        <check_ports>yes</check_ports>
+        <check_if>yes</check_if>
+        <frequency>43200</frequency>
+      </rootcheck>
+      
+      <vulnerability-detector>
+        <enabled>yes</enabled>
+        <interval>5m</interval>
+        <ignore_time>6h</ignore_time>
+        <run_on_start>yes</run_on_start>
+        <provider name="canonical">
+          <enabled>yes</enabled>
+          <os>focal</os>
+          <update_interval>1h</update_interval>
+        </provider>
+        <provider name="nvd">
+          <enabled>yes</enabled>
+          <update_from_year>2020</update_from_year>
+          <update_interval>1h</update_interval>
+        </provider>
+      </vulnerability-detector>
+      
+      <cluster>
+        <name>wazuh</name>
+        <node_name>{{ include "escrow-platform.fullname" . }}-wazuh-manager</node_name>
+        <node_type>master</node_type>
+        <key>{{ "wazuh-cluster-key" | b64enc }}</key>
+        <port>1516</port>
+        <bind_addr>0.0.0.0</bind_addr>
+        <nodes>
+          <node>{{ include "escrow-platform.fullname" . }}-wazuh-manager</node>
+        </nodes>
+        <hidden>no</hidden>
+        <disabled>no</disabled>
+      </cluster>
+    </ossec_config>
+  
+  escrow-rules.xml: |
+    <group name="escrow,">
+      <rule id="100001" level="10">
+        <decoded_as>json</decoded_as>
+        <field name="event_type">fraud_alert</field>
+        <description>Fraud alert detected in escrow transaction</description>
+        <group>escrow,fraud,</group>
+      </rule>
+      
+      <rule id="100002" level="8">
+        <decoded_as>json</decoded_as>
+        <field name="event_type">dispute_opened</field>
+        <description>Dispute opened on escrow transaction</description>
+        <group>escrow,dispute,</group>
+      </rule>
+      
+      <rule id="100003" level="12">
+        <decoded_as>json</decoded_as>
+        <field name="event_type">high_value_transaction</field>
+        <field name="amount_kobo">\.{8,}</field>
+        <description>High value escrow transaction detected (>1M NGN)</description>
+        <group>escrow,high_value,</group>
+      </rule>
+      
+      <rule id="100004" level="14">
+        <decoded_as>json</decoded_as>
+        <field name="event_type">multiple_failed_payments</field>
+        <description>Multiple failed payment attempts detected</description>
+        <group>escrow,payment,fraud,</group>
+      </rule>
+      
+      <rule id="100005" level="6">
+        <decoded_as>json</decoded_as>
+        <field name="event_type">kyc_verification_failed</field>
+        <description>KYC verification failed for user</description>
+        <group>escrow,kyc,</group>
+      </rule>
+    </group>
+{{- end }}
+
+{{- if .Values.opencti.enabled }}
+---
+# OpenCTI Threat Intelligence Configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "escrow-platform.fullname" . }}-opencti-config
+  labels:
+    {{- include "escrow-platform.labels" . | nindent 4 }}
+    app.kubernetes.io/component: opencti
+data:
+  production.json: |
+    {
+      "app": {
+        "port": 8080,
+        "base_path": "",
+        "base_url": "https://cti.escrowprotect.com",
+        "enabled_connectors": [
+          "mitre-attack",
+          "cve",
+          "alienvault",
+          "abuse-ssl"
+        ]
+      },
+      "providers": {
+        "local": {
+          "strategy": "LocalStrategy"
+        }
+      },
+      "escrow_integration": {
+        "enabled": true,
+        "fraud_indicators_feed": true,
+        "ip_reputation_check": true,
+        "phone_fraud_database": true,
+        "bank_fraud_patterns": true
+      }
+    }
+{{- end }}
+
+{{- if .Values.kubecost.enabled }}
+---
+# Kubecost Configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "escrow-platform.fullname" . }}-kubecost-config
+  labels:
+    {{- include "escrow-platform.labels" . | nindent 4 }}
+    app.kubernetes.io/component: kubecost
+data:
+  kubecost.yaml: |
+    prometheus:
+      enabled: {{ .Values.kubecost.prometheus.enabled }}
+      server:
+        global:
+          external_labels:
+            cluster_id: escrow-platform
+    
+    grafana:
+      enabled: {{ .Values.kubecost.grafana.enabled }}
+    
+    costAnalyzer:
+      enabled: true
+      defaultModelPricing:
+        enabled: true
+        CPU: 0.031611
+        GPU: 0.95
+        RAM: 0.004237
+        storage: 0.00005479452
+      
+      # Cost allocation for escrow services
+      allocation:
+        enabled: true
+        labels:
+          - app.kubernetes.io/component
+          - app.kubernetes.io/name
+        annotations:
+          - cost-center
+          - team
+      
+      # Savings recommendations
+      savings:
+        enabled: true
+        recommendations:
+          - rightSizing
+          - abandonedWorkloads
+          - reservedInstances
+      
+      # Alerts
+      alerts:
+        enabled: true
+        rules:
+          - name: high-cost-api
+            type: budget
+            threshold: 1000
+            window: 24h
+            aggregation: namespace
+            filter: 'namespace="escrow-platform"'
+          - name: cost-spike
+            type: efficiency
+            threshold: 0.5
+            window: 1h
+{{- end }}
+
+---
+# API ConfigMap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "escrow-platform.fullname" . }}-api-config
+  labels:
+    {{- include "escrow-platform.labels" . | nindent 4 }}
+    app.kubernetes.io/component: api
+data:
+  PRODUCTION_MODE: "{{ .Values.api.env.PRODUCTION_MODE }}"
+  REQUIRE_POSTGRES: "{{ .Values.api.env.REQUIRE_POSTGRES }}"
+  REQUIRE_REDIS: "{{ .Values.api.env.REQUIRE_REDIS }}"
+  REQUIRE_TIGERBEETLE: "{{ .Values.api.env.REQUIRE_TIGERBEETLE }}"
+  REQUIRE_KAFKA: "{{ .Values.api.env.REQUIRE_KAFKA }}"
+  kafka-bootstrap-servers: {{ include "escrow-platform.kafka.bootstrapServers" . | quote }}
+  tigerbeetle-addresses: {{ include "escrow-platform.tigerbeetle.addresses" . | quote }}
+  temporal-address: "{{ include "escrow-platform.fullname" . }}-temporal:7233"
+  opensearch-hosts: "{{ include "escrow-platform.fullname" . }}-opensearch:9200"
+  permify-url: "http://{{ include "escrow-platform.fullname" . }}-permify:3476"
+  LAKEHOUSE_STORAGE_PATH: "s3://{{ .Values.lakehouse.storage.bucket }}"
+  ICEBERG_CATALOG_URI: "{{ .Values.lakehouse.iceberg.catalog.uri }}"
+  SPARK_MASTER: "spark://{{ include "escrow-platform.fullname" . }}-spark-master:7077"
+  FLINK_JOBMANAGER: "{{ include "escrow-platform.fullname" . }}-flink-jobmanager:8081"
+  RAY_ADDRESS: "ray://{{ include "escrow-platform.fullname" . }}-ray-head:10001"
