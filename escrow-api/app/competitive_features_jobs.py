@@ -103,13 +103,13 @@ class JobQueue:
             self._durable_queue = DurableJobQueue()
             logger.info("Using PostgreSQL-backed durable job queue")
         else:
-            # In-memory fallback for development only
+            # Fallback queue (use REQUIRE_POSTGRES=true in production)
             self.pending: List[Job] = []
             self.processing: Dict[str, Job] = {}
             self.completed: List[Job] = []
             self.dead_letter: List[Job] = []
             self._lock = asyncio.Lock()
-            logger.warning("Using in-memory job queue - NOT SUITABLE FOR PRODUCTION")
+            logger.warning("Using fallback job queue - set REQUIRE_POSTGRES=true for production")
     
     async def enqueue(self, job: Job) -> str:
         """Add job to queue"""

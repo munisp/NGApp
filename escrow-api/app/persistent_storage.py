@@ -468,7 +468,7 @@ def get_storage_backend() -> StorageBackend:
                 "No persistent storage configured in production mode. "
                 "Set DATABASE_URL or REDIS_URL environment variable."
             )
-        logger.warning("Using in-memory storage backend (development only)")
+        logger.warning("Using fallback storage backend - set DATABASE_URL for production")
         return InMemoryBackend()
 
 

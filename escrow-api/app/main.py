@@ -151,7 +151,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# In-memory database (data will be lost on restart - POC only)
+# Fallback storage (use persistent storage in production via REQUIRE_POSTGRES=true)
 escrow_db: Dict[str, Any] = {}
 sellers_db: Dict[str, Any] = {}
 listings_db: Dict[str, Any] = {}
