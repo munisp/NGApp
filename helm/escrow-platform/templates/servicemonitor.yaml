@@ -1,0 +1,114 @@
+{{- if .Values.monitoring.prometheus.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "escrow-platform.fullname" . }}-api
+  labels:
+    {{- include "escrow-platform.labels" . | nindent 4 }}
+    app.kubernetes.io/component: api
+spec:
+  selector:
+    matchLabels:
+      {{- include "escrow-platform.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: api
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 30s
+      scrapeTimeout: 10s
+  namespaceSelector:
+    matchNames:
+      - {{ .Release.Namespace }}
+---
+{{- if .Values.temporal.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "escrow-platform.fullname" . }}-temporal
+  labels:
+    {{- include "escrow-platform.labels" . | nindent 4 }}
+    app.kubernetes.io/component: temporal
+spec:
+  selector:
+    matchLabels:
+      {{- include "escrow-platform.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: temporal
+  endpoints:
+    - port: metrics
+      path: /metrics
+      interval: 30s
+      scrapeTimeout: 10s
+  namespaceSelector:
+    matchNames:
+      - {{ .Release.Namespace }}
+{{- end }}
+---
+{{- if .Values.tigerbeetle.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "escrow-platform.fullname" . }}-tigerbeetle
+  labels:
+    {{- include "escrow-platform.labels" . | nindent 4 }}
+    app.kubernetes.io/component: tigerbeetle
+spec:
+  selector:
+    matchLabels:
+      {{- include "escrow-platform.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: tigerbeetle
+  endpoints:
+    - port: metrics
+      path: /metrics
+      interval: 30s
+      scrapeTimeout: 10s
+  namespaceSelector:
+    matchNames:
+      - {{ .Release.Namespace }}
+{{- end }}
+---
+{{- if .Values.opensearch.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "escrow-platform.fullname" . }}-opensearch
+  labels:
+    {{- include "escrow-platform.labels" . | nindent 4 }}
+    app.kubernetes.io/component: opensearch
+spec:
+  selector:
+    matchLabels:
+      {{- include "escrow-platform.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: opensearch
+  endpoints:
+    - port: http
+      path: /_prometheus/metrics
+      interval: 30s
+      scrapeTimeout: 10s
+  namespaceSelector:
+    matchNames:
+      - {{ .Release.Namespace }}
+{{- end }}
+---
+{{- if .Values.permify.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "escrow-platform.fullname" . }}-permify
+  labels:
+    {{- include "escrow-platform.labels" . | nindent 4 }}
+    app.kubernetes.io/component: permify
+spec:
+  selector:
+    matchLabels:
+      {{- include "escrow-platform.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: permify
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 30s
+      scrapeTimeout: 10s
+  namespaceSelector:
+    matchNames:
+      - {{ .Release.Namespace }}
+{{- end }}
+{{- end }}

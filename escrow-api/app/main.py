@@ -433,6 +433,54 @@ async def create_escrow(
     else:
         escrow_db[escrow_id] = escrow
     
+    # Wire TigerBeetle for escrow hold
+    tigerbeetle_transfer_id = None
+    try:
+        from app.middleware_integrations import tigerbeetle_money_flows
+        buyer_id = current_user.user_id if hasattr(current_user, 'user_id') else "anonymous"
+        seller_id = request.listing.seller.username if hasattr(request.listing.seller, 'username') else "unknown"
+        tb_result = await tigerbeetle_money_flows.create_escrow_hold(
+            escrow_id=escrow_id,
+            buyer_id=buyer_id,
+            seller_id=seller_id,
+            amount_kobo=int(total * 100),  # Convert to kobo
+            fee_kobo=int(fee * 100),
+        )
+        tigerbeetle_transfer_id = tb_result.get("transfer_id")
+        logger.info(f"TigerBeetle escrow hold created: {tigerbeetle_transfer_id}")
+    except Exception as e:
+        logger.warning(f"TigerBeetle escrow hold failed (non-blocking): {e}")
+    
+    # Wire Kafka for escrow created event
+    try:
+        from app.middleware_integrations import production_kafka
+        await production_kafka.publish("escrow.created", {
+            "escrow_id": escrow_id,
+            "buyer_id": current_user.user_id if hasattr(current_user, 'user_id') else "anonymous",
+            "seller_id": request.listing.seller.username if hasattr(request.listing.seller, 'username') else "unknown",
+            "amount": total,
+            "fee": fee,
+            "status": EscrowStatus.PAYMENT_RECEIVED.value,
+            "tigerbeetle_transfer_id": tigerbeetle_transfer_id,
+            "created_at": datetime.now().isoformat(),
+        })
+    except Exception as e:
+        logger.warning(f"Kafka publish failed (non-blocking): {e}")
+    
+    # Wire Permify for authorization relationship
+    try:
+        from app.middleware_integrations import permify_client
+        buyer_id = current_user.user_id if hasattr(current_user, 'user_id') else "anonymous"
+        await permify_client.create_relationship(
+            entity_type="escrow",
+            entity_id=escrow_id,
+            relation="buyer",
+            subject_type="user",
+            subject_id=buyer_id,
+        )
+    except Exception as e:
+        logger.warning(f"Permify relationship creation failed (non-blocking): {e}")
+    
     # Generate seller claim URL
     seller_claim_url = f"https://platform-verification-app-kvzjvakf.devinapps.com?mode=seller&escrow={escrow_id}&token={claim_token}"
     
@@ -655,6 +703,32 @@ async def confirm_delivery(
     # Calculate payout
     payout_amount = escrow["amount"] * 0.98  # 2% fee deducted
     
+    # Wire TigerBeetle for escrow release to seller
+    try:
+        from app.middleware_integrations import tigerbeetle_money_flows
+        seller_id = escrow.get("listing", {}).get("seller", {}).get("username", "unknown")
+        tb_result = await tigerbeetle_money_flows.release_escrow_to_seller(
+            escrow_id=request.escrow_id,
+            seller_id=seller_id,
+            amount_kobo=int(payout_amount * 100),
+        )
+        logger.info(f"TigerBeetle escrow released: {tb_result.get('transfer_id')}")
+    except Exception as e:
+        logger.warning(f"TigerBeetle release failed (non-blocking): {e}")
+    
+    # Wire Kafka for escrow released event
+    try:
+        from app.middleware_integrations import production_kafka
+        await production_kafka.publish("escrow.released", {
+            "escrow_id": request.escrow_id,
+            "seller_id": escrow.get("listing", {}).get("seller", {}).get("username", "unknown"),
+            "payout_amount": payout_amount,
+            "status": EscrowStatus.COMPLETED.value,
+            "released_at": datetime.now().isoformat(),
+        })
+    except Exception as e:
+        logger.warning(f"Kafka publish failed (non-blocking): {e}")
+    
     # Publish escrow released event to lakehouse
     try:
         from app.event_streaming import get_event_service
@@ -845,6 +919,34 @@ async def cancel_escrow(request: CancelEscrowRequest):
     
     # Calculate refund (full refund for buyer-initiated cancellation before seller accepts)
     refund_amount = escrow["total"]
+    
+    # Wire TigerBeetle for escrow refund to buyer
+    try:
+        from app.middleware_integrations import tigerbeetle_money_flows
+        buyer_id = escrow.get("created_by", "anonymous")
+        tb_result = await tigerbeetle_money_flows.refund_escrow_to_buyer(
+            escrow_id=request.escrow_id,
+            buyer_id=buyer_id,
+            amount_kobo=int(refund_amount * 100),
+            reason=request.reason,
+        )
+        logger.info(f"TigerBeetle escrow refunded: {tb_result.get('transfer_id')}")
+    except Exception as e:
+        logger.warning(f"TigerBeetle refund failed (non-blocking): {e}")
+    
+    # Wire Kafka for escrow cancelled event
+    try:
+        from app.middleware_integrations import production_kafka
+        await production_kafka.publish("escrow.cancelled", {
+            "escrow_id": request.escrow_id,
+            "buyer_id": escrow.get("created_by", "anonymous"),
+            "refund_amount": refund_amount,
+            "reason": request.reason,
+            "status": EscrowStatus.REFUNDED.value,
+            "cancelled_at": datetime.now().isoformat(),
+        })
+    except Exception as e:
+        logger.warning(f"Kafka publish failed (non-blocking): {e}")
     
     return {
         "success": True,

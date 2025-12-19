@@ -1,0 +1,119 @@
+{{- if .Values.apisix.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "escrow-platform.fullname" . }}-apisix
+  labels:
+    {{- include "escrow-platform.labels" . | nindent 4 }}
+    app.kubernetes.io/component: apisix
+spec:
+  replicas: {{ .Values.apisix.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "escrow-platform.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: apisix
+  template:
+    metadata:
+      labels:
+        {{- include "escrow-platform.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: apisix
+    spec:
+      containers:
+        - name: apisix
+          image: "apache/apisix:{{ .Values.apisix.image.tag | default "3.7.0-debian" }}"
+          imagePullPolicy: {{ .Values.apisix.image.pullPolicy | default "IfNotPresent" }}
+          ports:
+            - name: http
+              containerPort: 9080
+              protocol: TCP
+            - name: https
+              containerPort: 9443
+              protocol: TCP
+            - name: admin
+              containerPort: 9180
+              protocol: TCP
+            - name: metrics
+              containerPort: 9091
+              protocol: TCP
+          env:
+            - name: APISIX_STAND_ALONE
+              value: "true"
+          volumeMounts:
+            - name: config
+              mountPath: /usr/local/apisix/conf/apisix.yaml
+              subPath: apisix.yaml
+          resources:
+            {{- toYaml .Values.apisix.resources | nindent 12 }}
+          livenessProbe:
+            httpGet:
+              path: /apisix/status
+              port: admin
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /apisix/status
+              port: admin
+            initialDelaySeconds: 5
+            periodSeconds: 5
+      volumes:
+        - name: config
+          configMap:
+            name: {{ include "escrow-platform.fullname" . }}-apisix-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "escrow-platform.fullname" . }}-apisix
+  labels:
+    {{- include "escrow-platform.labels" . | nindent 4 }}
+    app.kubernetes.io/component: apisix
+spec:
+  type: {{ .Values.apisix.service.type | default "LoadBalancer" }}
+  ports:
+    - port: 80
+      targetPort: http
+      protocol: TCP
+      name: http
+    - port: 443
+      targetPort: https
+      protocol: TCP
+      name: https
+  selector:
+    {{- include "escrow-platform.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: apisix
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "escrow-platform.fullname" . }}-apisix-config
+  labels:
+    {{- include "escrow-platform.labels" . | nindent 4 }}
+    app.kubernetes.io/component: apisix
+data:
+  apisix.yaml: |
+    routes:
+      - uri: /api/*
+        upstream:
+          nodes:
+            "{{ include "escrow-platform.fullname" . }}-api:8000": 1
+          type: roundrobin
+        plugins:
+          jwt-auth:
+            _meta:
+              disable: false
+          limit-req:
+            rate: {{ .Values.apisix.rateLimit.rate | default 100 }}
+            burst: {{ .Values.apisix.rateLimit.burst | default 50 }}
+            key: remote_addr
+          cors:
+            allow_origins: "*"
+            allow_methods: "GET,POST,PUT,DELETE,OPTIONS"
+            allow_headers: "Authorization,Content-Type,X-Idempotency-Key"
+      - uri: /health
+        upstream:
+          nodes:
+            "{{ include "escrow-platform.fullname" . }}-api:8000": 1
+          type: roundrobin
+    #END
+{{- end }}

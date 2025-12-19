@@ -1,0 +1,111 @@
+{{- if .Values.api.pdb.enabled | default true }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "escrow-platform.fullname" . }}-api
+  labels:
+    {{- include "escrow-platform.labels" . | nindent 4 }}
+    app.kubernetes.io/component: api
+spec:
+  minAvailable: {{ .Values.api.pdb.minAvailable | default 1 }}
+  selector:
+    matchLabels:
+      {{- include "escrow-platform.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: api
+{{- end }}
+---
+{{- if and .Values.temporal.enabled (.Values.temporal.pdb.enabled | default true) }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "escrow-platform.fullname" . }}-temporal
+  labels:
+    {{- include "escrow-platform.labels" . | nindent 4 }}
+    app.kubernetes.io/component: temporal
+spec:
+  minAvailable: {{ .Values.temporal.pdb.minAvailable | default 1 }}
+  selector:
+    matchLabels:
+      {{- include "escrow-platform.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: temporal
+{{- end }}
+---
+{{- if and .Values.tigerbeetle.enabled (.Values.tigerbeetle.pdb.enabled | default true) }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "escrow-platform.fullname" . }}-tigerbeetle
+  labels:
+    {{- include "escrow-platform.labels" . | nindent 4 }}
+    app.kubernetes.io/component: tigerbeetle
+spec:
+  minAvailable: {{ .Values.tigerbeetle.pdb.minAvailable | default 2 }}
+  selector:
+    matchLabels:
+      {{- include "escrow-platform.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: tigerbeetle
+{{- end }}
+---
+{{- if and .Values.opensearch.enabled (.Values.opensearch.pdb.enabled | default true) }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "escrow-platform.fullname" . }}-opensearch
+  labels:
+    {{- include "escrow-platform.labels" . | nindent 4 }}
+    app.kubernetes.io/component: opensearch
+spec:
+  minAvailable: {{ .Values.opensearch.pdb.minAvailable | default 2 }}
+  selector:
+    matchLabels:
+      {{- include "escrow-platform.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: opensearch
+{{- end }}
+---
+{{- if and .Values.permify.enabled (.Values.permify.pdb.enabled | default true) }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "escrow-platform.fullname" . }}-permify
+  labels:
+    {{- include "escrow-platform.labels" . | nindent 4 }}
+    app.kubernetes.io/component: permify
+spec:
+  minAvailable: {{ .Values.permify.pdb.minAvailable | default 1 }}
+  selector:
+    matchLabels:
+      {{- include "escrow-platform.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: permify
+{{- end }}
+---
+{{- if and .Values.redis.enabled (.Values.redis.pdb.enabled | default true) }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "escrow-platform.fullname" . }}-redis
+  labels:
+    {{- include "escrow-platform.labels" . | nindent 4 }}
+    app.kubernetes.io/component: redis
+spec:
+  minAvailable: {{ .Values.redis.pdb.minAvailable | default 1 }}
+  selector:
+    matchLabels:
+      {{- include "escrow-platform.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: redis
+{{- end }}
+---
+{{- if and .Values.kafka.enabled (.Values.kafka.pdb.enabled | default true) }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "escrow-platform.fullname" . }}-kafka
+  labels:
+    {{- include "escrow-platform.labels" . | nindent 4 }}
+    app.kubernetes.io/component: kafka
+spec:
+  minAvailable: {{ .Values.kafka.pdb.minAvailable | default 2 }}
+  selector:
+    matchLabels:
+      {{- include "escrow-platform.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: kafka
+{{- end }}

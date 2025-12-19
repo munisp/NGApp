@@ -1,0 +1,102 @@
+{{- if .Values.opensearch.enabled }}
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "escrow-platform.fullname" . }}-opensearch
+  labels:
+    {{- include "escrow-platform.labels" . | nindent 4 }}
+    app.kubernetes.io/component: opensearch
+spec:
+  serviceName: {{ include "escrow-platform.fullname" . }}-opensearch
+  replicas: {{ .Values.opensearch.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "escrow-platform.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: opensearch
+  template:
+    metadata:
+      labels:
+        {{- include "escrow-platform.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: opensearch
+    spec:
+      initContainers:
+        - name: sysctl
+          image: busybox
+          command: ["sysctl", "-w", "vm.max_map_count=262144"]
+          securityContext:
+            privileged: true
+      containers:
+        - name: opensearch
+          image: "opensearchproject/opensearch:{{ .Values.opensearch.image.tag | default "2.11.0" }}"
+          imagePullPolicy: {{ .Values.opensearch.image.pullPolicy | default "IfNotPresent" }}
+          ports:
+            - name: http
+              containerPort: 9200
+              protocol: TCP
+            - name: transport
+              containerPort: 9300
+              protocol: TCP
+          env:
+            - name: cluster.name
+              value: "escrow-opensearch"
+            - name: node.name
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: discovery.seed_hosts
+              value: "{{ include "escrow-platform.fullname" . }}-opensearch"
+            - name: cluster.initial_cluster_manager_nodes
+              value: "{{ include "escrow-platform.fullname" . }}-opensearch-0"
+            - name: OPENSEARCH_JAVA_OPTS
+              value: "-Xms512m -Xmx512m"
+            - name: DISABLE_SECURITY_PLUGIN
+              value: "true"
+          resources:
+            {{- toYaml .Values.opensearch.resources | nindent 12 }}
+          volumeMounts:
+            - name: data
+              mountPath: /usr/share/opensearch/data
+          livenessProbe:
+            httpGet:
+              path: /_cluster/health
+              port: http
+            initialDelaySeconds: 60
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /_cluster/health
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 10
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: {{ .Values.opensearch.persistence.storageClass | default "standard" }}
+        resources:
+          requests:
+            storage: {{ .Values.opensearch.persistence.size | default "100Gi" }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "escrow-platform.fullname" . }}-opensearch
+  labels:
+    {{- include "escrow-platform.labels" . | nindent 4 }}
+    app.kubernetes.io/component: opensearch
+spec:
+  type: ClusterIP
+  ports:
+    - port: 9200
+      targetPort: http
+      protocol: TCP
+      name: http
+    - port: 9300
+      targetPort: transport
+      protocol: TCP
+      name: transport
+  selector:
+    {{- include "escrow-platform.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: opensearch
+{{- end }}
