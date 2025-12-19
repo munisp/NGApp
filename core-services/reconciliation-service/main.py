@@ -190,7 +190,16 @@ mock_provider_records: Dict[str, List[ProviderRecord]] = {}
 
 TRANSACTION_SERVICE_URL = os.getenv("TRANSACTION_SERVICE_URL", "http://transaction-service:8000")
 LEDGER_SERVICE_URL = os.getenv("LEDGER_SERVICE_URL", "http://tigerbeetle-service:8000")
+ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
 USE_MOCK_DATA = os.getenv("USE_MOCK_DATA", "false").lower() == "true"
+
+# Production guard: fail fast if mock data is enabled in production
+if USE_MOCK_DATA and ENVIRONMENT == "production":
+    raise RuntimeError(
+        "USE_MOCK_DATA=true is not allowed in production environment. "
+        "Set ENVIRONMENT to 'development' or 'test' to use mock data, "
+        "or set USE_MOCK_DATA=false for production."
+    )
 
 
 async def fetch_internal_transactions(
@@ -330,17 +339,24 @@ async def get_reconciliation_data(
     end_date: date
 ) -> tuple:
     """
-    Get reconciliation data from real services or mock data.
+    Get reconciliation data from real services.
     
     In production (USE_MOCK_DATA=false):
     - Fetches from transaction-service, TigerBeetle, and corridor providers
     
     In development (USE_MOCK_DATA=true):
-    - Returns mock data for testing
+    - Returns mock data for testing (from dev_mock_data module)
+    
+    Note: USE_MOCK_DATA=true is blocked in production environment by startup guard.
     """
     if USE_MOCK_DATA:
-        logger.info("Using mock data for reconciliation (USE_MOCK_DATA=true)")
-        return _generate_mock_data(corridor, start_date, end_date)
+        logger.info("Using mock data for reconciliation (USE_MOCK_DATA=true, ENVIRONMENT=%s)", ENVIRONMENT)
+        # Import dev-only module only when needed (not in production)
+        from dev_mock_data import generate_mock_reconciliation_data
+        return generate_mock_reconciliation_data(
+            corridor.value, start_date, end_date,
+            TransactionRecord, LedgerRecord, ProviderRecord
+        )
     
     logger.info(f"Fetching real data for reconciliation: corridor={corridor}, dates={start_date} to {end_date}")
     
@@ -354,51 +370,6 @@ async def get_reconciliation_data(
     logger.info(f"Fetched: {len(internal)} transactions, {len(ledger)} ledger entries, {len(provider)} provider records")
     
     return internal, ledger, provider
-
-
-def _generate_mock_data(corridor: CorridorType, start_date: date, end_date: date):
-    """Generate mock data for reconciliation testing (development only)"""
-    import random
-    
-    transactions = []
-    for i in range(100):
-        txn_date = start_date + timedelta(days=random.randint(0, max(1, (end_date - start_date).days)))
-        transactions.append(TransactionRecord(
-            transaction_id=f"TXN-{uuid.uuid4().hex[:8].upper()}",
-            reference=f"REF-{uuid.uuid4().hex[:8].upper()}",
-            amount=random.uniform(1000, 500000),
-            currency="NGN",
-            status=random.choice(["completed", "completed", "completed", "pending", "failed"]),
-            created_at=datetime.combine(txn_date, datetime.min.time()),
-            completed_at=datetime.combine(txn_date, datetime.min.time()) if random.random() > 0.1 else None,
-            corridor=corridor.value
-        ))
-    
-    ledger_records = []
-    for txn in transactions[:95]:
-        ledger_records.append(LedgerRecord(
-            ledger_id=f"LED-{uuid.uuid4().hex[:8].upper()}",
-            transaction_id=txn.transaction_id,
-            debit_account="WALLET-001",
-            credit_account="SETTLEMENT-001",
-            amount=txn.amount if random.random() > 0.05 else txn.amount * 1.01,
-            currency=txn.currency,
-            timestamp=txn.created_at,
-            pending=txn.status == "pending"
-        ))
-    
-    provider_records = []
-    for txn in transactions[:90]:
-        provider_records.append(ProviderRecord(
-            provider_reference=f"PRV-{uuid.uuid4().hex[:8].upper()}",
-            internal_reference=txn.reference,
-            amount=txn.amount if random.random() > 0.03 else txn.amount * 0.99,
-            currency=txn.currency,
-            status="settled" if txn.status == "completed" else txn.status,
-            settlement_date=txn.created_at
-        ))
-    
-    return transactions, ledger_records, provider_records
 
 
 def compare_records(

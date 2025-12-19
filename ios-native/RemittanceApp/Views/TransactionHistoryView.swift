@@ -120,11 +120,12 @@ protocol APIClientProtocol {
     func fetchTransactions() async throws -> [Transaction]
 }
 
-/// Mock implementation of the API client.
+#if DEBUG
+/// Mock implementation of the API client (DEBUG builds only).
 class MockAPIClient: APIClientProtocol {
     
-    /// Generates mock transaction data.
-    private func generateMockTransactions() -> [Transaction] {
+    /// Generates mock transaction data for testing.
+    private func createTestTransactions() -> [Transaction] {
         var transactions: [Transaction] = []
         let now = Date()
         let calendar = Calendar.current
@@ -158,9 +159,10 @@ class MockAPIClient: APIClientProtocol {
         //     throw APIError.custom("Simulated server maintenance error.")
         // }
         
-        return generateMockTransactions()
+        return createTestTransactions()
     }
 }
+#endif
 
 /// Utility for local data caching (Offline Mode Support).
 class LocalCacheManager {
