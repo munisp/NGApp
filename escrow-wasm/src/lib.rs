@@ -7,6 +7,10 @@ use std::collections::HashMap;
 #[cfg(feature = "console_error_panic_hook")]
 pub use console_error_panic_hook::set_once as set_panic_hook;
 
+// Optimized image processing module with integral images, SIMD, and WebGPU support
+pub mod optimized;
+pub use optimized::{IntegralImage, OptimizedImageProcessor, SimdImageProcessor, FastCommerceParser};
+
 #[wasm_bindgen(start)]
 pub fn init() {
     #[cfg(feature = "console_error_panic_hook")]
