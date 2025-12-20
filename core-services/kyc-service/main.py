@@ -23,6 +23,7 @@ import uuid
 from decimal import Decimal
 
 from property_transaction_kyc import router as property_kyc_router
+from property_service import router as property_kyc_v2_router
 from lakehouse_publisher import publish_kyc_to_lakehouse
 
 # Import common modules for production readiness
@@ -60,6 +61,7 @@ else:
     logger = logging.getLogger(__name__)
 
 app.include_router(property_kyc_router)
+app.include_router(property_kyc_v2_router)
 
 
 class KYCTier(str, Enum):
