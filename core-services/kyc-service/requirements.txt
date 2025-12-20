@@ -6,3 +6,7 @@ python-dotenv==1.0.1
 redis==5.2.1
 prometheus-client==0.21.1
 httpx==0.28.1
+sqlalchemy==2.0.36
+psycopg2-binary==2.9.10
+boto3==1.35.81
+aiofiles==24.1.0
