@@ -139,7 +139,18 @@ class PaymentResponse(BaseModel):
     gateway_reference: Optional[str]
     created_at: datetime
 
-# Storage
+# Production mode flag - when True, use PostgreSQL; when False, use in-memory (dev only)
+USE_DATABASE = os.getenv("USE_DATABASE", "true").lower() == "true"
+
+# Import database modules if available
+try:
+    from database import get_db_context, init_db, check_db_connection
+    from repository import PaymentRepository
+    DATABASE_AVAILABLE = True
+except ImportError:
+    DATABASE_AVAILABLE = False
+
+# In-memory storage (only used when USE_DATABASE=false for development)
 payments_db: Dict[str, Payment] = {}
 reference_index: Dict[str, str] = {}
 

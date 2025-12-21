@@ -41,6 +41,12 @@ from .compliance_client import (
     requires_compliance_review,
     ComplianceServiceUnavailable
 )
+from .property_kyc_client import (
+    verify_property_transaction_kyc,
+    is_property_kyc_approved,
+    get_property_kyc_blocking_reason,
+    PropertyKYCServiceUnavailable
+)
 
 import sys
 import os
@@ -384,6 +390,202 @@ async def get_transaction_history(
     user_id = get_user_id_from_request(request)
     service = TransactionServiceService()
     return await service.list_by_user(user_id, skip, limit)
+
+
+# ==================== Property Transaction Endpoints (with Property KYC Enforcement) ====================
+
+class PropertyTransferRequest(BaseModel):
+    """Request schema for property transaction disbursement"""
+    property_transaction_id: str = Field(..., description="Property transaction ID from property KYC service")
+    recipient_name: str = Field(..., min_length=1, max_length=200)
+    recipient_bank: str = Field(..., min_length=1, max_length=100)
+    recipient_account: str = Field(..., min_length=1, max_length=50)
+    amount: float = Field(..., gt=0)
+    currency: str = Field(default="NGN", min_length=3, max_length=3)
+    disbursement_type: str = Field(default="full", description="full, partial, or escrow_release")
+    note: Optional[str] = None
+
+
+@router.post("/property-transfer", response_model=TransferResponse)
+async def create_property_transfer(
+    transfer: PropertyTransferRequest,
+    request: Request,
+    db: Session = Depends(get_db),
+    idempotency_key: Optional[str] = Header(None, alias="Idempotency-Key")
+):
+    """
+    Create a property transaction disbursement with Property KYC enforcement.
+    
+    This endpoint REQUIRES the property transaction to be APPROVED in the Property KYC
+    service before any funds can be disbursed. This is a bank-grade requirement for
+    high-value property transactions.
+    """
+    user_id = get_user_id_from_request(request)
+    
+    if not idempotency_key:
+        idempotency_key = str(uuid.uuid4())
+    
+    # Check for duplicate request
+    idempotency_service = IdempotencyService(db)
+    existing = await idempotency_service.check_idempotency(idempotency_key, user_id)
+    
+    if existing:
+        logger.info(f"Duplicate property transfer request: {idempotency_key}")
+        response_data = existing.get("response", {})
+        return TransferResponse(
+            transaction_id=existing["transaction_id"],
+            status=response_data.get("status", "completed"),
+            amount=response_data.get("amount", transfer.amount),
+            currency=response_data.get("currency", transfer.currency),
+            fee=response_data.get("fee", 0),
+            total_amount=response_data.get("total_amount", transfer.amount),
+            recipient_name=response_data.get("recipient_name", transfer.recipient_name),
+            reference_number=response_data.get("reference_number", ""),
+            created_at=existing["created_at"],
+            is_duplicate=True,
+            message="Duplicate request - returning original result"
+        )
+    
+    try:
+        # CRITICAL: Property KYC Verification - MUST pass before disbursing property payments
+        try:
+            property_kyc_result = await verify_property_transaction_kyc(
+                property_transaction_id=transfer.property_transaction_id,
+                amount=transfer.amount,
+                disbursement_type=transfer.disbursement_type
+            )
+            
+            if not is_property_kyc_approved(property_kyc_result):
+                blocking_reason = get_property_kyc_blocking_reason(property_kyc_result)
+                logger.warning(
+                    f"Property transfer blocked by KYC: property_tx={transfer.property_transaction_id}, "
+                    f"status={property_kyc_result.status}, reason={blocking_reason}"
+                )
+                raise HTTPException(
+                    status_code=403,
+                    detail=f"Property transaction not approved for disbursement: {blocking_reason}"
+                )
+            
+            logger.info(
+                f"Property KYC verified for disbursement: property_tx={transfer.property_transaction_id}, "
+                f"buyer_verified={property_kyc_result.buyer_kyc_verified}, "
+                f"seller_verified={property_kyc_result.seller_kyc_verified}"
+            )
+            
+        except PropertyKYCServiceUnavailable as e:
+            logger.error(f"Property KYC service unavailable: {e}")
+            # FAIL CLOSED - do not allow property disbursements if KYC service is unavailable
+            raise HTTPException(
+                status_code=503,
+                detail="Property KYC verification service unavailable. Cannot process property disbursement."
+            )
+        
+        # Standard KYC verification for the user
+        user_name = request.headers.get("X-User-Name", "Unknown User")
+        try:
+            kyc_result = await verify_user_kyc(
+                user_id=user_id,
+                amount=transfer.amount,
+                transaction_type="property_disbursement",
+                destination_country="NG"
+            )
+            
+            if is_kyc_blocked(kyc_result):
+                raise HTTPException(
+                    status_code=403,
+                    detail=f"User KYC verification required: {kyc_result.missing_requirements}"
+                )
+        except KYCServiceUnavailable as e:
+            logger.error(f"KYC service unavailable: {e}")
+            raise HTTPException(status_code=503, detail="KYC verification service unavailable.")
+        
+        # Compliance check
+        try:
+            compliance_result = await check_transaction_compliance(
+                user_id=user_id,
+                user_name=user_name,
+                amount=transfer.amount,
+                source_currency=transfer.currency,
+                destination_currency=transfer.currency,
+                destination_country="NG",
+                beneficiary_name=transfer.recipient_name,
+                beneficiary_country="NG"
+            )
+            
+            if is_compliance_blocked(compliance_result):
+                raise HTTPException(
+                    status_code=403,
+                    detail="Property transfer blocked by compliance screening."
+                )
+        except ComplianceServiceUnavailable as e:
+            logger.error(f"Compliance service unavailable: {e}")
+            raise HTTPException(status_code=503, detail="Compliance service unavailable.")
+        
+        # Create the property transfer transaction
+        service = TransactionServiceService()
+        transaction_data = {
+            "user_id": user_id,
+            "transaction_type": "property_disbursement",
+            "amount": transfer.amount,
+            "currency": transfer.currency,
+            "destination_currency": transfer.currency,
+            "fee": 0,
+            "total_amount": transfer.amount,
+            "recipient_name": transfer.recipient_name,
+            "recipient_bank": transfer.recipient_bank,
+            "recipient_account": transfer.recipient_account,
+            "delivery_method": "bank_transfer",
+            "note": transfer.note,
+            "status": "pending",
+            "idempotency_key": idempotency_key,
+            "property_transaction_id": transfer.property_transaction_id,
+            "disbursement_type": transfer.disbursement_type
+        }
+        
+        result = await service.create(transaction_data)
+        transaction_id = result.get("id", str(uuid.uuid4()))
+        reference_number = result.get("reference_number", f"PROP{transaction_id[:8].upper()}")
+        created_at = result.get("created_at", "")
+        
+        response_data = {
+            "transaction_id": transaction_id,
+            "status": "pending",
+            "amount": transfer.amount,
+            "currency": transfer.currency,
+            "fee": 0,
+            "total_amount": transfer.amount,
+            "recipient_name": transfer.recipient_name,
+            "reference_number": reference_number,
+            "created_at": created_at
+        }
+        
+        await idempotency_service.store_idempotency(
+            idempotency_key=idempotency_key,
+            user_id=user_id,
+            transaction_id=transaction_id,
+            response_data=response_data
+        )
+        
+        # Publish to lakehouse
+        await publish_transaction_to_lakehouse(
+            transaction_id=transaction_id,
+            user_id=user_id,
+            event_type="property_disbursement_created",
+            transaction_data=transaction_data
+        )
+        
+        logger.info(
+            f"Property disbursement created: tx={transaction_id}, "
+            f"property_tx={transfer.property_transaction_id}, amount={transfer.amount}"
+        )
+        
+        return TransferResponse(**response_data, is_duplicate=False, message="Property disbursement initiated")
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Property transfer failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Property transfer failed: {str(e)}")
 
 
 # ==================== Legacy Endpoints ====================

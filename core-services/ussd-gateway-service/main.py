@@ -77,37 +77,75 @@ class MenuState(str, Enum):
     ENTER_PIN = "enter_pin"
 
 
+# Production mode flag - when True, use Redis; when False, use in-memory (dev only)
+USE_REDIS = os.getenv("USE_REDIS", "true").lower() == "true"
+
+# Import Redis session store
+try:
+    from redis_session import init_session_store, RedisSessionStore, InMemorySessionStore
+    SESSION_STORE_AVAILABLE = True
+except ImportError:
+    SESSION_STORE_AVAILABLE = False
+    logger.warning("Redis session store not available, using in-memory fallback")
+
+
 class USSDSession:
-    """In-memory session store (use Redis in production)"""
-    sessions: Dict[str, Dict[str, Any]] = {}
+    """
+    Session store wrapper that uses Redis in production, in-memory in development.
+    In production mode (USE_REDIS=true), Redis is REQUIRED - no fallback to in-memory.
+    """
+    _store = None
+    
+    @classmethod
+    def _get_store(cls):
+        """Get the appropriate session store"""
+        if cls._store is None:
+            if USE_REDIS and SESSION_STORE_AVAILABLE:
+                try:
+                    cls._store = init_session_store()
+                except Exception as e:
+                    logger.error(f"Failed to initialize Redis session store: {e}")
+                    # FAIL CLOSED - do not fall back to in-memory in production
+                    raise RuntimeError("Redis is required for USSD sessions in production mode")
+            else:
+                logger.warning("Using in-memory session store (development mode only)")
+                cls._store = InMemorySessionStore if SESSION_STORE_AVAILABLE else None
+        return cls._store
     
     @classmethod
     def get(cls, session_id: str) -> Optional[Dict[str, Any]]:
-        session = cls.sessions.get(session_id)
-        if session and session.get("expires_at", datetime.min) > datetime.utcnow():
-            return session
+        store = cls._get_store()
+        if store:
+            return store.get(session_id)
         return None
     
     @classmethod
     def set(cls, session_id: str, data: Dict[str, Any]) -> None:
-        data["expires_at"] = datetime.utcnow() + timedelta(minutes=SESSION_TTL_MINUTES)
-        cls.sessions[session_id] = data
+        store = cls._get_store()
+        if store:
+            store.set(session_id, data)
     
     @classmethod
     def delete(cls, session_id: str) -> None:
-        cls.sessions.pop(session_id, None)
+        store = cls._get_store()
+        if store:
+            store.delete(session_id)
     
     @classmethod
     def cleanup_expired(cls) -> int:
-        now = datetime.utcnow()
-        expired = [k for k, v in cls.sessions.items() if v.get("expires_at", datetime.min) < now]
-        for k in expired:
-            del cls.sessions[k]
-        return len(expired)
+        store = cls._get_store()
+        if store:
+            return store.cleanup_expired()
+        return 0
 
 
-# Fallback mock user data (used when user-service is unavailable)
-FALLBACK_MOCK_USERS = {
+# Production mode flag - when True, fail closed if user-service unavailable
+# When False (dev mode), allow mock data fallback for testing
+FAIL_CLOSED_ON_SERVICE_UNAVAILABLE = os.getenv("FAIL_CLOSED_ON_SERVICE_UNAVAILABLE", "true").lower() == "true"
+
+# Mock user data ONLY for development/testing (FAIL_CLOSED_ON_SERVICE_UNAVAILABLE=false)
+# In production, this is NEVER used - service fails closed if user-service unavailable
+DEV_MOCK_USERS = {
     "+2348012345678": {
         "user_id": "user-001",
         "name": "Adebayo Okonkwo",
@@ -255,7 +293,13 @@ async def purchase_airtime(user_id: str, phone: str, amount: float, idempotency_
 async def get_user_by_phone(phone: str) -> Optional[Dict[str, Any]]:
     """
     Get user data by phone number.
-    First tries user-service, falls back to mock data if unavailable.
+    
+    In production (FAIL_CLOSED_ON_SERVICE_UNAVAILABLE=true):
+        - Returns None if user not found in user-service
+        - Does NOT fall back to mock data
+    
+    In development (FAIL_CLOSED_ON_SERVICE_UNAVAILABLE=false):
+        - Falls back to mock data for testing
     """
     normalized = normalize_phone(phone)
     
@@ -276,9 +320,14 @@ async def get_user_by_phone(phone: str) -> Optional[Dict[str, Any]]:
         
         return user
     
-    # Fallback to mock data for demo/testing
-    logger.info(f"Using fallback mock data for {normalized}")
-    return FALLBACK_MOCK_USERS.get(normalized)
+    # In production mode, fail closed - do NOT use mock data
+    if FAIL_CLOSED_ON_SERVICE_UNAVAILABLE:
+        logger.warning(f"User not found and mock fallback disabled (production mode): {normalized}")
+        return None
+    
+    # Development mode only - fallback to mock data for testing
+    logger.info(f"Using DEV mock data for {normalized} (development mode only)")
+    return DEV_MOCK_USERS.get(normalized)
 
 
 def format_currency(amount: float, currency: str = "NGN") -> str:

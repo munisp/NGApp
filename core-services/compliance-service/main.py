@@ -246,13 +246,24 @@ class SuspiciousActivityReport(BaseModel):
     updated_at: datetime = Field(default_factory=datetime.utcnow)
 
 
-# In-memory storage (replace with database in production)
+# Production mode flag - when True, use PostgreSQL; when False, use in-memory (dev only)
+USE_DATABASE = os.getenv("USE_DATABASE", "true").lower() == "true"
+
+# In-memory storage (only used when USE_DATABASE=false for development)
 screening_results_db: Dict[str, ScreeningResult] = {}
 monitoring_rules_db: Dict[str, TransactionMonitoringRule] = {}
 alerts_db: Dict[str, TransactionAlert] = {}
 cases_db: Dict[str, ComplianceCase] = {}
 sars_db: Dict[str, SuspiciousActivityReport] = {}
 user_risk_profiles_db: Dict[str, Dict[str, Any]] = {}
+
+# Database dependency for production
+def get_db_session():
+    """Get database session for production use"""
+    if USE_DATABASE:
+        from database import get_db_context
+        return get_db_context()
+    return None
 
 # Simulated sanctions lists (in production, integrate with real providers)
 SANCTIONS_DATABASE = {
@@ -395,36 +406,56 @@ async def perform_screening(request: ScreeningRequest):
     matches = []
     lists_checked = []
     
-    # Check sanctions lists
-    if ScreeningType.SANCTIONS in request.screening_types:
-        for list_name, entries in SANCTIONS_DATABASE.items():
-            lists_checked.append(list_name.value)
-            for entry in entries:
+    # Use external sanctions provider if available, otherwise fall back to static lists
+    provider_result = sanctions_provider.screen(SanctionsScreeningRequest(
+        full_name=request.full_name,
+        date_of_birth=request.date_of_birth,
+        nationality=request.nationality,
+        country=request.country,
+        id_number=request.id_number
+    ))
+    
+    if provider_result.matches:
+        for pm in provider_result.matches:
+            match = ScreeningMatch(
+                list_name=pm.get("list_name", "external"),
+                list_type=ScreeningType.SANCTIONS if pm.get("list_type") == "sanctions" else ScreeningType.PEP,
+                matched_name=pm.get("matched_name", ""),
+                match_score=pm.get("match_score", 0.0),
+                match_details=pm
+            )
+            matches.append(match)
+        lists_checked.extend(provider_result.lists_checked or [])
+    else:
+        # Fallback to static lists only if provider returns no results
+        if ScreeningType.SANCTIONS in request.screening_types:
+            for list_name, entries in SANCTIONS_DATABASE.items():
+                lists_checked.append(list_name.value)
+                for entry in entries:
+                    score = calculate_name_similarity(request.full_name, entry["name"])
+                    if score >= 0.7:
+                        match = ScreeningMatch(
+                            list_name=list_name.value,
+                            list_type=ScreeningType.SANCTIONS,
+                            matched_name=entry["name"],
+                            match_score=score,
+                            match_details=entry
+                        )
+                        matches.append(match)
+        
+        if ScreeningType.PEP in request.screening_types:
+            lists_checked.append("pep_database")
+            for entry in PEP_DATABASE:
                 score = calculate_name_similarity(request.full_name, entry["name"])
                 if score >= 0.7:
                     match = ScreeningMatch(
-                        list_name=list_name.value,
-                        list_type=ScreeningType.SANCTIONS,
+                        list_name="pep_database",
+                        list_type=ScreeningType.PEP,
                         matched_name=entry["name"],
                         match_score=score,
                         match_details=entry
                     )
                     matches.append(match)
-    
-    # Check PEP list
-    if ScreeningType.PEP in request.screening_types:
-        lists_checked.append("pep_database")
-        for entry in PEP_DATABASE:
-            score = calculate_name_similarity(request.full_name, entry["name"])
-            if score >= 0.7:
-                match = ScreeningMatch(
-                    list_name="pep_database",
-                    list_type=ScreeningType.PEP,
-                    matched_name=entry["name"],
-                    match_score=score,
-                    match_details=entry
-                )
-                matches.append(match)
     
     # Determine overall risk
     is_clear = len(matches) == 0
@@ -451,7 +482,46 @@ async def perform_screening(request: ScreeningRequest):
         lists_checked=lists_checked
     )
     
-    screening_results_db[result.id] = result
+    # Store in database if available, otherwise in-memory
+    if USE_DATABASE and REPOSITORY_AVAILABLE:
+        try:
+            from database import get_db_context
+            with get_db_context() as db:
+                db_result = repository.create_screening_result(
+                    db=db,
+                    result_id=result.id,
+                    entity_id=request.entity_id,
+                    entity_type=request.entity_type,
+                    full_name=request.full_name,
+                    screening_types=[st.value for st in request.screening_types],
+                    overall_risk=overall_risk.value,
+                    is_clear=is_clear,
+                    lists_checked=lists_checked,
+                    date_of_birth=request.date_of_birth,
+                    nationality=request.nationality,
+                    country=request.country,
+                    id_number=request.id_number,
+                    id_type=request.id_type,
+                    address=request.address
+                )
+                # Store matches
+                for match in matches:
+                    repository.create_screening_match(
+                        db=db,
+                        match_id=match.id,
+                        screening_result_id=result.id,
+                        list_name=match.list_name,
+                        list_type=match.list_type.value,
+                        matched_name=match.matched_name,
+                        match_score=match.match_score,
+                        match_details=match.match_details
+                    )
+        except Exception as e:
+            logger.warning(f"Failed to store screening result in database: {e}")
+            screening_results_db[result.id] = result
+    else:
+        screening_results_db[result.id] = result
+    
     return result
 
 

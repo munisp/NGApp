@@ -166,7 +166,17 @@ class APIUsageLog(BaseModel):
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
 
-# In-memory storage
+# Production mode flag - when True, use PostgreSQL; when False, use in-memory (dev only)
+USE_DATABASE = os.getenv("USE_DATABASE", "true").lower() == "true"
+
+# Import database modules if available
+try:
+    from database import get_db_context, init_db, check_db_connection
+    DATABASE_AVAILABLE = True
+except ImportError:
+    DATABASE_AVAILABLE = False
+
+# In-memory storage (only used when USE_DATABASE=false for development)
 organizations_db: Dict[str, Organization] = {}
 api_keys_db: Dict[str, APIKey] = {}
 webhooks_db: Dict[str, WebhookEndpoint] = {}

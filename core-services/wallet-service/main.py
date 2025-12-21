@@ -164,10 +164,21 @@ class TransactionHistory(BaseModel):
     page: int
     page_size: int
 
-# In-memory storage (replace with database in produc# Storage
+# Production mode flag - when True, use PostgreSQL; when False, use in-memory (dev only)
+USE_DATABASE = os.getenv("USE_DATABASE", "true").lower() == "true"
+
+# Import database modules if available
+try:
+    from database import get_db_context, init_db, check_db_connection
+    from repository import WalletRepository, WalletTransactionRepository
+    DATABASE_AVAILABLE = True
+except ImportError:
+    DATABASE_AVAILABLE = False
+
+# In-memory storage (only used when USE_DATABASE=false for development)
 wallets_db: Dict[str, Wallet] = {}
 transactions_db: Dict[str, WalletTransaction] = {}
-user_wallets_index: Dict[str, List[str]] = {}
+user_wallets_index: Dict[str, List[str]] = defaultdict(list)
 
 # Initialize managers
 currency_converter = CurrencyConverter()
@@ -182,7 +193,51 @@ class WalletService:
     async def create_wallet(request: CreateWalletRequest) -> Wallet:
         """Create new wallet"""
         
-        # Check if user already has wallet in this currency
+        # Use database if available
+        if USE_DATABASE and DATABASE_AVAILABLE:
+            try:
+                with get_db_context() as db:
+                    # Check if user already has wallet in this currency
+                    existing = WalletRepository.get_wallet_by_user_and_currency(
+                        db, request.user_id, request.currency, request.wallet_type.value
+                    )
+                    if existing:
+                        raise HTTPException(status_code=400, detail=f"User already has {request.wallet_type} wallet in {request.currency}")
+                    
+                    wallet_id = str(uuid.uuid4())
+                    db_wallet = WalletRepository.create_wallet(
+                        db=db,
+                        wallet_id=wallet_id,
+                        user_id=request.user_id,
+                        wallet_type=request.wallet_type.value,
+                        currency=request.currency,
+                        daily_limit=request.daily_limit,
+                        monthly_limit=request.monthly_limit,
+                        is_primary=request.is_primary
+                    )
+                    
+                    wallet = Wallet(
+                        wallet_id=db_wallet.wallet_id,
+                        user_id=db_wallet.user_id,
+                        wallet_type=WalletType(db_wallet.wallet_type),
+                        currency=db_wallet.currency,
+                        balance=db_wallet.balance,
+                        available_balance=db_wallet.available_balance,
+                        reserved_balance=db_wallet.reserved_balance,
+                        status=WalletStatus(db_wallet.status),
+                        daily_limit=db_wallet.daily_limit,
+                        monthly_limit=db_wallet.monthly_limit,
+                        is_primary=db_wallet.is_primary,
+                        created_at=db_wallet.created_at
+                    )
+                    logger.info(f"Created wallet {wallet.wallet_id} for user {request.user_id} (DB)")
+                    return wallet
+            except HTTPException:
+                raise
+            except Exception as e:
+                logger.warning(f"Database error, falling back to in-memory: {e}")
+        
+        # Fallback to in-memory storage
         existing_wallets = [
             wallets_db[wid] for wid in user_wallets_index.get(request.user_id, [])
             if wallets_db[wid].currency == request.currency and wallets_db[wid].wallet_type == request.wallet_type
@@ -210,6 +265,36 @@ class WalletService:
     async def get_wallet(wallet_id: str) -> Wallet:
         """Get wallet by ID"""
         
+        # Use database if available
+        if USE_DATABASE and DATABASE_AVAILABLE:
+            try:
+                with get_db_context() as db:
+                    db_wallet = WalletRepository.get_wallet(db, wallet_id)
+                    if not db_wallet:
+                        raise HTTPException(status_code=404, detail="Wallet not found")
+                    
+                    return Wallet(
+                        wallet_id=db_wallet.wallet_id,
+                        user_id=db_wallet.user_id,
+                        wallet_type=WalletType(db_wallet.wallet_type),
+                        currency=db_wallet.currency,
+                        balance=db_wallet.balance,
+                        available_balance=db_wallet.available_balance,
+                        reserved_balance=db_wallet.reserved_balance,
+                        status=WalletStatus(db_wallet.status),
+                        daily_limit=db_wallet.daily_limit,
+                        monthly_limit=db_wallet.monthly_limit,
+                        is_primary=db_wallet.is_primary,
+                        created_at=db_wallet.created_at,
+                        updated_at=db_wallet.updated_at,
+                        last_transaction_at=db_wallet.last_transaction_at
+                    )
+            except HTTPException:
+                raise
+            except Exception as e:
+                logger.warning(f"Database error, falling back to in-memory: {e}")
+        
+        # Fallback to in-memory
         if wallet_id not in wallets_db:
             raise HTTPException(status_code=404, detail="Wallet not found")
         
