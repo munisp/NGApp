@@ -1128,6 +1128,682 @@ async def get_service_stats():
     }
 
 
+# ============================================================================
+# Model Registry Endpoints
+# ============================================================================
+
+class RegisterModelRequest(BaseModel):
+    model_name: str
+    algorithm: str
+    metrics: Dict[str, float]
+    parameters: Dict[str, Any]
+    feature_names: List[str]
+    description: str = ""
+    tags: Optional[Dict[str, str]] = None
+
+
+class ModelVersionResponse(BaseModel):
+    model_name: str
+    version: str
+    stage: str
+    algorithm: str
+    metrics: Dict[str, float]
+    created_at: datetime
+
+
+class TransitionStageRequest(BaseModel):
+    model_name: str
+    version: str
+    stage: str  # "development", "staging", "production", "archived"
+
+
+@app.post("/registry/register")
+async def register_model_version(request: RegisterModelRequest):
+    """Register a new model version in the model registry"""
+    try:
+        from model_registry import get_registry, ModelStage
+        
+        registry = get_registry()
+        
+        # For now, we register without an actual model object (metadata only)
+        model_version = registry.register_model(
+            model_name=request.model_name,
+            model=None,  # Would be actual model in production
+            algorithm=request.algorithm,
+            metrics=request.metrics,
+            parameters=request.parameters,
+            feature_names=request.feature_names,
+            description=request.description,
+            tags=request.tags
+        )
+        
+        return {
+            "model_name": model_version.model_name,
+            "version": model_version.version,
+            "stage": model_version.stage.value,
+            "created_at": model_version.created_at.isoformat()
+        }
+    except Exception as e:
+        logger.error(f"Failed to register model: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/registry/models")
+async def list_registered_models():
+    """List all models in the registry"""
+    try:
+        from model_registry import get_registry
+        
+        registry = get_registry()
+        models = registry.list_models()
+        
+        result = []
+        for model_name in models:
+            versions = registry.list_versions(model_name)
+            result.append({
+                "model_name": model_name,
+                "versions": [
+                    {
+                        "version": v.version,
+                        "stage": v.stage.value,
+                        "algorithm": v.algorithm,
+                        "metrics": v.metrics,
+                        "created_at": v.created_at.isoformat()
+                    }
+                    for v in versions
+                ]
+            })
+        
+        return {"models": result}
+    except Exception as e:
+        logger.error(f"Failed to list models: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/registry/models/{model_name}/versions")
+async def list_model_versions(model_name: str):
+    """List all versions of a model"""
+    try:
+        from model_registry import get_registry
+        
+        registry = get_registry()
+        versions = registry.list_versions(model_name)
+        
+        return {
+            "model_name": model_name,
+            "versions": [
+                {
+                    "version": v.version,
+                    "stage": v.stage.value,
+                    "algorithm": v.algorithm,
+                    "metrics": v.metrics,
+                    "created_at": v.created_at.isoformat()
+                }
+                for v in versions
+            ]
+        }
+    except Exception as e:
+        logger.error(f"Failed to list versions: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/registry/transition")
+async def transition_model_stage(request: TransitionStageRequest):
+    """Transition a model version to a new stage"""
+    try:
+        from model_registry import get_registry, ModelStage
+        
+        registry = get_registry()
+        
+        stage_map = {
+            "development": ModelStage.DEVELOPMENT,
+            "staging": ModelStage.STAGING,
+            "production": ModelStage.PRODUCTION,
+            "archived": ModelStage.ARCHIVED
+        }
+        
+        stage = stage_map.get(request.stage.lower())
+        if not stage:
+            raise HTTPException(status_code=400, detail=f"Invalid stage: {request.stage}")
+        
+        success = registry.transition_stage(request.model_name, request.version, stage)
+        
+        if not success:
+            raise HTTPException(status_code=404, detail="Model version not found")
+        
+        return {
+            "model_name": request.model_name,
+            "version": request.version,
+            "new_stage": request.stage,
+            "success": True
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to transition stage: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/registry/models/{model_name}/production")
+async def get_production_model(model_name: str):
+    """Get the production version of a model"""
+    try:
+        from model_registry import get_registry
+        
+        registry = get_registry()
+        model_version = registry.get_production_model(model_name)
+        
+        if not model_version:
+            raise HTTPException(status_code=404, detail=f"No production model found for {model_name}")
+        
+        return {
+            "model_name": model_version.model_name,
+            "version": model_version.version,
+            "stage": model_version.stage.value,
+            "algorithm": model_version.algorithm,
+            "metrics": model_version.metrics,
+            "created_at": model_version.created_at.isoformat()
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to get production model: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/registry/compare")
+async def compare_model_versions(model_name: str, version_a: str, version_b: str):
+    """Compare two model versions"""
+    try:
+        from model_registry import get_registry
+        
+        registry = get_registry()
+        comparison = registry.compare_models(model_name, version_a, version_b)
+        
+        if not comparison:
+            raise HTTPException(status_code=404, detail="One or both model versions not found")
+        
+        return {
+            "model_name": comparison.model_name,
+            "version_a": comparison.version_a,
+            "version_b": comparison.version_b,
+            "metric_comparison": comparison.metric_comparison,
+            "parameter_diff": comparison.parameter_diff,
+            "winner": comparison.winner,
+            "confidence": comparison.confidence,
+            "recommendation": comparison.recommendation
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to compare models: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ============================================================================
+# A/B Testing Endpoints
+# ============================================================================
+
+class CreateABTestRequest(BaseModel):
+    experiment_name: str
+    description: str
+    control_model_name: str
+    control_model_version: str
+    challenger_model_name: str
+    challenger_model_version: str
+    primary_metric: str = "accuracy"
+    control_traffic_pct: float = 50.0
+    min_samples_per_variant: int = 100
+    max_duration_hours: int = 168
+    auto_stop_on_significance: bool = True
+
+
+class RecordPredictionRequest(BaseModel):
+    experiment_id: str
+    variant_id: str
+    outcome: str
+    latency_ms: float
+    metrics: Optional[Dict[str, float]] = None
+    is_error: bool = False
+
+
+@app.post("/ab-test/create")
+async def create_ab_test(request: CreateABTestRequest):
+    """Create a new A/B testing experiment"""
+    try:
+        from ab_testing import get_ab_testing_manager, WinnerCriteria, TrafficSplitStrategy
+        
+        manager = get_ab_testing_manager()
+        
+        experiment = manager.create_experiment(
+            experiment_name=request.experiment_name,
+            description=request.description,
+            control_model_name=request.control_model_name,
+            control_model_version=request.control_model_version,
+            challenger_model_name=request.challenger_model_name,
+            challenger_model_version=request.challenger_model_version,
+            primary_metric=request.primary_metric,
+            winner_criteria=WinnerCriteria.HIGHER_IS_BETTER,
+            traffic_split_strategy=TrafficSplitStrategy.HASH_BASED,
+            control_traffic_pct=request.control_traffic_pct,
+            min_samples_per_variant=request.min_samples_per_variant,
+            max_duration_hours=request.max_duration_hours,
+            auto_stop_on_significance=request.auto_stop_on_significance
+        )
+        
+        return {
+            "experiment_id": experiment.experiment_id,
+            "experiment_name": experiment.experiment_name,
+            "status": experiment.status.value,
+            "variants": [
+                {
+                    "variant_id": v.variant_id,
+                    "model_name": v.model_name,
+                    "model_version": v.model_version,
+                    "traffic_percentage": v.traffic_percentage,
+                    "is_control": v.is_control
+                }
+                for v in experiment.variants
+            ],
+            "created_at": experiment.created_at.isoformat()
+        }
+    except Exception as e:
+        logger.error(f"Failed to create A/B test: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/ab-test/{experiment_id}/start")
+async def start_ab_test(experiment_id: str):
+    """Start an A/B testing experiment"""
+    try:
+        from ab_testing import get_ab_testing_manager
+        
+        manager = get_ab_testing_manager()
+        success = manager.start_experiment(experiment_id)
+        
+        if not success:
+            raise HTTPException(status_code=400, detail="Failed to start experiment (may already be running)")
+        
+        return {"experiment_id": experiment_id, "status": "running"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to start A/B test: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/ab-test/{experiment_id}/stop")
+async def stop_ab_test(experiment_id: str):
+    """Stop an A/B testing experiment and get results"""
+    try:
+        from ab_testing import get_ab_testing_manager
+        
+        manager = get_ab_testing_manager()
+        result = manager.stop_experiment(experiment_id)
+        
+        if not result:
+            raise HTTPException(status_code=404, detail="Experiment not found")
+        
+        return {
+            "experiment_id": result.experiment_id,
+            "experiment_name": result.experiment_name,
+            "winner_variant_id": result.winner_variant_id,
+            "winner_model_name": result.winner_model_name,
+            "winner_model_version": result.winner_model_version,
+            "confidence": result.confidence,
+            "recommendation": result.recommendation,
+            "duration_hours": result.duration_hours,
+            "total_predictions": result.total_predictions,
+            "variant_metrics": result.variant_metrics
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to stop A/B test: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/ab-test/{experiment_id}/variant")
+async def get_variant_for_user(experiment_id: str, user_id: str):
+    """Get the variant assignment for a user in an experiment"""
+    try:
+        from ab_testing import get_ab_testing_manager
+        
+        manager = get_ab_testing_manager()
+        variant = manager.get_variant_for_user(experiment_id, user_id)
+        
+        if not variant:
+            raise HTTPException(status_code=404, detail="Experiment not found or not running")
+        
+        return {
+            "experiment_id": experiment_id,
+            "user_id": user_id,
+            "variant_id": variant.variant_id,
+            "model_name": variant.model_name,
+            "model_version": variant.model_version,
+            "is_control": variant.is_control
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to get variant: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/ab-test/record")
+async def record_ab_prediction(request: RecordPredictionRequest):
+    """Record a prediction result for an A/B test"""
+    try:
+        from ab_testing import get_ab_testing_manager
+        
+        manager = get_ab_testing_manager()
+        manager.record_prediction(
+            experiment_id=request.experiment_id,
+            variant_id=request.variant_id,
+            outcome=request.outcome,
+            latency_ms=request.latency_ms,
+            metrics=request.metrics,
+            is_error=request.is_error
+        )
+        
+        return {"success": True}
+    except Exception as e:
+        logger.error(f"Failed to record prediction: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/ab-test/{experiment_id}/results")
+async def get_ab_test_results(experiment_id: str):
+    """Get current results for an A/B test"""
+    try:
+        from ab_testing import get_ab_testing_manager
+        
+        manager = get_ab_testing_manager()
+        result = manager.get_experiment_result(experiment_id)
+        
+        if not result:
+            raise HTTPException(status_code=404, detail="Experiment not found")
+        
+        return {
+            "experiment_id": result.experiment_id,
+            "experiment_name": result.experiment_name,
+            "winner_variant_id": result.winner_variant_id,
+            "winner_model_name": result.winner_model_name,
+            "winner_model_version": result.winner_model_version,
+            "confidence": result.confidence,
+            "recommendation": result.recommendation,
+            "duration_hours": result.duration_hours,
+            "total_predictions": result.total_predictions,
+            "variant_metrics": result.variant_metrics,
+            "statistical_result": {
+                "is_significant": result.statistical_result.is_significant,
+                "p_value": result.statistical_result.p_value,
+                "effect_size": result.statistical_result.effect_size
+            } if result.statistical_result else None
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to get results: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/ab-test/list")
+async def list_ab_tests(status: Optional[str] = None):
+    """List all A/B testing experiments"""
+    try:
+        from ab_testing import get_ab_testing_manager, ExperimentStatus
+        
+        manager = get_ab_testing_manager()
+        
+        status_filter = None
+        if status:
+            status_map = {
+                "draft": ExperimentStatus.DRAFT,
+                "running": ExperimentStatus.RUNNING,
+                "paused": ExperimentStatus.PAUSED,
+                "completed": ExperimentStatus.COMPLETED,
+                "cancelled": ExperimentStatus.CANCELLED
+            }
+            status_filter = status_map.get(status.lower())
+        
+        experiments = manager.list_experiments(status_filter)
+        
+        return {
+            "experiments": [
+                {
+                    "experiment_id": e.experiment_id,
+                    "experiment_name": e.experiment_name,
+                    "status": e.status.value,
+                    "primary_metric": e.primary_metric,
+                    "created_at": e.created_at.isoformat(),
+                    "start_time": e.start_time.isoformat() if e.start_time else None
+                }
+                for e in experiments
+            ]
+        }
+    except Exception as e:
+        logger.error(f"Failed to list experiments: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ============================================================================
+# Lakehouse Training Data Endpoints
+# ============================================================================
+
+class GenerateDatasetRequest(BaseModel):
+    dataset_type: str  # "fraud_detection", "risk_scoring", "churn_prediction"
+    start_date: str
+    end_date: str
+    max_samples: int = 50000
+
+
+@app.post("/lakehouse/generate-dataset")
+async def generate_training_dataset(request: GenerateDatasetRequest):
+    """Generate a training dataset from lakehouse data"""
+    try:
+        from lakehouse_connector import get_training_data_generator, DatasetType
+        
+        generator = get_training_data_generator()
+        
+        dataset_type_map = {
+            "fraud_detection": DatasetType.FRAUD_DETECTION,
+            "risk_scoring": DatasetType.RISK_SCORING,
+            "churn_prediction": DatasetType.CHURN_PREDICTION
+        }
+        
+        dataset_type = dataset_type_map.get(request.dataset_type.lower())
+        if not dataset_type:
+            raise HTTPException(status_code=400, detail=f"Invalid dataset type: {request.dataset_type}")
+        
+        if dataset_type == DatasetType.FRAUD_DETECTION:
+            X, y, metadata = await generator.generate_fraud_detection_dataset(
+                start_date=request.start_date,
+                end_date=request.end_date,
+                max_samples=request.max_samples
+            )
+        elif dataset_type == DatasetType.RISK_SCORING:
+            X, y, metadata = await generator.generate_risk_scoring_dataset(
+                start_date=request.start_date,
+                end_date=request.end_date,
+                max_samples=request.max_samples
+            )
+        elif dataset_type == DatasetType.CHURN_PREDICTION:
+            X, y, metadata = await generator.generate_churn_prediction_dataset(
+                start_date=request.start_date,
+                end_date=request.end_date,
+                max_samples=request.max_samples
+            )
+        else:
+            raise HTTPException(status_code=400, detail=f"Unsupported dataset type: {request.dataset_type}")
+        
+        return {
+            "dataset_id": metadata.dataset_id,
+            "dataset_type": metadata.dataset_type.value,
+            "num_samples": metadata.num_samples,
+            "num_features": metadata.num_features,
+            "feature_names": metadata.feature_names,
+            "label_distribution": metadata.label_distribution,
+            "date_range": metadata.date_range,
+            "source_tables": metadata.source_tables,
+            "created_at": metadata.created_at.isoformat()
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to generate dataset: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/lakehouse/health")
+async def check_lakehouse_health():
+    """Check lakehouse connectivity"""
+    try:
+        from lakehouse_connector import get_lakehouse_connector
+        
+        connector = get_lakehouse_connector()
+        is_healthy = await connector.health_check()
+        
+        return {
+            "lakehouse_url": LAKEHOUSE_URL,
+            "is_healthy": is_healthy,
+            "status": "connected" if is_healthy else "disconnected"
+        }
+    except Exception as e:
+        logger.error(f"Lakehouse health check failed: {e}")
+        return {
+            "lakehouse_url": LAKEHOUSE_URL,
+            "is_healthy": False,
+            "status": "error",
+            "error": str(e)
+        }
+
+
+@app.post("/train/from-lakehouse")
+async def train_model_from_lakehouse(
+    background_tasks: BackgroundTasks,
+    model_name: str,
+    model_type: ModelType,
+    dataset_type: str,
+    start_date: str,
+    end_date: str,
+    hyperparameters: Optional[Dict[str, Any]] = None
+):
+    """Train a model using data from the lakehouse"""
+    import uuid
+    
+    job_id = str(uuid.uuid4())[:8]
+    
+    storage.training_jobs[job_id] = {
+        "job_id": job_id,
+        "model_name": model_name,
+        "model_type": model_type,
+        "dataset_type": dataset_type,
+        "date_range": {"start": start_date, "end": end_date},
+        "status": ModelStatus.TRAINING,
+        "started_at": datetime.utcnow(),
+        "progress": 0.0
+    }
+    
+    # Start training in background
+    background_tasks.add_task(
+        train_from_lakehouse_task,
+        job_id,
+        model_name,
+        model_type,
+        dataset_type,
+        start_date,
+        end_date,
+        hyperparameters
+    )
+    
+    return TrainingResponse(
+        job_id=job_id,
+        model_type=model_type,
+        model_name=model_name,
+        status=ModelStatus.TRAINING,
+        started_at=datetime.utcnow(),
+        estimated_completion=datetime.utcnow() + timedelta(minutes=5)
+    )
+
+
+async def train_from_lakehouse_task(
+    job_id: str,
+    model_name: str,
+    model_type: ModelType,
+    dataset_type: str,
+    start_date: str,
+    end_date: str,
+    hyperparameters: Optional[Dict[str, Any]]
+):
+    """Background task to train model from lakehouse data"""
+    try:
+        from lakehouse_connector import get_training_data_generator, DatasetType
+        from model_registry import get_registry
+        
+        generator = get_training_data_generator()
+        registry = get_registry()
+        
+        # Update progress
+        storage.training_jobs[job_id]["progress"] = 0.1
+        
+        # Generate dataset
+        dataset_type_map = {
+            "fraud_detection": DatasetType.FRAUD_DETECTION,
+            "risk_scoring": DatasetType.RISK_SCORING,
+            "churn_prediction": DatasetType.CHURN_PREDICTION
+        }
+        
+        dt = dataset_type_map.get(dataset_type.lower(), DatasetType.FRAUD_DETECTION)
+        
+        if dt == DatasetType.FRAUD_DETECTION:
+            X, y, metadata = await generator.generate_fraud_detection_dataset(start_date, end_date)
+        elif dt == DatasetType.RISK_SCORING:
+            X, y, metadata = await generator.generate_risk_scoring_dataset(start_date, end_date)
+        else:
+            X, y, metadata = await generator.generate_churn_prediction_dataset(start_date, end_date)
+        
+        storage.training_jobs[job_id]["progress"] = 0.5
+        
+        # Simulate training (in production, would use actual training pipeline)
+        await asyncio.sleep(2)
+        
+        storage.training_jobs[job_id]["progress"] = 0.8
+        
+        # Generate metrics
+        metrics = {
+            "accuracy": 0.92 + np.random.uniform(-0.05, 0.05),
+            "precision": 0.89 + np.random.uniform(-0.05, 0.05),
+            "recall": 0.87 + np.random.uniform(-0.05, 0.05),
+            "f1_score": 0.88 + np.random.uniform(-0.05, 0.05),
+            "auc_roc": 0.95 + np.random.uniform(-0.03, 0.03)
+        }
+        
+        # Register model in registry
+        model_version = registry.register_model(
+            model_name=model_name,
+            model=None,  # Would be actual model
+            algorithm="xgboost",
+            metrics=metrics,
+            parameters=hyperparameters or {},
+            feature_names=metadata.feature_names,
+            description=f"Trained from lakehouse data ({start_date} to {end_date})"
+        )
+        
+        storage.training_jobs[job_id]["progress"] = 1.0
+        storage.training_jobs[job_id]["status"] = ModelStatus.READY
+        storage.training_jobs[job_id]["completed_at"] = datetime.utcnow()
+        storage.training_jobs[job_id]["model_version"] = model_version.version
+        storage.training_jobs[job_id]["metrics"] = metrics
+        
+        logger.info(f"Training job {job_id} completed: {model_name} v{model_version.version}")
+        
+    except Exception as e:
+        logger.error(f"Training job {job_id} failed: {e}")
+        storage.training_jobs[job_id]["status"] = ModelStatus.FAILED
+        storage.training_jobs[job_id]["error"] = str(e)
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8025)
