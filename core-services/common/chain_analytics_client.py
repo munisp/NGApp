@@ -549,9 +549,9 @@ class TRMLabsProvider(ChainAnalyticsProvider):
         
         alerts = []
         if from_risk.should_block():
-            alerts.append(f"Source address flagged by TRM")
+            alerts.append("Source address flagged by TRM")
         if to_risk.should_block():
-            alerts.append(f"Destination address flagged by TRM")
+            alerts.append("Destination address flagged by TRM")
         
         risk_level = RiskLevel.UNKNOWN
         if from_risk.is_sanctioned or to_risk.is_sanctioned:
@@ -695,9 +695,9 @@ class EllipticProvider(ChainAnalyticsProvider):
         
         alerts = []
         if from_risk.should_block():
-            alerts.append(f"Source address flagged by Elliptic")
+            alerts.append("Source address flagged by Elliptic")
         if to_risk.should_block():
-            alerts.append(f"Destination address flagged by Elliptic")
+            alerts.append("Destination address flagged by Elliptic")
         
         risk_level = RiskLevel.UNKNOWN
         if combined_score is not None:
