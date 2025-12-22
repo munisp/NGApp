@@ -15,7 +15,7 @@ import logging
 import uuid
 import hashlib
 import struct
-from typing import Dict, Any, Optional, List, Tuple
+from typing import Dict, Any, Optional, List, Tuple, Callable, Awaitable
 from decimal import Decimal
 from datetime import datetime, timezone
 from enum import IntFlag, Enum
