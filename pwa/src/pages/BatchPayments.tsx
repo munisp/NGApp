@@ -4,7 +4,6 @@
  */
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
 
 interface BatchPayment {
   payment_id: string;
@@ -71,7 +70,6 @@ const STATUS_COLORS: Record<string, string> = {
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 
 const BatchPayments: React.FC = () => {
-  const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [activeTab, setActiveTab] = useState<'batches' | 'scheduled' | 'create'>('batches');

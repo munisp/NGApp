@@ -57,7 +57,7 @@ const TransferTracking: React.FC = () => {
   
   const [tracking, setTracking] = useState<TransferTracking | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, _setError] = useState<string | null>(null);
   const [notificationPrefs, setNotificationPrefs] = useState({
     sms: true,
     whatsapp: false,
