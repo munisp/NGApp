@@ -142,7 +142,7 @@ struct QuickActionsView: View {
     let actions = [
         ("Send", "arrow.up.circle.fill", Color.blue),
         ("Receive", "arrow.down.circle.fill", Color.green),
-        ("Airtime", "phone.fill", Color.purple),
+        ("Stablecoin", "bitcoinsign.circle.fill", Color.purple),
         ("Bills", "doc.text.fill", Color.orange)
     ]
     
@@ -184,8 +184,8 @@ struct QuickActionsView: View {
             MultiChannelPaymentView()
         case "Receive":
             ReceiveMoneyView()
-        case "Airtime":
-            AirtimeBillPaymentView()
+        case "Stablecoin":
+            StablecoinView()
         case "Bills":
             AirtimeBillPaymentView()
         default:

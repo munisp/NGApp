@@ -29,6 +29,7 @@ sealed class Screen(val route: String) {
     object Settings : Screen("settings")
     object Profile : Screen("profile")
     object Support : Screen("support")
+    object Stablecoin : Screen("stablecoin")
 }
 
 @Composable
@@ -141,6 +142,10 @@ fun RemittanceNavHost(
 
         composable(Screen.Support.route) {
             SupportScreen(onNavigateBack = { navController.popBackStack() })
+        }
+
+        composable(Screen.Stablecoin.route) {
+            StablecoinScreen(onNavigateBack = { navController.popBackStack() })
         }
     }
 }
