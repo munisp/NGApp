@@ -30,6 +30,12 @@ sealed class Screen(val route: String) {
     object Profile : Screen("profile")
     object Support : Screen("support")
     object Stablecoin : Screen("stablecoin")
+    object TransferTracking : Screen("transfer_tracking/{transferId}") {
+        fun createRoute(transferId: String) = "transfer_tracking/$transferId"
+    }
+    object BatchPayments : Screen("batch_payments")
+    object SavingsGoals : Screen("savings_goals")
+    object FXAlerts : Screen("fx_alerts")
 }
 
 @Composable
@@ -146,6 +152,26 @@ fun RemittanceNavHost(
 
         composable(Screen.Stablecoin.route) {
             StablecoinScreen(onNavigateBack = { navController.popBackStack() })
+        }
+
+        composable(Screen.TransferTracking.route) { backStackEntry ->
+            val transferId = backStackEntry.arguments?.getString("transferId") ?: ""
+            TransferTrackingScreen(
+                transferId = transferId,
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        composable(Screen.BatchPayments.route) {
+            BatchPaymentsScreen(onNavigateBack = { navController.popBackStack() })
+        }
+
+        composable(Screen.SavingsGoals.route) {
+            SavingsGoalsScreen(onNavigateBack = { navController.popBackStack() })
+        }
+
+        composable(Screen.FXAlerts.route) {
+            FXAlertsScreen(onNavigateBack = { navController.popBackStack() })
         }
     }
 }

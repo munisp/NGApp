@@ -143,7 +143,11 @@ struct QuickActionsView: View {
         ("Send", "arrow.up.circle.fill", Color.blue),
         ("Receive", "arrow.down.circle.fill", Color.green),
         ("Stablecoin", "bitcoinsign.circle.fill", Color.purple),
-        ("Bills", "doc.text.fill", Color.orange)
+        ("Bills", "doc.text.fill", Color.orange),
+        ("Batch", "doc.on.doc.fill", Color.indigo),
+        ("Savings", "target", Color.teal),
+        ("FX Alerts", "bell.badge.fill", Color.pink),
+        ("Track", "location.fill", Color.cyan)
     ]
     
     var body: some View {
@@ -188,6 +192,14 @@ struct QuickActionsView: View {
             StablecoinView()
         case "Bills":
             AirtimeBillPaymentView()
+        case "Batch":
+            BatchPaymentsView()
+        case "Savings":
+            SavingsGoalsView()
+        case "FX Alerts":
+            FXAlertsView()
+        case "Track":
+            TransferTrackingView(transferId: "demo-transfer")
         default:
             EmptyView()
         }

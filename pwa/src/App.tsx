@@ -32,6 +32,10 @@ const AccountHealth = lazy(() => import('./pages/AccountHealth'));
 const PaymentPerformance = lazy(() => import('./pages/PaymentPerformance'));
 const Disputes = lazy(() => import('./pages/Disputes'));
 const Stablecoin = lazy(() => import('./pages/Stablecoin'));
+const TransferTracking = lazy(() => import('./pages/TransferTracking'));
+const BatchPayments = lazy(() => import('./pages/BatchPayments'));
+const SavingsGoals = lazy(() => import('./pages/SavingsGoals'));
+const FXAlerts = lazy(() => import('./pages/FXAlerts'));
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -88,8 +92,12 @@ const App: React.FC = () => {
                                                                   <Route path="account-health" element={<AccountHealth />} />
                                                                   <Route path="payment-performance" element={<PaymentPerformance />} />
                                                                                                                                   <Route path="disputes" element={<Disputes />} />
-                                                                                                                                  <Route path="stablecoin" element={<Stablecoin />} />
-                                                                                                                                </Route>
+                                                                                                                                                                                                                                                                  <Route path="stablecoin" element={<Stablecoin />} />
+                                                                                                                                                                                                                                                                  <Route path="transfer-tracking/:transferId" element={<TransferTracking />} />
+                                                                                                                                                                                                                                                                  <Route path="batch-payments" element={<BatchPayments />} />
+                                                                                                                                                                                                                                                                  <Route path="savings-goals" element={<SavingsGoals />} />
+                                                                                                                                                                                                                                                                  <Route path="fx-alerts" element={<FXAlerts />} />
+                                                                                                                                                                                                                                                                </Route>
         
         <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
