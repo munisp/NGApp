@@ -1,23 +1,4 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  Wallet, 
-  ArrowUpRight, 
-  ArrowDownLeft, 
-  RefreshCw, 
-  Copy, 
-  Check,
-  ChevronDown,
-  AlertCircle,
-  Clock,
-  Zap,
-  Globe,
-  Shield,
-  TrendingUp,
-  QrCode,
-  ExternalLink,
-  Wifi,
-  WifiOff
-} from 'lucide-react';
+import { useState, useEffect } from 'react';
 
 // Types
 interface WalletAddress {
@@ -73,6 +54,79 @@ const STABLECOINS = {
 };
 
 const API_BASE = import.meta.env.VITE_STABLECOIN_API_URL || 'http://localhost:8026';
+
+// SVG Icon Components
+const WifiIcon = ({ className = "w-4 h-4" }: { className?: string }) => (
+  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.141 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0" />
+  </svg>
+);
+
+const WifiOffIcon = ({ className = "w-4 h-4" }: { className?: string }) => (
+  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 5.636a9 9 0 010 12.728m0 0l-2.829-2.829m2.829 2.829L21 21M15.536 8.464a5 5 0 010 7.072m0 0l-2.829-2.829m-4.243 2.829a4.978 4.978 0 01-1.414-2.83m-1.414 5.658a9 9 0 01-2.167-9.238m7.824 2.167a1 1 0 111.414 1.414m-1.414-1.414L3 3m8.293 8.293l1.414 1.414" />
+  </svg>
+);
+
+const ArrowUpRightIcon = ({ className = "w-6 h-6" }: { className?: string }) => (
+  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 17L17 7M17 7H7M17 7v10" />
+  </svg>
+);
+
+const ArrowDownLeftIcon = ({ className = "w-6 h-6" }: { className?: string }) => (
+  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 7L7 17M7 17h10M7 17V7" />
+  </svg>
+);
+
+const RefreshIcon = ({ className = "w-6 h-6" }: { className?: string }) => (
+  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+  </svg>
+);
+
+const GlobeIcon = ({ className = "w-6 h-6" }: { className?: string }) => (
+  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+  </svg>
+);
+
+const TrendingUpIcon = ({ className = "w-4 h-4" }: { className?: string }) => (
+  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+  </svg>
+);
+
+const CopyIcon = ({ className = "w-4 h-4" }: { className?: string }) => (
+  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+  </svg>
+);
+
+const CheckIcon = ({ className = "w-4 h-4" }: { className?: string }) => (
+  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+  </svg>
+);
+
+const ShieldIcon = ({ className = "w-8 h-8" }: { className?: string }) => (
+  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+  </svg>
+);
+
+const ZapIcon = ({ className = "w-8 h-8" }: { className?: string }) => (
+  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+  </svg>
+);
+
+const AlertIcon = ({ className = "w-5 h-5" }: { className?: string }) => (
+  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+  </svg>
+);
 
 export default function Stablecoin() {
   const [activeTab, setActiveTab] = useState<'wallet' | 'send' | 'receive' | 'convert' | 'ramp'>('wallet');
@@ -130,14 +184,12 @@ export default function Stablecoin() {
   const loadWalletData = async () => {
     setLoading(true);
     try {
-      // Load wallets
       const walletsRes = await fetch(`${API_BASE}/wallet/${userId}`);
       if (walletsRes.ok) {
         const data = await walletsRes.json();
         setWallets(data.wallets || []);
       }
       
-      // Load balances
       const balancesRes = await fetch(`${API_BASE}/wallet/${userId}/balances`);
       if (balancesRes.ok) {
         const data = await balancesRes.json();
@@ -145,7 +197,6 @@ export default function Stablecoin() {
         setTotalBalance(data.total_usd || '0.00');
       }
       
-      // Load transactions
       const txRes = await fetch(`${API_BASE}/transactions/${userId}`);
       if (txRes.ok) {
         const data = await txRes.json();
@@ -354,11 +405,11 @@ export default function Stablecoin() {
           <div className="flex items-center gap-2">
             {isOnline ? (
               <span className="flex items-center text-green-300 text-sm">
-                <Wifi className="w-4 h-4 mr-1" /> Online
+                <WifiIcon className="w-4 h-4 mr-1" /> Online
               </span>
             ) : (
               <span className="flex items-center text-yellow-300 text-sm">
-                <WifiOff className="w-4 h-4 mr-1" /> Offline
+                <WifiOffIcon className="w-4 h-4 mr-1" /> Offline
               </span>
             )}
           </div>
@@ -368,8 +419,8 @@ export default function Stablecoin() {
         <div className="text-center py-4">
           <p className="text-sm opacity-80">Total Balance</p>
           <p className="text-4xl font-bold">${totalBalance}</p>
-          <p className="text-sm opacity-80 mt-1">
-            <TrendingUp className="w-4 h-4 inline mr-1" />
+          <p className="text-sm opacity-80 mt-1 flex items-center justify-center">
+            <TrendingUpIcon className="w-4 h-4 mr-1" />
             ML-optimized rates active
           </p>
         </div>
@@ -380,28 +431,28 @@ export default function Stablecoin() {
             onClick={() => setActiveTab('send')}
             className="flex flex-col items-center p-3 bg-white/20 rounded-xl hover:bg-white/30 transition"
           >
-            <ArrowUpRight className="w-6 h-6" />
+            <ArrowUpRightIcon className="w-6 h-6" />
             <span className="text-xs mt-1">Send</span>
           </button>
           <button 
             onClick={() => setActiveTab('receive')}
             className="flex flex-col items-center p-3 bg-white/20 rounded-xl hover:bg-white/30 transition"
           >
-            <ArrowDownLeft className="w-6 h-6" />
+            <ArrowDownLeftIcon className="w-6 h-6" />
             <span className="text-xs mt-1">Receive</span>
           </button>
           <button 
             onClick={() => setActiveTab('convert')}
             className="flex flex-col items-center p-3 bg-white/20 rounded-xl hover:bg-white/30 transition"
           >
-            <RefreshCw className="w-6 h-6" />
+            <RefreshIcon className="w-6 h-6" />
             <span className="text-xs mt-1">Convert</span>
           </button>
           <button 
             onClick={() => setActiveTab('ramp')}
             className="flex flex-col items-center p-3 bg-white/20 rounded-xl hover:bg-white/30 transition"
           >
-            <Globe className="w-6 h-6" />
+            <GlobeIcon className="w-6 h-6" />
             <span className="text-xs mt-1">Buy/Sell</span>
           </button>
         </div>
@@ -409,10 +460,10 @@ export default function Stablecoin() {
 
       {/* Tabs */}
       <div className="flex border-b bg-white sticky top-0 z-10">
-        {['wallet', 'send', 'receive', 'convert', 'ramp'].map((tab) => (
+        {(['wallet', 'send', 'receive', 'convert', 'ramp'] as const).map((tab) => (
           <button
             key={tab}
-            onClick={() => setActiveTab(tab as typeof activeTab)}
+            onClick={() => setActiveTab(tab)}
             className={`flex-1 py-3 text-sm font-medium capitalize ${
               activeTab === tab 
                 ? 'text-blue-600 border-b-2 border-blue-600' 
@@ -428,7 +479,6 @@ export default function Stablecoin() {
         {/* Wallet Tab */}
         {activeTab === 'wallet' && (
           <div className="space-y-4">
-            {/* Create Wallet Button */}
             {wallets.length === 0 && (
               <button
                 onClick={createWallet}
@@ -438,7 +488,6 @@ export default function Stablecoin() {
               </button>
             )}
             
-            {/* Balances */}
             <div className="bg-white rounded-xl p-4 shadow-sm">
               <h3 className="font-semibold mb-3">Your Balances</h3>
               {balances.length === 0 ? (
@@ -474,7 +523,6 @@ export default function Stablecoin() {
               )}
             </div>
             
-            {/* Recent Transactions */}
             <div className="bg-white rounded-xl p-4 shadow-sm">
               <h3 className="font-semibold mb-3">Recent Transactions</h3>
               {transactions.length === 0 ? (
@@ -488,9 +536,9 @@ export default function Stablecoin() {
                           tx.transaction_type === 'deposit' ? 'bg-green-100' : 'bg-red-100'
                         }`}>
                           {tx.transaction_type === 'deposit' ? (
-                            <ArrowDownLeft className="w-4 h-4 text-green-600" />
+                            <ArrowDownLeftIcon className="w-4 h-4 text-green-600" />
                           ) : (
-                            <ArrowUpRight className="w-4 h-4 text-red-600" />
+                            <ArrowUpRightIcon className="w-4 h-4 text-red-600" />
                           )}
                         </div>
                         <div>
@@ -499,7 +547,9 @@ export default function Stablecoin() {
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="font-semibold">
+                        <p className={`font-semibold ${
+                          tx.transaction_type === 'deposit' ? 'text-green-600' : 'text-red-600'
+                        }`}>
                           {tx.transaction_type === 'deposit' ? '+' : '-'}${tx.amount}
                         </p>
                         <span className={`text-xs px-2 py-0.5 rounded-full ${getStatusColor(tx.status)}`}>
@@ -512,25 +562,24 @@ export default function Stablecoin() {
               )}
             </div>
             
-            {/* Features */}
             <div className="grid grid-cols-2 gap-3">
               <div className="bg-white rounded-xl p-4 shadow-sm">
-                <Zap className="w-8 h-8 text-yellow-500 mb-2" />
+                <ZapIcon className="w-8 h-8 text-yellow-500 mb-2" />
                 <h4 className="font-medium">Instant Transfers</h4>
-                <p className="text-xs text-gray-500">Send in seconds, not days</p>
+                <p className="text-xs text-gray-500">Send in seconds</p>
               </div>
               <div className="bg-white rounded-xl p-4 shadow-sm">
-                <Shield className="w-8 h-8 text-green-500 mb-2" />
+                <ShieldIcon className="w-8 h-8 text-green-500 mb-2" />
                 <h4 className="font-medium">Secure</h4>
                 <p className="text-xs text-gray-500">Multi-chain security</p>
               </div>
               <div className="bg-white rounded-xl p-4 shadow-sm">
-                <TrendingUp className="w-8 h-8 text-blue-500 mb-2" />
+                <TrendingUpIcon className="w-8 h-8 text-blue-500 mb-2" />
                 <h4 className="font-medium">ML Rates</h4>
                 <p className="text-xs text-gray-500">AI-optimized timing</p>
               </div>
               <div className="bg-white rounded-xl p-4 shadow-sm">
-                <WifiOff className="w-8 h-8 text-purple-500 mb-2" />
+                <WifiOffIcon className="w-8 h-8 text-purple-500 mb-2" />
                 <h4 className="font-medium">Offline Ready</h4>
                 <p className="text-xs text-gray-500">Queue when offline</p>
               </div>
@@ -544,80 +593,87 @@ export default function Stablecoin() {
             <div className="bg-white rounded-xl p-4 shadow-sm">
               <h3 className="font-semibold mb-4">Send Stablecoin</h3>
               
-              {/* Chain Selection */}
+              {!isOnline && (
+                <div className="flex items-start gap-2 p-3 bg-yellow-50 rounded-lg mb-4">
+                  <AlertIcon className="w-5 h-5 text-yellow-600 flex-shrink-0" />
+                  <p className="text-sm text-yellow-700">
+                    You are offline. Transaction will be queued and sent when you are back online.
+                  </p>
+                </div>
+              )}
+              
               <div className="mb-4">
-                <label className="block text-sm text-gray-600 mb-2">Network</label>
-                <select
-                  value={sendChain}
-                  onChange={(e) => setSendChain(e.target.value)}
-                  className="w-full p-3 border rounded-lg bg-gray-50"
-                >
+                <label className="text-sm text-gray-600 mb-2 block">Network</label>
+                <div className="flex flex-wrap gap-2">
                   {Object.entries(CHAINS).map(([key, chain]) => (
-                    <option key={key} value={key}>
-                      {chain.icon} {chain.name} (Fee: {chain.fee})
-                    </option>
+                    <button
+                      key={key}
+                      onClick={() => setSendChain(key)}
+                      className={`px-3 py-2 rounded-lg text-sm font-medium transition ${
+                        sendChain === key 
+                          ? 'bg-blue-600 text-white' 
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                    >
+                      {chain.icon} {chain.name}
+                    </button>
                   ))}
-                </select>
+                </div>
               </div>
               
-              {/* Stablecoin Selection */}
               <div className="mb-4">
-                <label className="block text-sm text-gray-600 mb-2">Stablecoin</label>
-                <select
-                  value={sendStablecoin}
-                  onChange={(e) => setSendStablecoin(e.target.value)}
-                  className="w-full p-3 border rounded-lg bg-gray-50"
-                >
+                <label className="text-sm text-gray-600 mb-2 block">Stablecoin</label>
+                <div className="flex flex-wrap gap-2">
                   {Object.entries(STABLECOINS).map(([key, coin]) => (
-                    <option key={key} value={key}>
+                    <button
+                      key={key}
+                      onClick={() => setSendStablecoin(key)}
+                      className={`px-3 py-2 rounded-lg text-sm font-medium transition ${
+                        sendStablecoin === key 
+                          ? 'bg-blue-600 text-white' 
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                    >
                       {coin.icon} {coin.symbol}
-                    </option>
+                    </button>
                   ))}
-                </select>
+                </div>
               </div>
               
-              {/* Amount */}
               <div className="mb-4">
-                <label className="block text-sm text-gray-600 mb-2">Amount</label>
+                <label className="text-sm text-gray-600 mb-2 block">Amount</label>
                 <div className="relative">
-                  <span className="absolute left-3 top-3 text-gray-500">$</span>
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
                   <input
                     type="number"
                     value={sendAmount}
                     onChange={(e) => setSendAmount(e.target.value)}
                     placeholder="0.00"
-                    className="w-full p-3 pl-8 border rounded-lg bg-gray-50"
+                    className="w-full pl-8 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   />
                 </div>
               </div>
               
-              {/* Recipient Address */}
               <div className="mb-4">
-                <label className="block text-sm text-gray-600 mb-2">Recipient Address</label>
+                <label className="text-sm text-gray-600 mb-2 block">Recipient Address</label>
                 <input
                   type="text"
                   value={sendAddress}
                   onChange={(e) => setSendAddress(e.target.value)}
                   placeholder="Enter wallet address"
-                  className="w-full p-3 border rounded-lg bg-gray-50 font-mono text-sm"
+                  className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
               </div>
               
-              {/* Offline Notice */}
-              {!isOnline && (
-                <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg flex items-start gap-2">
-                  <AlertCircle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
-                  <div>
-                    <p className="text-sm font-medium text-yellow-800">You're offline</p>
-                    <p className="text-xs text-yellow-700">Transaction will be queued and sent when you're back online</p>
-                  </div>
-                </div>
-              )}
+              <div className="flex justify-between text-sm text-gray-600 mb-4">
+                <span>Network Fee</span>
+                <span>{CHAINS[sendChain as keyof typeof CHAINS]?.fee || '$0'}</span>
+              </div>
               
               <button
                 onClick={handleSend}
-                disabled={sendLoading || !sendAmount || !sendAddress}
-                className="w-full p-4 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={!sendAmount || !sendAddress || sendLoading}
+                className="w-full py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition disabled:bg-gray-300 disabled:cursor-not-allowed"
               >
                 {sendLoading ? 'Sending...' : isOnline ? 'Send Now' : 'Queue for Later'}
               </button>
@@ -633,11 +689,10 @@ export default function Stablecoin() {
               
               {wallets.length === 0 ? (
                 <div className="text-center py-8">
-                  <Wallet className="w-12 h-12 text-gray-300 mx-auto mb-3" />
                   <p className="text-gray-500 mb-4">Create a wallet to receive stablecoins</p>
                   <button
                     onClick={createWallet}
-                    className="px-6 py-2 bg-blue-600 text-white rounded-lg"
+                    className="px-6 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition"
                   >
                     Create Wallet
                   </button>
@@ -647,27 +702,30 @@ export default function Stablecoin() {
                   {wallets.map((wallet) => (
                     <div key={wallet.address_id} className="p-4 bg-gray-50 rounded-lg">
                       <div className="flex items-center justify-between mb-2">
-                        <span className="font-medium flex items-center gap-2">
-                          {CHAINS[wallet.chain as keyof typeof CHAINS]?.icon}
+                        <span className="font-medium">
+                          {CHAINS[wallet.chain as keyof typeof CHAINS]?.icon}{' '}
                           {CHAINS[wallet.chain as keyof typeof CHAINS]?.name || wallet.chain}
                         </span>
                         <button
                           onClick={() => copyAddress(wallet.address)}
-                          className="p-2 hover:bg-gray-200 rounded-lg transition"
+                          className="flex items-center gap-1 text-blue-600 text-sm hover:text-blue-700"
                         >
                           {copiedAddress === wallet.address ? (
-                            <Check className="w-4 h-4 text-green-600" />
+                            <>
+                              <CheckIcon className="w-4 h-4" /> Copied
+                            </>
                           ) : (
-                            <Copy className="w-4 h-4 text-gray-600" />
+                            <>
+                              <CopyIcon className="w-4 h-4" /> Copy
+                            </>
                           )}
                         </button>
                       </div>
-                      <p className="font-mono text-xs text-gray-600 break-all bg-white p-2 rounded">
+                      <p className="text-sm text-gray-600 break-all bg-white p-2 rounded">
                         {wallet.address}
                       </p>
                       <p className="text-xs text-gray-500 mt-2">
-                        Supports: USDT, USDC
-                        {wallet.chain === 'ethereum' && ', PYUSD, DAI'}
+                        Supports: USDT, USDC, PYUSD, DAI
                       </p>
                     </div>
                   ))}
@@ -678,9 +736,9 @@ export default function Stablecoin() {
             <div className="bg-blue-50 rounded-xl p-4">
               <h4 className="font-medium text-blue-800 mb-2">Tips for Receiving</h4>
               <ul className="text-sm text-blue-700 space-y-1">
-                <li>• Always verify the network matches the sender's</li>
-                <li>• Tron (TRC20) has the lowest fees</li>
-                <li>• Deposits are confirmed automatically</li>
+                <li>Always verify the network matches the sender</li>
+                <li>Tron (TRC20) has the lowest fees</li>
+                <li>Deposits are confirmed automatically</li>
               </ul>
             </div>
           </div>
@@ -692,36 +750,38 @@ export default function Stablecoin() {
             <div className="bg-white rounded-xl p-4 shadow-sm">
               <h3 className="font-semibold mb-4">Convert Stablecoin</h3>
               
-              {/* From */}
               <div className="mb-4">
-                <label className="block text-sm text-gray-600 mb-2">From</label>
-                <div className="flex gap-2">
-                  <select
-                    value={fromStablecoin}
-                    onChange={(e) => setFromStablecoin(e.target.value)}
-                    className="flex-1 p-3 border rounded-lg bg-gray-50"
-                  >
-                    {Object.entries(STABLECOINS).map(([key, coin]) => (
-                      <option key={key} value={key}>{coin.symbol}</option>
-                    ))}
-                  </select>
-                  <select
-                    value={fromChain}
-                    onChange={(e) => setFromChain(e.target.value)}
-                    className="flex-1 p-3 border rounded-lg bg-gray-50"
-                  >
-                    {Object.entries(CHAINS).map(([key, chain]) => (
-                      <option key={key} value={key}>{chain.name}</option>
-                    ))}
-                  </select>
+                <label className="text-sm text-gray-600 mb-2 block">From</label>
+                <div className="flex flex-wrap gap-2 mb-2">
+                  {Object.entries(STABLECOINS).map(([key, coin]) => (
+                    <button
+                      key={key}
+                      onClick={() => setFromStablecoin(key)}
+                      className={`px-3 py-2 rounded-lg text-sm font-medium transition ${
+                        fromStablecoin === key 
+                          ? 'bg-blue-600 text-white' 
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                    >
+                      {coin.icon} {coin.symbol}
+                    </button>
+                  ))}
                 </div>
+                <select
+                  value={fromChain}
+                  onChange={(e) => setFromChain(e.target.value)}
+                  className="w-full px-4 py-2 border rounded-lg text-sm"
+                >
+                  {Object.entries(CHAINS).map(([key, chain]) => (
+                    <option key={key} value={key}>{chain.name}</option>
+                  ))}
+                </select>
               </div>
               
-              {/* Amount */}
               <div className="mb-4">
-                <label className="block text-sm text-gray-600 mb-2">Amount</label>
+                <label className="text-sm text-gray-600 mb-2 block">Amount</label>
                 <div className="relative">
-                  <span className="absolute left-3 top-3 text-gray-500">$</span>
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
                   <input
                     type="number"
                     value={convertAmount}
@@ -730,73 +790,73 @@ export default function Stablecoin() {
                       setQuote(null);
                     }}
                     placeholder="0.00"
-                    className="w-full p-3 pl-8 border rounded-lg bg-gray-50"
+                    className="w-full pl-8 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   />
                 </div>
               </div>
               
-              {/* Swap Icon */}
               <div className="flex justify-center my-2">
                 <div className="p-2 bg-gray-100 rounded-full">
-                  <RefreshCw className="w-5 h-5 text-gray-600" />
+                  <RefreshIcon className="w-5 h-5 text-gray-600" />
                 </div>
               </div>
               
-              {/* To */}
               <div className="mb-4">
-                <label className="block text-sm text-gray-600 mb-2">To</label>
-                <div className="flex gap-2">
-                  <select
-                    value={toStablecoin}
-                    onChange={(e) => setToStablecoin(e.target.value)}
-                    className="flex-1 p-3 border rounded-lg bg-gray-50"
-                  >
-                    {Object.entries(STABLECOINS).map(([key, coin]) => (
-                      <option key={key} value={key}>{coin.symbol}</option>
-                    ))}
-                  </select>
-                  <select
-                    value={toChain}
-                    onChange={(e) => setToChain(e.target.value)}
-                    className="flex-1 p-3 border rounded-lg bg-gray-50"
-                  >
-                    {Object.entries(CHAINS).map(([key, chain]) => (
-                      <option key={key} value={key}>{chain.name}</option>
-                    ))}
-                  </select>
+                <label className="text-sm text-gray-600 mb-2 block">To</label>
+                <div className="flex flex-wrap gap-2 mb-2">
+                  {Object.entries(STABLECOINS).map(([key, coin]) => (
+                    <button
+                      key={key}
+                      onClick={() => setToStablecoin(key)}
+                      className={`px-3 py-2 rounded-lg text-sm font-medium transition ${
+                        toStablecoin === key 
+                          ? 'bg-blue-600 text-white' 
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                    >
+                      {coin.icon} {coin.symbol}
+                    </button>
+                  ))}
                 </div>
+                <select
+                  value={toChain}
+                  onChange={(e) => setToChain(e.target.value)}
+                  className="w-full px-4 py-2 border rounded-lg text-sm"
+                >
+                  {Object.entries(CHAINS).map(([key, chain]) => (
+                    <option key={key} value={key}>{chain.name}</option>
+                  ))}
+                </select>
               </div>
               
-              {/* Get Quote Button */}
               {!quote && (
                 <button
                   onClick={getQuote}
-                  disabled={quoteLoading || !convertAmount}
-                  className="w-full p-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition disabled:opacity-50 mb-4"
+                  disabled={!convertAmount || quoteLoading}
+                  className="w-full py-3 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition disabled:opacity-50 mb-4"
                 >
                   {quoteLoading ? 'Getting Quote...' : 'Get Quote'}
                 </button>
               )}
               
-              {/* Quote Display */}
               {quote && (
-                <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+                <div className="p-4 bg-green-50 rounded-lg mb-4">
                   <div className="flex justify-between mb-2">
-                    <span className="text-gray-600">You'll receive</span>
+                    <span className="text-gray-600">You will receive</span>
                     <span className="font-bold text-lg">${quote.to_amount}</span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-500">Rate</span>
-                    <span>1 {fromStablecoin.toUpperCase()} = {quote.rate} {toStablecoin.toUpperCase()}</span>
+                    <span>1 {STABLECOINS[fromStablecoin as keyof typeof STABLECOINS]?.symbol} = {quote.rate} {STABLECOINS[toStablecoin as keyof typeof STABLECOINS]?.symbol}</span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-500">Fee</span>
                     <span>${quote.fee}</span>
                   </div>
                   {quote.is_ml_optimized && (
-                    <div className="flex items-center gap-1 text-xs text-green-600 mt-2">
-                      <TrendingUp className="w-3 h-3" />
-                      ML-optimized rate applied
+                    <div className="flex items-center gap-1 text-green-600 text-sm mt-2">
+                      <TrendingUpIcon className="w-4 h-4" />
+                      <span>ML-optimized rate applied</span>
                     </div>
                   )}
                 </div>
@@ -805,7 +865,7 @@ export default function Stablecoin() {
               <button
                 onClick={handleConvert}
                 disabled={!quote}
-                className="w-full p-4 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition disabled:bg-gray-300 disabled:cursor-not-allowed"
               >
                 Convert Now
               </button>
@@ -816,53 +876,55 @@ export default function Stablecoin() {
         {/* Ramp Tab (Buy/Sell) */}
         {activeTab === 'ramp' && (
           <div className="space-y-4">
-            {/* Toggle */}
-            <div className="flex bg-gray-100 rounded-xl p-1">
-              <button
-                onClick={() => setRampType('on')}
-                className={`flex-1 py-2 rounded-lg font-medium transition ${
-                  rampType === 'on' ? 'bg-white shadow text-blue-600' : 'text-gray-600'
-                }`}
-              >
-                Buy Stablecoin
-              </button>
-              <button
-                onClick={() => setRampType('off')}
-                className={`flex-1 py-2 rounded-lg font-medium transition ${
-                  rampType === 'off' ? 'bg-white shadow text-blue-600' : 'text-gray-600'
-                }`}
-              >
-                Sell Stablecoin
-              </button>
-            </div>
-            
             <div className="bg-white rounded-xl p-4 shadow-sm">
+              <div className="flex bg-gray-100 rounded-lg p-1 mb-4">
+                <button
+                  onClick={() => setRampType('on')}
+                  className={`flex-1 py-2 rounded-lg text-sm font-medium transition ${
+                    rampType === 'on' ? 'bg-white shadow' : ''
+                  }`}
+                >
+                  Buy Stablecoin
+                </button>
+                <button
+                  onClick={() => setRampType('off')}
+                  className={`flex-1 py-2 rounded-lg text-sm font-medium transition ${
+                    rampType === 'off' ? 'bg-white shadow' : ''
+                  }`}
+                >
+                  Sell Stablecoin
+                </button>
+              </div>
+              
               <h3 className="font-semibold mb-4">
                 {rampType === 'on' ? 'Buy Stablecoin with Fiat' : 'Sell Stablecoin for Fiat'}
               </h3>
               
-              {/* Fiat Currency */}
               <div className="mb-4">
-                <label className="block text-sm text-gray-600 mb-2">
+                <label className="text-sm text-gray-600 mb-2 block">
                   {rampType === 'on' ? 'Pay with' : 'Receive in'}
                 </label>
-                <select
-                  value={rampFiat}
-                  onChange={(e) => setRampFiat(e.target.value)}
-                  className="w-full p-3 border rounded-lg bg-gray-50"
-                >
-                  <option value="NGN">🇳🇬 Nigerian Naira (NGN)</option>
-                  <option value="USD">🇺🇸 US Dollar (USD)</option>
-                  <option value="EUR">🇪🇺 Euro (EUR)</option>
-                  <option value="GBP">🇬🇧 British Pound (GBP)</option>
-                </select>
+                <div className="flex flex-wrap gap-2">
+                  {['NGN', 'USD', 'EUR', 'GBP'].map((fiat) => (
+                    <button
+                      key={fiat}
+                      onClick={() => setRampFiat(fiat)}
+                      className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
+                        rampFiat === fiat 
+                          ? 'bg-blue-600 text-white' 
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                    >
+                      {fiat}
+                    </button>
+                  ))}
+                </div>
               </div>
               
-              {/* Amount */}
               <div className="mb-4">
-                <label className="block text-sm text-gray-600 mb-2">Amount</label>
+                <label className="text-sm text-gray-600 mb-2 block">Amount</label>
                 <div className="relative">
-                  <span className="absolute left-3 top-3 text-gray-500">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">
                     {rampFiat === 'NGN' ? '₦' : rampFiat === 'EUR' ? '€' : rampFiat === 'GBP' ? '£' : '$'}
                   </span>
                   <input
@@ -870,45 +932,55 @@ export default function Stablecoin() {
                     value={rampAmount}
                     onChange={(e) => setRampAmount(e.target.value)}
                     placeholder="0.00"
-                    className="w-full p-3 pl-8 border rounded-lg bg-gray-50"
+                    className="w-full pl-8 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   />
                 </div>
               </div>
               
-              {/* Stablecoin */}
               <div className="mb-4">
-                <label className="block text-sm text-gray-600 mb-2">
+                <label className="text-sm text-gray-600 mb-2 block">
                   {rampType === 'on' ? 'Receive' : 'Sell'}
                 </label>
-                <div className="flex gap-2">
-                  <select
-                    value={rampStablecoin}
-                    onChange={(e) => setRampStablecoin(e.target.value)}
-                    className="flex-1 p-3 border rounded-lg bg-gray-50"
-                  >
-                    {Object.entries(STABLECOINS).map(([key, coin]) => (
-                      <option key={key} value={key}>{coin.symbol}</option>
-                    ))}
-                  </select>
-                  <select
-                    value={rampChain}
-                    onChange={(e) => setRampChain(e.target.value)}
-                    className="flex-1 p-3 border rounded-lg bg-gray-50"
-                  >
-                    {Object.entries(CHAINS).map(([key, chain]) => (
-                      <option key={key} value={key}>{chain.name}</option>
-                    ))}
-                  </select>
+                <div className="flex flex-wrap gap-2">
+                  {Object.entries(STABLECOINS).map(([key, coin]) => (
+                    <button
+                      key={key}
+                      onClick={() => setRampStablecoin(key)}
+                      className={`px-3 py-2 rounded-lg text-sm font-medium transition ${
+                        rampStablecoin === key 
+                          ? 'bg-blue-600 text-white' 
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                    >
+                      {coin.icon} {coin.symbol}
+                    </button>
+                  ))}
                 </div>
               </div>
               
-              {/* Rate Info */}
-              <div className="mb-4 p-3 bg-gray-50 rounded-lg">
+              <div className="mb-4">
+                <label className="text-sm text-gray-600 mb-2 block">Network</label>
+                <select
+                  value={rampChain}
+                  onChange={(e) => setRampChain(e.target.value)}
+                  className="w-full px-4 py-2 border rounded-lg text-sm"
+                >
+                  {Object.entries(CHAINS).map(([key, chain]) => (
+                    <option key={key} value={key}>{chain.name}</option>
+                  ))}
+                </select>
+              </div>
+              
+              <div className="p-3 bg-gray-50 rounded-lg mb-4">
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-500">Current Rate</span>
-                  <span>1 USDT = {rampFiat === 'NGN' ? '₦1,650' : rampFiat === 'EUR' ? '€0.92' : rampFiat === 'GBP' ? '£0.79' : '$1.00'}</span>
+                  <span>
+                    {rampFiat === 'NGN' ? '1 USDT = ₦1,650' : 
+                     rampFiat === 'EUR' ? '1 USDT = €0.92' :
+                     rampFiat === 'GBP' ? '1 USDT = £0.79' : '1 USDT = $1.00'}
+                  </span>
                 </div>
-                <div className="flex justify-between text-sm mt-1">
+                <div className="flex justify-between text-sm">
                   <span className="text-gray-500">Fee</span>
                   <span>1%</span>
                 </div>
@@ -917,19 +989,20 @@ export default function Stablecoin() {
               <button
                 onClick={handleRamp}
                 disabled={!rampAmount}
-                className="w-full p-4 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition disabled:bg-gray-300 disabled:cursor-not-allowed"
               >
                 {rampType === 'on' ? 'Buy Now' : 'Sell Now'}
               </button>
             </div>
             
-            {/* Payment Methods */}
             <div className="bg-white rounded-xl p-4 shadow-sm">
               <h4 className="font-medium mb-3">Payment Methods</h4>
-              <div className="space-y-2">
+              <div className="space-y-3">
                 <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                  <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                    🏦
+                  <div className="p-2 bg-gray-200 rounded-full">
+                    <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                    </svg>
                   </div>
                   <div>
                     <p className="font-medium">Bank Transfer</p>
@@ -937,8 +1010,10 @@ export default function Stablecoin() {
                   </div>
                 </div>
                 <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                  <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-                    💳
+                  <div className="p-2 bg-gray-200 rounded-full">
+                    <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                    </svg>
                   </div>
                   <div>
                     <p className="font-medium">Debit/Credit Card</p>
@@ -946,8 +1021,10 @@ export default function Stablecoin() {
                   </div>
                 </div>
                 <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                  <div className="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center">
-                    📱
+                  <div className="p-2 bg-gray-200 rounded-full">
+                    <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                    </svg>
                   </div>
                   <div>
                     <p className="font-medium">Mobile Money</p>
