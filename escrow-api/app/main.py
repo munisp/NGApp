@@ -114,7 +114,35 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.error(f"Failed to initialize production workers: {e}")
     
+    # Initialize middleware wiring (Mojaloop, Keycloak, Permify, Dapr, Fluvio, Temporal, Redis)
+    try:
+        from app.middleware_wiring import init_middleware
+        middleware_results = await init_middleware()
+        logger.info(f"Middleware initialized: {middleware_results}")
+    except Exception as e:
+        logger.error(f"Failed to initialize middleware: {e}")
+    
+    # Start Mojaloop workflow worker (Temporal sagas)
+    try:
+        import asyncio
+        from app.temporal_mojaloop_workflows import run_mojaloop_workflow_worker, TEMPORAL_AVAILABLE
+        if TEMPORAL_AVAILABLE:
+            asyncio.create_task(run_mojaloop_workflow_worker())
+            logger.info("Mojaloop workflow worker started")
+        else:
+            logger.warning("Temporal not available - Mojaloop workflows disabled")
+    except Exception as e:
+        logger.error(f"Failed to start Mojaloop workflow worker: {e}")
+    
     yield
+    
+    # Shutdown middleware
+    try:
+        from app.middleware_wiring import shutdown_middleware
+        await shutdown_middleware()
+        logger.info("Middleware shutdown successfully")
+    except Exception as e:
+        logger.error(f"Failed to shutdown middleware: {e}")
     
     # Shutdown production workers
     try:
@@ -395,6 +423,18 @@ async def persistence_health():
         health["overall"] = "unhealthy"
     
     return health
+
+@app.get("/api/v1/health/middleware")
+async def middleware_health():
+    """Check middleware integration health (Mojaloop, Keycloak, Permify, Dapr, Fluvio, Temporal, Redis)"""
+    try:
+        from app.middleware_wiring import middleware_manager
+        return await middleware_manager.health_check()
+    except Exception as e:
+        return {
+            "error": str(e),
+            "status": "middleware_not_initialized"
+        }
 
 @app.get("/api/v1/stats")
 async def get_stats():
