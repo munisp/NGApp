@@ -27,12 +27,15 @@ app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, 
 
 # Configuration
 KAFKA_BROKERS = os.getenv("KAFKA_BROKERS", "kafka-1:9092,kafka-2:9092,kafka-3:9092").split(",")
-MINIO_ENDPOINT = os.getenv("MINIO_ENDPOINT", "minio:9000")
-MINIO_ACCESS_KEY = os.getenv("MINIO_ACCESS_KEY", "minioadmin")
-MINIO_SECRET_KEY = os.getenv("MINIO_SECRET_KEY", "minioadmin")
-LAKEHOUSE_BUCKET = os.getenv("LAKEHOUSE_BUCKET", "lakehouse")
+RUSTFS_ENDPOINT = os.getenv("RUSTFS_ENDPOINT", "http://rustfs:9000")
+RUSTFS_ACCESS_KEY = os.getenv("RUSTFS_ACCESS_KEY", "rustfsadmin")
+RUSTFS_SECRET_KEY = os.getenv("RUSTFS_SECRET_KEY", "rustfsadmin")
+LAKEHOUSE_BRONZE_BUCKET = os.getenv("RUSTFS_LAKEHOUSE_BRONZE_BUCKET", "lakehouse-bronze")
+LAKEHOUSE_SILVER_BUCKET = os.getenv("RUSTFS_LAKEHOUSE_SILVER_BUCKET", "lakehouse-silver")
+LAKEHOUSE_GOLD_BUCKET = os.getenv("RUSTFS_LAKEHOUSE_GOLD_BUCKET", "lakehouse-gold")
 TRINO_HOST = os.getenv("TRINO_HOST", "trino:8080")
 CLICKHOUSE_HOST = os.getenv("CLICKHOUSE_HOST", "clickhouse:8123")
+OBJECT_STORAGE_BACKEND = os.getenv("OBJECT_STORAGE_BACKEND", "s3")
 
 
 class TableLayer(str, Enum):
@@ -120,14 +123,17 @@ class TableInfo(BaseModel):
     schema: List[Dict[str, str]]
 
 
-# In-memory storage (production would use MinIO + Iceberg/Delta)
+# Lakehouse storage with RustFS integration
 class LakehouseStorage:
     """
-    In-memory lakehouse storage with table management.
-    Production implementation would use:
-    - MinIO/S3 for object storage
+    Lakehouse storage with RustFS object storage integration.
+    Production implementation uses:
+    - RustFS for S3-compatible object storage (replaces MinIO)
     - Apache Iceberg or Delta Lake for table format
     - Trino or ClickHouse for query engine
+    
+    In-memory tables are used for fast queries while RustFS provides
+    durable storage for raw events and aggregated data.
     """
     
     def __init__(self):
@@ -138,8 +144,29 @@ class LakehouseStorage:
         }
         self.schemas: Dict[str, TableSchema] = {}
         self.metadata: Dict[str, Dict] = {}
+        self._rustfs_client = None
         self._initialize_tables()
-        logger.info("Lakehouse storage initialized")
+        self._initialize_rustfs()
+        logger.info("Lakehouse storage initialized with RustFS backend")
+    
+    def _initialize_rustfs(self):
+        """Initialize RustFS storage client"""
+        if OBJECT_STORAGE_BACKEND == "s3":
+            try:
+                import sys
+                sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'common'))
+                from rustfs_client import LakehouseStorage as RustFSLakehouseStorage, get_storage_client
+                self._rustfs_client = get_storage_client()
+                self._rustfs_lakehouse = RustFSLakehouseStorage(self._rustfs_client)
+                logger.info(f"RustFS client initialized with endpoint: {RUSTFS_ENDPOINT}")
+            except ImportError as e:
+                logger.warning(f"RustFS client not available, using in-memory only: {e}")
+                self._rustfs_client = None
+            except Exception as e:
+                logger.warning(f"Failed to initialize RustFS client: {e}")
+                self._rustfs_client = None
+        else:
+            logger.info("Using in-memory storage backend (OBJECT_STORAGE_BACKEND != s3)")
     
     def _initialize_tables(self):
         """Initialize default tables for each event type"""
@@ -355,7 +382,7 @@ class LakehouseStorage:
         logger.info("Sample data seeded successfully")
     
     async def ingest_event(self, event: IngestEvent) -> str:
-        """Ingest a single event into bronze layer"""
+        """Ingest a single event into bronze layer with RustFS persistence"""
         
         # Determine target table based on event type
         table_mapping = {
@@ -381,7 +408,23 @@ class LakehouseStorage:
             **event.payload
         }
         
+        # Store in in-memory table for fast queries
         self.tables[TableLayer.BRONZE][table_name].append(record)
+        
+        # Persist to RustFS for durability
+        if self._rustfs_client is not None:
+            try:
+                ts = datetime.fromisoformat(event.timestamp.replace('Z', '+00:00')) if event.timestamp else datetime.utcnow()
+                await self._rustfs_lakehouse.write_event(
+                    layer="bronze",
+                    event_type=event.event_type.value,
+                    event_id=event.event_id,
+                    data=record,
+                    timestamp=ts
+                )
+                logger.debug(f"Persisted event {event.event_id} to RustFS")
+            except Exception as e:
+                logger.warning(f"Failed to persist event {event.event_id} to RustFS: {e}")
         
         # Update metadata
         self.metadata[f"bronze.{table_name}"] = {

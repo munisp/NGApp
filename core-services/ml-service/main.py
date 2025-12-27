@@ -50,6 +50,13 @@ LAKEHOUSE_URL = os.getenv("LAKEHOUSE_URL", "http://localhost:8020")
 MODEL_STORAGE_PATH = os.getenv("MODEL_STORAGE_PATH", "/tmp/ml_models")
 USE_REDIS_FEATURE_STORE = os.getenv("USE_REDIS_FEATURE_STORE", "true").lower() == "true"
 
+# RustFS Configuration for model artifact storage
+RUSTFS_ENDPOINT = os.getenv("RUSTFS_ENDPOINT", "http://rustfs:9000")
+RUSTFS_ACCESS_KEY = os.getenv("RUSTFS_ACCESS_KEY", "rustfsadmin")
+RUSTFS_SECRET_KEY = os.getenv("RUSTFS_SECRET_KEY", "rustfsadmin")
+RUSTFS_ML_BUCKET = os.getenv("RUSTFS_ML_BUCKET", "ml-models")
+OBJECT_STORAGE_BACKEND = os.getenv("OBJECT_STORAGE_BACKEND", "s3")
+
 
 class ModelType(str, Enum):
     FRAUD_DETECTION = "fraud_detection"
@@ -158,7 +165,7 @@ class DriftReport(BaseModel):
     recommendation: str
 
 
-# In-memory storage (production would use Redis + S3/MinIO)
+# ML Storage with RustFS integration for model artifacts
 class MLStorage:
     def __init__(self):
         self.models: Dict[str, Dict] = {}
@@ -167,7 +174,57 @@ class MLStorage:
         self.feature_cache: Dict[str, Dict] = {}
         self.model_metrics: Dict[str, List[Dict]] = defaultdict(list)
         self.drift_baselines: Dict[str, Dict] = {}
+        self._rustfs_client = None
+        self._rustfs_model_storage = None
+        self._initialize_rustfs()
         self._initialize_default_models()
+    
+    def _initialize_rustfs(self):
+        """Initialize RustFS storage client for model artifacts"""
+        if OBJECT_STORAGE_BACKEND == "s3":
+            try:
+                import sys
+                sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'common'))
+                from rustfs_client import MLModelStorage, get_storage_client
+                self._rustfs_client = get_storage_client()
+                self._rustfs_model_storage = MLModelStorage(self._rustfs_client)
+                logger.info(f"RustFS ML storage initialized with endpoint: {RUSTFS_ENDPOINT}")
+            except ImportError as e:
+                logger.warning(f"RustFS client not available for ML storage: {e}")
+                self._rustfs_client = None
+            except Exception as e:
+                logger.warning(f"Failed to initialize RustFS ML storage: {e}")
+                self._rustfs_client = None
+        else:
+            logger.info("Using in-memory storage for ML models (OBJECT_STORAGE_BACKEND != s3)")
+    
+    async def save_model_artifact(self, model_name: str, version: str, model_data: bytes, metadata: Dict[str, str] = None):
+        """Save model artifact to RustFS"""
+        if self._rustfs_model_storage is not None:
+            try:
+                result = await self._rustfs_model_storage.save_model(model_name, version, model_data, metadata)
+                logger.info(f"Saved model artifact {model_name}/{version} to RustFS")
+                return result
+            except Exception as e:
+                logger.error(f"Failed to save model artifact to RustFS: {e}")
+                raise
+        else:
+            logger.warning("RustFS not available, model artifact not persisted")
+            return None
+    
+    async def load_model_artifact(self, model_name: str, version: str) -> bytes:
+        """Load model artifact from RustFS"""
+        if self._rustfs_model_storage is not None:
+            try:
+                content, metadata = await self._rustfs_model_storage.load_model(model_name, version)
+                logger.info(f"Loaded model artifact {model_name}/{version} from RustFS")
+                return content
+            except Exception as e:
+                logger.error(f"Failed to load model artifact from RustFS: {e}")
+                raise
+        else:
+            logger.warning("RustFS not available, cannot load model artifact")
+            return None
         
     def _initialize_default_models(self):
         """Initialize default trained models for demonstration"""
