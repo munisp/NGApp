@@ -289,8 +289,84 @@ opencti:
     enabled: true
   redis:
     enabled: true
-  minio:
+  # RustFS replaces MinIO for S3-compatible object storage
+  rustfs:
+    enabled: true  # Uses platform RustFS instead of separate MinIO
+
+# RustFS Object Storage (replaces MinIO)
+# High-performance, S3-compatible object storage built in Rust
+# 2.3x faster than MinIO for 4KB payloads, Apache 2.0 licensed
+rustfs:
+  enabled: true
+  replicaCount: 4  # Distributed mode with 4 replicas
+  image:
+    repository: rustfs/rustfs
+    tag: "1.0.0-alpha.76"
+    pullPolicy: IfNotPresent
+  distributed:
+    enabled: true  # Enable distributed mode for HA
+  region: "af-south-1"  # Match lakehouse region
+  logLevel: "info"
+  auth:
+    accessKey: "escrowprotect"  # Override via secret in production
+    secretKey: "escrowprotect-secret-key"  # Override via secret in production
+  resources:
+    requests:
+      cpu: 500m
+      memory: 512Mi
+    limits:
+      cpu: 2000m
+      memory: 2Gi
+  persistence:
     enabled: true
+    storageClass: ""  # Use default storage class
+    dataSize: 100Gi
+    logSize: 10Gi
+  # Default buckets for escrow platform
+  buckets:
+    - name: escrow-documents
+      versioning: true
+      lifecycle: false
+    - name: escrow-kyc
+      versioning: true
+      lifecycle: false
+    - name: escrow-evidence
+      versioning: true
+      lifecycle: false
+    - name: escrow-exports
+      versioning: false
+      lifecycle: true
+    - name: opencti-data
+      versioning: false
+      lifecycle: false
+
+# Rust Services (High-performance backend services)
+# Webhook dispatcher and event ingestion built in Rust for performance
+rustServices:
+  enabled: true
+  image:
+    repository: ghcr.io/escrowprotect
+    tag: latest
+    pullPolicy: IfNotPresent
+  logLevel: "info"
+  webhookDispatcher:
+    replicaCount: 2
+    resources:
+      requests:
+        cpu: 250m
+        memory: 256Mi
+      limits:
+        cpu: 1000m
+        memory: 512Mi
+  eventIngestion:
+    replicaCount: 3
+    resources:
+      requests:
+        cpu: 500m
+        memory: 512Mi
+      limits:
+        cpu: 2000m
+        memory: 1Gi
 
 # OpenSearch (for centralized logging)
 opensearch:

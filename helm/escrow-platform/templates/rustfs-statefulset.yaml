@@ -1,0 +1,267 @@
+{{- if .Values.rustfs.enabled }}
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "escrow-platform.fullname" . }}-rustfs
+  labels:
+    {{- include "escrow-platform.labels" . | nindent 4 }}
+    app.kubernetes.io/component: rustfs
+spec:
+  serviceName: {{ include "escrow-platform.fullname" . }}-rustfs-headless
+  replicas: {{ .Values.rustfs.replicaCount }}
+  podManagementPolicy: Parallel
+  selector:
+    matchLabels:
+      {{- include "escrow-platform.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: rustfs
+  template:
+    metadata:
+      labels:
+        {{- include "escrow-platform.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: rustfs
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9000"
+        prometheus.io/path: "/minio/v2/metrics/cluster"
+    spec:
+      securityContext:
+        fsGroup: 10001
+        runAsUser: 10001
+        runAsGroup: 10001
+      serviceAccountName: {{ include "escrow-platform.fullname" . }}-rustfs
+      containers:
+        - name: rustfs
+          image: "{{ .Values.rustfs.image.repository }}:{{ .Values.rustfs.image.tag }}"
+          imagePullPolicy: {{ .Values.rustfs.image.pullPolicy }}
+          args:
+            - server
+            {{- if .Values.rustfs.distributed.enabled }}
+            - http://{{ include "escrow-platform.fullname" . }}-rustfs-{0...{{ sub .Values.rustfs.replicaCount 1 }}}.{{ include "escrow-platform.fullname" . }}-rustfs-headless:9000/data
+            {{- else }}
+            - /data
+            {{- end }}
+            - --console-address
+            - ":9001"
+          env:
+            - name: RUSTFS_ROOT_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "escrow-platform.fullname" . }}-rustfs-secret
+                  key: access-key
+            - name: RUSTFS_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "escrow-platform.fullname" . }}-rustfs-secret
+                  key: secret-key
+            - name: RUSTFS_REGION
+              value: {{ .Values.rustfs.region | quote }}
+            - name: RUST_LOG
+              value: {{ .Values.rustfs.logLevel | quote }}
+          ports:
+            - name: endpoint
+              containerPort: 9000
+              protocol: TCP
+            - name: console
+              containerPort: 9001
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /minio/health/live
+              port: endpoint
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /minio/health/ready
+              port: endpoint
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          resources:
+            {{- toYaml .Values.rustfs.resources | nindent 12 }}
+          volumeMounts:
+            - name: data
+              mountPath: /data
+            - name: logs
+              mountPath: /logs
+          securityContext:
+            capabilities:
+              drop:
+                - ALL
+            readOnlyRootFilesystem: false
+            runAsNonRoot: true
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchLabels:
+                    {{- include "escrow-platform.selectorLabels" . | nindent 20 }}
+                    app.kubernetes.io/component: rustfs
+                topologyKey: kubernetes.io/hostname
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        {{- if .Values.rustfs.persistence.storageClass }}
+        storageClassName: {{ .Values.rustfs.persistence.storageClass }}
+        {{- end }}
+        resources:
+          requests:
+            storage: {{ .Values.rustfs.persistence.dataSize }}
+    - metadata:
+        name: logs
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        {{- if .Values.rustfs.persistence.storageClass }}
+        storageClassName: {{ .Values.rustfs.persistence.storageClass }}
+        {{- end }}
+        resources:
+          requests:
+            storage: {{ .Values.rustfs.persistence.logSize }}
+---
+# Headless Service for StatefulSet DNS
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "escrow-platform.fullname" . }}-rustfs-headless
+  labels:
+    {{- include "escrow-platform.labels" . | nindent 4 }}
+    app.kubernetes.io/component: rustfs
+spec:
+  type: ClusterIP
+  clusterIP: None
+  ports:
+    - port: 9000
+      targetPort: endpoint
+      protocol: TCP
+      name: endpoint
+  selector:
+    {{- include "escrow-platform.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: rustfs
+---
+# ClusterIP Service for API access
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "escrow-platform.fullname" . }}-rustfs
+  labels:
+    {{- include "escrow-platform.labels" . | nindent 4 }}
+    app.kubernetes.io/component: rustfs
+spec:
+  type: ClusterIP
+  ports:
+    - port: 9000
+      targetPort: endpoint
+      protocol: TCP
+      name: endpoint
+    - port: 9001
+      targetPort: console
+      protocol: TCP
+      name: console
+  selector:
+    {{- include "escrow-platform.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: rustfs
+---
+# Secret for RustFS credentials
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ include "escrow-platform.fullname" . }}-rustfs-secret
+  labels:
+    {{- include "escrow-platform.labels" . | nindent 4 }}
+    app.kubernetes.io/component: rustfs
+type: Opaque
+data:
+  access-key: {{ .Values.rustfs.auth.accessKey | b64enc | quote }}
+  secret-key: {{ .Values.rustfs.auth.secretKey | b64enc | quote }}
+---
+# ServiceAccount for RustFS
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ include "escrow-platform.fullname" . }}-rustfs
+  labels:
+    {{- include "escrow-platform.labels" . | nindent 4 }}
+    app.kubernetes.io/component: rustfs
+---
+# ConfigMap for bucket initialization
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "escrow-platform.fullname" . }}-rustfs-init
+  labels:
+    {{- include "escrow-platform.labels" . | nindent 4 }}
+    app.kubernetes.io/component: rustfs
+data:
+  init-buckets.sh: |
+    #!/bin/sh
+    set -e
+    
+    # Wait for RustFS to be ready
+    until curl -sf http://{{ include "escrow-platform.fullname" . }}-rustfs:9000/minio/health/ready; do
+      echo "Waiting for RustFS to be ready..."
+      sleep 5
+    done
+    
+    # Configure mc client
+    mc alias set rustfs http://{{ include "escrow-platform.fullname" . }}-rustfs:9000 $RUSTFS_ROOT_USER $RUSTFS_ROOT_PASSWORD
+    
+    # Create default buckets for escrow platform
+    {{- range .Values.rustfs.buckets }}
+    mc mb --ignore-existing rustfs/{{ .name }}
+    {{- if .versioning }}
+    mc version enable rustfs/{{ .name }}
+    {{- end }}
+    {{- if .lifecycle }}
+    mc ilm import rustfs/{{ .name }} < /config/lifecycle-{{ .name }}.json
+    {{- end }}
+    {{- end }}
+    
+    echo "Bucket initialization complete"
+---
+# Job to initialize buckets
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "escrow-platform.fullname" . }}-rustfs-init
+  labels:
+    {{- include "escrow-platform.labels" . | nindent 4 }}
+    app.kubernetes.io/component: rustfs
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-weight": "5"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: init-buckets
+          image: minio/mc:latest
+          command: ["/bin/sh", "/scripts/init-buckets.sh"]
+          env:
+            - name: RUSTFS_ROOT_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "escrow-platform.fullname" . }}-rustfs-secret
+                  key: access-key
+            - name: RUSTFS_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "escrow-platform.fullname" . }}-rustfs-secret
+                  key: secret-key
+          volumeMounts:
+            - name: scripts
+              mountPath: /scripts
+      volumes:
+        - name: scripts
+          configMap:
+            name: {{ include "escrow-platform.fullname" . }}-rustfs-init
+            defaultMode: 0755
+{{- end }}
