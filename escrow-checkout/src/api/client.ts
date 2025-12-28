@@ -169,7 +169,10 @@ class ApiClient {
 
   // Marketplace endpoints
   async searchListings(query: string, filters?: { category?: string; minPrice?: number; maxPrice?: number }): Promise<MarketplaceListing[]> {
-    const params = new URLSearchParams({ q: query, ...filters });
+    const params = new URLSearchParams({ q: query });
+    if (filters?.category) params.set('category', filters.category);
+    if (filters?.minPrice !== undefined) params.set('minPrice', String(filters.minPrice));
+    if (filters?.maxPrice !== undefined) params.set('maxPrice', String(filters.maxPrice));
     return this.request(`/api/v1/marketplace/search?${params}`);
   }
 

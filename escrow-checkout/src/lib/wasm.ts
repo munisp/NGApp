@@ -9,30 +9,8 @@
  * - Currency conversion (multi-currency support)
  */
 
-// Types for WASM module exports
-interface ImageProcessor {
-  new(width: number, height: number): ImageProcessor;
-  to_grayscale(data: Uint8Array): Uint8Array;
-  enhance_contrast(data: Uint8Array, factor: number): Uint8Array;
-  adaptive_threshold(data: Uint8Array, blockSize: number, c: number): Uint8Array;
-  median_filter(data: Uint8Array, kernelSize: number): Uint8Array;
-}
-
-interface CommerceDetector {
-  new(minConfidence: number): CommerceDetector;
-  detect(text: string): CommerceSignals;
-}
-
-interface RiskScorer {
-  new(): RiskScorer;
-  calculate_risk(transactionJson: string): RiskAssessment;
-}
-
-interface CurrencyConverter {
-  new(): CurrencyConverter;
-  update_rate(from: string, to: string, rate: number): void;
-  convert(amount: number, from: string, to: string): ExchangeResult;
-}
+// Note: WASM module types are defined inline where used
+// The actual WASM module is loaded dynamically at runtime
 
 // Result types
 export interface PriceDetection {
@@ -100,14 +78,20 @@ export async function initWasm(): Promise<boolean> {
 
   wasmLoading = (async () => {
     try {
-      // Try to load WASM module
-      const wasm = await import('../../escrow-wasm/pkg/escrow_wasm');
-      await wasm.default();
+      // Try to load WASM module dynamically
+      // This will fail gracefully if the WASM module is not available
+      const wasmPath = '/wasm/escrow_wasm.js';
+      const wasm = await import(/* @vite-ignore */ wasmPath);
+      if (wasm.default) {
+        await wasm.default();
+      }
       wasmModule = wasm;
       wasmAvailable = true;
       console.log('[WASM] Module loaded successfully');
     } catch (error) {
-      console.warn('[WASM] Failed to load, using JavaScript fallbacks:', error);
+      // WASM not available - this is expected in development
+      // JavaScript fallbacks will be used instead
+      console.info('[WASM] Using JavaScript fallbacks (WASM module not available)');
       wasmAvailable = false;
     }
   })();
