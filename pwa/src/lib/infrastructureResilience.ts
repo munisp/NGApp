@@ -169,7 +169,7 @@ export class OfflineDataManager {
   private cache: Map<string, CachedItem> = new Map();
   private operationQueue: QueuedOperation[] = [];
   private lastOnlineAt: number | null = null;
-  private lastSyncAt: number | null = null;
+  private _lastSyncAt: number | null = null;
 
   get offlineDurationHours(): number {
     if (!this.lastOnlineAt) return 0;
@@ -180,8 +180,13 @@ export class OfflineDataManager {
     return this.offlineDurationHours / 24;
   }
 
+  get lastSyncAt(): number | null {
+    return this._lastSyncAt;
+  }
+
   setOnline(): void {
     this.lastOnlineAt = Date.now();
+    this._lastSyncAt = Date.now();
   }
 
   canPerformOperation(operationType: string, amount: number = 0): { allowed: boolean; reason: string } {
