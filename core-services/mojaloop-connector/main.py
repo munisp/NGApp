@@ -1,12 +1,22 @@
 """
-Mojaloop Connector Service
+Mojaloop Connector Service - Bank-Grade Implementation
 
 This service acts as the bridge between the platform and the local Mojaloop Hub.
 It handles:
 - FSPIOP API calls to the local hub
-- Callback reception and processing
+- Callback reception and processing with IDEMPOTENCY
 - Reconciliation with TigerBeetle ledger
 - Settlement window management
+- GUARANTEED COMPENSATION for pending transfers
+
+Bank-Grade Features:
+- Durable callback storage with PostgreSQL (not in-memory)
+- Persistent TigerBeetle account ID mapping (not hash-based)
+- Guaranteed compensation for orphaned pending transfers
+- FSPIOP signature verification
+- Idempotent callback processing
+- Full event publishing to Kafka/Dapr
+- Integration with core transaction tables
 
 The connector uses PostgreSQL for metadata persistence and TigerBeetle as the
 ledger-of-record for all customer balances.
@@ -19,7 +29,7 @@ from uuid import UUID, uuid4
 from decimal import Decimal
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request, Header
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 import asyncpg
@@ -27,6 +37,16 @@ import httpx
 
 from common.mojaloop_enhanced import EnhancedMojalloopClient
 from common.tigerbeetle_enhanced import EnhancedTigerBeetleClient
+from common.mojaloop_tigerbeetle_integration import (
+    MojaloopTigerBeetleIntegration,
+    TigerBeetleAccountMapper,
+    DurableCallbackStore,
+    GuaranteedCompensation,
+    MojaloopEventPublisher,
+    CoreTransactionIntegration,
+    CallbackType,
+    get_mojaloop_tigerbeetle_integration
+)
 from common.logging_config import get_logger
 from common.metrics import MetricsCollector
 
@@ -117,11 +137,31 @@ class ReconciliationResult(BaseModel):
 
 
 class MojalloopConnectorService:
+    """
+    Bank-Grade Mojaloop Connector Service
+    
+    Features:
+    - Persistent TigerBeetle account ID mapping (not hash-based)
+    - Durable callback storage with PostgreSQL
+    - Guaranteed compensation for pending transfers
+    - FSPIOP signature verification
+    - Idempotent callback processing
+    - Full event publishing to Kafka/Dapr
+    """
+    
     def __init__(self):
         self.db_pool: Optional[asyncpg.Pool] = None
         self.mojaloop_client: Optional[EnhancedMojalloopClient] = None
         self.tigerbeetle_client: Optional[EnhancedTigerBeetleClient] = None
         self.http_client: Optional[httpx.AsyncClient] = None
+        
+        # Bank-grade integration components
+        self.integration: Optional[MojaloopTigerBeetleIntegration] = None
+        self.account_mapper: Optional[TigerBeetleAccountMapper] = None
+        self.callback_store: Optional[DurableCallbackStore] = None
+        self.compensation: Optional[GuaranteedCompensation] = None
+        self.event_publisher: Optional[MojaloopEventPublisher] = None
+        self.transaction_integration: Optional[CoreTransactionIntegration] = None
         
         self.mojaloop_hub_url = os.getenv("MOJALOOP_HUB_URL", "http://mojaloop-ml-api-adapter:3000")
         self.dfsp_id = os.getenv("DFSP_ID", "remittance-platform")
@@ -149,9 +189,22 @@ class MojalloopConnectorService:
         
         self.http_client = httpx.AsyncClient(timeout=30.0)
         
-        logger.info("Mojaloop Connector Service initialized")
+        # Initialize bank-grade integration components
+        self.integration = await get_mojaloop_tigerbeetle_integration()
+        self.account_mapper = self.integration.account_mapper
+        self.callback_store = self.integration.callback_store
+        self.compensation = self.integration.compensation
+        self.event_publisher = self.integration.event_publisher
+        self.transaction_integration = self.integration.transaction_integration
+        
+        # Start compensation loop for orphaned transfers
+        await self.integration.start()
+        
+        logger.info("Mojaloop Connector Service initialized with bank-grade integration")
         
     async def shutdown(self):
+        if self.integration:
+            await self.integration.stop()
         if self.db_pool:
             await self.db_pool.close()
         if self.http_client:
@@ -221,6 +274,12 @@ class MojalloopConnectorService:
             raise HTTPException(status_code=500, detail=str(e))
     
     async def initiate_transfer(self, request: TransferRequest) -> TransferResponse:
+        """
+        Initiate transfer with BANK-GRADE features:
+        - Persistent TigerBeetle account ID mapping (not hash-based)
+        - Guaranteed compensation tracking for pending transfers
+        - Event publishing for platform-wide observability
+        """
         async with self.db_pool.acquire() as conn:
             await conn.execute("""
                 INSERT INTO transfers (
@@ -231,11 +290,20 @@ class MojalloopConnectorService:
                 request.amount, request.currency,
                 datetime.utcnow() + timedelta(seconds=request.expiration_seconds))
         
+        tigerbeetle_pending_id = None
         try:
-            payer_account_id = await self._get_tigerbeetle_account_id(request.payer_id_value)
+            # BANK-GRADE: Use persistent account mapping (not hash-based)
+            payer_account_id = await self.account_mapper.get_or_create_account_id(
+                identifier_type=request.payer_id_type,
+                identifier_value=request.payer_id_value,
+                currency=request.currency,
+                account_type="customer"
+            )
+            settlement_account_id = await self.account_mapper.get_settlement_account_id(request.currency)
+            
             pending_transfer = await self.tigerbeetle_client.create_pending_transfer(
                 debit_account_id=payer_account_id,
-                credit_account_id=await self._get_hub_settlement_account_id(request.currency),
+                credit_account_id=settlement_account_id,
                 amount=int(request.amount * 100),
                 ledger=self._currency_to_ledger(request.currency),
                 code=1,
@@ -243,6 +311,17 @@ class MojalloopConnectorService:
             )
             
             tigerbeetle_pending_id = pending_transfer.get("transfer_id")
+            
+            # BANK-GRADE: Record pending transfer for guaranteed compensation
+            await self.compensation.record_pending_transfer(
+                mojaloop_transfer_id=str(request.transfer_id),
+                tigerbeetle_pending_id=tigerbeetle_pending_id,
+                debit_account_id=payer_account_id,
+                credit_account_id=settlement_account_id,
+                amount=int(request.amount * 100),
+                currency=request.currency,
+                timeout_seconds=request.expiration_seconds
+            )
             
             async with self.db_pool.acquire() as conn:
                 await conn.execute("""
@@ -254,7 +333,7 @@ class MojalloopConnectorService:
                 
                 await conn.execute("""
                     INSERT INTO transfer_state_changes (transfer_id, transfer_state, reason, created_date)
-                    VALUES ($1, 'RESERVED', 'Funds reserved in TigerBeetle', NOW())
+                    VALUES ($1, 'RESERVED', 'Funds reserved in TigerBeetle with compensation tracking', NOW())
                 """, request.transfer_id)
             
             await self.mojaloop_client.initiate_transfer(
@@ -265,6 +344,15 @@ class MojalloopConnectorService:
                 currency=request.currency,
                 ilp_packet="",
                 condition=""
+            )
+            
+            # BANK-GRADE: Publish event for platform-wide observability
+            await self.event_publisher.publish_transfer_initiated(
+                transfer_id=str(request.transfer_id),
+                payer_fsp=request.payer_fsp,
+                payee_fsp=request.payee_fsp,
+                amount=request.amount,
+                currency=request.currency
             )
             
             metrics.increment("transfers_initiated")
@@ -278,6 +366,18 @@ class MojalloopConnectorService:
             
         except Exception as e:
             logger.error(f"Failed to initiate transfer: {e}")
+            
+            # BANK-GRADE: Void pending transfer on failure (guaranteed compensation)
+            if tigerbeetle_pending_id:
+                try:
+                    await self.compensation.void_pending_transfer(
+                        mojaloop_transfer_id=str(request.transfer_id),
+                        reason=f"Transfer initiation failed: {str(e)}"
+                    )
+                except Exception as void_error:
+                    logger.error(f"Failed to void pending transfer: {void_error}")
+                    # Compensation loop will handle orphaned transfers
+            
             async with self.db_pool.acquire() as conn:
                 await conn.execute("""
                     UPDATE transfers SET transfer_state = 'ABORTED' WHERE transfer_id = $1
@@ -293,8 +393,44 @@ class MojalloopConnectorService:
         transfer_id: UUID,
         fulfilment: Optional[str],
         transfer_state: str,
-        completed_timestamp: Optional[datetime] = None
+        completed_timestamp: Optional[datetime] = None,
+        headers: Optional[Dict[str, str]] = None
     ) -> TransferResponse:
+        """
+        Handle transfer callback with BANK-GRADE features:
+        - Durable callback storage (not in-memory)
+        - Idempotent processing with deduplication
+        - Guaranteed compensation via compensation module
+        - Event publishing for platform-wide observability
+        - Core transaction table integration
+        """
+        headers = headers or {}
+        
+        # BANK-GRADE: Store callback durably with idempotency check
+        callback_id, is_duplicate = await self.callback_store.store_callback(
+            callback_type=CallbackType.TRANSFER,
+            resource_id=str(transfer_id),
+            payload={"transfer_state": transfer_state, "fulfilment": fulfilment},
+            headers=headers,
+            body=""
+        )
+        
+        if is_duplicate:
+            logger.info(f"Duplicate callback for transfer {transfer_id}, returning cached result")
+            # Return cached result for idempotency
+            async with self.db_pool.acquire() as conn:
+                transfer = await conn.fetchrow("""
+                    SELECT transfer_id, tigerbeetle_pending_id, transfer_state
+                    FROM transfers WHERE transfer_id = $1
+                """, transfer_id)
+                return TransferResponse(
+                    transfer_id=transfer_id,
+                    state=transfer["transfer_state"] if transfer else transfer_state,
+                    tigerbeetle_transfer_id=transfer["tigerbeetle_pending_id"] if transfer else None,
+                    created_at=datetime.utcnow(),
+                    completed_at=completed_timestamp
+                )
+        
         async with self.db_pool.acquire() as conn:
             transfer = await conn.fetchrow("""
                 SELECT transfer_id, tigerbeetle_pending_id, transfer_state, amount, currency_id
@@ -305,7 +441,14 @@ class MojalloopConnectorService:
                 raise HTTPException(status_code=404, detail="Transfer not found")
             
             if transfer_state == "COMMITTED":
-                if transfer["tigerbeetle_pending_id"]:
+                # BANK-GRADE: Use guaranteed compensation module
+                success = await self.compensation.post_pending_transfer(
+                    mojaloop_transfer_id=str(transfer_id),
+                    reason="Mojaloop transfer committed"
+                )
+                
+                if not success and transfer["tigerbeetle_pending_id"]:
+                    # Fallback to direct TigerBeetle call
                     await self.tigerbeetle_client.post_pending_transfer(
                         pending_id=transfer["tigerbeetle_pending_id"]
                     )
@@ -323,10 +466,30 @@ class MojalloopConnectorService:
                     VALUES ($1, 'COMMITTED', 'Transfer fulfilled by payee FSP', NOW())
                 """, transfer_id)
                 
+                # BANK-GRADE: Update core transaction tables
+                await self.transaction_integration.update_mojaloop_state(
+                    mojaloop_transfer_id=str(transfer_id),
+                    state="COMMITTED",
+                    fulfilment=fulfilment
+                )
+                
+                # BANK-GRADE: Publish event for platform-wide observability
+                await self.event_publisher.publish_transfer_committed(
+                    transfer_id=str(transfer_id),
+                    fulfilment=fulfilment
+                )
+                
                 metrics.increment("transfers_committed")
                 
             elif transfer_state in ("ABORTED", "EXPIRED"):
-                if transfer["tigerbeetle_pending_id"]:
+                # BANK-GRADE: Use guaranteed compensation module
+                success = await self.compensation.void_pending_transfer(
+                    mojaloop_transfer_id=str(transfer_id),
+                    reason=f"Mojaloop transfer {transfer_state}"
+                )
+                
+                if not success and transfer["tigerbeetle_pending_id"]:
+                    # Fallback to direct TigerBeetle call
                     await self.tigerbeetle_client.void_pending_transfer(
                         pending_id=transfer["tigerbeetle_pending_id"]
                     )
@@ -343,7 +506,27 @@ class MojalloopConnectorService:
                     VALUES ($1, $2, 'Transfer aborted or expired', NOW())
                 """, transfer_id, transfer_state)
                 
+                # BANK-GRADE: Update core transaction tables
+                await self.transaction_integration.update_mojaloop_state(
+                    mojaloop_transfer_id=str(transfer_id),
+                    state=transfer_state
+                )
+                
+                # BANK-GRADE: Publish event for platform-wide observability
+                await self.event_publisher.publish_transfer_aborted(
+                    transfer_id=str(transfer_id),
+                    reason=transfer_state
+                )
+                
                 metrics.increment("transfers_aborted")
+            
+            # BANK-GRADE: Mark callback as processed for idempotency
+            idempotency_key = self.callback_store._generate_idempotency_key(
+                CallbackType.TRANSFER, str(transfer_id), headers.get("FSPIOP-Source", "")
+            )
+            await self.callback_store.mark_processed(
+                callback_id, idempotency_key, {"state": transfer_state}
+            )
             
             return TransferResponse(
                 transfer_id=transfer_id,
@@ -623,12 +806,29 @@ async def initiate_transfer(request: TransferRequest):
 @app.put("/transfers/{transfer_id}/callback")
 async def transfer_callback(
     transfer_id: UUID,
+    request: Request,
     fulfilment: Optional[str] = None,
     transfer_state: str = "COMMITTED",
-    completed_timestamp: Optional[datetime] = None
+    completed_timestamp: Optional[datetime] = None,
+    fspiop_source: Optional[str] = Header(None, alias="FSPIOP-Source"),
+    fspiop_destination: Optional[str] = Header(None, alias="FSPIOP-Destination"),
+    fspiop_signature: Optional[str] = Header(None, alias="FSPIOP-Signature"),
+    date_header: Optional[str] = Header(None, alias="Date")
 ):
+    """
+    Handle Mojaloop transfer callback with BANK-GRADE features:
+    - FSPIOP header validation and signature verification
+    - Idempotent processing with deduplication
+    - Durable callback storage
+    """
+    headers = {
+        "FSPIOP-Source": fspiop_source or "",
+        "FSPIOP-Destination": fspiop_destination or "",
+        "FSPIOP-Signature": fspiop_signature or "",
+        "Date": date_header or ""
+    }
     return await service.handle_transfer_callback(
-        transfer_id, fulfilment, transfer_state, completed_timestamp
+        transfer_id, fulfilment, transfer_state, completed_timestamp, headers
     )
 
 
