@@ -24,6 +24,8 @@ from decimal import Decimal
 
 from property_transaction_kyc import router as property_kyc_router
 from property_service import router as property_kyc_v2_router
+from kyc_service_v2 import router as kyc_v2_router
+from kyb_service import router as kyb_router
 from lakehouse_publisher import publish_kyc_to_lakehouse
 
 # Import common modules for production readiness
@@ -60,8 +62,15 @@ else:
     app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
     logger = logging.getLogger(__name__)
 
+# Include all routers
+# Legacy in-memory property KYC (deprecated - use v2)
 app.include_router(property_kyc_router)
+# Production-ready property KYC with PostgreSQL
 app.include_router(property_kyc_v2_router)
+# Production-ready KYC v2 with PostgreSQL persistence
+app.include_router(kyc_v2_router)
+# KYB (Know Your Business) service
+app.include_router(kyb_router)
 
 
 class KYCTier(str, Enum):
