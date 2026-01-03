@@ -1,5 +1,5 @@
 """
-Comprehensive Middleware Integrations for EscrowProtect Platform
+Comprehensive Middleware Integrations for SocialEscrow Platform
 
 This module provides production-grade integrations for:
 1. TigerBeetle - Full money flow wiring (escrow hold, release, fees)

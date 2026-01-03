@@ -1,5 +1,5 @@
 /**
- * WASM Integration for EscrowProtect PWA
+ * WASM Integration for SocialEscrow PWA
  * 
  * This module provides high-performance client-side processing using
  * Rust-compiled WebAssembly modules for:

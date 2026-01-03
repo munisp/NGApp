@@ -1,5 +1,5 @@
 """
-Security Features for EscrowProtect
+Security Features for SocialEscrow
 Implements MFA, WebAuthn/Biometric authentication, session management,
 and integrates with Keycloak for SSO.
 """
@@ -345,7 +345,7 @@ class KeycloakClient:
 class TOTPService:
     """Time-based One-Time Password service"""
     
-    def __init__(self, issuer: str = "EscrowProtect"):
+    def __init__(self, issuer: str = "SocialEscrow"):
         self.issuer = issuer
     
     def generate_secret(self) -> str:
@@ -549,7 +549,7 @@ class SecurityService:
             type="sms.send",
             data={
                 "phone": phone,
-                "message": f"Your EscrowProtect verification code is: {otp}. Valid for 10 minutes.",
+                "message": f"Your SocialEscrow verification code is: {otp}. Valid for 10 minutes.",
             }
         ))
         
@@ -577,7 +577,7 @@ class SecurityService:
             type="email.send",
             data={
                 "to": email,
-                "subject": "EscrowProtect Verification Code",
+                "subject": "SocialEscrow Verification Code",
                 "body": f"Your verification code is: {otp}. Valid for 10 minutes.",
             }
         ))

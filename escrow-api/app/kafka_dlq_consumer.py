@@ -1,5 +1,5 @@
 """
-Kafka Dead Letter Queue (DLQ) Consumer for EscrowProtect Platform
+Kafka Dead Letter Queue (DLQ) Consumer for SocialEscrow Platform
 
 This module processes failed events from the DLQ, providing:
 - Manual review interface

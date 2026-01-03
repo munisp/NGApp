@@ -1,5 +1,5 @@
 """
-OpenTelemetry Tracing for EscrowProtect Platform
+OpenTelemetry Tracing for SocialEscrow Platform
 
 Provides distributed tracing with correlation IDs across:
 - FastAPI HTTP requests

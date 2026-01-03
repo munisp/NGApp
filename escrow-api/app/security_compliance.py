@@ -1,5 +1,5 @@
 """
-Security and Compliance Service for EscrowProtect
+Security and Compliance Service for SocialEscrow
 TIER 3: Security and Compliance Features
 
 Provides:

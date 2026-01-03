@@ -1,5 +1,5 @@
 """
-Database configuration and models for EscrowProtect
+Database configuration and models for SocialEscrow
 Provides PostgreSQL persistence with SQLAlchemy
 """
 

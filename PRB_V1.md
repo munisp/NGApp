@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document defines the finite scope of "production ready" for the EscrowProtect platform with objective pass/fail criteria. Every requirement maps to a single verification command.
+This document defines the finite scope of "production ready" for the SocialEscrow platform with objective pass/fail criteria. Every requirement maps to a single verification command.
 
 **How to Run:** `make verify` or `./scripts/verify_prb_v1.sh`
 

@@ -1,5 +1,5 @@
 """
-Alembic Environment Configuration for EscrowProtect Platform
+Alembic Environment Configuration for SocialEscrow Platform
 
 Supports both sync and async migrations with PostgreSQL.
 """

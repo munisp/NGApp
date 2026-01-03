@@ -336,8 +336,8 @@ if TEMPORAL_AVAILABLE:
                 payer_data = buyer_party
                 payee_data = {
                     "party_id_type": "BUSINESS",
-                    "party_id_value": "escrowprotect",
-                    "fsp_id": "escrowprotect"
+                    "party_id_value": "socialescrow",
+                    "fsp_id": "socialescrow"
                 }
                 
                 amount_naira = str(amount_kobo / 100)
@@ -501,8 +501,8 @@ if TEMPORAL_AVAILABLE:
                 # Our platform is the payer (sending funds)
                 payer_data = {
                     "party_id_type": "BUSINESS",
-                    "party_id_value": "escrowprotect",
-                    "fsp_id": "escrowprotect"
+                    "party_id_value": "socialescrow",
+                    "fsp_id": "socialescrow"
                 }
                 payee_data = seller_party
                 
@@ -629,8 +629,8 @@ if TEMPORAL_AVAILABLE:
                 # Step 4: Create quote for refund
                 payer_data = {
                     "party_id_type": "BUSINESS",
-                    "party_id_value": "escrowprotect",
-                    "fsp_id": "escrowprotect"
+                    "party_id_value": "socialescrow",
+                    "fsp_id": "socialescrow"
                 }
                 payee_data = buyer_party
                 

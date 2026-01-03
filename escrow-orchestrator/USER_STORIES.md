@@ -1,4 +1,4 @@
-# EscrowProtect Platform - Top 20 User Stories
+# SocialEscrow Platform - Top 20 User Stories
 
 Each user story is mapped to existing implemented components in the platform.
 

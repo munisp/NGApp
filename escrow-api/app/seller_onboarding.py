@@ -1,5 +1,5 @@
 """
-Seller Onboarding Service for EscrowProtect
+Seller Onboarding Service for SocialEscrow
 Reduces friction for sellers to claim payments
 
 TIER 2: Seller Onboarding Friction Reduction
@@ -203,7 +203,7 @@ class SellerOnboardingService:
         
         # Queue SMS fallback (sent 1 hour later if WhatsApp not delivered)
         sms_message = (
-            f"EscrowProtect: N{amount:,.0f} waiting. "
+            f"SocialEscrow: N{amount:,.0f} waiting. "
             f"Code: {claim_code.code}. "
             f"Dial *384*ESCROW# or visit {claim_url}"
         )

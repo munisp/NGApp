@@ -1,4 +1,4 @@
-// Core types for EscrowProtect platform
+// Core types for SocialEscrow platform
 
 export interface User {
   id: string;

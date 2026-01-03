@@ -168,7 +168,7 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.error(f"Failed to shutdown optimizations: {e}")
 
-app = FastAPI(title="EscrowProtect API", version="1.0.0", lifespan=lifespan)
+app = FastAPI(title="SocialEscrow API", version="1.0.0", lifespan=lifespan)
 
 # Disable CORS. Do not remove this for full-stack development.
 app.add_middleware(
@@ -1229,7 +1229,7 @@ async def generate_shareable_link(escrow_id: str):
     seller_claim_url = f"https://platform-verification-app-kvzjvakf.devinapps.com?mode=seller&escrow={escrow_id}&token={claim_token}"
     
     # Generate short message for sharing
-    share_message = f"Hi! I've paid ₦{escrow['amount']:,.0f} for your item via EscrowProtect. Click here to accept and provide your bank details: {seller_claim_url}"
+    share_message = f"Hi! I've paid ₦{escrow['amount']:,.0f} for your item via SocialEscrow. Click here to accept and provide your bank details: {seller_claim_url}"
     
     return {
         "success": True,
@@ -1441,7 +1441,7 @@ async def whatsapp_webhook(message: WhatsAppMessage):
         # Command: HELP - show help
         if text_lower in ['help', 'hi', 'hello', 'start']:
             response_messages.append(
-                "Welcome to EscrowProtect!\n\n"
+                "Welcome to SocialEscrow!\n\n"
                 "I help you buy safely on social media.\n\n"
                 "Quick Commands:\n"
                 "- ESCROW 150000 08012345678\n"
@@ -1485,7 +1485,7 @@ async def whatsapp_webhook(message: WhatsAppMessage):
                 else:
                     session["state"] = "awaiting_price"
                     response_messages.append(
-                        "Welcome to EscrowProtect!\n\n"
+                        "Welcome to SocialEscrow!\n\n"
                         "To protect your purchase:\n"
                         "1. Forward the seller's message/screenshot, OR\n"
                         "2. Send: ESCROW [amount] [seller phone]\n\n"
@@ -1494,7 +1494,7 @@ async def whatsapp_webhook(message: WhatsAppMessage):
             else:
                 # General help
                 response_messages.append(
-                    "Welcome to EscrowProtect!\n\n"
+                    "Welcome to SocialEscrow!\n\n"
                     "I help you buy safely on social media.\n\n"
                     "To start:\n"
                     "- Forward seller's message/screenshot\n"
@@ -1720,7 +1720,7 @@ async def ussd_callback(request: USSDRequest):
     if not user_input or user_input == [""]:
         # Main menu
         response_text = (
-            "Welcome to EscrowProtect\n"
+            "Welcome to SocialEscrow\n"
             "1. Create Escrow\n"
             "2. Check Status\n"
             "3. Claim Payment\n"
@@ -2017,7 +2017,7 @@ async def create_shareable_link(
     seller_url = f"{base_url}?link={link_id}&mode=seller"
     
     # Generate share messages
-    buyer_message = f"I want to buy your item for ₦{amount:,.0f} using EscrowProtect. Click here to accept: {seller_url}"
+    buyer_message = f"I want to buy your item for ₦{amount:,.0f} using SocialEscrow. Click here to accept: {seller_url}"
     
     return {
         "success": True,
@@ -2670,7 +2670,7 @@ async def get_insurance_pool_stats():
 async def get_platform_summary():
     """Get comprehensive platform summary with all tier features"""
     return {
-        "platform": "EscrowProtect",
+        "platform": "SocialEscrow",
         "version": "2.0.0",
         "tiers_implemented": {
             "tier_1_critical": {

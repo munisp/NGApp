@@ -1,4 +1,4 @@
-"""Initial schema for EscrowProtect Platform
+"""Initial schema for SocialEscrow Platform
 
 Revision ID: 20251219_000001
 Revises: 

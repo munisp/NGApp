@@ -1,5 +1,5 @@
 """
-Seller Verification with Visible Badge for EscrowProtect
+Seller Verification with Visible Badge for SocialEscrow
 Implements document verification, badge issuance, and continuous monitoring
 for seller credibility in social commerce.
 """
@@ -655,13 +655,13 @@ class SellerVerificationService:
         badge_info = {
             BadgeType.VERIFIED_SELLER: {
                 "name": "Verified Seller",
-                "description": "Identity verified by EscrowProtect",
+                "description": "Identity verified by SocialEscrow",
                 "icon": "https://escrowprotect.ng/badges/verified-seller.svg",
                 "priority": 10,
             },
             BadgeType.VERIFIED_BUSINESS: {
                 "name": "Verified Business",
-                "description": "Registered business verified by EscrowProtect",
+                "description": "Registered business verified by SocialEscrow",
                 "icon": "https://escrowprotect.ng/badges/verified-business.svg",
                 "priority": 9,
             },
@@ -679,7 +679,7 @@ class SellerVerificationService:
             },
             BadgeType.NEW_SELLER: {
                 "name": "New Seller",
-                "description": "Recently joined EscrowProtect",
+                "description": "Recently joined SocialEscrow",
                 "icon": "https://escrowprotect.ng/badges/new-seller.svg",
                 "priority": 1,
             },

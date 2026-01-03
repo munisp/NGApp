@@ -656,17 +656,17 @@ class ProtectionFund:
             risk_assessment=risk_assessment,
             valid_until=datetime.utcnow() + timedelta(hours=24),
             terms_and_conditions="""
-EscrowProtect Guarantee Terms:
+SocialEscrow Guarantee Terms:
 1. This is NOT insurance. It is a buyer protection guarantee.
 2. Maximum claim amount: ₦500,000 per transaction.
 3. Claims must be filed within 14 days of transaction completion.
 4. Deductible applies based on coverage tier selected.
-5. EscrowProtect reserves the right to investigate all claims.
+5. SocialEscrow reserves the right to investigate all claims.
 6. Fraudulent claims will result in account suspension.
 7. Payouts are subject to fund availability.
             """.strip(),
             is_licensed_insurance=False,
-            insurer_name="EscrowProtect Guarantee Fund"
+            insurer_name="SocialEscrow Guarantee Fund"
         )
     
     async def create_policy(
@@ -702,7 +702,7 @@ EscrowProtect Guarantee Terms:
             beneficiary_name=beneficiary_name,
             beneficiary_phone=beneficiary_phone,
             is_licensed_insurance=False,
-            insurer_name="EscrowProtect Guarantee Fund"
+            insurer_name="SocialEscrow Guarantee Fund"
         )
         
         # Store policy
@@ -1013,7 +1013,7 @@ class InsuranceService:
             beneficiary_name=beneficiary_name,
             beneficiary_phone=beneficiary_phone,
             is_licensed_insurance=provider == "licensed_insurance",
-            insurer_name="Nigerian Insurance Company Ltd" if provider == "licensed_insurance" else "EscrowProtect Guarantee Fund"
+            insurer_name="Nigerian Insurance Company Ltd" if provider == "licensed_insurance" else "SocialEscrow Guarantee Fund"
         )
     
     async def file_claim(

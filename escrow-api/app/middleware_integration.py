@@ -1,5 +1,5 @@
 """
-Comprehensive Middleware Integration for EscrowProtect
+Comprehensive Middleware Integration for SocialEscrow
 Integrates TigerBeetle, Kafka, Dapr, Fluvio, Temporal, Keycloak, Permify, Redis, APISIX
 """
 

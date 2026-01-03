@@ -561,7 +561,7 @@ function App() {
         <div className="bg-gradient-to-r from-slate-800 to-slate-900 text-white p-5 text-center">
           <h1 className="text-xl font-semibold flex items-center justify-center gap-2">
             <div className="w-8 h-8 bg-emerald-500 rounded-lg flex items-center justify-center"><Shield className="w-5 h-5" /></div>
-            EscrowProtect
+            SocialEscrow
           </h1>
           {mode === 'seller' && <Badge className="mt-2 bg-amber-500">Seller Portal</Badge>}
         </div>

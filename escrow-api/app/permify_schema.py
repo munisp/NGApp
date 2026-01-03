@@ -1,5 +1,5 @@
 """
-Permify Authorization Schema for EscrowProtect Platform
+Permify Authorization Schema for SocialEscrow Platform
 
 This module defines the authorization model for fine-grained access control
 using Permify. It includes entity definitions, relationships, and permissions.

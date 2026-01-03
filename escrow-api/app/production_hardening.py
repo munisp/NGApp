@@ -1,5 +1,5 @@
 """
-Production Hardening Module for EscrowProtect
+Production Hardening Module for SocialEscrow
 
 This module addresses critical production gaps:
 1. PostgreSQL-backed job queue (replaces in-memory queue)

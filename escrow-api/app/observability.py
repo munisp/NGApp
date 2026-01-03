@@ -1,5 +1,5 @@
 """
-Observability and Reliability Service for EscrowProtect
+Observability and Reliability Service for SocialEscrow
 TIER 3: Reliability and Observability
 
 Provides:

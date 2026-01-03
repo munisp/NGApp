@@ -1,5 +1,5 @@
 """
-Edge Case Handlers for EscrowProtect
+Edge Case Handlers for SocialEscrow
 Comprehensive handling of edge cases across all platform features
 
 Covers:

@@ -1,5 +1,5 @@
 """
-Fraud Detection Service for EscrowProtect
+Fraud Detection Service for SocialEscrow
 Nigerian-specific fraud pattern detection and risk scoring
 
 Common Nigerian fraud patterns:

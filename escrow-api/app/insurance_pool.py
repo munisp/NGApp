@@ -1,5 +1,5 @@
 """
-Insurance Pool Integration for EscrowProtect
+Insurance Pool Integration for SocialEscrow
 TIER 4: Insurance Pool Integration
 
 Provides optional insurance for high-value transactions,

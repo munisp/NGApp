@@ -1,5 +1,5 @@
 """
-Transaction History & Shareable Receipts for EscrowProtect
+Transaction History & Shareable Receipts for SocialEscrow
 Generates receipts for all transaction events that can be shared
 back into WhatsApp/Instagram chats as credible proof.
 """
@@ -191,7 +191,7 @@ class ShareReceiptRequest(BaseModel):
 class ReceiptService:
     """Service for generating and managing receipts"""
     
-    BASE_URL = "https://escrowprotect.ng"
+    BASE_URL = "https://socialescrow.ng"
     
     def __init__(self, event_bus: EventBus, redis_client: Any, storage_client: Any):
         self.event_bus = event_bus
@@ -438,7 +438,7 @@ class ReceiptService:
         
         # Header
         c.setFont("Helvetica-Bold", 24)
-        c.drawString(1*inch, height - 1*inch, "EscrowProtect")
+        c.drawString(1*inch, height - 1*inch, "SocialEscrow")
         
         c.setFont("Helvetica", 12)
         c.drawString(1*inch, height - 1.3*inch, "Transaction Receipt")
@@ -482,7 +482,7 @@ class ReceiptService:
         
         # Footer
         c.setFont("Helvetica", 8)
-        c.drawString(1*inch, 0.5*inch, "This receipt is digitally signed and can be verified at escrowprotect.ng")
+        c.drawString(1*inch, 0.5*inch, "This receipt is digitally signed and can be verified at socialescrow.ng")
         
         c.save()
         buffer.seek(0)

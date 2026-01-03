@@ -1,5 +1,5 @@
 """
-Voice Note Support for EscrowProtect
+Voice Note Support for SocialEscrow
 TIER 4: Voice Note Support in WhatsApp
 
 Provides:

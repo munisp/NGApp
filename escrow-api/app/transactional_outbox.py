@@ -1,5 +1,5 @@
 """
-Transactional Outbox Pattern for EscrowProtect Platform
+Transactional Outbox Pattern for SocialEscrow Platform
 
 This module implements the transactional outbox pattern to ensure
 atomicity between database operations and event publishing.

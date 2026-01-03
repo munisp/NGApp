@@ -1,5 +1,5 @@
 """
-Trust Badge and Status Sharing Service for EscrowProtect
+Trust Badge and Status Sharing Service for SocialEscrow
 TIER 2: Escrow Trust Badge and Status Sharing
 
 Creates recognizable visual indicators of escrow protection
@@ -170,7 +170,7 @@ class TrustBadgeService:
         
         # Generate share messages for different platforms
         share_message = (
-            f"Transaction Protected by EscrowProtect\n"
+            f"Transaction Protected by SocialEscrow\n"
             f"Amount: ₦{badge.amount:,.0f}\n"
             f"Status: {config['label']}\n"
             f"Verify: {share_url}"
@@ -197,7 +197,7 @@ class TrustBadgeService:
             },
             "protection": {
                 "buyer_protected": badge.buyer_protected,
-                "platform": "EscrowProtect",
+                "platform": "SocialEscrow",
                 "guarantee": "100% Money-Back Guarantee"
             },
             "share": {
@@ -238,7 +238,7 @@ class TrustBadgeService:
             "og:image": f"{base_url}/api/badge/{badge.badge_id}/image",
             "og:image:width": "1200",
             "og:image:height": "630",
-            "og:site_name": "EscrowProtect",
+            "og:site_name": "SocialEscrow",
             "twitter:card": "summary_large_image",
             "twitter:title": title,
             "twitter:description": description,
@@ -278,7 +278,7 @@ class TrustBadgeService:
                 message = (
                     f"Transaction Complete!\n\n"
                     f"₦{badge.amount:,.0f} has been released to the seller.\n"
-                    f"Thank you for using EscrowProtect!\n\n"
+                    f"Thank you for using SocialEscrow!\n\n"
                     f"Receipt: {base_url}/badge/{badge.badge_id}"
                 )
             else:
@@ -306,7 +306,7 @@ class TrustBadgeService:
                 message = (
                     f"Payment Released!\n\n"
                     f"₦{badge.amount:,.0f} has been sent to your bank account.\n"
-                    f"Thank you for using EscrowProtect!\n\n"
+                    f"Thank you for using SocialEscrow!\n\n"
                     f"Receipt: {base_url}/badge/{badge.badge_id}"
                 )
             else:
@@ -351,7 +351,7 @@ class TrustBadgeService:
                     <span style="color: white; font-size: 20px;">&#10003;</span>
                 </div>
                 <div>
-                    <div style="font-weight: 600; color: #333;">EscrowProtect</div>
+                    <div style="font-weight: 600; color: #333;">SocialEscrow</div>
                     <div style="font-size: 12px; color: #666;">Secure Transaction</div>
                 </div>
             </div>

@@ -1,5 +1,5 @@
 """
-GraphQL Federation Layer for EscrowProtect Platform
+GraphQL Federation Layer for SocialEscrow Platform
 
 Provides a unified GraphQL API over existing FastAPI endpoints:
 - Read-first queries with dataloaders to avoid N+1
@@ -249,7 +249,7 @@ class UserDataLoader(DataLoader):
 
 class GraphQLResolvers:
     """
-    GraphQL resolvers for EscrowProtect schema.
+    GraphQL resolvers for SocialEscrow schema.
     Uses dataloaders for efficient data fetching.
     """
     

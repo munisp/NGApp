@@ -1,5 +1,5 @@
 """
-Deep WhatsApp/Instagram In-Chat Flow for EscrowProtect
+Deep WhatsApp/Instagram In-Chat Flow for SocialEscrow
 Enables escrow initiation directly from social media chats with
 real-time notifications using WhatsApp Business API templates.
 """
@@ -472,7 +472,7 @@ class InstagramMessagingClient:
             f"Seller: {seller_name}\n"
             f"Item: {item_title}\n"
             f"Amount: {currency} {amount:,.2f}\n\n"
-            f"Pay securely with EscrowProtect:\n{escrow_link}\n\n"
+            f"Pay securely with SocialEscrow:\n{escrow_link}\n\n"
             f"Your payment is protected until you confirm delivery."
         )
         
@@ -483,7 +483,7 @@ class InstagramMessagingClient:
 class SocialMessagingService:
     """Main service for social media messaging integration"""
     
-    BASE_URL = "https://escrowprotect.ng"
+    BASE_URL = "https://socialescrow.ng"
     
     def __init__(
         self,
@@ -713,7 +713,7 @@ class SocialMessagingService:
             MessageType.FUNDS_RELEASED: (
                 f"💰 Funds Released!\n\n"
                 f"{escrow.currency} {escrow.amount:,.2f} has been released to your account.\n\n"
-                f"Thank you for using EscrowProtect!"
+                f"Thank you for using SocialEscrow!"
             ),
         }
         
@@ -907,7 +907,7 @@ async def whatsapp_webhook_verify(
 ):
     """Verify WhatsApp webhook"""
     import os
-    verify_token = os.getenv("WHATSAPP_VERIFY_TOKEN", "escrowprotect_verify")
+    verify_token = os.getenv("WHATSAPP_VERIFY_TOKEN", "socialescrow_verify")
     
     if hub_mode == "subscribe" and hub_verify_token == verify_token:
         return int(hub_challenge)

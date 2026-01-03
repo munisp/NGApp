@@ -1,5 +1,5 @@
 /**
- * Offline-First Queue for EscrowProtect PWA
+ * Offline-First Queue for SocialEscrow PWA
  * 
  * IndexedDB-backed outbox that stores "intent + evidence" for:
  * - Escrow creation requests

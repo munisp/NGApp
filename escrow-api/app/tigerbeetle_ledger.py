@@ -1,5 +1,5 @@
 """
-TigerBeetle Double-Entry Ledger for EscrowProtect
+TigerBeetle Double-Entry Ledger for SocialEscrow
 High-performance, ACID-compliant financial transactions
 
 TigerBeetle provides:

@@ -1,5 +1,5 @@
 """
-Double-Entry Ledger Service for EscrowProtect
+Double-Entry Ledger Service for SocialEscrow
 Ensures financial integrity with atomic transactions and reconciliation
 """
 

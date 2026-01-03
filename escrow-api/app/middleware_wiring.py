@@ -1,5 +1,5 @@
 """
-Middleware Wiring for EscrowProtect Platform
+Middleware Wiring for SocialEscrow Platform
 
 This module wires all middleware components to the business logic:
 1. Mojaloop - Fail-closed production enforcement (no mock fallbacks)

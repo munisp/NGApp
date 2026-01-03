@@ -1,5 +1,5 @@
 """
-Agent Network for Cash Transactions - EscrowProtect
+Agent Network for Cash Transactions - SocialEscrow
 TIER 4: Agent Network for Cash Transactions
 
 Enables cash-based escrow through a network of verified agents
@@ -488,7 +488,7 @@ class AgentNetworkService:
                 "title": "Cash Deposit Instructions",
                 "step_1": f"Visit {agent.name} at {agent.location.address}, {agent.location.city}",
                 "step_2": f"Landmark: {agent.location.landmark or 'N/A'}",
-                "step_3": f"Tell the agent you want to fund EscrowProtect",
+                "step_3": f"Tell the agent you want to fund SocialEscrow",
                 "step_4": f"Give them your verification code: {transaction.verification_code}",
                 "step_5": f"Pay ₦{transaction.amount + transaction.agent_commission:,.0f} in cash",
                 "step_6": "Wait for confirmation SMS",
@@ -501,7 +501,7 @@ class AgentNetworkService:
                 "title": "Cash Withdrawal Instructions",
                 "step_1": f"Visit {agent.name} at {agent.location.address}, {agent.location.city}",
                 "step_2": f"Landmark: {agent.location.landmark or 'N/A'}",
-                "step_3": f"Tell the agent you want to withdraw from EscrowProtect",
+                "step_3": f"Tell the agent you want to withdraw from SocialEscrow",
                 "step_4": f"Give them your verification code: {transaction.verification_code}",
                 "step_5": f"Receive ₦{transaction.amount - transaction.agent_commission:,.0f} in cash",
                 "step_6": "Confirm receipt in the app",

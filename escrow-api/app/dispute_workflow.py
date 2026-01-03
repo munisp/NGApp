@@ -1,5 +1,5 @@
 """
-Dispute Resolution Operational Workflow for EscrowProtect
+Dispute Resolution Operational Workflow for SocialEscrow
 Implements full dispute lifecycle: evidence submission, mediation, SLA timers,
 escalation paths, and resolution outcomes that drive ledger movements.
 """

@@ -1,5 +1,5 @@
 """
-Temporal Workflow Definitions for EscrowProtect Platform
+Temporal Workflow Definitions for SocialEscrow Platform
 
 This module contains the actual workflow definitions that orchestrate
 the escrow lifecycle. These workflows are executed by Temporal workers.

@@ -609,7 +609,7 @@ class CoreBankingAdapter(BankAdapterInterface):
                 account_number=account_number,
                 account_name=va.account_name,
                 bank_code=bank_code,
-                bank_name="EscrowProtect MFB",
+                bank_name="SocialEscrow MFB",
                 status=VerificationStatus.VERIFIED,
                 kyc_level="1",
                 message="Virtual account verified"
@@ -622,7 +622,7 @@ class CoreBankingAdapter(BankAdapterInterface):
                 account_number=account_number,
                 account_name=f"ESCROW CUSTOMER {account_number[-4:]}",
                 bank_code=bank_code,
-                bank_name="EscrowProtect MFB",
+                bank_name="SocialEscrow MFB",
                 status=VerificationStatus.VERIFIED,
                 kyc_level="2",
                 message="Account verified"
@@ -632,7 +632,7 @@ class CoreBankingAdapter(BankAdapterInterface):
             account_number=account_number,
             account_name="",
             bank_code=bank_code,
-            bank_name="EscrowProtect MFB",
+            bank_name="SocialEscrow MFB",
             status=VerificationStatus.NOT_FOUND,
             message="Account not found"
         )
@@ -674,7 +674,7 @@ class CoreBankingAdapter(BankAdapterInterface):
             virtual_account_number=virtual_account_number,
             account_name=account_name[:100],  # Truncate to max length
             bank_code="999999",  # Our bank code
-            bank_name="EscrowProtect MFB",
+            bank_name="SocialEscrow MFB",
             reference=reference,
             reference_type=reference_type,
             parent_account=self.escrow_pool_account or "0000000000",
@@ -1015,7 +1015,7 @@ class BankService:
             destination_account=seller_account,
             destination_bank_code=seller_bank_code,
             amount=amount,
-            narration=f"EscrowProtect Payout - {escrow_id}",
+            narration=f"SocialEscrow Payout - {escrow_id}",
             beneficiary_name=seller_name,
             idempotency_key=idempotency_key
         )
@@ -1053,7 +1053,7 @@ class BankService:
             destination_account=buyer_account,
             destination_bank_code=buyer_bank_code,
             amount=amount,
-            narration=f"EscrowProtect Refund - {reason[:50]}",
+            narration=f"SocialEscrow Refund - {reason[:50]}",
             beneficiary_name=buyer_name,
             idempotency_key=idempotency_key
         )

@@ -9,7 +9,7 @@ Provides sellers with a complete business operating system:
 - Messaging automation
 - Analytics dashboard
 
-This makes EscrowProtect the seller's "home base" rather than just an escrow layer.
+This makes SocialEscrow the seller's "home base" rather than just an escrow layer.
 """
 
 from datetime import datetime, timedelta

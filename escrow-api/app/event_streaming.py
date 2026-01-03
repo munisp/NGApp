@@ -1,5 +1,5 @@
 """
-Event Streaming Module for EscrowProtect Platform
+Event Streaming Module for SocialEscrow Platform
 
 Provides Kafka-based event publishing for real-time data streaming to the lakehouse.
 All business events (transactions, escrows, disputes, etc.) are published as structured

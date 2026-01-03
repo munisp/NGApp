@@ -1,5 +1,5 @@
 """
-Payment Gateway Hardening for EscrowProtect
+Payment Gateway Hardening for SocialEscrow
 End-to-end Paystack/Flutterwave integration with reconciliation,
 idempotency, retry logic, and clear wallet balance views.
 """

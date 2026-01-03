@@ -1,4 +1,4 @@
-// API client for EscrowProtect platform
+// API client for SocialEscrow platform
 import type { 
   Escrow, Dispute, Refund, Agent, AgentTransaction, 
   MarketplaceListing, Storefront, KYCSubmission, BankDetails,

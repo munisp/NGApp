@@ -171,7 +171,7 @@ WALLET_SERVICES: List[WalletService] = [
         description="Extend protection coverage by 5000 NGN per transaction",
         category=WalletServiceCategory.PROTECTION,
         cost_ngn=200,
-        partner="EscrowProtect Insurance Pool"
+        partner="SocialEscrow Insurance Pool"
     ),
     WalletService(
         service_id="insurance_topup_premium",
@@ -179,7 +179,7 @@ WALLET_SERVICES: List[WalletService] = [
         description="Extend protection coverage by 20000 NGN per transaction",
         category=WalletServiceCategory.PROTECTION,
         cost_ngn=600,
-        partner="EscrowProtect Insurance Pool",
+        partner="SocialEscrow Insurance Pool",
         min_tier="silver"
     ),
     WalletService(

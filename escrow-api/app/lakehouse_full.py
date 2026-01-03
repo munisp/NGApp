@@ -1,5 +1,5 @@
 """
-Comprehensive Lakehouse Architecture for EscrowProtect Platform
+Comprehensive Lakehouse Architecture for SocialEscrow Platform
 
 This module provides a complete data lakehouse implementation with:
 1. Delta Lake - ACID transactions on data lake
@@ -72,7 +72,7 @@ class DeltaLakeManager:
             from delta import configure_spark_with_delta_pip
             
             builder = SparkSession.builder \
-                .appName("EscrowProtect-Lakehouse") \
+                .appName("SocialEscrow-Lakehouse") \
                 .master(SPARK_MASTER) \
                 .config("spark.sql.extensions", "io.delta.sql.DeltaSparkSessionExtension") \
                 .config("spark.sql.catalog.spark_catalog", "org.apache.spark.sql.delta.catalog.DeltaCatalog") \
@@ -519,7 +519,7 @@ class SparkBatchProcessor:
             from pyspark.sql import SparkSession
             
             self.spark = SparkSession.builder \
-                .appName("EscrowProtect-BatchProcessing") \
+                .appName("SocialEscrow-BatchProcessing") \
                 .master(SPARK_MASTER) \
                 .config("spark.sql.adaptive.enabled", "true") \
                 .config("spark.sql.adaptive.coalescePartitions.enabled", "true") \
@@ -952,7 +952,7 @@ class SedonaGeospatial:
             from sedona.spark import SedonaContext
             
             config = SedonaContext.builder() \
-                .appName("EscrowProtect-Geospatial") \
+                .appName("SocialEscrow-Geospatial") \
                 .master(SPARK_MASTER) \
                 .getOrCreate()
             

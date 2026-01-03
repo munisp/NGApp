@@ -26,7 +26,7 @@ func main() {
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
 
-	log.Info().Msg("Starting EscrowProtect Orchestrator")
+	log.Info().Msg("Starting SocialEscrow Orchestrator")
 
 	// Load configuration
 	cfg := config.Load()

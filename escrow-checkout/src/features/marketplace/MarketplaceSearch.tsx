@@ -187,7 +187,7 @@ export function MarketplaceSearch() {
         <div className="max-w-4xl mx-auto px-4 py-4">
           <div className="flex items-center gap-2 mb-4">
             <Shield className="w-6 h-6 text-blue-600" />
-            <span className="font-semibold text-slate-800">EscrowProtect Marketplace</span>
+            <span className="font-semibold text-slate-800">SocialEscrow Marketplace</span>
           </div>
           
           {/* Search Bar */}

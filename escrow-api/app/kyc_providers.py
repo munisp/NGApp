@@ -1,5 +1,5 @@
 """
-BVN/NIN Provider Integration for EscrowProtect Platform
+BVN/NIN Provider Integration for SocialEscrow Platform
 
 Provides real identity verification via Nigerian identity providers:
 - Dojah (primary)

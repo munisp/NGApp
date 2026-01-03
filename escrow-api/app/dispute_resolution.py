@@ -1,5 +1,5 @@
 """
-Dispute Resolution Service for EscrowProtect
+Dispute Resolution Service for SocialEscrow
 Structured dispute handling with evidence collection and automated resolution
 
 Dispute Flow:

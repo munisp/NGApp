@@ -1,5 +1,5 @@
 """
-Dynamic Trust Scoring for EscrowProtect
+Dynamic Trust Scoring for SocialEscrow
 Computes explainable trust scores based on transaction history, buyer feedback,
 dispute rates, delivery timeliness, and feeds into marketplace ranking.
 """

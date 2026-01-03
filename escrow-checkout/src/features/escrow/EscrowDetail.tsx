@@ -202,7 +202,7 @@ export function EscrowDetail() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Shield className="w-6 h-6 text-blue-600" />
-              <span className="font-semibold text-slate-800">EscrowProtect</span>
+              <span className="font-semibold text-slate-800">SocialEscrow</span>
             </div>
             <Badge className={`${statusConfig.color} text-white`}>
               <StatusIcon className="w-3 h-3 mr-1" />

@@ -1,5 +1,5 @@
 """
-RustFS Object Storage Client for EscrowProtect Platform
+RustFS Object Storage Client for SocialEscrow Platform
 
 This module provides a unified S3-compatible storage interface using RustFS
 as the backend. RustFS is a high-performance, distributed object storage
@@ -68,8 +68,8 @@ class StorageConfig:
         """Create config from environment variables"""
         return cls(
             endpoint_url=os.getenv("RUSTFS_ENDPOINT", "http://localhost:9000"),
-            access_key=os.getenv("RUSTFS_ACCESS_KEY", "escrowprotect"),
-            secret_key=os.getenv("RUSTFS_SECRET_KEY", "escrowprotect-secret-key"),
+            access_key=os.getenv("RUSTFS_ACCESS_KEY", "socialescrow"),
+            secret_key=os.getenv("RUSTFS_SECRET_KEY", "socialescrow-secret-key"),
             region=os.getenv("RUSTFS_REGION", "af-south-1"),
             use_ssl=os.getenv("RUSTFS_USE_SSL", "false").lower() == "true",
             verify_ssl=os.getenv("RUSTFS_VERIFY_SSL", "true").lower() == "true",

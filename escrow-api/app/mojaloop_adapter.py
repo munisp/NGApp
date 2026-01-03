@@ -1,5 +1,5 @@
 """
-Mojaloop Adapter for EscrowProtect Platform
+Mojaloop Adapter for SocialEscrow Platform
 
 Implements FSPIOP (Financial Services Provider Interoperability Protocol) integration
 for interoperable payments across Nigerian banks and mobile money providers.
@@ -40,8 +40,8 @@ MOJALOOP_TRANSFERS_URL = os.getenv("MOJALOOP_TRANSFERS_URL", "http://localhost:4
 MOJALOOP_SETTLEMENT_URL = os.getenv("MOJALOOP_SETTLEMENT_URL", "http://localhost:4005")
 
 # Our DFSP identity
-ESCROW_DFSP_ID = os.getenv("ESCROW_DFSP_ID", "escrowprotect")
-ESCROW_DFSP_NAME = os.getenv("ESCROW_DFSP_NAME", "EscrowProtect Nigeria")
+ESCROW_DFSP_ID = os.getenv("ESCROW_DFSP_ID", "socialescrow")
+ESCROW_DFSP_NAME = os.getenv("ESCROW_DFSP_NAME", "SocialEscrow Nigeria")
 
 # API keys and certificates
 MOJALOOP_API_KEY = os.getenv("MOJALOOP_API_KEY", "")
@@ -198,7 +198,7 @@ class MojaloopError(Exception):
 
 class MojaloopAdapter:
     """
-    Mojaloop FSPIOP adapter for EscrowProtect.
+    Mojaloop FSPIOP adapter for SocialEscrow.
     
     Handles:
     - Party lookup (find DFSP for a phone number/account)
@@ -554,7 +554,7 @@ class MojaloopAdapter:
 
 class EscrowMojaloopIntegration:
     """
-    High-level integration between EscrowProtect and Mojaloop.
+    High-level integration between SocialEscrow and Mojaloop.
     
     Orchestrates the flow:
     1. Buyer pays into escrow (Mojaloop inbound transfer)
@@ -588,7 +588,7 @@ class EscrowMojaloopIntegration:
         Flow:
         1. Look up buyer's DFSP (bank/wallet)
         2. Create quote for transfer
-        3. Initiate transfer from buyer to EscrowProtect
+        3. Initiate transfer from buyer to SocialEscrow
         4. On fulfilment, create TigerBeetle escrow hold
         """
         from app.tigerbeetle_ledger import naira_to_kobo
@@ -686,7 +686,7 @@ class EscrowMojaloopIntegration:
         1. Release TigerBeetle escrow hold
         2. Look up seller's DFSP
         3. Create quote for payout
-        4. Initiate transfer from EscrowProtect to seller
+        4. Initiate transfer from SocialEscrow to seller
         """
         from app.tigerbeetle_ledger import kobo_to_naira
         
@@ -773,7 +773,7 @@ class EscrowMojaloopIntegration:
         1. Void TigerBeetle escrow hold
         2. Look up buyer's DFSP
         3. Create quote for refund
-        4. Initiate transfer from EscrowProtect to buyer
+        4. Initiate transfer from SocialEscrow to buyer
         """
         from app.tigerbeetle_ledger import kobo_to_naira
         

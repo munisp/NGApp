@@ -1,5 +1,5 @@
 """
-Lakehouse Data Pipeline for EscrowProtect Platform
+Lakehouse Data Pipeline for SocialEscrow Platform
 
 Provides data pipeline infrastructure for streaming events to the lakehouse (Apache Iceberg).
 Supports real-time analytics, ML feature engineering, and compliance reporting.

@@ -1,5 +1,5 @@
 """
-Logistics Integration Module for EscrowProtect
+Logistics Integration Module for SocialEscrow
 Integrates with Nigerian courier services (Gokada, Kwik, GIG Logistics, etc.)
 for real-time delivery tracking and proof-of-delivery capture.
 """

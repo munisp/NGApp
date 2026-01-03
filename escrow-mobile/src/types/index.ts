@@ -1,4 +1,4 @@
-// Shared types for EscrowProtect mobile app
+// Shared types for SocialEscrow mobile app
 // These mirror the PWA types for consistency
 
 export interface User {

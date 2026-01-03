@@ -1,5 +1,5 @@
 """
-Repository Pattern for EscrowProtect
+Repository Pattern for SocialEscrow
 Provides database abstraction for all services
 
 This module implements the repository pattern to:

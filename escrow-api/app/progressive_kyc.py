@@ -1,5 +1,5 @@
 """
-Progressive KYC Service for EscrowProtect
+Progressive KYC Service for SocialEscrow
 Risk-based, tiered KYC optimized for Nigerian social commerce
 
 Design Principles:

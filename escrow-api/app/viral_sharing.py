@@ -81,7 +81,7 @@ BADGE_DEFINITIONS: Dict[BadgeType, BadgeDefinition] = {
     BadgeType.SELLER_TRUST: BadgeDefinition(
         badge_type=BadgeType.SELLER_TRUST,
         name="Verified Seller",
-        description="This seller is verified and protected by EscrowProtect",
+        description="This seller is verified and protected by SocialEscrow",
         icon="shield",
         color="#22C55E",
         requirements={"bank_verified": True}
@@ -89,7 +89,7 @@ BADGE_DEFINITIONS: Dict[BadgeType, BadgeDefinition] = {
     BadgeType.TRANSACTION_VERIFIED: BadgeDefinition(
         badge_type=BadgeType.TRANSACTION_VERIFIED,
         name="Verified Transaction",
-        description="This transaction was completed successfully via EscrowProtect",
+        description="This transaction was completed successfully via SocialEscrow",
         icon="check-circle",
         color="#3B82F6",
         requirements={"transaction_completed": True}
@@ -306,11 +306,11 @@ class ShareContentGenerator:
         price_formatted = f"{price:,.0f}"
         
         messages = {
-            SharePlatform.WHATSAPP: f"Buy {item_description} from {seller_name} for N{price_formatted}\n\nProtected by EscrowProtect - Your payment is safe until you confirm delivery\n\n{checkout_url}",
-            SharePlatform.INSTAGRAM: f"Buy {item_description} from {seller_name}\nN{price_formatted}\n\nProtected by EscrowProtect\nLink in bio or DM for link",
-            SharePlatform.FACEBOOK: f"Check out {item_description} from {seller_name} for N{price_formatted}!\n\nYour payment is protected by EscrowProtect until you confirm delivery.\n\n{checkout_url}",
-            SharePlatform.TWITTER: f"Buy {item_description} from {seller_name} for N{price_formatted}\n\nProtected by @EscrowProtect\n\n{checkout_url}",
-            SharePlatform.TELEGRAM: f"Buy {item_description} from {seller_name} for N{price_formatted}\n\nProtected by EscrowProtect\n\n{checkout_url}",
+            SharePlatform.WHATSAPP: f"Buy {item_description} from {seller_name} for N{price_formatted}\n\nProtected by SocialEscrow - Your payment is safe until you confirm delivery\n\n{checkout_url}",
+            SharePlatform.INSTAGRAM: f"Buy {item_description} from {seller_name}\nN{price_formatted}\n\nProtected by SocialEscrow\nLink in bio or DM for link",
+            SharePlatform.FACEBOOK: f"Check out {item_description} from {seller_name} for N{price_formatted}!\n\nYour payment is protected by SocialEscrow until you confirm delivery.\n\n{checkout_url}",
+            SharePlatform.TWITTER: f"Buy {item_description} from {seller_name} for N{price_formatted}\n\nProtected by @SocialEscrow\n\n{checkout_url}",
+            SharePlatform.TELEGRAM: f"Buy {item_description} from {seller_name} for N{price_formatted}\n\nProtected by SocialEscrow\n\n{checkout_url}",
             SharePlatform.COPY_LINK: checkout_url
         }
         
@@ -341,10 +341,10 @@ class ShareContentGenerator:
         amount_formatted = f"{amount:,.0f}"
         
         messages = {
-            SharePlatform.WHATSAPP: f"Transaction Verified by EscrowProtect\n\nSeller: {seller_name}\nItem: {item_description}\nAmount: N{amount_formatted}\nVerification: {verification_code}\n\nView receipt: {receipt_url}",
-            SharePlatform.INSTAGRAM: f"Successful purchase from {seller_name}\nVerified by EscrowProtect\nCode: {verification_code}",
-            SharePlatform.FACEBOOK: f"Just completed a safe transaction with {seller_name} via EscrowProtect!\n\nItem: {item_description}\nAmount: N{amount_formatted}\n\nVerification code: {verification_code}\n\n{receipt_url}",
-            SharePlatform.TWITTER: f"Verified transaction with {seller_name} via @EscrowProtect\n\nN{amount_formatted} - {item_description}\nCode: {verification_code}\n\n{receipt_url}",
+            SharePlatform.WHATSAPP: f"Transaction Verified by SocialEscrow\n\nSeller: {seller_name}\nItem: {item_description}\nAmount: N{amount_formatted}\nVerification: {verification_code}\n\nView receipt: {receipt_url}",
+            SharePlatform.INSTAGRAM: f"Successful purchase from {seller_name}\nVerified by SocialEscrow\nCode: {verification_code}",
+            SharePlatform.FACEBOOK: f"Just completed a safe transaction with {seller_name} via SocialEscrow!\n\nItem: {item_description}\nAmount: N{amount_formatted}\n\nVerification code: {verification_code}\n\n{receipt_url}",
+            SharePlatform.TWITTER: f"Verified transaction with {seller_name} via @SocialEscrow\n\nN{amount_formatted} - {item_description}\nCode: {verification_code}\n\n{receipt_url}",
             SharePlatform.TELEGRAM: f"Transaction Verified\n\nSeller: {seller_name}\nAmount: N{amount_formatted}\nCode: {verification_code}\n\n{receipt_url}",
             SharePlatform.COPY_LINK: receipt_url
         }
@@ -368,10 +368,10 @@ class ShareContentGenerator:
         tier_emoji = {"bronze": "🥉", "silver": "🥈", "gold": "🥇", "platinum": "💎"}.get(tier.lower(), "✓")
         
         messages = {
-            SharePlatform.WHATSAPP: f"{tier_emoji} {seller_name} - Verified {tier.title()} Seller\n\n{completed_transactions}+ successful transactions\n{rating:.1f} star rating\n\nProtected by EscrowProtect\n\n{badge_url}",
-            SharePlatform.INSTAGRAM: f"{tier_emoji} Verified {tier.title()} Seller\n{completed_transactions}+ transactions\n{rating:.1f} stars\nProtected by EscrowProtect",
-            SharePlatform.FACEBOOK: f"I'm a verified {tier.title()} seller on EscrowProtect!\n\n{completed_transactions}+ successful transactions\n{rating:.1f} star rating\n\nShop with confidence - your payment is protected!\n\n{badge_url}",
-            SharePlatform.TWITTER: f"{tier_emoji} Verified {tier.title()} Seller on @EscrowProtect\n\n{completed_transactions}+ transactions | {rating:.1f} stars\n\nShop safely: {badge_url}",
+            SharePlatform.WHATSAPP: f"{tier_emoji} {seller_name} - Verified {tier.title()} Seller\n\n{completed_transactions}+ successful transactions\n{rating:.1f} star rating\n\nProtected by SocialEscrow\n\n{badge_url}",
+            SharePlatform.INSTAGRAM: f"{tier_emoji} Verified {tier.title()} Seller\n{completed_transactions}+ transactions\n{rating:.1f} stars\nProtected by SocialEscrow",
+            SharePlatform.FACEBOOK: f"I'm a verified {tier.title()} seller on SocialEscrow!\n\n{completed_transactions}+ successful transactions\n{rating:.1f} star rating\n\nShop with confidence - your payment is protected!\n\n{badge_url}",
+            SharePlatform.TWITTER: f"{tier_emoji} Verified {tier.title()} Seller on @SocialEscrow\n\n{completed_transactions}+ transactions | {rating:.1f} stars\n\nShop safely: {badge_url}",
             SharePlatform.TELEGRAM: f"{tier_emoji} {seller_name}\nVerified {tier.title()} Seller\n\n{completed_transactions}+ transactions\n{rating:.1f} stars\n\n{badge_url}",
             SharePlatform.COPY_LINK: badge_url
         }
@@ -450,7 +450,7 @@ async def create_checkout_link(request: CreateCheckoutLinkRequest):
         "share_content": share_content,
         "og_preview": {
             "title": f"Buy {request.item_description} from {request.seller_name}",
-            "description": f"N{request.price:,.0f} - Protected by EscrowProtect",
+            "description": f"N{request.price:,.0f} - Protected by SocialEscrow",
             "image": f"{BASE_URL}/api/v1/share/og-image/checkout/{link.link_id}"
         }
     }
@@ -531,7 +531,7 @@ async def verify_receipt(receipt_id: str, code: str):
     return {
         "valid": True,
         "receipt": receipt,
-        "message": "This transaction was verified by EscrowProtect"
+        "message": "This transaction was verified by SocialEscrow"
     }
 
 
@@ -561,7 +561,7 @@ async def create_seller_badge_card(
     # Generate embed code (HTML snippet for websites)
     embed_code = f'''<a href="{share_url}" target="_blank" rel="noopener">
   <img src="{BASE_URL}/api/v1/share/badge-image/{card_id}" 
-       alt="Verified by EscrowProtect" 
+       alt="Verified by SocialEscrow" 
        style="max-width: 200px; height: auto;" />
 </a>'''
     
@@ -636,7 +636,7 @@ async def create_referral_link(referrer_id: str, referral_code: str):
         "short_url": link.short_url,
         "full_url": link.full_url,
         "referral_code": referral_code,
-        "share_message": f"Join EscrowProtect and get 1000 bonus points!\n\nUse my referral code: {referral_code}\n\n{link.short_url}"
+        "share_message": f"Join SocialEscrow and get 1000 bonus points!\n\nUse my referral code: {referral_code}\n\n{link.short_url}"
     }
 
 
