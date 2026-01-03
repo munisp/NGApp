@@ -247,7 +247,7 @@ class KYBDirectorRepository:
         ).filter(
             and_(
                 business_directors.c.business_id == business_id,
-                business_directors.c.is_active == True
+                business_directors.c.is_active.is_(True)
             )
         ).all()
     
