@@ -409,7 +409,7 @@ spec:
         restartPolicy: Never
         containers:
           - name: batch-processor
-            image: remittance/batch-processor:latest
+            image: remittance/batch-processor:1.0.0
             env:
               - name: BATCH_SIZE
                 value: "1000"
