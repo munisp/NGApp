@@ -1,0 +1,472 @@
+# KEDA Autoscaling Configuration for 1M TPS
+# Scales services to 500+ replicas based on Kafka lag and CPU
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: keda-1m
+  labels:
+    app.kubernetes.io/name: keda-1m
+    throughput-tier: "1m-tps"
+---
+# ScaledObject for Transaction Service - 500 replicas max
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: transaction-service-1m-scaler
+  namespace: core-services
+  labels:
+    app: transaction-service
+    throughput-tier: "1m-tps"
+spec:
+  scaleTargetRef:
+    name: transaction-service
+  pollingInterval: 5
+  cooldownPeriod: 60
+  minReplicaCount: 50
+  maxReplicaCount: 500
+  fallback:
+    failureThreshold: 3
+    replicas: 100
+  advanced:
+    restoreToOriginalReplicaCount: false
+    horizontalPodAutoscalerConfig:
+      behavior:
+        scaleDown:
+          stabilizationWindowSeconds: 120
+          policies:
+            - type: Percent
+              value: 5
+              periodSeconds: 60
+        scaleUp:
+          stabilizationWindowSeconds: 0
+          policies:
+            - type: Percent
+              value: 200
+              periodSeconds: 15
+            - type: Pods
+              value: 50
+              periodSeconds: 15
+          selectPolicy: Max
+  triggers:
+    - type: kafka
+      metadata:
+        bootstrapServers: kafka-mega.kafka-mega.svc.cluster.local:9092
+        consumerGroup: transaction-service
+        topic: transactions.created
+        lagThreshold: "1000"
+        activationLagThreshold: "100"
+        offsetResetPolicy: earliest
+      authenticationRef:
+        name: kafka-mega-auth
+    - type: cpu
+      metricType: Utilization
+      metadata:
+        value: "60"
+    - type: memory
+      metricType: Utilization
+      metadata:
+        value: "70"
+---
+# ScaledObject for Payment Service - 500 replicas max
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: payment-service-1m-scaler
+  namespace: core-services
+  labels:
+    app: payment-service
+    throughput-tier: "1m-tps"
+spec:
+  scaleTargetRef:
+    name: payment-service
+  pollingInterval: 5
+  cooldownPeriod: 60
+  minReplicaCount: 50
+  maxReplicaCount: 500
+  fallback:
+    failureThreshold: 3
+    replicas: 100
+  advanced:
+    horizontalPodAutoscalerConfig:
+      behavior:
+        scaleDown:
+          stabilizationWindowSeconds: 120
+          policies:
+            - type: Percent
+              value: 5
+              periodSeconds: 60
+        scaleUp:
+          stabilizationWindowSeconds: 0
+          policies:
+            - type: Percent
+              value: 200
+              periodSeconds: 15
+            - type: Pods
+              value: 50
+              periodSeconds: 15
+          selectPolicy: Max
+  triggers:
+    - type: kafka
+      metadata:
+        bootstrapServers: kafka-mega.kafka-mega.svc.cluster.local:9092
+        consumerGroup: payment-service
+        topic: payments.initiated
+        lagThreshold: "1000"
+        activationLagThreshold: "100"
+      authenticationRef:
+        name: kafka-mega-auth
+    - type: cpu
+      metricType: Utilization
+      metadata:
+        value: "60"
+---
+# ScaledObject for Wallet Service - 400 replicas max
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: wallet-service-1m-scaler
+  namespace: core-services
+  labels:
+    app: wallet-service
+    throughput-tier: "1m-tps"
+spec:
+  scaleTargetRef:
+    name: wallet-service
+  pollingInterval: 5
+  cooldownPeriod: 60
+  minReplicaCount: 40
+  maxReplicaCount: 400
+  fallback:
+    failureThreshold: 3
+    replicas: 80
+  triggers:
+    - type: kafka
+      metadata:
+        bootstrapServers: kafka-mega.kafka-mega.svc.cluster.local:9092
+        consumerGroup: wallet-service
+        topic: wallet.credits
+        lagThreshold: "1000"
+        activationLagThreshold: "100"
+      authenticationRef:
+        name: kafka-mega-auth
+    - type: kafka
+      metadata:
+        bootstrapServers: kafka-mega.kafka-mega.svc.cluster.local:9092
+        consumerGroup: wallet-service
+        topic: wallet.debits
+        lagThreshold: "1000"
+        activationLagThreshold: "100"
+      authenticationRef:
+        name: kafka-mega-auth
+    - type: cpu
+      metricType: Utilization
+      metadata:
+        value: "60"
+---
+# ScaledObject for Risk Service - 300 replicas max
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: risk-service-1m-scaler
+  namespace: core-services
+  labels:
+    app: risk-service
+    throughput-tier: "1m-tps"
+spec:
+  scaleTargetRef:
+    name: risk-service
+  pollingInterval: 5
+  cooldownPeriod: 60
+  minReplicaCount: 30
+  maxReplicaCount: 300
+  fallback:
+    failureThreshold: 3
+    replicas: 60
+  triggers:
+    - type: kafka
+      metadata:
+        bootstrapServers: kafka-mega.kafka-mega.svc.cluster.local:9092
+        consumerGroup: risk-service
+        topic: risk.scoring.requests
+        lagThreshold: "500"
+        activationLagThreshold: "50"
+      authenticationRef:
+        name: kafka-mega-auth
+    - type: cpu
+      metricType: Utilization
+      metadata:
+        value: "60"
+---
+# ScaledObject for Mojaloop Connector - 300 replicas max
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: mojaloop-connector-1m-scaler
+  namespace: core-services
+  labels:
+    app: mojaloop-connector
+    throughput-tier: "1m-tps"
+spec:
+  scaleTargetRef:
+    name: mojaloop-connector
+  pollingInterval: 5
+  cooldownPeriod: 60
+  minReplicaCount: 30
+  maxReplicaCount: 300
+  fallback:
+    failureThreshold: 3
+    replicas: 60
+  triggers:
+    - type: kafka
+      metadata:
+        bootstrapServers: kafka-mega.kafka-mega.svc.cluster.local:9092
+        consumerGroup: mojaloop-connector
+        topic: mojaloop.transfers
+        lagThreshold: "500"
+        activationLagThreshold: "50"
+      authenticationRef:
+        name: kafka-mega-auth
+    - type: kafka
+      metadata:
+        bootstrapServers: kafka-mega.kafka-mega.svc.cluster.local:9092
+        consumerGroup: mojaloop-connector
+        topic: mojaloop.callbacks
+        lagThreshold: "500"
+        activationLagThreshold: "50"
+      authenticationRef:
+        name: kafka-mega-auth
+    - type: cpu
+      metricType: Utilization
+      metadata:
+        value: "60"
+---
+# ScaledObject for KYC Service - 100 replicas max
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: kyc-service-1m-scaler
+  namespace: core-services
+  labels:
+    app: kyc-service
+    throughput-tier: "1m-tps"
+spec:
+  scaleTargetRef:
+    name: kyc-service
+  pollingInterval: 10
+  cooldownPeriod: 120
+  minReplicaCount: 10
+  maxReplicaCount: 100
+  triggers:
+    - type: kafka
+      metadata:
+        bootstrapServers: kafka-mega.kafka-mega.svc.cluster.local:9092
+        consumerGroup: kyc-service
+        topic: kyc.verification.requested
+        lagThreshold: "200"
+        activationLagThreshold: "20"
+      authenticationRef:
+        name: kafka-mega-auth
+    - type: cpu
+      metricType: Utilization
+      metadata:
+        value: "70"
+---
+# ScaledObject for Notification Service - 200 replicas max
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: notification-service-1m-scaler
+  namespace: core-services
+  labels:
+    app: notification-service
+    throughput-tier: "1m-tps"
+spec:
+  scaleTargetRef:
+    name: notification-service
+  pollingInterval: 10
+  cooldownPeriod: 120
+  minReplicaCount: 20
+  maxReplicaCount: 200
+  triggers:
+    - type: kafka
+      metadata:
+        bootstrapServers: kafka-mega.kafka-mega.svc.cluster.local:9092
+        consumerGroup: notification-service
+        topic: notifications.email
+        lagThreshold: "5000"
+        activationLagThreshold: "500"
+      authenticationRef:
+        name: kafka-mega-auth
+    - type: kafka
+      metadata:
+        bootstrapServers: kafka-mega.kafka-mega.svc.cluster.local:9092
+        consumerGroup: notification-service
+        topic: notifications.sms
+        lagThreshold: "5000"
+        activationLagThreshold: "500"
+      authenticationRef:
+        name: kafka-mega-auth
+    - type: kafka
+      metadata:
+        bootstrapServers: kafka-mega.kafka-mega.svc.cluster.local:9092
+        consumerGroup: notification-service
+        topic: notifications.push
+        lagThreshold: "5000"
+        activationLagThreshold: "500"
+      authenticationRef:
+        name: kafka-mega-auth
+---
+# ScaledObject for Audit Service - 100 replicas max
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: audit-service-1m-scaler
+  namespace: core-services
+  labels:
+    app: audit-service
+    throughput-tier: "1m-tps"
+spec:
+  scaleTargetRef:
+    name: audit-service
+  pollingInterval: 10
+  cooldownPeriod: 120
+  minReplicaCount: 10
+  maxReplicaCount: 100
+  triggers:
+    - type: kafka
+      metadata:
+        bootstrapServers: kafka-mega.kafka-mega.svc.cluster.local:9092
+        consumerGroup: audit-service
+        topic: audit.events
+        lagThreshold: "10000"
+        activationLagThreshold: "1000"
+      authenticationRef:
+        name: kafka-mega-auth
+    - type: cpu
+      metricType: Utilization
+      metadata:
+        value: "70"
+---
+# ScaledObject for PostgreSQL Sync Consumer - 50 replicas max
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: postgres-sync-1m-scaler
+  namespace: core-services
+  labels:
+    app: postgres-sync
+    throughput-tier: "1m-tps"
+spec:
+  scaleTargetRef:
+    name: postgres-sync
+  pollingInterval: 5
+  cooldownPeriod: 60
+  minReplicaCount: 10
+  maxReplicaCount: 50
+  triggers:
+    - type: kafka
+      metadata:
+        bootstrapServers: kafka-mega.kafka-mega.svc.cluster.local:9092
+        consumerGroup: postgres-sync
+        topic: transactions.committed
+        lagThreshold: "50000"
+        activationLagThreshold: "5000"
+      authenticationRef:
+        name: kafka-mega-auth
+---
+# Kafka Authentication for 1M TPS cluster
+apiVersion: keda.sh/v1alpha1
+kind: TriggerAuthentication
+metadata:
+  name: kafka-mega-auth
+  namespace: core-services
+spec:
+  secretTargetRef:
+    - parameter: sasl
+      name: kafka-mega-credentials
+      key: sasl
+    - parameter: username
+      name: kafka-mega-credentials
+      key: username
+    - parameter: password
+      name: kafka-mega-credentials
+      key: password
+    - parameter: tls
+      name: kafka-mega-credentials
+      key: tls
+    - parameter: ca
+      name: kafka-mega-tls
+      key: ca.crt
+---
+# Prometheus Alerts for 1M TPS Scaling
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: keda-1m-tps-alerts
+  namespace: core-services
+spec:
+  groups:
+    - name: keda-1m-tps
+      rules:
+        - alert: ServiceScalingAtMax
+          expr: keda_scaler_active == 1 and keda_scaled_object_replicas == keda_scaled_object_max_replicas
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Service {{ $labels.scaledObject }} is at max replicas"
+            description: "Service is at maximum capacity. Consider increasing maxReplicaCount."
+        - alert: KafkaLagCritical
+          expr: kafka_consumergroup_lag > 100000
+          for: 2m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Kafka consumer lag is critical"
+            description: "Consumer group {{ $labels.consumergroup }} has lag of {{ $value }}"
+        - alert: ThroughputBelowTarget
+          expr: sum(rate(http_requests_total{service=~"transaction-service|payment-service"}[1m])) < 900000
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Platform throughput below 900K TPS target"
+            description: "Current throughput: {{ $value }} req/sec"
+        - alert: HighLatencyP99
+          expr: histogram_quantile(0.99, rate(http_request_duration_seconds_bucket[5m])) > 0.01
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "P99 latency above 10ms target"
+            description: "P99 latency: {{ $value }}s"
+---
+# Resource Quotas for 1M TPS namespace
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: core-services-1m-quota
+  namespace: core-services
+spec:
+  hard:
+    requests.cpu: "10000"
+    requests.memory: "20Ti"
+    limits.cpu: "20000"
+    limits.memory: "40Ti"
+    pods: "5000"
+---
+# Limit Range for pods
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: core-services-1m-limits
+  namespace: core-services
+spec:
+  limits:
+    - default:
+        cpu: "2"
+        memory: "4Gi"
+      defaultRequest:
+        cpu: "500m"
+        memory: "1Gi"
+      type: Container

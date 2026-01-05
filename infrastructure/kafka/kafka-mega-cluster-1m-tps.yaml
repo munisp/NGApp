@@ -1,0 +1,644 @@
+# Kafka Mega-Cluster Configuration for 1M TPS
+# This configuration is designed for extreme throughput scenarios
+# Requires: 24+ high-spec nodes, NVMe storage, 10Gbps+ networking
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: kafka-mega
+  labels:
+    app.kubernetes.io/name: kafka-mega
+    app.kubernetes.io/component: messaging
+    throughput-tier: "1m-tps"
+---
+# Kafka Broker StatefulSet - 24 Brokers for 1M TPS
+# Each broker handles ~42K TPS with headroom
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: kafka-mega
+  namespace: kafka-mega
+  labels:
+    app: kafka-mega
+spec:
+  serviceName: kafka-mega-headless
+  replicas: 24
+  podManagementPolicy: Parallel
+  updateStrategy:
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      app: kafka-mega
+  template:
+    metadata:
+      labels:
+        app: kafka-mega
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9404"
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchLabels:
+                  app: kafka-mega
+              topologyKey: kubernetes.io/hostname
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: node-type
+                    operator: In
+                    values:
+                      - kafka-high-perf
+      terminationGracePeriodSeconds: 300
+      containers:
+        - name: kafka
+          image: confluentinc/cp-kafka:7.5.3
+          ports:
+            - containerPort: 9092
+              name: client
+            - containerPort: 9093
+              name: internal
+            - containerPort: 9094
+              name: external
+            - containerPort: 9404
+              name: jmx
+          env:
+            - name: KAFKA_BROKER_ID
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: KAFKA_ZOOKEEPER_CONNECT
+              value: "zk-mega-0.zk-mega-headless.kafka-mega.svc.cluster.local:2181,zk-mega-1.zk-mega-headless.kafka-mega.svc.cluster.local:2181,zk-mega-2.zk-mega-headless.kafka-mega.svc.cluster.local:2181,zk-mega-3.zk-mega-headless.kafka-mega.svc.cluster.local:2181,zk-mega-4.zk-mega-headless.kafka-mega.svc.cluster.local:2181"
+            - name: KAFKA_LISTENER_SECURITY_PROTOCOL_MAP
+              value: "INTERNAL:SASL_SSL,CLIENT:SASL_SSL,EXTERNAL:SASL_SSL"
+            - name: KAFKA_INTER_BROKER_LISTENER_NAME
+              value: "INTERNAL"
+            - name: KAFKA_SASL_MECHANISM_INTER_BROKER_PROTOCOL
+              value: "SCRAM-SHA-512"
+            - name: KAFKA_SASL_ENABLED_MECHANISMS
+              value: "SCRAM-SHA-512"
+            # High-throughput optimizations
+            - name: KAFKA_NUM_NETWORK_THREADS
+              value: "16"
+            - name: KAFKA_NUM_IO_THREADS
+              value: "32"
+            - name: KAFKA_SOCKET_SEND_BUFFER_BYTES
+              value: "1048576"
+            - name: KAFKA_SOCKET_RECEIVE_BUFFER_BYTES
+              value: "1048576"
+            - name: KAFKA_SOCKET_REQUEST_MAX_BYTES
+              value: "104857600"
+            # Replication settings for durability + performance
+            - name: KAFKA_DEFAULT_REPLICATION_FACTOR
+              value: "3"
+            - name: KAFKA_MIN_INSYNC_REPLICAS
+              value: "2"
+            - name: KAFKA_UNCLEAN_LEADER_ELECTION_ENABLE
+              value: "false"
+            # Producer optimizations
+            - name: KAFKA_NUM_PARTITIONS
+              value: "100"
+            - name: KAFKA_LOG_FLUSH_INTERVAL_MESSAGES
+              value: "100000"
+            - name: KAFKA_LOG_FLUSH_INTERVAL_MS
+              value: "1000"
+            # Consumer optimizations
+            - name: KAFKA_FETCH_MAX_BYTES
+              value: "52428800"
+            - name: KAFKA_MAX_PARTITION_FETCH_BYTES
+              value: "10485760"
+            # Log retention
+            - name: KAFKA_LOG_RETENTION_HOURS
+              value: "168"
+            - name: KAFKA_LOG_RETENTION_BYTES
+              value: "107374182400"
+            - name: KAFKA_LOG_SEGMENT_BYTES
+              value: "1073741824"
+            # Compression
+            - name: KAFKA_COMPRESSION_TYPE
+              value: "lz4"
+            # JMX
+            - name: KAFKA_JMX_PORT
+              value: "9404"
+            - name: KAFKA_JMX_HOSTNAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+          resources:
+            requests:
+              memory: "32Gi"
+              cpu: "8"
+            limits:
+              memory: "64Gi"
+              cpu: "16"
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/kafka/data
+            - name: logs
+              mountPath: /var/log/kafka
+          livenessProbe:
+            tcpSocket:
+              port: 9092
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 10
+          readinessProbe:
+            tcpSocket:
+              port: 9092
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+        - name: jmx-exporter
+          image: bitnami/jmx-exporter:0.19.0
+          ports:
+            - containerPort: 9404
+              name: metrics
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: nvme-fast
+        resources:
+          requests:
+            storage: 2Ti
+    - metadata:
+        name: logs
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: nvme-fast
+        resources:
+          requests:
+            storage: 500Gi
+---
+# ZooKeeper Ensemble - 5 nodes for Kafka coordination
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: zk-mega
+  namespace: kafka-mega
+  labels:
+    app: zk-mega
+spec:
+  serviceName: zk-mega-headless
+  replicas: 5
+  podManagementPolicy: Parallel
+  selector:
+    matchLabels:
+      app: zk-mega
+  template:
+    metadata:
+      labels:
+        app: zk-mega
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchLabels:
+                  app: zk-mega
+              topologyKey: kubernetes.io/hostname
+      containers:
+        - name: zookeeper
+          image: confluentinc/cp-zookeeper:7.5.3
+          ports:
+            - containerPort: 2181
+              name: client
+            - containerPort: 2888
+              name: server
+            - containerPort: 3888
+              name: leader-election
+          env:
+            - name: ZOOKEEPER_CLIENT_PORT
+              value: "2181"
+            - name: ZOOKEEPER_TICK_TIME
+              value: "2000"
+            - name: ZOOKEEPER_INIT_LIMIT
+              value: "10"
+            - name: ZOOKEEPER_SYNC_LIMIT
+              value: "5"
+            - name: ZOOKEEPER_MAX_CLIENT_CNXNS
+              value: "1000"
+            - name: ZOOKEEPER_AUTOPURGE_SNAP_RETAIN_COUNT
+              value: "10"
+            - name: ZOOKEEPER_AUTOPURGE_PURGE_INTERVAL
+              value: "1"
+          resources:
+            requests:
+              memory: "4Gi"
+              cpu: "2"
+            limits:
+              memory: "8Gi"
+              cpu: "4"
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/zookeeper/data
+            - name: log
+              mountPath: /var/lib/zookeeper/log
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: nvme-fast
+        resources:
+          requests:
+            storage: 100Gi
+    - metadata:
+        name: log
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: nvme-fast
+        resources:
+          requests:
+            storage: 100Gi
+---
+# Headless Service for Kafka
+apiVersion: v1
+kind: Service
+metadata:
+  name: kafka-mega-headless
+  namespace: kafka-mega
+spec:
+  type: ClusterIP
+  clusterIP: None
+  selector:
+    app: kafka-mega
+  ports:
+    - name: client
+      port: 9092
+    - name: internal
+      port: 9093
+    - name: external
+      port: 9094
+---
+# Client Service for Kafka
+apiVersion: v1
+kind: Service
+metadata:
+  name: kafka-mega
+  namespace: kafka-mega
+spec:
+  type: ClusterIP
+  selector:
+    app: kafka-mega
+  ports:
+    - name: client
+      port: 9092
+      targetPort: 9092
+---
+# Headless Service for ZooKeeper
+apiVersion: v1
+kind: Service
+metadata:
+  name: zk-mega-headless
+  namespace: kafka-mega
+spec:
+  type: ClusterIP
+  clusterIP: None
+  selector:
+    app: zk-mega
+  ports:
+    - name: client
+      port: 2181
+    - name: server
+      port: 2888
+    - name: leader-election
+      port: 3888
+---
+# High-Throughput Topics Configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kafka-mega-topics
+  namespace: kafka-mega
+data:
+  create-topics.sh: |
+    #!/bin/bash
+    # Wait for Kafka to be ready
+    sleep 60
+    
+    KAFKA_BOOTSTRAP="kafka-mega-0.kafka-mega-headless.kafka-mega.svc.cluster.local:9092"
+    
+    # High-throughput transaction topics - 500 partitions each for 1M TPS
+    # Each partition can handle ~2K TPS, 500 partitions = 1M TPS capacity
+    
+    # Transaction events - highest throughput
+    kafka-topics --bootstrap-server $KAFKA_BOOTSTRAP --create --if-not-exists \
+      --topic transactions.created \
+      --partitions 500 \
+      --replication-factor 3 \
+      --config min.insync.replicas=2 \
+      --config retention.ms=604800000 \
+      --config segment.bytes=1073741824 \
+      --config compression.type=lz4
+    
+    kafka-topics --bootstrap-server $KAFKA_BOOTSTRAP --create --if-not-exists \
+      --topic transactions.completed \
+      --partitions 500 \
+      --replication-factor 3 \
+      --config min.insync.replicas=2 \
+      --config retention.ms=604800000 \
+      --config compression.type=lz4
+    
+    kafka-topics --bootstrap-server $KAFKA_BOOTSTRAP --create --if-not-exists \
+      --topic transactions.failed \
+      --partitions 200 \
+      --replication-factor 3 \
+      --config min.insync.replicas=2 \
+      --config retention.ms=2592000000 \
+      --config compression.type=lz4
+    
+    # Payment events - high throughput
+    kafka-topics --bootstrap-server $KAFKA_BOOTSTRAP --create --if-not-exists \
+      --topic payments.initiated \
+      --partitions 500 \
+      --replication-factor 3 \
+      --config min.insync.replicas=2 \
+      --config compression.type=lz4
+    
+    kafka-topics --bootstrap-server $KAFKA_BOOTSTRAP --create --if-not-exists \
+      --topic payments.settled \
+      --partitions 500 \
+      --replication-factor 3 \
+      --config min.insync.replicas=2 \
+      --config compression.type=lz4
+    
+    # TigerBeetle sync events - critical path
+    kafka-topics --bootstrap-server $KAFKA_BOOTSTRAP --create --if-not-exists \
+      --topic tigerbeetle.transfers \
+      --partitions 500 \
+      --replication-factor 3 \
+      --config min.insync.replicas=2 \
+      --config compression.type=lz4 \
+      --config retention.ms=86400000
+    
+    kafka-topics --bootstrap-server $KAFKA_BOOTSTRAP --create --if-not-exists \
+      --topic tigerbeetle.balances \
+      --partitions 200 \
+      --replication-factor 3 \
+      --config min.insync.replicas=2 \
+      --config compression.type=lz4
+    
+    # Mojaloop events
+    kafka-topics --bootstrap-server $KAFKA_BOOTSTRAP --create --if-not-exists \
+      --topic mojaloop.transfers \
+      --partitions 300 \
+      --replication-factor 3 \
+      --config min.insync.replicas=2 \
+      --config compression.type=lz4
+    
+    kafka-topics --bootstrap-server $KAFKA_BOOTSTRAP --create --if-not-exists \
+      --topic mojaloop.callbacks \
+      --partitions 300 \
+      --replication-factor 3 \
+      --config min.insync.replicas=2 \
+      --config compression.type=lz4
+    
+    # Risk scoring - needs low latency
+    kafka-topics --bootstrap-server $KAFKA_BOOTSTRAP --create --if-not-exists \
+      --topic risk.scoring.requests \
+      --partitions 300 \
+      --replication-factor 3 \
+      --config min.insync.replicas=2 \
+      --config compression.type=lz4
+    
+    kafka-topics --bootstrap-server $KAFKA_BOOTSTRAP --create --if-not-exists \
+      --topic risk.scoring.results \
+      --partitions 300 \
+      --replication-factor 3 \
+      --config min.insync.replicas=2 \
+      --config compression.type=lz4
+    
+    # Wallet events
+    kafka-topics --bootstrap-server $KAFKA_BOOTSTRAP --create --if-not-exists \
+      --topic wallet.credits \
+      --partitions 400 \
+      --replication-factor 3 \
+      --config min.insync.replicas=2 \
+      --config compression.type=lz4
+    
+    kafka-topics --bootstrap-server $KAFKA_BOOTSTRAP --create --if-not-exists \
+      --topic wallet.debits \
+      --partitions 400 \
+      --replication-factor 3 \
+      --config min.insync.replicas=2 \
+      --config compression.type=lz4
+    
+    # Notifications - lower priority
+    kafka-topics --bootstrap-server $KAFKA_BOOTSTRAP --create --if-not-exists \
+      --topic notifications.email \
+      --partitions 100 \
+      --replication-factor 3 \
+      --config min.insync.replicas=2 \
+      --config compression.type=lz4
+    
+    kafka-topics --bootstrap-server $KAFKA_BOOTSTRAP --create --if-not-exists \
+      --topic notifications.sms \
+      --partitions 100 \
+      --replication-factor 3 \
+      --config min.insync.replicas=2 \
+      --config compression.type=lz4
+    
+    kafka-topics --bootstrap-server $KAFKA_BOOTSTRAP --create --if-not-exists \
+      --topic notifications.push \
+      --partitions 100 \
+      --replication-factor 3 \
+      --config min.insync.replicas=2 \
+      --config compression.type=lz4
+    
+    # Audit events - compliance critical
+    kafka-topics --bootstrap-server $KAFKA_BOOTSTRAP --create --if-not-exists \
+      --topic audit.events \
+      --partitions 200 \
+      --replication-factor 3 \
+      --config min.insync.replicas=2 \
+      --config retention.ms=-1 \
+      --config compression.type=lz4
+    
+    # KYC events
+    kafka-topics --bootstrap-server $KAFKA_BOOTSTRAP --create --if-not-exists \
+      --topic kyc.verification.requested \
+      --partitions 100 \
+      --replication-factor 3 \
+      --config min.insync.replicas=2 \
+      --config compression.type=lz4
+    
+    kafka-topics --bootstrap-server $KAFKA_BOOTSTRAP --create --if-not-exists \
+      --topic kyc.verification.completed \
+      --partitions 100 \
+      --replication-factor 3 \
+      --config min.insync.replicas=2 \
+      --config compression.type=lz4
+    
+    echo "All 1M TPS topics created successfully"
+    echo "Total partitions: ~5000"
+---
+# Topic Creation Job
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: kafka-mega-topic-creator
+  namespace: kafka-mega
+spec:
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: topic-creator
+          image: confluentinc/cp-kafka:7.5.3
+          command: ["/bin/bash", "/scripts/create-topics.sh"]
+          volumeMounts:
+            - name: scripts
+              mountPath: /scripts
+      volumes:
+        - name: scripts
+          configMap:
+            name: kafka-mega-topics
+            defaultMode: 0755
+---
+# NVMe Storage Class for high-performance storage
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: nvme-fast
+provisioner: kubernetes.io/aws-ebs
+parameters:
+  type: io2
+  iopsPerGB: "500"
+  fsType: ext4
+volumeBindingMode: WaitForFirstConsumer
+allowVolumeExpansion: true
+---
+# Pod Disruption Budget
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: kafka-mega-pdb
+  namespace: kafka-mega
+spec:
+  minAvailable: 20
+  selector:
+    matchLabels:
+      app: kafka-mega
+---
+# Prometheus ServiceMonitor
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: kafka-mega
+  namespace: kafka-mega
+spec:
+  selector:
+    matchLabels:
+      app: kafka-mega
+  endpoints:
+    - port: jmx
+      interval: 15s
+      path: /metrics
+---
+# Kafka Alerts for 1M TPS
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: kafka-mega-alerts
+  namespace: kafka-mega
+spec:
+  groups:
+    - name: kafka-mega-1m-tps
+      rules:
+        - alert: KafkaThroughputBelowTarget
+          expr: sum(rate(kafka_server_brokertopicmetrics_messagesin_total[5m])) < 900000
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Kafka throughput below 900K TPS target"
+            description: "Current throughput: {{ $value }} msg/sec"
+        - alert: KafkaPartitionUnderReplicated
+          expr: kafka_server_replicamanager_underreplicatedpartitions > 0
+          for: 2m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Kafka has under-replicated partitions"
+            description: "{{ $value }} partitions are under-replicated"
+        - alert: KafkaBrokerDown
+          expr: count(up{job="kafka-mega"} == 1) < 20
+          for: 1m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Kafka cluster has fewer than 20 brokers"
+            description: "Only {{ $value }} brokers are up"
+        - alert: KafkaConsumerLagHigh
+          expr: kafka_consumergroup_lag > 100000
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Kafka consumer lag is high"
+            description: "Consumer group {{ $labels.consumergroup }} has lag of {{ $value }}"
+        - alert: KafkaDiskUsageHigh
+          expr: (kafka_log_size / kafka_log_max_size) > 0.8
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Kafka disk usage above 80%"
+            description: "Broker {{ $labels.broker }} disk usage: {{ $value }}%"
+---
+# Network Policy
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: kafka-mega-network-policy
+  namespace: kafka-mega
+spec:
+  podSelector:
+    matchLabels:
+      app: kafka-mega
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kafka-access: "true"
+      ports:
+        - protocol: TCP
+          port: 9092
+        - protocol: TCP
+          port: 9093
+    - from:
+        - podSelector:
+            matchLabels:
+              app: kafka-mega
+      ports:
+        - protocol: TCP
+          port: 9093
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app: zk-mega
+      ports:
+        - protocol: TCP
+          port: 2181
+    - to:
+        - podSelector:
+            matchLabels:
+              app: kafka-mega
+      ports:
+        - protocol: TCP
+          port: 9093

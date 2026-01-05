@@ -1,0 +1,318 @@
+# TigerBeetle Cluster Configuration for 1M TPS
+# TigerBeetle is designed for millions of transfers per second
+# This configuration maximizes throughput while maintaining durability
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: tigerbeetle
+  labels:
+    app.kubernetes.io/name: tigerbeetle
+    app.kubernetes.io/component: ledger
+    throughput-tier: "1m-tps"
+---
+# TigerBeetle StatefulSet - 6 replicas for HA and throughput
+# TigerBeetle uses Viewstamped Replication for consensus
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: tigerbeetle
+  namespace: tigerbeetle
+  labels:
+    app: tigerbeetle
+spec:
+  serviceName: tigerbeetle-headless
+  replicas: 6
+  podManagementPolicy: Parallel
+  updateStrategy:
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      app: tigerbeetle
+  template:
+    metadata:
+      labels:
+        app: tigerbeetle
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "3001"
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchLabels:
+                  app: tigerbeetle
+              topologyKey: kubernetes.io/hostname
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: node-type
+                    operator: In
+                    values:
+                      - tigerbeetle-high-perf
+      terminationGracePeriodSeconds: 300
+      initContainers:
+        - name: init-data
+          image: ghcr.io/tigerbeetle/tigerbeetle:0.15.3
+          command:
+            - /bin/sh
+            - -c
+            - |
+              if [ ! -f /data/0_0.tigerbeetle ]; then
+                echo "Initializing TigerBeetle data file..."
+                /tigerbeetle format --cluster=0 --replica=${HOSTNAME##*-} --replica-count=6 /data/0_0.tigerbeetle
+              else
+                echo "Data file already exists, skipping initialization"
+              fi
+          env:
+            - name: HOSTNAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+          volumeMounts:
+            - name: data
+              mountPath: /data
+          resources:
+            requests:
+              memory: "1Gi"
+              cpu: "500m"
+            limits:
+              memory: "2Gi"
+              cpu: "1"
+      containers:
+        - name: tigerbeetle
+          image: ghcr.io/tigerbeetle/tigerbeetle:0.15.3
+          command:
+            - /tigerbeetle
+            - start
+            - --addresses=tigerbeetle-0.tigerbeetle-headless.tigerbeetle.svc.cluster.local:3000,tigerbeetle-1.tigerbeetle-headless.tigerbeetle.svc.cluster.local:3000,tigerbeetle-2.tigerbeetle-headless.tigerbeetle.svc.cluster.local:3000,tigerbeetle-3.tigerbeetle-headless.tigerbeetle.svc.cluster.local:3000,tigerbeetle-4.tigerbeetle-headless.tigerbeetle.svc.cluster.local:3000,tigerbeetle-5.tigerbeetle-headless.tigerbeetle.svc.cluster.local:3000
+            - /data/0_0.tigerbeetle
+          ports:
+            - containerPort: 3000
+              name: client
+            - containerPort: 3001
+              name: metrics
+          env:
+            - name: TIGERBEETLE_CACHE_GRID_BLOCKS
+              value: "4096"
+          resources:
+            requests:
+              memory: "32Gi"
+              cpu: "8"
+            limits:
+              memory: "64Gi"
+              cpu: "16"
+          volumeMounts:
+            - name: data
+              mountPath: /data
+          livenessProbe:
+            tcpSocket:
+              port: 3000
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+          readinessProbe:
+            tcpSocket:
+              port: 3000
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 3
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: nvme-ultra-fast
+        resources:
+          requests:
+            storage: 1Ti
+---
+# Headless Service for StatefulSet
+apiVersion: v1
+kind: Service
+metadata:
+  name: tigerbeetle-headless
+  namespace: tigerbeetle
+spec:
+  type: ClusterIP
+  clusterIP: None
+  selector:
+    app: tigerbeetle
+  ports:
+    - name: client
+      port: 3000
+      targetPort: 3000
+---
+# Client Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: tigerbeetle
+  namespace: tigerbeetle
+spec:
+  type: ClusterIP
+  selector:
+    app: tigerbeetle
+  ports:
+    - name: client
+      port: 3000
+      targetPort: 3000
+---
+# Ultra-fast NVMe Storage Class for TigerBeetle
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: nvme-ultra-fast
+provisioner: kubernetes.io/aws-ebs
+parameters:
+  type: io2
+  iopsPerGB: "1000"
+  fsType: ext4
+volumeBindingMode: WaitForFirstConsumer
+allowVolumeExpansion: true
+---
+# Pod Disruption Budget
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: tigerbeetle-pdb
+  namespace: tigerbeetle
+spec:
+  minAvailable: 4
+  selector:
+    matchLabels:
+      app: tigerbeetle
+---
+# Network Policy
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: tigerbeetle-network-policy
+  namespace: tigerbeetle
+spec:
+  podSelector:
+    matchLabels:
+      app: tigerbeetle
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              tigerbeetle-access: "true"
+      ports:
+        - protocol: TCP
+          port: 3000
+    - from:
+        - podSelector:
+            matchLabels:
+              app: tigerbeetle
+      ports:
+        - protocol: TCP
+          port: 3000
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app: tigerbeetle
+      ports:
+        - protocol: TCP
+          port: 3000
+---
+# Prometheus ServiceMonitor
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: tigerbeetle
+  namespace: tigerbeetle
+spec:
+  selector:
+    matchLabels:
+      app: tigerbeetle
+  endpoints:
+    - port: metrics
+      interval: 15s
+      path: /metrics
+---
+# TigerBeetle Alerts
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: tigerbeetle-alerts
+  namespace: tigerbeetle
+spec:
+  groups:
+    - name: tigerbeetle-1m-tps
+      rules:
+        - alert: TigerBeetleReplicaDown
+          expr: count(up{job="tigerbeetle"} == 1) < 4
+          for: 1m
+          labels:
+            severity: critical
+          annotations:
+            summary: "TigerBeetle cluster has fewer than 4 replicas"
+            description: "Only {{ $value }} replicas are up. Minimum 4 required for consensus."
+        - alert: TigerBeetleThroughputLow
+          expr: rate(tigerbeetle_transfers_total[1m]) < 500000
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "TigerBeetle throughput below 500K TPS"
+            description: "Current throughput: {{ $value }} transfers/sec"
+        - alert: TigerBeetleLatencyHigh
+          expr: tigerbeetle_transfer_latency_p99 > 5
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "TigerBeetle P99 latency above 5ms"
+            description: "P99 latency: {{ $value }}ms"
+        - alert: TigerBeetleDiskUsageHigh
+          expr: (tigerbeetle_disk_used / tigerbeetle_disk_total) > 0.8
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: "TigerBeetle disk usage above 80%"
+            description: "Disk usage: {{ $value }}%"
+---
+# ConfigMap for TigerBeetle client configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tigerbeetle-client-config
+  namespace: tigerbeetle
+data:
+  config.json: |
+    {
+      "cluster_id": 0,
+      "addresses": [
+        "tigerbeetle-0.tigerbeetle-headless.tigerbeetle.svc.cluster.local:3000",
+        "tigerbeetle-1.tigerbeetle-headless.tigerbeetle.svc.cluster.local:3000",
+        "tigerbeetle-2.tigerbeetle-headless.tigerbeetle.svc.cluster.local:3000",
+        "tigerbeetle-3.tigerbeetle-headless.tigerbeetle.svc.cluster.local:3000",
+        "tigerbeetle-4.tigerbeetle-headless.tigerbeetle.svc.cluster.local:3000",
+        "tigerbeetle-5.tigerbeetle-headless.tigerbeetle.svc.cluster.local:3000"
+      ],
+      "max_concurrency": 8190,
+      "request_timeout_ms": 5000
+    }
+  
+  # Python client configuration
+  python_config.py: |
+    TIGERBEETLE_CONFIG = {
+        "cluster_id": 0,
+        "addresses": [
+            "tigerbeetle-0.tigerbeetle-headless.tigerbeetle.svc.cluster.local:3000",
+            "tigerbeetle-1.tigerbeetle-headless.tigerbeetle.svc.cluster.local:3000",
+            "tigerbeetle-2.tigerbeetle-headless.tigerbeetle.svc.cluster.local:3000",
+            "tigerbeetle-3.tigerbeetle-headless.tigerbeetle.svc.cluster.local:3000",
+            "tigerbeetle-4.tigerbeetle-headless.tigerbeetle.svc.cluster.local:3000",
+            "tigerbeetle-5.tigerbeetle-headless.tigerbeetle.svc.cluster.local:3000",
+        ],
+        "max_batch_size": 8190,
+        "request_timeout_ms": 5000,
+    }
