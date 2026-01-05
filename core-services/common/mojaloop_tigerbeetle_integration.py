@@ -532,6 +532,12 @@ class GuaranteedCompensation:
     
     Ensures that pending transfers in TigerBeetle are always
     either posted or voided, never left orphaned.
+    
+    BANK-GRADE FEATURES:
+    - Supervised compensation loop with health monitoring
+    - Metrics for observability (runs, errors, pending counts)
+    - Automatic restart on failure
+    - Health status endpoint for Kubernetes probes
     """
     
     def __init__(
@@ -546,6 +552,18 @@ class GuaranteedCompensation:
         self._http_client: Optional[httpx.AsyncClient] = None
         self._running = False
         self._compensation_task: Optional[asyncio.Task] = None
+        
+        # BANK-GRADE: Supervision metrics
+        self._last_run_at: Optional[datetime] = None
+        self._last_success_at: Optional[datetime] = None
+        self._last_error_at: Optional[datetime] = None
+        self._last_error_message: Optional[str] = None
+        self._run_count: int = 0
+        self._error_count: int = 0
+        self._consecutive_errors: int = 0
+        self._transfers_posted: int = 0
+        self._transfers_voided: int = 0
+        self._max_consecutive_errors: int = 10
     
     async def initialize(self):
         """Initialize compensation tables"""
@@ -746,10 +764,10 @@ class GuaranteedCompensation:
         """, uuid.UUID(record_id), action.value, reason, success, error)
     
     async def start_compensation_loop(self):
-        """Start background compensation loop"""
+        """Start background compensation loop with supervision"""
         self._running = True
-        self._compensation_task = asyncio.create_task(self._compensation_loop())
-        logger.info("Compensation loop started")
+        self._compensation_task = asyncio.create_task(self._supervised_compensation_loop())
+        logger.info("Compensation loop started with supervision")
     
     async def stop_compensation_loop(self):
         """Stop compensation loop"""
@@ -762,19 +780,128 @@ class GuaranteedCompensation:
                 pass
         logger.info("Compensation loop stopped")
     
-    async def _compensation_loop(self):
-        """Background loop to handle orphaned pending transfers"""
+    async def _supervised_compensation_loop(self):
+        """
+        BANK-GRADE: Supervised compensation loop with automatic restart.
+        
+        Features:
+        - Tracks run metrics (success/error counts, timestamps)
+        - Automatic restart on failure
+        - Circuit breaker after max consecutive errors
+        - Health status for Kubernetes probes
+        """
         while self._running:
             try:
-                await self._check_expired_transfers()
-                await self._check_orphaned_transfers()
+                self._last_run_at = datetime.now(timezone.utc)
+                self._run_count += 1
+                
+                # Run compensation checks
+                expired_count = await self._check_expired_transfers()
+                orphaned_count = await self._check_orphaned_transfers()
+                
+                # Update success metrics
+                self._last_success_at = datetime.now(timezone.utc)
+                self._consecutive_errors = 0
+                
+                logger.debug(
+                    f"Compensation loop run #{self._run_count}: "
+                    f"expired={expired_count}, orphaned={orphaned_count}"
+                )
+                
                 await asyncio.sleep(COMPENSATION_CHECK_INTERVAL_SECONDS)
+                
+            except asyncio.CancelledError:
+                raise
             except Exception as e:
-                logger.error(f"Compensation loop error: {e}")
-                await asyncio.sleep(10)
+                self._error_count += 1
+                self._consecutive_errors += 1
+                self._last_error_at = datetime.now(timezone.utc)
+                self._last_error_message = str(e)
+                
+                logger.error(
+                    f"Compensation loop error (consecutive: {self._consecutive_errors}): {e}"
+                )
+                
+                # Circuit breaker: stop if too many consecutive errors
+                if self._consecutive_errors >= self._max_consecutive_errors:
+                    logger.critical(
+                        f"Compensation loop circuit breaker triggered after "
+                        f"{self._consecutive_errors} consecutive errors. Stopping loop."
+                    )
+                    self._running = False
+                    break
+                
+                # Exponential backoff on errors (max 60 seconds)
+                backoff = min(10 * (2 ** (self._consecutive_errors - 1)), 60)
+                await asyncio.sleep(backoff)
     
-    async def _check_expired_transfers(self):
-        """Check for expired pending transfers and void them"""
+    async def _compensation_loop(self):
+        """Legacy compensation loop - redirects to supervised version"""
+        await self._supervised_compensation_loop()
+    
+    def get_health_status(self) -> Dict[str, Any]:
+        """
+        BANK-GRADE: Get compensation loop health status.
+        
+        Returns health information for Kubernetes probes and monitoring.
+        """
+        now = datetime.now(timezone.utc)
+        
+        # Calculate health indicators
+        is_running = self._running and self._compensation_task is not None
+        
+        # Healthy if: running, had a successful run in last 5 minutes, no circuit breaker
+        last_success_age = None
+        if self._last_success_at:
+            last_success_age = (now - self._last_success_at).total_seconds()
+        
+        is_healthy = (
+            is_running and
+            self._consecutive_errors < self._max_consecutive_errors and
+            (last_success_age is None or last_success_age < 300)  # 5 minutes
+        )
+        
+        return {
+            "healthy": is_healthy,
+            "running": is_running,
+            "run_count": self._run_count,
+            "error_count": self._error_count,
+            "consecutive_errors": self._consecutive_errors,
+            "max_consecutive_errors": self._max_consecutive_errors,
+            "transfers_posted": self._transfers_posted,
+            "transfers_voided": self._transfers_voided,
+            "last_run_at": self._last_run_at.isoformat() if self._last_run_at else None,
+            "last_success_at": self._last_success_at.isoformat() if self._last_success_at else None,
+            "last_error_at": self._last_error_at.isoformat() if self._last_error_at else None,
+            "last_error_message": self._last_error_message,
+            "circuit_breaker_triggered": self._consecutive_errors >= self._max_consecutive_errors
+        }
+    
+    async def get_pending_transfer_stats(self) -> Dict[str, Any]:
+        """Get statistics about pending transfers"""
+        async with self.pool.acquire() as conn:
+            stats = await conn.fetchrow("""
+                SELECT 
+                    COUNT(*) FILTER (WHERE status = 'pending') as pending_count,
+                    COUNT(*) FILTER (WHERE status = 'pending' AND expires_at < NOW()) as expired_count,
+                    COUNT(*) FILTER (WHERE status = 'posted') as posted_count,
+                    COUNT(*) FILTER (WHERE status = 'voided') as voided_count,
+                    COUNT(*) as total_count
+                FROM mojaloop_pending_transfers
+                WHERE created_at > NOW() - INTERVAL '24 hours'
+            """)
+            
+            return {
+                "pending": stats['pending_count'] or 0,
+                "expired": stats['expired_count'] or 0,
+                "posted": stats['posted_count'] or 0,
+                "voided": stats['voided_count'] or 0,
+                "total_24h": stats['total_count'] or 0
+            }
+    
+    async def _check_expired_transfers(self) -> int:
+        """Check for expired pending transfers and void them. Returns count of voided transfers."""
+        voided_count = 0
         async with self.pool.acquire() as conn:
             expired = await conn.fetch("""
                 SELECT * FROM mojaloop_pending_transfers
@@ -785,13 +912,19 @@ class GuaranteedCompensation:
                 mojaloop_id = str(record['mojaloop_transfer_id'])
                 logger.warning(f"Found expired pending transfer: {mojaloop_id}")
                 
-                await self.void_pending_transfer(
+                success = await self.void_pending_transfer(
                     mojaloop_id,
                     "Expired - automatic compensation"
                 )
+                if success:
+                    voided_count += 1
+                    self._transfers_voided += 1
+        
+        return voided_count
     
-    async def _check_orphaned_transfers(self):
-        """Check for orphaned transfers (Mojaloop committed but TigerBeetle still pending)"""
+    async def _check_orphaned_transfers(self) -> int:
+        """Check for orphaned transfers (Mojaloop committed but TigerBeetle still pending). Returns count of processed transfers."""
+        processed_count = 0
         async with self.pool.acquire() as conn:
             # Get pending transfers older than 5 minutes that haven't been checked recently
             stale = await conn.fetch("""
@@ -816,17 +949,25 @@ class GuaranteedCompensation:
                 if mojaloop_state == "COMMITTED":
                     # Mojaloop committed but we didn't post - post now
                     logger.warning(f"Orphaned committed transfer found: {mojaloop_id}")
-                    await self.post_pending_transfer(
+                    success = await self.post_pending_transfer(
                         mojaloop_id,
                         "Orphaned - Mojaloop committed, posting to TigerBeetle"
                     )
+                    if success:
+                        processed_count += 1
+                        self._transfers_posted += 1
                 elif mojaloop_state in ("ABORTED", "EXPIRED"):
                     # Mojaloop aborted but we didn't void - void now
                     logger.warning(f"Orphaned aborted transfer found: {mojaloop_id}")
-                    await self.void_pending_transfer(
+                    success = await self.void_pending_transfer(
                         mojaloop_id,
                         f"Orphaned - Mojaloop {mojaloop_state}, voiding in TigerBeetle"
                     )
+                    if success:
+                        processed_count += 1
+                        self._transfers_voided += 1
+        
+        return processed_count
     
     async def _get_mojaloop_transfer_state(self, transfer_id: str) -> Optional[str]:
         """Query Mojaloop for transfer state"""
