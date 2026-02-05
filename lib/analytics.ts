@@ -3,10 +3,11 @@
  * Wrapper around Mixpanel for tracking user events and behavior
  */
 
-import { Mixpanel } from 'mixpanel-react-native';
+import { Platform } from 'react-native';
+import type { Mixpanel as MixpanelType } from 'mixpanel-react-native';
 
 class AnalyticsService {
-  private mixpanel: Mixpanel | null = null;
+  private mixpanel: MixpanelType | null = null;
   private initialized = false;
 
   /**
@@ -17,6 +18,12 @@ class AnalyticsService {
     if (this.initialized) return;
 
     try {
+      if (Platform.OS === 'web') {
+        // Skip Mixpanel native SDK on web
+        this.initialized = true;
+        return;
+      }
+      const { Mixpanel } = await import('mixpanel-react-native');
       this.mixpanel = await Mixpanel.init(token, false);
       this.initialized = true;
       console.log('[Analytics] Mixpanel initialized');
