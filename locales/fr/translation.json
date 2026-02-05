@@ -1,0 +1,15 @@
+{
+  "common": {
+    "welcome": "Bienvenue",
+    "continue": "Continuer",
+    "cancel": "Annuler",
+    "save": "Enregistrer",
+    "loading": "Chargement...",
+    "error": "Erreur",
+    "success": "Succès"
+  },
+  "home": {
+    "title": "Fintech Africaine",
+    "subtitle": "Inclusion financière pour tous"
+  }
+}

@@ -1,0 +1,102 @@
+import axios, { AxiosInstance, AxiosError, InternalAxiosRequestConfig } from 'axios';
+import { setItemAsync, getItemAsync, deleteItemAsync } from '../secure-storage';
+
+// Get API base URL dynamically
+function getApiBaseUrl(): string {
+  // Check if we're in a browser environment
+  if (typeof window !== 'undefined' && window.location) {
+    const { protocol, hostname } = window.location;
+    // Pattern: 8081-sandboxid.region.domain -> 3000-sandboxid.region.domain
+    const apiHostname = hostname.replace(/^8081-/, '3000-');
+    if (apiHostname !== hostname) {
+      return `${protocol}//${apiHostname}`;
+    }
+  }
+  
+  // Fallback for native or when hostname pattern doesn't match
+  return process.env.EXPO_PUBLIC_API_BASE_URL || 'https://3000-izyqnt0a5eg8bumha4b9w-707b577a.us1.manus.computer';
+}
+
+// Token storage keys
+const ACCESS_TOKEN_KEY = 'access_token';
+const REFRESH_TOKEN_KEY = 'refresh_token';
+
+// Create axios instance
+const apiClient: AxiosInstance = axios.create({
+  baseURL: getApiBaseUrl(),
+  timeout: 30000,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+// Request interceptor to add auth token
+apiClient.interceptors.request.use(
+  async (config: InternalAxiosRequestConfig) => {
+    const token = await getItemAsync(ACCESS_TOKEN_KEY);
+    if (token && config.headers) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
+// Response interceptor to handle token refresh
+apiClient.interceptors.response.use(
+  (response) => response,
+  async (error: AxiosError) => {
+    const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
+
+    // If 401 and not already retried, try to refresh token
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
+
+      try {
+        const refreshToken = await getItemAsync(REFRESH_TOKEN_KEY);
+        if (!refreshToken) {
+          throw new Error('No refresh token');
+        }
+
+        const response = await axios.post(`${getApiBaseUrl()}/api/v1/auth/refresh`, {
+          refresh_token: refreshToken,
+        });
+
+        const { access_token, refresh_token } = response.data;
+        await setItemAsync(ACCESS_TOKEN_KEY, access_token);
+        await setItemAsync(REFRESH_TOKEN_KEY, refresh_token);
+
+        // Retry original request with new token
+        if (originalRequest.headers) {
+          originalRequest.headers.Authorization = `Bearer ${access_token}`;
+        }
+        return apiClient(originalRequest);
+      } catch (refreshError) {
+        // Refresh failed, logout user
+        await deleteItemAsync(ACCESS_TOKEN_KEY);
+        await deleteItemAsync(REFRESH_TOKEN_KEY);
+        // Navigate to login screen (handled by auth context)
+        return Promise.reject(refreshError);
+      }
+    }
+
+    return Promise.reject(error);
+  }
+);
+
+// Helper functions for token management
+export const setAuthTokens = async (accessToken: string, refreshToken: string) => {
+  await setItemAsync(ACCESS_TOKEN_KEY, accessToken);
+  await setItemAsync(REFRESH_TOKEN_KEY, refreshToken);
+};
+
+export const clearAuthTokens = async () => {
+  await deleteItemAsync(ACCESS_TOKEN_KEY);
+  await deleteItemAsync(REFRESH_TOKEN_KEY);
+};
+
+export const getAccessToken = async () => {
+  return await getItemAsync(ACCESS_TOKEN_KEY);
+};
+
+export default apiClient;

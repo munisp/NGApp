@@ -1,0 +1,256 @@
+import apiClient from './client';
+
+// ===== Auth Service =====
+export interface LoginRequest {
+  email: string;
+  password: string;
+}
+
+export interface RegisterRequest {
+  email: string;
+  password: string;
+  phone: string;
+  first_name: string;
+  last_name: string;
+}
+
+export interface AuthResponse {
+  access_token: string;
+  refresh_token: string;
+  user: User;
+}
+
+export interface User {
+  id: string;
+  email: string;
+  phone: string;
+  first_name: string;
+  last_name: string;
+  kyc_status: 'pending' | 'verified' | 'rejected';
+  created_at: string;
+}
+
+export const authService = {
+  login: async (data: LoginRequest): Promise<AuthResponse> => {
+    const response = await apiClient.post('/api/v1/auth/login', data);
+    return response.data;
+  },
+
+  register: async (data: RegisterRequest): Promise<AuthResponse> => {
+    const response = await apiClient.post('/api/v1/auth/register', data);
+    return response.data;
+  },
+
+  verifyOTP: async (code: string): Promise<void> => {
+    await apiClient.post('/api/v1/auth/verify-otp', { code });
+  },
+
+  requestOTP: async (): Promise<void> => {
+    await apiClient.post('/api/v1/auth/request-otp');
+  },
+
+  logout: async (): Promise<void> => {
+    await apiClient.post('/api/v1/auth/logout');
+  },
+};
+
+// ===== Account Service =====
+export interface Account {
+  id: string;
+  user_id: string;
+  account_number: string;
+  account_type: 'checking' | 'savings' | 'wallet';
+  balance: number;
+  currency: string;
+  status: 'active' | 'suspended' | 'closed';
+  created_at: string;
+}
+
+export interface Transaction {
+  id: string;
+  account_id: string;
+  type: 'deposit' | 'withdrawal' | 'transfer';
+  amount: number;
+  currency: string;
+  status: 'pending' | 'completed' | 'failed';
+  description: string;
+  created_at: string;
+}
+
+export const accountService = {
+  getAccounts: async (): Promise<Account[]> => {
+    const response = await apiClient.get('/api/v1/accounts');
+    return response.data;
+  },
+
+  getAccount: async (id: string): Promise<Account> => {
+    const response = await apiClient.get(`/api/v1/accounts/${id}`);
+    return response.data;
+  },
+
+  getTransactions: async (accountId: string, limit = 50): Promise<Transaction[]> => {
+    const response = await apiClient.get(`/api/v1/accounts/${accountId}/transactions`, {
+      params: { limit },
+    });
+    return response.data;
+  },
+
+  createAccount: async (type: string): Promise<Account> => {
+    const response = await apiClient.post('/api/v1/accounts', { account_type: type });
+    return response.data;
+  },
+
+  getStatement: async (accountId: string, startDate: string, endDate: string): Promise<Blob> => {
+    const response = await apiClient.get(`/api/v1/accounts/${accountId}/statement`, {
+      params: { start_date: startDate, end_date: endDate },
+      responseType: 'blob',
+    });
+    return response.data;
+  },
+};
+
+// ===== Payment Service =====
+export interface PaymentMethod {
+  id: string;
+  user_id: string;
+  type: 'card' | 'bank_account' | 'mobile_money';
+  provider: string;
+  last_four: string;
+  is_default: boolean;
+  status: 'active' | 'inactive';
+}
+
+export interface SendMoneyRequest {
+  recipient_id?: string;
+  recipient_account?: string;
+  amount: number;
+  currency: string;
+  payment_method_id: string;
+  description?: string;
+}
+
+export interface Payment {
+  id: string;
+  user_id: string;
+  amount: number;
+  currency: string;
+  status: 'pending' | 'processing' | 'completed' | 'failed';
+  type: 'send' | 'receive';
+  description: string;
+  created_at: string;
+}
+
+export const paymentService = {
+  getPaymentMethods: async (): Promise<PaymentMethod[]> => {
+    const response = await apiClient.get('/api/v1/payments/methods');
+    return response.data;
+  },
+
+  addPaymentMethod: async (data: Partial<PaymentMethod>): Promise<PaymentMethod> => {
+    const response = await apiClient.post('/api/v1/payments/methods', data);
+    return response.data;
+  },
+
+  sendMoney: async (data: SendMoneyRequest): Promise<Payment> => {
+    const response = await apiClient.post('/api/v1/payments/send', data);
+    return response.data;
+  },
+
+  getPaymentHistory: async (limit = 50): Promise<Payment[]> => {
+    const response = await apiClient.get('/api/v1/payments/history', {
+      params: { limit },
+    });
+    return response.data;
+  },
+
+  getPayment: async (id: string): Promise<Payment> => {
+    const response = await apiClient.get(`/api/v1/payments/${id}`);
+    return response.data;
+  },
+};
+
+// ===== Biometric Service =====
+export interface BiometricEnrollRequest {
+  type: 'fingerprint' | 'face';
+  biometric_data: string; // base64 encoded
+}
+
+export interface BiometricVerifyRequest {
+  type: 'fingerprint' | 'face';
+  biometric_data: string;
+}
+
+export const biometricService = {
+  enroll: async (data: BiometricEnrollRequest): Promise<void> => {
+    await apiClient.post('/api/v1/biometric/enroll', data);
+  },
+
+  verify: async (data: BiometricVerifyRequest): Promise<{ verified: boolean; score: number }> => {
+    const response = await apiClient.post('/api/v1/biometric/verify', data);
+    return response.data;
+  },
+
+  isEnrolled: async (): Promise<boolean> => {
+    const response = await apiClient.get('/api/v1/biometric/status');
+    return response.data.enrolled;
+  },
+};
+
+// ===== User Service (KYC) =====
+export interface KYCDocument {
+  id: string;
+  user_id: string;
+  document_type: 'id_card' | 'passport' | 'drivers_license';
+  status: 'pending' | 'approved' | 'rejected';
+  uploaded_at: string;
+}
+
+export interface UploadKYCRequest {
+  document_type: string;
+  front_image: string; // base64
+  back_image?: string; // base64
+}
+
+export const userService = {
+  getProfile: async (): Promise<User> => {
+    const response = await apiClient.get('/api/v1/users/profile');
+    return response.data;
+  },
+
+  updateProfile: async (data: Partial<User>): Promise<User> => {
+    const response = await apiClient.put('/api/v1/users/profile', data);
+    return response.data;
+  },
+
+  uploadKYC: async (data: UploadKYCRequest): Promise<KYCDocument> => {
+    const response = await apiClient.post('/api/v1/users/kyc/upload', data);
+    return response.data;
+  },
+
+  getKYCStatus: async (): Promise<KYCDocument[]> => {
+    const response = await apiClient.get('/api/v1/users/kyc/status');
+    return response.data;
+  },
+};
+
+// ===== Notification Service =====
+export interface NotificationPreferences {
+  email: boolean;
+  sms: boolean;
+  push: boolean;
+}
+
+export const notificationService = {
+  getPreferences: async (): Promise<NotificationPreferences> => {
+    const response = await apiClient.get('/api/v1/notifications/preferences');
+    return response.data;
+  },
+
+  updatePreferences: async (data: NotificationPreferences): Promise<void> => {
+    await apiClient.put('/api/v1/notifications/preferences', data);
+  },
+
+  registerPushToken: async (token: string): Promise<void> => {
+    await apiClient.post('/api/v1/notifications/push/register', { token });
+  },
+};

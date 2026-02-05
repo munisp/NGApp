@@ -1,0 +1,15 @@
+{
+  "common": {
+    "welcome": "Nnọọ",
+    "continue": "Gaa n'ihu",
+    "cancel": "Kagbuo",
+    "save": "Chekwaa",
+    "loading": "Na-ebu...",
+    "error": "Njehie",
+    "success": "Ihe ịga nke ọma"
+  },
+  "home": {
+    "title": "Fintech nke Africa",
+    "subtitle": "Ntinye ego maka onye ọ bụla"
+  }
+}

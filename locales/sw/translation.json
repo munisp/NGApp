@@ -1,0 +1,15 @@
+{
+  "common": {
+    "welcome": "Karibu",
+    "continue": "Endelea",
+    "cancel": "Ghairi",
+    "save": "Hifadhi",
+    "loading": "Inapakia...",
+    "error": "Hitilafu",
+    "success": "Mafanikio"
+  },
+  "home": {
+    "title": "Fedha ya Afrika",
+    "subtitle": "Ujumuishaji wa kifedha kwa kila mtu"
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "common": {
+    "welcome": "Welcome",
+    "continue": "Continue",
+    "cancel": "Cancel",
+    "save": "Save",
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success"
+  },
+  "home": {
+    "title": "African Fintech",
+    "subtitle": "Financial inclusion for everyone"
+  }
+}

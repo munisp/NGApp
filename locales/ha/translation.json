@@ -1,0 +1,15 @@
+{
+  "common": {
+    "welcome": "Barka da zuwa",
+    "continue": "Ci gaba",
+    "cancel": "Soke",
+    "save": "Ajiye",
+    "loading": "Ana lodi...",
+    "error": "Kuskure",
+    "success": "Nasara"
+  },
+  "home": {
+    "title": "Fintech na Afirka",
+    "subtitle": "Haɗa kuɗi ga kowa"
+  }
+}

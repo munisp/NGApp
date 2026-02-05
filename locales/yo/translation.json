@@ -1,0 +1,15 @@
+{
+  "common": {
+    "welcome": "Ẹ káàbọ̀",
+    "continue": "Tẹ̀síwájú",
+    "cancel": "Fagilee",
+    "save": "Fi pamọ",
+    "loading": "Ń gbé...",
+    "error": "Àṣìṣe",
+    "success": "Àṣeyọrí"
+  },
+  "home": {
+    "title": "Fintech ti Áfríkà",
+    "subtitle": "Ìfowópamọ́ owó fún gbogbo ènìyàn"
+  }
+}
