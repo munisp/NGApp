@@ -44,7 +44,7 @@ import type {
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000';
 
 async function getAuthHeaders(): Promise<Record<string, string>> {
-  const token = await SecureStorage.getItem('auth_token');
+  const token = await SecureStorage.getItemAsync('auth_token');
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
@@ -83,8 +83,8 @@ export const authService = {
     });
     
     if (response.access_token) {
-      await SecureStorage.setItem('auth_token', response.access_token);
-      await SecureStorage.setItem('refresh_token', response.refresh_token);
+      await SecureStorage.setItemAsync('auth_token', response.access_token);
+      await SecureStorage.setItemAsync('refresh_token', response.refresh_token);
     }
     
     return response;
@@ -97,14 +97,14 @@ export const authService = {
     });
     
     if (response.access_token) {
-      await SecureStorage.setItem('auth_token', response.access_token);
-      await SecureStorage.setItem('refresh_token', response.refresh_token);
+      await SecureStorage.setItemAsync('auth_token', response.access_token);
+      await SecureStorage.setItemAsync('refresh_token', response.refresh_token);
     }
     
     return response;
   },
 
-  verifyOTP: async (code: string): Promise<void> => {
+  verifyOTP:async (code: string): Promise<void> => {
     await apiRequest('/api/auth/verify-otp', {
       method: 'POST',
       body: JSON.stringify({ code }),
@@ -121,13 +121,13 @@ export const authService = {
     try {
       await apiRequest('/api/auth/logout', { method: 'POST' });
     } finally {
-      await SecureStorage.deleteItem('auth_token');
-      await SecureStorage.deleteItem('refresh_token');
+      await SecureStorage.deleteItemAsync('auth_token');
+      await SecureStorage.deleteItemAsync('refresh_token');
     }
   },
 
   refreshToken: async (): Promise<AuthResponse> => {
-    const refreshToken = await SecureStorage.getItem('refresh_token');
+    const refreshToken = await SecureStorage.getItemAsync('refresh_token');
     if (!refreshToken) {
       throw new Error('No refresh token available');
     }
@@ -138,8 +138,8 @@ export const authService = {
     });
 
     if (response.access_token) {
-      await SecureStorage.setItem('auth_token', response.access_token);
-      await SecureStorage.setItem('refresh_token', response.refresh_token);
+      await SecureStorage.setItemAsync('auth_token', response.access_token);
+      await SecureStorage.setItemAsync('refresh_token', response.refresh_token);
     }
 
     return response;

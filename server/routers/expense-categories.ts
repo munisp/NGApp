@@ -217,7 +217,17 @@ export const expenseCategoriesRouter = router({
         const { bankTransactions } = await import('../../drizzle/schema.js');
         
         // Update all transactions from the deleted category to the new category
-        const result = await db
+        const [{ count: reassignedCount }] = await db
+          .select({ count: sql<number>`count(*)` })
+          .from(bankTransactions)
+          .where(
+            and(
+              eq(bankTransactions.userId, ctx.user.openId),
+              eq(bankTransactions.category, categoryToDelete.name)
+            )
+          );
+
+        await db
           .update(bankTransactions)
           .set({ 
             category: input.reassignToCategoryId < 0 
@@ -231,7 +241,7 @@ export const expenseCategoriesRouter = router({
             )
           );
         
-        transactionsReassigned = result.rowCount || 0;
+        transactionsReassigned = Number(reassignedCount) || 0;
       }
 
       return {
@@ -291,7 +301,17 @@ export const expenseCategoriesRouter = router({
       // Count and reassign transactions from source categories to target
       let transactionsAffected = 0;
       for (const sourceCategory of sourceCategories) {
-        const result = await db
+        const [{ count: affectedCount }] = await db
+          .select({ count: sql<number>`count(*)` })
+          .from(bankTransactions)
+          .where(
+            and(
+              eq(bankTransactions.userId, ctx.user.openId),
+              eq(bankTransactions.category, sourceCategory.name)
+            )
+          );
+
+        await db
           .update(bankTransactions)
           .set({ category: targetCategory.name })
           .where(
@@ -300,7 +320,7 @@ export const expenseCategoriesRouter = router({
               eq(bankTransactions.category, sourceCategory.name)
             )
           );
-        transactionsAffected += result.rowCount || 0;
+        transactionsAffected += Number(affectedCount) || 0;
       }
 
       // Record merge history
