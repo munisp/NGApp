@@ -32,11 +32,13 @@ export const unstable_settings = {
   initialRouteName: "index",
 };
 
-export default function RootLayout() {
-  // Initialize push notifications
+function PushNotificationRegistrar() {
   usePushNotifications();
+  return null;
+}
 
-  const initialInsets = initialWindowMetrics?.insets ?? DEFAULT_WEB_INSETS;
+export default function RootLayout() {
+  const initialInsets= initialWindowMetrics?.insets ?? DEFAULT_WEB_INSETS;
   const initialFrame = initialWindowMetrics?.frame ?? DEFAULT_WEB_FRAME;
 
   const [insets, setInsets] = useState<EdgeInsets>(initialInsets);
@@ -108,6 +110,7 @@ export default function RootLayout() {
           {/* Default to hiding native headers so raw route segments don't appear (e.g. "(tabs)", "products/[id]"). */}
           {/* If a screen needs the native header, explicitly enable it and set a human title via Stack.Screen options. */}
           {/* in order for ios apps tab switching to work properly, use presentation: "fullScreenModal" for login page, whenever you decide to use presentation: "modal*/}
+          <PushNotificationRegistrar />
           <Stack screenOptions={{ headerShown: false }}>
             <Stack.Screen name="onboarding" />
             <Stack.Screen name="(auth)" />
