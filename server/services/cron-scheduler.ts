@@ -1,8 +1,10 @@
 import cron from 'node-cron';
-import { getUpcomingInstallments, formatReminderMessage } from './payment-reminders';
+import { getUpcomingInstallments, getOverdueInstallments, formatReminderMessage } from './payment-reminders';
 import { getDb } from '../db';
-import { recurringContributions, savingsGoals, savingsContributions, recurringContributionHistory } from '../../drizzle/schema';
-import { eq, and, lte } from 'drizzle-orm';
+import { recurringContributions, savingsGoals, savingsContributions, recurringContributionHistory, notificationPreferences, users } from '../../drizzle/schema';
+import { bnplInstallments, bnplApplications } from '../db/schema/bnpl';
+import { eq, and, lte, sql, isNotNull } from 'drizzle-orm';
+import { sendPushNotification, sendBatchPushNotifications } from './push-notification';
 
 /**
  * Schedule automated payment reminders to run daily at 9 AM
@@ -18,14 +20,20 @@ export function schedulePaymentReminders() {
       
       console.log(`[Cron] Found ${upcomingInstallments.length} upcoming payments`);
       
-      // In production, this would send actual push notifications via Expo Push API
-      // For now, we'll just log the reminders
-      for (const reminder of upcomingInstallments) {
+      // Send push notifications via Expo Push API
+      const notifications = upcomingInstallments.map((reminder) => {
         const message = formatReminderMessage(reminder, false);
-        console.log(`[Cron] Reminder for user ${reminder.userId}:`, message.title, '-', message.body);
-        
-        // TODO: Send actual push notification using Expo Push API
-        // await sendPushNotification(reminder.userId, message);
+        return {
+          userId: reminder.userId,
+          title: message.title,
+          body: message.body,
+          data: message.data,
+        };
+      });
+
+      if (notifications.length > 0) {
+        const result = await sendBatchPushNotifications(notifications);
+        console.log(`[Cron] Payment reminders sent: ${result.successful} successful, ${result.failed} failed`);
       }
       
       console.log('[Cron] Payment reminders completed');
@@ -46,20 +54,59 @@ export function scheduleOverdueReminders() {
     console.log('[Cron] Running overdue payment reminders scheduler...');
     
     try {
-      // In production, this would query all users with overdue payments
-      // and send push notifications to each
-      console.log('[Cron] Overdue reminders would be sent here');
-      
-      // TODO: Implement overdue reminders for all users
-      // const users = await getAllUsersWithOverduePayments();
-      // for (const user of users) {
-      //   const overdueInstallments = await getOverdueInstallments(user.id);
-      //   for (const reminder of overdueInstallments) {
-      //     const message = formatReminderMessage(reminder, true);
-      //     await sendPushNotification(user.id, message);
-      //   }
-      // }
-      
+      const db = await getDb();
+      if (!db) {
+        console.error('[Cron] Database not available for overdue reminders');
+        return;
+      }
+
+      const now = new Date();
+
+      // Get all users with overdue BNPL payments
+      const overduePayments = await db
+        .select({
+          installmentId: bnplInstallments.id,
+          userId: bnplApplications.userId,
+          dueDate: bnplInstallments.dueDate,
+          amount: bnplInstallments.amount,
+          applicationId: bnplApplications.id,
+          studentName: bnplApplications.studentName,
+        })
+        .from(bnplInstallments)
+        .innerJoin(bnplApplications, eq(bnplInstallments.applicationId, bnplApplications.id))
+        .where(
+          and(
+            eq(bnplInstallments.status, 'pending'),
+            sql`${bnplInstallments.dueDate} < ${now.toISOString()}`
+          )
+        );
+
+      console.log(`[Cron] Found ${overduePayments.length} overdue payments`);
+
+      if (overduePayments.length > 0) {
+        // Group by user and send notifications
+        const notifications = overduePayments.map((payment) => {
+          const reminder = {
+            installmentId: payment.installmentId,
+            userId: payment.userId,
+            dueDate: new Date(payment.dueDate),
+            amount: payment.amount,
+            applicationId: payment.applicationId,
+            studentName: payment.studentName,
+          };
+          const message = formatReminderMessage(reminder, true);
+          return {
+            userId: payment.userId,
+            title: message.title,
+            body: message.body,
+            data: message.data,
+          };
+        });
+
+        const result = await sendBatchPushNotifications(notifications);
+        console.log(`[Cron] Overdue reminders sent: ${result.successful} successful, ${result.failed} failed`);
+      }
+
       console.log('[Cron] Overdue reminders completed');
     } catch (error) {
       console.error('[Cron] Error sending overdue reminders:', error);

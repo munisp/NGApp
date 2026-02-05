@@ -1,5 +1,8 @@
 import { router, protectedProcedure } from "../_core/trpc.js";
 import { z } from 'zod';
+import { getDb } from '../db.js';
+import { categorizationCorrections, categoryKeywords } from '../../drizzle/schema-categorization-corrections.js';
+import { eq, and, sql } from 'drizzle-orm';
 
 const transactionSchema = z.object({
   id: z.string(),
@@ -176,7 +179,7 @@ export const categorizationRouter = router({
   }),
 
   /**
-   * Learn from user corrections (stub for future ML integration)
+   * Learn from user corrections and store for ML model training
    */
   learn: protectedProcedure
     .input(
@@ -185,16 +188,130 @@ export const categorizationRouter = router({
         description: z.string(),
         merchant: z.string().optional(),
         correctCategory: z.string(),
+        originalCategory: z.string().optional(),
       })
     )
-    .mutation(async ({ input }) => {
-      // TODO: Store user corrections for future ML model training
-      // For now, just acknowledge the correction
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) {
+        throw new Error('Database not available');
+      }
+
+      const userId = ctx.user?.openId;
+      if (!userId) {
+        throw new Error('User not authenticated');
+      }
+
+      // Extract features from the transaction for ML training
+      const text = `${input.description} ${input.merchant || ''}`.toLowerCase();
+      const words = text.split(/\s+/).filter(w => w.length > 2);
+      const features = {
+        words,
+        wordCount: words.length,
+        hasNumbers: /\d/.test(text),
+        merchantPresent: !!input.merchant,
+        descriptionLength: input.description.length,
+      };
+
+      // Store the correction for ML training
+      await db.insert(categorizationCorrections).values({
+        userId,
+        transactionId: input.transactionId,
+        description: input.description,
+        merchant: input.merchant || null,
+        originalCategory: input.originalCategory || null,
+        correctCategory: input.correctCategory,
+        features,
+      });
+
+      // Extract potential keywords from the description and merchant
+      const potentialKeywords = words.filter(w => 
+        w.length >= 3 && 
+        !['the', 'and', 'for', 'from', 'with', 'payment', 'transfer'].includes(w)
+      );
+
+      // Store learned keywords for future categorization
+      for (const keyword of potentialKeywords.slice(0, 5)) { // Limit to top 5 keywords
+        // Check if keyword already exists for this category
+        const existing = await db
+          .select()
+          .from(categoryKeywords)
+          .where(
+            and(
+              eq(categoryKeywords.category, input.correctCategory),
+              eq(categoryKeywords.keyword, keyword)
+            )
+          )
+          .limit(1);
+
+        if (existing.length === 0) {
+          await db.insert(categoryKeywords).values({
+            category: input.correctCategory,
+            keyword,
+            weight: '1.0',
+            source: 'user_correction',
+            userId,
+          });
+        } else {
+          // Increase weight for existing keyword
+          const currentWeight = parseFloat(existing[0].weight);
+          await db
+            .update(categoryKeywords)
+            .set({ 
+              weight: (currentWeight + 0.1).toFixed(1),
+              updatedAt: new Date(),
+            })
+            .where(eq(categoryKeywords.id, existing[0].id));
+        }
+      }
+
       return {
         success: true,
         message: 'Thank you for the correction. This will help improve future categorizations.',
+        keywordsLearned: potentialKeywords.slice(0, 5).length,
       };
     }),
+
+  /**
+   * Get correction statistics for the current user
+   */
+  getCorrectionStats: protectedProcedure.query(async ({ ctx }) => {
+    const db = await getDb();
+    if (!db) {
+      throw new Error('Database not available');
+    }
+
+    const userId = ctx.user?.openId;
+    if (!userId) {
+      throw new Error('User not authenticated');
+    }
+
+    // Get total corrections by this user
+    const corrections = await db
+      .select()
+      .from(categorizationCorrections)
+      .where(eq(categorizationCorrections.userId, userId));
+
+    // Get category distribution
+    const categoryDistribution: Record<string, number> = {};
+    for (const correction of corrections) {
+      categoryDistribution[correction.correctCategory] = 
+        (categoryDistribution[correction.correctCategory] || 0) + 1;
+    }
+
+    // Get learned keywords count
+    const learnedKeywords = await db
+      .select()
+      .from(categoryKeywords)
+      .where(eq(categoryKeywords.userId, userId));
+
+    return {
+      success: true,
+      totalCorrections: corrections.length,
+      categoryDistribution,
+      learnedKeywordsCount: learnedKeywords.length,
+    };
+  }),
 });
 
 export default categorizationRouter;

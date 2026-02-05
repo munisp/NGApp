@@ -1,0 +1,481 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: openappsec
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: openappsec-config
+  namespace: openappsec
+data:
+  local_policy.yaml: |
+    policies:
+      - name: fintech-api-policy
+        mode: prevent-learn
+        practices:
+          - web-attacks
+          - api-attacks
+          - bot-detection
+        triggers:
+          - log
+          - web-response
+        custom-response: "Access Denied - Security Policy Violation"
+        source-identifiers:
+          - x-forwarded-for
+          - x-real-ip
+        trusted-sources:
+          - 10.0.0.0/8
+          - 172.16.0.0/12
+          - 192.168.0.0/16
+    
+    practices:
+      - name: web-attacks
+        web-attacks:
+          override-mode: prevent-learn
+          minimum-confidence: medium
+          max-body-size-kb: 1000000
+          max-header-size-bytes: 102400
+          max-object-depth: 40
+          max-url-size-bytes: 32768
+          protections:
+            csrf-protection: prevent
+            error-disclosure: prevent
+            open-redirect: prevent
+            non-valid-http-methods: true
+      
+      - name: api-attacks
+        api-attacks:
+          override-mode: prevent-learn
+          minimum-confidence: medium
+      
+      - name: bot-detection
+        anti-bot:
+          override-mode: prevent-learn
+          injected-URIs:
+            - "/"
+          validated-URIs:
+            - "/api/*"
+    
+    triggers:
+      - name: log
+        log:
+          verbosity: extended
+          cef-format: true
+          syslog:
+            address: syslog.observability.svc.cluster.local
+            port: 514
+      
+      - name: web-response
+        web-response:
+          mode: response-code-only
+          response-code: 403
+    
+    log:
+      syslog:
+        enabled: true
+        address: syslog.observability.svc.cluster.local
+        port: 514
+      
+      cef:
+        enabled: true
+      
+      extended:
+        enabled: true
+        url-path: true
+        url-query: true
+        http-headers: true
+        request-body: true
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: openappsec-agent
+  namespace: openappsec
+spec:
+  selector:
+    matchLabels:
+      app: openappsec-agent
+  template:
+    metadata:
+      labels:
+        app: openappsec-agent
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9090"
+    spec:
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      tolerations:
+        - key: node-role.kubernetes.io/master
+          effect: NoSchedule
+        - key: node-role.kubernetes.io/control-plane
+          effect: NoSchedule
+      containers:
+        - name: agent
+          image: ghcr.io/openappsec/agent:1.0.0
+          securityContext:
+            privileged: true
+            capabilities:
+              add:
+                - NET_ADMIN
+                - SYS_PTRACE
+          ports:
+            - containerPort: 9090
+              name: metrics
+          env:
+            - name: SHARED_STORAGE_HOST
+              value: openappsec-storage.openappsec.svc.cluster.local
+            - name: LEARNING_HOST
+              value: openappsec-learning.openappsec.svc.cluster.local
+            - name: TUNING_HOST
+              value: openappsec-tuning.openappsec.svc.cluster.local
+            - name: FOG_ADDRESS
+              value: ""
+            - name: AGENT_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: openappsec-secrets
+                  key: agent-token
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+          resources:
+            requests:
+              memory: 512Mi
+              cpu: "250m"
+            limits:
+              memory: 1Gi
+              cpu: "1"
+          volumeMounts:
+            - name: config
+              mountPath: /etc/cp/conf
+            - name: logs
+              mountPath: /var/log/nano_agent
+            - name: data
+              mountPath: /etc/cp/data
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 9090
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 9090
+            initialDelaySeconds: 60
+            periodSeconds: 30
+      volumes:
+        - name: config
+          configMap:
+            name: openappsec-config
+        - name: logs
+          hostPath:
+            path: /var/log/openappsec
+            type: DirectoryOrCreate
+        - name: data
+          hostPath:
+            path: /var/lib/openappsec
+            type: DirectoryOrCreate
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: openappsec-learning
+  namespace: openappsec
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: openappsec-learning
+  template:
+    metadata:
+      labels:
+        app: openappsec-learning
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                  - key: app
+                    operator: In
+                    values:
+                      - openappsec-learning
+              topologyKey: kubernetes.io/hostname
+      containers:
+        - name: learning
+          image: ghcr.io/openappsec/smartsync-learning:1.0.0
+          ports:
+            - containerPort: 8080
+              name: http
+          env:
+            - name: STORAGE_HOST
+              value: openappsec-storage.openappsec.svc.cluster.local
+            - name: REDIS_HOST
+              value: redis.redis.svc.cluster.local
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: openappsec-secrets
+                  key: redis-password
+          resources:
+            requests:
+              memory: 1Gi
+              cpu: "500m"
+            limits:
+              memory: 2Gi
+              cpu: "2"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 30
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: openappsec-tuning
+  namespace: openappsec
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: openappsec-tuning
+  template:
+    metadata:
+      labels:
+        app: openappsec-tuning
+    spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: app
+                      operator: In
+                      values:
+                        - openappsec-tuning
+                topologyKey: kubernetes.io/hostname
+      containers:
+        - name: tuning
+          image: ghcr.io/openappsec/smartsync-tuning:1.0.0
+          ports:
+            - containerPort: 8080
+              name: http
+          env:
+            - name: STORAGE_HOST
+              value: openappsec-storage.openappsec.svc.cluster.local
+            - name: LEARNING_HOST
+              value: openappsec-learning.openappsec.svc.cluster.local
+          resources:
+            requests:
+              memory: 512Mi
+              cpu: "250m"
+            limits:
+              memory: 1Gi
+              cpu: "1"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 10
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: openappsec-storage
+  namespace: openappsec
+spec:
+  serviceName: openappsec-storage-headless
+  replicas: 3
+  selector:
+    matchLabels:
+      app: openappsec-storage
+  template:
+    metadata:
+      labels:
+        app: openappsec-storage
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                  - key: app
+                    operator: In
+                    values:
+                      - openappsec-storage
+              topologyKey: kubernetes.io/hostname
+      containers:
+        - name: storage
+          image: ghcr.io/openappsec/smartsync-shared-files:1.0.0
+          ports:
+            - containerPort: 8080
+              name: http
+          resources:
+            requests:
+              memory: 512Mi
+              cpu: "250m"
+            limits:
+              memory: 1Gi
+              cpu: "1"
+          volumeMounts:
+            - name: storage-data
+              mountPath: /data
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 10
+  volumeClaimTemplates:
+    - metadata:
+        name: storage-data
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        storageClassName: fast-ssd
+        resources:
+          requests:
+            storage: 50Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: openappsec-learning
+  namespace: openappsec
+spec:
+  type: ClusterIP
+  ports:
+    - port: 8080
+      targetPort: 8080
+      name: http
+  selector:
+    app: openappsec-learning
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: openappsec-tuning
+  namespace: openappsec
+spec:
+  type: ClusterIP
+  ports:
+    - port: 8080
+      targetPort: 8080
+      name: http
+  selector:
+    app: openappsec-tuning
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: openappsec-storage
+  namespace: openappsec
+spec:
+  type: ClusterIP
+  ports:
+    - port: 8080
+      targetPort: 8080
+      name: http
+  selector:
+    app: openappsec-storage
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: openappsec-storage-headless
+  namespace: openappsec
+spec:
+  clusterIP: None
+  ports:
+    - port: 8080
+      targetPort: 8080
+      name: http
+  selector:
+    app: openappsec-storage
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: openappsec-secrets
+  namespace: openappsec
+type: Opaque
+stringData:
+  agent-token: "${OPENAPPSEC_AGENT_TOKEN}"
+  redis-password: "${REDIS_PASSWORD}"
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: openappsec-learning-pdb
+  namespace: openappsec
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: openappsec-learning
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: openappsec-storage-pdb
+  namespace: openappsec
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: openappsec-storage
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: openappsec-learning-hpa
+  namespace: openappsec
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: openappsec-learning
+  minReplicas: 3
+  maxReplicas: 10
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 80
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: openappsec-monitor
+  namespace: openappsec
+spec:
+  selector:
+    matchLabels:
+      app: openappsec-agent
+  endpoints:
+    - port: metrics
+      interval: 15s
+      path: /metrics

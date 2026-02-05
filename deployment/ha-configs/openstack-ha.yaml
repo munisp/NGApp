@@ -1,0 +1,467 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: openstack-ha-config
+  namespace: openstack
+data:
+  README.md: |
+    # OpenStack High Availability Configuration
+    
+    This configuration provides HA setup for OpenStack services in the fintech platform.
+    
+    ## Architecture Overview
+    
+    - 3 Controller nodes with Pacemaker/Corosync for HA
+    - HAProxy for API load balancing
+    - Galera Cluster for MariaDB HA
+    - RabbitMQ cluster for messaging HA
+    - Ceph for distributed storage
+    
+  haproxy.cfg: |
+    global
+        log /dev/log local0
+        log /dev/log local1 notice
+        chroot /var/lib/haproxy
+        stats socket /run/haproxy/admin.sock mode 660 level admin expose-fd listeners
+        stats timeout 30s
+        user haproxy
+        group haproxy
+        daemon
+        maxconn 4096
+    
+    defaults
+        log     global
+        mode    http
+        option  httplog
+        option  dontlognull
+        option  redispatch
+        retries 3
+        timeout http-request 10s
+        timeout queue 1m
+        timeout connect 10s
+        timeout client 1m
+        timeout server 1m
+        timeout http-keep-alive 10s
+        timeout check 10s
+        maxconn 3000
+    
+    listen stats
+        bind *:8404
+        mode http
+        stats enable
+        stats uri /stats
+        stats refresh 10s
+        stats admin if LOCALHOST
+    
+    frontend keystone_public
+        bind *:5000
+        default_backend keystone_public_backend
+        option httpchk GET /
+    
+    backend keystone_public_backend
+        balance roundrobin
+        option httpchk GET /
+        http-check expect status 300
+        server controller1 10.0.1.10:5000 check inter 2000 rise 2 fall 5
+        server controller2 10.0.1.11:5000 check inter 2000 rise 2 fall 5
+        server controller3 10.0.1.12:5000 check inter 2000 rise 2 fall 5
+    
+    frontend nova_api
+        bind *:8774
+        default_backend nova_api_backend
+    
+    backend nova_api_backend
+        balance roundrobin
+        option httpchk GET /
+        server controller1 10.0.1.10:8774 check inter 2000 rise 2 fall 5
+        server controller2 10.0.1.11:8774 check inter 2000 rise 2 fall 5
+        server controller3 10.0.1.12:8774 check inter 2000 rise 2 fall 5
+    
+    frontend neutron_api
+        bind *:9696
+        default_backend neutron_api_backend
+    
+    backend neutron_api_backend
+        balance roundrobin
+        option httpchk GET /
+        server controller1 10.0.1.10:9696 check inter 2000 rise 2 fall 5
+        server controller2 10.0.1.11:9696 check inter 2000 rise 2 fall 5
+        server controller3 10.0.1.12:9696 check inter 2000 rise 2 fall 5
+    
+    frontend glance_api
+        bind *:9292
+        default_backend glance_api_backend
+    
+    backend glance_api_backend
+        balance roundrobin
+        option httpchk GET /healthcheck
+        server controller1 10.0.1.10:9292 check inter 2000 rise 2 fall 5
+        server controller2 10.0.1.11:9292 check inter 2000 rise 2 fall 5
+        server controller3 10.0.1.12:9292 check inter 2000 rise 2 fall 5
+    
+    frontend cinder_api
+        bind *:8776
+        default_backend cinder_api_backend
+    
+    backend cinder_api_backend
+        balance roundrobin
+        option httpchk GET /
+        server controller1 10.0.1.10:8776 check inter 2000 rise 2 fall 5
+        server controller2 10.0.1.11:8776 check inter 2000 rise 2 fall 5
+        server controller3 10.0.1.12:8776 check inter 2000 rise 2 fall 5
+    
+    frontend horizon
+        bind *:80
+        bind *:443 ssl crt /etc/ssl/private/horizon.pem
+        redirect scheme https if !{ ssl_fc }
+        default_backend horizon_backend
+    
+    backend horizon_backend
+        balance roundrobin
+        cookie SERVERID insert indirect nocache
+        option httpchk GET /
+        server controller1 10.0.1.10:80 check inter 2000 rise 2 fall 5 cookie s1
+        server controller2 10.0.1.11:80 check inter 2000 rise 2 fall 5 cookie s2
+        server controller3 10.0.1.12:80 check inter 2000 rise 2 fall 5 cookie s3
+    
+    frontend mysql_cluster
+        bind *:3306
+        mode tcp
+        option tcplog
+        default_backend mysql_cluster_backend
+    
+    backend mysql_cluster_backend
+        mode tcp
+        balance roundrobin
+        option mysql-check user haproxy
+        server galera1 10.0.1.10:3306 check inter 2000 rise 2 fall 5
+        server galera2 10.0.1.11:3306 check inter 2000 rise 2 fall 5 backup
+        server galera3 10.0.1.12:3306 check inter 2000 rise 2 fall 5 backup
+    
+    frontend rabbitmq
+        bind *:5672
+        mode tcp
+        option tcplog
+        default_backend rabbitmq_backend
+    
+    backend rabbitmq_backend
+        mode tcp
+        balance roundrobin
+        server rabbit1 10.0.1.10:5672 check inter 2000 rise 2 fall 5
+        server rabbit2 10.0.1.11:5672 check inter 2000 rise 2 fall 5
+        server rabbit3 10.0.1.12:5672 check inter 2000 rise 2 fall 5
+
+  pacemaker-resources.sh: |
+    #!/bin/bash
+    
+    pcs cluster auth controller1 controller2 controller3 -u hacluster -p ${HACLUSTER_PASSWORD}
+    
+    pcs cluster setup --name openstack-cluster controller1 controller2 controller3
+    
+    pcs cluster start --all
+    pcs cluster enable --all
+    
+    pcs property set stonith-enabled=true
+    pcs property set no-quorum-policy=stop
+    pcs property set pe-warn-series-max=1000
+    pcs property set pe-input-series-max=1000
+    pcs property set pe-error-series-max=1000
+    pcs property set cluster-recheck-interval=5min
+    
+    pcs resource create vip-public ocf:heartbeat:IPaddr2 \
+        ip=10.0.1.100 cidr_netmask=24 \
+        op monitor interval=10s
+    
+    pcs resource create vip-internal ocf:heartbeat:IPaddr2 \
+        ip=10.0.2.100 cidr_netmask=24 \
+        op monitor interval=10s
+    
+    pcs resource create haproxy systemd:haproxy \
+        op monitor interval=5s
+    
+    pcs constraint colocation add haproxy with vip-public INFINITY
+    pcs constraint order vip-public then haproxy
+    
+    pcs resource create galera galera \
+        enable_creation=true \
+        wsrep_cluster_address="gcomm://controller1,controller2,controller3" \
+        meta master-max=3 ordered=true \
+        op promote timeout=300s on-fail=block
+    
+    pcs resource create rabbitmq ocf:heartbeat:rabbitmq-cluster \
+        set_policy="ha-all ^(?!amq\.).* {\"ha-mode\":\"all\"}" \
+        meta notify=true ordered=false interleave=true \
+        op start timeout=180s \
+        op stop timeout=120s \
+        op monitor interval=30s timeout=60s
+    
+    pcs resource create memcached systemd:memcached \
+        clone interleave=true
+    
+    pcs resource create keystone systemd:openstack-keystone \
+        clone interleave=true
+    
+    pcs resource create glance-api systemd:openstack-glance-api \
+        clone interleave=true
+    
+    pcs resource create nova-api systemd:openstack-nova-api \
+        clone interleave=true
+    
+    pcs resource create nova-conductor systemd:openstack-nova-conductor \
+        clone interleave=true
+    
+    pcs resource create nova-scheduler systemd:openstack-nova-scheduler \
+        clone interleave=true
+    
+    pcs resource create neutron-server systemd:neutron-server \
+        clone interleave=true
+    
+    pcs resource create cinder-api systemd:openstack-cinder-api \
+        clone interleave=true
+    
+    pcs resource create cinder-scheduler systemd:openstack-cinder-scheduler \
+        clone interleave=true
+    
+    pcs constraint order start galera-master then keystone-clone
+    pcs constraint order start rabbitmq then keystone-clone
+    pcs constraint order start keystone-clone then glance-api-clone
+    pcs constraint order start glance-api-clone then nova-api-clone
+    pcs constraint order start nova-api-clone then neutron-server-clone
+
+  galera.cnf: |
+    [mysqld]
+    binlog_format=ROW
+    default-storage-engine=innodb
+    innodb_autoinc_lock_mode=2
+    bind-address=0.0.0.0
+    
+    wsrep_on=ON
+    wsrep_provider=/usr/lib64/galera/libgalera_smm.so
+    wsrep_cluster_name="openstack-galera"
+    wsrep_cluster_address="gcomm://controller1,controller2,controller3"
+    wsrep_node_name=controller1
+    wsrep_node_address=10.0.1.10
+    wsrep_sst_method=rsync
+    wsrep_sst_auth=sst_user:${SST_PASSWORD}
+    
+    innodb_buffer_pool_size=4G
+    innodb_log_file_size=256M
+    innodb_flush_log_at_trx_commit=2
+    innodb_flush_method=O_DIRECT
+    
+    max_connections=4096
+    max_allowed_packet=256M
+    query_cache_size=0
+    query_cache_type=0
+    
+    wsrep_slave_threads=4
+    wsrep_log_conflicts=ON
+    wsrep_certify_nonPK=ON
+    
+    wsrep_provider_options="gcache.size=1G; gcache.page_size=512M"
+
+  rabbitmq.conf: |
+    cluster_formation.peer_discovery_backend = rabbit_peer_discovery_classic_config
+    cluster_formation.classic_config.nodes.1 = rabbit@controller1
+    cluster_formation.classic_config.nodes.2 = rabbit@controller2
+    cluster_formation.classic_config.nodes.3 = rabbit@controller3
+    
+    cluster_partition_handling = pause_minority
+    
+    vm_memory_high_watermark.relative = 0.6
+    disk_free_limit.absolute = 2GB
+    
+    log.file.level = info
+    
+    management.tcp.port = 15672
+    management.tcp.ip = 0.0.0.0
+    
+    collect_statistics_interval = 10000
+    
+    queue_master_locator = min-masters
+    
+    mirroring_sync_batch_size = 4096
+    
+    tcp_listen_options.backlog = 128
+    tcp_listen_options.nodelay = true
+    tcp_listen_options.linger.on = true
+    tcp_listen_options.linger.timeout = 0
+    tcp_listen_options.sndbuf = 32768
+    tcp_listen_options.recbuf = 32768
+
+  ceph.conf: |
+    [global]
+    fsid = ${CEPH_FSID}
+    mon_initial_members = ceph-mon1, ceph-mon2, ceph-mon3
+    mon_host = 10.0.3.10, 10.0.3.11, 10.0.3.12
+    auth_cluster_required = cephx
+    auth_service_required = cephx
+    auth_client_required = cephx
+    
+    public_network = 10.0.3.0/24
+    cluster_network = 10.0.4.0/24
+    
+    osd_pool_default_size = 3
+    osd_pool_default_min_size = 2
+    osd_pool_default_pg_num = 128
+    osd_pool_default_pgp_num = 128
+    
+    mon_osd_full_ratio = 0.95
+    mon_osd_nearfull_ratio = 0.85
+    
+    [mon]
+    mon_compact_on_start = true
+    mon_osd_down_out_interval = 600
+    
+    [osd]
+    osd_journal_size = 10240
+    osd_mkfs_type = xfs
+    osd_mkfs_options_xfs = -f -i size=2048
+    osd_mount_options_xfs = noatime,nodiratime,logbufs=8
+    
+    osd_recovery_max_active = 3
+    osd_max_backfills = 1
+    
+    bluestore_cache_size_hdd = 1073741824
+    bluestore_cache_size_ssd = 3221225472
+    
+    [client]
+    rbd_cache = true
+    rbd_cache_size = 134217728
+    rbd_cache_max_dirty = 100663296
+    rbd_cache_target_dirty = 67108864
+    rbd_cache_writethrough_until_flush = true
+
+  nova.conf.ha: |
+    [DEFAULT]
+    transport_url = rabbit://openstack:${RABBIT_PASSWORD}@controller1:5672,openstack:${RABBIT_PASSWORD}@controller2:5672,openstack:${RABBIT_PASSWORD}@controller3:5672/
+    
+    osapi_compute_listen = $my_ip
+    osapi_compute_listen_port = 8774
+    
+    metadata_listen = $my_ip
+    metadata_listen_port = 8775
+    
+    [api_database]
+    connection = mysql+pymysql://nova:${NOVA_DB_PASSWORD}@10.0.1.100/nova_api
+    max_retries = -1
+    retry_interval = 1
+    
+    [database]
+    connection = mysql+pymysql://nova:${NOVA_DB_PASSWORD}@10.0.1.100/nova
+    max_retries = -1
+    retry_interval = 1
+    
+    [oslo_messaging_rabbit]
+    rabbit_retry_interval = 1
+    rabbit_retry_backoff = 2
+    rabbit_max_retries = 0
+    rabbit_ha_queues = true
+    
+    [cache]
+    enabled = true
+    backend = oslo_cache.memcache_pool
+    memcache_servers = controller1:11211,controller2:11211,controller3:11211
+
+  neutron.conf.ha: |
+    [DEFAULT]
+    transport_url = rabbit://openstack:${RABBIT_PASSWORD}@controller1:5672,openstack:${RABBIT_PASSWORD}@controller2:5672,openstack:${RABBIT_PASSWORD}@controller3:5672/
+    
+    bind_host = 0.0.0.0
+    bind_port = 9696
+    
+    l3_ha = true
+    max_l3_agents_per_router = 3
+    min_l3_agents_per_router = 2
+    
+    allow_automatic_l3agent_failover = true
+    allow_automatic_dhcp_failover = true
+    
+    dhcp_agents_per_network = 3
+    
+    [database]
+    connection = mysql+pymysql://neutron:${NEUTRON_DB_PASSWORD}@10.0.1.100/neutron
+    max_retries = -1
+    retry_interval = 1
+    
+    [oslo_messaging_rabbit]
+    rabbit_retry_interval = 1
+    rabbit_retry_backoff = 2
+    rabbit_max_retries = 0
+    rabbit_ha_queues = true
+
+  monitoring-alerts.yaml: |
+    groups:
+      - name: openstack-ha-alerts
+        rules:
+          - alert: OpenStackAPIDown
+            expr: up{job=~"keystone|nova|neutron|glance|cinder"} == 0
+            for: 2m
+            labels:
+              severity: critical
+            annotations:
+              summary: "OpenStack API {{ $labels.job }} is down"
+              description: "OpenStack API {{ $labels.job }} has been down for more than 2 minutes."
+          
+          - alert: GaleraClusterNotHealthy
+            expr: mysql_global_status_wsrep_cluster_status != 1
+            for: 1m
+            labels:
+              severity: critical
+            annotations:
+              summary: "Galera cluster is not healthy"
+              description: "Galera cluster status is not Primary."
+          
+          - alert: GaleraNodeNotReady
+            expr: mysql_global_status_wsrep_ready != 1
+            for: 1m
+            labels:
+              severity: warning
+            annotations:
+              summary: "Galera node {{ $labels.instance }} is not ready"
+              description: "Galera node is not ready to accept queries."
+          
+          - alert: RabbitMQClusterPartition
+            expr: rabbitmq_partitions > 0
+            for: 1m
+            labels:
+              severity: critical
+            annotations:
+              summary: "RabbitMQ cluster partition detected"
+              description: "RabbitMQ cluster has {{ $value }} partitions."
+          
+          - alert: CephHealthWarning
+            expr: ceph_health_status == 1
+            for: 5m
+            labels:
+              severity: warning
+            annotations:
+              summary: "Ceph cluster health warning"
+              description: "Ceph cluster is in HEALTH_WARN state."
+          
+          - alert: CephHealthError
+            expr: ceph_health_status == 2
+            for: 1m
+            labels:
+              severity: critical
+            annotations:
+              summary: "Ceph cluster health error"
+              description: "Ceph cluster is in HEALTH_ERR state."
+          
+          - alert: PacemakerResourceFailed
+            expr: pacemaker_resource_status{status="failed"} == 1
+            for: 1m
+            labels:
+              severity: critical
+            annotations:
+              summary: "Pacemaker resource {{ $labels.resource }} failed"
+              description: "Pacemaker resource {{ $labels.resource }} is in failed state on {{ $labels.node }}."
+          
+          - alert: HAProxyBackendDown
+            expr: haproxy_backend_up == 0
+            for: 1m
+            labels:
+              severity: critical
+            annotations:
+              summary: "HAProxy backend {{ $labels.backend }} is down"
+              description: "All servers in HAProxy backend {{ $labels.backend }} are down."

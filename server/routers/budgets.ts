@@ -203,8 +203,23 @@ export const budgetsRouter = router({
       const monthlyLimit = parseFloat(budget.monthlyLimit);
       const alertThreshold = parseFloat(budget.alertThreshold);
       
-      // TODO: Calculate actual spending from transactions
-      const amountSpent = 0;
+      // Calculate actual spending from transactions for this month
+      const monthlyTransactions = await db
+        .select()
+        .from(bankTransactions)
+        .where(
+          and(
+            eq(bankTransactions.userId, ctx.user.openId),
+            eq(bankTransactions.category, budget.category),
+            eq(bankTransactions.type, 'debit'),
+            sql`strftime('%Y-%m', ${bankTransactions.transactionDate}) = ${currentMonth}`
+          )
+        );
+      
+      const amountSpent = monthlyTransactions.reduce(
+        (sum, txn) => sum + parseFloat(txn.amount),
+        0
+      );
       const percentageUsed = amountSpent / monthlyLimit;
       
       // Check if we've already sent an alert this month

@@ -1,0 +1,368 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: permify
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: permify-config
+  namespace: permify
+data:
+  config.yaml: |
+    server:
+      http:
+        enabled: true
+        port: 3476
+      grpc:
+        enabled: true
+        port: 3478
+      rate_limit: 10000
+    
+    logger:
+      level: info
+      output: stdout
+      format: json
+    
+    profiler:
+      enabled: true
+      port: 6060
+    
+    authn:
+      enabled: true
+      method: preshared
+      preshared:
+        keys:
+          - "${PERMIFY_API_KEY}"
+    
+    tracer:
+      enabled: true
+      exporter: otlp
+      endpoint: otel-collector.observability.svc.cluster.local:4317
+      insecure: true
+    
+    meter:
+      enabled: true
+      exporter: otlp
+      endpoint: otel-collector.observability.svc.cluster.local:4317
+      insecure: true
+    
+    service:
+      circuit_breaker: true
+      watch:
+        enabled: true
+      schema:
+        cache:
+          number_of_counters: 10000
+          max_cost: 10485760
+      permission:
+        bulk_limit: 100
+        concurrency_limit: 100
+      relationship:
+        bulk_limit: 100
+        concurrency_limit: 100
+    
+    database:
+      engine: postgres
+      uri: "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres-ha.postgres.svc.cluster.local:5432/permify?sslmode=disable"
+      auto_migrate: true
+      max_open_connections: 20
+      max_idle_connections: 5
+      max_connection_lifetime: 300s
+      max_connection_idle_time: 60s
+      garbage_collection:
+        enabled: true
+        interval: 3h
+        window: 720h
+        timeout: 5m
+    
+    distributed:
+      enabled: true
+      address: "permify-headless.permify.svc.cluster.local:5053"
+      port: 5053
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: permify
+  namespace: permify
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: permify
+  template:
+    metadata:
+      labels:
+        app: permify
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "3476"
+        prometheus.io/path: "/metrics"
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                  - key: app
+                    operator: In
+                    values:
+                      - permify
+              topologyKey: kubernetes.io/hostname
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: app
+                      operator: In
+                      values:
+                        - permify
+                topologyKey: topology.kubernetes.io/zone
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: DoNotSchedule
+          labelSelector:
+            matchLabels:
+              app: permify
+      containers:
+        - name: permify
+          image: ghcr.io/permify/permify:v0.8.5
+          args:
+            - serve
+            - --config=/etc/permify/config.yaml
+          ports:
+            - containerPort: 3476
+              name: http
+            - containerPort: 3478
+              name: grpc
+            - containerPort: 5053
+              name: distributed
+            - containerPort: 6060
+              name: profiler
+          env:
+            - name: PERMIFY_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: permify-secrets
+                  key: api-key
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: permify-secrets
+                  key: postgres-user
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: permify-secrets
+                  key: postgres-password
+          resources:
+            requests:
+              memory: 512Mi
+              cpu: "250m"
+            limits:
+              memory: 1Gi
+              cpu: "1"
+          volumeMounts:
+            - name: config
+              mountPath: /etc/permify
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 3476
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 3476
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            timeoutSeconds: 5
+      volumes:
+        - name: config
+          configMap:
+            name: permify-config
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: permify-secrets
+  namespace: permify
+type: Opaque
+stringData:
+  api-key: "${PERMIFY_API_KEY}"
+  postgres-user: permify
+  postgres-password: "${POSTGRES_PASSWORD}"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: permify
+  namespace: permify
+spec:
+  type: ClusterIP
+  ports:
+    - port: 3476
+      targetPort: 3476
+      name: http
+    - port: 3478
+      targetPort: 3478
+      name: grpc
+  selector:
+    app: permify
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: permify-headless
+  namespace: permify
+spec:
+  clusterIP: None
+  ports:
+    - port: 3476
+      targetPort: 3476
+      name: http
+    - port: 3478
+      targetPort: 3478
+      name: grpc
+    - port: 5053
+      targetPort: 5053
+      name: distributed
+  selector:
+    app: permify
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: permify-pdb
+  namespace: permify
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: permify
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: permify-hpa
+  namespace: permify
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: permify
+  minReplicas: 3
+  maxReplicas: 10
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 80
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: permify-monitor
+  namespace: permify
+spec:
+  selector:
+    matchLabels:
+      app: permify
+  endpoints:
+    - port: http
+      interval: 15s
+      path: /metrics
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: permify-schema
+  namespace: permify
+data:
+  schema.perm: |
+    entity user {}
+    
+    entity organization {
+      relation admin @user
+      relation member @user
+      
+      permission view = admin or member
+      permission edit = admin
+      permission delete = admin
+      permission manage_members = admin
+    }
+    
+    entity account {
+      relation owner @user
+      relation organization @organization
+      
+      permission view = owner or organization.member
+      permission transfer = owner
+      permission close = owner
+    }
+    
+    entity transaction {
+      relation account @account
+      relation initiator @user
+      
+      permission view = account.view or initiator
+      permission approve = account.owner
+      permission cancel = initiator
+    }
+    
+    entity budget {
+      relation owner @user
+      relation shared_with @user
+      
+      permission view = owner or shared_with
+      permission edit = owner
+      permission delete = owner
+    }
+    
+    entity savings_goal {
+      relation owner @user
+      relation contributor @user
+      
+      permission view = owner or contributor
+      permission contribute = owner or contributor
+      permission withdraw = owner
+      permission edit = owner
+      permission delete = owner
+    }
+    
+    entity payment_method {
+      relation owner @user
+      
+      permission view = owner
+      permission use = owner
+      permission delete = owner
+    }
+    
+    entity notification {
+      relation recipient @user
+      
+      permission view = recipient
+      permission dismiss = recipient
+    }
+    
+    entity api_key {
+      relation owner @user
+      relation organization @organization
+      
+      permission view = owner or organization.admin
+      permission use = owner or organization.member
+      permission revoke = owner or organization.admin
+    }

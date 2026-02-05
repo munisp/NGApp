@@ -1,0 +1,240 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: tigerbeetle
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tigerbeetle-config
+  namespace: tigerbeetle
+data:
+  cluster_id: "0"
+  replica_count: "6"
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: tigerbeetle
+  namespace: tigerbeetle
+spec:
+  serviceName: tigerbeetle-headless
+  replicas: 6
+  podManagementPolicy: Parallel
+  selector:
+    matchLabels:
+      app: tigerbeetle
+  template:
+    metadata:
+      labels:
+        app: tigerbeetle
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "3004"
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                  - key: app
+                    operator: In
+                    values:
+                      - tigerbeetle
+              topologyKey: kubernetes.io/hostname
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: app
+                      operator: In
+                      values:
+                        - tigerbeetle
+                topologyKey: topology.kubernetes.io/zone
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: DoNotSchedule
+          labelSelector:
+            matchLabels:
+              app: tigerbeetle
+      initContainers:
+        - name: format
+          image: ghcr.io/tigerbeetle/tigerbeetle:0.15.3
+          command:
+            - /bin/sh
+            - -c
+            - |
+              if [ ! -f /data/0_0.tigerbeetle ]; then
+                REPLICA_ID=${HOSTNAME##*-}
+                ./tigerbeetle format --cluster=0 --replica=$REPLICA_ID --replica-count=6 /data/0_0.tigerbeetle
+              fi
+          volumeMounts:
+            - name: tigerbeetle-data
+              mountPath: /data
+          securityContext:
+            runAsUser: 1000
+            runAsGroup: 1000
+      containers:
+        - name: tigerbeetle
+          image: ghcr.io/tigerbeetle/tigerbeetle:0.15.3
+          command:
+            - /bin/sh
+            - -c
+            - |
+              REPLICA_ID=${HOSTNAME##*-}
+              ADDRESSES=""
+              for i in $(seq 0 5); do
+                if [ -n "$ADDRESSES" ]; then
+                  ADDRESSES="$ADDRESSES,"
+                fi
+                ADDRESSES="${ADDRESSES}tigerbeetle-${i}.tigerbeetle-headless.tigerbeetle.svc.cluster.local:3001"
+              done
+              exec ./tigerbeetle start --addresses=$ADDRESSES /data/0_0.tigerbeetle
+          ports:
+            - containerPort: 3001
+              name: client
+            - containerPort: 3002
+              name: replication
+            - containerPort: 3004
+              name: metrics
+          resources:
+            requests:
+              memory: 4Gi
+              cpu: "2"
+            limits:
+              memory: 8Gi
+              cpu: "4"
+          volumeMounts:
+            - name: tigerbeetle-data
+              mountPath: /data
+          securityContext:
+            runAsUser: 1000
+            runAsGroup: 1000
+          readinessProbe:
+            tcpSocket:
+              port: 3001
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+          livenessProbe:
+            tcpSocket:
+              port: 3001
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            timeoutSeconds: 5
+  volumeClaimTemplates:
+    - metadata:
+        name: tigerbeetle-data
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        storageClassName: fast-ssd
+        resources:
+          requests:
+            storage: 100Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: tigerbeetle
+  namespace: tigerbeetle
+spec:
+  type: ClusterIP
+  ports:
+    - port: 3001
+      targetPort: 3001
+      name: client
+  selector:
+    app: tigerbeetle
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: tigerbeetle-headless
+  namespace: tigerbeetle
+spec:
+  clusterIP: None
+  ports:
+    - port: 3001
+      targetPort: 3001
+      name: client
+    - port: 3002
+      targetPort: 3002
+      name: replication
+  selector:
+    app: tigerbeetle
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: tigerbeetle-pdb
+  namespace: tigerbeetle
+spec:
+  minAvailable: 4
+  selector:
+    matchLabels:
+      app: tigerbeetle
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tigerbeetle-client-config
+  namespace: tigerbeetle
+data:
+  addresses: "tigerbeetle-0.tigerbeetle-headless.tigerbeetle.svc.cluster.local:3001,tigerbeetle-1.tigerbeetle-headless.tigerbeetle.svc.cluster.local:3001,tigerbeetle-2.tigerbeetle-headless.tigerbeetle.svc.cluster.local:3001,tigerbeetle-3.tigerbeetle-headless.tigerbeetle.svc.cluster.local:3001,tigerbeetle-4.tigerbeetle-headless.tigerbeetle.svc.cluster.local:3001,tigerbeetle-5.tigerbeetle-headless.tigerbeetle.svc.cluster.local:3001"
+  cluster_id: "0"
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: tigerbeetle-backup
+  namespace: tigerbeetle
+spec:
+  schedule: "0 2 * * *"
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+            - name: backup
+              image: amazon/aws-cli:2.15.0
+              command:
+                - /bin/sh
+                - -c
+                - |
+                  DATE=$(date +%Y%m%d-%H%M%S)
+                  for i in $(seq 0 5); do
+                    kubectl cp tigerbeetle/tigerbeetle-$i:/data/0_0.tigerbeetle /tmp/tigerbeetle-$i-$DATE.backup
+                    aws s3 cp /tmp/tigerbeetle-$i-$DATE.backup s3://${BACKUP_BUCKET}/tigerbeetle/tigerbeetle-$i-$DATE.backup
+                  done
+              env:
+                - name: BACKUP_BUCKET
+                  value: "${BACKUP_BUCKET}"
+                - name: AWS_ACCESS_KEY_ID
+                  valueFrom:
+                    secretKeyRef:
+                      name: aws-credentials
+                      key: access-key-id
+                - name: AWS_SECRET_ACCESS_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: aws-credentials
+                      key: secret-access-key
+          restartPolicy: OnFailure
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: tigerbeetle-monitor
+  namespace: tigerbeetle
+spec:
+  selector:
+    matchLabels:
+      app: tigerbeetle
+  endpoints:
+    - port: metrics
+      interval: 15s
+      path: /metrics

@@ -1,0 +1,452 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: kube-system
+---
+apiVersion: kubeadm.k8s.io/v1beta3
+kind: ClusterConfiguration
+metadata:
+  name: kubernetes-ha-config
+kubernetesVersion: v1.29.0
+controlPlaneEndpoint: "k8s-api-lb.fintech.local:6443"
+networking:
+  podSubnet: "10.244.0.0/16"
+  serviceSubnet: "10.96.0.0/12"
+  dnsDomain: "cluster.local"
+apiServer:
+  extraArgs:
+    audit-log-path: /var/log/kubernetes/audit.log
+    audit-log-maxage: "30"
+    audit-log-maxbackup: "10"
+    audit-log-maxsize: "100"
+    enable-admission-plugins: "NodeRestriction,PodSecurityPolicy,ResourceQuota,LimitRanger"
+    encryption-provider-config: /etc/kubernetes/encryption-config.yaml
+    event-ttl: "1h"
+    max-requests-inflight: "400"
+    max-mutating-requests-inflight: "200"
+    profiling: "false"
+    request-timeout: "300s"
+    service-account-lookup: "true"
+    tls-cipher-suites: "TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305,TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305,TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384"
+  certSANs:
+    - "k8s-api-lb.fintech.local"
+    - "10.0.0.10"
+    - "10.0.0.11"
+    - "10.0.0.12"
+controllerManager:
+  extraArgs:
+    bind-address: "0.0.0.0"
+    profiling: "false"
+    terminated-pod-gc-threshold: "1000"
+    use-service-account-credentials: "true"
+    feature-gates: "RotateKubeletServerCertificate=true"
+scheduler:
+  extraArgs:
+    bind-address: "0.0.0.0"
+    profiling: "false"
+etcd:
+  local:
+    extraArgs:
+      listen-metrics-urls: "http://0.0.0.0:2381"
+      quota-backend-bytes: "8589934592"
+      auto-compaction-retention: "8"
+      snapshot-count: "10000"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: haproxy-config
+  namespace: kube-system
+data:
+  haproxy.cfg: |
+    global
+        log /dev/log local0
+        log /dev/log local1 notice
+        chroot /var/lib/haproxy
+        stats socket /run/haproxy/admin.sock mode 660 level admin expose-fd listeners
+        stats timeout 30s
+        user haproxy
+        group haproxy
+        daemon
+        maxconn 4096
+        tune.ssl.default-dh-param 2048
+    
+    defaults
+        log     global
+        mode    tcp
+        option  tcplog
+        option  dontlognull
+        timeout connect 5000
+        timeout client  50000
+        timeout server  50000
+        retries 3
+    
+    frontend kubernetes-api
+        bind *:6443
+        mode tcp
+        option tcplog
+        default_backend kubernetes-api-backend
+    
+    backend kubernetes-api-backend
+        mode tcp
+        option tcp-check
+        balance roundrobin
+        default-server inter 10s downinter 5s rise 2 fall 2 slowstart 60s maxconn 250 maxqueue 256 weight 100
+        server master1 10.0.0.10:6443 check
+        server master2 10.0.0.11:6443 check
+        server master3 10.0.0.12:6443 check
+    
+    frontend stats
+        bind *:8404
+        mode http
+        stats enable
+        stats uri /stats
+        stats refresh 10s
+        stats admin if LOCALHOST
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: keepalived
+  namespace: kube-system
+spec:
+  selector:
+    matchLabels:
+      app: keepalived
+  template:
+    metadata:
+      labels:
+        app: keepalived
+    spec:
+      hostNetwork: true
+      nodeSelector:
+        node-role.kubernetes.io/control-plane: ""
+      tolerations:
+        - key: node-role.kubernetes.io/control-plane
+          effect: NoSchedule
+        - key: node-role.kubernetes.io/master
+          effect: NoSchedule
+      containers:
+        - name: keepalived
+          image: osixia/keepalived:2.0.20
+          securityContext:
+            capabilities:
+              add:
+                - NET_ADMIN
+                - NET_BROADCAST
+                - NET_RAW
+          env:
+            - name: KEEPALIVED_VIRTUAL_IPS
+              value: "10.0.0.100"
+            - name: KEEPALIVED_INTERFACE
+              value: "eth0"
+            - name: KEEPALIVED_UNICAST_PEERS
+              value: "#PYTHON2BASH:['10.0.0.10', '10.0.0.11', '10.0.0.12']"
+            - name: KEEPALIVED_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: keepalived-secret
+                  key: password
+          resources:
+            requests:
+              memory: 64Mi
+              cpu: "50m"
+            limits:
+              memory: 128Mi
+              cpu: "100m"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: keepalived-secret
+  namespace: kube-system
+type: Opaque
+stringData:
+  password: "${KEEPALIVED_PASSWORD}"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: etcd-backup-config
+  namespace: kube-system
+data:
+  backup.sh: |
+    #!/bin/bash
+    set -e
+    
+    BACKUP_DIR="/backup/etcd"
+    DATE=$(date +%Y%m%d-%H%M%S)
+    BACKUP_FILE="${BACKUP_DIR}/etcd-snapshot-${DATE}.db"
+    
+    mkdir -p ${BACKUP_DIR}
+    
+    ETCDCTL_API=3 etcdctl snapshot save ${BACKUP_FILE} \
+      --endpoints=https://127.0.0.1:2379 \
+      --cacert=/etc/kubernetes/pki/etcd/ca.crt \
+      --cert=/etc/kubernetes/pki/etcd/healthcheck-client.crt \
+      --key=/etc/kubernetes/pki/etcd/healthcheck-client.key
+    
+    ETCDCTL_API=3 etcdctl snapshot status ${BACKUP_FILE} \
+      --write-out=table
+    
+    find ${BACKUP_DIR} -name "etcd-snapshot-*.db" -mtime +7 -delete
+    
+    if [ -n "${S3_BUCKET}" ]; then
+      aws s3 cp ${BACKUP_FILE} s3://${S3_BUCKET}/etcd-backups/
+    fi
+    
+    echo "Backup completed: ${BACKUP_FILE}"
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: etcd-backup
+  namespace: kube-system
+spec:
+  schedule: "0 */6 * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          hostNetwork: true
+          nodeSelector:
+            node-role.kubernetes.io/control-plane: ""
+          tolerations:
+            - key: node-role.kubernetes.io/control-plane
+              effect: NoSchedule
+          containers:
+            - name: etcd-backup
+              image: bitnami/etcd:3.5.11
+              command:
+                - /bin/bash
+                - /scripts/backup.sh
+              env:
+                - name: S3_BUCKET
+                  value: "${BACKUP_BUCKET}"
+                - name: AWS_ACCESS_KEY_ID
+                  valueFrom:
+                    secretKeyRef:
+                      name: aws-credentials
+                      key: access-key-id
+                - name: AWS_SECRET_ACCESS_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: aws-credentials
+                      key: secret-access-key
+              volumeMounts:
+                - name: etcd-certs
+                  mountPath: /etc/kubernetes/pki/etcd
+                  readOnly: true
+                - name: backup-scripts
+                  mountPath: /scripts
+                - name: backup-storage
+                  mountPath: /backup
+          volumes:
+            - name: etcd-certs
+              hostPath:
+                path: /etc/kubernetes/pki/etcd
+            - name: backup-scripts
+              configMap:
+                name: etcd-backup-config
+                defaultMode: 0755
+            - name: backup-storage
+              hostPath:
+                path: /var/lib/etcd-backup
+          restartPolicy: OnFailure
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: coredns-pdb
+  namespace: kube-system
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      k8s-app: kube-dns
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: etcd-pdb
+  namespace: kube-system
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      component: etcd
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cluster-autoscaler-config
+  namespace: kube-system
+data:
+  config.yaml: |
+    clusterName: fintech-cluster
+    cloudProvider: aws
+    awsRegion: us-east-1
+    autoDiscovery:
+      clusterName: fintech-cluster
+    scaleDownEnabled: true
+    scaleDownDelayAfterAdd: 10m
+    scaleDownDelayAfterDelete: 0s
+    scaleDownDelayAfterFailure: 3m
+    scaleDownUnneededTime: 10m
+    scaleDownUnreadyTime: 20m
+    scaleDownUtilizationThreshold: 0.5
+    skipNodesWithLocalStorage: true
+    skipNodesWithSystemPods: true
+    balanceSimilarNodeGroups: true
+    expander: least-waste
+    maxNodeProvisionTime: 15m
+    maxGracefulTerminationSec: 600
+    newPodScaleUpDelay: 0s
+    maxEmptyBulkDelete: 10
+    maxTotalUnreadyPercentage: 45
+    okTotalUnreadyCount: 3
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cluster-autoscaler
+  namespace: kube-system
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: cluster-autoscaler
+  template:
+    metadata:
+      labels:
+        app: cluster-autoscaler
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                  - key: app
+                    operator: In
+                    values:
+                      - cluster-autoscaler
+              topologyKey: kubernetes.io/hostname
+      serviceAccountName: cluster-autoscaler
+      containers:
+        - name: cluster-autoscaler
+          image: registry.k8s.io/autoscaling/cluster-autoscaler:v1.29.0
+          command:
+            - ./cluster-autoscaler
+            - --v=4
+            - --stderrthreshold=info
+            - --cloud-provider=aws
+            - --skip-nodes-with-local-storage=false
+            - --expander=least-waste
+            - --node-group-auto-discovery=asg:tag=k8s.io/cluster-autoscaler/enabled,k8s.io/cluster-autoscaler/fintech-cluster
+            - --balance-similar-node-groups
+            - --scale-down-enabled=true
+            - --scale-down-delay-after-add=10m
+            - --scale-down-unneeded-time=10m
+            - --scale-down-utilization-threshold=0.5
+            - --leader-elect=true
+          resources:
+            requests:
+              memory: 256Mi
+              cpu: "100m"
+            limits:
+              memory: 512Mi
+              cpu: "500m"
+          volumeMounts:
+            - name: ssl-certs
+              mountPath: /etc/ssl/certs/ca-certificates.crt
+              readOnly: true
+      volumes:
+        - name: ssl-certs
+          hostPath:
+            path: /etc/ssl/certs/ca-bundle.crt
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: cluster-autoscaler
+  namespace: kube-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: cluster-autoscaler
+rules:
+  - apiGroups: [""]
+    resources: ["events", "endpoints"]
+    verbs: ["create", "patch"]
+  - apiGroups: [""]
+    resources: ["pods/eviction"]
+    verbs: ["create"]
+  - apiGroups: [""]
+    resources: ["pods/status"]
+    verbs: ["update"]
+  - apiGroups: [""]
+    resources: ["endpoints"]
+    resourceNames: ["cluster-autoscaler"]
+    verbs: ["get", "update"]
+  - apiGroups: [""]
+    resources: ["nodes"]
+    verbs: ["watch", "list", "get", "update"]
+  - apiGroups: [""]
+    resources: ["namespaces", "pods", "services", "replicationcontrollers", "persistentvolumeclaims", "persistentvolumes"]
+    verbs: ["watch", "list", "get"]
+  - apiGroups: ["extensions"]
+    resources: ["replicasets", "daemonsets"]
+    verbs: ["watch", "list", "get"]
+  - apiGroups: ["policy"]
+    resources: ["poddisruptionbudgets"]
+    verbs: ["watch", "list"]
+  - apiGroups: ["apps"]
+    resources: ["statefulsets", "replicasets", "daemonsets"]
+    verbs: ["watch", "list", "get"]
+  - apiGroups: ["storage.k8s.io"]
+    resources: ["storageclasses", "csinodes", "csidrivers", "csistoragecapacities"]
+    verbs: ["watch", "list", "get"]
+  - apiGroups: ["batch", "extensions"]
+    resources: ["jobs"]
+    verbs: ["get", "list", "watch", "patch"]
+  - apiGroups: ["coordination.k8s.io"]
+    resources: ["leases"]
+    verbs: ["create"]
+  - apiGroups: ["coordination.k8s.io"]
+    resourceNames: ["cluster-autoscaler"]
+    resources: ["leases"]
+    verbs: ["get", "update"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: cluster-autoscaler
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-autoscaler
+subjects:
+  - kind: ServiceAccount
+    name: cluster-autoscaler
+    namespace: kube-system
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: kube-apiserver-monitor
+  namespace: kube-system
+spec:
+  selector:
+    matchLabels:
+      component: kube-apiserver
+  endpoints:
+    - port: https
+      scheme: https
+      tlsConfig:
+        insecureSkipVerify: true
+      interval: 15s
+      path: /metrics

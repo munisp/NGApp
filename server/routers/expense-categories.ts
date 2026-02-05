@@ -183,7 +183,23 @@ export const expenseCategoriesRouter = router({
         throw new Error('Cannot delete default categories');
       }
 
-      // Soft delete
+      // Get the category name before deleting
+      const [categoryToDelete] = await db
+        .select()
+        .from(expenseCategories)
+        .where(
+          and(
+            eq(expenseCategories.id, input.categoryId),
+            eq(expenseCategories.userId, ctx.user.openId)
+          )
+        )
+        .limit(1);
+
+      if (!categoryToDelete) {
+        throw new Error('Category not found');
+      }
+
+      // Soft delete the category
       await db
         .update(expenseCategories)
         .set({ isActive: false, updatedAt: new Date() })
@@ -194,11 +210,33 @@ export const expenseCategoriesRouter = router({
           )
         );
 
-      // TODO: Reassign transactions to new category if provided
-      // This would require integration with transactions table
+      // Reassign transactions to new category if provided
+      let transactionsReassigned = 0;
+      if (input.reassignToCategoryId) {
+        // Import bankTransactions for reassignment
+        const { bankTransactions } = await import('../../drizzle/schema.js');
+        
+        // Update all transactions from the deleted category to the new category
+        const result = await db
+          .update(bankTransactions)
+          .set({ 
+            category: input.reassignToCategoryId < 0 
+              ? DEFAULT_CATEGORIES[Math.abs(input.reassignToCategoryId) - 1]?.name || 'Other'
+              : (await db.select().from(expenseCategories).where(eq(expenseCategories.id, input.reassignToCategoryId)).limit(1))[0]?.name || 'Other',
+          })
+          .where(
+            and(
+              eq(bankTransactions.userId, ctx.user.openId),
+              eq(bankTransactions.category, categoryToDelete.name)
+            )
+          );
+        
+        transactionsReassigned = result.rowCount || 0;
+      }
 
       return {
         message: 'Category deleted successfully',
+        transactionsReassigned,
       };
     }),
 
@@ -220,9 +258,50 @@ export const expenseCategoriesRouter = router({
         throw new Error('Cannot merge default categories');
       }
 
-      // TODO: Count affected transactions
-      // This would require integration with transactions table
-      const transactionsAffected = 0;
+      // Get source category names
+      const sourceCategories = await db
+        .select()
+        .from(expenseCategories)
+        .where(
+          and(
+            inArray(expenseCategories.id, input.sourceCategoryIds),
+            eq(expenseCategories.userId, ctx.user.openId)
+          )
+        );
+
+      // Get target category name
+      const [targetCategory] = await db
+        .select()
+        .from(expenseCategories)
+        .where(
+          and(
+            eq(expenseCategories.id, input.targetCategoryId),
+            eq(expenseCategories.userId, ctx.user.openId)
+          )
+        )
+        .limit(1);
+
+      if (!targetCategory) {
+        throw new Error('Target category not found');
+      }
+
+      // Import bankTransactions for reassignment
+      const { bankTransactions } = await import('../../drizzle/schema.js');
+
+      // Count and reassign transactions from source categories to target
+      let transactionsAffected = 0;
+      for (const sourceCategory of sourceCategories) {
+        const result = await db
+          .update(bankTransactions)
+          .set({ category: targetCategory.name })
+          .where(
+            and(
+              eq(bankTransactions.userId, ctx.user.openId),
+              eq(bankTransactions.category, sourceCategory.name)
+            )
+          );
+        transactionsAffected += result.rowCount || 0;
+      }
 
       // Record merge history
       await db.insert(categoryMergeHistory).values({
@@ -242,9 +321,6 @@ export const expenseCategoriesRouter = router({
             eq(expenseCategories.userId, ctx.user.openId)
           )
         );
-
-      // TODO: Reassign transactions from source categories to target
-      // This would require integration with transactions table
 
       return {
         message: `Successfully merged ${input.sourceCategoryIds.length} categories`,

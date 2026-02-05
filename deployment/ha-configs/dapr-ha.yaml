@@ -1,0 +1,527 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: dapr-system
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: dapr-config
+  namespace: dapr-system
+data:
+  config.yaml: |
+    apiVersion: dapr.io/v1alpha1
+    kind: Configuration
+    metadata:
+      name: daprconfig
+    spec:
+      tracing:
+        samplingRate: "1"
+        zipkin:
+          endpointAddress: "http://zipkin.observability.svc.cluster.local:9411/api/v2/spans"
+      metric:
+        enabled: true
+      mtls:
+        enabled: true
+        workloadCertTTL: "24h"
+        allowedClockSkew: "15m"
+      accessControl:
+        defaultAction: deny
+        trustDomain: "fintech.local"
+        policies:
+          - appId: api-gateway
+            defaultAction: allow
+            trustDomain: "fintech.local"
+            namespace: "default"
+          - appId: payment-service
+            defaultAction: allow
+            trustDomain: "fintech.local"
+            namespace: "default"
+          - appId: notification-service
+            defaultAction: allow
+            trustDomain: "fintech.local"
+            namespace: "default"
+      features:
+        - name: ServiceInvocation.Streaming
+          enabled: true
+        - name: Resiliency
+          enabled: true
+---
+apiVersion: dapr.io/v1alpha1
+kind: Configuration
+metadata:
+  name: dapr-ha-config
+  namespace: dapr-system
+spec:
+  tracing:
+    samplingRate: "0.1"
+    zipkin:
+      endpointAddress: "http://zipkin.observability.svc.cluster.local:9411/api/v2/spans"
+  metric:
+    enabled: true
+  mtls:
+    enabled: true
+    workloadCertTTL: "24h"
+    allowedClockSkew: "15m"
+  features:
+    - name: ServiceInvocation.Streaming
+      enabled: true
+    - name: Resiliency
+      enabled: true
+---
+apiVersion: dapr.io/v1alpha1
+kind: Resiliency
+metadata:
+  name: fintech-resiliency
+  namespace: default
+spec:
+  policies:
+    timeouts:
+      general: 5s
+      important: 30s
+      critical: 60s
+    retries:
+      retryForever:
+        policy: constant
+        duration: 5s
+        maxRetries: -1
+      important:
+        policy: exponential
+        maxInterval: 15s
+        maxRetries: 10
+      critical:
+        policy: exponential
+        maxInterval: 30s
+        maxRetries: 20
+    circuitBreakers:
+      simpleCB:
+        maxRequests: 1
+        timeout: 30s
+        trip: consecutiveFailures >= 5
+      aggressiveCB:
+        maxRequests: 1
+        timeout: 60s
+        trip: consecutiveFailures >= 3
+  targets:
+    apps:
+      payment-service:
+        timeout: critical
+        retry: critical
+        circuitBreaker: aggressiveCB
+      notification-service:
+        timeout: important
+        retry: important
+        circuitBreaker: simpleCB
+    components:
+      statestore:
+        outbound:
+          timeout: general
+          retry: important
+          circuitBreaker: simpleCB
+      pubsub:
+        outbound:
+          timeout: important
+          retry: critical
+          circuitBreaker: simpleCB
+---
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: statestore
+  namespace: default
+spec:
+  type: state.redis
+  version: v1
+  metadata:
+    - name: redisHost
+      value: redis.redis.svc.cluster.local:6379
+    - name: redisPassword
+      secretKeyRef:
+        name: redis-secret
+        key: redis-password
+    - name: actorStateStore
+      value: "true"
+    - name: enableTLS
+      value: "false"
+    - name: failover
+      value: "true"
+    - name: sentinelMasterName
+      value: "mymaster"
+    - name: maxRetries
+      value: "5"
+    - name: maxRetryBackoff
+      value: "2s"
+---
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: pubsub
+  namespace: default
+spec:
+  type: pubsub.kafka
+  version: v1
+  metadata:
+    - name: brokers
+      value: "fintech-kafka-cluster-kafka-bootstrap.kafka.svc.cluster.local:9092"
+    - name: consumerGroup
+      value: "fintech-dapr"
+    - name: authType
+      value: "none"
+    - name: maxMessageBytes
+      value: "1048576"
+    - name: consumeRetryInterval
+      value: "100ms"
+    - name: version
+      value: "3.6.0"
+    - name: initialOffset
+      value: "oldest"
+    - name: disableTls
+      value: "true"
+---
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: secretstore
+  namespace: default
+spec:
+  type: secretstores.kubernetes
+  version: v1
+  metadata: []
+---
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: cron
+  namespace: default
+spec:
+  type: bindings.cron
+  version: v1
+  metadata:
+    - name: schedule
+      value: "@every 1m"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dapr-sidecar-injector
+  namespace: dapr-system
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: dapr-sidecar-injector
+  template:
+    metadata:
+      labels:
+        app: dapr-sidecar-injector
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                  - key: app
+                    operator: In
+                    values:
+                      - dapr-sidecar-injector
+              topologyKey: kubernetes.io/hostname
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: app
+                      operator: In
+                      values:
+                        - dapr-sidecar-injector
+                topologyKey: topology.kubernetes.io/zone
+      containers:
+        - name: dapr-sidecar-injector
+          image: daprio/dapr:1.12.4
+          args:
+            - /injector
+            - --log-level
+            - info
+            - --log-as-json
+            - --metrics-port
+            - "9090"
+          ports:
+            - containerPort: 4000
+              name: https
+            - containerPort: 9090
+              name: metrics
+          resources:
+            requests:
+              memory: 256Mi
+              cpu: "100m"
+            limits:
+              memory: 512Mi
+              cpu: "500m"
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 3
+            periodSeconds: 3
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 3
+            periodSeconds: 3
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dapr-operator
+  namespace: dapr-system
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: dapr-operator
+  template:
+    metadata:
+      labels:
+        app: dapr-operator
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                  - key: app
+                    operator: In
+                    values:
+                      - dapr-operator
+              topologyKey: kubernetes.io/hostname
+      containers:
+        - name: dapr-operator
+          image: daprio/dapr:1.12.4
+          args:
+            - /operator
+            - --log-level
+            - info
+            - --log-as-json
+            - --enable-metrics
+            - --metrics-port
+            - "9090"
+          ports:
+            - containerPort: 6500
+              name: api
+            - containerPort: 9090
+              name: metrics
+          resources:
+            requests:
+              memory: 256Mi
+              cpu: "100m"
+            limits:
+              memory: 512Mi
+              cpu: "500m"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dapr-placement
+  namespace: dapr-system
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: dapr-placement
+  template:
+    metadata:
+      labels:
+        app: dapr-placement
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                  - key: app
+                    operator: In
+                    values:
+                      - dapr-placement
+              topologyKey: kubernetes.io/hostname
+      containers:
+        - name: dapr-placement
+          image: daprio/dapr:1.12.4
+          args:
+            - /placement
+            - --log-level
+            - info
+            - --log-as-json
+            - --enable-metrics
+            - --metrics-port
+            - "9090"
+            - --replicationFactor
+            - "100"
+          ports:
+            - containerPort: 50005
+              name: api
+            - containerPort: 8201
+              name: raft
+            - containerPort: 9090
+              name: metrics
+          resources:
+            requests:
+              memory: 256Mi
+              cpu: "100m"
+            limits:
+              memory: 512Mi
+              cpu: "500m"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dapr-sentry
+  namespace: dapr-system
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: dapr-sentry
+  template:
+    metadata:
+      labels:
+        app: dapr-sentry
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                  - key: app
+                    operator: In
+                    values:
+                      - dapr-sentry
+              topologyKey: kubernetes.io/hostname
+      containers:
+        - name: dapr-sentry
+          image: daprio/dapr:1.12.4
+          args:
+            - /sentry
+            - --log-level
+            - info
+            - --log-as-json
+            - --enable-metrics
+            - --metrics-port
+            - "9090"
+            - --trust-domain
+            - fintech.local
+          ports:
+            - containerPort: 50001
+              name: grpc
+            - containerPort: 9090
+              name: metrics
+          resources:
+            requests:
+              memory: 256Mi
+              cpu: "100m"
+            limits:
+              memory: 512Mi
+              cpu: "500m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dapr-sidecar-injector
+  namespace: dapr-system
+spec:
+  type: ClusterIP
+  ports:
+    - port: 443
+      targetPort: 4000
+      name: https
+  selector:
+    app: dapr-sidecar-injector
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dapr-placement
+  namespace: dapr-system
+spec:
+  type: ClusterIP
+  ports:
+    - port: 50005
+      targetPort: 50005
+      name: api
+    - port: 8201
+      targetPort: 8201
+      name: raft
+  selector:
+    app: dapr-placement
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dapr-sentry
+  namespace: dapr-system
+spec:
+  type: ClusterIP
+  ports:
+    - port: 50001
+      targetPort: 50001
+      name: grpc
+  selector:
+    app: dapr-sentry
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: dapr-sidecar-injector-pdb
+  namespace: dapr-system
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: dapr-sidecar-injector
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: dapr-operator-pdb
+  namespace: dapr-system
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: dapr-operator
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: dapr-placement-pdb
+  namespace: dapr-system
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: dapr-placement
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: dapr-sentry-pdb
+  namespace: dapr-system
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: dapr-sentry
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: dapr-monitor
+  namespace: dapr-system
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/part-of: dapr
+  endpoints:
+    - port: metrics
+      interval: 15s
+      path: /metrics
