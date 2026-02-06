@@ -1,5 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+const KYC_UNIFIED_URL = process.env.EXPO_PUBLIC_KYC_UNIFIED_URL || 'http://127.0.0.1:8110';
+
 export interface KYCSubmission {
   documentType: 'passport' | 'drivers_license' | 'national_id' | 'voters_card';
   frontImage: string;
@@ -12,143 +14,292 @@ export interface KYCSubmission {
 }
 
 export interface KYCStatus {
-  status: 'pending' | 'in_review' | 'verified' | 'rejected';
+  status: 'pending' | 'ocr_processing' | 'face_matching' | 'liveness_check' | 'risk_scoring' | 'in_review' | 'verified' | 'rejected' | 'requires_resubmission';
   submittedAt: string;
   reviewedAt?: string;
   rejectionReason?: string;
-  verificationLevel: number; // 0-3 (0=none, 1=basic, 2=intermediate, 3=full)
+  verificationLevel: number;
+  verificationId?: string;
+  riskAssessment?: {
+    overall_score: number;
+    risk_level: string;
+    risk_factors: Array<{ factor: string; impact: string; value?: number }>;
+  };
+}
+
+export interface KYCVerificationDetail {
+  verification_id: string;
+  user_id: string;
+  document_type: string;
+  status: string;
+  verification_level: number;
+  full_name?: string;
+  document_number?: string;
+  date_of_birth?: string;
+  address?: string;
+  nationality?: string;
+  country?: string;
+  ocr_data: Record<string, unknown>;
+  face_data: Record<string, unknown>;
+  risk_assessment: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
+  reviewed_at?: string;
+  rejection_reason?: string;
 }
 
 class KYCService {
   private readonly STORAGE_KEY = '@kyc_data';
   private readonly STATUS_KEY = '@kyc_status';
 
-  async submitKYC(data: KYCSubmission): Promise<{ success: boolean; message: string }> {
+  async submitKYC(data: KYCSubmission): Promise<{ success: boolean; message: string; verificationId?: string }> {
     try {
-      // In production, this would upload images to server and submit for verification
-      // For now, we'll store locally and simulate the verification process
-      
-      const kycData = {
-        ...data,
-        submittedAt: new Date().toISOString(),
-        status: 'in_review' as const,
-      };
+      const userId = await this.getUserId();
 
-      await AsyncStorage.setItem(this.STORAGE_KEY, JSON.stringify(kycData));
-      
+      const response = await fetch(`${KYC_UNIFIED_URL}/kyc/submit`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: userId,
+          document_type: data.documentType,
+          document_image: data.frontImage,
+          selfie_image: data.selfieImage,
+          document_number: data.documentNumber || undefined,
+          full_name: data.fullName || undefined,
+          date_of_birth: data.dateOfBirth || undefined,
+          address: data.address || undefined,
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({ detail: 'Submission failed' }));
+        throw new Error(error.detail || 'Failed to submit KYC');
+      }
+
+      const result = await response.json();
+
       const status: KYCStatus = {
-        status: 'in_review',
+        status: result.status || 'pending',
         submittedAt: new Date().toISOString(),
         verificationLevel: 0,
+        verificationId: result.verification_id,
       };
-      
       await AsyncStorage.setItem(this.STATUS_KEY, JSON.stringify(status));
-
-      // Simulate facial recognition verification
-      const facialMatch = await this.verifyFacialRecognition(data.frontImage, data.selfieImage);
-      
-      if (!facialMatch) {
-        throw new Error('Facial verification failed. Please ensure your selfie matches your ID photo.');
-      }
 
       return {
         success: true,
-        message: 'KYC documents submitted successfully. Verification typically takes 24-48 hours.',
+        message: result.message || 'KYC documents submitted successfully. Verification typically takes 24-48 hours.',
+        verificationId: result.verification_id,
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to submit KYC documents';
       console.error('KYC submission error:', error);
-      throw new Error(error.message || 'Failed to submit KYC documents');
+      throw new Error(message);
     }
   }
 
   async getKYCStatus(): Promise<KYCStatus | null> {
     try {
-      const statusJson = await AsyncStorage.getItem(this.STATUS_KEY);
-      if (!statusJson) return null;
-      
-      return JSON.parse(statusJson);
+      const userId = await this.getUserId();
+      const response = await fetch(`${KYC_UNIFIED_URL}/kyc/status/${userId}`);
+
+      if (!response.ok) {
+        const cached = await AsyncStorage.getItem(this.STATUS_KEY);
+        return cached ? JSON.parse(cached) : null;
+      }
+
+      const data = await response.json();
+      if (data.status === 'not_submitted') {
+        return null;
+      }
+
+      const v = data.verification;
+      const status: KYCStatus = {
+        status: v.status === 'approved' ? 'verified' : v.status,
+        submittedAt: v.created_at,
+        reviewedAt: v.reviewed_at,
+        rejectionReason: v.rejection_reason,
+        verificationLevel: v.verification_level || 0,
+        verificationId: v.verification_id,
+        riskAssessment: v.risk_assessment,
+      };
+
+      await AsyncStorage.setItem(this.STATUS_KEY, JSON.stringify(status));
+      return status;
     } catch (error) {
       console.error('Error fetching KYC status:', error);
+      const cached = await AsyncStorage.getItem(this.STATUS_KEY);
+      return cached ? JSON.parse(cached) : null;
+    }
+  }
+
+  async getVerificationDetail(verificationId: string): Promise<KYCVerificationDetail | null> {
+    try {
+      const response = await fetch(`${KYC_UNIFIED_URL}/kyc/verification/${verificationId}`);
+      if (!response.ok) return null;
+      const data = await response.json();
+      return data.verification;
+    } catch (error) {
+      console.error('Error fetching verification detail:', error);
       return null;
     }
   }
 
-  async updateKYCStatus(status: Partial<KYCStatus>): Promise<void> {
+  async getPendingSubmissions(): Promise<Array<{
+    verification_id: string;
+    user_id: string;
+    document_type: string;
+    status: string;
+    risk_assessment: Record<string, unknown>;
+    nationality?: string;
+    country?: string;
+    created_at: string;
+  }>> {
     try {
-      const currentStatus = await this.getKYCStatus();
-      if (!currentStatus) {
-        throw new Error('No KYC submission found');
-      }
-
-      const updatedStatus = {
-        ...currentStatus,
-        ...status,
-      };
-
-      await AsyncStorage.setItem(this.STATUS_KEY, JSON.stringify(updatedStatus));
+      const response = await fetch(`${KYC_UNIFIED_URL}/kyc/pending`);
+      if (!response.ok) return [];
+      const data = await response.json();
+      return data.submissions || [];
     } catch (error) {
-      console.error('Error updating KYC status:', error);
-      throw error;
+      console.error('Error fetching pending submissions:', error);
+      return [];
+    }
+  }
+
+  async approveKYC(verificationId: string, reviewerId: string, notes?: string): Promise<{ success: boolean }> {
+    const response = await fetch(`${KYC_UNIFIED_URL}/kyc/approve`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ verification_id: verificationId, reviewer_id: reviewerId, notes }),
+    });
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ detail: 'Approval failed' }));
+      throw new Error(error.detail || 'Failed to approve');
+    }
+    return response.json();
+  }
+
+  async rejectKYC(verificationId: string, reviewerId: string, reason: string, notes?: string): Promise<{ success: boolean }> {
+    const response = await fetch(`${KYC_UNIFIED_URL}/kyc/reject`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ verification_id: verificationId, reviewer_id: reviewerId, reason, notes }),
+    });
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ detail: 'Rejection failed' }));
+      throw new Error(error.detail || 'Failed to reject');
+    }
+    return response.json();
+  }
+
+  async resubmitKYC(
+    verificationId: string,
+    documentType: string,
+    documentImage: string,
+    selfieImage: string,
+    nationality?: string,
+  ): Promise<{ success: boolean; verificationId: string }> {
+    const userId = await this.getUserId();
+    const response = await fetch(`${KYC_UNIFIED_URL}/kyc/resubmit`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        verification_id: verificationId,
+        user_id: userId,
+        document_type: documentType,
+        document_image: documentImage,
+        selfie_image: selfieImage,
+        nationality,
+      }),
+    });
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ detail: 'Resubmission failed' }));
+      throw new Error(error.detail || 'Failed to resubmit');
+    }
+    const data = await response.json();
+    return { success: true, verificationId: data.verification_id };
+  }
+
+  async verifyVideoLiveness(
+    verificationId: string,
+    videoBase64: string,
+    challenges: string[],
+  ): Promise<{
+    is_live: boolean;
+    confidence: number;
+    challenges_completed: string[];
+    failure_reason?: string;
+    anti_spoofing_flags?: { screen_replay_detected: boolean; mask_detected: boolean; multiple_faces_detected: boolean };
+  }> {
+    const userId = await this.getUserId();
+    const response = await fetch(`${KYC_UNIFIED_URL}/kyc/video-liveness`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        user_id: userId,
+        verification_id: verificationId,
+        video_base64: videoBase64,
+        challenges,
+      }),
+    });
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ detail: 'Liveness check failed' }));
+      throw new Error(error.detail || 'Video liveness verification failed');
+    }
+    return response.json();
+  }
+
+  async getAuditLog(verificationId: string): Promise<Array<Record<string, unknown>>> {
+    try {
+      const response = await fetch(`${KYC_UNIFIED_URL}/kyc/audit/${verificationId}`);
+      if (!response.ok) return [];
+      const data = await response.json();
+      return data.logs || [];
+    } catch (error) {
+      console.error('Error fetching audit log:', error);
+      return [];
+    }
+  }
+
+  async getAnalyticsSummary(): Promise<Record<string, unknown>> {
+    try {
+      const response = await fetch(`${KYC_UNIFIED_URL}/kyc/analytics/summary`);
+      if (!response.ok) return {};
+      return response.json();
+    } catch (error) {
+      console.error('Error fetching analytics:', error);
+      return {};
     }
   }
 
   async verifyFacialRecognition(idImage: string, selfieImage: string): Promise<boolean> {
-    // Connect to DeepFace facial recognition service (Facenet512 model)
-    
     try {
       const response = await fetch('http://127.0.0.1:5009/verify', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ document_image: idImage, selfie_image: selfieImage }),
       });
-
-      if (!response.ok) {
-        const error = await response.json();
-        console.error('Facial recognition error:', error);
-        return false;
-      }
-
+      if (!response.ok) return false;
       const data = await response.json();
-      
-      // Return true only if:
-      // 1. Faces match (confidence >= 95%)
-      // 2. Liveness check passes (not a photo of a photo)
-      const isMatch = data.isMatch && data.confidence >= 95 && data.livenessCheck?.isLikelyLive;
-      
-      console.log('Facial recognition result:', {
-        isMatch,
-        confidence: data.confidence,
-        livenessCheck: data.livenessCheck,
-      });
-      
-      return isMatch;
+      return data.isMatch && data.confidence >= 95 && data.livenessCheck?.isLikelyLive;
     } catch (error) {
       console.error('Facial recognition error:', error);
       return false;
     }
   }
 
-  async extractDocumentData(documentImage: string): Promise<any> {
-    // Connect to KYC Document OCR service (PaddleOCR)
-    
+  async extractDocumentData(documentImage: string): Promise<Record<string, unknown>> {
     try {
       const response = await fetch('http://127.0.0.1:5008/extract', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ image: documentImage }),
       });
-
       if (!response.ok) {
         const error = await response.json();
         throw new Error(error.error || 'OCR extraction failed');
       }
-
       const data = await response.json();
-      
       return {
         fullName: data.fullName || '',
         documentNumber: data.documentNumber || '',
@@ -166,31 +317,17 @@ class KYCService {
   }
 
   async clearKYCData(): Promise<void> {
-    try {
-      await AsyncStorage.removeItem(this.STORAGE_KEY);
-      await AsyncStorage.removeItem(this.STATUS_KEY);
-    } catch (error) {
-      console.error('Error clearing KYC data:', error);
-      throw error;
-    }
+    await AsyncStorage.removeItem(this.STORAGE_KEY);
+    await AsyncStorage.removeItem(this.STATUS_KEY);
   }
 
-  // Simulate automatic verification for testing
-  async simulateVerification(approved: boolean = true): Promise<void> {
-    const currentStatus = await this.getKYCStatus();
-    if (!currentStatus) {
-      throw new Error('No KYC submission found');
+  private async getUserId(): Promise<string> {
+    const userData = await AsyncStorage.getItem('userData');
+    if (userData) {
+      const parsed = JSON.parse(userData);
+      return parsed.id || '1';
     }
-
-    const updatedStatus: KYCStatus = {
-      ...currentStatus,
-      status: approved ? 'verified' : 'rejected',
-      reviewedAt: new Date().toISOString(),
-      verificationLevel: approved ? 3 : 0,
-      rejectionReason: approved ? undefined : 'Document image quality is insufficient. Please resubmit with clearer photos.',
-    };
-
-    await this.updateKYCStatus(updatedStatus);
+    return '1';
   }
 }
 

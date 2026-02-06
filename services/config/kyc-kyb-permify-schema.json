@@ -1,0 +1,132 @@
+{
+  "schema": {
+    "entities": [
+      {
+        "name": "kyc_submission",
+        "relations": {
+          "owner": { "type": "user" },
+          "reviewer": { "type": "user" },
+          "admin": { "type": "user" }
+        },
+        "permissions": {
+          "view": {
+            "union": ["owner", "reviewer", "admin"]
+          },
+          "submit": {
+            "union": ["owner"]
+          },
+          "review_kyc": {
+            "union": ["reviewer", "admin"]
+          },
+          "approve_kyc": {
+            "union": ["reviewer", "admin"]
+          },
+          "reject_kyc": {
+            "union": ["reviewer", "admin"]
+          },
+          "view_audit": {
+            "union": ["admin"]
+          },
+          "resubmit": {
+            "union": ["owner"]
+          }
+        }
+      },
+      {
+        "name": "kyb_submission",
+        "relations": {
+          "owner": { "type": "user" },
+          "reviewer": { "type": "user" },
+          "compliance_officer": { "type": "user" },
+          "admin": { "type": "user" }
+        },
+        "permissions": {
+          "view": {
+            "union": ["owner", "reviewer", "compliance_officer", "admin"]
+          },
+          "submit": {
+            "union": ["owner"]
+          },
+          "review_kyb": {
+            "union": ["reviewer", "compliance_officer", "admin"]
+          },
+          "approve_kyb": {
+            "union": ["compliance_officer", "admin"]
+          },
+          "reject_kyb": {
+            "union": ["compliance_officer", "admin"]
+          },
+          "run_sanctions_screening": {
+            "union": ["compliance_officer", "admin"]
+          },
+          "view_sanctions_results": {
+            "union": ["reviewer", "compliance_officer", "admin"]
+          },
+          "view_audit": {
+            "union": ["compliance_officer", "admin"]
+          }
+        }
+      },
+      {
+        "name": "kyc_analytics",
+        "relations": {
+          "viewer": { "type": "user" },
+          "admin": { "type": "user" }
+        },
+        "permissions": {
+          "view_dashboard": {
+            "union": ["viewer", "admin"]
+          },
+          "export_data": {
+            "union": ["admin"]
+          }
+        }
+      }
+    ],
+    "roles": [
+      {
+        "name": "kyc_reviewer",
+        "permissions": [
+          "kyc_submission.review_kyc",
+          "kyc_submission.approve_kyc",
+          "kyc_submission.reject_kyc",
+          "kyc_submission.view"
+        ]
+      },
+      {
+        "name": "kyb_reviewer",
+        "permissions": [
+          "kyb_submission.review_kyb",
+          "kyb_submission.view",
+          "kyb_submission.view_sanctions_results"
+        ]
+      },
+      {
+        "name": "compliance_officer",
+        "permissions": [
+          "kyc_submission.review_kyc",
+          "kyc_submission.approve_kyc",
+          "kyc_submission.reject_kyc",
+          "kyc_submission.view",
+          "kyc_submission.view_audit",
+          "kyb_submission.review_kyb",
+          "kyb_submission.approve_kyb",
+          "kyb_submission.reject_kyb",
+          "kyb_submission.view",
+          "kyb_submission.run_sanctions_screening",
+          "kyb_submission.view_sanctions_results",
+          "kyb_submission.view_audit",
+          "kyc_analytics.view_dashboard"
+        ]
+      },
+      {
+        "name": "kyc_kyb_admin",
+        "permissions": [
+          "kyc_submission.*",
+          "kyb_submission.*",
+          "kyc_analytics.*"
+        ]
+      }
+    ]
+  }
+}

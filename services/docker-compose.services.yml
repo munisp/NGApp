@@ -339,6 +339,73 @@ services:
       timeout: 5s
       retries: 3
 
+  # KYC/KYB Services
+  kyc-unified-service:
+    build:
+      context: ../python-services/kyc-unified
+      dockerfile: Dockerfile
+    ports:
+      - "8110:8110"
+    environment:
+      - KYC_UNIFIED_PORT=8110
+      - KAFKA_BROKERS=kafka:9092
+      - REDIS_URL=redis://redis:6379
+      - MINIO_ENDPOINT=minio:9000
+      - MINIO_ACCESS_KEY=minioadmin
+      - MINIO_SECRET_KEY=minioadmin
+      - TEMPORAL_ADDRESS=temporal:7233
+      - PERMIFY_HOST=permify
+      - PERMIFY_PORT=3476
+      - LAKEHOUSE_URL=http://lakehouse-service:8090
+      - GNN_SERVICE_URL=http://gnn-fraud-service:8101
+      - FEATURE_STORE_URL=http://feature-store-service:8104
+      - REALTIME_INFERENCE_URL=http://realtime-inference-service:8106
+    depends_on:
+      - kafka
+      - redis
+      - minio
+      - temporal
+      - permify
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8110/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  kyb-service:
+    build:
+      context: ../python-services/kyb
+      dockerfile: Dockerfile
+    ports:
+      - "8111:8111"
+    environment:
+      - KYB_SERVICE_PORT=8111
+      - KAFKA_BROKERS=kafka:9092
+      - REDIS_URL=redis://redis:6379
+      - MINIO_ENDPOINT=minio:9000
+      - MINIO_ACCESS_KEY=minioadmin
+      - MINIO_SECRET_KEY=minioadmin
+      - TEMPORAL_ADDRESS=temporal:7233
+      - PERMIFY_HOST=permify
+      - PERMIFY_PORT=3476
+      - LAKEHOUSE_URL=http://lakehouse-service:8090
+      - GNN_SERVICE_URL=http://gnn-fraud-service:8101
+      - FEATURE_STORE_URL=http://feature-store-service:8104
+      - REALTIME_INFERENCE_URL=http://realtime-inference-service:8106
+    depends_on:
+      - kafka
+      - redis
+      - minio
+      - temporal
+      - permify
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8111/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
   # Infrastructure services
   kafka:
     image: confluentinc/cp-kafka:7.6.0

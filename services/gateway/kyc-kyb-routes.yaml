@@ -1,0 +1,137 @@
+routes:
+  - uri: /api/kyc/*
+    name: kyc-unified-service
+    upstream:
+      type: roundrobin
+      nodes:
+        "kyc-unified-service:8110": 1
+      checks:
+        active:
+          http_path: /health
+          healthy:
+            interval: 5
+            successes: 2
+          unhealthy:
+            interval: 5
+            http_failures: 3
+    plugins:
+      jwt-auth:
+        header: Authorization
+        skip_paths:
+          - /api/kyc/health
+      limit-count:
+        count: 30
+        time_window: 60
+        rejected_code: 429
+        key: remote_addr
+      cors:
+        allow_origins: "*"
+        allow_methods: "GET,POST,PUT,DELETE,OPTIONS"
+        allow_headers: "Authorization,Content-Type,X-Correlation-ID"
+      prometheus:
+        prefer_name: true
+      zipkin:
+        endpoint: "http://zipkin:9411/api/v2/spans"
+        sample_ratio: 0.1
+
+  - uri: /api/kyb/*
+    name: kyb-service
+    upstream:
+      type: roundrobin
+      nodes:
+        "kyb-service:8111": 1
+      checks:
+        active:
+          http_path: /health
+          healthy:
+            interval: 5
+            successes: 2
+          unhealthy:
+            interval: 5
+            http_failures: 3
+    plugins:
+      jwt-auth:
+        header: Authorization
+        skip_paths:
+          - /api/kyb/health
+      limit-count:
+        count: 20
+        time_window: 60
+        rejected_code: 429
+        key: remote_addr
+      cors:
+        allow_origins: "*"
+        allow_methods: "GET,POST,PUT,DELETE,OPTIONS"
+        allow_headers: "Authorization,Content-Type,X-Correlation-ID"
+      prometheus:
+        prefer_name: true
+
+  - uri: /api/kyc/submit
+    name: kyc-submit
+    methods: ["POST"]
+    upstream:
+      nodes:
+        "kyc-unified-service:8110": 1
+    plugins:
+      limit-count:
+        count: 5
+        time_window: 300
+        rejected_code: 429
+        key: consumer_name
+      request-validation:
+        body_schema:
+          type: object
+          required: ["user_id", "document_type", "document_image", "selfie_image"]
+
+  - uri: /api/kyb/submit
+    name: kyb-submit
+    methods: ["POST"]
+    upstream:
+      nodes:
+        "kyb-service:8111": 1
+    plugins:
+      limit-count:
+        count: 3
+        time_window: 300
+        rejected_code: 429
+        key: consumer_name
+
+  - uri: /api/kyc/approve
+    name: kyc-approve
+    methods: ["POST"]
+    upstream:
+      nodes:
+        "kyc-unified-service:8110": 1
+    plugins:
+      jwt-auth:
+        header: Authorization
+
+  - uri: /api/kyc/reject
+    name: kyc-reject
+    methods: ["POST"]
+    upstream:
+      nodes:
+        "kyc-unified-service:8110": 1
+    plugins:
+      jwt-auth:
+        header: Authorization
+
+  - uri: /api/kyb/approve
+    name: kyb-approve
+    methods: ["POST"]
+    upstream:
+      nodes:
+        "kyb-service:8111": 1
+    plugins:
+      jwt-auth:
+        header: Authorization
+
+  - uri: /api/kyb/reject
+    name: kyb-reject
+    methods: ["POST"]
+    upstream:
+      nodes:
+        "kyb-service:8111": 1
+    plugins:
+      jwt-auth:
+        header: Authorization

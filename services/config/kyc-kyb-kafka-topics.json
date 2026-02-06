@@ -1,0 +1,128 @@
+{
+  "topics": [
+    {
+      "name": "kyc.submissions",
+      "partitions": 6,
+      "replication_factor": 3,
+      "config": {
+        "retention.ms": "604800000",
+        "cleanup.policy": "delete",
+        "compression.type": "lz4"
+      },
+      "description": "KYC submission events - new submissions, updates"
+    },
+    {
+      "name": "kyc.status_changes",
+      "partitions": 6,
+      "replication_factor": 3,
+      "config": {
+        "retention.ms": "2592000000",
+        "cleanup.policy": "compact",
+        "compression.type": "lz4"
+      },
+      "description": "KYC status change events - pending, approved, rejected"
+    },
+    {
+      "name": "kyc.liveness",
+      "partitions": 3,
+      "replication_factor": 3,
+      "config": {
+        "retention.ms": "604800000",
+        "cleanup.policy": "delete"
+      },
+      "description": "Video liveness verification results"
+    },
+    {
+      "name": "kyc.ocr_results",
+      "partitions": 3,
+      "replication_factor": 3,
+      "config": {
+        "retention.ms": "604800000",
+        "cleanup.policy": "delete"
+      },
+      "description": "Document OCR extraction results"
+    },
+    {
+      "name": "kyc.face_verification",
+      "partitions": 3,
+      "replication_factor": 3,
+      "config": {
+        "retention.ms": "604800000",
+        "cleanup.policy": "delete"
+      },
+      "description": "Facial recognition verification results"
+    },
+    {
+      "name": "kyc.risk_assessments",
+      "partitions": 3,
+      "replication_factor": 3,
+      "config": {
+        "retention.ms": "2592000000",
+        "cleanup.policy": "compact"
+      },
+      "description": "KYC risk assessment scores and factors"
+    },
+    {
+      "name": "kyc.audit_events",
+      "partitions": 3,
+      "replication_factor": 3,
+      "config": {
+        "retention.ms": "-1",
+        "cleanup.policy": "delete"
+      },
+      "description": "KYC audit trail - immutable log of all actions"
+    },
+    {
+      "name": "kyb.submissions",
+      "partitions": 6,
+      "replication_factor": 3,
+      "config": {
+        "retention.ms": "604800000",
+        "cleanup.policy": "delete",
+        "compression.type": "lz4"
+      },
+      "description": "KYB submission events"
+    },
+    {
+      "name": "kyb.status_changes",
+      "partitions": 6,
+      "replication_factor": 3,
+      "config": {
+        "retention.ms": "2592000000",
+        "cleanup.policy": "compact",
+        "compression.type": "lz4"
+      },
+      "description": "KYB status change events"
+    },
+    {
+      "name": "kyb.sanctions_screening",
+      "partitions": 3,
+      "replication_factor": 3,
+      "config": {
+        "retention.ms": "2592000000",
+        "cleanup.policy": "delete"
+      },
+      "description": "Sanctions screening results for businesses/owners/directors"
+    },
+    {
+      "name": "kyb.risk_assessments",
+      "partitions": 3,
+      "replication_factor": 3,
+      "config": {
+        "retention.ms": "2592000000",
+        "cleanup.policy": "compact"
+      },
+      "description": "KYB risk assessment scores"
+    },
+    {
+      "name": "kyb.audit_events",
+      "partitions": 3,
+      "replication_factor": 3,
+      "config": {
+        "retention.ms": "-1",
+        "cleanup.policy": "delete"
+      },
+      "description": "KYB audit trail - immutable"
+    }
+  ]
+}

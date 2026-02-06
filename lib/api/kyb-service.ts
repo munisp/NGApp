@@ -6,7 +6,7 @@
 import axios, { AxiosInstance, AxiosError } from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const KYB_SERVICE_URL = process.env.EXPO_PUBLIC_KYB_SERVICE_URL || 'http://localhost:5002';
+const KYB_SERVICE_URL = process.env.EXPO_PUBLIC_KYB_SERVICE_URL || 'http://127.0.0.1:8111';
 
 // Types
 export interface BusinessRegistrationData {

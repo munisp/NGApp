@@ -32,13 +32,16 @@ export default function KYCResubmitScreen() {
 
   const fetchRejectedSubmission = async () => {
     try {
-      // TODO: Get user ID from auth context
-      const userId = 1;
-      const response = await fetch(`http://127.0.0.1:5010/status/${userId}`);
-      const data = await response.json();
-      
-      if (data.submission && data.submission.status === 'rejected') {
-        setSubmission(data.submission);
+      const status = await kycService.getKYCStatus();
+      if (status && status.status === 'rejected') {
+        setSubmission({
+          id: 0,
+          status: 'rejected',
+          rejection_reason: status.rejectionReason || 'Documents were not clear enough',
+          review_notes: '',
+          document_type: 'national_id',
+          created_at: status.submittedAt,
+        });
       }
     } catch (error) {
       console.error('Failed to fetch rejected submission:', error);
@@ -112,31 +115,23 @@ export default function KYCResubmitScreen() {
     setSubmitting(true);
 
     try {
-      // TODO: Get user ID from auth context
-      const userId = 1;
-      
-      const response = await fetch('http://127.0.0.1:5010/submit', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          user_id: userId,
-          document_type: submission?.document_type || 'national_id',
-          document_image: documentImage,
-          selfie_image: selfieImage,
-          nationality: 'Nigeria', // TODO: Get from user profile
-        }),
+      await kycService.submitKYC({
+        documentType: (submission?.document_type as 'passport' | 'drivers_license' | 'national_id' | 'voters_card') || 'national_id',
+        frontImage: documentImage,
+        backImage: null,
+        selfieImage: selfieImage,
+        fullName: '',
+        documentNumber: '',
+        dateOfBirth: '',
+        address: '',
       });
 
-      if (response.ok) {
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        Alert.alert(
-          'Success',
-          'Your KYC documents have been resubmitted for review',
-          [{ text: 'OK', onPress: () => router.back() }]
-        );
-      } else {
-        throw new Error('Failed to resubmit KYC');
-      }
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      Alert.alert(
+        'Success',
+        'Your KYC documents have been resubmitted for review',
+        [{ text: 'OK', onPress: () => router.back() }]
+      );
     } catch (error) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       Alert.alert('Error', 'Failed to resubmit KYC documents. Please try again.');

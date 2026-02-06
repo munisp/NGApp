@@ -4,7 +4,8 @@ import { useState, useRef, useEffect } from 'react';
 import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
 import { ScreenContainer } from '@/components/screen-container';
 import * as Haptics from 'expo-haptics';
-import { videoLivenessService } from '@/lib/api/video-liveness-service';
+import { kycService } from '@/lib/api/kyc-service';
+import * as FileSystem from 'expo-file-system/legacy';
 
 type Challenge = 'blink' | 'turn_head_left' | 'turn_head_right' | 'smile' | 'nod';
 
@@ -157,8 +158,15 @@ export default function KYCVideoLivenessScreen() {
     try {
       setIsProcessing(true);
 
-      // Submit video to liveness detection service
-      const result = await videoLivenessService.verifyLiveness(recordedVideo, challenges.map(c => c.type));
+      const videoBase64 = await FileSystem.readAsStringAsync(recordedVideo, {
+        encoding: 'base64',
+      });
+      const verificationId = (params.verificationId as string) || 'pending';
+      const result = await kycService.verifyVideoLiveness(
+        verificationId,
+        videoBase64,
+        challenges.map(c => c.type),
+      );
 
       if (result.is_live) {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);

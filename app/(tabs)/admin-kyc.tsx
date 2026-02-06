@@ -5,13 +5,16 @@ import * as Haptics from "expo-haptics";
 
 import { ScreenContainer } from "@/components/screen-container";
 import { useColors } from "@/hooks/use-colors";
+import { kycService } from "@/lib/api/kyc-service";
 
 interface KYCSubmission {
-  id: number;
-  user_id: number;
+  verification_id: string;
+  user_id: string;
   document_type: string;
-  nationality: string;
+  nationality?: string;
+  country?: string;
   status: string;
+  risk_assessment: Record<string, unknown>;
   created_at: string;
 }
 
@@ -23,9 +26,8 @@ export default function AdminKYCScreen() {
 
   const fetchPendingSubmissions = async () => {
     try {
-      const response = await fetch('http://127.0.0.1:5010/pending');
-      const data = await response.json();
-      setSubmissions(data.submissions || []);
+      const submissions = await kycService.getPendingSubmissions();
+      setSubmissions(submissions);
     } catch (error) {
       console.error('Failed to fetch KYC submissions:', error);
     } finally {
@@ -43,9 +45,9 @@ export default function AdminKYCScreen() {
     fetchPendingSubmissions();
   }, []);
 
-  const handleReviewSubmission = (submissionId: number) => {
+  const handleReviewSubmission = (verificationId: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    router.push(`/(admin-kyc-review)/${submissionId}`);
+    router.push(`/(admin-kyc-review)/${verificationId}`);
   };
 
   const getStatusColor = (status: string) => {
@@ -106,8 +108,8 @@ export default function AdminKYCScreen() {
           ) : (
             submissions.map((submission) => (
               <TouchableOpacity
-                key={submission.id}
-                onPress={() => handleReviewSubmission(submission.id)}
+                key={submission.verification_id}
+                onPress={() => handleReviewSubmission(submission.verification_id)}
                 className="bg-surface rounded-2xl p-4 border border-border"
                 style={{ opacity: 1 }}
                 activeOpacity={0.7}
@@ -123,7 +125,7 @@ export default function AdminKYCScreen() {
                     </Text>
                   </View>
                   <Text className="text-xs text-muted">
-                    ID: {submission.id}
+                    {submission.verification_id.slice(0, 8)}
                   </Text>
                 </View>
 
@@ -141,9 +143,9 @@ export default function AdminKYCScreen() {
                   </View>
 
                   <View className="flex-row justify-between">
-                    <Text className="text-sm text-muted">Nationality:</Text>
+                    <Text className="text-sm text-muted">Country:</Text>
                     <Text className="text-sm font-medium text-foreground">
-                      {submission.nationality || 'N/A'}
+                      {submission.country || submission.nationality || 'N/A'}
                     </Text>
                   </View>
 
@@ -157,7 +159,7 @@ export default function AdminKYCScreen() {
 
                 <View className="mt-3 pt-3 border-t border-border">
                   <Text className="text-sm font-semibold text-primary text-center">
-                    Tap to Review →
+                    Tap to Review
                   </Text>
                 </View>
               </TouchableOpacity>

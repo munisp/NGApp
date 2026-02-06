@@ -1,0 +1,247 @@
+{
+  "workflows": [
+    {
+      "name": "kyc_verification",
+      "task_queue": "kyc-verification-queue",
+      "description": "End-to-end KYC verification pipeline",
+      "timeout": "86400s",
+      "retry_policy": {
+        "initial_interval": "10s",
+        "backoff_coefficient": 2.0,
+        "maximum_interval": "300s",
+        "maximum_attempts": 3
+      },
+      "steps": [
+        {
+          "activity": "validate_submission",
+          "timeout": "30s",
+          "description": "Validate submission data completeness"
+        },
+        {
+          "activity": "upload_documents_to_s3",
+          "timeout": "120s",
+          "description": "Upload document and selfie images to S3"
+        },
+        {
+          "activity": "run_document_ocr",
+          "timeout": "120s",
+          "description": "Extract text from document using PaddleOCR"
+        },
+        {
+          "activity": "run_face_verification",
+          "timeout": "120s",
+          "description": "Match selfie to document photo using DeepFace"
+        },
+        {
+          "activity": "run_liveness_check",
+          "timeout": "60s",
+          "description": "Verify liveness if video provided",
+          "optional": true
+        },
+        {
+          "activity": "query_fraud_detection",
+          "timeout": "30s",
+          "description": "Get GNN fraud risk score"
+        },
+        {
+          "activity": "run_ml_inference",
+          "timeout": "30s",
+          "description": "Run real-time ML fraud prediction"
+        },
+        {
+          "activity": "calculate_risk_score",
+          "timeout": "10s",
+          "description": "Calculate composite risk score"
+        },
+        {
+          "activity": "store_features",
+          "timeout": "10s",
+          "description": "Push KYC features to feature store"
+        },
+        {
+          "activity": "make_decision",
+          "timeout": "10s",
+          "description": "Auto-approve/reject or queue for manual review"
+        },
+        {
+          "activity": "publish_events",
+          "timeout": "10s",
+          "description": "Publish Kafka events and push to Lakehouse"
+        },
+        {
+          "activity": "send_notification",
+          "timeout": "10s",
+          "description": "Notify user of verification result"
+        }
+      ],
+      "signals": [
+        {
+          "name": "manual_review_complete",
+          "description": "Signal from reviewer approving/rejecting"
+        },
+        {
+          "name": "additional_info_requested",
+          "description": "Request additional documents from user"
+        },
+        {
+          "name": "resubmission_received",
+          "description": "User resubmitted documents"
+        }
+      ]
+    },
+    {
+      "name": "kyb_verification",
+      "task_queue": "kyb-verification-queue",
+      "description": "End-to-end KYB business verification pipeline",
+      "timeout": "172800s",
+      "retry_policy": {
+        "initial_interval": "30s",
+        "backoff_coefficient": 2.0,
+        "maximum_interval": "600s",
+        "maximum_attempts": 3
+      },
+      "steps": [
+        {
+          "activity": "validate_business_submission",
+          "timeout": "30s",
+          "description": "Validate business info completeness"
+        },
+        {
+          "activity": "verify_registration_number",
+          "timeout": "60s",
+          "description": "Verify business registration number format"
+        },
+        {
+          "activity": "verify_tax_id",
+          "timeout": "60s",
+          "description": "Verify tax identification number"
+        },
+        {
+          "activity": "screen_business_sanctions",
+          "timeout": "120s",
+          "description": "Screen business name against OFAC/EU/UN/UK sanctions"
+        },
+        {
+          "activity": "screen_owner_sanctions",
+          "timeout": "120s",
+          "description": "Screen all beneficial owners against sanctions lists"
+        },
+        {
+          "activity": "screen_director_sanctions",
+          "timeout": "120s",
+          "description": "Screen all directors against sanctions lists"
+        },
+        {
+          "activity": "verify_beneficial_owners",
+          "timeout": "300s",
+          "description": "Verify beneficial owner identities (triggers KYC per owner)"
+        },
+        {
+          "activity": "verify_directors",
+          "timeout": "300s",
+          "description": "Verify director identities"
+        },
+        {
+          "activity": "process_documents_ocr",
+          "timeout": "300s",
+          "description": "OCR all uploaded business documents"
+        },
+        {
+          "activity": "calculate_business_risk",
+          "timeout": "30s",
+          "description": "Calculate composite business risk score"
+        },
+        {
+          "activity": "store_kyb_features",
+          "timeout": "10s",
+          "description": "Push KYB features to feature store"
+        },
+        {
+          "activity": "make_kyb_decision",
+          "timeout": "10s",
+          "description": "Auto-approve/reject or queue for compliance review"
+        },
+        {
+          "activity": "publish_kyb_events",
+          "timeout": "10s",
+          "description": "Publish Kafka events and push to Lakehouse"
+        },
+        {
+          "activity": "notify_business",
+          "timeout": "10s",
+          "description": "Notify business of verification result"
+        }
+      ],
+      "signals": [
+        {
+          "name": "compliance_review_complete",
+          "description": "Signal from compliance officer"
+        },
+        {
+          "name": "additional_documents_requested",
+          "description": "Request additional business documents"
+        },
+        {
+          "name": "enhanced_due_diligence_required",
+          "description": "Trigger EDD for high-risk businesses"
+        }
+      ]
+    },
+    {
+      "name": "kyc_periodic_review",
+      "task_queue": "kyc-periodic-queue",
+      "description": "Periodic re-verification of approved KYC",
+      "schedule": "0 0 * * 1",
+      "steps": [
+        {
+          "activity": "fetch_approved_verifications",
+          "timeout": "60s"
+        },
+        {
+          "activity": "rescreen_sanctions",
+          "timeout": "600s"
+        },
+        {
+          "activity": "check_document_expiry",
+          "timeout": "60s"
+        },
+        {
+          "activity": "flag_for_review",
+          "timeout": "30s"
+        }
+      ]
+    },
+    {
+      "name": "kyb_periodic_review",
+      "task_queue": "kyb-periodic-queue",
+      "description": "Periodic re-screening of approved KYB",
+      "schedule": "0 0 1 * *",
+      "steps": [
+        {
+          "activity": "fetch_approved_businesses",
+          "timeout": "60s"
+        },
+        {
+          "activity": "rescreen_business_sanctions",
+          "timeout": "600s"
+        },
+        {
+          "activity": "check_registration_status",
+          "timeout": "300s"
+        },
+        {
+          "activity": "check_pep_status_changes",
+          "timeout": "300s"
+        },
+        {
+          "activity": "update_risk_scores",
+          "timeout": "300s"
+        },
+        {
+          "activity": "flag_for_compliance_review",
+          "timeout": "30s"
+        }
+      ]
+    }
+  ]
+}

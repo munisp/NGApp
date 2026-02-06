@@ -4,7 +4,7 @@ import { useState } from 'react';
 import * as ImagePicker from 'expo-image-picker';
 import { ScreenContainer } from '@/components/screen-container';
 import { useAuth } from '@/lib/auth-context';
-import { userService } from '@/lib/api/services-mock';
+import { kycService } from '@/lib/api/kyc-service';
 
 type DocumentType = 'passport' | 'drivers_license' | 'national_id';
 
@@ -79,12 +79,15 @@ export default function KYCScreen() {
     try {
       setIsUploading(true);
 
-      // In a real app, you would upload the images to a server
-      // For now, we'll just simulate the upload
-      await userService.uploadKYC({
-        document_type: documentType,
-        front_image: frontImage,
-        back_image: backImage || undefined,
+      await kycService.submitKYC({
+        documentType,
+        frontImage,
+        backImage,
+        selfieImage: frontImage,
+        fullName: '',
+        documentNumber: '',
+        dateOfBirth: '',
+        address: '',
       });
 
       await refreshUser();
