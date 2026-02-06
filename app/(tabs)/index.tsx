@@ -108,6 +108,18 @@ export default function HomeScreen() {
                 <Text className="text-2xl mb-1">🏛️</Text>
                 <Text className="text-xs font-medium text-foreground">Open Banking</Text>
               </TouchableOpacity>
+              <TouchableOpacity className="bg-surface border border-border rounded-xl p-3 flex-1 min-w-[30%]" onPress={() => router.push('/(account)/list')}>
+                <Text className="text-2xl mb-1">📝</Text>
+                <Text className="text-xs font-medium text-foreground">Acct Details</Text>
+              </TouchableOpacity>
+              <TouchableOpacity className="bg-surface border border-border rounded-xl p-3 flex-1 min-w-[30%]" onPress={() => router.push('/(accounts)/account-number')}>
+                <Text className="text-2xl mb-1">🔢</Text>
+                <Text className="text-xs font-medium text-foreground">Acct Number</Text>
+              </TouchableOpacity>
+              <TouchableOpacity className="bg-surface border border-border rounded-xl p-3 flex-1 min-w-[30%]" onPress={() => router.push('/(family)')}>
+                <Text className="text-2xl mb-1">👨‍👩‍👧</Text>
+                <Text className="text-xs font-medium text-foreground">Family Hub</Text>
+              </TouchableOpacity>
             </View>
           </View>
 
@@ -147,6 +159,34 @@ export default function HomeScreen() {
                 <Text className="text-2xl mb-1">🔔</Text>
                 <Text className="text-xs font-medium text-foreground">Reminders</Text>
               </TouchableOpacity>
+              <TouchableOpacity className="bg-surface border border-border rounded-xl p-3 flex-1 min-w-[30%]" onPress={() => router.push('/(qr)/scan')}>
+                <Text className="text-2xl mb-1">📱</Text>
+                <Text className="text-xs font-medium text-foreground">QR Scan</Text>
+              </TouchableOpacity>
+              <TouchableOpacity className="bg-surface border border-border rounded-xl p-3 flex-1 min-w-[30%]" onPress={() => router.push('/(bill-splitting)')}>
+                <Text className="text-2xl mb-1">✂️</Text>
+                <Text className="text-xs font-medium text-foreground">Bill Split</Text>
+              </TouchableOpacity>
+              <TouchableOpacity className="bg-surface border border-border rounded-xl p-3 flex-1 min-w-[30%]" onPress={() => router.push('/(split)')}>
+                <Text className="text-2xl mb-1">➗</Text>
+                <Text className="text-xs font-medium text-foreground">Split</Text>
+              </TouchableOpacity>
+              <TouchableOpacity className="bg-surface border border-border rounded-xl p-3 flex-1 min-w-[30%]" onPress={() => router.push('/(recurring)')}>
+                <Text className="text-2xl mb-1">🔁</Text>
+                <Text className="text-xs font-medium text-foreground">Recurring</Text>
+              </TouchableOpacity>
+              <TouchableOpacity className="bg-surface border border-border rounded-xl p-3 flex-1 min-w-[30%]" onPress={() => router.push('/(templates)')}>
+                <Text className="text-2xl mb-1">📄</Text>
+                <Text className="text-xs font-medium text-foreground">Templates</Text>
+              </TouchableOpacity>
+              <TouchableOpacity className="bg-surface border border-border rounded-xl p-3 flex-1 min-w-[30%]" onPress={() => router.push('/(bill-reminders)')}>
+                <Text className="text-2xl mb-1">⏰</Text>
+                <Text className="text-xs font-medium text-foreground">Bill Alerts</Text>
+              </TouchableOpacity>
+              <TouchableOpacity className="bg-surface border border-border rounded-xl p-3 flex-1 min-w-[30%]" onPress={() => router.push('/(receipts)')}>
+                <Text className="text-2xl mb-1">🧾</Text>
+                <Text className="text-xs font-medium text-foreground">Receipts</Text>
+              </TouchableOpacity>
             </View>
           </View>
 
@@ -165,6 +205,18 @@ export default function HomeScreen() {
               <TouchableOpacity className="bg-surface border border-border rounded-xl p-3 flex-1 min-w-[30%]" onPress={() => router.push('/(kyb-verification)')}>
                 <Text className="text-2xl mb-1">🏢</Text>
                 <Text className="text-xs font-medium text-foreground">KYB</Text>
+              </TouchableOpacity>
+              <TouchableOpacity className="bg-surface border border-border rounded-xl p-3 flex-1 min-w-[30%]" onPress={() => router.push('/(kyc-enhanced)')}>
+                <Text className="text-2xl mb-1">✅</Text>
+                <Text className="text-xs font-medium text-foreground">KYC Enhanced</Text>
+              </TouchableOpacity>
+              <TouchableOpacity className="bg-surface border border-border rounded-xl p-3 flex-1 min-w-[30%]" onPress={() => router.push('/(kyc-resubmit)')}>
+                <Text className="text-2xl mb-1">🔄</Text>
+                <Text className="text-xs font-medium text-foreground">KYC Resubmit</Text>
+              </TouchableOpacity>
+              <TouchableOpacity className="bg-surface border border-border rounded-xl p-3 flex-1 min-w-[30%]" onPress={() => router.push('/(admin-kyc-review)')}>
+                <Text className="text-2xl mb-1">🔍</Text>
+                <Text className="text-xs font-medium text-foreground">KYC Review</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -200,6 +252,18 @@ export default function HomeScreen() {
               <TouchableOpacity className="bg-surface border border-border rounded-xl p-3 flex-1 min-w-[30%]" onPress={() => router.push('/(debt-payoff)')}>
                 <Text className="text-2xl mb-1">📉</Text>
                 <Text className="text-xs font-medium text-foreground">Debt Payoff</Text>
+              </TouchableOpacity>
+              <TouchableOpacity className="bg-surface border border-border rounded-xl p-3 flex-1 min-w-[30%]" onPress={() => router.push('/(credit)')}>
+                <Text className="text-2xl mb-1">📊</Text>
+                <Text className="text-xs font-medium text-foreground">Credit Detail</Text>
+              </TouchableOpacity>
+              <TouchableOpacity className="bg-surface border border-border rounded-xl p-3 flex-1 min-w-[30%]" onPress={() => router.push('/(credit-score)')}>
+                <Text className="text-2xl mb-1">🎯</Text>
+                <Text className="text-xs font-medium text-foreground">Score Alt</Text>
+              </TouchableOpacity>
+              <TouchableOpacity className="bg-surface border border-border rounded-xl p-3 flex-1 min-w-[30%]" onPress={() => router.push('/(loans)')}>
+                <Text className="text-2xl mb-1">💵</Text>
+                <Text className="text-xs font-medium text-foreground">Loans</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -244,6 +308,30 @@ export default function HomeScreen() {
                 <Text className="text-2xl mb-1">₿</Text>
                 <Text className="text-xs font-medium text-foreground">Crypto</Text>
               </TouchableOpacity>
+              <TouchableOpacity className="bg-surface border border-border rounded-xl p-3 flex-1 min-w-[30%]" onPress={() => router.push('/(gamified-goals)')}>
+                <Text className="text-2xl mb-1">🎮</Text>
+                <Text className="text-xs font-medium text-foreground">Gamified</Text>
+              </TouchableOpacity>
+              <TouchableOpacity className="bg-surface border border-border rounded-xl p-3 flex-1 min-w-[30%]" onPress={() => router.push('/(savings)')}>
+                <Text className="text-2xl mb-1">💰</Text>
+                <Text className="text-xs font-medium text-foreground">Savings Hub</Text>
+              </TouchableOpacity>
+              <TouchableOpacity className="bg-surface border border-border rounded-xl p-3 flex-1 min-w-[30%]" onPress={() => router.push('/(goals)')}>
+                <Text className="text-2xl mb-1">🏹</Text>
+                <Text className="text-xs font-medium text-foreground">Goals</Text>
+              </TouchableOpacity>
+              <TouchableOpacity className="bg-surface border border-border rounded-xl p-3 flex-1 min-w-[30%]" onPress={() => router.push('/(investments)')}>
+                <Text className="text-2xl mb-1">📈</Text>
+                <Text className="text-xs font-medium text-foreground">Investments</Text>
+              </TouchableOpacity>
+              <TouchableOpacity className="bg-surface border border-border rounded-xl p-3 flex-1 min-w-[30%]" onPress={() => router.push('/(portfolio-enhanced)')}>
+                <Text className="text-2xl mb-1">🧩</Text>
+                <Text className="text-xs font-medium text-foreground">Portfolio+</Text>
+              </TouchableOpacity>
+              <TouchableOpacity className="bg-surface border border-border rounded-xl p-3 flex-1 min-w-[30%]" onPress={() => router.push('/(investment-news)')}>
+                <Text className="text-2xl mb-1">📰</Text>
+                <Text className="text-xs font-medium text-foreground">Invest News</Text>
+              </TouchableOpacity>
             </View>
           </View>
 
@@ -275,6 +363,30 @@ export default function HomeScreen() {
                 <Text className="text-2xl mb-1">🤝</Text>
                 <Text className="text-xs font-medium text-foreground">Negotiate</Text>
               </TouchableOpacity>
+              <TouchableOpacity className="bg-surface border border-border rounded-xl p-3 flex-1 min-w-[30%]" onPress={() => router.push('/(budget)')}>
+                <Text className="text-2xl mb-1">💳</Text>
+                <Text className="text-xs font-medium text-foreground">Budget Detail</Text>
+              </TouchableOpacity>
+              <TouchableOpacity className="bg-surface border border-border rounded-xl p-3 flex-1 min-w-[30%]" onPress={() => router.push('/(budget-alerts)')}>
+                <Text className="text-2xl mb-1">⚠️</Text>
+                <Text className="text-xs font-medium text-foreground">Budget Alerts</Text>
+              </TouchableOpacity>
+              <TouchableOpacity className="bg-surface border border-border rounded-xl p-3 flex-1 min-w-[30%]" onPress={() => router.push('/(expense-categories)')}>
+                <Text className="text-2xl mb-1">🏷️</Text>
+                <Text className="text-xs font-medium text-foreground">Exp. Categories</Text>
+              </TouchableOpacity>
+              <TouchableOpacity className="bg-surface border border-border rounded-xl p-3 flex-1 min-w-[30%]" onPress={() => router.push('/(categories)')}>
+                <Text className="text-2xl mb-1">🗂️</Text>
+                <Text className="text-xs font-medium text-foreground">Categories</Text>
+              </TouchableOpacity>
+              <TouchableOpacity className="bg-surface border border-border rounded-xl p-3 flex-1 min-w-[30%]" onPress={() => router.push('/(spending-limits)')}>
+                <Text className="text-2xl mb-1">🚫</Text>
+                <Text className="text-xs font-medium text-foreground">Spend Limits</Text>
+              </TouchableOpacity>
+              <TouchableOpacity className="bg-surface border border-border rounded-xl p-3 flex-1 min-w-[30%]" onPress={() => router.push('/(subscriptions)')}>
+                <Text className="text-2xl mb-1">🔄</Text>
+                <Text className="text-xs font-medium text-foreground">Subscriptions</Text>
+              </TouchableOpacity>
             </View>
           </View>
 
@@ -301,6 +413,22 @@ export default function HomeScreen() {
               <TouchableOpacity className="bg-surface border border-border rounded-xl p-3 flex-1 min-w-[30%]" onPress={() => router.push('/(wellness-score)')}>
                 <Text className="text-2xl mb-1">🧘</Text>
                 <Text className="text-xs font-medium text-foreground">Wellness</Text>
+              </TouchableOpacity>
+              <TouchableOpacity className="bg-surface border border-border rounded-xl p-3 flex-1 min-w-[30%]" onPress={() => router.push('/(insurance)')}>
+                <Text className="text-2xl mb-1">🛡️</Text>
+                <Text className="text-xs font-medium text-foreground">Insurance Hub</Text>
+              </TouchableOpacity>
+              <TouchableOpacity className="bg-surface border border-border rounded-xl p-3 flex-1 min-w-[30%]" onPress={() => router.push('/(health-dashboard)')}>
+                <Text className="text-2xl mb-1">🏥</Text>
+                <Text className="text-xs font-medium text-foreground">Health Dash</Text>
+              </TouchableOpacity>
+              <TouchableOpacity className="bg-surface border border-border rounded-xl p-3 flex-1 min-w-[30%]" onPress={() => router.push('/(health-score)')}>
+                <Text className="text-2xl mb-1">💚</Text>
+                <Text className="text-xs font-medium text-foreground">Health Score</Text>
+              </TouchableOpacity>
+              <TouchableOpacity className="bg-surface border border-border rounded-xl p-3 flex-1 min-w-[30%]" onPress={() => router.push('/(wellness)')}>
+                <Text className="text-2xl mb-1">🌿</Text>
+                <Text className="text-xs font-medium text-foreground">Wellness Hub</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -429,6 +557,109 @@ export default function HomeScreen() {
               <TouchableOpacity className="bg-surface border border-border rounded-xl p-3 flex-1 min-w-[30%]" onPress={() => router.push('/(news)')}>
                 <Text className="text-2xl mb-1">📰</Text>
                 <Text className="text-xs font-medium text-foreground">News</Text>
+              </TouchableOpacity>
+              <TouchableOpacity className="bg-surface border border-border rounded-xl p-3 flex-1 min-w-[30%]" onPress={() => router.push('/(insights)')}>
+                <Text className="text-2xl mb-1">📊</Text>
+                <Text className="text-xs font-medium text-foreground">Dashboard</Text>
+              </TouchableOpacity>
+              <TouchableOpacity className="bg-surface border border-border rounded-xl p-3 flex-1 min-w-[30%]" onPress={() => router.push('/(analytics)')}>
+                <Text className="text-2xl mb-1">📈</Text>
+                <Text className="text-xs font-medium text-foreground">Analytics</Text>
+              </TouchableOpacity>
+              <TouchableOpacity className="bg-surface border border-border rounded-xl p-3 flex-1 min-w-[30%]" onPress={() => router.push('/(smart-notifications)')}>
+                <Text className="text-2xl mb-1">📣</Text>
+                <Text className="text-xs font-medium text-foreground">Smart Alerts</Text>
+              </TouchableOpacity>
+              <TouchableOpacity className="bg-surface border border-border rounded-xl p-3 flex-1 min-w-[30%]" onPress={() => router.push('/(spending-challenges)')}>
+                <Text className="text-2xl mb-1">🏁</Text>
+                <Text className="text-xs font-medium text-foreground">Spend Challenge</Text>
+              </TouchableOpacity>
+              <TouchableOpacity className="bg-surface border border-border rounded-xl p-3 flex-1 min-w-[30%]" onPress={() => router.push('/(referral)')}>
+                <Text className="text-2xl mb-1">👥</Text>
+                <Text className="text-xs font-medium text-foreground">Referral</Text>
+              </TouchableOpacity>
+              <TouchableOpacity className="bg-surface border border-border rounded-xl p-3 flex-1 min-w-[30%]" onPress={() => router.push('/(referral-rewards-enhanced)')}>
+                <Text className="text-2xl mb-1">🎁</Text>
+                <Text className="text-xs font-medium text-foreground">Refer Rewards</Text>
+              </TouchableOpacity>
+              <TouchableOpacity className="bg-surface border border-border rounded-xl p-3 flex-1 min-w-[30%]" onPress={() => router.push('/(financial-literacy)')}>
+                <Text className="text-2xl mb-1">📚</Text>
+                <Text className="text-xs font-medium text-foreground">Fin. Literacy</Text>
+              </TouchableOpacity>
+              <TouchableOpacity className="bg-surface border border-border rounded-xl p-3 flex-1 min-w-[30%]" onPress={() => router.push('/(education)')}>
+                <Text className="text-2xl mb-1">🎓</Text>
+                <Text className="text-xs font-medium text-foreground">Education</Text>
+              </TouchableOpacity>
+              <TouchableOpacity className="bg-surface border border-border rounded-xl p-3 flex-1 min-w-[30%]" onPress={() => router.push('/(cashback)')}>
+                <Text className="text-2xl mb-1">💸</Text>
+                <Text className="text-xs font-medium text-foreground">Cashback</Text>
+              </TouchableOpacity>
+              <TouchableOpacity className="bg-surface border border-border rounded-xl p-3 flex-1 min-w-[30%]" onPress={() => router.push('/(challenges)')}>
+                <Text className="text-2xl mb-1">🏆</Text>
+                <Text className="text-xs font-medium text-foreground">Challenges</Text>
+              </TouchableOpacity>
+              <TouchableOpacity className="bg-surface border border-border rounded-xl p-3 flex-1 min-w-[30%]" onPress={() => router.push('/(p2p)')}>
+                <Text className="text-2xl mb-1">📱</Text>
+                <Text className="text-xs font-medium text-foreground">Mobile Money</Text>
+              </TouchableOpacity>
+              <TouchableOpacity className="bg-surface border border-border rounded-xl p-3 flex-1 min-w-[30%]" onPress={() => router.push('/(joint)')}>
+                <Text className="text-2xl mb-1">👥</Text>
+                <Text className="text-xs font-medium text-foreground">Joint Accts</Text>
+              </TouchableOpacity>
+              <TouchableOpacity className="bg-surface border border-border rounded-xl p-3 flex-1 min-w-[30%]" onPress={() => router.push('/(admin)/fraud-monitor-live')}>
+                <Text className="text-2xl mb-1">🛡️</Text>
+                <Text className="text-xs font-medium text-foreground">Fraud Monitor</Text>
+              </TouchableOpacity>
+              <TouchableOpacity className="bg-surface border border-border rounded-xl p-3 flex-1 min-w-[30%]" onPress={() => router.push('/(admin)/fraud-analytics')}>
+                <Text className="text-2xl mb-1">📊</Text>
+                <Text className="text-xs font-medium text-foreground">Fraud Stats</Text>
+              </TouchableOpacity>
+              <TouchableOpacity className="bg-surface border border-border rounded-xl p-3 flex-1 min-w-[30%]" onPress={() => router.push('/(admin)/fraud-patterns')}>
+                <Text className="text-2xl mb-1">🔎</Text>
+                <Text className="text-xs font-medium text-foreground">Fraud Detect</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* Tools & Utilities */}
+          <View className="gap-3">
+            <Text className="text-lg font-semibold text-foreground">Tools & Utilities</Text>
+            <View className="flex-row flex-wrap gap-3">
+              <TouchableOpacity className="bg-surface border border-border rounded-xl p-3 flex-1 min-w-[30%]" onPress={() => router.push('/(calendar)')}>
+                <Text className="text-2xl mb-1">📅</Text>
+                <Text className="text-xs font-medium text-foreground">Calendar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity className="bg-surface border border-border rounded-xl p-3 flex-1 min-w-[30%]" onPress={() => router.push('/(calendar-widget)')}>
+                <Text className="text-2xl mb-1">🗓️</Text>
+                <Text className="text-xs font-medium text-foreground">Cal Widget</Text>
+              </TouchableOpacity>
+              <TouchableOpacity className="bg-surface border border-border rounded-xl p-3 flex-1 min-w-[30%]" onPress={() => router.push('/(notifications)/center')}>
+                <Text className="text-2xl mb-1">🔔</Text>
+                <Text className="text-xs font-medium text-foreground">Notifications</Text>
+              </TouchableOpacity>
+              <TouchableOpacity className="bg-surface border border-border rounded-xl p-3 flex-1 min-w-[30%]" onPress={() => router.push('/(notifications-system)')}>
+                <Text className="text-2xl mb-1">📨</Text>
+                <Text className="text-xs font-medium text-foreground">System Notifs</Text>
+              </TouchableOpacity>
+              <TouchableOpacity className="bg-surface border border-border rounded-xl p-3 flex-1 min-w-[30%]" onPress={() => router.push('/(quick-actions)')}>
+                <Text className="text-2xl mb-1">⚡</Text>
+                <Text className="text-xs font-medium text-foreground">Quick Actions</Text>
+              </TouchableOpacity>
+              <TouchableOpacity className="bg-surface border border-border rounded-xl p-3 flex-1 min-w-[30%]" onPress={() => router.push('/(transaction-search)')}>
+                <Text className="text-2xl mb-1">🔍</Text>
+                <Text className="text-xs font-medium text-foreground">Search Txns</Text>
+              </TouchableOpacity>
+              <TouchableOpacity className="bg-surface border border-border rounded-xl p-3 flex-1 min-w-[30%]" onPress={() => router.push('/(reports)')}>
+                <Text className="text-2xl mb-1">📝</Text>
+                <Text className="text-xs font-medium text-foreground">Reports</Text>
+              </TouchableOpacity>
+              <TouchableOpacity className="bg-surface border border-border rounded-xl p-3 flex-1 min-w-[30%]" onPress={() => router.push('/(export)')}>
+                <Text className="text-2xl mb-1">📤</Text>
+                <Text className="text-xs font-medium text-foreground">Export</Text>
+              </TouchableOpacity>
+              <TouchableOpacity className="bg-surface border border-border rounded-xl p-3 flex-1 min-w-[30%]" onPress={() => router.push('/(settings)')}>
+                <Text className="text-2xl mb-1">⚙️</Text>
+                <Text className="text-xs font-medium text-foreground">Settings</Text>
               </TouchableOpacity>
             </View>
           </View>
