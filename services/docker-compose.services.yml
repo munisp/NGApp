@@ -163,6 +163,10 @@ services:
       - TRINO_HOST=trino
       - TRINO_PORT=8080
       - MINIO_ENDPOINT=minio:9000
+      - SEDONA_SERVICE_URL=http://sedona-geospatial-service:8102
+      - FEATURE_STORE_URL=http://feature-store-service:8104
+      - MLFLOW_URL=http://mlflow-registry-service:8105
+      - REALTIME_INFERENCE_URL=http://realtime-inference-service:8106
     depends_on:
       - trino
       - minio
@@ -204,6 +208,133 @@ services:
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8092/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # AI/ML Services
+  ray-cluster-service:
+    build:
+      context: ../python-services/ray
+      dockerfile: Dockerfile
+    ports:
+      - "8100:8100"
+    environment:
+      - RAY_CLUSTER_PORT=8100
+      - RAY_HEAD_ADDRESS=ray-head:6379
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8100/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  gnn-fraud-service:
+    build:
+      context: ../python-services/gnn-fraud
+      dockerfile: Dockerfile
+    ports:
+      - "8101:8101"
+    environment:
+      - GNN_FRAUD_PORT=8101
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8101/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  sedona-geospatial-service:
+    build:
+      context: ../python-services/sedona
+      dockerfile: Dockerfile
+    ports:
+      - "8102:8102"
+    environment:
+      - SEDONA_SERVICE_PORT=8102
+      - TRINO_HOST=trino
+      - TRINO_PORT=8080
+    depends_on:
+      - trino
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8102/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  deep-learning-service:
+    build:
+      context: ../python-services/deep-learning
+      dockerfile: Dockerfile
+    ports:
+      - "8103:8103"
+    environment:
+      - DEEP_LEARNING_PORT=8103
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8103/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  feature-store-service:
+    build:
+      context: ../python-services/feature-store
+      dockerfile: Dockerfile
+    ports:
+      - "8104:8104"
+    environment:
+      - FEATURE_STORE_PORT=8104
+      - REDIS_URL=redis://redis:6379
+      - LAKEHOUSE_URL=http://lakehouse-service:8090
+    depends_on:
+      - redis
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8104/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  mlflow-registry-service:
+    build:
+      context: ../python-services/mlflow-registry
+      dockerfile: Dockerfile
+    ports:
+      - "8105:8105"
+    environment:
+      - MLFLOW_REGISTRY_PORT=8105
+      - ARTIFACT_STORE=/data/mlflow/artifacts
+      - RAY_SERVICE_URL=http://ray-cluster-service:8100
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8105/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  realtime-inference-service:
+    build:
+      context: ../python-services/realtime-inference
+      dockerfile: Dockerfile
+    ports:
+      - "8106:8106"
+    environment:
+      - REALTIME_INFERENCE_PORT=8106
+      - KAFKA_BROKERS=kafka:9092
+      - FEATURE_STORE_URL=http://feature-store-service:8104
+      - RAY_SERVICE_URL=http://ray-cluster-service:8100
+      - GNN_SERVICE_URL=http://gnn-fraud-service:8101
+      - DL_SERVICE_URL=http://deep-learning-service:8103
+      - MLFLOW_URL=http://mlflow-registry-service:8105
+      - LAKEHOUSE_URL=http://lakehouse-service:8090
+    depends_on:
+      - kafka
+      - feature-store-service
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8106/health')"]
       interval: 10s
       timeout: 5s
       retries: 3
