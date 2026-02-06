@@ -1,10 +1,8 @@
-import { View, Text, TouchableOpacity, Dimensions, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, useWindowDimensions } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useState, useRef } from 'react';
 import { ScreenContainer } from '@/components/screen-container';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-
-const { width } = Dimensions.get('window');
 
 const ONBOARDING_KEY = 'hasSeenOnboarding';
 
@@ -39,6 +37,7 @@ const slides: OnboardingSlide[] = [
 
 export default function OnboardingScreen() {
   const router = useRouter();
+  const { width } = useWindowDimensions();
   const scrollViewRef = useRef<ScrollView>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
 
@@ -119,7 +118,7 @@ export default function OnboardingScreen() {
       </View>
 
       {/* Action Buttons */}
-      <View className="px-6 pb-8">
+      <View className="px-6 pb-8" style={{ maxWidth: 480, alignSelf: 'center', width: '100%' }}>
         <TouchableOpacity
           onPress={handleNext}
           className="bg-primary rounded-xl p-4 mb-3"

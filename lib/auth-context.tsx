@@ -2,7 +2,7 @@ import { createContext, useContext, useState, useEffect, ReactNode } from 'react
 import { router } from 'expo-router';
 import * as LocalAuthentication from 'expo-local-authentication';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { authService, userService, User } from './api/services-mock';
+import { authService, userService, User } from './api/services';
 
 interface AuthContextType {
   user: User | null;

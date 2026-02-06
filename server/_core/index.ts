@@ -11,6 +11,11 @@ import advisorRouter from "../routers/advisor.js";
 import { predictiveAlertsRouter } from "../routers/predictive-alerts.js";
 import { initializeBankIntegrations } from "../integrations/banks/index.js";
 import { initializeCronJobs } from "../services/cron-scheduler.js";
+import { globalRateLimiter, authRateLimiter } from "../middleware/rate-limiter";
+import { securityHeaders } from "../middleware/security-headers";
+import { requestValidator } from "../middleware/request-validator";
+import { requestMetricsMiddleware, healthCheckEndpoint } from "../services/monitoring";
+import { setupDefaultEventHandlers } from "../services/event-bus";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise((resolve) => {
@@ -56,6 +61,11 @@ async function startServer() {
     next();
   });
 
+  app.use(securityHeaders());
+  app.use(requestMetricsMiddleware());
+  app.use(globalRateLimiter);
+  app.use(requestValidator());
+
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
 
@@ -64,9 +74,9 @@ async function startServer() {
   // Initialize bank integrations
   initializeBankIntegrations();
 
-  app.get("/api/health", (_req, res) => {
-    res.json({ ok: true, timestamp: Date.now() });
-  });
+  app.get("/api/health", healthCheckEndpoint());
+
+  app.use("/api/auth", authRateLimiter);
 
   // Register advisor router
   app.use("/api/advisor", advisorRouter);
@@ -90,10 +100,11 @@ async function startServer() {
     console.log(`Port ${preferredPort} is busy, using port ${port} instead`);
   }
 
+  setupDefaultEventHandlers();
+
   server.listen(port, () => {
     console.log(`[api] server listening on port ${port}`);
     
-    // Initialize cron jobs for automated tasks
     initializeCronJobs();
   });
 }

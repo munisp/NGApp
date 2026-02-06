@@ -39,8 +39,8 @@ export default function LoginScreen() {
   };
 
   return (
-    <ScreenContainer className="p-6 justify-center">
-      <View className="gap-6">
+    <ScreenContainer className="p-6 justify-center items-center">
+      <View className="gap-6" style={{ maxWidth: 440, width: '100%' }}>
         {/* Header */}
         <View className="items-center gap-2 mb-8">
           <Text className="text-4xl font-bold text-foreground">Welcome Back</Text>
