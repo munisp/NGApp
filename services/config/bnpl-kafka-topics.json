@@ -1,0 +1,92 @@
+{
+  "topics": [
+    {
+      "name": "bnpl.applications",
+      "partitions": 6,
+      "replication_factor": 3,
+      "config": {
+        "retention.ms": "604800000",
+        "cleanup.policy": "delete",
+        "compression.type": "snappy"
+      },
+      "description": "BNPL application submissions and updates"
+    },
+    {
+      "name": "bnpl.status_changes",
+      "partitions": 6,
+      "replication_factor": 3,
+      "config": {
+        "retention.ms": "2592000000",
+        "cleanup.policy": "compact",
+        "compression.type": "snappy"
+      },
+      "description": "BNPL application status transitions (pending, credit_check, approved, rejected, active, completed, defaulted)"
+    },
+    {
+      "name": "bnpl.payments",
+      "partitions": 12,
+      "replication_factor": 3,
+      "config": {
+        "retention.ms": "2592000000",
+        "cleanup.policy": "delete",
+        "compression.type": "snappy"
+      },
+      "description": "BNPL installment payment events"
+    },
+    {
+      "name": "bnpl.disbursements",
+      "partitions": 6,
+      "replication_factor": 3,
+      "config": {
+        "retention.ms": "2592000000",
+        "cleanup.policy": "delete",
+        "compression.type": "snappy"
+      },
+      "description": "Fund disbursement events to merchants/schools"
+    },
+    {
+      "name": "bnpl.overdue",
+      "partitions": 6,
+      "replication_factor": 3,
+      "config": {
+        "retention.ms": "2592000000",
+        "cleanup.policy": "delete",
+        "compression.type": "snappy"
+      },
+      "description": "Overdue installment detection and late fee events"
+    },
+    {
+      "name": "bnpl.notifications",
+      "partitions": 6,
+      "replication_factor": 3,
+      "config": {
+        "retention.ms": "604800000",
+        "cleanup.policy": "delete",
+        "compression.type": "snappy"
+      },
+      "description": "BNPL notification events (reminders, approvals, rejections, overdue alerts)"
+    },
+    {
+      "name": "bnpl.credit_decisions",
+      "partitions": 6,
+      "replication_factor": 3,
+      "config": {
+        "retention.ms": "7776000000",
+        "cleanup.policy": "compact",
+        "compression.type": "snappy"
+      },
+      "description": "Credit scoring and fraud risk assessment results"
+    },
+    {
+      "name": "bnpl.audit",
+      "partitions": 3,
+      "replication_factor": 3,
+      "config": {
+        "retention.ms": "31536000000",
+        "cleanup.policy": "delete",
+        "compression.type": "gzip"
+      },
+      "description": "BNPL audit trail events for compliance"
+    }
+  ]
+}

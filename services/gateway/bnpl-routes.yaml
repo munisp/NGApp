@@ -1,0 +1,240 @@
+routes:
+  - uri: /api/bnpl/plans
+    name: bnpl-get-plans
+    methods: ["GET"]
+    upstream:
+      type: roundrobin
+      nodes:
+        "bnpl-service:8112": 1
+      timeout:
+        connect: 5
+        send: 10
+        read: 10
+    plugins:
+      proxy-rewrite:
+        uri: /bnpl/plans
+      limit-count:
+        count: 60
+        time_window: 60
+        rejected_code: 429
+      cors:
+        allow_origins: "*"
+        allow_methods: "GET,OPTIONS"
+
+  - uri: /api/bnpl/apply
+    name: bnpl-apply
+    methods: ["POST"]
+    upstream:
+      type: roundrobin
+      nodes:
+        "bnpl-service:8112": 1
+      timeout:
+        connect: 5
+        send: 30
+        read: 30
+    plugins:
+      proxy-rewrite:
+        uri: /bnpl/apply
+      limit-count:
+        count: 10
+        time_window: 60
+        rejected_code: 429
+      cors:
+        allow_origins: "*"
+        allow_methods: "POST,OPTIONS"
+
+  - uri: /api/bnpl/application/*
+    name: bnpl-get-application
+    methods: ["GET"]
+    upstream:
+      type: roundrobin
+      nodes:
+        "bnpl-service:8112": 1
+    plugins:
+      proxy-rewrite:
+        regex_uri: ["^/api/bnpl/application/(.*)", "/bnpl/application/$1"]
+      cors:
+        allow_origins: "*"
+
+  - uri: /api/bnpl/user/*/applications
+    name: bnpl-user-applications
+    methods: ["GET"]
+    upstream:
+      type: roundrobin
+      nodes:
+        "bnpl-service:8112": 1
+    plugins:
+      proxy-rewrite:
+        regex_uri: ["^/api/bnpl/user/(.*)/applications(.*)", "/bnpl/user/$1/applications$2"]
+      cors:
+        allow_origins: "*"
+
+  - uri: /api/bnpl/pending
+    name: bnpl-pending-applications
+    methods: ["GET"]
+    upstream:
+      type: roundrobin
+      nodes:
+        "bnpl-service:8112": 1
+    plugins:
+      proxy-rewrite:
+        uri: /bnpl/pending
+      cors:
+        allow_origins: "*"
+
+  - uri: /api/bnpl/review
+    name: bnpl-review-application
+    methods: ["POST"]
+    upstream:
+      type: roundrobin
+      nodes:
+        "bnpl-service:8112": 1
+      timeout:
+        connect: 5
+        send: 30
+        read: 30
+    plugins:
+      proxy-rewrite:
+        uri: /bnpl/review
+      limit-count:
+        count: 30
+        time_window: 60
+        rejected_code: 429
+      cors:
+        allow_origins: "*"
+        allow_methods: "POST,OPTIONS"
+
+  - uri: /api/bnpl/disburse
+    name: bnpl-disburse-funds
+    methods: ["POST"]
+    upstream:
+      type: roundrobin
+      nodes:
+        "bnpl-service:8112": 1
+      timeout:
+        connect: 5
+        send: 60
+        read: 60
+    plugins:
+      proxy-rewrite:
+        uri: /bnpl/disburse
+      limit-count:
+        count: 10
+        time_window: 60
+        rejected_code: 429
+      cors:
+        allow_origins: "*"
+        allow_methods: "POST,OPTIONS"
+
+  - uri: /api/bnpl/pay
+    name: bnpl-pay-installment
+    methods: ["POST"]
+    upstream:
+      type: roundrobin
+      nodes:
+        "bnpl-service:8112": 1
+      timeout:
+        connect: 5
+        send: 60
+        read: 60
+    plugins:
+      proxy-rewrite:
+        uri: /bnpl/pay
+      limit-count:
+        count: 10
+        time_window: 60
+        rejected_code: 429
+      cors:
+        allow_origins: "*"
+        allow_methods: "POST,OPTIONS"
+
+  - uri: /api/bnpl/check-overdue
+    name: bnpl-check-overdue
+    methods: ["POST"]
+    upstream:
+      type: roundrobin
+      nodes:
+        "bnpl-service:8112": 1
+    plugins:
+      proxy-rewrite:
+        uri: /bnpl/check-overdue
+      cors:
+        allow_origins: "*"
+
+  - uri: /api/bnpl/send-reminders
+    name: bnpl-send-reminders
+    methods: ["POST"]
+    upstream:
+      type: roundrobin
+      nodes:
+        "bnpl-service:8112": 1
+    plugins:
+      proxy-rewrite:
+        uri: /bnpl/send-reminders
+      cors:
+        allow_origins: "*"
+
+  - uri: /api/bnpl/installments/*
+    name: bnpl-get-installments
+    methods: ["GET"]
+    upstream:
+      type: roundrobin
+      nodes:
+        "bnpl-service:8112": 1
+    plugins:
+      proxy-rewrite:
+        regex_uri: ["^/api/bnpl/installments/(.*)", "/bnpl/installments/$1"]
+      cors:
+        allow_origins: "*"
+
+  - uri: /api/bnpl/payments/*
+    name: bnpl-get-payments
+    methods: ["GET"]
+    upstream:
+      type: roundrobin
+      nodes:
+        "bnpl-service:8112": 1
+    plugins:
+      proxy-rewrite:
+        regex_uri: ["^/api/bnpl/payments/(.*)", "/bnpl/payments/$1"]
+      cors:
+        allow_origins: "*"
+
+  - uri: /api/bnpl/notifications/*
+    name: bnpl-get-notifications
+    methods: ["GET"]
+    upstream:
+      type: roundrobin
+      nodes:
+        "bnpl-service:8112": 1
+    plugins:
+      proxy-rewrite:
+        regex_uri: ["^/api/bnpl/notifications/(.*)", "/bnpl/notifications/$1"]
+      cors:
+        allow_origins: "*"
+
+  - uri: /api/bnpl/audit/*
+    name: bnpl-audit-trail
+    methods: ["GET"]
+    upstream:
+      type: roundrobin
+      nodes:
+        "bnpl-service:8112": 1
+    plugins:
+      proxy-rewrite:
+        regex_uri: ["^/api/bnpl/audit/(.*)", "/bnpl/audit/$1"]
+      cors:
+        allow_origins: "*"
+
+  - uri: /api/bnpl/analytics/summary
+    name: bnpl-analytics
+    methods: ["GET"]
+    upstream:
+      type: roundrobin
+      nodes:
+        "bnpl-service:8112": 1
+    plugins:
+      proxy-rewrite:
+        uri: /bnpl/analytics/summary
+      cors:
+        allow_origins: "*"

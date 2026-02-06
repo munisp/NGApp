@@ -496,6 +496,39 @@ services:
     volumes:
       - trino-data:/data/trino
 
+  bnpl-service:
+    build:
+      context: ../python-services/bnpl
+      dockerfile: Dockerfile
+    ports:
+      - "8112:8112"
+    environment:
+      - KAFKA_SERVICE_URL=http://kafka-service:8081
+      - REDIS_SERVICE_URL=http://redis-service:8082
+      - TIGERBEETLE_SERVICE_URL=http://tigerbeetle-service:8083
+      - TEMPORAL_SERVICE_URL=http://temporal-service:8085
+      - PERMIFY_SERVICE_URL=http://permify-service:8089
+      - LAKEHOUSE_SERVICE_URL=http://lakehouse-service:8090
+      - CREDIT_SCORE_SERVICE_URL=http://credit-score:5003
+      - GNN_FRAUD_SERVICE_URL=http://gnn-fraud-service:8101
+      - FEATURE_STORE_URL=http://feature-store-service:8104
+      - REALTIME_INFERENCE_URL=http://realtime-inference-service:8106
+      - BNPL_LATE_FEE_PERCENTAGE=2.0
+      - BNPL_GRACE_PERIOD_DAYS=3
+      - BNPL_MAX_LOAN_AMOUNT=5000000
+      - BNPL_MIN_LOAN_AMOUNT=5000
+      - BNPL_MIN_CREDIT_SCORE=400
+      - BNPL_AUTO_APPROVE_CREDIT_SCORE=650
+    depends_on:
+      - kafka-service
+      - redis-service
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8112/health')"]
+      interval: 15s
+      timeout: 10s
+      retries: 3
+
 volumes:
   kafka-data:
   redis-data:

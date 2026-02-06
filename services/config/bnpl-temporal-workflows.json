@@ -1,0 +1,233 @@
+{
+  "namespace": "fintech-bnpl",
+  "task_queue": "bnpl-verification-queue",
+  "workflows": [
+    {
+      "name": "bnpl_application_workflow",
+      "description": "Orchestrates the full BNPL application lifecycle from submission to completion",
+      "steps": [
+        {
+          "activity": "validate_application",
+          "timeout": "30s",
+          "retry": { "max_attempts": 3, "initial_interval": "1s" }
+        },
+        {
+          "activity": "run_credit_check",
+          "timeout": "60s",
+          "retry": { "max_attempts": 3, "initial_interval": "2s" },
+          "description": "Calls credit score service (port 5003) and GNN fraud detection (port 8101)"
+        },
+        {
+          "activity": "assess_credit_decision",
+          "timeout": "10s",
+          "retry": { "max_attempts": 2, "initial_interval": "1s" },
+          "description": "Evaluates credit score, fraud risk, DTI ratio to determine auto-approve/reject/manual-review"
+        },
+        {
+          "activity": "publish_credit_decision_event",
+          "timeout": "10s",
+          "retry": { "max_attempts": 3, "initial_interval": "1s" },
+          "description": "Publishes to bnpl.credit_decisions Kafka topic"
+        },
+        {
+          "activity": "store_bnpl_features",
+          "timeout": "10s",
+          "retry": { "max_attempts": 2, "initial_interval": "1s" },
+          "description": "Stores credit/fraud features in Feature Store (port 8104)"
+        },
+        {
+          "activity": "send_decision_notification",
+          "timeout": "10s",
+          "retry": { "max_attempts": 3, "initial_interval": "1s" }
+        },
+        {
+          "activity": "create_installment_schedule",
+          "timeout": "10s",
+          "retry": { "max_attempts": 2, "initial_interval": "1s" },
+          "condition": "decision == 'approved'"
+        },
+        {
+          "activity": "record_ledger_approval",
+          "timeout": "10s",
+          "retry": { "max_attempts": 3, "initial_interval": "2s" },
+          "description": "Creates TigerBeetle ledger entry for approved amount",
+          "condition": "decision == 'approved'"
+        },
+        {
+          "activity": "push_to_lakehouse",
+          "timeout": "15s",
+          "retry": { "max_attempts": 2, "initial_interval": "2s" },
+          "description": "Pushes application data to Lakehouse analytics"
+        }
+      ],
+      "signals": [
+        {
+          "name": "manual_review_completed",
+          "description": "Signal from admin when manual review is done"
+        },
+        {
+          "name": "application_cancelled",
+          "description": "Signal when user cancels application"
+        }
+      ]
+    },
+    {
+      "name": "bnpl_disbursement_workflow",
+      "description": "Handles fund disbursement to merchants/schools after approval",
+      "steps": [
+        {
+          "activity": "validate_disbursement_request",
+          "timeout": "10s",
+          "retry": { "max_attempts": 2, "initial_interval": "1s" }
+        },
+        {
+          "activity": "process_disbursement_payment",
+          "timeout": "120s",
+          "retry": { "max_attempts": 3, "initial_interval": "5s" },
+          "description": "Processes payment via Paystack/Flutterwave to merchant"
+        },
+        {
+          "activity": "record_disbursement_ledger",
+          "timeout": "10s",
+          "retry": { "max_attempts": 3, "initial_interval": "2s" },
+          "description": "Records disbursement in TigerBeetle double-entry ledger"
+        },
+        {
+          "activity": "activate_application",
+          "timeout": "10s",
+          "retry": { "max_attempts": 2, "initial_interval": "1s" }
+        },
+        {
+          "activity": "send_disbursement_notification",
+          "timeout": "10s",
+          "retry": { "max_attempts": 3, "initial_interval": "1s" }
+        },
+        {
+          "activity": "publish_disbursement_event",
+          "timeout": "10s",
+          "retry": { "max_attempts": 3, "initial_interval": "1s" }
+        }
+      ]
+    },
+    {
+      "name": "bnpl_payment_workflow",
+      "description": "Processes individual installment payments",
+      "steps": [
+        {
+          "activity": "validate_payment",
+          "timeout": "10s",
+          "retry": { "max_attempts": 2, "initial_interval": "1s" }
+        },
+        {
+          "activity": "process_payment_gateway",
+          "timeout": "120s",
+          "retry": { "max_attempts": 3, "initial_interval": "5s" },
+          "description": "Processes payment via configured gateway (wallet/card/bank/mobile_money)"
+        },
+        {
+          "activity": "record_payment_ledger",
+          "timeout": "10s",
+          "retry": { "max_attempts": 3, "initial_interval": "2s" },
+          "description": "Records payment in TigerBeetle as debit from user, credit to receivable"
+        },
+        {
+          "activity": "update_installment_status",
+          "timeout": "10s",
+          "retry": { "max_attempts": 2, "initial_interval": "1s" }
+        },
+        {
+          "activity": "check_application_completion",
+          "timeout": "10s",
+          "retry": { "max_attempts": 2, "initial_interval": "1s" },
+          "description": "Checks if all installments are paid and marks application as completed"
+        },
+        {
+          "activity": "send_payment_confirmation",
+          "timeout": "10s",
+          "retry": { "max_attempts": 3, "initial_interval": "1s" }
+        },
+        {
+          "activity": "publish_payment_event",
+          "timeout": "10s",
+          "retry": { "max_attempts": 3, "initial_interval": "1s" }
+        }
+      ]
+    },
+    {
+      "name": "bnpl_overdue_detection_workflow",
+      "description": "Scheduled workflow that checks for overdue installments and applies late fees",
+      "schedule": "0 8 * * *",
+      "steps": [
+        {
+          "activity": "scan_active_applications",
+          "timeout": "60s",
+          "retry": { "max_attempts": 2, "initial_interval": "5s" }
+        },
+        {
+          "activity": "identify_overdue_installments",
+          "timeout": "30s",
+          "retry": { "max_attempts": 2, "initial_interval": "2s" }
+        },
+        {
+          "activity": "apply_late_fees",
+          "timeout": "30s",
+          "retry": { "max_attempts": 3, "initial_interval": "2s" },
+          "description": "Applies 2% late fee after 3-day grace period"
+        },
+        {
+          "activity": "detect_defaults",
+          "timeout": "10s",
+          "retry": { "max_attempts": 2, "initial_interval": "1s" },
+          "description": "Marks application as defaulted after 3 consecutive overdue installments"
+        },
+        {
+          "activity": "send_overdue_notifications",
+          "timeout": "30s",
+          "retry": { "max_attempts": 3, "initial_interval": "2s" }
+        },
+        {
+          "activity": "publish_overdue_events",
+          "timeout": "10s",
+          "retry": { "max_attempts": 3, "initial_interval": "1s" }
+        },
+        {
+          "activity": "push_overdue_analytics",
+          "timeout": "15s",
+          "retry": { "max_attempts": 2, "initial_interval": "2s" }
+        }
+      ]
+    },
+    {
+      "name": "bnpl_reminder_workflow",
+      "description": "Scheduled workflow that sends payment reminders at 7, 3, and 1 day intervals",
+      "schedule": "0 9 * * *",
+      "steps": [
+        {
+          "activity": "scan_upcoming_payments",
+          "timeout": "30s",
+          "retry": { "max_attempts": 2, "initial_interval": "2s" }
+        },
+        {
+          "activity": "send_7day_reminders",
+          "timeout": "30s",
+          "retry": { "max_attempts": 3, "initial_interval": "2s" }
+        },
+        {
+          "activity": "send_3day_reminders",
+          "timeout": "30s",
+          "retry": { "max_attempts": 3, "initial_interval": "2s" }
+        },
+        {
+          "activity": "send_1day_reminders",
+          "timeout": "30s",
+          "retry": { "max_attempts": 3, "initial_interval": "2s" }
+        },
+        {
+          "activity": "mark_due_installments",
+          "timeout": "10s",
+          "retry": { "max_attempts": 2, "initial_interval": "1s" }
+        }
+      ]
+    }
+  ]
+}

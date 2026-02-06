@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, TextInput, ActivityIndicator, Alert } from 'react-native';
 import { ScreenContainer } from '@/components/screen-container';
-import { trpc } from '@/lib/trpc';
 import { useColors } from '@/hooks/use-colors';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import * as Haptics from 'expo-haptics';
 import { Platform } from 'react-native';
+import { bnplService, BNPLPlan } from '@/lib/api/bnpl-service';
 
 type CheckoutStep = 'amount' | 'plans' | 'review' | 'success';
 
@@ -14,49 +14,12 @@ export default function BNPLCheckoutScreen() {
   const [step, setStep] = useState<CheckoutStep>('amount');
   const [amount, setAmount] = useState('');
   const [merchantName, setMerchantName] = useState('');
-  const [selectedPlan, setSelectedPlan] = useState<any>(null);
+  const [selectedPlan, setSelectedPlan] = useState<BNPLPlan | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [plans, setPlans] = useState<BNPLPlan[]>([]);
+  const [plansLoading, setPlansLoading] = useState(false);
 
-  // Mock plans since getAvailablePlans doesn't exist - generate based on amount
-  const generatePlans = (amt: number) => {
-    if (!amt || amt < 5000) return [];
-    return [
-      {
-        id: '3-month',
-        installments: 3,
-        frequency: 'Monthly',
-        interestRate: 5,
-        installmentAmount: (amt * 1.05) / 3,
-        totalAmount: amt * 1.05,
-        firstPaymentDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-      },
-      {
-        id: '6-month',
-        installments: 6,
-        frequency: 'Monthly',
-        interestRate: 8,
-        installmentAmount: (amt * 1.08) / 6,
-        totalAmount: amt * 1.08,
-        firstPaymentDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-      },
-      {
-        id: '12-month',
-        installments: 12,
-        frequency: 'Monthly',
-        interestRate: 12,
-        installmentAmount: (amt * 1.12) / 12,
-        totalAmount: amt * 1.12,
-        firstPaymentDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-      },
-    ];
-  };
-
-  const plans = step === 'plans' ? generatePlans(parseFloat(amount)) : [];
-  const plansLoading = false;
-
-  const createApplicationMutation = trpc.bnpl.createApplication.useMutation();
-
-  const handleContinueFromAmount = () => {
+  const handleContinueFromAmount = async () => {
     const amountNum = parseFloat(amount);
     if (!amount || isNaN(amountNum) || amountNum <= 0) {
       Alert.alert('Invalid Amount', 'Please enter a valid purchase amount');
@@ -70,9 +33,18 @@ export default function BNPLCheckoutScreen() {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
     setStep('plans');
+    setPlansLoading(true);
+    try {
+      const fetchedPlans = await bnplService.getAvailablePlans(amountNum);
+      setPlans(fetchedPlans);
+    } catch (error) {
+      console.error('Failed to fetch plans:', error);
+    } finally {
+      setPlansLoading(false);
+    }
   };
 
-  const handleSelectPlan = (plan: any) => {
+  const handleSelectPlan = (plan: BNPLPlan) => {
     if (Platform.OS !== 'web') {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
@@ -85,28 +57,20 @@ export default function BNPLCheckoutScreen() {
 
     setIsProcessing(true);
     try {
-      // Create BNPL application with the selected plan
-      await createApplicationMutation.mutateAsync({
-        student_name: merchantName,
-        school_name: 'General Purchase',
-        grade: 'N/A',
-        school_fees_amount: parseFloat(amount),
-        installment_plan: selectedPlan.installments as 3 | 6 | 12,
-        employment_status: 'Employed',
-        monthly_income: parseFloat(amount) * 0.5, // Assume 50% of purchase amount as monthly income
-        documents: {
-          id: null,
-          proofOfIncome: null,
-          studentId: null,
-        },
+      await bnplService.applyForBNPL({
+        category: 'general_purchase',
+        merchant_name: merchantName,
+        amount: parseFloat(amount),
+        installment_months: selectedPlan.months,
       });
 
       if (Platform.OS !== 'web') {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       }
       setStep('success');
-    } catch (error: any) {
-      Alert.alert('Error', error.message || 'Failed to create purchase');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to create purchase';
+      Alert.alert('Error', message);
       if (Platform.OS !== 'web') {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       }
@@ -267,9 +231,9 @@ export default function BNPLCheckoutScreen() {
       ) : (
         <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
           <View className="gap-4">
-            {plans.map((plan: any) => (
+            {plans.map((plan) => (
               <TouchableOpacity
-                key={plan.id}
+                key={plan.months}
                 onPress={() => handleSelectPlan(plan)}
                 activeOpacity={0.7}
                 className="bg-surface rounded-3xl p-6 border border-border"
@@ -277,15 +241,15 @@ export default function BNPLCheckoutScreen() {
                 <View className="flex-row items-center justify-between mb-4">
                   <View>
                     <Text className="text-xl font-bold text-foreground">
-                      {plan.installments} Installments
+                      {plan.months} Installments
                     </Text>
                     <Text className="text-sm text-muted mt-1">
-                      {plan.frequency} payments
+                      Monthly payments
                     </Text>
                   </View>
                   <View className="items-end">
                     <Text className="text-2xl font-bold" style={{ color: colors.primary }}>
-                      {formatCurrency(plan.installmentAmount)}
+                      {formatCurrency(plan.monthly_payment)}
                     </Text>
                     <Text className="text-xs text-muted mt-1">per payment</Text>
                   </View>
@@ -295,19 +259,19 @@ export default function BNPLCheckoutScreen() {
                   <View className="flex-row justify-between">
                     <Text className="text-sm text-muted">Interest Rate</Text>
                     <Text className="text-sm font-semibold text-foreground">
-                      {plan.interestRate}%
+                      {plan.interest_rate}%
                     </Text>
                   </View>
                   <View className="flex-row justify-between">
                     <Text className="text-sm text-muted">Total Amount</Text>
                     <Text className="text-sm font-semibold text-foreground">
-                      {formatCurrency(plan.totalAmount)}
+                      {formatCurrency(plan.total_amount)}
                     </Text>
                   </View>
                   <View className="flex-row justify-between">
                     <Text className="text-sm text-muted">First Payment</Text>
                     <Text className="text-sm font-semibold text-foreground">
-                      {formatDate(plan.firstPaymentDate)}
+                      {formatDate(plan.first_payment_date)}
                     </Text>
                   </View>
                 </View>
@@ -372,26 +336,26 @@ export default function BNPLCheckoutScreen() {
                 <View className="flex-row justify-between">
                   <Text className="text-sm text-muted">Installments</Text>
                   <Text className="text-sm font-semibold text-foreground">
-                    {selectedPlan.installments} payments
+                    {selectedPlan.months} payments
                   </Text>
                 </View>
                 <View className="flex-row justify-between">
                   <Text className="text-sm text-muted">Payment Amount</Text>
                   <Text className="text-sm font-semibold text-foreground">
-                    {formatCurrency(selectedPlan.installmentAmount)}
+                    {formatCurrency(selectedPlan.monthly_payment)}
                   </Text>
                 </View>
                 <View className="flex-row justify-between">
                   <Text className="text-sm text-muted">Interest Rate</Text>
                   <Text className="text-sm font-semibold text-foreground">
-                    {selectedPlan.interestRate}%
+                    {selectedPlan.interest_rate}%
                   </Text>
                 </View>
                 <View className="h-px bg-border my-2" />
                 <View className="flex-row justify-between">
                   <Text className="text-base font-bold text-foreground">Total Amount</Text>
                   <Text className="text-base font-bold" style={{ color: colors.primary }}>
-                    {formatCurrency(selectedPlan.totalAmount)}
+                    {formatCurrency(selectedPlan.total_amount)}
                   </Text>
                 </View>
               </View>
@@ -401,8 +365,8 @@ export default function BNPLCheckoutScreen() {
             <View className="bg-surface rounded-3xl p-6 border border-border">
               <Text className="text-lg font-bold text-foreground mb-4">Payment Schedule</Text>
               <View className="gap-2">
-                {Array.from({ length: selectedPlan.installments }).map((_, index) => {
-                  const paymentDate = new Date(selectedPlan.firstPaymentDate);
+                {Array.from({ length: selectedPlan.months }).map((_, index) => {
+                  const paymentDate = new Date(selectedPlan.first_payment_date);
                   paymentDate.setMonth(paymentDate.getMonth() + index);
                   return (
                     <View key={index} className="flex-row justify-between py-2">
@@ -411,7 +375,7 @@ export default function BNPLCheckoutScreen() {
                       </Text>
                       <View className="items-end">
                         <Text className="text-sm font-semibold text-foreground">
-                          {formatCurrency(selectedPlan.installmentAmount)}
+                          {formatCurrency(selectedPlan.monthly_payment)}
                         </Text>
                         <Text className="text-xs text-muted">
                           {formatDate(paymentDate.toISOString())}
@@ -491,13 +455,13 @@ export default function BNPLCheckoutScreen() {
           <View className="flex-row justify-between">
             <Text className="text-sm text-muted">Total Amount</Text>
             <Text className="text-sm font-semibold text-foreground">
-              {selectedPlan && formatCurrency(selectedPlan.totalAmount)}
+              {selectedPlan && formatCurrency(selectedPlan.total_amount)}
             </Text>
           </View>
           <View className="flex-row justify-between">
             <Text className="text-sm text-muted">First Payment</Text>
             <Text className="text-sm font-semibold text-foreground">
-              {selectedPlan && formatDate(selectedPlan.firstPaymentDate)}
+              {selectedPlan && formatDate(selectedPlan.first_payment_date)}
             </Text>
           </View>
         </View>

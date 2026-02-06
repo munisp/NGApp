@@ -1,0 +1,116 @@
+{
+  "schema": {
+    "entities": [
+      {
+        "name": "bnpl_application",
+        "relations": [
+          {
+            "name": "owner",
+            "type": "user",
+            "description": "The user who submitted the BNPL application"
+          },
+          {
+            "name": "reviewer",
+            "type": "user",
+            "description": "The admin who reviewed/approved/rejected the application"
+          },
+          {
+            "name": "organization",
+            "type": "organization",
+            "description": "The organization the application belongs to"
+          }
+        ],
+        "permissions": [
+          {
+            "name": "view",
+            "description": "View application details",
+            "rules": ["owner", "reviewer", "organization.bnpl_admin", "organization.bnpl_reviewer"]
+          },
+          {
+            "name": "edit",
+            "description": "Edit application (before approval)",
+            "rules": ["owner"]
+          },
+          {
+            "name": "review",
+            "description": "Review and approve/reject application",
+            "rules": ["organization.bnpl_reviewer", "organization.bnpl_admin"]
+          },
+          {
+            "name": "disburse",
+            "description": "Disburse funds for approved application",
+            "rules": ["organization.bnpl_admin"]
+          },
+          {
+            "name": "cancel",
+            "description": "Cancel application",
+            "rules": ["owner", "organization.bnpl_admin"]
+          },
+          {
+            "name": "view_credit_decision",
+            "description": "View credit scoring and fraud risk details",
+            "rules": ["organization.bnpl_reviewer", "organization.bnpl_admin"]
+          },
+          {
+            "name": "view_audit_trail",
+            "description": "View full audit trail",
+            "rules": ["organization.bnpl_admin"]
+          }
+        ]
+      },
+      {
+        "name": "organization",
+        "relations": [
+          {
+            "name": "bnpl_admin",
+            "type": "user",
+            "description": "Full BNPL administration access - can review, approve, reject, disburse, and view analytics"
+          },
+          {
+            "name": "bnpl_reviewer",
+            "type": "user",
+            "description": "Can review and approve/reject BNPL applications but cannot disburse funds"
+          },
+          {
+            "name": "bnpl_viewer",
+            "type": "user",
+            "description": "Read-only access to BNPL applications and analytics"
+          }
+        ]
+      }
+    ],
+    "roles": [
+      {
+        "name": "bnpl_admin",
+        "description": "Full BNPL admin with disbursement and analytics access",
+        "permissions": [
+          "bnpl_application:view",
+          "bnpl_application:review",
+          "bnpl_application:disburse",
+          "bnpl_application:cancel",
+          "bnpl_application:view_credit_decision",
+          "bnpl_application:view_audit_trail",
+          "bnpl_analytics:view",
+          "bnpl_analytics:export"
+        ]
+      },
+      {
+        "name": "bnpl_reviewer",
+        "description": "BNPL reviewer who can approve/reject applications",
+        "permissions": [
+          "bnpl_application:view",
+          "bnpl_application:review",
+          "bnpl_application:view_credit_decision"
+        ]
+      },
+      {
+        "name": "bnpl_viewer",
+        "description": "Read-only access to BNPL data",
+        "permissions": [
+          "bnpl_application:view",
+          "bnpl_analytics:view"
+        ]
+      }
+    ]
+  }
+}
