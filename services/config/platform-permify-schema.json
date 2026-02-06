@@ -1,0 +1,123 @@
+{
+  "schema": {
+    "entities": [
+      {
+        "name": "account",
+        "relations": {
+          "owner": { "type": "user" },
+          "joint_owner": { "type": "user" },
+          "family_member": { "type": "user" },
+          "admin": { "type": "user" }
+        },
+        "permissions": {
+          "view": { "union": ["owner", "joint_owner", "family_member", "admin"] },
+          "transact": { "union": ["owner", "joint_owner"] },
+          "manage": { "union": ["owner", "admin"] },
+          "freeze": { "union": ["admin"] },
+          "close": { "union": ["owner", "admin"] }
+        }
+      },
+      {
+        "name": "payment",
+        "relations": {
+          "payer": { "type": "user" },
+          "recipient": { "type": "user" },
+          "admin": { "type": "user" }
+        },
+        "permissions": {
+          "view": { "union": ["payer", "recipient", "admin"] },
+          "refund": { "union": ["admin"] },
+          "verify": { "union": ["payer", "admin"] }
+        }
+      },
+      {
+        "name": "insurance_policy",
+        "relations": {
+          "holder": { "type": "user" },
+          "beneficiary": { "type": "user" },
+          "agent": { "type": "user" },
+          "claims_reviewer": { "type": "user" },
+          "admin": { "type": "user" }
+        },
+        "permissions": {
+          "view": { "union": ["holder", "beneficiary", "agent", "admin"] },
+          "submit_claim": { "union": ["holder"] },
+          "review_claim": { "union": ["claims_reviewer", "admin"] },
+          "cancel": { "union": ["holder", "admin"] },
+          "renew": { "union": ["holder", "agent", "admin"] }
+        }
+      },
+      {
+        "name": "portfolio",
+        "relations": {
+          "owner": { "type": "user" },
+          "advisor": { "type": "user" },
+          "admin": { "type": "user" }
+        },
+        "permissions": {
+          "view": { "union": ["owner", "advisor", "admin"] },
+          "trade": { "union": ["owner"] },
+          "manage": { "union": ["owner", "admin"] },
+          "advise": { "union": ["advisor", "admin"] }
+        }
+      },
+      {
+        "name": "merchant",
+        "relations": {
+          "owner": { "type": "user" },
+          "staff": { "type": "user" },
+          "reviewer": { "type": "user" },
+          "admin": { "type": "user" }
+        },
+        "permissions": {
+          "view": { "union": ["owner", "staff", "reviewer", "admin"] },
+          "process_payment": { "union": ["owner", "staff"] },
+          "manage_invoices": { "union": ["owner", "staff"] },
+          "view_settlements": { "union": ["owner", "admin"] },
+          "approve": { "union": ["reviewer", "admin"] }
+        }
+      },
+      {
+        "name": "cooperative",
+        "relations": {
+          "creator": { "type": "user" },
+          "member": { "type": "user" },
+          "admin": { "type": "user" }
+        },
+        "permissions": {
+          "view": { "union": ["creator", "member", "admin"] },
+          "contribute": { "union": ["member", "creator"] },
+          "manage": { "union": ["creator", "admin"] },
+          "withdraw": { "union": ["creator", "admin"] }
+        }
+      },
+      {
+        "name": "ml_service",
+        "relations": {
+          "data_scientist": { "type": "user" },
+          "ml_engineer": { "type": "user" },
+          "admin": { "type": "user" }
+        },
+        "permissions": {
+          "predict": { "union": ["data_scientist", "ml_engineer", "admin"] },
+          "train": { "union": ["data_scientist", "admin"] },
+          "deploy_model": { "union": ["ml_engineer", "admin"] },
+          "manage_ab_tests": { "union": ["data_scientist", "ml_engineer", "admin"] }
+        }
+      },
+      {
+        "name": "tax_plan",
+        "relations": {
+          "owner": { "type": "user" },
+          "advisor": { "type": "user" },
+          "admin": { "type": "user" }
+        },
+        "permissions": {
+          "view": { "union": ["owner", "advisor", "admin"] },
+          "calculate": { "union": ["owner", "advisor"] },
+          "manage": { "union": ["owner", "admin"] }
+        }
+      }
+    ]
+  }
+}

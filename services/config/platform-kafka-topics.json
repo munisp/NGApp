@@ -1,0 +1,186 @@
+{
+  "topics": [
+    {
+      "name": "corebanking.accounts",
+      "partitions": 6,
+      "replication_factor": 3,
+      "config": { "retention.ms": "2592000000", "cleanup.policy": "compact", "compression.type": "snappy" },
+      "description": "Account creation, updates, freeze/unfreeze/close events"
+    },
+    {
+      "name": "corebanking.transactions",
+      "partitions": 12,
+      "replication_factor": 3,
+      "config": { "retention.ms": "2592000000", "cleanup.policy": "delete", "compression.type": "snappy" },
+      "description": "All account transactions (deposits, withdrawals, transfers)"
+    },
+    {
+      "name": "corebanking.ledger",
+      "partitions": 12,
+      "replication_factor": 3,
+      "config": { "retention.ms": "7776000000", "cleanup.policy": "delete", "compression.type": "gzip" },
+      "description": "Double-entry ledger events for audit trail"
+    },
+    {
+      "name": "corebanking.interest",
+      "partitions": 3,
+      "replication_factor": 3,
+      "config": { "retention.ms": "2592000000", "cleanup.policy": "delete", "compression.type": "snappy" },
+      "description": "Interest accrual events"
+    },
+    {
+      "name": "payments.initiated",
+      "partitions": 12,
+      "replication_factor": 3,
+      "config": { "retention.ms": "2592000000", "cleanup.policy": "delete", "compression.type": "snappy" },
+      "description": "Payment initiation events across all methods"
+    },
+    {
+      "name": "payments.completed",
+      "partitions": 12,
+      "replication_factor": 3,
+      "config": { "retention.ms": "2592000000", "cleanup.policy": "delete", "compression.type": "snappy" },
+      "description": "Payment completion and verification events"
+    },
+    {
+      "name": "payments.refunds",
+      "partitions": 6,
+      "replication_factor": 3,
+      "config": { "retention.ms": "2592000000", "cleanup.policy": "delete", "compression.type": "snappy" },
+      "description": "Refund processing events"
+    },
+    {
+      "name": "payments.mobile_money",
+      "partitions": 6,
+      "replication_factor": 3,
+      "config": { "retention.ms": "2592000000", "cleanup.policy": "delete", "compression.type": "snappy" },
+      "description": "Mobile money transfer events"
+    },
+    {
+      "name": "payments.reconciliation",
+      "partitions": 3,
+      "replication_factor": 3,
+      "config": { "retention.ms": "7776000000", "cleanup.policy": "delete", "compression.type": "gzip" },
+      "description": "Payment reconciliation results"
+    },
+    {
+      "name": "insurance.policies",
+      "partitions": 6,
+      "replication_factor": 3,
+      "config": { "retention.ms": "2592000000", "cleanup.policy": "compact", "compression.type": "snappy" },
+      "description": "Policy creation, renewal, cancellation events"
+    },
+    {
+      "name": "insurance.claims",
+      "partitions": 6,
+      "replication_factor": 3,
+      "config": { "retention.ms": "2592000000", "cleanup.policy": "delete", "compression.type": "snappy" },
+      "description": "Claim submission and review events"
+    },
+    {
+      "name": "insurance.premiums",
+      "partitions": 6,
+      "replication_factor": 3,
+      "config": { "retention.ms": "2592000000", "cleanup.policy": "delete", "compression.type": "snappy" },
+      "description": "Premium payment events"
+    },
+    {
+      "name": "investments.trades",
+      "partitions": 12,
+      "replication_factor": 3,
+      "config": { "retention.ms": "2592000000", "cleanup.policy": "delete", "compression.type": "snappy" },
+      "description": "Buy/sell trade execution events"
+    },
+    {
+      "name": "investments.portfolio",
+      "partitions": 6,
+      "replication_factor": 3,
+      "config": { "retention.ms": "2592000000", "cleanup.policy": "compact", "compression.type": "snappy" },
+      "description": "Portfolio valuation and rebalancing events"
+    },
+    {
+      "name": "investments.dividends",
+      "partitions": 3,
+      "replication_factor": 3,
+      "config": { "retention.ms": "2592000000", "cleanup.policy": "delete", "compression.type": "snappy" },
+      "description": "Dividend distribution events"
+    },
+    {
+      "name": "investments.maturity",
+      "partitions": 3,
+      "replication_factor": 3,
+      "config": { "retention.ms": "604800000", "cleanup.policy": "delete", "compression.type": "snappy" },
+      "description": "Fixed deposit maturity notification events"
+    },
+    {
+      "name": "merchant.onboarding",
+      "partitions": 6,
+      "replication_factor": 3,
+      "config": { "retention.ms": "2592000000", "cleanup.policy": "compact", "compression.type": "snappy" },
+      "description": "Merchant onboarding and approval events"
+    },
+    {
+      "name": "merchant.transactions",
+      "partitions": 12,
+      "replication_factor": 3,
+      "config": { "retention.ms": "2592000000", "cleanup.policy": "delete", "compression.type": "snappy" },
+      "description": "POS and invoice payment transactions"
+    },
+    {
+      "name": "merchant.settlements",
+      "partitions": 6,
+      "replication_factor": 3,
+      "config": { "retention.ms": "2592000000", "cleanup.policy": "delete", "compression.type": "snappy" },
+      "description": "Merchant settlement and payout events"
+    },
+    {
+      "name": "african.mobile_money",
+      "partitions": 12,
+      "replication_factor": 3,
+      "config": { "retention.ms": "2592000000", "cleanup.policy": "delete", "compression.type": "snappy" },
+      "description": "African mobile money provider transactions (M-Pesa, MTN MoMo, etc.)"
+    },
+    {
+      "name": "african.cooperative",
+      "partitions": 6,
+      "replication_factor": 3,
+      "config": { "retention.ms": "2592000000", "cleanup.policy": "delete", "compression.type": "snappy" },
+      "description": "Cooperative savings (esusu/ajo/chama) contribution and payout events"
+    },
+    {
+      "name": "african.airtime",
+      "partitions": 6,
+      "replication_factor": 3,
+      "config": { "retention.ms": "604800000", "cleanup.policy": "delete", "compression.type": "snappy" },
+      "description": "Airtime purchase and data bundle events"
+    },
+    {
+      "name": "ml.predictions",
+      "partitions": 12,
+      "replication_factor": 3,
+      "config": { "retention.ms": "2592000000", "cleanup.policy": "delete", "compression.type": "snappy" },
+      "description": "ML prediction results (fraud, credit, categorization)"
+    },
+    {
+      "name": "ml.fraud_alerts",
+      "partitions": 6,
+      "replication_factor": 3,
+      "config": { "retention.ms": "7776000000", "cleanup.policy": "delete", "compression.type": "gzip" },
+      "description": "High-risk fraud detection alerts"
+    },
+    {
+      "name": "tax.calculations",
+      "partitions": 3,
+      "replication_factor": 3,
+      "config": { "retention.ms": "31536000000", "cleanup.policy": "delete", "compression.type": "gzip" },
+      "description": "Tax calculation and planning events"
+    },
+    {
+      "name": "tax.retirement",
+      "partitions": 3,
+      "replication_factor": 3,
+      "config": { "retention.ms": "31536000000", "cleanup.policy": "compact", "compression.type": "gzip" },
+      "description": "Retirement plan creation and update events"
+    }
+  ]
+}

@@ -496,6 +496,188 @@ services:
     volumes:
       - trino-data:/data/trino
 
+  # Core Banking & Feature Services
+  corebanking-service:
+    build:
+      context: ./go/corebanking
+      dockerfile: Dockerfile
+    ports:
+      - "8113:8113"
+    environment:
+      - KAFKA_SERVICE_URL=http://kafka-service:8081
+      - REDIS_SERVICE_URL=http://redis-service:8082
+      - TIGERBEETLE_SERVICE_URL=http://tigerbeetle-service:8083
+      - TEMPORAL_SERVICE_URL=http://temporal-service:8085
+      - PERMIFY_SERVICE_URL=http://permify-service:8089
+      - LAKEHOUSE_SERVICE_URL=http://lakehouse-service:8090
+    depends_on:
+      - kafka-service
+      - redis-service
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8113/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  payments-service:
+    build:
+      context: ./go/payments
+      dockerfile: Dockerfile
+    ports:
+      - "8114:8114"
+    environment:
+      - KAFKA_SERVICE_URL=http://kafka-service:8081
+      - REDIS_SERVICE_URL=http://redis-service:8082
+      - TIGERBEETLE_SERVICE_URL=http://tigerbeetle-service:8083
+      - TEMPORAL_SERVICE_URL=http://temporal-service:8085
+      - GNN_FRAUD_SERVICE_URL=http://gnn-fraud-service:8101
+      - REALTIME_INFERENCE_URL=http://realtime-inference-service:8106
+    depends_on:
+      - kafka-service
+      - redis-service
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8114/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  insurance-service:
+    build:
+      context: ../python-services/insurance
+      dockerfile: Dockerfile
+    ports:
+      - "8115:8115"
+    environment:
+      - KAFKA_SERVICE_URL=http://kafka-service:8081
+      - REDIS_SERVICE_URL=http://redis-service:8082
+      - TEMPORAL_SERVICE_URL=http://temporal-service:8085
+      - LAKEHOUSE_SERVICE_URL=http://lakehouse-service:8090
+      - ML_GATEWAY_URL=http://ml-gateway-service:8119
+    depends_on:
+      - kafka-service
+      - redis-service
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8115/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  investments-service:
+    build:
+      context: ./go/investments
+      dockerfile: Dockerfile
+    ports:
+      - "8116:8116"
+    environment:
+      - KAFKA_SERVICE_URL=http://kafka-service:8081
+      - REDIS_SERVICE_URL=http://redis-service:8082
+      - TIGERBEETLE_SERVICE_URL=http://tigerbeetle-service:8083
+      - TEMPORAL_SERVICE_URL=http://temporal-service:8085
+      - LAKEHOUSE_SERVICE_URL=http://lakehouse-service:8090
+    depends_on:
+      - kafka-service
+      - redis-service
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8116/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  merchant-service:
+    build:
+      context: ./go/merchant
+      dockerfile: Dockerfile
+    ports:
+      - "8117:8117"
+    environment:
+      - KAFKA_SERVICE_URL=http://kafka-service:8081
+      - REDIS_SERVICE_URL=http://redis-service:8082
+      - TIGERBEETLE_SERVICE_URL=http://tigerbeetle-service:8083
+      - TEMPORAL_SERVICE_URL=http://temporal-service:8085
+      - PERMIFY_SERVICE_URL=http://permify-service:8089
+      - LAKEHOUSE_SERVICE_URL=http://lakehouse-service:8090
+    depends_on:
+      - kafka-service
+      - redis-service
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8117/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  african-markets-service:
+    build:
+      context: ./go/africanmarkets
+      dockerfile: Dockerfile
+    ports:
+      - "8118:8118"
+    environment:
+      - KAFKA_SERVICE_URL=http://kafka-service:8081
+      - REDIS_SERVICE_URL=http://redis-service:8082
+      - TEMPORAL_SERVICE_URL=http://temporal-service:8085
+      - LAKEHOUSE_SERVICE_URL=http://lakehouse-service:8090
+    depends_on:
+      - kafka-service
+      - redis-service
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8118/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  ml-gateway-service:
+    build:
+      context: ../python-services/ml-gateway
+      dockerfile: Dockerfile
+    ports:
+      - "8119:8119"
+    environment:
+      - KAFKA_SERVICE_URL=http://kafka-service:8081
+      - REDIS_SERVICE_URL=http://redis-service:8082
+      - RAY_SERVICE_URL=http://ray-cluster-service:8100
+      - GNN_SERVICE_URL=http://gnn-fraud-service:8101
+      - DL_SERVICE_URL=http://deep-learning-service:8103
+      - FEATURE_STORE_URL=http://feature-store-service:8104
+      - MLFLOW_URL=http://mlflow-registry-service:8105
+      - REALTIME_INFERENCE_URL=http://realtime-inference-service:8106
+      - CREDIT_SCORE_URL=http://credit-score:5003
+      - SMART_CATEGORIZATION_URL=http://smart-categorization:5004
+    depends_on:
+      - kafka-service
+      - redis-service
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8119/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  tax-planning-service:
+    build:
+      context: ../python-services/tax-planning
+      dockerfile: Dockerfile
+    ports:
+      - "8120:8120"
+    environment:
+      - KAFKA_SERVICE_URL=http://kafka-service:8081
+      - REDIS_SERVICE_URL=http://redis-service:8082
+      - LAKEHOUSE_SERVICE_URL=http://lakehouse-service:8090
+    depends_on:
+      - kafka-service
+      - redis-service
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8120/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
   bnpl-service:
     build:
       context: ../python-services/bnpl

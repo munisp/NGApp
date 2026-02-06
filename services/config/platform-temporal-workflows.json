@@ -1,0 +1,107 @@
+{
+  "workflows": [
+    {
+      "name": "CoreBankingTransferWorkflow",
+      "task_queue": "corebanking-transfers",
+      "activities": ["ValidateAccounts", "CheckBalance", "DebitAccount", "CreditAccount", "RecordLedger", "PublishEvent"],
+      "retry_policy": { "max_attempts": 3, "initial_interval": "1s", "backoff_coefficient": 2.0 },
+      "timeout": "30s"
+    },
+    {
+      "name": "InterestAccrualWorkflow",
+      "task_queue": "corebanking-interest",
+      "activities": ["FetchEligibleAccounts", "CalculateInterest", "CreditInterest", "RecordLedger", "PublishEvent"],
+      "schedule": "0 0 * * *",
+      "retry_policy": { "max_attempts": 5, "initial_interval": "5s", "backoff_coefficient": 2.0 },
+      "timeout": "300s"
+    },
+    {
+      "name": "PaymentProcessingWorkflow",
+      "task_queue": "payment-processing",
+      "activities": ["ValidatePayment", "FraudCheck", "ProcessGateway", "VerifyPayment", "RecordTransaction", "PublishEvent"],
+      "retry_policy": { "max_attempts": 3, "initial_interval": "2s", "backoff_coefficient": 2.0 },
+      "timeout": "120s"
+    },
+    {
+      "name": "ReconciliationWorkflow",
+      "task_queue": "payment-reconciliation",
+      "activities": ["FetchTransactions", "FetchGatewayRecords", "MatchRecords", "FlagDiscrepancies", "GenerateReport"],
+      "schedule": "0 2 * * *",
+      "retry_policy": { "max_attempts": 3, "initial_interval": "10s", "backoff_coefficient": 2.0 },
+      "timeout": "600s"
+    },
+    {
+      "name": "InsurancePolicyWorkflow",
+      "task_queue": "insurance-policies",
+      "activities": ["ValidateApplicant", "CalculatePremium", "CreatePolicy", "SchedulePremiums", "SendConfirmation"],
+      "retry_policy": { "max_attempts": 3, "initial_interval": "2s", "backoff_coefficient": 2.0 },
+      "timeout": "60s"
+    },
+    {
+      "name": "ClaimProcessingWorkflow",
+      "task_queue": "insurance-claims",
+      "activities": ["ValidateClaim", "AssessDocuments", "FraudScreening", "ReviewDecision", "ProcessPayout", "NotifyClaimant"],
+      "retry_policy": { "max_attempts": 3, "initial_interval": "5s", "backoff_coefficient": 2.0 },
+      "timeout": "300s"
+    },
+    {
+      "name": "InvestmentTradeWorkflow",
+      "task_queue": "investment-trades",
+      "activities": ["ValidateOrder", "CheckFunds", "ExecuteTrade", "UpdatePortfolio", "RecordDividend", "PublishEvent"],
+      "retry_policy": { "max_attempts": 3, "initial_interval": "1s", "backoff_coefficient": 2.0 },
+      "timeout": "30s"
+    },
+    {
+      "name": "FixedDepositMaturityWorkflow",
+      "task_queue": "investment-maturity",
+      "activities": ["CheckMaturity", "CalculateYield", "CreditAccount", "NotifyUser", "AutoRollover"],
+      "schedule": "0 6 * * *",
+      "retry_policy": { "max_attempts": 5, "initial_interval": "5s", "backoff_coefficient": 2.0 },
+      "timeout": "300s"
+    },
+    {
+      "name": "MerchantOnboardingWorkflow",
+      "task_queue": "merchant-onboarding",
+      "activities": ["ValidateBusiness", "KYBCheck", "SanctionsScreening", "RiskAssessment", "ApprovalDecision", "SetupAccount"],
+      "retry_policy": { "max_attempts": 3, "initial_interval": "5s", "backoff_coefficient": 2.0 },
+      "timeout": "600s"
+    },
+    {
+      "name": "MerchantSettlementWorkflow",
+      "task_queue": "merchant-settlements",
+      "activities": ["AggregateTransactions", "CalculateFees", "InitiateSettlement", "VerifySettlement", "NotifyMerchant"],
+      "schedule": "0 4 * * *",
+      "retry_policy": { "max_attempts": 5, "initial_interval": "10s", "backoff_coefficient": 2.0 },
+      "timeout": "600s"
+    },
+    {
+      "name": "MobileMoneyTransferWorkflow",
+      "task_queue": "african-mobile-money",
+      "activities": ["ValidateProvider", "CheckWalletBalance", "InitiateTransfer", "ConfirmTransfer", "RecordTransaction"],
+      "retry_policy": { "max_attempts": 3, "initial_interval": "2s", "backoff_coefficient": 2.0 },
+      "timeout": "60s"
+    },
+    {
+      "name": "CooperativePayoutWorkflow",
+      "task_queue": "african-cooperative",
+      "activities": ["VerifyContributions", "SelectRecipient", "ProcessPayout", "UpdateRound", "NotifyMembers"],
+      "schedule": "0 8 * * 1",
+      "retry_policy": { "max_attempts": 3, "initial_interval": "5s", "backoff_coefficient": 2.0 },
+      "timeout": "120s"
+    },
+    {
+      "name": "MLInferencePipelineWorkflow",
+      "task_queue": "ml-inference",
+      "activities": ["ExtractFeatures", "RunModel", "PostProcess", "RecordPrediction", "PublishResult"],
+      "retry_policy": { "max_attempts": 2, "initial_interval": "1s", "backoff_coefficient": 2.0 },
+      "timeout": "15s"
+    },
+    {
+      "name": "TaxCalculationWorkflow",
+      "task_queue": "tax-planning",
+      "activities": ["FetchIncome", "ApplyDeductions", "CalculateBrackets", "GenerateReport", "StoreResult"],
+      "retry_policy": { "max_attempts": 3, "initial_interval": "2s", "backoff_coefficient": 2.0 },
+      "timeout": "60s"
+    }
+  ]
+}

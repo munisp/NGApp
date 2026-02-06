@@ -1,0 +1,725 @@
+routes:
+  # Core Banking Routes
+  - uri: /api/corebanking/accounts/create
+    name: corebanking-create-account
+    methods: ["POST"]
+    upstream:
+      type: roundrobin
+      nodes:
+        "corebanking-service:8113": 1
+      timeout: { connect: 5, send: 10, read: 10 }
+    plugins:
+      proxy-rewrite: { uri: /accounts/create }
+      limit-count: { count: 30, time_window: 60, rejected_code: 429 }
+      cors: { allow_origins: "*", allow_methods: "POST,OPTIONS" }
+
+  - uri: /api/corebanking/accounts/user
+    name: corebanking-user-accounts
+    methods: ["GET"]
+    upstream:
+      type: roundrobin
+      nodes:
+        "corebanking-service:8113": 1
+    plugins:
+      proxy-rewrite: { uri: /accounts/user }
+      cors: { allow_origins: "*" }
+
+  - uri: /api/corebanking/transfer
+    name: corebanking-transfer
+    methods: ["POST"]
+    upstream:
+      type: roundrobin
+      nodes:
+        "corebanking-service:8113": 1
+      timeout: { connect: 5, send: 30, read: 30 }
+    plugins:
+      proxy-rewrite: { uri: /transfer }
+      limit-count: { count: 20, time_window: 60, rejected_code: 429 }
+      cors: { allow_origins: "*", allow_methods: "POST,OPTIONS" }
+
+  - uri: /api/corebanking/deposit
+    name: corebanking-deposit
+    methods: ["POST"]
+    upstream:
+      type: roundrobin
+      nodes:
+        "corebanking-service:8113": 1
+    plugins:
+      proxy-rewrite: { uri: /deposit }
+      limit-count: { count: 30, time_window: 60, rejected_code: 429 }
+      cors: { allow_origins: "*", allow_methods: "POST,OPTIONS" }
+
+  - uri: /api/corebanking/withdraw
+    name: corebanking-withdraw
+    methods: ["POST"]
+    upstream:
+      type: roundrobin
+      nodes:
+        "corebanking-service:8113": 1
+    plugins:
+      proxy-rewrite: { uri: /withdraw }
+      limit-count: { count: 20, time_window: 60, rejected_code: 429 }
+      cors: { allow_origins: "*", allow_methods: "POST,OPTIONS" }
+
+  - uri: /api/corebanking/statement
+    name: corebanking-statement
+    methods: ["GET"]
+    upstream:
+      type: roundrobin
+      nodes:
+        "corebanking-service:8113": 1
+    plugins:
+      proxy-rewrite: { uri: /statement }
+      cors: { allow_origins: "*" }
+
+  - uri: /api/corebanking/ledger
+    name: corebanking-ledger
+    methods: ["GET"]
+    upstream:
+      type: roundrobin
+      nodes:
+        "corebanking-service:8113": 1
+    plugins:
+      proxy-rewrite: { uri: /ledger }
+      cors: { allow_origins: "*" }
+
+  - uri: /api/corebanking/cards/create
+    name: corebanking-create-card
+    methods: ["POST"]
+    upstream:
+      type: roundrobin
+      nodes:
+        "corebanking-service:8113": 1
+    plugins:
+      proxy-rewrite: { uri: /cards/create }
+      limit-count: { count: 5, time_window: 60, rejected_code: 429 }
+      cors: { allow_origins: "*", allow_methods: "POST,OPTIONS" }
+
+  - uri: /api/corebanking/exchange-rates
+    name: corebanking-exchange-rates
+    methods: ["GET"]
+    upstream:
+      type: roundrobin
+      nodes:
+        "corebanking-service:8113": 1
+    plugins:
+      proxy-rewrite: { uri: /exchange-rates }
+      proxy-cache: { cache_ttl: 300 }
+      cors: { allow_origins: "*" }
+
+  # Payment Processing Routes
+  - uri: /api/payments/initiate
+    name: payments-initiate
+    methods: ["POST"]
+    upstream:
+      type: roundrobin
+      nodes:
+        "payments-service:8114": 1
+      timeout: { connect: 5, send: 60, read: 60 }
+    plugins:
+      proxy-rewrite: { uri: /payments/initiate }
+      limit-count: { count: 10, time_window: 60, rejected_code: 429 }
+      cors: { allow_origins: "*", allow_methods: "POST,OPTIONS" }
+
+  - uri: /api/payments/verify
+    name: payments-verify
+    methods: ["POST"]
+    upstream:
+      type: roundrobin
+      nodes:
+        "payments-service:8114": 1
+    plugins:
+      proxy-rewrite: { uri: /payments/verify }
+      cors: { allow_origins: "*", allow_methods: "POST,OPTIONS" }
+
+  - uri: /api/payments/refund
+    name: payments-refund
+    methods: ["POST"]
+    upstream:
+      type: roundrobin
+      nodes:
+        "payments-service:8114": 1
+    plugins:
+      proxy-rewrite: { uri: /payments/refund }
+      limit-count: { count: 5, time_window: 60, rejected_code: 429 }
+      cors: { allow_origins: "*", allow_methods: "POST,OPTIONS" }
+
+  - uri: /api/payments/history
+    name: payments-history
+    methods: ["GET"]
+    upstream:
+      type: roundrobin
+      nodes:
+        "payments-service:8114": 1
+    plugins:
+      proxy-rewrite: { uri: /payments/history }
+      cors: { allow_origins: "*" }
+
+  - uri: /api/payments/mobile-money/transfer
+    name: payments-mobile-money
+    methods: ["POST"]
+    upstream:
+      type: roundrobin
+      nodes:
+        "payments-service:8114": 1
+    plugins:
+      proxy-rewrite: { uri: /mobile-money/transfer }
+      limit-count: { count: 10, time_window: 60, rejected_code: 429 }
+      cors: { allow_origins: "*", allow_methods: "POST,OPTIONS" }
+
+  - uri: /api/payments/qr/generate
+    name: payments-qr-generate
+    methods: ["POST"]
+    upstream:
+      type: roundrobin
+      nodes:
+        "payments-service:8114": 1
+    plugins:
+      proxy-rewrite: { uri: /qr/generate }
+      cors: { allow_origins: "*", allow_methods: "POST,OPTIONS" }
+
+  - uri: /api/payments/qr/pay
+    name: payments-qr-pay
+    methods: ["POST"]
+    upstream:
+      type: roundrobin
+      nodes:
+        "payments-service:8114": 1
+    plugins:
+      proxy-rewrite: { uri: /qr/pay }
+      cors: { allow_origins: "*", allow_methods: "POST,OPTIONS" }
+
+  - uri: /api/payments/bill-split/*
+    name: payments-bill-split
+    methods: ["POST"]
+    upstream:
+      type: roundrobin
+      nodes:
+        "payments-service:8114": 1
+    plugins:
+      proxy-rewrite:
+        regex_uri: ["^/api/payments/bill-split/(.*)", "/bill-split/$1"]
+      cors: { allow_origins: "*", allow_methods: "POST,OPTIONS" }
+
+  - uri: /api/payments/reconciliation/run
+    name: payments-reconciliation
+    methods: ["POST"]
+    upstream:
+      type: roundrobin
+      nodes:
+        "payments-service:8114": 1
+      timeout: { connect: 5, send: 120, read: 120 }
+    plugins:
+      proxy-rewrite: { uri: /reconciliation/run }
+      cors: { allow_origins: "*", allow_methods: "POST,OPTIONS" }
+
+  # Insurance Routes
+  - uri: /api/insurance/products
+    name: insurance-products
+    methods: ["GET"]
+    upstream:
+      type: roundrobin
+      nodes:
+        "insurance-service:8115": 1
+    plugins:
+      proxy-rewrite: { uri: /products }
+      proxy-cache: { cache_ttl: 600 }
+      cors: { allow_origins: "*" }
+
+  - uri: /api/insurance/products/*
+    name: insurance-product-detail
+    methods: ["GET"]
+    upstream:
+      type: roundrobin
+      nodes:
+        "insurance-service:8115": 1
+    plugins:
+      proxy-rewrite:
+        regex_uri: ["^/api/insurance/products/(.*)", "/products/$1"]
+      cors: { allow_origins: "*" }
+
+  - uri: /api/insurance/quotes
+    name: insurance-quotes
+    methods: ["POST"]
+    upstream:
+      type: roundrobin
+      nodes:
+        "insurance-service:8115": 1
+    plugins:
+      proxy-rewrite: { uri: /quotes }
+      limit-count: { count: 30, time_window: 60, rejected_code: 429 }
+      cors: { allow_origins: "*", allow_methods: "POST,OPTIONS" }
+
+  - uri: /api/insurance/policies
+    name: insurance-policies
+    methods: ["GET", "POST"]
+    upstream:
+      type: roundrobin
+      nodes:
+        "insurance-service:8115": 1
+    plugins:
+      proxy-rewrite: { uri: /policies }
+      cors: { allow_origins: "*", allow_methods: "GET,POST,OPTIONS" }
+
+  - uri: /api/insurance/policies/*/cancel
+    name: insurance-cancel-policy
+    methods: ["POST"]
+    upstream:
+      type: roundrobin
+      nodes:
+        "insurance-service:8115": 1
+    plugins:
+      proxy-rewrite:
+        regex_uri: ["^/api/insurance/policies/(.*)/cancel", "/policies/$1/cancel"]
+      cors: { allow_origins: "*", allow_methods: "POST,OPTIONS" }
+
+  - uri: /api/insurance/claims
+    name: insurance-claims
+    methods: ["GET", "POST"]
+    upstream:
+      type: roundrobin
+      nodes:
+        "insurance-service:8115": 1
+    plugins:
+      proxy-rewrite: { uri: /claims }
+      cors: { allow_origins: "*", allow_methods: "GET,POST,OPTIONS" }
+
+  - uri: /api/insurance/claims/review
+    name: insurance-claims-review
+    methods: ["POST"]
+    upstream:
+      type: roundrobin
+      nodes:
+        "insurance-service:8115": 1
+    plugins:
+      proxy-rewrite: { uri: /claims/review }
+      cors: { allow_origins: "*", allow_methods: "POST,OPTIONS" }
+
+  # Investment Routes
+  - uri: /api/investments/products
+    name: investments-products
+    methods: ["GET"]
+    upstream:
+      type: roundrobin
+      nodes:
+        "investments-service:8116": 1
+    plugins:
+      proxy-rewrite: { uri: /products }
+      proxy-cache: { cache_ttl: 300 }
+      cors: { allow_origins: "*" }
+
+  - uri: /api/investments/buy
+    name: investments-buy
+    methods: ["POST"]
+    upstream:
+      type: roundrobin
+      nodes:
+        "investments-service:8116": 1
+    plugins:
+      proxy-rewrite: { uri: /buy }
+      limit-count: { count: 20, time_window: 60, rejected_code: 429 }
+      cors: { allow_origins: "*", allow_methods: "POST,OPTIONS" }
+
+  - uri: /api/investments/sell
+    name: investments-sell
+    methods: ["POST"]
+    upstream:
+      type: roundrobin
+      nodes:
+        "investments-service:8116": 1
+    plugins:
+      proxy-rewrite: { uri: /sell }
+      limit-count: { count: 20, time_window: 60, rejected_code: 429 }
+      cors: { allow_origins: "*", allow_methods: "POST,OPTIONS" }
+
+  - uri: /api/investments/portfolio
+    name: investments-portfolio
+    methods: ["GET"]
+    upstream:
+      type: roundrobin
+      nodes:
+        "investments-service:8116": 1
+    plugins:
+      proxy-rewrite: { uri: /portfolio }
+      cors: { allow_origins: "*" }
+
+  - uri: /api/investments/fixed-deposits
+    name: investments-fixed-deposits
+    methods: ["GET"]
+    upstream:
+      type: roundrobin
+      nodes:
+        "investments-service:8116": 1
+    plugins:
+      proxy-rewrite: { uri: /fixed-deposits }
+      cors: { allow_origins: "*" }
+
+  - uri: /api/investments/robo-advisor
+    name: investments-robo-advisor
+    methods: ["POST"]
+    upstream:
+      type: roundrobin
+      nodes:
+        "investments-service:8116": 1
+    plugins:
+      proxy-rewrite: { uri: /robo-advisor }
+      cors: { allow_origins: "*", allow_methods: "POST,OPTIONS" }
+
+  - uri: /api/investments/dividends
+    name: investments-dividends
+    methods: ["GET"]
+    upstream:
+      type: roundrobin
+      nodes:
+        "investments-service:8116": 1
+    plugins:
+      proxy-rewrite: { uri: /dividends }
+      cors: { allow_origins: "*" }
+
+  # Merchant Routes
+  - uri: /api/merchant/onboard
+    name: merchant-onboard
+    methods: ["POST"]
+    upstream:
+      type: roundrobin
+      nodes:
+        "merchant-service:8117": 1
+    plugins:
+      proxy-rewrite: { uri: /merchants/onboard }
+      limit-count: { count: 5, time_window: 60, rejected_code: 429 }
+      cors: { allow_origins: "*", allow_methods: "POST,OPTIONS" }
+
+  - uri: /api/merchant/approve
+    name: merchant-approve
+    methods: ["POST"]
+    upstream:
+      type: roundrobin
+      nodes:
+        "merchant-service:8117": 1
+    plugins:
+      proxy-rewrite: { uri: /merchants/approve }
+      cors: { allow_origins: "*", allow_methods: "POST,OPTIONS" }
+
+  - uri: /api/merchant/pos/register
+    name: merchant-pos-register
+    methods: ["POST"]
+    upstream:
+      type: roundrobin
+      nodes:
+        "merchant-service:8117": 1
+    plugins:
+      proxy-rewrite: { uri: /pos/register }
+      cors: { allow_origins: "*", allow_methods: "POST,OPTIONS" }
+
+  - uri: /api/merchant/pos/process
+    name: merchant-pos-process
+    methods: ["POST"]
+    upstream:
+      type: roundrobin
+      nodes:
+        "merchant-service:8117": 1
+    plugins:
+      proxy-rewrite: { uri: /pos/process }
+      limit-count: { count: 60, time_window: 60, rejected_code: 429 }
+      cors: { allow_origins: "*", allow_methods: "POST,OPTIONS" }
+
+  - uri: /api/merchant/invoices/*
+    name: merchant-invoices
+    methods: ["GET", "POST"]
+    upstream:
+      type: roundrobin
+      nodes:
+        "merchant-service:8117": 1
+    plugins:
+      proxy-rewrite:
+        regex_uri: ["^/api/merchant/invoices/(.*)", "/invoices/$1"]
+      cors: { allow_origins: "*", allow_methods: "GET,POST,OPTIONS" }
+
+  - uri: /api/merchant/settlements/run
+    name: merchant-settlements
+    methods: ["POST"]
+    upstream:
+      type: roundrobin
+      nodes:
+        "merchant-service:8117": 1
+      timeout: { connect: 5, send: 60, read: 60 }
+    plugins:
+      proxy-rewrite: { uri: /settlements/run }
+      cors: { allow_origins: "*", allow_methods: "POST,OPTIONS" }
+
+  - uri: /api/merchant/analytics
+    name: merchant-analytics
+    methods: ["GET"]
+    upstream:
+      type: roundrobin
+      nodes:
+        "merchant-service:8117": 1
+    plugins:
+      proxy-rewrite: { uri: /analytics }
+      cors: { allow_origins: "*" }
+
+  # African Markets Routes
+  - uri: /api/african/mobile-money/providers
+    name: african-mobile-money-providers
+    methods: ["GET"]
+    upstream:
+      type: roundrobin
+      nodes:
+        "african-markets-service:8118": 1
+    plugins:
+      proxy-rewrite: { uri: /mobile-money/providers }
+      proxy-cache: { cache_ttl: 3600 }
+      cors: { allow_origins: "*" }
+
+  - uri: /api/african/mobile-money/link
+    name: african-mobile-money-link
+    methods: ["POST"]
+    upstream:
+      type: roundrobin
+      nodes:
+        "african-markets-service:8118": 1
+    plugins:
+      proxy-rewrite: { uri: /mobile-money/link }
+      cors: { allow_origins: "*", allow_methods: "POST,OPTIONS" }
+
+  - uri: /api/african/mobile-money/transfer
+    name: african-mobile-money-transfer
+    methods: ["POST"]
+    upstream:
+      type: roundrobin
+      nodes:
+        "african-markets-service:8118": 1
+    plugins:
+      proxy-rewrite: { uri: /mobile-money/transfer }
+      limit-count: { count: 10, time_window: 60, rejected_code: 429 }
+      cors: { allow_origins: "*", allow_methods: "POST,OPTIONS" }
+
+  - uri: /api/african/agents
+    name: african-agents
+    methods: ["GET"]
+    upstream:
+      type: roundrobin
+      nodes:
+        "african-markets-service:8118": 1
+    plugins:
+      proxy-rewrite: { uri: /agents }
+      cors: { allow_origins: "*" }
+
+  - uri: /api/african/agents/nearby
+    name: african-agents-nearby
+    methods: ["GET"]
+    upstream:
+      type: roundrobin
+      nodes:
+        "african-markets-service:8118": 1
+    plugins:
+      proxy-rewrite: { uri: /agents/nearby }
+      cors: { allow_origins: "*" }
+
+  - uri: /api/african/cooperative/*
+    name: african-cooperative
+    methods: ["GET", "POST"]
+    upstream:
+      type: roundrobin
+      nodes:
+        "african-markets-service:8118": 1
+    plugins:
+      proxy-rewrite:
+        regex_uri: ["^/api/african/cooperative/(.*)", "/cooperative/$1"]
+      cors: { allow_origins: "*", allow_methods: "GET,POST,OPTIONS" }
+
+  - uri: /api/african/ussd
+    name: african-ussd
+    methods: ["POST"]
+    upstream:
+      type: roundrobin
+      nodes:
+        "african-markets-service:8118": 1
+    plugins:
+      proxy-rewrite: { uri: /ussd }
+      cors: { allow_origins: "*", allow_methods: "POST,OPTIONS" }
+
+  - uri: /api/african/airtime/*
+    name: african-airtime
+    methods: ["GET", "POST"]
+    upstream:
+      type: roundrobin
+      nodes:
+        "african-markets-service:8118": 1
+    plugins:
+      proxy-rewrite:
+        regex_uri: ["^/api/african/airtime/(.*)", "/airtime/$1"]
+      cors: { allow_origins: "*", allow_methods: "GET,POST,OPTIONS" }
+
+  # ML Gateway Routes
+  - uri: /api/ml/services
+    name: ml-services
+    methods: ["GET"]
+    upstream:
+      type: roundrobin
+      nodes:
+        "ml-gateway-service:8119": 1
+    plugins:
+      proxy-rewrite: { uri: /services }
+      cors: { allow_origins: "*" }
+
+  - uri: /api/ml/predict
+    name: ml-predict
+    methods: ["POST"]
+    upstream:
+      type: roundrobin
+      nodes:
+        "ml-gateway-service:8119": 1
+      timeout: { connect: 5, send: 30, read: 30 }
+    plugins:
+      proxy-rewrite: { uri: /predict }
+      limit-count: { count: 60, time_window: 60, rejected_code: 429 }
+      cors: { allow_origins: "*", allow_methods: "POST,OPTIONS" }
+
+  - uri: /api/ml/fraud/check
+    name: ml-fraud-check
+    methods: ["POST"]
+    upstream:
+      type: roundrobin
+      nodes:
+        "ml-gateway-service:8119": 1
+      timeout: { connect: 5, send: 10, read: 10 }
+    plugins:
+      proxy-rewrite: { uri: /fraud/check }
+      cors: { allow_origins: "*", allow_methods: "POST,OPTIONS" }
+
+  - uri: /api/ml/credit-score/calculate
+    name: ml-credit-score
+    methods: ["POST"]
+    upstream:
+      type: roundrobin
+      nodes:
+        "ml-gateway-service:8119": 1
+    plugins:
+      proxy-rewrite: { uri: /credit-score/calculate }
+      cors: { allow_origins: "*", allow_methods: "POST,OPTIONS" }
+
+  - uri: /api/ml/categorize
+    name: ml-categorize
+    methods: ["POST"]
+    upstream:
+      type: roundrobin
+      nodes:
+        "ml-gateway-service:8119": 1
+    plugins:
+      proxy-rewrite: { uri: /categorize }
+      cors: { allow_origins: "*", allow_methods: "POST,OPTIONS" }
+
+  - uri: /api/ml/risk-assessment
+    name: ml-risk-assessment
+    methods: ["POST"]
+    upstream:
+      type: roundrobin
+      nodes:
+        "ml-gateway-service:8119": 1
+    plugins:
+      proxy-rewrite: { uri: /risk-assessment }
+      cors: { allow_origins: "*", allow_methods: "POST,OPTIONS" }
+
+  - uri: /api/ml/metrics
+    name: ml-metrics
+    methods: ["GET"]
+    upstream:
+      type: roundrobin
+      nodes:
+        "ml-gateway-service:8119": 1
+    plugins:
+      proxy-rewrite: { uri: /metrics }
+      cors: { allow_origins: "*" }
+
+  # Tax Planning Routes
+  - uri: /api/tax/calculate
+    name: tax-calculate
+    methods: ["POST"]
+    upstream:
+      type: roundrobin
+      nodes:
+        "tax-planning-service:8120": 1
+    plugins:
+      proxy-rewrite: { uri: /tax/calculate }
+      limit-count: { count: 30, time_window: 60, rejected_code: 429 }
+      cors: { allow_origins: "*", allow_methods: "POST,OPTIONS" }
+
+  - uri: /api/tax/deductions
+    name: tax-deductions
+    methods: ["GET"]
+    upstream:
+      type: roundrobin
+      nodes:
+        "tax-planning-service:8120": 1
+    plugins:
+      proxy-rewrite: { uri: /tax/deductions }
+      proxy-cache: { cache_ttl: 3600 }
+      cors: { allow_origins: "*" }
+
+  - uri: /api/tax/brackets
+    name: tax-brackets
+    methods: ["GET"]
+    upstream:
+      type: roundrobin
+      nodes:
+        "tax-planning-service:8120": 1
+    plugins:
+      proxy-rewrite: { uri: /tax/brackets }
+      proxy-cache: { cache_ttl: 3600 }
+      cors: { allow_origins: "*" }
+
+  - uri: /api/tax/history
+    name: tax-history
+    methods: ["GET"]
+    upstream:
+      type: roundrobin
+      nodes:
+        "tax-planning-service:8120": 1
+    plugins:
+      proxy-rewrite: { uri: /tax/history }
+      cors: { allow_origins: "*" }
+
+  - uri: /api/retirement/plan
+    name: retirement-plan
+    methods: ["GET", "POST"]
+    upstream:
+      type: roundrobin
+      nodes:
+        "tax-planning-service:8120": 1
+    plugins:
+      proxy-rewrite: { uri: /retirement/plan }
+      cors: { allow_origins: "*", allow_methods: "GET,POST,OPTIONS" }
+
+  - uri: /api/estate/plan
+    name: estate-plan
+    methods: ["GET", "POST"]
+    upstream:
+      type: roundrobin
+      nodes:
+        "tax-planning-service:8120": 1
+    plugins:
+      proxy-rewrite: { uri: /estate/plan }
+      cors: { allow_origins: "*", allow_methods: "GET,POST,OPTIONS" }
+
+  - uri: /api/capital-gains/calculate
+    name: capital-gains
+    methods: ["POST"]
+    upstream:
+      type: roundrobin
+      nodes:
+        "tax-planning-service:8120": 1
+    plugins:
+      proxy-rewrite: { uri: /capital-gains/calculate }
+      cors: { allow_origins: "*", allow_methods: "POST,OPTIONS" }
+
+  - uri: /api/financial-health/score
+    name: financial-health
+    methods: ["POST"]
+    upstream:
+      type: roundrobin
+      nodes:
+        "tax-planning-service:8120": 1
+    plugins:
+      proxy-rewrite: { uri: /financial-health/score }
+      cors: { allow_origins: "*", allow_methods: "POST,OPTIONS" }
