@@ -1,0 +1,12 @@
+FROM golang:1.22-alpine AS builder
+WORKDIR /app
+COPY go.mod .
+RUN go mod download
+COPY kubernetes/ kubernetes/
+RUN CGO_ENABLED=0 GOOS=linux go build -o /kubernetes-service ./kubernetes/cmd/main.go
+
+FROM alpine:3.19
+RUN apk --no-cache add ca-certificates
+COPY --from=builder /kubernetes-service /kubernetes-service
+EXPOSE 8088
+CMD ["/kubernetes-service"]

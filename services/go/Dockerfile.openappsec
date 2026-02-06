@@ -1,0 +1,12 @@
+FROM golang:1.22-alpine AS builder
+WORKDIR /app
+COPY go.mod .
+RUN go mod download
+COPY openappsec/ openappsec/
+RUN CGO_ENABLED=0 GOOS=linux go build -o /openappsec-service ./openappsec/cmd/main.go
+
+FROM alpine:3.19
+RUN apk --no-cache add ca-certificates
+COPY --from=builder /openappsec-service /openappsec-service
+EXPOSE 8087
+CMD ["/openappsec-service"]

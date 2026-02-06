@@ -1,0 +1,12 @@
+FROM golang:1.22-alpine AS builder
+WORKDIR /app
+COPY go.mod .
+RUN go mod download
+COPY redis/ redis/
+RUN CGO_ENABLED=0 GOOS=linux go build -o /redis-service ./redis/cmd/main.go
+
+FROM alpine:3.19
+RUN apk --no-cache add ca-certificates
+COPY --from=builder /redis-service /redis-service
+EXPOSE 8082
+CMD ["/redis-service"]

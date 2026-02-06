@@ -1,0 +1,12 @@
+temporalio==1.7.1
+python-keycloak==4.2.2
+permify-grpc==0.9.0
+dapr==1.14.0
+trino==0.329.0
+fastapi==0.115.6
+uvicorn==0.34.0
+httpx==0.28.1
+pydantic==2.10.4
+grpcio==1.69.0
+grpcio-tools==1.69.0
+python-jose[cryptography]==3.3.0
