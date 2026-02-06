@@ -311,7 +311,7 @@ pub struct KycUploadResponse {
     pub total_bytes: u64,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TransferProgress {
     pub transfer_id: String,
     pub status: String,

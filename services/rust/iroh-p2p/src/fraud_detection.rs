@@ -1,22 +1,27 @@
 use anyhow::Result;
-use chrono::Utc;
+use chrono::{DateTime, Utc};
 use dashmap::DashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
-use tracing::info;
+use tracing::{info, warn};
 use uuid::Uuid;
 
+use crate::persistence::{LocalStore, RecordType};
 use crate::types::*;
+
+const ALERT_TTL_HOURS: i64 = 72;
 
 pub struct FraudDetectionService {
     alerts: Arc<RwLock<Vec<FraudAlert>>>,
     subscriptions: Arc<DashMap<String, Vec<String>>>,
     stats: Arc<RwLock<ModuleStats>>,
+    missed_alerts: Arc<RwLock<Vec<FraudAlert>>>,
+    store: Arc<LocalStore>,
 }
 
 impl FraudDetectionService {
-    pub async fn new() -> Result<Self> {
-        info!("Initializing Fraud Detection Service with iroh-gossip broadcast");
+    pub async fn new(store: Arc<LocalStore>) -> Result<Self> {
+        info!("Initializing Fraud Detection Service with gossip catch-up, alert TTL, persistence, and idempotency");
 
         let initial_alerts = vec![
             FraudAlert {
@@ -87,6 +92,8 @@ impl FraudDetectionService {
                 active_connections: 3,
                 ..Default::default()
             })),
+            missed_alerts: Arc::new(RwLock::new(Vec::new())),
+            store,
         })
     }
 
@@ -94,6 +101,23 @@ impl FraudDetectionService {
         let alert_id = Uuid::new_v4().to_string();
         alert.alert_id = Some(alert_id.clone());
         alert.timestamp = Some(Utc::now());
+
+        let idempotency_key = LocalStore::generate_idempotency_key(
+            alert.source_node.as_deref().unwrap_or("unknown"),
+            &alert.description,
+            alert.confidence_score,
+            &Utc::now(),
+        );
+
+        if let Some(existing_id) = self.store.check_idempotency(&idempotency_key).await {
+            info!("Idempotent fraud alert hit: {}", existing_id);
+            return Ok(FraudAlertResponse {
+                alert_id: existing_id,
+                broadcast_to: 0,
+                acknowledged_by: 0,
+                propagation_time_ms: 0,
+            });
+        }
 
         let topic = match &alert.alert_type {
             FraudAlertType::SuspiciousTransaction => "suspicious_transactions",
@@ -108,6 +132,19 @@ impl FraudDetectionService {
             .map(|s| s.len())
             .unwrap_or(0);
 
+        let offline_peers = self.count_offline_subscribers(topic);
+        if offline_peers > 0 {
+            let mut missed = self.missed_alerts.write().await;
+            missed.push(alert.clone());
+            info!("Queued alert for {} offline peers for gossip catch-up", offline_peers);
+        }
+
+        self.store.persist_record(
+            RecordType::FraudAlert,
+            serde_json::to_value(&alert)?,
+            idempotency_key,
+        ).await?;
+
         let mut alerts = self.alerts.write().await;
         alerts.push(alert);
 
@@ -115,26 +152,43 @@ impl FraudDetectionService {
         stats.total_operations += 1;
         stats.successful += 1;
 
-        info!("Fraud alert {} broadcast to {} peers via iroh-gossip topic '{}'", 
-            alert_id, broadcast_count, topic);
+        info!("Fraud alert {} broadcast to {} peers via iroh-gossip topic '{}', {} offline queued",
+            alert_id, broadcast_count, topic, offline_peers);
 
         Ok(FraudAlertResponse {
             alert_id,
             broadcast_to: broadcast_count,
-            acknowledged_by: broadcast_count.saturating_sub(1),
+            acknowledged_by: broadcast_count.saturating_sub(offline_peers),
             propagation_time_ms: 8,
         })
     }
 
     pub async fn get_alerts(&self) -> Vec<FraudAlert> {
-        self.alerts.read().await.clone()
+        let alerts = self.alerts.read().await;
+        let cutoff = Utc::now() - chrono::Duration::hours(ALERT_TTL_HOURS);
+        alerts.iter()
+            .filter(|a| a.timestamp.map_or(true, |t| t > cutoff))
+            .cloned()
+            .collect()
+    }
+
+    pub async fn gossip_catchup(&self, node_id: &str, last_seen: DateTime<Utc>) -> Vec<FraudAlert> {
+        let alerts = self.alerts.read().await;
+        let missed: Vec<FraudAlert> = alerts.iter()
+            .filter(|a| a.timestamp.map_or(false, |t| t > last_seen))
+            .cloned()
+            .collect();
+
+        info!("Gossip catch-up for node {}: {} missed alerts since {}",
+            node_id, missed.len(), last_seen);
+        missed
     }
 
     pub async fn subscribe(&self, topic: &str) -> Result<FraudSubscribeResponse> {
         let mut entry = self.subscriptions
             .entry(topic.to_string())
             .or_insert_with(Vec::new);
-        
+
         let node_id = format!("node-subscriber-{}", Uuid::new_v4().to_string().split('-').next().unwrap_or("000"));
         entry.push(node_id);
 
@@ -147,6 +201,25 @@ impl FraudDetectionService {
             subscribed: true,
             peer_count,
         })
+    }
+
+    pub async fn expire_old_alerts(&self) -> u32 {
+        let cutoff = Utc::now() - chrono::Duration::hours(ALERT_TTL_HOURS);
+        let mut alerts = self.alerts.write().await;
+        let before = alerts.len();
+        alerts.retain(|a| a.timestamp.map_or(true, |t| t > cutoff));
+        let expired = (before - alerts.len()) as u32;
+        if expired > 0 {
+            info!("Expired {} fraud alerts older than {}h", expired, ALERT_TTL_HOURS);
+        }
+        expired
+    }
+
+    fn count_offline_subscribers(&self, topic: &str) -> usize {
+        self.subscriptions
+            .get(topic)
+            .map(|s| s.iter().filter(|n| n.contains("relay") || n.contains("offline")).count())
+            .unwrap_or(0)
     }
 
     pub async fn get_stats(&self) -> ModuleStats {

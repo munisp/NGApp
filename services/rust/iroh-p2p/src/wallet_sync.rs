@@ -5,6 +5,7 @@ use tokio::sync::RwLock;
 use tracing::info;
 use uuid::Uuid;
 
+use crate::persistence::{CrdtEntry, LocalStore, RecordType};
 use crate::types::*;
 
 pub struct WalletSyncService {
@@ -12,11 +13,12 @@ pub struct WalletSyncService {
     devices: Arc<RwLock<Vec<DeviceInfo>>>,
     stats: Arc<RwLock<ModuleStats>>,
     version: Arc<RwLock<u64>>,
+    store: Arc<LocalStore>,
 }
 
 impl WalletSyncService {
-    pub async fn new() -> Result<Self> {
-        info!("Initializing Wallet Sync Service with iroh-docs multi-writer CRDT");
+    pub async fn new(store: Arc<LocalStore>) -> Result<Self> {
+        info!("Initializing Wallet Sync Service with CRDT conflict resolution and persistence");
 
         let initial_state = WalletState {
             wallet_data: Some(WalletData {
@@ -92,6 +94,7 @@ impl WalletSyncService {
             devices: Arc::new(RwLock::new(devices)),
             stats: Arc::new(RwLock::new(ModuleStats::default())),
             version: Arc::new(RwLock::new(1)),
+            store,
         })
     }
 
@@ -99,11 +102,54 @@ impl WalletSyncService {
         let start = std::time::Instant::now();
         let sync_id = Uuid::new_v4().to_string();
 
+        let idempotency_key = LocalStore::generate_idempotency_key(
+            &req.device_id, "wallet_sync", 0.0, &Utc::now(),
+        );
+
         let mut version = self.version.write().await;
         *version += 1;
 
+        let mut conflicts_resolved = 0u32;
+
+        for balance in &req.wallet_data.balances {
+            let entry = CrdtEntry {
+                key: format!("balance:{}", balance.account_id),
+                value: serde_json::to_value(balance)?,
+                vector_clock: vec![(req.device_id.clone(), *version)],
+                origin_device: req.device_id.clone(),
+                timestamp: Utc::now(),
+            };
+            let result = self.store.crdt_merge(entry).await?;
+            if result.origin_device != req.device_id {
+                conflicts_resolved += 1;
+            }
+        }
+
+        let settings_entry = CrdtEntry {
+            key: "settings".to_string(),
+            value: req.wallet_data.settings.clone(),
+            vector_clock: vec![(req.device_id.clone(), *version)],
+            origin_device: req.device_id.clone(),
+            timestamp: Utc::now(),
+        };
+        let settings_result = self.store.crdt_merge(settings_entry).await?;
+        if settings_result.origin_device != req.device_id {
+            conflicts_resolved += 1;
+        }
+
+        for tx in &req.wallet_data.recent_transactions {
+            let tx_entry = CrdtEntry {
+                key: format!("tx:{}", tx.id),
+                value: serde_json::to_value(tx)?,
+                vector_clock: vec![(req.device_id.clone(), *version)],
+                origin_device: req.device_id.clone(),
+                timestamp: tx.timestamp,
+            };
+            self.store.crdt_merge(tx_entry).await?;
+        }
+
         let mut state = self.state.write().await;
-        state.wallet_data = Some(req.wallet_data);
+        state.wallet_data = Some(req.wallet_data.clone());
         state.last_sync = Some(Utc::now());
         state.version = *version;
 
@@ -122,6 +168,21 @@ impl WalletSyncService {
         }
         state.synced_devices = devices.len();
 
+        let entries_synced = req.wallet_data.balances.len() as u32
+            + req.wallet_data.recent_transactions.len() as u32
+            + 1;
+
+        self.store.persist_record(
+            RecordType::WalletSync,
+            serde_json::json!({
+                "device_id": req.device_id,
+                "version": *version,
+                "entries_synced": entries_synced,
+                "conflicts_resolved": conflicts_resolved,
+            }),
+            idempotency_key,
+        ).await?;
+
         let duration = start.elapsed();
 
         let mut stats = self.stats.write().await;
@@ -129,13 +190,14 @@ impl WalletSyncService {
         stats.successful += 1;
         stats.avg_latency_ms = duration.as_millis() as f64;
 
-        info!("Wallet synced for device {}, version {}", req.device_id, *version);
+        info!("Wallet synced: device={}, version={}, entries={}, conflicts_resolved={}",
+            req.device_id, *version, entries_synced, conflicts_resolved);
 
         Ok(WalletSyncResponse {
             sync_id,
             status: "synced".to_string(),
-            conflicts_resolved: 0,
-            entries_synced: 2,
+            conflicts_resolved,
+            entries_synced,
             sync_duration_ms: duration.as_millis() as u64,
         })
     }

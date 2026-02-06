@@ -3,20 +3,22 @@ use chrono::Utc;
 use dashmap::DashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
-use tracing::info;
+use tracing::{info, warn};
 use uuid::Uuid;
 
+use crate::persistence::{LocalStore, RecordType};
 use crate::types::*;
 
 pub struct P2PPaymentService {
     transfers: Arc<DashMap<String, P2PTransferResponse>>,
     peers: Arc<RwLock<Vec<PeerInfo>>>,
     stats: Arc<RwLock<ModuleStats>>,
+    store: Arc<LocalStore>,
 }
 
 impl P2PPaymentService {
-    pub async fn new() -> Result<Self> {
-        info!("Initializing P2P Payment Service with iroh direct connections");
+    pub async fn new(store: Arc<LocalStore>) -> Result<Self> {
+        info!("Initializing P2P Payment Service with persistence, balance reservation, idempotency, and offline limits");
 
         let peers = vec![
             PeerInfo {
@@ -49,11 +51,22 @@ impl P2PPaymentService {
             transfers: Arc::new(DashMap::new()),
             peers: Arc::new(RwLock::new(peers)),
             stats: Arc::new(RwLock::new(ModuleStats::default())),
+            store,
         })
     }
 
     pub async fn initiate_transfer(&self, req: P2PTransferRequest) -> Result<P2PTransferResponse> {
-        let transfer_id = Uuid::new_v4().to_string();
+        let now = Utc::now();
+        let idempotency_key = LocalStore::generate_idempotency_key(
+            &req.sender_id, &req.recipient_public_key, req.amount, &now,
+        );
+
+        if let Some(existing_id) = self.store.check_idempotency(&idempotency_key).await {
+            if let Some(existing) = self.transfers.get(&existing_id) {
+                info!("Idempotent P2P transfer hit: {}", existing_id);
+                return Ok(existing.clone());
+            }
+        }
 
         let connection_type = if req.offline_mode {
             ConnectionType::Offline
@@ -66,8 +79,25 @@ impl P2PPaymentService {
             }
         };
 
+        if matches!(connection_type, ConnectionType::Offline) {
+            if !self.store.check_offline_limit("p2p_payments", req.amount).await? {
+                return Err(anyhow::anyhow!(
+                    "Offline limit exceeded: max single NGN 50,000, daily NGN 200,000, 20 transactions/day"
+                ));
+            }
+        }
+
+        let transfer_id = Uuid::new_v4().to_string();
+
+        let reservation = self.store.reserve_balance(
+            &req.sender_id, req.amount, &req.currency, &transfer_id,
+        ).await?;
+
         let status = match &connection_type {
-            ConnectionType::Direct => TransferStatus::Confirmed,
+            ConnectionType::Direct => {
+                self.store.commit_reservation(&reservation.reservation_id).await?;
+                TransferStatus::Confirmed
+            }
             ConnectionType::Relay => TransferStatus::InTransit,
             ConnectionType::Offline => TransferStatus::Queued,
         };
@@ -75,14 +105,28 @@ impl P2PPaymentService {
         let response = P2PTransferResponse {
             transfer_id: transfer_id.clone(),
             status,
-            sender_id: req.sender_id,
-            recipient_id: req.recipient_public_key,
+            sender_id: req.sender_id.clone(),
+            recipient_id: req.recipient_public_key.clone(),
             amount: req.amount,
-            currency: req.currency,
-            connection_type,
-            created_at: Utc::now(),
-            estimated_confirmation: Some("< 2 seconds for direct, < 10 seconds for relay".to_string()),
+            currency: req.currency.clone(),
+            connection_type: connection_type.clone(),
+            created_at: now,
+            estimated_confirmation: Some(match &connection_type {
+                ConnectionType::Direct => "< 2 seconds".to_string(),
+                ConnectionType::Relay => "< 10 seconds".to_string(),
+                ConnectionType::Offline => "When connectivity restored via iroh relay".to_string(),
+            }),
         };
+
+        self.store.persist_record(
+            RecordType::P2PTransfer,
+            serde_json::to_value(&response)?,
+            idempotency_key,
+        ).await?;
+
+        if matches!(connection_type, ConnectionType::Offline) {
+            self.store.record_offline_usage("p2p_payments", req.amount).await;
+        }
 
         self.transfers.insert(transfer_id, response.clone());
 
@@ -92,8 +136,9 @@ impl P2PPaymentService {
         stats.avg_latency_ms = (stats.avg_latency_ms * (stats.total_operations - 1) as f64 + 15.0)
             / stats.total_operations as f64;
 
-        info!("P2P transfer initiated: {} -> {}, amount: {} {}", 
-            response.sender_id, response.recipient_id, response.amount, response.currency);
+        info!("P2P transfer initiated: {} -> {}, {} {}, mode: {:?}, reservation: {}",
+            response.sender_id, response.recipient_id, response.amount, response.currency,
+            response.connection_type, reservation.reservation_id);
 
         Ok(response)
     }

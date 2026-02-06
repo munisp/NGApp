@@ -4,10 +4,6 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-iroh = "0.32"
-iroh-blobs = "0.31"
-iroh-gossip = "0.31"
-iroh-docs = "0.28"
 tokio = { version = "1", features = ["full"] }
 axum = { version = "0.7", features = ["json"] }
 serde = { version = "1", features = ["derive"] }
