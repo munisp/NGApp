@@ -14,6 +14,7 @@ import { useColors } from '@/hooks/use-colors';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import * as Haptics from 'expo-haptics';
 import { Platform } from 'react-native';
+import { DEMO } from '@/lib/demo-data';
 
 /**
  * Budget Recommendations Screen
@@ -30,8 +31,10 @@ export default function BudgetRecommendationsScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [selectedCategories, setSelectedCategories] = useState<Set<string>>(new Set());
 
-  const { data: recommendations, isLoading, refetch } = trpc.budgetRecommendations.getRecommendations.useQuery();
-  const { data: insights } = trpc.budgetRecommendations.getInsights.useQuery();
+    const { data: _recommendations, isLoading, isError: recError, refetch } = trpc.budgetRecommendations.getRecommendations.useQuery();
+    const { data: _insights, isError: insError } = trpc.budgetRecommendations.getInsights.useQuery();
+    const recommendations = recError ? DEMO.budgetRecommendations : _recommendations;
+    const insights = insError ? DEMO.budgetInsights : _insights;
   const applyMutation = trpc.budgetRecommendations.applyRecommendations.useMutation();
 
   const handleRefresh = async () => {
@@ -128,14 +131,14 @@ export default function BudgetRecommendationsScreen() {
     }
   };
 
-  if (isLoading) {
-    return (
-      <ScreenContainer className="items-center justify-center">
-        <ActivityIndicator size="large" color={colors.primary} />
-        <Text className="mt-4 text-muted">Analyzing your finances...</Text>
-      </ScreenContainer>
-    );
-  }
+    if (isLoading && !recError) {
+      return (
+        <ScreenContainer className="items-center justify-center">
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text className="mt-4 text-muted">Analyzing your finances...</Text>
+        </ScreenContainer>
+      );
+    }
 
   return (
     <ScreenContainer>

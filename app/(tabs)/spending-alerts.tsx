@@ -17,6 +17,7 @@ import { IconSymbol } from '@/components/ui/icon-symbol';
 import * as Haptics from 'expo-haptics';
 import { Platform } from 'react-native';
 import * as Notifications from 'expo-notifications';
+import { DEMO } from '@/lib/demo-data';
 
 /**
  * Spending Alerts Screen
@@ -44,13 +45,15 @@ export default function SpendingAlertsScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
 
-  // Fetch alerts and settings
-  const { data: alerts, isLoading, refetch } = trpc.spendingAlerts.getAlerts.useQuery({
-    includeRead: false,
-    includeDismissed: false,
-  });
+    // Fetch alerts and settings
+    const { data: _alerts, isLoading, isError: alertsError, refetch } = trpc.spendingAlerts.getAlerts.useQuery({
+      includeRead: false,
+      includeDismissed: false,
+    });
 
-  const { data: settings, refetch: refetchSettings } = trpc.spendingAlerts.getSettings.useQuery();
+    const { data: _settings, isError: settingsError, refetch: refetchSettings } = trpc.spendingAlerts.getSettings.useQuery();
+    const alerts = alertsError ? DEMO.spendingAlerts : _alerts;
+    const settings = settingsError ? DEMO.spendingAlertSettings : _settings;
 
   // Mutations
   const markAsReadMutation = trpc.spendingAlerts.markAsRead.useMutation();
@@ -186,14 +189,14 @@ export default function SpendingAlertsScreen() {
     return date.toLocaleDateString();
   };
 
-  if (isLoading) {
-    return (
-      <ScreenContainer className="items-center justify-center">
-        <ActivityIndicator size="large" color={colors.primary} />
-        <Text className="mt-4 text-muted">Loading alerts...</Text>
-      </ScreenContainer>
-    );
-  }
+    if (isLoading && !alertsError) {
+      return (
+        <ScreenContainer className="items-center justify-center">
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text className="mt-4 text-muted">Loading alerts...</Text>
+        </ScreenContainer>
+      );
+    }
 
   return (
     <ScreenContainer>

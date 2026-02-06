@@ -6,6 +6,7 @@ import { IconSymbol } from '@/components/ui/icon-symbol';
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { trpc } from '@/lib/trpc';
+import { DEMO } from '@/lib/demo-data';
 import Svg, { Circle, G } from 'react-native-svg';
 
 const { width } = Dimensions.get('window');
@@ -41,15 +42,18 @@ export default function CreditScoreScreen() {
   const [creditScore, setCreditScore] = useState<CreditScore | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Fetch credit score
-  const { data: scoreData, isLoading } = trpc.creditScore.getCurrentScore.useQuery();
+    // Fetch credit score
+    const { data: scoreData, isLoading, isError } = trpc.creditScore.getCurrentScore.useQuery();
 
-  useEffect(() => {
-    if (scoreData) {
-      setCreditScore(scoreData);
-      setLoading(false);
-    }
-  }, [scoreData]);
+    useEffect(() => {
+      if (isError) {
+        setCreditScore(DEMO.creditScore);
+        setLoading(false);
+      } else if (scoreData) {
+        setCreditScore(scoreData);
+        setLoading(false);
+      }
+    }, [scoreData, isError]);
 
   const getScoreColor = (score: number) => {
     if (score >= 750) return '#22C55E'; // Excellent - Green

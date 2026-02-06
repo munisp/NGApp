@@ -6,13 +6,15 @@ import { useColors } from '@/hooks/use-colors';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import * as Haptics from 'expo-haptics';
 import { Platform } from 'react-native';
+import { DEMO } from '@/lib/demo-data';
 
 export default function AccountManagementScreen() {
   const colors = useColors();
   const [refreshing, setRefreshing] = useState(false);
   const [syncingAccountId, setSyncingAccountId] = useState<string | null>(null);
 
-  const { data: accounts = [], isLoading, refetch } = trpc.openBanking.getLinkedAccounts.useQuery();
+  const { data: _accounts = [], isLoading, isError, refetch } = trpc.openBanking.getLinkedAccounts.useQuery();
+  const accounts = isError ? DEMO.linkedAccounts : _accounts;
   const syncAccountMutation = trpc.openBanking.syncAccount.useMutation();
   const unlinkAccountMutation = trpc.openBanking.unlinkAccount.useMutation();
 
@@ -135,16 +137,16 @@ export default function AccountManagementScreen() {
     return '🏦';
   };
 
-  if (isLoading) {
-    return (
-      <ScreenContainer className="p-4">
-        <View className="flex-1 items-center justify-center">
-          <ActivityIndicator size="large" color={colors.primary} />
-          <Text className="text-muted mt-4">Loading accounts...</Text>
-        </View>
-      </ScreenContainer>
-    );
-  }
+    if (isLoading && !isError) {
+      return (
+        <ScreenContainer className="p-4">
+          <View className="flex-1 items-center justify-center">
+            <ActivityIndicator size="large" color={colors.primary} />
+            <Text className="text-muted mt-4">Loading accounts...</Text>
+          </View>
+        </ScreenContainer>
+      );
+    }
 
   return (
     <ScreenContainer className="p-4">

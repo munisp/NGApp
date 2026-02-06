@@ -6,8 +6,9 @@ import { useColors } from '@/hooks/use-colors';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import * as Haptics from 'expo-haptics';
 import { Platform } from 'react-native';
+import { DEMO } from '@/lib/demo-data';
 
-const SCREEN_WIDTH = Dimensions.get('window').width;
+const SCREEN_WIDTH= Dimensions.get('window').width;
 const CHART_WIDTH = SCREEN_WIDTH - 48; // 24px padding on each side
 
 const CATEGORY_COLORS: Record<string, string> = {
@@ -25,17 +26,22 @@ export default function BudgetAnalyticsScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string | undefined>(undefined);
 
-  const { data: monthlyTrends, isLoading: trendsLoading, refetch: refetchTrends } =
-    trpc.budgetAnalytics.getMonthlyTrends.useQuery({ category: selectedCategory });
+    const { data: _monthlyTrends, isLoading: trendsLoading, isError: trendsError, refetch: refetchTrends } =
+      trpc.budgetAnalytics.getMonthlyTrends.useQuery({ category: selectedCategory });
 
-  const { data: categoryBreakdown, isLoading: breakdownLoading, refetch: refetchBreakdown } =
-    trpc.budgetAnalytics.getCategoryBreakdown.useQuery();
+    const { data: _categoryBreakdown, isLoading: breakdownLoading, isError: breakdownError, refetch: refetchBreakdown } =
+      trpc.budgetAnalytics.getCategoryBreakdown.useQuery();
 
-  const { data: budgetComparison, isLoading: comparisonLoading, refetch: refetchComparison } =
-    trpc.budgetAnalytics.getBudgetComparison.useQuery();
+    const { data: _budgetComparison, isLoading: comparisonLoading, isError: comparisonError, refetch: refetchComparison } =
+      trpc.budgetAnalytics.getBudgetComparison.useQuery();
 
-  const { data: overspendingPatterns, isLoading: patternsLoading, refetch: refetchPatterns } =
-    trpc.budgetAnalytics.getOverspendingPatterns.useQuery();
+    const { data: _overspendingPatterns, isLoading: patternsLoading, isError: patternsError, refetch: refetchPatterns } =
+      trpc.budgetAnalytics.getOverspendingPatterns.useQuery();
+
+    const monthlyTrends = trendsError ? DEMO.monthlyTrends : _monthlyTrends;
+    const categoryBreakdown = breakdownError ? DEMO.categoryBreakdown : _categoryBreakdown;
+    const budgetComparison = comparisonError ? DEMO.budgetComparison : _budgetComparison;
+    const overspendingPatterns = patternsError ? DEMO.overspendingPatterns : _overspendingPatterns;
 
   const handleRefresh = async () => {
     if (Platform.OS !== 'web') {
@@ -54,9 +60,10 @@ export default function BudgetAnalyticsScreen() {
     return CATEGORY_COLORS[category] || CATEGORY_COLORS.other;
   };
 
-  const isLoading = trendsLoading || breakdownLoading || comparisonLoading || patternsLoading;
+    const hasError = trendsError || breakdownError || comparisonError || patternsError;
+    const isLoading = (trendsLoading || breakdownLoading || comparisonLoading || patternsLoading) && !hasError;
 
-  if (isLoading) {
+    if (isLoading) {
     return (
       <ScreenContainer className="p-4">
         <View className="flex-1 items-center justify-center">

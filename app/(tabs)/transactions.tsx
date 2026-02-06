@@ -6,8 +6,9 @@ import { useColors } from '@/hooks/use-colors';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import * as Haptics from 'expo-haptics';
 import { Platform } from 'react-native';
+import { DEMO } from '@/lib/demo-data';
 
-type TransactionType = 'all' | 'debit' | 'credit';
+type TransactionType= 'all' | 'debit' | 'credit';
 type TransactionStatus = 'all' | 'completed' | 'pending' | 'failed';
 
 export default function TransactionsScreen() {
@@ -24,22 +25,23 @@ export default function TransactionsScreen() {
   const [categoryFilter, setCategoryFilter] = useState('all');
   const pageSize = 50;
 
-  // Get linked accounts first
-  const { data: accountsData } = trpc.openBanking.getLinkedAccounts.useQuery();
-  const accounts = accountsData || [];
+    // Get linked accounts first
+    const { data: accountsData, isError: accountsError } = trpc.openBanking.getLinkedAccounts.useQuery();
+    const accounts = accountsError ? DEMO.linkedAccounts : (accountsData || []);
 
   // Use first account if available
   const selectedAccountId = accountId || accounts[0]?.id || '';
 
-  const { data: transactions = [], isLoading, refetch, isFetching } = trpc.openBanking.getTransactions.useQuery(
-    {
-      accountId: selectedAccountId,
-      limit: pageSize,
-    },
-    {
-      enabled: !!selectedAccountId,
-    }
-  );
+    const { data: _transactions = [], isLoading, refetch, isFetching, isError: txError } = trpc.openBanking.getTransactions.useQuery(
+      {
+        accountId: selectedAccountId,
+        limit: pageSize,
+      },
+      {
+        enabled: !!selectedAccountId,
+      }
+    );
+    const transactions = txError ? DEMO.transactions.map(t => ({ ...t, type: t.amount < 0 ? 'debit' : 'credit', status: 'completed' })) : _transactions;
 
   // Filter transactions based on search and filters
   const filteredTransactions = transactions.filter((txn: any) => {

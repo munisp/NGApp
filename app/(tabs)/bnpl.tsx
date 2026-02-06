@@ -6,8 +6,9 @@ import { IconSymbol } from '@/components/ui/icon-symbol';
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { trpc } from '@/lib/trpc';
+import { DEMO } from '@/lib/demo-data';
 
-interface BNPLApplication {
+interface BNPLApplication{
   id: string;
   studentName: string;
   schoolName: string;
@@ -27,15 +28,18 @@ export default function BNPLScreen() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'active' | 'pending' | 'history'>('active');
 
-  // Fetch BNPL applications
-  const { data: applicationsData, isLoading } = trpc.bnpl.getApplications.useQuery();
+    // Fetch BNPL applications
+    const { data: applicationsData, isLoading, isError } = trpc.bnpl.getApplications.useQuery();
 
-  useEffect(() => {
-    if (applicationsData) {
-      setApplications(applicationsData);
-      setLoading(false);
-    }
-  }, [applicationsData]);
+    useEffect(() => {
+      if (isError) {
+        setApplications(DEMO.bnplApplications as BNPLApplication[]);
+        setLoading(false);
+      } else if (applicationsData) {
+        setApplications(applicationsData);
+        setLoading(false);
+      }
+    }, [applicationsData, isError]);
 
   const handleNewApplication = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);

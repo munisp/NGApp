@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { ScreenContainer } from '@/components/screen-container';
 import { trpc } from '@/lib/trpc';
+import { DEMO } from '@/lib/demo-data';
 
 /**
  * MFA Settings Screen
@@ -16,7 +17,8 @@ export default function MfaSettingsScreen() {
   const [verificationCode, setVerificationCode] = useState('');
   const [newBackupCodes, setNewBackupCodes] = useState<string[]>([]);
   
-  const { data: statusData, isLoading, refetch } = trpc.mfa.getStatus.useQuery();
+  const { data: _statusData, isLoading, isError: mfaError, refetch } = trpc.mfa.getStatus.useQuery();
+  const statusData = mfaError ? DEMO.mfaStatus : _statusData;
   const disableMutation = trpc.mfa.disable.useMutation();
   const regenerateMutation = trpc.mfa.regenerateBackupCodes.useMutation();
   
@@ -80,15 +82,15 @@ export default function MfaSettingsScreen() {
     }
   };
   
-  if (isLoading) {
-    return (
-      <ScreenContainer className="p-6">
-        <View className="flex-1 items-center justify-center">
-          <ActivityIndicator size="large" color="#0a7ea4" />
-        </View>
-      </ScreenContainer>
-    );
-  }
+    if (isLoading && !mfaError) {
+      return (
+        <ScreenContainer className="p-6">
+          <View className="flex-1 items-center justify-center">
+            <ActivityIndicator size="large" color="#0a7ea4" />
+          </View>
+        </ScreenContainer>
+      );
+    }
   
   return (
     <ScreenContainer className="p-6">

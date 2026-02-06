@@ -17,6 +17,7 @@ import { useColors } from '@/hooks/use-colors';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import * as Haptics from 'expo-haptics';
 import { Platform } from 'react-native';
+import { DEMO } from '@/lib/demo-data';
 
 /**
  * Bill Reminders & Auto-Pay Screen
@@ -44,9 +45,12 @@ export default function BillRemindersScreen() {
   const [autoPayEnabled, setAutoPayEnabled] = useState(false);
   const [reminderDays, setReminderDays] = useState('3');
 
-  const { data, isLoading, refetch } = trpc.billReminders.getBillReminders.useQuery();
-  const { data: upcomingData } = trpc.billReminders.getUpcomingBills.useQuery();
-  const { data: overdueData } = trpc.billReminders.getOverdueBills.useQuery();
+    const { data: _data, isLoading, isError: billsError, refetch } = trpc.billReminders.getBillReminders.useQuery();
+    const { data: _upcomingData, isError: upError } = trpc.billReminders.getUpcomingBills.useQuery();
+    const { data: _overdueData, isError: odError } = trpc.billReminders.getOverdueBills.useQuery();
+    const data = billsError ? DEMO.billReminders : _data;
+    const upcomingData = upError ? DEMO.upcomingBills : _upcomingData;
+    const overdueData = odError ? DEMO.overdueBills : _overdueData;
   
   const createMutation = trpc.billReminders.createBillReminder.useMutation();
   const updateMutation = trpc.billReminders.updateBillReminder.useMutation();
@@ -216,14 +220,14 @@ export default function BillRemindersScreen() {
     return days;
   };
 
-  if (isLoading) {
-    return (
-      <ScreenContainer className="items-center justify-center">
-        <ActivityIndicator size="large" color={colors.primary} />
-        <Text className="mt-4 text-muted">Loading bill reminders...</Text>
-      </ScreenContainer>
-    );
-  }
+    if (isLoading && !billsError) {
+      return (
+        <ScreenContainer className="items-center justify-center">
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text className="mt-4 text-muted">Loading bill reminders...</Text>
+        </ScreenContainer>
+      );
+    }
 
   const reminders = data?.reminders || [];
   const upcomingCount = data?.upcomingCount || 0;

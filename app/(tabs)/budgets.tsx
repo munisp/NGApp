@@ -6,8 +6,9 @@ import { useColors } from '@/hooks/use-colors';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import * as Haptics from 'expo-haptics';
 import { Platform } from 'react-native';
+import { DEMO } from '@/lib/demo-data';
 
-const CATEGORIES = [
+const CATEGORIES= [
   { id: 'food', name: 'Food & Dining', icon: '🍽️', color: '#FF6B6B' },
   { id: 'transport', name: 'Transport', icon: '🚗', color: '#4ECDC4' },
   { id: 'shopping', name: 'Shopping', icon: '🛍️', color: '#FFE66D' },
@@ -25,8 +26,10 @@ export default function BudgetsScreen() {
   const [monthlyLimit, setMonthlyLimit] = useState('');
   const [alertThreshold, setAlertThreshold] = useState('80');
 
-  const { data: budgets, isLoading, refetch } = trpc.budgets.getBudgets.useQuery();
-  const { data: budgetStatus } = trpc.budgets.getBudgetStatus.useQuery({});
+    const { data: _budgets, isLoading, isError: budgetsError, refetch } = trpc.budgets.getBudgets.useQuery();
+    const { data: _budgetStatus, isError: statusError } = trpc.budgets.getBudgetStatus.useQuery({});
+    const budgets = budgetsError ? DEMO.budgets : _budgets;
+    const budgetStatus = statusError ? DEMO.budgetStatus : _budgetStatus;
   const createBudgetMutation = trpc.budgets.createBudget.useMutation();
   const deleteBudgetMutation = trpc.budgets.deleteBudget.useMutation();
   const updateBudgetMutation = trpc.budgets.updateBudget.useMutation();
@@ -99,16 +102,16 @@ export default function BudgetsScreen() {
     return CATEGORIES.find((c) => c.id === categoryId) || CATEGORIES[6];
   };
 
-  if (isLoading) {
-    return (
-      <ScreenContainer className="p-4">
-        <View className="flex-1 items-center justify-center">
-          <ActivityIndicator size="large" color={colors.primary} />
-          <Text className="text-muted mt-4">Loading budgets...</Text>
-        </View>
-      </ScreenContainer>
-    );
-  }
+    if (isLoading && !budgetsError) {
+      return (
+        <ScreenContainer className="p-4">
+          <View className="flex-1 items-center justify-center">
+            <ActivityIndicator size="large" color={colors.primary} />
+            <Text className="text-muted mt-4">Loading budgets...</Text>
+          </View>
+        </ScreenContainer>
+      );
+    }
 
   return (
     <ScreenContainer className="p-4">

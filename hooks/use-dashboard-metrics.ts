@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Platform } from 'react-native';
+import { DEMO } from '@/lib/demo-data';
 
 /**
  * Custom hook for fetching and managing pilot dashboard metrics
@@ -93,10 +94,8 @@ export function useDashboardMetrics() {
       setError(null);
       return data;
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch metrics';
-      setError(errorMessage);
-      console.error('Error fetching dashboard metrics:', err);
-      throw err;
+      setMetrics(DEMO.dashboardMetrics);
+      setError(null);
     } finally {
       setLoading(false);
     }

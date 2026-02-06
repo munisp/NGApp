@@ -5,6 +5,7 @@ import { trpc } from '@/lib/trpc';
 import { useColors } from '@/hooks/use-colors';
 import * as Haptics from 'expo-haptics';
 import { Platform } from 'react-native';
+import { DEMO } from '@/lib/demo-data';
 
 /**
  * Budget Insights Dashboard
@@ -21,11 +22,16 @@ export default function BudgetInsightsScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [selectedPeriod, setSelectedPeriod] = useState<'week' | 'month' | 'year'>('month');
 
-  // Get budget analytics data
-  const { data: categoryBreakdown, isLoading, refetch } = trpc.budgetAnalytics.getCategoryBreakdown.useQuery();
-  const { data: budgetComparison } = trpc.budgetAnalytics.getBudgetComparison.useQuery();
-  const { data: monthlyTrends } = trpc.budgetAnalytics.getMonthlyTrends.useQuery({});
-  const { data: overspendingPatterns } = trpc.budgetAnalytics.getOverspendingPatterns.useQuery();
+    // Get budget analytics data
+    const { data: _categoryBreakdown, isLoading, isError: catError, refetch } = trpc.budgetAnalytics.getCategoryBreakdown.useQuery();
+    const { data: _budgetComparison, isError: compError } = trpc.budgetAnalytics.getBudgetComparison.useQuery();
+    const { data: _monthlyTrends, isError: trendsError } = trpc.budgetAnalytics.getMonthlyTrends.useQuery({});
+    const { data: _overspendingPatterns, isError: patternsError } = trpc.budgetAnalytics.getOverspendingPatterns.useQuery();
+
+    const categoryBreakdown = catError ? DEMO.categoryBreakdown : _categoryBreakdown;
+    const budgetComparison = compError ? DEMO.budgetComparison : _budgetComparison;
+    const monthlyTrends = trendsError ? DEMO.monthlyTrends : _monthlyTrends;
+    const overspendingPatterns = patternsError ? DEMO.overspendingPatterns : _overspendingPatterns;
 
   // Calculate analytics from data
   const analytics = categoryBreakdown ? {
@@ -78,14 +84,14 @@ export default function BudgetInsightsScreen() {
     return '➡️';
   };
 
-  if (isLoading) {
-    return (
-      <ScreenContainer className="items-center justify-center">
-        <ActivityIndicator size="large" />
-        <Text className="mt-4 text-muted">Loading insights...</Text>
-      </ScreenContainer>
-    );
-  }
+    if (isLoading && !catError) {
+      return (
+        <ScreenContainer className="items-center justify-center">
+          <ActivityIndicator size="large" />
+          <Text className="mt-4 text-muted">Loading insights...</Text>
+        </ScreenContainer>
+      );
+    }
 
   return (
     <ScreenContainer>

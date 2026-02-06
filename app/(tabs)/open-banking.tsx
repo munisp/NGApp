@@ -6,8 +6,9 @@ import { IconSymbol } from '@/components/ui/icon-symbol';
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { trpc } from '@/lib/trpc';
+import { DEMO } from '@/lib/demo-data';
 
-interface LinkedAccount {
+interface LinkedAccount{
   id: string;
   userId: string;
   bankCode: string;
@@ -45,8 +46,8 @@ export default function OpenBankingScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [totalBalance, setTotalBalance] = useState(0);
 
-  // Fetch linked accounts
-  const { data: accountsData, isLoading, refetch } = trpc.openBanking.getLinkedAccounts.useQuery();
+    // Fetch linked accounts
+    const { data: accountsData, isLoading, isError, refetch } = trpc.openBanking.getLinkedAccounts.useQuery();
   
   // Fetch recent transactions - disabled for now since we need accountId
   // const recentTransactionsQuery = trpc.openBanking.getTransactions.useQuery({
@@ -54,14 +55,20 @@ export default function OpenBankingScreen() {
   //   limit: 10
   // }, { enabled: linkedAccounts.length > 0 });
 
-  useEffect(() => {
-    if (accountsData) {
-      setLinkedAccounts(accountsData);
-      const totalBalance = linkedAccounts.reduce((sum: number, acc: any) => sum + parseFloat(acc.balance || '0'), 0);
-      setTotalBalance(totalBalance);
-      setLoading(false);
-    }
-  }, [accountsData]);
+    useEffect(() => {
+      if (isError) {
+        const demoAccounts = DEMO.linkedAccounts.map(a => ({ ...a, userId: 'demo', bankCode: 'DEMO', accountType: 'savings', currency: 'NGN', createdAt: new Date(a.createdAt), updatedAt: new Date(a.lastSyncedAt) })) as LinkedAccount[];
+        setLinkedAccounts(demoAccounts);
+        const total = demoAccounts.reduce((sum, acc) => sum + parseFloat(acc.balance || '0'), 0);
+        setTotalBalance(total);
+        setLoading(false);
+      } else if (accountsData) {
+        setLinkedAccounts(accountsData);
+        const totalBalance = linkedAccounts.reduce((sum: number, acc: any) => sum + parseFloat(acc.balance || '0'), 0);
+        setTotalBalance(totalBalance);
+        setLoading(false);
+      }
+    }, [accountsData, isError]);
 
   // useEffect(() => {
   //   if (recentTransactionsQuery.data) {

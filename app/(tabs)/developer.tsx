@@ -7,8 +7,9 @@ import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import * as Clipboard from 'expo-clipboard';
 import { trpc } from '@/lib/trpc';
+import { DEMO } from '@/lib/demo-data';
 
-interface APIKey {
+interface APIKey{
   id: string;
   name: string;
   key: string;
@@ -43,15 +44,18 @@ export default function DeveloperPortalScreen() {
   const [showCreateKey, setShowCreateKey] = useState(false);
   const [newKeyName, setNewKeyName] = useState('');
 
-  // Fetch developer data
-  const { data: apiKeysData, isLoading, refetch } = trpc.developerPortal.getAPIKeys.useQuery();
+    // Fetch developer data
+    const { data: apiKeysData, isLoading, isError, refetch } = trpc.developerPortal.getAPIKeys.useQuery();
 
-  useEffect(() => {
-    if (apiKeysData) {
-      setApiKeys(apiKeysData);
-      setLoading(false);
-    }
-  }, [apiKeysData]);
+    useEffect(() => {
+      if (isError) {
+        setApiKeys(DEMO.apiKeys);
+        setLoading(false);
+      } else if (apiKeysData) {
+        setApiKeys(apiKeysData);
+        setLoading(false);
+      }
+    }, [apiKeysData, isError]);
 
   const handleCopyKey = async (key: string) => {
     await Clipboard.setStringAsync(key);

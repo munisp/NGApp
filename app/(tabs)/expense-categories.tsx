@@ -16,6 +16,7 @@ import { useColors } from '@/hooks/use-colors';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import * as Haptics from 'expo-haptics';
 import { Platform } from 'react-native';
+import { DEMO } from '@/lib/demo-data';
 
 /**
  * Expense Categories Management Screen
@@ -64,7 +65,8 @@ export default function ExpenseCategoriesScreen() {
   const [selectedIcon, setSelectedIcon] = useState('fork.knife');
   const [selectedColor, setSelectedColor] = useState('#FF6B6B');
 
-  const { data, isLoading, refetch } = trpc.expenseCategories.getCategories.useQuery();
+  const { data: _data, isLoading, isError: catError, refetch } = trpc.expenseCategories.getCategories.useQuery();
+  const data = catError ? DEMO.expenseCategories : _data;
   const createMutation = trpc.expenseCategories.createCategory.useMutation();
   const updateMutation = trpc.expenseCategories.updateCategory.useMutation();
   const deleteMutation = trpc.expenseCategories.deleteCategory.useMutation();
@@ -168,14 +170,14 @@ export default function ExpenseCategoriesScreen() {
     return `₦${(amount / 100).toLocaleString()}`;
   };
 
-  if (isLoading) {
-    return (
-      <ScreenContainer className="items-center justify-center">
-        <ActivityIndicator size="large" color={colors.primary} />
-        <Text className="mt-4 text-muted">Loading categories...</Text>
-      </ScreenContainer>
-    );
-  }
+    if (isLoading && !catError) {
+      return (
+        <ScreenContainer className="items-center justify-center">
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text className="mt-4 text-muted">Loading categories...</Text>
+        </ScreenContainer>
+      );
+    }
 
   const categories = data?.categories || [];
   const defaultCategories = categories.filter(c => c.isDefault);

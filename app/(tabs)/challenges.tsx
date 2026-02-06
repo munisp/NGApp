@@ -3,6 +3,7 @@ import { useState } from "react";
 import { ScreenContainer } from "@/components/screen-container";
 import { useColors } from "@/hooks/use-colors";
 import { trpc } from "@/lib/trpc";
+import { DEMO } from '@/lib/demo-data';
 import * as Haptics from "expo-haptics";
 
 type ChallengeType = "52-week" | "no-spend-month" | "round-up";
@@ -14,10 +15,13 @@ export default function ChallengesScreen() {
   const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [showAchievements, setShowAchievements] = useState(false);
 
-  const { data: challenges, refetch: refetchChallenges } = trpc.savingsChallenges.getChallenges.useQuery();
-  // Progress is tracked directly in the challenges table
-  const { data: leaderboard } = trpc.savingsChallenges.getLeaderboard.useQuery({ challengeType: selectedType });
-  const { data: achievements } = trpc.savingsChallenges.getAchievements.useQuery();
+    const { data: _challenges, isError: chError, refetch: refetchChallenges } = trpc.savingsChallenges.getChallenges.useQuery();
+    // Progress is tracked directly in the challenges table
+    const { data: _leaderboard, isError: lbError } = trpc.savingsChallenges.getLeaderboard.useQuery({ challengeType: selectedType });
+    const { data: _achievements, isError: achError } = trpc.savingsChallenges.getAchievements.useQuery();
+    const challenges = chError ? DEMO.savingsChallenges : _challenges;
+    const leaderboard = lbError ? DEMO.leaderboard : _leaderboard;
+    const achievements = achError ? DEMO.achievements : _achievements;
 
   const startChallengeMutation = trpc.savingsChallenges.startChallenge.useMutation({
     onSuccess: () => {

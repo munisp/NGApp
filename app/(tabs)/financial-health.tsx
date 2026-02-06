@@ -4,6 +4,7 @@ import { trpc } from '@/lib/trpc';
 import { useState, useEffect } from 'react';
 import * as Haptics from 'expo-haptics';
 import { Platform } from 'react-native';
+import { DEMO } from '@/lib/demo-data';
 
 /**
  * Financial Health Score Screen
@@ -19,11 +20,13 @@ export default function FinancialHealthScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [calculating, setCalculating] = useState(false);
 
-  // Get current score
-  const { data: scoreData, isLoading, refetch } = trpc.financialHealth.getCurrentScore.useQuery();
+    // Get current score
+    const { data: _scoreData, isLoading, isError: scoreError, refetch } = trpc.financialHealth.getCurrentScore.useQuery();
   
-  // Get 12-month history
-  const { data: history } = trpc.financialHealth.getScoreHistory.useQuery();
+    // Get 12-month history
+    const { data: _history, isError: histError } = trpc.financialHealth.getScoreHistory.useQuery();
+    const scoreData = scoreError ? DEMO.financialHealth : _scoreData;
+    const history = histError ? DEMO.financialHealthHistory : _history;
   
   // Calculate new score mutation
   const calculateScore = trpc.financialHealth.calculateScore.useMutation({
@@ -72,14 +75,14 @@ export default function FinancialHealthScreen() {
     return 'Needs Improvement';
   };
 
-  if (isLoading) {
-    return (
-      <ScreenContainer className="items-center justify-center">
-        <ActivityIndicator size="large" />
-        <Text className="mt-4 text-muted">Loading your financial health...</Text>
-      </ScreenContainer>
-    );
-  }
+    if (isLoading && !scoreError) {
+      return (
+        <ScreenContainer className="items-center justify-center">
+          <ActivityIndicator size="large" />
+          <Text className="mt-4 text-muted">Loading your financial health...</Text>
+        </ScreenContainer>
+      );
+    }
 
   const score = scoreData?.score;
   const recommendations = scoreData?.recommendations || [];

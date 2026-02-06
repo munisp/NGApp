@@ -16,6 +16,7 @@ import { useColors } from '@/hooks/use-colors';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import * as Haptics from 'expo-haptics';
 import { Platform } from 'react-native';
+import { DEMO } from '@/lib/demo-data';
 
 const CATEGORY_ICONS: Record<string, string> = {
   emergency: '🚨',
@@ -46,13 +47,15 @@ export default function SavingsGoalsScreen() {
   const [recurringFrequency, setRecurringFrequency] = useState<'weekly' | 'biweekly' | 'monthly'>('monthly');
   const [recurringDay, setRecurringDay] = useState('1');
 
-  const { data: goals, isLoading, refetch } = trpc.savingsGoals.getGoals.useQuery();
+  const { data: _goals, isLoading, isError: goalsError, refetch } = trpc.savingsGoals.getGoals.useQuery();
+  const goals = goalsError ? DEMO.savingsGoals : _goals;
   const createGoalMutation = trpc.savingsGoals.createGoal.useMutation();
   const addContributionMutation = trpc.savingsGoals.addContribution.useMutation();
   const deleteGoalMutation = trpc.savingsGoals.deleteGoal.useMutation();
   
-  // Recurring contributions
-  const { data: recurringContributions } = trpc.recurringContributions.getRecurringContributions.useQuery();
+    // Recurring contributions
+    const { data: _recurringContributions, isError: recError } = trpc.recurringContributions.getRecurringContributions.useQuery();
+    const recurringContributions = recError ? DEMO.recurringContributions : _recurringContributions;
   const createRecurringMutation = trpc.recurringContributions.createRecurringContribution.useMutation();
   const updateRecurringMutation = trpc.recurringContributions.updateRecurringContribution.useMutation();
   const deleteRecurringMutation = trpc.recurringContributions.deleteRecurringContribution.useMutation();
@@ -160,16 +163,16 @@ export default function SavingsGoalsScreen() {
     return new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   };
 
-  if (isLoading) {
-    return (
-      <ScreenContainer className="p-4">
-        <View className="flex-1 items-center justify-center">
-          <ActivityIndicator size="large" color={colors.primary} />
-          <Text className="text-muted mt-4">Loading goals...</Text>
-        </View>
-      </ScreenContainer>
-    );
-  }
+    if (isLoading && !goalsError) {
+      return (
+        <ScreenContainer className="p-4">
+          <View className="flex-1 items-center justify-center">
+            <ActivityIndicator size="large" color={colors.primary} />
+            <Text className="text-muted mt-4">Loading goals...</Text>
+          </View>
+        </ScreenContainer>
+      );
+    }
 
   const activeGoals = goals?.filter((g) => g.isActive && !g.isCompleted) || [];
   const completedGoals = goals?.filter((g) => g.isCompleted) || [];

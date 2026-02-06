@@ -6,6 +6,7 @@ import { useColors } from '@/hooks/use-colors';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import * as Haptics from 'expo-haptics';
 import { Platform } from 'react-native';
+import { DEMO } from '@/lib/demo-data';
 // Chart library imports removed - using simple visualization instead
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -14,11 +15,11 @@ export default function CreditScoreDashboardScreen() {
   const colors = useColors();
   const [refreshing, setRefreshing] = useState(false);
 
-  const { data: scoreData, isLoading, refetch } = trpc.creditScore.getCurrentScore.useQuery();
-  const { data: historyData } = trpc.creditScore.getScoreHistory.useQuery({
-    months: 12,
-  });
-  const { data: factorsData } = trpc.creditScore.getFactorsBreakdown.useQuery();
+    const { data: scoreData, isLoading, isError: scoreError, refetch } = trpc.creditScore.getCurrentScore.useQuery();
+    const { data: historyData, isError: histError } = trpc.creditScore.getScoreHistory.useQuery({
+      months: 12,
+    });
+    const { data: factorsData, isError: factorsError } = trpc.creditScore.getFactorsBreakdown.useQuery();
 
   const handleRefresh = async () => {
     if (Platform.OS !== 'web') {
@@ -85,21 +86,22 @@ export default function CreditScoreDashboardScreen() {
     }
   };
 
-  if (isLoading) {
-    return (
-      <ScreenContainer className="p-4">
-        <View className="flex-1 items-center justify-center">
-          <ActivityIndicator size="large" color={colors.primary} />
-          <Text className="text-muted mt-4">Loading credit score...</Text>
-        </View>
-      </ScreenContainer>
-    );
-  }
+    if (isLoading && !scoreError) {
+      return (
+        <ScreenContainer className="p-4">
+          <View className="flex-1 items-center justify-center">
+            <ActivityIndicator size="large" color={colors.primary} />
+            <Text className="text-muted mt-4">Loading credit score...</Text>
+          </View>
+        </ScreenContainer>
+      );
+    }
 
-  const score = scoreData?.score || 0;
-  const rating = scoreData?.rating || 'poor';
-  const recommendations = scoreData?.recommendations || [];
-  const factors = factorsData?.factors || { paymentHistory: 0, creditUtilization: 0, creditAge: 0, creditMix: 0, newCredit: 0 };
+    const demoScore = DEMO.creditScore;
+    const score = scoreError ? demoScore.score : (scoreData?.score || 0);
+    const rating = scoreError ? demoScore.rating : (scoreData?.rating || 'poor');
+    const recommendations = scoreError ? demoScore.recommendations : (scoreData?.recommendations || []);
+    const factors = factorsError ? demoScore.factors : (factorsData?.factors || { paymentHistory: 0, creditUtilization: 0, creditAge: 0, creditMix: 0, newCredit: 0 });
   
   // Convert factors object to array for rendering
   const factorsArray = [
@@ -109,7 +111,7 @@ export default function CreditScoreDashboardScreen() {
     { factorType: 'credit_mix', value: factors.creditMix?.toString() || '0', impact: factors.creditMix >= 70 ? 'positive' : factors.creditMix >= 50 ? 'neutral' : 'negative', description: 'Variety of credit types' },
     { factorType: 'new_credit', value: factors.newCredit?.toString() || '0', impact: factors.newCredit >= 70 ? 'positive' : factors.newCredit >= 50 ? 'neutral' : 'negative', description: 'Recent credit inquiries' },
   ];
-  const history = historyData || [];
+  const history = histError ? DEMO.creditScoreHistory.map(h => ({ date: h.month, score: h.score })) : (historyData || []);
 
   // Prepare chart data
   const chartData = history.map((h: any) => h.score);
