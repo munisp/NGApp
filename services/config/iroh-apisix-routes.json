@@ -1,0 +1,140 @@
+{
+  "routes": [
+    {
+      "uri": "/api/v1/p2p/*",
+      "name": "iroh-p2p-payments",
+      "methods": ["GET", "POST"],
+      "upstream": {
+        "type": "roundrobin",
+        "nodes": {
+          "iroh-p2p:8120": 1
+        }
+      },
+      "plugins": {
+        "limit-req": {
+          "rate": 30,
+          "burst": 10,
+          "rejected_code": 429,
+          "key_type": "var",
+          "key": "remote_addr"
+        },
+        "cors": {
+          "allow_origins": "*",
+          "allow_methods": "GET,POST,OPTIONS",
+          "allow_headers": "Content-Type,Authorization"
+        }
+      }
+    },
+    {
+      "uri": "/api/v1/wallet/*",
+      "name": "iroh-wallet-sync",
+      "methods": ["GET", "POST"],
+      "upstream": {
+        "type": "roundrobin",
+        "nodes": {
+          "iroh-p2p:8120": 1
+        }
+      },
+      "plugins": {
+        "limit-req": {
+          "rate": 60,
+          "burst": 20,
+          "rejected_code": 429,
+          "key_type": "var",
+          "key": "remote_addr"
+        }
+      }
+    },
+    {
+      "uri": "/api/v1/agent/*",
+      "name": "iroh-agent-banking",
+      "methods": ["GET", "POST"],
+      "upstream": {
+        "type": "roundrobin",
+        "nodes": {
+          "iroh-p2p:8120": 1
+        }
+      },
+      "plugins": {
+        "limit-req": {
+          "rate": 20,
+          "burst": 5,
+          "rejected_code": 429,
+          "key_type": "var",
+          "key": "remote_addr"
+        }
+      }
+    },
+    {
+      "uri": "/api/v1/fraud/*",
+      "name": "iroh-fraud-detection",
+      "methods": ["GET", "POST"],
+      "upstream": {
+        "type": "roundrobin",
+        "nodes": {
+          "iroh-p2p:8120": 1
+        }
+      },
+      "plugins": {
+        "limit-req": {
+          "rate": 100,
+          "burst": 50,
+          "rejected_code": 429,
+          "key_type": "var",
+          "key": "remote_addr"
+        }
+      }
+    },
+    {
+      "uri": "/api/v1/kyc/*",
+      "name": "iroh-kyc-transfer",
+      "methods": ["GET", "POST"],
+      "upstream": {
+        "type": "roundrobin",
+        "nodes": {
+          "iroh-p2p:8120": 1
+        }
+      },
+      "plugins": {
+        "limit-req": {
+          "rate": 15,
+          "burst": 5,
+          "rejected_code": 429,
+          "key_type": "var",
+          "key": "remote_addr"
+        },
+        "limit-body": {
+          "size": 52428800
+        }
+      }
+    },
+    {
+      "uri": "/api/v1/merchant/*",
+      "name": "iroh-merchant-mesh",
+      "methods": ["GET", "POST"],
+      "upstream": {
+        "type": "roundrobin",
+        "nodes": {
+          "iroh-p2p:8120": 1
+        }
+      },
+      "plugins": {
+        "limit-req": {
+          "rate": 30,
+          "burst": 10,
+          "rejected_code": 429,
+          "key_type": "var",
+          "key": "remote_addr"
+        }
+      }
+    }
+  ],
+  "global_rules": {
+    "plugins": {
+      "prometheus": {},
+      "request-id": {
+        "header_name": "X-Iroh-Request-Id"
+      }
+    }
+  }
+}

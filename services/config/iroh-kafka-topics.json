@@ -1,0 +1,104 @@
+{
+  "topics": [
+    {
+      "name": "iroh.p2p.transfers",
+      "partitions": 6,
+      "replication_factor": 3,
+      "config": {
+        "retention.ms": 604800000,
+        "cleanup.policy": "delete"
+      }
+    },
+    {
+      "name": "iroh.p2p.transfers.confirmed",
+      "partitions": 6,
+      "replication_factor": 3,
+      "config": {
+        "retention.ms": 2592000000
+      }
+    },
+    {
+      "name": "iroh.wallet.sync.events",
+      "partitions": 3,
+      "replication_factor": 3,
+      "config": {
+        "retention.ms": 604800000,
+        "cleanup.policy": "compact"
+      }
+    },
+    {
+      "name": "iroh.wallet.conflicts",
+      "partitions": 3,
+      "replication_factor": 3,
+      "config": {
+        "retention.ms": 2592000000
+      }
+    },
+    {
+      "name": "iroh.agent.transactions",
+      "partitions": 6,
+      "replication_factor": 3,
+      "config": {
+        "retention.ms": 2592000000
+      }
+    },
+    {
+      "name": "iroh.agent.offline.queue",
+      "partitions": 3,
+      "replication_factor": 3,
+      "config": {
+        "retention.ms": 604800000,
+        "cleanup.policy": "compact"
+      }
+    },
+    {
+      "name": "iroh.fraud.alerts",
+      "partitions": 6,
+      "replication_factor": 3,
+      "config": {
+        "retention.ms": 7776000000
+      }
+    },
+    {
+      "name": "iroh.fraud.alerts.critical",
+      "partitions": 3,
+      "replication_factor": 3,
+      "config": {
+        "retention.ms": 31536000000
+      }
+    },
+    {
+      "name": "iroh.kyc.uploads",
+      "partitions": 3,
+      "replication_factor": 3,
+      "config": {
+        "retention.ms": 2592000000
+      }
+    },
+    {
+      "name": "iroh.kyc.verifications",
+      "partitions": 3,
+      "replication_factor": 3,
+      "config": {
+        "retention.ms": 31536000000
+      }
+    },
+    {
+      "name": "iroh.merchant.registrations",
+      "partitions": 3,
+      "replication_factor": 3,
+      "config": {
+        "retention.ms": 31536000000,
+        "cleanup.policy": "compact"
+      }
+    },
+    {
+      "name": "iroh.merchant.transactions",
+      "partitions": 6,
+      "replication_factor": 3,
+      "config": {
+        "retention.ms": 2592000000
+      }
+    }
+  ]
+}
