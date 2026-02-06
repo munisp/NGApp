@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 
 	"github.com/unified-platform/services/fluvio/internal"
@@ -33,19 +34,24 @@ func main() {
 			w.Header().Set("Content-Type", "application/json")
 			json.NewEncoder(w).Encode(client.ListTopics())
 		case http.MethodPost:
-			var req internal.CreateTopicRequest
+			var req struct {
+				Name       string `json:"name"`
+				Partitions int    `json:"partitions"`
+				Replicas   int    `json:"replicas"`
+			}
 			if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 				http.Error(w, "Invalid request", http.StatusBadRequest)
 				return
 			}
-			if err := client.CreateTopic(req.Name, req.Partitions, req.Replicas); err != nil {
+			topic, err := client.CreateTopic(req.Name, req.Partitions, req.Replicas)
+			if err != nil {
 				w.WriteHeader(http.StatusInternalServerError)
 				json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
 				return
 			}
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusCreated)
-			json.NewEncoder(w).Encode(map[string]string{"status": "created"})
+			json.NewEncoder(w).Encode(topic)
 		default:
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		}
@@ -61,14 +67,14 @@ func main() {
 			http.Error(w, "Invalid request", http.StatusBadRequest)
 			return
 		}
-		offset, err := client.Produce(req.Topic, req.Key, req.Value)
+		record, err := client.Produce(req.Topic, req.Key, req.Value)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
 			return
 		}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]interface{}{"status": "produced", "offset": offset})
+		json.NewEncoder(w).Encode(record)
 	})
 
 	mux.HandleFunc("/consume", func(w http.ResponseWriter, r *http.Request) {
@@ -77,7 +83,23 @@ func main() {
 			http.Error(w, "topic required", http.StatusBadRequest)
 			return
 		}
-		records := client.Consume(topic, 100)
+		offsetStr := r.URL.Query().Get("offset")
+		var offset int64
+		if offsetStr != "" {
+			offset, _ = strconv.ParseInt(offsetStr, 10, 64)
+		}
+		maxCount := 100
+		if mc := r.URL.Query().Get("max_count"); mc != "" {
+			if v, err := strconv.Atoi(mc); err == nil {
+				maxCount = v
+			}
+		}
+		records, err := client.Consume(topic, offset, maxCount)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+			return
+		}
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(records)
 	})

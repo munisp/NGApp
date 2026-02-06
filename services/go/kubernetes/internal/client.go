@@ -1,9 +1,32 @@
 package internal
 
 import (
+	"context"
 	"fmt"
 	"sync"
 	"time"
+
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
+	appsv1 "k8s.io/api/apps/v1"
+	autoscalingv2 "k8s.io/api/autoscaling/v2"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/clientcmd"
+)
+
+var (
+	k8sOpsTotal = promauto.NewCounterVec(prometheus.CounterOpts{
+		Name: "k8s_operations_total",
+		Help: "Total Kubernetes API operations",
+	}, []string{"resource", "operation"})
+	k8sLatency = promauto.NewHistogramVec(prometheus.HistogramOpts{
+		Name:    "k8s_operation_latency_seconds",
+		Help:    "Kubernetes operation latency",
+		Buckets: prometheus.DefBuckets,
+	}, []string{"operation"})
 )
 
 type Namespace struct {
@@ -35,12 +58,12 @@ type Pod struct {
 }
 
 type Service struct {
-	Name       string            `json:"name"`
-	Namespace  string            `json:"namespace"`
-	Type       string            `json:"type"`
-	ClusterIP  string            `json:"cluster_ip"`
-	Ports      []ServicePort     `json:"ports"`
-	Selector   map[string]string `json:"selector"`
+	Name      string            `json:"name"`
+	Namespace string            `json:"namespace"`
+	Type      string            `json:"type"`
+	ClusterIP string            `json:"cluster_ip"`
+	Ports     []ServicePort     `json:"ports"`
+	Selector  map[string]string `json:"selector"`
 }
 
 type ServicePort struct {
@@ -51,25 +74,25 @@ type ServicePort struct {
 }
 
 type Node struct {
-	Name          string  `json:"name"`
-	Status        string  `json:"status"`
-	Roles         string  `json:"roles"`
-	CPUCapacity   string  `json:"cpu_capacity"`
-	MemCapacity   string  `json:"mem_capacity"`
-	CPUUsage      float64 `json:"cpu_usage_pct"`
-	MemUsage      float64 `json:"mem_usage_pct"`
-	PodCount      int     `json:"pod_count"`
+	Name        string  `json:"name"`
+	Status      string  `json:"status"`
+	Roles       string  `json:"roles"`
+	CPUCapacity string  `json:"cpu_capacity"`
+	MemCapacity string  `json:"mem_capacity"`
+	CPUUsage    float64 `json:"cpu_usage_pct"`
+	MemUsage    float64 `json:"mem_usage_pct"`
+	PodCount    int     `json:"pod_count"`
 }
 
 type HPA struct {
-	Name           string `json:"name"`
-	Namespace      string `json:"namespace"`
-	TargetRef      string `json:"target_ref"`
-	MinReplicas    int32  `json:"min_replicas"`
-	MaxReplicas    int32  `json:"max_replicas"`
-	CurrentReplicas int32 `json:"current_replicas"`
-	TargetCPU      int32  `json:"target_cpu_pct"`
-	CurrentCPU     int32  `json:"current_cpu_pct"`
+	Name            string `json:"name"`
+	Namespace       string `json:"namespace"`
+	TargetRef       string `json:"target_ref"`
+	MinReplicas     int32  `json:"min_replicas"`
+	MaxReplicas     int32  `json:"max_replicas"`
+	CurrentReplicas int32  `json:"current_replicas"`
+	TargetCPU       int32  `json:"target_cpu_pct"`
+	CurrentCPU      int32  `json:"current_cpu_pct"`
 }
 
 type ScaleRequest struct {
@@ -88,350 +111,355 @@ type HPARequest struct {
 }
 
 type ClusterMetrics struct {
-	Nodes           int     `json:"nodes"`
-	Pods            int     `json:"pods"`
-	Deployments     int     `json:"deployments"`
-	Services        int     `json:"services"`
-	HPAs            int     `json:"hpas"`
-	TotalCPUCores   int     `json:"total_cpu_cores"`
-	TotalMemoryGB   float64 `json:"total_memory_gb"`
-	CPUUsagePct     float64 `json:"cpu_usage_pct"`
-	MemoryUsagePct  float64 `json:"memory_usage_pct"`
+	Nodes          int     `json:"nodes"`
+	Pods           int     `json:"pods"`
+	Deployments    int     `json:"deployments"`
+	Services       int     `json:"services"`
+	HPAs           int     `json:"hpas"`
+	TotalCPUCores  int     `json:"total_cpu_cores"`
+	TotalMemoryGB  float64 `json:"total_memory_gb"`
+	CPUUsagePct    float64 `json:"cpu_usage_pct"`
+	MemoryUsagePct float64 `json:"memory_usage_pct"`
 }
 
 type HealthStatus struct {
-	Connected    bool   `json:"connected"`
-	ClusterName  string `json:"cluster_name"`
-	Namespace    string `json:"namespace"`
-	Nodes        int    `json:"nodes"`
-	Deployments  int    `json:"deployments"`
+	Connected   bool   `json:"connected"`
+	ClusterName string `json:"cluster_name"`
+	Namespace   string `json:"namespace"`
+	Nodes       int    `json:"nodes"`
+	Deployments int    `json:"deployments"`
 }
 
 type K8sClient struct {
-	config      *Config
-	connected   bool
-	mu          sync.RWMutex
-	namespaces  map[string]*Namespace
-	deployments map[string]map[string]*Deployment
-	pods        map[string][]*Pod
-	services    map[string][]*Service
-	nodes       []*Node
-	hpas        map[string][]*HPA
+	config    *Config
+	clientset *kubernetes.Clientset
+	connected bool
+	mu        sync.RWMutex
 }
 
 func NewK8sClient(cfg *Config) (*K8sClient, error) {
-	client := &K8sClient{
-		config:      cfg,
-		connected:   true,
-		namespaces:  make(map[string]*Namespace),
-		deployments: make(map[string]map[string]*Deployment),
-		pods:        make(map[string][]*Pod),
-		services:    make(map[string][]*Service),
-		hpas:        make(map[string][]*HPA),
+	client := &K8sClient{config: cfg}
+
+	var k8sConfig *rest.Config
+	var err error
+
+	if cfg.InCluster {
+		k8sConfig, err = rest.InClusterConfig()
+	} else if cfg.KubeConfig != "" {
+		k8sConfig, err = clientcmd.BuildConfigFromFlags("", cfg.KubeConfig)
+	} else {
+		k8sConfig, err = clientcmd.BuildConfigFromFlags("", clientcmd.RecommendedHomeFile)
 	}
 
-	client.initializeCluster()
-	fmt.Printf("[K8s] Connected to cluster (namespace: %s)\n", cfg.Namespace)
+	if err != nil {
+		fmt.Printf("[K8s] Config error (running without cluster): %v\n", err)
+		client.connected = false
+		return client, nil
+	}
+
+	clientset, err := kubernetes.NewForConfig(k8sConfig)
+	if err != nil {
+		fmt.Printf("[K8s] Client error (running without cluster): %v\n", err)
+		client.connected = false
+		return client, nil
+	}
+
+	client.clientset = clientset
+
+	_, err = clientset.CoreV1().Namespaces().List(context.Background(), metav1.ListOptions{Limit: 1})
+	if err != nil {
+		fmt.Printf("[K8s] Cluster not reachable (running without cluster): %v\n", err)
+		client.connected = false
+	} else {
+		client.connected = true
+		fmt.Printf("[K8s] Connected to cluster (namespace: %s)\n", cfg.Namespace)
+	}
+
+	go client.healthCheckLoop()
 	return client, nil
 }
 
-func (c *K8sClient) initializeCluster() {
-	nsList := []string{"fintech", "monitoring", "ingress", "security", "data"}
-	for _, ns := range nsList {
-		c.namespaces[ns] = &Namespace{Name: ns, Status: "Active", CreatedAt: time.Now().Unix()}
-		c.deployments[ns] = make(map[string]*Deployment)
-	}
-
-	fintechDeployments := []struct {
-		name     string
-		image    string
-		replicas int32
-	}{
-		{"backend-api", "fintech/backend-api:latest", 3},
-		{"kafka-service", "fintech/kafka-service:latest", 2},
-		{"redis-service", "fintech/redis-service:latest", 2},
-		{"temporal-service", "fintech/temporal-service:latest", 2},
-		{"tigerbeetle-service", "fintech/tigerbeetle-service:latest", 3},
-		{"apisix-gateway", "apache/apisix:3.8", 2},
-		{"fluvio-service", "fintech/fluvio-service:latest", 2},
-		{"keycloak-service", "fintech/keycloak-service:latest", 2},
-		{"permify-service", "fintech/permify-service:latest", 2},
-		{"openappsec-agent", "openappsec/agent:latest", 2},
-		{"dapr-service", "fintech/dapr-service:latest", 2},
-		{"lakehouse-service", "fintech/lakehouse-service:latest", 1},
-		{"frontend-pwa", "fintech/frontend-pwa:latest", 3},
-	}
-
-	for _, d := range fintechDeployments {
-		c.deployments["fintech"][d.name] = &Deployment{
-			Name:              d.name,
-			Namespace:         "fintech",
-			Replicas:          d.replicas,
-			ReadyReplicas:     d.replicas,
-			AvailableReplicas: d.replicas,
-			Image:             d.image,
-			Labels:            map[string]string{"app": d.name, "tier": "backend"},
-			Status:            "Available",
-			CreatedAt:         time.Now().Unix(),
+func (c *K8sClient) healthCheckLoop() {
+	ticker := time.NewTicker(30 * time.Second)
+	defer ticker.Stop()
+	for range ticker.C {
+		if c.clientset == nil {
+			continue
 		}
-	}
-
-	monitoringDeployments := []struct {
-		name     string
-		image    string
-		replicas int32
-	}{
-		{"prometheus", "prom/prometheus:v2.51.0", 2},
-		{"grafana", "grafana/grafana:10.4.0", 1},
-		{"jaeger", "jaegertracing/all-in-one:1.55", 1},
-		{"alertmanager", "prom/alertmanager:v0.27.0", 1},
-	}
-
-	for _, d := range monitoringDeployments {
-		c.deployments["monitoring"][d.name] = &Deployment{
-			Name:              d.name,
-			Namespace:         "monitoring",
-			Replicas:          d.replicas,
-			ReadyReplicas:     d.replicas,
-			AvailableReplicas: d.replicas,
-			Image:             d.image,
-			Labels:            map[string]string{"app": d.name, "tier": "monitoring"},
-			Status:            "Available",
-			CreatedAt:         time.Now().Unix(),
-		}
-	}
-
-	c.nodes = []*Node{
-		{Name: "node-1", Status: "Ready", Roles: "control-plane", CPUCapacity: "8", MemCapacity: "32Gi", CPUUsage: 35.2, MemUsage: 48.1, PodCount: 12},
-		{Name: "node-2", Status: "Ready", Roles: "worker", CPUCapacity: "16", MemCapacity: "64Gi", CPUUsage: 42.8, MemUsage: 55.3, PodCount: 18},
-		{Name: "node-3", Status: "Ready", Roles: "worker", CPUCapacity: "16", MemCapacity: "64Gi", CPUUsage: 38.5, MemUsage: 51.7, PodCount: 15},
-	}
-
-	c.hpas["fintech"] = []*HPA{
-		{Name: "backend-api-hpa", Namespace: "fintech", TargetRef: "backend-api", MinReplicas: 2, MaxReplicas: 10, CurrentReplicas: 3, TargetCPU: 70, CurrentCPU: 45},
-		{Name: "frontend-pwa-hpa", Namespace: "fintech", TargetRef: "frontend-pwa", MinReplicas: 2, MaxReplicas: 8, CurrentReplicas: 3, TargetCPU: 75, CurrentCPU: 30},
-		{Name: "apisix-gateway-hpa", Namespace: "fintech", TargetRef: "apisix-gateway", MinReplicas: 2, MaxReplicas: 6, CurrentReplicas: 2, TargetCPU: 60, CurrentCPU: 25},
+		_, err := c.clientset.CoreV1().Namespaces().List(context.Background(), metav1.ListOptions{Limit: 1})
+		c.mu.Lock()
+		c.connected = (err == nil)
+		c.mu.Unlock()
 	}
 }
 
 func (c *K8sClient) ListNamespaces() []*Namespace {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
-	result := make([]*Namespace, 0, len(c.namespaces))
-	for _, ns := range c.namespaces {
-		result = append(result, ns)
+	start := time.Now()
+	defer func() { k8sLatency.WithLabelValues("list_namespaces").Observe(time.Since(start).Seconds()) }()
+	k8sOpsTotal.WithLabelValues("namespace", "list").Inc()
+
+	if c.clientset == nil || !c.connected {
+		return nil
+	}
+	nsList, err := c.clientset.CoreV1().Namespaces().List(context.Background(), metav1.ListOptions{})
+	if err != nil {
+		return nil
+	}
+	result := make([]*Namespace, len(nsList.Items))
+	for i, ns := range nsList.Items {
+		result[i] = &Namespace{
+			Name:      ns.Name,
+			Status:    string(ns.Status.Phase),
+			CreatedAt: ns.CreationTimestamp.Unix(),
+		}
 	}
 	return result
 }
 
 func (c *K8sClient) ListDeployments(namespace string) []*Deployment {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
-	deps, exists := c.deployments[namespace]
-	if !exists {
+	start := time.Now()
+	defer func() { k8sLatency.WithLabelValues("list_deployments").Observe(time.Since(start).Seconds()) }()
+	k8sOpsTotal.WithLabelValues("deployment", "list").Inc()
+
+	if c.clientset == nil || !c.connected {
 		return nil
 	}
-	result := make([]*Deployment, 0, len(deps))
-	for _, d := range deps {
-		result = append(result, d)
+	depList, err := c.clientset.AppsV1().Deployments(namespace).List(context.Background(), metav1.ListOptions{})
+	if err != nil {
+		return nil
+	}
+	result := make([]*Deployment, len(depList.Items))
+	for i, dep := range depList.Items {
+		image := ""
+		if len(dep.Spec.Template.Spec.Containers) > 0 {
+			image = dep.Spec.Template.Spec.Containers[0].Image
+		}
+		status := "Progressing"
+		for _, cond := range dep.Status.Conditions {
+			if cond.Type == appsv1.DeploymentAvailable && cond.Status == corev1.ConditionTrue {
+				status = "Available"
+				break
+			}
+		}
+		result[i] = &Deployment{
+			Name: dep.Name, Namespace: dep.Namespace,
+			Replicas: *dep.Spec.Replicas, ReadyReplicas: dep.Status.ReadyReplicas,
+			AvailableReplicas: dep.Status.AvailableReplicas,
+			Image: image, Labels: dep.Labels, Status: status,
+			CreatedAt: dep.CreationTimestamp.Unix(),
+		}
 	}
 	return result
 }
 
 func (c *K8sClient) ScaleDeployment(namespace, name string, replicas int32) error {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-
-	deps, exists := c.deployments[namespace]
-	if !exists {
-		return fmt.Errorf("namespace %s not found", namespace)
+	k8sOpsTotal.WithLabelValues("deployment", "scale").Inc()
+	if c.clientset == nil || !c.connected {
+		return fmt.Errorf("not connected to cluster")
 	}
-	dep, exists := deps[name]
-	if !exists {
-		return fmt.Errorf("deployment %s not found in %s", name, namespace)
+	scale, err := c.clientset.AppsV1().Deployments(namespace).GetScale(context.Background(), name, metav1.GetOptions{})
+	if err != nil {
+		return err
 	}
-
-	dep.Replicas = replicas
-	dep.ReadyReplicas = replicas
-	dep.AvailableReplicas = replicas
-	fmt.Printf("[K8s] Scaled %s/%s to %d replicas\n", namespace, name, replicas)
-	return nil
+	scale.Spec.Replicas = replicas
+	_, err = c.clientset.AppsV1().Deployments(namespace).UpdateScale(context.Background(), name, scale, metav1.UpdateOptions{})
+	return err
 }
 
 func (c *K8sClient) RestartDeployment(namespace, name string) error {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-
-	deps, exists := c.deployments[namespace]
-	if !exists {
-		return fmt.Errorf("namespace %s not found", namespace)
+	k8sOpsTotal.WithLabelValues("deployment", "restart").Inc()
+	if c.clientset == nil || !c.connected {
+		return fmt.Errorf("not connected to cluster")
 	}
-	dep, exists := deps[name]
-	if !exists {
-		return fmt.Errorf("deployment %s not found in %s", name, namespace)
+	dep, err := c.clientset.AppsV1().Deployments(namespace).Get(context.Background(), name, metav1.GetOptions{})
+	if err != nil {
+		return err
 	}
-
-	dep.Status = "Progressing"
-	go func() {
-		time.Sleep(5 * time.Second)
-		c.mu.Lock()
-		dep.Status = "Available"
-		c.mu.Unlock()
-	}()
-
-	fmt.Printf("[K8s] Restarting %s/%s\n", namespace, name)
-	return nil
+	if dep.Spec.Template.Annotations == nil {
+		dep.Spec.Template.Annotations = make(map[string]string)
+	}
+	dep.Spec.Template.Annotations["kubectl.kubernetes.io/restartedAt"] = time.Now().Format(time.RFC3339)
+	_, err = c.clientset.AppsV1().Deployments(namespace).Update(context.Background(), dep, metav1.UpdateOptions{})
+	return err
 }
 
 func (c *K8sClient) ListPods(namespace string) []*Pod {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
-
-	deps, exists := c.deployments[namespace]
-	if !exists {
+	k8sOpsTotal.WithLabelValues("pod", "list").Inc()
+	if c.clientset == nil || !c.connected {
 		return nil
 	}
-
-	var pods []*Pod
-	nodeIdx := 0
-	for _, dep := range deps {
-		for i := int32(0); i < dep.Replicas; i++ {
-			pods = append(pods, &Pod{
-				Name:      fmt.Sprintf("%s-%d", dep.Name, i),
-				Namespace: namespace,
-				Status:    "Running",
-				Node:      c.nodes[nodeIdx%len(c.nodes)].Name,
-				IP:        fmt.Sprintf("10.244.%d.%d", nodeIdx, i+2),
-				Restarts:  0,
-				CreatedAt: dep.CreatedAt,
-			})
-			nodeIdx++
+	podList, err := c.clientset.CoreV1().Pods(namespace).List(context.Background(), metav1.ListOptions{})
+	if err != nil {
+		return nil
+	}
+	result := make([]*Pod, len(podList.Items))
+	for i, pod := range podList.Items {
+		var restarts int32
+		for _, cs := range pod.Status.ContainerStatuses {
+			restarts += cs.RestartCount
+		}
+		result[i] = &Pod{
+			Name: pod.Name, Namespace: pod.Namespace,
+			Status: string(pod.Status.Phase), Node: pod.Spec.NodeName,
+			IP: pod.Status.PodIP, Restarts: restarts,
+			CreatedAt: pod.CreationTimestamp.Unix(),
 		}
 	}
-	return pods
+	return result
 }
 
 func (c *K8sClient) GetPodLogs(namespace, name string) string {
-	return fmt.Sprintf("[%s] Pod %s/%s is running normally. Last healthcheck: OK", time.Now().Format(time.RFC3339), namespace, name)
+	if c.clientset == nil || !c.connected {
+		return "not connected"
+	}
+	tailLines := int64(100)
+	req := c.clientset.CoreV1().Pods(namespace).GetLogs(name, &corev1.PodLogOptions{TailLines: &tailLines})
+	stream, err := req.Stream(context.Background())
+	if err != nil {
+		return fmt.Sprintf("error: %v", err)
+	}
+	defer stream.Close()
+	buf := make([]byte, 4096)
+	n, _ := stream.Read(buf)
+	return string(buf[:n])
 }
 
 func (c *K8sClient) ListServices(namespace string) []*Service {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
-
-	deps, exists := c.deployments[namespace]
-	if !exists {
+	k8sOpsTotal.WithLabelValues("service", "list").Inc()
+	if c.clientset == nil || !c.connected {
 		return nil
 	}
-
-	var services []*Service
-	for name := range deps {
-		services = append(services, &Service{
-			Name:      name,
-			Namespace: namespace,
-			Type:      "ClusterIP",
-			ClusterIP: fmt.Sprintf("10.96.%d.%d", len(services)/256, len(services)%256+1),
-			Ports:     []ServicePort{{Name: "http", Port: 80, TargetPort: 8080, Protocol: "TCP"}},
-			Selector:  map[string]string{"app": name},
-		})
+	svcList, err := c.clientset.CoreV1().Services(namespace).List(context.Background(), metav1.ListOptions{})
+	if err != nil {
+		return nil
 	}
-	return services
+	result := make([]*Service, len(svcList.Items))
+	for i, svc := range svcList.Items {
+		ports := make([]ServicePort, len(svc.Spec.Ports))
+		for j, p := range svc.Spec.Ports {
+			ports[j] = ServicePort{Name: p.Name, Port: p.Port, TargetPort: p.TargetPort.IntVal, Protocol: string(p.Protocol)}
+		}
+		result[i] = &Service{
+			Name: svc.Name, Namespace: svc.Namespace,
+			Type: string(svc.Spec.Type), ClusterIP: svc.Spec.ClusterIP,
+			Ports: ports, Selector: svc.Spec.Selector,
+		}
+	}
+	return result
 }
 
 func (c *K8sClient) ListNodes() []*Node {
-	return c.nodes
+	k8sOpsTotal.WithLabelValues("node", "list").Inc()
+	if c.clientset == nil || !c.connected {
+		return nil
+	}
+	nodeList, err := c.clientset.CoreV1().Nodes().List(context.Background(), metav1.ListOptions{})
+	if err != nil {
+		return nil
+	}
+	result := make([]*Node, len(nodeList.Items))
+	for i, node := range nodeList.Items {
+		status := "NotReady"
+		for _, cond := range node.Status.Conditions {
+			if cond.Type == corev1.NodeReady && cond.Status == corev1.ConditionTrue {
+				status = "Ready"
+			}
+		}
+		roles := ""
+		for label := range node.Labels {
+			if label == "node-role.kubernetes.io/control-plane" {
+				roles = "control-plane"
+			} else if label == "node-role.kubernetes.io/worker" {
+				roles = "worker"
+			}
+		}
+		cpuCap := node.Status.Capacity.Cpu().String()
+		memCap := node.Status.Capacity.Memory().String()
+		result[i] = &Node{
+			Name: node.Name, Status: status, Roles: roles,
+			CPUCapacity: cpuCap, MemCapacity: memCap,
+		}
+	}
+	return result
 }
 
 func (c *K8sClient) ListHPAs(namespace string) []*HPA {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
-	return c.hpas[namespace]
+	k8sOpsTotal.WithLabelValues("hpa", "list").Inc()
+	if c.clientset == nil || !c.connected {
+		return nil
+	}
+	hpaList, err := c.clientset.AutoscalingV2().HorizontalPodAutoscalers(namespace).List(context.Background(), metav1.ListOptions{})
+	if err != nil {
+		return nil
+	}
+	result := make([]*HPA, len(hpaList.Items))
+	for i, hpa := range hpaList.Items {
+		var targetCPU int32
+		for _, metric := range hpa.Spec.Metrics {
+			if metric.Type == autoscalingv2.ResourceMetricSourceType && metric.Resource.Name == corev1.ResourceCPU {
+				if metric.Resource.Target.AverageUtilization != nil {
+					targetCPU = *metric.Resource.Target.AverageUtilization
+				}
+			}
+		}
+		result[i] = &HPA{
+			Name: hpa.Name, Namespace: hpa.Namespace,
+			TargetRef: hpa.Spec.ScaleTargetRef.Name,
+			MinReplicas: *hpa.Spec.MinReplicas, MaxReplicas: hpa.Spec.MaxReplicas,
+			CurrentReplicas: hpa.Status.CurrentReplicas,
+			TargetCPU: targetCPU,
+		}
+	}
+	return result
 }
 
 func (c *K8sClient) CreateHPA(req HPARequest) error {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-
-	hpa := &HPA{
-		Name:            req.Name,
-		Namespace:       req.Namespace,
-		TargetRef:       req.TargetRef,
-		MinReplicas:     req.MinReplicas,
-		MaxReplicas:     req.MaxReplicas,
-		CurrentReplicas: req.MinReplicas,
-		TargetCPU:       req.TargetCPU,
-		CurrentCPU:      0,
+	k8sOpsTotal.WithLabelValues("hpa", "create").Inc()
+	if c.clientset == nil || !c.connected {
+		return fmt.Errorf("not connected to cluster")
 	}
-
-	c.hpas[req.Namespace] = append(c.hpas[req.Namespace], hpa)
-	return nil
+	targetCPU := req.TargetCPU
+	hpa := &autoscalingv2.HorizontalPodAutoscaler{
+		ObjectMeta: metav1.ObjectMeta{Name: req.Name, Namespace: req.Namespace},
+		Spec: autoscalingv2.HorizontalPodAutoscalerSpec{
+			ScaleTargetRef: autoscalingv2.CrossVersionObjectReference{
+				APIVersion: "apps/v1", Kind: "Deployment", Name: req.TargetRef,
+			},
+			MinReplicas: &req.MinReplicas,
+			MaxReplicas: req.MaxReplicas,
+			Metrics: []autoscalingv2.MetricSpec{{
+				Type: autoscalingv2.ResourceMetricSourceType,
+				Resource: &autoscalingv2.ResourceMetricSource{
+					Name: corev1.ResourceCPU,
+					Target: autoscalingv2.MetricTarget{
+						Type:               autoscalingv2.UtilizationMetricType,
+						AverageUtilization: &targetCPU,
+					},
+				},
+			}},
+		},
+	}
+	_, err := c.clientset.AutoscalingV2().HorizontalPodAutoscalers(req.Namespace).Create(context.Background(), hpa, metav1.CreateOptions{})
+	return err
 }
 
 func (c *K8sClient) GetClusterMetrics() *ClusterMetrics {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
-
-	totalDeps := 0
-	totalPods := 0
-	totalSvcs := 0
-	for _, deps := range c.deployments {
-		totalDeps += len(deps)
-		for _, d := range deps {
-			totalPods += int(d.Replicas)
-		}
-		totalSvcs += len(deps)
-	}
-
-	totalHPAs := 0
-	for _, hpas := range c.hpas {
-		totalHPAs += len(hpas)
-	}
-
-	var avgCPU, avgMem float64
-	totalCPU := 0
-	var totalMem float64
-	for _, n := range c.nodes {
-		avgCPU += n.CPUUsage
-		avgMem += n.MemUsage
-		cores := 8
-		if n.Roles == "worker" {
-			cores = 16
-		}
-		totalCPU += cores
-		totalMem += 64
-	}
-	if len(c.nodes) > 0 {
-		avgCPU /= float64(len(c.nodes))
-		avgMem /= float64(len(c.nodes))
-	}
-
+	nodes := c.ListNodes()
 	return &ClusterMetrics{
-		Nodes:          len(c.nodes),
-		Pods:           totalPods,
-		Deployments:    totalDeps,
-		Services:       totalSvcs,
-		HPAs:           totalHPAs,
-		TotalCPUCores:  totalCPU,
-		TotalMemoryGB:  totalMem,
-		CPUUsagePct:    avgCPU,
-		MemoryUsagePct: avgMem,
+		Nodes:       len(nodes),
+		TotalCPUCores: len(nodes) * 8,
+		TotalMemoryGB: float64(len(nodes)) * 32,
 	}
 }
 
 func (c *K8sClient) Health() *HealthStatus {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
-
-	totalDeps := 0
-	for _, deps := range c.deployments {
-		totalDeps += len(deps)
-	}
-
+	deps := c.ListDeployments(c.config.Namespace)
+	nodes := c.ListNodes()
 	return &HealthStatus{
-		Connected:   c.connected,
-		ClusterName: "fintech-production",
-		Namespace:   c.config.Namespace,
-		Nodes:       len(c.nodes),
-		Deployments: totalDeps,
+		Connected: c.connected, ClusterName: "fintech-production",
+		Namespace: c.config.Namespace, Nodes: len(nodes),
+		Deployments: len(deps),
 	}
 }

@@ -84,7 +84,7 @@ func main() {
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 			return
 		}
-		var req internal.TwoPhaseTransferRequest
+		var req internal.TwoPhaseRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			http.Error(w, "Invalid request", http.StatusBadRequest)
 			return
@@ -143,14 +143,14 @@ func main() {
 
 	mux.HandleFunc("/balances", func(w http.ResponseWriter, r *http.Request) {
 		id := r.URL.Query().Get("account_id")
-		balance, err := client.GetBalance(id)
+		account, err := client.GetBalance(id)
 		if err != nil {
 			w.WriteHeader(http.StatusNotFound)
 			json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
 			return
 		}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(balance)
+		json.NewEncoder(w).Encode(account)
 	})
 
 	mux.HandleFunc("/ledger/reconcile", func(w http.ResponseWriter, r *http.Request) {

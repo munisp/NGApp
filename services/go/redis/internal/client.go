@@ -1,9 +1,35 @@
 package internal
 
 import (
+	"context"
+	"encoding/json"
 	"fmt"
 	"sync"
 	"time"
+
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
+	"github.com/redis/go-redis/v9"
+)
+
+var (
+	redisOpsTotal = promauto.NewCounterVec(prometheus.CounterOpts{
+		Name: "redis_operations_total",
+		Help: "Total Redis operations",
+	}, []string{"operation"})
+	redisLatency = promauto.NewHistogramVec(prometheus.HistogramOpts{
+		Name:    "redis_operation_latency_seconds",
+		Help:    "Redis operation latency",
+		Buckets: prometheus.DefBuckets,
+	}, []string{"operation"})
+	redisCacheHits = promauto.NewCounter(prometheus.CounterOpts{
+		Name: "redis_cache_hits_total",
+		Help: "Total cache hits",
+	})
+	redisCacheMisses = promauto.NewCounter(prometheus.CounterOpts{
+		Name: "redis_cache_misses_total",
+		Help: "Total cache misses",
+	})
 )
 
 type CacheSetRequest struct {
@@ -48,50 +74,31 @@ type PubSubRequest struct {
 }
 
 type HealthStatus struct {
-	Connected  bool              `json:"connected"`
-	Host       string            `json:"host"`
-	Port       int               `json:"port"`
-	CacheSize  int               `json:"cache_size"`
-	Namespaces map[string]int    `json:"namespaces"`
+	Connected  bool           `json:"connected"`
+	Host       string         `json:"host"`
+	Port       int            `json:"port"`
+	CacheSize  int            `json:"cache_size"`
+	Namespaces map[string]int `json:"namespaces"`
 }
 
 type Stats struct {
-	CacheSize   int            `json:"cache_size"`
-	Hits        int64          `json:"hits"`
-	Misses      int64          `json:"misses"`
-	HitRate     float64        `json:"hit_rate"`
-	Evictions   int64          `json:"evictions"`
-	Sessions    int            `json:"sessions"`
-	Locks       int            `json:"locks"`
-	Namespaces  map[string]int `json:"namespaces"`
-}
-
-type cacheEntry struct {
-	value     interface{}
-	expiresAt int64
-	tags      []string
-}
-
-type lockEntry struct {
-	lockID    string
-	expiresAt int64
+	CacheSize  int            `json:"cache_size"`
+	Hits       int64          `json:"hits"`
+	Misses     int64          `json:"misses"`
+	HitRate    float64        `json:"hit_rate"`
+	Evictions  int64          `json:"evictions"`
+	Sessions   int            `json:"sessions"`
+	Locks      int            `json:"locks"`
+	Namespaces map[string]int `json:"namespaces"`
 }
 
 type RedisClient struct {
-	config     *Config
-	connected  bool
-	mu         sync.RWMutex
-	cache      map[string]*cacheEntry
-	sessions   map[string]*cacheEntry
-	locks      map[string]*lockEntry
-	rateLimits map[string]*rateLimitEntry
-	pubsub     map[string][]func(string)
-	stats      *clientStats
-}
-
-type rateLimitEntry struct {
-	count     int
-	windowEnd int64
+	config    *Config
+	rdb       redis.UniversalClient
+	connected bool
+	mu        sync.RWMutex
+	stats     *clientStats
+	ctx       context.Context
 }
 
 type clientStats struct {
@@ -103,29 +110,68 @@ type clientStats struct {
 
 func NewRedisClient(cfg *Config) (*RedisClient, error) {
 	client := &RedisClient{
-		config:     cfg,
-		cache:      make(map[string]*cacheEntry),
-		sessions:   make(map[string]*cacheEntry),
-		locks:      make(map[string]*lockEntry),
-		rateLimits: make(map[string]*rateLimitEntry),
-		pubsub:     make(map[string][]func(string)),
-		stats:      &clientStats{},
+		config: cfg,
+		stats:  &clientStats{},
+		ctx:    context.Background(),
 	}
 
-	client.connected = true
-	fmt.Printf("[Redis] Connected to %s:%d (prefix: %s, pool: %d)\n",
-		cfg.Host, cfg.Port, cfg.KeyPrefix, cfg.PoolSize)
-
-	if len(cfg.SentinelHosts) > 0 {
-		fmt.Printf("[Redis] Sentinel mode: master=%s, sentinels=%v\n", cfg.SentinelName, cfg.SentinelHosts)
-	}
+	var rdb redis.UniversalClient
 	if cfg.ClusterMode {
-		fmt.Printf("[Redis] Cluster mode enabled\n")
+		rdb = redis.NewClusterClient(&redis.ClusterOptions{
+			Addrs:      []string{fmt.Sprintf("%s:%d", cfg.Host, cfg.Port)},
+			Password:   cfg.Password,
+			MaxRetries: cfg.MaxRetries,
+			PoolSize:   cfg.PoolSize,
+		})
+	} else if len(cfg.SentinelHosts) > 0 {
+		rdb = redis.NewFailoverClient(&redis.FailoverOptions{
+			MasterName:    cfg.SentinelName,
+			SentinelAddrs: cfg.SentinelHosts,
+			Password:      cfg.Password,
+			DB:            cfg.DB,
+			MaxRetries:    cfg.MaxRetries,
+			PoolSize:      cfg.PoolSize,
+		})
+	} else {
+		rdb = redis.NewClient(&redis.Options{
+			Addr:       fmt.Sprintf("%s:%d", cfg.Host, cfg.Port),
+			Password:   cfg.Password,
+			DB:         cfg.DB,
+			MaxRetries: cfg.MaxRetries,
+			PoolSize:   cfg.PoolSize,
+		})
 	}
 
-	go client.evictionLoop()
+	client.rdb = rdb
 
+	if err := rdb.Ping(client.ctx).Err(); err != nil {
+		fmt.Printf("[Redis] Connection failed (will retry): %v\n", err)
+		client.connected = false
+	} else {
+		client.connected = true
+		mode := "standalone"
+		if cfg.ClusterMode {
+			mode = "cluster"
+		} else if len(cfg.SentinelHosts) > 0 {
+			mode = "sentinel"
+		}
+		fmt.Printf("[Redis] Connected to %s:%d (mode: %s, prefix: %s, pool: %d)\n",
+			cfg.Host, cfg.Port, mode, cfg.KeyPrefix, cfg.PoolSize)
+	}
+
+	go client.healthCheckLoop()
 	return client, nil
+}
+
+func (c *RedisClient) healthCheckLoop() {
+	ticker := time.NewTicker(15 * time.Second)
+	defer ticker.Stop()
+	for range ticker.C {
+		err := c.rdb.Ping(c.ctx).Err()
+		c.mu.Lock()
+		c.connected = (err == nil)
+		c.mu.Unlock()
+	}
 }
 
 func (c *RedisClient) buildKey(namespace, key string) string {
@@ -133,190 +179,189 @@ func (c *RedisClient) buildKey(namespace, key string) string {
 }
 
 func (c *RedisClient) Get(namespace, key string) (interface{}, bool) {
-	fullKey := c.buildKey(namespace, key)
-	c.mu.RLock()
-	entry, exists := c.cache[fullKey]
-	c.mu.RUnlock()
+	start := time.Now()
+	defer func() { redisLatency.WithLabelValues("get").Observe(time.Since(start).Seconds()) }()
+	redisOpsTotal.WithLabelValues("get").Inc()
 
-	if !exists {
+	fullKey := c.buildKey(namespace, key)
+	val, err := c.rdb.Get(c.ctx, fullKey).Result()
+	if err == redis.Nil {
 		c.stats.mu.Lock()
 		c.stats.misses++
 		c.stats.mu.Unlock()
+		redisCacheMisses.Inc()
+		return nil, false
+	}
+	if err != nil {
+		c.stats.mu.Lock()
+		c.stats.misses++
+		c.stats.mu.Unlock()
+		redisCacheMisses.Inc()
 		return nil, false
 	}
 
-	if entry.expiresAt > 0 && time.Now().UnixMilli() > entry.expiresAt {
-		c.mu.Lock()
-		delete(c.cache, fullKey)
-		c.mu.Unlock()
-		c.stats.mu.Lock()
-		c.stats.misses++
-		c.stats.mu.Unlock()
-		return nil, false
+	var result interface{}
+	if err := json.Unmarshal([]byte(val), &result); err != nil {
+		result = val
 	}
 
 	c.stats.mu.Lock()
 	c.stats.hits++
 	c.stats.mu.Unlock()
-	return entry.value, true
+	redisCacheHits.Inc()
+	return result, true
 }
 
 func (c *RedisClient) Set(namespace, key string, value interface{}, ttlSeconds int, tags []string) {
+	start := time.Now()
+	defer func() { redisLatency.WithLabelValues("set").Observe(time.Since(start).Seconds()) }()
+	redisOpsTotal.WithLabelValues("set").Inc()
+
 	fullKey := c.buildKey(namespace, key)
-	var expiresAt int64
-	if ttlSeconds > 0 {
-		expiresAt = time.Now().UnixMilli() + int64(ttlSeconds)*1000
+	data, err := json.Marshal(value)
+	if err != nil {
+		return
 	}
 
-	c.mu.Lock()
-	c.cache[fullKey] = &cacheEntry{
-		value:     value,
-		expiresAt: expiresAt,
-		tags:      tags,
+	var ttl time.Duration
+	if ttlSeconds > 0 {
+		ttl = time.Duration(ttlSeconds) * time.Second
 	}
-	c.mu.Unlock()
+	c.rdb.Set(c.ctx, fullKey, data, ttl)
+
+	if len(tags) > 0 {
+		for _, tag := range tags {
+			tagKey := fmt.Sprintf("%stag:%s", c.config.KeyPrefix, tag)
+			c.rdb.SAdd(c.ctx, tagKey, fullKey)
+		}
+	}
 }
 
 func (c *RedisClient) Delete(namespace, key string) {
+	redisOpsTotal.WithLabelValues("delete").Inc()
 	fullKey := c.buildKey(namespace, key)
-	c.mu.Lock()
-	delete(c.cache, fullKey)
-	c.mu.Unlock()
+	c.rdb.Del(c.ctx, fullKey)
 }
 
 func (c *RedisClient) InvalidateByTag(tag string) int {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	count := 0
-	for key, entry := range c.cache {
-		for _, t := range entry.tags {
-			if t == tag {
-				delete(c.cache, key)
-				count++
-				break
-			}
-		}
+	redisOpsTotal.WithLabelValues("invalidate_tag").Inc()
+	tagKey := fmt.Sprintf("%stag:%s", c.config.KeyPrefix, tag)
+	keys, err := c.rdb.SMembers(c.ctx, tagKey).Result()
+	if err != nil {
+		return 0
 	}
-	return count
+	if len(keys) > 0 {
+		c.rdb.Del(c.ctx, keys...)
+		c.rdb.Del(c.ctx, tagKey)
+	}
+	return len(keys)
 }
 
 func (c *RedisClient) SetSession(sessionID string, data map[string]interface{}, ttlSeconds int) {
-	var expiresAt int64
+	redisOpsTotal.WithLabelValues("session_set").Inc()
+	key := fmt.Sprintf("%ssession:%s", c.config.KeyPrefix, sessionID)
+	jsonData, err := json.Marshal(data)
+	if err != nil {
+		return
+	}
+	var ttl time.Duration
 	if ttlSeconds > 0 {
-		expiresAt = time.Now().UnixMilli() + int64(ttlSeconds)*1000
+		ttl = time.Duration(ttlSeconds) * time.Second
 	}
-
-	c.mu.Lock()
-	c.sessions[sessionID] = &cacheEntry{
-		value:     data,
-		expiresAt: expiresAt,
-	}
-	c.mu.Unlock()
+	c.rdb.Set(c.ctx, key, jsonData, ttl)
 }
 
 func (c *RedisClient) GetSession(sessionID string) (map[string]interface{}, bool) {
-	c.mu.RLock()
-	entry, exists := c.sessions[sessionID]
-	c.mu.RUnlock()
-
-	if !exists {
+	redisOpsTotal.WithLabelValues("session_get").Inc()
+	key := fmt.Sprintf("%ssession:%s", c.config.KeyPrefix, sessionID)
+	val, err := c.rdb.Get(c.ctx, key).Result()
+	if err != nil {
 		return nil, false
 	}
-
-	if entry.expiresAt > 0 && time.Now().UnixMilli() > entry.expiresAt {
-		c.mu.Lock()
-		delete(c.sessions, sessionID)
-		c.mu.Unlock()
+	var data map[string]interface{}
+	if err := json.Unmarshal([]byte(val), &data); err != nil {
 		return nil, false
 	}
-
-	data, ok := entry.value.(map[string]interface{})
-	return data, ok
+	return data, true
 }
 
 func (c *RedisClient) DeleteSession(sessionID string) {
-	c.mu.Lock()
-	delete(c.sessions, sessionID)
-	c.mu.Unlock()
+	key := fmt.Sprintf("%ssession:%s", c.config.KeyPrefix, sessionID)
+	c.rdb.Del(c.ctx, key)
 }
 
 func (c *RedisClient) CheckRateLimit(identifier string, maxRequests, windowSeconds int) *RateLimitResult {
+	redisOpsTotal.WithLabelValues("rate_limit").Inc()
+	key := fmt.Sprintf("%srl:%s", c.config.KeyPrefix, identifier)
 	now := time.Now().UnixMilli()
 	windowMs := int64(windowSeconds) * 1000
 
-	c.mu.Lock()
-	defer c.mu.Unlock()
+	pipe := c.rdb.Pipeline()
+	pipe.ZRemRangeByScore(c.ctx, key, "0", fmt.Sprintf("%d", now-windowMs))
+	pipe.ZCard(c.ctx, key)
+	pipe.ZAdd(c.ctx, key, redis.Z{Score: float64(now), Member: fmt.Sprintf("%d", now)})
+	pipe.Expire(c.ctx, key, time.Duration(windowSeconds)*time.Second)
+	results, err := pipe.Exec(c.ctx)
 
-	entry, exists := c.rateLimits[identifier]
-	if !exists || now > entry.windowEnd {
-		c.rateLimits[identifier] = &rateLimitEntry{
-			count:     1,
-			windowEnd: now + windowMs,
-		}
-		return &RateLimitResult{
-			Allowed:   true,
-			Remaining: maxRequests - 1,
-			ResetAt:   now + windowMs,
-		}
+	if err != nil {
+		return &RateLimitResult{Allowed: true, Remaining: maxRequests - 1, ResetAt: now + windowMs}
 	}
 
-	entry.count++
-	allowed := entry.count <= maxRequests
-	remaining := maxRequests - entry.count
+	count := results[1].(*redis.IntCmd).Val()
+	allowed := count < int64(maxRequests)
+	remaining := int64(maxRequests) - count - 1
 	if remaining < 0 {
 		remaining = 0
 	}
 
 	return &RateLimitResult{
 		Allowed:   allowed,
-		Remaining: remaining,
-		ResetAt:   entry.windowEnd,
+		Remaining: int(remaining),
+		ResetAt:   now + windowMs,
 	}
 }
 
 func (c *RedisClient) AcquireLock(resource string, ttlSeconds int) (string, bool) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
+	redisOpsTotal.WithLabelValues("lock_acquire").Inc()
+	lockID := fmt.Sprintf("lock-%d", time.Now().UnixNano())
+	key := fmt.Sprintf("%slock:%s", c.config.KeyPrefix, resource)
+	ttl := time.Duration(ttlSeconds) * time.Second
 
-	now := time.Now().UnixMilli()
-	if existing, exists := c.locks[resource]; exists && now < existing.expiresAt {
+	ok, err := c.rdb.SetNX(c.ctx, key, lockID, ttl).Result()
+	if err != nil || !ok {
 		return "", false
-	}
-
-	lockID := fmt.Sprintf("lock-%d-%d", now, time.Now().UnixNano()%10000)
-	c.locks[resource] = &lockEntry{
-		lockID:    lockID,
-		expiresAt: now + int64(ttlSeconds)*1000,
 	}
 	return lockID, true
 }
 
 func (c *RedisClient) ReleaseLock(resource, lockID string) bool {
-	c.mu.Lock()
-	defer c.mu.Unlock()
+	redisOpsTotal.WithLabelValues("lock_release").Inc()
+	key := fmt.Sprintf("%slock:%s", c.config.KeyPrefix, resource)
 
-	entry, exists := c.locks[resource]
-	if !exists || entry.lockID != lockID {
-		return false
-	}
-	delete(c.locks, resource)
-	return true
+	script := redis.NewScript(`
+		if redis.call("get", KEYS[1]) == ARGV[1] then
+			return redis.call("del", KEYS[1])
+		else
+			return 0
+		end
+	`)
+	result, err := script.Run(c.ctx, c.rdb, []string{key}, lockID).Int64()
+	return err == nil && result == 1
 }
 
 func (c *RedisClient) Publish(channel, message string) {
-	c.mu.RLock()
-	handlers := c.pubsub[channel]
-	c.mu.RUnlock()
-
-	for _, handler := range handlers {
-		go handler(message)
-	}
+	redisOpsTotal.WithLabelValues("publish").Inc()
+	c.rdb.Publish(c.ctx, fmt.Sprintf("%s%s", c.config.KeyPrefix, channel), message)
 }
 
 func (c *RedisClient) Subscribe(channel string, handler func(string)) {
-	c.mu.Lock()
-	c.pubsub[channel] = append(c.pubsub[channel], handler)
-	c.mu.Unlock()
+	ch := fmt.Sprintf("%s%s", c.config.KeyPrefix, channel)
+	sub := c.rdb.Subscribe(c.ctx, ch)
+	go func() {
+		for msg := range sub.Channel() {
+			handler(msg.Payload)
+		}
+	}()
 }
 
 func (c *RedisClient) Health() *HealthStatus {
@@ -324,32 +369,23 @@ func (c *RedisClient) Health() *HealthStatus {
 	defer c.mu.RUnlock()
 
 	namespaces := make(map[string]int)
-	for key := range c.cache {
-		ns := extractNamespace(key, c.config.KeyPrefix)
-		namespaces[ns]++
+	info, err := c.rdb.Info(c.ctx, "keyspace").Result()
+	if err == nil {
+		namespaces["info"] = len(info)
 	}
+
+	dbSize, _ := c.rdb.DBSize(c.ctx).Result()
 
 	return &HealthStatus{
 		Connected:  c.connected,
 		Host:       c.config.Host,
 		Port:       c.config.Port,
-		CacheSize:  len(c.cache),
+		CacheSize:  int(dbSize),
 		Namespaces: namespaces,
 	}
 }
 
 func (c *RedisClient) GetStats() *Stats {
-	c.mu.RLock()
-	cacheSize := len(c.cache)
-	sessionCount := len(c.sessions)
-	lockCount := len(c.locks)
-	namespaces := make(map[string]int)
-	for key := range c.cache {
-		ns := extractNamespace(key, c.config.KeyPrefix)
-		namespaces[ns]++
-	}
-	c.mu.RUnlock()
-
 	c.stats.mu.Lock()
 	hits := c.stats.hits
 	misses := c.stats.misses
@@ -362,54 +398,17 @@ func (c *RedisClient) GetStats() *Stats {
 		hitRate = float64(hits) / float64(total)
 	}
 
+	dbSize, _ := c.rdb.DBSize(c.ctx).Result()
+
 	return &Stats{
-		CacheSize:  cacheSize,
+		CacheSize:  int(dbSize),
 		Hits:       hits,
 		Misses:     misses,
 		HitRate:    hitRate,
 		Evictions:  evictions,
-		Sessions:   sessionCount,
-		Locks:      lockCount,
-		Namespaces: namespaces,
-	}
-}
-
-func (c *RedisClient) evictionLoop() {
-	ticker := time.NewTicker(10 * time.Second)
-	defer ticker.Stop()
-
-	for range ticker.C {
-		now := time.Now().UnixMilli()
-		c.mu.Lock()
-
-		for key, entry := range c.cache {
-			if entry.expiresAt > 0 && now > entry.expiresAt {
-				delete(c.cache, key)
-				c.stats.mu.Lock()
-				c.stats.evictions++
-				c.stats.mu.Unlock()
-			}
-		}
-
-		for key, entry := range c.sessions {
-			if entry.expiresAt > 0 && now > entry.expiresAt {
-				delete(c.sessions, key)
-			}
-		}
-
-		for key, entry := range c.locks {
-			if now > entry.expiresAt {
-				delete(c.locks, key)
-			}
-		}
-
-		for key, entry := range c.rateLimits {
-			if now > entry.windowEnd {
-				delete(c.rateLimits, key)
-			}
-		}
-
-		c.mu.Unlock()
+		Sessions:   0,
+		Locks:      0,
+		Namespaces: map[string]int{},
 	}
 }
 
@@ -417,15 +416,6 @@ func (c *RedisClient) Close() {
 	c.mu.Lock()
 	c.connected = false
 	c.mu.Unlock()
+	c.rdb.Close()
 	fmt.Println("[Redis] Client closed")
-}
-
-func extractNamespace(key, prefix string) string {
-	trimmed := key[len(prefix):]
-	for i, ch := range trimmed {
-		if ch == ':' {
-			return trimmed[:i]
-		}
-	}
-	return "default"
 }

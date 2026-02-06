@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 
 	"github.com/unified-platform/services/openappsec/internal"
@@ -13,7 +14,11 @@ import (
 
 func main() {
 	cfg := internal.LoadConfig()
-	client := internal.NewOpenAppSecClient(cfg)
+	client, err := internal.NewOpenAppSecClient(cfg)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "[OpenAppSec] Failed to initialize: %v\n", err)
+		os.Exit(1)
+	}
 
 	mux := http.NewServeMux()
 
@@ -34,7 +39,7 @@ func main() {
 		}
 		result := client.ScanRequest(req)
 		w.Header().Set("Content-Type", "application/json")
-		if result.Blocked {
+		if !result.Allowed {
 			w.WriteHeader(http.StatusForbidden)
 		}
 		json.NewEncoder(w).Encode(result)
@@ -44,7 +49,7 @@ func main() {
 		switch r.Method {
 		case http.MethodGet:
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(client.ListPolicies())
+			json.NewEncoder(w).Encode(client.GetPolicies())
 		case http.MethodPost:
 			var req internal.Policy
 			if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -61,8 +66,15 @@ func main() {
 	})
 
 	mux.HandleFunc("/threats", func(w http.ResponseWriter, r *http.Request) {
+		limitStr := r.URL.Query().Get("limit")
+		limit := 100
+		if limitStr != "" {
+			if v, err := strconv.Atoi(limitStr); err == nil {
+				limit = v
+			}
+		}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(client.GetThreats())
+		json.NewEncoder(w).Encode(client.GetThreats(limit))
 	})
 
 	mux.HandleFunc("/whitelist", func(w http.ResponseWriter, r *http.Request) {
@@ -70,12 +82,14 @@ func main() {
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 			return
 		}
-		var req internal.WhitelistEntry
+		var req struct {
+			IPs []string `json:"ips"`
+		}
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			http.Error(w, "Invalid request", http.StatusBadRequest)
 			return
 		}
-		client.AddWhitelist(&req)
+		client.AddWhitelist(req.IPs)
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]string{"status": "added"})
 	})

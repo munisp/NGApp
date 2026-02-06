@@ -5,12 +5,34 @@ import (
 	"fmt"
 	"sync"
 	"time"
+
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
+)
+
+var (
+	fluvioRecordsProduced = promauto.NewCounterVec(prometheus.CounterOpts{
+		Name: "fluvio_records_produced_total",
+		Help: "Total records produced",
+	}, []string{"topic"})
+	fluvioRecordsConsumed = promauto.NewCounterVec(prometheus.CounterOpts{
+		Name: "fluvio_records_consumed_total",
+		Help: "Total records consumed",
+	}, []string{"topic"})
+	fluvioLatency = promauto.NewHistogramVec(prometheus.HistogramOpts{
+		Name:    "fluvio_operation_latency_seconds",
+		Help:    "Fluvio operation latency",
+		Buckets: prometheus.DefBuckets,
+	}, []string{"operation"})
 )
 
 type Topic struct {
 	Name       string `json:"name"`
 	Partitions int    `json:"partitions"`
 	Replicas   int    `json:"replicas"`
+	Retention  string `json:"retention"`
 	CreatedAt  int64  `json:"created_at"`
 }
 
@@ -20,19 +42,14 @@ type Record struct {
 	Value     json.RawMessage `json:"value"`
 	Offset    int64           `json:"offset"`
 	Timestamp int64           `json:"timestamp"`
-	Partition int             `json:"partition"`
+	Partition int32           `json:"partition"`
 }
 
 type SmartModule struct {
 	Name    string `json:"name"`
 	Type    string `json:"type"`
-	Desc    string `json:"description"`
-}
-
-type CreateTopicRequest struct {
-	Name       string `json:"name"`
-	Partitions int    `json:"partitions"`
-	Replicas   int    `json:"replicas"`
+	Version string `json:"version"`
+	Status  string `json:"status"`
 }
 
 type ProduceRequest struct {
@@ -41,206 +58,247 @@ type ProduceRequest struct {
 	Value json.RawMessage `json:"value"`
 }
 
+type ConsumeRequest struct {
+	Topic    string `json:"topic"`
+	Offset   int64  `json:"offset"`
+	MaxCount int    `json:"max_count"`
+}
+
 type StreamMetrics struct {
-	TotalTopics    int              `json:"total_topics"`
-	TotalRecords   int64            `json:"total_records"`
-	RecordsByTopic map[string]int64 `json:"records_by_topic"`
-	BytesIn        int64            `json:"bytes_in"`
-	BytesOut       int64            `json:"bytes_out"`
-	SmartModules   int              `json:"smart_modules"`
+	TotalRecords    int64            `json:"total_records"`
+	TotalTopics     int              `json:"total_topics"`
+	RecordsByTopic  map[string]int64 `json:"records_by_topic"`
+	SmartModules    int              `json:"smart_modules"`
+	AvgThroughput   float64          `json:"avg_throughput_rps"`
 }
 
 type HealthStatus struct {
-	Connected bool   `json:"connected"`
-	Endpoint  string `json:"endpoint"`
-	Topics    int    `json:"topics"`
-	Records   int64  `json:"total_records"`
+	Connected    bool   `json:"connected"`
+	Endpoint     string `json:"endpoint"`
+	TopicCount   int    `json:"topic_count"`
+	SmartModules int    `json:"smart_modules"`
 }
 
 type FluvioClient struct {
 	config       *Config
+	grpcConn     *grpc.ClientConn
 	connected    bool
 	mu           sync.RWMutex
 	topics       map[string]*Topic
 	records      map[string][]*Record
-	offsets      map[string]int64
 	smartModules []*SmartModule
-	bytesIn      int64
-	bytesOut     int64
+	offsets      map[string]int64
+	metrics      *streamMetrics
+}
+
+type streamMetrics struct {
+	mu           sync.Mutex
+	totalRecords int64
+	byTopic      map[string]int64
+	produceTimes []float64
+}
+
+var defaultTopics = []string{
+	"cdc.accounts", "cdc.transactions", "cdc.payments",
+	"events.user-activity", "events.notifications",
+	"analytics.real-time", "analytics.aggregated",
+	"ml.predictions", "ml.features",
+	"audit.trail",
 }
 
 func NewFluvioClient(cfg *Config) (*FluvioClient, error) {
 	client := &FluvioClient{
 		config:  cfg,
-		connected: true,
 		topics:  make(map[string]*Topic),
 		records: make(map[string][]*Record),
 		offsets: make(map[string]int64),
+		metrics: &streamMetrics{byTopic: make(map[string]int64)},
 	}
 
-	client.registerDefaultTopics()
-	client.registerSmartModules()
+	conn, err := grpc.Dial(cfg.Endpoint, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		fmt.Printf("[Fluvio] gRPC connection failed (will retry): %v\n", err)
+		client.connected = false
+	} else {
+		client.grpcConn = conn
+		client.connected = true
+		fmt.Printf("[Fluvio] Connected via gRPC to %s\n", cfg.Endpoint)
+	}
 
-	fmt.Printf("[Fluvio] Connected to %s (profile: %s)\n", cfg.Endpoint, cfg.Profile)
+	for _, name := range defaultTopics {
+		client.topics[name] = &Topic{
+			Name: name, Partitions: 3, Replicas: 1,
+			Retention: "7d", CreatedAt: time.Now().Unix(),
+		}
+		client.records[name] = make([]*Record, 0)
+		client.offsets[name] = 0
+	}
+
+	client.smartModules = []*SmartModule{
+		{Name: "json-filter", Type: "filter", Version: "0.1.0", Status: "active"},
+		{Name: "dedup", Type: "filter", Version: "0.1.0", Status: "active"},
+		{Name: "json-to-avro", Type: "map", Version: "0.1.0", Status: "active"},
+		{Name: "aggregate-sum", Type: "aggregate", Version: "0.1.0", Status: "active"},
+		{Name: "fraud-score-filter", Type: "filter", Version: "0.2.0", Status: "active"},
+	}
+
+	go client.healthCheckLoop()
 	return client, nil
 }
 
-func (c *FluvioClient) registerDefaultTopics() {
-	defaults := []CreateTopicRequest{
-		{Name: "transaction-stream", Partitions: 6, Replicas: 3},
-		{Name: "payment-events", Partitions: 4, Replicas: 3},
-		{Name: "account-changes", Partitions: 3, Replicas: 3},
-		{Name: "fraud-signals", Partitions: 2, Replicas: 3},
-		{Name: "audit-trail", Partitions: 4, Replicas: 3},
-		{Name: "notification-stream", Partitions: 2, Replicas: 2},
-		{Name: "kyc-events", Partitions: 2, Replicas: 3},
-		{Name: "realtime-balances", Partitions: 6, Replicas: 3},
-		{Name: "market-data", Partitions: 4, Replicas: 2},
-		{Name: "user-activity", Partitions: 3, Replicas: 2},
-	}
-
-	for _, req := range defaults {
-		c.CreateTopic(req.Name, req.Partitions, req.Replicas)
+func (c *FluvioClient) healthCheckLoop() {
+	ticker := time.NewTicker(30 * time.Second)
+	defer ticker.Stop()
+	for range ticker.C {
+		if c.grpcConn != nil {
+			state := c.grpcConn.GetState()
+			c.mu.Lock()
+			c.connected = state.String() == "READY" || state.String() == "IDLE"
+			c.mu.Unlock()
+		}
 	}
 }
 
-func (c *FluvioClient) registerSmartModules() {
-	c.smartModules = []*SmartModule{
-		{Name: "fraud-filter", Type: "filter", Desc: "Filters transactions flagged as potentially fraudulent"},
-		{Name: "pii-redactor", Type: "map", Desc: "Redacts PII fields from audit streams"},
-		{Name: "balance-aggregator", Type: "aggregate", Desc: "Aggregates balance changes in real-time"},
-		{Name: "transaction-enricher", Type: "map", Desc: "Enriches transactions with merchant/category data"},
-		{Name: "dedup-filter", Type: "filter", Desc: "Deduplicates events by correlation ID"},
-		{Name: "currency-converter", Type: "map", Desc: "Converts amounts to base currency"},
-		{Name: "compliance-filter", Type: "filter", Desc: "Filters events requiring compliance review"},
-		{Name: "json-to-avro", Type: "map", Desc: "Converts JSON records to Avro format for lakehouse"},
-	}
-}
-
-func (c *FluvioClient) CreateTopic(name string, partitions, replicas int) error {
+func (c *FluvioClient) CreateTopic(name string, partitions, replicas int) (*Topic, error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-
 	if _, exists := c.topics[name]; exists {
-		return fmt.Errorf("topic %s already exists", name)
+		return nil, fmt.Errorf("topic %s already exists", name)
 	}
-
-	c.topics[name] = &Topic{
-		Name:       name,
-		Partitions: partitions,
-		Replicas:   replicas,
-		CreatedAt:  time.Now().Unix(),
+	topic := &Topic{
+		Name: name, Partitions: partitions, Replicas: replicas,
+		Retention: "7d", CreatedAt: time.Now().Unix(),
 	}
+	c.topics[name] = topic
 	c.records[name] = make([]*Record, 0)
 	c.offsets[name] = 0
+	return topic, nil
+}
+
+func (c *FluvioClient) DeleteTopic(name string) error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if _, exists := c.topics[name]; !exists {
+		return fmt.Errorf("topic %s not found", name)
+	}
+	delete(c.topics, name)
+	delete(c.records, name)
+	delete(c.offsets, name)
 	return nil
 }
 
-func (c *FluvioClient) Produce(topic, key string, value json.RawMessage) (int64, error) {
+func (c *FluvioClient) ListTopics() []*Topic {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	result := make([]*Topic, 0, len(c.topics))
+	for _, t := range c.topics {
+		result = append(result, t)
+	}
+	return result
+}
+
+func (c *FluvioClient) Produce(topic, key string, value json.RawMessage) (*Record, error) {
+	start := time.Now()
+	defer func() { fluvioLatency.WithLabelValues("produce").Observe(time.Since(start).Seconds()) }()
+
 	c.mu.Lock()
 	defer c.mu.Unlock()
-
 	if _, exists := c.topics[topic]; !exists {
-		return 0, fmt.Errorf("topic %s not found", topic)
+		return nil, fmt.Errorf("topic %s not found", topic)
 	}
 
 	offset := c.offsets[topic]
 	c.offsets[topic]++
 
 	record := &Record{
-		Topic:     topic,
-		Key:       key,
-		Value:     value,
-		Offset:    offset,
-		Timestamp: time.Now().UnixMilli(),
-		Partition: int(offset) % c.topics[topic].Partitions,
+		Topic: topic, Key: key, Value: value,
+		Offset: offset, Timestamp: time.Now().UnixMilli(),
+		Partition: int32(offset % 3),
 	}
-
 	c.records[topic] = append(c.records[topic], record)
-	c.bytesIn += int64(len(value))
 
-	if len(c.records[topic]) > 100000 {
-		c.records[topic] = c.records[topic][50000:]
+	c.metrics.mu.Lock()
+	c.metrics.totalRecords++
+	c.metrics.byTopic[topic]++
+	c.metrics.produceTimes = append(c.metrics.produceTimes, time.Since(start).Seconds())
+	if len(c.metrics.produceTimes) > 10000 {
+		c.metrics.produceTimes = c.metrics.produceTimes[5000:]
 	}
+	c.metrics.mu.Unlock()
 
-	return offset, nil
+	fluvioRecordsProduced.WithLabelValues(topic).Inc()
+	return record, nil
 }
 
-func (c *FluvioClient) Consume(topic string, limit int) []*Record {
+func (c *FluvioClient) Consume(topic string, offset int64, maxCount int) ([]*Record, error) {
+	start := time.Now()
+	defer func() { fluvioLatency.WithLabelValues("consume").Observe(time.Since(start).Seconds()) }()
+
 	c.mu.RLock()
 	defer c.mu.RUnlock()
-
-	records, exists := c.records[topic]
+	recs, exists := c.records[topic]
 	if !exists {
-		return nil
+		return nil, fmt.Errorf("topic %s not found", topic)
 	}
 
-	start := 0
-	if len(records) > limit {
-		start = len(records) - limit
+	var result []*Record
+	for _, r := range recs {
+		if r.Offset >= offset {
+			result = append(result, r)
+			fluvioRecordsConsumed.WithLabelValues(topic).Inc()
+			if len(result) >= maxCount {
+				break
+			}
+		}
 	}
-
-	result := make([]*Record, len(records[start:]))
-	copy(result, records[start:])
-
-	for _, r := range result {
-		c.bytesOut += int64(len(r.Value))
-	}
-
-	return result
-}
-
-func (c *FluvioClient) ListTopics() []*Topic {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
-	topics := make([]*Topic, 0, len(c.topics))
-	for _, t := range c.topics {
-		topics = append(topics, t)
-	}
-	return topics
+	return result, nil
 }
 
 func (c *FluvioClient) ListSmartModules() []*SmartModule {
-	return c.smartModules
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	result := make([]*SmartModule, len(c.smartModules))
+	copy(result, c.smartModules)
+	return result
 }
 
 func (c *FluvioClient) GetMetrics() *StreamMetrics {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
-
-	var totalRecords int64
+	c.metrics.mu.Lock()
+	defer c.metrics.mu.Unlock()
 	byTopic := make(map[string]int64)
-	for name, records := range c.records {
-		byTopic[name] = int64(len(records))
-		totalRecords += int64(len(records))
+	for k, v := range c.metrics.byTopic {
+		byTopic[k] = v
 	}
-
+	var avgThroughput float64
+	if len(c.metrics.produceTimes) > 0 {
+		var total float64
+		for _, t := range c.metrics.produceTimes {
+			total += t
+		}
+		avgThroughput = float64(len(c.metrics.produceTimes)) / total
+	}
 	return &StreamMetrics{
-		TotalTopics:    len(c.topics),
-		TotalRecords:   totalRecords,
+		TotalRecords: c.metrics.totalRecords,
+		TotalTopics: len(c.topics),
 		RecordsByTopic: byTopic,
-		BytesIn:        c.bytesIn,
-		BytesOut:       c.bytesOut,
-		SmartModules:   len(c.smartModules),
+		SmartModules: len(c.smartModules),
+		AvgThroughput: avgThroughput,
 	}
 }
 
 func (c *FluvioClient) Health() *HealthStatus {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
-	var totalRecords int64
-	for _, records := range c.records {
-		totalRecords += int64(len(records))
-	}
 	return &HealthStatus{
-		Connected: c.connected,
-		Endpoint:  c.config.Endpoint,
-		Topics:    len(c.topics),
-		Records:   totalRecords,
+		Connected: c.connected, Endpoint: c.config.Endpoint,
+		TopicCount: len(c.topics), SmartModules: len(c.smartModules),
 	}
 }
 
 func (c *FluvioClient) Close() {
+	if c.grpcConn != nil {
+		c.grpcConn.Close()
+	}
 	c.mu.Lock()
 	c.connected = false
 	c.mu.Unlock()

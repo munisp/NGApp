@@ -1,0 +1,105 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  scrape_timeout: 10s
+
+rule_files:
+  - "alerts/*.yml"
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: ["alertmanager:9093"]
+
+scrape_configs:
+  - job_name: "prometheus"
+    static_configs:
+      - targets: ["localhost:9090"]
+
+  - job_name: "kafka-service"
+    static_configs:
+      - targets: ["kafka-service:8081"]
+    metrics_path: /metrics
+
+  - job_name: "redis-service"
+    static_configs:
+      - targets: ["redis-service:8082"]
+    metrics_path: /metrics
+
+  - job_name: "tigerbeetle-service"
+    static_configs:
+      - targets: ["tigerbeetle-service:8083"]
+    metrics_path: /metrics
+
+  - job_name: "apisix-service"
+    static_configs:
+      - targets: ["apisix-service:8084"]
+    metrics_path: /metrics
+
+  - job_name: "fluvio-service"
+    static_configs:
+      - targets: ["fluvio-service:8086"]
+    metrics_path: /metrics
+
+  - job_name: "openappsec-service"
+    static_configs:
+      - targets: ["openappsec-service:8087"]
+    metrics_path: /metrics
+
+  - job_name: "kubernetes-service"
+    static_configs:
+      - targets: ["kubernetes-service:8088"]
+    metrics_path: /metrics
+
+  - job_name: "ml-gateway"
+    static_configs:
+      - targets: ["ml-gateway:8119"]
+    metrics_path: /metrics
+
+  - job_name: "credit-score-ml"
+    static_configs:
+      - targets: ["credit-score-ml:5003"]
+    metrics_path: /metrics
+
+  - job_name: "categorization-ml"
+    static_configs:
+      - targets: ["categorization-ml:5004"]
+    metrics_path: /metrics
+
+  - job_name: "fraud-detection-ml"
+    static_configs:
+      - targets: ["fraud-detection-ml:5005"]
+    metrics_path: /metrics
+
+  - job_name: "kyc-service"
+    static_configs:
+      - targets: ["kyc-service:8110"]
+    metrics_path: /metrics
+
+  - job_name: "kyb-service"
+    static_configs:
+      - targets: ["kyb-service:8111"]
+    metrics_path: /metrics
+
+  - job_name: "bnpl-service"
+    static_configs:
+      - targets: ["bnpl-service:8112"]
+    metrics_path: /metrics
+
+  - job_name: "corebanking-go"
+    static_configs:
+      - targets: ["corebanking-go:8120"]
+    metrics_path: /metrics
+
+  - job_name: "payment-processing-go"
+    static_configs:
+      - targets: ["payment-processing-go:8121"]
+    metrics_path: /metrics
+
+  - job_name: "node-exporter"
+    static_configs:
+      - targets: ["node-exporter:9100"]
+
+  - job_name: "cadvisor"
+    static_configs:
+      - targets: ["cadvisor:8080"]

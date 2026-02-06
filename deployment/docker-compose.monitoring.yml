@@ -1,0 +1,60 @@
+version: "3.8"
+
+services:
+  prometheus:
+    image: prom/prometheus:v2.50.0
+    container_name: fintech-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./deployment/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./deployment/prometheus/alerts:/etc/prometheus/alerts
+      - prometheus_data:/prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.retention.time=30d"
+      - "--web.enable-lifecycle"
+    networks:
+      - fintech
+
+  grafana:
+    image: grafana/grafana:10.3.1
+    container_name: fintech-grafana
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=fintech-admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - ./deployment/grafana/provisioning:/etc/grafana/provisioning
+      - ./deployment/grafana/dashboards:/var/lib/grafana/dashboards
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      - prometheus
+    networks:
+      - fintech
+
+  node-exporter:
+    image: prom/node-exporter:v1.7.0
+    container_name: fintech-node-exporter
+    ports:
+      - "9100:9100"
+    networks:
+      - fintech
+
+  alertmanager:
+    image: prom/alertmanager:v0.27.0
+    container_name: fintech-alertmanager
+    ports:
+      - "9093:9093"
+    networks:
+      - fintech
+
+volumes:
+  prometheus_data:
+  grafana_data:
+
+networks:
+  fintech:
+    external: true

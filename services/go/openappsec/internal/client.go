@@ -1,302 +1,386 @@
 package internal
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
 	"regexp"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
+)
+
+var (
+	wafScansTotal = promauto.NewCounter(prometheus.CounterOpts{
+		Name: "openappsec_scans_total",
+		Help: "Total WAF scans performed",
+	})
+	wafThreatsDetected = promauto.NewCounterVec(prometheus.CounterOpts{
+		Name: "openappsec_threats_detected_total",
+		Help: "Total threats detected by type",
+	}, []string{"threat_type"})
+	wafBlockedTotal = promauto.NewCounter(prometheus.CounterOpts{
+		Name: "openappsec_blocked_total",
+		Help: "Total requests blocked",
+	})
+	wafScanLatency = promauto.NewHistogram(prometheus.HistogramOpts{
+		Name:    "openappsec_scan_latency_seconds",
+		Help:    "WAF scan latency",
+		Buckets: prometheus.DefBuckets,
+	})
 )
 
 type ScanRequest struct {
-	Method    string            `json:"method"`
-	URI       string            `json:"uri"`
-	Headers   map[string]string `json:"headers"`
-	Body      string            `json:"body"`
-	SourceIP  string            `json:"source_ip"`
-	UserAgent string            `json:"user_agent"`
+	Method  string            `json:"method"`
+	URI     string            `json:"uri"`
+	Headers map[string]string `json:"headers"`
+	Body    string            `json:"body"`
+	IP      string            `json:"ip"`
 }
 
 type ScanResult struct {
-	Allowed       bool     `json:"allowed"`
-	Blocked       bool     `json:"blocked"`
-	ThreatLevel   string   `json:"threat_level"`
-	Threats       []string `json:"threats,omitempty"`
-	Score         float64  `json:"score"`
-	ProcessTimeMs float64  `json:"process_time_ms"`
-	Action        string   `json:"action"`
+	Allowed    bool     `json:"allowed"`
+	Threats    []Threat `json:"threats"`
+	Score      float64  `json:"score"`
+	Processing float64  `json:"processing_ms"`
+}
+
+type Threat struct {
+	Type       string  `json:"type"`
+	Severity   string  `json:"severity"`
+	Pattern    string  `json:"pattern"`
+	Location   string  `json:"location"`
+	Confidence float64 `json:"confidence"`
+	Timestamp  int64   `json:"timestamp"`
 }
 
 type Policy struct {
 	ID          string   `json:"id"`
 	Name        string   `json:"name"`
 	Mode        string   `json:"mode"`
-	Practices   []string `json:"practices"`
-	SourceIDs   []string `json:"source_ids,omitempty"`
-	TriggerIDs  []string `json:"trigger_ids,omitempty"`
+	Rules       []Rule   `json:"rules"`
+	Whitelist   []string `json:"whitelist"`
+	Blacklist   []string `json:"blacklist"`
+	CreatedAt   int64    `json:"created_at"`
 }
 
-type Threat struct {
-	ID          string  `json:"id"`
-	Type        string  `json:"type"`
-	Severity    string  `json:"severity"`
-	Description string  `json:"description"`
-	SourceIP    string  `json:"source_ip"`
-	URI         string  `json:"uri"`
-	Score       float64 `json:"score"`
-	Blocked     bool    `json:"blocked"`
-	Timestamp   int64   `json:"timestamp"`
-}
-
-type WhitelistEntry struct {
+type Rule struct {
 	ID       string `json:"id"`
-	Type     string `json:"type"`
-	Value    string `json:"value"`
-	Reason   string `json:"reason"`
+	Pattern  string `json:"pattern"`
+	Action   string `json:"action"`
+	Severity string `json:"severity"`
+	Enabled  bool   `json:"enabled"`
 }
 
-type SecurityMetrics struct {
-	TotalScans     int64            `json:"total_scans"`
-	BlockedCount   int64            `json:"blocked_count"`
-	AllowedCount   int64            `json:"allowed_count"`
-	ThreatsByType  map[string]int64 `json:"threats_by_type"`
-	AvgScoreMs     float64          `json:"avg_score_ms"`
-	TopAttackTypes []string         `json:"top_attack_types"`
-	BlockRate      float64          `json:"block_rate"`
+type WAFMetrics struct {
+	TotalScans     int64              `json:"total_scans"`
+	TotalBlocked   int64              `json:"total_blocked"`
+	TotalAllowed   int64              `json:"total_allowed"`
+	Threats        int                `json:"threats_detected"`
+	ThreatsByType  map[string]int     `json:"threats_by_type"`
+	AvgLatencyMs   float64            `json:"avg_latency_ms"`
+	TopAttackIPs   map[string]int     `json:"top_attack_ips"`
 }
 
 type HealthStatus struct {
-	Connected       bool   `json:"connected"`
-	Mode            string `json:"mode"`
-	Policies        int    `json:"policies"`
-	ThreatsDetected int    `json:"threats_detected"`
-	WhitelistSize   int    `json:"whitelist_size"`
+	Connected    bool   `json:"connected"`
+	Mode         string `json:"mode"`
+	Policies     int    `json:"policies"`
+	ThreatsTotal int    `json:"threats_total"`
 }
 
 type OpenAppSecClient struct {
-	config    *Config
-	mu        sync.RWMutex
-	policies  []*Policy
-	threats   []*Threat
-	whitelist []*WhitelistEntry
-	patterns  []*attackPattern
-	metrics   *secMetrics
+	config     *Config
+	httpClient *http.Client
+	connected  bool
+	mu         sync.RWMutex
+	policies   map[string]*Policy
+	threats    []*Threat
+	whitelist  map[string]bool
+	patterns   []*threatPattern
+	metrics    *wafMetrics
 }
 
-type attackPattern struct {
-	name    string
-	pattern *regexp.Regexp
-	score   float64
+type threatPattern struct {
+	name     string
+	pattern  *regexp.Regexp
+	severity string
 }
 
-type secMetrics struct {
+type wafMetrics struct {
 	mu           sync.Mutex
 	totalScans   int64
-	blocked      int64
-	allowed      int64
-	threatTypes  map[string]int64
-	scoreTimes   []float64
+	totalBlocked int64
+	totalAllowed int64
+	threatTypes  map[string]int
+	attackIPs    map[string]int
+	latencies    []float64
 }
 
-func NewOpenAppSecClient(cfg *Config) *OpenAppSecClient {
+func NewOpenAppSecClient(cfg *Config) (*OpenAppSecClient, error) {
 	client := &OpenAppSecClient{
-		config: cfg,
-		metrics: &secMetrics{
-			threatTypes: make(map[string]int64),
+		config:     cfg,
+		httpClient: &http.Client{Timeout: 5 * time.Second},
+		policies:   make(map[string]*Policy),
+		whitelist:  make(map[string]bool),
+		metrics: &wafMetrics{
+			threatTypes: make(map[string]int),
+			attackIPs:   make(map[string]int),
 		},
 	}
 
-	client.loadAttackPatterns()
-	client.loadDefaultPolicies()
+	client.initPatterns()
+	client.initDefaultPolicy()
 
-	fmt.Printf("[OpenAppSec] Initialized (mode: %s, threat_prevention: %v)\n", cfg.Mode, cfg.ThreatPrevention)
-	return client
+	if err := client.checkAgentConnection(); err != nil {
+		fmt.Printf("[OpenAppSec] Agent not reachable (using local engine): %v\n", err)
+		client.connected = false
+	} else {
+		client.connected = true
+		fmt.Printf("[OpenAppSec] Connected to agent (mode: %s)\n", cfg.Mode)
+	}
+
+	go client.healthCheckLoop()
+	return client, nil
 }
 
-func (c *OpenAppSecClient) loadAttackPatterns() {
-	c.patterns = []*attackPattern{
-		{name: "SQL Injection", pattern: regexp.MustCompile(`(?i)(union\s+select|or\s+1\s*=\s*1|drop\s+table|insert\s+into|delete\s+from|update\s+.*set|select\s+.*from|;\s*--|'\s*or\s*')`), score: 0.9},
-		{name: "XSS", pattern: regexp.MustCompile(`(?i)(<script|javascript:|on(error|load|click|mouseover)\s*=|<img\s+.*onerror|<svg\s+.*onload|eval\s*\(|document\.(cookie|location)|alert\s*\()`), score: 0.85},
-		{name: "Path Traversal", pattern: regexp.MustCompile(`(\.\./|\.\.\\|%2e%2e|%252e%252e|/etc/passwd|/proc/self|\\windows\\system32)`), score: 0.8},
-		{name: "Command Injection", pattern: regexp.MustCompile(`(?i)(;\s*(ls|cat|rm|wget|curl|bash|sh|python|perl|nc)\s|[|&]\s*(ls|cat|rm)|` + "`" + `.*` + "`" + `|\$\(.*\))`), score: 0.95},
-		{name: "LDAP Injection", pattern: regexp.MustCompile(`(?i)([)(|*\\].*[)(|*\\]|objectclass=\*|cn=\*)`), score: 0.7},
-		{name: "XML External Entity", pattern: regexp.MustCompile(`(?i)(<!DOCTYPE.*ENTITY|<!ENTITY|SYSTEM\s+"file:|SYSTEM\s+"http)`), score: 0.9},
-		{name: "Server-Side Request Forgery", pattern: regexp.MustCompile(`(?i)(127\.0\.0\.1|localhost|0\.0\.0\.0|169\.254\.169\.254|metadata\.google|::1)`), score: 0.75},
-		{name: "Log Injection", pattern: regexp.MustCompile(`(?i)(\r\n|\n|\r).*HTTP/`), score: 0.6},
-		{name: "Open Redirect", pattern: regexp.MustCompile(`(?i)(redirect|url|next|return|goto)=https?://`), score: 0.5},
-		{name: "Header Injection", pattern: regexp.MustCompile(`(\r\n|\n)[\w-]+:`), score: 0.7},
+func (c *OpenAppSecClient) checkAgentConnection() error {
+	resp, err := c.httpClient.Get("http://localhost:19789/health")
+	if err != nil {
+		return err
+	}
+	resp.Body.Close()
+	return nil
+}
+
+func (c *OpenAppSecClient) healthCheckLoop() {
+	ticker := time.NewTicker(30 * time.Second)
+	defer ticker.Stop()
+	for range ticker.C {
+		err := c.checkAgentConnection()
+		c.mu.Lock()
+		c.connected = (err == nil)
+		c.mu.Unlock()
 	}
 }
 
-func (c *OpenAppSecClient) loadDefaultPolicies() {
-	c.policies = []*Policy{
-		{ID: "default-web", Name: "Web Application Protection", Mode: "prevent",
-			Practices: []string{"web-attacks", "api-attacks", "bot-protection"}},
-		{ID: "api-protection", Name: "API Security", Mode: "prevent",
-			Practices: []string{"api-attacks", "schema-validation", "rate-limiting"}},
-		{ID: "financial-api", Name: "Financial API Protection", Mode: "prevent",
-			Practices: []string{"web-attacks", "api-attacks", "data-loss-prevention", "fraud-detection"}},
+func (c *OpenAppSecClient) initPatterns() {
+	c.patterns = []*threatPattern{
+		{name: "sql_injection", pattern: regexp.MustCompile(`(?i)(union\s+select|drop\s+table|insert\s+into|delete\s+from|update\s+.*set|exec\s*\(|execute\s+|xp_|sp_|0x[0-9a-f]+|\bor\b\s+1\s*=\s*1|\band\b\s+1\s*=\s*1|--|;\s*$|\bwaitfor\b|\bbenchmark\b)`), severity: "critical"},
+		{name: "xss", pattern: regexp.MustCompile(`(?i)(<script|javascript:|on\w+\s*=|<iframe|<object|<embed|<svg\s+on|alert\s*\(|confirm\s*\(|prompt\s*\(|document\.|window\.|eval\s*\()`), severity: "high"},
+		{name: "path_traversal", pattern: regexp.MustCompile(`(?i)(\.\./|\.\.\\|%2e%2e|%252e%252e|/etc/passwd|/etc/shadow|/proc/self|/windows/system32)`), severity: "high"},
+		{name: "command_injection", pattern: regexp.MustCompile("(?i)(;\s*(ls|cat|rm|wget|curl|bash|sh|python|perl|ruby|nc|ncat)\s|\|\s*(ls|cat|rm)|`.*`|\$\(.*\))"), severity: "critical"},
+		{name: "ldap_injection", pattern: regexp.MustCompile(`(?i)(\(\|\(|\)\(|\*\)|%28%7c%28|objectclass=\*|cn=\*|uid=\*)`), severity: "high"},
+		{name: "xxe", pattern: regexp.MustCompile(`(?i)(<!ENTITY|<!DOCTYPE.*\[|SYSTEM\s+["\']|PUBLIC\s+["\']|file://|php://|data://|expect://)`), severity: "critical"},
+		{name: "ssrf", pattern: regexp.MustCompile(`(?i)(localhost|127\.0\.0\.1|0\.0\.0\.0|\[::1\]|169\.254\.|metadata\.google|100\.100\.100\.200)`), severity: "high"},
+		{name: "header_injection", pattern: regexp.MustCompile(`(?i)(\r\n|%0d%0a|%0d|%0a)`), severity: "medium"},
+	}
+}
+
+func (c *OpenAppSecClient) initDefaultPolicy() {
+	c.policies["default"] = &Policy{
+		ID: "default", Name: "Default Fintech Policy",
+		Mode: c.config.Mode, CreatedAt: time.Now().Unix(),
+		Rules: []Rule{
+			{ID: "sqli", Pattern: "sql_injection", Action: "block", Severity: "critical", Enabled: true},
+			{ID: "xss", Pattern: "xss", Action: "block", Severity: "high", Enabled: true},
+			{ID: "traversal", Pattern: "path_traversal", Action: "block", Severity: "high", Enabled: true},
+			{ID: "cmdi", Pattern: "command_injection", Action: "block", Severity: "critical", Enabled: true},
+			{ID: "xxe", Pattern: "xxe", Action: "block", Severity: "critical", Enabled: true},
+			{ID: "ssrf", Pattern: "ssrf", Action: "block", Severity: "high", Enabled: true},
+			{ID: "ldap", Pattern: "ldap_injection", Action: "block", Severity: "high", Enabled: true},
+			{ID: "header", Pattern: "header_injection", Action: "block", Severity: "medium", Enabled: true},
+		},
 	}
 }
 
 func (c *OpenAppSecClient) ScanRequest(req ScanRequest) *ScanResult {
 	start := time.Now()
+	wafScansTotal.Inc()
 
 	c.mu.RLock()
-	for _, entry := range c.whitelist {
-		if entry.Type == "ip" && entry.Value == req.SourceIP {
-			c.mu.RUnlock()
-			c.recordScan(false, 0, time.Since(start))
-			return &ScanResult{Allowed: true, Blocked: false, ThreatLevel: "none", Score: 0, Action: "allow", ProcessTimeMs: float64(time.Since(start).Microseconds()) / 1000}
-		}
-	}
+	wl := c.whitelist[req.IP]
 	c.mu.RUnlock()
 
-	var threats []string
-	var maxScore float64
-	scanTarget := strings.Join([]string{req.URI, req.Body, req.UserAgent}, " ")
+	if wl {
+		c.metrics.mu.Lock()
+		c.metrics.totalScans++
+		c.metrics.totalAllowed++
+		c.metrics.mu.Unlock()
+		return &ScanResult{Allowed: true, Score: 0, Processing: float64(time.Since(start).Microseconds()) / 1000}
+	}
 
-	for _, ap := range c.patterns {
-		if ap.pattern.MatchString(scanTarget) {
-			threats = append(threats, ap.name)
-			if ap.score > maxScore {
-				maxScore = ap.score
+	if c.connected {
+		result, err := c.scanViaAgent(req)
+		if err == nil {
+			return result
+		}
+	}
+
+	var threats []Threat
+	var totalScore float64
+	targets := []struct{ val, loc string }{
+		{req.URI, "uri"}, {req.Body, "body"},
+	}
+	for k, v := range req.Headers {
+		targets = append(targets, struct{ val, loc string }{v, "header:" + k})
+	}
+
+	for _, target := range targets {
+		for _, p := range c.patterns {
+			if p.pattern.MatchString(target.val) {
+				confidence := 0.85
+				if p.severity == "critical" {
+					confidence = 0.95
+				}
+				threat := Threat{
+					Type: p.name, Severity: p.severity,
+					Pattern: p.pattern.String()[:min(50, len(p.pattern.String()))],
+					Location: target.loc, Confidence: confidence,
+					Timestamp: time.Now().UnixMilli(),
+				}
+				threats = append(threats, threat)
+				wafThreatsDetected.WithLabelValues(p.name).Inc()
+				switch p.severity {
+				case "critical":
+					totalScore += 0.9
+				case "high":
+					totalScore += 0.7
+				case "medium":
+					totalScore += 0.4
+				}
 			}
 		}
 	}
 
-	blocked := len(threats) > 0 && maxScore >= 0.7 && c.config.ThreatPrevention
-	processTime := float64(time.Since(start).Microseconds()) / 1000
-
-	threatLevel := "none"
-	action := "allow"
-	if maxScore >= 0.9 {
-		threatLevel = "critical"
-	} else if maxScore >= 0.7 {
-		threatLevel = "high"
-	} else if maxScore >= 0.5 {
-		threatLevel = "medium"
-	} else if maxScore > 0 {
-		threatLevel = "low"
+	if totalScore > 1.0 {
+		totalScore = 1.0
 	}
+	allowed := totalScore < 0.5 || c.config.Mode == "detect"
+	processingMs := float64(time.Since(start).Microseconds()) / 1000
+	wafScanLatency.Observe(time.Since(start).Seconds())
 
-	if blocked {
-		action = "block"
-	} else if len(threats) > 0 {
-		action = "detect"
+	c.metrics.mu.Lock()
+	c.metrics.totalScans++
+	if allowed {
+		c.metrics.totalAllowed++
+	} else {
+		c.metrics.totalBlocked++
+		wafBlockedTotal.Inc()
+		c.metrics.attackIPs[req.IP]++
 	}
+	for _, t := range threats {
+		c.metrics.threatTypes[t.Type]++
+	}
+	c.metrics.latencies = append(c.metrics.latencies, processingMs)
+	if len(c.metrics.latencies) > 10000 {
+		c.metrics.latencies = c.metrics.latencies[5000:]
+	}
+	c.metrics.mu.Unlock()
 
 	if len(threats) > 0 {
 		c.mu.Lock()
-		c.threats = append(c.threats, &Threat{
-			ID:          fmt.Sprintf("threat-%d", time.Now().UnixNano()),
-			Type:        threats[0],
-			Severity:    threatLevel,
-			Description: fmt.Sprintf("Detected: %s", strings.Join(threats, ", ")),
-			SourceIP:    req.SourceIP,
-			URI:         req.URI,
-			Score:       maxScore,
-			Blocked:     blocked,
-			Timestamp:   time.Now().Unix(),
-		})
-		if len(c.threats) > 10000 {
-			c.threats = c.threats[5000:]
+		for i := range threats {
+			t := threats[i]
+			c.threats = append(c.threats, &t)
 		}
 		c.mu.Unlock()
 	}
 
-	c.recordScan(blocked, maxScore, time.Since(start))
-
-	return &ScanResult{
-		Allowed:       !blocked,
-		Blocked:       blocked,
-		ThreatLevel:   threatLevel,
-		Threats:       threats,
-		Score:         maxScore,
-		ProcessTimeMs: processTime,
-		Action:        action,
-	}
+	return &ScanResult{Allowed: allowed, Threats: threats, Score: totalScore, Processing: processingMs}
 }
 
-func (c *OpenAppSecClient) recordScan(blocked bool, score float64, duration time.Duration) {
-	c.metrics.mu.Lock()
-	defer c.metrics.mu.Unlock()
-	c.metrics.totalScans++
-	if blocked {
-		c.metrics.blocked++
-	} else {
-		c.metrics.allowed++
+func (c *OpenAppSecClient) scanViaAgent(req ScanRequest) (*ScanResult, error) {
+	data, _ := json.Marshal(req)
+	resp, err := c.httpClient.Post("http://localhost:19789/scan", "application/json", bytes.NewReader(data))
+	if err != nil {
+		return nil, err
 	}
-	c.metrics.scoreTimes = append(c.metrics.scoreTimes, float64(duration.Microseconds())/1000)
-	if len(c.metrics.scoreTimes) > 10000 {
-		c.metrics.scoreTimes = c.metrics.scoreTimes[5000:]
+	defer resp.Body.Close()
+	body, _ := io.ReadAll(resp.Body)
+	var result ScanResult
+	if err := json.Unmarshal(body, &result); err != nil {
+		return nil, err
 	}
+	return &result, nil
 }
 
 func (c *OpenAppSecClient) AddPolicy(policy *Policy) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	c.policies = append(c.policies, policy)
+	policy.CreatedAt = time.Now().Unix()
+	c.policies[policy.ID] = policy
 }
 
-func (c *OpenAppSecClient) ListPolicies() []*Policy {
+func (c *OpenAppSecClient) GetPolicies() []*Policy {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
-	result := make([]*Policy, len(c.policies))
-	copy(result, c.policies)
+	result := make([]*Policy, 0, len(c.policies))
+	for _, p := range c.policies {
+		result = append(result, p)
+	}
 	return result
 }
 
-func (c *OpenAppSecClient) GetThreats() []*Threat {
+func (c *OpenAppSecClient) GetThreats(limit int) []*Threat {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
-	limit := 100
-	start := 0
-	if len(c.threats) > limit {
-		start = len(c.threats) - limit
+	if limit <= 0 || limit > len(c.threats) {
+		limit = len(c.threats)
 	}
-	result := make([]*Threat, len(c.threats[start:]))
+	start := len(c.threats) - limit
+	if start < 0 {
+		start = 0
+	}
+	result := make([]*Threat, limit)
 	copy(result, c.threats[start:])
 	return result
 }
 
-func (c *OpenAppSecClient) AddWhitelist(entry *WhitelistEntry) {
+func (c *OpenAppSecClient) AddWhitelist(ips []string) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	c.whitelist = append(c.whitelist, entry)
+	for _, ip := range ips {
+		c.whitelist[ip] = true
+	}
 }
 
-func (c *OpenAppSecClient) GetMetrics() *SecurityMetrics {
+func (c *OpenAppSecClient) RemoveWhitelist(ips []string) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	for _, ip := range ips {
+		delete(c.whitelist, ip)
+	}
+}
+
+func (c *OpenAppSecClient) GetMetrics() *WAFMetrics {
 	c.metrics.mu.Lock()
 	defer c.metrics.mu.Unlock()
-
-	var avgTime float64
-	if len(c.metrics.scoreTimes) > 0 {
+	var avgLat float64
+	if len(c.metrics.latencies) > 0 {
 		var sum float64
-		for _, t := range c.metrics.scoreTimes {
-			sum += t
+		for _, l := range c.metrics.latencies {
+			sum += l
 		}
-		avgTime = sum / float64(len(c.metrics.scoreTimes))
+		avgLat = sum / float64(len(c.metrics.latencies))
 	}
-
-	var blockRate float64
-	if c.metrics.totalScans > 0 {
-		blockRate = float64(c.metrics.blocked) / float64(c.metrics.totalScans)
-	}
-
-	typeCopy := make(map[string]int64)
+	types := make(map[string]int)
 	for k, v := range c.metrics.threatTypes {
-		typeCopy[k] = v
+		types[k] = v
 	}
-
-	return &SecurityMetrics{
-		TotalScans:     c.metrics.totalScans,
-		BlockedCount:   c.metrics.blocked,
-		AllowedCount:   c.metrics.allowed,
-		ThreatsByType:  typeCopy,
-		AvgScoreMs:     avgTime,
-		TopAttackTypes: []string{"SQL Injection", "XSS", "Command Injection", "Path Traversal"},
-		BlockRate:      blockRate,
+	ips := make(map[string]int)
+	for k, v := range c.metrics.attackIPs {
+		ips[k] = v
+	}
+	return &WAFMetrics{
+		TotalScans: c.metrics.totalScans, TotalBlocked: c.metrics.totalBlocked,
+		TotalAllowed: c.metrics.totalAllowed, Threats: len(c.threats),
+		ThreatsByType: types, AvgLatencyMs: avgLat, TopAttackIPs: ips,
 	}
 }
 
@@ -304,10 +388,18 @@ func (c *OpenAppSecClient) Health() *HealthStatus {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 	return &HealthStatus{
-		Connected:       true,
-		Mode:            c.config.Mode,
-		Policies:        len(c.policies),
-		ThreatsDetected: len(c.threats),
-		WhitelistSize:   len(c.whitelist),
+		Connected: c.connected, Mode: c.config.Mode,
+		Policies: len(c.policies), ThreatsTotal: len(c.threats),
 	}
+}
+
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
+}
+
+func (_ *OpenAppSecClient) isInternalIP(ip string) bool {
+	return strings.HasPrefix(ip, "10.") || strings.HasPrefix(ip, "192.168.") || strings.HasPrefix(ip, "172.")
 }

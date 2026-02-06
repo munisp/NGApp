@@ -1,0 +1,83 @@
+groups:
+  - name: service_alerts
+    rules:
+      - alert: ServiceDown
+        expr: up == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Service {{ $labels.job }} is down"
+          description: "{{ $labels.job }} has been down for more than 2 minutes."
+
+      - alert: HighErrorRate
+        expr: rate(http_requests_total{status=~"5.."}[5m]) / rate(http_requests_total[5m]) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High error rate on {{ $labels.job }}"
+
+      - alert: HighLatency
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 2
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High latency on {{ $labels.job }}"
+
+      - alert: KafkaProduceErrors
+        expr: rate(kafka_produce_errors_total[5m]) > 0.1
+        for: 3m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Kafka produce errors increasing"
+
+      - alert: RedisConnectionDown
+        expr: redis_operations_total == 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Redis appears disconnected"
+
+      - alert: TigerBeetleLedgerImbalance
+        expr: abs(tigerbeetle_ledger_balance{type="debits"} - tigerbeetle_ledger_balance{type="credits"}) > 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "TigerBeetle ledger imbalance detected"
+
+      - alert: WAFHighBlockRate
+        expr: rate(openappsec_blocked_total[5m]) / rate(openappsec_scans_total[5m]) > 0.3
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "WAF blocking >30% of requests"
+
+      - alert: HighDLQMessages
+        expr: kafka_dlq_messages_total > 100
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Kafka DLQ accumulating messages"
+
+      - alert: CircuitBreakerOpen
+        expr: circuit_breaker_state == 2
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Circuit breaker open for {{ $labels.service }}"
+
+      - alert: HighMemoryUsage
+        expr: process_resident_memory_bytes / 1024 / 1024 > 512
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High memory usage on {{ $labels.job }}"

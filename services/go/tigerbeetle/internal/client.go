@@ -1,22 +1,49 @@
 package internal
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
 	"sync"
 	"time"
+
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
+)
+
+var (
+	tbOpsTotal = promauto.NewCounterVec(prometheus.CounterOpts{
+		Name: "tigerbeetle_operations_total",
+		Help: "Total TigerBeetle operations",
+	}, []string{"operation"})
+	tbLatency = promauto.NewHistogramVec(prometheus.HistogramOpts{
+		Name:    "tigerbeetle_operation_latency_seconds",
+		Help:    "TigerBeetle operation latency",
+		Buckets: prometheus.DefBuckets,
+	}, []string{"operation"})
+	tbTransferTotal = promauto.NewCounter(prometheus.CounterOpts{
+		Name: "tigerbeetle_transfers_total",
+		Help: "Total transfers processed",
+	})
+	tbLedgerBalance = promauto.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "tigerbeetle_ledger_balance",
+		Help: "Current ledger balance",
+	}, []string{"ledger", "type"})
 )
 
 type Account struct {
 	ID             string `json:"id"`
+	UserID         string `json:"user_id"`
 	Ledger         uint32 `json:"ledger"`
 	Code           uint16 `json:"code"`
-	DebitsPending  uint64 `json:"debits_pending"`
 	DebitsPosted   uint64 `json:"debits_posted"`
-	CreditsPending uint64 `json:"credits_pending"`
 	CreditsPosted  uint64 `json:"credits_posted"`
-	UserData       string `json:"user_data,omitempty"`
+	DebitsPending  uint64 `json:"debits_pending"`
+	CreditsPending uint64 `json:"credits_pending"`
 	Flags          uint16 `json:"flags"`
-	Timestamp      int64  `json:"timestamp"`
+	CreatedAt      int64  `json:"created_at"`
 }
 
 type Transfer struct {
@@ -27,112 +54,144 @@ type Transfer struct {
 	Ledger          uint32 `json:"ledger"`
 	Code            uint16 `json:"code"`
 	PendingID       string `json:"pending_id,omitempty"`
-	UserData        string `json:"user_data,omitempty"`
 	Flags           uint16 `json:"flags"`
 	Timestamp       int64  `json:"timestamp"`
-}
-
-type Balance struct {
-	AccountID      string `json:"account_id"`
-	DebitsPending  uint64 `json:"debits_pending"`
-	DebitsPosted   uint64 `json:"debits_posted"`
-	CreditsPending uint64 `json:"credits_pending"`
-	CreditsPosted  uint64 `json:"credits_posted"`
-	Available      int64  `json:"available"`
+	Status          string `json:"status"`
 }
 
 type CreateAccountRequest struct {
-	ID       string `json:"id"`
-	Ledger   uint32 `json:"ledger"`
-	Code     uint16 `json:"code"`
-	UserData string `json:"user_data,omitempty"`
-	Flags    uint16 `json:"flags"`
+	ID     string `json:"id"`
+	UserID string `json:"user_id"`
+	Ledger uint32 `json:"ledger"`
+	Code   uint16 `json:"code"`
 }
 
 type CreateTransferRequest struct {
-	ID              string `json:"id"`
 	DebitAccountID  string `json:"debit_account_id"`
 	CreditAccountID string `json:"credit_account_id"`
 	Amount          uint64 `json:"amount"`
 	Ledger          uint32 `json:"ledger"`
 	Code            uint16 `json:"code"`
-	UserData        string `json:"user_data,omitempty"`
 }
 
-type TwoPhaseTransferRequest struct {
-	ID              string `json:"id"`
+type TwoPhaseRequest struct {
 	DebitAccountID  string `json:"debit_account_id"`
 	CreditAccountID string `json:"credit_account_id"`
 	Amount          uint64 `json:"amount"`
 	Ledger          uint32 `json:"ledger"`
 	Code            uint16 `json:"code"`
-	Timeout         uint32 `json:"timeout"`
-}
-
-type TwoPhaseResult struct {
-	PendingID string `json:"pending_id"`
-	Status    string `json:"status"`
 }
 
 type ReconciliationResult struct {
-	TotalAccounts     int    `json:"total_accounts"`
-	TotalTransfers    int    `json:"total_transfers"`
-	BalancesVerified  bool   `json:"balances_verified"`
-	DiscrepancyCount  int    `json:"discrepancy_count"`
-	Timestamp         int64  `json:"timestamp"`
+	TotalAccounts    int                `json:"total_accounts"`
+	TotalTransfers   int                `json:"total_transfers"`
+	Balanced         bool               `json:"balanced"`
+	TotalDebits      uint64             `json:"total_debits"`
+	TotalCredits     uint64             `json:"total_credits"`
+	Discrepancies    []string           `json:"discrepancies"`
+	LedgerBalances   map[string]int64   `json:"ledger_balances"`
+	ReconcileTime    string             `json:"reconcile_time"`
+}
+
+type LedgerMetrics struct {
+	TotalAccounts  int            `json:"total_accounts"`
+	TotalTransfers int            `json:"total_transfers"`
+	PendingCount   int            `json:"pending_transfers"`
+	TotalDebits    uint64         `json:"total_debits"`
+	TotalCredits   uint64         `json:"total_credits"`
+	LedgerTotals   map[string]uint64 `json:"ledger_totals"`
 }
 
 type HealthStatus struct {
-	Connected     bool     `json:"connected"`
-	Addresses     []string `json:"addresses"`
-	ClusterID     uint64   `json:"cluster_id"`
-	AccountCount  int      `json:"account_count"`
-	TransferCount int      `json:"transfer_count"`
+	Connected    bool     `json:"connected"`
+	Addresses    []string `json:"addresses"`
+	ClusterID    uint64   `json:"cluster_id"`
+	AccountCount int      `json:"account_count"`
+	TransferCount int     `json:"transfer_count"`
 }
 
 type TigerBeetleClient struct {
-	config    *Config
-	connected bool
-	mu        sync.RWMutex
-	accounts  map[string]*Account
-	transfers []*Transfer
-	pending   map[string]*Transfer
-	idCounter uint64
+	config     *Config
+	httpClient *http.Client
+	connected  bool
+	mu         sync.RWMutex
+	accounts   map[string]*Account
+	transfers  []*Transfer
+	pending    map[string]*Transfer
 }
 
 func NewTigerBeetleClient(cfg *Config) (*TigerBeetleClient, error) {
 	client := &TigerBeetleClient{
-		config:   cfg,
-		accounts: make(map[string]*Account),
-		pending:  make(map[string]*Transfer),
+		config:     cfg,
+		httpClient: &http.Client{Timeout: 5 * time.Second},
+		accounts:   make(map[string]*Account),
+		pending:    make(map[string]*Transfer),
 	}
 
-	client.connected = true
-	fmt.Printf("[TigerBeetle] Connected to cluster %d at %v\n", cfg.ClusterID, cfg.Addresses)
+	if err := client.checkConnection(); err != nil {
+		fmt.Printf("[TigerBeetle] Connection failed (will retry): %v\n", err)
+		client.connected = false
+	} else {
+		client.connected = true
+	}
 
-	client.createSystemAccounts()
-
+	fmt.Printf("[TigerBeetle] Initialized with addresses: %v (cluster: %d)\n",
+		cfg.Addresses, cfg.ClusterID)
+	go client.healthCheckLoop()
 	return client, nil
 }
 
-func (c *TigerBeetleClient) createSystemAccounts() {
-	systemAccounts := []CreateAccountRequest{
-		{ID: "system-revenue", Ledger: 1, Code: 1},
-		{ID: "system-fees", Ledger: 1, Code: 2},
-		{ID: "system-escrow", Ledger: 1, Code: 3},
-		{ID: "system-settlement", Ledger: 1, Code: 4},
-		{ID: "system-suspense", Ledger: 1, Code: 5},
+func (c *TigerBeetleClient) checkConnection() error {
+	addr := c.config.Addresses[0]
+	url := fmt.Sprintf("http://%s/health", addr)
+	resp, err := c.httpClient.Get(url)
+	if err != nil {
+		return err
 	}
+	resp.Body.Close()
+	return nil
+}
 
-	for _, req := range systemAccounts {
-		if _, err := c.CreateAccount(req); err != nil {
-			fmt.Printf("[TigerBeetle] Warning: failed to create system account %s: %v\n", req.ID, err)
-		}
+func (c *TigerBeetleClient) healthCheckLoop() {
+	ticker := time.NewTicker(15 * time.Second)
+	defer ticker.Stop()
+	for range ticker.C {
+		err := c.checkConnection()
+		c.mu.Lock()
+		c.connected = (err == nil)
+		c.mu.Unlock()
 	}
-	fmt.Printf("[TigerBeetle] Created %d system accounts\n", len(systemAccounts))
+}
+
+func (c *TigerBeetleClient) tbRequest(method, path string, body interface{}) ([]byte, error) {
+	start := time.Now()
+	defer func() { tbLatency.WithLabelValues(method).Observe(time.Since(start).Seconds()) }()
+
+	addr := c.config.Addresses[0]
+	var bodyReader io.Reader
+	if body != nil {
+		data, _ := json.Marshal(body)
+		bodyReader = bytes.NewReader(data)
+	}
+	url := fmt.Sprintf("http://%s%s", addr, path)
+	req, err := http.NewRequest(method, url, bodyReader)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	return io.ReadAll(resp.Body)
 }
 
 func (c *TigerBeetleClient) CreateAccount(req CreateAccountRequest) (*Account, error) {
+	start := time.Now()
+	defer func() { tbLatency.WithLabelValues("create_account").Observe(time.Since(start).Seconds()) }()
+	tbOpsTotal.WithLabelValues("create_account").Inc()
+
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
@@ -142,204 +201,224 @@ func (c *TigerBeetleClient) CreateAccount(req CreateAccountRequest) (*Account, e
 
 	account := &Account{
 		ID:        req.ID,
+		UserID:    req.UserID,
 		Ledger:    req.Ledger,
 		Code:      req.Code,
-		UserData:  req.UserData,
-		Flags:     req.Flags,
-		Timestamp: time.Now().UnixNano(),
+		CreatedAt: time.Now().UnixMilli(),
+	}
+
+	if c.connected {
+		_, err := c.tbRequest("POST", "/accounts", account)
+		if err != nil {
+			fmt.Printf("[TigerBeetle] Remote create_account failed, storing locally: %v\n", err)
+		}
 	}
 
 	c.accounts[req.ID] = account
-	fmt.Printf("[TigerBeetle] Created account %s (ledger=%d, code=%d)\n", req.ID, req.Ledger, req.Code)
+	tbLedgerBalance.WithLabelValues(fmt.Sprintf("%d", req.Ledger), "accounts").Inc()
 	return account, nil
 }
 
-func (c *TigerBeetleClient) LookupAccount(id string) (*Account, error) {
+func (c *TigerBeetleClient) GetAccount(id string) (*Account, error) {
+	tbOpsTotal.WithLabelValues("get_account").Inc()
 	c.mu.RLock()
 	defer c.mu.RUnlock()
-
-	account, exists := c.accounts[id]
-	if !exists {
-		return nil, fmt.Errorf("account %s not found", id)
+	if acc, ok := c.accounts[id]; ok {
+		return acc, nil
 	}
-	return account, nil
+	return nil, fmt.Errorf("account %s not found", id)
 }
 
 func (c *TigerBeetleClient) CreateTransfer(req CreateTransferRequest) (*Transfer, error) {
+	start := time.Now()
+	defer func() { tbLatency.WithLabelValues("create_transfer").Observe(time.Since(start).Seconds()) }()
+	tbOpsTotal.WithLabelValues("create_transfer").Inc()
+	tbTransferTotal.Inc()
+
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	debitAccount, exists := c.accounts[req.DebitAccountID]
-	if !exists {
+	debitAcc, ok := c.accounts[req.DebitAccountID]
+	if !ok {
 		return nil, fmt.Errorf("debit account %s not found", req.DebitAccountID)
 	}
-	creditAccount, exists := c.accounts[req.CreditAccountID]
-	if !exists {
+	creditAcc, ok := c.accounts[req.CreditAccountID]
+	if !ok {
 		return nil, fmt.Errorf("credit account %s not found", req.CreditAccountID)
 	}
 
-	available := int64(creditAccount.CreditsPosted) - int64(creditAccount.DebitsPosted) - int64(creditAccount.DebitsPending)
-	if available < 0 {
-		available = 0
-	}
-
 	transfer := &Transfer{
-		ID:              req.ID,
+		ID:              fmt.Sprintf("tx-%d", time.Now().UnixNano()),
 		DebitAccountID:  req.DebitAccountID,
 		CreditAccountID: req.CreditAccountID,
 		Amount:          req.Amount,
 		Ledger:          req.Ledger,
 		Code:            req.Code,
-		UserData:        req.UserData,
-		Timestamp:       time.Now().UnixNano(),
+		Timestamp:       time.Now().UnixMilli(),
+		Status:          "posted",
 	}
 
-	debitAccount.DebitsPosted += req.Amount
-	creditAccount.CreditsPosted += req.Amount
+	debitAcc.DebitsPosted += req.Amount
+	creditAcc.CreditsPosted += req.Amount
+
+	if c.connected {
+		c.tbRequest("POST", "/transfers", transfer)
+	}
 
 	c.transfers = append(c.transfers, transfer)
-	fmt.Printf("[TigerBeetle] Transfer %s: %s -> %s, amount=%d\n",
-		req.ID, req.DebitAccountID, req.CreditAccountID, req.Amount)
-
-	_ = available
+	tbLedgerBalance.WithLabelValues(fmt.Sprintf("%d", req.Ledger), "debits").Add(float64(req.Amount))
+	tbLedgerBalance.WithLabelValues(fmt.Sprintf("%d", req.Ledger), "credits").Add(float64(req.Amount))
 	return transfer, nil
 }
 
-func (c *TigerBeetleClient) CreateTwoPhaseTransfer(req TwoPhaseTransferRequest) (*TwoPhaseResult, error) {
+func (c *TigerBeetleClient) CreateTwoPhaseTransfer(req TwoPhaseRequest) (*Transfer, error) {
+	tbOpsTotal.WithLabelValues("two_phase_transfer").Inc()
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	debitAccount, exists := c.accounts[req.DebitAccountID]
-	if !exists {
+	debitAcc, ok := c.accounts[req.DebitAccountID]
+	if !ok {
 		return nil, fmt.Errorf("debit account %s not found", req.DebitAccountID)
-	}
-	_, exists = c.accounts[req.CreditAccountID]
-	if !exists {
-		return nil, fmt.Errorf("credit account %s not found", req.CreditAccountID)
 	}
 
 	transfer := &Transfer{
-		ID:              req.ID,
+		ID:              fmt.Sprintf("tx-%d", time.Now().UnixNano()),
 		DebitAccountID:  req.DebitAccountID,
 		CreditAccountID: req.CreditAccountID,
 		Amount:          req.Amount,
 		Ledger:          req.Ledger,
 		Code:            req.Code,
 		Flags:           1,
-		Timestamp:       time.Now().UnixNano(),
+		Timestamp:       time.Now().UnixMilli(),
+		Status:          "pending",
 	}
 
-	debitAccount.DebitsPending += req.Amount
-	c.pending[req.ID] = transfer
-
-	go func() {
-		time.Sleep(time.Duration(req.Timeout) * time.Second)
-		c.mu.Lock()
-		if _, still := c.pending[req.ID]; still {
-			c.voidPendingLocked(req.ID)
-		}
-		c.mu.Unlock()
-	}()
-
-	fmt.Printf("[TigerBeetle] Two-phase transfer pending %s: amount=%d, timeout=%ds\n",
-		req.ID, req.Amount, req.Timeout)
-
-	return &TwoPhaseResult{PendingID: req.ID, Status: "pending"}, nil
+	debitAcc.DebitsPending += req.Amount
+	c.pending[transfer.ID] = transfer
+	c.transfers = append(c.transfers, transfer)
+	return transfer, nil
 }
 
-func (c *TigerBeetleClient) ConfirmTransfer(pendingID string) error {
+func (c *TigerBeetleClient) ConfirmTransfer(transferID string) error {
+	tbOpsTotal.WithLabelValues("confirm_transfer").Inc()
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	pending, exists := c.pending[pendingID]
-	if !exists {
-		return fmt.Errorf("pending transfer %s not found", pendingID)
+	transfer, ok := c.pending[transferID]
+	if !ok {
+		return fmt.Errorf("pending transfer %s not found", transferID)
 	}
 
-	debitAccount := c.accounts[pending.DebitAccountID]
-	creditAccount := c.accounts[pending.CreditAccountID]
-
-	debitAccount.DebitsPending -= pending.Amount
-	debitAccount.DebitsPosted += pending.Amount
-	creditAccount.CreditsPosted += pending.Amount
-
-	pending.Flags = 0
-	c.transfers = append(c.transfers, pending)
-	delete(c.pending, pendingID)
-
-	fmt.Printf("[TigerBeetle] Confirmed transfer %s\n", pendingID)
+	debitAcc := c.accounts[transfer.DebitAccountID]
+	creditAcc := c.accounts[transfer.CreditAccountID]
+	debitAcc.DebitsPending -= transfer.Amount
+	debitAcc.DebitsPosted += transfer.Amount
+	creditAcc.CreditsPosted += transfer.Amount
+	transfer.Status = "posted"
+	delete(c.pending, transferID)
 	return nil
 }
 
-func (c *TigerBeetleClient) VoidTransfer(pendingID string) error {
+func (c *TigerBeetleClient) VoidTransfer(transferID string) error {
+	tbOpsTotal.WithLabelValues("void_transfer").Inc()
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	return c.voidPendingLocked(pendingID)
-}
 
-func (c *TigerBeetleClient) voidPendingLocked(pendingID string) error {
-	pending, exists := c.pending[pendingID]
-	if !exists {
-		return fmt.Errorf("pending transfer %s not found", pendingID)
+	transfer, ok := c.pending[transferID]
+	if !ok {
+		return fmt.Errorf("pending transfer %s not found", transferID)
 	}
 
-	debitAccount := c.accounts[pending.DebitAccountID]
-	debitAccount.DebitsPending -= pending.Amount
-	delete(c.pending, pendingID)
-
-	fmt.Printf("[TigerBeetle] Voided transfer %s\n", pendingID)
+	debitAcc := c.accounts[transfer.DebitAccountID]
+	debitAcc.DebitsPending -= transfer.Amount
+	transfer.Status = "voided"
+	delete(c.pending, transferID)
 	return nil
-}
-
-func (c *TigerBeetleClient) GetBalance(accountID string) (*Balance, error) {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
-
-	account, exists := c.accounts[accountID]
-	if !exists {
-		return nil, fmt.Errorf("account %s not found", accountID)
-	}
-
-	available := int64(account.CreditsPosted) - int64(account.DebitsPosted) - int64(account.DebitsPending)
-
-	return &Balance{
-		AccountID:      accountID,
-		DebitsPending:  account.DebitsPending,
-		DebitsPosted:   account.DebitsPosted,
-		CreditsPending: account.CreditsPending,
-		CreditsPosted:  account.CreditsPosted,
-		Available:      available,
-	}, nil
 }
 
 func (c *TigerBeetleClient) Reconcile() *ReconciliationResult {
+	tbOpsTotal.WithLabelValues("reconcile").Inc()
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 
 	var totalDebits, totalCredits uint64
-	for _, account := range c.accounts {
-		totalDebits += account.DebitsPosted
-		totalCredits += account.CreditsPosted
+	ledgerBalances := make(map[string]int64)
+
+	for _, acc := range c.accounts {
+		totalDebits += acc.DebitsPosted
+		totalCredits += acc.CreditsPosted
+		ledgerKey := fmt.Sprintf("ledger_%d", acc.Ledger)
+		ledgerBalances[ledgerKey] += int64(acc.CreditsPosted) - int64(acc.DebitsPosted)
 	}
 
-	discrepancy := 0
-	if totalDebits != totalCredits {
-		discrepancy = 1
+	var discrepancies []string
+	balanced := totalDebits == totalCredits
+	if !balanced {
+		discrepancies = append(discrepancies,
+			fmt.Sprintf("imbalance: debits=%d credits=%d diff=%d",
+				totalDebits, totalCredits, int64(totalDebits)-int64(totalCredits)))
 	}
 
 	return &ReconciliationResult{
-		TotalAccounts:    len(c.accounts),
-		TotalTransfers:   len(c.transfers),
-		BalancesVerified: totalDebits == totalCredits,
-		DiscrepancyCount: discrepancy,
-		Timestamp:        time.Now().UnixNano(),
+		TotalAccounts:  len(c.accounts),
+		TotalTransfers: len(c.transfers),
+		Balanced:       balanced,
+		TotalDebits:    totalDebits,
+		TotalCredits:   totalCredits,
+		Discrepancies:  discrepancies,
+		LedgerBalances: ledgerBalances,
+		ReconcileTime:  time.Now().Format(time.RFC3339),
+	}
+}
+
+func (c *TigerBeetleClient) GetAccountsByUser(userID string) []*Account {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	var result []*Account
+	for _, acc := range c.accounts {
+		if acc.UserID == userID {
+			result = append(result, acc)
+		}
+	}
+	return result
+}
+
+func (c *TigerBeetleClient) GetTransfersByAccount(accountID string) []*Transfer {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	var result []*Transfer
+	for _, tx := range c.transfers {
+		if tx.DebitAccountID == accountID || tx.CreditAccountID == accountID {
+			result = append(result, tx)
+		}
+	}
+	return result
+}
+
+func (c *TigerBeetleClient) GetMetrics() *LedgerMetrics {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	var totalDebits, totalCredits uint64
+	ledgerTotals := make(map[string]uint64)
+	for _, acc := range c.accounts {
+		totalDebits += acc.DebitsPosted
+		totalCredits += acc.CreditsPosted
+		key := fmt.Sprintf("ledger_%d", acc.Ledger)
+		ledgerTotals[key] += acc.CreditsPosted
+	}
+	return &LedgerMetrics{
+		TotalAccounts:  len(c.accounts),
+		TotalTransfers: len(c.transfers),
+		PendingCount:   len(c.pending),
+		TotalDebits:    totalDebits,
+		TotalCredits:   totalCredits,
+		LedgerTotals:   ledgerTotals,
 	}
 }
 
 func (c *TigerBeetleClient) Health() *HealthStatus {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
-
 	return &HealthStatus{
 		Connected:     c.connected,
 		Addresses:     c.config.Addresses,
@@ -347,6 +426,14 @@ func (c *TigerBeetleClient) Health() *HealthStatus {
 		AccountCount:  len(c.accounts),
 		TransferCount: len(c.transfers),
 	}
+}
+
+func (c *TigerBeetleClient) LookupAccount(id string) (*Account, error) {
+	return c.GetAccount(id)
+}
+
+func (c *TigerBeetleClient) GetBalance(accountID string) (*Account, error) {
+	return c.GetAccount(accountID)
 }
 
 func (c *TigerBeetleClient) Close() {

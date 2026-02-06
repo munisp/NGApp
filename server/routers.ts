@@ -33,6 +33,7 @@ import { financialHealthRouter } from './routers/financial-health.js';
 import { expenseCategoriesRouter } from './routers/expense-categories.js';
 import { billRemindersRouter } from './routers/bill-reminders.js';
 import { goalTemplatesRouter } from './routers/goal-templates.js';
+import { mlGatewayRouter } from './routers/ml-gateway.js';
 
 export const appRouter = router({
   // if you need to use socket.io, read and register route in server/_core/index.ts, all api should start with '/api/' so that the gateway can route correctly
@@ -65,6 +66,7 @@ export const appRouter = router({
   expenseCategories: expenseCategoriesRouter,
   billReminders: billRemindersRouter,
   goalTemplates: goalTemplatesRouter,
+  mlGateway: mlGatewayRouter,
   auth: router({
     me: publicProcedure.query((opts) => opts.ctx.user),
     logout: publicProcedure.mutation(({ ctx }) => {
