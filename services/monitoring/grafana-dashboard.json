@@ -1,0 +1,114 @@
+{
+  "dashboard": {
+    "title": "Fintech Platform - Service Overview",
+    "uid": "fintech-services",
+    "timezone": "utc",
+    "refresh": "10s",
+    "panels": [
+      {
+        "title": "Service Health Status",
+        "type": "stat",
+        "gridPos": {"h": 4, "w": 24, "x": 0, "y": 0},
+        "targets": [
+          {"expr": "up{job=~\"kafka-service|redis-service|tigerbeetle-service|apisix-service|temporal-service|fluvio-service|openappsec-service|kubernetes-service|permify-service|lakehouse-service|keycloak-service|dapr-service\"}", "legendFormat": "{{job}}"}
+        ],
+        "fieldConfig": {"defaults": {"mappings": [{"type": "value", "options": {"0": {"text": "DOWN", "color": "red"}, "1": {"text": "UP", "color": "green"}}}]}}
+      },
+      {
+        "title": "Request Rate (req/s)",
+        "type": "timeseries",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 4},
+        "targets": [
+          {"expr": "rate(http_requests_total{service=~\".+\"}[1m])", "legendFormat": "{{service}} - {{endpoint}}"}
+        ]
+      },
+      {
+        "title": "Error Rate (%)",
+        "type": "timeseries",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 4},
+        "targets": [
+          {"expr": "rate(http_errors_total{service=~\".+\"}[1m]) / rate(http_requests_total{service=~\".+\"}[1m]) * 100", "legendFormat": "{{service}}"}
+        ],
+        "fieldConfig": {"defaults": {"color": {"mode": "palette-classic"}, "thresholds": {"steps": [{"value": 0, "color": "green"}, {"value": 1, "color": "yellow"}, {"value": 5, "color": "red"}]}}}
+      },
+      {
+        "title": "P95 Latency (ms)",
+        "type": "timeseries",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 12},
+        "targets": [
+          {"expr": "histogram_quantile(0.95, rate(http_request_duration_ms_bucket{service=~\".+\"}[1m]))", "legendFormat": "{{service}}"}
+        ]
+      },
+      {
+        "title": "P99 Latency (ms)",
+        "type": "timeseries",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 12},
+        "targets": [
+          {"expr": "histogram_quantile(0.99, rate(http_request_duration_ms_bucket{service=~\".+\"}[1m]))", "legendFormat": "{{service}}"}
+        ]
+      },
+      {
+        "title": "Kafka - Messages Produced/Consumed",
+        "type": "timeseries",
+        "gridPos": {"h": 8, "w": 8, "x": 0, "y": 20},
+        "targets": [
+          {"expr": "http_requests_total{service=\"kafka\",endpoint=~\"POST_/produce\"}", "legendFormat": "produced"},
+          {"expr": "http_requests_total{service=\"kafka\",endpoint=~\"GET_/consume\"}", "legendFormat": "consumed"}
+        ]
+      },
+      {
+        "title": "Redis - Cache Hit Rate",
+        "type": "gauge",
+        "gridPos": {"h": 8, "w": 8, "x": 8, "y": 20},
+        "targets": [
+          {"expr": "http_requests_total{service=\"redis\",endpoint=\"GET_/cache/get\"}", "legendFormat": "cache gets"}
+        ]
+      },
+      {
+        "title": "TigerBeetle - Transfer Rate",
+        "type": "timeseries",
+        "gridPos": {"h": 8, "w": 8, "x": 16, "y": 20},
+        "targets": [
+          {"expr": "rate(http_requests_total{service=\"tigerbeetle\",endpoint=~\"POST_/transfers/.*\"}[1m])", "legendFormat": "{{endpoint}}"}
+        ]
+      },
+      {
+        "title": "Temporal - Active Workflows",
+        "type": "stat",
+        "gridPos": {"h": 4, "w": 8, "x": 0, "y": 28},
+        "targets": [
+          {"expr": "http_requests_total{service=\"temporal\",endpoint=\"POST_/workflows/start\"}", "legendFormat": "started"}
+        ]
+      },
+      {
+        "title": "Keycloak - Auth Operations",
+        "type": "timeseries",
+        "gridPos": {"h": 8, "w": 8, "x": 8, "y": 28},
+        "targets": [
+          {"expr": "rate(http_requests_total{service=\"keycloak\",endpoint=~\"POST_/auth/.*\"}[1m])", "legendFormat": "{{endpoint}}"}
+        ]
+      },
+      {
+        "title": "OpenAppSec - Threats Blocked",
+        "type": "stat",
+        "gridPos": {"h": 4, "w": 8, "x": 16, "y": 28},
+        "targets": [
+          {"expr": "http_requests_total{service=\"openappsec\",endpoint=\"POST_/scan\"}", "legendFormat": "scans"}
+        ]
+      },
+      {
+        "title": "Circuit Breaker States",
+        "type": "table",
+        "gridPos": {"h": 6, "w": 24, "x": 0, "y": 36},
+        "targets": [
+          {"expr": "circuit_breaker_state", "format": "table", "instant": true}
+        ]
+      }
+    ],
+    "templating": {
+      "list": [
+        {"name": "service", "type": "query", "query": "label_values(http_requests_total, service)", "multi": true, "includeAll": true}
+      ]
+    }
+  }
+}

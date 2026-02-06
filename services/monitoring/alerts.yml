@@ -1,0 +1,79 @@
+groups:
+  - name: service_health
+    rules:
+      - alert: ServiceDown
+        expr: up == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Service {{ $labels.job }} is down"
+          description: "{{ $labels.job }} has been unreachable for more than 1 minute."
+
+      - alert: HighErrorRate
+        expr: rate(http_errors_total[5m]) / rate(http_requests_total[5m]) > 0.05
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High error rate on {{ $labels.service }}"
+          description: "Error rate is above 5% on {{ $labels.service }} endpoint {{ $labels.endpoint }}"
+
+      - alert: HighLatency
+        expr: histogram_quantile(0.95, rate(http_request_duration_ms_bucket[5m])) > 1000
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High P95 latency on {{ $labels.service }}"
+          description: "P95 latency is above 1s on {{ $labels.service }}"
+
+      - alert: CircuitBreakerOpen
+        expr: circuit_breaker_state == 1
+        for: 30s
+        labels:
+          severity: critical
+        annotations:
+          summary: "Circuit breaker open for {{ $labels.service }}"
+          description: "Circuit breaker for {{ $labels.service }} -> {{ $labels.target }} has been open for 30s"
+
+  - name: kafka_alerts
+    rules:
+      - alert: KafkaDLQGrowing
+        expr: kafka_dlq_size > 100
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Kafka DLQ growing"
+          description: "Dead letter queue has {{ $value }} messages"
+
+  - name: tigerbeetle_alerts
+    rules:
+      - alert: LedgerImbalance
+        expr: tigerbeetle_reconciliation_balanced == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "TigerBeetle ledger imbalance detected"
+          description: "Total debits != total credits"
+
+  - name: keycloak_alerts
+    rules:
+      - alert: HighFailedLogins
+        expr: rate(keycloak_failed_logins_total[5m]) > 10
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High failed login rate"
+          description: "More than 10 failed logins per second"
+
+      - alert: TooManyActiveSessions
+        expr: keycloak_active_sessions > 10000
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Too many active sessions"

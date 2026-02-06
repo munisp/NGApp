@@ -1,0 +1,145 @@
+{
+  "routes": [
+    {
+      "id": "auth-routes",
+      "uri": "/api/auth/*",
+      "upstream": {"type": "roundrobin", "nodes": {"keycloak-service:8091": 1}},
+      "plugins": {
+        "limit-req": {"rate": 15, "burst": 5, "rejected_code": 429, "key": "remote_addr"},
+        "cors": {"allow_origins": "*", "allow_methods": "GET,POST,PUT,DELETE,OPTIONS", "allow_headers": "Authorization,Content-Type,X-Correlation-ID"},
+        "request-id": {"header_name": "X-Correlation-ID", "include_in_response": true}
+      }
+    },
+    {
+      "id": "payment-routes",
+      "uri": "/api/payments/*",
+      "upstream": {"type": "roundrobin", "nodes": {"temporal-service:8085": 1}},
+      "plugins": {
+        "limit-req": {"rate": 10, "burst": 3, "rejected_code": 429, "key": "remote_addr"},
+        "jwt-auth": {},
+        "cors": {"allow_origins": "*", "allow_methods": "GET,POST", "allow_headers": "Authorization,Content-Type,X-Correlation-ID"},
+        "request-id": {"header_name": "X-Correlation-ID", "include_in_response": true}
+      }
+    },
+    {
+      "id": "transaction-routes",
+      "uri": "/api/transactions/*",
+      "upstream": {"type": "roundrobin", "nodes": {"kafka-service:8081": 1, "tigerbeetle-service:8083": 1}},
+      "plugins": {
+        "limit-req": {"rate": 100, "burst": 50, "rejected_code": 429, "key": "remote_addr"},
+        "jwt-auth": {},
+        "traffic-split": {
+          "rules": [
+            {"match": [{"vars": [["http_x_request_type", "==", "ledger"]]}], "weighted_upstreams": [{"upstream": {"nodes": {"tigerbeetle-service:8083": 1}}, "weight": 1}]},
+            {"weighted_upstreams": [{"upstream": {"nodes": {"kafka-service:8081": 1}}, "weight": 1}]}
+          ]
+        }
+      }
+    },
+    {
+      "id": "account-routes",
+      "uri": "/api/accounts/*",
+      "upstream": {"type": "roundrobin", "nodes": {"tigerbeetle-service:8083": 1}},
+      "plugins": {
+        "jwt-auth": {},
+        "limit-req": {"rate": 50, "burst": 20, "rejected_code": 429, "key": "remote_addr"}
+      }
+    },
+    {
+      "id": "kyc-routes",
+      "uri": "/api/kyc/*",
+      "upstream": {"type": "roundrobin", "nodes": {"temporal-service:8085": 1}},
+      "plugins": {
+        "jwt-auth": {},
+        "limit-req": {"rate": 20, "burst": 5, "rejected_code": 429, "key": "remote_addr"}
+      }
+    },
+    {
+      "id": "permissions-routes",
+      "uri": "/api/permissions/*",
+      "upstream": {"type": "roundrobin", "nodes": {"permify-service:8089": 1}},
+      "plugins": {
+        "jwt-auth": {},
+        "limit-req": {"rate": 200, "burst": 100, "rejected_code": 429, "key": "remote_addr"}
+      }
+    },
+    {
+      "id": "analytics-routes",
+      "uri": "/api/analytics/*",
+      "upstream": {"type": "roundrobin", "nodes": {"lakehouse-service:8090": 1}},
+      "plugins": {
+        "jwt-auth": {},
+        "limit-req": {"rate": 30, "burst": 10, "rejected_code": 429, "key": "remote_addr"}
+      }
+    },
+    {
+      "id": "streaming-routes",
+      "uri": "/api/streams/*",
+      "upstream": {"type": "roundrobin", "nodes": {"fluvio-service:8086": 1}},
+      "plugins": {
+        "jwt-auth": {},
+        "limit-req": {"rate": 100, "burst": 50, "rejected_code": 429, "key": "remote_addr"}
+      }
+    },
+    {
+      "id": "cache-routes",
+      "uri": "/api/cache/*",
+      "upstream": {"type": "roundrobin", "nodes": {"redis-service:8082": 1}},
+      "plugins": {
+        "jwt-auth": {},
+        "limit-req": {"rate": 500, "burst": 200, "rejected_code": 429, "key": "remote_addr"}
+      }
+    },
+    {
+      "id": "security-scan",
+      "uri": "/api/security/*",
+      "upstream": {"type": "roundrobin", "nodes": {"openappsec-service:8087": 1}},
+      "plugins": {
+        "jwt-auth": {},
+        "ip-restriction": {"whitelist": ["10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16"]}
+      }
+    },
+    {
+      "id": "cluster-routes",
+      "uri": "/api/cluster/*",
+      "upstream": {"type": "roundrobin", "nodes": {"kubernetes-service:8088": 1}},
+      "plugins": {
+        "jwt-auth": {},
+        "ip-restriction": {"whitelist": ["10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16"]}
+      }
+    },
+    {
+      "id": "dapr-routes",
+      "uri": "/api/dapr/*",
+      "upstream": {"type": "roundrobin", "nodes": {"dapr-service:8092": 1}},
+      "plugins": {
+        "jwt-auth": {},
+        "limit-req": {"rate": 100, "burst": 50, "rejected_code": 429, "key": "remote_addr"}
+      }
+    },
+    {
+      "id": "health-aggregate",
+      "uri": "/api/health/*",
+      "upstream": {"type": "roundrobin", "nodes": {"apisix-service:8084": 1}},
+      "plugins": {}
+    }
+  ],
+  "upstreams": [
+    {"id": "kafka-service", "type": "roundrobin", "nodes": {"kafka-service:8081": 1}, "checks": {"active": {"http_path": "/health", "healthy": {"interval": 5, "successes": 2}, "unhealthy": {"interval": 3, "http_failures": 3}}}},
+    {"id": "redis-service", "type": "roundrobin", "nodes": {"redis-service:8082": 1}, "checks": {"active": {"http_path": "/health", "healthy": {"interval": 5, "successes": 2}, "unhealthy": {"interval": 3, "http_failures": 3}}}},
+    {"id": "tigerbeetle-service", "type": "roundrobin", "nodes": {"tigerbeetle-service:8083": 1}, "checks": {"active": {"http_path": "/health", "healthy": {"interval": 5, "successes": 2}, "unhealthy": {"interval": 3, "http_failures": 3}}}},
+    {"id": "temporal-service", "type": "roundrobin", "nodes": {"temporal-service:8085": 1}, "checks": {"active": {"http_path": "/health", "healthy": {"interval": 5, "successes": 2}, "unhealthy": {"interval": 3, "http_failures": 3}}}},
+    {"id": "fluvio-service", "type": "roundrobin", "nodes": {"fluvio-service:8086": 1}, "checks": {"active": {"http_path": "/health", "healthy": {"interval": 5, "successes": 2}, "unhealthy": {"interval": 3, "http_failures": 3}}}},
+    {"id": "openappsec-service", "type": "roundrobin", "nodes": {"openappsec-service:8087": 1}, "checks": {"active": {"http_path": "/health", "healthy": {"interval": 5, "successes": 2}, "unhealthy": {"interval": 3, "http_failures": 3}}}},
+    {"id": "kubernetes-service", "type": "roundrobin", "nodes": {"kubernetes-service:8088": 1}, "checks": {"active": {"http_path": "/health", "healthy": {"interval": 5, "successes": 2}, "unhealthy": {"interval": 3, "http_failures": 3}}}},
+    {"id": "permify-service", "type": "roundrobin", "nodes": {"permify-service:8089": 1}, "checks": {"active": {"http_path": "/health", "healthy": {"interval": 5, "successes": 2}, "unhealthy": {"interval": 3, "http_failures": 3}}}},
+    {"id": "lakehouse-service", "type": "roundrobin", "nodes": {"lakehouse-service:8090": 1}, "checks": {"active": {"http_path": "/health", "healthy": {"interval": 5, "successes": 2}, "unhealthy": {"interval": 3, "http_failures": 3}}}},
+    {"id": "keycloak-service", "type": "roundrobin", "nodes": {"keycloak-service:8091": 1}, "checks": {"active": {"http_path": "/health", "healthy": {"interval": 5, "successes": 2}, "unhealthy": {"interval": 3, "http_failures": 3}}}},
+    {"id": "dapr-service", "type": "roundrobin", "nodes": {"dapr-service:8092": 1}, "checks": {"active": {"http_path": "/health", "healthy": {"interval": 5, "successes": 2}, "unhealthy": {"interval": 3, "http_failures": 3}}}}
+  ],
+  "global_plugins": {
+    "prometheus": {"prefer_name": true},
+    "zipkin": {"endpoint": "http://zipkin:9411/api/v2/spans", "sample_ratio": 0.1},
+    "request-id": {"header_name": "X-Correlation-ID", "include_in_response": true}
+  }
+}

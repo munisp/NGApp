@@ -1,0 +1,80 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  scrape_timeout: 10s
+
+rule_files:
+  - "alerts.yml"
+
+scrape_configs:
+  - job_name: "kafka-service"
+    static_configs:
+      - targets: ["kafka-service:8081"]
+    metrics_path: "/prometheus"
+    scrape_interval: 10s
+
+  - job_name: "redis-service"
+    static_configs:
+      - targets: ["redis-service:8082"]
+    metrics_path: "/prometheus"
+    scrape_interval: 10s
+
+  - job_name: "tigerbeetle-service"
+    static_configs:
+      - targets: ["tigerbeetle-service:8083"]
+    metrics_path: "/prometheus"
+    scrape_interval: 10s
+
+  - job_name: "apisix-service"
+    static_configs:
+      - targets: ["apisix-service:8084"]
+    metrics_path: "/prometheus"
+    scrape_interval: 10s
+
+  - job_name: "temporal-service"
+    static_configs:
+      - targets: ["temporal-service:8085"]
+    metrics_path: "/prometheus"
+    scrape_interval: 10s
+
+  - job_name: "fluvio-service"
+    static_configs:
+      - targets: ["fluvio-service:8086"]
+    metrics_path: "/prometheus"
+    scrape_interval: 10s
+
+  - job_name: "openappsec-service"
+    static_configs:
+      - targets: ["openappsec-service:8087"]
+    metrics_path: "/prometheus"
+    scrape_interval: 10s
+
+  - job_name: "kubernetes-service"
+    static_configs:
+      - targets: ["kubernetes-service:8088"]
+    metrics_path: "/prometheus"
+    scrape_interval: 10s
+
+  - job_name: "permify-service"
+    static_configs:
+      - targets: ["permify-service:8089"]
+    metrics_path: "/prometheus"
+    scrape_interval: 10s
+
+  - job_name: "lakehouse-service"
+    static_configs:
+      - targets: ["lakehouse-service:8090"]
+    metrics_path: "/prometheus"
+    scrape_interval: 10s
+
+  - job_name: "keycloak-service"
+    static_configs:
+      - targets: ["keycloak-service:8091"]
+    metrics_path: "/prometheus"
+    scrape_interval: 10s
+
+  - job_name: "dapr-service"
+    static_configs:
+      - targets: ["dapr-service:8092"]
+    metrics_path: "/prometheus"
+    scrape_interval: 10s
