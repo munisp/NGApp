@@ -1,0 +1,414 @@
+{
+  "routes": [
+    {
+      "uri": "/fraud/score",
+      "upstream": {
+        "type": "roundrobin",
+        "nodes": {
+          "fraud-scoring-service:8140": 1
+        }
+      },
+      "plugins": {
+        "key-auth": {},
+        "limit-req": {
+          "rate": 1000,
+          "burst": 500,
+          "key": "remote_addr"
+        }
+      },
+      "desc": "Fraud scoring - score transaction"
+    },
+    {
+      "uri": "/fraud/score/batch",
+      "upstream": {
+        "type": "roundrobin",
+        "nodes": {
+          "fraud-scoring-service:8140": 1
+        }
+      },
+      "plugins": {
+        "key-auth": {},
+        "limit-req": {
+          "rate": 100,
+          "burst": 50,
+          "key": "remote_addr"
+        }
+      },
+      "desc": "Fraud scoring - batch score"
+    },
+    {
+      "uri": "/fraud/model/info",
+      "upstream": {
+        "type": "roundrobin",
+        "nodes": {
+          "fraud-scoring-service:8140": 1
+        }
+      },
+      "plugins": {
+        "key-auth": {}
+      },
+      "desc": "Fraud scoring - model info"
+    },
+    {
+      "uri": "/fraud/insights",
+      "upstream": {
+        "type": "roundrobin",
+        "nodes": {
+          "risk-insights-service:8141": 1
+        }
+      },
+      "plugins": {
+        "key-auth": {}
+      },
+      "desc": "Risk insights - generate insights"
+    },
+    {
+      "uri": "/fraud/insights/*",
+      "upstream": {
+        "type": "roundrobin",
+        "nodes": {
+          "risk-insights-service:8141": 1
+        }
+      },
+      "plugins": {
+        "key-auth": {}
+      },
+      "desc": "Risk insights - get cached insights"
+    },
+    {
+      "uri": "/fraud/investigation/search",
+      "upstream": {
+        "type": "roundrobin",
+        "nodes": {
+          "fraud-investigation-service:8142": 1
+        }
+      },
+      "plugins": {
+        "key-auth": {}
+      },
+      "desc": "Fraud investigation - search transactions"
+    },
+    {
+      "uri": "/fraud/investigation/transactions/*",
+      "upstream": {
+        "type": "roundrobin",
+        "nodes": {
+          "fraud-investigation-service:8142": 1
+        }
+      },
+      "plugins": {
+        "key-auth": {}
+      },
+      "desc": "Fraud investigation - transaction details"
+    },
+    {
+      "uri": "/fraud/investigation/geo/*",
+      "upstream": {
+        "type": "roundrobin",
+        "nodes": {
+          "fraud-investigation-service:8142": 1
+        }
+      },
+      "plugins": {
+        "key-auth": {}
+      },
+      "desc": "Fraud investigation - geo heatmap"
+    },
+    {
+      "uri": "/fraud/investigation/investigations",
+      "upstream": {
+        "type": "roundrobin",
+        "nodes": {
+          "fraud-investigation-service:8142": 1
+        }
+      },
+      "plugins": {
+        "key-auth": {}
+      },
+      "desc": "Fraud investigation - manage investigations"
+    },
+    {
+      "uri": "/fraud/investigation/investigations/*",
+      "upstream": {
+        "type": "roundrobin",
+        "nodes": {
+          "fraud-investigation-service:8142": 1
+        }
+      },
+      "plugins": {
+        "key-auth": {}
+      },
+      "desc": "Fraud investigation - investigation details"
+    },
+    {
+      "uri": "/fraud/investigation/attack-patterns",
+      "upstream": {
+        "type": "roundrobin",
+        "nodes": {
+          "fraud-investigation-service:8142": 1
+        }
+      },
+      "plugins": {
+        "key-auth": {}
+      },
+      "desc": "Fraud investigation - attack patterns"
+    },
+    {
+      "uri": "/fraud/investigation/analytics/*",
+      "upstream": {
+        "type": "roundrobin",
+        "nodes": {
+          "fraud-investigation-service:8142": 1
+        }
+      },
+      "plugins": {
+        "key-auth": {}
+      },
+      "desc": "Fraud investigation - analytics"
+    },
+    {
+      "uri": "/fraud/retrain",
+      "upstream": {
+        "type": "roundrobin",
+        "nodes": {
+          "model-retraining-service:8143": 1
+        }
+      },
+      "plugins": {
+        "key-auth": {}
+      },
+      "desc": "Model retraining - trigger retraining"
+    },
+    {
+      "uri": "/fraud/retrain/jobs",
+      "upstream": {
+        "type": "roundrobin",
+        "nodes": {
+          "model-retraining-service:8143": 1
+        }
+      },
+      "plugins": {
+        "key-auth": {}
+      },
+      "desc": "Model retraining - list jobs"
+    },
+    {
+      "uri": "/fraud/retrain/jobs/*",
+      "upstream": {
+        "type": "roundrobin",
+        "nodes": {
+          "model-retraining-service:8143": 1
+        }
+      },
+      "plugins": {
+        "key-auth": {}
+      },
+      "desc": "Model retraining - job details"
+    },
+    {
+      "uri": "/fraud/retrain/models",
+      "upstream": {
+        "type": "roundrobin",
+        "nodes": {
+          "model-retraining-service:8143": 1
+        }
+      },
+      "plugins": {
+        "key-auth": {}
+      },
+      "desc": "Model retraining - list models"
+    },
+    {
+      "uri": "/fraud/retrain/models/*",
+      "upstream": {
+        "type": "roundrobin",
+        "nodes": {
+          "model-retraining-service:8143": 1
+        }
+      },
+      "plugins": {
+        "key-auth": {}
+      },
+      "desc": "Model retraining - model operations"
+    },
+    {
+      "uri": "/fraud/retrain/metrics",
+      "upstream": {
+        "type": "roundrobin",
+        "nodes": {
+          "model-retraining-service:8143": 1
+        }
+      },
+      "plugins": {
+        "key-auth": {}
+      },
+      "desc": "Model retraining - performance metrics"
+    },
+    {
+      "uri": "/fraud/retrain/alerts",
+      "upstream": {
+        "type": "roundrobin",
+        "nodes": {
+          "model-retraining-service:8143": 1
+        }
+      },
+      "plugins": {
+        "key-auth": {}
+      },
+      "desc": "Model retraining - alerts"
+    },
+    {
+      "uri": "/fraud/features/extract",
+      "upstream": {
+        "type": "roundrobin",
+        "nodes": {
+          "fraud-features-service:8144": 1
+        }
+      },
+      "plugins": {
+        "key-auth": {},
+        "limit-req": {
+          "rate": 2000,
+          "burst": 1000,
+          "key": "remote_addr"
+        }
+      },
+      "desc": "Fraud features - extract features"
+    },
+    {
+      "uri": "/fraud/features/velocity",
+      "upstream": {
+        "type": "roundrobin",
+        "nodes": {
+          "fraud-features-service:8144": 1
+        }
+      },
+      "plugins": {
+        "key-auth": {}
+      },
+      "desc": "Fraud features - velocity check"
+    },
+    {
+      "uri": "/fraud/features/device",
+      "upstream": {
+        "type": "roundrobin",
+        "nodes": {
+          "fraud-features-service:8144": 1
+        }
+      },
+      "plugins": {
+        "key-auth": {}
+      },
+      "desc": "Fraud features - device lookup"
+    },
+    {
+      "uri": "/fraud/features/email/*",
+      "upstream": {
+        "type": "roundrobin",
+        "nodes": {
+          "fraud-features-service:8144": 1
+        }
+      },
+      "plugins": {
+        "key-auth": {}
+      },
+      "desc": "Fraud features - email analysis"
+    },
+    {
+      "uri": "/fraud/features/geo/*",
+      "upstream": {
+        "type": "roundrobin",
+        "nodes": {
+          "fraud-features-service:8144": 1
+        }
+      },
+      "plugins": {
+        "key-auth": {}
+      },
+      "desc": "Fraud features - geo check"
+    },
+    {
+      "uri": "/fraud/features/bin/*",
+      "upstream": {
+        "type": "roundrobin",
+        "nodes": {
+          "fraud-features-service:8144": 1
+        }
+      },
+      "plugins": {
+        "key-auth": {}
+      },
+      "desc": "Fraud features - BIN risk"
+    },
+    {
+      "uri": "/fraud/rules/evaluate",
+      "upstream": {
+        "type": "roundrobin",
+        "nodes": {
+          "rules-engine-service:8145": 1
+        }
+      },
+      "plugins": {
+        "key-auth": {},
+        "limit-req": {
+          "rate": 2000,
+          "burst": 1000,
+          "key": "remote_addr"
+        }
+      },
+      "desc": "Rules engine - evaluate transaction"
+    },
+    {
+      "uri": "/fraud/rules",
+      "upstream": {
+        "type": "roundrobin",
+        "nodes": {
+          "rules-engine-service:8145": 1
+        }
+      },
+      "plugins": {
+        "key-auth": {}
+      },
+      "desc": "Rules engine - list/create rules"
+    },
+    {
+      "uri": "/fraud/rules/*",
+      "upstream": {
+        "type": "roundrobin",
+        "nodes": {
+          "rules-engine-service:8145": 1
+        }
+      },
+      "plugins": {
+        "key-auth": {}
+      },
+      "desc": "Rules engine - rule operations"
+    },
+    {
+      "uri": "/fraud/rules/toggle/*",
+      "upstream": {
+        "type": "roundrobin",
+        "nodes": {
+          "rules-engine-service:8145": 1
+        }
+      },
+      "plugins": {
+        "key-auth": {}
+      },
+      "desc": "Rules engine - toggle rule"
+    },
+    {
+      "uri": "/fraud/rules/metrics",
+      "upstream": {
+        "type": "roundrobin",
+        "nodes": {
+          "rules-engine-service:8145": 1
+        }
+      },
+      "plugins": {
+        "key-auth": {}
+      },
+      "desc": "Rules engine - metrics"
+    }
+  ]
+}

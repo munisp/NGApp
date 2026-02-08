@@ -821,6 +821,136 @@ services:
       timeout: 5s
       retries: 3
 
+  # Stripe Radar-inspired Fraud Detection Services
+  fraud-scoring-service:
+    build:
+      context: ./python/fraud-scoring
+      dockerfile: Dockerfile
+    ports:
+      - "8140:8140"
+    environment:
+      - FRAUD_SCORING_PORT=8140
+      - KAFKA_BROKERS=kafka:9092
+      - REDIS_URL=redis://redis:6379
+      - FEATURE_STORE_URL=http://feature-store-service:8104
+      - GNN_SERVICE_URL=http://gnn-fraud-service:8101
+      - MODEL_VERSION=v2.1.0
+    depends_on:
+      - kafka
+      - redis
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8140/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  risk-insights-service:
+    build:
+      context: ./python/risk-insights
+      dockerfile: Dockerfile
+    ports:
+      - "8141:8141"
+    environment:
+      - RISK_INSIGHTS_PORT=8141
+      - KAFKA_BROKERS=kafka:9092
+      - REDIS_URL=redis://redis:6379
+      - FRAUD_SCORING_URL=http://fraud-scoring-service:8140
+    depends_on:
+      - kafka
+      - redis
+      - fraud-scoring-service
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8141/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  fraud-investigation-service:
+    build:
+      context: ./python/fraud-investigation
+      dockerfile: Dockerfile
+    ports:
+      - "8142:8142"
+    environment:
+      - FRAUD_INVESTIGATION_PORT=8142
+      - KAFKA_BROKERS=kafka:9092
+      - REDIS_URL=redis://redis:6379
+      - ELASTICSEARCH_URL=http://elasticsearch:9200
+    depends_on:
+      - kafka
+      - redis
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8142/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  model-retraining-service:
+    build:
+      context: ./python/model-retraining
+      dockerfile: Dockerfile
+    ports:
+      - "8143:8143"
+    environment:
+      - MODEL_RETRAINING_PORT=8143
+      - KAFKA_BROKERS=kafka:9092
+      - RAY_SERVICE_URL=http://ray-cluster-service:8100
+      - TEMPORAL_ADDRESS=temporal:7233
+      - MLFLOW_URL=http://mlflow-registry-service:8105
+      - FEATURE_STORE_URL=http://feature-store-service:8104
+    depends_on:
+      - kafka
+      - temporal
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8143/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  fraud-features-service:
+    build:
+      context: ./go/fraud-features
+      dockerfile: Dockerfile
+    ports:
+      - "8144:8144"
+    environment:
+      - FRAUD_FEATURES_PORT=8144
+      - KAFKA_BROKERS=kafka:9092
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      - kafka
+      - redis
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8144/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  rules-engine-service:
+    build:
+      context: ./go/rules-engine
+      dockerfile: Dockerfile
+    ports:
+      - "8145:8145"
+    environment:
+      - RULES_ENGINE_PORT=8145
+      - KAFKA_BROKERS=kafka:9092
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      - kafka
+      - redis
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8145/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
 volumes:
   kafka-data:
   redis-data:

@@ -1,0 +1,172 @@
+{
+  "topics": [
+    {
+      "name": "fraud.scoring.requests",
+      "partitions": 12,
+      "replication_factor": 3,
+      "retention_ms": 604800000,
+      "desc": "Transaction scoring requests"
+    },
+    {
+      "name": "fraud.scoring.results",
+      "partitions": 12,
+      "replication_factor": 3,
+      "retention_ms": 604800000,
+      "desc": "Fraud score results"
+    },
+    {
+      "name": "fraud.scoring.high_risk",
+      "partitions": 6,
+      "replication_factor": 3,
+      "retention_ms": 2592000000,
+      "desc": "High-risk transaction alerts"
+    },
+    {
+      "name": "fraud.scoring.blocked",
+      "partitions": 6,
+      "replication_factor": 3,
+      "retention_ms": 2592000000,
+      "desc": "Blocked transactions"
+    },
+    {
+      "name": "fraud.features.extracted",
+      "partitions": 12,
+      "replication_factor": 3,
+      "retention_ms": 604800000,
+      "desc": "Extracted feature vectors"
+    },
+    {
+      "name": "fraud.features.velocity_alerts",
+      "partitions": 6,
+      "replication_factor": 3,
+      "retention_ms": 604800000,
+      "desc": "Velocity threshold alerts"
+    },
+    {
+      "name": "fraud.features.device_fingerprints",
+      "partitions": 6,
+      "replication_factor": 3,
+      "retention_ms": 2592000000,
+      "desc": "Device fingerprint events"
+    },
+    {
+      "name": "fraud.features.geo_anomalies",
+      "partitions": 6,
+      "replication_factor": 3,
+      "retention_ms": 604800000,
+      "desc": "Geographic anomaly events"
+    },
+    {
+      "name": "fraud.features.email_risk",
+      "partitions": 6,
+      "replication_factor": 3,
+      "retention_ms": 604800000,
+      "desc": "Email risk analysis results"
+    },
+    {
+      "name": "fraud.insights.generated",
+      "partitions": 6,
+      "replication_factor": 3,
+      "retention_ms": 2592000000,
+      "desc": "Risk insight reports"
+    },
+    {
+      "name": "fraud.insights.feedback",
+      "partitions": 6,
+      "replication_factor": 3,
+      "retention_ms": 2592000000,
+      "desc": "User feedback on insights"
+    },
+    {
+      "name": "fraud.investigation.cases",
+      "partitions": 6,
+      "replication_factor": 3,
+      "retention_ms": 7776000000,
+      "desc": "Investigation case events"
+    },
+    {
+      "name": "fraud.investigation.attack_patterns",
+      "partitions": 3,
+      "replication_factor": 3,
+      "retention_ms": 7776000000,
+      "desc": "Detected attack patterns"
+    },
+    {
+      "name": "fraud.investigation.resolutions",
+      "partitions": 6,
+      "replication_factor": 3,
+      "retention_ms": 7776000000,
+      "desc": "Investigation resolutions"
+    },
+    {
+      "name": "fraud.rules.evaluations",
+      "partitions": 12,
+      "replication_factor": 3,
+      "retention_ms": 604800000,
+      "desc": "Rule evaluation results"
+    },
+    {
+      "name": "fraud.rules.changes",
+      "partitions": 3,
+      "replication_factor": 3,
+      "retention_ms": 2592000000,
+      "desc": "Rule CRUD events"
+    },
+    {
+      "name": "fraud.rules.matches",
+      "partitions": 6,
+      "replication_factor": 3,
+      "retention_ms": 604800000,
+      "desc": "Rule match events"
+    },
+    {
+      "name": "fraud.model.training_started",
+      "partitions": 3,
+      "replication_factor": 3,
+      "retention_ms": 2592000000,
+      "desc": "Model training start events"
+    },
+    {
+      "name": "fraud.model.training_completed",
+      "partitions": 3,
+      "replication_factor": 3,
+      "retention_ms": 2592000000,
+      "desc": "Model training completion events"
+    },
+    {
+      "name": "fraud.model.deployed",
+      "partitions": 3,
+      "replication_factor": 3,
+      "retention_ms": 2592000000,
+      "desc": "Model deployment events"
+    },
+    {
+      "name": "fraud.model.performance_alerts",
+      "partitions": 3,
+      "replication_factor": 3,
+      "retention_ms": 2592000000,
+      "desc": "Performance degradation alerts"
+    },
+    {
+      "name": "fraud.model.rollbacks",
+      "partitions": 3,
+      "replication_factor": 3,
+      "retention_ms": 2592000000,
+      "desc": "Model rollback events"
+    },
+    {
+      "name": "fraud.network.cross_merchant_signals",
+      "partitions": 6,
+      "replication_factor": 3,
+      "retention_ms": 2592000000,
+      "desc": "Cross-merchant fraud signals"
+    },
+    {
+      "name": "fraud.network.bin_risk_updates",
+      "partitions": 3,
+      "replication_factor": 3,
+      "retention_ms": 2592000000,
+      "desc": "BIN risk score updates"
+    }
+  ]
+}
