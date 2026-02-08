@@ -1,0 +1,172 @@
+{
+  "routes": [
+    {
+      "uri": "/api/whatsapp/health",
+      "name": "whatsapp-health",
+      "methods": ["GET"],
+      "upstream": {"type": "roundrobin", "nodes": {"whatsapp-service:8130": 1}},
+      "plugins": {"proxy-rewrite": {"uri": "/health"}}
+    },
+    {
+      "uri": "/api/whatsapp/webhook",
+      "name": "whatsapp-webhook",
+      "methods": ["GET", "POST"],
+      "upstream": {"type": "roundrobin", "nodes": {"whatsapp-service:8130": 1}},
+      "plugins": {"proxy-rewrite": {"uri": "/webhook"}}
+    },
+    {
+      "uri": "/api/whatsapp/messages/*",
+      "name": "whatsapp-messages",
+      "methods": ["GET", "POST"],
+      "upstream": {"type": "roundrobin", "nodes": {"whatsapp-service:8130": 1}},
+      "plugins": {"proxy-rewrite": {"regex_uri": ["^/api/whatsapp/(.*)", "/$1"]}}
+    },
+    {
+      "uri": "/api/whatsapp/conversations",
+      "name": "whatsapp-conversations",
+      "methods": ["GET"],
+      "upstream": {"type": "roundrobin", "nodes": {"whatsapp-service:8130": 1}},
+      "plugins": {"proxy-rewrite": {"uri": "/conversations"}}
+    },
+    {
+      "uri": "/api/whatsapp/conversations/*",
+      "name": "whatsapp-conversation-detail",
+      "methods": ["GET"],
+      "upstream": {"type": "roundrobin", "nodes": {"whatsapp-service:8130": 1}},
+      "plugins": {"proxy-rewrite": {"regex_uri": ["^/api/whatsapp/(.*)", "/$1"]}}
+    },
+    {
+      "uri": "/api/whatsapp/templates",
+      "name": "whatsapp-templates",
+      "methods": ["GET"],
+      "upstream": {"type": "roundrobin", "nodes": {"whatsapp-service:8130": 1}},
+      "plugins": {"proxy-rewrite": {"uri": "/templates"}}
+    },
+    {
+      "uri": "/api/whatsapp/metrics",
+      "name": "whatsapp-metrics",
+      "methods": ["GET"],
+      "upstream": {"type": "roundrobin", "nodes": {"whatsapp-service:8130": 1}},
+      "plugins": {"proxy-rewrite": {"uri": "/metrics"}}
+    },
+    {
+      "uri": "/api/telegram/health",
+      "name": "telegram-health",
+      "methods": ["GET"],
+      "upstream": {"type": "roundrobin", "nodes": {"telegram-service:8131": 1}},
+      "plugins": {"proxy-rewrite": {"uri": "/health"}}
+    },
+    {
+      "uri": "/api/telegram/webhook",
+      "name": "telegram-webhook",
+      "methods": ["POST"],
+      "upstream": {"type": "roundrobin", "nodes": {"telegram-service:8131": 1}},
+      "plugins": {"proxy-rewrite": {"uri": "/webhook"}}
+    },
+    {
+      "uri": "/api/telegram/messages/*",
+      "name": "telegram-messages",
+      "methods": ["GET", "POST"],
+      "upstream": {"type": "roundrobin", "nodes": {"telegram-service:8131": 1}},
+      "plugins": {"proxy-rewrite": {"regex_uri": ["^/api/telegram/(.*)", "/$1"]}}
+    },
+    {
+      "uri": "/api/telegram/users",
+      "name": "telegram-users",
+      "methods": ["GET"],
+      "upstream": {"type": "roundrobin", "nodes": {"telegram-service:8131": 1}},
+      "plugins": {"proxy-rewrite": {"uri": "/users"}}
+    },
+    {
+      "uri": "/api/telegram/sessions",
+      "name": "telegram-sessions",
+      "methods": ["GET"],
+      "upstream": {"type": "roundrobin", "nodes": {"telegram-service:8131": 1}},
+      "plugins": {"proxy-rewrite": {"uri": "/sessions"}}
+    },
+    {
+      "uri": "/api/telegram/commands",
+      "name": "telegram-commands",
+      "methods": ["GET"],
+      "upstream": {"type": "roundrobin", "nodes": {"telegram-service:8131": 1}},
+      "plugins": {"proxy-rewrite": {"uri": "/commands"}}
+    },
+    {
+      "uri": "/api/telegram/metrics",
+      "name": "telegram-metrics",
+      "methods": ["GET"],
+      "upstream": {"type": "roundrobin", "nodes": {"telegram-service:8131": 1}},
+      "plugins": {"proxy-rewrite": {"uri": "/metrics"}}
+    },
+    {
+      "uri": "/api/ussd",
+      "name": "ussd-service",
+      "methods": ["POST"],
+      "upstream": {"type": "roundrobin", "nodes": {"ussd-service:8132": 1}},
+      "plugins": {"proxy-rewrite": {"uri": "/ussd"}}
+    },
+    {
+      "uri": "/api/ussd/health",
+      "name": "ussd-health",
+      "methods": ["GET"],
+      "upstream": {"type": "roundrobin", "nodes": {"ussd-service:8132": 1}},
+      "plugins": {"proxy-rewrite": {"uri": "/health"}}
+    },
+    {
+      "uri": "/api/ussd/sessions",
+      "name": "ussd-sessions",
+      "methods": ["GET"],
+      "upstream": {"type": "roundrobin", "nodes": {"ussd-service:8132": 1}},
+      "plugins": {"proxy-rewrite": {"uri": "/sessions"}}
+    },
+    {
+      "uri": "/api/sms/send",
+      "name": "sms-send",
+      "methods": ["POST"],
+      "upstream": {"type": "roundrobin", "nodes": {"sms-service:8133": 1}},
+      "plugins": {"proxy-rewrite": {"uri": "/send"}}
+    },
+    {
+      "uri": "/api/sms/bulk",
+      "name": "sms-bulk",
+      "methods": ["POST"],
+      "upstream": {"type": "roundrobin", "nodes": {"sms-service:8133": 1}},
+      "plugins": {"proxy-rewrite": {"uri": "/bulk"}}
+    },
+    {
+      "uri": "/api/sms/messages/*",
+      "name": "sms-messages",
+      "methods": ["GET"],
+      "upstream": {"type": "roundrobin", "nodes": {"sms-service:8133": 1}},
+      "plugins": {"proxy-rewrite": {"regex_uri": ["^/api/sms/(.*)", "/$1"]}}
+    },
+    {
+      "uri": "/api/sms/templates",
+      "name": "sms-templates",
+      "methods": ["GET"],
+      "upstream": {"type": "roundrobin", "nodes": {"sms-service:8133": 1}},
+      "plugins": {"proxy-rewrite": {"uri": "/templates"}}
+    },
+    {
+      "uri": "/api/sms/health",
+      "name": "sms-health",
+      "methods": ["GET"],
+      "upstream": {"type": "roundrobin", "nodes": {"sms-service:8133": 1}},
+      "plugins": {"proxy-rewrite": {"uri": "/health"}}
+    },
+    {
+      "uri": "/api/sms/webhook/twilio",
+      "name": "sms-webhook-twilio",
+      "methods": ["POST"],
+      "upstream": {"type": "roundrobin", "nodes": {"sms-service:8133": 1}},
+      "plugins": {"proxy-rewrite": {"uri": "/webhook/twilio"}}
+    },
+    {
+      "uri": "/api/sms/webhook/africastalking",
+      "name": "sms-webhook-africastalking",
+      "methods": ["POST"],
+      "upstream": {"type": "roundrobin", "nodes": {"sms-service:8133": 1}},
+      "plugins": {"proxy-rewrite": {"uri": "/webhook/africastalking"}}
+    }
+  ]
+}

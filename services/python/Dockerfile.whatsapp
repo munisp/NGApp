@@ -1,0 +1,6 @@
+FROM python:3.11-slim
+WORKDIR /app
+RUN pip install --no-cache-dir fastapi uvicorn pydantic httpx
+COPY whatsapp/app.py .
+EXPOSE 8130
+CMD ["python", "app.py"]

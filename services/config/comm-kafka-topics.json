@@ -1,0 +1,22 @@
+{
+  "topics": [
+    {"name": "whatsapp.messages.inbound", "partitions": 6, "replication_factor": 1, "retention_ms": 604800000, "description": "Incoming WhatsApp messages"},
+    {"name": "whatsapp.messages.outbound", "partitions": 6, "replication_factor": 1, "retention_ms": 604800000, "description": "Outgoing WhatsApp messages"},
+    {"name": "whatsapp.messages.status", "partitions": 3, "replication_factor": 1, "retention_ms": 259200000, "description": "WhatsApp message delivery status updates"},
+    {"name": "whatsapp.conversations", "partitions": 3, "replication_factor": 1, "retention_ms": 2592000000, "description": "WhatsApp conversation events"},
+    {"name": "telegram.messages.inbound", "partitions": 6, "replication_factor": 1, "retention_ms": 604800000, "description": "Incoming Telegram messages"},
+    {"name": "telegram.messages.outbound", "partitions": 6, "replication_factor": 1, "retention_ms": 604800000, "description": "Outgoing Telegram messages"},
+    {"name": "telegram.callbacks", "partitions": 3, "replication_factor": 1, "retention_ms": 259200000, "description": "Telegram callback query events"},
+    {"name": "telegram.inline_queries", "partitions": 3, "replication_factor": 1, "retention_ms": 86400000, "description": "Telegram inline query events"},
+    {"name": "ussd.requests", "partitions": 6, "replication_factor": 1, "retention_ms": 604800000, "description": "USSD request/response events"},
+    {"name": "ussd.balance.inquiry", "partitions": 3, "replication_factor": 1, "retention_ms": 259200000, "description": "USSD balance inquiry events"},
+    {"name": "ussd.transfer.initiate", "partitions": 6, "replication_factor": 1, "retention_ms": 2592000000, "description": "USSD transfer initiation events"},
+    {"name": "ussd.airtime.purchase", "partitions": 3, "replication_factor": 1, "retention_ms": 2592000000, "description": "USSD airtime purchase events"},
+    {"name": "ussd.statement.request", "partitions": 3, "replication_factor": 1, "retention_ms": 259200000, "description": "USSD statement request events"},
+    {"name": "sms.outbound", "partitions": 6, "replication_factor": 1, "retention_ms": 604800000, "description": "Outgoing SMS events"},
+    {"name": "sms.bulk", "partitions": 3, "replication_factor": 1, "retention_ms": 259200000, "description": "Bulk SMS campaign events"},
+    {"name": "sms.sent", "partitions": 6, "replication_factor": 1, "retention_ms": 604800000, "description": "SMS sent confirmation events"},
+    {"name": "sms.status", "partitions": 3, "replication_factor": 1, "retention_ms": 259200000, "description": "SMS delivery status webhook events"},
+    {"name": "sms.inbound", "partitions": 3, "replication_factor": 1, "retention_ms": 604800000, "description": "Incoming SMS events"}
+  ]
+}

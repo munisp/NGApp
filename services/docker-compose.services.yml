@@ -734,6 +734,93 @@ services:
       timeout: 5s
       retries: 3
 
+  # Communication Channel Services
+  whatsapp-service:
+    build:
+      context: ./python
+      dockerfile: Dockerfile.whatsapp
+    ports:
+      - "8130:8130"
+    environment:
+      - WHATSAPP_SERVICE_PORT=8130
+      - WHATSAPP_API_URL=https://graph.facebook.com/v18.0
+      - WHATSAPP_VERIFY_TOKEN=fintech_verify_token
+      - KAFKA_BROKERS=kafka:9092
+      - REDIS_URL=redis://redis:6379
+      - TEMPORAL_ADDRESS=temporal:7233
+    depends_on:
+      - kafka
+      - redis
+      - temporal
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8130/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  telegram-service:
+    build:
+      context: ./python
+      dockerfile: Dockerfile.telegram
+    ports:
+      - "8131:8131"
+    environment:
+      - TELEGRAM_SERVICE_PORT=8131
+      - KAFKA_BROKERS=kafka:9092
+      - REDIS_URL=redis://redis:6379
+      - TEMPORAL_ADDRESS=temporal:7233
+    depends_on:
+      - kafka
+      - redis
+      - temporal
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8131/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  ussd-service:
+    build:
+      context: ./go
+      dockerfile: Dockerfile.ussd
+    ports:
+      - "8132:8132"
+    environment:
+      - USSD_SERVICE_PORT=8132
+      - KAFKA_BROKERS=kafka:9092
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      - kafka
+      - redis
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8132/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  sms-service:
+    build:
+      context: ./go
+      dockerfile: Dockerfile.sms
+    ports:
+      - "8133:8133"
+    environment:
+      - SMS_SERVICE_PORT=8133
+      - KAFKA_BROKERS=kafka:9092
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      - kafka
+      - redis
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8133/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
 volumes:
   kafka-data:
   redis-data:
