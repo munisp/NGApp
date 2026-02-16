@@ -1,0 +1,268 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgres-primary
+  namespace: fintech
+  labels:
+    app: postgres
+    role: primary
+spec:
+  serviceName: postgres-primary
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres
+      role: primary
+  template:
+    metadata:
+      labels:
+        app: postgres
+        role: primary
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:16-alpine
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_DB
+              value: fintech
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-credentials
+                  key: username
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-credentials
+                  key: password
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata
+          args:
+            - postgres
+            - -c
+            - wal_level=replica
+            - -c
+            - hot_standby=on
+            - -c
+            - max_wal_senders=10
+            - -c
+            - max_replication_slots=10
+            - -c
+            - shared_preload_libraries=pg_stat_statements
+            - -c
+            - pg_stat_statements.max=10000
+            - -c
+            - statement_timeout=30000
+            - -c
+            - max_connections=200
+            - -c
+            - shared_buffers=2Gi
+          resources:
+            requests:
+              memory: 4Gi
+              cpu: "2"
+            limits:
+              memory: 8Gi
+              cpu: "4"
+          volumeMounts:
+            - name: postgres-data
+              mountPath: /var/lib/postgresql/data
+          readinessProbe:
+            exec:
+              command: ["pg_isready", "-U", "fintech"]
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          livenessProbe:
+            exec:
+              command: ["pg_isready", "-U", "fintech"]
+            initialDelaySeconds: 30
+            periodSeconds: 10
+        - name: pgbouncer
+          image: edoburu/pgbouncer:1.22.0
+          ports:
+            - containerPort: 6432
+          volumeMounts:
+            - name: pgbouncer-config
+              mountPath: /etc/pgbouncer
+          readinessProbe:
+            exec:
+              command: ["pg_isready", "-h", "localhost", "-p", "6432"]
+            initialDelaySeconds: 5
+            periodSeconds: 5
+      volumes:
+        - name: pgbouncer-config
+          configMap:
+            name: pgbouncer-config
+  volumeClaimTemplates:
+    - metadata:
+        name: postgres-data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: fast-ssd
+        resources:
+          requests:
+            storage: 100Gi
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgres-replica
+  namespace: fintech
+  labels:
+    app: postgres
+    role: replica
+spec:
+  serviceName: postgres-replica
+  replicas: 2
+  selector:
+    matchLabels:
+      app: postgres
+      role: replica
+  template:
+    metadata:
+      labels:
+        app: postgres
+        role: replica
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:16-alpine
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_DB
+              value: fintech
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-credentials
+                  key: username
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-credentials
+                  key: password
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata
+          args:
+            - postgres
+            - -c
+            - hot_standby=on
+            - -c
+            - max_connections=200
+            - -c
+            - shared_preload_libraries=pg_stat_statements
+            - -c
+            - statement_timeout=30000
+          resources:
+            requests:
+              memory: 4Gi
+              cpu: "2"
+            limits:
+              memory: 8Gi
+              cpu: "4"
+          volumeMounts:
+            - name: postgres-data
+              mountPath: /var/lib/postgresql/data
+          readinessProbe:
+            exec:
+              command: ["pg_isready", "-U", "fintech"]
+            initialDelaySeconds: 10
+            periodSeconds: 5
+        - name: pgbouncer
+          image: edoburu/pgbouncer:1.22.0
+          ports:
+            - containerPort: 6432
+          volumeMounts:
+            - name: pgbouncer-config
+              mountPath: /etc/pgbouncer
+      volumes:
+        - name: pgbouncer-config
+          configMap:
+            name: pgbouncer-config
+  volumeClaimTemplates:
+    - metadata:
+        name: postgres-data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: fast-ssd
+        resources:
+          requests:
+            storage: 100Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-primary
+  namespace: fintech
+spec:
+  selector:
+    app: postgres
+    role: primary
+  ports:
+    - name: postgres
+      port: 5432
+      targetPort: 5432
+    - name: pgbouncer
+      port: 6432
+      targetPort: 6432
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-replica
+  namespace: fintech
+spec:
+  selector:
+    app: postgres
+    role: replica
+  ports:
+    - name: postgres
+      port: 5432
+      targetPort: 5432
+    - name: pgbouncer
+      port: 6432
+      targetPort: 6432
+  type: ClusterIP
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pgbouncer-config
+  namespace: fintech
+data:
+  pgbouncer.ini: |
+    [databases]
+    fintech = host=localhost port=5432 dbname=fintech pool_size=20
+
+    [pgbouncer]
+    listen_addr = 0.0.0.0
+    listen_port = 6432
+    auth_type = md5
+    auth_file = /etc/pgbouncer/userlist.txt
+    pool_mode = transaction
+    max_client_conn = 1000
+    default_pool_size = 20
+    min_pool_size = 5
+    reserve_pool_size = 5
+    server_lifetime = 3600
+    server_idle_timeout = 600
+    query_timeout = 30
+    stats_period = 60
+  userlist.txt: |
+    "fintech" "${POSTGRES_PASSWORD}"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: postgres-credentials
+  namespace: fintech
+type: Opaque
+stringData:
+  username: REPLACE_WITH_POSTGRES_USER
+  password: REPLACE_WITH_POSTGRES_PASSWORD
+  replication-username: REPLACE_WITH_REPLICATION_USER
+  replication-password: REPLACE_WITH_REPLICATION_PASSWORD

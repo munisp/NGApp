@@ -1,0 +1,43 @@
+scrape_configs:
+  - job_name: postgres-primary
+    static_configs:
+      - targets: ["postgres-exporter-primary:9187"]
+        labels:
+          role: primary
+          cluster: fintech
+
+  - job_name: postgres-replica-1
+    static_configs:
+      - targets: ["postgres-exporter-replica-1:9187"]
+        labels:
+          role: replica
+          cluster: fintech
+          replica_id: "1"
+
+  - job_name: postgres-replica-2
+    static_configs:
+      - targets: ["postgres-exporter-replica-2:9187"]
+        labels:
+          role: replica
+          cluster: fintech
+          replica_id: "2"
+
+  - job_name: pgbouncer-primary
+    static_configs:
+      - targets: ["pgbouncer-exporter-primary:9127"]
+        labels:
+          role: primary
+          pool: pgbouncer
+
+  - job_name: pgbouncer-replica
+    static_configs:
+      - targets: ["pgbouncer-exporter-replica:9127"]
+        labels:
+          role: replica
+          pool: pgbouncer
+
+  - job_name: patroni
+    static_configs:
+      - targets: ["postgres-primary:8008", "postgres-replica-1:8008", "postgres-replica-2:8008"]
+        labels:
+          cluster: fintech

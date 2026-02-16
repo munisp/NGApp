@@ -436,11 +436,95 @@ services:
     ports:
       - "5432:5432"
     environment:
-      POSTGRES_DB: fintech
-      POSTGRES_USER: fintech
-      POSTGRES_PASSWORD: fintech_secret
+      POSTGRES_DB: ${POSTGRES_DB:-fintech}
+      POSTGRES_USER: ${POSTGRES_USER:-fintech}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    command: >
+      postgres
+        -c wal_level=replica
+        -c hot_standby=on
+        -c max_wal_senders=10
+        -c max_replication_slots=10
+        -c shared_preload_libraries=pg_stat_statements
+        -c pg_stat_statements.max=10000
+        -c pg_stat_statements.track=all
+        -c max_connections=200
+        -c shared_buffers=256MB
+        -c statement_timeout=30000
+        -c idle_in_transaction_session_timeout=60000
+        -c log_min_duration_statement=500
+        -c log_checkpoints=on
+        -c log_lock_waits=on
     volumes:
       - postgres-data:/var/lib/postgresql/data
+      - ./config/postgres-ha/monitoring-queries.sql:/docker-entrypoint-initdb.d/monitoring.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fintech"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  postgres-replica:
+    image: postgres:16-alpine
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-fintech}
+      POSTGRES_USER: ${POSTGRES_USER:-fintech}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    command: >
+      postgres
+        -c hot_standby=on
+        -c max_connections=200
+        -c shared_preload_libraries=pg_stat_statements
+        -c pg_stat_statements.max=10000
+        -c statement_timeout=30000
+    volumes:
+      - postgres-replica-data:/var/lib/postgresql/data
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fintech"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  pgbouncer:
+    image: edoburu/pgbouncer:1.22.0
+    ports:
+      - "6432:6432"
+    volumes:
+      - ./config/pgbouncer/pgbouncer.ini:/etc/pgbouncer/pgbouncer.ini
+      - ./config/pgbouncer/userlist.txt:/etc/pgbouncer/userlist.txt
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "pg_isready", "-h", "localhost", "-p", "6432"]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+    restart: unless-stopped
+
+  pgbouncer-replica:
+    image: edoburu/pgbouncer:1.22.0
+    ports:
+      - "6433:6432"
+    volumes:
+      - ./config/pgbouncer/pgbouncer.ini:/etc/pgbouncer/pgbouncer.ini
+      - ./config/pgbouncer/userlist.txt:/etc/pgbouncer/userlist.txt
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-fintech}:${POSTGRES_PASSWORD}@postgres-replica:5432/${POSTGRES_DB:-fintech}
+    depends_on:
+      postgres-replica:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "pg_isready", "-h", "localhost", "-p", "6432"]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+    restart: unless-stopped
 
   keycloak:
     image: quay.io/keycloak/keycloak:24.0
@@ -450,9 +534,9 @@ services:
       KEYCLOAK_ADMIN: admin
       KEYCLOAK_ADMIN_PASSWORD: admin
       KC_DB: postgres
-      KC_DB_URL: jdbc:postgresql://postgres:5432/fintech
-      KC_DB_USERNAME: fintech
-      KC_DB_PASSWORD: fintech_secret
+      KC_DB_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-fintech}
+      KC_DB_USERNAME: ${POSTGRES_USER:-fintech}
+      KC_DB_PASSWORD: ${POSTGRES_PASSWORD}
     command: start-dev
     depends_on:
       - postgres
@@ -464,8 +548,8 @@ services:
     environment:
       DB: postgresql
       DB_PORT: 5432
-      POSTGRES_USER: fintech
-      POSTGRES_PWD: fintech_secret
+      POSTGRES_USER: ${POSTGRES_USER:-fintech}
+      POSTGRES_PWD: ${POSTGRES_PASSWORD}
       POSTGRES_SEEDS: postgres
     depends_on:
       - postgres
@@ -483,8 +567,8 @@ services:
       - "9000:9000"
       - "9001:9001"
     environment:
-      MINIO_ROOT_USER: minioadmin
-      MINIO_ROOT_PASSWORD: minioadmin
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
     command: server /data --console-address ":9001"
     volumes:
       - minio-data:/data
@@ -510,9 +594,17 @@ services:
       - TEMPORAL_SERVICE_URL=http://temporal-service:8085
       - PERMIFY_SERVICE_URL=http://permify-service:8089
       - LAKEHOUSE_SERVICE_URL=http://lakehouse-service:8090
+      - PGBOUNCER_HOST=pgbouncer
+      - PGBOUNCER_PORT=6432
+      - PGBOUNCER_REPLICA_HOST=pgbouncer-replica
+      - POSTGRES_USER=fintech
+      - POSTGRES_PASSWORD=fintech_secret
+      - POSTGRES_DB=fintech
+      - STATEMENT_TIMEOUT_MS=30000
     depends_on:
       - kafka-service
       - redis-service
+      - pgbouncer
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:8113/health"]
@@ -533,9 +625,17 @@ services:
       - TEMPORAL_SERVICE_URL=http://temporal-service:8085
       - GNN_FRAUD_SERVICE_URL=http://gnn-fraud-service:8101
       - REALTIME_INFERENCE_URL=http://realtime-inference-service:8106
+      - PGBOUNCER_HOST=pgbouncer
+      - PGBOUNCER_PORT=6432
+      - PGBOUNCER_REPLICA_HOST=pgbouncer-replica
+      - POSTGRES_USER=fintech
+      - POSTGRES_PASSWORD=fintech_secret
+      - POSTGRES_DB=fintech
+      - STATEMENT_TIMEOUT_MS=15000
     depends_on:
       - kafka-service
       - redis-service
+      - pgbouncer
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:8114/health"]
@@ -835,9 +935,17 @@ services:
       - FEATURE_STORE_URL=http://feature-store-service:8104
       - GNN_SERVICE_URL=http://gnn-fraud-service:8101
       - MODEL_VERSION=v2.1.0
+      - PGBOUNCER_HOST=pgbouncer
+      - PGBOUNCER_PORT=6432
+      - PGBOUNCER_REPLICA_HOST=pgbouncer-replica
+      - POSTGRES_USER=fintech
+      - POSTGRES_PASSWORD=fintech_secret
+      - POSTGRES_DB=fintech
+      - STATEMENT_TIMEOUT_MS=5000
     depends_on:
       - kafka
       - redis
+      - pgbouncer
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8140/health')"]
@@ -901,9 +1009,18 @@ services:
       - TEMPORAL_ADDRESS=temporal:7233
       - MLFLOW_URL=http://mlflow-registry-service:8105
       - FEATURE_STORE_URL=http://feature-store-service:8104
+      - PGBOUNCER_HOST=pgbouncer
+      - PGBOUNCER_PORT=6432
+      - PGBOUNCER_REPLICA_HOST=pgbouncer-replica
+      - POSTGRES_USER=fintech
+      - POSTGRES_PASSWORD=fintech_secret
+      - POSTGRES_DB=fintech
+      - STATEMENT_TIMEOUT_MS=120000
+      - BACKFILL_RATE_LIMIT=100
     depends_on:
       - kafka
       - temporal
+      - pgbouncer
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8143/health')"]
@@ -955,5 +1072,6 @@ volumes:
   kafka-data:
   redis-data:
   postgres-data:
+  postgres-replica-data:
   minio-data:
   trino-data:

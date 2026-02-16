@@ -1,0 +1,85 @@
+scope: fintech-cluster
+name: postgres-primary
+namespace: /fintech/
+
+restapi:
+  listen: 0.0.0.0:8008
+  connect_address: postgres-primary:8008
+
+bootstrap:
+  dcs:
+    ttl: 30
+    loop_wait: 10
+    retry_timeout: 10
+    maximum_lag_on_failover: 1048576
+    postgresql:
+      use_pg_rewind: true
+      use_slots: true
+      parameters:
+        max_connections: 200
+        shared_buffers: 2GB
+        effective_cache_size: 6GB
+        maintenance_work_mem: 512MB
+        checkpoint_completion_target: 0.9
+        wal_buffers: 64MB
+        default_statistics_target: 100
+        random_page_cost: 1.1
+        effective_io_concurrency: 200
+        work_mem: 10485kB
+        huge_pages: "off"
+        min_wal_size: 1GB
+        max_wal_size: 4GB
+        max_worker_processes: 8
+        max_parallel_workers_per_gather: 4
+        max_parallel_workers: 8
+        max_parallel_maintenance_workers: 4
+        wal_level: replica
+        hot_standby: "on"
+        max_wal_senders: 10
+        max_replication_slots: 10
+        hot_standby_feedback: "on"
+        wal_log_hints: "on"
+        archive_mode: "on"
+        archive_command: "/bin/true"
+        shared_preload_libraries: "pg_stat_statements"
+        pg_stat_statements.max: 10000
+        pg_stat_statements.track: all
+        statement_timeout: 30000
+        idle_in_transaction_session_timeout: 60000
+        log_min_duration_statement: 500
+        log_checkpoints: "on"
+        log_lock_waits: "on"
+        log_temp_files: 0
+        log_autovacuum_min_duration: 0
+
+  initdb:
+    - encoding: UTF8
+    - data-checksums
+
+  pg_hba:
+    - host replication replicator 0.0.0.0/0 md5
+    - host all all 0.0.0.0/0 md5
+
+postgresql:
+  listen: 0.0.0.0:5432
+  connect_address: postgres-primary:5432
+  data_dir: /data/postgres
+  pgpass: /tmp/pgpass0
+  authentication:
+    replication:
+      username: replicator
+      password: replicator_secret
+    superuser:
+      username: fintech
+      password: fintech_secret
+  parameters:
+    unix_socket_directories: "/var/run/postgresql"
+
+watchdog:
+  mode: "off"
+
+tags:
+  nofailover: false
+  noloadbalance: false
+  clonefrom: false
+  nosync: false

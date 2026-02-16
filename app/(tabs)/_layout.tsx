@@ -116,6 +116,13 @@ const SIDEBAR_NAV_ITEMS: SidebarNavItem[] = [
   { title: "Utility Arbitrage", href: "/(utility-arbitrage)", icon: "bolt.fill", section: "African Markets" },
   { title: "Micro Royalties", href: "/(micro-royalties)", icon: "music.note", section: "African Markets" },
 
+  { title: "Fraud Radar", href: "/fraud-dashboard", icon: "shield.lefthalf.filled", section: "Fraud Detection" },
+  { title: "Fraud Scoring", href: "/fraud-scoring", icon: "gauge.with.dots.needle.bottom.50percent", section: "Fraud Detection" },
+  { title: "Rules Engine", href: "/fraud-rules", icon: "list.bullet.rectangle.fill", section: "Fraud Detection" },
+  { title: "Risk Insights", href: "/fraud-insights", icon: "lightbulb.max.fill", section: "Fraud Detection" },
+  { title: "Investigation", href: "/fraud-investigation", icon: "magnifyingglass.circle.fill", section: "Fraud Detection" },
+  { title: "Model Retraining", href: "/fraud-retraining", icon: "arrow.triangle.2.circlepath", section: "Fraud Detection" },
+
   { title: "Merchant Portal", href: "/(merchant)", icon: "storefront.fill", section: "Merchant & Business" },
   { title: "Gateway Settings", href: "/(payment-gateway-settings)", icon: "gearshape.2.fill", section: "Merchant & Business" },
   { title: "Cashback", href: "/(cashback)", icon: "arrow.counterclockwise.circle.fill", section: "Merchant & Business" },

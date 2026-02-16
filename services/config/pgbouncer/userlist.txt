@@ -1,0 +1,4 @@
+"fintech" "${POSTGRES_PASSWORD}"
+"fintech_admin" "${PGBOUNCER_ADMIN_PASSWORD}"
+"fintech_stats" "${PGBOUNCER_STATS_PASSWORD}"
+"fintech_readonly" "${POSTGRES_READONLY_PASSWORD}"

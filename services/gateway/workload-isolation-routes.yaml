@@ -1,0 +1,303 @@
+routes:
+  # Priority Tier 1: CRITICAL - Payment processing, account balance, fraud scoring
+  # These get highest connection priority and lowest timeouts
+  - uri: /api/v1/payments/*
+    name: payments-critical
+    plugins:
+      limit-conn:
+        conn: 500
+        burst: 100
+        default_conn_delay: 0.1
+        key_type: var
+        key: remote_addr
+      proxy-rewrite:
+        headers:
+          set:
+            X-Priority-Tier: critical
+            X-Workload-Class: realtime
+    upstream:
+      type: roundrobin
+      timeout:
+        connect: 5
+        send: 10
+        read: 10
+      nodes:
+        payments-service:8114: 1
+    priority: 100
+
+  - uri: /api/v1/accounts/*/balance
+    name: account-balance-critical
+    plugins:
+      limit-conn:
+        conn: 500
+        burst: 100
+        default_conn_delay: 0.1
+        key_type: var
+        key: remote_addr
+      proxy-rewrite:
+        headers:
+          set:
+            X-Priority-Tier: critical
+            X-Workload-Class: realtime
+    upstream:
+      type: roundrobin
+      timeout:
+        connect: 5
+        send: 5
+        read: 5
+      nodes:
+        corebanking-service:8113: 1
+    priority: 100
+
+  - uri: /api/v1/fraud/score
+    name: fraud-scoring-critical
+    plugins:
+      limit-conn:
+        conn: 300
+        burst: 50
+        default_conn_delay: 0.05
+        key_type: var
+        key: remote_addr
+      proxy-rewrite:
+        headers:
+          set:
+            X-Priority-Tier: critical
+            X-Workload-Class: realtime
+    upstream:
+      type: roundrobin
+      timeout:
+        connect: 3
+        send: 5
+        read: 5
+      nodes:
+        fraud-scoring-service:8140: 1
+    priority: 100
+
+  # Priority Tier 2: HIGH - KYC verification, BNPL, investments
+  - uri: /api/v1/kyc/*
+    name: kyc-high
+    plugins:
+      limit-conn:
+        conn: 200
+        burst: 50
+        default_conn_delay: 0.5
+        key_type: var
+        key: remote_addr
+      proxy-rewrite:
+        headers:
+          set:
+            X-Priority-Tier: high
+            X-Workload-Class: interactive
+    upstream:
+      type: roundrobin
+      timeout:
+        connect: 10
+        send: 30
+        read: 30
+      nodes:
+        kyc-unified-service:8110: 1
+    priority: 80
+
+  - uri: /api/v1/bnpl/*
+    name: bnpl-high
+    plugins:
+      limit-conn:
+        conn: 200
+        burst: 50
+        default_conn_delay: 0.5
+        key_type: var
+        key: remote_addr
+      proxy-rewrite:
+        headers:
+          set:
+            X-Priority-Tier: high
+            X-Workload-Class: interactive
+    upstream:
+      type: roundrobin
+      timeout:
+        connect: 10
+        send: 15
+        read: 15
+      nodes:
+        bnpl-service:8112: 1
+    priority: 80
+
+  - uri: /api/v1/investments/*
+    name: investments-high
+    plugins:
+      limit-conn:
+        conn: 200
+        burst: 50
+        default_conn_delay: 0.5
+        key_type: var
+        key: remote_addr
+      proxy-rewrite:
+        headers:
+          set:
+            X-Priority-Tier: high
+            X-Workload-Class: interactive
+    upstream:
+      type: roundrobin
+      timeout:
+        connect: 10
+        send: 15
+        read: 15
+      nodes:
+        investments-service:8116: 1
+    priority: 80
+
+  # Priority Tier 3: NORMAL - Insurance, tax, merchant, African markets
+  - uri: /api/v1/insurance/*
+    name: insurance-normal
+    plugins:
+      limit-conn:
+        conn: 100
+        burst: 25
+        default_conn_delay: 1.0
+        key_type: var
+        key: remote_addr
+      proxy-rewrite:
+        headers:
+          set:
+            X-Priority-Tier: normal
+            X-Workload-Class: standard
+    upstream:
+      type: roundrobin
+      timeout:
+        connect: 15
+        send: 30
+        read: 30
+      nodes:
+        insurance-service:8115: 1
+    priority: 50
+
+  - uri: /api/v1/tax/*
+    name: tax-normal
+    plugins:
+      limit-conn:
+        conn: 100
+        burst: 25
+        default_conn_delay: 1.0
+        key_type: var
+        key: remote_addr
+      proxy-rewrite:
+        headers:
+          set:
+            X-Priority-Tier: normal
+            X-Workload-Class: standard
+    upstream:
+      type: roundrobin
+      timeout:
+        connect: 15
+        send: 30
+        read: 30
+      nodes:
+        tax-planning-service:8120: 1
+    priority: 50
+
+  - uri: /api/v1/merchants/*
+    name: merchant-normal
+    plugins:
+      limit-conn:
+        conn: 100
+        burst: 25
+        default_conn_delay: 1.0
+        key_type: var
+        key: remote_addr
+      proxy-rewrite:
+        headers:
+          set:
+            X-Priority-Tier: normal
+            X-Workload-Class: standard
+    upstream:
+      type: roundrobin
+      timeout:
+        connect: 15
+        send: 30
+        read: 30
+      nodes:
+        merchant-service:8117: 1
+    priority: 50
+
+  # Priority Tier 4: BACKGROUND - Analytics, model retraining, ETL, backfills
+  - uri: /api/v1/analytics/*
+    name: analytics-background
+    plugins:
+      limit-conn:
+        conn: 30
+        burst: 10
+        default_conn_delay: 3.0
+        key_type: var
+        key: remote_addr
+      limit-req:
+        rate: 20
+        burst: 10
+        key_type: var
+        key: remote_addr
+      proxy-rewrite:
+        headers:
+          set:
+            X-Priority-Tier: background
+            X-Workload-Class: batch
+    upstream:
+      type: roundrobin
+      timeout:
+        connect: 30
+        send: 120
+        read: 120
+      nodes:
+        lakehouse-service:8090: 1
+    priority: 10
+
+  - uri: /api/v1/ml/retrain*
+    name: model-retraining-background
+    plugins:
+      limit-conn:
+        conn: 10
+        burst: 5
+        default_conn_delay: 5.0
+        key_type: var
+        key: remote_addr
+      limit-req:
+        rate: 5
+        burst: 2
+        key_type: var
+        key: remote_addr
+      proxy-rewrite:
+        headers:
+          set:
+            X-Priority-Tier: background
+            X-Workload-Class: batch
+    upstream:
+      type: roundrobin
+      timeout:
+        connect: 30
+        send: 300
+        read: 300
+      nodes:
+        model-retraining-service:8143: 1
+    priority: 5
+
+  - uri: /api/v1/investigation/*
+    name: investigation-background
+    plugins:
+      limit-conn:
+        conn: 50
+        burst: 20
+        default_conn_delay: 2.0
+        key_type: var
+        key: remote_addr
+      proxy-rewrite:
+        headers:
+          set:
+            X-Priority-Tier: background
+            X-Workload-Class: batch
+    upstream:
+      type: roundrobin
+      timeout:
+        connect: 15
+        send: 60
+        read: 60
+      nodes:
+        fraud-investigation-service:8142: 1
+    priority: 10

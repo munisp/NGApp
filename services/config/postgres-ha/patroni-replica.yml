@@ -1,0 +1,46 @@
+scope: fintech-cluster
+name: postgres-replica-1
+namespace: /fintech/
+
+restapi:
+  listen: 0.0.0.0:8008
+  connect_address: postgres-replica-1:8008
+
+bootstrap:
+  dcs:
+    ttl: 30
+    loop_wait: 10
+    retry_timeout: 10
+    maximum_lag_on_failover: 1048576
+
+postgresql:
+  listen: 0.0.0.0:5432
+  connect_address: postgres-replica-1:5432
+  data_dir: /data/postgres
+  pgpass: /tmp/pgpass0
+  authentication:
+    replication:
+      username: replicator
+      password: replicator_secret
+    superuser:
+      username: fintech
+      password: fintech_secret
+  parameters:
+    unix_socket_directories: "/var/run/postgresql"
+    hot_standby: "on"
+    max_connections: 200
+    shared_buffers: 2GB
+    effective_cache_size: 6GB
+    shared_preload_libraries: "pg_stat_statements"
+    pg_stat_statements.max: 10000
+    pg_stat_statements.track: all
+    statement_timeout: 30000
+
+watchdog:
+  mode: "off"
+
+tags:
+  nofailover: false
+  noloadbalance: false
+  clonefrom: true
+  nosync: false
