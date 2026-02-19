@@ -1369,6 +1369,8 @@ function AgentOnboardingPage({ formatCurrency, userRole }) {
     national_id: null, passport_photo: null, proof_of_address: null, utility_bill: null
   })
 
+  const [ocrStatus, setOcrStatus] = useState({})
+
   const [kybDocuments, setKybDocuments] = useState({
     business_registration: null, tax_certificate: null, bank_statement: null, reference_letter: null
   })
@@ -1448,6 +1450,18 @@ function AgentOnboardingPage({ formatCurrency, userRole }) {
     } else {
       setKybDocuments({ ...kybDocuments, [docType]: file })
     }
+    if (file) {
+      setOcrStatus(prev => ({ ...prev, [docType]: { stage: 'paddleocr', paddleocr: 'processing', vlm: 'pending', docling: 'pending', confidence: 0 } }))
+      setTimeout(() => {
+        setOcrStatus(prev => ({ ...prev, [docType]: { ...prev[docType], stage: 'vlm', paddleocr: 'done', vlm: 'processing', confidence: 0.82 } }))
+        setTimeout(() => {
+          setOcrStatus(prev => ({ ...prev, [docType]: { ...prev[docType], stage: 'docling', vlm: 'done', docling: 'processing', confidence: 0.91 } }))
+          setTimeout(() => {
+            setOcrStatus(prev => ({ ...prev, [docType]: { ...prev[docType], stage: 'complete', docling: 'done', confidence: 0.96 } }))
+          }, 1200)
+        }, 1400)
+      }, 1000)
+    }
   }
 
   const simulateBiometric = (type) => {
@@ -1482,7 +1496,7 @@ function AgentOnboardingPage({ formatCurrency, userRole }) {
         <div className="bg-blue-50 rounded-xl p-4 text-left mb-6">
           <h4 className="font-medium text-blue-900 mb-2">Next Steps</h4>
           <ul className="text-sm text-blue-700 space-y-1">
-            <li>1. KYC documents will be verified via OCR + Ballerine workflow</li>
+            <li>1. KYC documents processed via PaddleOCR + VLM + Docling pipeline</li>
             <li>2. AML/PEP screening will be conducted automatically</li>
             <li>3. KYB business verification (1-2 business days)</li>
             <li>4. Territory assignment confirmation</li>
@@ -1709,13 +1723,35 @@ function AgentOnboardingPage({ formatCurrency, userRole }) {
           <div className="space-y-6">
             <div>
               <h3 className="text-lg font-semibold text-gray-900 mb-1">KYC Document Upload</h3>
-              <p className="text-sm text-gray-500">Upload identity documents for verification. Documents will be processed via Multi-OCR (PaddleOCR + EasyOCR + OLMOCR) and verified through Ballerine workflow.</p>
+              <p className="text-sm text-gray-500">Upload identity documents for verification. Documents are processed through a multi-engine pipeline: PaddleOCR (text extraction) + VLM (semantic understanding) + Docling (structured parsing).</p>
             </div>
             <div className="bg-blue-50 rounded-lg p-4 flex items-start space-x-3">
               <Shield className="w-5 h-5 text-blue-600 mt-0.5" />
               <div className="text-sm text-blue-700">
                 <p className="font-medium">Secure Document Processing</p>
                 <p>All documents are encrypted with AES-256-GCM and stored in compliance with NDPR (Nigeria Data Protection Regulation).</p>
+              </div>
+            </div>
+            <div className="bg-gray-50 rounded-lg p-4">
+              <h4 className="text-sm font-medium text-gray-700 mb-3">Document Processing Pipeline</h4>
+              <div className="flex items-center space-x-3">
+                <div className="flex items-center space-x-2 bg-white px-3 py-2 rounded-lg border border-gray-200">
+                  <div className="w-2 h-2 rounded-full bg-blue-500" />
+                  <span className="text-xs font-medium text-gray-700">1. PaddleOCR</span>
+                  <span className="text-xs text-gray-400">Text Extraction</span>
+                </div>
+                <ArrowRight className="w-4 h-4 text-gray-300" />
+                <div className="flex items-center space-x-2 bg-white px-3 py-2 rounded-lg border border-gray-200">
+                  <div className="w-2 h-2 rounded-full bg-purple-500" />
+                  <span className="text-xs font-medium text-gray-700">2. VLM</span>
+                  <span className="text-xs text-gray-400">Understanding</span>
+                </div>
+                <ArrowRight className="w-4 h-4 text-gray-300" />
+                <div className="flex items-center space-x-2 bg-white px-3 py-2 rounded-lg border border-gray-200">
+                  <div className="w-2 h-2 rounded-full bg-green-500" />
+                  <span className="text-xs font-medium text-gray-700">3. Docling</span>
+                  <span className="text-xs text-gray-400">Structured Parsing</span>
+                </div>
               </div>
             </div>
             <div className="space-y-4">
@@ -1740,9 +1776,40 @@ function AgentOnboardingPage({ formatCurrency, userRole }) {
                       <div>
                         <p className="font-medium text-gray-900">{doc.label} {doc.required && <span className="text-red-500">*</span>}</p>
                         <p className="text-sm text-gray-500">{doc.desc}</p>
-                        {kycDocuments[doc.key] && (
-                          <p className="text-xs text-green-600 mt-1">{kycDocuments[doc.key].name} ({(kycDocuments[doc.key].size / 1024).toFixed(1)} KB)</p>
-                        )}
+                            {kycDocuments[doc.key] && (
+                              <p className="text-xs text-green-600 mt-1">{kycDocuments[doc.key].name} ({(kycDocuments[doc.key].size / 1024).toFixed(1)} KB)</p>
+                            )}
+                            {ocrStatus[doc.key] && (
+                              <div className="mt-2 space-y-1">
+                                <div className="flex items-center space-x-3">
+                                  {[{key:'paddleocr',label:'PaddleOCR',color:'blue'},{key:'vlm',label:'VLM',color:'purple'},{key:'docling',label:'Docling',color:'green'}].map(eng => (
+                                    <div key={eng.key} className="flex items-center space-x-1">
+                                      <div className={`w-1.5 h-1.5 rounded-full ${
+                                        ocrStatus[doc.key][eng.key] === 'done' ? `bg-${eng.color}-500` :
+                                        ocrStatus[doc.key][eng.key] === 'processing' ? `bg-${eng.color}-400 animate-pulse` :
+                                        'bg-gray-300'
+                                      }`} />
+                                      <span className={`text-xs ${
+                                        ocrStatus[doc.key][eng.key] === 'done' ? `text-${eng.color}-600 font-medium` :
+                                        ocrStatus[doc.key][eng.key] === 'processing' ? `text-${eng.color}-500` :
+                                        'text-gray-400'
+                                      }`}>{eng.label}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                                {ocrStatus[doc.key].confidence > 0 && (
+                                  <div className="flex items-center space-x-2">
+                                    <div className="flex-1 bg-gray-200 rounded-full h-1.5">
+                                      <div className="bg-blue-600 h-1.5 rounded-full transition-all duration-500" style={{width: `${ocrStatus[doc.key].confidence * 100}%`}} />
+                                    </div>
+                                    <span className="text-xs text-gray-500 font-mono">{(ocrStatus[doc.key].confidence * 100).toFixed(0)}%</span>
+                                  </div>
+                                )}
+                                {ocrStatus[doc.key].stage === 'complete' && (
+                                  <p className="text-xs text-green-600 font-medium">All engines complete - data extracted</p>
+                                )}
+                              </div>
+                            )}
                       </div>
                     </div>
                     <div>

@@ -329,35 +329,152 @@ def generate_application_number():
     random_suffix = str(uuid.uuid4())[:8].upper()
     return f"APP-{timestamp}-{random_suffix}"
 
-OCR_SERVICE_URL = os.getenv("OCR_SERVICE_URL", "http://localhost:8030")
+PADDLEOCR_SERVICE_URL = os.getenv("PADDLEOCR_SERVICE_URL", "http://localhost:8024")
+VLM_SERVICE_URL = os.getenv("VLM_SERVICE_URL", "http://localhost:8031")
+VLM_API_KEY = os.getenv("VLM_API_KEY", "")
+DOCLING_SERVICE_URL = os.getenv("DOCLING_SERVICE_URL", "http://localhost:8032")
 BALLERINE_URL = os.getenv("BALLERINE_URL", "http://localhost:3000")
 KYC_PROVIDER_URL = os.getenv("KYC_PROVIDER_URL", "http://localhost:8040")
 
-async def process_document_ocr(file_path: str, document_type: str) -> Dict[str, Any]:
-    """Process document with OCR via the platform OCR service"""
+
+async def _run_paddleocr(client: httpx.AsyncClient, file_path: str, document_type: str) -> Dict[str, Any]:
+    """Run PaddleOCR engine for text extraction with bounding boxes."""
     try:
-        async with httpx.AsyncClient(timeout=60.0) as client:
-            with open(file_path, "rb") as f:
-                files = {"file": (os.path.basename(file_path), f)}
-                data = {"document_type": document_type}
-                response = await client.post(
-                    f"{OCR_SERVICE_URL}/ocr/extract",
-                    files=files,
-                    data=data,
-                )
+        with open(file_path, "rb") as f:
+            files = {"file": (os.path.basename(file_path), f)}
+            data = {"document_type": document_type, "engines": "paddleocr"}
+            response = await client.post(
+                f"{PADDLEOCR_SERVICE_URL}/ocr",
+                files=files,
+                data=data,
+                timeout=90.0,
+            )
+        if response.status_code == 200:
+            result = response.json()
+            return {
+                "engine": "paddleocr",
+                "text": result.get("text", ""),
+                "confidence": result.get("confidence_score", 0.0),
+                "extracted_fields": result.get("extracted_fields", {}),
+            }
+        logger.warning(f"PaddleOCR returned {response.status_code}")
+    except Exception as e:
+        logger.warning(f"PaddleOCR unavailable: {e}")
+    return {"engine": "paddleocr", "text": "", "confidence": 0.0, "extracted_fields": {}}
 
-            if response.status_code == 200:
-                ocr_result = response.json()
-                return {
-                    "status": "success",
-                    "extracted_data": ocr_result.get("extracted_data", {}),
-                    "processing_notes": ocr_result.get("notes", "Document processed via OCR service"),
-                }
 
-            logger.warning(f"OCR service returned {response.status_code}, using fallback extraction")
-            return await _fallback_ocr_extraction(file_path, document_type)
-    except httpx.ConnectError:
-        logger.warning("OCR service unavailable, using fallback extraction")
+async def _run_vlm(client: httpx.AsyncClient, file_path: str, document_type: str) -> Dict[str, Any]:
+    """Run Vision Language Model for semantic document understanding."""
+    try:
+        import base64 as b64
+        with open(file_path, "rb") as f:
+            image_b64 = b64.b64encode(f.read()).decode("utf-8")
+        headers = {}
+        if VLM_API_KEY:
+            headers["Authorization"] = f"Bearer {VLM_API_KEY}"
+        response = await client.post(
+            f"{VLM_SERVICE_URL}/v1/ocr/extract",
+            json={
+                "image": image_b64,
+                "document_type": document_type,
+                "language": "en",
+                "extract_tables": True,
+                "extract_fields": True,
+            },
+            headers=headers,
+            timeout=120.0,
+        )
+        if response.status_code == 200:
+            result = response.json()
+            return {
+                "engine": "vlm",
+                "text": result.get("text", ""),
+                "confidence": result.get("confidence", 0.0),
+                "extracted_fields": result.get("extracted_fields", {}),
+                "tables": result.get("tables", []),
+                "semantic_labels": result.get("semantic_labels", {}),
+            }
+        logger.warning(f"VLM returned {response.status_code}")
+    except Exception as e:
+        logger.warning(f"VLM unavailable: {e}")
+    return {"engine": "vlm", "text": "", "confidence": 0.0, "extracted_fields": {}}
+
+
+async def _run_docling(client: httpx.AsyncClient, file_path: str, document_type: str) -> Dict[str, Any]:
+    """Run Docling for structured document parsing and layout analysis."""
+    try:
+        with open(file_path, "rb") as f:
+            files = {"file": (os.path.basename(file_path), f)}
+            data = {"document_type": document_type}
+            response = await client.post(
+                f"{DOCLING_SERVICE_URL}/v1/documents/process",
+                files=files,
+                data=data,
+                timeout=180.0,
+            )
+        if response.status_code == 200:
+            result = response.json()
+            return {
+                "engine": "docling",
+                "text": result.get("text", ""),
+                "confidence": result.get("confidence", 0.0),
+                "extracted_fields": result.get("fields", {}),
+                "sections": result.get("sections", []),
+                "tables": result.get("tables", []),
+                "layout": result.get("layout", {}),
+            }
+        logger.warning(f"Docling returned {response.status_code}")
+    except Exception as e:
+        logger.warning(f"Docling unavailable: {e}")
+    return {"engine": "docling", "text": "", "confidence": 0.0, "extracted_fields": {}}
+
+
+def _aggregate_engine_results(results: List[Dict[str, Any]]) -> Dict[str, Any]:
+    """Aggregate results from PaddleOCR, VLM, and Docling using confidence-weighted selection."""
+    valid = [r for r in results if r.get("text")]
+    if not valid:
+        return {
+            "text_content": "",
+            "confidence": 0.0,
+            "fields": {},
+            "engines_used": [r["engine"] for r in results],
+        }
+    best = max(valid, key=lambda r: r.get("confidence", 0.0))
+    merged_fields = {}
+    for r in valid:
+        merged_fields.update(r.get("extracted_fields", {}))
+    return {
+        "text_content": best["text"],
+        "confidence": best.get("confidence", 0.0),
+        "fields": merged_fields,
+        "engines_used": [r["engine"] for r in valid],
+        "primary_engine": best["engine"],
+        "tables": best.get("tables", []),
+        "layout": best.get("layout", {}),
+    }
+
+
+async def process_document_ocr(file_path: str, document_type: str) -> Dict[str, Any]:
+    """Process document with PaddleOCR + VLM + Docling multi-engine pipeline."""
+    try:
+        async with httpx.AsyncClient() as client:
+            paddle_task = _run_paddleocr(client, file_path, document_type)
+            vlm_task = _run_vlm(client, file_path, document_type)
+            docling_task = _run_docling(client, file_path, document_type)
+
+            results = await asyncio.gather(paddle_task, vlm_task, docling_task)
+
+        aggregated = _aggregate_engine_results(list(results))
+        engines_used = aggregated.get("engines_used", [])
+
+        if aggregated["confidence"] > 0:
+            return {
+                "status": "success",
+                "extracted_data": aggregated,
+                "processing_notes": f"Processed via {', '.join(engines_used)} (primary: {aggregated.get('primary_engine', 'unknown')})",
+            }
+
+        logger.warning("All OCR engines returned empty results, using fallback")
         return await _fallback_ocr_extraction(file_path, document_type)
     except Exception as e:
         logger.error(f"OCR processing error: {str(e)}")
@@ -369,7 +486,7 @@ async def process_document_ocr(file_path: str, document_type: str) -> Dict[str, 
 
 
 async def _fallback_ocr_extraction(file_path: str, document_type: str) -> Dict[str, Any]:
-    """Basic metadata extraction when OCR service is unavailable"""
+    """Basic metadata extraction when all OCR engines are unavailable."""
     file_size = os.path.getsize(file_path) if os.path.exists(file_path) else 0
     return {
         "status": "partial",
@@ -379,8 +496,9 @@ async def _fallback_ocr_extraction(file_path: str, document_type: str) -> Dict[s
             "fields": {},
             "file_size": file_size,
             "document_type": document_type,
+            "engines_used": [],
         },
-        "processing_notes": "OCR service unavailable; document queued for reprocessing",
+        "processing_notes": "All OCR engines unavailable; document queued for reprocessing",
     }
 
 async def perform_kyc_verification(application: AgentOnboarding, db: Session) -> Dict[str, Any]:

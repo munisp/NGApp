@@ -1,6 +1,6 @@
 """
 Production-Ready OCR Service
-Local implementation using DeepSeekOCR and Docling for document processing
+Multi-engine pipeline using PaddleOCR, VLM, and Docling for document processing
 Integrates with: PostgreSQL, Kafka, Redis, Lakehouse
 """
 
@@ -48,7 +48,8 @@ class DocumentType(str, Enum):
 
 
 class OCREngine(str, Enum):
-    DEEPSEEK = "deepseek"
+    PADDLEOCR = "paddleocr"
+    VLM = "vlm"
     DOCLING = "docling"
     TESSERACT = "tesseract"
     AUTO = "auto"
@@ -70,8 +71,9 @@ class ServiceConfig:
     redis_url: str = field(default_factory=lambda: os.getenv("REDIS_URL", "redis://localhost:6379"))
     kafka_bootstrap_servers: str = field(default_factory=lambda: os.getenv("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092"))
     lakehouse_url: str = field(default_factory=lambda: os.getenv("LAKEHOUSE_URL", "http://localhost:8181"))
-    deepseek_api_url: str = field(default_factory=lambda: os.getenv("DEEPSEEK_API_URL", "http://localhost:8031"))
-    deepseek_api_key: str = field(default_factory=lambda: os.getenv("DEEPSEEK_API_KEY", ""))
+    paddleocr_api_url: str = field(default_factory=lambda: os.getenv("PADDLEOCR_API_URL", "http://localhost:8024"))
+    vlm_api_url: str = field(default_factory=lambda: os.getenv("VLM_API_URL", "http://localhost:8031"))
+    vlm_api_key: str = field(default_factory=lambda: os.getenv("VLM_API_KEY", ""))
     docling_api_url: str = field(default_factory=lambda: os.getenv("DOCLING_API_URL", "http://localhost:8032"))
     document_storage_path: str = field(default_factory=lambda: os.getenv("DOCUMENT_STORAGE_PATH", "/tmp/ocr_documents"))
     max_file_size_mb: int = field(default_factory=lambda: int(os.getenv("MAX_FILE_SIZE_MB", "50")))
@@ -207,24 +209,19 @@ class LakehouseClient:
             return False
 
 
-class DeepSeekOCRClient:
-    """DeepSeek OCR client for document text extraction"""
+class PaddleOCRClient:
+    """PaddleOCR client for fast text extraction with bounding boxes"""
     
-    def __init__(self, api_url: str, api_key: str):
+    def __init__(self, api_url: str):
         self.api_url = api_url
-        self.api_key = api_key
         self._client: Optional[httpx.AsyncClient] = None
     
     async def initialize(self):
-        headers = {}
-        if self.api_key:
-            headers["Authorization"] = f"Bearer {self.api_key}"
         self._client = httpx.AsyncClient(
             base_url=self.api_url,
-            headers=headers,
             timeout=120.0
         )
-        logger.info("DeepSeek OCR client initialized")
+        logger.info("PaddleOCR client initialized")
     
     async def close(self):
         if self._client:
@@ -233,32 +230,35 @@ class DeepSeekOCRClient:
     
     @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=1, max=10))
     async def extract_text(self, image_data: bytes, document_type: str) -> Dict[str, Any]:
-        """Extract text from image using DeepSeek OCR"""
+        """Extract text from image using PaddleOCR"""
         if not self._client:
             return self._local_ocr_extraction(image_data, document_type)
         
         try:
-            image_base64 = base64.b64encode(image_data).decode('utf-8')
-            
-            response = await self._client.post(
-                "/v1/ocr/extract",
-                json={
-                    "image": image_base64,
-                    "document_type": document_type,
-                    "language": "en",
-                    "extract_tables": True,
-                    "extract_fields": True
-                }
-            )
+            files = {"file": ("document.jpg", image_data)}
+            data = {"document_type": document_type, "engines": "paddleocr"}
+            response = await self._client.post("/ocr", files=files, data=data)
             
             if response.status_code == 200:
-                return response.json()
+                result = response.json()
+                text = result.get("text", "")
+                confidence = result.get("confidence_score", 0.0)
+                extracted_fields = self._extract_fields_from_text(text, document_type)
+                return {
+                    "engine": "paddleocr",
+                    "text": text,
+                    "confidence": confidence,
+                    "document_type": document_type,
+                    "extracted_fields": extracted_fields,
+                    "tables": [],
+                    "processed_at": datetime.utcnow().isoformat(),
+                }
             
-            logger.warning(f"DeepSeek OCR returned {response.status_code}, using local extraction")
+            logger.warning(f"PaddleOCR returned {response.status_code}, using local extraction")
             return self._local_ocr_extraction(image_data, document_type)
             
         except Exception as e:
-            logger.warning(f"DeepSeek OCR failed: {e}, using local extraction")
+            logger.warning(f"PaddleOCR failed: {e}, using local extraction")
             return self._local_ocr_extraction(image_data, document_type)
     
     def _local_ocr_extraction(self, image_data: bytes, document_type: str) -> Dict[str, Any]:
@@ -448,6 +448,84 @@ class DeepSeekOCRClient:
             fields["closing_balance"] = balance_match.group(1).replace(",", "")
         
         return fields
+
+
+class VLMClient:
+    """Vision Language Model client for semantic document understanding"""
+    
+    def __init__(self, api_url: str, api_key: str):
+        self.api_url = api_url
+        self.api_key = api_key
+        self._client: Optional[httpx.AsyncClient] = None
+    
+    async def initialize(self):
+        headers = {}
+        if self.api_key:
+            headers["Authorization"] = f"Bearer {self.api_key}"
+        self._client = httpx.AsyncClient(
+            base_url=self.api_url,
+            headers=headers,
+            timeout=120.0
+        )
+        logger.info("VLM client initialized")
+    
+    async def close(self):
+        if self._client:
+            await self._client.aclose()
+            self._client = None
+    
+    @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=1, max=10))
+    async def extract_text(self, image_data: bytes, document_type: str) -> Dict[str, Any]:
+        """Analyse document image using a Vision Language Model."""
+        if not self._client:
+            return {
+                "engine": "vlm",
+                "text": "",
+                "confidence": 0.0,
+                "document_type": document_type,
+                "extracted_fields": {},
+                "semantic_labels": {},
+                "tables": [],
+                "processed_at": datetime.utcnow().isoformat(),
+                "error": "VLM client not available",
+            }
+        try:
+            image_base64 = base64.b64encode(image_data).decode('utf-8')
+            response = await self._client.post(
+                "/v1/ocr/extract",
+                json={
+                    "image": image_base64,
+                    "document_type": document_type,
+                    "language": "en",
+                    "extract_tables": True,
+                    "extract_fields": True,
+                },
+            )
+            if response.status_code == 200:
+                result = response.json()
+                return {
+                    "engine": "vlm",
+                    "text": result.get("text", ""),
+                    "confidence": result.get("confidence", 0.0),
+                    "document_type": document_type,
+                    "extracted_fields": result.get("extracted_fields", {}),
+                    "semantic_labels": result.get("semantic_labels", {}),
+                    "tables": result.get("tables", []),
+                    "processed_at": datetime.utcnow().isoformat(),
+                }
+            logger.warning(f"VLM returned {response.status_code}")
+        except Exception as e:
+            logger.warning(f"VLM failed: {e}")
+        return {
+            "engine": "vlm",
+            "text": "",
+            "confidence": 0.0,
+            "document_type": document_type,
+            "extracted_fields": {},
+            "semantic_labels": {},
+            "tables": [],
+            "processed_at": datetime.utcnow().isoformat(),
+        }
 
 
 class DoclingClient:
@@ -785,7 +863,8 @@ class ServiceContainer:
         self.redis = RedisClient(config.redis_url)
         self.kafka = KafkaProducer(config.kafka_bootstrap_servers)
         self.lakehouse = LakehouseClient(config.lakehouse_url)
-        self.deepseek = DeepSeekOCRClient(config.deepseek_api_url, config.deepseek_api_key)
+        self.paddleocr = PaddleOCRClient(config.paddleocr_api_url)
+        self.vlm = VLMClient(config.vlm_api_url, config.vlm_api_key)
         self.docling = DoclingClient(config.docling_api_url)
     
     async def initialize(self):
@@ -793,14 +872,16 @@ class ServiceContainer:
         await self.redis.initialize()
         await self.kafka.initialize()
         await self.lakehouse.initialize()
-        await self.deepseek.initialize()
+        await self.paddleocr.initialize()
+        await self.vlm.initialize()
         await self.docling.initialize()
         await self._ensure_tables()
         logger.info("All services initialized")
     
     async def close(self):
         await self.docling.close()
-        await self.deepseek.close()
+        await self.vlm.close()
+        await self.paddleocr.close()
         await self.lakehouse.close()
         await self.kafka.close()
         await self.redis.close()
@@ -867,7 +948,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="OCR Service (Production)",
-    description="Production-ready OCR service with DeepSeek and Docling integration",
+    description="Production-ready OCR service with PaddleOCR, VLM, and Docling integration",
     version="2.0.0",
     lifespan=lifespan
 )
@@ -927,19 +1008,22 @@ async def extract_text_from_document(
             if file_ext in ['.pdf', '.doc', '.docx']:
                 engine = OCREngine.DOCLING
             else:
-                engine = OCREngine.DEEPSEEK
+                engine = OCREngine.PADDLEOCR
         
-        if engine == OCREngine.DEEPSEEK:
-            ocr_result = await svc.deepseek.extract_text(file_content, document_type.value)
-            engine_used = ocr_result.get("engine", "deepseek")
+        if engine == OCREngine.PADDLEOCR:
+            ocr_result = await svc.paddleocr.extract_text(file_content, document_type.value)
+            engine_used = ocr_result.get("engine", "paddleocr")
+        elif engine == OCREngine.VLM:
+            ocr_result = await svc.vlm.extract_text(file_content, document_type.value)
+            engine_used = ocr_result.get("engine", "vlm")
         elif engine == OCREngine.DOCLING:
             ocr_result = await svc.docling.process_document(
                 file_content, file.filename, document_type.value
             )
             engine_used = ocr_result.get("engine", "docling")
         else:
-            ocr_result = await svc.deepseek.extract_text(file_content, document_type.value)
-            engine_used = ocr_result.get("engine", "tesseract")
+            ocr_result = await svc.paddleocr.extract_text(file_content, document_type.value)
+            engine_used = ocr_result.get("engine", "paddleocr")
         
         validation_result = DocumentValidator.validate_document(ocr_result, document_type.value)
         
@@ -1086,10 +1170,11 @@ async def get_supported_document_types():
 def _get_engine_description(engine: OCREngine) -> str:
     """Get description for OCR engine"""
     descriptions = {
-        OCREngine.DEEPSEEK: "DeepSeek OCR - Best for images and scanned documents",
-        OCREngine.DOCLING: "Docling - Best for PDFs and structured documents",
+        OCREngine.PADDLEOCR: "PaddleOCR - Fast text extraction with bounding boxes",
+        OCREngine.VLM: "Vision Language Model - Semantic document understanding",
+        OCREngine.DOCLING: "Docling - Structured document parsing and layout analysis",
         OCREngine.TESSERACT: "Tesseract - Open source OCR fallback",
-        OCREngine.AUTO: "Automatic - Selects best engine based on file type"
+        OCREngine.AUTO: "Automatic - Selects best engine based on file type",
     }
     return descriptions.get(engine, "")
 
