@@ -1,0 +1,251 @@
+apiVersion: kafka.strimzi.io/v1beta2
+kind: Kafka
+metadata:
+  name: agent-banking-kafka
+  namespace: agent-banking
+spec:
+  kafka:
+    version: 3.6.0
+    replicas: 3
+    listeners:
+      - name: plain
+        port: 9092
+        type: internal
+        tls: false
+      - name: tls
+        port: 9093
+        type: internal
+        tls: true
+        authentication:
+          type: tls
+      - name: external
+        port: 9094
+        type: nodeport
+        tls: true
+        authentication:
+          type: tls
+    authorization:
+      type: simple
+    config:
+      offsets.topic.replication.factor: 3
+      transaction.state.log.replication.factor: 3
+      transaction.state.log.min.isr: 2
+      default.replication.factor: 3
+      min.insync.replicas: 2
+      inter.broker.protocol.version: "3.6"
+      log.message.format.version: "3.6"
+      log.retention.hours: 168
+      log.segment.bytes: 1073741824
+      log.retention.check.interval.ms: 300000
+      num.network.threads: 8
+      num.io.threads: 16
+      socket.send.buffer.bytes: 102400
+      socket.receive.buffer.bytes: 102400
+      socket.request.max.bytes: 104857600
+      num.partitions: 12
+      num.recovery.threads.per.data.dir: 1
+      log.flush.interval.messages: 10000
+      log.flush.interval.ms: 1000
+      compression.type: "snappy"
+    storage:
+      type: jbod
+      volumes:
+      - id: 0
+        type: persistent-claim
+        size: 500Gi
+        class: fast-ssd
+        deleteClaim: false
+    resources:
+      requests:
+        memory: 8Gi
+        cpu: "2"
+      limits:
+        memory: 16Gi
+        cpu: "4"
+    jvmOptions:
+      -Xms: 4g
+      -Xmx: 8g
+    metricsConfig:
+      type: jmxPrometheusExporter
+      valueFrom:
+        configMapKeyRef:
+          name: kafka-metrics
+          key: kafka-metrics-config.yml
+  zookeeper:
+    replicas: 3
+    storage:
+      type: persistent-claim
+      size: 100Gi
+      class: fast-ssd
+      deleteClaim: false
+    resources:
+      requests:
+        memory: 2Gi
+        cpu: "1"
+      limits:
+        memory: 4Gi
+        cpu: "2"
+    jvmOptions:
+      -Xms: 1g
+      -Xmx: 2g
+    metricsConfig:
+      type: jmxPrometheusExporter
+      valueFrom:
+        configMapKeyRef:
+          name: kafka-metrics
+          key: zookeeper-metrics-config.yml
+  entityOperator:
+    topicOperator:
+      resources:
+        requests:
+          memory: 512Mi
+          cpu: "0.5"
+        limits:
+          memory: 1Gi
+          cpu: "1"
+    userOperator:
+      resources:
+        requests:
+          memory: 512Mi
+          cpu: "0.5"
+        limits:
+          memory: 1Gi
+          cpu: "1"
+  kafkaExporter:
+    topicRegex: ".*"
+    groupRegex: ".*"
+    resources:
+      requests:
+        memory: 256Mi
+        cpu: "0.2"
+      limits:
+        memory: 512Mi
+        cpu: "0.5"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kafka-metrics
+  namespace: agent-banking
+data:
+  kafka-metrics-config.yml: |
+    lowercaseOutputName: true
+    rules:
+    # Special cases and very specific rules
+    - pattern: kafka.server<type=(.+), name=(.+), clientId=(.+), topic=(.+), partition=(.*)><>Value
+      name: kafka_server_$1_$2
+      type: GAUGE
+      labels:
+        clientId: "$3"
+        topic: "$4"
+        partition: "$5"
+    # Generic rules
+    - pattern: kafka.server<type=(.+), name=(.+)><>Value
+      name: kafka_server_$1_$2
+      type: GAUGE
+    - pattern: kafka.network<type=(.+), name=(.+)><>Value
+      name: kafka_network_$1_$2
+      type: GAUGE
+    - pattern: kafka.log<type=(.+), name=(.+), topic=(.+), partition=(.*)><>Value
+      name: kafka_log_$1_$2
+      type: GAUGE
+      labels:
+        topic: "$3"
+        partition: "$4"
+  zookeeper-metrics-config.yml: |
+    lowercaseOutputName: true
+    rules:
+    - pattern: "org.apache.ZooKeeperService<name0=ReplicatedServer_id(\\d+)><>(\\w+)"
+      name: "zookeeper_$2"
+      type: GAUGE
+    - pattern: "org.apache.ZooKeeperService<name0=ReplicatedServer_id(\\d+), name1=replica.(\\d+)><>(\\w+)"
+      name: "zookeeper_$3"
+      type: GAUGE
+      labels:
+        replicaId: "$2"
+---
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaTopic
+metadata:
+  name: transactions
+  namespace: agent-banking
+  labels:
+    strimzi.io/cluster: agent-banking-kafka
+spec:
+  partitions: 24
+  replicas: 3
+  config:
+    retention.ms: 604800000  # 7 days
+    segment.ms: 86400000     # 1 day
+    compression.type: snappy
+    cleanup.policy: delete
+    min.insync.replicas: 2
+---
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaTopic
+metadata:
+  name: agent-events
+  namespace: agent-banking
+  labels:
+    strimzi.io/cluster: agent-banking-kafka
+spec:
+  partitions: 12
+  replicas: 3
+  config:
+    retention.ms: 2592000000  # 30 days
+    segment.ms: 86400000      # 1 day
+    compression.type: snappy
+    cleanup.policy: delete
+    min.insync.replicas: 2
+---
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaTopic
+metadata:
+  name: fraud-alerts
+  namespace: agent-banking
+  labels:
+    strimzi.io/cluster: agent-banking-kafka
+spec:
+  partitions: 6
+  replicas: 3
+  config:
+    retention.ms: 7776000000  # 90 days
+    segment.ms: 86400000      # 1 day
+    compression.type: snappy
+    cleanup.policy: delete
+    min.insync.replicas: 2
+---
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaTopic
+metadata:
+  name: commission-settlements
+  namespace: agent-banking
+  labels:
+    strimzi.io/cluster: agent-banking-kafka
+spec:
+  partitions: 12
+  replicas: 3
+  config:
+    retention.ms: 31536000000  # 365 days
+    segment.ms: 86400000       # 1 day
+    compression.type: snappy
+    cleanup.policy: delete
+    min.insync.replicas: 2
+---
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaTopic
+metadata:
+  name: audit-logs
+  namespace: agent-banking
+  labels:
+    strimzi.io/cluster: agent-banking-kafka
+spec:
+  partitions: 18
+  replicas: 3
+  config:
+    retention.ms: 94608000000  # 3 years
+    segment.ms: 86400000       # 1 day
+    compression.type: snappy
+    cleanup.policy: delete
+    min.insync.replicas: 2
+

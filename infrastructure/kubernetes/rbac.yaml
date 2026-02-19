@@ -1,0 +1,291 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: agent-banking-service-account
+  namespace: agent-banking
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: agent-banking-cluster-role
+rules:
+- apiGroups: [""]
+  resources: ["pods", "services", "endpoints", "persistentvolumeclaims", "events", "configmaps", "secrets"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+- apiGroups: ["apps"]
+  resources: ["deployments", "daemonsets", "replicasets", "statefulsets"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+- apiGroups: ["monitoring.coreos.com"]
+  resources: ["servicemonitors", "prometheusrules"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+- apiGroups: ["networking.k8s.io"]
+  resources: ["networkpolicies", "ingresses"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+- apiGroups: ["policy"]
+  resources: ["poddisruptionbudgets"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+- apiGroups: ["kafka.strimzi.io"]
+  resources: ["kafkas", "kafkatopics", "kafkausers", "kafkaconnects", "kafkaconnectors"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+- apiGroups: ["dapr.io"]
+  resources: ["components", "configurations", "subscriptions", "resiliencies"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: agent-banking-cluster-role-binding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: agent-banking-cluster-role
+subjects:
+- kind: ServiceAccount
+  name: agent-banking-service-account
+  namespace: agent-banking
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  namespace: agent-banking
+  name: agent-banking-role
+rules:
+- apiGroups: [""]
+  resources: ["pods", "services", "endpoints", "persistentvolumeclaims", "events", "configmaps", "secrets"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+- apiGroups: ["apps"]
+  resources: ["deployments", "daemonsets", "replicasets", "statefulsets"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+- apiGroups: ["extensions"]
+  resources: ["ingresses"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: agent-banking-role-binding
+  namespace: agent-banking
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: agent-banking-role
+subjects:
+- kind: ServiceAccount
+  name: agent-banking-service-account
+  namespace: agent-banking
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: agent-banking-security-service-account
+  namespace: agent-banking-security
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: agent-banking-security-cluster-role
+rules:
+- apiGroups: [""]
+  resources: ["pods", "services", "endpoints", "events", "configmaps", "secrets", "nodes"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["apps"]
+  resources: ["deployments", "daemonsets", "replicasets", "statefulsets"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["networking.k8s.io"]
+  resources: ["networkpolicies", "ingresses"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+- apiGroups: ["security.istio.io"]
+  resources: ["authorizationpolicies", "peerauthentications", "requestauthentications"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+- apiGroups: ["policy"]
+  resources: ["podsecuritypolicies"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: agent-banking-security-cluster-role-binding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: agent-banking-security-cluster-role
+subjects:
+- kind: ServiceAccount
+  name: agent-banking-security-service-account
+  namespace: agent-banking-security
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: agent-banking-monitoring-service-account
+  namespace: agent-banking-monitoring
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: agent-banking-monitoring-cluster-role
+rules:
+- apiGroups: [""]
+  resources: ["nodes", "nodes/proxy", "services", "endpoints", "pods"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["extensions"]
+  resources: ["ingresses"]
+  verbs: ["get", "list", "watch"]
+- nonResourceURLs: ["/metrics"]
+  verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: agent-banking-monitoring-cluster-role-binding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: agent-banking-monitoring-cluster-role
+subjects:
+- kind: ServiceAccount
+  name: agent-banking-monitoring-service-account
+  namespace: agent-banking-monitoring
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: agent-banking-data-service-account
+  namespace: agent-banking-data
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  namespace: agent-banking-data
+  name: agent-banking-data-role
+rules:
+- apiGroups: [""]
+  resources: ["pods", "services", "endpoints", "persistentvolumeclaims", "events", "configmaps", "secrets"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+- apiGroups: ["apps"]
+  resources: ["deployments", "daemonsets", "replicasets", "statefulsets"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+- apiGroups: ["batch"]
+  resources: ["jobs", "cronjobs"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: agent-banking-data-role-binding
+  namespace: agent-banking-data
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: agent-banking-data-role
+subjects:
+- kind: ServiceAccount
+  name: agent-banking-data-service-account
+  namespace: agent-banking-data
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: agent-banking-network-policy
+  namespace: agent-banking
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: agent-banking
+    - namespaceSelector:
+        matchLabels:
+          name: agent-banking-security
+    - namespaceSelector:
+        matchLabels:
+          name: agent-banking-monitoring
+    - namespaceSelector:
+        matchLabels:
+          name: agent-banking-data
+    ports:
+    - protocol: TCP
+      port: 8080
+    - protocol: TCP
+      port: 9090
+    - protocol: TCP
+      port: 50051
+  egress:
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          name: agent-banking
+    - namespaceSelector:
+        matchLabels:
+          name: agent-banking-security
+    - namespaceSelector:
+        matchLabels:
+          name: agent-banking-monitoring
+    - namespaceSelector:
+        matchLabels:
+          name: agent-banking-data
+  - to: []
+    ports:
+    - protocol: TCP
+      port: 53
+    - protocol: UDP
+      port: 53
+    - protocol: TCP
+      port: 443
+    - protocol: TCP
+      port: 80
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: agent-banking-pdb
+  namespace: agent-banking
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      tier: critical
+---
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: agent-banking-limit-range
+  namespace: agent-banking
+spec:
+  limits:
+  - default:
+      memory: "1Gi"
+      cpu: "500m"
+    defaultRequest:
+      memory: "256Mi"
+      cpu: "100m"
+    type: Container
+  - max:
+      memory: "8Gi"
+      cpu: "4"
+    min:
+      memory: "64Mi"
+      cpu: "50m"
+    type: Container
+---
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: agent-banking-resource-quota
+  namespace: agent-banking
+spec:
+  hard:
+    requests.cpu: "50"
+    requests.memory: 100Gi
+    limits.cpu: "100"
+    limits.memory: 200Gi
+    persistentvolumeclaims: "20"
+    pods: "50"
+    services: "20"
+    secrets: "20"
+    configmaps: "20"
+

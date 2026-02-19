@@ -1,0 +1,57 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: agent-banking
+  labels:
+    name: agent-banking
+    environment: production
+    project: agent-banking-network
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: agent-banking-dev
+  labels:
+    name: agent-banking-dev
+    environment: development
+    project: agent-banking-network
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: agent-banking-staging
+  labels:
+    name: agent-banking-staging
+    environment: staging
+    project: agent-banking-network
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: agent-banking-security
+  labels:
+    name: agent-banking-security
+    environment: production
+    project: agent-banking-network
+    component: security
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: agent-banking-monitoring
+  labels:
+    name: agent-banking-monitoring
+    environment: production
+    project: agent-banking-network
+    component: monitoring
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: agent-banking-data
+  labels:
+    name: agent-banking-data
+    environment: production
+    project: agent-banking-network
+    component: data-platform
+

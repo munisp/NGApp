@@ -1,0 +1,364 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: apisix-config
+  namespace: agent-banking
+data:
+  config.yaml: |
+    apisix:
+      node_listen: 9080
+      enable_ipv6: false
+      enable_control: true
+      control:
+        ip: "0.0.0.0"
+        port: 9092
+      
+    etcd:
+      host:
+        - "http://etcd:2379"
+      prefix: "/apisix"
+      timeout: 30
+      
+    plugin_attr:
+      prometheus:
+        ip: "0.0.0.0"
+        port: 9091
+        prefer_name: true
+      
+    nginx_config:
+      error_log: "/dev/stderr"
+      error_log_level: "warn"
+      worker_processes: "auto"
+      worker_rlimit_nofile: 20480
+      worker_connections: 10620
+      http:
+        access_log: "/dev/stdout"
+        keepalive_timeout: 60s
+        client_header_timeout: 60s
+        client_body_timeout: 60s
+        send_timeout: 10s
+        underscores_in_headers: "on"
+        real_ip_header: "X-Real-IP"
+        real_ip_from:
+          - 127.0.0.1
+          - 'unix:'
+        
+    plugins:
+      - real-ip
+      - client-control
+      - proxy-control
+      - request-id
+      - zipkin
+      - ext-plugin-pre-req
+      - fault-injection
+      - mocking
+      - serverless-pre-function
+      - cors
+      - ip-restriction
+      - ua-restriction
+      - referer-restriction
+      - csrf
+      - uri-blocker
+      - request-validation
+      - openid-connect
+      - cas-auth
+      - authz-casbin
+      - authz-casdoor
+      - wolf-rbac
+      - ldap-auth
+      - hmac-auth
+      - basic-auth
+      - jwt-auth
+      - key-auth
+      - consumer-restriction
+      - authz-keycloak
+      - opa
+      - forward-auth
+      - multi-auth
+      - api-breaker
+      - limit-req
+      - limit-count
+      - limit-conn
+      - degraphql
+      - proxy-cache
+      - body-transformer
+      - proxy-mirror
+      - proxy-rewrite
+      - workflow
+      - response-rewrite
+      - kafka-proxy
+      - grpc-transcode
+      - grpc-web
+      - public-api
+      - prometheus
+      - datadog
+      - echo
+      - loggly
+      - http-logger
+      - splunk-hec-logging
+      - skywalking-logger
+      - google-cloud-logging
+      - sls-logger
+      - tcp-logger
+      - kafka-logger
+      - rocketmq-logger
+      - syslog
+      - udp-logger
+      - file-logger
+      - clickhouse-logger
+      - tencent-cloud-cls
+      - inspect
+      - example-plugin
+      - aws-lambda
+      - azure-functions
+      - openwhisk
+      - openfunction
+      - serverless-post-function
+      - ext-plugin-post-req
+      - ext-plugin-post-resp
+      
+    stream_plugins:
+      - ip-restriction
+      - limit-conn
+      - mqtt-proxy
+      - syslog
+      
+    wasm:
+      plugins:
+        - name: "wasm_log"
+          priority: 7999
+          file: "/usr/local/apisix/wasm/wasm_log.wasm"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: apisix
+  namespace: agent-banking
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: apisix
+  template:
+    metadata:
+      labels:
+        app: apisix
+    spec:
+      containers:
+      - name: apisix
+        image: apache/apisix:3.7.0-debian
+        ports:
+        - containerPort: 9080
+          name: http
+        - containerPort: 9091
+          name: metrics
+        - containerPort: 9092
+          name: control
+        - containerPort: 9443
+          name: https
+        env:
+        - name: APISIX_STAND_ALONE
+          value: "false"
+        volumeMounts:
+        - name: config
+          mountPath: /usr/local/apisix/conf/config.yaml
+          subPath: config.yaml
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "500m"
+          limits:
+            memory: "1Gi"
+            cpu: "1"
+        livenessProbe:
+          httpGet:
+            path: /apisix/status
+            port: 9092
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /apisix/status
+            port: 9092
+          initialDelaySeconds: 10
+          periodSeconds: 5
+      volumes:
+      - name: config
+        configMap:
+          name: apisix-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: apisix
+  namespace: agent-banking
+spec:
+  selector:
+    app: apisix
+  ports:
+  - name: http
+    port: 9080
+    targetPort: 9080
+  - name: https
+    port: 9443
+    targetPort: 9443
+  - name: metrics
+    port: 9091
+    targetPort: 9091
+  - name: control
+    port: 9092
+    targetPort: 9092
+  type: LoadBalancer
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: apisix-dashboard
+  namespace: agent-banking
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: apisix-dashboard
+  template:
+    metadata:
+      labels:
+        app: apisix-dashboard
+    spec:
+      containers:
+      - name: apisix-dashboard
+        image: apache/apisix-dashboard:3.0.1-alpine
+        ports:
+        - containerPort: 9000
+          name: http
+        env:
+        - name: APISIX_API_BASE_URL
+          value: "http://apisix:9092"
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 9000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 9000
+          initialDelaySeconds: 10
+          periodSeconds: 5
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: apisix-dashboard
+  namespace: agent-banking
+spec:
+  selector:
+    app: apisix-dashboard
+  ports:
+  - name: http
+    port: 9000
+    targetPort: 9000
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: etcd
+  namespace: agent-banking
+spec:
+  serviceName: etcd
+  replicas: 3
+  selector:
+    matchLabels:
+      app: etcd
+  template:
+    metadata:
+      labels:
+        app: etcd
+    spec:
+      containers:
+      - name: etcd
+        image: quay.io/coreos/etcd:v3.5.10
+        ports:
+        - containerPort: 2379
+          name: client
+        - containerPort: 2380
+          name: peer
+        env:
+        - name: ETCD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: ETCD_INITIAL_CLUSTER
+          value: "etcd-0=http://etcd-0.etcd:2380,etcd-1=http://etcd-1.etcd:2380,etcd-2=http://etcd-2.etcd:2380"
+        - name: ETCD_INITIAL_CLUSTER_STATE
+          value: "new"
+        - name: ETCD_INITIAL_CLUSTER_TOKEN
+          value: "agent-banking-etcd"
+        - name: ETCD_LISTEN_CLIENT_URLS
+          value: "http://0.0.0.0:2379"
+        - name: ETCD_LISTEN_PEER_URLS
+          value: "http://0.0.0.0:2380"
+        - name: ETCD_ADVERTISE_CLIENT_URLS
+          value: "http://$(ETCD_NAME).etcd:2379"
+        - name: ETCD_INITIAL_ADVERTISE_PEER_URLS
+          value: "http://$(ETCD_NAME).etcd:2380"
+        - name: ETCD_DATA_DIR
+          value: "/etcd-data"
+        volumeMounts:
+        - name: etcd-data
+          mountPath: /etcd-data
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 2379
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 2379
+          initialDelaySeconds: 10
+          periodSeconds: 5
+  volumeClaimTemplates:
+  - metadata:
+      name: etcd-data
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      storageClassName: "fast-ssd"
+      resources:
+        requests:
+          storage: 10Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: etcd
+  namespace: agent-banking
+spec:
+  clusterIP: None
+  selector:
+    app: etcd
+  ports:
+  - name: client
+    port: 2379
+    targetPort: 2379
+  - name: peer
+    port: 2380
+    targetPort: 2380
+

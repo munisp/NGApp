@@ -1,0 +1,687 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ballerine
+  labels:
+    name: ballerine
+    component: kyb-verification
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ballerine-config
+  namespace: ballerine
+data:
+  config.json: |
+    {
+      "app": {
+        "name": "Agent Banking KYB Service",
+        "version": "1.0.0",
+        "environment": "production",
+        "port": 3000,
+        "cors": {
+          "origin": ["https://app.agent-banking.local", "http://localhost:3000"],
+          "credentials": true
+        }
+      },
+      "database": {
+        "type": "postgresql",
+        "host": "postgresql",
+        "port": 5432,
+        "username": "ballerine",
+        "password": "ballerine123",
+        "database": "ballerine",
+        "synchronize": false,
+        "logging": false,
+        "ssl": false,
+        "entities": ["dist/**/*.entity.js"],
+        "migrations": ["dist/migrations/*.js"],
+        "cli": {
+          "migrationsDir": "src/migrations"
+        }
+      },
+      "redis": {
+        "host": "redis-master",
+        "port": 6379,
+        "password": "agent-banking-redis",
+        "db": 2
+      },
+      "auth": {
+        "jwt": {
+          "secret": "ballerine-jwt-secret-key-123",
+          "expiresIn": "24h"
+        },
+        "keycloak": {
+          "realm": "agent-banking",
+          "authServerUrl": "http://keycloak:8080",
+          "clientId": "ballerine-kyb",
+          "clientSecret": "ballerine-client-secret-123"
+        }
+      },
+      "workflows": {
+        "kyb": {
+          "enabled": true,
+          "autoApprove": false,
+          "requireManualReview": true,
+          "documentTypes": [
+            "business_registration",
+            "tax_certificate",
+            "bank_statement",
+            "utility_bill",
+            "director_id",
+            "memorandum_of_association"
+          ],
+          "verificationSteps": [
+            "document_collection",
+            "ocr_extraction",
+            "registry_verification",
+            "risk_assessment",
+            "manual_review",
+            "decision"
+          ],
+          "riskFactors": [
+            "pep_check",
+            "sanctions_check",
+            "adverse_media",
+            "business_age",
+            "industry_risk",
+            "geographic_risk"
+          ]
+        }
+      },
+      "integrations": {
+        "ocr": {
+          "provider": "got-ocr",
+          "endpoint": "http://got-ocr-service:8080",
+          "apiKey": "got-ocr-api-key-123"
+        },
+        "registry": {
+          "providers": [
+            {
+              "name": "companies_house",
+              "country": "UK",
+              "endpoint": "https://api.companieshouse.gov.uk",
+              "apiKey": "companies-house-api-key"
+            },
+            {
+              "name": "business_registry_za",
+              "country": "ZA",
+              "endpoint": "https://eservices.cipc.co.za",
+              "apiKey": "cipc-api-key"
+            },
+            {
+              "name": "business_registry_ng",
+              "country": "NG",
+              "endpoint": "https://search.cac.gov.ng",
+              "apiKey": "cac-api-key"
+            },
+            {
+              "name": "business_registry_ke",
+              "country": "KE",
+              "endpoint": "https://ecitizen.go.ke",
+              "apiKey": "ecitizen-api-key"
+            }
+          ]
+        },
+        "sanctions": {
+          "providers": [
+            {
+              "name": "ofac",
+              "endpoint": "https://sanctionslistservice.ofac.treas.gov",
+              "updateInterval": "daily"
+            },
+            {
+              "name": "un_sanctions",
+              "endpoint": "https://scsanctions.un.org",
+              "updateInterval": "daily"
+            },
+            {
+              "name": "eu_sanctions",
+              "endpoint": "https://webgate.ec.europa.eu/fsd/fsf",
+              "updateInterval": "daily"
+            }
+          ]
+        },
+        "pep": {
+          "provider": "worldcheck",
+          "endpoint": "https://api.worldcheck.com",
+          "apiKey": "worldcheck-api-key"
+        },
+        "adverse_media": {
+          "provider": "dow_jones",
+          "endpoint": "https://api.dowjones.com",
+          "apiKey": "dow-jones-api-key"
+        }
+      },
+      "storage": {
+        "provider": "s3",
+        "bucket": "agent-banking-kyb-documents",
+        "region": "us-east-1",
+        "accessKeyId": "minio-access-key",
+        "secretAccessKey": "minio-secret-key",
+        "endpoint": "http://minio:9000",
+        "forcePathStyle": true
+      },
+      "notifications": {
+        "email": {
+          "provider": "smtp",
+          "host": "smtp.agent-banking.com",
+          "port": 587,
+          "secure": false,
+          "auth": {
+            "user": "kyb@agent-banking.com",
+            "pass": "smtp-password"
+          }
+        },
+        "webhook": {
+          "enabled": true,
+          "endpoints": [
+            {
+              "name": "agent_management",
+              "url": "http://agent-management:8080/webhooks/kyb",
+              "events": ["kyb.completed", "kyb.rejected", "kyb.requires_review"]
+            }
+          ]
+        }
+      },
+      "compliance": {
+        "retention": {
+          "documents": "7y",
+          "logs": "5y",
+          "decisions": "10y"
+        },
+        "encryption": {
+          "algorithm": "AES-256-GCM",
+          "keyRotation": "90d"
+        },
+        "audit": {
+          "enabled": true,
+          "logLevel": "detailed",
+          "destinations": ["database", "syslog"]
+        }
+      },
+      "monitoring": {
+        "metrics": {
+          "enabled": true,
+          "port": 9090,
+          "path": "/metrics"
+        },
+        "health": {
+          "enabled": true,
+          "path": "/health"
+        },
+        "logging": {
+          "level": "info",
+          "format": "json",
+          "destinations": ["console", "file"]
+        }
+      }
+    }
+  
+  workflow-config.json: |
+    {
+      "workflows": [
+        {
+          "id": "kyb-standard",
+          "name": "Standard KYB Verification",
+          "description": "Standard Know Your Business verification workflow",
+          "version": "1.0",
+          "states": [
+            {
+              "id": "document_collection",
+              "name": "Document Collection",
+              "type": "manual",
+              "description": "Collect required business documents",
+              "requiredDocuments": [
+                "business_registration",
+                "tax_certificate",
+                "bank_statement",
+                "director_id"
+              ],
+              "transitions": [
+                {
+                  "to": "ocr_extraction",
+                  "condition": "all_documents_uploaded"
+                }
+              ]
+            },
+            {
+              "id": "ocr_extraction",
+              "name": "OCR Data Extraction",
+              "type": "automated",
+              "description": "Extract data from uploaded documents using OCR",
+              "processor": "got-ocr",
+              "transitions": [
+                {
+                  "to": "registry_verification",
+                  "condition": "extraction_successful"
+                },
+                {
+                  "to": "manual_review",
+                  "condition": "extraction_failed"
+                }
+              ]
+            },
+            {
+              "id": "registry_verification",
+              "name": "Business Registry Verification",
+              "type": "automated",
+              "description": "Verify business details against official registries",
+              "verifications": [
+                "company_registration",
+                "director_verification",
+                "business_status"
+              ],
+              "transitions": [
+                {
+                  "to": "risk_assessment",
+                  "condition": "verification_passed"
+                },
+                {
+                  "to": "manual_review",
+                  "condition": "verification_failed"
+                }
+              ]
+            },
+            {
+              "id": "risk_assessment",
+              "name": "Risk Assessment",
+              "type": "automated",
+              "description": "Assess business and director risks",
+              "checks": [
+                "sanctions_screening",
+                "pep_screening",
+                "adverse_media_check",
+                "industry_risk_assessment",
+                "geographic_risk_assessment"
+              ],
+              "transitions": [
+                {
+                  "to": "auto_approve",
+                  "condition": "low_risk"
+                },
+                {
+                  "to": "manual_review",
+                  "condition": "medium_risk or high_risk"
+                }
+              ]
+            },
+            {
+              "id": "manual_review",
+              "name": "Manual Review",
+              "type": "manual",
+              "description": "Manual review by compliance officer",
+              "assignee": "compliance_officer",
+              "sla": "24h",
+              "transitions": [
+                {
+                  "to": "approved",
+                  "condition": "reviewer_approves"
+                },
+                {
+                  "to": "rejected",
+                  "condition": "reviewer_rejects"
+                },
+                {
+                  "to": "additional_info_required",
+                  "condition": "more_info_needed"
+                }
+              ]
+            },
+            {
+              "id": "additional_info_required",
+              "name": "Additional Information Required",
+              "type": "manual",
+              "description": "Request additional information from applicant",
+              "transitions": [
+                {
+                  "to": "manual_review",
+                  "condition": "info_provided"
+                },
+                {
+                  "to": "rejected",
+                  "condition": "timeout_exceeded"
+                }
+              ]
+            },
+            {
+              "id": "auto_approve",
+              "name": "Auto Approved",
+              "type": "automated",
+              "description": "Automatically approved based on risk assessment",
+              "final": true
+            },
+            {
+              "id": "approved",
+              "name": "Approved",
+              "type": "final",
+              "description": "KYB verification approved",
+              "final": true
+            },
+            {
+              "id": "rejected",
+              "name": "Rejected",
+              "type": "final",
+              "description": "KYB verification rejected",
+              "final": true
+            }
+          ],
+          "rules": [
+            {
+              "id": "auto_approve_rule",
+              "condition": "risk_score < 30 and all_verifications_passed",
+              "action": "auto_approve"
+            },
+            {
+              "id": "manual_review_rule",
+              "condition": "risk_score >= 30 or any_verification_failed",
+              "action": "manual_review"
+            },
+            {
+              "id": "high_risk_rule",
+              "condition": "risk_score >= 70",
+              "action": "escalate_to_senior_reviewer"
+            }
+          ]
+        }
+      ]
+    }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ballerine-backend
+  namespace: ballerine
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: ballerine-backend
+  template:
+    metadata:
+      labels:
+        app: ballerine-backend
+    spec:
+      containers:
+      - name: ballerine
+        image: ballerine/backend:latest
+        ports:
+        - containerPort: 3000
+          name: http
+        - containerPort: 9090
+          name: metrics
+        env:
+        - name: NODE_ENV
+          value: "production"
+        - name: PORT
+          value: "3000"
+        - name: DATABASE_URL
+          value: "postgresql://ballerine:ballerine123@postgresql:5432/ballerine"
+        - name: REDIS_URL
+          value: "redis://:agent-banking-redis@redis-master:6379/2"
+        - name: JWT_SECRET
+          value: "ballerine-jwt-secret-key-123"
+        - name: KEYCLOAK_REALM
+          value: "agent-banking"
+        - name: KEYCLOAK_AUTH_SERVER_URL
+          value: "http://keycloak:8080"
+        - name: KEYCLOAK_CLIENT_ID
+          value: "ballerine-kyb"
+        - name: KEYCLOAK_CLIENT_SECRET
+          value: "ballerine-client-secret-123"
+        volumeMounts:
+        - name: config
+          mountPath: /app/config
+        resources:
+          requests:
+            memory: "1Gi"
+            cpu: "500m"
+          limits:
+            memory: "2Gi"
+            cpu: "1"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 3000
+          initialDelaySeconds: 60
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 3000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+      volumes:
+      - name: config
+        configMap:
+          name: ballerine-config
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ballerine-frontend
+  namespace: ballerine
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: ballerine-frontend
+  template:
+    metadata:
+      labels:
+        app: ballerine-frontend
+    spec:
+      containers:
+      - name: ballerine-frontend
+        image: ballerine/frontend:latest
+        ports:
+        - containerPort: 3001
+          name: http
+        env:
+        - name: REACT_APP_API_URL
+          value: "https://ballerine-api.agent-banking.local"
+        - name: REACT_APP_KEYCLOAK_URL
+          value: "https://keycloak.agent-banking.local"
+        - name: REACT_APP_KEYCLOAK_REALM
+          value: "agent-banking"
+        - name: REACT_APP_KEYCLOAK_CLIENT_ID
+          value: "ballerine-kyb"
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 3001
+          initialDelaySeconds: 30
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 3001
+          initialDelaySeconds: 10
+          periodSeconds: 10
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: got-ocr-service
+  namespace: ballerine
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: got-ocr-service
+  template:
+    metadata:
+      labels:
+        app: got-ocr-service
+    spec:
+      containers:
+      - name: got-ocr
+        image: ucas-haoranwei/got-ocr2.0:latest
+        ports:
+        - containerPort: 8080
+          name: http
+        env:
+        - name: MODEL_PATH
+          value: "/models/got-ocr2.0"
+        - name: DEVICE
+          value: "cpu"
+        - name: MAX_WORKERS
+          value: "4"
+        resources:
+          requests:
+            memory: "4Gi"
+            cpu: "2"
+          limits:
+            memory: "8Gi"
+            cpu: "4"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 120
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 60
+          periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ballerine-backend
+  namespace: ballerine
+spec:
+  selector:
+    app: ballerine-backend
+  ports:
+  - name: http
+    port: 3000
+    targetPort: 3000
+  - name: metrics
+    port: 9090
+    targetPort: 9090
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ballerine-frontend
+  namespace: ballerine
+spec:
+  selector:
+    app: ballerine-frontend
+  ports:
+  - name: http
+    port: 3001
+    targetPort: 3001
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: got-ocr-service
+  namespace: ballerine
+spec:
+  selector:
+    app: got-ocr-service
+  ports:
+  - name: http
+    port: 8080
+    targetPort: 8080
+  type: ClusterIP
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ballerine-api-ingress
+  namespace: ballerine
+  annotations:
+    kubernetes.io/ingress.class: "openappsec"
+    openappsec.io/waf-enabled: "true"
+    openappsec.io/api-protection: "true"
+spec:
+  tls:
+  - hosts:
+    - ballerine-api.agent-banking.local
+    secretName: ballerine-api-tls
+  rules:
+  - host: ballerine-api.agent-banking.local
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: ballerine-backend
+            port:
+              number: 3000
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ballerine-frontend-ingress
+  namespace: ballerine
+  annotations:
+    kubernetes.io/ingress.class: "openappsec"
+    openappsec.io/waf-enabled: "true"
+    openappsec.io/api-protection: "false"
+spec:
+  tls:
+  - hosts:
+    - ballerine.agent-banking.local
+    secretName: ballerine-frontend-tls
+  rules:
+  - host: ballerine.agent-banking.local
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: ballerine-frontend
+            port:
+              number: 3001
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: ballerine-api-tls
+  namespace: ballerine
+type: kubernetes.io/tls
+data:
+  tls.crt: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0t  # Base64 encoded certificate
+  tls.key: LS0tLS1CRUdJTiBQUklWQVRFIEtFWS0tLS0t  # Base64 encoded private key
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: ballerine-frontend-tls
+  namespace: ballerine
+type: kubernetes.io/tls
+data:
+  tls.crt: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0t  # Base64 encoded certificate
+  tls.key: LS0tLS1CRUdJTiBQUklWQVRFIEtFWS0tLS0t  # Base64 encoded private key
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: ballerine-metrics
+  namespace: ballerine
+spec:
+  selector:
+    matchLabels:
+      app: ballerine-backend
+  endpoints:
+  - port: metrics
+    interval: 30s
+    path: /metrics
+

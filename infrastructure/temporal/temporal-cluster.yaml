@@ -1,0 +1,410 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: temporal-config
+  namespace: agent-banking
+data:
+  config.yaml: |
+    global:
+      membership:
+        maxJoinDuration: 30s
+        broadcastAddress: "0.0.0.0"
+      pprof:
+        port: 7936
+      metrics:
+        prometheus:
+          timerType: "histogram"
+          listenAddress: "0.0.0.0:9090"
+    
+    persistence:
+      defaultStore: default
+      visibilityStore: visibility
+      numHistoryShards: 4
+      datastores:
+        default:
+          sql:
+            pluginName: "postgres"
+            databaseName: "temporal"
+            connectAddr: "postgresql://temporal-postgresql:5432"
+            connectProtocol: "tcp"
+            user: "temporal"
+            password: "temporal"
+            maxConns: 20
+            maxIdleConns: 20
+            maxConnLifetime: "1h"
+        visibility:
+          sql:
+            pluginName: "postgres"
+            databaseName: "temporal_visibility"
+            connectAddr: "postgresql://temporal-postgresql:5432"
+            connectProtocol: "tcp"
+            user: "temporal"
+            password: "temporal"
+            maxConns: 10
+            maxIdleConns: 10
+            maxConnLifetime: "1h"
+    
+    services:
+      frontend:
+        rpc:
+          grpcPort: 7233
+          membershipPort: 6933
+          bindOnLocalHost: false
+        metrics:
+          prometheus:
+            timerType: "histogram"
+            listenAddress: "0.0.0.0:9090"
+      
+      matching:
+        rpc:
+          grpcPort: 7235
+          membershipPort: 6935
+          bindOnLocalHost: false
+        metrics:
+          prometheus:
+            timerType: "histogram"
+            listenAddress: "0.0.0.0:9091"
+      
+      history:
+        rpc:
+          grpcPort: 7234
+          membershipPort: 6934
+          bindOnLocalHost: false
+        metrics:
+          prometheus:
+            timerType: "histogram"
+            listenAddress: "0.0.0.0:9092"
+      
+      worker:
+        rpc:
+          grpcPort: 7239
+          membershipPort: 6939
+          bindOnLocalHost: false
+        metrics:
+          prometheus:
+            timerType: "histogram"
+            listenAddress: "0.0.0.0:9093"
+    
+    clusterMetadata:
+      enableGlobalNamespace: false
+      failoverVersionIncrement: 10
+      masterClusterName: "active"
+      currentClusterName: "active"
+      clusterInformation:
+        active:
+          enabled: true
+          initialFailoverVersion: 1
+          rpcName: "frontend"
+          rpcAddress: "temporal-frontend:7233"
+    
+    dcRedirectionPolicy:
+      policy: "noop"
+    
+    archival:
+      history:
+        state: "enabled"
+        enableRead: true
+        provider:
+          filestore:
+            fileMode: "0666"
+            dirMode: "0766"
+      visibility:
+        state: "enabled"
+        enableRead: true
+        provider:
+          filestore:
+            fileMode: "0666"
+            dirMode: "0766"
+    
+    namespaceDefaults:
+      archival:
+        history:
+          state: "disabled"
+          URI: "file:///tmp/temporal_archival/development"
+        visibility:
+          state: "disabled"
+          URI: "file:///tmp/temporal_vis_archival/development"
+    
+    publicClient:
+      hostPort: "temporal-frontend:7233"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: temporal-frontend
+  namespace: agent-banking
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: temporal-frontend
+  template:
+    metadata:
+      labels:
+        app: temporal-frontend
+    spec:
+      containers:
+      - name: temporal-frontend
+        image: temporalio/server:1.22.0
+        ports:
+        - containerPort: 7233
+          name: rpc
+        - containerPort: 9090
+          name: metrics
+        env:
+        - name: SERVICES
+          value: "frontend"
+        - name: TEMPORAL_CLI_ADDRESS
+          value: "temporal-frontend:7233"
+        volumeMounts:
+        - name: config
+          mountPath: /etc/temporal/config
+        resources:
+          requests:
+            memory: "1Gi"
+            cpu: "500m"
+          limits:
+            memory: "2Gi"
+            cpu: "1"
+        livenessProbe:
+          tcpSocket:
+            port: 7233
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          tcpSocket:
+            port: 7233
+          initialDelaySeconds: 10
+          periodSeconds: 5
+      volumes:
+      - name: config
+        configMap:
+          name: temporal-config
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: temporal-history
+  namespace: agent-banking
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: temporal-history
+  template:
+    metadata:
+      labels:
+        app: temporal-history
+    spec:
+      containers:
+      - name: temporal-history
+        image: temporalio/server:1.22.0
+        ports:
+        - containerPort: 7234
+          name: rpc
+        - containerPort: 9092
+          name: metrics
+        env:
+        - name: SERVICES
+          value: "history"
+        - name: TEMPORAL_CLI_ADDRESS
+          value: "temporal-frontend:7233"
+        volumeMounts:
+        - name: config
+          mountPath: /etc/temporal/config
+        resources:
+          requests:
+            memory: "2Gi"
+            cpu: "1"
+          limits:
+            memory: "4Gi"
+            cpu: "2"
+        livenessProbe:
+          tcpSocket:
+            port: 7234
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          tcpSocket:
+            port: 7234
+          initialDelaySeconds: 10
+          periodSeconds: 5
+      volumes:
+      - name: config
+        configMap:
+          name: temporal-config
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: temporal-matching
+  namespace: agent-banking
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: temporal-matching
+  template:
+    metadata:
+      labels:
+        app: temporal-matching
+    spec:
+      containers:
+      - name: temporal-matching
+        image: temporalio/server:1.22.0
+        ports:
+        - containerPort: 7235
+          name: rpc
+        - containerPort: 9091
+          name: metrics
+        env:
+        - name: SERVICES
+          value: "matching"
+        - name: TEMPORAL_CLI_ADDRESS
+          value: "temporal-frontend:7233"
+        volumeMounts:
+        - name: config
+          mountPath: /etc/temporal/config
+        resources:
+          requests:
+            memory: "1Gi"
+            cpu: "500m"
+          limits:
+            memory: "2Gi"
+            cpu: "1"
+        livenessProbe:
+          tcpSocket:
+            port: 7235
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          tcpSocket:
+            port: 7235
+          initialDelaySeconds: 10
+          periodSeconds: 5
+      volumes:
+      - name: config
+        configMap:
+          name: temporal-config
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: temporal-worker
+  namespace: agent-banking
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: temporal-worker
+  template:
+    metadata:
+      labels:
+        app: temporal-worker
+    spec:
+      containers:
+      - name: temporal-worker
+        image: temporalio/server:1.22.0
+        ports:
+        - containerPort: 7239
+          name: rpc
+        - containerPort: 9093
+          name: metrics
+        env:
+        - name: SERVICES
+          value: "worker"
+        - name: TEMPORAL_CLI_ADDRESS
+          value: "temporal-frontend:7233"
+        volumeMounts:
+        - name: config
+          mountPath: /etc/temporal/config
+        resources:
+          requests:
+            memory: "1Gi"
+            cpu: "500m"
+          limits:
+            memory: "2Gi"
+            cpu: "1"
+        livenessProbe:
+          tcpSocket:
+            port: 7239
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          tcpSocket:
+            port: 7239
+          initialDelaySeconds: 10
+          periodSeconds: 5
+      volumes:
+      - name: config
+        configMap:
+          name: temporal-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: temporal-frontend
+  namespace: agent-banking
+spec:
+  selector:
+    app: temporal-frontend
+  ports:
+  - name: rpc
+    port: 7233
+    targetPort: 7233
+  - name: metrics
+    port: 9090
+    targetPort: 9090
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: temporal-history
+  namespace: agent-banking
+spec:
+  selector:
+    app: temporal-history
+  ports:
+  - name: rpc
+    port: 7234
+    targetPort: 7234
+  - name: metrics
+    port: 9092
+    targetPort: 9092
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: temporal-matching
+  namespace: agent-banking
+spec:
+  selector:
+    app: temporal-matching
+  ports:
+  - name: rpc
+    port: 7235
+    targetPort: 7235
+  - name: metrics
+    port: 9091
+    targetPort: 9091
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: temporal-worker
+  namespace: agent-banking
+spec:
+  selector:
+    app: temporal-worker
+  ports:
+  - name: rpc
+    port: 7239
+    targetPort: 7239
+  - name: metrics
+    port: 9093
+    targetPort: 9093
+  type: ClusterIP
+
