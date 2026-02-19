@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Building2, Users, CreditCard, BarChart3, Settings, Shield, Bell, LogOut, User, DollarSign, TrendingUp, AlertTriangle, CheckCircle, Eye, EyeOff, Zap, Phone, Receipt, Sliders, Wifi, Tv, Droplets, FileText, ChevronRight, Search, Plus, Trash2, Edit, RefreshCw, UserPlus, MapPin, Upload, ClipboardCheck, Star, Award, Globe, Briefcase, Hash, Calendar, ArrowRight, ArrowLeft, Camera, Fingerprint } from 'lucide-react'
+import { Building2, Users, CreditCard, BarChart3, Settings, Shield, Bell, LogOut, User, DollarSign, TrendingUp, AlertTriangle, CheckCircle, Eye, EyeOff, Zap, Phone, Receipt, Sliders, Wifi, Tv, Droplets, FileText, ChevronRight, Search, Plus, Trash2, Edit, RefreshCw, UserPlus, MapPin, Upload, ClipboardCheck, Star, Award, Globe, Briefcase, Hash, Calendar, ArrowRight, ArrowLeft, Camera, Fingerprint, ShoppingCart, Package, MessageSquare, Truck, Warehouse, Tag, Filter, Image, Heart, Share2, MoreHorizontal, Send, Bot, Headphones, Radio, Smartphone, Mail, Volume2, MessageCircle, Activity, Clock, AlertCircle, Box, BarChart2, Layers, Target } from 'lucide-react'
 import { RealTimeNotifications, RealTimeMetrics, RealTimeTransactionFeed } from './components/RealTimeFeatures';
 import PWAInstallPrompt, { PWAStatusIndicator, OfflineBanner } from './components/PWAInstallPrompt';
 import './App.css'
@@ -119,6 +119,18 @@ function App() {
     role: 'customer'
   })
 
+  // URL-based auto-login for demo navigation
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const role = params.get('role')
+    const view = params.get('view')
+    if (role && !currentUser) {
+      setCurrentUser({ id: 1, role })
+      setCurrentView(view || 'dashboard')
+      localStorage.setItem('authToken', 'demo-token')
+    }
+  }, [])
+
   // Load dashboard data when user logs in
   useEffect(() => {
     if (currentUser) {
@@ -200,6 +212,9 @@ function App() {
           { id: 'transactions', label: 'Transactions', icon: CreditCard },
           { id: 'bills', label: 'Bills Payment', icon: Receipt },
           { id: 'airtime', label: 'Airtime & Data', icon: Phone },
+          { id: 'ecommerce', label: 'Ecommerce', icon: ShoppingCart },
+          { id: 'inventory', label: 'Inventory', icon: Package },
+          { id: 'omnichannel', label: 'Channels', icon: MessageSquare },
           { id: 'customers', label: 'Customers', icon: Users },
           { id: 'analytics', label: 'Analytics', icon: BarChart3 },
           { id: 'cash', label: 'Cash Management', icon: DollarSign }
@@ -211,6 +226,9 @@ function App() {
           { id: 'transactions', label: 'Transactions', icon: CreditCard },
           { id: 'bills', label: 'Bills Payment', icon: Receipt },
           { id: 'airtime', label: 'Airtime & Data', icon: Phone },
+          { id: 'ecommerce', label: 'Ecommerce', icon: ShoppingCart },
+          { id: 'inventory', label: 'Inventory', icon: Package },
+          { id: 'omnichannel', label: 'Channels', icon: MessageSquare },
           { id: 'agents', label: 'My Agents', icon: Users },
           { id: 'analytics', label: 'Analytics', icon: BarChart3 },
           { id: 'cash', label: 'Cash Management', icon: DollarSign }
@@ -234,6 +252,9 @@ function App() {
           { id: 'transactions', label: 'Transactions', icon: CreditCard },
           { id: 'bills', label: 'Bills Payment', icon: Receipt },
           { id: 'airtime', label: 'Airtime & Data', icon: Phone },
+          { id: 'ecommerce', label: 'Ecommerce', icon: ShoppingCart },
+          { id: 'inventory', label: 'Inventory', icon: Package },
+          { id: 'omnichannel', label: 'Channels', icon: MessageSquare },
           { id: 'agents', label: 'Agents', icon: Users },
           { id: 'fee_schedule', label: 'Fee Schedule', icon: Sliders },
           { id: 'analytics', label: 'Analytics', icon: BarChart3 },
@@ -693,8 +714,11 @@ function App() {
         {currentView === 'bills' && <BillsPaymentPage formatCurrency={formatCurrency} />}
         {currentView === 'airtime' && <AirtimeDataPage formatCurrency={formatCurrency} />}
         {currentView === 'fee_schedule' && <FeeSchedulePage formatCurrency={formatCurrency} />}
+        {currentView === 'ecommerce' && <EcommercePage formatCurrency={formatCurrency} />}
+        {currentView === 'inventory' && <InventoryPage formatCurrency={formatCurrency} />}
+        {currentView === 'omnichannel' && <OmnichannelPage />}
 
-        {!['dashboard', 'onboarding', 'bills', 'airtime', 'fee_schedule'].includes(currentView) && currentView !== 'dashboard' && (
+        {!['dashboard', 'onboarding', 'bills', 'airtime', 'fee_schedule', 'ecommerce', 'inventory', 'omnichannel'].includes(currentView) && currentView !== 'dashboard' && (
           <div className="bg-white rounded-lg shadow p-8 text-center">
             <h2 className="text-2xl font-bold text-gray-900 mb-4 capitalize">
               {currentView} Section
@@ -2206,6 +2230,994 @@ function AgentOnboardingPage({ formatCurrency, userRole }) {
           </div>
         </div>
       )}
+    </div>
+  )
+}
+
+// ==================== ECOMMERCE PAGE ====================
+const DEMO_PRODUCTS = [
+  { id: 'P001', name: 'Samsung Galaxy A15', category: 'Electronics', price: 125000, stock: 24, image: null, rating: 4.5, sold: 156, status: 'active' },
+  { id: 'P002', name: 'Tecno Spark 20C', category: 'Electronics', price: 89000, stock: 42, image: null, rating: 4.3, sold: 234, status: 'active' },
+  { id: 'P003', name: 'Oraimo Power Bank 20000mAh', category: 'Accessories', price: 12500, stock: 67, image: null, rating: 4.7, sold: 89, status: 'active' },
+  { id: 'P004', name: 'Airpod Pro Max Clone', category: 'Accessories', price: 8500, stock: 31, image: null, rating: 3.9, sold: 312, status: 'active' },
+  { id: 'P005', name: 'Binatone Stabilizer 2000VA', category: 'Home & Office', price: 35000, stock: 12, image: null, rating: 4.1, sold: 45, status: 'active' },
+  { id: 'P006', name: 'Hisense 32" Smart TV', category: 'Electronics', price: 145000, stock: 8, image: null, rating: 4.6, sold: 28, status: 'active' },
+  { id: 'P007', name: 'Multipurpose Blender Set', category: 'Home & Office', price: 18500, stock: 0, image: null, rating: 4.2, sold: 167, status: 'out_of_stock' },
+  { id: 'P008', name: 'Solar Panel 200W', category: 'Energy', price: 85000, stock: 15, image: null, rating: 4.4, sold: 53, status: 'active' },
+]
+
+const DEMO_ORDERS = [
+  { id: 'ORD-2024-001', customer: 'Adebayo Ogunlesi', items: 2, total: 214000, status: 'delivered', date: '2024-01-15', channel: 'Storefront' },
+  { id: 'ORD-2024-002', customer: 'Ngozi Okafor', items: 1, total: 89000, status: 'shipped', date: '2024-01-14', channel: 'WhatsApp' },
+  { id: 'ORD-2024-003', customer: 'Ibrahim Musa', items: 3, total: 46500, status: 'processing', date: '2024-01-14', channel: 'Jumia' },
+  { id: 'ORD-2024-004', customer: 'Chioma Eze', items: 1, total: 145000, status: 'pending', date: '2024-01-13', channel: 'Konga' },
+  { id: 'ORD-2024-005', customer: 'Fatima Abdullahi', items: 2, total: 21000, status: 'delivered', date: '2024-01-12', channel: 'Storefront' },
+  { id: 'ORD-2024-006', customer: 'Emeka Nwosu', items: 1, total: 85000, status: 'cancelled', date: '2024-01-11', channel: 'Amazon' },
+]
+
+const MARKETPLACE_CHANNELS = [
+  { id: 'storefront', name: 'Agent Storefront', products: 8, orders: 145, revenue: 2340000, status: 'active', color: 'bg-blue-500' },
+  { id: 'jumia', name: 'Jumia', products: 6, orders: 89, revenue: 1560000, status: 'active', color: 'bg-orange-500' },
+  { id: 'konga', name: 'Konga', products: 5, orders: 67, revenue: 980000, status: 'active', color: 'bg-red-500' },
+  { id: 'whatsapp', name: 'WhatsApp Commerce', products: 8, orders: 112, revenue: 1890000, status: 'active', color: 'bg-green-500' },
+  { id: 'amazon', name: 'Amazon', products: 3, orders: 23, revenue: 450000, status: 'pending', color: 'bg-yellow-500' },
+  { id: 'ebay', name: 'eBay', products: 2, orders: 11, revenue: 210000, status: 'pending', color: 'bg-purple-500' },
+]
+
+function EcommercePage({ formatCurrency }) {
+  const [activeTab, setActiveTab] = useState('products')
+  const [selectedProduct, setSelectedProduct] = useState(null)
+  const [showAddProduct, setShowAddProduct] = useState(false)
+  const [productForm, setProductForm] = useState({ name: '', category: 'Electronics', price: '', stock: '', description: '' })
+  const [cart, setCart] = useState([])
+  const [orderFilter, setOrderFilter] = useState('all')
+
+  const tabs = [
+    { id: 'products', label: 'Product Catalog', icon: Package },
+    { id: 'orders', label: 'Orders', icon: ShoppingCart },
+    { id: 'channels', label: 'Marketplace Channels', icon: Globe },
+    { id: 'storefront', label: 'My Storefront', icon: Building2 },
+  ]
+
+  const categories = ['All', 'Electronics', 'Accessories', 'Home & Office', 'Energy']
+  const [selectedCategory, setSelectedCategory] = useState('All')
+  const filteredProducts = selectedCategory === 'All' ? DEMO_PRODUCTS : DEMO_PRODUCTS.filter(p => p.category === selectedCategory)
+
+  const orderStatuses = { delivered: 'bg-green-100 text-green-800', shipped: 'bg-blue-100 text-blue-800', processing: 'bg-yellow-100 text-yellow-800', pending: 'bg-gray-100 text-gray-800', cancelled: 'bg-red-100 text-red-800' }
+  const filteredOrders = orderFilter === 'all' ? DEMO_ORDERS : DEMO_ORDERS.filter(o => o.status === orderFilter)
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900">Ecommerce Platform</h2>
+          <p className="text-gray-500 mt-1">Manage your products, orders, and marketplace channels</p>
+        </div>
+        <Button onClick={() => setShowAddProduct(true)} className="bg-blue-600 text-white">
+          <Plus className="w-4 h-4 mr-2" /> Add Product
+        </Button>
+      </div>
+
+      {/* KPI Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        {[
+          { label: 'Total Products', value: '8', sub: '6 active', icon: Package, color: 'text-blue-600', bg: 'bg-blue-50' },
+          { label: 'Total Orders', value: '447', sub: '+23 today', icon: ShoppingCart, color: 'text-green-600', bg: 'bg-green-50' },
+          { label: 'Revenue (MTD)', value: formatCurrency(7430000), sub: '+18% vs last month', icon: DollarSign, color: 'text-purple-600', bg: 'bg-purple-50' },
+          { label: 'Active Channels', value: '4/6', sub: '2 pending setup', icon: Globe, color: 'text-orange-600', bg: 'bg-orange-50' },
+        ].map((kpi, i) => (
+          <div key={i} className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-500">{kpi.label}</p>
+                <p className="text-2xl font-bold text-gray-900 mt-1">{kpi.value}</p>
+                <p className="text-xs text-gray-400 mt-1">{kpi.sub}</p>
+              </div>
+              <div className={`w-12 h-12 ${kpi.bg} rounded-xl flex items-center justify-center`}>
+                <kpi.icon className={`w-6 h-6 ${kpi.color}`} />
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Tabs */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100">
+        <div className="flex border-b">
+          {tabs.map(tab => (
+            <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`flex items-center space-x-2 px-6 py-4 text-sm font-medium border-b-2 transition-colors ${activeTab === tab.id ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
+              <tab.icon className="w-4 h-4" />
+              <span>{tab.label}</span>
+            </button>
+          ))}
+        </div>
+
+        <div className="p-6">
+          {/* PRODUCTS TAB */}
+          {activeTab === 'products' && (
+            <div>
+              <div className="flex items-center space-x-3 mb-6">
+                {categories.map(cat => (
+                  <button key={cat} onClick={() => setSelectedCategory(cat)} className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${selectedCategory === cat ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
+                    {cat}
+                  </button>
+                ))}
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {filteredProducts.map(product => (
+                  <div key={product.id} className="border border-gray-200 rounded-xl overflow-hidden hover:shadow-lg transition-shadow">
+                    <div className={`h-40 ${product.stock === 0 ? 'bg-gray-200' : 'bg-gradient-to-br from-blue-50 to-indigo-100'} flex items-center justify-center relative`}>
+                      <Package className={`w-12 h-12 ${product.stock === 0 ? 'text-gray-400' : 'text-blue-300'}`} />
+                      {product.stock === 0 && <div className="absolute top-2 right-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full">Out of Stock</div>}
+                      {product.stock > 0 && product.stock <= 10 && <div className="absolute top-2 right-2 bg-orange-500 text-white text-xs px-2 py-1 rounded-full">Low Stock</div>}
+                    </div>
+                    <div className="p-4">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-xs text-gray-400">{product.category}</span>
+                        <div className="flex items-center space-x-1">
+                          <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" />
+                          <span className="text-xs text-gray-500">{product.rating}</span>
+                        </div>
+                      </div>
+                      <h3 className="font-semibold text-gray-900 text-sm mb-2">{product.name}</h3>
+                      <div className="flex items-center justify-between">
+                        <span className="text-lg font-bold text-blue-600">{formatCurrency(product.price)}</span>
+                        <span className="text-xs text-gray-400">{product.sold} sold</span>
+                      </div>
+                      <div className="flex items-center justify-between mt-3">
+                        <span className="text-xs text-gray-500">Stock: {product.stock}</span>
+                        <div className="flex space-x-2">
+                          <button className="p-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors"><Edit className="w-3.5 h-3.5 text-gray-600" /></button>
+                          <button className="p-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 transition-colors"><Eye className="w-3.5 h-3.5 text-blue-600" /></button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* ORDERS TAB */}
+          {activeTab === 'orders' && (
+            <div>
+              <div className="flex items-center space-x-3 mb-6">
+                {['all', 'pending', 'processing', 'shipped', 'delivered', 'cancelled'].map(status => (
+                  <button key={status} onClick={() => setOrderFilter(status)} className={`px-4 py-2 rounded-lg text-sm font-medium capitalize transition-colors ${orderFilter === status ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
+                    {status}
+                  </button>
+                ))}
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-gray-200">
+                      <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Order ID</th>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Customer</th>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Items</th>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Total</th>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Channel</th>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Status</th>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Date</th>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredOrders.map(order => (
+                      <tr key={order.id} className="border-b border-gray-100 hover:bg-gray-50">
+                        <td className="py-3 px-4 text-sm font-medium text-blue-600">{order.id}</td>
+                        <td className="py-3 px-4 text-sm text-gray-900">{order.customer}</td>
+                        <td className="py-3 px-4 text-sm text-gray-600">{order.items}</td>
+                        <td className="py-3 px-4 text-sm font-medium text-gray-900">{formatCurrency(order.total)}</td>
+                        <td className="py-3 px-4"><span className="text-xs px-2 py-1 rounded-full bg-gray-100 text-gray-700">{order.channel}</span></td>
+                        <td className="py-3 px-4"><span className={`text-xs px-2 py-1 rounded-full capitalize ${orderStatuses[order.status]}`}>{order.status}</span></td>
+                        <td className="py-3 px-4 text-sm text-gray-500">{order.date}</td>
+                        <td className="py-3 px-4"><button className="p-1.5 rounded-lg hover:bg-gray-100"><MoreHorizontal className="w-4 h-4 text-gray-400" /></button></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* CHANNELS TAB */}
+          {activeTab === 'channels' && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {MARKETPLACE_CHANNELS.map(ch => (
+                <div key={ch.id} className="border border-gray-200 rounded-xl p-5 hover:shadow-md transition-shadow">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center space-x-3">
+                      <div className={`w-10 h-10 ${ch.color} rounded-lg flex items-center justify-center`}>
+                        <Globe className="w-5 h-5 text-white" />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-gray-900">{ch.name}</h3>
+                        <span className={`text-xs px-2 py-0.5 rounded-full ${ch.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>{ch.status}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className="text-center">
+                      <p className="text-lg font-bold text-gray-900">{ch.products}</p>
+                      <p className="text-xs text-gray-500">Products</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-lg font-bold text-gray-900">{ch.orders}</p>
+                      <p className="text-xs text-gray-500">Orders</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-lg font-bold text-blue-600">{formatCurrency(ch.revenue)}</p>
+                      <p className="text-xs text-gray-500">Revenue</p>
+                    </div>
+                  </div>
+                  <div className="mt-4 flex space-x-2">
+                    <Button variant="outline" size="sm" className="flex-1 text-xs">Manage</Button>
+                    <Button variant="outline" size="sm" className="flex-1 text-xs">Sync Products</Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* STOREFRONT TAB */}
+          {activeTab === 'storefront' && (
+            <div>
+              <div className="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-xl p-6 text-white mb-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-xl font-bold">Lagos Central Agent Store</h3>
+                    <p className="text-blue-100 mt-1">agent-store-lagos-central.54link.ng</p>
+                    <div className="flex items-center space-x-4 mt-3">
+                      <span className="text-sm"><CheckCircle className="w-4 h-4 inline mr-1" />Verified Seller</span>
+                      <span className="text-sm"><Star className="w-4 h-4 inline mr-1" />4.8 Rating</span>
+                      <span className="text-sm"><Users className="w-4 h-4 inline mr-1" />1,247 Customers</span>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-3xl font-bold">{formatCurrency(7430000)}</p>
+                    <p className="text-blue-100 text-sm">Total Revenue (MTD)</p>
+                  </div>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="bg-white border border-gray-200 rounded-xl p-5">
+                  <h4 className="font-semibold text-gray-900 mb-3">Storefront Settings</h4>
+                  <div className="space-y-3">
+                    {['Store Name', 'Custom Domain', 'Payment Methods', 'Delivery Zones', 'Store Theme'].map(setting => (
+                      <div key={setting} className="flex items-center justify-between py-2 border-b border-gray-100">
+                        <span className="text-sm text-gray-600">{setting}</span>
+                        <button className="text-blue-600 text-sm font-medium">Edit</button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div className="bg-white border border-gray-200 rounded-xl p-5">
+                  <h4 className="font-semibold text-gray-900 mb-3">Top Selling Products</h4>
+                  <div className="space-y-3">
+                    {DEMO_PRODUCTS.slice(0, 5).sort((a, b) => b.sold - a.sold).map(p => (
+                      <div key={p.id} className="flex items-center justify-between py-2 border-b border-gray-100">
+                        <div className="flex items-center space-x-2">
+                          <Package className="w-4 h-4 text-gray-400" />
+                          <span className="text-sm text-gray-900">{p.name}</span>
+                        </div>
+                        <span className="text-sm font-medium text-gray-600">{p.sold} sold</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div className="bg-white border border-gray-200 rounded-xl p-5">
+                  <h4 className="font-semibold text-gray-900 mb-3">Sales by Channel</h4>
+                  <div className="space-y-3">
+                    {MARKETPLACE_CHANNELS.filter(c => c.status === 'active').map(ch => (
+                      <div key={ch.id} className="flex items-center justify-between py-2 border-b border-gray-100">
+                        <div className="flex items-center space-x-2">
+                          <div className={`w-3 h-3 rounded-full ${ch.color}`} />
+                          <span className="text-sm text-gray-900">{ch.name}</span>
+                        </div>
+                        <span className="text-sm font-medium text-blue-600">{formatCurrency(ch.revenue)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Add Product Modal */}
+      {showAddProduct && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg">
+            <div className="p-6 border-b border-gray-100">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-bold text-gray-900">Add New Product</h3>
+                <button onClick={() => setShowAddProduct(false)} className="p-2 hover:bg-gray-100 rounded-lg"><Trash2 className="w-4 h-4 text-gray-400" /></button>
+              </div>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Product Name</label>
+                <input type="text" value={productForm.name} onChange={e => setProductForm({ ...productForm, name: e.target.value })} className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="e.g. Samsung Galaxy A15" />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                  <select value={productForm.category} onChange={e => setProductForm({ ...productForm, category: e.target.value })} className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                    {['Electronics', 'Accessories', 'Home & Office', 'Energy', 'Fashion', 'Food & Beverage'].map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Price (NGN)</label>
+                  <input type="number" value={productForm.price} onChange={e => setProductForm({ ...productForm, price: e.target.value })} className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="0" />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Initial Stock</label>
+                <input type="number" value={productForm.stock} onChange={e => setProductForm({ ...productForm, stock: e.target.value })} className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="0" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                <textarea rows={3} value={productForm.description} onChange={e => setProductForm({ ...productForm, description: e.target.value })} className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Product description..." />
+              </div>
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                <p className="text-sm text-gray-500">Drag & drop product images or click to browse</p>
+              </div>
+            </div>
+            <div className="p-6 border-t border-gray-100 flex justify-end space-x-3">
+              <Button variant="outline" onClick={() => setShowAddProduct(false)}>Cancel</Button>
+              <Button onClick={() => { setShowAddProduct(false) }} className="bg-blue-600 text-white">Add Product</Button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ==================== INVENTORY PAGE ====================
+const DEMO_INVENTORY = [
+  { sku: 'SKU-001', name: 'Samsung Galaxy A15', warehouse: 'Lagos Main', qty: 24, reorder: 10, cost: 95000, value: 2280000, status: 'healthy', lastRestock: '2024-01-10' },
+  { sku: 'SKU-002', name: 'Tecno Spark 20C', warehouse: 'Lagos Main', qty: 42, reorder: 15, cost: 65000, value: 2730000, status: 'healthy', lastRestock: '2024-01-08' },
+  { sku: 'SKU-003', name: 'Oraimo Power Bank 20000mAh', warehouse: 'Abuja Hub', qty: 67, reorder: 20, cost: 8000, value: 536000, status: 'overstocked', lastRestock: '2024-01-12' },
+  { sku: 'SKU-004', name: 'Airpod Pro Max Clone', warehouse: 'Lagos Main', qty: 31, reorder: 25, cost: 5000, value: 155000, status: 'healthy', lastRestock: '2024-01-09' },
+  { sku: 'SKU-005', name: 'Binatone Stabilizer 2000VA', warehouse: 'PH Depot', qty: 12, reorder: 15, cost: 25000, value: 300000, status: 'low', lastRestock: '2024-01-05' },
+  { sku: 'SKU-006', name: 'Hisense 32" Smart TV', warehouse: 'Lagos Main', qty: 8, reorder: 10, cost: 110000, value: 880000, status: 'low', lastRestock: '2024-01-03' },
+  { sku: 'SKU-007', name: 'Multipurpose Blender Set', warehouse: 'Abuja Hub', qty: 0, reorder: 20, cost: 12000, value: 0, status: 'out', lastRestock: '2023-12-28' },
+  { sku: 'SKU-008', name: 'Solar Panel 200W', warehouse: 'PH Depot', qty: 15, reorder: 10, cost: 60000, value: 900000, status: 'healthy', lastRestock: '2024-01-11' },
+]
+
+const WAREHOUSES = [
+  { id: 'lagos', name: 'Lagos Main Warehouse', location: 'Ikeja, Lagos', capacity: 500, used: 342, items: 156, orders: 89 },
+  { id: 'abuja', name: 'Abuja Distribution Hub', location: 'Garki, Abuja', capacity: 300, used: 187, items: 98, orders: 45 },
+  { id: 'ph', name: 'Port Harcourt Depot', location: 'Trans Amadi, PH', capacity: 200, used: 78, items: 45, orders: 23 },
+]
+
+const DEMAND_FORECAST = [
+  { product: 'Samsung Galaxy A15', current: 24, predicted7d: 18, predicted30d: 65, confidence: 0.89, trend: 'up' },
+  { product: 'Tecno Spark 20C', current: 42, predicted7d: 25, predicted30d: 95, confidence: 0.92, trend: 'up' },
+  { product: 'Oraimo Power Bank', current: 67, predicted7d: 12, predicted30d: 40, confidence: 0.85, trend: 'stable' },
+  { product: 'Solar Panel 200W', current: 15, predicted7d: 8, predicted30d: 35, confidence: 0.78, trend: 'up' },
+  { product: 'Hisense 32" TV', current: 8, predicted7d: 6, predicted30d: 22, confidence: 0.81, trend: 'down' },
+]
+
+function InventoryPage({ formatCurrency }) {
+  const [activeTab, setActiveTab] = useState('stock')
+
+  const tabs = [
+    { id: 'stock', label: 'Stock Levels', icon: Package },
+    { id: 'warehouses', label: 'Warehouses', icon: Warehouse },
+    { id: 'forecast', label: 'Demand Forecast', icon: TrendingUp },
+    { id: 'suppliers', label: 'Procurement', icon: Truck },
+  ]
+
+  const statusColors = { healthy: 'bg-green-100 text-green-800', low: 'bg-orange-100 text-orange-800', out: 'bg-red-100 text-red-800', overstocked: 'bg-blue-100 text-blue-800' }
+  const statusLabels = { healthy: 'Healthy', low: 'Low Stock', out: 'Out of Stock', overstocked: 'Overstocked' }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900">Inventory Management</h2>
+          <p className="text-gray-500 mt-1">Track stock, manage warehouses, and forecast demand</p>
+        </div>
+        <div className="flex space-x-3">
+          <Button variant="outline"><RefreshCw className="w-4 h-4 mr-2" /> Sync All</Button>
+          <Button className="bg-blue-600 text-white"><Plus className="w-4 h-4 mr-2" /> Restock Order</Button>
+        </div>
+      </div>
+
+      {/* KPI Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+        {[
+          { label: 'Total SKUs', value: '8', icon: Box, color: 'text-blue-600', bg: 'bg-blue-50' },
+          { label: 'Total Value', value: formatCurrency(7781000), icon: DollarSign, color: 'text-green-600', bg: 'bg-green-50' },
+          { label: 'Low Stock Items', value: '2', icon: AlertTriangle, color: 'text-orange-600', bg: 'bg-orange-50' },
+          { label: 'Out of Stock', value: '1', icon: AlertCircle, color: 'text-red-600', bg: 'bg-red-50' },
+          { label: 'Warehouses', value: '3', icon: Warehouse, color: 'text-purple-600', bg: 'bg-purple-50' },
+        ].map((kpi, i) => (
+          <div key={i} className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+            <div className="flex items-center space-x-3">
+              <div className={`w-10 h-10 ${kpi.bg} rounded-lg flex items-center justify-center`}>
+                <kpi.icon className={`w-5 h-5 ${kpi.color}`} />
+              </div>
+              <div>
+                <p className="text-xs text-gray-500">{kpi.label}</p>
+                <p className="text-xl font-bold text-gray-900">{kpi.value}</p>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Tabs */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100">
+        <div className="flex border-b">
+          {tabs.map(tab => (
+            <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`flex items-center space-x-2 px-6 py-4 text-sm font-medium border-b-2 transition-colors ${activeTab === tab.id ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
+              <tab.icon className="w-4 h-4" />
+              <span>{tab.label}</span>
+            </button>
+          ))}
+        </div>
+
+        <div className="p-6">
+          {/* STOCK TAB */}
+          {activeTab === 'stock' && (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-gray-200">
+                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">SKU</th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Product</th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Warehouse</th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Qty</th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Reorder Point</th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Unit Cost</th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Total Value</th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Status</th>
+                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Last Restock</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {DEMO_INVENTORY.map(item => (
+                    <tr key={item.sku} className="border-b border-gray-100 hover:bg-gray-50">
+                      <td className="py-3 px-4 text-sm font-mono text-blue-600">{item.sku}</td>
+                      <td className="py-3 px-4 text-sm font-medium text-gray-900">{item.name}</td>
+                      <td className="py-3 px-4 text-sm text-gray-600">{item.warehouse}</td>
+                      <td className="py-3 px-4 text-sm font-bold text-gray-900">{item.qty}</td>
+                      <td className="py-3 px-4 text-sm text-gray-500">{item.reorder}</td>
+                      <td className="py-3 px-4 text-sm text-gray-600">{formatCurrency(item.cost)}</td>
+                      <td className="py-3 px-4 text-sm font-medium text-gray-900">{formatCurrency(item.value)}</td>
+                      <td className="py-3 px-4"><span className={`text-xs px-2 py-1 rounded-full ${statusColors[item.status]}`}>{statusLabels[item.status]}</span></td>
+                      <td className="py-3 px-4 text-sm text-gray-500">{item.lastRestock}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {/* WAREHOUSES TAB */}
+          {activeTab === 'warehouses' && (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {WAREHOUSES.map(wh => (
+                <div key={wh.id} className="border border-gray-200 rounded-xl p-5">
+                  <div className="flex items-center space-x-3 mb-4">
+                    <div className="w-12 h-12 bg-purple-50 rounded-xl flex items-center justify-center">
+                      <Warehouse className="w-6 h-6 text-purple-600" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-gray-900">{wh.name}</h3>
+                      <p className="text-sm text-gray-500 flex items-center"><MapPin className="w-3 h-3 mr-1" />{wh.location}</p>
+                    </div>
+                  </div>
+                  <div className="mb-4">
+                    <div className="flex justify-between text-sm mb-1">
+                      <span className="text-gray-500">Capacity</span>
+                      <span className="font-medium text-gray-900">{wh.used}/{wh.capacity} units</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2.5">
+                      <div className={`h-2.5 rounded-full ${(wh.used / wh.capacity) > 0.8 ? 'bg-red-500' : (wh.used / wh.capacity) > 0.6 ? 'bg-yellow-500' : 'bg-green-500'}`} style={{ width: `${(wh.used / wh.capacity) * 100}%` }} />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="bg-gray-50 rounded-lg p-3 text-center">
+                      <p className="text-xl font-bold text-gray-900">{wh.items}</p>
+                      <p className="text-xs text-gray-500">Unique Items</p>
+                    </div>
+                    <div className="bg-gray-50 rounded-lg p-3 text-center">
+                      <p className="text-xl font-bold text-gray-900">{wh.orders}</p>
+                      <p className="text-xs text-gray-500">Pending Orders</p>
+                    </div>
+                  </div>
+                  <div className="mt-4 flex space-x-2">
+                    <Button variant="outline" size="sm" className="flex-1 text-xs">View Stock</Button>
+                    <Button variant="outline" size="sm" className="flex-1 text-xs">Transfer</Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* FORECAST TAB */}
+          {activeTab === 'forecast' && (
+            <div>
+              <div className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl p-5 mb-6">
+                <div className="flex items-center space-x-3 mb-2">
+                  <Target className="w-5 h-5 text-indigo-600" />
+                  <h3 className="font-semibold text-gray-900">ML-Powered Demand Forecasting</h3>
+                </div>
+                <p className="text-sm text-gray-600">Predictions based on historical sales data, seasonal patterns, and market trends. Model accuracy: 87.3%</p>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-gray-200">
+                      <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Product</th>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Current Stock</th>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Predicted Demand (7d)</th>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Predicted Demand (30d)</th>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Confidence</th>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Trend</th>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {DEMAND_FORECAST.map((item, i) => (
+                      <tr key={i} className="border-b border-gray-100 hover:bg-gray-50">
+                        <td className="py-3 px-4 text-sm font-medium text-gray-900">{item.product}</td>
+                        <td className="py-3 px-4 text-sm text-gray-900">{item.current}</td>
+                        <td className="py-3 px-4 text-sm font-medium text-orange-600">{item.predicted7d}</td>
+                        <td className="py-3 px-4 text-sm font-medium text-red-600">{item.predicted30d}</td>
+                        <td className="py-3 px-4">
+                          <div className="flex items-center space-x-2">
+                            <div className="w-16 bg-gray-200 rounded-full h-2"><div className="h-2 rounded-full bg-indigo-500" style={{ width: `${item.confidence * 100}%` }} /></div>
+                            <span className="text-xs text-gray-500">{(item.confidence * 100).toFixed(0)}%</span>
+                          </div>
+                        </td>
+                        <td className="py-3 px-4">
+                          <span className={`text-xs px-2 py-1 rounded-full ${item.trend === 'up' ? 'bg-green-100 text-green-800' : item.trend === 'down' ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800'}`}>
+                            {item.trend === 'up' ? 'Trending Up' : item.trend === 'down' ? 'Trending Down' : 'Stable'}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4">
+                          {item.current < item.predicted30d ? (
+                            <Button size="sm" className="bg-orange-500 text-white text-xs">Reorder Now</Button>
+                          ) : (
+                            <span className="text-xs text-green-600 font-medium">Stock Sufficient</span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* PROCUREMENT TAB */}
+          {activeTab === 'suppliers' && (
+            <div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                {[
+                  { name: 'Kuda Electronics Ltd', type: 'Electronics', rating: 4.8, orders: 45, leadTime: '3-5 days', status: 'active' },
+                  { name: 'PowerMax Energy', type: 'Energy Products', rating: 4.5, orders: 23, leadTime: '5-7 days', status: 'active' },
+                  { name: 'HomeGoods Nigeria', type: 'Home & Office', rating: 4.2, orders: 34, leadTime: '2-4 days', status: 'active' },
+                ].map((supplier, i) => (
+                  <div key={i} className="border border-gray-200 rounded-xl p-5">
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="font-semibold text-gray-900">{supplier.name}</h3>
+                      <span className="text-xs px-2 py-1 rounded-full bg-green-100 text-green-700">{supplier.status}</span>
+                    </div>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between"><span className="text-gray-500">Category</span><span className="text-gray-900">{supplier.type}</span></div>
+                      <div className="flex justify-between"><span className="text-gray-500">Rating</span><span className="text-gray-900 flex items-center"><Star className="w-3 h-3 text-yellow-400 fill-yellow-400 mr-1" />{supplier.rating}</span></div>
+                      <div className="flex justify-between"><span className="text-gray-500">Total Orders</span><span className="text-gray-900">{supplier.orders}</span></div>
+                      <div className="flex justify-between"><span className="text-gray-500">Lead Time</span><span className="text-gray-900">{supplier.leadTime}</span></div>
+                    </div>
+                    <div className="mt-4 flex space-x-2">
+                      <Button variant="outline" size="sm" className="flex-1 text-xs">View Catalog</Button>
+                      <Button size="sm" className="flex-1 text-xs bg-blue-600 text-white">Place Order</Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="bg-white border border-gray-200 rounded-xl p-5">
+                <h4 className="font-semibold text-gray-900 mb-4">Recent Purchase Orders</h4>
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-gray-200">
+                      <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">PO Number</th>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Supplier</th>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Items</th>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Total</th>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Status</th>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Expected</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[
+                      { po: 'PO-2024-089', supplier: 'Kuda Electronics', items: 50, total: 4750000, status: 'In Transit', expected: '2024-01-18' },
+                      { po: 'PO-2024-088', supplier: 'PowerMax Energy', items: 20, total: 1700000, status: 'Confirmed', expected: '2024-01-20' },
+                      { po: 'PO-2024-087', supplier: 'HomeGoods Nigeria', items: 100, total: 1200000, status: 'Delivered', expected: '2024-01-12' },
+                    ].map((po, i) => (
+                      <tr key={i} className="border-b border-gray-100 hover:bg-gray-50">
+                        <td className="py-3 px-4 text-sm font-mono text-blue-600">{po.po}</td>
+                        <td className="py-3 px-4 text-sm text-gray-900">{po.supplier}</td>
+                        <td className="py-3 px-4 text-sm text-gray-600">{po.items}</td>
+                        <td className="py-3 px-4 text-sm font-medium text-gray-900">{formatCurrency(po.total)}</td>
+                        <td className="py-3 px-4"><span className={`text-xs px-2 py-1 rounded-full ${po.status === 'Delivered' ? 'bg-green-100 text-green-800' : po.status === 'In Transit' ? 'bg-blue-100 text-blue-800' : 'bg-yellow-100 text-yellow-800'}`}>{po.status}</span></td>
+                        <td className="py-3 px-4 text-sm text-gray-500">{po.expected}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ==================== OMNICHANNEL PAGE ====================
+const CHANNEL_STATS = [
+  { id: 'whatsapp', name: 'WhatsApp', icon: MessageCircle, color: 'bg-green-500', textColor: 'text-green-600', messages: 12450, activeUsers: 3420, responseTime: '< 30s', satisfaction: 4.7, status: 'active' },
+  { id: 'ussd', name: 'USSD', icon: Phone, color: 'bg-blue-600', textColor: 'text-blue-600', messages: 8900, activeUsers: 5600, responseTime: 'Instant', satisfaction: 4.2, status: 'active' },
+  { id: 'sms', name: 'SMS', icon: MessageSquare, color: 'bg-purple-500', textColor: 'text-purple-600', messages: 15600, activeUsers: 8900, responseTime: '< 5s', satisfaction: 4.0, status: 'active' },
+  { id: 'telegram', name: 'Telegram', icon: Send, color: 'bg-sky-500', textColor: 'text-sky-600', messages: 3200, activeUsers: 1100, responseTime: '< 30s', satisfaction: 4.5, status: 'active' },
+  { id: 'voice', name: 'Voice AI', icon: Headphones, color: 'bg-orange-500', textColor: 'text-orange-600', messages: 2100, activeUsers: 890, responseTime: '< 10s', satisfaction: 4.3, status: 'active' },
+  { id: 'email', name: 'Email', icon: Mail, color: 'bg-red-500', textColor: 'text-red-600', messages: 4500, activeUsers: 2300, responseTime: '< 2hr', satisfaction: 4.1, status: 'active' },
+]
+
+const DEMO_CONVERSATIONS = [
+  { id: 1, customer: 'Adebayo O.', channel: 'whatsapp', channelColor: 'bg-green-500', message: 'I want to check my account balance', time: '2 min ago', status: 'active', agent: 'AI Bot' },
+  { id: 2, customer: 'Ngozi K.', channel: 'ussd', channelColor: 'bg-blue-600', message: '*737*1# - Balance Inquiry', time: '5 min ago', status: 'completed', agent: 'System' },
+  { id: 3, customer: 'Ibrahim M.', channel: 'whatsapp', channelColor: 'bg-green-500', message: 'I need to buy 2GB MTN data', time: '8 min ago', status: 'active', agent: 'AI Bot' },
+  { id: 4, customer: 'Chioma E.', channel: 'telegram', channelColor: 'bg-sky-500', message: '/transfer 5000 to 0123456789', time: '12 min ago', status: 'completed', agent: 'AI Bot' },
+  { id: 5, customer: 'Fatima A.', channel: 'voice', channelColor: 'bg-orange-500', message: 'Voice call - Bill payment inquiry', time: '15 min ago', status: 'active', agent: 'Voice AI' },
+  { id: 6, customer: 'Emeka N.', channel: 'sms', channelColor: 'bg-purple-500', message: 'BAL to 54321 - Balance check', time: '18 min ago', status: 'completed', agent: 'System' },
+  { id: 7, customer: 'Bola A.', channel: 'whatsapp', channelColor: 'bg-green-500', message: 'Track my order ORD-2024-003', time: '22 min ago', status: 'active', agent: 'AI Bot' },
+  { id: 8, customer: 'Yusuf D.', channel: 'email', channelColor: 'bg-red-500', message: 'Monthly statement request for January', time: '45 min ago', status: 'pending', agent: 'Unassigned' },
+]
+
+const WHATSAPP_DEMO_MESSAGES = [
+  { sender: 'customer', name: 'Adebayo O.', text: 'Hi, I want to check my account balance', time: '10:30 AM' },
+  { sender: 'bot', name: '54link Bot', text: 'Hello Adebayo! Welcome to 54link. I can help you with that.\n\nPlease select an option:\n1. Check Balance\n2. Transfer Funds\n3. Buy Airtime\n4. Pay Bills\n5. Order Status\n6. Speak to Agent', time: '10:30 AM' },
+  { sender: 'customer', name: 'Adebayo O.', text: '1', time: '10:31 AM' },
+  { sender: 'bot', name: '54link Bot', text: 'Your current balance:\n\nWallet: NGN 125,450.00\nCommission: NGN 15,750.00\nFloat: NGN 500,000.00\n\nLast transaction: NGN 5,000 deposit (Today 09:45 AM)\n\nReply MENU for more options.', time: '10:31 AM' },
+  { sender: 'customer', name: 'Adebayo O.', text: '3', time: '10:32 AM' },
+  { sender: 'bot', name: '54link Bot', text: 'Buy Airtime:\n\nSelect network:\n1. MTN\n2. Airtel\n3. Glo\n4. 9mobile\n\nOr type the phone number directly.', time: '10:32 AM' },
+]
+
+const USSD_DEMO_FLOW = [
+  { type: 'system', text: 'Welcome to 54link\n*737#\n\n1. Check Balance\n2. Transfer\n3. Buy Airtime\n4. Pay Bills\n5. Mini Statement\n6. Agent Services' },
+  { type: 'user', text: '1' },
+  { type: 'system', text: 'Account Balance:\n\nWallet: NGN 125,450.00\nFloat: NGN 500,000.00\n\nEnter PIN to confirm:' },
+  { type: 'user', text: '****' },
+  { type: 'system', text: 'Balance confirmed.\n\nWallet: NGN 125,450.00\nFloat: NGN 500,000.00\n\n0. Back\n00. Main Menu' },
+]
+
+function OmnichannelPage() {
+  const [activeTab, setActiveTab] = useState('overview')
+  const [selectedConversation, setSelectedConversation] = useState(null)
+  const [channelPreview, setChannelPreview] = useState(null)
+
+  const tabs = [
+    { id: 'overview', label: 'Channel Overview', icon: Activity },
+    { id: 'conversations', label: 'Live Conversations', icon: MessageCircle },
+    { id: 'whatsapp_demo', label: 'WhatsApp Bot', icon: MessageSquare },
+    { id: 'ussd_demo', label: 'USSD Flow', icon: Phone },
+    { id: 'campaigns', label: 'Campaigns', icon: Send },
+  ]
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900">Omnichannel Communication Hub</h2>
+          <p className="text-gray-500 mt-1">Manage all customer channels from one dashboard</p>
+        </div>
+        <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-2 bg-green-50 px-3 py-2 rounded-lg">
+            <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+            <span className="text-sm text-green-700 font-medium">6 channels active</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Channel Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
+        {CHANNEL_STATS.map(ch => (
+          <div key={ch.id} className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 hover:shadow-md transition-shadow cursor-pointer" onClick={() => setChannelPreview(ch.id)}>
+            <div className="flex items-center space-x-2 mb-3">
+              <div className={`w-8 h-8 ${ch.color} rounded-lg flex items-center justify-center`}>
+                <ch.icon className="w-4 h-4 text-white" />
+              </div>
+              <span className="font-semibold text-sm text-gray-900">{ch.name}</span>
+            </div>
+            <div className="space-y-1">
+              <div className="flex justify-between"><span className="text-xs text-gray-500">Messages</span><span className="text-xs font-bold text-gray-900">{ch.messages.toLocaleString()}</span></div>
+              <div className="flex justify-between"><span className="text-xs text-gray-500">Active Users</span><span className="text-xs font-bold text-gray-900">{ch.activeUsers.toLocaleString()}</span></div>
+              <div className="flex justify-between"><span className="text-xs text-gray-500">Response</span><span className="text-xs font-bold text-green-600">{ch.responseTime}</span></div>
+              <div className="flex justify-between"><span className="text-xs text-gray-500">Rating</span><span className="text-xs font-bold text-gray-900 flex items-center"><Star className="w-3 h-3 text-yellow-400 fill-yellow-400 mr-0.5" />{ch.satisfaction}</span></div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Tabs */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100">
+        <div className="flex border-b overflow-x-auto">
+          {tabs.map(tab => (
+            <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`flex items-center space-x-2 px-6 py-4 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${activeTab === tab.id ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
+              <tab.icon className="w-4 h-4" />
+              <span>{tab.label}</span>
+            </button>
+          ))}
+        </div>
+
+        <div className="p-6">
+          {/* OVERVIEW TAB */}
+          {activeTab === 'overview' && (
+            <div>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                {[
+                  { label: 'Total Messages (MTD)', value: '46,750', change: '+12%', icon: MessageSquare, color: 'text-blue-600', bg: 'bg-blue-50' },
+                  { label: 'Active Conversations', value: '234', change: '+8%', icon: MessageCircle, color: 'text-green-600', bg: 'bg-green-50' },
+                  { label: 'Avg Response Time', value: '28s', change: '-15%', icon: Clock, color: 'text-orange-600', bg: 'bg-orange-50' },
+                  { label: 'Customer Satisfaction', value: '4.4/5', change: '+3%', icon: Star, color: 'text-purple-600', bg: 'bg-purple-50' },
+                ].map((kpi, i) => (
+                  <div key={i} className="bg-gray-50 rounded-xl p-5">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-gray-500">{kpi.label}</p>
+                        <p className="text-2xl font-bold text-gray-900 mt-1">{kpi.value}</p>
+                        <p className="text-xs text-green-600 mt-1">{kpi.change} vs last month</p>
+                      </div>
+                      <div className={`w-12 h-12 ${kpi.bg} rounded-xl flex items-center justify-center`}>
+                        <kpi.icon className={`w-6 h-6 ${kpi.color}`} />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <h3 className="font-semibold text-gray-900 mb-4">Channel Performance</h3>
+              <div className="space-y-3">
+                {CHANNEL_STATS.map(ch => (
+                  <div key={ch.id} className="flex items-center space-x-4 p-4 bg-gray-50 rounded-xl">
+                    <div className={`w-10 h-10 ${ch.color} rounded-lg flex items-center justify-center`}>
+                      <ch.icon className="w-5 h-5 text-white" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="font-medium text-gray-900">{ch.name}</span>
+                        <span className="text-sm text-gray-500">{ch.messages.toLocaleString()} messages</span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div className={`h-2 rounded-full ${ch.color}`} style={{ width: `${(ch.messages / 16000) * 100}%` }} />
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm font-bold text-gray-900">{ch.activeUsers.toLocaleString()}</p>
+                      <p className="text-xs text-gray-500">active users</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* LIVE CONVERSATIONS TAB */}
+          {activeTab === 'conversations' && (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-0 -m-6">
+              <div className="border-r border-gray-200 max-h-[600px] overflow-y-auto">
+                <div className="p-4 border-b border-gray-200">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <input type="text" placeholder="Search conversations..." className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg text-sm" />
+                  </div>
+                </div>
+                {DEMO_CONVERSATIONS.map(conv => (
+                  <div key={conv.id} onClick={() => setSelectedConversation(conv)} className={`p-4 border-b border-gray-100 cursor-pointer hover:bg-gray-50 ${selectedConversation?.id === conv.id ? 'bg-blue-50' : ''}`}>
+                    <div className="flex items-center justify-between mb-1">
+                      <div className="flex items-center space-x-2">
+                        <div className={`w-6 h-6 ${conv.channelColor} rounded-full flex items-center justify-center`}>
+                          <MessageSquare className="w-3 h-3 text-white" />
+                        </div>
+                        <span className="font-medium text-sm text-gray-900">{conv.customer}</span>
+                      </div>
+                      <span className="text-xs text-gray-400">{conv.time}</span>
+                    </div>
+                    <p className="text-xs text-gray-500 truncate ml-8">{conv.message}</p>
+                    <div className="flex items-center justify-between mt-1 ml-8">
+                      <span className="text-xs text-gray-400">{conv.agent}</span>
+                      <span className={`text-xs px-1.5 py-0.5 rounded-full ${conv.status === 'active' ? 'bg-green-100 text-green-700' : conv.status === 'completed' ? 'bg-gray-100 text-gray-600' : 'bg-yellow-100 text-yellow-700'}`}>{conv.status}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="col-span-2 p-6">
+                {selectedConversation ? (
+                  <div>
+                    <div className="flex items-center justify-between mb-6 pb-4 border-b border-gray-200">
+                      <div className="flex items-center space-x-3">
+                        <div className={`w-10 h-10 ${selectedConversation.channelColor} rounded-full flex items-center justify-center`}>
+                          <User className="w-5 h-5 text-white" />
+                        </div>
+                        <div>
+                          <h3 className="font-semibold text-gray-900">{selectedConversation.customer}</h3>
+                          <p className="text-xs text-gray-500">via {selectedConversation.channel} | Handled by {selectedConversation.agent}</p>
+                        </div>
+                      </div>
+                      <div className="flex space-x-2">
+                        <Button variant="outline" size="sm"><Phone className="w-4 h-4" /></Button>
+                        <Button variant="outline" size="sm"><User className="w-4 h-4" /></Button>
+                      </div>
+                    </div>
+                    <div className="space-y-4 mb-4">
+                      <div className="flex justify-start">
+                        <div className="bg-gray-100 rounded-2xl rounded-tl-none px-4 py-3 max-w-sm">
+                          <p className="text-sm text-gray-900">{selectedConversation.message}</p>
+                          <p className="text-xs text-gray-400 mt-1">{selectedConversation.time}</p>
+                        </div>
+                      </div>
+                      <div className="flex justify-end">
+                        <div className="bg-blue-600 text-white rounded-2xl rounded-tr-none px-4 py-3 max-w-sm">
+                          <p className="text-sm">Hello! I can help you with that. Let me pull up your account details...</p>
+                          <p className="text-xs text-blue-200 mt-1">AI Bot - just now</p>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-3">
+                      <input type="text" placeholder="Type a message..." className="flex-1 px-4 py-2.5 border border-gray-200 rounded-lg text-sm" />
+                      <Button className="bg-blue-600 text-white"><Send className="w-4 h-4" /></Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center h-full text-gray-400">
+                    <MessageCircle className="w-12 h-12 mb-3" />
+                    <p className="text-sm">Select a conversation to view details</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* WHATSAPP BOT DEMO TAB */}
+          {activeTab === 'whatsapp_demo' && (
+            <div className="max-w-lg mx-auto">
+              <div className="bg-gradient-to-r from-green-600 to-green-700 rounded-t-xl px-4 py-3 flex items-center space-x-3">
+                <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
+                  <Bot className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-white font-semibold">54link Agent</h3>
+                  <p className="text-green-100 text-xs">AI-Powered | Online</p>
+                </div>
+              </div>
+              <div className="bg-[#e5ddd5] p-4 space-y-3 min-h-[400px]" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'200\' height=\'200\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cpath d=\'M0 0h200v200H0z\' fill=\'%23d4cfc4\' fill-opacity=\'.1\'/%3E%3C/svg%3E")' }}>
+                {WHATSAPP_DEMO_MESSAGES.map((msg, i) => (
+                  <div key={i} className={`flex ${msg.sender === 'customer' ? 'justify-start' : 'justify-end'}`}>
+                    <div className={`rounded-lg px-3 py-2 max-w-xs shadow-sm ${msg.sender === 'customer' ? 'bg-white' : 'bg-[#dcf8c6]'}`}>
+                      {msg.sender === 'bot' && <p className="text-xs font-semibold text-green-700 mb-1">{msg.name}</p>}
+                      <p className="text-sm text-gray-900 whitespace-pre-line">{msg.text}</p>
+                      <p className="text-xs text-gray-500 text-right mt-1">{msg.time}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="bg-white rounded-b-xl px-4 py-3 flex items-center space-x-3 border-t">
+                <input type="text" placeholder="Type a message..." className="flex-1 px-4 py-2 bg-gray-100 rounded-full text-sm" />
+                <button className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center">
+                  <Send className="w-5 h-5 text-white" />
+                </button>
+              </div>
+              <div className="mt-4 bg-green-50 rounded-xl p-4">
+                <h4 className="font-semibold text-green-900 text-sm mb-2">WhatsApp AI Bot Capabilities</h4>
+                <div className="grid grid-cols-2 gap-2">
+                  {['Balance Inquiry', 'Fund Transfer', 'Airtime Purchase', 'Bill Payment', 'Order Tracking', 'Product Browsing', 'Agent Locator', 'Mini Statement'].map(cap => (
+                    <div key={cap} className="flex items-center space-x-2">
+                      <CheckCircle className="w-3 h-3 text-green-600" />
+                      <span className="text-xs text-green-800">{cap}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* USSD FLOW DEMO TAB */}
+          {activeTab === 'ussd_demo' && (
+            <div className="max-w-md mx-auto">
+              <div className="bg-gray-900 rounded-2xl overflow-hidden shadow-2xl">
+                <div className="bg-gray-800 px-4 py-3 flex items-center justify-between">
+                  <span className="text-gray-400 text-xs">Carrier</span>
+                  <span className="text-white text-sm font-semibold">USSD Session</span>
+                  <span className="text-gray-400 text-xs">*737#</span>
+                </div>
+                <div className="p-4 space-y-3 min-h-[350px]">
+                  {USSD_DEMO_FLOW.map((step, i) => (
+                    <div key={i}>
+                      {step.type === 'system' ? (
+                        <div className="bg-gray-800 rounded-lg p-3">
+                          <p className="text-green-400 text-sm font-mono whitespace-pre-line">{step.text}</p>
+                        </div>
+                      ) : (
+                        <div className="flex justify-end">
+                          <div className="bg-blue-600 rounded-lg px-3 py-2">
+                            <p className="text-white text-sm font-mono">{step.text}</p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+                <div className="bg-gray-800 px-4 py-3 flex items-center space-x-3">
+                  <input type="text" placeholder="Enter response..." className="flex-1 px-3 py-2 bg-gray-700 text-white rounded-lg text-sm font-mono" />
+                  <button className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold">Send</button>
+                </div>
+              </div>
+              <div className="mt-4 bg-blue-50 rounded-xl p-4">
+                <h4 className="font-semibold text-blue-900 text-sm mb-2">USSD Service Features</h4>
+                <div className="grid grid-cols-2 gap-2">
+                  {['No Internet Required', 'Feature Phone Support', 'Balance Check', 'Fund Transfer', 'Airtime Purchase', 'Bill Payment', 'Mini Statement', 'Agent Services'].map(cap => (
+                    <div key={cap} className="flex items-center space-x-2">
+                      <CheckCircle className="w-3 h-3 text-blue-600" />
+                      <span className="text-xs text-blue-800">{cap}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* CAMPAIGNS TAB */}
+          {activeTab === 'campaigns' && (
+            <div>
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="font-semibold text-gray-900">Messaging Campaigns</h3>
+                <Button className="bg-blue-600 text-white"><Plus className="w-4 h-4 mr-2" /> New Campaign</Button>
+              </div>
+              <div className="space-y-4">
+                {[
+                  { name: 'January Promo - Free Transfers', channels: ['WhatsApp', 'SMS'], sent: 12500, delivered: 12100, opened: 8900, converted: 2340, status: 'completed', date: '2024-01-01' },
+                  { name: 'New Year Data Bundle Offer', channels: ['WhatsApp', 'SMS', 'Email'], sent: 8900, delivered: 8600, opened: 6200, converted: 1890, status: 'completed', date: '2024-01-05' },
+                  { name: 'Agent Recruitment Drive', channels: ['WhatsApp', 'Telegram'], sent: 5000, delivered: 4800, opened: 3500, converted: 890, status: 'active', date: '2024-01-12' },
+                  { name: 'Valentine Special - Gift Cards', channels: ['WhatsApp', 'SMS', 'Email', 'Push'], sent: 0, delivered: 0, opened: 0, converted: 0, status: 'scheduled', date: '2024-02-10' },
+                ].map((campaign, i) => (
+                  <div key={i} className="border border-gray-200 rounded-xl p-5">
+                    <div className="flex items-center justify-between mb-3">
+                      <div>
+                        <h4 className="font-semibold text-gray-900">{campaign.name}</h4>
+                        <div className="flex items-center space-x-2 mt-1">
+                          {campaign.channels.map(ch => (
+                            <span key={ch} className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">{ch}</span>
+                          ))}
+                        </div>
+                      </div>
+                      <span className={`text-xs px-3 py-1 rounded-full font-medium ${campaign.status === 'completed' ? 'bg-green-100 text-green-700' : campaign.status === 'active' ? 'bg-blue-100 text-blue-700' : 'bg-yellow-100 text-yellow-700'}`}>{campaign.status}</span>
+                    </div>
+                    {campaign.sent > 0 && (
+                      <div className="grid grid-cols-4 gap-4">
+                        <div><p className="text-lg font-bold text-gray-900">{campaign.sent.toLocaleString()}</p><p className="text-xs text-gray-500">Sent</p></div>
+                        <div><p className="text-lg font-bold text-gray-900">{campaign.delivered.toLocaleString()}</p><p className="text-xs text-gray-500">Delivered</p></div>
+                        <div><p className="text-lg font-bold text-gray-900">{campaign.opened.toLocaleString()}</p><p className="text-xs text-gray-500">Opened</p></div>
+                        <div><p className="text-lg font-bold text-green-600">{campaign.converted.toLocaleString()}</p><p className="text-xs text-gray-500">Converted</p></div>
+                      </div>
+                    )}
+                    {campaign.sent === 0 && <p className="text-sm text-gray-500">Scheduled for {campaign.date}</p>}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   )
 }
