@@ -526,13 +526,31 @@ class KeycloakIntegration:
         self._token_expiry = None
     
     async def get_admin_token(self) -> str:
-        """Get admin token for Keycloak API"""
+        """Get admin token from Keycloak token endpoint"""
         if self._admin_token and self._token_expiry and datetime.utcnow() < self._token_expiry:
             return self._admin_token
         
-        # In production, call Keycloak token endpoint
-        self._admin_token = "mock_admin_token"
-        self._token_expiry = datetime.utcnow() + timedelta(hours=1)
+        import aiohttp
+        token_url = f"{self.config.keycloak_url}/realms/master/protocol/openid-connect/token"
+        admin_user = os.getenv("KEYCLOAK_ADMIN_USER", "admin")
+        admin_pass = os.getenv("KEYCLOAK_ADMIN_PASSWORD", "")
+        if not admin_pass:
+            raise RuntimeError("KEYCLOAK_ADMIN_PASSWORD env var is required")
+        data = {
+            "grant_type": "password",
+            "client_id": "admin-cli",
+            "username": admin_user,
+            "password": admin_pass,
+        }
+        async with aiohttp.ClientSession() as session:
+            async with session.post(token_url, data=data) as resp:
+                if resp.status != 200:
+                    body = await resp.text()
+                    raise RuntimeError(f"Keycloak token request failed ({resp.status}): {body}")
+                token_data = await resp.json()
+                self._admin_token = token_data["access_token"]
+                expires_in = token_data.get("expires_in", 3600)
+                self._token_expiry = datetime.utcnow() + timedelta(seconds=expires_in - 60)
         
         return self._admin_token
     
@@ -547,6 +565,7 @@ class KeycloakIntegration:
     ) -> str:
         """Create user in Keycloak after KYC approval"""
         logger.info(f"Creating Keycloak user for {email}")
+        token = await self.get_admin_token()
         
         user_data = {
             "username": email,
@@ -563,28 +582,66 @@ class KeycloakIntegration:
             },
         }
         
-        # In production, POST to Keycloak Admin API
-        # POST /admin/realms/{realm}/users
+        import aiohttp
+        url = f"{self.config.keycloak_url}/admin/realms/{self.config.keycloak_realm}/users"
+        headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
+        async with aiohttp.ClientSession() as session:
+            async with session.post(url, json=user_data, headers=headers) as resp:
+                if resp.status not in (201, 409):
+                    body = await resp.text()
+                    logger.error(f"Keycloak user creation failed ({resp.status}): {body}")
+                    raise RuntimeError(f"Failed to create Keycloak user: {body}")
+                if resp.status == 409:
+                    logger.info(f"User {email} already exists in Keycloak")
         
         return user_id
     
     async def assign_role(self, user_id: str, role_name: str):
-        """Assign role to user"""
+        """Assign role to user via Keycloak role mapping API"""
         logger.info(f"Assigning role {role_name} to user {user_id}")
-        
-        # In production, POST to Keycloak role mapping API
+        token = await self.get_admin_token()
+        import aiohttp
+        realm = self.config.keycloak_realm
+        base = self.config.keycloak_url
+        headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
+        roles_url = f"{base}/admin/realms/{realm}/roles/{role_name}"
+        async with aiohttp.ClientSession() as session:
+            async with session.get(roles_url, headers=headers) as resp:
+                if resp.status != 200:
+                    logger.error(f"Role {role_name} not found")
+                    return
+                role_data = await resp.json()
+            mapping_url = f"{base}/admin/realms/{realm}/users/{user_id}/role-mappings/realm"
+            async with session.post(mapping_url, json=[role_data], headers=headers) as resp:
+                if resp.status != 204:
+                    body = await resp.text()
+                    logger.error(f"Role assignment failed ({resp.status}): {body}")
     
     async def update_user_attributes(self, user_id: str, attributes: Dict[str, Any]):
-        """Update user attributes"""
+        """Update user attributes via Keycloak user API"""
         logger.info(f"Updating attributes for user {user_id}")
-        
-        # In production, PUT to Keycloak user API
+        token = await self.get_admin_token()
+        import aiohttp
+        url = f"{self.config.keycloak_url}/admin/realms/{self.config.keycloak_realm}/users/{user_id}"
+        headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
+        async with aiohttp.ClientSession() as session:
+            async with session.put(url, json={"attributes": attributes}, headers=headers) as resp:
+                if resp.status != 204:
+                    body = await resp.text()
+                    logger.error(f"User attribute update failed ({resp.status}): {body}")
     
     async def disable_user(self, user_id: str, reason: str):
-        """Disable user (e.g., after failed reverification)"""
+        """Disable user via Keycloak user API"""
         logger.info(f"Disabling user {user_id}: {reason}")
-        
-        # In production, PUT to Keycloak user API with enabled=false
+        token = await self.get_admin_token()
+        import aiohttp
+        url = f"{self.config.keycloak_url}/admin/realms/{self.config.keycloak_realm}/users/{user_id}"
+        headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
+        async with aiohttp.ClientSession() as session:
+            async with session.put(url, json={"enabled": False, "attributes": {"disable_reason": [reason]}}, headers=headers) as resp:
+                if resp.status != 204:
+                    body = await resp.text()
+                    logger.error(f"User disable failed ({resp.status}): {body}")
 
 
 # ============================================================================

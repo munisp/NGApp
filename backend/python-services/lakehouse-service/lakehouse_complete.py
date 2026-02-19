@@ -72,11 +72,8 @@ async def login_endpoint(login_request: LoginRequest, request: Request):
     """
     Login endpoint - Returns JWT tokens or MFA challenge
     
-    Demo users:
-    - admin / admin123 (full access)
-    - data_engineer / engineer123 (can create tables, run pipelines)
-    - analyst / analyst123 (read-only analytics)
-    - viewer / viewer123 (read-only catalog)
+    Credentials:
+    - Use configured users/passwords (no hardcoded credentials)
     """
     return await login(login_request, request)
 

@@ -21,7 +21,9 @@ logger = logging.getLogger(__name__)
 # CONFIGURATION
 # ============================================================================
 
-SECRET_KEY = os.getenv("POS_JWT_SECRET_KEY", "CHANGE-THIS-IN-PRODUCTION-USE-STRONG-SECRET")
+SECRET_KEY = os.getenv("POS_JWT_SECRET_KEY")
+if not SECRET_KEY:
+    raise RuntimeError("POS_JWT_SECRET_KEY env var is required")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30  # Short-lived for security
 REFRESH_TOKEN_EXPIRE_DAYS = 7
@@ -333,51 +335,55 @@ require_operator = RoleChecker([
 ])
 
 # ============================================================================
-# DEMO USERS (In production, use database)
+# USER STORE (loaded from environment / external DB in production)
 # ============================================================================
 
-DEMO_USERS = {
-    "admin": {
-        "user_id": "user_001",
-        "username": "admin",
-        "email": "admin@pos.system",
-        "password_hash": PasswordHasher.hash_password("admin123"),
-        "role": POSUserRole.SUPER_ADMIN,
-        "merchant_id": None,
-        "terminal_ids": [],
-    },
-    "merchant1": {
-        "user_id": "user_002",
-        "username": "merchant1",
-        "email": "merchant1@pos.system",
-        "password_hash": PasswordHasher.hash_password("merchant123"),
-        "role": POSUserRole.MERCHANT_ADMIN,
-        "merchant_id": "merchant_001",
-        "terminal_ids": ["terminal_001", "terminal_002"],
-    },
-    "cashier1": {
-        "user_id": "user_003",
-        "username": "cashier1",
-        "email": "cashier1@pos.system",
-        "password_hash": PasswordHasher.hash_password("cashier123"),
-        "role": POSUserRole.CASHIER,
-        "merchant_id": "merchant_001",
-        "terminal_ids": ["terminal_001"],
-    },
-}
+def _load_pos_users() -> Dict[str, Dict[str, Any]]:
+    """Load POS users from environment variables.
+    
+    Expected env vars per user: POS_USER_{IDX}_USERNAME, _PASSWORD, _EMAIL, _ROLE, _MERCHANT_ID, _TERMINAL_IDS
+    """
+    users: Dict[str, Dict[str, Any]] = {}
+    idx = 0
+    while True:
+        prefix = f"POS_USER_{idx}"
+        username = os.getenv(f"{prefix}_USERNAME")
+        if not username:
+            break
+        password = os.getenv(f"{prefix}_PASSWORD", "")
+        email = os.getenv(f"{prefix}_EMAIL", f"{username}@pos.system")
+        role_str = os.getenv(f"{prefix}_ROLE", "viewer")
+        merchant_id = os.getenv(f"{prefix}_MERCHANT_ID") or None
+        terminal_ids_str = os.getenv(f"{prefix}_TERMINAL_IDS", "")
+        terminal_ids = [t.strip() for t in terminal_ids_str.split(",") if t.strip()] if terminal_ids_str else []
+        try:
+            role = POSUserRole(role_str)
+        except ValueError:
+            role = POSUserRole.VIEWER
+        users[username] = {
+            "user_id": f"user_{idx:03d}",
+            "username": username,
+            "email": email,
+            "password_hash": PasswordHasher.hash_password(password),
+            "role": role,
+            "merchant_id": merchant_id,
+            "terminal_ids": terminal_ids,
+        }
+        idx += 1
+    return users
+
+POS_USERS = _load_pos_users()
 
 async def authenticate_user(username: str, password: str) -> Optional[POSUser]:
     """Authenticate user with username and password"""
-    user_data = DEMO_USERS.get(username)
+    user_data = POS_USERS.get(username)
     
     if not user_data:
         return None
     
-    # Verify password
     if not PasswordHasher.verify_password(password, user_data['password_hash']):
         return None
     
-    # Create user object
     user = POSUser(
         user_id=user_data['user_id'],
         username=user_data['username'],

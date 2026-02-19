@@ -1,7 +1,7 @@
 import logging
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, Header, HTTPException, status
 from sqlalchemy.orm import Session
 
 from . import models
@@ -15,38 +15,35 @@ logger = logging.getLogger(__name__)
 
 # --- Dependencies ---
 
-# Placeholder for actual authentication dependency
-# In a real application, this would decode a JWT or session cookie
-def get_current_user_id() -> int:
-    """
-    Get authenticated user ID from JWT token or session.
-    Returns user ID if authenticated, otherwise raises HTTPException.
-    """
-    # Implement JWT token validation
-    from fastapi import Header, HTTPException
+def get_current_user_id(authorization: Optional[str] = Header(None, alias="Authorization")) -> int:
+    """Get authenticated user ID from JWT token."""
     from jose import JWTError, jwt
     import os
-    
-    token = Header(None, alias="Authorization")
-    if not token:
-        return 1  # Default for development
-    
+
+    if not authorization:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Missing Authorization header")
+
+    token = authorization
+    if token.startswith("Bearer "):
+        token = token[7:]
+
+    secret_key = os.getenv("JWT_SECRET_KEY")
+    if not secret_key:
+        raise RuntimeError("JWT_SECRET_KEY env var is required")
+
     try:
-        # Remove 'Bearer ' prefix if present
-        if token.startswith('Bearer '):
-            token = token[7:]
-        
-        # Decode JWT token
-        secret_key = os.getenv('JWT_SECRET_KEY', 'your-secret-key-change-in-production')
         payload = jwt.decode(token, secret_key, algorithms=["HS256"])
-        user_id = payload.get("user_id") or payload.get("sub")
-        
-        if user_id:
-            return int(user_id)
-        else:
-            return 1  # Default fallback
-    except (JWTError, ValueError):
-        return 1  # Default fallback for invalid tokens
+    except JWTError:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
+
+    user_id = payload.get("user_id") or payload.get("sub")
+    if not user_id:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Missing user id in token")
+
+    try:
+        return int(user_id)
+    except ValueError:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid user id in token")
 
 # --- Helper Functions ---
 

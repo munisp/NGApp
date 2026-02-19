@@ -51,8 +51,7 @@ config = Config()
 
 # Validate required config
 if not config.ILP_SECRET:
-    logger.warning("ILP_SECRET not set - using development default (NOT FOR PRODUCTION)")
-    config.ILP_SECRET = "mojaloop-ilp-secret-key-change-in-production"
+    raise RuntimeError("ILP_SECRET env var is required")
 
 # Database connection pool
 db_pool: Optional[asyncpg.Pool] = None

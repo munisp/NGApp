@@ -34,9 +34,12 @@ class Config:
     KAFKA_BROKERS = os.getenv("KAFKA_BROKERS", "localhost:9092")
     CALLBACK_TIMEOUT = int(os.getenv("CALLBACK_TIMEOUT", "30"))
     MAX_RETRIES = int(os.getenv("MAX_RETRIES", "3"))
-    ILP_SECRET = os.getenv("ILP_SECRET", "mojaloop-ilp-secret-key-change-in-production")
+    ILP_SECRET = os.getenv("ILP_SECRET")  # REQUIRED - no default
 
 config = Config()
+
+if not config.ILP_SECRET:
+    raise RuntimeError("ILP_SECRET env var is required")
 
 # Database connection pool
 db_pool: Optional[asyncpg.Pool] = None

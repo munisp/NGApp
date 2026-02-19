@@ -104,7 +104,14 @@ fluvio_producer = None
 
 # JWT Security
 security = HTTPBearer()
-JWT_SECRET = os.getenv("JWT_SECRET", "your-secret-key-change-in-production")
+JWT_SECRET = os.getenv("JWT_SECRET")
+if not JWT_SECRET:
+    raise RuntimeError("JWT_SECRET env var is required")
+
+QR_SIGNATURE_SECRET = os.getenv("QR_SIGNATURE_SECRET")
+if not QR_SIGNATURE_SECRET:
+    raise RuntimeError("QR_SIGNATURE_SECRET env var is required")
+
 JWT_ALGORITHM = "HS256"
 
 # ==================== ENUMS ====================
@@ -283,9 +290,8 @@ async def publish_qr_event(event_type: str, data: Dict[str, Any]):
 
 def generate_qr_signature(data: Dict[str, Any]) -> str:
     """Generate HMAC signature for QR code security"""
-    secret = os.getenv("QR_SIGNATURE_SECRET", "default-secret-change-me")
     message = json.dumps(data, sort_keys=True).encode()
-    signature = hmac.new(secret.encode(), message, hashlib.sha256).hexdigest()
+    signature = hmac.new(QR_SIGNATURE_SECRET.encode(), message, hashlib.sha256).hexdigest()
     return signature
 
 def verify_qr_signature(data: Dict[str, Any], signature: str) -> bool:
@@ -736,8 +742,12 @@ async def startup_event():
     global db_pool, redis_client, s3_client, fluvio_producer
     
     # Database
+    database_url = os.getenv("DATABASE_URL")
+    if not database_url:
+        raise RuntimeError("DATABASE_URL env var is required")
+
     db_pool = await asyncpg.create_pool(
-        os.getenv("DATABASE_URL", "postgresql://postgres:password@localhost:5432/agent_banking"),
+        database_url,
         min_size=5,
         max_size=20
     )

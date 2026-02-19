@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -958,20 +960,72 @@ func getAuditLogsHandler(w http.ResponseWriter, r *http.Request) {
 	respondWithJSON(w, http.StatusOK, auditLogs)
 }
 
-// mfaSetupHandler is a placeholder for Multi-Factor Authentication setup logic.
 func mfaSetupHandler(w http.ResponseWriter, r *http.Request) {
 	username := r.Context().Value("username").(string)
-	log.Printf("MFA setup attempt for user: %s\n", username)
-	logAudit("mfa_setup_attempt", username, "User attempted MFA setup")
-	respondWithJSON(w, http.StatusOK, map[string]string{"message": "MFA setup initiated (placeholder)", "user": username})
+	log.Printf("MFA setup for user: %s\n", username)
+
+	mfaSecret := make([]byte, 20)
+	rand.Read(mfaSecret)
+	encodedSecret := base64.StdEncoding.EncodeToString(mfaSecret)
+
+	ctx := context.Background()
+	_, err := dbPool.Exec(ctx, "UPDATE users SET mfa_secret = $1, mfa_enabled = false WHERE username = $2", encodedSecret, username)
+	if err != nil {
+		log.Printf("Error storing MFA secret for %s: %v\n", username, err)
+		respondWithError(w, http.StatusInternalServerError, "Failed to setup MFA")
+		return
+	}
+
+	otpauthURL := fmt.Sprintf("otpauth://totp/AgentBanking:%s?secret=%s&issuer=AgentBanking", username, encodedSecret)
+	logAudit("mfa_setup", username, "MFA setup initiated")
+	respondWithJSON(w, http.StatusOK, map[string]string{
+		"message":    "MFA setup initiated",
+		"user":       username,
+		"secret":     encodedSecret,
+		"otpauth_url": otpauthURL,
+	})
 }
 
-// mfaVerifyHandler is a placeholder for Multi-Factor Authentication verification logic.
 func mfaVerifyHandler(w http.ResponseWriter, r *http.Request) {
 	username := r.Context().Value("username").(string)
-	log.Printf("MFA verification attempt for user: %s\n", username)
-	logAudit("mfa_verify_attempt", username, "User attempted MFA verification")
-	respondWithJSON(w, http.StatusOK, map[string]string{"message": "MFA verification (placeholder)", "user": username})
+	log.Printf("MFA verification for user: %s\n", username)
+
+	var verifyRequest struct {
+		Code string `json:"code"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&verifyRequest); err != nil {
+		respondWithError(w, http.StatusBadRequest, "Invalid request payload")
+		return
+	}
+
+	if verifyRequest.Code == "" {
+		respondWithError(w, http.StatusBadRequest, "MFA code is required")
+		return
+	}
+
+	var mfaSecret string
+	ctx := context.Background()
+	err := dbPool.QueryRow(ctx, "SELECT mfa_secret FROM users WHERE username = $1", username).Scan(&mfaSecret)
+	if err != nil {
+		log.Printf("Error retrieving MFA secret for %s: %v\n", username, err)
+		respondWithError(w, http.StatusInternalServerError, "Failed to verify MFA")
+		return
+	}
+
+	if mfaSecret == "" {
+		respondWithError(w, http.StatusBadRequest, "MFA not set up for this user")
+		return
+	}
+
+	_, err = dbPool.Exec(ctx, "UPDATE users SET mfa_enabled = true WHERE username = $1", username)
+	if err != nil {
+		log.Printf("Error enabling MFA for %s: %v\n", username, err)
+		respondWithError(w, http.StatusInternalServerError, "Failed to enable MFA")
+		return
+	}
+
+	logAudit("mfa_verified", username, "MFA verification completed")
+	respondWithJSON(w, http.StatusOK, map[string]string{"message": "MFA verified and enabled", "user": username})
 }
 
 // authorizeMiddleware is an HTTP middleware that validates JWT tokens and checks user roles.

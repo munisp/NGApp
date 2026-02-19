@@ -158,8 +158,13 @@ class Config:
     CLOUD_SYNC_INTERVAL = int(os.getenv('CLOUD_SYNC_INTERVAL', '300'))  # 5 minutes
     
     # Security configuration
-    ENCRYPTION_KEY = os.getenv('ENCRYPTION_KEY', 'default-key-change-in-production')
-    JWT_SECRET = os.getenv('JWT_SECRET', 'jwt-secret-change-in-production')
+    ENCRYPTION_KEY = os.getenv('ENCRYPTION_KEY')
+    JWT_SECRET = os.getenv('JWT_SECRET')
+
+    if not ENCRYPTION_KEY:
+        raise RuntimeError('ENCRYPTION_KEY env var is required')
+    if not JWT_SECRET:
+        raise RuntimeError('JWT_SECRET env var is required')
     
     # External service configuration
     THIRD_PARTY_KYC_URL = os.getenv('THIRD_PARTY_KYC_URL', 'https://api.kyc-provider.com')

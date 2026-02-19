@@ -23,7 +23,9 @@ from mfa import MFAManager, MFAVerifier, MFASetupResponse, MFAVerifyRequest
 # CONFIGURATION
 # ============================================================================
 
-SECRET_KEY = os.getenv("JWT_SECRET_KEY", "your-secret-key-change-in-production")
+SECRET_KEY = os.getenv("JWT_SECRET_KEY")
+if not SECRET_KEY:
+    raise RuntimeError("JWT_SECRET_KEY env var is required")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60  # 1 hour
 REFRESH_TOKEN_EXPIRE_DAYS = 7  # 7 days

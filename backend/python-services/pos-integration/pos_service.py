@@ -390,7 +390,10 @@ class POSIntegrationService:
             amount=payment_request.amount,
             currency=payment_request.currency,
             authorization_code=auth_code,
-            receipt_data=self._generate_mock_receipt(payment_request, auth_code)
+            receipt_data=self._generate_receipt_data(payment_request, {
+                "provider": "simulated",
+                "authorization_code": auth_code,
+            })
         )
     
     async def _process_nfc_payment(self, payment_request: PaymentRequest,
@@ -537,17 +540,15 @@ class POSIntegrationService:
             "receipt_number": f"RCP{datetime.utcnow().strftime('%Y%m%d%H%M%S')}{uuid.uuid4().hex[:4].upper()}"
         }
     
-    def _generate_mock_receipt(self, payment_request: PaymentRequest, auth_code: str) -> Dict[str, Any]:
-        """Generate mock receipt for demo"""
+    def _generate_simulated_receipt(self, payment_request: PaymentRequest, auth_code: str) -> Dict[str, Any]:
+        """Generate simulated receipt data for non-production flows"""
         return {
-            "merchant_name": "Demo Merchant",
             "merchant_id": payment_request.merchant_id,
             "terminal_id": payment_request.terminal_id,
+            "transaction_reference": payment_request.transaction_reference,
             "amount": payment_request.amount,
             "currency": payment_request.currency,
-            "payment_method": "Card",
-            "card_last_four": "1234",
-            "card_type": "Visa",
+            "payment_method": payment_request.payment_method.value,
             "authorization_code": auth_code,
             "timestamp": datetime.utcnow().isoformat(),
             "receipt_number": f"RCP{datetime.utcnow().strftime('%Y%m%d%H%M%S')}"

@@ -26,8 +26,11 @@ from dataclasses import dataclass, field
 from typing import List, Optional, Callable, TypeVar, Generic, Any
 from datetime import datetime, timedelta
 
-# TigerBeetle Python client (placeholder - actual import would be from tigerbeetle package)
-# from tigerbeetle import Client, Account, Transfer
+try:
+    from tigerbeetle import Client, Account, Transfer
+    TIGERBEETLE_AVAILABLE = True
+except ImportError:
+    TIGERBEETLE_AVAILABLE = False
 
 # ============================================================================
 # TYPES AND ENUMS
@@ -128,12 +131,17 @@ class TigerBeetleResilientClient:
                 format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
             )
         
-        # Create TigerBeetle client (placeholder - actual client initialization)
-        # self.client = Client(
-        #     cluster_id=self.config.cluster_id,
-        #     replica_addresses=self.config.replica_addresses
-        # )
-        self.client = None  # Placeholder
+        self.client = None
+        if TIGERBEETLE_AVAILABLE:
+            try:
+                self.client = Client(
+                    cluster_id=self.config.cluster_id,
+                    replica_addresses=self.config.replica_addresses
+                )
+            except Exception as e:
+                self.logger.error(f"Failed to connect to TigerBeetle: {e}")
+        else:
+            self.logger.warning("TigerBeetle client library not installed")
         
         self.logger.info(
             "TigerBeetleResilientClient initialized",
@@ -226,8 +234,7 @@ class TigerBeetleResilientClient:
     def close(self) -> None:
         """Close the client connection"""
         if self.client:
-            # self.client.close()  # Actual close call
-            pass
+            self.client.close()
         self.logger.info("TigerBeetleResilientClient closed")
 
     # ========================================================================
@@ -531,28 +538,28 @@ class TigerBeetleResilientClient:
         )
 
     # ========================================================================
-    # TIGERBEETLE OPERATIONS (PLACEHOLDER IMPLEMENTATIONS)
+    # TIGERBEETLE OPERATIONS
     # ========================================================================
 
     def _create_accounts_impl(self, accounts: List[Any]) -> List[Any]:
-        """Placeholder for actual create_accounts implementation"""
-        # return self.client.create_accounts(accounts)
-        return []
+        if not self.client:
+            raise ConnectionError("TigerBeetle client not connected")
+        return self.client.create_accounts(accounts)
 
     def _create_transfers_impl(self, transfers: List[Any]) -> List[Any]:
-        """Placeholder for actual create_transfers implementation"""
-        # return self.client.create_transfers(transfers)
-        return []
+        if not self.client:
+            raise ConnectionError("TigerBeetle client not connected")
+        return self.client.create_transfers(transfers)
 
     def _lookup_accounts_impl(self, ids: List[int]) -> List[Any]:
-        """Placeholder for actual lookup_accounts implementation"""
-        # return self.client.lookup_accounts(ids)
-        return []
+        if not self.client:
+            raise ConnectionError("TigerBeetle client not connected")
+        return self.client.lookup_accounts(ids)
 
     def _lookup_transfers_impl(self, ids: List[int]) -> List[Any]:
-        """Placeholder for actual lookup_transfers implementation"""
-        # return self.client.lookup_transfers(ids)
-        return []
+        if not self.client:
+            raise ConnectionError("TigerBeetle client not connected")
+        return self.client.lookup_transfers(ids)
 
 
 # ============================================================================

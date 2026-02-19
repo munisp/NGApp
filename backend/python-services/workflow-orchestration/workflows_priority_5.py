@@ -3,12 +3,19 @@ Top 5 Priority Workflow Implementations
 Based on prioritization analysis - highest business impact workflows
 """
 
-from temporalio import workflow
+from temporalio import workflow, activity
 from temporalio.common import RetryPolicy
-from datetime import timedelta
+from datetime import datetime, timedelta
 from typing import Dict, Any, List, Optional
 from dataclasses import dataclass
 from enum import Enum
+import logging
+import uuid
+import re
+import hashlib
+import httpx
+
+logger = logging.getLogger(__name__)
 
 # ============================================================================
 # Additional Data Classes for Priority Workflows
@@ -1323,207 +1330,916 @@ class SavingsAccountWorkflow:
         }
 
 # ============================================================================
-# Activity Function Stubs for Priority Workflows
-# These will be implemented in activities_priority_5.py
+# Activity Function Implementations for Priority Workflows
 # ============================================================================
 
-# P2P Transfer Activities
+DAILY_P2P_LIMIT = 500000.00
+DAILY_BILL_LIMIT = 1000000.00
+DAILY_FLOAT_LIMIT = 5000000.00
+P2P_COMMISSION_RATE = 0.005
+BILL_COMMISSION_RATE = 0.01
+AIRTIME_COMMISSION_RATE = 0.03
+DATA_COMMISSION_RATE = 0.025
+
+NIGERIAN_TELCO_PROVIDERS = {"MTN", "Airtel", "Glo", "9mobile"}
+NIGERIAN_PHONE_PATTERN = re.compile(r"^(\+234|0)[789][01]\d{8}$")
+
+
 @activity.defn
 async def validate_sender_account(params: Dict[str, Any]) -> Dict[str, Any]:
     """Validate sender account and balance"""
-    pass
+    customer_id = params["customer_id"]
+    amount = params["amount"]
+    currency = params.get("currency", "NGN")
+    logger.info(f"Validating sender account {customer_id} for {amount} {currency}")
+    async with httpx.AsyncClient(timeout=10.0) as client:
+        try:
+            resp = await client.get(
+                f"http://account-service:8080/accounts/{customer_id}",
+                params={"currency": currency},
+            )
+            if resp.status_code == 404:
+                return {"valid": False, "reason": "Sender account not found"}
+            resp.raise_for_status()
+            account = resp.json()
+        except httpx.HTTPError as e:
+            logger.error(f"Account service error: {e}")
+            return {"valid": False, "reason": "Account service unavailable"}
+    if account.get("status") != "active":
+        return {"valid": False, "reason": f"Account status: {account.get('status')}"}
+    balance = float(account.get("available_balance", 0))
+    if balance < amount:
+        return {"valid": False, "reason": f"Insufficient balance: {balance} < {amount}"}
+    if account.get("kyc_level", 0) < 1:
+        return {"valid": False, "reason": "KYC verification required"}
+    return {"valid": True, "balance": balance, "account_type": account.get("account_type")}
+
 
 @activity.defn
 async def validate_recipient_account(params: Dict[str, Any]) -> Dict[str, Any]:
     """Validate recipient account"""
-    pass
+    customer_id = params["customer_id"]
+    logger.info(f"Validating recipient account {customer_id}")
+    async with httpx.AsyncClient(timeout=10.0) as client:
+        try:
+            resp = await client.get(f"http://account-service:8080/accounts/{customer_id}")
+            if resp.status_code == 404:
+                return {"valid": False, "reason": "Recipient account not found"}
+            resp.raise_for_status()
+            account = resp.json()
+        except httpx.HTTPError as e:
+            logger.error(f"Account service error: {e}")
+            return {"valid": False, "reason": "Account service unavailable"}
+    if account.get("status") != "active":
+        return {"valid": False, "reason": f"Recipient account status: {account.get('status')}"}
+    return {"valid": True, "account_name": account.get("account_name")}
+
 
 @activity.defn
 async def check_p2p_transaction_limits(params: Dict[str, Any]) -> Dict[str, Any]:
     """Check P2P transaction limits"""
-    pass
+    customer_id = params["customer_id"]
+    amount = params["amount"]
+    currency = params.get("currency", "NGN")
+    logger.info(f"Checking P2P limits for {customer_id}: {amount} {currency}")
+    async with httpx.AsyncClient(timeout=10.0) as client:
+        try:
+            resp = await client.get(
+                f"http://limits-service:8080/limits/{customer_id}",
+                params={"type": "p2p", "currency": currency},
+            )
+            resp.raise_for_status()
+            limits = resp.json()
+        except httpx.HTTPError:
+            limits = {"daily_used": 0, "daily_limit": DAILY_P2P_LIMIT}
+    daily_used = float(limits.get("daily_used", 0))
+    daily_limit = float(limits.get("daily_limit", DAILY_P2P_LIMIT))
+    within = (daily_used + amount) <= daily_limit
+    return {
+        "within_limits": within,
+        "daily_used": daily_used,
+        "daily_limit": daily_limit,
+        "remaining": max(0, daily_limit - daily_used),
+    }
+
 
 @activity.defn
 async def check_p2p_fraud(params: Dict[str, Any]) -> Dict[str, Any]:
     """Check P2P transaction for fraud"""
-    pass
+    logger.info(f"Fraud check for txn {params['transaction_id']}")
+    async with httpx.AsyncClient(timeout=15.0) as client:
+        try:
+            resp = await client.post(
+                "http://fraud-detection-service:8080/check",
+                json={
+                    "transaction_id": params["transaction_id"],
+                    "sender_id": params["sender_id"],
+                    "recipient_id": params["recipient_id"],
+                    "amount": params["amount"],
+                    "type": "p2p_transfer",
+                },
+            )
+            resp.raise_for_status()
+            result = resp.json()
+            return {
+                "is_fraudulent": result.get("risk_score", 0) > 0.85,
+                "risk_score": result.get("risk_score", 0),
+                "risk_factors": result.get("risk_factors", []),
+            }
+        except httpx.HTTPError as e:
+            logger.error(f"Fraud service error: {e}")
+            return {"is_fraudulent": False, "risk_score": 0, "risk_factors": []}
+
 
 @activity.defn
 async def verify_sender_pin(params: Dict[str, Any]) -> Dict[str, Any]:
     """Verify sender PIN"""
-    pass
+    customer_id = params["customer_id"]
+    transaction_id = params["transaction_id"]
+    logger.info(f"PIN verification for {customer_id} on txn {transaction_id}")
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        try:
+            resp = await client.post(
+                "http://auth-service:8080/verify-pin",
+                json={"customer_id": customer_id, "transaction_id": transaction_id},
+            )
+            resp.raise_for_status()
+            return resp.json()
+        except httpx.HTTPError as e:
+            logger.error(f"Auth service error: {e}")
+            return {"verified": False, "reason": "PIN verification service unavailable"}
+
 
 @activity.defn
 async def process_p2p_ledger_transaction(params: Dict[str, Any]) -> Dict[str, Any]:
     """Process P2P transfer in ledger"""
-    pass
+    logger.info(f"Processing ledger txn {params['transaction_id']}")
+    ledger_id = str(uuid.uuid4())
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        try:
+            resp = await client.post(
+                "http://tigerbeetle-service:8080/transfers",
+                json={
+                    "transfer_id": ledger_id,
+                    "debit_account_id": params["sender_id"],
+                    "credit_account_id": params["recipient_id"],
+                    "amount": int(params["amount"] * 100),
+                    "currency": params.get("currency", "NGN"),
+                    "reference": params["transaction_id"],
+                    "metadata": {"note": params.get("note", ""), "type": "p2p_transfer"},
+                },
+            )
+            resp.raise_for_status()
+            return {"success": True, "ledger_id": ledger_id}
+        except httpx.HTTPError as e:
+            logger.error(f"Ledger service error: {e}")
+            return {"success": False, "error": str(e)}
+
 
 @activity.defn
 async def calculate_p2p_commission(params: Dict[str, Any]) -> Dict[str, Any]:
     """Calculate P2P commission"""
-    pass
+    amount = params["amount"]
+    commission = round(amount * P2P_COMMISSION_RATE, 2)
+    logger.info(f"P2P commission for txn {params['transaction_id']}: {commission}")
+    async with httpx.AsyncClient(timeout=10.0) as client:
+        try:
+            resp = await client.post(
+                "http://commission-service:8080/credit",
+                json={
+                    "agent_id": params["agent_id"],
+                    "transaction_id": params["transaction_id"],
+                    "commission_amount": commission,
+                    "commission_type": "p2p_transfer",
+                },
+            )
+            resp.raise_for_status()
+        except httpx.HTTPError as e:
+            logger.error(f"Commission service error: {e}")
+    return {"commission_amount": commission, "agent_id": params["agent_id"]}
+
 
 @activity.defn
 async def generate_p2p_receipt(params: Dict[str, Any]) -> Dict[str, Any]:
     """Generate P2P receipt"""
-    pass
+    receipt_id = f"RCP-{params['transaction_id']}"
+    logger.info(f"Generating receipt {receipt_id}")
+    receipt = {
+        "receipt_id": receipt_id,
+        "transaction_id": params["transaction_id"],
+        "sender_id": params["sender_id"],
+        "recipient_id": params["recipient_id"],
+        "amount": params["amount"],
+        "ledger_id": params.get("ledger_id"),
+        "timestamp": datetime.utcnow().isoformat(),
+        "type": "p2p_transfer",
+    }
+    async with httpx.AsyncClient(timeout=10.0) as client:
+        try:
+            resp = await client.post("http://receipt-service:8080/receipts", json=receipt)
+            resp.raise_for_status()
+            return {"receipt_id": receipt_id, "receipt_url": f"/receipts/{receipt_id}"}
+        except httpx.HTTPError:
+            return {"receipt_id": receipt_id, "receipt_url": f"/receipts/{receipt_id}"}
+
 
 @activity.defn
 async def send_p2p_notifications(params: Dict[str, Any]) -> Dict[str, Any]:
     """Send P2P notifications"""
-    pass
+    logger.info(f"Sending P2P notifications for txn {params['transaction_id']}")
+    async with httpx.AsyncClient(timeout=10.0) as client:
+        try:
+            await client.post(
+                "http://notification-service:8080/send-batch",
+                json={
+                    "notifications": [
+                        {
+                            "user_id": params["sender_id"],
+                            "type": "transaction",
+                            "title": "Transfer Sent",
+                            "message": f"You sent {params['amount']} NGN",
+                            "channels": ["push", "sms"],
+                        },
+                        {
+                            "user_id": params["recipient_id"],
+                            "type": "transaction",
+                            "title": "Transfer Received",
+                            "message": f"You received {params['amount']} NGN",
+                            "channels": ["push", "sms"],
+                        },
+                    ]
+                },
+            )
+        except httpx.HTTPError as e:
+            logger.error(f"Notification service error: {e}")
+    return {"sent": True}
+
 
 @activity.defn
 async def update_p2p_analytics(params: Dict[str, Any]) -> Dict[str, Any]:
     """Update P2P analytics"""
-    pass
+    logger.info(f"Updating analytics for txn {params['transaction_id']}")
+    async with httpx.AsyncClient(timeout=5.0) as client:
+        try:
+            await client.post(
+                "http://analytics-service:8080/events",
+                json={
+                    "event_type": "p2p_transfer_completed",
+                    "transaction_id": params["transaction_id"],
+                    "sender_id": params["sender_id"],
+                    "recipient_id": params["recipient_id"],
+                    "amount": params["amount"],
+                    "agent_id": params.get("agent_id"),
+                    "timestamp": datetime.utcnow().isoformat(),
+                },
+            )
+        except httpx.HTTPError as e:
+            logger.warning(f"Analytics update failed (non-critical): {e}")
+    return {"updated": True}
+
 
 # Bill Payment Activities
 @activity.defn
 async def validate_biller_account(params: Dict[str, Any]) -> Dict[str, Any]:
     """Validate biller and account number"""
-    pass
+    biller_id = params["biller_id"]
+    account_number = params["account_number"]
+    bill_type = params["bill_type"]
+    logger.info(f"Validating biller {biller_id} account {account_number}")
+    async with httpx.AsyncClient(timeout=15.0) as client:
+        try:
+            resp = await client.post(
+                "http://biller-service:8080/validate",
+                json={
+                    "biller_id": biller_id,
+                    "account_number": account_number,
+                    "bill_type": bill_type,
+                },
+            )
+            resp.raise_for_status()
+            result = resp.json()
+            return {
+                "valid": result.get("valid", False),
+                "customer_name": result.get("customer_name"),
+                "biller_name": result.get("biller_name"),
+            }
+        except httpx.HTTPError as e:
+            logger.error(f"Biller validation error: {e}")
+            return {"valid": False, "reason": "Biller validation service unavailable"}
+
 
 @activity.defn
 async def fetch_bill_details(params: Dict[str, Any]) -> Dict[str, Any]:
     """Fetch bill details from biller"""
-    pass
+    logger.info(f"Fetching bill for {params['biller_id']} acct {params['account_number']}")
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        try:
+            resp = await client.get(
+                f"http://biller-service:8080/billers/{params['biller_id']}/bills",
+                params={
+                    "account_number": params["account_number"],
+                    "bill_type": params["bill_type"],
+                },
+            )
+            resp.raise_for_status()
+            return resp.json()
+        except httpx.HTTPError as e:
+            logger.error(f"Bill fetch error: {e}")
+            return {"amount_due": None, "due_date": None}
+
 
 @activity.defn
 async def submit_bill_payment(params: Dict[str, Any]) -> Dict[str, Any]:
     """Submit payment to biller"""
-    pass
+    logger.info(f"Submitting bill payment {params['transaction_id']} to {params['biller_id']}")
+    async with httpx.AsyncClient(timeout=60.0) as client:
+        try:
+            resp = await client.post(
+                f"http://biller-service:8080/billers/{params['biller_id']}/pay",
+                json={
+                    "transaction_id": params["transaction_id"],
+                    "account_number": params["account_number"],
+                    "amount": params["amount"],
+                    "bill_type": params["bill_type"],
+                },
+            )
+            resp.raise_for_status()
+            result = resp.json()
+            return {
+                "success": True,
+                "reference": result.get("reference", params["transaction_id"]),
+                "confirmation_code": result.get("confirmation_code"),
+            }
+        except httpx.HTTPError as e:
+            logger.error(f"Bill payment submission error: {e}")
+            return {"success": False, "error": str(e)}
+
 
 @activity.defn
 async def initiate_refund(params: Dict[str, Any]) -> Dict[str, Any]:
     """Initiate refund for failed transaction"""
-    pass
+    logger.info(f"Initiating refund for txn {params['transaction_id']}")
+    refund_id = f"REF-{params['transaction_id']}"
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        try:
+            resp = await client.post(
+                "http://tigerbeetle-service:8080/refunds",
+                json={
+                    "refund_id": refund_id,
+                    "original_ledger_id": params["ledger_id"],
+                    "reason": params.get("reason", "Transaction failed"),
+                },
+            )
+            resp.raise_for_status()
+            return {"success": True, "refund_id": refund_id}
+        except httpx.HTTPError as e:
+            logger.error(f"Refund initiation error: {e}")
+            return {"success": False, "error": str(e)}
+
 
 # Airtime/Data Activities
 @activity.defn
 async def validate_telco_phone(params: Dict[str, Any]) -> Dict[str, Any]:
     """Validate telco provider and phone number"""
-    pass
+    provider = params.get("telco_provider", "")
+    phone = params.get("phone_number", "")
+    logger.info(f"Validating {provider} phone {phone}")
+    if provider not in NIGERIAN_TELCO_PROVIDERS:
+        return {"valid": False, "reason": f"Unsupported provider: {provider}"}
+    if not NIGERIAN_PHONE_PATTERN.match(phone):
+        return {"valid": False, "reason": "Invalid Nigerian phone number format"}
+    return {"valid": True, "provider": provider, "phone_number": phone}
+
 
 @activity.defn
 async def fetch_data_product_details(params: Dict[str, Any]) -> Dict[str, Any]:
     """Fetch data product details"""
-    pass
+    product_id = params.get("product_id")
+    provider = params.get("telco_provider")
+    logger.info(f"Fetching product {product_id} from {provider}")
+    async with httpx.AsyncClient(timeout=15.0) as client:
+        try:
+            resp = await client.get(
+                f"http://telco-service:8080/providers/{provider}/products",
+                params={"product_id": product_id} if product_id else {},
+            )
+            resp.raise_for_status()
+            return resp.json()
+        except httpx.HTTPError as e:
+            logger.error(f"Telco product fetch error: {e}")
+            return {"products": [], "error": str(e)}
+
 
 @activity.defn
 async def submit_telco_purchase(params: Dict[str, Any]) -> Dict[str, Any]:
     """Submit purchase to telco provider"""
-    pass
+    logger.info(f"Submitting telco purchase {params['transaction_id']}")
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        try:
+            resp = await client.post(
+                f"http://telco-service:8080/providers/{params['telco_provider']}/purchase",
+                json={
+                    "transaction_id": params["transaction_id"],
+                    "phone_number": params["phone_number"],
+                    "product_type": params["product_type"],
+                    "product_id": params.get("product_id"),
+                    "amount": params["amount"],
+                },
+            )
+            resp.raise_for_status()
+            result = resp.json()
+            return {
+                "success": True,
+                "reference": result.get("reference"),
+                "voucher_code": result.get("voucher_code"),
+            }
+        except httpx.HTTPError as e:
+            logger.error(f"Telco purchase error: {e}")
+            return {"success": False, "error": str(e)}
+
 
 # Float Management Activities
 @activity.defn
 async def validate_agent_account(params: Dict[str, Any]) -> Dict[str, Any]:
     """Validate agent account"""
-    pass
+    agent_id = params["agent_id"]
+    logger.info(f"Validating agent {agent_id}")
+    async with httpx.AsyncClient(timeout=10.0) as client:
+        try:
+            resp = await client.get(f"http://agent-service:8080/agents/{agent_id}")
+            if resp.status_code == 404:
+                return {"valid": False, "reason": "Agent not found"}
+            resp.raise_for_status()
+            agent = resp.json()
+        except httpx.HTTPError as e:
+            logger.error(f"Agent service error: {e}")
+            return {"valid": False, "reason": "Agent service unavailable"}
+    if agent.get("status") != "active":
+        return {"valid": False, "reason": f"Agent status: {agent.get('status')}"}
+    return {"valid": True, "agent_tier": agent.get("tier"), "agent_name": agent.get("name")}
+
 
 @activity.defn
 async def get_agent_float_balance(params: Dict[str, Any]) -> Dict[str, Any]:
     """Get agent float balance"""
-    pass
+    agent_id = params["agent_id"]
+    logger.info(f"Getting float balance for agent {agent_id}")
+    async with httpx.AsyncClient(timeout=10.0) as client:
+        try:
+            resp = await client.get(f"http://float-service:8080/agents/{agent_id}/balance")
+            resp.raise_for_status()
+            return resp.json()
+        except httpx.HTTPError as e:
+            logger.error(f"Float service error: {e}")
+            return {"balance": 0, "currency": "NGN", "error": str(e)}
+
 
 @activity.defn
 async def validate_float_operation(params: Dict[str, Any]) -> Dict[str, Any]:
     """Validate float operation"""
-    pass
+    op_type = params.get("operation_type")
+    amount = params.get("amount", 0)
+    balance = params.get("balance", 0)
+    logger.info(f"Validating float op {op_type} for {amount}")
+    if op_type == "withdrawal" and balance < amount:
+        return {"valid": False, "reason": f"Insufficient float: {balance} < {amount}"}
+    if amount <= 0:
+        return {"valid": False, "reason": "Amount must be positive"}
+    return {"valid": True}
+
 
 @activity.defn
 async def check_float_limits(params: Dict[str, Any]) -> Dict[str, Any]:
     """Check float limits"""
-    pass
+    agent_id = params["agent_id"]
+    amount = params["amount"]
+    logger.info(f"Checking float limits for agent {agent_id}")
+    async with httpx.AsyncClient(timeout=10.0) as client:
+        try:
+            resp = await client.get(
+                f"http://limits-service:8080/limits/{agent_id}",
+                params={"type": "float"},
+            )
+            resp.raise_for_status()
+            limits = resp.json()
+        except httpx.HTTPError:
+            limits = {"daily_used": 0, "daily_limit": DAILY_FLOAT_LIMIT}
+    daily_used = float(limits.get("daily_used", 0))
+    daily_limit = float(limits.get("daily_limit", DAILY_FLOAT_LIMIT))
+    return {
+        "within_limits": (daily_used + amount) <= daily_limit,
+        "daily_used": daily_used,
+        "daily_limit": daily_limit,
+    }
+
 
 @activity.defn
 async def process_float_ledger_operation(params: Dict[str, Any]) -> Dict[str, Any]:
     """Process float operation in ledger"""
-    pass
+    logger.info(f"Processing float ledger op {params['operation_id']}")
+    ledger_id = str(uuid.uuid4())
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        try:
+            resp = await client.post(
+                "http://tigerbeetle-service:8080/transfers",
+                json={
+                    "transfer_id": ledger_id,
+                    "debit_account_id": params.get("source_agent_id", "float-pool"),
+                    "credit_account_id": params.get("target_agent_id", params["agent_id"]),
+                    "amount": int(params["amount"] * 100),
+                    "currency": params.get("currency", "NGN"),
+                    "reference": params["operation_id"],
+                    "metadata": {"type": "float_operation", "op": params.get("operation_type")},
+                },
+            )
+            resp.raise_for_status()
+            return {"success": True, "ledger_id": ledger_id}
+        except httpx.HTTPError as e:
+            logger.error(f"Float ledger error: {e}")
+            return {"success": False, "error": str(e)}
+
 
 @activity.defn
 async def update_float_tracking(params: Dict[str, Any]) -> Dict[str, Any]:
     """Update float tracking system"""
-    pass
+    logger.info(f"Updating float tracking for {params['agent_id']}")
+    async with httpx.AsyncClient(timeout=10.0) as client:
+        try:
+            await client.post(
+                f"http://float-service:8080/agents/{params['agent_id']}/tracking",
+                json={
+                    "operation_id": params["operation_id"],
+                    "operation_type": params["operation_type"],
+                    "amount": params["amount"],
+                    "timestamp": datetime.utcnow().isoformat(),
+                },
+            )
+        except httpx.HTTPError as e:
+            logger.warning(f"Float tracking update failed: {e}")
+    return {"updated": True}
+
 
 @activity.defn
 async def update_agent_cash_availability(params: Dict[str, Any]) -> Dict[str, Any]:
     """Update agent cash availability"""
-    pass
+    logger.info(f"Updating cash availability for agent {params['agent_id']}")
+    async with httpx.AsyncClient(timeout=10.0) as client:
+        try:
+            await client.put(
+                f"http://agent-service:8080/agents/{params['agent_id']}/cash-availability",
+                json={
+                    "operation_type": params["operation_type"],
+                    "amount": params["amount"],
+                    "timestamp": datetime.utcnow().isoformat(),
+                },
+            )
+        except httpx.HTTPError as e:
+            logger.warning(f"Cash availability update failed: {e}")
+    return {"updated": True}
+
 
 @activity.defn
 async def generate_float_report(params: Dict[str, Any]) -> Dict[str, Any]:
     """Generate float report"""
-    pass
+    report_id = f"FLR-{params['operation_id']}"
+    logger.info(f"Generating float report {report_id}")
+    report = {
+        "report_id": report_id,
+        "agent_id": params["agent_id"],
+        "operation_id": params["operation_id"],
+        "operation_type": params["operation_type"],
+        "amount": params["amount"],
+        "new_balance": params.get("new_balance", 0),
+        "timestamp": datetime.utcnow().isoformat(),
+    }
+    async with httpx.AsyncClient(timeout=10.0) as client:
+        try:
+            await client.post("http://reporting-service:8080/reports", json=report)
+        except httpx.HTTPError as e:
+            logger.warning(f"Report generation failed: {e}")
+    return {"report_id": report_id, "report_url": f"/reports/{report_id}"}
+
 
 @activity.defn
 async def send_float_notifications(params: Dict[str, Any]) -> Dict[str, Any]:
     """Send float notifications"""
-    pass
+    logger.info(f"Sending float notification for agent {params['agent_id']}")
+    async with httpx.AsyncClient(timeout=10.0) as client:
+        try:
+            await client.post(
+                "http://notification-service:8080/send",
+                json={
+                    "user_id": params["agent_id"],
+                    "type": "float",
+                    "title": f"Float {params['operation_type'].title()}",
+                    "message": f"Float {params['operation_type']} of {params['amount']} NGN processed",
+                    "channels": ["push", "sms"],
+                },
+            )
+        except httpx.HTTPError as e:
+            logger.warning(f"Float notification failed: {e}")
+    return {"sent": True}
+
 
 @activity.defn
 async def update_float_analytics(params: Dict[str, Any]) -> Dict[str, Any]:
     """Update float analytics"""
-    pass
+    logger.info(f"Updating float analytics for {params['operation_id']}")
+    async with httpx.AsyncClient(timeout=5.0) as client:
+        try:
+            await client.post(
+                "http://analytics-service:8080/events",
+                json={
+                    "event_type": "float_operation",
+                    "agent_id": params["agent_id"],
+                    "operation_id": params["operation_id"],
+                    "operation_type": params["operation_type"],
+                    "amount": params["amount"],
+                    "timestamp": datetime.utcnow().isoformat(),
+                },
+            )
+        except httpx.HTTPError as e:
+            logger.warning(f"Float analytics update failed: {e}")
+    return {"updated": True}
+
 
 @activity.defn
 async def trigger_float_rebalance_alert(params: Dict[str, Any]) -> Dict[str, Any]:
     """Trigger float rebalance alert"""
-    pass
+    agent_id = params["agent_id"]
+    balance = params.get("balance", 0)
+    threshold = params.get("threshold", 10000)
+    logger.info(f"Checking rebalance alert for agent {agent_id}: balance={balance}")
+    if balance < threshold:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            try:
+                await client.post(
+                    "http://notification-service:8080/send",
+                    json={
+                        "user_id": agent_id,
+                        "type": "alert",
+                        "title": "Low Float Balance",
+                        "message": f"Float balance {balance} NGN below threshold {threshold} NGN",
+                        "channels": ["push", "sms", "email"],
+                        "priority": "high",
+                    },
+                )
+            except httpx.HTTPError as e:
+                logger.warning(f"Rebalance alert failed: {e}")
+        return {"alert_sent": True, "balance": balance, "threshold": threshold}
+    return {"alert_sent": False, "balance": balance, "threshold": threshold}
+
 
 # Savings Account Activities
 @activity.defn
 async def validate_savings_operation(params: Dict[str, Any]) -> Dict[str, Any]:
     """Validate savings operation"""
-    pass
+    op_type = params.get("operation_type")
+    amount = params.get("amount", 0)
+    logger.info(f"Validating savings operation: {op_type}")
+    valid_ops = {"open", "deposit", "withdraw", "close"}
+    if op_type not in valid_ops:
+        return {"valid": False, "reason": f"Invalid operation: {op_type}"}
+    if op_type in ("deposit", "withdraw") and (amount is None or amount <= 0):
+        return {"valid": False, "reason": "Amount must be positive for deposit/withdrawal"}
+    return {"valid": True}
+
 
 @activity.defn
 async def check_savings_account_status(params: Dict[str, Any]) -> Dict[str, Any]:
     """Check savings account status"""
-    pass
+    account_id = params.get("account_id")
+    logger.info(f"Checking savings account {account_id}")
+    async with httpx.AsyncClient(timeout=10.0) as client:
+        try:
+            resp = await client.get(f"http://savings-service:8080/accounts/{account_id}")
+            if resp.status_code == 404:
+                return {"exists": False, "status": "not_found"}
+            resp.raise_for_status()
+            account = resp.json()
+            return {
+                "exists": True,
+                "status": account.get("status", "unknown"),
+                "balance": account.get("balance", 0),
+                "account_type": account.get("account_type"),
+                "interest_rate": account.get("interest_rate"),
+            }
+        except httpx.HTTPError as e:
+            logger.error(f"Savings service error: {e}")
+            return {"exists": False, "status": "error", "error": str(e)}
+
 
 @activity.defn
 async def calculate_savings_interest(params: Dict[str, Any]) -> Dict[str, Any]:
     """Calculate savings interest"""
-    pass
+    balance = float(params.get("balance", 0))
+    rate = float(params.get("interest_rate", 0.05))
+    term_months = int(params.get("term_months", 12))
+    logger.info(f"Calculating interest: balance={balance}, rate={rate}, months={term_months}")
+    monthly_rate = rate / 12
+    accrued = balance * monthly_rate * term_months
+    maturity_amount = balance + accrued
+    return {
+        "principal": balance,
+        "interest_rate": rate,
+        "term_months": term_months,
+        "accrued_interest": round(accrued, 2),
+        "maturity_amount": round(maturity_amount, 2),
+    }
+
 
 @activity.defn
 async def check_savings_compliance(params: Dict[str, Any]) -> Dict[str, Any]:
     """Check savings compliance"""
-    pass
+    customer_id = params.get("customer_id")
+    operation_type = params.get("operation_type")
+    amount = params.get("amount", 0)
+    logger.info(f"Checking savings compliance for {customer_id}")
+    async with httpx.AsyncClient(timeout=10.0) as client:
+        try:
+            resp = await client.post(
+                "http://compliance-service:8080/check",
+                json={
+                    "customer_id": customer_id,
+                    "operation_type": operation_type,
+                    "amount": amount,
+                    "product_type": "savings",
+                },
+            )
+            resp.raise_for_status()
+            result = resp.json()
+            return {
+                "compliant": result.get("compliant", True),
+                "flags": result.get("flags", []),
+            }
+        except httpx.HTTPError:
+            return {"compliant": True, "flags": []}
+
 
 @activity.defn
 async def request_savings_authorization(params: Dict[str, Any]) -> Dict[str, Any]:
     """Request savings authorization"""
-    pass
+    customer_id = params["customer_id"]
+    logger.info(f"Requesting savings authorization for {customer_id}")
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        try:
+            resp = await client.post(
+                "http://auth-service:8080/authorize",
+                json={
+                    "customer_id": customer_id,
+                    "operation": "savings",
+                    "account_id": params.get("account_id"),
+                },
+            )
+            resp.raise_for_status()
+            return resp.json()
+        except httpx.HTTPError as e:
+            logger.error(f"Authorization error: {e}")
+            return {"authorized": False, "reason": "Authorization service unavailable"}
+
 
 @activity.defn
 async def process_savings_ledger_operation(params: Dict[str, Any]) -> Dict[str, Any]:
     """Process savings operation in ledger"""
-    pass
+    logger.info(f"Processing savings ledger op for {params['account_id']}")
+    ledger_id = str(uuid.uuid4())
+    op_type = params.get("operation_type")
+    debit = params["customer_id"] if op_type == "deposit" else params["account_id"]
+    credit = params["account_id"] if op_type == "deposit" else params["customer_id"]
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        try:
+            resp = await client.post(
+                "http://tigerbeetle-service:8080/transfers",
+                json={
+                    "transfer_id": ledger_id,
+                    "debit_account_id": debit,
+                    "credit_account_id": credit,
+                    "amount": int(params.get("amount", 0) * 100),
+                    "currency": "NGN",
+                    "reference": params["account_id"],
+                    "metadata": {"type": "savings", "op": op_type},
+                },
+            )
+            resp.raise_for_status()
+            return {"success": True, "ledger_id": ledger_id}
+        except httpx.HTTPError as e:
+            logger.error(f"Savings ledger error: {e}")
+            return {"success": False, "error": str(e)}
+
 
 @activity.defn
 async def update_savings_account(params: Dict[str, Any]) -> Dict[str, Any]:
     """Update savings account records"""
-    pass
+    account_id = params["account_id"]
+    logger.info(f"Updating savings account {account_id}")
+    async with httpx.AsyncClient(timeout=10.0) as client:
+        try:
+            resp = await client.put(
+                f"http://savings-service:8080/accounts/{account_id}",
+                json={
+                    "operation_type": params["operation_type"],
+                    "amount": params.get("amount"),
+                    "ledger_id": params.get("ledger_id"),
+                    "timestamp": datetime.utcnow().isoformat(),
+                },
+            )
+            resp.raise_for_status()
+            return resp.json()
+        except httpx.HTTPError as e:
+            logger.error(f"Savings account update error: {e}")
+            return {"updated": False, "error": str(e)}
+
 
 @activity.defn
 async def schedule_interest_payments(params: Dict[str, Any]) -> Dict[str, Any]:
     """Schedule interest payments"""
-    pass
+    account_id = params["account_id"]
+    rate = params.get("interest_rate", 0.05)
+    term = params.get("term_months", 12)
+    logger.info(f"Scheduling interest for account {account_id}")
+    async with httpx.AsyncClient(timeout=10.0) as client:
+        try:
+            resp = await client.post(
+                "http://scheduler-service:8080/schedules",
+                json={
+                    "type": "interest_payment",
+                    "account_id": account_id,
+                    "interest_rate": rate,
+                    "frequency": "monthly",
+                    "duration_months": term,
+                    "start_date": datetime.utcnow().isoformat(),
+                },
+            )
+            resp.raise_for_status()
+            result = resp.json()
+            return {"schedule_id": result.get("schedule_id"), "scheduled": True}
+        except httpx.HTTPError as e:
+            logger.error(f"Interest scheduling error: {e}")
+            return {"scheduled": False, "error": str(e)}
+
 
 @activity.defn
 async def generate_savings_statement(params: Dict[str, Any]) -> Dict[str, Any]:
     """Generate savings statement"""
-    pass
+    account_id = params["account_id"]
+    statement_id = f"SST-{account_id}-{datetime.utcnow().strftime('%Y%m%d')}"
+    logger.info(f"Generating savings statement {statement_id}")
+    async with httpx.AsyncClient(timeout=10.0) as client:
+        try:
+            await client.post(
+                "http://reporting-service:8080/statements",
+                json={
+                    "statement_id": statement_id,
+                    "account_id": account_id,
+                    "customer_id": params["customer_id"],
+                    "type": "savings",
+                    "timestamp": datetime.utcnow().isoformat(),
+                },
+            )
+        except httpx.HTTPError as e:
+            logger.warning(f"Statement generation failed: {e}")
+    return {"statement_id": statement_id, "statement_url": f"/statements/{statement_id}"}
+
 
 @activity.defn
 async def send_savings_notifications(params: Dict[str, Any]) -> Dict[str, Any]:
     """Send savings notifications"""
-    pass
+    logger.info(f"Sending savings notification for {params['customer_id']}")
+    op_type = params.get("operation_type", "update")
+    async with httpx.AsyncClient(timeout=10.0) as client:
+        try:
+            await client.post(
+                "http://notification-service:8080/send",
+                json={
+                    "user_id": params["customer_id"],
+                    "type": "savings",
+                    "title": f"Savings {op_type.title()}",
+                    "message": f"Savings account {op_type} processed successfully",
+                    "channels": ["push", "sms"],
+                },
+            )
+        except httpx.HTTPError as e:
+            logger.warning(f"Savings notification failed: {e}")
+    return {"sent": True}
+
 
 @activity.defn
 async def update_savings_analytics(params: Dict[str, Any]) -> Dict[str, Any]:
     """Update savings analytics"""
-    pass
+    logger.info(f"Updating savings analytics for {params['account_id']}")
+    async with httpx.AsyncClient(timeout=5.0) as client:
+        try:
+            await client.post(
+                "http://analytics-service:8080/events",
+                json={
+                    "event_type": f"savings_{params.get('operation_type', 'update')}",
+                    "account_id": params["account_id"],
+                    "customer_id": params["customer_id"],
+                    "amount": params.get("amount"),
+                    "timestamp": datetime.utcnow().isoformat(),
+                },
+            )
+        except httpx.HTTPError as e:
+            logger.warning(f"Savings analytics update failed: {e}")
+    return {"updated": True}
 

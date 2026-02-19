@@ -15,6 +15,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"os"
 	"strings"
 	"sync"
 	"time"
@@ -248,12 +249,17 @@ func (sf *SecurityFramework) initializeDefaultRolesAndPermissions() {
 		sf.authManager.roles[role.ID] = &role
 	}
 
+	adminPassword := os.Getenv("POS_ADMIN_PASSWORD")
+	if adminPassword == "" {
+		log.Fatal("POS_ADMIN_PASSWORD env var is required")
+	}
+
 	// Create default admin user
 	adminUser := &User{
 		ID:           "admin",
 		Username:     "admin",
 		Email:        "admin@posmanagement.com",
-		PasswordHash: sf.hashPassword("admin123"),
+		PasswordHash: sf.hashPassword(adminPassword),
 		Role:         "admin",
 		IsActive:     true,
 		CreatedAt:    time.Now(),

@@ -48,7 +48,7 @@ class Config:
     TIGERBEETLE_URL = os.getenv("TIGERBEETLE_URL", "http://localhost:8160")
     CENTRAL_LEDGER_URL = os.getenv("CENTRAL_LEDGER_URL", "http://localhost:8001")
     SETTLEMENT_SERVICE_URL = os.getenv("SETTLEMENT_SERVICE_URL", "http://localhost:8002")
-    ILP_SECRET = os.getenv("ILP_SECRET", "mojaloop-ilp-secret-key-change-in-production")
+    ILP_SECRET = os.getenv("ILP_SECRET")  # REQUIRED - no default
     CALLBACK_TIMEOUT = int(os.getenv("CALLBACK_TIMEOUT", "30"))
     MAX_RETRIES = int(os.getenv("MAX_RETRIES", "3"))
     
@@ -63,6 +63,9 @@ class Config:
 
 
 config = Config()
+
+if not config.ILP_SECRET:
+    raise RuntimeError("ILP_SECRET env var is required")
 
 # Database pool
 db_pool: Optional[asyncpg.Pool] = None

@@ -21,7 +21,10 @@ import hmac
 # ==================== CONFIGURATION ====================
 
 class Config:
-    JWT_SECRET = os.getenv("JWT_SECRET", "communication-secret-change-in-production")
+    JWT_SECRET = os.getenv("JWT_SECRET")
+    if not JWT_SECRET:
+        raise RuntimeError("JWT_SECRET env var is required")
+
     JWT_ALGORITHM = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES = 30
     REFRESH_TOKEN_EXPIRE_DAYS = 7
@@ -36,7 +39,9 @@ class Config:
     LOG_DIR = os.getenv("LOG_DIR", "/var/log/communication-services")
     
     # Webhook security
-    WEBHOOK_SECRET = os.getenv("WEBHOOK_SECRET", "webhook-secret-change-me")
+    WEBHOOK_SECRET = os.getenv("WEBHOOK_SECRET")
+    if not WEBHOOK_SECRET:
+        raise RuntimeError("WEBHOOK_SECRET env var is required")
 
 config = Config()
 

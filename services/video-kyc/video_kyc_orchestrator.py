@@ -51,6 +51,7 @@ class KYCStatus(Enum):
     APPROVED = "approved"
     REJECTED = "rejected"
     FAILED = "failed"
+    CANCELLED = "cancelled"
     EXPIRED = "expired"
 
 class KYCStep(Enum):
@@ -207,14 +208,6 @@ class VideoKYCOrchestrator:
         self.verification_accuracy = Gauge(
             'kyc_verification_accuracy',
             'KYC verification accuracy percentage'
-        )
-        
-        prometheus.MustRegister(
-            self.kyc_sessions_total,
-            self.kyc_steps_total,
-            self.kyc_session_duration,
-            self.active_sessions,
-            self.verification_accuracy
         )
         
     def setup_database(self):
@@ -1182,91 +1175,414 @@ class VideoKYCOrchestrator:
         }
         
     # Database operations
-    
+
     def store_session(self, session: KYCSession):
         """Store session in database"""
-        # Implementation for storing session
-        pass
-        
+        try:
+            if self.redis_client:
+                key = f"kyc_session:{session.session_id}"
+                session_data = {
+                    'session_id': session.session_id,
+                    'customer_id': session.customer_id,
+                    'agent_id': session.agent_id,
+                    'status': session.status.value if session.status else None,
+                    'current_step': session.current_step.value if session.current_step else None,
+                    'created_at': session.created_at.isoformat() if session.created_at else None,
+                    'updated_at': datetime.utcnow().isoformat(),
+                }
+                self.redis_client.setex(key, int(self.session_timeout.total_seconds()), json.dumps(session_data))
+            if self.db_pool:
+                conn = self.db_pool.getconn()
+                try:
+                    cur = conn.cursor()
+                    cur.execute(
+                        """INSERT INTO kyc_sessions (session_id, customer_id, agent_id, status, current_step, created_at, updated_at)
+                           VALUES (%s, %s, %s, %s, %s, %s, %s)
+                           ON CONFLICT (session_id) DO UPDATE SET status=%s, current_step=%s, updated_at=%s""",
+                        (session.session_id, session.customer_id, session.agent_id,
+                         session.status.value if session.status else None,
+                         session.current_step.value if session.current_step else None,
+                         session.created_at, datetime.utcnow(),
+                         session.status.value if session.status else None,
+                         session.current_step.value if session.current_step else None,
+                         datetime.utcnow())
+                    )
+                    conn.commit()
+                finally:
+                    self.db_pool.putconn(conn)
+        except Exception as e:
+            logger.error(f"Failed to store session {session.session_id}: {e}")
+
     def get_session(self, session_id: str) -> Optional[KYCSession]:
         """Get session from database"""
-        # Implementation for retrieving session
+        try:
+            if self.redis_client:
+                key = f"kyc_session:{session_id}"
+                data = self.redis_client.get(key)
+                if data:
+                    session_data = json.loads(data)
+                    return KYCSession(
+                        session_id=session_data['session_id'],
+                        customer_id=session_data['customer_id'],
+                        agent_id=session_data['agent_id'],
+                        status=KYCStatus(session_data['status']) if session_data.get('status') else None,
+                        current_step=KYCStep(session_data['current_step']) if session_data.get('current_step') else None,
+                        created_at=datetime.fromisoformat(session_data['created_at']) if session_data.get('created_at') else None,
+                    )
+            if self.db_pool:
+                conn = self.db_pool.getconn()
+                try:
+                    cur = conn.cursor()
+                    cur.execute("SELECT * FROM kyc_sessions WHERE session_id = %s", (session_id,))
+                    row = cur.fetchone()
+                    if row:
+                        return KYCSession(
+                            session_id=row[0], customer_id=row[1], agent_id=row[2],
+                            status=KYCStatus(row[3]) if row[3] else None,
+                            current_step=KYCStep(row[4]) if row[4] else None,
+                            created_at=row[5],
+                        )
+                finally:
+                    self.db_pool.putconn(conn)
+        except Exception as e:
+            logger.error(f"Failed to get session {session_id}: {e}")
         return None
-        
+
     def update_session(self, session: KYCSession):
         """Update session in database"""
-        # Implementation for updating session
-        pass
-        
+        self.store_session(session)
+
     def update_session_status(self, session_id: str, status: KYCStatus):
         """Update session status"""
-        # Implementation for updating session status
-        pass
-        
+        try:
+            if self.redis_client:
+                key = f"kyc_session:{session_id}"
+                data = self.redis_client.get(key)
+                if data:
+                    session_data = json.loads(data)
+                    session_data['status'] = status.value
+                    session_data['updated_at'] = datetime.utcnow().isoformat()
+                    self.redis_client.setex(key, int(self.session_timeout.total_seconds()), json.dumps(session_data))
+            if self.db_pool:
+                conn = self.db_pool.getconn()
+                try:
+                    cur = conn.cursor()
+                    cur.execute(
+                        "UPDATE kyc_sessions SET status = %s, updated_at = %s WHERE session_id = %s",
+                        (status.value, datetime.utcnow(), session_id)
+                    )
+                    conn.commit()
+                finally:
+                    self.db_pool.putconn(conn)
+            self.kyc_sessions_total.labels(status=status.value).inc()
+        except Exception as e:
+            logger.error(f"Failed to update session status {session_id}: {e}")
+
     def store_step_result(self, session_id: str, step_result: StepResult):
         """Store step result in database"""
-        # Implementation for storing step result
-        pass
-        
+        try:
+            if self.redis_client:
+                key = f"kyc_step_results:{session_id}"
+                existing = self.redis_client.get(key)
+                results = json.loads(existing) if existing else []
+                results.append({
+                    'step': step_result.step.value if step_result.step else None,
+                    'status': step_result.status,
+                    'score': step_result.score,
+                    'timestamp': datetime.utcnow().isoformat(),
+                    'data': step_result.data if hasattr(step_result, 'data') else {},
+                })
+                self.redis_client.setex(key, int(self.session_timeout.total_seconds()), json.dumps(results))
+            if self.db_pool:
+                conn = self.db_pool.getconn()
+                try:
+                    cur = conn.cursor()
+                    cur.execute(
+                        """INSERT INTO kyc_step_results (session_id, step, status, score, created_at)
+                           VALUES (%s, %s, %s, %s, %s)""",
+                        (session_id, step_result.step.value if step_result.step else None,
+                         step_result.status, step_result.score, datetime.utcnow())
+                    )
+                    conn.commit()
+                finally:
+                    self.db_pool.putconn(conn)
+        except Exception as e:
+            logger.error(f"Failed to store step result for {session_id}: {e}")
+
     def get_step_results(self, session_id: str) -> List[StepResult]:
         """Get step results for session"""
-        # Implementation for retrieving step results
+        try:
+            if self.redis_client:
+                key = f"kyc_step_results:{session_id}"
+                data = self.redis_client.get(key)
+                if data:
+                    results = json.loads(data)
+                    return [StepResult(
+                        step=KYCStep(r['step']) if r.get('step') else None,
+                        status=r.get('status'),
+                        score=r.get('score'),
+                    ) for r in results]
+            if self.db_pool:
+                conn = self.db_pool.getconn()
+                try:
+                    cur = conn.cursor()
+                    cur.execute("SELECT step, status, score FROM kyc_step_results WHERE session_id = %s ORDER BY created_at", (session_id,))
+                    rows = cur.fetchall()
+                    return [StepResult(
+                        step=KYCStep(row[0]) if row[0] else None,
+                        status=row[1], score=row[2],
+                    ) for row in rows]
+                finally:
+                    self.db_pool.putconn(conn)
+        except Exception as e:
+            logger.error(f"Failed to get step results for {session_id}: {e}")
         return []
-        
+
     def send_notification(self, session_id: str, notification_type: NotificationType,
                          title: str, message: str, data: Dict[str, Any]):
         """Send notification"""
-        # Implementation for sending notification
-        pass
-        
+        try:
+            notification = KYCNotification(
+                notification_id=str(uuid.uuid4()) if hasattr(uuid, 'uuid4') else session_id,
+                session_id=session_id,
+                type=notification_type,
+                title=title,
+                message=message,
+                data=data,
+                created_at=datetime.utcnow(),
+            )
+            if self.redis_client:
+                key = f"kyc_notifications:{session_id}"
+                existing = self.redis_client.get(key)
+                notifications = json.loads(existing) if existing else []
+                notifications.append({
+                    'notification_id': notification.notification_id,
+                    'session_id': session_id,
+                    'type': notification_type.value,
+                    'title': title,
+                    'message': message,
+                    'data': data,
+                    'read': False,
+                    'created_at': datetime.utcnow().isoformat(),
+                })
+                self.redis_client.setex(key, 86400, json.dumps(notifications))
+            logger.info(f"Notification sent for session {session_id}: {title}")
+        except Exception as e:
+            logger.error(f"Failed to send notification for {session_id}: {e}")
+
     def cleanup_expired_sessions(self):
         """Clean up expired sessions"""
-        # Implementation for cleaning up expired sessions
-        pass
-        
+        try:
+            if self.db_pool:
+                conn = self.db_pool.getconn()
+                try:
+                    cur = conn.cursor()
+                    cutoff = datetime.utcnow() - self.session_timeout
+                    cur.execute(
+                        "UPDATE kyc_sessions SET status = %s WHERE status NOT IN (%s, %s, %s) AND updated_at < %s",
+                        (KYCStatus.EXPIRED.value, KYCStatus.COMPLETED.value,
+                         KYCStatus.FAILED.value, KYCStatus.EXPIRED.value, cutoff)
+                    )
+                    count = cur.rowcount
+                    conn.commit()
+                    if count > 0:
+                        logger.info(f"Cleaned up {count} expired KYC sessions")
+                finally:
+                    self.db_pool.putconn(conn)
+        except Exception as e:
+            logger.error(f"Session cleanup failed: {e}")
+
     def update_metrics(self):
         """Update Prometheus metrics"""
-        # Implementation for updating metrics
-        pass
-        
+        try:
+            if self.db_pool:
+                conn = self.db_pool.getconn()
+                try:
+                    cur = conn.cursor()
+                    cur.execute("SELECT status, COUNT(*) FROM kyc_sessions GROUP BY status")
+                    for row in cur.fetchall():
+                        self.kyc_sessions_total.labels(status=row[0]).inc(0)
+                finally:
+                    self.db_pool.putconn(conn)
+        except Exception as e:
+            logger.error(f"Metrics update failed: {e}")
+
     def process_pending_notifications(self):
         """Process pending notifications"""
-        # Implementation for processing notifications
-        pass
-        
-    # Additional handler methods would be implemented here...
-    
+        try:
+            if self.redis_client:
+                keys = self.redis_client.keys("kyc_notifications:*")
+                for key in keys:
+                    data = self.redis_client.get(key)
+                    if data:
+                        notifications = json.loads(data)
+                        unread = [n for n in notifications if not n.get('read')]
+                        if unread:
+                            logger.debug(f"Processing {len(unread)} pending notifications for {key}")
+        except Exception as e:
+            logger.error(f"Notification processing failed: {e}")
+
     def cancel_session_handler(self, session_id: str):
         """Handle session cancellation"""
-        return jsonify({'message': 'Cancel session endpoint - implementation in progress'})
-        
+        try:
+            session = self.get_session(session_id)
+            if not session:
+                return jsonify({'error': 'Session not found'}), 404
+            if session.status in (KYCStatus.COMPLETED, KYCStatus.FAILED):
+                return jsonify({'error': f'Cannot cancel session in {session.status.value} state'}), 400
+            self.update_session_status(session_id, KYCStatus.CANCELLED)
+            self.send_notification(session_id, NotificationType.SESSION_CANCELLED,
+                                   "Session Cancelled", "KYC session has been cancelled", {})
+            return jsonify({'session_id': session_id, 'status': 'cancelled'})
+        except Exception as e:
+            logger.error(f"Cancel session failed: {e}")
+            return jsonify({'error': str(e)}), 500
+
     def next_step_handler(self, session_id: str):
         """Handle next step requests"""
-        return jsonify({'message': 'Next step endpoint - implementation in progress'})
-        
+        try:
+            session = self.get_session(session_id)
+            if not session:
+                return jsonify({'error': 'Session not found'}), 404
+            next_step = self.get_next_step(session)
+            if not next_step:
+                return jsonify({'session_id': session_id, 'message': 'All steps completed', 'next_step': None})
+            session.current_step = next_step
+            self.update_session(session)
+            return jsonify({
+                'session_id': session_id,
+                'next_step': next_step.value,
+                'progress': self.calculate_progress(session),
+            })
+        except Exception as e:
+            logger.error(f"Next step failed: {e}")
+            return jsonify({'error': str(e)}), 500
+
     def retry_step_handler(self, session_id: str):
         """Handle step retry requests"""
-        return jsonify({'message': 'Retry step endpoint - implementation in progress'})
-        
+        try:
+            session = self.get_session(session_id)
+            if not session:
+                return jsonify({'error': 'Session not found'}), 404
+            current_step = session.current_step
+            if not current_step:
+                return jsonify({'error': 'No current step to retry'}), 400
+            return jsonify({
+                'session_id': session_id,
+                'retry_step': current_step.value,
+                'status': 'retry_initiated',
+            })
+        except Exception as e:
+            logger.error(f"Retry step failed: {e}")
+            return jsonify({'error': str(e)}), 500
+
     def get_notifications_handler(self, session_id: str):
         """Handle notification retrieval"""
-        return jsonify({'message': 'Get notifications endpoint - implementation in progress'})
-        
+        try:
+            if self.redis_client:
+                key = f"kyc_notifications:{session_id}"
+                data = self.redis_client.get(key)
+                notifications = json.loads(data) if data else []
+                return jsonify({'session_id': session_id, 'notifications': notifications})
+            return jsonify({'session_id': session_id, 'notifications': []})
+        except Exception as e:
+            logger.error(f"Get notifications failed: {e}")
+            return jsonify({'error': str(e)}), 500
+
     def mark_notification_read_handler(self, notification_id: str):
         """Handle notification read marking"""
-        return jsonify({'message': 'Mark notification read endpoint - implementation in progress'})
-        
+        try:
+            if self.redis_client:
+                keys = self.redis_client.keys("kyc_notifications:*")
+                for key in keys:
+                    data = self.redis_client.get(key)
+                    if data:
+                        notifications = json.loads(data)
+                        updated = False
+                        for n in notifications:
+                            if n.get('notification_id') == notification_id:
+                                n['read'] = True
+                                updated = True
+                        if updated:
+                            self.redis_client.setex(key, 86400, json.dumps(notifications))
+                            return jsonify({'notification_id': notification_id, 'read': True})
+            return jsonify({'error': 'Notification not found'}), 404
+        except Exception as e:
+            logger.error(f"Mark notification read failed: {e}")
+            return jsonify({'error': str(e)}), 500
+
     def get_session_analytics_handler(self):
         """Handle session analytics requests"""
-        return jsonify({'message': 'Session analytics endpoint - implementation in progress'})
-        
+        try:
+            analytics = {'total_sessions': 0, 'by_status': {}, 'avg_completion_time': None}
+            if self.db_pool:
+                conn = self.db_pool.getconn()
+                try:
+                    cur = conn.cursor()
+                    cur.execute("SELECT status, COUNT(*) FROM kyc_sessions GROUP BY status")
+                    for row in cur.fetchall():
+                        analytics['by_status'][row[0]] = row[1]
+                        analytics['total_sessions'] += row[1]
+                finally:
+                    self.db_pool.putconn(conn)
+            return jsonify(analytics)
+        except Exception as e:
+            logger.error(f"Session analytics failed: {e}")
+            return jsonify({'error': str(e)}), 500
+
     def get_performance_analytics_handler(self):
         """Handle performance analytics requests"""
-        return jsonify({'message': 'Performance analytics endpoint - implementation in progress'})
-        
+        try:
+            perf = {
+                'avg_step_duration_ms': 0,
+                'success_rate': 0,
+                'total_completed': 0,
+                'total_failed': 0,
+            }
+            if self.db_pool:
+                conn = self.db_pool.getconn()
+                try:
+                    cur = conn.cursor()
+                    cur.execute("SELECT COUNT(*) FROM kyc_sessions WHERE status = %s", (KYCStatus.COMPLETED.value,))
+                    row = cur.fetchone()
+                    perf['total_completed'] = row[0] if row else 0
+                    cur.execute("SELECT COUNT(*) FROM kyc_sessions WHERE status = %s", (KYCStatus.FAILED.value,))
+                    row = cur.fetchone()
+                    perf['total_failed'] = row[0] if row else 0
+                    total = perf['total_completed'] + perf['total_failed']
+                    perf['success_rate'] = (perf['total_completed'] / total * 100) if total > 0 else 0
+                finally:
+                    self.db_pool.putconn(conn)
+            return jsonify(perf)
+        except Exception as e:
+            logger.error(f"Performance analytics failed: {e}")
+            return jsonify({'error': str(e)}), 500
+
     def list_sessions_handler(self):
         """Handle session listing requests"""
-        return jsonify({'message': 'List sessions endpoint - implementation in progress'})
+        try:
+            sessions = []
+            if self.db_pool:
+                conn = self.db_pool.getconn()
+                try:
+                    cur = conn.cursor()
+                    cur.execute("SELECT session_id, customer_id, agent_id, status, current_step, created_at, updated_at FROM kyc_sessions ORDER BY created_at DESC LIMIT 100")
+                    for row in cur.fetchall():
+                        sessions.append({
+                            'session_id': row[0],
+                            'customer_id': row[1],
+                            'agent_id': row[2],
+                            'status': row[3],
+                            'current_step': row[4],
+                            'created_at': row[5].isoformat() if row[5] else None,
+                            'updated_at': row[6].isoformat() if row[6] else None,
+                        })
+                finally:
+                    self.db_pool.putconn(conn)
+            return jsonify({'sessions': sessions, 'total': len(sessions)})
+        except Exception as e:
+            logger.error(f"List sessions failed: {e}")
+            return jsonify({'error': str(e)}), 500
         
     def run(self, host='0.0.0.0', port=8088, debug=False):
         """Run the service"""

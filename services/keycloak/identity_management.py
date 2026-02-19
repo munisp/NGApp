@@ -5,6 +5,7 @@ Comprehensive authentication and authorization for Agent Banking Network
 """
 
 import json
+import os
 import requests
 import jwt
 from typing import Dict, List, Any, Optional
@@ -45,8 +46,8 @@ class KeycloakManager:
     def __init__(self, server_url: str = "http://localhost:8080", realm: str = "agent-banking"):
         self.server_url = server_url.rstrip('/')
         self.realm = realm
-        self.admin_username = "admin"
-        self.admin_password = "admin123"
+        self.admin_username = os.getenv("KEYCLOAK_ADMIN_USER", "admin")
+        self.admin_password = os.getenv("KEYCLOAK_ADMIN_PASSWORD", "")
         self.admin_token = None
         self.admin_token_expires = None
         
@@ -602,11 +603,11 @@ class KeycloakManager:
                     "command": ["start-dev"],
                     "environment": [
                         "KEYCLOAK_ADMIN=admin",
-                        "KEYCLOAK_ADMIN_PASSWORD=admin123",
+                        "KEYCLOAK_ADMIN_PASSWORD=${KEYCLOAK_ADMIN_PASSWORD}",
                         "KC_DB=postgres",
                         "KC_DB_URL=jdbc:postgresql://postgres:5432/keycloak",
                         "KC_DB_USERNAME=keycloak",
-                        "KC_DB_PASSWORD=keycloak123",
+                        "KC_DB_PASSWORD=${KEYCLOAK_DB_PASSWORD}",
                         "KC_HOSTNAME=localhost",
                         "KC_HOSTNAME_PORT=8080",
                         "KC_HTTP_ENABLED=true",
@@ -628,7 +629,7 @@ class KeycloakManager:
                     "environment": [
                         "POSTGRES_DB=keycloak",
                         "POSTGRES_USER=keycloak",
-                        "POSTGRES_PASSWORD=keycloak123"
+                        "POSTGRES_PASSWORD=${KEYCLOAK_DB_PASSWORD}"
                     ],
                     "ports": ["5433:5432"],
                     "networks": ["keycloak"],
@@ -679,7 +680,7 @@ class KeycloakManager:
             logger.info("✅ Keycloak setup completed successfully!")
             logger.info("📁 Configuration files saved to /tmp/")
             logger.info("🔐 Keycloak Admin Console: http://localhost:8080")
-            logger.info("👤 Admin credentials: admin / admin123")
+            logger.info("👤 Admin credentials: admin / <set KEYCLOAK_ADMIN_PASSWORD>")
             logger.info(f"🏦 Banking Realm: {self.realm}")
             
             return True
@@ -700,7 +701,7 @@ def main():
         print("\n📋 Next Steps:")
         print("1. Start Keycloak: docker-compose -f /tmp/docker-compose-keycloak.yaml up -d")
         print("2. Access Admin Console: http://localhost:8080")
-        print("3. Login with: admin / admin123")
+        print("3. Login with: admin / <set KEYCLOAK_ADMIN_PASSWORD>")
         print("4. Switch to 'agent-banking' realm")
         print("5. Configure additional settings as needed")
     else:

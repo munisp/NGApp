@@ -2,12 +2,15 @@ package main
 
 import (
 	"context"
+	"crypto/hmac"
 	"crypto/rand"
+	"crypto/sha256"
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"sync"
 	"time"
 
@@ -102,6 +105,7 @@ type SecurityManager struct {
 	certificates map[string]string
 	apiKeys      map[string]string
 	permissions  map[string][]string
+	signingKey   string
 	mutex        sync.RWMutex
 }
 
@@ -120,6 +124,7 @@ func NewPOSManagementServer() *POSManagementServer {
 			certificates: make(map[string]string),
 			apiKeys:      make(map[string]string),
 			permissions:  make(map[string][]string),
+			signingKey:   os.Getenv("POS_SIGNING_KEY"),
 		},
 	}
 
@@ -133,7 +138,10 @@ func NewPOSManagementServer() *POSManagementServer {
 }
 
 func (s *POSManagementServer) initializeDatabase() {
-	dsn := "host=localhost user=postgres password=postgres dbname=pos_management port=5432 sslmode=disable"
+	dsn := os.Getenv("POS_DATABASE_URL")
+	if dsn == "" {
+		dsn = "host=localhost user=postgres dbname=pos_management port=5432 sslmode=disable"
+	}
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
 		log.Printf("Failed to connect to database: %v", err)
@@ -728,8 +736,14 @@ func (s *POSManagementServer) generateID() string {
 }
 
 func (s *POSManagementServer) signMessage(message interface{}) string {
-	// Implement message signing for security
-	return "signature_placeholder"
+	data, err := json.Marshal(message)
+	if err != nil {
+		log.Printf("Error marshaling message for signing: %v", err)
+		return ""
+	}
+	h := hmac.New(sha256.New, []byte(s.security.signingKey))
+	h.Write(data)
+	return fmt.Sprintf("%x", h.Sum(nil))
 }
 
 // Database models and logging functions

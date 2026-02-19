@@ -21,7 +21,7 @@ class ExchangeRateProvider(str, Enum):
     CURRENCYLAYER = "currencylayer"
     OPENEXCHANGERATES = "openexchangerates"
     EXCHANGERATE_API = "exchangerate_api"
-    MOCK = "mock"
+    FALLBACK = "fallback"
 
 class ExchangeRateService:
     """Live exchange rate service with multiple providers and caching"""
@@ -34,14 +34,14 @@ class ExchangeRateService:
             ExchangeRateProvider.CURRENCYLAYER: self._get_currencylayer_rates,
             ExchangeRateProvider.OPENEXCHANGERATES: self._get_openexchangerates_rates,
             ExchangeRateProvider.EXCHANGERATE_API: self._get_exchangerate_api_rates,
-            ExchangeRateProvider.MOCK: self._get_mock_rates
+            ExchangeRateProvider.FALLBACK: self._get_fallback_rates
         }
         self.provider_priority = [
             ExchangeRateProvider.FIXER,
             ExchangeRateProvider.CURRENCYLAYER,
             ExchangeRateProvider.OPENEXCHANGERATES,
             ExchangeRateProvider.EXCHANGERATE_API,
-            ExchangeRateProvider.MOCK
+            ExchangeRateProvider.FALLBACK
         ]
         
         # Supported currencies
@@ -355,32 +355,32 @@ class ExchangeRateService:
                 else:
                     raise ValueError(f"ExchangeRate-API HTTP error: {response.status}")
     
-    async def _get_mock_rates(self, base_currency: str) -> Optional[Dict[str, float]]:
-        """Get mock exchange rates for development"""
-        # Mock exchange rates (approximate real rates)
-        mock_rates = {
-            'USD': {'EUR': 0.85, 'GBP': 0.73, 'JPY': 110.0, 'AUD': 1.35, 'CAD': 1.25, 'CHF': 0.92, 'CNY': 6.45, 'SEK': 8.5, 'NZD': 1.42, 'MXN': 20.0, 'SGD': 1.35, 'HKD': 7.8, 'NOK': 8.6, 'TRY': 8.5, 'RUB': 75.0, 'INR': 74.0, 'BRL': 5.2, 'ZAR': 14.5, 'KRW': 1180.0},
-            'EUR': {'USD': 1.18, 'GBP': 0.86, 'JPY': 129.0, 'AUD': 1.59, 'CAD': 1.47, 'CHF': 1.08, 'CNY': 7.6, 'SEK': 10.0, 'NZD': 1.67, 'MXN': 23.5, 'SGD': 1.59, 'HKD': 9.2, 'NOK': 10.1, 'TRY': 10.0, 'RUB': 88.0, 'INR': 87.0, 'BRL': 6.1, 'ZAR': 17.0, 'KRW': 1390.0},
-            'GBP': {'USD': 1.37, 'EUR': 1.16, 'JPY': 150.0, 'AUD': 1.85, 'CAD': 1.71, 'CHF': 1.26, 'CNY': 8.8, 'SEK': 11.6, 'NZD': 1.94, 'MXN': 27.4, 'SGD': 1.85, 'HKD': 10.7, 'NOK': 11.8, 'TRY': 11.6, 'RUB': 102.0, 'INR': 101.0, 'BRL': 7.1, 'ZAR': 19.8, 'KRW': 1620.0}
-        }
-        
-        if base_currency in mock_rates:
-            return mock_rates[base_currency]
-        
-        # If base currency not in mock data, return inverse rates
-        for currency, rates in mock_rates.items():
-            if base_currency in rates:
-                # Calculate inverse rates
-                base_rate = rates[base_currency]
-                inverse_rates = {}
-                for target_currency, rate in mock_rates[currency].items():
-                    if target_currency != base_currency:
-                        inverse_rates[target_currency] = rate / base_rate
-                inverse_rates[currency] = 1.0 / base_rate
-                return inverse_rates
-        
-        # Fallback: return 1.0 for all currencies
-        return {curr: 1.0 for curr in self.supported_currencies if curr != base_currency}
+    async def _get_fallback_rates(self, base_currency: str) -> Optional[Dict[str, float]]:
+        """Get cached fallback exchange rates when all live providers are unavailable.
+        Uses the last known rates from Redis cache. If no cached rates exist,
+        raises an error rather than returning hardcoded values."""
+        logger.warning(f"All live exchange rate providers failed - using cached fallback for {base_currency}")
+        if self.redis_client:
+            try:
+                pattern = f"exchange_rate:{base_currency}:*"
+                keys = []
+                async for key in self.redis_client.scan_iter(match=pattern):
+                    keys.append(key)
+                if keys:
+                    rates = {}
+                    for key in keys:
+                        target = key.split(':')[-1]
+                        cached_data = await self.redis_client.get(key)
+                        if cached_data:
+                            data = json.loads(cached_data)
+                            rates[target] = data.get('rate', 0)
+                    if rates:
+                        logger.info(f"Returning {len(rates)} cached fallback rates for {base_currency}")
+                        return rates
+            except Exception as e:
+                logger.error(f"Fallback cache lookup failed: {e}")
+        logger.error(f"No cached rates available for {base_currency} - all providers down")
+        return None
     
     async def get_health_status(self) -> Dict[str, Any]:
         """Get health status of exchange rate service"""

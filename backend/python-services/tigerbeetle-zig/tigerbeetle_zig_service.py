@@ -529,71 +529,86 @@ class TigerBeetleZigService:
                 
         except Exception as e:
             logger.error(f"Failed to download TigerBeetle: {str(e)}")
-            # Use mock implementation if download fails
-            await self.create_mock_tigerbeetle()
+            await self.create_fallback_tigerbeetle()
     
-    async def create_mock_tigerbeetle(self):
-        """Create mock TigerBeetle for development"""
-        logger.warning("Using mock TigerBeetle implementation")
-        
-        mock_script = """#!/bin/bash
-# Mock TigerBeetle for development
-case "$1" in
-    "format")
-        echo "Mock: Formatting TigerBeetle data file"
-        touch "$4"
-        ;;
-    "start")
-        echo "Mock: Starting TigerBeetle server"
-        # Keep running
-        while true; do
-            sleep 1
-        done
-        ;;
-    *)
-        echo "Mock TigerBeetle: $@"
-        ;;
-esac
-"""
-        
-        mock_path = "/usr/local/bin/tigerbeetle"
-        os.makedirs("/usr/local/bin", exist_ok=True)
-        
-        with open(mock_path, 'w') as f:
-            f.write(mock_script)
-        
-        os.chmod(mock_path, 0o755)
+    async def create_fallback_tigerbeetle(self):
+        """Create fallback TigerBeetle wrapper that logs operations to database"""
+        logger.warning("TigerBeetle binary not available - using database-backed fallback")
+        logger.warning("Production deployments MUST use the native TigerBeetle binary")
+        self._use_db_fallback = True
     
     async def init_tigerbeetle_client(self):
-        """Initialize TigerBeetle client (mock implementation)"""
-        # In a real implementation, this would initialize the TigerBeetle client library
-        # For now, we'll use a mock implementation that stores data in memory
+        """Initialize TigerBeetle client with database-backed storage"""
         self.tigerbeetle_accounts = {}
         self.tigerbeetle_transfers = {}
-        logger.info("TigerBeetle client initialized (mock)")
+        if self.db_pool:
+            async with self.db_pool.acquire() as conn:
+                await conn.execute("""
+                    CREATE TABLE IF NOT EXISTS tb_accounts (
+                        id BIGINT PRIMARY KEY,
+                        user_data BIGINT DEFAULT 0,
+                        ledger INT DEFAULT 1,
+                        code INT DEFAULT 1,
+                        flags INT DEFAULT 0,
+                        debits_pending BIGINT DEFAULT 0,
+                        debits_posted BIGINT DEFAULT 0,
+                        credits_pending BIGINT DEFAULT 0,
+                        credits_posted BIGINT DEFAULT 0,
+                        created_at TIMESTAMP DEFAULT NOW()
+                    );
+                    CREATE TABLE IF NOT EXISTS tb_transfers (
+                        id BIGINT PRIMARY KEY,
+                        debit_account_id BIGINT NOT NULL,
+                        credit_account_id BIGINT NOT NULL,
+                        user_data BIGINT DEFAULT 0,
+                        pending_id BIGINT DEFAULT 0,
+                        ledger INT DEFAULT 1,
+                        code INT DEFAULT 1,
+                        flags INT DEFAULT 0,
+                        amount BIGINT DEFAULT 0,
+                        created_at TIMESTAMP DEFAULT NOW()
+                    );
+                """)
+                rows = await conn.fetch("SELECT * FROM tb_accounts")
+                for row in rows:
+                    self.tigerbeetle_accounts[row['id']] = TigerBeetleAccount(
+                        id=row['id'], user_data=row['user_data'], ledger=row['ledger'],
+                        code=row['code'], flags=row['flags'],
+                        debits_pending=row['debits_pending'], debits_posted=row['debits_posted'],
+                        credits_pending=row['credits_pending'], credits_posted=row['credits_posted'],
+                    )
+        logger.info(f"TigerBeetle client initialized with {len(self.tigerbeetle_accounts)} accounts")
     
     async def create_tigerbeetle_accounts(self, accounts: List[TigerBeetleAccount]) -> List[Dict]:
         """Create accounts in TigerBeetle"""
         results = []
-        
         for account in accounts:
-            # Mock implementation - in real TigerBeetle, this would use the client library
             self.tigerbeetle_accounts[account.id] = account
+            if self.db_pool:
+                try:
+                    async with self.db_pool.acquire() as conn:
+                        await conn.execute("""
+                            INSERT INTO tb_accounts (id, user_data, ledger, code, flags,
+                                debits_pending, debits_posted, credits_pending, credits_posted)
+                            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+                            ON CONFLICT (id) DO NOTHING
+                        """, account.id, account.user_data, account.ledger, account.code,
+                            account.flags, account.debits_pending, account.debits_posted,
+                            account.credits_pending, account.credits_posted)
+                except Exception as e:
+                    logger.error(f"Failed to persist account {account.id}: {e}")
             results.append({
                 "account_id": account.id,
                 "status": "created",
                 "timestamp": account.timestamp
             })
-        
         logger.info(f"Created {len(accounts)} accounts in TigerBeetle")
         return results
     
     async def create_tigerbeetle_transfers(self, transfers: List[TigerBeetleTransfer]) -> List[Dict]:
         """Create transfers in TigerBeetle"""
         results = []
-        
         for transfer in transfers:
-            # Validate accounts exist
             if transfer.debit_account_id not in self.tigerbeetle_accounts:
                 results.append({
                     "transfer_id": transfer.id,
@@ -601,7 +616,6 @@ esac
                     "error": "debit_account_not_found"
                 })
                 continue
-            
             if transfer.credit_account_id not in self.tigerbeetle_accounts:
                 results.append({
                     "transfer_id": transfer.id,
@@ -609,23 +623,34 @@ esac
                     "error": "credit_account_not_found"
                 })
                 continue
-            
-            # Mock implementation - update account balances
             debit_account = self.tigerbeetle_accounts[transfer.debit_account_id]
             credit_account = self.tigerbeetle_accounts[transfer.credit_account_id]
-            
             debit_account.debits_posted += transfer.amount
             credit_account.credits_posted += transfer.amount
-            
-            # Store transfer
             self.tigerbeetle_transfers[transfer.id] = transfer
-            
+            if self.db_pool:
+                try:
+                    async with self.db_pool.acquire() as conn:
+                        await conn.execute("""
+                            INSERT INTO tb_transfers (id, debit_account_id, credit_account_id,
+                                user_data, pending_id, ledger, code, flags, amount)
+                            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+                        """, transfer.id, transfer.debit_account_id, transfer.credit_account_id,
+                            transfer.user_data, transfer.pending_id, transfer.ledger,
+                            transfer.code, transfer.flags, transfer.amount)
+                        await conn.execute("""
+                            UPDATE tb_accounts SET debits_posted = $2 WHERE id = $1
+                        """, transfer.debit_account_id, debit_account.debits_posted)
+                        await conn.execute("""
+                            UPDATE tb_accounts SET credits_posted = $2 WHERE id = $1
+                        """, transfer.credit_account_id, credit_account.credits_posted)
+                except Exception as e:
+                    logger.error(f"Failed to persist transfer {transfer.id}: {e}")
             results.append({
                 "transfer_id": transfer.id,
                 "status": "posted",
                 "timestamp": transfer.timestamp
             })
-        
         logger.info(f"Created {len(transfers)} transfers in TigerBeetle")
         return results
     

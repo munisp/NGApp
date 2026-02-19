@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 
 import asyncio
+import hashlib
+import hmac
 import json
 import logging
 import os
@@ -631,8 +633,12 @@ class POSDashboardServer:
             
     def generate_signature(self, payload: Dict) -> str:
         """Generate signature for message integrity"""
-        # In production, implement proper message signing
-        return "signature_placeholder"
+        signing_key = os.getenv("POS_SIGNING_KEY")
+        if not signing_key:
+            raise RuntimeError("POS_SIGNING_KEY env var is required")
+
+        message = json.dumps(payload, sort_keys=True).encode("utf-8")
+        return hmac.new(signing_key.encode("utf-8"), message, hashlib.sha256).hexdigest()
         
     async def log_update(self, update_message: Dict):
         """Log update to database"""

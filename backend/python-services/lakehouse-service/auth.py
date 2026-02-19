@@ -20,7 +20,9 @@ from pydantic import BaseModel
 # ============================================================================
 
 # In production, use environment variables
-SECRET_KEY = os.getenv("JWT_SECRET_KEY", "your-secret-key-change-in-production")
+SECRET_KEY = os.getenv("JWT_SECRET_KEY")
+if not SECRET_KEY:
+    raise RuntimeError("JWT_SECRET_KEY env var is required")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60  # 1 hour
 REFRESH_TOKEN_EXPIRE_DAYS = 7  # 7 days
@@ -81,55 +83,43 @@ security = HTTPBearer()
 # ============================================================================
 
 class UserDatabase:
-    """In-memory user database for demo (use real DB in production)"""
+    """User database backed by environment-configured credentials"""
     
     def __init__(self):
         self.users: Dict[str, UserInDB] = {}
-        self._init_demo_users()
+        self._init_users_from_env()
     
-    def _init_demo_users(self):
-        """Initialize demo users with different roles"""
-        demo_users = [
-            {
-                "user_id": "admin-001",
-                "username": "admin",
-                "email": "admin@agentbanking.com",
-                "password": "admin123",  # In production, never hardcode!
-                "role": UserRole.ADMIN
-            },
-            {
-                "user_id": "de-001",
-                "username": "data_engineer",
-                "email": "engineer@agentbanking.com",
-                "password": "engineer123",
-                "role": UserRole.DATA_ENGINEER
-            },
-            {
-                "user_id": "analyst-001",
-                "username": "analyst",
-                "email": "analyst@agentbanking.com",
-                "password": "analyst123",
-                "role": UserRole.ANALYST
-            },
-            {
-                "user_id": "viewer-001",
-                "username": "viewer",
-                "email": "viewer@agentbanking.com",
-                "password": "viewer123",
-                "role": UserRole.VIEWER
-            }
-        ]
+    def _init_users_from_env(self):
+        """Initialize users from environment variables.
         
-        for user_data in demo_users:
-            password = user_data.pop("password")
+        Expected env vars per user: LAKEHOUSE_USER_{IDX}_USERNAME, _PASSWORD, _EMAIL, _ROLE
+        Example: LAKEHOUSE_USER_0_USERNAME=admin, LAKEHOUSE_USER_0_PASSWORD=..., etc.
+        """
+        idx = 0
+        while True:
+            prefix = f"LAKEHOUSE_USER_{idx}"
+            username = os.getenv(f"{prefix}_USERNAME")
+            if not username:
+                break
+            password = os.getenv(f"{prefix}_PASSWORD", "")
+            email = os.getenv(f"{prefix}_EMAIL", f"{username}@agentbanking.com")
+            role_str = os.getenv(f"{prefix}_ROLE", "viewer")
+            try:
+                role = UserRole(role_str)
+            except ValueError:
+                role = UserRole.VIEWER
+
             hashed_password = self._hash_password(password)
-            
             user = UserInDB(
-                **user_data,
+                user_id=f"user-{idx:03d}",
+                username=username,
+                email=email,
+                role=role,
                 hashed_password=hashed_password,
                 created_at=datetime.utcnow()
             )
             self.users[user.username] = user
+            idx += 1
     
     def _hash_password(self, password: str) -> str:
         """Hash password using bcrypt"""
