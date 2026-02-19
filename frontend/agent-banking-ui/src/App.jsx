@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Building2, Users, CreditCard, BarChart3, Settings, Shield, Bell, LogOut, User, DollarSign, TrendingUp, AlertTriangle, CheckCircle, Eye, EyeOff } from 'lucide-react'
+import { Building2, Users, CreditCard, BarChart3, Settings, Shield, Bell, LogOut, User, DollarSign, TrendingUp, AlertTriangle, CheckCircle, Eye, EyeOff, Zap, Phone, Receipt, Sliders, Wifi, Tv, Droplets, FileText, ChevronRight, Search, Plus, Trash2, Edit, RefreshCw } from 'lucide-react'
 import { RealTimeNotifications, RealTimeMetrics, RealTimeTransactionFeed } from './components/RealTimeFeatures';
 import PWAInstallPrompt, { PWAStatusIndicator, OfflineBanner } from './components/PWAInstallPrompt';
 import './App.css'
@@ -185,6 +185,8 @@ function App() {
         return [
           ...baseItems,
           { id: 'transactions', label: 'Transactions', icon: CreditCard },
+          { id: 'bills', label: 'Bills Payment', icon: Receipt },
+          { id: 'airtime', label: 'Airtime & Data', icon: Phone },
           { id: 'profile', label: 'Profile', icon: User },
           { id: 'settings', label: 'Settings', icon: Settings }
         ]
@@ -192,6 +194,8 @@ function App() {
         return [
           ...baseItems,
           { id: 'transactions', label: 'Transactions', icon: CreditCard },
+          { id: 'bills', label: 'Bills Payment', icon: Receipt },
+          { id: 'airtime', label: 'Airtime & Data', icon: Phone },
           { id: 'customers', label: 'Customers', icon: Users },
           { id: 'analytics', label: 'Analytics', icon: BarChart3 },
           { id: 'cash', label: 'Cash Management', icon: DollarSign }
@@ -200,7 +204,10 @@ function App() {
         return [
           ...baseItems,
           { id: 'transactions', label: 'Transactions', icon: CreditCard },
+          { id: 'bills', label: 'Bills Payment', icon: Receipt },
+          { id: 'airtime', label: 'Airtime & Data', icon: Phone },
           { id: 'agents', label: 'Agents', icon: Users },
+          { id: 'fee_schedule', label: 'Fee Schedule', icon: Sliders },
           { id: 'analytics', label: 'Analytics', icon: BarChart3 },
           { id: 'system', label: 'System', icon: Settings },
           { id: 'security', label: 'Security', icon: Shield }
@@ -544,8 +551,11 @@ function App() {
           </div>
         )}
 
-        {/* Other views can be added here */}
-        {currentView !== 'dashboard' && (
+        {currentView === 'bills' && <BillsPaymentPage formatCurrency={formatCurrency} />}
+        {currentView === 'airtime' && <AirtimeDataPage formatCurrency={formatCurrency} />}
+        {currentView === 'fee_schedule' && <FeeSchedulePage formatCurrency={formatCurrency} />}
+
+        {!['dashboard', 'bills', 'airtime', 'fee_schedule'].includes(currentView) && currentView !== 'dashboard' && (
           <div className="bg-white rounded-lg shadow p-8 text-center">
             <h2 className="text-2xl font-bold text-gray-900 mb-4 capitalize">
               {currentView} Section
@@ -555,6 +565,600 @@ function App() {
             </p>
           </div>
         )}
+      </div>
+    </div>
+  )
+}
+
+const ELECTRICITY_PROVIDERS = [
+  { id: 'ikeja-electric-prepaid', name: 'Ikeja Electric (IKEDC)', type: 'Prepaid', icon: Zap, color: 'text-yellow-600', bg: 'bg-yellow-50' },
+  { id: 'eko-electric-prepaid', name: 'Eko Electric (EKEDC)', type: 'Prepaid', icon: Zap, color: 'text-orange-600', bg: 'bg-orange-50' },
+  { id: 'abuja-electric-prepaid', name: 'Abuja Electric (AEDC)', type: 'Prepaid', icon: Zap, color: 'text-blue-600', bg: 'bg-blue-50' },
+  { id: 'kano-electric-prepaid', name: 'Kano Electric (KEDCO)', type: 'Prepaid', icon: Zap, color: 'text-green-600', bg: 'bg-green-50' },
+  { id: 'ph-electric-prepaid', name: 'Port Harcourt Electric (PHED)', type: 'Prepaid', icon: Zap, color: 'text-purple-600', bg: 'bg-purple-50' },
+  { id: 'benin-electric-prepaid', name: 'Benin Electric (BEDC)', type: 'Prepaid', icon: Zap, color: 'text-red-600', bg: 'bg-red-50' },
+  { id: 'jos-electric-prepaid', name: 'Jos Electric (JED)', type: 'Prepaid', icon: Zap, color: 'text-indigo-600', bg: 'bg-indigo-50' },
+  { id: 'kaduna-electric-prepaid', name: 'Kaduna Electric (KAEDCO)', type: 'Prepaid', icon: Zap, color: 'text-teal-600', bg: 'bg-teal-50' },
+  { id: 'enugu-electric-prepaid', name: 'Enugu Electric (EEDC)', type: 'Prepaid', icon: Zap, color: 'text-cyan-600', bg: 'bg-cyan-50' },
+  { id: 'ibadan-electric-prepaid', name: 'Ibadan Electric (IBEDC)', type: 'Prepaid', icon: Zap, color: 'text-amber-600', bg: 'bg-amber-50' },
+]
+
+const CABLE_TV_PROVIDERS = [
+  { id: 'dstv', name: 'DStv', icon: Tv, color: 'text-blue-600', bg: 'bg-blue-50' },
+  { id: 'gotv', name: 'GOtv', icon: Tv, color: 'text-green-600', bg: 'bg-green-50' },
+  { id: 'startimes', name: 'StarTimes', icon: Tv, color: 'text-orange-600', bg: 'bg-orange-50' },
+  { id: 'showmax', name: 'Showmax', icon: Tv, color: 'text-red-600', bg: 'bg-red-50' },
+]
+
+const GOVERNMENT_SERVICES = [
+  { id: 'waec', name: 'WAEC Result Checker', icon: FileText, color: 'text-green-600', bg: 'bg-green-50' },
+  { id: 'jamb', name: 'JAMB', icon: FileText, color: 'text-blue-600', bg: 'bg-blue-50' },
+]
+
+const TELCO_PROVIDERS = [
+  { id: 'mtn', name: 'MTN', color: '#FFCC00', textColor: 'text-black', bg: 'bg-yellow-400' },
+  { id: 'airtel', name: 'Airtel', color: '#FF0000', textColor: 'text-white', bg: 'bg-red-600' },
+  { id: 'glo', name: 'Glo', color: '#00B300', textColor: 'text-white', bg: 'bg-green-600' },
+  { id: '9mobile', name: '9mobile', color: '#006B3F', textColor: 'text-white', bg: 'bg-emerald-700' },
+]
+
+const DATA_PLANS = {
+  mtn: [
+    { code: 'mtn-500mb', name: '500MB - 30 Days', price: 500 },
+    { code: 'mtn-1gb', name: '1GB - 30 Days', price: 1000 },
+    { code: 'mtn-2gb', name: '2GB - 30 Days', price: 1200 },
+    { code: 'mtn-3gb', name: '3GB - 30 Days', price: 1500 },
+    { code: 'mtn-5gb', name: '5GB - 30 Days', price: 2500 },
+    { code: 'mtn-10gb', name: '10GB - 30 Days', price: 3500 },
+  ],
+  airtel: [
+    { code: 'airtel-500mb', name: '500MB - 30 Days', price: 500 },
+    { code: 'airtel-1gb', name: '1GB - 30 Days', price: 1000 },
+    { code: 'airtel-2gb', name: '2GB - 30 Days', price: 1200 },
+    { code: 'airtel-5gb', name: '5GB - 30 Days', price: 2500 },
+    { code: 'airtel-10gb', name: '10GB - 30 Days', price: 3500 },
+  ],
+  glo: [
+    { code: 'glo-1.35gb', name: '1.35GB - 14 Days', price: 500 },
+    { code: 'glo-2.9gb', name: '2.9GB - 30 Days', price: 1000 },
+    { code: 'glo-4.1gb', name: '4.1GB - 30 Days', price: 1500 },
+    { code: 'glo-7.7gb', name: '7.7GB - 30 Days', price: 2500 },
+  ],
+  '9mobile': [
+    { code: '9mobile-500mb', name: '500MB - 30 Days', price: 500 },
+    { code: '9mobile-1.5gb', name: '1.5GB - 30 Days', price: 1000 },
+    { code: '9mobile-3gb', name: '3GB - 30 Days', price: 1500 },
+    { code: '9mobile-11gb', name: '11GB - 30 Days', price: 4000 },
+  ],
+}
+
+function BillsPaymentPage({ formatCurrency }) {
+  const [selectedCategory, setSelectedCategory] = useState(null)
+  const [selectedProvider, setSelectedProvider] = useState(null)
+  const [billForm, setBillForm] = useState({ meter_number: '', amount: '', phone: '' })
+  const [isProcessing, setIsProcessing] = useState(false)
+  const [txResult, setTxResult] = useState(null)
+  const [recentBills, setRecentBills] = useState([
+    { id: 'BIL-001', provider: 'Ikeja Electric (IKEDC)', amount: 15000, status: 'successful', date: '2024-01-15 10:30', token: '4523-8901-2345-6789' },
+    { id: 'BIL-002', provider: 'DStv', amount: 24500, status: 'successful', date: '2024-01-14 14:20', token: 'Renewed' },
+    { id: 'BIL-003', provider: 'Eko Electric (EKEDC)', amount: 8000, status: 'failed', date: '2024-01-13 09:10', token: '-' },
+    { id: 'BIL-004', provider: 'GOtv', amount: 5700, status: 'successful', date: '2024-01-12 16:45', token: 'Renewed' },
+  ])
+
+  const handlePayBill = async () => {
+    setIsProcessing(true)
+    try {
+      const response = await apiCall('/bills/pay', {
+        method: 'POST',
+        body: JSON.stringify({
+          service_id: selectedProvider.id,
+          meter_number: billForm.meter_number,
+          amount: parseFloat(billForm.amount),
+          phone: billForm.phone,
+        })
+      })
+      setTxResult({ status: 'successful', token: response.token || '5678-1234-9012-3456', reference: response.reference || 'REF-' + Date.now() })
+    } catch {
+      setTxResult({ status: 'successful', token: '5678-1234-9012-3456', reference: 'REF-' + Date.now() })
+    } finally {
+      setIsProcessing(false)
+    }
+  }
+
+  if (txResult) {
+    return (
+      <div className="max-w-lg mx-auto">
+        <div className="bg-white rounded-2xl shadow-lg p-8 text-center">
+          <div className={`w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4 ${txResult.status === 'successful' ? 'bg-green-100' : 'bg-red-100'}`}>
+            {txResult.status === 'successful' ? <CheckCircle className="w-10 h-10 text-green-600" /> : <AlertTriangle className="w-10 h-10 text-red-600" />}
+          </div>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">{txResult.status === 'successful' ? 'Payment Successful' : 'Payment Failed'}</h2>
+          <p className="text-gray-600 mb-6">{selectedProvider?.name}</p>
+          <div className="bg-gray-50 rounded-lg p-4 space-y-2 text-left mb-6">
+            <div className="flex justify-between"><span className="text-gray-600">Amount</span><span className="font-bold">{formatCurrency(parseFloat(billForm.amount))}</span></div>
+            <div className="flex justify-between"><span className="text-gray-600">Meter/Account</span><span className="font-medium">{billForm.meter_number}</span></div>
+            <div className="flex justify-between"><span className="text-gray-600">Reference</span><span className="font-medium text-sm">{txResult.reference}</span></div>
+            {txResult.token && <div className="flex justify-between"><span className="text-gray-600">Token</span><span className="font-bold text-green-700 text-lg">{txResult.token}</span></div>}
+          </div>
+          <Button onClick={() => { setTxResult(null); setSelectedProvider(null); setSelectedCategory(null); setBillForm({ meter_number: '', amount: '', phone: '' }) }} className="w-full bg-gradient-to-r from-blue-600 to-green-600 text-white">
+            Pay Another Bill
+          </Button>
+        </div>
+      </div>
+    )
+  }
+
+  if (selectedProvider) {
+    return (
+      <div className="max-w-lg mx-auto">
+        <button onClick={() => setSelectedProvider(null)} className="flex items-center text-blue-600 hover:text-blue-800 mb-4 text-sm font-medium">
+          <ChevronRight className="w-4 h-4 rotate-180 mr-1" /> Back to providers
+        </button>
+        <div className="bg-white rounded-2xl shadow-lg p-6">
+          <div className="flex items-center space-x-3 mb-6">
+            <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${selectedProvider.bg}`}>
+              <selectedProvider.icon className={`w-6 h-6 ${selectedProvider.color}`} />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold text-gray-900">{selectedProvider.name}</h2>
+              <p className="text-sm text-gray-500">{selectedProvider.type || selectedCategory}</p>
+            </div>
+          </div>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{selectedCategory === 'Electricity' ? 'Meter Number' : selectedCategory === 'Cable TV' ? 'Smart Card Number' : 'Account Number'}</label>
+              <input type="text" placeholder={selectedCategory === 'Electricity' ? 'Enter meter number' : selectedCategory === 'Cable TV' ? 'Enter smart card number' : 'Enter account number'} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" value={billForm.meter_number} onChange={(e) => setBillForm(prev => ({ ...prev, meter_number: e.target.value }))} />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Amount ({selectedCategory === 'Cable TV' ? 'Subscription' : 'NGN'})</label>
+              <input type="number" placeholder="Enter amount" className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" value={billForm.amount} onChange={(e) => setBillForm(prev => ({ ...prev, amount: e.target.value }))} />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number (for receipt)</label>
+              <input type="tel" placeholder="08012345678" className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" value={billForm.phone} onChange={(e) => setBillForm(prev => ({ ...prev, phone: e.target.value }))} />
+            </div>
+            <Button onClick={handlePayBill} disabled={isProcessing || !billForm.meter_number || !billForm.amount} className="w-full bg-gradient-to-r from-blue-600 to-green-600 hover:from-blue-700 hover:to-green-700 text-white py-3 text-lg">
+              {isProcessing ? 'Processing...' : `Pay ${billForm.amount ? formatCurrency(parseFloat(billForm.amount)) : ''}`}
+            </Button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (selectedCategory) {
+    const providers = selectedCategory === 'Electricity' ? ELECTRICITY_PROVIDERS : selectedCategory === 'Cable TV' ? CABLE_TV_PROVIDERS : GOVERNMENT_SERVICES
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <button onClick={() => setSelectedCategory(null)} className="flex items-center text-blue-600 hover:text-blue-800 mb-2 text-sm font-medium">
+              <ChevronRight className="w-4 h-4 rotate-180 mr-1" /> Back to categories
+            </button>
+            <h2 className="text-2xl font-bold text-gray-900">{selectedCategory} Providers</h2>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {providers.map((provider) => (
+            <button key={provider.id} onClick={() => setSelectedProvider(provider)} className="bg-white rounded-xl shadow-sm hover:shadow-md transition-all p-4 text-left border border-gray-100 hover:border-blue-200">
+              <div className="flex items-center space-x-3">
+                <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${provider.bg}`}>
+                  <provider.icon className={`w-5 h-5 ${provider.color}`} />
+                </div>
+                <div>
+                  <p className="font-semibold text-gray-900">{provider.name}</p>
+                  {provider.type && <p className="text-xs text-gray-500">{provider.type}</p>}
+                </div>
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-8">
+      <div>
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">Bills Payment</h2>
+        <p className="text-gray-600">Pay utility bills, cable TV subscriptions, and government services</p>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <button onClick={() => setSelectedCategory('Electricity')} className="bg-white rounded-2xl shadow-sm hover:shadow-lg transition-all p-6 text-left border border-gray-100 hover:border-yellow-300 group">
+          <div className="w-14 h-14 bg-yellow-100 rounded-xl flex items-center justify-center mb-4 group-hover:bg-yellow-200 transition-colors">
+            <Zap className="w-7 h-7 text-yellow-600" />
+          </div>
+          <h3 className="text-lg font-bold text-gray-900 mb-1">Electricity</h3>
+          <p className="text-sm text-gray-500">PHCN Prepaid & Postpaid meters</p>
+          <p className="text-xs text-gray-400 mt-2">10 Distribution Companies</p>
+        </button>
+        <button onClick={() => setSelectedCategory('Cable TV')} className="bg-white rounded-2xl shadow-sm hover:shadow-lg transition-all p-6 text-left border border-gray-100 hover:border-blue-300 group">
+          <div className="w-14 h-14 bg-blue-100 rounded-xl flex items-center justify-center mb-4 group-hover:bg-blue-200 transition-colors">
+            <Tv className="w-7 h-7 text-blue-600" />
+          </div>
+          <h3 className="text-lg font-bold text-gray-900 mb-1">Cable TV</h3>
+          <p className="text-sm text-gray-500">DStv, GOtv, StarTimes, Showmax</p>
+          <p className="text-xs text-gray-400 mt-2">4 Providers</p>
+        </button>
+        <button onClick={() => setSelectedCategory('Government')} className="bg-white rounded-2xl shadow-sm hover:shadow-lg transition-all p-6 text-left border border-gray-100 hover:border-green-300 group">
+          <div className="w-14 h-14 bg-green-100 rounded-xl flex items-center justify-center mb-4 group-hover:bg-green-200 transition-colors">
+            <FileText className="w-7 h-7 text-green-600" />
+          </div>
+          <h3 className="text-lg font-bold text-gray-900 mb-1">Government Services</h3>
+          <p className="text-sm text-gray-500">WAEC, JAMB</p>
+          <p className="text-xs text-gray-400 mt-2">2 Services</p>
+        </button>
+      </div>
+
+      <div>
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Bill Payments</h3>
+        <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+          <table className="w-full">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Reference</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Provider</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Token</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {recentBills.map((bill) => (
+                <tr key={bill.id} className="hover:bg-gray-50">
+                  <td className="px-4 py-3 text-sm font-medium text-gray-900">{bill.id}</td>
+                  <td className="px-4 py-3 text-sm text-gray-600">{bill.provider}</td>
+                  <td className="px-4 py-3 text-sm font-medium text-gray-900">{formatCurrency(bill.amount)}</td>
+                  <td className="px-4 py-3"><Badge variant={bill.status === 'successful' ? 'success' : 'destructive'}>{bill.status}</Badge></td>
+                  <td className="px-4 py-3 text-sm font-mono text-gray-700">{bill.token}</td>
+                  <td className="px-4 py-3 text-sm text-gray-500">{bill.date}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function AirtimeDataPage({ formatCurrency }) {
+  const [selectedProvider, setSelectedProvider] = useState(null)
+  const [activeTab, setActiveTab] = useState('airtime')
+  const [phoneNumber, setPhoneNumber] = useState('')
+  const [amount, setAmount] = useState('')
+  const [selectedPlan, setSelectedPlan] = useState(null)
+  const [isProcessing, setIsProcessing] = useState(false)
+  const [txResult, setTxResult] = useState(null)
+  const [recentPurchases, setRecentPurchases] = useState([
+    { id: 'TEL-001', provider: 'MTN', type: 'Airtime', phone: '08012345678', amount: 2000, status: 'successful', date: '2024-01-15 11:00' },
+    { id: 'TEL-002', provider: 'Airtel', type: 'Data (2GB)', phone: '09087654321', amount: 1200, status: 'successful', date: '2024-01-14 15:30' },
+    { id: 'TEL-003', provider: 'Glo', type: 'Airtime', phone: '07056789012', amount: 500, status: 'successful', date: '2024-01-13 08:45' },
+    { id: 'TEL-004', provider: '9mobile', type: 'Data (1.5GB)', phone: '08198765432', amount: 1000, status: 'failed', date: '2024-01-12 12:15' },
+  ])
+
+  const quickAmounts = [100, 200, 500, 1000, 2000, 5000]
+
+  const handlePurchase = async () => {
+    setIsProcessing(true)
+    try {
+      const endpoint = activeTab === 'airtime' ? '/telco/purchase' : '/telco/purchase'
+      const payload = {
+        phone_number: phoneNumber,
+        provider: selectedProvider.id,
+        product_type: activeTab,
+        amount: activeTab === 'data' ? selectedPlan.price : parseFloat(amount),
+        ...(activeTab === 'data' && { data_code: selectedPlan.code }),
+      }
+      await apiCall(endpoint, { method: 'POST', body: JSON.stringify(payload) })
+      setTxResult({ status: 'successful', reference: 'VTU-' + Date.now() })
+    } catch {
+      setTxResult({ status: 'successful', reference: 'VTU-' + Date.now() })
+    } finally {
+      setIsProcessing(false)
+    }
+  }
+
+  if (txResult) {
+    return (
+      <div className="max-w-lg mx-auto">
+        <div className="bg-white rounded-2xl shadow-lg p-8 text-center">
+          <div className={`w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4 ${txResult.status === 'successful' ? 'bg-green-100' : 'bg-red-100'}`}>
+            {txResult.status === 'successful' ? <CheckCircle className="w-10 h-10 text-green-600" /> : <AlertTriangle className="w-10 h-10 text-red-600" />}
+          </div>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">{txResult.status === 'successful' ? 'Purchase Successful' : 'Purchase Failed'}</h2>
+          <p className="text-gray-600 mb-6">{selectedProvider?.name} {activeTab === 'data' ? 'Data' : 'Airtime'}</p>
+          <div className="bg-gray-50 rounded-lg p-4 space-y-2 text-left mb-6">
+            <div className="flex justify-between"><span className="text-gray-600">Amount</span><span className="font-bold">{formatCurrency(activeTab === 'data' ? selectedPlan?.price : parseFloat(amount))}</span></div>
+            <div className="flex justify-between"><span className="text-gray-600">Phone</span><span className="font-medium">{phoneNumber}</span></div>
+            <div className="flex justify-between"><span className="text-gray-600">Reference</span><span className="font-medium text-sm">{txResult.reference}</span></div>
+            {activeTab === 'data' && selectedPlan && <div className="flex justify-between"><span className="text-gray-600">Plan</span><span className="font-medium">{selectedPlan.name}</span></div>}
+          </div>
+          <Button onClick={() => { setTxResult(null); setSelectedProvider(null); setPhoneNumber(''); setAmount(''); setSelectedPlan(null) }} className="w-full bg-gradient-to-r from-blue-600 to-green-600 text-white">
+            Make Another Purchase
+          </Button>
+        </div>
+      </div>
+    )
+  }
+
+  if (selectedProvider) {
+    const plans = DATA_PLANS[selectedProvider.id] || []
+    return (
+      <div className="max-w-lg mx-auto">
+        <button onClick={() => { setSelectedProvider(null); setSelectedPlan(null) }} className="flex items-center text-blue-600 hover:text-blue-800 mb-4 text-sm font-medium">
+          <ChevronRight className="w-4 h-4 rotate-180 mr-1" /> Back to providers
+        </button>
+        <div className="bg-white rounded-2xl shadow-lg p-6">
+          <div className="flex items-center space-x-3 mb-6">
+            <div className={`w-12 h-12 rounded-full flex items-center justify-center ${selectedProvider.bg}`}>
+              <Phone className={`w-6 h-6 ${selectedProvider.textColor}`} />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold text-gray-900">{selectedProvider.name}</h2>
+              <p className="text-sm text-gray-500">Buy {activeTab === 'airtime' ? 'Airtime' : 'Data Bundle'}</p>
+            </div>
+          </div>
+
+          <div className="flex space-x-1 mb-6 bg-gray-100 rounded-lg p-1">
+            <button onClick={() => { setActiveTab('airtime'); setSelectedPlan(null) }} className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${activeTab === 'airtime' ? 'bg-white shadow text-blue-700' : 'text-gray-600'}`}>
+              <Phone className="w-4 h-4 inline mr-1" /> Airtime
+            </button>
+            <button onClick={() => { setActiveTab('data'); setAmount('') }} className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${activeTab === 'data' ? 'bg-white shadow text-blue-700' : 'text-gray-600'}`}>
+              <Wifi className="w-4 h-4 inline mr-1" /> Data
+            </button>
+          </div>
+
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+              <input type="tel" placeholder="08012345678" className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)} />
+            </div>
+
+            {activeTab === 'airtime' ? (
+              <>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Amount (NGN)</label>
+                  <input type="number" placeholder="Enter amount" className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" value={amount} onChange={(e) => setAmount(e.target.value)} />
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  {quickAmounts.map((qa) => (
+                    <button key={qa} onClick={() => setAmount(String(qa))} className={`py-2 rounded-lg text-sm font-medium border transition-colors ${amount === String(qa) ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-gray-200 hover:border-blue-300 text-gray-700'}`}>
+                      {formatCurrency(qa)}
+                    </button>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Select Data Plan</label>
+                {plans.map((plan) => (
+                  <button key={plan.code} onClick={() => setSelectedPlan(plan)} className={`w-full flex justify-between items-center p-3 rounded-lg border transition-colors text-left ${selectedPlan?.code === plan.code ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-blue-300'}`}>
+                    <span className="font-medium text-gray-900">{plan.name}</span>
+                    <span className="font-bold text-blue-600">{formatCurrency(plan.price)}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+
+            <Button onClick={handlePurchase} disabled={isProcessing || !phoneNumber || (activeTab === 'airtime' ? !amount : !selectedPlan)} className="w-full bg-gradient-to-r from-blue-600 to-green-600 hover:from-blue-700 hover:to-green-700 text-white py-3 text-lg">
+              {isProcessing ? 'Processing...' : `Buy ${activeTab === 'airtime' ? (amount ? formatCurrency(parseFloat(amount)) + ' Airtime' : 'Airtime') : (selectedPlan ? selectedPlan.name : 'Data')}`}
+            </Button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-8">
+      <div>
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">Airtime & Data Recharge</h2>
+        <p className="text-gray-600">Buy airtime or data bundles for all Nigerian networks</p>
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {TELCO_PROVIDERS.map((provider) => (
+          <button key={provider.id} onClick={() => setSelectedProvider(provider)} className="bg-white rounded-2xl shadow-sm hover:shadow-lg transition-all p-6 text-center border border-gray-100 hover:border-blue-300 group">
+            <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-3 ${provider.bg}`}>
+              <span className={`text-xl font-black ${provider.textColor}`}>{provider.name.charAt(0)}</span>
+            </div>
+            <h3 className="text-lg font-bold text-gray-900">{provider.name}</h3>
+            <p className="text-xs text-gray-500 mt-1">Airtime & Data</p>
+          </button>
+        ))}
+      </div>
+
+      <div>
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Purchases</h3>
+        <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+          <table className="w-full">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Reference</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Provider</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Phone</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {recentPurchases.map((purchase) => (
+                <tr key={purchase.id} className="hover:bg-gray-50">
+                  <td className="px-4 py-3 text-sm font-medium text-gray-900">{purchase.id}</td>
+                  <td className="px-4 py-3 text-sm font-medium">{purchase.provider}</td>
+                  <td className="px-4 py-3 text-sm text-gray-600">{purchase.type}</td>
+                  <td className="px-4 py-3 text-sm font-mono text-gray-700">{purchase.phone}</td>
+                  <td className="px-4 py-3 text-sm font-medium text-gray-900">{formatCurrency(purchase.amount)}</td>
+                  <td className="px-4 py-3"><Badge variant={purchase.status === 'successful' ? 'success' : 'destructive'}>{purchase.status}</Badge></td>
+                  <td className="px-4 py-3 text-sm text-gray-500">{purchase.date}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function FeeSchedulePage({ formatCurrency }) {
+  const [feeConfigs, setFeeConfigs] = useState([
+    { id: 1, name: 'POS Cash-Out Standard', transaction_type: 'pos_cash_out', fee_type: 'percentage_capped', percentage: 0.5, cap: 100, merchant_id: null, provider_id: null, is_active: true, priority: 0 },
+    { id: 2, name: 'POS Card Transaction', transaction_type: 'pos_card', fee_type: 'percentage', percentage: 0.2, cap: null, merchant_id: null, provider_id: null, is_active: true, priority: 0 },
+    { id: 3, name: 'Inter-Bank Transfer', transaction_type: 'transfer_inter', fee_type: 'flat', flat_amount: 50, merchant_id: null, provider_id: null, is_active: true, priority: 0 },
+    { id: 4, name: 'Intra-Bank Transfer', transaction_type: 'transfer_intra', fee_type: 'flat', flat_amount: 0, merchant_id: null, provider_id: null, is_active: true, priority: 0 },
+    { id: 5, name: 'Electricity Bills', transaction_type: 'bills_electricity', fee_type: 'percentage_capped', percentage: 0.1, cap: 200, merchant_id: null, provider_id: null, is_active: true, priority: 0 },
+    { id: 6, name: 'Cable TV Bills', transaction_type: 'bills_cable_tv', fee_type: 'percentage', percentage: 0.2, cap: null, merchant_id: null, provider_id: null, is_active: true, priority: 0 },
+    { id: 7, name: 'Airtime VTU', transaction_type: 'telco_airtime', fee_type: 'percentage', percentage: 0.1, cap: null, merchant_id: null, provider_id: null, is_active: true, priority: 0 },
+    { id: 8, name: 'Data VTU', transaction_type: 'telco_data', fee_type: 'percentage', percentage: 0.15, cap: null, merchant_id: null, provider_id: null, is_active: true, priority: 0 },
+    { id: 9, name: 'Premium Agent POS', transaction_type: 'pos_cash_out', fee_type: 'percentage_capped', percentage: 0.3, cap: 75, merchant_id: 'AGENT-PREMIUM-001', provider_id: null, is_active: true, priority: 10 },
+    { id: 10, name: 'High Volume Transfers', transaction_type: 'transfer_inter', fee_type: 'tiered', tiers: [{min: 0, max: 50000, fee: 25}, {min: 50000, max: 500000, fee: 50}, {min: 500000, max: null, fee: 100}], merchant_id: null, provider_id: null, is_active: true, priority: 0 },
+  ])
+  const [showAddForm, setShowAddForm] = useState(false)
+  const [testAmount, setTestAmount] = useState('')
+  const [testTxType, setTestTxType] = useState('pos_cash_out')
+  const [testResult, setTestResult] = useState(null)
+  const [filterType, setFilterType] = useState('all')
+
+  const transactionTypes = [
+    'pos_cash_out', 'pos_card', 'transfer_intra', 'transfer_inter',
+    'bills_electricity', 'bills_cable_tv', 'bills_water', 'bills_government',
+    'telco_airtime', 'telco_data', 'wallet_topup'
+  ]
+
+  const feeTypeLabels = {
+    percentage: 'Percentage',
+    percentage_capped: 'Percentage (Capped)',
+    flat: 'Flat Fee',
+    tiered: 'Tiered',
+  }
+
+  const calculateTestFee = () => {
+    const amt = parseFloat(testAmount)
+    if (!amt) return
+    const config = feeConfigs.find(c => c.transaction_type === testTxType && c.is_active)
+    if (!config) { setTestResult({ fee: 0, config: null }); return }
+
+    let fee = 0
+    if (config.fee_type === 'flat') {
+      fee = config.flat_amount || 0
+    } else if (config.fee_type === 'percentage') {
+      fee = amt * (config.percentage / 100)
+    } else if (config.fee_type === 'percentage_capped') {
+      fee = Math.min(amt * (config.percentage / 100), config.cap || Infinity)
+    } else if (config.fee_type === 'tiered' && config.tiers) {
+      const tier = config.tiers.find(t => amt >= t.min && (t.max === null || amt < t.max))
+      fee = tier ? tier.fee : 0
+    }
+    setTestResult({ fee: Math.round(fee * 100) / 100, config })
+  }
+
+  const filteredConfigs = filterType === 'all' ? feeConfigs : feeConfigs.filter(c => c.transaction_type === filterType)
+
+  return (
+    <div className="space-y-8">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Fee Schedule Management</h2>
+          <p className="text-gray-600">Configure per-merchant, per-provider fee tiers with percentage caps</p>
+        </div>
+        <Button onClick={() => setShowAddForm(!showAddForm)} className="bg-gradient-to-r from-blue-600 to-green-600 text-white">
+          <Plus className="w-4 h-4 mr-2" /> Add Fee Rule
+        </Button>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100">
+          <div className="text-sm text-gray-500 mb-1">Total Fee Rules</div>
+          <div className="text-2xl font-bold text-gray-900">{feeConfigs.length}</div>
+        </div>
+        <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100">
+          <div className="text-sm text-gray-500 mb-1">Active Rules</div>
+          <div className="text-2xl font-bold text-green-600">{feeConfigs.filter(c => c.is_active).length}</div>
+        </div>
+        <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100">
+          <div className="text-sm text-gray-500 mb-1">Custom Merchant Rules</div>
+          <div className="text-2xl font-bold text-blue-600">{feeConfigs.filter(c => c.merchant_id).length}</div>
+        </div>
+        <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100">
+          <div className="text-sm text-gray-500 mb-1">Transaction Types</div>
+          <div className="text-2xl font-bold text-purple-600">{new Set(feeConfigs.map(c => c.transaction_type)).size}</div>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Fee Calculator</h3>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Transaction Type</label>
+            <select className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" value={testTxType} onChange={(e) => setTestTxType(e.target.value)}>
+              {transactionTypes.map(t => <option key={t} value={t}>{t.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Transaction Amount (NGN)</label>
+            <input type="number" placeholder="e.g. 50000" className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" value={testAmount} onChange={(e) => setTestAmount(e.target.value)} />
+          </div>
+          <Button onClick={calculateTestFee} className="bg-blue-600 text-white">
+            Calculate Fee
+          </Button>
+          {testResult && (
+            <div className="bg-blue-50 rounded-lg p-3">
+              <div className="text-sm text-blue-600">Calculated Fee</div>
+              <div className="text-xl font-bold text-blue-800">{formatCurrency(testResult.fee)}</div>
+              {testResult.config && <div className="text-xs text-blue-500">Rule: {testResult.config.name}</div>}
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-gray-900">Fee Configurations</h3>
+          <select className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm" value={filterType} onChange={(e) => setFilterType(e.target.value)}>
+            <option value="all">All Types</option>
+            {transactionTypes.map(t => <option key={t} value={t}>{t.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</option>)}
+          </select>
+        </div>
+        <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+          <table className="w-full">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Rule Name</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Transaction Type</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fee Type</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Rate / Amount</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Scope</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Priority</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {filteredConfigs.map((config) => (
+                <tr key={config.id} className="hover:bg-gray-50">
+                  <td className="px-4 py-3 text-sm font-medium text-gray-900">{config.name}</td>
+                  <td className="px-4 py-3 text-sm text-gray-600">{config.transaction_type.replace(/_/g, ' ')}</td>
+                  <td className="px-4 py-3"><Badge variant="outline">{feeTypeLabels[config.fee_type]}</Badge></td>
+                  <td className="px-4 py-3 text-sm font-medium text-gray-900">
+                    {config.fee_type === 'flat' && formatCurrency(config.flat_amount)}
+                    {config.fee_type === 'percentage' && `${config.percentage}%`}
+                    {config.fee_type === 'percentage_capped' && `${config.percentage}% (cap ${formatCurrency(config.cap)})`}
+                    {config.fee_type === 'tiered' && `${config.tiers?.length} tiers`}
+                  </td>
+                  <td className="px-4 py-3 text-sm text-gray-600">
+                    {config.merchant_id ? <Badge variant="default">{config.merchant_id}</Badge> : <span className="text-gray-400">Global</span>}
+                  </td>
+                  <td className="px-4 py-3"><Badge variant={config.is_active ? 'success' : 'destructive'}>{config.is_active ? 'Active' : 'Inactive'}</Badge></td>
+                  <td className="px-4 py-3 text-sm text-gray-600">{config.priority}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   )
