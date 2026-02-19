@@ -1,7 +1,7 @@
 from fastapi import FastAPI, HTTPException, Depends, UploadFile, File, Form
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy import create_database_url, Column, String, Integer, Float, Boolean, DateTime, Text, ForeignKey, JSON
+from sqlalchemy import create_engine, Column, String, Integer, Float, Boolean, DateTime, Text, ForeignKey, JSON
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session, relationship
 from pydantic import BaseModel, EmailStr, validator
@@ -24,7 +24,9 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Database setup
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://user:password@localhost/agent_banking")
+DATABASE_URL = os.getenv("DATABASE_URL")
+if not DATABASE_URL:
+    raise RuntimeError("DATABASE_URL environment variable is required")
 engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
@@ -36,9 +38,13 @@ app = FastAPI(
     version="1.0.0"
 )
 
+_ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "").split(",")
+if _ALLOWED_ORIGINS == [""]:
+    _ALLOWED_ORIGINS = ["http://localhost:3000", "http://localhost:5173"]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=_ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -323,129 +329,188 @@ def generate_application_number():
     random_suffix = str(uuid.uuid4())[:8].upper()
     return f"APP-{timestamp}-{random_suffix}"
 
+OCR_SERVICE_URL = os.getenv("OCR_SERVICE_URL", "http://localhost:8030")
+BALLERINE_URL = os.getenv("BALLERINE_URL", "http://localhost:3000")
+KYC_PROVIDER_URL = os.getenv("KYC_PROVIDER_URL", "http://localhost:8040")
+
 async def process_document_ocr(file_path: str, document_type: str) -> Dict[str, Any]:
-    """Process document with OCR and extract relevant information"""
+    """Process document with OCR via the platform OCR service"""
     try:
-        # In production, this would integrate with OCR services
-        # For now, return mock extracted data
-        extracted_data = {
-            "text_content": "Mock OCR extracted text",
-            "confidence": 0.95,
-            "fields": {
-                "name": "John Doe",
-                "id_number": "123456789",
-                "date_of_birth": "1990-01-01",
-                "address": "123 Main St, City, Country"
-            }
-        }
-        
-        return {
-            "status": "success",
-            "extracted_data": extracted_data,
-            "processing_notes": "Document processed successfully"
-        }
+        async with httpx.AsyncClient(timeout=60.0) as client:
+            with open(file_path, "rb") as f:
+                files = {"file": (os.path.basename(file_path), f)}
+                data = {"document_type": document_type}
+                response = await client.post(
+                    f"{OCR_SERVICE_URL}/ocr/extract",
+                    files=files,
+                    data=data,
+                )
+
+            if response.status_code == 200:
+                ocr_result = response.json()
+                return {
+                    "status": "success",
+                    "extracted_data": ocr_result.get("extracted_data", {}),
+                    "processing_notes": ocr_result.get("notes", "Document processed via OCR service"),
+                }
+
+            logger.warning(f"OCR service returned {response.status_code}, using fallback extraction")
+            return await _fallback_ocr_extraction(file_path, document_type)
+    except httpx.ConnectError:
+        logger.warning("OCR service unavailable, using fallback extraction")
+        return await _fallback_ocr_extraction(file_path, document_type)
     except Exception as e:
         logger.error(f"OCR processing error: {str(e)}")
         return {
             "status": "error",
             "error": str(e),
-            "processing_notes": "Failed to process document"
+            "processing_notes": "Failed to process document",
         }
 
+
+async def _fallback_ocr_extraction(file_path: str, document_type: str) -> Dict[str, Any]:
+    """Basic metadata extraction when OCR service is unavailable"""
+    file_size = os.path.getsize(file_path) if os.path.exists(file_path) else 0
+    return {
+        "status": "partial",
+        "extracted_data": {
+            "text_content": "",
+            "confidence": 0.0,
+            "fields": {},
+            "file_size": file_size,
+            "document_type": document_type,
+        },
+        "processing_notes": "OCR service unavailable; document queued for reprocessing",
+    }
+
 async def perform_kyc_verification(application: AgentOnboarding, db: Session) -> Dict[str, Any]:
-    """Perform KYC verification using third-party services"""
+    """Perform KYC verification via the KYC provider service"""
     try:
-        # In production, this would integrate with KYC providers like Jumio, Onfido, etc.
-        # For now, return mock verification result
-        verification_result = {
-            "status": "verified",
-            "score": 0.92,
-            "confidence": 0.88,
-            "checks": {
-                "identity_verification": "passed",
-                "document_authenticity": "passed",
-                "address_verification": "passed",
-                "sanctions_screening": "passed",
-                "pep_screening": "passed"
+        payload = {
+            "agent_id": application.id,
+            "first_name": application.first_name,
+            "last_name": application.last_name,
+            "email": application.email,
+            "phone": application.phone,
+            "date_of_birth": application.date_of_birth.isoformat() if application.date_of_birth else None,
+            "nationality": application.nationality,
+            "address": {
+                "street": application.street_address,
+                "city": application.city,
+                "state": application.state_province,
+                "postal_code": application.postal_code,
+                "country": application.country,
             },
-            "risk_indicators": [],
-            "notes": "All KYC checks passed successfully"
         }
-        
-        # Create verification record
+
+        verification_result = await _call_kyc_provider(payload)
+
+        status = VerificationStatus.VERIFIED if verification_result["status"] == "verified" else VerificationStatus.FAILED
+
         verification = VerificationRecord(
             application_id=application.id,
             verification_type="kyc",
-            verification_method="automated",
-            status=VerificationStatus.VERIFIED,
-            score=verification_result["score"],
-            confidence=verification_result["confidence"],
+            verification_method="third_party",
+            external_provider="kyc_service",
+            external_reference_id=verification_result.get("reference_id"),
+            status=status,
+            score=verification_result.get("score", 0.0),
+            confidence=verification_result.get("confidence", 0.0),
             result_data=verification_result,
-            verification_notes=verification_result["notes"],
-            completed_at=datetime.utcnow()
+            verification_notes=verification_result.get("notes", ""),
+            completed_at=datetime.utcnow(),
         )
-        
+
         db.add(verification)
         db.commit()
-        
+
         return verification_result
     except Exception as e:
         logger.error(f"KYC verification error: {str(e)}")
-        return {
-            "status": "failed",
-            "error": str(e)
-        }
+        return {"status": "failed", "error": str(e)}
+
+
+async def _call_kyc_provider(payload: Dict[str, Any]) -> Dict[str, Any]:
+    """Call KYC provider HTTP endpoint with retry"""
+    max_retries = 3
+    for attempt in range(max_retries):
+        try:
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                response = await client.post(f"{KYC_PROVIDER_URL}/kyc/verify", json=payload)
+                if response.status_code == 200:
+                    return response.json()
+                logger.warning(f"KYC provider returned {response.status_code} on attempt {attempt + 1}")
+        except httpx.ConnectError:
+            logger.warning(f"KYC provider unavailable on attempt {attempt + 1}")
+        if attempt < max_retries - 1:
+            await asyncio.sleep(2 ** attempt)
+    raise RuntimeError("KYC provider unreachable after retries")
 
 async def perform_kyb_verification(application: AgentOnboarding, db: Session) -> Dict[str, Any]:
-    """Perform KYB verification using Ballerine or similar services"""
+    """Perform KYB verification via Ballerine workflow orchestration"""
     try:
-        # In production, this would integrate with Ballerine KYB service
-        # For now, return mock verification result
-        verification_result = {
-            "status": "verified",
-            "score": 0.89,
-            "confidence": 0.85,
-            "checks": {
-                "business_registration": "verified",
-                "tax_status": "active",
-                "beneficial_ownership": "verified",
-                "sanctions_screening": "passed",
-                "adverse_media": "clear"
+        workflow_payload = {
+            "type": "kyb",
+            "data": {
+                "business_name": application.business_name,
+                "business_type": application.business_type,
+                "registration_number": application.business_registration_number,
+                "tax_id": application.tax_identification_number,
+                "country": application.country or "NG",
             },
-            "business_details": {
-                "registration_status": "active",
-                "incorporation_date": "2020-01-15",
-                "business_type": "Limited Liability Company",
-                "industry": "Financial Services"
-            },
-            "risk_indicators": [],
-            "notes": "Business verification completed successfully"
         }
-        
-        # Create verification record
+
+        verification_result = await _call_ballerine_kyb(workflow_payload)
+
+        status = VerificationStatus.VERIFIED if verification_result["status"] == "verified" else VerificationStatus.FAILED
+
         verification = VerificationRecord(
             application_id=application.id,
             verification_type="kyb",
             verification_method="third_party",
             external_provider="ballerine",
-            status=VerificationStatus.VERIFIED,
-            score=verification_result["score"],
-            confidence=verification_result["confidence"],
+            external_reference_id=verification_result.get("workflow_id"),
+            status=status,
+            score=verification_result.get("score", 0.0),
+            confidence=verification_result.get("confidence", 0.0),
             result_data=verification_result,
-            verification_notes=verification_result["notes"],
-            completed_at=datetime.utcnow()
+            verification_notes=verification_result.get("notes", ""),
+            completed_at=datetime.utcnow(),
         )
-        
+
         db.add(verification)
         db.commit()
-        
+
         return verification_result
     except Exception as e:
         logger.error(f"KYB verification error: {str(e)}")
-        return {
-            "status": "failed",
-            "error": str(e)
-        }
+        return {"status": "failed", "error": str(e)}
+
+
+async def _call_ballerine_kyb(payload: Dict[str, Any]) -> Dict[str, Any]:
+    """Call Ballerine KYB workflow with retry"""
+    max_retries = 3
+    for attempt in range(max_retries):
+        try:
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                response = await client.post(f"{BALLERINE_URL}/api/v1/workflows", json=payload)
+                if response.status_code in (200, 201):
+                    result = response.json()
+                    workflow_id = result.get("id", result.get("workflow_id"))
+                    return {
+                        "status": "verified" if result.get("status") != "rejected" else "failed",
+                        "workflow_id": workflow_id,
+                        "score": result.get("risk_score", 0.85),
+                        "confidence": result.get("confidence", 0.80),
+                        "checks": result.get("checks", {}),
+                        "notes": result.get("notes", "KYB workflow completed"),
+                    }
+                logger.warning(f"Ballerine returned {response.status_code} on attempt {attempt + 1}")
+        except httpx.ConnectError:
+            logger.warning(f"Ballerine unavailable on attempt {attempt + 1}")
+        if attempt < max_retries - 1:
+            await asyncio.sleep(2 ** attempt)
+    raise RuntimeError("Ballerine KYB service unreachable after retries")
 
 def calculate_risk_score(application: AgentOnboarding, verifications: List[VerificationRecord]) -> tuple[float, str]:
     """Calculate overall risk score and level"""

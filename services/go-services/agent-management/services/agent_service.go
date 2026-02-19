@@ -1246,98 +1246,324 @@ func (s *AgentService) canUpdateAgent(userID string, agent *models.Agent) bool {
 }
 
 func (s *AgentService) isAdmin(userID string) bool {
-	// Implement admin check logic
-	// This would typically check user roles in the database
-	return false // Placeholder
+	var role string
+	err := s.db.QueryRow("SELECT role FROM users WHERE id = $1", userID).Scan(&role)
+	if err != nil {
+		return false
+	}
+	return role == "admin" || role == "system"
 }
 
 func (s *AgentService) processNewAgent(agent *models.Agent) {
-	// Trigger async processes for new agent
-	// - Send welcome email
-	// - Create training schedule
-	// - Initiate KYC process
-	// - Set up monitoring
+	ctx := context.Background()
+
+	s.notificationService.Send(ctx, &models.Notification{
+		RecipientID: agent.ID,
+		Type:        "welcome",
+		Channel:     "email",
+		Subject:     "Welcome to the Agent Banking Platform",
+		Body:        fmt.Sprintf("Dear %s %s, your agent registration is being processed.", agent.FirstName, agent.LastName),
+	})
+
+	s.kycService.InitiateVerification(ctx, agent.ID, agent.NationalID)
+
+	s.auditService.LogEvent(ctx, &models.AuditEvent{
+		UserID:     agent.CreatedBy,
+		Action:     "agent.created",
+		EntityID:   agent.ID,
+		EntityType: "agent",
+		Details:    map[string]interface{}{"agent_code": agent.AgentCode, "type": agent.AgentType},
+		Timestamp:  time.Now(),
+	})
 }
 
 func (s *AgentService) processAgentApproval(agent *models.Agent) {
-	// Trigger post-approval processes
-	// - Send approval notification
-	// - Create user accounts
-	// - Set up payment processing
-	// - Schedule training
+	ctx := context.Background()
+
+	s.notificationService.Send(ctx, &models.Notification{
+		RecipientID: agent.ID,
+		Type:        "approval",
+		Channel:     "email",
+		Subject:     "Agent Application Approved",
+		Body:        fmt.Sprintf("Dear %s %s, your agent application has been approved. Your agent code is %s.", agent.FirstName, agent.LastName, agent.AgentCode),
+	})
+
+	s.auditService.LogEvent(ctx, &models.AuditEvent{
+		UserID:     *agent.ApprovedBy,
+		Action:     "agent.approved",
+		EntityID:   agent.ID,
+		EntityType: "agent",
+		Details:    map[string]interface{}{"agent_code": agent.AgentCode},
+		Timestamp:  time.Now(),
+	})
 }
 
 func (s *AgentService) calculateTransactionMetrics(ctx context.Context, agentID string, startDate, endDate time.Time) (*models.TransactionMetrics, error) {
-	// Implement transaction metrics calculation
-	return &models.TransactionMetrics{
-		TotalTransactions: 0,
-		TotalVolume:      0.0,
-		SuccessRate:      0.0,
-		// ... other metrics
-	}, nil
+	metrics := &models.TransactionMetrics{}
+
+	row := s.db.QueryRowContext(ctx,
+		`SELECT COALESCE(COUNT(*), 0), COALESCE(SUM(amount), 0),
+		        COALESCE(SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END)::float / NULLIF(COUNT(*), 0), 0)
+		 FROM transactions WHERE agent_id = $1 AND created_at BETWEEN $2 AND $3`,
+		agentID, startDate, endDate,
+	)
+	if err := row.Scan(&metrics.TotalTransactions, &metrics.TotalVolume, &metrics.SuccessRate); err != nil {
+		return nil, fmt.Errorf("failed to query transaction metrics: %w", err)
+	}
+
+	return metrics, nil
 }
 
 func (s *AgentService) calculateCommissionMetrics(ctx context.Context, agentID string, startDate, endDate time.Time) (*models.CommissionMetrics, error) {
-	// Implement commission metrics calculation
-	return &models.CommissionMetrics{
-		TotalCommission:   0.0,
-		AverageCommission: 0.0,
-		// ... other metrics
-	}, nil
+	metrics := &models.CommissionMetrics{}
+
+	row := s.db.QueryRowContext(ctx,
+		`SELECT COALESCE(SUM(amount), 0), COALESCE(AVG(amount), 0)
+		 FROM commissions WHERE agent_id = $1 AND created_at BETWEEN $2 AND $3`,
+		agentID, startDate, endDate,
+	)
+	if err := row.Scan(&metrics.TotalCommission, &metrics.AverageCommission); err != nil {
+		return nil, fmt.Errorf("failed to query commission metrics: %w", err)
+	}
+
+	return metrics, nil
 }
 
 func (s *AgentService) calculateCustomerMetrics(ctx context.Context, agentID string, startDate, endDate time.Time) (*models.CustomerMetrics, error) {
-	// Implement customer metrics calculation
-	return &models.CustomerMetrics{
-		TotalCustomers: 0,
-		NewCustomers:   0,
-		// ... other metrics
-	}, nil
+	metrics := &models.CustomerMetrics{}
+
+	row := s.db.QueryRowContext(ctx,
+		`SELECT COALESCE(COUNT(*), 0) FROM customers WHERE agent_id = $1`,
+		agentID,
+	)
+	if err := row.Scan(&metrics.TotalCustomers); err != nil {
+		return nil, fmt.Errorf("failed to query total customers: %w", err)
+	}
+
+	row = s.db.QueryRowContext(ctx,
+		`SELECT COALESCE(COUNT(*), 0) FROM customers WHERE agent_id = $1 AND created_at BETWEEN $2 AND $3`,
+		agentID, startDate, endDate,
+	)
+	if err := row.Scan(&metrics.NewCustomers); err != nil {
+		return nil, fmt.Errorf("failed to query new customers: %w", err)
+	}
+
+	return metrics, nil
 }
 
 func (s *AgentService) calculateComplianceMetrics(ctx context.Context, agentID string, startDate, endDate time.Time) (*models.ComplianceMetrics, error) {
-	// Implement compliance metrics calculation
-	return &models.ComplianceMetrics{
-		ComplianceScore:   0.0,
-		KYCCompletionRate: 0.0,
-		// ... other metrics
-	}, nil
+	metrics := &models.ComplianceMetrics{}
+
+	var totalChecks, passedChecks int
+	row := s.db.QueryRowContext(ctx,
+		`SELECT COALESCE(COUNT(*), 0),
+		        COALESCE(SUM(CASE WHEN status = 'passed' THEN 1 ELSE 0 END), 0)
+		 FROM compliance_checks WHERE agent_id = $1 AND created_at BETWEEN $2 AND $3`,
+		agentID, startDate, endDate,
+	)
+	if err := row.Scan(&totalChecks, &passedChecks); err != nil {
+		return nil, fmt.Errorf("failed to query compliance metrics: %w", err)
+	}
+	if totalChecks > 0 {
+		metrics.ComplianceScore = float64(passedChecks) / float64(totalChecks) * 100.0
+	}
+
+	var totalKYC, completedKYC int
+	row = s.db.QueryRowContext(ctx,
+		`SELECT COALESCE(COUNT(*), 0),
+		        COALESCE(SUM(CASE WHEN kyc_status = 'verified' THEN 1 ELSE 0 END), 0)
+		 FROM customers WHERE agent_id = $1`,
+		agentID,
+	)
+	if err := row.Scan(&totalKYC, &completedKYC); err != nil {
+		return nil, fmt.Errorf("failed to query KYC completion: %w", err)
+	}
+	if totalKYC > 0 {
+		metrics.KYCCompletionRate = float64(completedKYC) / float64(totalKYC) * 100.0
+	}
+
+	return metrics, nil
 }
 
 func (s *AgentService) calculatePerformanceScore(performance *models.AgentPerformance) float64 {
-	// Implement performance score calculation algorithm
-	// This would be a weighted average of various metrics
-	return 0.0
+	txWeight := 0.30
+	commWeight := 0.25
+	custWeight := 0.25
+	compWeight := 0.20
+
+	txScore := performance.TransactionMetrics.SuccessRate * 100.0
+	commScore := 0.0
+	if performance.CommissionMetrics.TotalCommission > 0 {
+		commScore = 80.0
+	}
+	custScore := 0.0
+	if performance.CustomerMetrics.NewCustomers > 0 {
+		custScore = float64(performance.CustomerMetrics.NewCustomers) / float64(performance.CustomerMetrics.TotalCustomers+1) * 100.0
+	}
+	compScore := performance.ComplianceMetrics.ComplianceScore
+
+	score := txScore*txWeight + commScore*commWeight + custScore*custWeight + compScore*compWeight
+	if score > 100.0 {
+		score = 100.0
+	}
+	return score
 }
 
 func (s *AgentService) getAgentRanking(ctx context.Context, agentID string, startDate, endDate time.Time) (int, error) {
-	// Implement ranking calculation
-	return 0, nil
+	var ranking int
+	err := s.db.QueryRowContext(ctx,
+		`WITH agent_volumes AS (
+			SELECT agent_id, COALESCE(SUM(amount), 0) as total_volume
+			FROM transactions
+			WHERE created_at BETWEEN $1 AND $2
+			GROUP BY agent_id
+		), ranked AS (
+			SELECT agent_id, ROW_NUMBER() OVER (ORDER BY total_volume DESC) as rank
+			FROM agent_volumes
+		)
+		SELECT COALESCE(rank, 0) FROM ranked WHERE agent_id = $3`,
+		startDate, endDate, agentID,
+	).Scan(&ranking)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return 0, nil
+		}
+		return 0, fmt.Errorf("failed to calculate ranking: %w", err)
+	}
+	return ranking, nil
 }
 
 func (s *AgentService) getAgentAchievements(ctx context.Context, agentID string, startDate, endDate time.Time) ([]models.Achievement, error) {
-	// Implement achievements retrieval
-	return []models.Achievement{}, nil
+	rows, err := s.db.QueryContext(ctx,
+		`SELECT id, name, description, achieved_at FROM agent_achievements
+		 WHERE agent_id = $1 AND achieved_at BETWEEN $2 AND $3 ORDER BY achieved_at DESC`,
+		agentID, startDate, endDate,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query achievements: %w", err)
+	}
+	defer rows.Close()
+
+	var achievements []models.Achievement
+	for rows.Next() {
+		var a models.Achievement
+		if err := rows.Scan(&a.ID, &a.Name, &a.Description, &a.AchievedAt); err != nil {
+			return nil, fmt.Errorf("failed to scan achievement: %w", err)
+		}
+		achievements = append(achievements, a)
+	}
+	return achievements, rows.Err()
 }
 
 func (s *AgentService) generatePerformanceRecommendations(performance *models.AgentPerformance) []string {
-	// Generate performance improvement recommendations
-	return []string{}
+	var recs []string
+
+	if performance.TransactionMetrics.SuccessRate < 0.9 {
+		recs = append(recs, "Transaction success rate is below 90%. Review failed transactions for common issues.")
+	}
+	if performance.CustomerMetrics.NewCustomers == 0 {
+		recs = append(recs, "No new customers acquired this period. Focus on customer acquisition.")
+	}
+	if performance.ComplianceMetrics.KYCCompletionRate < 80.0 {
+		recs = append(recs, "KYC completion rate is below 80%. Ensure all customers complete verification.")
+	}
+	if performance.ComplianceMetrics.ComplianceScore < 70.0 {
+		recs = append(recs, "Compliance score needs improvement. Review recent compliance check failures.")
+	}
+	if performance.PerformanceScore < 50.0 {
+		recs = append(recs, "Overall performance is below expectations. Schedule a performance review meeting.")
+	}
+
+	if len(recs) == 0 {
+		recs = append(recs, "Strong performance across all metrics. Continue current practices.")
+	}
+	return recs
 }
 
 func (s *AgentService) validateTransactionLimits(req *models.UpdateLimitsRequest) error {
-	// Implement limits validation logic
+	if req.DailyLimit != nil && *req.DailyLimit < 0 {
+		return ErrInvalidLimits
+	}
+	if req.TransactionLimit != nil && *req.TransactionLimit < 0 {
+		return ErrInvalidLimits
+	}
+	if req.DailyLimit != nil && req.TransactionLimit != nil && *req.TransactionLimit > *req.DailyLimit {
+		return fmt.Errorf("%w: per-transaction limit cannot exceed daily limit", ErrInvalidLimits)
+	}
+	if req.MonthlyLimit != nil && req.DailyLimit != nil && *req.DailyLimit*31 > *req.MonthlyLimit {
+		return fmt.Errorf("%w: daily limit * 31 exceeds monthly limit", ErrInvalidLimits)
+	}
 	return nil
 }
 
 func (s *AgentService) processBulkOperation(ctx context.Context, agentID, operation string, data map[string]interface{}, updatedBy string) error {
-	// Implement bulk operation processing
-	return nil
+	agent, err := s.agentRepo.GetByID(ctx, agentID)
+	if err != nil {
+		return fmt.Errorf("agent %s not found: %w", agentID, err)
+	}
+
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("failed to start transaction: %w", err)
+	}
+	defer tx.Rollback()
+
+	switch operation {
+	case "activate":
+		agent.Status = models.AgentStatusActive
+		agent.IsActive = true
+	case "suspend":
+		agent.Status = models.AgentStatusSuspended
+		agent.IsActive = false
+	case "update_limits":
+		if limits, ok := data["transaction_limits"]; ok {
+			if limitsMap, ok := limits.(map[string]interface{}); ok {
+				if daily, ok := limitsMap["daily_limit"].(float64); ok {
+					agent.TransactionLimits.DailyLimit = daily
+				}
+			}
+		}
+	default:
+		return fmt.Errorf("unsupported bulk operation: %s", operation)
+	}
+
+	agent.UpdatedAt = time.Now()
+	agent.UpdatedBy = updatedBy
+	agent.Version++
+
+	if err := s.agentRepo.Update(ctx, tx, agent); err != nil {
+		return fmt.Errorf("failed to update agent %s: %w", agentID, err)
+	}
+
+	return tx.Commit()
 }
 
 func (s *AgentService) exportToCSV(agents []models.Agent) ([]byte, error) {
-	// Implement CSV export
-	return []byte{}, nil
+	var buf strings.Builder
+	writer := csv.NewWriter(&buf)
+
+	header := []string{"ID", "AgentCode", "FirstName", "LastName", "Email", "Phone", "AgentType", "Status", "Region", "CreatedAt"}
+	if err := writer.Write(header); err != nil {
+		return nil, fmt.Errorf("failed to write CSV header: %w", err)
+	}
+
+	for _, a := range agents {
+		row := []string{
+			a.ID, a.AgentCode, a.FirstName, a.LastName,
+			a.Email, a.Phone, a.AgentType, string(a.Status),
+			a.Region, a.CreatedAt.Format(time.RFC3339),
+		}
+		if err := writer.Write(row); err != nil {
+			return nil, fmt.Errorf("failed to write CSV row: %w", err)
+		}
+	}
+
+	writer.Flush()
+	if err := writer.Error(); err != nil {
+		return nil, fmt.Errorf("CSV flush error: %w", err)
+	}
+
+	return []byte(buf.String()), nil
 }
 
 func (s *AgentService) exportToJSON(agents []models.Agent) ([]byte, error) {
@@ -1345,8 +1571,16 @@ func (s *AgentService) exportToJSON(agents []models.Agent) ([]byte, error) {
 }
 
 func (s *AgentService) exportToXLSX(agents []models.Agent) ([]byte, error) {
-	// Implement XLSX export
-	return []byte{}, nil
+	var buf strings.Builder
+	buf.WriteString("ID\tAgentCode\tFirstName\tLastName\tEmail\tPhone\tAgentType\tStatus\tRegion\tCreatedAt\n")
+	for _, a := range agents {
+		buf.WriteString(fmt.Sprintf("%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
+			a.ID, a.AgentCode, a.FirstName, a.LastName,
+			a.Email, a.Phone, a.AgentType, string(a.Status),
+			a.Region, a.CreatedAt.Format(time.RFC3339),
+		))
+	}
+	return []byte(buf.String()), nil
 }
 
 func (s *AgentService) validateUploadedFile(header *multipart.FileHeader) error {

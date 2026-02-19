@@ -80,8 +80,10 @@ class KeyManager:
     def __init__(self, master_key: Optional[str] = None):
         self._master_key = master_key or os.getenv("KYC_MASTER_KEY")
         if not self._master_key:
-            logger.warning("No master key provided, generating ephemeral key")
-            self._master_key = secrets.token_hex(32)
+            raise RuntimeError(
+                "KYC_MASTER_KEY environment variable is required. "
+                "Generate one with: python -c 'import secrets; print(secrets.token_hex(32))'"
+            )
         
         self._key_cache: Dict[str, bytes] = {}
         self._key_versions: Dict[str, int] = {}
@@ -363,9 +365,10 @@ class AuditTrailEncryptor:
     Ensures compliance with data protection regulations
     """
     
-    def __init__(self, encryptor: AES256Encryptor):
+    def __init__(self, encryptor: AES256Encryptor, db_url: Optional[str] = None):
         self.encryptor = encryptor
         self._audit_log: List[Dict[str, Any]] = []
+        self._db_url = db_url or os.getenv("DATABASE_URL")
     
     def log_event(
         self,
@@ -408,10 +411,39 @@ class AuditTrailEncryptor:
         }
         
         self._audit_log.append(encrypted_entry)
+        self._persist_entry(encrypted_entry)
         
         logger.info(f"Audit event logged: {event_id} - {event_type}/{action}")
         
         return event_id
+    
+    def _persist_entry(self, entry: Dict[str, Any]) -> None:
+        """Persist audit entry to database if configured"""
+        if not self._db_url:
+            return
+        try:
+            import asyncpg
+            import asyncio
+
+            async def _insert():
+                conn = await asyncpg.connect(self._db_url)
+                try:
+                    await conn.execute(
+                        "INSERT INTO kyc_audit_log (event_id, encrypted_data, created_at) "
+                        "VALUES ($1, $2, NOW()) ON CONFLICT (event_id) DO NOTHING",
+                        entry["event_id"],
+                        json.dumps(entry["encrypted_data"]),
+                    )
+                finally:
+                    await conn.close()
+
+            try:
+                loop = asyncio.get_running_loop()
+                loop.create_task(_insert())
+            except RuntimeError:
+                asyncio.run(_insert())
+        except Exception as exc:
+            logger.warning(f"Failed to persist audit entry {entry['event_id']}: {exc}")
     
     def get_audit_entry(self, event_id: str) -> Optional[Dict[str, Any]]:
         """Retrieve and decrypt an audit entry"""

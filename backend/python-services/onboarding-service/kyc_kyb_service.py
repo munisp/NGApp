@@ -523,31 +523,57 @@ class RiskScorer:
         return risk_score, risk_level, risk_factors
 
 
+SANCTIONS_API_URL = os.getenv("SANCTIONS_API_URL", "http://localhost:8050")
+
+
 class AMLScreener:
-    """Anti-Money Laundering screening"""
-    
+    """Anti-Money Laundering screening via external sanctions/PEP API"""
+
     WATCHLIST_SOURCES = [
         "OFAC_SDN",
         "UN_SANCTIONS",
         "EU_SANCTIONS",
         "UK_SANCTIONS",
         "NIGERIA_EFCC",
-        "INTERPOL"
+        "INTERPOL",
     ]
-    
+
+    HIGH_RISK_COUNTRIES = {"KP", "IR", "SY", "RU", "BY", "CU", "VE", "MM", "SD", "SO"}
+
+    @classmethod
+    async def _call_screening_api(
+        cls,
+        endpoint: str,
+        payload: Dict[str, Any],
+    ) -> Optional[Dict[str, Any]]:
+        """Call the external screening API with retry"""
+        for attempt in range(3):
+            try:
+                async with httpx.AsyncClient(timeout=30.0) as client:
+                    response = await client.post(
+                        f"{SANCTIONS_API_URL}{endpoint}",
+                        json=payload,
+                    )
+                    if response.status_code == 200:
+                        return response.json()
+                    logger.warning(f"Screening API returned {response.status_code} on attempt {attempt + 1}")
+            except httpx.ConnectError:
+                logger.warning(f"Screening API unavailable on attempt {attempt + 1}")
+            if attempt < 2:
+                await asyncio.sleep(2 ** attempt)
+        return None
+
     @classmethod
     async def screen_individual(
         cls,
         first_name: str,
         last_name: str,
         date_of_birth: Optional[str] = None,
-        nationality: Optional[str] = None
+        nationality: Optional[str] = None,
     ) -> Dict[str, Any]:
-        """Screen individual against watchlists"""
-        
-        full_name = f"{first_name} {last_name}".lower()
-        
-        screening_results = {
+        """Screen individual against watchlists via external API"""
+
+        screening_results: Dict[str, Any] = {
             "screened_at": datetime.utcnow().isoformat(),
             "full_name": f"{first_name} {last_name}",
             "sanctions_match": False,
@@ -555,48 +581,79 @@ class AMLScreener:
             "adverse_media": False,
             "matches": [],
             "sources_checked": cls.WATCHLIST_SOURCES,
-            "risk_indicators": []
+            "risk_indicators": [],
         }
-        
-        known_pep_patterns = ["president", "minister", "governor", "senator"]
-        for pattern in known_pep_patterns:
-            if pattern in full_name:
-                screening_results["pep_match"] = True
-                screening_results["matches"].append({
-                    "type": "PEP",
-                    "source": "PEP_DATABASE",
-                    "match_score": 0.85,
-                    "details": f"Potential PEP match: {pattern}"
-                })
-        
-        if nationality and nationality.upper() in ["KP", "IR", "SY"]:
-            screening_results["sanctions_match"] = True
+
+        payload = {
+            "first_name": first_name,
+            "last_name": last_name,
+            "date_of_birth": date_of_birth,
+            "nationality": nationality,
+        }
+
+        api_result = await cls._call_screening_api("/api/v1/screen/individual", payload)
+
+        if api_result:
+            for match in api_result.get("matches", []):
+                screening_results["matches"].append(match)
+                match_type = match.get("type", "").upper()
+                if match_type == "SANCTIONS":
+                    screening_results["sanctions_match"] = True
+                elif match_type == "PEP":
+                    screening_results["pep_match"] = True
+                elif match_type == "ADVERSE_MEDIA":
+                    screening_results["adverse_media"] = True
+            screening_results["risk_indicators"].extend(api_result.get("risk_indicators", []))
+        else:
+            screening_results["risk_indicators"].append("screening_api_unavailable")
+
+        if nationality and nationality.upper() in cls.HIGH_RISK_COUNTRIES:
             screening_results["risk_indicators"].append(f"High-risk nationality: {nationality}")
-        
+
         return screening_results
-    
+
     @classmethod
     async def screen_business(
         cls,
         business_name: str,
         registration_number: Optional[str] = None,
-        country: Optional[str] = None
+        country: Optional[str] = None,
     ) -> Dict[str, Any]:
-        """Screen business against watchlists"""
-        
-        screening_results = {
+        """Screen business against watchlists via external API"""
+
+        screening_results: Dict[str, Any] = {
             "screened_at": datetime.utcnow().isoformat(),
             "business_name": business_name,
             "sanctions_match": False,
             "adverse_media": False,
             "matches": [],
             "sources_checked": cls.WATCHLIST_SOURCES,
-            "risk_indicators": []
+            "risk_indicators": [],
         }
-        
-        if country and country.upper() in ["KP", "IR", "SY", "RU", "BY"]:
+
+        payload = {
+            "business_name": business_name,
+            "registration_number": registration_number,
+            "country": country,
+        }
+
+        api_result = await cls._call_screening_api("/api/v1/screen/business", payload)
+
+        if api_result:
+            for match in api_result.get("matches", []):
+                screening_results["matches"].append(match)
+                match_type = match.get("type", "").upper()
+                if match_type == "SANCTIONS":
+                    screening_results["sanctions_match"] = True
+                elif match_type == "ADVERSE_MEDIA":
+                    screening_results["adverse_media"] = True
+            screening_results["risk_indicators"].extend(api_result.get("risk_indicators", []))
+        else:
+            screening_results["risk_indicators"].append("screening_api_unavailable")
+
+        if country and country.upper() in cls.HIGH_RISK_COUNTRIES:
             screening_results["risk_indicators"].append(f"High-risk jurisdiction: {country}")
-        
+
         return screening_results
 
 
