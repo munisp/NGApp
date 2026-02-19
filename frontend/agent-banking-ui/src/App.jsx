@@ -16,10 +16,14 @@ const apiCall = async (endpoint, options = {}) => {
   }
 
   try {
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 3000)
     const response = await fetch(`${API_BASE_URL}${endpoint}`, {
       headers: { ...defaultHeaders, ...options.headers },
+      signal: controller.signal,
       ...options
     })
+    clearTimeout(timeoutId)
 
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`)
