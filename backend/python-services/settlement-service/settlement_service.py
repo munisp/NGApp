@@ -46,6 +46,7 @@ REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379")
 COMMISSION_SERVICE_URL = os.getenv("COMMISSION_SERVICE_URL", "http://localhost:8010")
 TIGERBEETLE_SERVICE_URL = os.getenv("TIGERBEETLE_SERVICE_URL", "http://localhost:8028")
 NOTIFICATION_SERVICE_URL = os.getenv("NOTIFICATION_SERVICE_URL", "http://localhost:8030")
+FEE_SCHEDULE_SERVICE_URL = os.getenv("FEE_SCHEDULE_SERVICE_URL", "http://localhost:8106")
 
 # Database and Redis connections
 db_pool = None
@@ -540,41 +541,60 @@ class SettlementEngine:
             }
     
     async def _calculate_deductions(self, agent_id: str, gross_amount: Decimal) -> Decimal:
-        """Calculate deductions for agent settlement"""
+        """Calculate deductions for agent settlement including configurable fees"""
         deductions = Decimal("0")
-        
+
+        # Apply configurable service fee from fee schedule engine
+        try:
+            fee_response = await self.http.post(
+                f"{FEE_SCHEDULE_SERVICE_URL}/calculate-fee",
+                json={
+                    "merchant_id": agent_id,
+                    "transaction_type": "pos_cash_out",
+                    "transaction_amount": float(gross_amount),
+                },
+                timeout=10.0,
+            )
+            if fee_response.status_code == 200:
+                fee_data = fee_response.json()
+                service_fee = Decimal(str(fee_data.get("fee_amount", "0")))
+                if service_fee > 0:
+                    deductions += service_fee
+                    logger.info(f"Applied service fee {service_fee} for agent {agent_id}")
+        except Exception as e:
+            logger.warning(f"Fee schedule lookup failed for agent {agent_id}: {e}")
+
         # Check for outstanding loans
         loan_row = await self.db.fetchrow("""
             SELECT COALESCE(SUM(outstanding_amount), 0) as total_loans
             FROM agent_loans
             WHERE agent_id = $1 AND status = 'active'
         """, agent_id)
-        
+
         if loan_row and loan_row['total_loans'] > 0:
-            # Deduct up to 30% of gross for loan repayment
             loan_deduction = min(loan_row['total_loans'], gross_amount * Decimal("0.3"))
             deductions += loan_deduction
-        
+
         # Check for penalties
         penalty_row = await self.db.fetchrow("""
             SELECT COALESCE(SUM(amount), 0) as total_penalties
             FROM agent_penalties
             WHERE agent_id = $1 AND status = 'pending'
         """, agent_id)
-        
+
         if penalty_row and penalty_row['total_penalties'] > 0:
             deductions += penalty_row['total_penalties']
-        
+
         # Check for chargebacks
         chargeback_row = await self.db.fetchrow("""
             SELECT COALESCE(SUM(amount), 0) as total_chargebacks
             FROM transaction_chargebacks
             WHERE agent_id = $1 AND status = 'approved' AND settled = false
         """, agent_id)
-        
+
         if chargeback_row and chargeback_row['total_chargebacks'] > 0:
             deductions += chargeback_row['total_chargebacks']
-        
+
         return deductions
     
     async def _get_agent_payout_details(self, agent_id: str) -> Dict[str, Any]:
