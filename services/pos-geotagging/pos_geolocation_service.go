@@ -7,6 +7,7 @@ import (
 	"log"
 	"math"
 	"net/http"
+	"os"
 	"strconv"
 	"sync"
 	"time"
@@ -86,17 +87,45 @@ type POSGeoService struct {
 // NewPOSGeoService creates a new POS geolocation service
 func NewPOSGeoService() *POSGeoService {
 	// Database connection
-	dsn := "host=localhost user=postgres password=postgres dbname=agent_banking port=5432 sslmode=disable"
+	dsn := os.Getenv("POS_GEO_DATABASE_URL")
+	if dsn == "" {
+		dbHost := os.Getenv("POS_GEO_DB_HOST")
+		if dbHost == "" {
+			dbHost = "localhost"
+		}
+		dbUser := os.Getenv("POS_GEO_DB_USER")
+		if dbUser == "" {
+			dbUser = "postgres"
+		}
+		dbPassword := os.Getenv("POS_GEO_DB_PASSWORD")
+		dbName := os.Getenv("POS_GEO_DB_NAME")
+		if dbName == "" {
+			dbName = "agent_banking"
+		}
+		dbPort := os.Getenv("POS_GEO_DB_PORT")
+		if dbPort == "" {
+			dbPort = "5432"
+		}
+		dbSSL := os.Getenv("POS_GEO_DB_SSLMODE")
+		if dbSSL == "" {
+			dbSSL = "disable"
+		}
+		dsn = fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=%s",
+			dbHost, dbUser, dbPassword, dbName, dbPort, dbSSL)
+	}
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
 		log.Printf("Failed to connect to database: %v", err)
-		// Continue with in-memory operation
 	}
 
 	// Redis connection
+	redisAddr := os.Getenv("REDIS_ADDR")
+	if redisAddr == "" {
+		redisAddr = "localhost:6379"
+	}
 	rdb := redis.NewClient(&redis.Options{
-		Addr:     "localhost:6379",
-		Password: "",
+		Addr:     redisAddr,
+		Password: os.Getenv("REDIS_PASSWORD"),
 		DB:       0,
 	})
 

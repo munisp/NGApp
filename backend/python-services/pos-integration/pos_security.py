@@ -41,12 +41,50 @@ class CardTokenizer:
     """
     PCI DSS compliant card tokenization
     Replaces sensitive card data with non-sensitive tokens
+    Uses database-backed vault for persistence across restarts
     """
-    
+
     def __init__(self):
         self.cipher_suite = Fernet(MASTER_KEY)
-        self.token_vault: Dict[str, Dict[str, Any]] = {}  # In production, use database
-    
+        self._db_engine = None
+        self._db_session_factory = None
+        self._init_db()
+
+    def _init_db(self):
+        """Initialize database-backed token vault"""
+        try:
+            from sqlalchemy import create_engine, Column, String, LargeBinary, DateTime, MetaData, Table
+            from sqlalchemy.orm import sessionmaker
+
+            db_url = os.getenv("POS_TOKEN_VAULT_DB_URL", os.getenv("DATABASE_URL", ""))
+            if not db_url:
+                logger.warning("No POS_TOKEN_VAULT_DB_URL configured; token vault will use in-memory fallback")
+                self._fallback_vault: Dict[str, Dict[str, Any]] = {}
+                return
+
+            self._db_engine = create_engine(db_url, pool_pre_ping=True)
+            self._db_session_factory = sessionmaker(bind=self._db_engine)
+
+            metadata = MetaData()
+            self._token_table = Table(
+                'card_token_vault', metadata,
+                Column('token', String, primary_key=True),
+                Column('encrypted_data', LargeBinary, nullable=False),
+                Column('last_four', String(4), nullable=False),
+                Column('card_type', String(20), nullable=False),
+                Column('created_at', DateTime, nullable=False),
+                Column('expires_at', DateTime, nullable=False),
+            )
+            metadata.create_all(self._db_engine)
+            logger.info("Card token vault initialized with database backend")
+        except Exception as e:
+            logger.warning(f"Database token vault init failed, using in-memory fallback: {e}")
+            self._db_engine = None
+            self._fallback_vault: Dict[str, Dict[str, Any]] = {}
+
+    def _use_db(self) -> bool:
+        return self._db_engine is not None
+
     def tokenize_card(
         self,
         card_number: str,
@@ -57,7 +95,7 @@ class CardTokenizer:
     ) -> Dict[str, str]:
         """
         Tokenize card data and return token
-        
+
         Returns:
             {
                 'token': 'tok_xxxxx',
@@ -66,14 +104,10 @@ class CardTokenizer:
                 'expiry_masked': '**/**'
             }
         """
-        # Generate unique token
         token = self._generate_token()
-        
-        # Extract card metadata (non-sensitive)
         last_four = card_number[-4:]
         card_type = self._detect_card_type(card_number)
-        
-        # Encrypt sensitive data
+
         encrypted_card = self._encrypt_card_data({
             'card_number': card_number,
             'cvv': cvv,
@@ -81,74 +115,126 @@ class CardTokenizer:
             'expiry_year': expiry_year,
             'cardholder_name': cardholder_name
         })
-        
-        # Store in vault (encrypted)
-        self.token_vault[token] = {
-            'encrypted_data': encrypted_card,
-            'last_four': last_four,
-            'card_type': card_type,
-            'created_at': datetime.utcnow(),
-            'expires_at': datetime.utcnow() + timedelta(days=30)  # Token expiry
-        }
-        
+
+        created_at = datetime.utcnow()
+        expires_at = created_at + timedelta(days=30)
+
+        if self._use_db():
+            try:
+                session = self._db_session_factory()
+                session.execute(self._token_table.insert().values(
+                    token=token,
+                    encrypted_data=encrypted_card,
+                    last_four=last_four,
+                    card_type=card_type,
+                    created_at=created_at,
+                    expires_at=expires_at,
+                ))
+                session.commit()
+                session.close()
+            except Exception as e:
+                logger.error(f"Failed to persist token to DB: {e}")
+                raise
+        else:
+            self._fallback_vault[token] = {
+                'encrypted_data': encrypted_card,
+                'last_four': last_four,
+                'card_type': card_type,
+                'created_at': created_at,
+                'expires_at': expires_at,
+            }
+
         logger.info(f"Card tokenized: {token} (****{last_four})")
-        
+
         return {
             'token': token,
             'last_four': last_four,
             'card_type': card_type,
             'expiry_masked': '**/**'
         }
-    
+
     def detokenize_card(self, token: str) -> Optional[Dict[str, str]]:
         """
         Retrieve card data from token (only for payment processing)
         Should be called only by payment processor
         """
-        vault_entry = self.token_vault.get(token)
-        
+        vault_entry = self._load_vault_entry(token)
+
         if not vault_entry:
             logger.warning(f"Token not found: {token}")
             return None
-        
-        # Check token expiry
+
         if datetime.utcnow() > vault_entry['expires_at']:
             logger.warning(f"Token expired: {token}")
-            del self.token_vault[token]
+            self._delete_vault_entry(token)
             return None
-        
-        # Decrypt card data
+
         card_data = self._decrypt_card_data(vault_entry['encrypted_data'])
-        
         logger.info(f"Card detokenized: {token} (****{vault_entry['last_four']})")
-        
         return card_data
-    
+
+    def _load_vault_entry(self, token: str) -> Optional[Dict[str, Any]]:
+        if self._use_db():
+            try:
+                from sqlalchemy import select
+                session = self._db_session_factory()
+                row = session.execute(
+                    select(self._token_table).where(self._token_table.c.token == token)
+                ).fetchone()
+                session.close()
+                if row:
+                    return {
+                        'encrypted_data': row.encrypted_data,
+                        'last_four': row.last_four,
+                        'card_type': row.card_type,
+                        'created_at': row.created_at,
+                        'expires_at': row.expires_at,
+                    }
+                return None
+            except Exception as e:
+                logger.error(f"Failed to load token from DB: {e}")
+                return None
+        else:
+            return self._fallback_vault.get(token)
+
+    def _delete_vault_entry(self, token: str):
+        if self._use_db():
+            try:
+                session = self._db_session_factory()
+                session.execute(
+                    self._token_table.delete().where(self._token_table.c.token == token)
+                )
+                session.commit()
+                session.close()
+            except Exception as e:
+                logger.error(f"Failed to delete token from DB: {e}")
+        else:
+            self._fallback_vault.pop(token, None)
+
     def _generate_token(self) -> str:
         """Generate unique token"""
-        # Use cryptographically secure random
         random_bytes = secrets.token_bytes(16)
         token_hash = hashlib.sha256(random_bytes).hexdigest()[:32]
         return f"tok_{token_hash}"
-    
+
     def _encrypt_card_data(self, card_data: Dict[str, str]) -> bytes:
         """Encrypt card data using Fernet (AES-128 CBC)"""
         import json
         data_json = json.dumps(card_data)
         encrypted = self.cipher_suite.encrypt(data_json.encode())
         return encrypted
-    
+
     def _decrypt_card_data(self, encrypted_data: bytes) -> Dict[str, str]:
         """Decrypt card data"""
         import json
         decrypted = self.cipher_suite.decrypt(encrypted_data)
         card_data = json.loads(decrypted.decode())
         return card_data
-    
+
     def _detect_card_type(self, card_number: str) -> str:
         """Detect card type from number"""
         card_number = card_number.replace(' ', '').replace('-', '')
-        
+
         if card_number.startswith('4'):
             return 'visa'
         elif card_number.startswith(('51', '52', '53', '54', '55')):

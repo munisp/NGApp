@@ -5,6 +5,7 @@ Production-ready POS with all security fixes implemented
 
 import asyncio
 import logging
+import os
 import uuid
 from datetime import datetime
 from typing import Dict, List, Optional, Any
@@ -367,13 +368,28 @@ async def get_transaction(
     # Query transaction...
     # (In production, query from database)
     
-    return {
-        "transaction_id": transaction_id,
-        "status": "approved",
-        "amount": 100.00,
-        "currency": "USD",
-        "timestamp": datetime.utcnow()
-    }
+    db_url = os.getenv("POS_DATABASE_URL", "")
+    if db_url:
+        try:
+            from sqlalchemy import create_engine, text
+            engine = create_engine(db_url, pool_pre_ping=True)
+            with engine.connect() as conn:
+                row = conn.execute(
+                    text("SELECT transaction_id, status, amount, currency, created_at FROM pos_transactions WHERE transaction_id = :tid"),
+                    {"tid": transaction_id}
+                ).fetchone()
+                if row:
+                    return {
+                        "transaction_id": row[0],
+                        "status": row[1],
+                        "amount": float(row[2]),
+                        "currency": row[3],
+                        "timestamp": row[4]
+                    }
+        except Exception as e:
+            logger.error(f"Database query failed for transaction {transaction_id}: {e}")
+
+    raise HTTPException(status_code=404, detail=f"Transaction {transaction_id} not found")
 
 # ============================================================================
 # DEVICE MANAGEMENT ENDPOINTS (Protected)
@@ -389,12 +405,26 @@ async def list_devices(
     """
     logger.info(f"Device list requested by {current_user.username}")
     
-    return {
-        "devices": [
-            {"device_id": "dev_001", "type": "card_reader", "status": "online"},
-            {"device_id": "dev_002", "type": "printer", "status": "online"},
-        ]
-    }
+    db_url = os.getenv("POS_DATABASE_URL", "")
+    if db_url:
+        try:
+            from sqlalchemy import create_engine, text
+            engine = create_engine(db_url, pool_pre_ping=True)
+            with engine.connect() as conn:
+                rows = conn.execute(
+                    text("SELECT device_id, device_type, status FROM pos_devices ORDER BY device_id")
+                ).fetchall()
+                if rows:
+                    return {
+                        "devices": [
+                            {"device_id": r[0], "type": r[1], "status": r[2]}
+                            for r in rows
+                        ]
+                    }
+        except Exception as e:
+            logger.error(f"Database query failed for device list: {e}")
+
+    return {"devices": []}
 
 # ============================================================================
 # HEALTH CHECK (Public)

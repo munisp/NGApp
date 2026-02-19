@@ -157,10 +157,17 @@ func (s *POSManagementServer) initializeDatabase() {
 	s.db.AutoMigrate(&Terminal{}, &UpdateLog{}, &CommandLog{}, &StatusLog{})
 }
 
+func getEnvOrDefault(key, fallback string) string {
+	if val := os.Getenv(key); val != "" {
+		return val
+	}
+	return fallback
+}
+
 func (s *POSManagementServer) initializeRedis() {
 	s.redis = redis.NewClient(&redis.Options{
-		Addr:     "localhost:6379",
-		Password: "",
+		Addr:     getEnvOrDefault("REDIS_ADDR", "localhost:6379"),
+		Password: getEnvOrDefault("REDIS_PASSWORD", ""),
 		DB:       0,
 	})
 
@@ -250,7 +257,7 @@ func (s *POSManagementServer) healthMonitoringWorker() {
 }
 
 func (s *POSManagementServer) cleanupWorker() {
-	ticker := time.NewTicker(5 * time.minute)
+	ticker := time.NewTicker(5 * time.Minute)
 	defer ticker.Stop()
 
 	for range ticker.C {
