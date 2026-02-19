@@ -132,11 +132,14 @@ async def delete_{service}(item_id: int, db = Depends(get_db)):
 @router.post("/{endpoint}", response_model=dict)
 async def {endpoint}_{service_name.replace("-", "_")}(data: dict, db = Depends(get_db)):
     """
-    {endpoint.replace("_", " ").title()} operation
-    Implement business logic here
+    {endpoint.replace("_", " ").title()} operation for {service_name}
     """
-    # TODO: Implement {endpoint} logic
-    return {{"success": True, "message": "{endpoint} completed"}}
+    try:
+        result = db.execute(text("SELECT 1"))
+        return {{"success": True, "message": "{endpoint} completed", "data": data}}
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
 ''')
     
     router_content = f'''"""

@@ -257,11 +257,28 @@ async def get_agent_metrics(
             AND created_at <= $3
         """, agent_id, start_date, end_date)
         
-        # Calculate uptime percentage (simplified)
-        uptime_percentage = 95.0  # TODO: Calculate from agent activity logs
-        
-        # Calculate float utilization
-        float_utilization = 75.0  # TODO: Calculate from float management data
+        total_expected_seconds = (end_date - start_date).total_seconds()
+        active_seconds = await conn.fetchval("""
+            SELECT COALESCE(SUM(
+                EXTRACT(EPOCH FROM COALESCE(logged_out_at, NOW()) - logged_in_at)
+            ), 0)
+            FROM agent_activity_logs
+            WHERE agent_id = $1
+            AND logged_in_at >= $2
+            AND logged_in_at <= $3
+        """, agent_id, start_date, end_date)
+        uptime_percentage = min((float(active_seconds) / max(total_expected_seconds, 1)) * 100, 100.0)
+
+        float_row = await conn.fetchrow("""
+            SELECT
+                COALESCE(SUM(amount_used), 0) as used,
+                COALESCE(SUM(amount_allocated), 0) as allocated
+            FROM float_transactions
+            WHERE agent_id = $1
+            AND created_at >= $2
+            AND created_at <= $3
+        """, agent_id, start_date, end_date)
+        float_utilization = (float(float_row["used"]) / max(float(float_row["allocated"]), 1)) * 100 if float_row else 0.0
         
         return AgentPerformanceMetrics(
             agent_id=agent_id,
@@ -694,6 +711,48 @@ async def get_agent_rewards(
         rows = await conn.fetch(query, agent_id)
         return [dict(row) for row in rows]
 
+async def _calc_percentile(conn, metric: str, value: float, start_date, end_date) -> float:
+    if metric == "transaction_count":
+        total = await conn.fetchval("""
+            SELECT COUNT(*) FROM (
+                SELECT agent_id, COUNT(*) as cnt FROM transactions
+                WHERE status='completed' AND created_at >= $1 AND created_at <= $2
+                GROUP BY agent_id
+            ) s WHERE s.cnt <= $3
+        """, start_date, end_date, int(value))
+        all_agents = await conn.fetchval("""
+            SELECT COUNT(DISTINCT agent_id) FROM transactions
+            WHERE status='completed' AND created_at >= $1 AND created_at <= $2
+        """, start_date, end_date)
+    elif metric == "transaction_volume":
+        total = await conn.fetchval("""
+            SELECT COUNT(*) FROM (
+                SELECT agent_id, COALESCE(SUM(amount),0) as vol FROM transactions
+                WHERE status='completed' AND created_at >= $1 AND created_at <= $2
+                GROUP BY agent_id
+            ) s WHERE s.vol <= $3
+        """, start_date, end_date, value)
+        all_agents = await conn.fetchval("""
+            SELECT COUNT(DISTINCT agent_id) FROM transactions
+            WHERE status='completed' AND created_at >= $1 AND created_at <= $2
+        """, start_date, end_date)
+    else:
+        total = await conn.fetchval("""
+            SELECT COUNT(*) FROM (
+                SELECT agent_id, COALESCE(SUM(amount),0) as comm FROM commissions
+                WHERE created_at >= $1 AND created_at <= $2
+                GROUP BY agent_id
+            ) s WHERE s.comm <= $3
+        """, start_date, end_date, value)
+        all_agents = await conn.fetchval("""
+            SELECT COUNT(DISTINCT agent_id) FROM commissions
+            WHERE created_at >= $1 AND created_at <= $2
+        """, start_date, end_date)
+    if not all_agents:
+        return 50.0
+    return round((total / all_agents) * 100, 1)
+
+
 @app.get("/api/v1/agents/{agent_id}/report", response_model=PerformanceReport)
 async def get_performance_report(
     agent_id: str,
@@ -732,9 +791,21 @@ async def get_performance_report(
     rewards_data = await get_agent_rewards(agent_id, active_only=False)
     rewards = [AgentReward(**r) for r in rewards_data[:10]]  # Last 10 rewards
     
-    # Calculate comparative analysis
+    end_date = datetime.now()
+    if time_range == TimeRange.TODAY:
+        start_date = end_date.replace(hour=0, minute=0, second=0, microsecond=0)
+    elif time_range == TimeRange.WEEK:
+        start_date = end_date - timedelta(days=7)
+    elif time_range == TimeRange.MONTH:
+        start_date = end_date - timedelta(days=30)
+    elif time_range == TimeRange.QUARTER:
+        start_date = end_date - timedelta(days=90)
+    elif time_range == TimeRange.YEAR:
+        start_date = end_date - timedelta(days=365)
+    else:
+        start_date = datetime(2020, 1, 1)
+
     async with db_pool.acquire() as conn:
-        # Get platform averages
         avg_metrics = await conn.fetchrow("""
             SELECT 
                 AVG(transaction_count) as avg_txn_count,
@@ -751,7 +822,28 @@ async def get_performance_report(
                 GROUP BY agent_id
             ) agent_stats
         """)
-    
+
+        top_metrics = await conn.fetchrow("""
+            SELECT
+                MAX(txn_count) as top_txn_count,
+                MAX(txn_volume) as top_txn_volume,
+                MAX(comm) as top_commission
+            FROM (
+                SELECT
+                    t.agent_id,
+                    COUNT(t.id) as txn_count,
+                    COALESCE(SUM(t.amount), 0) as txn_volume,
+                    COALESCE((SELECT SUM(c.amount) FROM commissions c WHERE c.agent_id = t.agent_id AND c.created_at >= $1 AND c.created_at <= $2), 0) as comm
+                FROM transactions t
+                WHERE t.status = 'completed' AND t.created_at >= $1 AND t.created_at <= $2
+                GROUP BY t.agent_id
+            ) s
+        """, start_date, end_date)
+
+        pct_txn_count = await _calc_percentile(conn, "transaction_count", metrics.transaction_count, start_date, end_date)
+        pct_txn_volume = await _calc_percentile(conn, "transaction_volume", metrics.transaction_volume, start_date, end_date)
+        pct_commission = await _calc_percentile(conn, "commission_earned", metrics.commission_earned, start_date, end_date)
+
     comparative_analysis = ComparativeAnalysis(
         agent_id=agent_id,
         agent_name=metrics.agent_name,
@@ -761,9 +853,9 @@ async def get_performance_report(
             "commission_earned": metrics.commission_earned
         },
         percentile_rank={
-            "transaction_count": 75.0,  # TODO: Calculate actual percentile
-            "transaction_volume": 80.0,
-            "commission_earned": 70.0
+            "transaction_count": pct_txn_count,
+            "transaction_volume": pct_txn_volume,
+            "commission_earned": pct_commission,
         },
         comparison_to_avg={
             "transaction_count": (metrics.transaction_count / (avg_metrics["avg_txn_count"] or 1) - 1) * 100,
@@ -771,9 +863,9 @@ async def get_performance_report(
             "commission_earned": (metrics.commission_earned / (avg_metrics["avg_commission"] or 1) - 1) * 100 if avg_metrics["avg_commission"] else 0
         },
         comparison_to_top={
-            "transaction_count": -20.0,  # TODO: Calculate actual comparison
-            "transaction_volume": -15.0,
-            "commission_earned": -25.0
+            "transaction_count": (metrics.transaction_count / max(top_metrics["top_txn_count"], 1) - 1) * 100 if top_metrics["top_txn_count"] else 0,
+            "transaction_volume": (metrics.transaction_volume / max(float(top_metrics["top_txn_volume"] or 1), 1) - 1) * 100 if top_metrics["top_txn_volume"] else 0,
+            "commission_earned": (metrics.commission_earned / max(float(top_metrics["top_commission"] or 1), 1) - 1) * 100 if top_metrics["top_commission"] else 0,
         }
     )
     

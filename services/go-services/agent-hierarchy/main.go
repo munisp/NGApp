@@ -1267,7 +1267,14 @@ func (s *AgentHierarchyService) SuspendAgent(ctx context.Context, agentID uuid.U
 		return fmt.Errorf("failed to suspend agent: %w", err)
 	}
 
-	// TODO: Log suspension reason in audit trail
+	s.db.WithContext(ctx).Create(&map[string]interface{}{
+		"entity_type":  agentType,
+		"entity_id":    agentID,
+		"action":       "suspend",
+		"reason":       updates["suspension_reason"],
+		"performed_by": ctx.Value("user_id"),
+		"performed_at": time.Now(),
+	})
 
 	return nil
 }

@@ -6,10 +6,12 @@ Implements Kafka consumer for inventory events processing
 import asyncio
 import json
 import logging
+import os
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
 from typing import Any, Callable, Dict, List, Optional
+import httpx
 from aiokafka import AIOKafkaConsumer, AIOKafkaProducer
 from aiokafka.errors import KafkaError
 
@@ -358,7 +360,19 @@ async def handle_low_stock_alert(event: InventoryEvent):
         f"Low stock alert: {event.sku} at warehouse {event.warehouse_id}, "
         f"available: {event.quantity_available}"
     )
-    # TODO: Trigger reorder workflow via Temporal
+    async with httpx.AsyncClient(timeout=15.0) as client:
+        try:
+            await client.post(
+                f"{os.getenv('TEMPORAL_URL', 'http://temporal:7233')}/api/v1/workflows/reorder",
+                json={
+                    "sku": event.sku,
+                    "warehouse_id": event.warehouse_id,
+                    "current_quantity": event.quantity_available,
+                    "reorder_quantity": event.quantity_available * 3,
+                },
+            )
+        except Exception as exc:
+            logger.error(f"Failed to trigger reorder workflow: {exc}")
 
 
 async def handle_out_of_stock(event: InventoryEvent):
@@ -366,7 +380,14 @@ async def handle_out_of_stock(event: InventoryEvent):
     logger.error(
         f"Out of stock: {event.sku} at warehouse {event.warehouse_id}"
     )
-    # TODO: Update product catalog availability
+    async with httpx.AsyncClient(timeout=10.0) as client:
+        try:
+            await client.patch(
+                f"{os.getenv('DATABASE_SERVICE_URL', 'http://database-service:8080')}/api/v1/products/{event.sku}/availability",
+                json={"available": False, "warehouse_id": event.warehouse_id},
+            )
+        except Exception as exc:
+            logger.error(f"Failed to update product availability: {exc}")
 
 
 async def handle_stock_reserved(event: InventoryEvent):

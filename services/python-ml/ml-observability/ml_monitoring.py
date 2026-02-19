@@ -433,7 +433,7 @@ class MLMonitoringService:
             recall=recall,
             f1_score=f1_score,
             auc_roc=auc_roc,
-            auc_pr=0,  # TODO: implement
+            auc_pr=self._calculate_auc_pr(predictions, actuals),
             brier_score=brier_score,
             calibration_error=calibration_error,
             mean_latency_ms=np.mean(latencies),
@@ -572,6 +572,36 @@ class MLMonitoringService:
         auc = (rank_sum - n_pos * (n_pos + 1) / 2) / (n_pos * n_neg)
         return auc
     
+    def _calculate_auc_pr(
+        self,
+        predictions: List[float],
+        actuals: List[float]
+    ) -> float:
+        """Calculate Area Under the Precision-Recall Curve"""
+        if not predictions or len(set(actuals)) < 2:
+            return 0.0
+        sorted_pairs = sorted(zip(predictions, actuals), key=lambda x: -x[0])
+        tp = 0
+        fp = 0
+        total_positives = sum(1 for _, a in sorted_pairs if a >= 0.5)
+        if total_positives == 0:
+            return 0.0
+        precisions = []
+        recalls = []
+        for pred, actual in sorted_pairs:
+            if actual >= 0.5:
+                tp += 1
+            else:
+                fp += 1
+            precision = tp / (tp + fp) if (tp + fp) > 0 else 0
+            recall = tp / total_positives
+            precisions.append(precision)
+            recalls.append(recall)
+        auc_pr = 0.0
+        for i in range(1, len(recalls)):
+            auc_pr += (recalls[i] - recalls[i - 1]) * precisions[i]
+        return auc_pr
+
     async def _store_inference_redis(self, metrics: InferenceMetrics):
         """Store inference metrics in Redis for real-time access"""
         key = f"ml:inference:{metrics.model_name}:{metrics.request_id}"

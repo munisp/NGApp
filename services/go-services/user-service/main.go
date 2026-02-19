@@ -1414,8 +1414,8 @@ func (s *userService) Login(ctx context.Context, req *LoginRequest) (*LoginRespo
 	// Log activity
 	s.LogActivity(ctx, user.ID, "user_login", "user", user.ID.String(), map[string]interface{}{
 		"session_id": sessionID,
-		"ip_address": "", // TODO: Get from context
-		"user_agent": "", // TODO: Get from context
+		"ip_address": ctx.Value("client_ip"),
+		"user_agent": ctx.Value("user_agent")
 	})
 
 	// Update metrics
@@ -1608,28 +1608,70 @@ func (s *userService) ChangePassword(ctx context.Context, userID uuid.UUID, req 
 }
 
 func (s *userService) VerifyEmail(ctx context.Context, req *VerifyEmailRequest) error {
-	// TODO: Implement email verification logic
-	// This would typically involve:
-	// 1. Validate the verification token
-	// 2. Find the user associated with the token
-	// 3. Mark email as verified
-	// 4. Update user in database
-	// 5. Log activity
+	redisKey := fmt.Sprintf("email_verification:%s", req.Token)
+	userIDStr, err := s.redis.Get(ctx, redisKey).Result()
+	if err != nil {
+		verificationAttemptsTotal.WithLabelValues("email", "failed").Inc()
+		return fmt.Errorf("invalid or expired verification token")
+	}
+
+	userID, err := uuid.Parse(userIDStr)
+	if err != nil {
+		return fmt.Errorf("invalid user ID in token: %w", err)
+	}
+
+	user, err := s.repo.GetByID(ctx, userID)
+	if err != nil {
+		return fmt.Errorf("user not found: %w", err)
+	}
+
+	user.EmailVerified = true
+	now := time.Now()
+	user.UpdatedAt = now
+
+	if err := s.repo.Update(ctx, user); err != nil {
+		return fmt.Errorf("failed to update user: %w", err)
+	}
+
+	s.redis.Del(ctx, redisKey)
+	s.LogActivity(ctx, userID, "email_verified", "user", userID.String(), nil)
 
 	verificationAttemptsTotal.WithLabelValues("email", "success").Inc()
+	s.logger.WithFields(logrus.Fields{"user_id": userID}).Info("Email verified successfully")
 	return nil
 }
 
 func (s *userService) VerifyPhone(ctx context.Context, userID uuid.UUID, req *VerifyPhoneRequest) error {
-	// TODO: Implement phone verification logic
-	// This would typically involve:
-	// 1. Validate the verification code
-	// 2. Check if code matches what was sent
-	// 3. Mark phone as verified
-	// 4. Update user in database
-	// 5. Log activity
+	redisKey := fmt.Sprintf("phone_verification:%s", userID.String())
+	storedCode, err := s.redis.Get(ctx, redisKey).Result()
+	if err != nil {
+		verificationAttemptsTotal.WithLabelValues("phone", "failed").Inc()
+		return fmt.Errorf("verification code expired or not found")
+	}
+
+	if storedCode != req.Code {
+		verificationAttemptsTotal.WithLabelValues("phone", "failed").Inc()
+		return fmt.Errorf("invalid verification code")
+	}
+
+	user, err := s.repo.GetByID(ctx, userID)
+	if err != nil {
+		return fmt.Errorf("user not found: %w", err)
+	}
+
+	user.PhoneVerified = true
+	now := time.Now()
+	user.UpdatedAt = now
+
+	if err := s.repo.Update(ctx, user); err != nil {
+		return fmt.Errorf("failed to update user: %w", err)
+	}
+
+	s.redis.Del(ctx, redisKey)
+	s.LogActivity(ctx, userID, "phone_verified", "user", userID.String(), nil)
 
 	verificationAttemptsTotal.WithLabelValues("phone", "success").Inc()
+	s.logger.WithFields(logrus.Fields{"user_id": userID}).Info("Phone verified successfully")
 	return nil
 }
 
@@ -1639,12 +1681,41 @@ func (s *userService) ResendVerification(ctx context.Context, userID uuid.UUID, 
 		return fmt.Errorf("user not found: %w", err)
 	}
 
-	// TODO: Implement resend verification logic
-	// This would typically involve:
-	// 1. Generate new verification token/code
-	// 2. Send email/SMS based on type
-	// 3. Store token/code for validation
-	// 4. Log activity
+	if req.Type == "email" {
+		token := uuid.New().String()
+		redisKey := fmt.Sprintf("email_verification:%s", token)
+		s.redis.Set(ctx, redisKey, userID.String(), 24*time.Hour)
+
+		if s.messaging != nil {
+			msg := map[string]interface{}{
+				"type":    "email_verification",
+				"to":      user.Email,
+				"user_id": userID.String(),
+				"token":   token,
+			}
+			msgBytes, _ := json.Marshal(msg)
+			s.messaging.Publish(ctx, "notifications", msgBytes)
+		}
+	} else if req.Type == "phone" {
+		code := fmt.Sprintf("%06d", time.Now().UnixNano()%1000000)
+		redisKey := fmt.Sprintf("phone_verification:%s", userID.String())
+		s.redis.Set(ctx, redisKey, code, 10*time.Minute)
+
+		if s.messaging != nil {
+			msg := map[string]interface{}{
+				"type":    "sms_verification",
+				"to":      user.Phone,
+				"user_id": userID.String(),
+				"code":    code,
+			}
+			msgBytes, _ := json.Marshal(msg)
+			s.messaging.Publish(ctx, "notifications", msgBytes)
+		}
+	} else {
+		return fmt.Errorf("invalid verification type: %s", req.Type)
+	}
+
+	s.LogActivity(ctx, userID, "verification_resent", "user", userID.String(), map[string]interface{}{"type": req.Type})
 
 	s.logger.WithFields(logrus.Fields{
 		"user_id": userID,
@@ -1657,17 +1728,25 @@ func (s *userService) ResendVerification(ctx context.Context, userID uuid.UUID, 
 func (s *userService) ForgotPassword(ctx context.Context, req *ForgotPasswordRequest) error {
 	user, err := s.repo.GetByEmail(ctx, req.Email)
 	if err != nil {
-		// Don't reveal if email exists or not
 		return nil
 	}
 
-	// TODO: Implement forgot password logic
-	// This would typically involve:
-	// 1. Generate password reset token
-	// 2. Send reset email
-	// 3. Store token for validation
-	// 4. Log activity
+	token := uuid.New().String()
+	redisKey := fmt.Sprintf("password_reset:%s", token)
+	s.redis.Set(ctx, redisKey, user.ID.String(), 1*time.Hour)
 
+	if s.messaging != nil {
+		msg := map[string]interface{}{
+			"type":    "password_reset",
+			"to":      user.Email,
+			"user_id": user.ID.String(),
+			"token":   token,
+		}
+		msgBytes, _ := json.Marshal(msg)
+		s.messaging.Publish(ctx, "notifications", msgBytes)
+	}
+
+	s.LogActivity(ctx, user.ID, "password_reset_requested", "user", user.ID.String(), nil)
 	passwordResetRequestsTotal.Inc()
 
 	s.logger.WithFields(logrus.Fields{
@@ -1679,15 +1758,43 @@ func (s *userService) ForgotPassword(ctx context.Context, req *ForgotPasswordReq
 }
 
 func (s *userService) ResetPassword(ctx context.Context, req *ResetPasswordRequest) error {
-	// TODO: Implement reset password logic
-	// This would typically involve:
-	// 1. Validate reset token
-	// 2. Find user associated with token
-	// 3. Validate new password strength
-	// 4. Hash and update password
-	// 5. Invalidate reset token
-	// 6. Log activity
+	redisKey := fmt.Sprintf("password_reset:%s", req.Token)
+	userIDStr, err := s.redis.Get(ctx, redisKey).Result()
+	if err != nil {
+		return fmt.Errorf("invalid or expired reset token")
+	}
 
+	userID, err := uuid.Parse(userIDStr)
+	if err != nil {
+		return fmt.Errorf("invalid user ID in token: %w", err)
+	}
+
+	user, err := s.repo.GetByID(ctx, userID)
+	if err != nil {
+		return fmt.Errorf("user not found: %w", err)
+	}
+
+	if err := validatePasswordStrength(req.NewPassword); err != nil {
+		return fmt.Errorf("password validation failed: %w", err)
+	}
+
+	hashedPassword, err := hashPassword(req.NewPassword)
+	if err != nil {
+		return fmt.Errorf("failed to hash password: %w", err)
+	}
+
+	user.Password = hashedPassword
+	now := time.Now()
+	user.UpdatedAt = now
+
+	if err := s.repo.Update(ctx, user); err != nil {
+		return fmt.Errorf("failed to update password: %w", err)
+	}
+
+	s.redis.Del(ctx, redisKey)
+	s.LogActivity(ctx, userID, "password_reset", "user", userID.String(), nil)
+
+	s.logger.WithFields(logrus.Fields{"user_id": userID}).Info("Password reset successfully")
 	return nil
 }
 

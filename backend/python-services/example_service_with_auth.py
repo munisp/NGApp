@@ -14,6 +14,13 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional, List
 import logging
+import os
+import httpx
+import uuid as uuid_mod
+
+DATABASE_SERVICE_URL = os.getenv("DATABASE_SERVICE_URL", "http://database-service:8080")
+KEYCLOAK_ADMIN_URL = os.getenv("KEYCLOAK_URL", "http://keycloak:8080") + "/admin/realms/agent-banking"
+TEMPORAL_URL = os.getenv("TEMPORAL_URL", "http://temporal:7233")
 
 # Import Keycloak authentication
 from shared.keycloak_auth import (
@@ -148,30 +155,25 @@ async def get_transaction_history(
     
     logger.info(f"Fetching transaction history for user: {username} (ID: {user_id})")
     
-    # TODO: Fetch from database
-    return {
-        "user_id": user_id,
-        "username": username,
-        "transactions": [
-            {
-                "id": "txn-001",
-                "type": "cash-in",
-                "amount": 10000.00,
-                "status": "completed",
-                "timestamp": "2025-11-11T10:00:00Z"
-            },
-            {
-                "id": "txn-002",
-                "type": "cash-out",
-                "amount": 5000.00,
-                "status": "completed",
-                "timestamp": "2025-11-11T11:30:00Z"
+    async with httpx.AsyncClient(timeout=10.0) as client:
+        try:
+            resp = await client.get(
+                f"{DATABASE_SERVICE_URL}/api/v1/transactions",
+                params={"user_id": user_id, "limit": limit, "offset": offset},
+            )
+            resp.raise_for_status()
+            data = resp.json()
+            return {
+                "user_id": user_id,
+                "username": username,
+                "transactions": data.get("items", []),
+                "total": data.get("total", 0),
+                "limit": limit,
+                "offset": offset,
             }
-        ],
-        "total": 2,
-        "limit": limit,
-        "offset": offset
-    }
+        except httpx.HTTPError as exc:
+            logger.error(f"Failed to fetch transactions: {exc}")
+            raise HTTPException(status_code=502, detail="Transaction service unavailable")
 
 
 # ============================================================================
@@ -194,13 +196,31 @@ async def cash_in(
     
     logger.info(f"Cash-in transaction initiated by {username}: {request.amount}")
     
-    # TODO: Process transaction via Temporal workflow
-    return TransactionResponse(
-        transaction_id="txn-003",
-        status="completed",
-        amount=request.amount,
-        message=f"Cash-in of {request.amount} completed successfully"
-    )
+    txn_id = str(uuid_mod.uuid4())
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        try:
+            resp = await client.post(
+                f"{TEMPORAL_URL}/api/v1/workflows/cash-in",
+                json={
+                    "transaction_id": txn_id,
+                    "agent_id": user_id,
+                    "customer_id": request.customer_id,
+                    "amount": request.amount,
+                    "type": request.transaction_type,
+                    "description": request.description,
+                },
+            )
+            resp.raise_for_status()
+            result = resp.json()
+            return TransactionResponse(
+                transaction_id=txn_id,
+                status=result.get("status", "completed"),
+                amount=request.amount,
+                message=f"Cash-in of {request.amount} completed successfully",
+            )
+        except httpx.HTTPError as exc:
+            logger.error(f"Cash-in workflow failed: {exc}")
+            raise HTTPException(status_code=502, detail="Transaction processing failed")
 
 
 @app.post("/api/v1/transactions/cash-out", response_model=TransactionResponse)
@@ -219,13 +239,31 @@ async def cash_out(
     
     logger.info(f"Cash-out transaction initiated by {username}: {request.amount}")
     
-    # TODO: Process transaction via Temporal workflow
-    return TransactionResponse(
-        transaction_id="txn-004",
-        status="completed",
-        amount=request.amount,
-        message=f"Cash-out of {request.amount} completed successfully"
-    )
+    txn_id = str(uuid_mod.uuid4())
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        try:
+            resp = await client.post(
+                f"{TEMPORAL_URL}/api/v1/workflows/cash-out",
+                json={
+                    "transaction_id": txn_id,
+                    "agent_id": user_id,
+                    "customer_id": request.customer_id,
+                    "amount": request.amount,
+                    "type": request.transaction_type,
+                    "description": request.description,
+                },
+            )
+            resp.raise_for_status()
+            result = resp.json()
+            return TransactionResponse(
+                transaction_id=txn_id,
+                status=result.get("status", "completed"),
+                amount=request.amount,
+                message=f"Cash-out of {request.amount} completed successfully",
+            )
+        except httpx.HTTPError as exc:
+            logger.error(f"Cash-out workflow failed: {exc}")
+            raise HTTPException(status_code=502, detail="Transaction processing failed")
 
 
 @app.get("/api/v1/agents/hierarchy")
@@ -241,27 +279,23 @@ async def get_agent_hierarchy(user: dict = Depends(auth.get_current_user)):
     
     logger.info(f"Agent hierarchy requested by {username}")
     
-    # TODO: Fetch from database
-    return {
-        "agent_id": user_id,
-        "username": username,
-        "level": 1,
-        "downline": [
-            {
-                "agent_id": "agent-002",
-                "username": "sub-agent-1",
-                "level": 2,
-                "recruits": 5
-            },
-            {
-                "agent_id": "agent-003",
-                "username": "sub-agent-2",
-                "level": 2,
-                "recruits": 3
+    async with httpx.AsyncClient(timeout=10.0) as client:
+        try:
+            resp = await client.get(
+                f"{DATABASE_SERVICE_URL}/api/v1/agents/{user_id}/hierarchy",
+            )
+            resp.raise_for_status()
+            hierarchy = resp.json()
+            return {
+                "agent_id": user_id,
+                "username": username,
+                "level": hierarchy.get("level", 1),
+                "downline": hierarchy.get("downline", []),
+                "total_downline": hierarchy.get("total_downline", 0),
             }
-        ],
-        "total_downline": 8
-    }
+        except httpx.HTTPError as exc:
+            logger.error(f"Failed to fetch hierarchy: {exc}")
+            raise HTTPException(status_code=502, detail="Hierarchy service unavailable")
 
 
 @app.post("/api/v1/agents/recruit")
@@ -282,14 +316,42 @@ async def recruit_agent(
     
     logger.info(f"Agent recruitment initiated by {recruiter_username}: {email}")
     
-    # TODO: Create user in Keycloak and database
-    return {
-        "message": "Agent recruitment initiated",
-        "recruiter_id": recruiter_id,
-        "recruiter_username": recruiter_username,
-        "new_agent_email": email,
-        "status": "pending_verification"
-    }
+    async with httpx.AsyncClient(timeout=15.0) as client:
+        try:
+            kc_resp = await client.post(
+                f"{KEYCLOAK_ADMIN_URL}/users",
+                json={
+                    "username": email,
+                    "email": email,
+                    "firstName": first_name,
+                    "lastName": last_name,
+                    "enabled": True,
+                    "emailVerified": False,
+                    "requiredActions": ["VERIFY_EMAIL", "UPDATE_PASSWORD"],
+                },
+            )
+            kc_resp.raise_for_status()
+            db_resp = await client.post(
+                f"{DATABASE_SERVICE_URL}/api/v1/agents",
+                json={
+                    "email": email,
+                    "first_name": first_name,
+                    "last_name": last_name,
+                    "recruiter_id": recruiter_id,
+                    "status": "pending_verification",
+                },
+            )
+            db_resp.raise_for_status()
+            return {
+                "message": "Agent recruitment initiated",
+                "recruiter_id": recruiter_id,
+                "recruiter_username": recruiter_username,
+                "new_agent_email": email,
+                "status": "pending_verification",
+            }
+        except httpx.HTTPError as exc:
+            logger.error(f"Agent recruitment failed: {exc}")
+            raise HTTPException(status_code=502, detail="Recruitment service unavailable")
 
 
 # ============================================================================
@@ -312,28 +374,31 @@ async def list_users(
     
     logger.info(f"User list requested by admin: {admin_username}")
     
-    # TODO: Fetch from Keycloak or database
-    return {
-        "users": [
-            {
-                "user_id": "user-001",
-                "username": "agent-001",
-                "email": "agent1@example.com",
-                "roles": ["agent"],
-                "status": "active"
-            },
-            {
-                "user_id": "user-002",
-                "username": "super-agent-001",
-                "email": "superagent1@example.com",
-                "roles": ["super_agent"],
-                "status": "active"
-            }
-        ],
-        "total": 2,
-        "limit": limit,
-        "offset": offset
-    }
+    async with httpx.AsyncClient(timeout=10.0) as client:
+        try:
+            resp = await client.get(
+                f"{KEYCLOAK_ADMIN_URL}/users",
+                params={"first": offset, "max": limit},
+            )
+            resp.raise_for_status()
+            kc_users = resp.json()
+            users = []
+            for u in kc_users:
+                role_resp = await client.get(
+                    f"{KEYCLOAK_ADMIN_URL}/users/{u['id']}/role-mappings/realm",
+                )
+                roles = [r["name"] for r in role_resp.json()] if role_resp.status_code == 200 else []
+                users.append({
+                    "user_id": u["id"],
+                    "username": u.get("username", ""),
+                    "email": u.get("email", ""),
+                    "roles": roles,
+                    "status": "active" if u.get("enabled") else "disabled",
+                })
+            return {"users": users, "total": len(users), "limit": limit, "offset": offset}
+        except httpx.HTTPError as exc:
+            logger.error(f"Failed to list users: {exc}")
+            raise HTTPException(status_code=502, detail="User service unavailable")
 
 
 @app.post("/api/v1/admin/users/{user_id}/roles")
@@ -352,11 +417,23 @@ async def assign_role(
     
     logger.info(f"Role assignment by admin {admin_username}: user={user_id}, role={role}")
     
-    # TODO: Assign role in Keycloak
-    return {
-        "message": f"Role '{role}' assigned to user '{user_id}'",
-        "assigned_by": admin_username
-    }
+    async with httpx.AsyncClient(timeout=10.0) as client:
+        try:
+            roles_resp = await client.get(f"{KEYCLOAK_ADMIN_URL}/roles/{role}")
+            roles_resp.raise_for_status()
+            role_repr = roles_resp.json()
+            resp = await client.post(
+                f"{KEYCLOAK_ADMIN_URL}/users/{user_id}/role-mappings/realm",
+                json=[role_repr],
+            )
+            resp.raise_for_status()
+            return {
+                "message": f"Role '{role}' assigned to user '{user_id}'",
+                "assigned_by": admin_username,
+            }
+        except httpx.HTTPError as exc:
+            logger.error(f"Role assignment failed: {exc}")
+            raise HTTPException(status_code=502, detail="Role assignment failed")
 
 
 # ============================================================================
