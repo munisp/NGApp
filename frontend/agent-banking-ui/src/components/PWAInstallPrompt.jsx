@@ -1,6 +1,23 @@
-import React, { useState } from 'react'
+import { useState, Component } from 'react'
 import { Download, X, Smartphone, Monitor, Wifi, WifiOff, Bell } from 'lucide-react'
 import { useInstallPrompt, useOnlineStatus, usePushNotifications } from '../hooks/usePWA'
+
+class PWAErrorBoundary extends Component {
+  constructor(props) {
+    super(props)
+    this.state = { hasError: false }
+  }
+  static getDerivedStateFromError() {
+    return { hasError: true }
+  }
+  componentDidCatch(error, info) {
+    console.warn('PWA component error caught:', error.message)
+  }
+  render() {
+    if (this.state.hasError) return null
+    return this.props.children
+  }
+}
 
 const Button = ({ children, variant = 'default', size = 'default', className = '', onClick, disabled, ...props }) => {
   const baseClasses = 'inline-flex items-center justify-center rounded-md font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none'
@@ -45,14 +62,13 @@ const Badge = ({ children, variant = 'default', className = '' }) => {
   )
 }
 
-export function PWAInstallPrompt() {
+function PWAInstallPromptInner() {
   const { isInstallable, isInstalled, installApp } = useInstallPrompt()
   const { isOnline, connectionType, isSlowConnection } = useOnlineStatus()
   const { isSupported: pushSupported, permission, requestPermission, subscribe } = usePushNotifications()
   const [isVisible, setIsVisible] = useState(true)
   const [isInstalling, setIsInstalling] = useState(false)
 
-  // Don't show if already installed or not installable
   if (isInstalled || !isInstallable || !isVisible) {
     return null
   }
@@ -186,7 +202,15 @@ export function PWAInstallPrompt() {
   )
 }
 
-export function PWAStatusIndicator() {
+export function PWAInstallPrompt() {
+  return (
+    <PWAErrorBoundary>
+      <PWAInstallPromptInner />
+    </PWAErrorBoundary>
+  )
+}
+
+function PWAStatusIndicatorInner() {
   const { isInstalled } = useInstallPrompt()
   const { isOnline, connectionType } = useOnlineStatus()
   
@@ -211,7 +235,15 @@ export function PWAStatusIndicator() {
   )
 }
 
-export function OfflineBanner() {
+export function PWAStatusIndicator() {
+  return (
+    <PWAErrorBoundary>
+      <PWAStatusIndicatorInner />
+    </PWAErrorBoundary>
+  )
+}
+
+function OfflineBannerInner() {
   const { isOnline } = useOnlineStatus()
   
   if (isOnline) return null
@@ -226,6 +258,14 @@ export function OfflineBanner() {
         <Badge variant="warning">Offline Mode</Badge>
       </div>
     </div>
+  )
+}
+
+export function OfflineBanner() {
+  return (
+    <PWAErrorBoundary>
+      <OfflineBannerInner />
+    </PWAErrorBoundary>
   )
 }
 

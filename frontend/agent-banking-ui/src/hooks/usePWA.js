@@ -7,13 +7,15 @@ export function useInstallPrompt() {
   const [isInstalled, setIsInstalled] = useState(false)
 
   useEffect(() => {
-    // Check if app is already installed
     const checkInstalled = () => {
-      const isStandalone = window.matchMedia('(display-mode: standalone)').matches
-      const isInWebAppiOS = window.navigator.standalone === true
-      const isInWebAppChrome = window.matchMedia('(display-mode: standalone)').matches
-      
-      setIsInstalled(isStandalone || isInWebAppiOS || isInWebAppChrome)
+      try {
+        const isStandalone = window.matchMedia('(display-mode: standalone)').matches
+        const isInWebAppiOS = window.navigator.standalone === true
+        const isInWebAppChrome = window.matchMedia('(display-mode: standalone)').matches
+        setIsInstalled(isStandalone || isInWebAppiOS || isInWebAppChrome)
+      } catch (e) {
+        // Browser API not available
+      }
     }
 
     checkInstalled()
@@ -75,7 +77,9 @@ export function useInstallPrompt() {
 
 // Hook for online/offline status
 export function useOnlineStatus() {
-  const [isOnline, setIsOnline] = useState(navigator.onLine)
+  const [isOnline, setIsOnline] = useState(() => {
+    try { return navigator.onLine } catch (e) { return true }
+  })
   const [connectionType, setConnectionType] = useState('unknown')
 
   useEffect(() => {
@@ -219,9 +223,13 @@ export function usePushNotifications() {
   const [subscription, setSubscription] = useState(null)
 
   useEffect(() => {
-    if ('Notification' in window && 'serviceWorker' in navigator && 'PushManager' in window) {
-      setIsSupported(true)
-      setPermission(Notification.permission)
+    try {
+      if ('Notification' in window && 'serviceWorker' in navigator && 'PushManager' in window) {
+        setIsSupported(true)
+        setPermission(Notification.permission)
+      }
+    } catch (e) {
+      // Browser API not available
     }
   }, [])
 
