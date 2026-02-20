@@ -806,12 +806,12 @@
   - Compliance checklists
   - Workflow tracking
 
-### 71. **Ballerine Integration**
-- **Service:** ballerine-integration
+### 71. **Workflow Integration (Temporal)**
+- **Service:** workflow-integration
 - **Features:**
   - Risk & compliance platform
   - Case management
-  - Workflow orchestration
+  - Workflow orchestration (Temporal)
   - Decision engine
   - Compliance automation
 

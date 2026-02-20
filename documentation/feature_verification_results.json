@@ -108,7 +108,7 @@
         "lines_of_code": 155,
         "implemented": true
       },
-      "ballerine-integration": {
+      "workflow-integration": {
         "has_main": true,
         "has_requirements": true,
         "has_fastapi": true,

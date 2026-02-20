@@ -1,6 +1,6 @@
 """
 KYB (Know Your Business) Verification Service
-Integrates with Ballerine for comprehensive business verification and compliance
+Integrates with Temporal for comprehensive business verification and compliance
 """
 
 import asyncio
@@ -128,7 +128,7 @@ class KYBVerification(Base):
     
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     business_id = Column(String, nullable=False, unique=True, index=True)
-    ballerine_workflow_id = Column(String, index=True)
+    temporal_workflow_id = Column(String, index=True)
     business_info = Column(JSON, nullable=False)
     beneficial_owners = Column(JSON)
     authorized_representatives = Column(JSON)
@@ -176,7 +176,7 @@ class KYBWorkflowEvent(Base):
     verification_id = Column(UUID(as_uuid=True), nullable=False, index=True)
     event_type = Column(String, nullable=False)
     event_data = Column(JSON)
-    ballerine_event_id = Column(String)
+    workflow_event_id = Column(String)
     timestamp = Column(DateTime, default=datetime.utcnow, index=True)
     processed = Column(Boolean, default=False)
 
@@ -186,8 +186,8 @@ Base.metadata.create_all(bind=engine)
 class KYBVerificationService:
     def __init__(self):
         self.redis_client = None
-        self.ballerine_api_url = os.getenv("BALLERINE_API_URL", "http://localhost:3000")
-        self.ballerine_api_key = os.getenv("BALLERINE_API_KEY", "")
+        self.temporal_api_url = os.getenv("TEMPORAL_API_URL", "http://localhost:7233")
+        self.temporal_namespace = os.getenv("TEMPORAL_NAMESPACE", "default")
         self.ocr_service_url = os.getenv("OCR_SERVICE_URL", "http://localhost:8014")
         
         # Initialize screening services
@@ -228,15 +228,13 @@ class KYBVerificationService:
         try:
             business_id = str(uuid.uuid4())
             
-            # Create Ballerine workflow
-            ballerine_workflow_id = await self._create_ballerine_workflow(
+            temporal_workflow_id = await self._create_temporal_workflow(
                 business_id, business_info, beneficial_owners, authorized_representatives
             )
             
-            # Create verification record
             verification = KYBVerification(
                 business_id=business_id,
-                ballerine_workflow_id=ballerine_workflow_id,
+                temporal_workflow_id=temporal_workflow_id,
                 business_info=asdict(business_info),
                 beneficial_owners=[asdict(bo) for bo in beneficial_owners],
                 authorized_representatives=[asdict(ar) for ar in authorized_representatives],
@@ -265,56 +263,45 @@ class KYBVerificationService:
         finally:
             db.close()
     
-    async def _create_ballerine_workflow(self, business_id: str, business_info: BusinessInfo,
+    async def _create_temporal_workflow(self, business_id: str, business_info: BusinessInfo,
                                        beneficial_owners: List[BeneficialOwner],
                                        authorized_representatives: List[AuthorizedRepresentative]) -> str:
-        """Create workflow in Ballerine"""
+        """Create workflow via Temporal"""
         try:
             async with httpx.AsyncClient() as client:
+                workflow_id = f"kyb-{business_id[:8]}-{uuid.uuid4().hex[:8]}"
                 workflow_data = {
-                    "workflowDefinitionId": "kyb_verification_workflow",
-                    "context": {
-                        "entity": {
-                            "type": "business",
-                            "id": business_id,
+                    "workflowId": workflow_id,
+                    "workflowType": {"name": "kyb-verification"},
+                    "taskQueue": {"name": "kyb-verification"},
+                    "input": {
+                        "payloads": [{
                             "data": {
+                                "businessId": business_id,
                                 "businessInformation": asdict(business_info),
                                 "beneficialOwners": [asdict(bo) for bo in beneficial_owners],
-                                "authorizedRepresentatives": [asdict(ar) for ar in authorized_representatives]
+                                "authorizedRepresentatives": [asdict(ar) for ar in authorized_representatives],
+                                "webhookUrl": f"{os.getenv('WEBHOOK_BASE_URL', 'http://localhost:8015')}/kyb/webhook"
                             }
-                        }
-                    },
-                    "config": {
-                        "subscriptions": [
-                            {
-                                "type": "webhook",
-                                "url": f"{os.getenv('WEBHOOK_BASE_URL', 'http://localhost:8015')}/kyb/webhook"
-                            }
-                        ]
+                        }]
                     }
                 }
                 
-                headers = {
-                    "Authorization": f"Bearer {self.ballerine_api_key}",
-                    "Content-Type": "application/json"
-                }
-                
                 response = await client.post(
-                    f"{self.ballerine_api_url}/api/v1/workflows",
+                    f"{self.temporal_api_url}/api/v1/namespaces/{self.temporal_namespace}/workflows",
                     json=workflow_data,
-                    headers=headers,
+                    headers={"Content-Type": "application/json"},
                     timeout=30.0
                 )
                 
-                if response.status_code == 201:
-                    workflow = response.json()
-                    return workflow.get("id", "")
+                if response.status_code in (200, 201):
+                    return workflow_id
                 else:
-                    logger.error(f"Failed to create Ballerine workflow: {response.text}")
+                    logger.error(f"Failed to create Temporal workflow: {response.text}")
                     return ""
                     
         except Exception as e:
-            logger.error(f"Error creating Ballerine workflow: {e}")
+            logger.error(f"Error creating Temporal workflow: {e}")
             return ""
     
     def _get_required_documents(self, business_type: BusinessType) -> List[str]:
@@ -377,8 +364,7 @@ class KYBVerificationService:
             
             db.commit()
             
-            # Notify Ballerine of status update
-            await self._update_ballerine_workflow(verification.ballerine_workflow_id, {
+            await self._update_temporal_workflow(verification.temporal_workflow_id, {
                 "status": verification.status,
                 "riskScore": verification.risk_score,
                 "riskLevel": verification.risk_level,
@@ -846,8 +832,7 @@ class KYBVerificationService:
                 
                 db.commit()
                 
-                # Update Ballerine workflow
-                await self._update_ballerine_workflow(verification.ballerine_workflow_id, {
+                await self._update_temporal_workflow(verification.temporal_workflow_id, {
                     "status": verification.status,
                     "documentsComplete": True
                 })
@@ -857,30 +842,28 @@ class KYBVerificationService:
         finally:
             db.close()
     
-    async def _update_ballerine_workflow(self, workflow_id: str, update_data: Dict[str, Any]):
-        """Update Ballerine workflow with new data"""
+    async def _update_temporal_workflow(self, workflow_id: str, update_data: Dict[str, Any]):
+        """Update Temporal workflow via signal"""
         if not workflow_id:
             return
         
         try:
             async with httpx.AsyncClient() as client:
-                headers = {
-                    "Authorization": f"Bearer {self.ballerine_api_key}",
-                    "Content-Type": "application/json"
-                }
-                
-                response = await client.patch(
-                    f"{self.ballerine_api_url}/api/v1/workflows/{workflow_id}",
-                    json={"context": update_data},
-                    headers=headers,
+                response = await client.post(
+                    f"{self.temporal_api_url}/api/v1/namespaces/{self.temporal_namespace}/workflows/{workflow_id}/signal",
+                    json={
+                        "signalName": "workflow_update",
+                        "input": {"payloads": [{"data": update_data}]}
+                    },
+                    headers={"Content-Type": "application/json"},
                     timeout=30.0
                 )
                 
-                if response.status_code != 200:
-                    logger.error(f"Failed to update Ballerine workflow: {response.text}")
+                if response.status_code not in (200, 201):
+                    logger.error(f"Failed to signal Temporal workflow: {response.text}")
                     
         except Exception as e:
-            logger.error(f"Error updating Ballerine workflow: {e}")
+            logger.error(f"Error signaling Temporal workflow: {e}")
     
     async def get_verification_status(self, business_id: str) -> Dict[str, Any]:
         """Get KYB verification status"""
@@ -954,8 +937,7 @@ class KYBVerificationService:
             
             db.commit()
             
-            # Update Ballerine workflow
-            await self._update_ballerine_workflow(verification.ballerine_workflow_id, {
+            await self._update_temporal_workflow(verification.temporal_workflow_id, {
                 "status": "approved",
                 "approvedBy": approved_by,
                 "approvedAt": datetime.utcnow().isoformat(),
@@ -989,8 +971,7 @@ class KYBVerificationService:
             
             db.commit()
             
-            # Update Ballerine workflow
-            await self._update_ballerine_workflow(verification.ballerine_workflow_id, {
+            await self._update_temporal_workflow(verification.temporal_workflow_id, {
                 "status": "rejected",
                 "rejectedBy": rejected_by,
                 "rejectedAt": datetime.utcnow().isoformat(),
@@ -1006,8 +987,8 @@ class KYBVerificationService:
         finally:
             db.close()
     
-    async def handle_ballerine_webhook(self, webhook_data: Dict[str, Any]):
-        """Handle webhook from Ballerine"""
+    async def handle_workflow_webhook(self, webhook_data: Dict[str, Any]):
+        """Handle webhook from Temporal workflow"""
         try:
             workflow_id = webhook_data.get("workflowId")
             event_type = webhook_data.get("eventName")
@@ -1016,7 +997,7 @@ class KYBVerificationService:
             # Find verification by workflow ID
             db = SessionLocal()
             verification = db.query(KYBVerification).filter(
-                KYBVerification.ballerine_workflow_id == workflow_id
+                KYBVerification.temporal_workflow_id == workflow_id
             ).first()
             
             if not verification:
@@ -1028,7 +1009,7 @@ class KYBVerificationService:
                 verification_id=verification.id,
                 event_type=event_type,
                 event_data=event_data,
-                ballerine_event_id=webhook_data.get("id")
+                workflow_event_id=webhook_data.get("id")
             )
             
             db.add(workflow_event)
@@ -1045,19 +1026,18 @@ class KYBVerificationService:
             db.close()
             
         except Exception as e:
-            logger.error(f"Failed to handle Ballerine webhook: {e}")
+            logger.error(f"Failed to handle workflow webhook: {e}")
     
     async def _handle_workflow_completed(self, verification: KYBVerification, event_data: Dict[str, Any]):
-        """Handle workflow completion from Ballerine"""
-        # Implementation would depend on Ballerine's event structure
+        """Handle workflow completion from Temporal"""
         logger.info(f"Workflow completed for verification {verification.business_id}")
     
     async def _handle_workflow_failed(self, verification: KYBVerification, event_data: Dict[str, Any]):
-        """Handle workflow failure from Ballerine"""
+        """Handle workflow failure from Temporal"""
         logger.error(f"Workflow failed for verification {verification.business_id}: {event_data}")
     
     async def _handle_document_processed(self, verification: KYBVerification, event_data: Dict[str, Any]):
-        """Handle document processing event from Ballerine"""
+        """Handle document processing event from Temporal"""
         logger.info(f"Document processed for verification {verification.business_id}")
     
     async def health_check(self) -> Dict[str, Any]:
@@ -1081,29 +1061,31 @@ class KYBVerificationService:
             except Exception:
                 redis_healthy = False
         
-        # Check Ballerine API
-        ballerine_healthy = False
+        temporal_healthy = False
         try:
             async with httpx.AsyncClient() as client:
-                response = await client.get(f"{self.ballerine_api_url}/health", timeout=10.0)
-                ballerine_healthy = response.status_code == 200
+                response = await client.get(
+                    f"{self.temporal_api_url}/api/v1/namespaces/{self.temporal_namespace}",
+                    timeout=10.0
+                )
+                temporal_healthy = response.status_code == 200
         except Exception:
-            ballerine_healthy = False
+            temporal_healthy = False
         
         return {
             "status": "healthy" if db_healthy else "unhealthy",
             "timestamp": datetime.utcnow().isoformat(),
             "service": "kyb-verification-service",
-            "version": "1.0.0",
+            "version": "2.0.0",
             "components": {
                 "database": db_healthy,
                 "redis": redis_healthy,
-                "ballerine": ballerine_healthy,
+                "temporal": temporal_healthy,
             }
         }
 
 # FastAPI application
-app = FastAPI(title="KYB Verification Service", version="1.0.0")
+app = FastAPI(title="KYB Verification Service", version="2.0.0")
 
 # CORS middleware
 app.add_middleware(
@@ -1218,9 +1200,9 @@ async def reject_verification(
     return {"success": success, "status": "rejected"}
 
 @app.post("/webhook")
-async def ballerine_webhook(webhook_data: Dict[str, Any]):
-    """Handle Ballerine webhook"""
-    await kyb_service.handle_ballerine_webhook(webhook_data)
+async def workflow_webhook(webhook_data: Dict[str, Any]):
+    """Handle Temporal workflow webhook"""
+    await kyb_service.handle_workflow_webhook(webhook_data)
     return {"status": "processed"}
 
 @app.get("/health")

@@ -56,10 +56,10 @@
       "error": ""
     },
     {
-      "input": "ballerine-integration",
+      "input": "workflow-integration",
       "output": {
-        "service_name": "ballerine-integration",
-        "file_path": "/home/ubuntu/agent-banking-platform/backend/python-services/ballerine-integration/main.py",
+        "service_name": "workflow-integration",
+        "file_path": "/home/ubuntu/agent-banking-platform/backend/python-services/workflow-integration/main.py",
         "lines_of_code": 305,
         "endpoints_count": 8,
         "status": "success"

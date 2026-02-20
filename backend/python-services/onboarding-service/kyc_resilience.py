@@ -316,17 +316,17 @@ class KYCCircuitBreakers:
     _breakers: Dict[str, CircuitBreaker] = {}
     
     @classmethod
-    def get_ballerine_breaker(cls) -> CircuitBreaker:
-        if "ballerine" not in cls._breakers:
-            cls._breakers["ballerine"] = CircuitBreaker(
-                "ballerine",
+    def get_workflow_breaker(cls) -> CircuitBreaker:
+        if "workflow" not in cls._breakers:
+            cls._breakers["workflow"] = CircuitBreaker(
+                "workflow",
                 CircuitBreakerConfig(
                     failure_threshold=3,
                     success_threshold=2,
                     timeout=60.0
                 )
             )
-        return cls._breakers["ballerine"]
+        return cls._breakers["workflow"]
     
     @classmethod
     def get_ocr_breaker(cls) -> CircuitBreaker:

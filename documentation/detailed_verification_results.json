@@ -106,7 +106,7 @@
       "has_stats": true
     },
     {
-      "name": "ballerine-integration",
+      "name": "workflow-integration",
       "lines": 155,
       "endpoints": 10,
       "has_health": true,

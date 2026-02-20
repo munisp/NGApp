@@ -1,6 +1,6 @@
 """
-Ballerine KYB Integration Service
-For agent hierarchy and business verification
+Temporal KYB Workflow Integration Service
+For agent hierarchy and business verification (open-source replacement)
 Port: 8025
 """
 
@@ -20,20 +20,20 @@ from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 
 # Configuration
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://agent_user:agent_password@localhost/ballerine_db")
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://agent_user:agent_password@localhost/workflow_db")
 engine = create_engine(DATABASE_URL, pool_pre_ping=True, pool_size=20, max_overflow=40)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
-# Ballerine Configuration
-BALLERINE_API_URL = os.getenv("BALLERINE_API_URL", "https://api.ballerine.io/v1")
-BALLERINE_API_KEY = os.getenv("BALLERINE_API_KEY", "")
-BALLERINE_WORKFLOW_ID = os.getenv("BALLERINE_WORKFLOW_ID", "kyb-verification")
+# Temporal Configuration
+TEMPORAL_API_URL = os.getenv("TEMPORAL_API_URL", "http://localhost:7233")
+TEMPORAL_NAMESPACE = os.getenv("TEMPORAL_NAMESPACE", "default")
+TEMPORAL_TASK_QUEUE = os.getenv("TEMPORAL_TASK_QUEUE", "kyb-verification")
 
 # ==================== DATABASE MODELS ====================
 
-class BallerineVerification(Base):
-    __tablename__ = "ballerine_verifications"
+class WorkflowVerification(Base):
+    __tablename__ = "workflow_verifications"
     
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     verification_id = Column(String(100), unique=True, nullable=False, index=True)
@@ -42,9 +42,9 @@ class BallerineVerification(Base):
     business_registration_number = Column(String(200))
     country = Column(String(2))
     
-    # Ballerine workflow
-    ballerine_workflow_id = Column(String(200), index=True)
-    ballerine_case_id = Column(String(200))
+    # Temporal workflow
+    temporal_workflow_id = Column(String(200), index=True)
+    temporal_run_id = Column(String(200))
     
     # Verification status
     status = Column(String(50), default="pending", index=True)
@@ -82,54 +82,73 @@ def get_db():
     finally:
         db.close()
 
-async def create_ballerine_workflow(data: Dict) -> Dict:
-    """Create verification workflow in Ballerine"""
+async def create_temporal_workflow(data: Dict) -> Dict:
+    """Create verification workflow via Temporal"""
     try:
         async with httpx.AsyncClient() as client:
+            workflow_id = f"kyb-{data['business_registration_number']}-{uuid.uuid4().hex[:8]}"
             response = await client.post(
-                f"{BALLERINE_API_URL}/workflows",
+                f"{TEMPORAL_API_URL}/api/v1/namespaces/{TEMPORAL_NAMESPACE}/workflows",
                 json={
-                    "workflowDefinitionId": BALLERINE_WORKFLOW_ID,
-                    "context": {
-                        "entity": {
-                            "type": "business",
+                    "workflowId": workflow_id,
+                    "workflowType": {"name": TEMPORAL_TASK_QUEUE},
+                    "taskQueue": {"name": TEMPORAL_TASK_QUEUE},
+                    "input": {
+                        "payloads": [{
                             "data": {
                                 "companyName": data["business_name"],
                                 "registrationNumber": data["business_registration_number"],
-                                "country": data["country"]
+                                "country": data["country"],
+                                "documents": data.get("documents", [])
                             }
-                        },
-                        "documents": data.get("documents", [])
+                        }]
                     }
                 },
-                headers={"Authorization": f"Bearer {BALLERINE_API_KEY}"},
                 timeout=30.0
             )
-            response.raise_for_status()
-            return response.json()
+            if response.status_code in (200, 201):
+                result = response.json()
+                return {
+                    "id": workflow_id,
+                    "runId": result.get("runId", ""),
+                    "status": "processing"
+                }
+            raise HTTPException(status_code=500, detail=f"Temporal returned {response.status_code}")
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Ballerine workflow creation failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Temporal workflow creation failed: {str(e)}")
 
-async def get_ballerine_workflow_status(workflow_id: str) -> Dict:
-    """Get workflow status from Ballerine"""
+async def get_temporal_workflow_status(workflow_id: str) -> Dict:
+    """Get workflow status from Temporal"""
     try:
         async with httpx.AsyncClient() as client:
             response = await client.get(
-                f"{BALLERINE_API_URL}/workflows/{workflow_id}",
-                headers={"Authorization": f"Bearer {BALLERINE_API_KEY}"},
+                f"{TEMPORAL_API_URL}/api/v1/namespaces/{TEMPORAL_NAMESPACE}/workflows/{workflow_id}",
                 timeout=10.0
             )
-            response.raise_for_status()
-            return response.json()
+            if response.status_code == 200:
+                result = response.json()
+                status_map = {
+                    "WORKFLOW_EXECUTION_STATUS_RUNNING": "processing",
+                    "WORKFLOW_EXECUTION_STATUS_COMPLETED": "completed",
+                    "WORKFLOW_EXECUTION_STATUS_FAILED": "failed",
+                }
+                raw_status = result.get("workflowExecutionInfo", {}).get("status", "")
+                return {
+                    "status": status_map.get(raw_status, "processing"),
+                    "riskLevel": result.get("workflowExecutionInfo", {}).get("memo", {}).get("riskLevel", "medium")
+                }
+            return {"status": "processing"}
     except Exception as e:
         return {"status": "error", "error": str(e)}
 
 # ==================== FASTAPI APP ====================
 
 app = FastAPI(
-    title="Ballerine KYB Integration Service",
-    description="Agent business verification via Ballerine",
-    version="1.0.0"
+    title="Temporal KYB Workflow Integration Service",
+    description="Agent business verification via Temporal workflows (open-source)",
+    version="2.0.0"
 )
 
 app.add_middleware(
@@ -145,10 +164,10 @@ async def health_check():
     """Health check"""
     return {
         "status": "healthy",
-        "service": "ballerine-integration",
-        "version": "1.0.0",
+        "service": "temporal-kyb-integration",
+        "version": "2.0.0",
         "port": 8025,
-        "ballerine_configured": bool(BALLERINE_API_KEY),
+        "temporal_configured": bool(TEMPORAL_API_URL),
         "features": [
             "kyb_verification",
             "document_verification",
@@ -165,7 +184,7 @@ async def create_verification(
 ):
     """Create KYB verification for agent"""
     
-    verification = BallerineVerification(
+    verification = WorkflowVerification(
         verification_id=f"VER-{datetime.utcnow().strftime('%Y%m%d')}-{uuid.uuid4().hex[:8].upper()}",
         agent_id=request.agent_id,
         business_name=request.business_name,
@@ -178,45 +197,42 @@ async def create_verification(
     db.commit()
     db.refresh(verification)
     
-    # Create Ballerine workflow
-    if BALLERINE_API_KEY:
-        try:
-            workflow_data = await create_ballerine_workflow({
-                "business_name": request.business_name,
-                "business_registration_number": request.business_registration_number,
-                "country": request.country,
-                "documents": request.documents
-            })
-            
-            verification.ballerine_workflow_id = workflow_data.get("id")
-            verification.ballerine_case_id = workflow_data.get("caseId")
-            verification.status = "processing"
-            db.commit()
-        except Exception as e:
-            verification.status = "failed"
-            db.commit()
-            raise
+    try:
+        workflow_data = await create_temporal_workflow({
+            "business_name": request.business_name,
+            "business_registration_number": request.business_registration_number,
+            "country": request.country,
+            "documents": request.documents
+        })
+        
+        verification.temporal_workflow_id = workflow_data.get("id")
+        verification.temporal_run_id = workflow_data.get("runId")
+        verification.status = "processing"
+        db.commit()
+    except Exception as e:
+        verification.status = "failed"
+        db.commit()
+        raise
     
     return {
         "verification_id": verification.verification_id,
         "status": verification.status,
-        "ballerine_workflow_id": verification.ballerine_workflow_id
+        "workflow_id": verification.temporal_workflow_id
     }
 
 @app.get("/verify/{verification_id}")
 async def get_verification(verification_id: str, db: Session = Depends(get_db)):
     """Get verification status"""
     
-    verification = db.query(BallerineVerification).filter(
-        BallerineVerification.verification_id == verification_id
+    verification = db.query(WorkflowVerification).filter(
+        WorkflowVerification.verification_id == verification_id
     ).first()
     
     if not verification:
         raise HTTPException(status_code=404, detail="Verification not found")
     
-    # Update from Ballerine if workflow exists
-    if verification.ballerine_workflow_id and BALLERINE_API_KEY:
-        workflow_status = await get_ballerine_workflow_status(verification.ballerine_workflow_id)
+    if verification.temporal_workflow_id:
+        workflow_status = await get_temporal_workflow_status(verification.temporal_workflow_id)
         
         if workflow_status.get("status") == "completed":
             verification.status = "completed"

@@ -145,7 +145,7 @@ SERVICE_MODULES = [
     "ocr_processing", "offline_sync", "pos_integration", "risk_assessment", "rule_engine",
     "supply_chain", "sync_manager", "territory_management", "tigerbeetle_sync", "tigerbeetle_zig",
     "unified_streaming", "ussd_service", "workflow_orchestration", "workflow_service", "zapier_integration",
-    "ballerine_integration", "integration_service", "middleware_integration",
+    "workflow_integration", "integration_service", "middleware_integration",
     "platform_middleware", "zapier_service",
     # Customer Services
     "customer_service", "onboarding_service",

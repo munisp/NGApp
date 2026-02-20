@@ -1861,7 +1861,7 @@ function AgentOnboardingPage({ formatCurrency, userRole }) {
           <div className="space-y-6">
             <div>
               <h3 className="text-lg font-semibold text-gray-900 mb-1">KYB Business Verification</h3>
-              <p className="text-sm text-gray-500">Upload business documents for KYB verification. Documents are verified through Ballerine workflow with CAC registry cross-reference.</p>
+              <p className="text-sm text-gray-500">Upload business documents for KYB verification. Documents are verified through Temporal workflow with CAC registry cross-reference.</p>
             </div>
             <div className="space-y-4">
               {[

@@ -1,6 +1,6 @@
 """
 Production-Ready KYC/KYB Verification Service
-Local implementation using Ballerine for workflow orchestration
+Local implementation using Temporal for workflow orchestration
 Integrates with: PostgreSQL, Kafka, Redis, Temporal, Lakehouse
 """
 
@@ -79,7 +79,7 @@ class ServiceConfig:
     redis_url: str = field(default_factory=lambda: os.getenv("REDIS_URL", "redis://localhost:6379"))
     kafka_bootstrap_servers: str = field(default_factory=lambda: os.getenv("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092"))
     temporal_host: str = field(default_factory=lambda: os.getenv("TEMPORAL_HOST", "localhost:7233"))
-    ballerine_url: str = field(default_factory=lambda: os.getenv("BALLERINE_URL", "http://localhost:3000"))
+    temporal_url: str = field(default_factory=lambda: os.getenv("TEMPORAL_URL", "http://localhost:7233"))
     lakehouse_url: str = field(default_factory=lambda: os.getenv("LAKEHOUSE_URL", "http://localhost:8181"))
     ocr_service_url: str = field(default_factory=lambda: os.getenv("OCR_SERVICE_URL", "http://localhost:8030"))
     document_storage_path: str = field(default_factory=lambda: os.getenv("DOCUMENT_STORAGE_PATH", "/tmp/documents"))
@@ -188,8 +188,8 @@ class KafkaProducer:
                 logger.error(f"Failed to send Kafka event: {e}")
 
 
-class BallerineClient:
-    """Ballerine KYC/KYB workflow orchestration client"""
+class TemporalWorkflowClient:
+    """Temporal-based KYC/KYB workflow orchestration client (open-source replacement)"""
     
     def __init__(self, url: str):
         self.url = url
@@ -197,7 +197,7 @@ class BallerineClient:
     
     async def initialize(self):
         self._client = httpx.AsyncClient(base_url=self.url, timeout=60.0)
-        logger.info("Ballerine client initialized")
+        logger.info("Temporal workflow client initialized")
     
     async def close(self):
         if self._client:
@@ -206,31 +206,40 @@ class BallerineClient:
     
     @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=1, max=10))
     async def create_workflow(self, workflow_type: str, entity_data: Dict[str, Any]) -> Dict[str, Any]:
-        """Create a new verification workflow in Ballerine"""
+        """Create a new verification workflow via Temporal"""
         if not self._client:
             return self._local_workflow_creation(workflow_type, entity_data)
         
         try:
             response = await self._client.post(
-                "/api/v1/workflows",
+                "/api/v1/namespaces/default/workflows",
                 json={
-                    "workflowDefinitionId": f"agent-banking-{workflow_type}",
-                    "context": {
-                        "entity": entity_data,
-                        "documents": [],
-                        "pluginsOutput": {}
+                    "workflowId": f"agent-banking-{workflow_type}-{uuid.uuid4().hex[:8]}",
+                    "workflowType": {"name": f"agent-banking-{workflow_type}"},
+                    "taskQueue": {"name": "kyc-kyb-verification"},
+                    "input": {
+                        "payloads": [{
+                            "data": entity_data
+                        }]
                     }
                 }
             )
             if response.status_code in (200, 201):
-                return response.json()
+                result = response.json()
+                return {
+                    "id": result.get("workflowId", result.get("runId", str(uuid.uuid4()))),
+                    "workflowDefinitionId": f"agent-banking-{workflow_type}",
+                    "status": "active",
+                    "context": {"entity": entity_data, "documents": [], "pluginsOutput": {}},
+                    "createdAt": datetime.utcnow().isoformat()
+                }
             return self._local_workflow_creation(workflow_type, entity_data)
         except Exception as e:
-            logger.warning(f"Ballerine API call failed: {e}, using local workflow")
+            logger.warning(f"Temporal API call failed: {e}, using local workflow")
             return self._local_workflow_creation(workflow_type, entity_data)
     
     def _local_workflow_creation(self, workflow_type: str, entity_data: Dict[str, Any]) -> Dict[str, Any]:
-        """Local workflow creation when Ballerine is unavailable"""
+        """Local workflow creation when Temporal is unavailable"""
         workflow_id = str(uuid.uuid4())
         return {
             "id": workflow_id,
@@ -245,38 +254,60 @@ class BallerineClient:
         }
     
     async def get_workflow_status(self, workflow_id: str) -> Dict[str, Any]:
-        """Get workflow status from Ballerine"""
+        """Get workflow status from Temporal"""
         if not self._client:
             return {"id": workflow_id, "status": "active"}
         
         try:
-            response = await self._client.get(f"/api/v1/workflows/{workflow_id}")
+            response = await self._client.get(
+                f"/api/v1/namespaces/default/workflows/{workflow_id}"
+            )
             if response.status_code == 200:
-                return response.json()
+                result = response.json()
+                status_map = {
+                    "WORKFLOW_EXECUTION_STATUS_RUNNING": "active",
+                    "WORKFLOW_EXECUTION_STATUS_COMPLETED": "completed",
+                    "WORKFLOW_EXECUTION_STATUS_FAILED": "failed",
+                    "WORKFLOW_EXECUTION_STATUS_TIMED_OUT": "timed_out",
+                }
+                raw_status = result.get("workflowExecutionInfo", {}).get("status", "")
+                return {
+                    "id": workflow_id,
+                    "status": status_map.get(raw_status, "active")
+                }
             return {"id": workflow_id, "status": "active"}
         except Exception as e:
             logger.warning(f"Failed to get workflow status: {e}")
             return {"id": workflow_id, "status": "active"}
     
     async def submit_document(self, workflow_id: str, document_data: Dict[str, Any]) -> Dict[str, Any]:
-        """Submit document to workflow"""
+        """Submit document to workflow via Temporal signal"""
         if not self._client:
             return self._local_document_submission(workflow_id, document_data)
         
         try:
             response = await self._client.post(
-                f"/api/v1/workflows/{workflow_id}/documents",
-                json=document_data
+                f"/api/v1/namespaces/default/workflows/{workflow_id}/signal",
+                json={
+                    "signalName": "document_submitted",
+                    "input": {"payloads": [{"data": document_data}]}
+                }
             )
             if response.status_code in (200, 201):
-                return response.json()
+                return {
+                    "id": str(uuid.uuid4()),
+                    "workflowId": workflow_id,
+                    "type": document_data.get("type"),
+                    "status": "pending_verification",
+                    "createdAt": datetime.utcnow().isoformat()
+                }
             return self._local_document_submission(workflow_id, document_data)
         except Exception as e:
             logger.warning(f"Document submission failed: {e}")
             return self._local_document_submission(workflow_id, document_data)
     
     def _local_document_submission(self, workflow_id: str, document_data: Dict[str, Any]) -> Dict[str, Any]:
-        """Local document submission when Ballerine is unavailable"""
+        """Local document submission when Temporal is unavailable"""
         return {
             "id": str(uuid.uuid4()),
             "workflowId": workflow_id,
@@ -722,21 +753,21 @@ class ServiceContainer:
         self.db = DatabasePool(config.database_url)
         self.redis = RedisClient(config.redis_url)
         self.kafka = KafkaProducer(config.kafka_bootstrap_servers)
-        self.ballerine = BallerineClient(config.ballerine_url)
+        self.workflow = TemporalWorkflowClient(config.temporal_url)
         self.lakehouse = LakehouseClient(config.lakehouse_url)
     
     async def initialize(self):
         await self.db.initialize()
         await self.redis.initialize()
         await self.kafka.initialize()
-        await self.ballerine.initialize()
+        await self.workflow.initialize()
         await self.lakehouse.initialize()
         await self._ensure_tables()
         logger.info("All services initialized")
     
     async def close(self):
         await self.lakehouse.close()
-        await self.ballerine.close()
+        await self.workflow.close()
         await self.kafka.close()
         await self.redis.close()
         await self.db.close()
@@ -860,7 +891,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="KYC/KYB Verification Service (Production)",
-    description="Production-ready KYC/KYB verification with Ballerine integration",
+    description="Production-ready KYC/KYB verification with Temporal workflow orchestration",
     version="2.0.0",
     lifespan=lifespan
 )
@@ -910,7 +941,7 @@ async def initiate_kyc_verification(
         "bvn": data.bvn
     }
     
-    workflow = await svc.ballerine.create_workflow("kyc", personal_info)
+    workflow = await svc.workflow.create_workflow("kyc", personal_info)
     
     aml_results = await AMLScreener.screen_individual(
         data.first_name,
@@ -1031,7 +1062,7 @@ async def initiate_kyb_verification(
     except ValueError:
         business_info["years_in_business"] = 0
     
-    workflow = await svc.ballerine.create_workflow("kyb", business_info)
+    workflow = await svc.workflow.create_workflow("kyb", business_info)
     
     aml_results = await AMLScreener.screen_business(
         data.business_name,
@@ -1236,7 +1267,7 @@ async def upload_kyc_document(
             json.dumps(validation_result), verification_score, "pending_verification"
         )
         
-        await svc.ballerine.submit_document(
+        await svc.workflow.submit_document(
             verification['workflow_id'],
             {
                 "type": document_type.value,

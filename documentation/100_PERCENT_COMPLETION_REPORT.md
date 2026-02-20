@@ -41,7 +41,7 @@
 3. ✅ ai-ml-services (Port 8150) - AI/ML Services Coordinator
 4. ✅ audit-service (Port 8112) - Audit Logging
 5. ✅ backup-service (Port 8113) - Backup Management
-6. ✅ ballerine-integration (Port 8151) - Ballerine Integration
+6. ✅ workflow-integration (Port 8151) - Workflow Integration (Temporal)
 7. ✅ commission-service (Port 8114) - Commission Calculation
 8. ✅ communication-gateway (Port 8115) - Communication Gateway
 9. ✅ compliance-service (Port 8116) - Compliance Management
@@ -128,7 +128,7 @@
 3. ✅ Analytics services (customer analytics, unified analytics)
 4. ✅ Communication services (gateway, hub, unified)
 5. ✅ Processing services (document, OCR, multi-OCR)
-6. ✅ Integration services (middleware, Ballerine, Zapier, Discord, Telegram)
+6. ✅ Integration services (middleware, Temporal workflow, Zapier, Discord, Telegram)
 7. ✅ Infrastructure services (backup, scheduler, security monitoring)
 8. ✅ Workflow services (orchestration, workflow)
 9. ✅ Payment services (payout, commission)

@@ -1,16 +1,16 @@
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: ballerine
+  name: workflow-orchestration
   labels:
-    name: ballerine
+    name: workflow-orchestration
     component: kyb-verification
 ---
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: ballerine-config
-  namespace: ballerine
+  name: temporal-config
+  namespace: workflow-orchestration
 data:
   config.json: |
     {
@@ -28,9 +28,9 @@ data:
         "type": "postgresql",
         "host": "postgresql",
         "port": 5432,
-        "username": "ballerine",
-        "password": "ballerine123",
-        "database": "ballerine",
+        "username": "${TEMPORAL_DB_USER}",
+        "password": "${TEMPORAL_DB_PASSWORD}",
+        "database": "temporal",
         "synchronize": false,
         "logging": false,
         "ssl": false,
@@ -48,14 +48,14 @@ data:
       },
       "auth": {
         "jwt": {
-          "secret": "ballerine-jwt-secret-key-123",
+          "secret": "${JWT_SECRET}",
           "expiresIn": "24h"
         },
         "keycloak": {
           "realm": "agent-banking",
           "authServerUrl": "http://keycloak:8080",
-          "clientId": "ballerine-kyb",
-          "clientSecret": "ballerine-client-secret-123"
+          "clientId": "workflow-kyb",
+          "clientSecret": "${KEYCLOAK_CLIENT_SECRET}"
         }
       },
       "workflows": {
@@ -390,25 +390,25 @@ data:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: ballerine-backend
-  namespace: ballerine
+  name: temporal-frontend
+  namespace: workflow-orchestration
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: ballerine-backend
+      app: temporal-frontend
   template:
     metadata:
       labels:
-        app: ballerine-backend
+        app: temporal-frontend
     spec:
       containers:
-      - name: ballerine
-        image: ballerine/backend:latest
+      - name: temporal
+        image: temporalio/server:1.24.2
         ports:
-        - containerPort: 3000
-          name: http
-        - containerPort: 9090
+        - containerPort: 7233
+          name: grpc
+        - containerPort: 7235
           name: metrics
         env:
         - name: NODE_ENV
@@ -416,19 +416,25 @@ spec:
         - name: PORT
           value: "3000"
         - name: DATABASE_URL
-          value: "postgresql://ballerine:ballerine123@postgresql:5432/ballerine"
+          value: "postgresql://${TEMPORAL_DB_USER}:${TEMPORAL_DB_PASSWORD}@postgresql:5432/temporal"
         - name: REDIS_URL
           value: "redis://:agent-banking-redis@redis-master:6379/2"
         - name: JWT_SECRET
-          value: "ballerine-jwt-secret-key-123"
+          valueFrom:
+            secretKeyRef:
+              name: temporal-db-credentials
+              key: JWT_SECRET
         - name: KEYCLOAK_REALM
           value: "agent-banking"
         - name: KEYCLOAK_AUTH_SERVER_URL
           value: "http://keycloak:8080"
         - name: KEYCLOAK_CLIENT_ID
-          value: "ballerine-kyb"
+          value: "workflow-kyb"
         - name: KEYCLOAK_CLIENT_SECRET
-          value: "ballerine-client-secret-123"
+          valueFrom:
+            secretKeyRef:
+              name: temporal-db-credentials
+              key: KEYCLOAK_CLIENT_SECRET
         volumeMounts:
         - name: config
           mountPath: /app/config
@@ -442,50 +448,50 @@ spec:
         livenessProbe:
           httpGet:
             path: /health
-            port: 3000
+            port: 7233
           initialDelaySeconds: 60
           periodSeconds: 30
         readinessProbe:
           httpGet:
             path: /health
-            port: 3000
+            port: 7233
           initialDelaySeconds: 30
           periodSeconds: 10
       volumes:
       - name: config
         configMap:
-          name: ballerine-config
+          name: temporal-config
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: ballerine-frontend
-  namespace: ballerine
+  name: temporal-ui
+  namespace: workflow-orchestration
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: ballerine-frontend
+      app: temporal-ui
   template:
     metadata:
       labels:
-        app: ballerine-frontend
+        app: temporal-ui
     spec:
       containers:
-      - name: ballerine-frontend
-        image: ballerine/frontend:latest
+      - name: temporal-ui
+        image: temporalio/ui:2.26.2
         ports:
-        - containerPort: 3001
-          name: http
+        - containerPort: 8080
+          name: grpc
         env:
         - name: REACT_APP_API_URL
-          value: "https://ballerine-api.agent-banking.local"
+          value: "temporal-frontend:7233"
         - name: REACT_APP_KEYCLOAK_URL
           value: "https://keycloak.agent-banking.local"
         - name: REACT_APP_KEYCLOAK_REALM
           value: "agent-banking"
         - name: REACT_APP_KEYCLOAK_CLIENT_ID
-          value: "ballerine-kyb"
+          value: "workflow-kyb"
         resources:
           requests:
             memory: "256Mi"
@@ -496,13 +502,13 @@ spec:
         livenessProbe:
           httpGet:
             path: /
-            port: 3001
+            port: 8080
           initialDelaySeconds: 30
           periodSeconds: 30
         readinessProbe:
           httpGet:
             path: /
-            port: 3001
+            port: 8080
           initialDelaySeconds: 10
           periodSeconds: 10
 ---
@@ -510,7 +516,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: got-ocr-service
-  namespace: ballerine
+  namespace: workflow-orchestration
 spec:
   replicas: 2
   selector:
@@ -526,7 +532,7 @@ spec:
         image: ucas-haoranwei/got-ocr2.0:latest
         ports:
         - containerPort: 8080
-          name: http
+          name: grpc
         env:
         - name: MODEL_PATH
           value: "/models/got-ocr2.0"
@@ -557,31 +563,31 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: ballerine-backend
-  namespace: ballerine
+  name: temporal-frontend
+  namespace: workflow-orchestration
 spec:
   selector:
-    app: ballerine-backend
+    app: temporal-frontend
   ports:
-  - name: http
-    port: 3000
+  - name: grpc
+    port: 7233
     targetPort: 3000
   - name: metrics
-    port: 9090
+    port: 7235
     targetPort: 9090
   type: ClusterIP
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: ballerine-frontend
-  namespace: ballerine
+  name: temporal-ui
+  namespace: workflow-orchestration
 spec:
   selector:
-    app: ballerine-frontend
+    app: temporal-ui
   ports:
-  - name: http
-    port: 3001
+  - name: grpc
+    port: 8080
     targetPort: 3001
   type: ClusterIP
 ---
@@ -589,12 +595,12 @@ apiVersion: v1
 kind: Service
 metadata:
   name: got-ocr-service
-  namespace: ballerine
+  namespace: workflow-orchestration
 spec:
   selector:
     app: got-ocr-service
   ports:
-  - name: http
+  - name: grpc
     port: 8080
     targetPort: 8080
   type: ClusterIP
@@ -602,8 +608,8 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: ballerine-api-ingress
-  namespace: ballerine
+  name: temporal-api-ingress
+  namespace: workflow-orchestration
   annotations:
     kubernetes.io/ingress.class: "openappsec"
     openappsec.io/waf-enabled: "true"
@@ -611,25 +617,25 @@ metadata:
 spec:
   tls:
   - hosts:
-    - ballerine-api.agent-banking.local
-    secretName: ballerine-api-tls
+    - temporal-api.agent-banking.local
+    secretName: temporal-api-tls
   rules:
-  - host: ballerine-api.agent-banking.local
+  - host: temporal-api.agent-banking.local
     http:
       paths:
       - path: /
         pathType: Prefix
         backend:
           service:
-            name: ballerine-backend
+            name: temporal-frontend
             port:
               number: 3000
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: ballerine-frontend-ingress
-  namespace: ballerine
+  name: temporal-ui-ingress
+  namespace: workflow-orchestration
   annotations:
     kubernetes.io/ingress.class: "openappsec"
     openappsec.io/waf-enabled: "true"
@@ -637,25 +643,25 @@ metadata:
 spec:
   tls:
   - hosts:
-    - ballerine.agent-banking.local
-    secretName: ballerine-frontend-tls
+    - temporal-ui.agent-banking.local
+    secretName: temporal-ui-tls
   rules:
-  - host: ballerine.agent-banking.local
+  - host: temporal-ui.agent-banking.local
     http:
       paths:
       - path: /
         pathType: Prefix
         backend:
           service:
-            name: ballerine-frontend
+            name: temporal-ui
             port:
               number: 3001
 ---
 apiVersion: v1
 kind: Secret
 metadata:
-  name: ballerine-api-tls
-  namespace: ballerine
+  name: temporal-api-tls
+  namespace: workflow-orchestration
 type: kubernetes.io/tls
 data:
   tls.crt: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0t  # Base64 encoded certificate
@@ -664,8 +670,8 @@ data:
 apiVersion: v1
 kind: Secret
 metadata:
-  name: ballerine-frontend-tls
-  namespace: ballerine
+  name: temporal-ui-tls
+  namespace: workflow-orchestration
 type: kubernetes.io/tls
 data:
   tls.crt: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0t  # Base64 encoded certificate
@@ -674,12 +680,12 @@ data:
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
-  name: ballerine-metrics
-  namespace: ballerine
+  name: temporal-metrics
+  namespace: workflow-orchestration
 spec:
   selector:
     matchLabels:
-      app: ballerine-backend
+      app: temporal-frontend
   endpoints:
   - port: metrics
     interval: 30s

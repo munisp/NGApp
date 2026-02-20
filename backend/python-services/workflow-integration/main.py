@@ -1,5 +1,5 @@
 """
-Ballerine Integration Service
+Workflow Integration Service
 Port: 8151
 """
 from fastapi import FastAPI, HTTPException
@@ -68,9 +68,9 @@ def storage_keys(pattern: str = "*"):
 
 
 app = FastAPI(
-    title="Ballerine Integration",
-    description="Ballerine Integration for Agent Banking Platform",
-    version="1.0.0"
+    title="Workflow Integration",
+    description="Workflow Integration for Agent Banking Platform (Temporal-based)",
+    version="2.0.0"
 )
 
 app.add_middleware(
@@ -99,9 +99,9 @@ class Item(BaseModel):
 @app.get("/")
 async def root():
     return {
-        "service": "ballerine-integration",
-        "description": "Ballerine Integration",
-        "version": "1.0.0",
+        "service": "workflow-integration",
+        "description": "Workflow Integration",
+        "version": "2.0.0",
         "port": 8151,
         "status": "operational"
     }
@@ -178,7 +178,7 @@ async def process_data(data: Dict[str, Any]):
     return {
         "success": True,
         "message": "Data processed successfully",
-        "service": "ballerine-integration",
+        "service": "workflow-integration",
         "processed_at": datetime.now().isoformat(),
         "data": data
     }
@@ -203,7 +203,7 @@ async def get_statistics():
         "uptime_seconds": int(uptime),
         "total_requests": stats["total_requests"],
         "total_items": stats["total_items"],
-        "service": "ballerine-integration",
+        "service": "workflow-integration",
         "port": 8151,
         "status": "operational"
     }

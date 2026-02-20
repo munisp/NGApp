@@ -450,11 +450,11 @@ spec:
             secretKeyRef:
               name: db-credentials
               key: connection-string
-        - name: BALLERINE_API_URL
+        - name: TEMPORAL_API_URL
           valueFrom:
             configMapKeyRef:
               name: kyc-config
-              key: ballerine-url
+              key: temporal-url
         resources:
           requests:
             memory: "256Mi"

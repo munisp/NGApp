@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -106,7 +106,7 @@ export default function OnboardingFlow() {
         });
         formData.append('agent_id', agentId);
         await api.onboarding.uploadKYBDocuments(agentId, formData);
-        await api.ballerine.verifyAgent(agentId);
+        await api.kyb.verifyAgent(agentId);
       } else if (currentStep === 4) {
         const storeFormData = new FormData();
         storeFormData.append('agent_id', agentId);
@@ -327,7 +327,7 @@ export default function OnboardingFlow() {
             <Alert>
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>
-                Upload required documents for KYB verification. Documents will be processed using Multi-OCR (PaddleOCR + EasyOCR + OLMOCR) and verified through Ballerine. Verification typically takes 1-2 business days.
+                Upload required documents for KYB verification. Documents will be processed using Multi-OCR (PaddleOCR + EasyOCR + OLMOCR) and verified through Temporal workflow orchestration. Verification typically takes 1-2 business days.
               </AlertDescription>
             </Alert>
             <div className="space-y-4">

@@ -3,7 +3,7 @@ KYB Verification Service
 Port: 8121
 Delegates to kyb_service.KYBVerificationService for real verification logic,
 deep_kyb.DeepKYBService for advanced 5-path verification, and
-kyc_kyb_service for Ballerine-orchestrated KYB.
+kyc_kyb_service for Temporal-orchestrated KYB.
 """
 from fastapi import FastAPI, HTTPException, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware

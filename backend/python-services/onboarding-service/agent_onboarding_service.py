@@ -333,7 +333,7 @@ PADDLEOCR_SERVICE_URL = os.getenv("PADDLEOCR_SERVICE_URL", "http://localhost:802
 VLM_SERVICE_URL = os.getenv("VLM_SERVICE_URL", "http://localhost:8031")
 VLM_API_KEY = os.getenv("VLM_API_KEY", "")
 DOCLING_SERVICE_URL = os.getenv("DOCLING_SERVICE_URL", "http://localhost:8032")
-BALLERINE_URL = os.getenv("BALLERINE_URL", "http://localhost:3000")
+TEMPORAL_WORKFLOW_URL = os.getenv("TEMPORAL_WORKFLOW_URL", "http://localhost:7233")
 KYC_PROVIDER_URL = os.getenv("KYC_PROVIDER_URL", "http://localhost:8040")
 
 
@@ -565,7 +565,7 @@ async def _call_kyc_provider(payload: Dict[str, Any]) -> Dict[str, Any]:
     raise RuntimeError("KYC provider unreachable after retries")
 
 async def perform_kyb_verification(application: AgentOnboarding, db: Session) -> Dict[str, Any]:
-    """Perform KYB verification via Ballerine workflow orchestration"""
+    """Perform KYB verification via Temporal workflow orchestration"""
     try:
         workflow_payload = {
             "type": "kyb",
@@ -578,7 +578,7 @@ async def perform_kyb_verification(application: AgentOnboarding, db: Session) ->
             },
         }
 
-        verification_result = await _call_ballerine_kyb(workflow_payload)
+        verification_result = await _call_temporal_kyb(workflow_payload)
 
         status = VerificationStatus.VERIFIED if verification_result["status"] == "verified" else VerificationStatus.FAILED
 
@@ -586,7 +586,7 @@ async def perform_kyb_verification(application: AgentOnboarding, db: Session) ->
             application_id=application.id,
             verification_type="kyb",
             verification_method="third_party",
-            external_provider="ballerine",
+            external_provider="temporal",
             external_reference_id=verification_result.get("workflow_id"),
             status=status,
             score=verification_result.get("score", 0.0),
@@ -605,30 +605,38 @@ async def perform_kyb_verification(application: AgentOnboarding, db: Session) ->
         return {"status": "failed", "error": str(e)}
 
 
-async def _call_ballerine_kyb(payload: Dict[str, Any]) -> Dict[str, Any]:
-    """Call Ballerine KYB workflow with retry"""
+async def _call_temporal_kyb(payload: Dict[str, Any]) -> Dict[str, Any]:
+    """Call Temporal KYB workflow with retry"""
     max_retries = 3
     for attempt in range(max_retries):
         try:
             async with httpx.AsyncClient(timeout=30.0) as client:
-                response = await client.post(f"{BALLERINE_URL}/api/v1/workflows", json=payload)
+                workflow_id = f"kyb-{payload['data'].get('registration_number', 'unknown')}-{uuid.uuid4().hex[:8]}"
+                response = await client.post(
+                    f"{TEMPORAL_WORKFLOW_URL}/api/v1/namespaces/default/workflows",
+                    json={
+                        "workflowId": workflow_id,
+                        "workflowType": {"name": "kyb-verification"},
+                        "taskQueue": {"name": "kyb-verification"},
+                        "input": {"payloads": [{"data": payload}]}
+                    }
+                )
                 if response.status_code in (200, 201):
                     result = response.json()
-                    workflow_id = result.get("id", result.get("workflow_id"))
                     return {
                         "status": "verified" if result.get("status") != "rejected" else "failed",
                         "workflow_id": workflow_id,
                         "score": result.get("risk_score", 0.85),
                         "confidence": result.get("confidence", 0.80),
                         "checks": result.get("checks", {}),
-                        "notes": result.get("notes", "KYB workflow completed"),
+                        "notes": result.get("notes", "KYB workflow completed via Temporal"),
                     }
-                logger.warning(f"Ballerine returned {response.status_code} on attempt {attempt + 1}")
+                logger.warning(f"Temporal returned {response.status_code} on attempt {attempt + 1}")
         except httpx.ConnectError:
-            logger.warning(f"Ballerine unavailable on attempt {attempt + 1}")
+            logger.warning(f"Temporal unavailable on attempt {attempt + 1}")
         if attempt < max_retries - 1:
             await asyncio.sleep(2 ** attempt)
-    raise RuntimeError("Ballerine KYB service unreachable after retries")
+    raise RuntimeError("Temporal KYB workflow service unreachable after retries")
 
 def calculate_risk_score(application: AgentOnboarding, verifications: List[VerificationRecord]) -> tuple[float, str]:
     """Calculate overall risk score and level"""

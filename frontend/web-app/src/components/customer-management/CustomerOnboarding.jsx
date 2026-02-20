@@ -3,14 +3,14 @@ import { Stepper, Step, StepLabel, Button } from '@mui/material';
 import PersonalInformationForm from './PersonalInformationForm';
 import DocumentUpload from './DocumentUpload';
 import OnboardingConfirmation from './OnboardingConfirmation';
-import { useBallerine } from './useBallerine'; // Custom hook for Ballerine integration
+import { useKYBVerification } from './useKYBVerification';
 
 const steps = ['Personal Information', 'Document Upload', 'Confirmation'];
 
 const CustomerOnboarding = () => {
   const [activeStep, setActiveStep] = useState(0);
   const [customerData, setCustomerData] = useState({});
-  const { kybStatus, initiateKyb } = useBallerine();
+  const { kybStatus, initiateKyb } = useKYBVerification();
 
   const handleNext = (data) => {
     setCustomerData({ ...customerData, ...data });

@@ -1,11 +1,11 @@
 """
-Router for ballerine-integration service
+Router for workflow-integration service
 Auto-extracted from main.py for unified gateway registration
 """
 
 from fastapi import APIRouter
 
-router = APIRouter(prefix="/ballerine-integration", tags=["ballerine-integration"])
+router = APIRouter(prefix="/workflow-integration", tags=["workflow-integration"])
 
 @router.get("/")
 async def root():

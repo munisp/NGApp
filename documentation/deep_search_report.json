@@ -1154,7 +1154,7 @@
     "/home/ubuntu/agent-banking-platform/backend/python-services/agent-service/main.py",
     "/home/ubuntu/agent-banking-platform/backend/python-services/audit-service/main.py",
     "/home/ubuntu/agent-banking-platform/backend/python-services/backup-service/main.py",
-    "/home/ubuntu/agent-banking-platform/backend/python-services/ballerine-integration/main.py",
+    "/home/ubuntu/agent-banking-platform/backend/python-services/workflow-integration/main.py",
     "/home/ubuntu/agent-banking-platform/backend/python-services/commission-service/main.py",
     "/home/ubuntu/agent-banking-platform/backend/python-services/communication-gateway/main.py",
     "/home/ubuntu/agent-banking-platform/backend/python-services/compliance-service/main.py",
