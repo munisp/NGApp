@@ -201,7 +201,7 @@ class VerificationRecord(Base):
     
     # Third-party Integration
     external_reference_id = Column(String)
-    external_provider = Column(String)  # ballerine, jumio, etc.
+    external_provider = Column(String)  # temporal, jumio, etc.
     
     created_at = Column(DateTime, default=datetime.utcnow)
     completed_at = Column(DateTime)
