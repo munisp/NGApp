@@ -3,6 +3,11 @@ KYC (Know Your Customer) Service
 Comprehensive customer identity verification for Nigerian banking
 Compliant with CBN, NIMC, and AML/CFT regulations
 """
+import os
+import asyncio
+import logging
+import re
+
 from fastapi import FastAPI, HTTPException, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, EmailStr
@@ -13,7 +18,18 @@ import uvicorn
 import httpx
 import hashlib
 import json
-import random
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+NIMC_API_URL = os.getenv("NIMC_API_URL", "http://localhost:8040")
+NIMC_API_KEY = os.getenv("NIMC_API_KEY", "")
+NIBSS_API_URL = os.getenv("NIBSS_API_URL", "http://localhost:8041")
+NIBSS_API_KEY = os.getenv("NIBSS_API_KEY", "")
+BIOMETRIC_SERVICE_URL = os.getenv("BIOMETRIC_SERVICE_URL", "http://localhost:8087")
+OCR_SERVICE_URL = os.getenv("OCR_SERVICE_URL", "http://localhost:8030")
+KYC_KYB_SERVICE_URL = os.getenv("KYC_KYB_SERVICE_URL", "http://localhost:8099")
+VIDEO_KYC_SERVICE_URL = os.getenv("VIDEO_KYC_SERVICE_URL", "http://localhost:8083")
 
 app = FastAPI(
     title="KYC Service",
@@ -21,9 +37,11 @@ app = FastAPI(
     version="1.0.0"
 )
 
+ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "http://localhost:5173,http://localhost:3000").split(",")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -113,39 +131,82 @@ def generate_kyc_id():
     random_num = random.randint(1000, 9999)
     return f"KYC-{timestamp}-{random_num}"
 
-def verify_nin(nin: str) -> Dict[str, Any]:
-    """Verify NIN with NIMC (simulated)"""
-    # In production, integrate with NIMC API
-    if len(nin) != 11 or not nin.isdigit():
-        return {"valid": False, "error": "Invalid NIN format"}
-    
-    # Simulated verification
-    return {
-        "valid": True,
-        "nin": nin,
-        "first_name": "Simulated",
-        "last_name": "Customer",
-        "date_of_birth": "1990-01-01",
-        "gender": "M",
-        "verified_at": datetime.now().isoformat()
-    }
+NIN_PATTERN = re.compile(r'^\d{11}$')
 
-def verify_bvn(bvn: str) -> Dict[str, Any]:
-    """Verify BVN with NIBSS (simulated)"""
-    # In production, integrate with NIBSS BVN API
-    if len(bvn) != 11 or not bvn.isdigit():
-        return {"valid": False, "error": "Invalid BVN format"}
-    
-    # Simulated verification
-    return {
-        "valid": True,
-        "bvn": bvn,
-        "first_name": "Simulated",
-        "last_name": "Customer",
-        "phone_number": "+234XXXXXXXXXX",
-        "date_of_birth": "1990-01-01",
-        "verified_at": datetime.now().isoformat()
-    }
+
+async def verify_nin(nin: str) -> Dict[str, Any]:
+    """Verify NIN with NIMC API"""
+    if not NIN_PATTERN.match(nin):
+        return {"valid": False, "error": "Invalid NIN format – must be 11 digits"}
+
+    checksum = sum(int(d) * (11 - i) for i, d in enumerate(nin[:10])) % 11
+    expected_check = 11 - checksum if checksum != 0 else 0
+    if int(nin[10]) != expected_check:
+        return {"valid": False, "error": "Invalid NIN checksum"}
+
+    for attempt in range(3):
+        try:
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                headers = {"Authorization": f"Bearer {NIMC_API_KEY}"} if NIMC_API_KEY else {}
+                response = await client.post(
+                    f"{NIMC_API_URL}/api/v1/nin/verify",
+                    json={"nin": nin},
+                    headers=headers,
+                )
+                if response.status_code == 200:
+                    data = response.json()
+                    return {
+                        "valid": True,
+                        "nin": nin,
+                        "first_name": data.get("first_name", ""),
+                        "last_name": data.get("last_name", ""),
+                        "date_of_birth": data.get("date_of_birth", ""),
+                        "gender": data.get("gender", ""),
+                        "verified_at": datetime.now().isoformat(),
+                    }
+                logger.warning(f"NIMC API returned {response.status_code} on attempt {attempt + 1}")
+        except httpx.ConnectError:
+            logger.warning(f"NIMC API unavailable on attempt {attempt + 1}")
+        if attempt < 2:
+            await asyncio.sleep(2 ** attempt)
+
+    return {"valid": False, "error": "NIMC verification service unavailable after 3 retries"}
+
+BVN_PATTERN = re.compile(r'^\d{11}$')
+
+
+async def verify_bvn(bvn: str) -> Dict[str, Any]:
+    """Verify BVN with NIBSS API"""
+    if not BVN_PATTERN.match(bvn):
+        return {"valid": False, "error": "Invalid BVN format – must be 11 digits"}
+
+    for attempt in range(3):
+        try:
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                headers = {"Authorization": f"Bearer {NIBSS_API_KEY}"} if NIBSS_API_KEY else {}
+                response = await client.post(
+                    f"{NIBSS_API_URL}/api/v1/bvn/verify",
+                    json={"bvn": bvn},
+                    headers=headers,
+                )
+                if response.status_code == 200:
+                    data = response.json()
+                    return {
+                        "valid": True,
+                        "bvn": bvn,
+                        "first_name": data.get("first_name", ""),
+                        "last_name": data.get("last_name", ""),
+                        "phone_number": data.get("phone_number", ""),
+                        "date_of_birth": data.get("date_of_birth", ""),
+                        "verified_at": datetime.now().isoformat(),
+                    }
+                logger.warning(f"NIBSS API returned {response.status_code} on attempt {attempt + 1}")
+        except httpx.ConnectError:
+            logger.warning(f"NIBSS API unavailable on attempt {attempt + 1}")
+        if attempt < 2:
+            await asyncio.sleep(2 ** attempt)
+
+    return {"valid": False, "error": "NIBSS verification service unavailable after 3 retries"}
 
 def calculate_risk_score(kyc_data: Dict[str, Any]) -> int:
     """Calculate AML/CFT risk score (0-100)"""
@@ -277,8 +338,7 @@ async def register_kyc(kyc_data: CustomerKYC):
 async def verify_nin_endpoint(customer_id: str, nin: str):
     """Verify customer NIN"""
     
-    # Verify NIN
-    result = verify_nin(nin)
+    result = await verify_nin(nin)
     
     if not result["valid"]:
         return {
@@ -321,8 +381,7 @@ async def verify_nin_endpoint(customer_id: str, nin: str):
 async def verify_bvn_endpoint(customer_id: str, bvn: str):
     """Verify customer BVN"""
     
-    # Verify BVN
-    result = verify_bvn(bvn)
+    result = await verify_bvn(bvn)
     
     if not result["valid"]:
         return {
@@ -375,14 +434,9 @@ async def verify_document(verification: DocumentVerification):
     if not kyc_record:
         raise HTTPException(status_code=404, detail="KYC record not found")
     
-    # Simulate document verification (in production, use OCR/AI)
-    verification_result = {
-        "document_type": verification.document_type,
-        "document_number": verification.document_number,
-        "verified": True,
-        "verified_at": datetime.now().isoformat(),
-        "confidence_score": random.uniform(0.85, 0.99)
-    }
+    verification_result = await _verify_document_via_ocr(
+        verification.document_type, verification.document_number, verification.document_image
+    )
     
     # Update KYC record
     doc_key = f"{verification.document_type}_verified"
@@ -415,15 +469,7 @@ async def verify_biometric(biometric: BiometricVerification):
     if not kyc_record:
         raise HTTPException(status_code=404, detail="KYC record not found")
     
-    # Simulate biometric verification (in production, use biometric API)
-    biometric_result = {
-        "fingerprint_match": biometric.fingerprint_data is not None,
-        "face_match": biometric.face_data is not None,
-        "voice_match": biometric.voice_data is not None,
-        "overall_match": True,
-        "confidence_score": random.uniform(0.90, 0.99),
-        "verified_at": datetime.now().isoformat()
-    }
+    biometric_result = await _verify_biometric_via_service(biometric)
     
     # Update KYC record
     kyc_record["biometric_verified"] = True
@@ -573,6 +619,130 @@ async def get_stats():
         "rejected_verifications": stats["rejected_verifications"],
         "verification_rate": round(stats["verified_customers"] / max(stats["total_kyc_records"], 1) * 100, 2)
     }
+
+async def _verify_document_via_ocr(
+    document_type: str, document_number: str, document_image: str | None
+) -> Dict[str, Any]:
+    """Verify document via OCR service with retry"""
+    payload = {
+        "document_type": document_type,
+        "document_number": document_number,
+        "document_image": document_image,
+    }
+    for attempt in range(3):
+        try:
+            async with httpx.AsyncClient(timeout=60.0) as client:
+                response = await client.post(f"{OCR_SERVICE_URL}/api/v1/verify", json=payload)
+                if response.status_code == 200:
+                    data = response.json()
+                    return {
+                        "document_type": document_type,
+                        "document_number": document_number,
+                        "verified": data.get("verified", False),
+                        "verified_at": datetime.now().isoformat(),
+                        "confidence_score": data.get("confidence", 0.0),
+                        "extracted_fields": data.get("fields", {}),
+                    }
+                logger.warning(f"OCR service returned {response.status_code} on attempt {attempt + 1}")
+        except httpx.ConnectError:
+            logger.warning(f"OCR service unavailable on attempt {attempt + 1}")
+        if attempt < 2:
+            await asyncio.sleep(2 ** attempt)
+
+    return {
+        "document_type": document_type,
+        "document_number": document_number,
+        "verified": False,
+        "verified_at": datetime.now().isoformat(),
+        "confidence_score": 0.0,
+        "error": "OCR service unavailable after 3 retries",
+    }
+
+
+async def _verify_biometric_via_service(biometric: BiometricVerification) -> Dict[str, Any]:
+    """Verify biometric data via biometric matching service with retry"""
+    payload = {
+        "customer_id": biometric.customer_id,
+        "fingerprint_data": biometric.fingerprint_data,
+        "face_data": biometric.face_data,
+        "voice_data": biometric.voice_data,
+    }
+    for attempt in range(3):
+        try:
+            async with httpx.AsyncClient(timeout=60.0) as client:
+                response = await client.post(
+                    f"{BIOMETRIC_SERVICE_URL}/api/v1/biometric/verify", json=payload
+                )
+                if response.status_code == 200:
+                    data = response.json()
+                    return {
+                        "fingerprint_match": data.get("fingerprint_match", False),
+                        "face_match": data.get("face_match", False),
+                        "voice_match": data.get("voice_match", False),
+                        "overall_match": data.get("overall_match", False),
+                        "confidence_score": data.get("confidence", 0.0),
+                        "verified_at": datetime.now().isoformat(),
+                    }
+                logger.warning(f"Biometric service returned {response.status_code} on attempt {attempt + 1}")
+        except httpx.ConnectError:
+            logger.warning(f"Biometric service unavailable on attempt {attempt + 1}")
+        if attempt < 2:
+            await asyncio.sleep(2 ** attempt)
+
+    return {
+        "fingerprint_match": False,
+        "face_match": False,
+        "voice_match": False,
+        "overall_match": False,
+        "confidence_score": 0.0,
+        "verified_at": datetime.now().isoformat(),
+        "error": "Biometric service unavailable after 3 retries",
+    }
+
+
+@app.post("/kyc/video/start")
+async def start_video_kyc(customer_id: str):
+    """Start a video KYC session via the video-kyc orchestrator"""
+    for attempt in range(3):
+        try:
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                response = await client.post(
+                    f"{VIDEO_KYC_SERVICE_URL}/session/start",
+                    json={"user_id": customer_id},
+                )
+                if response.status_code == 200:
+                    return response.json()
+                logger.warning(f"Video KYC service returned {response.status_code} on attempt {attempt + 1}")
+        except httpx.ConnectError:
+            logger.warning(f"Video KYC service unavailable on attempt {attempt + 1}")
+        if attempt < 2:
+            await asyncio.sleep(2 ** attempt)
+    raise HTTPException(status_code=503, detail="Video KYC service unavailable")
+
+
+@app.post("/kyc/delegate/initiate")
+async def delegate_to_kyc_kyb(customer_id: str, first_name: str, last_name: str):
+    """Delegate full KYC verification to the production kyc_kyb_service"""
+    for attempt in range(3):
+        try:
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                response = await client.post(
+                    f"{KYC_KYB_SERVICE_URL}/kyc/verify",
+                    json={
+                        "agent_id": customer_id,
+                        "first_name": first_name,
+                        "last_name": last_name,
+                    },
+                )
+                if response.status_code == 200:
+                    return response.json()
+                logger.warning(f"KYC-KYB service returned {response.status_code} on attempt {attempt + 1}")
+        except httpx.ConnectError:
+            logger.warning(f"KYC-KYB service unavailable on attempt {attempt + 1}")
+        if attempt < 2:
+            await asyncio.sleep(2 ** attempt)
+    raise HTTPException(status_code=503, detail="KYC-KYB service unavailable")
+
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8098)

@@ -149,11 +149,11 @@ class VideoKYCOrchestrator:
         self.app = Flask(__name__)
         CORS(self.app, origins="*")
         
-        # Service clients
-        self.face_detection_client = ServiceClient("http://localhost:8084")
-        self.liveness_detection_client = ServiceClient("http://localhost:8085")
-        self.video_storage_client = ServiceClient("http://localhost:8086")
-        self.biometric_matching_client = ServiceClient("http://localhost:8087")
+        # Service clients (configurable via env vars)
+        self.face_detection_client = ServiceClient(os.getenv("FACE_DETECTION_URL", "http://localhost:8084"))
+        self.liveness_detection_client = ServiceClient(os.getenv("LIVENESS_DETECTION_URL", "http://localhost:8085"))
+        self.video_storage_client = ServiceClient(os.getenv("VIDEO_STORAGE_URL", "http://localhost:8086"))
+        self.biometric_matching_client = ServiceClient(os.getenv("BIOMETRIC_MATCHING_URL", "http://localhost:8087"))
         
         # Database and Redis
         self.redis_client = None

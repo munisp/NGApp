@@ -18,6 +18,15 @@ from enum import Enum
 from collections import defaultdict
 import hashlib
 
+import httpx
+
+COMPLY_ADVANTAGE_API_URL = os.getenv("COMPLY_ADVANTAGE_API_URL", "https://api.complyadvantage.com")
+COMPLY_ADVANTAGE_API_KEY = os.getenv("COMPLY_ADVANTAGE_API_KEY", "")
+OFAC_API_URL = os.getenv("OFAC_API_URL", "https://api.ofac-api.com/v4")
+OFAC_API_KEY = os.getenv("OFAC_API_KEY", "")
+CAC_API_URL = os.getenv("CAC_API_URL", "http://localhost:8042")
+CAC_API_KEY = os.getenv("CAC_API_KEY", "")
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -265,31 +274,98 @@ class ScreeningService:
         name: str,
         additional_data: Optional[Dict[str, Any]]
     ) -> Tuple[bool, float, Dict[str, Any]]:
-        """Call ComplyAdvantage API"""
-        # Production implementation would call:
-        # POST https://api.complyadvantage.com/searches
-        
-        # Simulated response
-        return False, 0.0, {
-            "provider": "comply_advantage",
-            "search_id": secrets.token_hex(8),
-            "total_hits": 0,
-            "search_term": name
+        """Call ComplyAdvantage API with retry"""
+        filt = {
+            ScreeningType.PEP: "pep",
+            ScreeningType.SANCTIONS: "sanction",
+            ScreeningType.ADVERSE_MEDIA: "adverse-media",
+            ScreeningType.WATCHLIST: "warning",
         }
+        payload = {
+            "search_term": name,
+            "fuzziness": 0.6,
+            "filters": {"types": [filt.get(screening_type, "pep")]},
+        }
+        if additional_data:
+            if additional_data.get("date_of_birth"):
+                payload["filters"]["birth_year"] = additional_data["date_of_birth"][:4]
+            if additional_data.get("country"):
+                payload["filters"]["country_codes"] = [additional_data["country"]]
+
+        for attempt in range(3):
+            try:
+                async with httpx.AsyncClient(timeout=30.0) as client:
+                    headers = {"Authorization": f"Token {COMPLY_ADVANTAGE_API_KEY}"} if COMPLY_ADVANTAGE_API_KEY else {}
+                    response = await client.post(
+                        f"{COMPLY_ADVANTAGE_API_URL}/searches",
+                        json=payload,
+                        headers=headers,
+                    )
+                    if response.status_code == 200:
+                        data = response.json()
+                        hits = data.get("content", {}).get("data", {}).get("total_hits", 0)
+                        is_match = hits > 0
+                        match_score = min(100.0, hits * 25.0) if is_match else 0.0
+                        return is_match, match_score, {
+                            "provider": "comply_advantage",
+                            "search_id": data.get("content", {}).get("data", {}).get("id", ""),
+                            "total_hits": hits,
+                            "search_term": name,
+                        }
+                    logger.warning(f"ComplyAdvantage returned {response.status_code} on attempt {attempt + 1}")
+            except httpx.ConnectError:
+                logger.warning(f"ComplyAdvantage unavailable on attempt {attempt + 1}")
+            if attempt < 2:
+                await asyncio.sleep(2 ** attempt)
+
+        logger.error("ComplyAdvantage unavailable after 3 retries")
+        return False, 0.0, {"provider": "comply_advantage", "error": "service_unavailable", "search_term": name}
     
     async def _call_ofac(
         self,
         name: str,
         additional_data: Optional[Dict[str, Any]]
     ) -> Tuple[bool, float, Dict[str, Any]]:
-        """Call OFAC API"""
-        # Production implementation would call OFAC SDN list
-        
-        return False, 0.0, {
-            "provider": "ofac",
-            "list_checked": "SDN",
-            "search_term": name
+        """Call OFAC SDN screening API with retry"""
+        payload = {
+            "name": name,
+            "sources": ["SDN", "NONSDN"],
+            "type": ["individual", "entity"],
+            "score": 80,
         }
+        if additional_data:
+            if additional_data.get("country"):
+                payload["countries"] = [additional_data["country"]]
+
+        for attempt in range(3):
+            try:
+                async with httpx.AsyncClient(timeout=30.0) as client:
+                    headers = {"apiKey": OFAC_API_KEY} if OFAC_API_KEY else {}
+                    response = await client.post(
+                        f"{OFAC_API_URL}/search",
+                        json=payload,
+                        headers=headers,
+                    )
+                    if response.status_code == 200:
+                        data = response.json()
+                        matches = data.get("matches", [])
+                        is_match = len(matches) > 0
+                        best_score = max((m.get("score", 0) for m in matches), default=0)
+                        return is_match, float(best_score), {
+                            "provider": "ofac",
+                            "list_checked": "SDN",
+                            "matches_count": len(matches),
+                            "best_score": best_score,
+                            "search_term": name,
+                        }
+                    logger.warning(f"OFAC API returned {response.status_code} on attempt {attempt + 1}")
+            except httpx.ConnectError:
+                logger.warning(f"OFAC API unavailable on attempt {attempt + 1}")
+            if attempt < 2:
+                await asyncio.sleep(2 ** attempt)
+
+        logger.error("OFAC API unavailable after 3 retries")
+        return False, 0.0, {"provider": "ofac", "error": "service_unavailable", "search_term": name}
     
     async def review_result(
         self,
@@ -688,9 +764,22 @@ class CorporateMonitoringService:
         return changes
     
     async def _fetch_cac_data(self, cac_number: str) -> Optional[Dict[str, Any]]:
-        """Fetch latest data from CAC"""
-        # In production, call CAC API
-        # For now, return None (no changes)
+        """Fetch latest data from CAC API with retry"""
+        for attempt in range(3):
+            try:
+                async with httpx.AsyncClient(timeout=30.0) as client:
+                    headers = {"Authorization": f"Bearer {CAC_API_KEY}"} if CAC_API_KEY else {}
+                    response = await client.get(
+                        f"{CAC_API_URL}/api/v1/company/{cac_number}",
+                        headers=headers,
+                    )
+                    if response.status_code == 200:
+                        return response.json()
+                    logger.warning(f"CAC API returned {response.status_code} on attempt {attempt + 1}")
+            except httpx.ConnectError:
+                logger.warning(f"CAC API unavailable on attempt {attempt + 1}")
+            if attempt < 2:
+                await asyncio.sleep(2 ** attempt)
         return None
     
     def get_change_history(self, business_id: str) -> List[Dict[str, Any]]:

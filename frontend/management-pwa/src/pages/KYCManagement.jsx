@@ -5,13 +5,7 @@ import DataTable from '../components/DataTable';
 import StatCard from '../components/StatCard';
 import { kycApi } from '../services/api';
 
-const mockApplications = [
-  { id: 'KYC001', name: 'John Doe', type: 'Agent', documentType: 'National ID', submittedAt: '2024-01-15 10:30', status: 'pending', riskScore: 15 },
-  { id: 'KYC002', name: 'Jane Smith', type: 'Super Agent', documentType: 'Passport', submittedAt: '2024-01-15 09:45', status: 'pending', riskScore: 8 },
-  { id: 'KYC003', name: 'Mike Johnson', type: 'Agent', documentType: 'Driver License', submittedAt: '2024-01-14 16:20', status: 'approved', riskScore: 12 },
-  { id: 'KYC004', name: 'Sarah Williams', type: 'Sub Agent', documentType: 'National ID', submittedAt: '2024-01-14 14:15', status: 'rejected', riskScore: 65 },
-  { id: 'KYC005', name: 'David Brown', type: 'Agent', documentType: 'Voter ID', submittedAt: '2024-01-14 11:00', status: 'approved', riskScore: 5 },
-];
+const EMPTY_APPLICATIONS = [];
 
 const columns = [
   { key: 'id', label: 'Application ID' },
@@ -52,10 +46,9 @@ export default function KYCManagement() {
   const [selectedApplication, setSelectedApplication] = useState(null);
   const queryClient = useQueryClient();
 
-  const { data: applications = mockApplications } = useQuery({
+  const { data: applications = EMPTY_APPLICATIONS } = useQuery({
     queryKey: ['kyc-applications'],
     queryFn: () => kycApi.list(),
-    placeholderData: mockApplications,
   });
 
   const approveMutation = useMutation({
