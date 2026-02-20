@@ -104,34 +104,49 @@ try:
 except Exception as e:
     logger.warning(f"⚠️  Could not register email-service: {e}")
 
-# Auto-register all other services - COMPLETE LIST OF ALL 83 ROUTERS
+# Auto-register all services - COMPLETE LIST OF ALL 134 ROUTERS
 # This list includes all services with router.py files in the backend/python-services directory
 SERVICE_MODULES = [
     # Agent & Hierarchy Services
     "agent_ecommerce_platform", "agent_hierarchy_service", "agent_training",
+    "agent_commerce_integration", "agent_performance",
     # AI/ML Services
     "ai_ml_services", "ai_orchestration", "neural_network_service", "gnn_engine",
+    "ai_document_validation", "cocoindex_service", "epr_kgqa_service", "ml_engine",
+    "ollama_service",
     # E-commerce & Marketplace Services
     "amazon_ebay_integration", "amazon_service", "ecommerce_service", "gaming_integration", "gaming_service",
+    "ebay_service", "jumia_service", "konga_service", "marketplace_integration",
+    "inventory_management", "metaverse_service",
     # Analytics & Data Services
     "analytics_service", "customer_analytics", "data_warehouse", "etl_pipeline", "unified_analytics",
+    "analytics_dashboard", "business_intelligence", "monitoring_dashboard",
     # Communication Services
     "communication_service", "communication_shared", "discord_service", "messenger_service",
     "push_notification_service", "rcs_service", "sms_service", "snapchat_service", "telegram_service",
     "tiktok_service", "translation_service", "unified_communication_hub", "unified_communication_service",
     "voice_ai_service", "voice_assistant_service", "whatsapp_order_service", "whatsapp_service",
+    "communication_gateway", "instagram_service", "twitter_service", "wechat_service",
+    "whatsapp_ai_bot", "multilingual_integration_service", "notification_service",
+    "omnichannel_middleware", "websocket_service", "sms_gateway",
     # Authentication & Security Services
     "authentication_service", "security_monitoring",
+    "mfa", "rbac", "security_alert", "background_check",
     # Compliance & KYC/KYB Services
     "compliance_workflows", "kyb_verification",
+    "aml_monitoring", "compliance_reporting", "kyc_kyb_service",
     # Financial Services
     "credit_scoring", "global_payment_gateway", "loyalty_service", "settlement_service",
+    "float_service", "loan_management", "payment_gateway", "reconciliation_service",
+    "biller_integration", "promotion_service",
     # Integration Services
     "falkordb_service", "fluvio_streaming", "google_assistant_service", "hierarchy_service",
     "hybrid_engine", "integration_layer", "lakehouse_service", "multi_ocr_service",
     "ocr_processing", "offline_sync", "pos_integration", "risk_assessment", "rule_engine",
     "supply_chain", "sync_manager", "territory_management", "tigerbeetle_sync", "tigerbeetle_zig",
     "unified_streaming", "ussd_service", "workflow_orchestration", "workflow_service", "zapier_integration",
+    "ballerine_integration", "integration_service", "middleware_integration",
+    "platform_middleware", "zapier_service",
     # Customer Services
     "customer_service", "onboarding_service",
     # Document Services
@@ -139,7 +154,17 @@ SERVICE_MODULES = [
     # Dispute & Art Services
     "dispute_resolution", "art_agent_service",
     # Backup & Database Services
-    "backup_service", "database"
+    "backup_service", "database",
+    # Device & Edge Services
+    "device_management", "edge_computing", "edge_deployment",
+    # Geospatial & Territory Services
+    "geospatial_service",
+    # QR Code & Telco Services
+    "qr_code_service", "telco_integration",
+    # Reporting & Scheduling Services
+    "reporting_service", "scheduler_service",
+    # User Management
+    "user_management",
 ]
 
 registered_count = 10  # Already registered 10 critical services
