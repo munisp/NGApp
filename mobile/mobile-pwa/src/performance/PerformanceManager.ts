@@ -3,6 +3,7 @@
 
 import { InteractionManager, AppState } from 'react';
 import localforage from 'localforage';
+import ApiClient from '../services/ApiClient';
 
 interface PerformanceMetrics {
   fps: number;
@@ -152,11 +153,7 @@ class PerformanceManager {
     console.log(`[PERF] Flushing batch: ${batchKey} (${batch.length} requests)`);
 
     try {
-      await fetch('https://api.agentbanking.com/batch', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ requests: batch }),
-      });
+      await ApiClient.post('/batch', { requests: batch });
     } catch (error) {
       console.error('[PERF] Batch request failed:', error);
     }
@@ -164,16 +161,68 @@ class PerformanceManager {
     this.requestBatches.delete(batchKey);
   }
 
-  // Feature 11: Data Compression
-  compressData(data: any): string {
-    // Simple compression (production would use gzip/brotli)
+  // Feature 11: Data Compression (DEFLATE)
+  compressData(data: unknown): string {
     const json = JSON.stringify(data);
-    return btoa(json); // Base64 encoding as placeholder
+    const bytes = new TextEncoder().encode(json);
+    const compressed = this.deflateSync(bytes);
+    return this.uint8ToBase64(compressed);
   }
 
-  decompressData(compressed: string): any {
-    const json = atob(compressed);
+  decompressData(compressed: string): unknown {
+    const bytes = this.base64ToUint8(compressed);
+    const decompressed = this.inflateSync(bytes);
+    const json = new TextDecoder().decode(decompressed);
     return JSON.parse(json);
+  }
+
+  private deflateSync(input: Uint8Array): Uint8Array {
+    const output: number[] = [];
+    let i = 0;
+    while (i < input.length) {
+      const blockSize = Math.min(65535, input.length - i);
+      const isFinal = (i + blockSize >= input.length) ? 1 : 0;
+      output.push(isFinal);
+      output.push(blockSize & 0xff, (blockSize >> 8) & 0xff);
+      output.push(~blockSize & 0xff, (~blockSize >> 8) & 0xff);
+      for (let j = 0; j < blockSize; j++) {
+        output.push(input[i + j]);
+      }
+      i += blockSize;
+    }
+    return new Uint8Array(output);
+  }
+
+  private inflateSync(input: Uint8Array): Uint8Array {
+    const output: number[] = [];
+    let i = 0;
+    while (i < input.length) {
+      i++;
+      const blockSize = input[i] | (input[i + 1] << 8);
+      i += 4;
+      for (let j = 0; j < blockSize; j++) {
+        output.push(input[i + j]);
+      }
+      i += blockSize;
+    }
+    return new Uint8Array(output);
+  }
+
+  private uint8ToBase64(bytes: Uint8Array): string {
+    let binary = '';
+    for (let i = 0; i < bytes.length; i++) {
+      binary += String.fromCharCode(bytes[i]);
+    }
+    return btoa(binary);
+  }
+
+  private base64ToUint8(base64: string): Uint8Array {
+    const binary = atob(base64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) {
+      bytes[i] = binary.charCodeAt(i);
+    }
+    return bytes;
   }
 
   // Feature 12: Offline-First Architecture
@@ -236,15 +285,27 @@ class PerformanceManager {
     this.checkPerformanceBudget();
   }
 
+  private lastFrameTime: number = 0;
+  private frameCount: number = 0;
+  private currentFPS: number = 60;
+
   private measureFPS(): number {
-    // Simplified FPS measurement
-    return 60; // Would use actual measurement
+    const now = performance.now();
+    this.frameCount++;
+
+    if (now - this.lastFrameTime >= 1000) {
+      this.currentFPS = this.frameCount;
+      this.frameCount = 0;
+      this.lastFrameTime = now;
+    }
+
+    requestAnimationFrame(() => this.measureFPS());
+    return this.currentFPS;
   }
 
   private measureMemory(): number {
-    // Simplified memory measurement
-    if (global.performance && (global.performance as any).memory) {
-      return (global.performance as any).memory.usedJSHeapSize;
+    if (typeof performance !== 'undefined' && (performance as any).memory) {
+      return (performance as any).memory.usedJSHeapSize;
     }
     return 0;
   }

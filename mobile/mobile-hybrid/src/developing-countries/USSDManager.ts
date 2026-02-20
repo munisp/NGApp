@@ -1,11 +1,14 @@
 // USSDManager.ts - USSD support for feature phones
-import { Platform, NativeModules } from 'react-native';
+import { Capacitor } from '@capacitor/core';
+import { Platform, NativeModules, Linking } from 'react-native';
 
 interface USSDResponse {
   success: boolean;
   message: string;
   sessionId?: string;
 }
+
+const { USSDModule } = NativeModules;
 
 export class USSDManager {
   private static instance: USSDManager;
@@ -22,26 +25,46 @@ export class USSDManager {
   }
 
   async dialUSSD(code: string): Promise<USSDResponse> {
-    if (Platform.OS === 'android') {
-      try {
-        // This would integrate with a native USSD module
-        console.log(`[USSD] Dialing: ${code}`);
-        
-        // Simulate USSD response
-        this.sessionActive = true;
-        
-        return {
-          success: true,
-          message: 'USSD session started',
-          sessionId: `ussd_${Date.now()}`
-        };
-      } catch (error) {
-        console.error('[USSD] Dial failed:', error);
-        return {
-          success: false,
-          message: 'USSD dial failed'
-        };
+    const platform = Capacitor.getPlatform();
+    if (platform === 'android') {
+      if (USSDModule) {
+        try {
+          console.log(`[USSD] Dialing via native module: ${code}`);
+          const result = await USSDModule.dial(code);
+          this.sessionActive = true;
+          return {
+            success: true,
+            message: result.message || 'USSD session started',
+            sessionId: result.sessionId || `ussd_${Date.now()}`
+          };
+        } catch (error: unknown) {
+          const errMsg = error instanceof Error ? error.message : String(error);
+          console.error('[USSD] Native module dial failed:', errMsg);
+        }
       }
+
+      try {
+        const encodedCode = encodeURIComponent(code);
+        const telUri = `tel:${encodedCode}`;
+        const canOpen = await Linking.canOpenURL(telUri);
+        if (canOpen) {
+          await Linking.openURL(telUri);
+          this.sessionActive = true;
+          return {
+            success: true,
+            message: 'USSD dialed via system dialer',
+            sessionId: `ussd_${Date.now()}`
+          };
+        }
+      } catch (error: unknown) {
+        const errMsg = error instanceof Error ? error.message : String(error);
+        console.error('[USSD] System dialer fallback failed:', errMsg);
+      }
+
+      return {
+        success: false,
+        message: 'USSD dial failed — no native module or system dialer available'
+      };
     }
     
     return {

@@ -5,6 +5,7 @@ import { Capacitor } from '@capacitor/core';
 import DeviceInfo from 'react-native-device-info';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
+import ApiClient from '../services/ApiClient';
 
 interface DeviceFingerprint {
   deviceId: string;
@@ -85,16 +86,12 @@ class DeviceBinding {
     };
   }
 
-  private async hashFingerprint(data: any): Promise<string> {
+  private async hashFingerprint(data: Record<string, unknown>): Promise<string> {
     const jsonString = JSON.stringify(data);
-    // Simple hash (production would use crypto)
-    let hash = 0;
-    for (let i = 0; i < jsonString.length; i++) {
-      const char = jsonString.charCodeAt(i);
-      hash = ((hash << 5) - hash) + char;
-      hash = hash & hash;
-    }
-    return hash.toString(36);
+    const dataBytes = new TextEncoder().encode(jsonString);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', dataBytes);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
   }
 
   async checkDevice(): Promise<DeviceBindingResult> {
@@ -192,13 +189,9 @@ class DeviceBinding {
     await AsyncStorage.setItem('trusted_devices_data', JSON.stringify(updated));
   }
 
-  private async sendSecurityAlert(alert: any): Promise<void> {
+  private async sendSecurityAlert(alert: Record<string, unknown>): Promise<void> {
     try {
-      await fetch('https://api.agentbanking.com/security/device-alert', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(alert),
-      });
+      await ApiClient.post('/security/device-alert', alert);
     } catch (error) {
       console.error('Failed to send device alert:', error);
     }

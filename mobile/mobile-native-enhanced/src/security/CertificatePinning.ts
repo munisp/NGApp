@@ -34,33 +34,53 @@ class CertificatePinning {
   }
 
   private initializePinning(): void {
-    // Production API domains with SHA-256 public key hashes
+    const envPins = this.loadPinsFromEnv();
+    if (envPins.length > 0) {
+      envPins.forEach(pin => this.addPinnedDomain(pin));
+      return;
+    }
+
+    const apiHost = process.env.REACT_NATIVE_API_HOST || 'api.agentbanking.com';
+    const authHost = process.env.REACT_NATIVE_AUTH_HOST || 'auth.agentbanking.com';
+    const paymentHost = process.env.REACT_NATIVE_PAYMENT_HOST || 'payment.agentbanking.com';
+
     this.addPinnedDomain({
-      hostname: 'api.agentbanking.com',
+      hostname: apiHost,
       publicKeyHashes: [
-        'sha256/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=', // Primary cert
-        'sha256/BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB=', // Backup cert
+        process.env.REACT_NATIVE_PIN_API_PRIMARY || 'sha256/CONFIGURE_PRIMARY_CERT_HASH_BEFORE_PRODUCTION',
+        process.env.REACT_NATIVE_PIN_API_BACKUP || 'sha256/CONFIGURE_BACKUP_CERT_HASH_BEFORE_PRODUCTION',
       ],
       includeSubdomains: true,
     });
 
     this.addPinnedDomain({
-      hostname: 'auth.agentbanking.com',
+      hostname: authHost,
       publicKeyHashes: [
-        'sha256/CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC=',
-        'sha256/DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD=',
+        process.env.REACT_NATIVE_PIN_AUTH_PRIMARY || 'sha256/CONFIGURE_AUTH_CERT_HASH_BEFORE_PRODUCTION',
+        process.env.REACT_NATIVE_PIN_AUTH_BACKUP || 'sha256/CONFIGURE_AUTH_BACKUP_HASH_BEFORE_PRODUCTION',
       ],
       includeSubdomains: false,
     });
 
     this.addPinnedDomain({
-      hostname: 'payment.agentbanking.com',
+      hostname: paymentHost,
       publicKeyHashes: [
-        'sha256/EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE=',
-        'sha256/FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF=',
+        process.env.REACT_NATIVE_PIN_PAY_PRIMARY || 'sha256/CONFIGURE_PAYMENT_CERT_HASH_BEFORE_PRODUCTION',
+        process.env.REACT_NATIVE_PIN_PAY_BACKUP || 'sha256/CONFIGURE_PAYMENT_BACKUP_HASH_BEFORE_PRODUCTION',
       ],
       includeSubdomains: false,
     });
+  }
+
+  private loadPinsFromEnv(): PinningConfig[] {
+    const pinsJson = process.env.REACT_NATIVE_CERT_PINS;
+    if (!pinsJson) return [];
+    try {
+      return JSON.parse(pinsJson) as PinningConfig[];
+    } catch {
+      console.error('[SECURITY] Failed to parse REACT_NATIVE_CERT_PINS env var');
+      return [];
+    }
   }
 
   private addPinnedDomain(config: PinningConfig): void {

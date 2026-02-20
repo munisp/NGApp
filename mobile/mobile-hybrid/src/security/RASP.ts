@@ -4,6 +4,7 @@ import { Capacitor } from '@capacitor/core';
 
 import { Platform, NativeModules } from 'react-native';
 import DeviceInfo from 'react-native-device-info';
+import ApiClient from '../services/ApiClient';
 
 interface RASPCheck {
   codeInjection: boolean;
@@ -89,17 +90,33 @@ class RASP {
   }
 
   private async checkForFrida(): Promise<boolean> {
-    // Check for Frida server
     const fridaPorts = [27042, 27043];
-    
-    // Check for Frida libraries
-    const fridaLibs = [
-      'frida-agent',
-      'frida-gadget',
-      'frida-server',
-    ];
 
-    // Would need native module to check loaded libraries
+    for (const port of fridaPorts) {
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 500);
+        await fetch(`http://127.0.0.1:${port}`, { signal: controller.signal });
+        clearTimeout(timeoutId);
+        return true;
+      } catch {
+        // Port not open — expected
+      }
+    }
+
+    if (Capacitor.getPlatform() === 'android' && NativeModules.RASPModule) {
+      try {
+        const fridaLibs = ['frida-agent', 'frida-gadget', 'frida-server'];
+        const loadedLibs: string[] = await NativeModules.RASPModule.getLoadedLibraries();
+        const hasFrida = loadedLibs.some(lib =>
+          fridaLibs.some(f => lib.toLowerCase().includes(f))
+        );
+        if (hasFrida) return true;
+      } catch {
+        // Native module unavailable
+      }
+    }
+
     return false;
   }
 
@@ -116,10 +133,22 @@ class RASP {
   }
 
   private async checkForSubstrate(): Promise<boolean> {
-    if (Platform.OS !== 'ios') return false;
+    if (Capacitor.getPlatform() !== 'ios') return false;
 
-    // Check for Cydia Substrate
-    // Would need native module implementation
+    if (NativeModules.RASPModule) {
+      try {
+        const substrateFiles = [
+          '/Library/MobileSubstrate/MobileSubstrate.dylib',
+          '/Library/MobileSubstrate/DynamicLibraries',
+          '/usr/lib/substrate',
+        ];
+        const detected: boolean = await NativeModules.RASPModule.checkFilesExist(substrateFiles);
+        return detected;
+      } catch {
+        // Native module unavailable
+      }
+    }
+
     return false;
   }
 
@@ -170,14 +199,24 @@ class RASP {
   }
 
   private async isDebuggerAttached(): Promise<boolean> {
-    // Platform-specific debugger detection
-    if (Capacitor.getPlatform() === 'ios') {
-      // Check for Xcode debugger
-      return false; // Would need native implementation
-    } else if (Capacitor.getPlatform() === 'android') {
-      // Check for Android Studio debugger
-      return false; // Would need native implementation
+    if (NativeModules.RASPModule) {
+      try {
+        const attached: boolean = await NativeModules.RASPModule.isDebuggerAttached();
+        return attached;
+      } catch {
+        // Native module unavailable
+      }
     }
+
+    if (Capacitor.getPlatform() === 'android') {
+      try {
+        const isDebuggable: boolean = await DeviceInfo.isDebuggable?.() ?? false;
+        if (isDebuggable) return true;
+      } catch {
+        // Method unavailable
+      }
+    }
+
     return false;
   }
 
@@ -235,11 +274,7 @@ class RASP {
 
   private async notifyBackend(alert: RASPAlert): Promise<void> {
     try {
-      await fetch('https://api.agentbanking.com/security/rasp-alert', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(alert),
-      });
+      await ApiClient.post('/security/rasp-alert', alert);
     } catch (error) {
       console.error('Failed to send RASP alert:', error);
     }

@@ -2,6 +2,7 @@ import { Capacitor } from '@capacitor/core';
 // TransactionSigning.ts - Biometric Transaction Confirmation
 import * as LocalAuthentication from 'react-native-biometrics';
 import SecureEnclave from './SecureEnclave';
+import ApiClient from '../services/ApiClient';
 
 interface Transaction {
   id: string;
@@ -111,14 +112,23 @@ class TransactionSigning {
       timestamp: Date.now(),
     });
 
-    // Generate cryptographic signature
-    let hash = 0;
-    for (let i = 0; i < data.length; i++) {
-      hash = ((hash << 5) - hash) + data.charCodeAt(i);
-      hash = hash & hash;
-    }
+    const signingKey = await SecureEnclave.getOrCreateKey('txn_signing_key');
+    const keyBytes = new TextEncoder().encode(signingKey);
+    const dataBytes = new TextEncoder().encode(data);
 
-    return `sig_${hash.toString(36)}_${Date.now()}`;
+    const cryptoKey = await crypto.subtle.importKey(
+      'raw',
+      keyBytes,
+      { name: 'HMAC', hash: 'SHA-256' },
+      false,
+      ['sign']
+    );
+
+    const signatureBuffer = await crypto.subtle.sign('HMAC', cryptoKey, dataBytes);
+    const signatureArray = Array.from(new Uint8Array(signatureBuffer));
+    const signatureHex = signatureArray.map(b => b.toString(16).padStart(2, '0')).join('');
+
+    return `sig_hmac256_${signatureHex}_${Date.now()}`;
   }
 
   private async logSignedTransaction(transaction: Transaction, signature: string): Promise<void> {
@@ -128,16 +138,11 @@ class TransactionSigning {
       timestamp: Date.now(),
     });
 
-    // Send to backend
     try {
-      await fetch('https://api.agentbanking.com/transactions/signed', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          transactionId: transaction.id,
-          signature,
-          timestamp: Date.now(),
-        }),
+      await ApiClient.post('/transactions/signed', {
+        transactionId: transaction.id,
+        signature,
+        timestamp: Date.now(),
       });
     } catch (error) {
       console.error('Failed to log signed transaction:', error);
@@ -145,8 +150,19 @@ class TransactionSigning {
   }
 
   async verifySignature(transactionId: string, signature: string): Promise<boolean> {
-    // Verify signature validity
-    return signature.startsWith('sig_') && signature.length > 20;
+    if (!signature.startsWith('sig_hmac256_') || signature.length < 40) {
+      return false;
+    }
+
+    try {
+      const response = await ApiClient.post<{ valid: boolean }>('/transactions/verify-signature', {
+        transactionId,
+        signature,
+      });
+      return response.data.valid;
+    } catch {
+      return false;
+    }
   }
 }
 

@@ -3,6 +3,14 @@
 
 import { Platform, NativeModules } from 'react';
 import DeviceInfo from 'device-info';
+import ApiClient from '../services/ApiClient';
+
+function getPlatform(): string {
+  const ua = navigator.userAgent.toLowerCase();
+  if (/android/.test(ua)) return 'android';
+  if (/iphone|ipad|ipod/.test(ua)) return 'ios';
+  return 'web';
+}
 
 interface RASPCheck {
   codeInjection: boolean;
@@ -88,25 +96,27 @@ class RASP {
   }
 
   private async checkForFrida(): Promise<boolean> {
-    // Check for Frida server
     const fridaPorts = [27042, 27043];
-    
-    // Check for Frida libraries
-    const fridaLibs = [
-      'frida-agent',
-      'frida-gadget',
-      'frida-server',
-    ];
 
-    // Would need native module to check loaded libraries
+    for (const port of fridaPorts) {
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 500);
+        await fetch(`http://127.0.0.1:${port}`, { signal: controller.signal });
+        clearTimeout(timeoutId);
+        return true;
+      } catch {
+        // Port not open — expected
+      }
+    }
+
     return false;
   }
 
   private async checkForXposed(): Promise<boolean> {
-    if ('web' !== 'android') return false;
+    if (getPlatform() !== 'android') return false;
 
     try {
-      // Check for Xposed framework
       const stackTrace = new Error().stack || '';
       return stackTrace.includes('de.robv.android.xposed');
     } catch {
@@ -115,10 +125,7 @@ class RASP {
   }
 
   private async checkForSubstrate(): Promise<boolean> {
-    if ('web' !== 'ios') return false;
-
-    // Check for Cydia Substrate
-    // Would need native module implementation
+    if (getPlatform() !== 'ios') return false;
     return false;
   }
 
@@ -169,13 +176,16 @@ class RASP {
   }
 
   private async isDebuggerAttached(): Promise<boolean> {
-    // Platform-specific debugger detection
-    if ('web' === 'ios') {
-      // Check for Xcode debugger
-      return false; // Would need native implementation
-    } else if ('web' === 'android') {
-      // Check for Android Studio debugger
-      return false; // Would need native implementation
+    const platform = getPlatform();
+    if (platform === 'web') {
+      try {
+        const start = performance.now();
+        /* tslint:disable-next-line:no-debugger */
+        const elapsed = performance.now() - start;
+        return elapsed > 100;
+      } catch {
+        return false;
+      }
     }
     return false;
   }
@@ -234,11 +244,7 @@ class RASP {
 
   private async notifyBackend(alert: RASPAlert): Promise<void> {
     try {
-      await fetch('https://api.agentbanking.com/security/rasp-alert', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(alert),
-      });
+      await ApiClient.post('/security/rasp-alert', alert);
     } catch (error) {
       console.error('Failed to send RASP alert:', error);
     }

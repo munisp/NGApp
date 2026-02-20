@@ -1,5 +1,4 @@
-// USSDManager.ts - USSD support for feature phones
-import { Platform, NativeModules } from 'react-native';
+// USSDManager.ts - USSD support for feature phones (PWA variant)
 
 interface USSDResponse {
   success: boolean;
@@ -7,9 +6,16 @@ interface USSDResponse {
   sessionId?: string;
 }
 
+function getPlatform(): string {
+  const ua = navigator.userAgent.toLowerCase();
+  if (/android/.test(ua)) return 'android';
+  if (/iphone|ipad|ipod/.test(ua)) return 'ios';
+  return 'web';
+}
+
 export class USSDManager {
   private static instance: USSDManager;
-  private ussdCode: string = '*123#'; // Bank's USSD code
+  private ussdCode: string = '*123#';
   private sessionActive: boolean = false;
 
   private constructor() {}
@@ -22,21 +28,21 @@ export class USSDManager {
   }
 
   async dialUSSD(code: string): Promise<USSDResponse> {
-    if (Platform.OS === 'android') {
+    const platform = getPlatform();
+    if (platform === 'android' || platform === 'ios') {
       try {
-        // This would integrate with a native USSD module
-        console.log(`[USSD] Dialing: ${code}`);
-        
-        // Simulate USSD response
+        const encodedCode = encodeURIComponent(code);
+        const telUri = `tel:${encodedCode}`;
+        window.location.href = telUri;
         this.sessionActive = true;
-        
         return {
           success: true,
-          message: 'USSD session started',
+          message: 'USSD dialed via system dialer',
           sessionId: `ussd_${Date.now()}`
         };
-      } catch (error) {
-        console.error('[USSD] Dial failed:', error);
+      } catch (error: unknown) {
+        const errMsg = error instanceof Error ? error.message : String(error);
+        console.error('[USSD] System dialer failed:', errMsg);
         return {
           success: false,
           message: 'USSD dial failed'
@@ -46,7 +52,7 @@ export class USSDManager {
     
     return {
       success: false,
-      message: 'USSD not supported on this platform'
+      message: 'USSD not supported on desktop web'
     };
   }
 
