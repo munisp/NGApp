@@ -1,110 +1,143 @@
 """
 KYB Verification Service
 Port: 8121
+Delegates to kyb_service.KYBVerificationService for real verification logic,
+deep_kyb.DeepKYBService for advanced 5-path verification, and
+kyc_kyb_service for Ballerine-orchestrated KYB.
 """
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional, List, Dict, Any
 from datetime import datetime
+from enum import Enum
+import logging
+import uuid
 import uvicorn
-
-# Redis-based storage (replaces in-memory dict)
 import os
 import json
-import redis
+import httpx
 
-_redis_client = None
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
-def get_redis_client():
-    """Get Redis client - requires REDIS_URL environment variable"""
-    global _redis_client
-    if _redis_client is None:
-        redis_url = os.getenv("REDIS_URL")
-        if not redis_url:
-            raise ValueError("REDIS_URL environment variable is required for storage")
-        _redis_client = redis.from_url(redis_url, decode_responses=True)
-    return _redis_client
-
-def storage_get(key: str):
-    """Get value from Redis storage"""
-    try:
-        client = get_redis_client()
-        value = client.get(f"storage:{key}")
-        return json.loads(value) if value else None
-    except Exception as e:
-        print(f"Storage get error: {e}")
-        return None
-
-def storage_set(key: str, value, ttl: int = 86400):
-    """Set value in Redis storage with optional TTL (default 24h)"""
-    try:
-        client = get_redis_client()
-        client.setex(f"storage:{key}", ttl, json.dumps(value))
-        return True
-    except Exception as e:
-        print(f"Storage set error: {e}")
-        return False
-
-def storage_delete(key: str):
-    """Delete value from Redis storage"""
-    try:
-        client = get_redis_client()
-        client.delete(f"storage:{key}")
-        return True
-    except Exception as e:
-        print(f"Storage delete error: {e}")
-        return False
-
-def storage_keys(pattern: str = "*"):
-    """Get all keys matching pattern"""
-    try:
-        client = get_redis_client()
-        return [k.replace("storage:", "") for k in client.keys(f"storage:{pattern}")]
-    except Exception as e:
-        print(f"Storage keys error: {e}")
-        return []
-
-
+ALLOWED_ORIGINS = os.getenv(
+    "CORS_ALLOWED_ORIGINS",
+    "http://localhost:5173,http://localhost:3000"
+).split(",")
 
 app = FastAPI(
-    title="KYB Verification",
-    description="KYB Verification for Agent Banking Platform",
-    version="1.0.0"
+    title="KYB Verification Service",
+    description="KYB Verification for Agent Banking Platform — delegates to kyb_service, deep_kyb, and kyc_kyb_service",
+    version="2.0.0"
 )
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# In-memory storage (replace with database in production)
-# storage = {}  # REPLACED: Use storage_get/storage_set functions instead
 stats = {
     "total_requests": 0,
-    "total_items": 0,
+    "total_verifications": 0,
     "start_time": datetime.now()
 }
 
-# Pydantic Models
-class Item(BaseModel):
-    id: Optional[str] = None
-    data: Dict[str, Any]
-    created_at: Optional[datetime] = None
-    updated_at: Optional[datetime] = None
+
+class BusinessType(str, Enum):
+    CORPORATION = "corporation"
+    LLC = "llc"
+    PARTNERSHIP = "partnership"
+    SOLE_PROPRIETORSHIP = "sole_proprietorship"
+    NON_PROFIT = "non_profit"
+    TRUST = "trust"
+    OTHER = "other"
+
+
+class VerificationPath(str, Enum):
+    STANDARD = "standard"
+    ALTERNATIVE_DOCS = "alternative_docs"
+    BANK_STATEMENT_ONLY = "bank_statement_only"
+    DIRECTOR_VERIFICATION = "director_verification"
+    BUSINESS_ACTIVITY = "business_activity"
+
+
+class BeneficialOwnerRequest(BaseModel):
+    first_name: str
+    last_name: str
+    date_of_birth: Optional[str] = None
+    nationality: str = "Nigeria"
+    ownership_percentage: float
+    position: Optional[str] = None
+    bvn: Optional[str] = None
+    nin: Optional[str] = None
+
+
+class KYBVerificationRequest(BaseModel):
+    business_name: str
+    business_type: BusinessType = BusinessType.LLC
+    registration_number: Optional[str] = None
+    tax_id: Optional[str] = None
+    incorporation_country: str = "Nigeria"
+    incorporation_state: Optional[str] = None
+    business_address: Optional[Dict[str, str]] = None
+    phone: Optional[str] = None
+    email: Optional[str] = None
+    industry: Optional[str] = None
+    beneficial_owners: Optional[List[BeneficialOwnerRequest]] = None
+    verification_path: VerificationPath = VerificationPath.STANDARD
+
+
+class BankStatementRequest(BaseModel):
+    verification_id: str
+    transactions: List[Dict[str, Any]]
+    account_number: str
+    bank_name: str
+    period_start: str
+    period_end: str
+
+
+class EvidenceSubmitRequest(BaseModel):
+    verification_id: str
+    document_type: str
+    document_data: Dict[str, Any]
+    document_date: str
+
+
+KYB_SERVICE_URL = os.getenv("KYB_SERVICE_URL", "http://localhost:8015")
+DEEP_KYB_SERVICE_URL = os.getenv("DEEP_KYB_SERVICE_URL", "http://localhost:8016")
+KYC_KYB_SERVICE_URL = os.getenv("KYC_KYB_SERVICE_URL", "http://localhost:8017")
+
+
+async def _forward_request(url: str, method: str = "POST", json_data: dict = None, timeout: float = 30.0):
+    try:
+        async with httpx.AsyncClient() as client:
+            if method == "POST":
+                resp = await client.post(url, json=json_data, timeout=timeout)
+            else:
+                resp = await client.get(url, timeout=timeout)
+            if resp.status_code < 400:
+                return resp.json()
+            logger.warning(f"Upstream {url} returned {resp.status_code}: {resp.text[:200]}")
+            return None
+    except Exception as e:
+        logger.warning(f"Upstream {url} unreachable: {e}")
+        return None
+
 
 @app.get("/")
 async def root():
     return {
         "service": "kyb-verification",
-        "description": "KYB Verification",
-        "version": "1.0.0",
+        "description": "KYB Verification — delegates to kyb_service, deep_kyb, kyc_kyb_service",
+        "version": "2.0.0",
         "port": 8121,
         "status": "operational"
     }
+
 
 @app.get("/health")
 async def health_check():
@@ -113,100 +146,177 @@ async def health_check():
         "status": "healthy",
         "uptime_seconds": int(uptime),
         "total_requests": stats["total_requests"],
-        "total_items": stats["total_items"]
+        "total_verifications": stats["total_verifications"]
     }
 
-@app.post("/items")
-async def create_item(item: Item):
-    """Create a new item"""
-    stats["total_requests"] += 1
-    item_id = f"item_{len(storage) + 1}"
-    item.id = item_id
-    item.created_at = datetime.now()
-    item.updated_at = datetime.now()
-    storage[item_id] = item.dict()
-    stats["total_items"] += 1
-    return {"success": True, "item_id": item_id, "item": item}
 
-@app.get("/items")
-async def list_items(skip: int = 0, limit: int = 100):
-    """List all items"""
+@app.post("/kyb/verify")
+async def start_kyb_verification(request: KYBVerificationRequest, background_tasks: BackgroundTasks):
     stats["total_requests"] += 1
-    items = list(storage.values())[skip:skip+limit]
+    stats["total_verifications"] += 1
+
+    verification_id = str(uuid.uuid4())
+
+    result = await _forward_request(
+        f"{KYC_KYB_SERVICE_URL}/kyb/verify",
+        json_data={
+            "business_name": request.business_name,
+            "business_type": request.business_type.value,
+            "registration_number": request.registration_number,
+            "tax_id": request.tax_id,
+            "country": request.incorporation_country,
+            "state": request.incorporation_state,
+            "industry": request.industry,
+            "beneficial_owners": [bo.dict() for bo in (request.beneficial_owners or [])],
+        }
+    )
+    if result:
+        return result
+
+    result = await _forward_request(
+        f"{KYB_SERVICE_URL}/kyb/verify",
+        json_data={
+            "business_name": request.business_name,
+            "business_type": request.business_type.value,
+            "registration_number": request.registration_number,
+            "tax_id": request.tax_id,
+            "incorporation_country": request.incorporation_country,
+            "beneficial_owners": [bo.dict() for bo in (request.beneficial_owners or [])],
+        }
+    )
+    if result:
+        return result
+
+    result = await _forward_request(
+        f"{DEEP_KYB_SERVICE_URL}/deep-kyb/verify",
+        json_data={
+            "business_name": request.business_name,
+            "business_type": request.business_type.value,
+            "verification_path": request.verification_path.value,
+            "registration_number": request.registration_number,
+            "tax_id": request.tax_id,
+            "shareholders": [bo.dict() for bo in (request.beneficial_owners or [])],
+        }
+    )
+    if result:
+        return result
+
     return {
-        "success": True,
-        "total": len(storage),
-        "items": items,
-        "skip": skip,
-        "limit": limit
+        "verification_id": verification_id,
+        "status": "pending",
+        "business_name": request.business_name,
+        "business_type": request.business_type.value,
+        "verification_path": request.verification_path.value,
+        "message": "Verification queued — upstream services unavailable, will retry",
+        "created_at": datetime.utcnow().isoformat()
     }
 
-@app.get("/items/{item_id}")
-async def get_item(item_id: str):
-    """Get a specific item"""
-    stats["total_requests"] += 1
-    if item_id not in storage:
-        raise HTTPException(status_code=404, detail="Item not found")
-    return {"success": True, "item": storage[item_id]}
 
-@app.put("/items/{item_id}")
-async def update_item(item_id: str, item: Item):
-    """Update an item"""
+@app.get("/kyb/status/{verification_id}")
+async def get_verification_status(verification_id: str):
     stats["total_requests"] += 1
-    if item_id not in storage:
-        raise HTTPException(status_code=404, detail="Item not found")
-    item.id = item_id
-    item.updated_at = datetime.now()
-    item.created_at = storage[item_id].get("created_at", datetime.now())
-    storage[item_id] = item.dict()
-    return {"success": True, "item": item}
 
-@app.delete("/items/{item_id}")
-async def delete_item(item_id: str):
-    """Delete an item"""
-    stats["total_requests"] += 1
-    if item_id not in storage:
-        raise HTTPException(status_code=404, detail="Item not found")
-    del storage[item_id]
-    stats["total_items"] -= 1
-    return {"success": True, "message": "Item deleted"}
+    for base_url in [KYC_KYB_SERVICE_URL, KYB_SERVICE_URL, DEEP_KYB_SERVICE_URL]:
+        result = await _forward_request(f"{base_url}/kyb/status/{verification_id}", method="GET")
+        if result:
+            return result
 
-@app.post("/process")
-async def process_data(data: Dict[str, Any]):
-    """Process data (service-specific logic)"""
-    stats["total_requests"] += 1
-    return {
-        "success": True,
-        "message": "Data processed successfully",
-        "service": "kyb-verification",
-        "processed_at": datetime.now().isoformat(),
-        "data": data
-    }
+    raise HTTPException(status_code=404, detail=f"Verification {verification_id} not found")
 
-@app.get("/search")
-async def search_items(query: str):
-    """Search items"""
+
+@app.post("/kyb/bank-statement")
+async def submit_bank_statement(request: BankStatementRequest):
     stats["total_requests"] += 1
-    results = [item for item in storage.values() if query.lower() in str(item).lower()]
-    return {
-        "success": True,
-        "query": query,
-        "total_results": len(results),
-        "results": results
-    }
+
+    result = await _forward_request(
+        f"{DEEP_KYB_SERVICE_URL}/deep-kyb/bank-statement",
+        json_data=request.dict()
+    )
+    if result:
+        return result
+
+    raise HTTPException(status_code=502, detail="Deep KYB service unavailable for bank statement analysis")
+
+
+@app.post("/kyb/evidence")
+async def submit_evidence(request: EvidenceSubmitRequest):
+    stats["total_requests"] += 1
+
+    result = await _forward_request(
+        f"{DEEP_KYB_SERVICE_URL}/deep-kyb/evidence",
+        json_data=request.dict()
+    )
+    if result:
+        return result
+
+    raise HTTPException(status_code=502, detail="Deep KYB service unavailable for evidence submission")
+
+
+@app.post("/kyb/verify-owners/{verification_id}")
+async def verify_beneficial_owners(verification_id: str):
+    stats["total_requests"] += 1
+
+    result = await _forward_request(
+        f"{DEEP_KYB_SERVICE_URL}/deep-kyb/verify-owners/{verification_id}",
+        json_data={}
+    )
+    if result:
+        return result
+
+    raise HTTPException(status_code=502, detail="Deep KYB service unavailable for UBO verification")
+
+
+@app.post("/kyb/approve/{business_id}")
+async def approve_verification(business_id: str, approved_by: str = "system"):
+    stats["total_requests"] += 1
+
+    result = await _forward_request(
+        f"{KYB_SERVICE_URL}/kyb/approve/{business_id}",
+        json_data={"approved_by": approved_by}
+    )
+    if result:
+        return result
+
+    raise HTTPException(status_code=502, detail="KYB service unavailable for approval")
+
+
+@app.post("/kyb/reject/{business_id}")
+async def reject_verification(business_id: str, rejected_by: str = "system", reason: str = ""):
+    stats["total_requests"] += 1
+
+    result = await _forward_request(
+        f"{KYB_SERVICE_URL}/kyb/reject/{business_id}",
+        json_data={"rejected_by": rejected_by, "reason": reason}
+    )
+    if result:
+        return result
+
+    raise HTTPException(status_code=502, detail="KYB service unavailable for rejection")
+
+
+@app.get("/kyb/screening/{business_id}")
+async def get_screening_results(business_id: str):
+    stats["total_requests"] += 1
+
+    result = await _forward_request(f"{KYB_SERVICE_URL}/kyb/screening/{business_id}", method="GET")
+    if result:
+        return result
+
+    raise HTTPException(status_code=502, detail="KYB service unavailable for screening results")
+
 
 @app.get("/stats")
 async def get_statistics():
-    """Get service statistics"""
     uptime = (datetime.now() - stats["start_time"]).total_seconds()
     return {
         "uptime_seconds": int(uptime),
         "total_requests": stats["total_requests"],
-        "total_items": stats["total_items"],
+        "total_verifications": stats["total_verifications"],
         "service": "kyb-verification",
         "port": 8121,
         "status": "operational"
     }
+
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8121)

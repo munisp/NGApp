@@ -468,6 +468,245 @@ async def create_qa_review(case_id: str, request: QAReviewRequest):
     return {"qa_id": qa.qa_id, "result": qa.result.value, "score": qa.score}
 
 
+class DeepKYBVerifyRequest(BaseModel):
+    business_name: str
+    business_type: str = "llc"
+    verification_path: str = "standard"
+    registration_number: Optional[str] = None
+    tax_id: Optional[str] = None
+    shareholders: Optional[List[Dict[str, Any]]] = None
+    directors: Optional[List[Dict[str, Any]]] = None
+    metadata: Optional[Dict[str, Any]] = None
+
+
+class BankStatementSubmitRequest(BaseModel):
+    verification_id: str
+    transactions: List[Dict[str, Any]]
+    account_number: str
+    bank_name: str
+    period_start: str
+    period_end: str
+
+
+class EvidenceSubmitRequest(BaseModel):
+    verification_id: str
+    document_type: str
+    document_data: Dict[str, Any]
+    document_date: str
+
+
+class CompleteVerificationRequest(BaseModel):
+    reviewer_id: str
+
+
+@router.post("/deep-kyb/verify")
+async def deep_kyb_verify(request: DeepKYBVerifyRequest):
+    from .deep_kyb import get_deep_kyb_service, BusinessType, VerificationPath as VPath
+    svc = get_deep_kyb_service()
+    try:
+        btype = BusinessType(request.business_type)
+    except ValueError:
+        btype = BusinessType.LLC
+    try:
+        vpath = VPath(request.verification_path)
+    except ValueError:
+        vpath = VPath.STANDARD
+
+    import secrets
+    business_id = secrets.token_hex(16)
+    verification = await svc.start_verification(
+        business_id=business_id,
+        business_name=request.business_name,
+        business_type=btype,
+        verification_path=vpath,
+        cac_number=request.registration_number,
+        tin=request.tax_id,
+        shareholders=request.shareholders,
+        directors=request.directors,
+        metadata=request.metadata,
+    )
+    return {
+        "verification_id": verification.verification_id,
+        "business_id": verification.business_id,
+        "status": verification.status.value,
+        "risk_level": verification.risk_level.value,
+        "verification_path": verification.verification_path.value,
+        "created_at": verification.created_at.isoformat(),
+    }
+
+
+@router.get("/deep-kyb/status/{verification_id}")
+async def deep_kyb_status(verification_id: str):
+    from .deep_kyb import get_deep_kyb_service
+    svc = get_deep_kyb_service()
+    verification = svc.get_verification(verification_id)
+    if not verification:
+        raise HTTPException(status_code=404, detail="Verification not found")
+    from dataclasses import asdict as _asdict
+    bs = None
+    if verification.bank_statement_analysis:
+        bs = {
+            "statement_id": verification.bank_statement_analysis.statement_id,
+            "cash_flow_score": verification.bank_statement_analysis.cash_flow_score,
+            "volatility_score": verification.bank_statement_analysis.volatility_score,
+            "consistency_score": verification.bank_statement_analysis.consistency_score,
+            "overall_health_score": verification.bank_statement_analysis.overall_health_score,
+            "red_flags": verification.bank_statement_analysis.red_flags,
+        }
+    return {
+        "verification_id": verification.verification_id,
+        "business_id": verification.business_id,
+        "business_name": verification.business_name,
+        "status": verification.status.value,
+        "risk_level": verification.risk_level.value,
+        "risk_score": verification.risk_score,
+        "verification_path": verification.verification_path.value,
+        "bank_statement_analysis": bs,
+        "evidence_count": len(verification.evidence_documents),
+        "ubo_count": len(verification.corporate_structure.beneficial_owners),
+        "director_count": len(verification.corporate_structure.directors),
+        "created_at": verification.created_at.isoformat(),
+        "updated_at": verification.updated_at.isoformat(),
+    }
+
+
+@router.post("/deep-kyb/bank-statement")
+async def deep_kyb_bank_statement(request: BankStatementSubmitRequest):
+    from .deep_kyb import get_deep_kyb_service
+    svc = get_deep_kyb_service()
+    try:
+        analysis = await svc.submit_bank_statement(
+            verification_id=request.verification_id,
+            transactions=request.transactions,
+            account_number=request.account_number,
+            bank_name=request.bank_name,
+            period_start=datetime.fromisoformat(request.period_start),
+            period_end=datetime.fromisoformat(request.period_end),
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    return {
+        "statement_id": analysis.statement_id,
+        "cash_flow_score": analysis.cash_flow_score,
+        "volatility_score": analysis.volatility_score,
+        "consistency_score": analysis.consistency_score,
+        "overall_health_score": analysis.overall_health_score,
+        "transaction_count": analysis.transaction_count,
+        "total_credits": analysis.total_credits,
+        "total_debits": analysis.total_debits,
+        "revenue_trend": analysis.revenue_trend,
+        "red_flags": analysis.red_flags,
+        "insights": analysis.insights,
+    }
+
+
+@router.post("/deep-kyb/evidence")
+async def deep_kyb_evidence(request: EvidenceSubmitRequest):
+    from .deep_kyb import get_deep_kyb_service, DocumentType as DType
+    svc = get_deep_kyb_service()
+    try:
+        dtype = DType(request.document_type)
+    except ValueError:
+        raise HTTPException(status_code=400, detail=f"Invalid document type: {request.document_type}")
+    try:
+        evidence = await svc.submit_evidence(
+            verification_id=request.verification_id,
+            document_type=dtype,
+            document_data=request.document_data,
+            document_date=datetime.fromisoformat(request.document_date),
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    return {
+        "evidence_id": evidence.evidence_id,
+        "document_type": evidence.document_type.value,
+        "confidence_score": evidence.confidence_score,
+        "verified": evidence.verified,
+    }
+
+
+@router.post("/deep-kyb/verify-owners/{verification_id}")
+async def deep_kyb_verify_owners(verification_id: str):
+    from .deep_kyb import get_deep_kyb_service
+    svc = get_deep_kyb_service()
+    try:
+        results = await svc.verify_beneficial_owners(verification_id)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    return {
+        "verification_id": verification_id,
+        "owners": [
+            {
+                "owner_id": owner.owner_id,
+                "name": owner.name,
+                "ownership_percentage": owner.ownership_percentage,
+                "is_pep": owner.is_pep,
+                "is_sanctioned": owner.is_sanctioned,
+                "passed": passed,
+                "details": details,
+            }
+            for owner, passed, details in results
+        ],
+    }
+
+
+@router.post("/deep-kyb/verify-directors/{verification_id}")
+async def deep_kyb_verify_directors(verification_id: str):
+    from .deep_kyb import get_deep_kyb_service
+    svc = get_deep_kyb_service()
+    try:
+        results = await svc.verify_directors(verification_id)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    return {
+        "verification_id": verification_id,
+        "directors": [
+            {
+                "director_id": director.director_id,
+                "name": director.name,
+                "position": director.position,
+                "passed": passed,
+                "details": details,
+            }
+            for director, passed, details in results
+        ],
+    }
+
+
+@router.post("/deep-kyb/complete/{verification_id}")
+async def deep_kyb_complete(verification_id: str, request: CompleteVerificationRequest):
+    from .deep_kyb import get_deep_kyb_service
+    svc = get_deep_kyb_service()
+    try:
+        verification = await svc.complete_verification(verification_id, request.reviewer_id)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    return {
+        "verification_id": verification.verification_id,
+        "status": verification.status.value,
+        "risk_score": verification.risk_score,
+        "risk_level": verification.risk_level.value,
+        "risk_factors": verification.risk_factors,
+        "approved_at": verification.approved_at.isoformat() if verification.approved_at else None,
+        "rejection_reason": verification.rejection_reason,
+    }
+
+
+@router.get("/deep-kyb/paths")
+async def deep_kyb_paths():
+    from .deep_kyb import PATH_REQUIREMENTS
+    return {
+        path.value: {
+            "description": config.get("description", ""),
+            "required_documents": [d.value for d in config.get("required_documents", [])],
+            "ubo_verification": config.get("ubo_verification", False),
+            "director_verification": config.get("director_verification", False),
+            "bank_statement_months": config.get("bank_statement_months", 0),
+        }
+        for path, config in PATH_REQUIREMENTS.items()
+    }
+
+
 @router.get("/health")
 async def health():
     return {"service": "kyc-kyb-service", "status": "healthy", "timestamp": datetime.utcnow().isoformat()}

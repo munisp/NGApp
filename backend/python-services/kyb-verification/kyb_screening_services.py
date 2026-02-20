@@ -1,11 +1,13 @@
 """
 KYB Screening Services - Real Implementations
-Provides actual integrations for sanctions, adverse media, and PEP screening
+Provides actual integrations for sanctions, adverse media, and PEP screening.
+Calls real HTTP APIs for OFAC, UN, EU sanctions lists with retry and fallback.
 """
 
 import asyncio
 import hashlib
 import logging
+import os
 from datetime import datetime, timedelta
 from typing import Dict, List, Any, Optional
 import httpx
@@ -13,20 +15,48 @@ import re
 
 logger = logging.getLogger(__name__)
 
+SCREENING_TIMEOUT = float(os.getenv("SCREENING_TIMEOUT_SECONDS", "10"))
+SCREENING_MAX_RETRIES = int(os.getenv("SCREENING_MAX_RETRIES", "3"))
+
+
+async def _http_get_with_retry(url: str, params: dict = None, headers: dict = None, max_retries: int = SCREENING_MAX_RETRIES) -> Optional[dict]:
+    for attempt in range(max_retries):
+        try:
+            async with httpx.AsyncClient() as client:
+                resp = await client.get(url, params=params, headers=headers, timeout=SCREENING_TIMEOUT)
+                if resp.status_code < 400:
+                    return resp.json()
+                logger.warning(f"Screening API {url} returned {resp.status_code} (attempt {attempt + 1})")
+        except Exception as e:
+            logger.warning(f"Screening API {url} failed (attempt {attempt + 1}): {e}")
+            if attempt < max_retries - 1:
+                await asyncio.sleep(2 ** attempt)
+    return None
+
+
 class SanctionsScreeningService:
     """
-    Real sanctions screening service integrating with multiple sources
+    Sanctions screening service calling real OFAC, UN, EU APIs with fallback to pattern matching.
     """
-    
+
     def __init__(self, config: Dict[str, Any] = None):
         self.config = config or {}
         self.cache = {}
-        self.cache_ttl = 3600  # 1 hour
-        
-        # Sanctions lists endpoints (would be configured from environment)
-        self.ofac_endpoint = self.config.get('ofac_endpoint', 'https://sanctionslist.ofac.treas.gov/api/v1')
-        self.un_endpoint = self.config.get('un_endpoint', 'https://scsanctions.un.org/api')
-        self.eu_endpoint = self.config.get('eu_endpoint', 'https://webgate.ec.europa.eu/fsd/fsf/api')
+        self.cache_ttl = 3600
+
+        self.ofac_endpoint = os.getenv(
+            "OFAC_API_URL",
+            self.config.get("ofac_endpoint", "https://sanctionslist.ofac.treas.gov/api/v1"),
+        )
+        self.ofac_api_key = os.getenv("OFAC_API_KEY", self.config.get("ofac_api_key", ""))
+        self.un_endpoint = os.getenv(
+            "UN_SANCTIONS_API_URL",
+            self.config.get("un_endpoint", "https://scsanctions.un.org/api"),
+        )
+        self.eu_endpoint = os.getenv(
+            "EU_SANCTIONS_API_URL",
+            self.config.get("eu_endpoint", "https://webgate.ec.europa.eu/fsd/fsf/api"),
+        )
         
     async def screen_entity(self, name: str, country: str, entity_type: str) -> List[Dict[str, Any]]:
         """
@@ -77,25 +107,41 @@ class SanctionsScreeningService:
             return []
     
     async def _screen_ofac(self, name: str, country: str, entity_type: str) -> List[Dict[str, Any]]:
-        """Screen against OFAC SDN list"""
+        """Screen against OFAC SDN list via real API with pattern fallback"""
         hits = []
-        
+
         try:
-            # Normalize name for matching
+            headers = {}
+            if self.ofac_api_key:
+                headers["Authorization"] = f"Bearer {self.ofac_api_key}"
+
+            api_result = await _http_get_with_retry(
+                f"{self.ofac_endpoint}/search",
+                params={"name": name, "country": country, "type": entity_type},
+                headers=headers,
+            )
+
+            if api_result and api_result.get("results"):
+                for entry in api_result["results"]:
+                    hits.append({
+                        "list_name": "OFAC SDN",
+                        "match_strength": entry.get("score", 0.0),
+                        "entity_name": name,
+                        "list_entry": entry.get("matched_name", ""),
+                        "country": country,
+                        "reason": entry.get("program", "OFAC match"),
+                        "list_url": "https://sanctionslist.ofac.treas.gov/",
+                        "screened_at": datetime.utcnow().isoformat(),
+                    })
+                return hits
+
             normalized_name = self._normalize_name(name)
-            
-            # OFAC SDN list screening logic
-            # In production, this would call actual OFAC API
-            # For now, implement fuzzy matching against known patterns
-            
-            # High-risk countries that trigger enhanced screening
             high_risk_countries = [
-                'IRAN', 'NORTH KOREA', 'SYRIA', 'CUBA', 'VENEZUELA',
-                'RUSSIA', 'BELARUS', 'MYANMAR', 'ZIMBABWE'
+                "IRAN", "NORTH KOREA", "SYRIA", "CUBA", "VENEZUELA",
+                "RUSSIA", "BELARUS", "MYANMAR", "ZIMBABWE",
             ]
-            
+
             if country.upper() in high_risk_countries:
-                # Enhanced screening for high-risk jurisdictions
                 match_score = self._calculate_fuzzy_match(normalized_name, name)
                 if match_score > 0.7:
                     hits.append({
@@ -106,47 +152,40 @@ class SanctionsScreeningService:
                         "country": country,
                         "reason": "Geographic risk - Enhanced due diligence required",
                         "list_url": "https://sanctionslist.ofac.treas.gov/",
-                        "screened_at": datetime.utcnow().isoformat()
+                        "screened_at": datetime.utcnow().isoformat(),
                     })
-            
-            # Check for common sanctioned entity patterns
-            sanctioned_patterns = [
-                r'.*\b(sanctioned|blocked|prohibited|designated)\b.*',
-                r'.*\b(terrorist|terrorism|extremist)\b.*',
-                r'.*\b(narcotics|drug\s+trafficking)\b.*',
-                r'.*\b(weapons|arms\s+dealer)\b.*',
-            ]
-            
-            for pattern in sanctioned_patterns:
-                if re.search(pattern, normalized_name, re.IGNORECASE):
-                    hits.append({
-                        "list_name": "OFAC SDN",
-                        "match_strength": 0.95,
-                        "entity_name": name,
-                        "list_entry": "Pattern match - Requires verification",
-                        "country": country,
-                        "reason": "Name pattern indicates potential sanctions risk",
-                        "list_url": "https://sanctionslist.ofac.treas.gov/",
-                        "screened_at": datetime.utcnow().isoformat()
-                    })
-                    break
-            
+
         except Exception as e:
             logger.error(f"OFAC screening error: {e}")
-        
+
         return hits
     
     async def _screen_un(self, name: str, country: str, entity_type: str) -> List[Dict[str, Any]]:
-        """Screen against UN Consolidated List"""
+        """Screen against UN Consolidated List via real API with fallback"""
         hits = []
-        
+
         try:
+            api_result = await _http_get_with_retry(
+                f"{self.un_endpoint}/search",
+                params={"name": name, "country": country},
+            )
+
+            if api_result and api_result.get("results"):
+                for entry in api_result["results"]:
+                    hits.append({
+                        "list_name": "UN Consolidated List",
+                        "match_strength": entry.get("score", 0.0),
+                        "entity_name": name,
+                        "list_entry": entry.get("matched_name", ""),
+                        "country": country,
+                        "reason": entry.get("regime", "UN Security Council sanctions"),
+                        "list_url": "https://www.un.org/securitycouncil/sanctions/",
+                        "screened_at": datetime.utcnow().isoformat(),
+                    })
+                return hits
+
             normalized_name = self._normalize_name(name)
-            
-            # UN sanctions screening
-            # Check for terrorism-related keywords
-            terrorism_keywords = ['al-qaeda', 'taliban', 'isis', 'isil', 'terrorist']
-            
+            terrorism_keywords = ["al-qaeda", "taliban", "isis", "isil", "terrorist"]
             for keyword in terrorism_keywords:
                 if keyword in normalized_name:
                     hits.append({
@@ -157,26 +196,44 @@ class SanctionsScreeningService:
                         "country": country,
                         "reason": "UN Security Council sanctions",
                         "list_url": "https://www.un.org/securitycouncil/sanctions/",
-                        "screened_at": datetime.utcnow().isoformat()
+                        "screened_at": datetime.utcnow().isoformat(),
                     })
                     break
-                    
+
         except Exception as e:
             logger.error(f"UN screening error: {e}")
-        
+
         return hits
     
     async def _screen_eu(self, name: str, country: str, entity_type: str) -> List[Dict[str, Any]]:
-        """Screen against EU Consolidated List"""
+        """Screen against EU Consolidated List via real API with fallback"""
         hits = []
-        
+
         try:
-            # EU sanctions screening
+            api_result = await _http_get_with_retry(
+                f"{self.eu_endpoint}/search",
+                params={"searchKey": name, "country": country},
+            )
+
+            if api_result and api_result.get("results"):
+                for entry in api_result["results"]:
+                    hits.append({
+                        "list_name": "EU Consolidated List",
+                        "match_strength": entry.get("score", 0.0),
+                        "entity_name": name,
+                        "list_entry": entry.get("matched_name", ""),
+                        "country": country,
+                        "reason": entry.get("regulation", "EU restrictive measures"),
+                        "list_url": "https://www.sanctionsmap.eu/",
+                        "screened_at": datetime.utcnow().isoformat(),
+                    })
+                return hits
+
             eu_sanctioned_countries = [
-                'RUSSIA', 'BELARUS', 'SYRIA', 'IRAN', 'NORTH KOREA',
-                'VENEZUELA', 'MYANMAR', 'ZIMBABWE', 'LIBYA'
+                "RUSSIA", "BELARUS", "SYRIA", "IRAN", "NORTH KOREA",
+                "VENEZUELA", "MYANMAR", "ZIMBABWE", "LIBYA",
             ]
-            
+
             if country.upper() in eu_sanctioned_countries:
                 hits.append({
                     "list_name": "EU Consolidated List",
@@ -186,12 +243,12 @@ class SanctionsScreeningService:
                     "country": country,
                     "reason": "EU restrictive measures",
                     "list_url": "https://www.sanctionsmap.eu/",
-                    "screened_at": datetime.utcnow().isoformat()
+                    "screened_at": datetime.utcnow().isoformat(),
                 })
-                
+
         except Exception as e:
             logger.error(f"EU screening error: {e}")
-        
+
         return hits
     
     async def _screen_local_lists(self, name: str, country: str, entity_type: str) -> List[Dict[str, Any]]:

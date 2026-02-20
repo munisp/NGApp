@@ -1,6 +1,7 @@
 // API Client for Agent Banking Platform
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8020'
 const PAYMENT_API_URL = import.meta.env.VITE_PAYMENT_GATEWAY_URL || 'http://localhost:8021'
+const KYB_API_URL = import.meta.env.VITE_KYB_API_URL || 'http://localhost:8121'
 
 class APIClient {
   constructor(baseURL) {
@@ -81,6 +82,7 @@ class APIClient {
 // Create API client instances
 const ecommerceAPI = new APIClient(API_BASE_URL)
 const paymentAPI = new APIClient(PAYMENT_API_URL)
+const kybAPI = new APIClient(KYB_API_URL)
 
 // E-commerce API endpoints
 export const ecommerce = {
@@ -202,6 +204,20 @@ export const workflows = {
   getWorkflowStatus: (id) => ecommerceAPI.get(`/api/workflows/${id}/status`)
 }
 
+// KYB Verification API endpoints
+export const kyb = {
+  startVerification: (data) => kybAPI.post('/kyb/verify', data),
+  getVerificationStatus: (id) => kybAPI.get(`/kyb/status/${id}`),
+  submitBankStatement: (data) => kybAPI.post('/kyb/bank-statement', data),
+  submitEvidence: (data) => kybAPI.post('/kyb/evidence', data),
+  verifyOwners: (id) => kybAPI.post(`/kyb/verify-owners/${id}`),
+  approveVerification: (id) => kybAPI.post(`/kyb/approve/${id}`),
+  rejectVerification: (id, reason) => kybAPI.post(`/kyb/reject/${id}`, { reason }),
+  getScreeningResults: (id) => kybAPI.get(`/kyb/screening/${id}`),
+  uploadKYBDocuments: (file, verificationId, documentType) => kybAPI.uploadFile('/kyb/documents', file, { verificationId, documentType }),
+  getVerificationPaths: () => kybAPI.get('/kyb/paths'),
+}
+
 // Export default API object
 export default {
   ecommerce,
@@ -211,5 +227,6 @@ export default {
   transactions,
   fraud,
   security,
-  workflows
+  workflows,
+  kyb
 }

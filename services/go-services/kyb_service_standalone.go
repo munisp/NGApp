@@ -52,17 +52,41 @@ type ServiceMetrics struct {
 func NewStandaloneKYBService() *StandaloneKYBService {
 	instanceID := fmt.Sprintf("kyb-instance-%d", time.Now().Unix())
 	
-	// Single Redis connection for testing
+	redisAddr := os.Getenv("REDIS_ADDR")
+	if redisAddr == "" {
+		redisAddr = "localhost:6380"
+	}
+	redisPassword := os.Getenv("REDIS_PASSWORD")
 	redisClient := redis.NewClient(&redis.Options{
-		Addr:     "localhost:6380",  // Updated port
-		Password: "",
+		Addr:     redisAddr,
+		Password: redisPassword,
 		DB:       0,
 		PoolSize: 100,
 	})
-	
-	// PostgreSQL connection
+
+	dbHost := os.Getenv("POSTGRES_HOST")
+	if dbHost == "" {
+		dbHost = "localhost"
+	}
+	dbPort := os.Getenv("POSTGRES_PORT")
+	if dbPort == "" {
+		dbPort = "5432"
+	}
+	dbUser := os.Getenv("POSTGRES_USER")
+	if dbUser == "" {
+		log.Fatal("POSTGRES_USER environment variable is required")
+	}
+	dbPassword := os.Getenv("POSTGRES_PASSWORD")
+	if dbPassword == "" {
+		log.Fatal("POSTGRES_PASSWORD environment variable is required")
+	}
+	dbName := os.Getenv("POSTGRES_DB")
+	if dbName == "" {
+		dbName = "kyb_db"
+	}
 	dbConfig := fmt.Sprintf(
-		"host=localhost port=5432 user=kyb_user password=kyb_password dbname=kyb_db sslmode=disable pool_max_conns=50",
+		"host=%s port=%s user=%s password=%s dbname=%s sslmode=disable pool_max_conns=50",
+		dbHost, dbPort, dbUser, dbPassword, dbName,
 	)
 	
 	dbPool, err := pgxpool.Connect(context.Background(), dbConfig)
@@ -300,12 +324,22 @@ func (s *StandaloneKYBService) verifyBusiness(c *gin.Context) {
 		return
 	}
 	
-	// Simulate processing time
-	time.Sleep(time.Millisecond * 50)
-	
-	// Cache result
+	var count int
+	err := s.db.QueryRow(ctx, "SELECT COUNT(*) FROM kyb_verifications WHERE tax_id = $1 AND country = $2", request.TaxID, request.Country).Scan(&count)
+	if err != nil {
+		log.Printf("DB query failed, continuing: %v", err)
+	}
+
+	_, insertErr := s.db.Exec(ctx,
+		"INSERT INTO kyb_verifications (verification_id, business_name, tax_id, country, status, created_at) VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT DO NOTHING",
+		verificationID, request.BusinessName, request.TaxID, request.Country, "processing", time.Now(),
+	)
+	if insertErr != nil {
+		log.Printf("DB insert failed: %v", insertErr)
+	}
+
 	s.redis.Set(ctx, cacheKey, "processed", time.Minute*5)
-	
+
 	// Add to processing queue
 	queueData, _ := json.Marshal(map[string]interface{}{
 		"verification_id": verificationID,
@@ -328,12 +362,31 @@ func (s *StandaloneKYBService) verifyBusiness(c *gin.Context) {
 
 func (s *StandaloneKYBService) getVerificationStatus(c *gin.Context) {
 	verificationID := c.Param("id")
-	
+	ctx := context.Background()
+
+	var businessName, taxID, country, status string
+	var createdAt time.Time
+	err := s.db.QueryRow(ctx,
+		"SELECT business_name, tax_id, country, status, created_at FROM kyb_verifications WHERE verification_id = $1",
+		verificationID,
+	).Scan(&businessName, &taxID, &country, &status, &createdAt)
+
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"verification_id": verificationID,
+			"status":         "not_found",
+			"timestamp":      time.Now().UTC(),
+		})
+		return
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"verification_id": verificationID,
-		"status":         "completed",
-		"result":         "verified",
-		"confidence":     0.95,
+		"business_name":  businessName,
+		"tax_id":         taxID,
+		"country":        country,
+		"status":         status,
+		"created_at":     createdAt,
 		"timestamp":      time.Now().UTC(),
 	})
 }

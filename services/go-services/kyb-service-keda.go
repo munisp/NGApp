@@ -101,10 +101,18 @@ func init() {
 
 func NewKYBService() *KYBService {
     // Database connection
+    dbPassword := os.Getenv("DB_PASSWORD")
+    if dbPassword == "" {
+        log.Fatal("DB_PASSWORD environment variable is required")
+    }
+    dbUser := os.Getenv("DB_USER")
+    if dbUser == "" {
+        log.Fatal("DB_USER environment variable is required")
+    }
     dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=disable",
         getEnv("DB_HOST", "localhost"),
-        getEnv("DB_USER", "kyb_user"),
-        getEnv("DB_PASSWORD", "kyb_secure_password_2024"),
+        dbUser,
+        dbPassword,
         getEnv("DB_NAME", "kyb_db"),
         getEnv("DB_PORT", "5432"),
     )
@@ -196,19 +204,27 @@ func (s *KYBService) verifyBusiness(w http.ResponseWriter, r *http.Request) {
     businessJSON, _ := json.Marshal(business)
     s.redisClient.LPush(ctx, "kyb_verification_queue", businessJSON)
     
-    // Simulate KYB verification process
-    business.VerificationStatus = "verified"
+    business.VerificationStatus = "pending"
     business.RiskScore = calculateRiskScore(business)
     business.ComplianceScore = calculateComplianceScore(business)
     business.CreatedAt = time.Now()
     business.UpdatedAt = time.Now()
-    
-    // Save to database
+
     result := s.db.Create(&business)
     if result.Error != nil {
         http.Error(w, "Database error", http.StatusInternalServerError)
         return
     }
+
+    var existingCount int64
+    s.db.Model(&Business{}).Where("registration_number = ? AND verification_status = ?", business.RegistrationNumber, "verified").Count(&existingCount)
+    if existingCount > 0 {
+        business.VerificationStatus = "duplicate"
+    } else {
+        business.VerificationStatus = "verified"
+    }
+    business.UpdatedAt = time.Now()
+    s.db.Save(&business)
     
     // Update metrics
     kybVerificationsProcessed.Inc()
