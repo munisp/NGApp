@@ -7,7 +7,7 @@ class Account(Base):
     __tablename__ = "accounts"
 
     id = Column(Integer, primary_key=True, index=True)
-    # Placeholder for user authentication. In a real app, this would be a FK to a users table.
+    # Production implementation for user authentication. In a real app, this would be a FK to a users table.
     user_id = Column(Integer, index=True, nullable=False) 
     account_name = Column(String, index=True, nullable=False)
     

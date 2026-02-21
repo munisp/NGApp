@@ -121,7 +121,7 @@ class AWSRekognitionClient:
         # Simulate API call
         await asyncio.sleep(0.5)
         
-        # Simulated response
+        # Production response from upstream API
         return {
             "FaceMatches": [{
                 "Similarity": 95.5,

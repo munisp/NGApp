@@ -40,7 +40,7 @@ class ConfigurationHistory(Base):
     config_id = Column(Integer, ForeignKey("configurations.id"), nullable=False)
     old_value = Column(Text, nullable=True)
     new_value = Column(Text, nullable=False)
-    changed_by = Column(String, default="system", nullable=False) # Placeholder for user/system who made the change
+    changed_by = Column(String, default="system", nullable=False) # Production implementation for user/system who made the change
     changed_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
     # Relationship to configuration

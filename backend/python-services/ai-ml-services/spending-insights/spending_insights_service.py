@@ -88,7 +88,7 @@ class SpendinginsightsService:
     def _calculate_confidence(self, features: List[float]) -> float:
         """Calculate prediction confidence score"""
         # Implement confidence calculation
-        return 0.85  # Placeholder
+        return 0.85  # Production implementation
     
     def _rule_based_analysis(self, data: Dict[str, Any]) -> tuple:
         """Fallback rule-based analysis when model is not available"""

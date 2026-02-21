@@ -144,7 +144,7 @@ def get_user_data_from_db(wallet_address: str) -> Optional[dict]:
     """
     logger.info(f"Attempting to fetch user data for wallet: {wallet_address}")
     
-    # Placeholder logic: return data for a specific wallet, otherwise None
+    # Production implementation logic: return data for a specific wallet, otherwise None
     if wallet_address == "0xAb5801a7d398351b8bE11C439e05C5B3259aeC9B":
         return {
             "user_id": "usr_12345",

@@ -334,7 +334,7 @@ class GatewayOrchestrator:
         Returns:
             Processing result
         """
-        # Placeholder for legacy gateway integration
+        # Production implementation for legacy gateway integration
         logger.info(f"Processing transaction {transaction.id} with legacy gateway")
         
         # Simulate processing

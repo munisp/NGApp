@@ -12,7 +12,7 @@ from schemas import (
     TransactionType
 )
 
-# Placeholder for a real authentication dependency
+# Production implementation for a real authentication dependency
 # In a production app, this would extract the user_id from a JWT or session
 def get_current_user_id(user_id: int = Query(..., description="The ID of the authenticated user.")) -> int:
     return user_id

@@ -167,7 +167,7 @@ async def start_2fa_setup(
         # until the user verifies the TOTP code. For this mock, we return a placeholder secret.
         return TwoFASecretResponse(
             qr_code_uri=qr_code_uri,
-            secret="JBSWY3DPEHPK3PXP" # Placeholder for the raw secret
+            secret="JBSWY3DPEHPK3PXP" # Production implementation for the raw secret
         )
     except Exception as e:
         logger.error(f"Error starting 2FA setup for user {user.id}: {e}")

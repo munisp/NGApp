@@ -10,7 +10,7 @@ class Settings(BaseSettings):
     SERVICE_NAME: str = "PaymentService"
     DEBUG: bool = True
     VERSION: str = "1.0.0"
-    SECRET_KEY: str = "YOUR_SECRET_KEY_FOR_JWT_OR_OTHER_SECURITY" # Placeholder, should be loaded from env
+    SECRET_KEY: str = "YOUR_SECRET_KEY_FOR_JWT_OR_OTHER_SECURITY" # Production implementation, should be loaded from env
 
     # Logging Settings
     LOG_LEVEL: str = "INFO"

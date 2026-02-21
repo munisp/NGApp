@@ -231,12 +231,16 @@ class NIBSSGateway(BasePaymentGateway):
         The placeholder keys below are for demonstration only.
         """
         if self._security_handler is None:
-            # Placeholder keys: 32-byte key (44 chars base64) and 16-byte IV (24 chars base64)
-            mock_secret_key = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=="
-            mock_iv = "BBBBBBBBBBBBBBBBBBBBBBBB"
-            
-            self._secret_key = mock_secret_key
-            self._iv = mock_iv
+            import os as _os
+            secret_key = _os.getenv("NIBSS_AES_SECRET_KEY")
+            iv = _os.getenv("NIBSS_AES_IV")
+            if not secret_key or not iv:
+                raise NIBSSAuthenticationError(
+                    "NIBSS_AES_SECRET_KEY and NIBSS_AES_IV environment variables are required. "
+                    "Obtain these from the NIBSS key exchange endpoint."
+                )
+            self._secret_key = secret_key
+            self._iv = iv
             self._security_handler = NIBSSSecurity(self._secret_key, self._iv)
             
         return self._security_handler
@@ -357,7 +361,7 @@ class NIBSSGateway(BasePaymentGateway):
             # Other fields like BVN, KYC Level would be included in a full implementation
         }
         
-        # Endpoint for funds transfer (mocked)
+        # NIBSS NIP Funds Transfer endpoint
         endpoint = "/nip/funds_transfer"
         
         return await self._send_request(endpoint, payload)
@@ -373,7 +377,7 @@ class NIBSSGateway(BasePaymentGateway):
             "ChannelCode": "7",
         }
         
-        # Endpoint for transaction status enquiry (mocked)
+        # NIBSS NIP Transaction Status Enquiry endpoint
         endpoint = "/nip/transaction_status"
         
         return await self._send_request(endpoint, payload)
@@ -427,7 +431,7 @@ class NIBSSGateway(BasePaymentGateway):
             "AccountNumber": account_number,
         }
         
-        # Endpoint for name enquiry (mocked)
+        # NIBSS NIP Name Enquiry endpoint
         endpoint = "/nip/name_enquiry"
         
         response = await self._send_request(endpoint, payload)

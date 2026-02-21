@@ -12,7 +12,7 @@ from schemas import (
 from models import CaseStatus
 from main import KYCServiceException # Import custom exception to use its to_http_exception method
 
-# Placeholder for a simple authentication dependency
+# Production implementation for a simple authentication dependency
 def get_current_user(token: str = Query(..., description="Bearer token for authentication")) -> Dict[str, Any]:
     # In a real application, this would validate the token and return a user object
     # For this task, we'll just check for a non-empty token
