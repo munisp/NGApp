@@ -1,76 +1,23 @@
 """
-POS Integration Service
+POS Integration Service - Gateway Entry Point
 Port: 8126
+Delegates to pos_service.py (core POS) and enhanced_pos_service.py (fraud/analytics)
 """
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
-from typing import Optional, List, Dict, Any
+from typing import Optional, Dict, Any
 from datetime import datetime
+import os
+import logging
+import httpx
 import uvicorn
 
-# Redis-based storage (replaces in-memory dict)
-import os
-import json
-import redis
-
-_redis_client = None
-
-def get_redis_client():
-    """Get Redis client - requires REDIS_URL environment variable"""
-    global _redis_client
-    if _redis_client is None:
-        redis_url = os.getenv("REDIS_URL")
-        if not redis_url:
-            raise ValueError("REDIS_URL environment variable is required for storage")
-        _redis_client = redis.from_url(redis_url, decode_responses=True)
-    return _redis_client
-
-def storage_get(key: str):
-    """Get value from Redis storage"""
-    try:
-        client = get_redis_client()
-        value = client.get(f"storage:{key}")
-        return json.loads(value) if value else None
-    except Exception as e:
-        print(f"Storage get error: {e}")
-        return None
-
-def storage_set(key: str, value, ttl: int = 86400):
-    """Set value in Redis storage with optional TTL (default 24h)"""
-    try:
-        client = get_redis_client()
-        client.setex(f"storage:{key}", ttl, json.dumps(value))
-        return True
-    except Exception as e:
-        print(f"Storage set error: {e}")
-        return False
-
-def storage_delete(key: str):
-    """Delete value from Redis storage"""
-    try:
-        client = get_redis_client()
-        client.delete(f"storage:{key}")
-        return True
-    except Exception as e:
-        print(f"Storage delete error: {e}")
-        return False
-
-def storage_keys(pattern: str = "*"):
-    """Get all keys matching pattern"""
-    try:
-        client = get_redis_client()
-        return [k.replace("storage:", "") for k in client.keys(f"storage:{pattern}")]
-    except Exception as e:
-        print(f"Storage keys error: {e}")
-        return []
-
-
+logger = logging.getLogger(__name__)
 
 app = FastAPI(
     title="POS Integration",
-    description="POS Integration for Agent Banking Platform",
-    version="1.0.0"
+    description="POS Integration Gateway for Agent Banking Platform",
+    version="2.0.0"
 )
 
 app.add_middleware(
@@ -81,132 +28,217 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# In-memory storage (replace with database in production)
-# storage = {}  # REPLACED: Use storage_get/storage_set functions instead
+POS_CORE_URL = os.getenv("POS_CORE_URL", "http://localhost:8016")
+POS_ENHANCED_URL = os.getenv("POS_ENHANCED_URL", "http://localhost:8072")
+
 stats = {
     "total_requests": 0,
-    "total_items": 0,
     "start_time": datetime.now()
 }
 
-# Pydantic Models
-class Item(BaseModel):
-    id: Optional[str] = None
-    data: Dict[str, Any]
-    created_at: Optional[datetime] = None
-    updated_at: Optional[datetime] = None
 
 @app.get("/")
 async def root():
     return {
         "service": "pos-integration",
-        "description": "POS Integration",
-        "version": "1.0.0",
+        "description": "POS Integration Gateway",
+        "version": "2.0.0",
         "port": 8126,
-        "status": "operational"
+        "status": "operational",
+        "upstream_services": {
+            "pos_core": POS_CORE_URL,
+            "pos_enhanced": POS_ENHANCED_URL
+        }
     }
+
 
 @app.get("/health")
 async def health_check():
     uptime = (datetime.now() - stats["start_time"]).total_seconds()
+    core_healthy = False
+    enhanced_healthy = False
+
+    async with httpx.AsyncClient(timeout=5.0) as client:
+        try:
+            resp = await client.get(f"{POS_CORE_URL}/health")
+            core_healthy = resp.status_code == 200
+        except Exception:
+            pass
+        try:
+            resp = await client.get(f"{POS_ENHANCED_URL}/health")
+            enhanced_healthy = resp.status_code == 200
+        except Exception:
+            pass
+
     return {
-        "status": "healthy",
+        "status": "healthy" if core_healthy else "degraded",
         "uptime_seconds": int(uptime),
         "total_requests": stats["total_requests"],
-        "total_items": stats["total_items"]
+        "upstream": {
+            "pos_core": "healthy" if core_healthy else "unreachable",
+            "pos_enhanced": "healthy" if enhanced_healthy else "unreachable"
+        }
     }
 
-@app.post("/items")
-async def create_item(item: Item):
-    """Create a new item"""
-    stats["total_requests"] += 1
-    item_id = f"item_{len(storage) + 1}"
-    item.id = item_id
-    item.created_at = datetime.now()
-    item.updated_at = datetime.now()
-    storage[item_id] = item.dict()
-    stats["total_items"] += 1
-    return {"success": True, "item_id": item_id, "item": item}
 
-@app.get("/items")
-async def list_items(skip: int = 0, limit: int = 100):
-    """List all items"""
+@app.post("/process-payment")
+async def process_payment(request: Request):
+    """Delegate payment processing to core POS service"""
     stats["total_requests"] += 1
-    items = list(storage.values())[skip:skip+limit]
-    return {
-        "success": True,
-        "total": len(storage),
-        "items": items,
-        "skip": skip,
-        "limit": limit
-    }
+    body = await request.json()
+    async with httpx.AsyncClient(timeout=60.0) as client:
+        response = await client.post(f"{POS_CORE_URL}/process-payment", json=body)
+        if response.status_code != 200:
+            raise HTTPException(status_code=response.status_code, detail=response.json())
+        return response.json()
 
-@app.get("/items/{item_id}")
-async def get_item(item_id: str):
-    """Get a specific item"""
-    stats["total_requests"] += 1
-    if item_id not in storage:
-        raise HTTPException(status_code=404, detail="Item not found")
-    return {"success": True, "item": storage[item_id]}
 
-@app.put("/items/{item_id}")
-async def update_item(item_id: str, item: Item):
-    """Update an item"""
+@app.post("/process-enhanced-payment")
+async def process_enhanced_payment(request: Request):
+    """Delegate enhanced payment (with fraud detection) to enhanced POS service"""
     stats["total_requests"] += 1
-    if item_id not in storage:
-        raise HTTPException(status_code=404, detail="Item not found")
-    item.id = item_id
-    item.updated_at = datetime.now()
-    item.created_at = storage[item_id].get("created_at", datetime.now())
-    storage[item_id] = item.dict()
-    return {"success": True, "item": item}
+    body = await request.json()
+    async with httpx.AsyncClient(timeout=60.0) as client:
+        response = await client.post(f"{POS_ENHANCED_URL}/process-enhanced-payment", json=body)
+        if response.status_code != 200:
+            raise HTTPException(status_code=response.status_code, detail=response.json())
+        return response.json()
 
-@app.delete("/items/{item_id}")
-async def delete_item(item_id: str):
-    """Delete an item"""
-    stats["total_requests"] += 1
-    if item_id not in storage:
-        raise HTTPException(status_code=404, detail="Item not found")
-    del storage[item_id]
-    stats["total_items"] -= 1
-    return {"success": True, "message": "Item deleted"}
 
-@app.post("/process")
-async def process_data(data: Dict[str, Any]):
-    """Process data (service-specific logic)"""
+@app.get("/transaction/{transaction_id}/status")
+async def get_transaction_status(transaction_id: str):
+    """Get transaction status from core POS service"""
     stats["total_requests"] += 1
-    return {
-        "success": True,
-        "message": "Data processed successfully",
-        "service": "pos-integration",
-        "processed_at": datetime.now().isoformat(),
-        "data": data
-    }
+    async with httpx.AsyncClient(timeout=10.0) as client:
+        response = await client.get(f"{POS_CORE_URL}/transaction/{transaction_id}/status")
+        if response.status_code != 200:
+            raise HTTPException(status_code=response.status_code, detail=response.json())
+        return response.json()
 
-@app.get("/search")
-async def search_items(query: str):
-    """Search items"""
+
+@app.post("/transaction/{transaction_id}/refund")
+async def refund_transaction(transaction_id: str, refund_amount: Optional[float] = None, reason: str = ""):
+    """Delegate refund to core POS service"""
     stats["total_requests"] += 1
-    results = [item for item in storage.values() if query.lower() in str(item).lower()]
-    return {
-        "success": True,
-        "query": query,
-        "total_results": len(results),
-        "results": results
-    }
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        params: Dict[str, Any] = {"reason": reason}
+        if refund_amount is not None:
+            params["refund_amount"] = refund_amount
+        response = await client.post(
+            f"{POS_CORE_URL}/transaction/{transaction_id}/refund",
+            params=params
+        )
+        if response.status_code != 200:
+            raise HTTPException(status_code=response.status_code, detail=response.json())
+        return response.json()
+
+
+@app.post("/device/register")
+async def register_device(request: Request):
+    """Register a POS device via core service"""
+    stats["total_requests"] += 1
+    body = await request.json()
+    async with httpx.AsyncClient(timeout=10.0) as client:
+        response = await client.post(f"{POS_CORE_URL}/device/register", json=body)
+        if response.status_code != 200:
+            raise HTTPException(status_code=response.status_code, detail=response.json())
+        return response.json()
+
+
+@app.get("/devices")
+async def get_devices(merchant_id: Optional[str] = None):
+    """Get registered devices from core service"""
+    stats["total_requests"] += 1
+    params = {}
+    if merchant_id:
+        params["merchant_id"] = merchant_id
+    async with httpx.AsyncClient(timeout=10.0) as client:
+        response = await client.get(f"{POS_CORE_URL}/devices", params=params)
+        if response.status_code != 200:
+            raise HTTPException(status_code=response.status_code, detail=response.json())
+        return response.json()
+
+
+@app.post("/device/{device_id}/command")
+async def send_device_command(device_id: str, request: Request):
+    """Send command to POS device via core service"""
+    stats["total_requests"] += 1
+    body = await request.json()
+    async with httpx.AsyncClient(timeout=15.0) as client:
+        response = await client.post(f"{POS_CORE_URL}/device/{device_id}/command", json=body)
+        if response.status_code != 200:
+            raise HTTPException(status_code=response.status_code, detail=response.json())
+        return response.json()
+
+
+@app.get("/fraud-rules")
+async def get_fraud_rules():
+    """Get fraud detection rules from enhanced service"""
+    stats["total_requests"] += 1
+    async with httpx.AsyncClient(timeout=10.0) as client:
+        response = await client.get(f"{POS_ENHANCED_URL}/fraud-rules")
+        if response.status_code != 200:
+            raise HTTPException(status_code=response.status_code, detail=response.json())
+        return response.json()
+
+
+@app.get("/analytics/{transaction_id}")
+async def get_transaction_analytics(transaction_id: str):
+    """Get transaction analytics from enhanced service"""
+    stats["total_requests"] += 1
+    async with httpx.AsyncClient(timeout=10.0) as client:
+        response = await client.get(f"{POS_ENHANCED_URL}/analytics/{transaction_id}")
+        if response.status_code != 200:
+            raise HTTPException(status_code=response.status_code, detail=response.json())
+        return response.json()
+
+
+@app.get("/exchange-rates")
+async def get_exchange_rates():
+    """Get current exchange rates from enhanced service"""
+    stats["total_requests"] += 1
+    async with httpx.AsyncClient(timeout=10.0) as client:
+        response = await client.get(f"{POS_ENHANCED_URL}/exchange-rates")
+        if response.status_code != 200:
+            raise HTTPException(status_code=response.status_code, detail=response.json())
+        return response.json()
+
+
+@app.get("/supported-currencies")
+async def get_supported_currencies():
+    """Get supported currencies from enhanced service"""
+    stats["total_requests"] += 1
+    async with httpx.AsyncClient(timeout=10.0) as client:
+        response = await client.get(f"{POS_ENHANCED_URL}/supported-currencies")
+        if response.status_code != 200:
+            raise HTTPException(status_code=response.status_code, detail=response.json())
+        return response.json()
+
+
+@app.post("/convert-currency")
+async def convert_currency(request: Request):
+    """Convert currency via enhanced service"""
+    stats["total_requests"] += 1
+    body = await request.json()
+    async with httpx.AsyncClient(timeout=10.0) as client:
+        response = await client.post(f"{POS_ENHANCED_URL}/convert-currency", json=body)
+        if response.status_code != 200:
+            raise HTTPException(status_code=response.status_code, detail=response.json())
+        return response.json()
+
 
 @app.get("/stats")
 async def get_statistics():
-    """Get service statistics"""
+    """Get gateway statistics"""
     uptime = (datetime.now() - stats["start_time"]).total_seconds()
     return {
         "uptime_seconds": int(uptime),
         "total_requests": stats["total_requests"],
-        "total_items": stats["total_items"],
         "service": "pos-integration",
         "port": 8126,
         "status": "operational"
     }
+
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8126)

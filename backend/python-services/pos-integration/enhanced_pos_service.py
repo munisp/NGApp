@@ -6,6 +6,8 @@ Advanced fraud detection, multi-currency support, and comprehensive analytics
 import asyncio
 import json
 import logging
+import math
+import os
 import time
 import uuid
 import hashlib
@@ -171,43 +173,57 @@ class EnhancedPOSService(POSService):
                 await asyncio.sleep(300)  # Retry in 5 minutes
     
     async def _fetch_exchange_rates(self):
-        """Fetch current exchange rates"""
-        try:
-            # In production, this would call a real exchange rate API
-            # Using cached exchange rates
+        """Fetch current exchange rates from live API with static fallback"""
+        base_currency = "USD"
+        target_currencies = list(self.currency_precision.keys())
+        base_rates = None
+        source = "static_fallback"
+        
+        api_key = os.getenv("EXCHANGE_RATE_API_KEY", "")
+        if api_key:
+            try:
+                async with httpx.AsyncClient() as client:
+                    response = await client.get(
+                        f"https://v6.exchangerate-api.com/v6/{api_key}/latest/{base_currency}",
+                        timeout=15.0
+                    )
+                    if response.status_code == 200:
+                        data = response.json()
+                        if data.get("result") == "success":
+                            rates_raw = data.get("conversion_rates", {})
+                            base_rates = {c: rates_raw[c] for c in target_currencies if c in rates_raw}
+                            source = "exchangerate-api.com"
+                            logger.info("Fetched live exchange rates from exchangerate-api.com")
+            except Exception as e:
+                logger.warning(f"Live exchange rate fetch failed, falling back to static rates: {e}")
+        
+        if base_rates is None:
             base_rates = {
-                "USD": 1.0,
-                "EUR": 0.85,
-                "GBP": 0.73,
-                "JPY": 110.0,
-                "CAD": 1.25,
-                "AUD": 1.35,
-                "CHF": 0.92,
-                "CNY": 6.45,
-                "INR": 74.5,
-                "BRL": 5.2,
+                "USD": 1.0, "EUR": 0.85, "GBP": 0.73, "JPY": 110.0,
+                "CAD": 1.25, "AUD": 1.35, "CHF": 0.92, "CNY": 6.45,
+                "INR": 74.5, "BRL": 5.2,
             }
-            
-            # Create exchange rate matrix
+            logger.info("Using static fallback exchange rates")
+        
+        try:
             for from_curr, from_rate in base_rates.items():
                 for to_curr, to_rate in base_rates.items():
                     if from_curr != to_curr:
                         rate = Decimal(str(to_rate / from_rate)).quantize(
                             Decimal('0.0001'), rounding=ROUND_HALF_UP
                         )
-                        
                         self.exchange_rates[f"{from_curr}_{to_curr}"] = ExchangeRate(
                             from_currency=from_curr,
                             to_currency=to_curr,
                             rate=rate,
                             timestamp=datetime.utcnow(),
-                            source="exchange_rate_api"
+                            source=source
                         )
             
-            logger.info(f"Updated {len(self.exchange_rates)} exchange rates")
+            logger.info(f"Updated {len(self.exchange_rates)} exchange rates (source: {source})")
             
         except Exception as e:
-            logger.error(f"Failed to fetch exchange rates: {e}")
+            logger.error(f"Failed to build exchange rate matrix: {e}")
     
     def convert_currency(self, amount: Decimal, from_currency: str, to_currency: str) -> Decimal:
         """Convert amount between currencies"""
@@ -422,22 +438,50 @@ class EnhancedPOSService(POSService):
             return 0.0
     
     async def _calculate_location_score(self, transaction: POSTransaction) -> float:
-        """Calculate location-based risk score"""
+        """Calculate location-based risk score using terminal geolocation data"""
         try:
-            # In a real implementation, this would check:
-            # - GPS coordinates vs usual location
-            # - IP geolocation
-            # - Time zone consistency
+            db = self.get_db_session()
             
-            # For demo, random score based on terminal ID
-            terminal_hash = hashlib.md5(transaction.terminal_id.encode()).hexdigest()
-            score = int(terminal_hash[:2], 16) / 255.0
+            terminal_location = db.execute(
+                "SELECT latitude, longitude FROM merchant_terminals WHERE terminal_id = :tid",
+                {"tid": transaction.terminal_id}
+            ).fetchone()
             
-            return score * 0.5  # Reduce impact for demo
+            transaction_location = db.execute(
+                "SELECT latitude, longitude FROM pos_transactions "
+                "WHERE transaction_id = :txid AND latitude IS NOT NULL",
+                {"txid": transaction.transaction_id}
+            ).fetchone()
+            
+            db.close()
+            
+            if not terminal_location or not transaction_location:
+                return 0.3
+            
+            term_lat, term_lon = terminal_location
+            tx_lat, tx_lon = transaction_location
+            
+            if term_lat is None or tx_lat is None:
+                return 0.3
+            
+            R = 6371000
+            lat1, lat2 = math.radians(term_lat), math.radians(tx_lat)
+            dlat = math.radians(tx_lat - term_lat)
+            dlon = math.radians(tx_lon - term_lon)
+            a = math.sin(dlat / 2) ** 2 + math.cos(lat1) * math.cos(lat2) * math.sin(dlon / 2) ** 2
+            distance_m = R * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+            
+            allowed_radius = 500.0
+            if distance_m <= allowed_radius:
+                return 0.1
+            elif distance_m <= allowed_radius * 5:
+                return 0.4 + 0.3 * (distance_m / (allowed_radius * 5))
+            else:
+                return min(1.0, 0.7 + 0.3 * (distance_m / (allowed_radius * 10)))
             
         except Exception as e:
             logger.error(f"Location score calculation failed: {e}")
-            return 0.0
+            return 0.3
     
     async def _calculate_device_score(self, transaction: POSTransaction) -> float:
         """Calculate device-based risk score"""
@@ -692,13 +736,43 @@ class EnhancedPOSService(POSService):
             return ""
     
     async def _get_location_distance(self, merchant_id: str) -> float:
-        """Get distance from usual location"""
+        """Get distance from usual merchant location using geolocation data"""
         try:
-            # In real implementation, this would calculate GPS distance
-            # For demo, return random distance based on merchant ID
-            merchant_hash = hashlib.md5(merchant_id.encode()).hexdigest()
-            distance = int(merchant_hash[:2], 16) / 2.55  # 0-100 km
-            return distance
+            db = self.get_db_session()
+            
+            recent_locations = db.execute(
+                "SELECT latitude, longitude FROM pos_transactions "
+                "WHERE merchant_id = :mid AND latitude IS NOT NULL "
+                "ORDER BY created_at DESC LIMIT 20",
+                {"mid": merchant_id}
+            ).fetchall()
+            
+            db.close()
+            
+            if len(recent_locations) < 2:
+                return 0.0
+            
+            lats = [row[0] for row in recent_locations if row[0] is not None]
+            lons = [row[1] for row in recent_locations if row[1] is not None]
+            
+            if not lats or not lons:
+                return 0.0
+            
+            avg_lat = sum(lats) / len(lats)
+            avg_lon = sum(lons) / len(lons)
+            
+            latest_lat, latest_lon = recent_locations[0]
+            if latest_lat is None or latest_lon is None:
+                return 0.0
+            
+            R = 6371.0
+            lat1, lat2 = math.radians(avg_lat), math.radians(latest_lat)
+            dlat = math.radians(latest_lat - avg_lat)
+            dlon = math.radians(latest_lon - avg_lon)
+            a = math.sin(dlat / 2) ** 2 + math.cos(lat1) * math.cos(lat2) * math.sin(dlon / 2) ** 2
+            distance_km = R * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+            
+            return distance_km
             
         except Exception as e:
             logger.error(f"Location distance calculation failed: {e}")

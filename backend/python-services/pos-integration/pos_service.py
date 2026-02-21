@@ -304,47 +304,167 @@ class POSIntegrationService:
     
     async def _process_card_payment(self, payment_request: PaymentRequest, 
                                    transaction: POSTransaction) -> PaymentResponse:
-        """Process card payment through payment processor"""
-        try:
-            # Use Stripe as default processor
-            processor = "stripe"
-            config = self.payment_processors[processor]
-            
+        """Process card payment through payment processor with multi-gateway failover"""
+        gateways = [
+            ("stripe", self.payment_processors["stripe"]),
+            ("square", self.payment_processors["square"]),
+            ("adyen", self.payment_processors["adyen"]),
+        ]
+        
+        last_error = None
+        for gateway_name, config in gateways:
             if not config["api_key"]:
-                # Process card payment
-                return await self._process_card_payment(payment_request)
+                continue
+            try:
+                return await self._call_card_gateway(gateway_name, config, payment_request, transaction)
+            except Exception as e:
+                last_error = e
+                logger.warning(f"Gateway {gateway_name} failed, trying next: {e}")
+        
+        if last_error:
+            logger.error(f"All card payment gateways failed. Last error: {last_error}")
+            return PaymentResponse(
+                transaction_id=transaction.transaction_id,
+                status=TransactionStatus.FAILED,
+                amount=payment_request.amount,
+                currency=payment_request.currency,
+                error_message=f"All payment gateways unavailable: {last_error}"
+            )
+        
+        return PaymentResponse(
+            transaction_id=transaction.transaction_id,
+            status=TransactionStatus.FAILED,
+            amount=payment_request.amount,
+            currency=payment_request.currency,
+            error_message="No payment gateway configured. Set STRIPE_SECRET_KEY, SQUARE_ACCESS_TOKEN, or ADYEN_API_KEY."
+        )
+    
+    async def _call_card_gateway(self, gateway_name: str, config: Dict[str, Any],
+                                payment_request: PaymentRequest,
+                                transaction: POSTransaction) -> PaymentResponse:
+        """Call a specific card payment gateway"""
+        async with httpx.AsyncClient() as client:
+            if gateway_name == "stripe":
+                headers = {
+                    "Authorization": f"Bearer {config['api_key']}",
+                    "Content-Type": "application/x-www-form-urlencoded"
+                }
+                data = {
+                    "amount": int(payment_request.amount * 100),
+                    "currency": payment_request.currency.lower(),
+                    "payment_method_types[]": "card",
+                    "metadata[transaction_id]": transaction.transaction_id,
+                    "metadata[terminal_id]": payment_request.terminal_id
+                }
+                response = await client.post(
+                    f"{config['endpoint']}/payment_intents",
+                    headers=headers, data=data, timeout=30.0
+                )
+            elif gateway_name == "square":
+                headers = {
+                    "Authorization": f"Bearer {config['api_key']}",
+                    "Content-Type": "application/json",
+                    "Square-Version": "2023-10-18"
+                }
+                payload = {
+                    "idempotency_key": transaction.transaction_id,
+                    "amount_money": {
+                        "amount": int(payment_request.amount * 100),
+                        "currency": payment_request.currency.upper()
+                    },
+                    "source_id": payment_request.metadata.get("source_id", "cnon:card-nonce-ok") if payment_request.metadata else "cnon:card-nonce-ok",
+                    "reference_id": transaction.transaction_id
+                }
+                response = await client.post(
+                    f"{config['endpoint']}/payments",
+                    headers=headers, json=payload, timeout=30.0
+                )
+            elif gateway_name == "adyen":
+                headers = {
+                    "X-API-Key": config["api_key"],
+                    "Content-Type": "application/json"
+                }
+                payload = {
+                    "amount": {
+                        "value": int(payment_request.amount * 100),
+                        "currency": payment_request.currency.upper()
+                    },
+                    "reference": transaction.transaction_id,
+                    "merchantAccount": os.getenv("ADYEN_MERCHANT_ACCOUNT", "default"),
+                    "paymentMethod": {"type": "scheme"}
+                }
+                response = await client.post(
+                    f"{config['endpoint']}/payments",
+                    headers=headers, json=payload, timeout=30.0
+                )
+            else:
+                raise ValueError(f"Unknown gateway: {gateway_name}")
+            
+            if response.status_code in (200, 201):
+                result = response.json()
+                return PaymentResponse(
+                    transaction_id=transaction.transaction_id,
+                    status=TransactionStatus.APPROVED,
+                    amount=payment_request.amount,
+                    currency=payment_request.currency,
+                    authorization_code=result.get("id", result.get("payment", {}).get("id", "")),
+                    receipt_data=self._generate_receipt_data(payment_request, {
+                        "provider": gateway_name, **result
+                    })
+                )
+            else:
+                error_data = response.json()
+                raise ValueError(f"{gateway_name} returned {response.status_code}: {error_data}")
+    
+    async def _process_nfc_payment(self, payment_request: PaymentRequest,
+                                 transaction: POSTransaction) -> PaymentResponse:
+        """Process NFC mobile payment via payment gateway"""
+        try:
+            payment_app = payment_request.metadata.get("payment_app", "apple_pay") if payment_request.metadata else "apple_pay"
+            nfc_token = payment_request.metadata.get("nfc_token", "") if payment_request.metadata else ""
+            
+            config = self.payment_processors["stripe"]
+            if not config["api_key"]:
+                config = self.payment_processors["adyen"]
+            if not config["api_key"]:
+                return PaymentResponse(
+                    transaction_id=transaction.transaction_id,
+                    status=TransactionStatus.FAILED,
+                    amount=payment_request.amount,
+                    currency=payment_request.currency,
+                    error_message="No payment gateway configured for NFC payments"
+                )
             
             async with httpx.AsyncClient() as client:
                 headers = {
                     "Authorization": f"Bearer {config['api_key']}",
                     "Content-Type": "application/x-www-form-urlencoded"
                 }
-                
                 data = {
-                    "amount": int(payment_request.amount * 100),  # Amount in cents
+                    "amount": int(payment_request.amount * 100),
                     "currency": payment_request.currency.lower(),
                     "payment_method_types[]": "card",
                     "metadata[transaction_id]": transaction.transaction_id,
-                    "metadata[terminal_id]": payment_request.terminal_id
+                    "metadata[terminal_id]": payment_request.terminal_id,
+                    "metadata[nfc_app]": payment_app,
+                    "metadata[nfc_token]": nfc_token
                 }
-                
                 response = await client.post(
                     f"{config['endpoint']}/payment_intents",
-                    headers=headers,
-                    data=data,
-                    timeout=30.0
+                    headers=headers, data=data, timeout=30.0
                 )
                 
                 if response.status_code == 200:
                     result = response.json()
-                    
                     return PaymentResponse(
                         transaction_id=transaction.transaction_id,
                         status=TransactionStatus.APPROVED,
                         amount=payment_request.amount,
                         currency=payment_request.currency,
                         authorization_code=result.get("id", ""),
-                        receipt_data=self._generate_receipt_data(payment_request, result)
+                        receipt_data=self._generate_receipt_data(payment_request, {
+                            "provider": "stripe", "nfc_app": payment_app, **result
+                        })
                     )
                 else:
                     error_data = response.json()
@@ -353,73 +473,9 @@ class POSIntegrationService:
                         status=TransactionStatus.DECLINED,
                         amount=payment_request.amount,
                         currency=payment_request.currency,
-                        error_message=error_data.get("error", {}).get("message", "Payment failed")
+                        error_message=error_data.get("error", {}).get("message", "NFC payment failed")
                     )
                     
-        except Exception as e:
-            logger.error(f"Card payment processing failed: {e}")
-            return PaymentResponse(
-                transaction_id=transaction.transaction_id,
-                status=TransactionStatus.FAILED,
-                amount=payment_request.amount,
-                currency=payment_request.currency,
-                error_message=str(e)
-            )
-    
-    async def _process_card_payment(self, payment_request: PaymentRequest) -> PaymentResponse:
-        """Process card payment via configured gateway"""
-        # Processing delay for card reader
-        await asyncio.sleep(2)
-        
-        # Determine approval based on gateway response
-        if payment_request.amount > 10000:  # Decline large amounts
-            return PaymentResponse(
-                transaction_id=str(uuid.uuid4()),
-                status=TransactionStatus.DECLINED,
-                amount=payment_request.amount,
-                currency=payment_request.currency,
-                error_message="Amount exceeds limit"
-            )
-        
-        # Generate mock authorization code
-        auth_code = f"AUTH{uuid.uuid4().hex[:8].upper()}"
-        
-        return PaymentResponse(
-            transaction_id=str(uuid.uuid4()),
-            status=TransactionStatus.APPROVED,
-            amount=payment_request.amount,
-            currency=payment_request.currency,
-            authorization_code=auth_code,
-            receipt_data=self._generate_receipt_data(payment_request, {
-                "provider": "card_gateway",
-                "authorization_code": auth_code,
-            })
-        )
-    
-    async def _process_nfc_payment(self, payment_request: PaymentRequest,
-                                 transaction: POSTransaction) -> PaymentResponse:
-        """Process NFC mobile payment"""
-        try:
-            # Process NFC payment
-            await asyncio.sleep(1)
-            
-            # Generate NFC transaction data
-            nfc_data = {
-                "device_type": "mobile",
-                "payment_app": payment_request.metadata.get("payment_app", "apple_pay"),
-                "device_id": payment_request.metadata.get("device_id", ""),
-                "transaction_token": str(uuid.uuid4())
-            }
-            
-            return PaymentResponse(
-                transaction_id=transaction.transaction_id,
-                status=TransactionStatus.APPROVED,
-                amount=payment_request.amount,
-                currency=payment_request.currency,
-                authorization_code=f"NFC{uuid.uuid4().hex[:8].upper()}",
-                receipt_data=self._generate_receipt_data(payment_request, nfc_data)
-            )
-            
         except Exception as e:
             logger.error(f"NFC payment processing failed: {e}")
             return PaymentResponse(
@@ -446,19 +502,59 @@ class POSIntegrationService:
             
             qr_code_data = await self._generate_qr_code(qr_data)
             
-            # For demo, auto-approve QR payments
-            return PaymentResponse(
-                transaction_id=transaction.transaction_id,
-                status=TransactionStatus.APPROVED,
-                amount=payment_request.amount,
-                currency=payment_request.currency,
-                authorization_code=f"QR{uuid.uuid4().hex[:8].upper()}",
-                receipt_data={
-                    "qr_code": qr_code_data,
-                    "payment_method": "QR Code",
-                    **self._generate_receipt_data(payment_request, qr_data)
+            config = self.payment_processors["stripe"]
+            if not config["api_key"]:
+                config = self.payment_processors["square"]
+            if not config["api_key"]:
+                return PaymentResponse(
+                    transaction_id=transaction.transaction_id,
+                    status=TransactionStatus.FAILED,
+                    amount=payment_request.amount,
+                    currency=payment_request.currency,
+                    error_message="No payment gateway configured for QR payments"
+                )
+            
+            async with httpx.AsyncClient() as client:
+                headers = {
+                    "Authorization": f"Bearer {config['api_key']}",
+                    "Content-Type": "application/x-www-form-urlencoded"
                 }
-            )
+                data = {
+                    "amount": int(payment_request.amount * 100),
+                    "currency": payment_request.currency.lower(),
+                    "payment_method_types[]": "card",
+                    "metadata[transaction_id]": transaction.transaction_id,
+                    "metadata[terminal_id]": payment_request.terminal_id,
+                    "metadata[payment_type]": "qr_code"
+                }
+                response = await client.post(
+                    f"{config['endpoint']}/payment_intents",
+                    headers=headers, data=data, timeout=30.0
+                )
+                
+                if response.status_code == 200:
+                    result = response.json()
+                    return PaymentResponse(
+                        transaction_id=transaction.transaction_id,
+                        status=TransactionStatus.APPROVED,
+                        amount=payment_request.amount,
+                        currency=payment_request.currency,
+                        authorization_code=result.get("id", ""),
+                        receipt_data={
+                            "qr_code": qr_code_data,
+                            "payment_method": "QR Code",
+                            **self._generate_receipt_data(payment_request, result)
+                        }
+                    )
+                else:
+                    error_data = response.json()
+                    return PaymentResponse(
+                        transaction_id=transaction.transaction_id,
+                        status=TransactionStatus.DECLINED,
+                        amount=payment_request.amount,
+                        currency=payment_request.currency,
+                        error_message=error_data.get("error", {}).get("message", "QR payment failed")
+                    )
             
         except Exception as e:
             logger.error(f"QR payment processing failed: {e}")
@@ -496,25 +592,66 @@ class POSIntegrationService:
     
     async def _process_wallet_payment(self, payment_request: PaymentRequest,
                                     transaction: POSTransaction) -> PaymentResponse:
-        """Process digital wallet payment"""
+        """Process digital wallet payment via payment gateway"""
         try:
-            wallet_type = payment_request.metadata.get("wallet_type", "unknown")
+            wallet_type = payment_request.metadata.get("wallet_type", "unknown") if payment_request.metadata else "unknown"
+            wallet_token = payment_request.metadata.get("wallet_token", "") if payment_request.metadata else ""
             
-            # Process wallet payment
-            await asyncio.sleep(1.5)
+            config = self.payment_processors["stripe"]
+            if not config["api_key"]:
+                config = self.payment_processors["adyen"]
+            if not config["api_key"]:
+                return PaymentResponse(
+                    transaction_id=transaction.transaction_id,
+                    status=TransactionStatus.FAILED,
+                    amount=payment_request.amount,
+                    currency=payment_request.currency,
+                    error_message="No payment gateway configured for wallet payments"
+                )
             
-            return PaymentResponse(
-                transaction_id=transaction.transaction_id,
-                status=TransactionStatus.APPROVED,
-                amount=payment_request.amount,
-                currency=payment_request.currency,
-                authorization_code=f"WALLET{uuid.uuid4().hex[:8].upper()}",
-                receipt_data=self._generate_receipt_data(payment_request, {
-                    "wallet_type": wallet_type,
-                    "payment_method": "Digital Wallet"
-                })
-            )
-            
+            async with httpx.AsyncClient() as client:
+                headers = {
+                    "Authorization": f"Bearer {config['api_key']}",
+                    "Content-Type": "application/x-www-form-urlencoded"
+                }
+                data = {
+                    "amount": int(payment_request.amount * 100),
+                    "currency": payment_request.currency.lower(),
+                    "payment_method_types[]": "card",
+                    "metadata[transaction_id]": transaction.transaction_id,
+                    "metadata[terminal_id]": payment_request.terminal_id,
+                    "metadata[wallet_type]": wallet_type,
+                    "metadata[wallet_token]": wallet_token
+                }
+                response = await client.post(
+                    f"{config['endpoint']}/payment_intents",
+                    headers=headers, data=data, timeout=30.0
+                )
+                
+                if response.status_code == 200:
+                    result = response.json()
+                    return PaymentResponse(
+                        transaction_id=transaction.transaction_id,
+                        status=TransactionStatus.APPROVED,
+                        amount=payment_request.amount,
+                        currency=payment_request.currency,
+                        authorization_code=result.get("id", ""),
+                        receipt_data=self._generate_receipt_data(payment_request, {
+                            "wallet_type": wallet_type,
+                            "payment_method": "Digital Wallet",
+                            **result
+                        })
+                    )
+                else:
+                    error_data = response.json()
+                    return PaymentResponse(
+                        transaction_id=transaction.transaction_id,
+                        status=TransactionStatus.DECLINED,
+                        amount=payment_request.amount,
+                        currency=payment_request.currency,
+                        error_message=error_data.get("error", {}).get("message", "Wallet payment failed")
+                    )
+                    
         except Exception as e:
             logger.error(f"Wallet payment processing failed: {e}")
             return PaymentResponse(
@@ -860,14 +997,64 @@ class POSIntegrationService:
             return {"error": str(e)}
     
     async def _handle_usb_device(self, device_id: str, command: str, data: Any):
-        """Handle USB device communication"""
-        # USB device handling would require specific drivers
-        return {"error": "USB devices not implemented"}
+        """Handle USB device communication via device_drivers"""
+        try:
+            from device_drivers import DeviceDriverManager, DeviceCommand
+            manager = DeviceDriverManager()
+            
+            driver = manager.drivers.get(device_id)
+            if not driver:
+                return {"error": f"USB device {device_id} not registered in driver manager"}
+            
+            cmd_map = {
+                "print_receipt": DeviceCommand.PRINT_RECEIPT,
+                "open_cash_drawer": DeviceCommand.OPEN_CASH_DRAWER,
+                "read_card": DeviceCommand.READ_CARD,
+                "display_message": DeviceCommand.DISPLAY_MESSAGE,
+                "get_status": DeviceCommand.GET_STATUS,
+            }
+            device_cmd = cmd_map.get(command)
+            if not device_cmd:
+                return {"error": f"Unknown USB command: {command}"}
+            
+            response = await driver.send_command(device_cmd, data)
+            return {"success": response.success, "data": response.data, "error": response.error}
+            
+        except ImportError:
+            return {"error": "USB driver module not available"}
+        except Exception as e:
+            logger.error(f"USB device communication failed: {e}")
+            return {"error": str(e)}
     
     async def _handle_bluetooth_device(self, device_id: str, command: str, data: Any):
-        """Handle Bluetooth device communication"""
-        # Bluetooth device handling would require bluetooth libraries
-        return {"error": "Bluetooth devices not implemented"}
+        """Handle Bluetooth device communication via device_drivers"""
+        try:
+            from device_drivers import DeviceDriverManager, DeviceCommand
+            manager = DeviceDriverManager()
+            
+            driver = manager.drivers.get(device_id)
+            if not driver:
+                return {"error": f"Bluetooth device {device_id} not registered in driver manager"}
+            
+            cmd_map = {
+                "print_receipt": DeviceCommand.PRINT_RECEIPT,
+                "open_cash_drawer": DeviceCommand.OPEN_CASH_DRAWER,
+                "read_card": DeviceCommand.READ_CARD,
+                "display_message": DeviceCommand.DISPLAY_MESSAGE,
+                "get_status": DeviceCommand.GET_STATUS,
+            }
+            device_cmd = cmd_map.get(command)
+            if not device_cmd:
+                return {"error": f"Unknown Bluetooth command: {command}"}
+            
+            response = await driver.send_command(device_cmd, data)
+            return {"success": response.success, "data": response.data, "error": response.error}
+            
+        except ImportError:
+            return {"error": "Bluetooth driver module not available"}
+        except Exception as e:
+            logger.error(f"Bluetooth device communication failed: {e}")
+            return {"error": str(e)}
     
     async def send_device_command(self, device_id: str, command: str, data: Any = None) -> Dict[str, Any]:
         """Send command to POS device"""

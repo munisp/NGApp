@@ -24,7 +24,7 @@ class PaymentProcessorFactory:
     def __init__(self):
         self._processors: Dict[ProcessorType, Any] = {}
         self._default_processor: Optional[ProcessorType] = None
-        self._processor_priorities = [ProcessorType.STRIPE, ProcessorType.SQUARE, ProcessorType.MOCK]
+        self._processor_priorities = [ProcessorType.STRIPE, ProcessorType.SQUARE, ProcessorType.FALLBACK]
     
     def initialize_processors(self, config: Dict[str, Any]):
         """Initialize all configured payment processors"""
@@ -68,7 +68,7 @@ class PaymentProcessorFactory:
         # Initialize fallback processor
         if not self._processors:
             self._processors[ProcessorType.FALLBACK] = FallbackProcessor()
-            self._default_processor = ProcessorType.MOCK
+            self._default_processor = ProcessorType.FALLBACK
             logger.warning("No real payment processors configured, using fallback processor")
     
     def get_processor(self, processor_type: Optional[ProcessorType] = None) -> Any:
@@ -156,73 +156,41 @@ class PaymentProcessorFactory:
         return bool(os.getenv("SQUARE_ACCESS_TOKEN") and os.getenv("SQUARE_APPLICATION_ID"))
 
 class FallbackProcessor:
-    """Fallback payment processor when no real gateway is configured"""
+    """Fallback processor that rejects payments when no real gateway is configured.
+    This ensures no transactions are silently approved without a real payment provider."""
     
     async def process_card_payment(self, payment_request) -> 'PaymentResponse':
-        """Fallback card payment processing"""
+        """Reject payment — no real gateway configured"""
         from .stripe_processor import PaymentResponse, TransactionStatus
-        import uuid
         
-        # Processing delay
-        import asyncio
-        await asyncio.sleep(0.1)
-        
-        # Approval logic
-        import random
-        if random.random() < 0.9:
-            return PaymentResponse(
-                transaction_id=f"fb_{uuid.uuid4().hex[:8]}",
-                status=TransactionStatus.APPROVED,
-                amount=payment_request.amount,
-                currency=payment_request.currency,
-                authorization_code=f"AUTH_{uuid.uuid4().hex[:6].upper()}",
-                processor_response={'processor': 'fallback'},
-                receipt_data={
-                    'transaction_id': f"fb_{uuid.uuid4().hex[:8]}",
-                    'amount': payment_request.amount,
-                    'currency': payment_request.currency.upper(),
-                    'payment_method': payment_request.payment_method,
-                    'status': 'approved',
-                    'timestamp': int(datetime.now().timestamp()),
-                    'merchant_id': payment_request.merchant_id,
-                    'terminal_id': payment_request.terminal_id,
-                    'test_mode': True
-                }
-            )
-        else:
-            return PaymentResponse(
-                transaction_id=None,
-                status=TransactionStatus.DECLINED,
-                amount=payment_request.amount,
-                currency=payment_request.currency,
-                error_message="Insufficient funds"
-            )
+        logger.error(
+            "Payment rejected: no real payment processor configured. "
+            "Set STRIPE_SECRET_KEY or SQUARE_ACCESS_TOKEN environment variables."
+        )
+        return PaymentResponse(
+            transaction_id=None,
+            status=TransactionStatus.DECLINED,
+            amount=payment_request.amount,
+            currency=payment_request.currency,
+            error_message="No payment gateway configured. Contact system administrator."
+        )
     
     async def refund_payment(self, transaction_id: str, amount: Optional[float] = None) -> Dict[str, Any]:
-        """Fallback refund processing"""
-        import uuid
-        await asyncio.sleep(0.1)
-        
+        """Reject refund — no real gateway configured"""
         return {
-            'success': True,
-            'refund_id': f"refund_{uuid.uuid4().hex[:8]}",
-            'amount': amount or 0,
-            'status': 'completed'
+            'success': False,
+            'error': 'No payment gateway configured for refunds',
+            'transaction_id': transaction_id
         }
     
     async def get_payment_status(self, transaction_id: str) -> Dict[str, Any]:
-        """Fallback payment status check"""
+        """Return unknown status — no real gateway configured"""
         return {
             'transaction_id': transaction_id,
-            'status': 'completed',
-            'amount': 100.00,
-            'currency': 'USD',
-            'created': int(datetime.now().timestamp())
+            'status': 'unknown',
+            'error': 'No payment gateway configured'
         }
     
     async def handle_webhook(self, payload: str, signature: str) -> Dict[str, Any]:
-        """Fallback webhook handling"""
-        return {'handled': True, 'processor': 'fallback'}
-
-# Import datetime for FallbackProcessor
-from datetime import datetime
+        """Reject webhook — no real gateway configured"""
+        return {'handled': False, 'error': 'No payment gateway configured'}
