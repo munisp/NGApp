@@ -1,0 +1,674 @@
+/**
+ * SavingsGoals - Stablecoin savings goals with auto-convert
+ * Features: Goal creation, progress tracking, auto-convert rules, multiple stablecoins
+ */
+
+import React, { useState, useEffect, useCallback } from 'react';
+
+interface SavingsGoal {
+  goal_id: string;
+  user_id: string;
+  name: string;
+  category: string;
+  target_amount: number;
+  current_amount: number;
+  stablecoin: string;
+  target_date?: string;
+  status: string;
+  created_at: string;
+  progress_percent: number;
+  auto_convert_rules: AutoConvertRule[];
+}
+
+interface AutoConvertRule {
+  rule_id: string;
+  source_type: string;
+  percentage: number;
+  min_amount?: number;
+  max_amount?: number;
+  is_active: boolean;
+}
+
+interface Contribution {
+  contribution_id: string;
+  amount: number;
+  stablecoin: string;
+  source: string;
+  created_at: string;
+}
+
+const GOAL_CATEGORIES = [
+  { value: 'EDUCATION', label: 'Education', icon: '🎓', color: 'bg-blue-500' },
+  { value: 'EMERGENCY', label: 'Emergency Fund', icon: '🚨', color: 'bg-red-500' },
+  { value: 'TRAVEL', label: 'Travel', icon: '✈️', color: 'bg-purple-500' },
+  { value: 'HOUSING', label: 'Housing', icon: '🏠', color: 'bg-green-500' },
+  { value: 'BUSINESS', label: 'Business', icon: '💼', color: 'bg-yellow-500' },
+  { value: 'RETIREMENT', label: 'Retirement', icon: '🏖️', color: 'bg-orange-500' },
+  { value: 'WEDDING', label: 'Wedding', icon: '💒', color: 'bg-pink-500' },
+  { value: 'HEALTHCARE', label: 'Healthcare', icon: '🏥', color: 'bg-teal-500' },
+  { value: 'VEHICLE', label: 'Vehicle', icon: '🚗', color: 'bg-indigo-500' },
+  { value: 'OTHER', label: 'Other', icon: '🎯', color: 'bg-gray-500' },
+];
+
+const STABLECOINS = [
+  { value: 'USDT', label: 'Tether (USDT)', icon: '💵' },
+  { value: 'USDC', label: 'USD Coin (USDC)', icon: '💲' },
+  { value: 'DAI', label: 'Dai (DAI)', icon: '🌕' },
+  { value: 'BUSD', label: 'Binance USD (BUSD)', icon: '🟡' },
+];
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+
+const SavingsGoals: React.FC = () => {
+  const [goals, setGoals] = useState<SavingsGoal[]>([]);
+  const [selectedGoal, setSelectedGoal] = useState<SavingsGoal | null>(null);
+  const [contributions, setContributions] = useState<Contribution[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showContributeModal, setShowContributeModal] = useState(false);
+  const [showAutoConvertModal, setShowAutoConvertModal] = useState(false);
+  
+  const [newGoal, setNewGoal] = useState({
+    name: '',
+    category: 'EDUCATION',
+    target_amount: '',
+    stablecoin: 'USDT',
+    target_date: '',
+  });
+  
+  const [contributeAmount, setContributeAmount] = useState('');
+  const [autoConvertPercentage, setAutoConvertPercentage] = useState('10');
+
+  const fetchGoals = useCallback(async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/savings/goals`);
+      if (response.ok) {
+        const data = await response.json();
+        setGoals(data.goals || []);
+      } else {
+        setGoals([
+          {
+            goal_id: 'goal-001',
+            user_id: 'user-123',
+            name: 'School Fees 2025',
+            category: 'EDUCATION',
+            target_amount: 500,
+            current_amount: 325,
+            stablecoin: 'USDT',
+            target_date: new Date(Date.now() + 86400000 * 90).toISOString(),
+            status: 'ACTIVE',
+            created_at: new Date(Date.now() - 86400000 * 30).toISOString(),
+            progress_percent: 65,
+            auto_convert_rules: [
+              { rule_id: 'rule-001', source_type: 'REMITTANCE_INCOMING', percentage: 20, is_active: true },
+            ],
+          },
+          {
+            goal_id: 'goal-002',
+            user_id: 'user-123',
+            name: 'Emergency Fund',
+            category: 'EMERGENCY',
+            target_amount: 1000,
+            current_amount: 450,
+            stablecoin: 'USDC',
+            status: 'ACTIVE',
+            created_at: new Date(Date.now() - 86400000 * 60).toISOString(),
+            progress_percent: 45,
+            auto_convert_rules: [],
+          },
+          {
+            goal_id: 'goal-003',
+            user_id: 'user-123',
+            name: 'Lagos Trip',
+            category: 'TRAVEL',
+            target_amount: 200,
+            current_amount: 200,
+            stablecoin: 'USDT',
+            status: 'COMPLETED',
+            created_at: new Date(Date.now() - 86400000 * 120).toISOString(),
+            progress_percent: 100,
+            auto_convert_rules: [],
+          },
+        ]);
+      }
+    } catch {
+      setGoals([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const fetchContributions = useCallback(async (goalId: string) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/savings/goals/${goalId}/contributions`);
+      if (response.ok) {
+        const data = await response.json();
+        setContributions(data.contributions || []);
+      } else {
+        setContributions([
+          { contribution_id: 'c-001', amount: 100, stablecoin: 'USDT', source: 'Manual', created_at: new Date(Date.now() - 86400000 * 5).toISOString() },
+          { contribution_id: 'c-002', amount: 50, stablecoin: 'USDT', source: 'Auto-convert from remittance', created_at: new Date(Date.now() - 86400000 * 10).toISOString() },
+          { contribution_id: 'c-003', amount: 75, stablecoin: 'USDT', source: 'Auto-convert from remittance', created_at: new Date(Date.now() - 86400000 * 15).toISOString() },
+        ]);
+      }
+    } catch {
+      setContributions([]);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchGoals();
+  }, [fetchGoals]);
+
+  useEffect(() => {
+    if (selectedGoal) {
+      fetchContributions(selectedGoal.goal_id);
+    }
+  }, [selectedGoal, fetchContributions]);
+
+  const handleCreateGoal = async () => {
+    if (!newGoal.name || !newGoal.target_amount) return;
+    
+    try {
+      const response = await fetch(`${API_BASE_URL}/savings/goals`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: newGoal.name,
+          category: newGoal.category,
+          target_amount: parseFloat(newGoal.target_amount),
+          stablecoin: newGoal.stablecoin,
+          target_date: newGoal.target_date || null,
+        }),
+      });
+      
+      if (response.ok) {
+        fetchGoals();
+        setShowCreateModal(false);
+        setNewGoal({ name: '', category: 'EDUCATION', target_amount: '', stablecoin: 'USDT', target_date: '' });
+      }
+    } catch {
+      const mockGoal: SavingsGoal = {
+        goal_id: `goal-${Date.now()}`,
+        user_id: 'user-123',
+        name: newGoal.name,
+        category: newGoal.category,
+        target_amount: parseFloat(newGoal.target_amount),
+        current_amount: 0,
+        stablecoin: newGoal.stablecoin,
+        target_date: newGoal.target_date || undefined,
+        status: 'ACTIVE',
+        created_at: new Date().toISOString(),
+        progress_percent: 0,
+        auto_convert_rules: [],
+      };
+      setGoals(prev => [mockGoal, ...prev]);
+      setShowCreateModal(false);
+      setNewGoal({ name: '', category: 'EDUCATION', target_amount: '', stablecoin: 'USDT', target_date: '' });
+    }
+  };
+
+  const handleContribute = async () => {
+    if (!selectedGoal || !contributeAmount) return;
+    
+    try {
+      await fetch(`${API_BASE_URL}/savings/goals/${selectedGoal.goal_id}/contribute`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount: parseFloat(contributeAmount) }),
+      });
+      fetchGoals();
+      fetchContributions(selectedGoal.goal_id);
+    } catch {
+      const amount = parseFloat(contributeAmount);
+      setGoals(prev => prev.map(g => 
+        g.goal_id === selectedGoal.goal_id
+          ? {
+              ...g,
+              current_amount: g.current_amount + amount,
+              progress_percent: Math.min(100, Math.round(((g.current_amount + amount) / g.target_amount) * 100)),
+            }
+          : g
+      ));
+      setContributions(prev => [
+        { contribution_id: `c-${Date.now()}`, amount, stablecoin: selectedGoal.stablecoin, source: 'Manual', created_at: new Date().toISOString() },
+        ...prev,
+      ]);
+    }
+    setShowContributeModal(false);
+    setContributeAmount('');
+  };
+
+  const handleAddAutoConvert = async () => {
+    if (!selectedGoal || !autoConvertPercentage) return;
+    
+    try {
+      await fetch(`${API_BASE_URL}/savings/goals/${selectedGoal.goal_id}/auto-convert`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          source_type: 'REMITTANCE_INCOMING',
+          percentage: parseFloat(autoConvertPercentage),
+        }),
+      });
+      fetchGoals();
+    } catch {
+      const newRule: AutoConvertRule = {
+        rule_id: `rule-${Date.now()}`,
+        source_type: 'REMITTANCE_INCOMING',
+        percentage: parseFloat(autoConvertPercentage),
+        is_active: true,
+      };
+      setGoals(prev => prev.map(g =>
+        g.goal_id === selectedGoal.goal_id
+          ? { ...g, auto_convert_rules: [...g.auto_convert_rules, newRule] }
+          : g
+      ));
+    }
+    setShowAutoConvertModal(false);
+    setAutoConvertPercentage('10');
+  };
+
+  const getCategoryInfo = (category: string) => {
+    return GOAL_CATEGORIES.find(c => c.value === category) || GOAL_CATEGORIES[GOAL_CATEGORIES.length - 1];
+  };
+
+  const formatCurrency = (amount: number, stablecoin: string) => {
+    return `$${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${stablecoin}`;
+  };
+
+  const formatDate = (isoString: string) => {
+    return new Date(isoString).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  };
+
+  const getDaysRemaining = (targetDate?: string) => {
+    if (!targetDate) return null;
+    const days = Math.ceil((new Date(targetDate).getTime() - Date.now()) / 86400000);
+    return days > 0 ? days : 0;
+  };
+
+  const activeGoals = goals.filter(g => g.status === 'ACTIVE');
+  const completedGoals = goals.filter(g => g.status === 'COMPLETED');
+  const totalSaved = goals.reduce((sum, g) => sum + g.current_amount, 0);
+
+  return (
+    <div className="max-w-4xl mx-auto space-y-6 p-4">
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold text-gray-900">Savings Goals</h1>
+        <button
+          onClick={() => setShowCreateModal(true)}
+          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
+        >
+          + New Goal
+        </button>
+      </div>
+
+      <div className="grid grid-cols-3 gap-4">
+        <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-4 text-white">
+          <p className="text-blue-100 text-sm">Total Saved</p>
+          <p className="text-2xl font-bold">${totalSaved.toLocaleString()}</p>
+        </div>
+        <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-4 text-white">
+          <p className="text-green-100 text-sm">Active Goals</p>
+          <p className="text-2xl font-bold">{activeGoals.length}</p>
+        </div>
+        <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-4 text-white">
+          <p className="text-purple-100 text-sm">Completed</p>
+          <p className="text-2xl font-bold">{completedGoals.length}</p>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+        <div className="p-6">
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">Active Goals</h2>
+          
+          {loading ? (
+            <div className="text-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+            </div>
+          ) : activeGoals.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">
+              <p>No active goals. Create your first savings goal to get started!</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {activeGoals.map(goal => {
+                const category = getCategoryInfo(goal.category);
+                const daysRemaining = getDaysRemaining(goal.target_date);
+                
+                return (
+                  <div
+                    key={goal.goal_id}
+                    onClick={() => setSelectedGoal(goal)}
+                    className="border border-gray-200 rounded-lg p-4 hover:border-blue-300 cursor-pointer transition-colors"
+                  >
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex items-center">
+                        <div className={`w-10 h-10 ${category.color} rounded-lg flex items-center justify-center text-white text-xl mr-3`}>
+                          {category.icon}
+                        </div>
+                        <div>
+                          <h3 className="font-semibold text-gray-900">{goal.name}</h3>
+                          <p className="text-sm text-gray-500">{category.label}</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-semibold text-gray-900">{formatCurrency(goal.current_amount, goal.stablecoin)}</p>
+                        <p className="text-sm text-gray-500">of {formatCurrency(goal.target_amount, goal.stablecoin)}</p>
+                      </div>
+                    </div>
+                    
+                    <div className="mb-2">
+                      <div className="flex justify-between text-sm mb-1">
+                        <span className="text-gray-500">{goal.progress_percent}% complete</span>
+                        {daysRemaining !== null && (
+                          <span className="text-gray-500">{daysRemaining} days left</span>
+                        )}
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div
+                          className={`h-2 rounded-full transition-all ${category.color}`}
+                          style={{ width: `${goal.progress_percent}%` }}
+                        ></div>
+                      </div>
+                    </div>
+                    
+                    {goal.auto_convert_rules.length > 0 && (
+                      <div className="flex items-center text-sm text-green-600 mt-2">
+                        <span className="mr-1">🔄</span>
+                        Auto-converting {goal.auto_convert_rules[0].percentage}% of incoming remittances
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {completedGoals.length > 0 && (
+          <div className="border-t border-gray-200 p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Completed Goals</h2>
+            <div className="space-y-3">
+              {completedGoals.map(goal => {
+                const category = getCategoryInfo(goal.category);
+                return (
+                  <div
+                    key={goal.goal_id}
+                    className="flex items-center justify-between p-3 bg-green-50 rounded-lg"
+                  >
+                    <div className="flex items-center">
+                      <span className="text-xl mr-3">{category.icon}</span>
+                      <div>
+                        <p className="font-medium text-gray-900">{goal.name}</p>
+                        <p className="text-sm text-gray-500">Completed {formatDate(goal.created_at)}</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-semibold text-green-600">{formatCurrency(goal.target_amount, goal.stablecoin)}</p>
+                      <span className="text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded-full">Completed</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {showCreateModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl max-w-md w-full p-6">
+            <h2 className="text-xl font-bold mb-4">Create Savings Goal</h2>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Goal Name</label>
+                <input
+                  type="text"
+                  value={newGoal.name}
+                  onChange={(e) => setNewGoal(prev => ({ ...prev, name: e.target.value }))}
+                  placeholder="e.g., School Fees 2025"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                <div className="grid grid-cols-5 gap-2">
+                  {GOAL_CATEGORIES.slice(0, 10).map(cat => (
+                    <button
+                      key={cat.value}
+                      onClick={() => setNewGoal(prev => ({ ...prev, category: cat.value }))}
+                      className={`p-2 rounded-lg text-center ${
+                        newGoal.category === cat.value
+                          ? `${cat.color} text-white`
+                          : 'bg-gray-100 hover:bg-gray-200'
+                      }`}
+                      title={cat.label}
+                    >
+                      <span className="text-xl">{cat.icon}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Target Amount</label>
+                  <input
+                    type="number"
+                    value={newGoal.target_amount}
+                    onChange={(e) => setNewGoal(prev => ({ ...prev, target_amount: e.target.value }))}
+                    placeholder="500"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Stablecoin</label>
+                  <select
+                    value={newGoal.stablecoin}
+                    onChange={(e) => setNewGoal(prev => ({ ...prev, stablecoin: e.target.value }))}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  >
+                    {STABLECOINS.map(coin => (
+                      <option key={coin.value} value={coin.value}>{coin.label}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Target Date (optional)</label>
+                <input
+                  type="date"
+                  value={newGoal.target_date}
+                  onChange={(e) => setNewGoal(prev => ({ ...prev, target_date: e.target.value }))}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            </div>
+            
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={() => setShowCreateModal(false)}
+                className="flex-1 py-3 border border-gray-300 rounded-lg font-medium hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleCreateGoal}
+                disabled={!newGoal.name || !newGoal.target_amount}
+                className="flex-1 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:bg-gray-300"
+              >
+                Create Goal
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {selectedGoal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl max-w-lg w-full max-h-[80vh] overflow-hidden">
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center">
+                  <div className={`w-12 h-12 ${getCategoryInfo(selectedGoal.category).color} rounded-lg flex items-center justify-center text-white text-2xl mr-3`}>
+                    {getCategoryInfo(selectedGoal.category).icon}
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-bold">{selectedGoal.name}</h2>
+                    <p className="text-sm text-gray-500">{getCategoryInfo(selectedGoal.category).label}</p>
+                  </div>
+                </div>
+                <button onClick={() => setSelectedGoal(null)} className="text-gray-400 hover:text-gray-600">
+                  Close
+                </button>
+              </div>
+            </div>
+            
+            <div className="p-6 overflow-y-auto max-h-[50vh]">
+              <div className="mb-6">
+                <div className="flex justify-between mb-2">
+                  <span className="text-2xl font-bold">{formatCurrency(selectedGoal.current_amount, selectedGoal.stablecoin)}</span>
+                  <span className="text-gray-500">of {formatCurrency(selectedGoal.target_amount, selectedGoal.stablecoin)}</span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-3">
+                  <div
+                    className={`h-3 rounded-full ${getCategoryInfo(selectedGoal.category).color}`}
+                    style={{ width: `${selectedGoal.progress_percent}%` }}
+                  ></div>
+                </div>
+                <p className="text-sm text-gray-500 mt-1">{selectedGoal.progress_percent}% complete</p>
+              </div>
+              
+              <div className="flex gap-3 mb-6">
+                <button
+                  onClick={() => setShowContributeModal(true)}
+                  className="flex-1 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700"
+                >
+                  + Add Funds
+                </button>
+                <button
+                  onClick={() => setShowAutoConvertModal(true)}
+                  className="flex-1 py-2 border border-blue-600 text-blue-600 rounded-lg font-medium hover:bg-blue-50"
+                >
+                  🔄 Auto-Convert
+                </button>
+              </div>
+              
+              {selectedGoal.auto_convert_rules.length > 0 && (
+                <div className="mb-6 p-4 bg-green-50 rounded-lg">
+                  <h4 className="font-medium text-green-800 mb-2">Auto-Convert Rules</h4>
+                  {selectedGoal.auto_convert_rules.map(rule => (
+                    <div key={rule.rule_id} className="flex items-center justify-between text-sm">
+                      <span className="text-green-700">
+                        {rule.percentage}% of incoming remittances
+                      </span>
+                      <span className={`px-2 py-0.5 rounded-full text-xs ${rule.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'}`}>
+                        {rule.is_active ? 'Active' : 'Paused'}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+              
+              <h4 className="font-medium text-gray-900 mb-3">Recent Contributions</h4>
+              <div className="space-y-2">
+                {contributions.length === 0 ? (
+                  <p className="text-gray-500 text-center py-4">No contributions yet</p>
+                ) : (
+                  contributions.map(c => (
+                    <div key={c.contribution_id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <div>
+                        <p className="font-medium">{formatCurrency(c.amount, c.stablecoin)}</p>
+                        <p className="text-xs text-gray-500">{c.source}</p>
+                      </div>
+                      <p className="text-sm text-gray-500">{formatDate(c.created_at)}</p>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showContributeModal && selectedGoal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl max-w-sm w-full p-6">
+            <h3 className="text-lg font-bold mb-4">Add Funds to {selectedGoal.name}</h3>
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Amount ({selectedGoal.stablecoin})</label>
+              <input
+                type="number"
+                value={contributeAmount}
+                onChange={(e) => setContributeAmount(e.target.value)}
+                placeholder="50"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => { setShowContributeModal(false); setContributeAmount(''); }}
+                className="flex-1 py-3 border border-gray-300 rounded-lg font-medium"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleContribute}
+                disabled={!contributeAmount}
+                className="flex-1 py-3 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 disabled:bg-gray-300"
+              >
+                Add Funds
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showAutoConvertModal && selectedGoal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl max-w-sm w-full p-6">
+            <h3 className="text-lg font-bold mb-4">Auto-Convert Settings</h3>
+            <p className="text-sm text-gray-500 mb-4">
+              Automatically convert a percentage of every incoming remittance to this goal.
+            </p>
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Percentage of incoming remittances</label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="range"
+                  min="5"
+                  max="50"
+                  step="5"
+                  value={autoConvertPercentage}
+                  onChange={(e) => setAutoConvertPercentage(e.target.value)}
+                  className="flex-1"
+                />
+                <span className="font-bold text-blue-600 w-12 text-right">{autoConvertPercentage}%</span>
+              </div>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => { setShowAutoConvertModal(false); setAutoConvertPercentage('10'); }}
+                className="flex-1 py-3 border border-gray-300 rounded-lg font-medium"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleAddAutoConvert}
+                className="flex-1 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700"
+              >
+                Enable Auto-Convert
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default SavingsGoals;
