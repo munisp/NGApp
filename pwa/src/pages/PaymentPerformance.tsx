@@ -134,7 +134,7 @@ export default function PaymentPerformance() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
       </div>
     );
   }
@@ -143,10 +143,10 @@ export default function PaymentPerformance() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Payment Performance</h1>
-          <p className="text-gray-500">Track your transaction metrics and analytics</p>
+          <h1 className="text-2xl font-bold text-slate-900">Payment Performance</h1>
+          <p className="text-slate-500">Track your transaction metrics and analytics</p>
         </div>
-        <div className="flex gap-2 bg-gray-100 p-1 rounded-lg">
+        <div className="flex gap-2 bg-slate-100 p-1 rounded-xl">
           {(['7d', '30d', '90d', '1y'] as const).map((range) => (
             <button
               key={range}
@@ -154,7 +154,7 @@ export default function PaymentPerformance() {
               className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
                 timeRange === range
                   ? 'bg-white text-primary-600 shadow-sm'
-                  : 'text-gray-500 hover:text-gray-700'
+                  : 'text-slate-500 hover:text-slate-700'
               }`}
             >
               {range === '7d' ? '7 Days' : range === '30d' ? '30 Days' : range === '90d' ? '90 Days' : '1 Year'}
@@ -167,12 +167,12 @@ export default function PaymentPerformance() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {metrics.map((metric) => (
           <div key={metric.label} className="bg-white rounded-xl p-4 shadow-sm">
-            <p className="text-sm text-gray-500">{metric.label}</p>
-            <p className="text-2xl font-bold text-gray-900 mt-1">
+            <p className="text-sm text-slate-500">{metric.label}</p>
+            <p className="text-2xl font-bold text-slate-900 mt-1">
               {formatValue(metric.value, metric.format)}
             </p>
             <div className={`flex items-center gap-1 mt-2 text-sm ${
-              metric.changeType === 'increase' ? 'text-green-600' : 'text-red-600'
+              metric.changeType === 'increase' ? 'text-emerald-600' : 'text-red-600'
             }`}>
               <svg
                 className={`w-4 h-4 ${metric.changeType === 'decrease' ? 'rotate-180' : ''}`}
@@ -183,7 +183,7 @@ export default function PaymentPerformance() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
               </svg>
               <span>{Math.abs(metric.change)}%</span>
-              <span className="text-gray-400">vs last period</span>
+              <span className="text-slate-400">vs last period</span>
             </div>
           </div>
         ))}
@@ -191,7 +191,7 @@ export default function PaymentPerformance() {
 
       {/* Transaction Volume Chart */}
       <div className="bg-white rounded-2xl p-6 shadow-sm">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Transaction Volume</h2>
+        <h2 className="text-lg font-semibold text-slate-900 mb-4">Transaction Volume</h2>
         <div className="h-64 flex items-end gap-1">
           {timeSeries.map((data, index) => (
             <div
@@ -210,7 +210,7 @@ export default function PaymentPerformance() {
                 </div>
               </div>
               {index % Math.ceil(timeSeries.length / 7) === 0 && (
-                <span className="text-xs text-gray-400 mt-2">
+                <span className="text-xs text-slate-400 mt-2">
                   {new Date(data.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                 </span>
               )}
@@ -223,28 +223,28 @@ export default function PaymentPerformance() {
         {/* Transaction Status */}
         {stats && (
           <div className="bg-white rounded-2xl p-6 shadow-sm">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Transaction Status</h2>
+            <h2 className="text-lg font-semibold text-slate-900 mb-4">Transaction Status</h2>
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-3 h-3 rounded-full bg-green-500"></div>
-                  <span className="text-gray-700">Successful</span>
+                  <div className="w-3 h-3 rounded-full bg-emerald-500"></div>
+                  <span className="text-slate-700">Successful</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="font-bold text-gray-900">{stats.successful}</span>
-                  <span className="text-sm text-gray-400">
+                  <span className="font-bold text-slate-900">{stats.successful}</span>
+                  <span className="text-sm text-slate-400">
                     ({((stats.successful / stats.total) * 100).toFixed(1)}%)
                   </span>
                 </div>
               </div>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
-                  <span className="text-gray-700">Pending</span>
+                  <div className="w-3 h-3 rounded-full bg-amber-500"></div>
+                  <span className="text-slate-700">Pending</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="font-bold text-gray-900">{stats.pending}</span>
-                  <span className="text-sm text-gray-400">
+                  <span className="font-bold text-slate-900">{stats.pending}</span>
+                  <span className="text-sm text-slate-400">
                     ({((stats.pending / stats.total) * 100).toFixed(1)}%)
                   </span>
                 </div>
@@ -252,23 +252,23 @@ export default function PaymentPerformance() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="w-3 h-3 rounded-full bg-red-500"></div>
-                  <span className="text-gray-700">Failed</span>
+                  <span className="text-slate-700">Failed</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="font-bold text-gray-900">{stats.failed}</span>
-                  <span className="text-sm text-gray-400">
+                  <span className="font-bold text-slate-900">{stats.failed}</span>
+                  <span className="text-sm text-slate-400">
                     ({((stats.failed / stats.total) * 100).toFixed(1)}%)
                   </span>
                 </div>
               </div>
               <div className="pt-4 border-t">
-                <div className="h-4 bg-gray-100 rounded-full overflow-hidden flex">
+                <div className="h-4 bg-slate-100 rounded-full overflow-hidden flex">
                   <div
-                    className="bg-green-500"
+                    className="bg-emerald-500"
                     style={{ width: `${(stats.successful / stats.total) * 100}%` }}
                   />
                   <div
-                    className="bg-yellow-500"
+                    className="bg-amber-500"
                     style={{ width: `${(stats.pending / stats.total) * 100}%` }}
                   />
                   <div
@@ -283,26 +283,26 @@ export default function PaymentPerformance() {
 
         {/* Currency Breakdown */}
         <div className="bg-white rounded-2xl p-6 shadow-sm">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Currency Breakdown</h2>
+          <h2 className="text-lg font-semibold text-slate-900 mb-4">Currency Breakdown</h2>
           <div className="space-y-4">
             {currencyBreakdown.map((item) => (
               <div key={item.currency}>
                 <div className="flex items-center justify-between mb-1">
                   <div className="flex items-center gap-2">
-                    <span className="font-medium text-gray-900">{item.currency}</span>
-                    <span className="text-sm text-gray-400">{item.count} transactions</span>
+                    <span className="font-medium text-slate-900">{item.currency}</span>
+                    <span className="text-sm text-slate-400">{item.count} transactions</span>
                   </div>
-                  <span className="font-bold text-gray-900">
+                  <span className="font-bold text-slate-900">
                     {formatCurrency(item.amount, item.currency)}
                   </span>
                 </div>
-                <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
                   <div
                     className="h-full bg-primary-500 rounded-full"
                     style={{ width: `${item.percentage}%` }}
                   />
                 </div>
-                <p className="text-xs text-gray-400 mt-1">{item.percentage}% of total volume</p>
+                <p className="text-xs text-slate-400 mt-1">{item.percentage}% of total volume</p>
               </div>
             ))}
           </div>
@@ -311,27 +311,27 @@ export default function PaymentPerformance() {
 
       {/* Performance Insights */}
       <div className="bg-white rounded-2xl p-6 shadow-sm">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Performance Insights</h2>
+        <h2 className="text-lg font-semibold text-slate-900 mb-4">Performance Insights</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="p-4 bg-green-50 rounded-xl">
+          <div className="p-4 bg-emerald-50 rounded-xl">
             <div className="flex items-center gap-2 mb-2">
-              <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
-              <span className="font-medium text-green-700">High Success Rate</span>
+              <span className="font-medium text-emerald-700">High Success Rate</span>
             </div>
-            <p className="text-sm text-green-600">
+            <p className="text-sm text-emerald-600">
               Your transaction success rate of {stats?.successRate}% is above the platform average of 96%.
             </p>
           </div>
-          <div className="p-4 bg-blue-50 rounded-xl">
+          <div className="p-4 bg-indigo-50 rounded-xl">
             <div className="flex items-center gap-2 mb-2">
-              <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
               </svg>
-              <span className="font-medium text-blue-700">Growing Volume</span>
+              <span className="font-medium text-indigo-700">Growing Volume</span>
             </div>
-            <p className="text-sm text-blue-600">
+            <p className="text-sm text-indigo-600">
               Your transaction volume has increased by 15.2% compared to the previous period.
             </p>
           </div>

@@ -229,7 +229,7 @@ export default function Beneficiaries() {
     if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
       </div>
     );
   }
@@ -237,7 +237,7 @@ export default function Beneficiaries() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">Beneficiaries</h1>
+        <h1 className="text-2xl font-bold text-slate-900">Beneficiaries</h1>
         <button
           onClick={() => setShowAddModal(true)}
           className="btn-primary flex items-center gap-2"
@@ -260,20 +260,20 @@ export default function Beneficiaries() {
       {/* Favorites Section */}
       {favoriteBeneficiaries.length > 0 && !searchText && (
         <div className="space-y-3">
-          <h2 className="text-lg font-semibold text-gray-900">Favorites</h2>
+          <h2 className="text-lg font-semibold text-slate-900">Favorites</h2>
           <div className="flex gap-4 overflow-x-auto pb-2">
             {favoriteBeneficiaries.map((beneficiary) => (
               <button
                 key={beneficiary.id}
                 onClick={() => setSelectedBeneficiary(beneficiary)}
-                className="flex flex-col items-center p-4 bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow min-w-[100px]"
+                className="flex flex-col items-center p-4 bg-white rounded-2xl shadow-sm border border-slate-100 hover:shadow-md transition-shadow min-w-[100px]"
               >
                 <div className="w-14 h-14 rounded-full bg-primary-100 flex items-center justify-center mb-2">
                   <span className="text-xl font-bold text-primary-600">
                     {beneficiary.name.charAt(0)}
                   </span>
                 </div>
-                <span className="text-sm font-medium text-gray-900 text-center line-clamp-2">
+                <span className="text-sm font-medium text-slate-900 text-center line-clamp-2">
                   {beneficiary.name}
                 </span>
               </button>
@@ -285,7 +285,7 @@ export default function Beneficiaries() {
       {/* Recent Section */}
       {recentBeneficiaries.length > 0 && !searchText && (
         <div className="space-y-3">
-          <h2 className="text-lg font-semibold text-gray-900">Recent</h2>
+          <h2 className="text-lg font-semibold text-slate-900">Recent</h2>
           <div className="space-y-2">
             {recentBeneficiaries.map((beneficiary) => (
               <BeneficiaryRow
@@ -305,7 +305,7 @@ export default function Beneficiaries() {
 
       {/* All Beneficiaries */}
       <div className="space-y-3">
-        <h2 className="text-lg font-semibold text-gray-900">
+        <h2 className="text-lg font-semibold text-slate-900">
           All Beneficiaries ({filteredBeneficiaries.length})
         </h2>
         {filteredBeneficiaries.length === 0 ? (
@@ -323,7 +323,7 @@ export default function Beneficiaries() {
                 d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
               />
             </svg>
-            <p className="text-gray-500">No beneficiaries found</p>
+            <p className="text-slate-500">No beneficiaries found</p>
             <button
               onClick={() => setShowAddModal(true)}
               className="mt-4 text-primary-600 hover:text-primary-700 font-medium"
@@ -355,10 +355,10 @@ export default function Beneficiaries() {
           <div className="bg-white rounded-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
             <div className="p-6">
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-bold text-gray-900">Add Beneficiary</h2>
+                <h2 className="text-xl font-bold text-slate-900">Add Beneficiary</h2>
                 <button
                   onClick={() => setShowAddModal(false)}
-                  className="text-gray-400 hover:text-gray-600"
+                  className="text-slate-400 hover:text-slate-600"
                 >
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -367,7 +367,7 @@ export default function Beneficiaries() {
               </div>
               <form onSubmit={addBeneficiary} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Full Name</label>
                   <input
                     type="text"
                     required
@@ -378,7 +378,7 @@ export default function Beneficiaries() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Account Number</label>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Account Number</label>
                   <input
                     type="text"
                     required
@@ -389,7 +389,7 @@ export default function Beneficiaries() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Bank Name</label>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Bank Name</label>
                   <input
                     type="text"
                     required
@@ -400,7 +400,7 @@ export default function Beneficiaries() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Bank Code</label>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Bank Code</label>
                   <input
                     type="text"
                     value={formData.bankCode}
@@ -410,7 +410,7 @@ export default function Beneficiaries() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number (Optional)</label>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Phone Number (Optional)</label>
                   <input
                     type="tel"
                     value={formData.phoneNumber}
@@ -420,7 +420,7 @@ export default function Beneficiaries() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Email (Optional)</label>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Email (Optional)</label>
                   <input
                     type="email"
                     value={formData.email}
@@ -453,10 +453,10 @@ export default function Beneficiaries() {
           <div className="bg-white rounded-2xl w-full max-w-md">
             <div className="p-6">
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-bold text-gray-900">Beneficiary Details</h2>
+                <h2 className="text-xl font-bold text-slate-900">Beneficiary Details</h2>
                 <button
                   onClick={() => setSelectedBeneficiary(null)}
-                  className="text-gray-400 hover:text-gray-600"
+                  className="text-slate-400 hover:text-slate-600"
                 >
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -469,35 +469,35 @@ export default function Beneficiaries() {
                     {selectedBeneficiary.name.charAt(0)}
                   </span>
                 </div>
-                <h3 className="text-xl font-bold text-gray-900">{selectedBeneficiary.name}</h3>
+                <h3 className="text-xl font-bold text-slate-900">{selectedBeneficiary.name}</h3>
               </div>
-              <div className="space-y-3 bg-gray-50 rounded-xl p-4">
+              <div className="space-y-3 bg-slate-50 rounded-xl p-4">
                 <div className="flex justify-between">
-                  <span className="text-gray-500">Account Number</span>
+                  <span className="text-slate-500">Account Number</span>
                   <span className="font-medium">{selectedBeneficiary.accountNumber}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-500">Bank</span>
+                  <span className="text-slate-500">Bank</span>
                   <span className="font-medium">{selectedBeneficiary.bankName}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-500">Bank Code</span>
+                  <span className="text-slate-500">Bank Code</span>
                   <span className="font-medium">{selectedBeneficiary.bankCode}</span>
                 </div>
                 {selectedBeneficiary.phoneNumber && (
                   <div className="flex justify-between">
-                    <span className="text-gray-500">Phone</span>
+                    <span className="text-slate-500">Phone</span>
                     <span className="font-medium">{selectedBeneficiary.phoneNumber}</span>
                   </div>
                 )}
                 {selectedBeneficiary.email && (
                   <div className="flex justify-between">
-                    <span className="text-gray-500">Email</span>
+                    <span className="text-slate-500">Email</span>
                     <span className="font-medium">{selectedBeneficiary.email}</span>
                   </div>
                 )}
                 <div className="flex justify-between">
-                  <span className="text-gray-500">Total Transactions</span>
+                  <span className="text-slate-500">Total Transactions</span>
                   <span className="font-medium">{selectedBeneficiary.totalTransactions}</span>
                 </div>
               </div>
@@ -528,8 +528,8 @@ export default function Beneficiaries() {
       {showDeleteConfirm && beneficiaryToDelete && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl w-full max-w-sm p-6">
-            <h2 className="text-xl font-bold text-gray-900 mb-2">Delete Beneficiary</h2>
-            <p className="text-gray-500 mb-6">
+            <h2 className="text-xl font-bold text-slate-900 mb-2">Delete Beneficiary</h2>
+            <p className="text-slate-500 mb-6">
               Are you sure you want to delete {beneficiaryToDelete.name}? This action cannot be undone.
             </p>
             <div className="flex gap-3">
@@ -565,7 +565,7 @@ function BeneficiaryRow({
   onDelete: () => void;
 }) {
   return (
-    <div className="flex items-center gap-3 p-4 bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow">
+    <div className="flex items-center gap-3 p-4 bg-white rounded-2xl shadow-sm border border-slate-100 hover:shadow-md transition-shadow">
       <button onClick={onSelect} className="flex items-center gap-3 flex-1 text-left">
         <div className="w-12 h-12 rounded-full bg-primary-100 flex items-center justify-center">
           <span className="text-lg font-bold text-primary-600">
@@ -573,12 +573,12 @@ function BeneficiaryRow({
           </span>
         </div>
         <div className="flex-1 min-w-0">
-          <p className="font-medium text-gray-900 truncate">{beneficiary.name}</p>
-          <p className="text-sm text-gray-500 truncate">
+          <p className="font-medium text-slate-900 truncate">{beneficiary.name}</p>
+          <p className="text-sm text-slate-500 truncate">
             {beneficiary.bankName} • {beneficiary.accountNumber}
           </p>
           {beneficiary.totalTransactions > 0 && (
-            <p className="text-xs text-gray-400">
+            <p className="text-xs text-slate-400">
               {beneficiary.totalTransactions} transactions
             </p>
           )}
@@ -589,7 +589,7 @@ function BeneficiaryRow({
           e.stopPropagation();
           onToggleFavorite();
         }}
-        className="p-2 hover:bg-gray-100 rounded-full"
+        className="p-2 hover:bg-slate-100 rounded-full"
       >
         <svg
           className={`w-5 h-5 ${beneficiary.isFavorite ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'}`}
@@ -610,7 +610,7 @@ function BeneficiaryRow({
           e.stopPropagation();
           onDelete();
         }}
-        className="p-2 hover:bg-red-50 rounded-full text-gray-400 hover:text-red-500"
+        className="p-2 hover:bg-red-50 rounded-full text-slate-400 hover:text-red-500"
       >
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path

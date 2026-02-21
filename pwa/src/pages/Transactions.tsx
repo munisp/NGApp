@@ -13,7 +13,6 @@ interface Transaction {
   reference: string;
 }
 
-// Mock data for fallback when API is unavailable
 const mockTransactions: Transaction[] = [
   { id: '1', type: 'sent', amount: 50000, currency: 'NGN', status: 'completed', description: 'Transfer to John Doe', date: '2024-01-15 14:30', reference: 'TXN001234' },
   { id: '2', type: 'received', amount: 25000, currency: 'NGN', status: 'completed', description: 'From Jane Smith', date: '2024-01-14 10:15', reference: 'TXN001233' },
@@ -34,7 +33,6 @@ const Transactions: React.FC = () => {
   const [useOpenSearch, setUseOpenSearch] = useState(true);
   const pageSize = 20;
 
-  // Map search results to Transaction interface
   const mapSearchResultToTransaction = (result: TransactionSearchResult): Transaction => ({
     id: result.id,
     type: (result.type as Transaction['type']) || 'sent',
@@ -46,10 +44,8 @@ const Transactions: React.FC = () => {
     reference: result.reference,
   });
 
-  // Search transactions using OpenSearch
   const searchTransactions = useCallback(async (query: string, typeFilter: string) => {
     if (!useOpenSearch) {
-      // Fallback to local filtering
       const filtered = mockTransactions.filter((tx) => {
         if (typeFilter !== 'all' && tx.type !== typeFilter) return false;
         if (query && !tx.description.toLowerCase().includes(query.toLowerCase()) && !tx.reference.toLowerCase().includes(query.toLowerCase())) return false;
@@ -59,28 +55,17 @@ const Transactions: React.FC = () => {
       setTotal(filtered.length);
       return;
     }
-
     setIsLoading(true);
-
     try {
       const filters: SearchFilters = {};
-      if (typeFilter !== 'all') {
-        filters.type = typeFilter;
-      }
-
-      const response = await searchService.searchTransactions(
-        query || '*',
-        filters,
-        { page, size: pageSize }
-      );
-
+      if (typeFilter !== 'all') { filters.type = typeFilter; }
+      const response = await searchService.searchTransactions(query || '*', filters, { page, size: pageSize });
       const mappedTransactions = response.hits.map(hit => mapSearchResultToTransaction(hit.source));
       setTransactions(mappedTransactions);
       setTotal(response.total);
     } catch (err) {
       console.error('OpenSearch failed, falling back to local data:', err);
       setUseOpenSearch(false);
-      // Fallback to local filtering
       const filtered = mockTransactions.filter((tx) => {
         if (typeFilter !== 'all' && tx.type !== typeFilter) return false;
         if (query && !tx.description.toLowerCase().includes(query.toLowerCase()) && !tx.reference.toLowerCase().includes(query.toLowerCase())) return false;
@@ -93,138 +78,104 @@ const Transactions: React.FC = () => {
     }
   }, [page, useOpenSearch]);
 
-  // Effect to search when filter or page changes
-  useEffect(() => {
-    searchTransactions(searchQuery, filter);
-  }, [filter, page, searchTransactions, searchQuery]);
+  useEffect(() => { searchTransactions(searchQuery, filter); }, [filter, page, searchTransactions, searchQuery]);
 
-  // Handle search from SearchBar
-  const handleSearch = (query: string) => {
-    setSearchQuery(query);
-    setPage(1);
-  };
-
-  const filteredTransactions = transactions;
+  const handleSearch = (query: string) => { setSearchQuery(query); setPage(1); };
 
   const getTypeIcon = (type: string) => {
-    switch (type) {
-      case 'sent': return '↑';
-      case 'received': return '↓';
-      case 'airtime': return '📱';
-      case 'bill': return '📄';
-      case 'exchange': return '💱';
-      default: return '•';
-    }
+    const icons: Record<string, string> = {
+      sent: 'M5 10l7-7m0 0l7 7m-7-7v18',
+      received: 'M19 14l-7 7m0 0l-7-7m7 7V3',
+      airtime: 'M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z',
+      bill: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z',
+      exchange: 'M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4',
+    };
+    return icons[type] || 'M12 8v4m0 4h.01';
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'completed': return 'bg-green-100 text-green-800';
-      case 'pending': return 'bg-yellow-100 text-yellow-800';
-      case 'failed': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
+  const getTypeColor = (type: string) => {
+    const colors: Record<string, string> = {
+      sent: 'bg-indigo-50 text-indigo-600', received: 'bg-emerald-50 text-emerald-600',
+      airtime: 'bg-amber-50 text-amber-600', bill: 'bg-violet-50 text-violet-600',
+      exchange: 'bg-cyan-50 text-cyan-600',
+    };
+    return colors[type] || 'bg-slate-50 text-slate-600';
+  };
+
+  const getStatusStyle = (status: string) => {
+    const styles: Record<string, string> = {
+      completed: 'bg-emerald-50 text-emerald-700', pending: 'bg-amber-50 text-amber-700', failed: 'bg-red-50 text-red-600',
+    };
+    return styles[status] || 'bg-slate-50 text-slate-600';
   };
 
   return (
     <div className="space-y-6">
-      <h1 className="page-title">Transaction History</h1>
+      <div>
+        <h1 className="text-2xl font-bold text-slate-900">Transaction History</h1>
+        <p className="text-slate-500 mt-1">Track all your transactions</p>
+      </div>
 
-      {/* Filters */}
-      <div className="card">
+      <div className="bg-white rounded-2xl border border-slate-100 p-5">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div className="flex flex-wrap gap-2">
             {['all', 'sent', 'received', 'airtime', 'bill', 'exchange'].map((f) => (
-              <button
-                key={f}
-                onClick={() => setFilter(f)}
-                className={`px-4 py-2 rounded-lg text-sm font-medium capitalize ${
-                  filter === f ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                }`}
-              >
+              <button key={f} onClick={() => setFilter(f)}
+                className={`px-4 py-2 rounded-xl text-sm font-medium capitalize transition-all duration-200 ${filter === f ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200' : 'bg-slate-50 text-slate-600 hover:bg-slate-100'}`}>
                 {f}
               </button>
             ))}
           </div>
           <div className="flex gap-2">
-            <SearchBar
-              placeholder="Search transactions..."
-              index="transactions"
-              onSearch={handleSearch}
-              className="w-full md:w-64"
-            />
-            <button className="btn-secondary">Export</button>
+            <SearchBar placeholder="Search transactions..." index="transactions" onSearch={handleSearch} className="w-full md:w-64" />
+            <button className="px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors">Export</button>
           </div>
         </div>
       </div>
 
-      {/* Transaction List */}
-      <div className="card">
-        <div className="space-y-4">
+      <div className="bg-white rounded-2xl border border-slate-100">
+        <div className="divide-y divide-slate-50">
           {isLoading ? (
-            <div className="flex items-center justify-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-              <span className="ml-3 text-gray-500">Searching...</span>
+            <div className="flex items-center justify-center py-12">
+              <div className="w-8 h-8 border-2 border-indigo-200 border-t-indigo-600 rounded-full animate-spin" />
+              <span className="ml-3 text-slate-500">Searching...</span>
             </div>
-          ) : filteredTransactions.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              No transactions found
-            </div>
+          ) : transactions.length === 0 ? (
+            <div className="text-center py-12 text-slate-400">No transactions found</div>
           ) : (
-            filteredTransactions.map((tx) => (
-              <div
-                key={tx.id}
-                className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 cursor-pointer"
-              >
-                <div className="flex items-center">
-                  <div className={`w-12 h-12 rounded-full flex items-center justify-center text-lg ${
-                    tx.type === 'received' ? 'bg-green-100 text-green-600' : 'bg-blue-100 text-blue-600'
-                  }`}>
-                    {getTypeIcon(tx.type)}
+            transactions.map((tx) => (
+              <div key={tx.id} className="flex items-center justify-between p-4 hover:bg-slate-50 transition-colors cursor-pointer">
+                <div className="flex items-center gap-4">
+                  <div className={`w-11 h-11 rounded-xl flex items-center justify-center ${getTypeColor(tx.type)}`}>
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d={getTypeIcon(tx.type)} /></svg>
                   </div>
-                  <div className="ml-4">
-                    <p className="font-medium text-gray-900">{tx.description}</p>
-                    <div className="flex items-center gap-2 mt-1">
-                      <span className="text-xs text-gray-500">{tx.date}</span>
-                      <span className="text-xs text-gray-400">•</span>
-                      <span className="text-xs text-gray-500">{tx.reference}</span>
+                  <div>
+                    <p className="text-sm font-semibold text-slate-900">{tx.description}</p>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <span className="text-xs text-slate-400">{tx.date}</span>
+                      <span className="text-xs text-slate-300">|</span>
+                      <span className="text-xs text-slate-400 font-mono">{tx.reference}</span>
                     </div>
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className={`font-semibold ${tx.type === 'received' ? 'text-green-600' : 'text-gray-900'}`}>
+                  <p className={`text-sm font-bold tabular-nums ${tx.type === 'received' ? 'text-emerald-600' : 'text-slate-900'}`}>
                     {tx.type === 'received' ? '+' : '-'}{tx.currency} {tx.amount.toLocaleString()}
                   </p>
-                  <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium mt-1 ${getStatusColor(tx.status)}`}>
-                    {tx.status}
-                  </span>
+                  <span className={`inline-block px-2.5 py-0.5 rounded-full text-xs font-medium mt-1 ${getStatusStyle(tx.status)}`}>{tx.status}</span>
                 </div>
               </div>
             ))
           )}
         </div>
-
-        {/* Pagination */}
-        <div className="flex items-center justify-between mt-6 pt-4 border-t">
-          <p className="text-sm text-gray-500">
-            Showing {filteredTransactions.length} of {total} transactions
-            {!useOpenSearch && <span className="text-yellow-600 ml-2">(offline mode)</span>}
+        <div className="flex items-center justify-between p-4 border-t border-slate-100">
+          <p className="text-xs text-slate-400">
+            Showing {transactions.length} of {total}
+            {!useOpenSearch && <span className="text-amber-500 ml-2">(offline)</span>}
           </p>
           <div className="flex gap-2">
-            <button 
-              className="btn-secondary" 
-              disabled={page <= 1}
-              onClick={() => setPage(p => Math.max(1, p - 1))}
-            >
-              Previous
-            </button>
-            <button 
-              className="btn-secondary"
-              disabled={page * pageSize >= total}
-              onClick={() => setPage(p => p + 1)}
-            >
-              Next
-            </button>
+            <button className="px-3 py-1.5 text-sm bg-white border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50 disabled:opacity-40" disabled={page <= 1} onClick={() => setPage(p => Math.max(1, p - 1))}>Previous</button>
+            <button className="px-3 py-1.5 text-sm bg-white border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50 disabled:opacity-40" disabled={page * pageSize >= total} onClick={() => setPage(p => p + 1)}>Next</button>
           </div>
         </div>
       </div>

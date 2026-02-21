@@ -40,16 +40,16 @@ interface Quote {
 // Chain configurations
 const CHAINS = {
   tron: { name: 'Tron', symbol: 'TRX', color: 'bg-red-500', icon: '🔴', fee: '$1' },
-  ethereum: { name: 'Ethereum', symbol: 'ETH', color: 'bg-blue-500', icon: '🔷', fee: '$5' },
+  ethereum: { name: 'Ethereum', symbol: 'ETH', color: 'bg-indigo-500', icon: '🔷', fee: '$5' },
   solana: { name: 'Solana', symbol: 'SOL', color: 'bg-purple-500', icon: '🟣', fee: '$0.01' },
   polygon: { name: 'Polygon', symbol: 'MATIC', color: 'bg-violet-500', icon: '🟪', fee: '$0.10' },
-  bsc: { name: 'BNB Chain', symbol: 'BNB', color: 'bg-yellow-500', icon: '🟡', fee: '$0.30' },
+  bsc: { name: 'BNB Chain', symbol: 'BNB', color: 'bg-amber-500', icon: '🟡', fee: '$0.30' },
 };
 
 const STABLECOINS = {
-  usdt: { name: 'Tether', symbol: 'USDT', color: 'bg-green-500', icon: '💵' },
+  usdt: { name: 'Tether', symbol: 'USDT', color: 'bg-emerald-500', icon: '💵' },
   usdc: { name: 'USD Coin', symbol: 'USDC', color: 'bg-blue-400', icon: '💲' },
-  pyusd: { name: 'PayPal USD', symbol: 'PYUSD', color: 'bg-blue-600', icon: '🅿️' },
+  pyusd: { name: 'PayPal USD', symbol: 'PYUSD', color: 'bg-indigo-600', icon: '🅿️' },
   dai: { name: 'Dai', symbol: 'DAI', color: 'bg-yellow-400', icon: '🌕' },
 };
 
@@ -379,25 +379,25 @@ export default function Stablecoin() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'completed': return 'text-green-600 bg-green-100';
-      case 'confirming': return 'text-yellow-600 bg-yellow-100';
-      case 'pending': return 'text-blue-600 bg-blue-100';
+      case 'completed': return 'text-emerald-600 bg-green-100';
+      case 'confirming': return 'text-amber-600 bg-amber-100';
+      case 'pending': return 'text-indigo-600 bg-indigo-100';
       case 'failed': return 'text-red-600 bg-red-100';
-      case 'queued_offline': return 'text-gray-600 bg-gray-100';
-      default: return 'text-gray-600 bg-gray-100';
+      case 'queued_offline': return 'text-slate-600 bg-slate-100';
+      default: return 'text-slate-600 bg-slate-100';
     }
   };
 
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-20">
+    <div className="min-h-screen bg-slate-50 pb-20">
       {/* Header */}
       <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-6">
         <div className="flex items-center justify-between mb-4">
@@ -466,8 +466,8 @@ export default function Stablecoin() {
             onClick={() => setActiveTab(tab)}
             className={`flex-1 py-3 text-sm font-medium capitalize ${
               activeTab === tab 
-                ? 'text-blue-600 border-b-2 border-blue-600' 
-                : 'text-gray-500'
+                ? 'text-indigo-600 border-b-2 border-indigo-600' 
+                : 'text-slate-500'
             }`}
           >
             {tab === 'ramp' ? 'Buy/Sell' : tab}
@@ -482,7 +482,7 @@ export default function Stablecoin() {
             {wallets.length === 0 && (
               <button
                 onClick={createWallet}
-                className="w-full p-4 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition"
+                className="w-full p-4 bg-gradient-to-r from-indigo-600 to-violet-600 text-white rounded-xl shadow-lg shadow-indigo-200 font-medium hover:bg-indigo-700 transition"
               >
                 Create Stablecoin Wallet
               </button>
@@ -491,11 +491,11 @@ export default function Stablecoin() {
             <div className="bg-white rounded-xl p-4 shadow-sm">
               <h3 className="font-semibold mb-3">Your Balances</h3>
               {balances.length === 0 ? (
-                <p className="text-gray-500 text-center py-4">No balances yet</p>
+                <p className="text-slate-500 text-center py-4">No balances yet</p>
               ) : (
                 <div className="space-y-3">
                   {balances.map((balance, idx) => (
-                    <div key={idx} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div key={idx} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
                       <div className="flex items-center gap-3">
                         <span className="text-2xl">
                           {STABLECOINS[balance.stablecoin as keyof typeof STABLECOINS]?.icon || '💰'}
@@ -504,7 +504,7 @@ export default function Stablecoin() {
                           <p className="font-medium">
                             {STABLECOINS[balance.stablecoin as keyof typeof STABLECOINS]?.symbol || balance.stablecoin.toUpperCase()}
                           </p>
-                          <p className="text-xs text-gray-500">
+                          <p className="text-xs text-slate-500">
                             {CHAINS[balance.chain as keyof typeof CHAINS]?.name || balance.chain}
                           </p>
                         </div>
@@ -512,7 +512,7 @@ export default function Stablecoin() {
                       <div className="text-right">
                         <p className="font-semibold">${balance.balance}</p>
                         {parseFloat(balance.pending_balance) > 0 && (
-                          <p className="text-xs text-yellow-600">
+                          <p className="text-xs text-amber-600">
                             +${balance.pending_balance} pending
                           </p>
                         )}
@@ -526,29 +526,29 @@ export default function Stablecoin() {
             <div className="bg-white rounded-xl p-4 shadow-sm">
               <h3 className="font-semibold mb-3">Recent Transactions</h3>
               {transactions.length === 0 ? (
-                <p className="text-gray-500 text-center py-4">No transactions yet</p>
+                <p className="text-slate-500 text-center py-4">No transactions yet</p>
               ) : (
                 <div className="space-y-3">
                   {transactions.slice(0, 5).map((tx) => (
-                    <div key={tx.transaction_id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div key={tx.transaction_id} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
                       <div className="flex items-center gap-3">
                         <div className={`p-2 rounded-full ${
                           tx.transaction_type === 'deposit' ? 'bg-green-100' : 'bg-red-100'
                         }`}>
                           {tx.transaction_type === 'deposit' ? (
-                            <ArrowDownLeftIcon className="w-4 h-4 text-green-600" />
+                            <ArrowDownLeftIcon className="w-4 h-4 text-emerald-600" />
                           ) : (
                             <ArrowUpRightIcon className="w-4 h-4 text-red-600" />
                           )}
                         </div>
                         <div>
                           <p className="font-medium capitalize">{tx.transaction_type}</p>
-                          <p className="text-xs text-gray-500">{formatDate(tx.created_at)}</p>
+                          <p className="text-xs text-slate-500">{formatDate(tx.created_at)}</p>
                         </div>
                       </div>
                       <div className="text-right">
                         <p className={`font-semibold ${
-                          tx.transaction_type === 'deposit' ? 'text-green-600' : 'text-red-600'
+                          tx.transaction_type === 'deposit' ? 'text-emerald-600' : 'text-red-600'
                         }`}>
                           {tx.transaction_type === 'deposit' ? '+' : '-'}${tx.amount}
                         </p>
@@ -564,24 +564,24 @@ export default function Stablecoin() {
             
             <div className="grid grid-cols-2 gap-3">
               <div className="bg-white rounded-xl p-4 shadow-sm">
-                <ZapIcon className="w-8 h-8 text-yellow-500 mb-2" />
+                <ZapIcon className="w-8 h-8 text-amber-500 mb-2" />
                 <h4 className="font-medium">Instant Transfers</h4>
-                <p className="text-xs text-gray-500">Send in seconds</p>
+                <p className="text-xs text-slate-500">Send in seconds</p>
               </div>
               <div className="bg-white rounded-xl p-4 shadow-sm">
-                <ShieldIcon className="w-8 h-8 text-green-500 mb-2" />
+                <ShieldIcon className="w-8 h-8 text-emerald-500 mb-2" />
                 <h4 className="font-medium">Secure</h4>
-                <p className="text-xs text-gray-500">Multi-chain security</p>
+                <p className="text-xs text-slate-500">Multi-chain security</p>
               </div>
               <div className="bg-white rounded-xl p-4 shadow-sm">
-                <TrendingUpIcon className="w-8 h-8 text-blue-500 mb-2" />
+                <TrendingUpIcon className="w-8 h-8 text-indigo-500 mb-2" />
                 <h4 className="font-medium">ML Rates</h4>
-                <p className="text-xs text-gray-500">AI-optimized timing</p>
+                <p className="text-xs text-slate-500">AI-optimized timing</p>
               </div>
               <div className="bg-white rounded-xl p-4 shadow-sm">
                 <WifiOffIcon className="w-8 h-8 text-purple-500 mb-2" />
                 <h4 className="font-medium">Offline Ready</h4>
-                <p className="text-xs text-gray-500">Queue when offline</p>
+                <p className="text-xs text-slate-500">Queue when offline</p>
               </div>
             </div>
           </div>
@@ -594,8 +594,8 @@ export default function Stablecoin() {
               <h3 className="font-semibold mb-4">Send Stablecoin</h3>
               
               {!isOnline && (
-                <div className="flex items-start gap-2 p-3 bg-yellow-50 rounded-lg mb-4">
-                  <AlertIcon className="w-5 h-5 text-yellow-600 flex-shrink-0" />
+                <div className="flex items-start gap-2 p-3 bg-amber-50 rounded-xl mb-4">
+                  <AlertIcon className="w-5 h-5 text-amber-600 flex-shrink-0" />
                   <p className="text-sm text-yellow-700">
                     You are offline. Transaction will be queued and sent when you are back online.
                   </p>
@@ -603,16 +603,16 @@ export default function Stablecoin() {
               )}
               
               <div className="mb-4">
-                <label className="text-sm text-gray-600 mb-2 block">Network</label>
+                <label className="text-sm text-slate-600 mb-2 block">Network</label>
                 <div className="flex flex-wrap gap-2">
                   {Object.entries(CHAINS).map(([key, chain]) => (
                     <button
                       key={key}
                       onClick={() => setSendChain(key)}
-                      className={`px-3 py-2 rounded-lg text-sm font-medium transition ${
+                      className={`px-3 py-2 rounded-xl text-sm font-medium transition ${
                         sendChain === key 
-                          ? 'bg-blue-600 text-white' 
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                          ? 'bg-indigo-600 text-white' 
+                          : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                       }`}
                     >
                       {chain.icon} {chain.name}
@@ -622,16 +622,16 @@ export default function Stablecoin() {
               </div>
               
               <div className="mb-4">
-                <label className="text-sm text-gray-600 mb-2 block">Stablecoin</label>
+                <label className="text-sm text-slate-600 mb-2 block">Stablecoin</label>
                 <div className="flex flex-wrap gap-2">
                   {Object.entries(STABLECOINS).map(([key, coin]) => (
                     <button
                       key={key}
                       onClick={() => setSendStablecoin(key)}
-                      className={`px-3 py-2 rounded-lg text-sm font-medium transition ${
+                      className={`px-3 py-2 rounded-xl text-sm font-medium transition ${
                         sendStablecoin === key 
-                          ? 'bg-blue-600 text-white' 
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                          ? 'bg-indigo-600 text-white' 
+                          : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                       }`}
                     >
                       {coin.icon} {coin.symbol}
@@ -641,31 +641,31 @@ export default function Stablecoin() {
               </div>
               
               <div className="mb-4">
-                <label className="text-sm text-gray-600 mb-2 block">Amount</label>
+                <label className="text-sm text-slate-600 mb-2 block">Amount</label>
                 <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">$</span>
                   <input
                     type="number"
                     value={sendAmount}
                     onChange={(e) => setSendAmount(e.target.value)}
                     placeholder="0.00"
-                    className="w-full pl-8 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full pl-8 pr-4 py-3 border rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                   />
                 </div>
               </div>
               
               <div className="mb-4">
-                <label className="text-sm text-gray-600 mb-2 block">Recipient Address</label>
+                <label className="text-sm text-slate-600 mb-2 block">Recipient Address</label>
                 <input
                   type="text"
                   value={sendAddress}
                   onChange={(e) => setSendAddress(e.target.value)}
                   placeholder="Enter wallet address"
-                  className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                 />
               </div>
               
-              <div className="flex justify-between text-sm text-gray-600 mb-4">
+              <div className="flex justify-between text-sm text-slate-600 mb-4">
                 <span>Network Fee</span>
                 <span>{CHAINS[sendChain as keyof typeof CHAINS]?.fee || '$0'}</span>
               </div>
@@ -673,7 +673,7 @@ export default function Stablecoin() {
               <button
                 onClick={handleSend}
                 disabled={!sendAmount || !sendAddress || sendLoading}
-                className="w-full py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition disabled:bg-gray-300 disabled:cursor-not-allowed"
+                className="w-full py-3 bg-gradient-to-r from-indigo-600 to-violet-600 text-white rounded-xl shadow-lg shadow-indigo-200 font-medium hover:bg-indigo-700 transition disabled:bg-gray-300 disabled:cursor-not-allowed"
               >
                 {sendLoading ? 'Sending...' : isOnline ? 'Send Now' : 'Queue for Later'}
               </button>
@@ -689,10 +689,10 @@ export default function Stablecoin() {
               
               {wallets.length === 0 ? (
                 <div className="text-center py-8">
-                  <p className="text-gray-500 mb-4">Create a wallet to receive stablecoins</p>
+                  <p className="text-slate-500 mb-4">Create a wallet to receive stablecoins</p>
                   <button
                     onClick={createWallet}
-                    className="px-6 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition"
+                    className="px-6 py-2 bg-gradient-to-r from-indigo-600 to-violet-600 text-white rounded-xl shadow-lg shadow-indigo-200 font-medium hover:bg-indigo-700 transition"
                   >
                     Create Wallet
                   </button>
@@ -700,7 +700,7 @@ export default function Stablecoin() {
               ) : (
                 <div className="space-y-4">
                   {wallets.map((wallet) => (
-                    <div key={wallet.address_id} className="p-4 bg-gray-50 rounded-lg">
+                    <div key={wallet.address_id} className="p-4 bg-slate-50 rounded-xl">
                       <div className="flex items-center justify-between mb-2">
                         <span className="font-medium">
                           {CHAINS[wallet.chain as keyof typeof CHAINS]?.icon}{' '}
@@ -708,7 +708,7 @@ export default function Stablecoin() {
                         </span>
                         <button
                           onClick={() => copyAddress(wallet.address)}
-                          className="flex items-center gap-1 text-blue-600 text-sm hover:text-blue-700"
+                          className="flex items-center gap-1 text-indigo-600 text-sm hover:text-indigo-700"
                         >
                           {copiedAddress === wallet.address ? (
                             <>
@@ -721,10 +721,10 @@ export default function Stablecoin() {
                           )}
                         </button>
                       </div>
-                      <p className="text-sm text-gray-600 break-all bg-white p-2 rounded">
+                      <p className="text-sm text-slate-600 break-all bg-white p-2 rounded">
                         {wallet.address}
                       </p>
-                      <p className="text-xs text-gray-500 mt-2">
+                      <p className="text-xs text-slate-500 mt-2">
                         Supports: USDT, USDC, PYUSD, DAI
                       </p>
                     </div>
@@ -733,9 +733,9 @@ export default function Stablecoin() {
               )}
             </div>
             
-            <div className="bg-blue-50 rounded-xl p-4">
-              <h4 className="font-medium text-blue-800 mb-2">Tips for Receiving</h4>
-              <ul className="text-sm text-blue-700 space-y-1">
+            <div className="bg-indigo-50 rounded-xl p-4">
+              <h4 className="font-medium text-indigo-800 mb-2">Tips for Receiving</h4>
+              <ul className="text-sm text-indigo-700 space-y-1">
                 <li>Always verify the network matches the sender</li>
                 <li>Tron (TRC20) has the lowest fees</li>
                 <li>Deposits are confirmed automatically</li>
@@ -751,16 +751,16 @@ export default function Stablecoin() {
               <h3 className="font-semibold mb-4">Convert Stablecoin</h3>
               
               <div className="mb-4">
-                <label className="text-sm text-gray-600 mb-2 block">From</label>
+                <label className="text-sm text-slate-600 mb-2 block">From</label>
                 <div className="flex flex-wrap gap-2 mb-2">
                   {Object.entries(STABLECOINS).map(([key, coin]) => (
                     <button
                       key={key}
                       onClick={() => setFromStablecoin(key)}
-                      className={`px-3 py-2 rounded-lg text-sm font-medium transition ${
+                      className={`px-3 py-2 rounded-xl text-sm font-medium transition ${
                         fromStablecoin === key 
-                          ? 'bg-blue-600 text-white' 
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                          ? 'bg-indigo-600 text-white' 
+                          : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                       }`}
                     >
                       {coin.icon} {coin.symbol}
@@ -770,7 +770,7 @@ export default function Stablecoin() {
                 <select
                   value={fromChain}
                   onChange={(e) => setFromChain(e.target.value)}
-                  className="w-full px-4 py-2 border rounded-lg text-sm"
+                  className="w-full px-4 py-2 border rounded-xl text-sm"
                 >
                   {Object.entries(CHAINS).map(([key, chain]) => (
                     <option key={key} value={key}>{chain.name}</option>
@@ -779,9 +779,9 @@ export default function Stablecoin() {
               </div>
               
               <div className="mb-4">
-                <label className="text-sm text-gray-600 mb-2 block">Amount</label>
+                <label className="text-sm text-slate-600 mb-2 block">Amount</label>
                 <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">$</span>
                   <input
                     type="number"
                     value={convertAmount}
@@ -790,28 +790,28 @@ export default function Stablecoin() {
                       setQuote(null);
                     }}
                     placeholder="0.00"
-                    className="w-full pl-8 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full pl-8 pr-4 py-3 border rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                   />
                 </div>
               </div>
               
               <div className="flex justify-center my-2">
-                <div className="p-2 bg-gray-100 rounded-full">
-                  <RefreshIcon className="w-5 h-5 text-gray-600" />
+                <div className="p-2 bg-slate-100 rounded-full">
+                  <RefreshIcon className="w-5 h-5 text-slate-600" />
                 </div>
               </div>
               
               <div className="mb-4">
-                <label className="text-sm text-gray-600 mb-2 block">To</label>
+                <label className="text-sm text-slate-600 mb-2 block">To</label>
                 <div className="flex flex-wrap gap-2 mb-2">
                   {Object.entries(STABLECOINS).map(([key, coin]) => (
                     <button
                       key={key}
                       onClick={() => setToStablecoin(key)}
-                      className={`px-3 py-2 rounded-lg text-sm font-medium transition ${
+                      className={`px-3 py-2 rounded-xl text-sm font-medium transition ${
                         toStablecoin === key 
-                          ? 'bg-blue-600 text-white' 
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                          ? 'bg-indigo-600 text-white' 
+                          : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                       }`}
                     >
                       {coin.icon} {coin.symbol}
@@ -821,7 +821,7 @@ export default function Stablecoin() {
                 <select
                   value={toChain}
                   onChange={(e) => setToChain(e.target.value)}
-                  className="w-full px-4 py-2 border rounded-lg text-sm"
+                  className="w-full px-4 py-2 border rounded-xl text-sm"
                 >
                   {Object.entries(CHAINS).map(([key, chain]) => (
                     <option key={key} value={key}>{chain.name}</option>
@@ -833,28 +833,28 @@ export default function Stablecoin() {
                 <button
                   onClick={getQuote}
                   disabled={!convertAmount || quoteLoading}
-                  className="w-full py-3 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition disabled:opacity-50 mb-4"
+                  className="w-full py-3 bg-slate-100 text-slate-700 rounded-xl font-medium hover:bg-slate-200 transition disabled:opacity-50 mb-4"
                 >
                   {quoteLoading ? 'Getting Quote...' : 'Get Quote'}
                 </button>
               )}
               
               {quote && (
-                <div className="p-4 bg-green-50 rounded-lg mb-4">
+                <div className="p-4 bg-emerald-50 rounded-xl mb-4">
                   <div className="flex justify-between mb-2">
-                    <span className="text-gray-600">You will receive</span>
+                    <span className="text-slate-600">You will receive</span>
                     <span className="font-bold text-lg">${quote.to_amount}</span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-500">Rate</span>
+                    <span className="text-slate-500">Rate</span>
                     <span>1 {STABLECOINS[fromStablecoin as keyof typeof STABLECOINS]?.symbol} = {quote.rate} {STABLECOINS[toStablecoin as keyof typeof STABLECOINS]?.symbol}</span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-500">Fee</span>
+                    <span className="text-slate-500">Fee</span>
                     <span>${quote.fee}</span>
                   </div>
                   {quote.is_ml_optimized && (
-                    <div className="flex items-center gap-1 text-green-600 text-sm mt-2">
+                    <div className="flex items-center gap-1 text-emerald-600 text-sm mt-2">
                       <TrendingUpIcon className="w-4 h-4" />
                       <span>ML-optimized rate applied</span>
                     </div>
@@ -865,7 +865,7 @@ export default function Stablecoin() {
               <button
                 onClick={handleConvert}
                 disabled={!quote}
-                className="w-full py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition disabled:bg-gray-300 disabled:cursor-not-allowed"
+                className="w-full py-3 bg-gradient-to-r from-indigo-600 to-violet-600 text-white rounded-xl shadow-lg shadow-indigo-200 font-medium hover:bg-indigo-700 transition disabled:bg-gray-300 disabled:cursor-not-allowed"
               >
                 Convert Now
               </button>
@@ -877,10 +877,10 @@ export default function Stablecoin() {
         {activeTab === 'ramp' && (
           <div className="space-y-4">
             <div className="bg-white rounded-xl p-4 shadow-sm">
-              <div className="flex bg-gray-100 rounded-lg p-1 mb-4">
+              <div className="flex bg-slate-100 rounded-xl p-1 mb-4">
                 <button
                   onClick={() => setRampType('on')}
-                  className={`flex-1 py-2 rounded-lg text-sm font-medium transition ${
+                  className={`flex-1 py-2 rounded-xl text-sm font-medium transition ${
                     rampType === 'on' ? 'bg-white shadow' : ''
                   }`}
                 >
@@ -888,7 +888,7 @@ export default function Stablecoin() {
                 </button>
                 <button
                   onClick={() => setRampType('off')}
-                  className={`flex-1 py-2 rounded-lg text-sm font-medium transition ${
+                  className={`flex-1 py-2 rounded-xl text-sm font-medium transition ${
                     rampType === 'off' ? 'bg-white shadow' : ''
                   }`}
                 >
@@ -901,7 +901,7 @@ export default function Stablecoin() {
               </h3>
               
               <div className="mb-4">
-                <label className="text-sm text-gray-600 mb-2 block">
+                <label className="text-sm text-slate-600 mb-2 block">
                   {rampType === 'on' ? 'Pay with' : 'Receive in'}
                 </label>
                 <div className="flex flex-wrap gap-2">
@@ -909,10 +909,10 @@ export default function Stablecoin() {
                     <button
                       key={fiat}
                       onClick={() => setRampFiat(fiat)}
-                      className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
+                      className={`px-4 py-2 rounded-xl text-sm font-medium transition ${
                         rampFiat === fiat 
-                          ? 'bg-blue-600 text-white' 
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                          ? 'bg-indigo-600 text-white' 
+                          : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                       }`}
                     >
                       {fiat}
@@ -922,9 +922,9 @@ export default function Stablecoin() {
               </div>
               
               <div className="mb-4">
-                <label className="text-sm text-gray-600 mb-2 block">Amount</label>
+                <label className="text-sm text-slate-600 mb-2 block">Amount</label>
                 <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">
                     {rampFiat === 'NGN' ? '₦' : rampFiat === 'EUR' ? '€' : rampFiat === 'GBP' ? '£' : '$'}
                   </span>
                   <input
@@ -932,13 +932,13 @@ export default function Stablecoin() {
                     value={rampAmount}
                     onChange={(e) => setRampAmount(e.target.value)}
                     placeholder="0.00"
-                    className="w-full pl-8 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full pl-8 pr-4 py-3 border rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                   />
                 </div>
               </div>
               
               <div className="mb-4">
-                <label className="text-sm text-gray-600 mb-2 block">
+                <label className="text-sm text-slate-600 mb-2 block">
                   {rampType === 'on' ? 'Receive' : 'Sell'}
                 </label>
                 <div className="flex flex-wrap gap-2">
@@ -946,10 +946,10 @@ export default function Stablecoin() {
                     <button
                       key={key}
                       onClick={() => setRampStablecoin(key)}
-                      className={`px-3 py-2 rounded-lg text-sm font-medium transition ${
+                      className={`px-3 py-2 rounded-xl text-sm font-medium transition ${
                         rampStablecoin === key 
-                          ? 'bg-blue-600 text-white' 
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                          ? 'bg-indigo-600 text-white' 
+                          : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                       }`}
                     >
                       {coin.icon} {coin.symbol}
@@ -959,11 +959,11 @@ export default function Stablecoin() {
               </div>
               
               <div className="mb-4">
-                <label className="text-sm text-gray-600 mb-2 block">Network</label>
+                <label className="text-sm text-slate-600 mb-2 block">Network</label>
                 <select
                   value={rampChain}
                   onChange={(e) => setRampChain(e.target.value)}
-                  className="w-full px-4 py-2 border rounded-lg text-sm"
+                  className="w-full px-4 py-2 border rounded-xl text-sm"
                 >
                   {Object.entries(CHAINS).map(([key, chain]) => (
                     <option key={key} value={key}>{chain.name}</option>
@@ -971,9 +971,9 @@ export default function Stablecoin() {
                 </select>
               </div>
               
-              <div className="p-3 bg-gray-50 rounded-lg mb-4">
+              <div className="p-3 bg-slate-50 rounded-xl mb-4">
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-500">Current Rate</span>
+                  <span className="text-slate-500">Current Rate</span>
                   <span>
                     {rampFiat === 'NGN' ? '1 USDT = ₦1,650' : 
                      rampFiat === 'EUR' ? '1 USDT = €0.92' :
@@ -981,7 +981,7 @@ export default function Stablecoin() {
                   </span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-500">Fee</span>
+                  <span className="text-slate-500">Fee</span>
                   <span>1%</span>
                 </div>
               </div>
@@ -989,7 +989,7 @@ export default function Stablecoin() {
               <button
                 onClick={handleRamp}
                 disabled={!rampAmount}
-                className="w-full py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition disabled:bg-gray-300 disabled:cursor-not-allowed"
+                className="w-full py-3 bg-gradient-to-r from-indigo-600 to-violet-600 text-white rounded-xl shadow-lg shadow-indigo-200 font-medium hover:bg-indigo-700 transition disabled:bg-gray-300 disabled:cursor-not-allowed"
               >
                 {rampType === 'on' ? 'Buy Now' : 'Sell Now'}
               </button>
@@ -998,37 +998,37 @@ export default function Stablecoin() {
             <div className="bg-white rounded-xl p-4 shadow-sm">
               <h4 className="font-medium mb-3">Payment Methods</h4>
               <div className="space-y-3">
-                <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                  <div className="p-2 bg-gray-200 rounded-full">
-                    <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl">
+                  <div className="p-2 bg-slate-200 rounded-full">
+                    <svg className="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                     </svg>
                   </div>
                   <div>
                     <p className="font-medium">Bank Transfer</p>
-                    <p className="text-xs text-gray-500">Instant for NGN, 1-2 days for others</p>
+                    <p className="text-xs text-slate-500">Instant for NGN, 1-2 days for others</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                  <div className="p-2 bg-gray-200 rounded-full">
-                    <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl">
+                  <div className="p-2 bg-slate-200 rounded-full">
+                    <svg className="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
                     </svg>
                   </div>
                   <div>
                     <p className="font-medium">Debit/Credit Card</p>
-                    <p className="text-xs text-gray-500">Instant, 2.5% fee</p>
+                    <p className="text-xs text-slate-500">Instant, 2.5% fee</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                  <div className="p-2 bg-gray-200 rounded-full">
-                    <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl">
+                  <div className="p-2 bg-slate-200 rounded-full">
+                    <svg className="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
                     </svg>
                   </div>
                   <div>
                     <p className="font-medium">Mobile Money</p>
-                    <p className="text-xs text-gray-500">M-Pesa, MTN MoMo, Airtel Money</p>
+                    <p className="text-xs text-slate-500">M-Pesa, MTN MoMo, Airtel Money</p>
                   </div>
                 </div>
               </div>

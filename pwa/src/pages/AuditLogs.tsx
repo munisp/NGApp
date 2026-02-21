@@ -211,32 +211,32 @@ export default function AuditLogs() {
   const getCategoryColor = (category: AuditLog['category']) => {
     switch (category) {
       case 'auth':
-        return 'bg-blue-100 text-blue-700';
+        return 'bg-indigo-100 text-indigo-700';
       case 'transaction':
-        return 'bg-green-100 text-green-700';
+        return 'bg-emerald-100 text-emerald-700';
       case 'profile':
-        return 'bg-purple-100 text-purple-700';
+        return 'bg-violet-100 text-violet-700';
       case 'security':
-        return 'bg-red-100 text-red-700';
+        return 'bg-red-50 text-red-600';
       case 'kyc':
-        return 'bg-yellow-100 text-yellow-700';
+        return 'bg-amber-100 text-amber-700';
       case 'admin':
-        return 'bg-gray-100 text-gray-700';
+        return 'bg-slate-100 text-slate-700';
       default:
-        return 'bg-gray-100 text-gray-700';
+        return 'bg-slate-100 text-slate-700';
     }
   };
 
   const getStatusColor = (status: AuditLog['status']) => {
     switch (status) {
       case 'success':
-        return 'bg-green-100 text-green-700';
+        return 'bg-emerald-100 text-emerald-700';
       case 'failure':
-        return 'bg-red-100 text-red-700';
+        return 'bg-red-50 text-red-600';
       case 'pending':
-        return 'bg-yellow-100 text-yellow-700';
+        return 'bg-amber-100 text-amber-700';
       default:
-        return 'bg-gray-100 text-gray-700';
+        return 'bg-slate-100 text-slate-700';
     }
   };
 
@@ -266,7 +266,7 @@ export default function AuditLogs() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
       </div>
     );
   }
@@ -275,8 +275,8 @@ export default function AuditLogs() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Audit Logs</h1>
-          <p className="text-gray-500">View and export your account activity history</p>
+          <h1 className="text-2xl font-bold text-slate-900">Audit Logs</h1>
+          <p className="text-slate-500">View and export your account activity history</p>
         </div>
         <div className="flex gap-2">
           <button
@@ -304,7 +304,7 @@ export default function AuditLogs() {
       <div className="bg-white rounded-2xl p-4 shadow-sm">
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Search</label>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Search</label>
             <SearchBar
               placeholder="Search logs..."
               index="audit_logs"
@@ -313,7 +313,7 @@ export default function AuditLogs() {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Category</label>
             <select
               value={filters.category}
               onChange={(e) => setFilters({ ...filters, category: e.target.value })}
@@ -329,7 +329,7 @@ export default function AuditLogs() {
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Status</label>
             <select
               value={filters.status}
               onChange={(e) => setFilters({ ...filters, status: e.target.value })}
@@ -342,7 +342,7 @@ export default function AuditLogs() {
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">From Date</label>
+            <label className="block text-sm font-medium text-slate-700 mb-1">From Date</label>
             <input
               type="date"
               value={filters.dateFrom}
@@ -351,7 +351,7 @@ export default function AuditLogs() {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">To Date</label>
+            <label className="block text-sm font-medium text-slate-700 mb-1">To Date</label>
             <input
               type="date"
               value={filters.dateTo}
@@ -362,11 +362,11 @@ export default function AuditLogs() {
         </div>
         {(filters.category || filters.status || filters.search || filters.dateFrom || filters.dateTo) && (
           <div className="mt-4 flex items-center gap-2">
-            <span className="text-sm text-gray-500">Active filters:</span>
+            <span className="text-sm text-slate-500">Active filters:</span>
             {filters.category && (
-              <span className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded-full flex items-center gap-1">
+              <span className="text-xs bg-slate-100 text-slate-700 px-2 py-1 rounded-full flex items-center gap-1">
                 {filters.category}
-                <button onClick={() => setFilters({ ...filters, category: '' })} className="hover:text-gray-900">
+                <button onClick={() => setFilters({ ...filters, category: '' })} className="hover:text-slate-900">
                   <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
@@ -374,9 +374,9 @@ export default function AuditLogs() {
               </span>
             )}
             {filters.status && (
-              <span className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded-full flex items-center gap-1">
+              <span className="text-xs bg-slate-100 text-slate-700 px-2 py-1 rounded-full flex items-center gap-1">
                 {filters.status}
-                <button onClick={() => setFilters({ ...filters, status: '' })} className="hover:text-gray-900">
+                <button onClick={() => setFilters({ ...filters, status: '' })} className="hover:text-slate-900">
                   <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
@@ -397,56 +397,56 @@ export default function AuditLogs() {
       <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-gray-50 border-b">
+            <thead className="bg-slate-50 border-b">
               <tr>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
                   Action
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
                   Category
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
                   Description
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
                   IP Address
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
                   Timestamp
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
                   Status
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
                   
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-slate-100">
               {paginatedLogs.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-4 py-12 text-center text-gray-500">
+                  <td colSpan={7} className="px-4 py-12 text-center text-slate-500">
                     No logs found matching your filters
                   </td>
                 </tr>
               ) : (
                 paginatedLogs.map((log) => (
-                  <tr key={log.id} className="hover:bg-gray-50">
+                  <tr key={log.id} className="hover:bg-slate-50">
                     <td className="px-4 py-3">
-                      <span className="font-medium text-gray-900">{log.action}</span>
+                      <span className="font-medium text-slate-900">{log.action}</span>
                     </td>
                     <td className="px-4 py-3">
                       <span className={`text-xs px-2 py-1 rounded-full ${getCategoryColor(log.category)}`}>
                         {log.category}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-500 max-w-xs truncate">
+                    <td className="px-4 py-3 text-sm text-slate-500 max-w-xs truncate">
                       {log.description}
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-500 font-mono">
+                    <td className="px-4 py-3 text-sm text-slate-500 font-mono">
                       {log.ipAddress}
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-500">
+                    <td className="px-4 py-3 text-sm text-slate-500">
                       {formatDate(log.timestamp)}
                     </td>
                     <td className="px-4 py-3">
@@ -472,7 +472,7 @@ export default function AuditLogs() {
         {/* Pagination */}
         {totalPages > 1 && (
           <div className="px-4 py-3 border-t flex items-center justify-between">
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-slate-500">
               Showing {(currentPage - 1) * logsPerPage + 1} to{' '}
               {Math.min(currentPage * logsPerPage, filteredLogs.length)} of {filteredLogs.length} logs
             </p>
@@ -480,7 +480,7 @@ export default function AuditLogs() {
               <button
                 onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                 disabled={currentPage === 1}
-                className="px-3 py-1 rounded-lg border text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                className="px-3 py-1 rounded-xl border text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50"
               >
                 Previous
               </button>
@@ -491,10 +491,10 @@ export default function AuditLogs() {
                   <button
                     key={page}
                     onClick={() => setCurrentPage(page)}
-                    className={`px-3 py-1 rounded-lg text-sm ${
+                    className={`px-3 py-1 rounded-xl text-sm ${
                       currentPage === page
                         ? 'bg-primary-600 text-white'
-                        : 'border hover:bg-gray-50'
+                        : 'border hover:bg-slate-50'
                     }`}
                   >
                     {page}
@@ -504,7 +504,7 @@ export default function AuditLogs() {
               <button
                 onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                 disabled={currentPage === totalPages}
-                className="px-3 py-1 rounded-lg border text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                className="px-3 py-1 rounded-xl border text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50"
               >
                 Next
               </button>
@@ -519,10 +519,10 @@ export default function AuditLogs() {
           <div className="bg-white rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
             <div className="p-6">
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-bold text-gray-900">Log Details</h2>
+                <h2 className="text-xl font-bold text-slate-900">Log Details</h2>
                 <button
                   onClick={() => setSelectedLog(null)}
-                  className="text-gray-400 hover:text-gray-600"
+                  className="text-slate-400 hover:text-slate-600"
                 >
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -539,33 +539,33 @@ export default function AuditLogs() {
                   </span>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500">Action</p>
-                  <p className="font-medium text-gray-900">{selectedLog.action}</p>
+                  <p className="text-sm text-slate-500">Action</p>
+                  <p className="font-medium text-slate-900">{selectedLog.action}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500">Description</p>
-                  <p className="text-gray-900">{selectedLog.description}</p>
+                  <p className="text-sm text-slate-500">Description</p>
+                  <p className="text-slate-900">{selectedLog.description}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500">User</p>
-                  <p className="text-gray-900">{selectedLog.userEmail}</p>
+                  <p className="text-sm text-slate-500">User</p>
+                  <p className="text-slate-900">{selectedLog.userEmail}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500">IP Address</p>
-                  <p className="font-mono text-gray-900">{selectedLog.ipAddress}</p>
+                  <p className="text-sm text-slate-500">IP Address</p>
+                  <p className="font-mono text-slate-900">{selectedLog.ipAddress}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500">User Agent</p>
-                  <p className="text-sm text-gray-900 break-all">{selectedLog.userAgent}</p>
+                  <p className="text-sm text-slate-500">User Agent</p>
+                  <p className="text-sm text-slate-900 break-all">{selectedLog.userAgent}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500">Timestamp</p>
-                  <p className="text-gray-900">{formatDate(selectedLog.timestamp)}</p>
+                  <p className="text-sm text-slate-500">Timestamp</p>
+                  <p className="text-slate-900">{formatDate(selectedLog.timestamp)}</p>
                 </div>
                 {selectedLog.metadata && Object.keys(selectedLog.metadata).length > 0 && (
                   <div>
-                    <p className="text-sm text-gray-500 mb-2">Metadata</p>
-                    <pre className="bg-gray-50 rounded-lg p-3 text-sm overflow-x-auto">
+                    <p className="text-sm text-slate-500 mb-2">Metadata</p>
+                    <pre className="bg-slate-50 rounded-xl p-3 text-sm overflow-x-auto">
                       {JSON.stringify(selectedLog.metadata, null, 2)}
                     </pre>
                   </div>

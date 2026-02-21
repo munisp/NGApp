@@ -250,91 +250,91 @@ const PropertyKYC: React.FC = () => {
 
     return (
       <div className="space-y-6">
-        <h3 className="text-lg font-semibold text-gray-900">{title} Identity Verification</h3>
-        <p className="text-sm text-gray-600">Please provide the {title.toLowerCase()}'s government-issued ID and personal details.</p>
+        <h3 className="text-lg font-semibold text-slate-900">{title} Identity Verification</h3>
+        <p className="text-sm text-slate-600">Please provide the {title.toLowerCase()}'s government-issued ID and personal details.</p>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Full Name (as on ID)</label>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Full Name (as on ID)</label>
             <input type="text" value={data.fullName} onChange={(e) => handlePartyChange(party, 'fullName', e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Enter full legal name" required />
+              className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500" placeholder="Enter full legal name" required />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Date of Birth</label>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Date of Birth</label>
             <input type="date" value={data.dateOfBirth} onChange={(e) => handlePartyChange(party, 'dateOfBirth', e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" required />
+              className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500" required />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Nationality</label>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Nationality</label>
             <input type="text" value={data.nationality} onChange={(e) => handlePartyChange(party, 'nationality', e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Nigerian" />
+              className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500" placeholder="Nigerian" />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">ID Type</label>
+            <label className="block text-sm font-medium text-slate-700 mb-1">ID Type</label>
             <select value={data.idType} onChange={(e) => handlePartyChange(party, 'idType', e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+              className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500">
               {ID_TYPES.map(type => <option key={type.value} value={type.value}>{type.label}</option>)}
             </select>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">ID Number</label>
+            <label className="block text-sm font-medium text-slate-700 mb-1">ID Number</label>
             <input type="text" value={data.idNumber} onChange={(e) => handlePartyChange(party, 'idNumber', e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Enter ID number" required />
+              className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500" placeholder="Enter ID number" required />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">ID Expiry Date</label>
+            <label className="block text-sm font-medium text-slate-700 mb-1">ID Expiry Date</label>
             <input type="date" value={data.idExpiryDate} onChange={(e) => handlePartyChange(party, 'idExpiryDate', e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
+              className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500" />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">BVN (11 digits)</label>
+            <label className="block text-sm font-medium text-slate-700 mb-1">BVN (11 digits)</label>
             <input type="text" value={data.bvn} onChange={(e) => handlePartyChange(party, 'bvn', e.target.value)} maxLength={11}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="22XXXXXXXXX" />
+              className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500" placeholder="22XXXXXXXXX" />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">NIN (11 digits)</label>
+            <label className="block text-sm font-medium text-slate-700 mb-1">NIN (11 digits)</label>
             <input type="text" value={data.nin} onChange={(e) => handlePartyChange(party, 'nin', e.target.value)} maxLength={11}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Enter NIN" />
+              className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500" placeholder="Enter NIN" />
           </div>
 
           <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Residential Address</label>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Residential Address</label>
             <input type="text" value={data.address} onChange={(e) => handlePartyChange(party, 'address', e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Enter full address" required />
+              className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500" placeholder="Enter full address" required />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">City</label>
+            <label className="block text-sm font-medium text-slate-700 mb-1">City</label>
             <input type="text" value={data.city} onChange={(e) => handlePartyChange(party, 'city', e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Lagos" />
+              className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500" placeholder="Lagos" />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">State</label>
+            <label className="block text-sm font-medium text-slate-700 mb-1">State</label>
             <select value={data.state} onChange={(e) => handlePartyChange(party, 'state', e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+              className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500">
               <option value="">Select State</option>
               {NIGERIAN_STATES.map(state => <option key={state} value={state}>{state}</option>)}
             </select>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Phone Number</label>
             <input type="tel" value={data.phone} onChange={(e) => handlePartyChange(party, 'phone', e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="+234 XXX XXX XXXX" required />
+              className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500" placeholder="+234 XXX XXX XXXX" required />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Email Address</label>
             <input type="email" value={data.email} onChange={(e) => handlePartyChange(party, 'email', e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="email@example.com" required={party === 'buyer'} />
+              className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500" placeholder="email@example.com" required={party === 'buyer'} />
           </div>
         </div>
       </div>
@@ -343,33 +343,33 @@ const PropertyKYC: React.FC = () => {
 
   const renderSourceOfFundsForm = () => (
     <div className="space-y-6">
-      <h3 className="text-lg font-semibold text-gray-900">Source of Funds Declaration</h3>
-      <p className="text-sm text-gray-600">Please declare the source of funds for this property transaction.</p>
+      <h3 className="text-lg font-semibold text-slate-900">Source of Funds Declaration</h3>
+      <p className="text-sm text-slate-600">Please declare the source of funds for this property transaction.</p>
 
       <div className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Primary Source of Funds</label>
+          <label className="block text-sm font-medium text-slate-700 mb-1">Primary Source of Funds</label>
           <select value={sourceOfFunds.primarySource} onChange={(e) => handleSourceOfFundsChange('primarySource', e.target.value)}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+            className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500">
             {SOURCE_OF_FUNDS_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
           </select>
         </div>
 
         {(sourceOfFunds.primarySource === 'EMPLOYMENT' || sourceOfFunds.primarySource === 'BUSINESS') && (
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-slate-700 mb-1">
               {sourceOfFunds.primarySource === 'EMPLOYMENT' ? 'Employer Name' : 'Business Name'}
             </label>
             <input type="text" value={sourceOfFunds.primarySource === 'EMPLOYMENT' ? sourceOfFunds.employerName : sourceOfFunds.businessName}
               onChange={(e) => handleSourceOfFundsChange(sourceOfFunds.primarySource === 'EMPLOYMENT' ? 'employerName' : 'businessName', e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Enter name" />
+              className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500" placeholder="Enter name" />
           </div>
         )}
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Annual Income Range</label>
+          <label className="block text-sm font-medium text-slate-700 mb-1">Annual Income Range</label>
           <select value={sourceOfFunds.annualIncome} onChange={(e) => handleSourceOfFundsChange('annualIncome', e.target.value)}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+            className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500">
             <option value="">Select range</option>
             <option value="0-5M">Below 5 Million NGN</option>
             <option value="5M-20M">5 - 20 Million NGN</option>
@@ -380,9 +380,9 @@ const PropertyKYC: React.FC = () => {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Additional Details</label>
+          <label className="block text-sm font-medium text-slate-700 mb-1">Additional Details</label>
           <textarea value={sourceOfFunds.description} onChange={(e) => handleSourceOfFundsChange('description', e.target.value)}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" rows={4}
+            className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500" rows={4}
             placeholder="Please provide additional details about your source of funds..." required />
         </div>
       </div>
@@ -391,16 +391,16 @@ const PropertyKYC: React.FC = () => {
 
   const renderBankStatementsForm = () => (
     <div className="space-y-6">
-      <h3 className="text-lg font-semibold text-gray-900">Bank Statements</h3>
-      <p className="text-sm text-gray-600">Please upload at least 3 months of bank statements showing regular income.</p>
+      <h3 className="text-lg font-semibold text-slate-900">Bank Statements</h3>
+      <p className="text-sm text-slate-600">Please upload at least 3 months of bank statements showing regular income.</p>
 
-      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+      <div className="bg-amber-50 border border-yellow-200 rounded-xl p-4">
         <div className="flex items-start">
-          <svg className="w-5 h-5 text-yellow-500 mr-3 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-5 h-5 text-amber-500 mr-3 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
           </svg>
           <div>
-            <p className="text-sm font-medium text-yellow-800">Requirements</p>
+            <p className="text-sm font-medium text-amber-700">Requirements</p>
             <ul className="text-xs text-yellow-700 mt-1 list-disc list-inside">
               <li>Statements must cover at least 90 consecutive days</li>
               <li>Must be dated within the last 6 months</li>
@@ -411,9 +411,9 @@ const PropertyKYC: React.FC = () => {
       </div>
 
       {bankStatements.map((statement, index) => (
-        <div key={index} className="p-4 border border-gray-200 rounded-lg space-y-4">
+        <div key={index} className="p-4 border border-slate-200 rounded-xl space-y-4">
           <div className="flex justify-between items-center">
-            <h4 className="font-medium text-gray-900">Statement {index + 1}</h4>
+            <h4 className="font-medium text-slate-900">Statement {index + 1}</h4>
             {index > 0 && (
               <button type="button" onClick={() => setBankStatements(prev => prev.filter((_, i) => i !== index))}
                 className="text-red-600 hover:text-red-800 text-sm">Remove</button>
@@ -422,34 +422,34 @@ const PropertyKYC: React.FC = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Statement Start Date</label>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Statement Start Date</label>
               <input type="date" value={statement.startDate}
                 onChange={(e) => setBankStatements(prev => { const u = [...prev]; u[index] = { ...u[index], startDate: e.target.value }; return u; })}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
+                className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Statement End Date</label>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Statement End Date</label>
               <input type="date" value={statement.endDate}
                 onChange={(e) => setBankStatements(prev => { const u = [...prev]; u[index] = { ...u[index], endDate: e.target.value }; return u; })}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
+                className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500" />
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Upload Statement (PDF)</label>
-            <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors">
+            <label className="block text-sm font-medium text-slate-700 mb-1">Upload Statement (PDF)</label>
+            <div className="border-2 border-dashed border-slate-200 rounded-xl p-6 text-center hover:border-blue-400 transition-colors">
               <input type="file" accept=".pdf" onChange={(e) => handleFileUpload('bankStatement', index, e.target.files?.[0] || null)}
                 className="hidden" id={`bank-statement-${index}`} />
               <label htmlFor={`bank-statement-${index}`} className="cursor-pointer">
                 {statement.fileName ? (
-                  <div className="flex items-center justify-center text-green-600">
+                  <div className="flex items-center justify-center text-emerald-600">
                     <svg className="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                     {statement.fileName}
                   </div>
                 ) : (
-                  <div className="text-gray-500">
+                  <div className="text-slate-500">
                     <svg className="w-10 h-10 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                     </svg>
@@ -463,7 +463,7 @@ const PropertyKYC: React.FC = () => {
       ))}
 
       <button type="button" onClick={addBankStatement}
-        className="w-full py-3 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-blue-400 hover:text-blue-600 transition-colors">
+        className="w-full py-3 border-2 border-dashed border-slate-200 rounded-xl text-slate-600 hover:border-blue-400 hover:text-indigo-600 transition-colors">
         + Add Another Statement
       </button>
     </div>
@@ -471,13 +471,13 @@ const PropertyKYC: React.FC = () => {
 
   const renderIncomeDocumentsForm = () => (
     <div className="space-y-6">
-      <h3 className="text-lg font-semibold text-gray-900">Income Documents</h3>
-      <p className="text-sm text-gray-600">Please upload W-2, PAYE records, or equivalent income documentation.</p>
+      <h3 className="text-lg font-semibold text-slate-900">Income Documents</h3>
+      <p className="text-sm text-slate-600">Please upload W-2, PAYE records, or equivalent income documentation.</p>
 
       {incomeDocuments.map((doc, index) => (
-        <div key={index} className="p-4 border border-gray-200 rounded-lg space-y-4">
+        <div key={index} className="p-4 border border-slate-200 rounded-xl space-y-4">
           <div className="flex justify-between items-center">
-            <h4 className="font-medium text-gray-900">Document {index + 1}</h4>
+            <h4 className="font-medium text-slate-900">Document {index + 1}</h4>
             {index > 0 && (
               <button type="button" onClick={() => setIncomeDocuments(prev => prev.filter((_, i) => i !== index))}
                 className="text-red-600 hover:text-red-800 text-sm">Remove</button>
@@ -486,36 +486,36 @@ const PropertyKYC: React.FC = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Document Type</label>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Document Type</label>
               <select value={doc.type}
                 onChange={(e) => setIncomeDocuments(prev => { const u = [...prev]; u[index] = { ...u[index], type: e.target.value as IncomeDocument['type'] }; return u; })}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500">
                 {INCOME_DOC_TYPES.map(type => <option key={type.value} value={type.value}>{type.label}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Year</label>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Year</label>
               <input type="text" value={doc.year}
                 onChange={(e) => setIncomeDocuments(prev => { const u = [...prev]; u[index] = { ...u[index], year: e.target.value }; return u; })}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="2024" />
+                className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500" placeholder="2024" />
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Upload Document (PDF)</label>
-            <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors">
+            <label className="block text-sm font-medium text-slate-700 mb-1">Upload Document (PDF)</label>
+            <div className="border-2 border-dashed border-slate-200 rounded-xl p-6 text-center hover:border-blue-400 transition-colors">
               <input type="file" accept=".pdf" onChange={(e) => handleFileUpload('incomeDoc', index, e.target.files?.[0] || null)}
                 className="hidden" id={`income-doc-${index}`} />
               <label htmlFor={`income-doc-${index}`} className="cursor-pointer">
                 {doc.fileName ? (
-                  <div className="flex items-center justify-center text-green-600">
+                  <div className="flex items-center justify-center text-emerald-600">
                     <svg className="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                     {doc.fileName}
                   </div>
                 ) : (
-                  <div className="text-gray-500">
+                  <div className="text-slate-500">
                     <svg className="w-10 h-10 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                     </svg>
@@ -529,7 +529,7 @@ const PropertyKYC: React.FC = () => {
       ))}
 
       <button type="button" onClick={addIncomeDocument}
-        className="w-full py-3 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-blue-400 hover:text-blue-600 transition-colors">
+        className="w-full py-3 border-2 border-dashed border-slate-200 rounded-xl text-slate-600 hover:border-blue-400 hover:text-indigo-600 transition-colors">
         + Add Another Document
       </button>
     </div>
@@ -537,17 +537,17 @@ const PropertyKYC: React.FC = () => {
 
   const renderPurchaseAgreementForm = () => (
     <div className="space-y-6">
-      <h3 className="text-lg font-semibold text-gray-900">Purchase Agreement</h3>
-      <p className="text-sm text-gray-600">Please upload the signed purchase agreement with all required details.</p>
+      <h3 className="text-lg font-semibold text-slate-900">Purchase Agreement</h3>
+      <p className="text-sm text-slate-600">Please upload the signed purchase agreement with all required details.</p>
 
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+      <div className="bg-indigo-50 border border-blue-200 rounded-xl p-4">
         <div className="flex items-start">
-          <svg className="w-5 h-5 text-blue-500 mr-3 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-5 h-5 text-indigo-500 mr-3 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
           <div>
-            <p className="text-sm font-medium text-blue-800">Agreement Requirements</p>
-            <ul className="text-xs text-blue-700 mt-1 list-disc list-inside">
+            <p className="text-sm font-medium text-indigo-800">Agreement Requirements</p>
+            <ul className="text-xs text-indigo-700 mt-1 list-disc list-inside">
               <li>Must show buyer and seller names matching KYC</li>
               <li>Must include property address and transaction value</li>
               <li>Must be signed and dated by both parties</li>
@@ -558,60 +558,60 @@ const PropertyKYC: React.FC = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="md:col-span-2">
-          <label className="block text-sm font-medium text-gray-700 mb-1">Property Address</label>
+          <label className="block text-sm font-medium text-slate-700 mb-1">Property Address</label>
           <input type="text" value={purchaseAgreement.propertyAddress}
             onChange={(e) => setPurchaseAgreement(prev => ({ ...prev, propertyAddress: e.target.value }))}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+            className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500"
             placeholder="Enter full property address" required />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Property Value (NGN)</label>
+          <label className="block text-sm font-medium text-slate-700 mb-1">Property Value (NGN)</label>
           <input type="text" value={purchaseAgreement.propertyValue}
             onChange={(e) => setPurchaseAgreement(prev => ({ ...prev, propertyValue: e.target.value }))}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+            className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500"
             placeholder="50,000,000" required />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Agreement Date</label>
+          <label className="block text-sm font-medium text-slate-700 mb-1">Agreement Date</label>
           <input type="date" value={purchaseAgreement.agreementDate}
             onChange={(e) => setPurchaseAgreement(prev => ({ ...prev, agreementDate: e.target.value }))}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" required />
+            className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500" required />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Buyer Name (on agreement)</label>
+          <label className="block text-sm font-medium text-slate-700 mb-1">Buyer Name (on agreement)</label>
           <input type="text" value={purchaseAgreement.buyerName}
             onChange={(e) => setPurchaseAgreement(prev => ({ ...prev, buyerName: e.target.value }))}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+            className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500"
             placeholder="Must match buyer KYC" required />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Seller Name (on agreement)</label>
+          <label className="block text-sm font-medium text-slate-700 mb-1">Seller Name (on agreement)</label>
           <input type="text" value={purchaseAgreement.sellerName}
             onChange={(e) => setPurchaseAgreement(prev => ({ ...prev, sellerName: e.target.value }))}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+            className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500"
             placeholder="Must match seller KYC" required />
         </div>
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Upload Agreement (PDF)</label>
-        <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors">
+        <label className="block text-sm font-medium text-slate-700 mb-1">Upload Agreement (PDF)</label>
+        <div className="border-2 border-dashed border-slate-200 rounded-xl p-6 text-center hover:border-blue-400 transition-colors">
           <input type="file" accept=".pdf" onChange={(e) => handleFileUpload('agreement', 0, e.target.files?.[0] || null)}
             className="hidden" id="purchase-agreement" />
           <label htmlFor="purchase-agreement" className="cursor-pointer">
             {purchaseAgreement.fileName ? (
-              <div className="flex items-center justify-center text-green-600">
+              <div className="flex items-center justify-center text-emerald-600">
                 <svg className="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
                 {purchaseAgreement.fileName}
               </div>
             ) : (
-              <div className="text-gray-500">
+              <div className="text-slate-500">
                 <svg className="w-10 h-10 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                 </svg>
@@ -625,8 +625,8 @@ const PropertyKYC: React.FC = () => {
       <div className="flex items-center">
         <input type="checkbox" id="is-signed" checked={purchaseAgreement.isSigned}
           onChange={(e) => setPurchaseAgreement(prev => ({ ...prev, isSigned: e.target.checked }))}
-          className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" />
-        <label htmlFor="is-signed" className="ml-2 text-sm text-gray-700">
+          className="w-4 h-4 text-indigo-600 border-slate-200 rounded focus:ring-indigo-500" />
+        <label htmlFor="is-signed" className="ml-2 text-sm text-slate-700">
           I confirm this agreement is signed and dated by both buyer and seller
         </label>
       </div>
@@ -635,59 +635,59 @@ const PropertyKYC: React.FC = () => {
 
   const renderReviewForm = () => (
     <div className="space-y-6">
-      <h3 className="text-lg font-semibold text-gray-900">Review & Submit</h3>
-      <p className="text-sm text-gray-600">Please review all information before submitting for compliance review.</p>
+      <h3 className="text-lg font-semibold text-slate-900">Review & Submit</h3>
+      <p className="text-sm text-slate-600">Please review all information before submitting for compliance review.</p>
 
       <div className="space-y-4">
-        <div className="bg-gray-50 rounded-lg p-4">
-          <h4 className="font-medium text-gray-900 mb-2">Buyer Information</h4>
+        <div className="bg-slate-50 rounded-xl p-4">
+          <h4 className="font-medium text-slate-900 mb-2">Buyer Information</h4>
           <div className="grid grid-cols-2 gap-2 text-sm">
-            <div><span className="text-gray-500">Name:</span> {buyerKyc.fullName || '-'}</div>
-            <div><span className="text-gray-500">ID:</span> {buyerKyc.idType} - {buyerKyc.idNumber || '-'}</div>
-            <div><span className="text-gray-500">Phone:</span> {buyerKyc.phone || '-'}</div>
-            <div><span className="text-gray-500">Email:</span> {buyerKyc.email || '-'}</div>
+            <div><span className="text-slate-500">Name:</span> {buyerKyc.fullName || '-'}</div>
+            <div><span className="text-slate-500">ID:</span> {buyerKyc.idType} - {buyerKyc.idNumber || '-'}</div>
+            <div><span className="text-slate-500">Phone:</span> {buyerKyc.phone || '-'}</div>
+            <div><span className="text-slate-500">Email:</span> {buyerKyc.email || '-'}</div>
           </div>
         </div>
 
-        <div className="bg-gray-50 rounded-lg p-4">
-          <h4 className="font-medium text-gray-900 mb-2">Seller Information</h4>
+        <div className="bg-slate-50 rounded-xl p-4">
+          <h4 className="font-medium text-slate-900 mb-2">Seller Information</h4>
           <div className="grid grid-cols-2 gap-2 text-sm">
-            <div><span className="text-gray-500">Name:</span> {sellerKyc.fullName || '-'}</div>
-            <div><span className="text-gray-500">ID:</span> {sellerKyc.idType} - {sellerKyc.idNumber || '-'}</div>
-            <div><span className="text-gray-500">Phone:</span> {sellerKyc.phone || '-'}</div>
-            <div><span className="text-gray-500">Address:</span> {sellerKyc.address || '-'}</div>
+            <div><span className="text-slate-500">Name:</span> {sellerKyc.fullName || '-'}</div>
+            <div><span className="text-slate-500">ID:</span> {sellerKyc.idType} - {sellerKyc.idNumber || '-'}</div>
+            <div><span className="text-slate-500">Phone:</span> {sellerKyc.phone || '-'}</div>
+            <div><span className="text-slate-500">Address:</span> {sellerKyc.address || '-'}</div>
           </div>
         </div>
 
-        <div className="bg-gray-50 rounded-lg p-4">
-          <h4 className="font-medium text-gray-900 mb-2">Source of Funds</h4>
+        <div className="bg-slate-50 rounded-xl p-4">
+          <h4 className="font-medium text-slate-900 mb-2">Source of Funds</h4>
           <div className="text-sm">
-            <div><span className="text-gray-500">Primary Source:</span> {SOURCE_OF_FUNDS_OPTIONS.find(o => o.value === sourceOfFunds.primarySource)?.label}</div>
-            <div><span className="text-gray-500">Annual Income:</span> {sourceOfFunds.annualIncome || '-'}</div>
+            <div><span className="text-slate-500">Primary Source:</span> {SOURCE_OF_FUNDS_OPTIONS.find(o => o.value === sourceOfFunds.primarySource)?.label}</div>
+            <div><span className="text-slate-500">Annual Income:</span> {sourceOfFunds.annualIncome || '-'}</div>
           </div>
         </div>
 
-        <div className="bg-gray-50 rounded-lg p-4">
-          <h4 className="font-medium text-gray-900 mb-2">Documents</h4>
+        <div className="bg-slate-50 rounded-xl p-4">
+          <h4 className="font-medium text-slate-900 mb-2">Documents</h4>
           <div className="text-sm space-y-1">
-            <div><span className="text-gray-500">Bank Statements:</span> {bankStatements.filter(bs => bs.fileName).length} uploaded</div>
-            <div><span className="text-gray-500">Income Documents:</span> {incomeDocuments.filter(doc => doc.fileName).length} uploaded</div>
-            <div><span className="text-gray-500">Purchase Agreement:</span> {purchaseAgreement.fileName ? 'Uploaded' : 'Not uploaded'}</div>
+            <div><span className="text-slate-500">Bank Statements:</span> {bankStatements.filter(bs => bs.fileName).length} uploaded</div>
+            <div><span className="text-slate-500">Income Documents:</span> {incomeDocuments.filter(doc => doc.fileName).length} uploaded</div>
+            <div><span className="text-slate-500">Purchase Agreement:</span> {purchaseAgreement.fileName ? 'Uploaded' : 'Not uploaded'}</div>
           </div>
         </div>
 
-        <div className="bg-gray-50 rounded-lg p-4">
-          <h4 className="font-medium text-gray-900 mb-2">Property Details</h4>
+        <div className="bg-slate-50 rounded-xl p-4">
+          <h4 className="font-medium text-slate-900 mb-2">Property Details</h4>
           <div className="text-sm space-y-1">
-            <div><span className="text-gray-500">Address:</span> {purchaseAgreement.propertyAddress || '-'}</div>
-            <div><span className="text-gray-500">Value:</span> NGN {purchaseAgreement.propertyValue || '-'}</div>
-            <div><span className="text-gray-500">Agreement Date:</span> {purchaseAgreement.agreementDate || '-'}</div>
+            <div><span className="text-slate-500">Address:</span> {purchaseAgreement.propertyAddress || '-'}</div>
+            <div><span className="text-slate-500">Value:</span> NGN {purchaseAgreement.propertyValue || '-'}</div>
+            <div><span className="text-slate-500">Agreement Date:</span> {purchaseAgreement.agreementDate || '-'}</div>
           </div>
         </div>
       </div>
 
-      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-        <p className="text-sm text-yellow-800">
+      <div className="bg-amber-50 border border-yellow-200 rounded-xl p-4">
+        <p className="text-sm text-amber-700">
           By submitting this KYC application, you confirm that all information provided is accurate and complete.
           False or misleading information may result in rejection and potential legal consequences.
         </p>
@@ -712,26 +712,26 @@ const PropertyKYC: React.FC = () => {
     <div className="max-w-4xl mx-auto space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Property Transaction KYC</h1>
-          <p className="text-sm text-gray-600 mt-1">Bank-grade verification for property transactions</p>
+          <h1 className="text-2xl font-bold text-slate-900">Property Transaction KYC</h1>
+          <p className="text-sm text-slate-600 mt-1">Bank-grade verification for property transactions</p>
         </div>
         {!isOnline && (
-          <div className="flex items-center px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm">
-            <span className="w-2 h-2 bg-yellow-500 rounded-full mr-2 animate-pulse" />
+          <div className="flex items-center px-3 py-1 bg-amber-100 text-amber-700 rounded-full text-sm">
+            <span className="w-2 h-2 bg-amber-500 rounded-full mr-2 animate-pulse" />
             Offline Mode
           </div>
         )}
       </div>
 
       {/* Progress Steps */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-100 border border-slate-200 p-4">
         <div className="flex items-center justify-between overflow-x-auto">
           {STEPS.map((step, index) => (
             <div key={step.id} className="flex items-center min-w-0">
               <div className="flex flex-col items-center">
                 <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium transition-all ${
-                  currentStep > step.id ? 'bg-green-500 text-white' :
-                  currentStep === step.id ? 'bg-blue-600 text-white shadow-lg' : 'bg-gray-200 text-gray-600'
+                  currentStep > step.id ? 'bg-emerald-500 text-white' :
+                  currentStep === step.id ? 'bg-indigo-600 text-white shadow-lg' : 'bg-slate-200 text-slate-600'
                 }`}>
                   {currentStep > step.id ? (
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -739,12 +739,12 @@ const PropertyKYC: React.FC = () => {
                     </svg>
                   ) : step.id}
                 </div>
-                <span className={`text-xs mt-1 hidden md:block ${currentStep === step.id ? 'text-blue-600 font-medium' : 'text-gray-500'}`}>
+                <span className={`text-xs mt-1 hidden md:block ${currentStep === step.id ? 'text-indigo-600 font-medium' : 'text-slate-500'}`}>
                   {step.name}
                 </span>
               </div>
               {index < STEPS.length - 1 && (
-                <div className={`w-8 md:w-12 h-0.5 mx-1 ${currentStep > step.id ? 'bg-green-500' : 'bg-gray-200'}`} />
+                <div className={`w-8 md:w-12 h-0.5 mx-1 ${currentStep > step.id ? 'bg-emerald-500' : 'bg-slate-200'}`} />
               )}
             </div>
           ))}
@@ -752,7 +752,7 @@ const PropertyKYC: React.FC = () => {
       </div>
 
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start">
+        <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-start">
           <svg className="w-5 h-5 text-red-500 mr-3 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
@@ -764,40 +764,40 @@ const PropertyKYC: React.FC = () => {
       )}
 
       {successMessage && (
-        <div className="bg-green-50 border border-green-200 rounded-lg p-4 flex items-start">
-          <svg className="w-5 h-5 text-green-500 mr-3 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 flex items-start">
+          <svg className="w-5 h-5 text-emerald-500 mr-3 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
-          <p className="text-sm font-medium text-green-800">{successMessage}</p>
+          <p className="text-sm font-medium text-emerald-700">{successMessage}</p>
         </div>
       )}
 
       {/* Form Content */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-100 border border-slate-200 p-6">
         {renderStepContent()}
 
         {/* Navigation */}
-        <div className="flex justify-between mt-8 pt-6 border-t border-gray-200">
+        <div className="flex justify-between mt-8 pt-6 border-t border-slate-200">
           {currentStep > 1 ? (
             <button type="button" onClick={() => setCurrentStep(currentStep - 1)}
-              className="px-6 py-3 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 font-medium">
+              className="px-6 py-3 text-slate-700 bg-slate-100 rounded-xl hover:bg-slate-200 font-medium">
               Back
             </button>
           ) : (
             <button type="button" onClick={() => navigate(-1)}
-              className="px-6 py-3 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 font-medium">
+              className="px-6 py-3 text-slate-700 bg-slate-100 rounded-xl hover:bg-slate-200 font-medium">
               Cancel
             </button>
           )}
 
           {currentStep < 7 ? (
             <button type="button" onClick={() => setCurrentStep(currentStep + 1)} disabled={!validateStep(currentStep)}
-              className="px-8 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium disabled:opacity-50 disabled:cursor-not-allowed">
+              className="px-8 py-3 bg-gradient-to-r from-indigo-600 to-violet-600 text-white rounded-xl shadow-lg shadow-indigo-200 hover:bg-indigo-700 font-medium disabled:opacity-50 disabled:cursor-not-allowed">
               Continue
             </button>
           ) : (
             <button type="button" onClick={handleSubmit} disabled={isSubmitting}
-              className="px-8 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium disabled:opacity-50 flex items-center">
+              className="px-8 py-3 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 font-medium disabled:opacity-50 flex items-center">
               {isSubmitting ? (
                 <><div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />Submitting...</>
               ) : (

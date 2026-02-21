@@ -168,7 +168,7 @@ const TransferTracking: React.FC = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
       </div>
     );
   }
@@ -176,7 +176,7 @@ const TransferTracking: React.FC = () => {
   if (error || !tracking) {
     return (
       <div className="max-w-2xl mx-auto p-6">
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+        <div className="bg-red-50 border border-red-200 rounded-xl p-4">
           <p className="text-red-800">{error || 'Transfer not found'}</p>
           <button
             onClick={() => navigate('/transactions')}
@@ -196,38 +196,38 @@ const TransferTracking: React.FC = () => {
       <div className="flex items-center justify-between">
         <button
           onClick={() => navigate('/transactions')}
-          className="text-gray-600 hover:text-gray-900 flex items-center"
+          className="text-slate-600 hover:text-slate-900 flex items-center"
         >
           <span className="mr-2">&larr;</span> Back
         </button>
-        <span className="text-sm text-gray-500">ID: {tracking.tracking_id}</span>
+        <span className="text-sm text-slate-500">ID: {tracking.tracking_id}</span>
       </div>
 
-      <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-        <div className="bg-gradient-to-r from-blue-600 to-blue-700 p-6 text-white">
+      <div className="bg-white rounded-2xl shadow-lg border border-slate-100 overflow-hidden">
+        <div className="bg-gradient-to-r from-indigo-600 to-violet-600 p-6 text-white">
           <div className="flex justify-between items-start mb-4">
             <div>
-              <p className="text-blue-100 text-sm">Sending</p>
+              <p className="text-indigo-100 text-sm">Sending</p>
               <p className="text-2xl font-bold">{tracking.currency} {tracking.amount.toLocaleString()}</p>
             </div>
             <div className="text-right">
-              <p className="text-blue-100 text-sm">Receiving</p>
+              <p className="text-indigo-100 text-sm">Receiving</p>
               <p className="text-2xl font-bold">{tracking.destination_currency} {tracking.destination_amount.toLocaleString()}</p>
             </div>
           </div>
           
           <div className="flex items-center justify-between text-sm">
             <div>
-              <p className="text-blue-100">From</p>
+              <p className="text-indigo-100">From</p>
               <p className="font-medium">{tracking.sender_name}</p>
             </div>
             <div className="text-center">
-              <span className="inline-block px-3 py-1 bg-blue-500 rounded-full text-xs">
+              <span className="inline-block px-3 py-1 bg-indigo-500 rounded-full text-xs">
                 {CORRIDOR_LABELS[tracking.corridor] || tracking.corridor}
               </span>
             </div>
             <div className="text-right">
-              <p className="text-blue-100">To</p>
+              <p className="text-indigo-100">To</p>
               <p className="font-medium">{tracking.recipient_name}</p>
             </div>
           </div>
@@ -236,22 +236,22 @@ const TransferTracking: React.FC = () => {
         <div className="p-6">
           <div className="mb-6">
             <div className="flex justify-between items-center mb-2">
-              <span className="text-sm font-medium text-gray-700">Progress</span>
-              <span className="text-sm text-gray-500">{tracking.progress_percent}%</span>
+              <span className="text-sm font-medium text-slate-700">Progress</span>
+              <span className="text-sm text-slate-500">{tracking.progress_percent}%</span>
             </div>
-            <div className="w-full bg-gray-200 rounded-full h-3">
+            <div className="w-full bg-slate-200 rounded-full h-3">
               <div
-                className="bg-blue-600 h-3 rounded-full transition-all duration-500"
+                className="bg-indigo-600 h-3 rounded-full transition-all duration-500"
                 style={{ width: `${tracking.progress_percent}%` }}
               ></div>
             </div>
-            <p className="text-sm text-gray-500 mt-2">
+            <p className="text-sm text-slate-500 mt-2">
               Estimated completion: {getTimeRemaining(tracking.estimated_completion)}
             </p>
           </div>
 
           <div className="space-y-4">
-            <h3 className="font-semibold text-gray-900">Transfer Status</h3>
+            <h3 className="font-semibold text-slate-900">Transfer Status</h3>
             <div className="relative">
               {TRANSFER_STATES.slice(0, -1).map((state, index) => {
                 const isCompleted = index < currentStateIndex;
@@ -264,10 +264,10 @@ const TransferTracking: React.FC = () => {
                       <div
                         className={`w-10 h-10 rounded-full flex items-center justify-center text-lg ${
                           isCompleted
-                            ? 'bg-green-100 text-green-600'
+                            ? 'bg-green-100 text-emerald-600'
                             : isCurrent
-                            ? 'bg-blue-100 text-blue-600 ring-4 ring-blue-50'
-                            : 'bg-gray-100 text-gray-400'
+                            ? 'bg-indigo-100 text-indigo-600 ring-4 ring-indigo-50'
+                            : 'bg-slate-100 text-slate-400'
                         }`}
                       >
                         {isCompleted ? '✓' : state.icon}
@@ -275,7 +275,7 @@ const TransferTracking: React.FC = () => {
                       {index < TRANSFER_STATES.length - 2 && (
                         <div
                           className={`w-0.5 h-12 ${
-                            isCompleted ? 'bg-green-300' : 'bg-gray-200'
+                            isCompleted ? 'bg-green-300' : 'bg-slate-200'
                           }`}
                         ></div>
                       )}
@@ -283,14 +283,14 @@ const TransferTracking: React.FC = () => {
                     <div className="flex-1 pt-1">
                       <p
                         className={`font-medium ${
-                          isPending ? 'text-gray-400' : 'text-gray-900'
+                          isPending ? 'text-slate-400' : 'text-slate-900'
                         }`}
                       >
                         {state.label}
                       </p>
-                      <p className="text-sm text-gray-500">{state.description}</p>
+                      <p className="text-sm text-slate-500">{state.description}</p>
                       {tracking.events.find(e => e.state === state.state) && (
-                        <p className="text-xs text-gray-400 mt-1">
+                        <p className="text-xs text-slate-400 mt-1">
                           {formatTime(tracking.events.find(e => e.state === state.state)!.timestamp)}
                           {tracking.events.find(e => e.state === state.state)?.location && (
                             <span> - {tracking.events.find(e => e.state === state.state)?.location}</span>
@@ -306,9 +306,9 @@ const TransferTracking: React.FC = () => {
         </div>
       </div>
 
-      <div className="bg-white rounded-xl shadow-lg p-6">
-        <h3 className="font-semibold text-gray-900 mb-4">Notification Preferences</h3>
-        <p className="text-sm text-gray-500 mb-4">Get updates about this transfer via:</p>
+      <div className="bg-white rounded-2xl shadow-lg border border-slate-100 p-6">
+        <h3 className="font-semibold text-slate-900 mb-4">Notification Preferences</h3>
+        <p className="text-sm text-slate-500 mb-4">Get updates about this transfer via:</p>
         
         <div className="space-y-3">
           {[
@@ -319,41 +319,41 @@ const TransferTracking: React.FC = () => {
           ].map(channel => (
             <label
               key={channel.key}
-              className="flex items-center justify-between p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100"
+              className="flex items-center justify-between p-3 bg-slate-50 rounded-xl cursor-pointer hover:bg-slate-100"
             >
               <div className="flex items-center">
                 <span className="mr-3">{channel.icon}</span>
-                <span className="font-medium text-gray-700">{channel.label}</span>
+                <span className="font-medium text-slate-700">{channel.label}</span>
               </div>
               <input
                 type="checkbox"
                 checked={notificationPrefs[channel.key as keyof typeof notificationPrefs]}
                 onChange={(e) => updateNotificationPrefs(channel.key, e.target.checked)}
-                className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500"
+                className="w-5 h-5 text-indigo-600 rounded focus:ring-indigo-500"
               />
             </label>
           ))}
         </div>
       </div>
 
-      <div className="bg-white rounded-xl shadow-lg p-6">
-        <h3 className="font-semibold text-gray-900 mb-4">Transfer Details</h3>
+      <div className="bg-white rounded-2xl shadow-lg border border-slate-100 p-6">
+        <h3 className="font-semibold text-slate-900 mb-4">Transfer Details</h3>
         <dl className="space-y-3">
           <div className="flex justify-between">
-            <dt className="text-gray-500">Transfer ID</dt>
-            <dd className="font-medium text-gray-900">{tracking.transfer_id.slice(0, 8)}...</dd>
+            <dt className="text-slate-500">Transfer ID</dt>
+            <dd className="font-medium text-slate-900">{tracking.transfer_id.slice(0, 8)}...</dd>
           </div>
           <div className="flex justify-between">
-            <dt className="text-gray-500">Created</dt>
-            <dd className="font-medium text-gray-900">{formatDate(tracking.created_at)} at {formatTime(tracking.created_at)}</dd>
+            <dt className="text-slate-500">Created</dt>
+            <dd className="font-medium text-slate-900">{formatDate(tracking.created_at)} at {formatTime(tracking.created_at)}</dd>
           </div>
           <div className="flex justify-between">
-            <dt className="text-gray-500">Payment Network</dt>
-            <dd className="font-medium text-gray-900">{CORRIDOR_LABELS[tracking.corridor] || tracking.corridor}</dd>
+            <dt className="text-slate-500">Payment Network</dt>
+            <dd className="font-medium text-slate-900">{CORRIDOR_LABELS[tracking.corridor] || tracking.corridor}</dd>
           </div>
           <div className="flex justify-between">
-            <dt className="text-gray-500">Status</dt>
-            <dd className="font-medium text-blue-600">{TRANSFER_STATES.find(s => s.state === tracking.current_state)?.label}</dd>
+            <dt className="text-slate-500">Status</dt>
+            <dd className="font-medium text-indigo-600">{TRANSFER_STATES.find(s => s.state === tracking.current_state)?.label}</dd>
           </div>
         </dl>
       </div>
@@ -361,7 +361,7 @@ const TransferTracking: React.FC = () => {
       <div className="text-center">
         <button
           onClick={() => navigate('/support')}
-          className="text-blue-600 hover:text-blue-800 font-medium"
+          className="text-indigo-600 hover:text-indigo-800 font-medium"
         >
           Need help? Contact Support
         </button>

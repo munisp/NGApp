@@ -57,14 +57,14 @@ const RECURRENCE_OPTIONS = [
 ];
 
 const STATUS_COLORS: Record<string, string> = {
-  PENDING: 'bg-yellow-100 text-yellow-800',
-  VALIDATING: 'bg-blue-100 text-blue-800',
-  VALIDATED: 'bg-green-100 text-green-800',
-  PROCESSING: 'bg-blue-100 text-blue-800',
-  COMPLETED: 'bg-green-100 text-green-800',
+  PENDING: 'bg-amber-100 text-amber-700',
+  VALIDATING: 'bg-indigo-100 text-indigo-800',
+  VALIDATED: 'bg-emerald-100 text-emerald-700',
+  PROCESSING: 'bg-indigo-100 text-indigo-800',
+  COMPLETED: 'bg-emerald-100 text-emerald-700',
   PARTIALLY_COMPLETED: 'bg-orange-100 text-orange-800',
-  FAILED: 'bg-red-100 text-red-800',
-  CANCELLED: 'bg-gray-100 text-gray-800',
+  FAILED: 'bg-red-50 text-red-600',
+  CANCELLED: 'bg-slate-100 text-slate-800',
 };
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
@@ -319,17 +319,17 @@ const BatchPayments: React.FC = () => {
   return (
     <div className="max-w-4xl mx-auto space-y-6 p-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">Batch Payments</h1>
+        <h1 className="text-2xl font-bold text-slate-900">Batch Payments</h1>
         <button
           onClick={() => setActiveTab('create')}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
+          className="px-4 py-2 bg-gradient-to-r from-indigo-600 to-violet-600 text-white rounded-xl shadow-lg shadow-indigo-200 hover:bg-indigo-700 font-medium"
         >
           + New Batch
         </button>
       </div>
 
-      <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-        <div className="border-b border-gray-200">
+      <div className="bg-white rounded-2xl shadow-lg border border-slate-100 overflow-hidden">
+        <div className="border-b border-slate-200">
           <nav className="flex -mb-px">
             {[
               { key: 'batches', label: 'Batches', count: batches.length },
@@ -341,13 +341,13 @@ const BatchPayments: React.FC = () => {
                 onClick={() => setActiveTab(tab.key as typeof activeTab)}
                 className={`px-6 py-4 text-sm font-medium border-b-2 ${
                   activeTab === tab.key
-                    ? 'border-blue-600 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                    ? 'border-indigo-600 text-indigo-600'
+                    : 'border-transparent text-slate-500 hover:text-slate-700'
                 }`}
               >
                 {tab.label}
                 {tab.count !== undefined && (
-                  <span className="ml-2 px-2 py-0.5 bg-gray-100 rounded-full text-xs">
+                  <span className="ml-2 px-2 py-0.5 bg-slate-100 rounded-full text-xs">
                     {tab.count}
                   </span>
                 )}
@@ -361,23 +361,23 @@ const BatchPayments: React.FC = () => {
             <div className="space-y-4">
               {loading ? (
                 <div className="text-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto"></div>
                 </div>
               ) : batches.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">
+                <div className="text-center py-8 text-slate-500">
                   <p>No batches yet. Create your first batch to get started.</p>
                 </div>
               ) : (
                 batches.map(batch => (
                   <div
                     key={batch.batch_id}
-                    className="border border-gray-200 rounded-lg p-4 hover:border-blue-300 cursor-pointer"
+                    className="border border-slate-200 rounded-xl p-4 hover:border-indigo-300 cursor-pointer"
                     onClick={() => setSelectedBatch(batch)}
                   >
                     <div className="flex items-center justify-between mb-3">
                       <div>
-                        <h3 className="font-semibold text-gray-900">{batch.name}</h3>
-                        <p className="text-sm text-gray-500">{formatDate(batch.created_at)}</p>
+                        <h3 className="font-semibold text-slate-900">{batch.name}</h3>
+                        <p className="text-sm text-slate-500">{formatDate(batch.created_at)}</p>
                       </div>
                       <span className={`px-3 py-1 rounded-full text-xs font-medium ${STATUS_COLORS[batch.status]}`}>
                         {batch.status}
@@ -386,23 +386,23 @@ const BatchPayments: React.FC = () => {
                     
                     <div className="grid grid-cols-3 gap-4 mb-3">
                       <div>
-                        <p className="text-xs text-gray-500">Total Amount</p>
+                        <p className="text-xs text-slate-500">Total Amount</p>
                         <p className="font-semibold">{formatCurrency(batch.total_amount, batch.source_currency)}</p>
                       </div>
                       <div>
-                        <p className="text-xs text-gray-500">Payments</p>
+                        <p className="text-xs text-slate-500">Payments</p>
                         <p className="font-semibold">{batch.completed_payments}/{batch.total_payments}</p>
                       </div>
                       <div>
-                        <p className="text-xs text-gray-500">Recurrence</p>
+                        <p className="text-xs text-slate-500">Recurrence</p>
                         <p className="font-semibold">{RECURRENCE_OPTIONS.find(r => r.value === batch.recurrence)?.label}</p>
                       </div>
                     </div>
                     
                     {batch.status === 'PROCESSING' && (
-                      <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div className="w-full bg-slate-200 rounded-full h-2">
                         <div
-                          className="bg-blue-600 h-2 rounded-full transition-all"
+                          className="bg-indigo-600 h-2 rounded-full transition-all"
                           style={{ width: `${batch.progress_percent}%` }}
                         ></div>
                       </div>
@@ -411,7 +411,7 @@ const BatchPayments: React.FC = () => {
                     {batch.status === 'PENDING' && (
                       <button
                         onClick={(e) => { e.stopPropagation(); handleProcessBatch(batch.batch_id); }}
-                        className="mt-3 px-4 py-2 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700"
+                        className="mt-3 px-4 py-2 bg-emerald-600 text-white rounded-xl text-sm hover:bg-emerald-700"
                       >
                         Process Batch
                       </button>
@@ -425,19 +425,19 @@ const BatchPayments: React.FC = () => {
           {activeTab === 'scheduled' && (
             <div className="space-y-4">
               {scheduledPayments.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">
+                <div className="text-center py-8 text-slate-500">
                   <p>No scheduled payments. Set up recurring payments to automate your transfers.</p>
                 </div>
               ) : (
                 scheduledPayments.map(payment => (
                   <div
                     key={payment.schedule_id}
-                    className={`border rounded-lg p-4 ${payment.is_active ? 'border-gray-200' : 'border-gray-100 bg-gray-50'}`}
+                    className={`border rounded-xl p-4 ${payment.is_active ? 'border-slate-200' : 'border-slate-100 bg-slate-50'}`}
                   >
                     <div className="flex items-center justify-between mb-2">
-                      <h3 className="font-semibold text-gray-900">{payment.recipient_name}</h3>
+                      <h3 className="font-semibold text-slate-900">{payment.recipient_name}</h3>
                       <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                        payment.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'
+                        payment.is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'
                       }`}>
                         {payment.is_active ? 'Active' : 'Cancelled'}
                       </span>
@@ -445,19 +445,19 @@ const BatchPayments: React.FC = () => {
                     
                     <div className="grid grid-cols-2 gap-4 mb-3">
                       <div>
-                        <p className="text-xs text-gray-500">Amount</p>
+                        <p className="text-xs text-slate-500">Amount</p>
                         <p className="font-semibold">{formatCurrency(payment.amount, payment.source_currency)}</p>
                       </div>
                       <div>
-                        <p className="text-xs text-gray-500">Frequency</p>
+                        <p className="text-xs text-slate-500">Frequency</p>
                         <p className="font-semibold">{RECURRENCE_OPTIONS.find(r => r.value === payment.recurrence)?.label}</p>
                       </div>
                       <div>
-                        <p className="text-xs text-gray-500">Next Payment</p>
+                        <p className="text-xs text-slate-500">Next Payment</p>
                         <p className="font-semibold">{formatDate(payment.next_run_at)}</p>
                       </div>
                       <div>
-                        <p className="text-xs text-gray-500">Payments Made</p>
+                        <p className="text-xs text-slate-500">Payments Made</p>
                         <p className="font-semibold">{payment.run_count}</p>
                       </div>
                     </div>
@@ -479,29 +479,29 @@ const BatchPayments: React.FC = () => {
           {activeTab === 'create' && (
             <div className="space-y-6">
               {error && (
-                <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-800">
+                <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-red-800">
                   {error}
                 </div>
               )}
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Batch Name</label>
+                <label className="block text-sm font-medium text-slate-700 mb-2">Batch Name</label>
                 <input
                   type="text"
                   value={newBatch.name}
                   onChange={(e) => setNewBatch(prev => ({ ...prev, name: e.target.value }))}
                   placeholder="e.g., January Payroll"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-4 focus:ring-indigo-100 focus:border-indigo-500 focus:outline-none transition-all"
                 />
               </div>
               
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Source Currency</label>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">Source Currency</label>
                   <select
                     value={newBatch.source_currency}
                     onChange={(e) => setNewBatch(prev => ({ ...prev, source_currency: e.target.value }))}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500"
                   >
                     <option value="NGN">NGN - Nigerian Naira</option>
                     <option value="USD">USD - US Dollar</option>
@@ -511,11 +511,11 @@ const BatchPayments: React.FC = () => {
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Recurrence</label>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">Recurrence</label>
                   <select
                     value={newBatch.recurrence}
                     onChange={(e) => setNewBatch(prev => ({ ...prev, recurrence: e.target.value }))}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500"
                   >
                     {RECURRENCE_OPTIONS.map(opt => (
                       <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -526,22 +526,22 @@ const BatchPayments: React.FC = () => {
               
               {newBatch.recurrence !== 'ONCE' && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">First Payment Date</label>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">First Payment Date</label>
                   <input
                     type="datetime-local"
                     value={newBatch.scheduled_at}
                     onChange={(e) => setNewBatch(prev => ({ ...prev, scheduled_at: e.target.value }))}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500"
                   />
                 </div>
               )}
               
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <label className="block text-sm font-medium text-gray-700">Upload CSV</label>
+                  <label className="block text-sm font-medium text-slate-700">Upload CSV</label>
                   <button
                     onClick={downloadTemplate}
-                    className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                    className="text-indigo-600 hover:text-indigo-800 text-sm font-medium"
                   >
                     Download Template
                   </button>
@@ -549,7 +549,7 @@ const BatchPayments: React.FC = () => {
                 
                 <div
                   onClick={() => fileInputRef.current?.click()}
-                  className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center cursor-pointer hover:border-blue-400"
+                  className="border-2 border-dashed border-slate-200 rounded-xl p-8 text-center cursor-pointer hover:border-blue-400"
                 >
                   <input
                     ref={fileInputRef}
@@ -558,27 +558,27 @@ const BatchPayments: React.FC = () => {
                     onChange={handleFileUpload}
                     className="hidden"
                   />
-                  <p className="text-gray-500">
+                  <p className="text-slate-500">
                     {csvContent ? `${csvPreview.length} payments loaded` : 'Click to upload CSV file'}
                   </p>
-                  <p className="text-xs text-gray-400 mt-1">Supports up to 10,000 payments</p>
+                  <p className="text-xs text-slate-400 mt-1">Supports up to 10,000 payments</p>
                 </div>
               </div>
               
               {csvPreview.length > 0 && (
                 <div>
-                  <h4 className="text-sm font-medium text-gray-700 mb-2">Preview (first 5 rows)</h4>
+                  <h4 className="text-sm font-medium text-slate-700 mb-2">Preview (first 5 rows)</h4>
                   <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-gray-200">
-                      <thead className="bg-gray-50">
+                    <table className="min-w-full divide-y divide-slate-100">
+                      <thead className="bg-slate-50">
                         <tr>
-                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">Recipient</th>
-                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">Account</th>
-                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">Country</th>
-                          <th className="px-4 py-2 text-right text-xs font-medium text-gray-500">Amount</th>
+                          <th className="px-4 py-2 text-left text-xs font-medium text-slate-500">Recipient</th>
+                          <th className="px-4 py-2 text-left text-xs font-medium text-slate-500">Account</th>
+                          <th className="px-4 py-2 text-left text-xs font-medium text-slate-500">Country</th>
+                          <th className="px-4 py-2 text-right text-xs font-medium text-slate-500">Amount</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-gray-200">
+                      <tbody className="divide-y divide-slate-100">
                         {csvPreview.map(payment => (
                           <tr key={payment.payment_id}>
                             <td className="px-4 py-2 text-sm">{payment.recipient_name}</td>
@@ -596,7 +596,7 @@ const BatchPayments: React.FC = () => {
               <button
                 onClick={handleCreateBatch}
                 disabled={uploading || !newBatch.name || !csvContent}
-                className="w-full py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
+                className="w-full py-3 bg-gradient-to-r from-indigo-600 to-violet-600 text-white rounded-xl shadow-lg shadow-indigo-200 font-medium hover:bg-indigo-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
               >
                 {uploading ? 'Creating...' : 'Create Batch'}
               </button>
@@ -608,12 +608,12 @@ const BatchPayments: React.FC = () => {
       {selectedBatch && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-xl max-w-2xl w-full max-h-[80vh] overflow-hidden">
-            <div className="p-6 border-b border-gray-200">
+            <div className="p-6 border-b border-slate-200">
               <div className="flex items-center justify-between">
                 <h2 className="text-xl font-bold">{selectedBatch.name}</h2>
                 <button
                   onClick={() => setSelectedBatch(null)}
-                  className="text-gray-400 hover:text-gray-600"
+                  className="text-slate-400 hover:text-slate-600"
                 >
                   Close
                 </button>
@@ -621,16 +621,16 @@ const BatchPayments: React.FC = () => {
             </div>
             <div className="p-6 overflow-y-auto max-h-[60vh]">
               <div className="grid grid-cols-3 gap-4 mb-6">
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <p className="text-sm text-gray-500">Total Amount</p>
+                <div className="bg-slate-50 rounded-xl p-4">
+                  <p className="text-sm text-slate-500">Total Amount</p>
                   <p className="text-xl font-bold">{formatCurrency(selectedBatch.total_amount, selectedBatch.source_currency)}</p>
                 </div>
-                <div className="bg-green-50 rounded-lg p-4">
-                  <p className="text-sm text-gray-500">Completed</p>
-                  <p className="text-xl font-bold text-green-600">{selectedBatch.completed_payments}</p>
+                <div className="bg-emerald-50 rounded-xl p-4">
+                  <p className="text-sm text-slate-500">Completed</p>
+                  <p className="text-xl font-bold text-emerald-600">{selectedBatch.completed_payments}</p>
                 </div>
-                <div className="bg-red-50 rounded-lg p-4">
-                  <p className="text-sm text-gray-500">Failed</p>
+                <div className="bg-red-50 rounded-xl p-4">
+                  <p className="text-sm text-slate-500">Failed</p>
                   <p className="text-xl font-bold text-red-600">{selectedBatch.failed_payments}</p>
                 </div>
               </div>
@@ -638,13 +638,13 @@ const BatchPayments: React.FC = () => {
               <h3 className="font-semibold mb-3">Payments</h3>
               <div className="space-y-2">
                 {selectedBatch.payments.length === 0 ? (
-                  <p className="text-gray-500 text-center py-4">No payment details available</p>
+                  <p className="text-slate-500 text-center py-4">No payment details available</p>
                 ) : (
                   selectedBatch.payments.map(payment => (
-                    <div key={payment.payment_id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div key={payment.payment_id} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
                       <div>
                         <p className="font-medium">{payment.recipient_name}</p>
-                        <p className="text-sm text-gray-500">{payment.recipient_account}</p>
+                        <p className="text-sm text-slate-500">{payment.recipient_account}</p>
                       </div>
                       <div className="text-right">
                         <p className="font-medium">{formatCurrency(payment.amount, payment.currency)}</p>

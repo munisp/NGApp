@@ -60,9 +60,9 @@ const CURRENCY_PAIRS = [
 
 const TIER_INFO: Record<string, { color: string; icon: string; bgColor: string }> = {
   BRONZE: { color: 'text-amber-700', icon: '🥉', bgColor: 'bg-amber-100' },
-  SILVER: { color: 'text-gray-500', icon: '🥈', bgColor: 'bg-gray-100' },
-  GOLD: { color: 'text-yellow-500', icon: '🥇', bgColor: 'bg-yellow-100' },
-  PLATINUM: { color: 'text-blue-500', icon: '💎', bgColor: 'bg-blue-100' },
+  SILVER: { color: 'text-slate-500', icon: '🥈', bgColor: 'bg-slate-100' },
+  GOLD: { color: 'text-amber-500', icon: '🥇', bgColor: 'bg-amber-100' },
+  PLATINUM: { color: 'text-indigo-500', icon: '💎', bgColor: 'bg-indigo-100' },
   DIAMOND: { color: 'text-purple-500', icon: '👑', bgColor: 'bg-purple-100' },
 };
 
@@ -296,11 +296,11 @@ const FXAlerts: React.FC = () => {
 
   const getAlertStatusColor = (status: string) => {
     switch (status) {
-      case 'ACTIVE': return 'bg-green-100 text-green-800';
-      case 'TRIGGERED': return 'bg-blue-100 text-blue-800';
-      case 'EXPIRED': return 'bg-gray-100 text-gray-600';
-      case 'CANCELLED': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-600';
+      case 'ACTIVE': return 'bg-emerald-100 text-emerald-700';
+      case 'TRIGGERED': return 'bg-indigo-100 text-indigo-800';
+      case 'EXPIRED': return 'bg-slate-100 text-slate-600';
+      case 'CANCELLED': return 'bg-red-50 text-red-600';
+      default: return 'bg-slate-100 text-slate-600';
     }
   };
 
@@ -312,11 +312,11 @@ const FXAlerts: React.FC = () => {
   return (
     <div className="max-w-4xl mx-auto space-y-6 p-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">FX Alerts & Rewards</h1>
+        <h1 className="text-2xl font-bold text-slate-900">FX Alerts & Rewards</h1>
       </div>
 
-      <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-        <div className="border-b border-gray-200">
+      <div className="bg-white rounded-2xl shadow-lg border border-slate-100 overflow-hidden">
+        <div className="border-b border-slate-200">
           <nav className="flex -mb-px">
             {[
               { key: 'alerts', label: 'Rate Alerts', icon: '🔔' },
@@ -328,8 +328,8 @@ const FXAlerts: React.FC = () => {
                 onClick={() => setActiveTab(tab.key as typeof activeTab)}
                 className={`flex-1 px-6 py-4 text-sm font-medium border-b-2 ${
                   activeTab === tab.key
-                    ? 'border-blue-600 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                    ? 'border-indigo-600 text-indigo-600'
+                    : 'border-transparent text-slate-500 hover:text-slate-700'
                 }`}
               >
                 <span className="mr-2">{tab.icon}</span>
@@ -343,10 +343,10 @@ const FXAlerts: React.FC = () => {
           {activeTab === 'alerts' && (
             <div className="space-y-4">
               <div className="flex justify-between items-center">
-                <p className="text-gray-500">Get notified when rates hit your target</p>
+                <p className="text-slate-500">Get notified when rates hit your target</p>
                 <button
                   onClick={() => setShowCreateAlert(true)}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
+                  className="px-4 py-2 bg-gradient-to-r from-indigo-600 to-violet-600 text-white rounded-xl shadow-lg shadow-indigo-200 hover:bg-indigo-700 font-medium"
                 >
                   + New Alert
                 </button>
@@ -354,15 +354,15 @@ const FXAlerts: React.FC = () => {
               
               {loading ? (
                 <div className="text-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto"></div>
                 </div>
               ) : alerts.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">
+                <div className="text-center py-8 text-slate-500">
                   <p>No alerts set. Create an alert to get notified when rates change.</p>
                 </div>
               ) : (
                 alerts.filter(a => a.status !== 'CANCELLED').map(alert => (
-                  <div key={alert.alert_id} className="border border-gray-200 rounded-lg p-4">
+                  <div key={alert.alert_id} className="border border-slate-200 rounded-xl p-4">
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center">
                         <span className="text-xl mr-2">
@@ -370,7 +370,7 @@ const FXAlerts: React.FC = () => {
                         </span>
                         <div>
                           <p className="font-semibold">{alert.source_currency}/{alert.destination_currency}</p>
-                          <p className="text-sm text-gray-500">
+                          <p className="text-sm text-slate-500">
                             {alert.alert_type === 'RATE_ABOVE' ? 'Alert when above' : 'Alert when below'} {formatRate(alert.threshold_value)}
                           </p>
                         </div>
@@ -382,14 +382,14 @@ const FXAlerts: React.FC = () => {
                     
                     <div className="flex items-center justify-between text-sm">
                       <div>
-                        <span className="text-gray-500">Current: </span>
+                        <span className="text-slate-500">Current: </span>
                         <span className="font-medium">{formatRate(alert.current_value)}</span>
                         {alert.alert_type === 'RATE_ABOVE' ? (
-                          <span className={`ml-2 ${alert.current_value >= alert.threshold_value ? 'text-green-600' : 'text-gray-400'}`}>
+                          <span className={`ml-2 ${alert.current_value >= alert.threshold_value ? 'text-emerald-600' : 'text-slate-400'}`}>
                             {alert.current_value >= alert.threshold_value ? '(Target reached!)' : `(${formatRate(alert.threshold_value - alert.current_value)} to go)`}
                           </span>
                         ) : (
-                          <span className={`ml-2 ${alert.current_value <= alert.threshold_value ? 'text-green-600' : 'text-gray-400'}`}>
+                          <span className={`ml-2 ${alert.current_value <= alert.threshold_value ? 'text-emerald-600' : 'text-slate-400'}`}>
                             {alert.current_value <= alert.threshold_value ? '(Target reached!)' : `(${formatRate(alert.current_value - alert.threshold_value)} above target)`}
                           </span>
                         )}
@@ -416,10 +416,10 @@ const FXAlerts: React.FC = () => {
                   <button
                     key={`${pair.from}-${pair.to}`}
                     onClick={() => setSelectedPair(pair)}
-                    className={`px-4 py-2 rounded-lg whitespace-nowrap ${
+                    className={`px-4 py-2 rounded-xl whitespace-nowrap ${
                       selectedPair.from === pair.from && selectedPair.to === pair.to
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        ? 'bg-indigo-600 text-white'
+                        : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                     }`}
                   >
                     {pair.flag} {pair.from}/{pair.to}
@@ -428,23 +428,23 @@ const FXAlerts: React.FC = () => {
               </div>
               
               <div className="grid grid-cols-3 gap-4">
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <p className="text-sm text-gray-500">Current Rate</p>
+                <div className="bg-slate-50 rounded-xl p-4">
+                  <p className="text-sm text-slate-500">Current Rate</p>
                   <p className="text-2xl font-bold">{formatRate(currentRate)}</p>
                 </div>
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <p className="text-sm text-gray-500">30-Day Change</p>
-                  <p className={`text-2xl font-bold ${rateChange >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                <div className="bg-slate-50 rounded-xl p-4">
+                  <p className="text-sm text-slate-500">30-Day Change</p>
+                  <p className={`text-2xl font-bold ${rateChange >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
                     {rateChange >= 0 ? '+' : ''}{rateChange.toFixed(2)}%
                   </p>
                 </div>
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <p className="text-sm text-gray-500">30-Day Range</p>
+                <div className="bg-slate-50 rounded-xl p-4">
+                  <p className="text-sm text-slate-500">30-Day Range</p>
                   <p className="text-lg font-bold">{formatRate(minRate)} - {formatRate(maxRate)}</p>
                 </div>
               </div>
               
-              <div className="h-48 bg-gray-50 rounded-lg p-4">
+              <div className="h-48 bg-slate-50 rounded-xl p-4">
                 <div className="h-full flex items-end justify-between gap-1">
                   {rateHistory.slice(-30).map((point, index) => {
                     const height = maxRate > minRate 
@@ -453,7 +453,7 @@ const FXAlerts: React.FC = () => {
                     return (
                       <div
                         key={index}
-                        className="flex-1 bg-blue-500 rounded-t hover:bg-blue-600 transition-colors"
+                        className="flex-1 bg-indigo-500 rounded-t hover:bg-indigo-600 transition-colors"
                         style={{ height: `${Math.max(5, height)}%` }}
                         title={`${point.date}: ${formatRate(point.rate)}`}
                       ></div>
@@ -462,14 +462,14 @@ const FXAlerts: React.FC = () => {
                 </div>
               </div>
               
-              <div className="flex justify-between text-xs text-gray-500">
+              <div className="flex justify-between text-xs text-slate-500">
                 <span>{rateHistory.length > 0 ? formatDate(rateHistory[0].date) : ''}</span>
                 <span>{rateHistory.length > 0 ? formatDate(rateHistory[rateHistory.length - 1].date) : ''}</span>
               </div>
               
               <button
                 onClick={() => { setNewAlert({ ...newAlert, source_currency: selectedPair.from, destination_currency: selectedPair.to }); setShowCreateAlert(true); }}
-                className="w-full py-3 border border-blue-600 text-blue-600 rounded-lg font-medium hover:bg-blue-50"
+                className="w-full py-3 border border-indigo-600 text-indigo-600 rounded-xl font-medium hover:bg-indigo-50"
               >
                 Set Alert for {selectedPair.from}/{selectedPair.to}
               </button>
@@ -478,20 +478,20 @@ const FXAlerts: React.FC = () => {
 
           {activeTab === 'loyalty' && loyalty && (
             <div className="space-y-6">
-              <div className={`${TIER_INFO[loyalty.tier]?.bgColor || 'bg-gray-100'} rounded-xl p-6`}>
+              <div className={`${TIER_INFO[loyalty.tier]?.bgColor || 'bg-slate-100'} rounded-xl p-6`}>
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center">
                     <span className="text-4xl mr-3">{TIER_INFO[loyalty.tier]?.icon || '🎖️'}</span>
                     <div>
-                      <p className={`text-2xl font-bold ${TIER_INFO[loyalty.tier]?.color || 'text-gray-700'}`}>
+                      <p className={`text-2xl font-bold ${TIER_INFO[loyalty.tier]?.color || 'text-slate-700'}`}>
                         {loyalty.tier} Member
                       </p>
-                      <p className="text-sm text-gray-600">Member since {formatDate(loyalty.member_since)}</p>
+                      <p className="text-sm text-slate-600">Member since {formatDate(loyalty.member_since)}</p>
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-3xl font-bold text-gray-900">{loyalty.available_points.toLocaleString()}</p>
-                    <p className="text-sm text-gray-500">Available Points</p>
+                    <p className="text-3xl font-bold text-slate-900">{loyalty.available_points.toLocaleString()}</p>
+                    <p className="text-sm text-slate-500">Available Points</p>
                   </div>
                 </div>
                 
@@ -503,45 +503,45 @@ const FXAlerts: React.FC = () => {
                     </div>
                     <div className="w-full bg-white bg-opacity-50 rounded-full h-2">
                       <div
-                        className="bg-blue-600 h-2 rounded-full"
+                        className="bg-indigo-600 h-2 rounded-full"
                         style={{ width: `${Math.min(100, (loyalty.total_points / (loyalty.total_points + loyalty.points_to_next_tier)) * 100)}%` }}
                       ></div>
                     </div>
-                    <p className="text-xs text-gray-600 mt-1">{loyalty.points_to_next_tier.toLocaleString()} points to {loyalty.next_tier}</p>
+                    <p className="text-xs text-slate-600 mt-1">{loyalty.points_to_next_tier.toLocaleString()} points to {loyalty.next_tier}</p>
                   </div>
                 )}
               </div>
               
               <div className="grid grid-cols-2 gap-4">
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <p className="text-sm text-gray-500">Lifetime Volume</p>
+                <div className="bg-slate-50 rounded-xl p-4">
+                  <p className="text-sm text-slate-500">Lifetime Volume</p>
                   <p className="text-xl font-bold">${loyalty.lifetime_volume_usd.toLocaleString()}</p>
                 </div>
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <p className="text-sm text-gray-500">Total Transfers</p>
+                <div className="bg-slate-50 rounded-xl p-4">
+                  <p className="text-sm text-slate-500">Total Transfers</p>
                   <p className="text-xl font-bold">{loyalty.transfer_count}</p>
                 </div>
               </div>
               
-              <div className="bg-blue-50 rounded-lg p-4">
+              <div className="bg-indigo-50 rounded-xl p-4">
                 <h4 className="font-semibold text-blue-900 mb-3">Your Benefits</h4>
                 <div className="grid grid-cols-2 gap-3 text-sm">
                   <div className="flex items-center">
-                    <span className="text-green-500 mr-2">✓</span>
+                    <span className="text-emerald-500 mr-2">✓</span>
                     <span>{loyalty.benefits.fee_discount_percent}% fee discount</span>
                   </div>
                   <div className="flex items-center">
-                    <span className="text-green-500 mr-2">✓</span>
+                    <span className="text-emerald-500 mr-2">✓</span>
                     <span>{loyalty.benefits.cashback_percent}% cashback</span>
                   </div>
                   <div className="flex items-center">
-                    <span className={`mr-2 ${loyalty.benefits.priority_support ? 'text-green-500' : 'text-gray-300'}`}>
+                    <span className={`mr-2 ${loyalty.benefits.priority_support ? 'text-emerald-500' : 'text-gray-300'}`}>
                       {loyalty.benefits.priority_support ? '✓' : '○'}
                     </span>
                     <span>Priority support</span>
                   </div>
                   <div className="flex items-center">
-                    <span className="text-green-500 mr-2">✓</span>
+                    <span className="text-emerald-500 mr-2">✓</span>
                     <span>{loyalty.benefits.free_transfers_per_month} free transfers/month</span>
                   </div>
                 </div>
@@ -549,25 +549,25 @@ const FXAlerts: React.FC = () => {
               
               <div>
                 <div className="flex items-center justify-between mb-3">
-                  <h4 className="font-semibold text-gray-900">Recent Rewards</h4>
+                  <h4 className="font-semibold text-slate-900">Recent Rewards</h4>
                   <button
                     onClick={() => setShowRedeemModal(true)}
-                    className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700"
+                    className="px-4 py-2 bg-emerald-600 text-white rounded-xl text-sm hover:bg-emerald-700"
                   >
                     Redeem Points
                   </button>
                 </div>
                 <div className="space-y-2">
                   {loyalty.recent_rewards.map((reward, index) => (
-                    <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div key={index} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
                       <div className="flex items-center">
                         <span className="text-xl mr-3">{REWARD_ICONS[reward.type] || '🎁'}</span>
                         <div>
                           <p className="font-medium">{reward.type.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, l => l.toUpperCase())}</p>
-                          <p className="text-xs text-gray-500">{formatDate(reward.created_at)}</p>
+                          <p className="text-xs text-slate-500">{formatDate(reward.created_at)}</p>
                         </div>
                       </div>
-                      <span className="font-bold text-green-600">+{reward.points}</span>
+                      <span className="font-bold text-emerald-600">+{reward.points}</span>
                     </div>
                   ))}
                 </div>
@@ -585,11 +585,11 @@ const FXAlerts: React.FC = () => {
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">From</label>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">From</label>
                   <select
                     value={newAlert.source_currency}
                     onChange={(e) => setNewAlert(prev => ({ ...prev, source_currency: e.target.value }))}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg"
+                    className="w-full px-4 py-3 border border-slate-200 rounded-xl"
                   >
                     <option value="GBP">GBP</option>
                     <option value="USD">USD</option>
@@ -597,11 +597,11 @@ const FXAlerts: React.FC = () => {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">To</label>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">To</label>
                   <select
                     value={newAlert.destination_currency}
                     onChange={(e) => setNewAlert(prev => ({ ...prev, destination_currency: e.target.value }))}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg"
+                    className="w-full px-4 py-3 border border-slate-200 rounded-xl"
                   >
                     <option value="NGN">NGN</option>
                     <option value="GHS">GHS</option>
@@ -612,11 +612,11 @@ const FXAlerts: React.FC = () => {
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Alert Type</label>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Alert Type</label>
                 <select
                   value={newAlert.alert_type}
                   onChange={(e) => setNewAlert(prev => ({ ...prev, alert_type: e.target.value }))}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg"
+                  className="w-full px-4 py-3 border border-slate-200 rounded-xl"
                 >
                   <option value="RATE_ABOVE">Rate goes above</option>
                   <option value="RATE_BELOW">Rate goes below</option>
@@ -624,13 +624,13 @@ const FXAlerts: React.FC = () => {
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Target Rate</label>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Target Rate</label>
                 <input
                   type="number"
                   value={newAlert.threshold_value}
                   onChange={(e) => setNewAlert(prev => ({ ...prev, threshold_value: e.target.value }))}
                   placeholder="e.g., 2000"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg"
+                  className="w-full px-4 py-3 border border-slate-200 rounded-xl"
                 />
               </div>
             </div>
@@ -638,14 +638,14 @@ const FXAlerts: React.FC = () => {
             <div className="flex gap-3 mt-6">
               <button
                 onClick={() => setShowCreateAlert(false)}
-                className="flex-1 py-3 border border-gray-300 rounded-lg font-medium"
+                className="flex-1 py-3 border border-slate-200 rounded-xl font-medium"
               >
                 Cancel
               </button>
               <button
                 onClick={handleCreateAlert}
                 disabled={!newAlert.threshold_value}
-                className="flex-1 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:bg-gray-300"
+                className="flex-1 py-3 bg-gradient-to-r from-indigo-600 to-violet-600 text-white rounded-xl shadow-lg shadow-indigo-200 font-medium hover:bg-indigo-700 disabled:bg-gray-300"
               >
                 Create Alert
               </button>
@@ -658,27 +658,27 @@ const FXAlerts: React.FC = () => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-xl max-w-sm w-full p-6">
             <h3 className="text-lg font-bold mb-4">Redeem Points</h3>
-            <p className="text-sm text-gray-500 mb-4">Available: {loyalty.available_points.toLocaleString()} points</p>
+            <p className="text-sm text-slate-500 mb-4">Available: {loyalty.available_points.toLocaleString()} points</p>
             
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Points to Redeem</label>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Points to Redeem</label>
                 <input
                   type="number"
                   value={redeemPoints}
                   onChange={(e) => setRedeemPoints(e.target.value)}
                   max={loyalty.available_points}
                   placeholder="100"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg"
+                  className="w-full px-4 py-3 border border-slate-200 rounded-xl"
                 />
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Redemption Type</label>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Redemption Type</label>
                 <select
                   value={redeemType}
                   onChange={(e) => setRedeemType(e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg"
+                  className="w-full px-4 py-3 border border-slate-200 rounded-xl"
                 >
                   <option value="CASHBACK">Cashback ($0.01 per point)</option>
                   <option value="FEE_CREDIT">Fee Credit ($0.02 per point)</option>
@@ -686,8 +686,8 @@ const FXAlerts: React.FC = () => {
               </div>
               
               {redeemPoints && (
-                <div className="bg-green-50 rounded-lg p-3">
-                  <p className="text-sm text-green-800">
+                <div className="bg-emerald-50 rounded-xl p-3">
+                  <p className="text-sm text-emerald-700">
                     You'll receive: ${(parseInt(redeemPoints) * (redeemType === 'CASHBACK' ? 0.01 : 0.02)).toFixed(2)} {redeemType === 'CASHBACK' ? 'cashback' : 'in fee credits'}
                   </p>
                 </div>
@@ -697,14 +697,14 @@ const FXAlerts: React.FC = () => {
             <div className="flex gap-3 mt-6">
               <button
                 onClick={() => { setShowRedeemModal(false); setRedeemPoints(''); }}
-                className="flex-1 py-3 border border-gray-300 rounded-lg font-medium"
+                className="flex-1 py-3 border border-slate-200 rounded-xl font-medium"
               >
                 Cancel
               </button>
               <button
                 onClick={handleRedeem}
                 disabled={!redeemPoints || parseInt(redeemPoints) > loyalty.available_points}
-                className="flex-1 py-3 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 disabled:bg-gray-300"
+                className="flex-1 py-3 bg-emerald-600 text-white rounded-xl font-medium hover:bg-emerald-700 disabled:bg-gray-300"
               >
                 Redeem
               </button>

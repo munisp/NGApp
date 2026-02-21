@@ -398,27 +398,27 @@ const SendMoney: React.FC = () => {
   return (
     <div className="max-w-2xl mx-auto space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">Send Money</h1>
+        <h1 className="text-2xl font-bold text-slate-900">Send Money</h1>
         {!isOnline && (
-          <div className="flex items-center px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm">
-            <span className="w-2 h-2 bg-yellow-500 rounded-full mr-2 animate-pulse" />
+          <div className="flex items-center px-3 py-1 bg-amber-100 text-amber-700 rounded-full text-sm">
+            <span className="w-2 h-2 bg-amber-500 rounded-full mr-2 animate-pulse" />
             Offline Mode
           </div>
         )}
       </div>
 
       {pendingCount > 0 && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-center justify-between">
+        <div className="bg-indigo-50 border border-blue-200 rounded-xl p-4 flex items-center justify-between">
           <div className="flex items-center">
-            <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-3">
-              <span className="text-blue-600 font-semibold">{pendingCount}</span>
+            <div className="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center mr-3">
+              <span className="text-indigo-600 font-semibold">{pendingCount}</span>
             </div>
             <div>
               <p className="text-sm font-medium text-blue-900">Pending Transactions</p>
-              <p className="text-xs text-blue-700">Will sync when you're back online</p>
+              <p className="text-xs text-indigo-700">Will sync when you're back online</p>
             </div>
           </div>
-          <button onClick={() => navigate('/transactions?filter=pending')} className="text-sm text-blue-600 hover:text-blue-800 font-medium">View</button>
+          <button onClick={() => navigate('/transactions?filter=pending')} className="text-sm text-indigo-600 hover:text-indigo-800 font-medium">View</button>
         </div>
       )}
 
@@ -426,7 +426,7 @@ const SendMoney: React.FC = () => {
         {['Recipient', 'Amount', 'Confirm'].map((label, i) => (
           <div key={label} className="flex items-center">
             <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium transition-all ${
-              step > i + 1 ? 'bg-green-500 text-white' : step === i + 1 ? 'bg-blue-600 text-white shadow-lg' : 'bg-gray-200 text-gray-600'
+              step > i + 1 ? 'bg-emerald-500 text-white' : step === i + 1 ? 'bg-indigo-600 text-white shadow-lg' : 'bg-slate-200 text-slate-600'
             }`}>
               {step > i + 1 ? (
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -434,14 +434,14 @@ const SendMoney: React.FC = () => {
                 </svg>
               ) : i + 1}
             </div>
-            <span className={`ml-2 text-sm hidden sm:block ${step === i + 1 ? 'text-blue-600 font-medium' : 'text-gray-500'}`}>{label}</span>
-            {i < 2 && <div className={`w-8 sm:w-16 h-0.5 mx-2 sm:mx-4 ${step > i + 1 ? 'bg-green-500' : 'bg-gray-200'}`} />}
+            <span className={`ml-2 text-sm hidden sm:block ${step === i + 1 ? 'text-indigo-600 font-medium' : 'text-slate-500'}`}>{label}</span>
+            {i < 2 && <div className={`w-8 sm:w-16 h-0.5 mx-2 sm:mx-4 ${step > i + 1 ? 'bg-emerald-500' : 'bg-slate-200'}`} />}
           </div>
         ))}
       </div>
 
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start">
+        <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-start">
           <svg className="w-5 h-5 text-red-500 mr-3 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
@@ -453,47 +453,47 @@ const SendMoney: React.FC = () => {
       )}
 
       {successMessage && (
-        <div className="bg-green-50 border border-green-200 rounded-lg p-4 flex items-start">
-          <svg className="w-5 h-5 text-green-500 mr-3 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 flex items-start">
+          <svg className="w-5 h-5 text-emerald-500 mr-3 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
-          <p className="text-sm font-medium text-green-800">{successMessage}</p>
+          <p className="text-sm font-medium text-emerald-700">{successMessage}</p>
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+      <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-sm border border-slate-100 border border-slate-200 p-6">
         {step === 1 && (
           <div className="space-y-6">
-            <h2 className="text-lg font-semibold text-gray-900">Who are you sending to?</h2>
+            <h2 className="text-lg font-semibold text-slate-900">Who are you sending to?</h2>
             <div className="grid grid-cols-3 gap-3">
               {(['phone', 'email', 'bank'] as const).map((type) => (
                 <button key={type} type="button" onClick={() => setFormData(prev => ({ ...prev, recipientType: type }))}
-                  className={`p-4 rounded-xl border-2 transition-all ${formData.recipientType === type ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'}`}>
+                  className={`p-4 rounded-xl border-2 transition-all ${formData.recipientType === type ? 'border-indigo-500 bg-indigo-50' : 'border-slate-200 hover:border-slate-200'}`}>
                   <div className="text-2xl mb-2">{type === 'phone' ? '📱' : type === 'email' ? '📧' : '🏦'}</div>
-                  <div className={`text-sm font-medium ${formData.recipientType === type ? 'text-blue-700' : 'text-gray-700'}`}>
+                  <div className={`text-sm font-medium ${formData.recipientType === type ? 'text-indigo-700' : 'text-slate-700'}`}>
                     {type === 'phone' ? 'Phone' : type === 'email' ? 'Email' : 'Bank'}
                   </div>
                 </button>
               ))}
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Recipient Name</label>
+              <label className="block text-sm font-medium text-slate-700 mb-2">Recipient Name</label>
               <input type="text" name="recipientName" value={formData.recipientName} onChange={handleChange}
-                placeholder="Enter recipient's full name" className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required />
+                placeholder="Enter recipient's full name" className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-4 focus:ring-indigo-100 focus:border-indigo-500 focus:outline-none transition-all" required />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-slate-700 mb-2">
                 {formData.recipientType === 'phone' ? 'Phone Number' : formData.recipientType === 'email' ? 'Email Address' : 'Account Number'}
               </label>
               <input type={formData.recipientType === 'email' ? 'email' : 'text'} name="recipient" value={formData.recipient} onChange={handleChange}
                 placeholder={formData.recipientType === 'phone' ? '+234 XXX XXX XXXX' : formData.recipientType === 'email' ? 'recipient@email.com' : '0123456789'}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required />
+                className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-4 focus:ring-indigo-100 focus:border-indigo-500 focus:outline-none transition-all" required />
             </div>
             {formData.recipientType === 'bank' && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Bank</label>
+                <label className="block text-sm font-medium text-slate-700 mb-2">Bank</label>
                 <select name="bankCode" value={formData.bankCode || ''} onChange={handleChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required>
+                  className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-4 focus:ring-indigo-100 focus:border-indigo-500 focus:outline-none transition-all" required>
                   <option value="">Select a bank</option>
                   <option value="044">Access Bank</option>
                   <option value="011">First Bank</option>
@@ -504,11 +504,11 @@ const SendMoney: React.FC = () => {
               </div>
             )}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Sending to</label>
+              <label className="block text-sm font-medium text-slate-700 mb-2">Sending to</label>
               <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
                 {SUPPORTED_CURRENCIES.destination.map((curr) => (
                   <button key={curr} type="button" onClick={() => setFormData(prev => ({ ...prev, destinationCurrency: curr }))}
-                    className={`p-3 rounded-lg border-2 transition-all ${formData.destinationCurrency === curr ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'}`}>
+                    className={`p-3 rounded-xl border-2 transition-all ${formData.destinationCurrency === curr ? 'border-indigo-500 bg-indigo-50' : 'border-slate-200 hover:border-slate-200'}`}>
                     <div className="text-lg">{CURRENCY_FLAGS[curr]}</div>
                     <div className="text-xs font-medium mt-1">{curr}</div>
                   </button>
@@ -520,26 +520,26 @@ const SendMoney: React.FC = () => {
 
         {step === 2 && (
           <div className="space-y-6">
-            <h2 className="text-lg font-semibold text-gray-900">How much are you sending?</h2>
+            <h2 className="text-lg font-semibold text-slate-900">How much are you sending?</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">You send</label>
+                <label className="block text-sm font-medium text-slate-700 mb-2">You send</label>
                 <div className="relative">
-                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-medium">{CURRENCY_SYMBOLS[formData.currency]}</span>
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 font-medium">{CURRENCY_SYMBOLS[formData.currency]}</span>
                   <input type="number" name="amount" value={formData.amount} onChange={handleChange} placeholder="0.00" min="0" step="0.01"
-                    className="w-full pl-10 pr-20 py-4 text-xl font-semibold border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" required />
+                    className="w-full pl-10 pr-20 py-4 text-xl font-semibold border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500" required />
                   <select name="currency" value={formData.currency} onChange={handleChange}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 bg-gray-100 border-0 rounded-md px-2 py-1 text-sm font-medium">
+                    className="absolute right-2 top-1/2 -translate-y-1/2 bg-slate-100 border-0 rounded-md px-2 py-1 text-sm font-medium">
                     {SUPPORTED_CURRENCIES.source.map((curr) => (<option key={curr} value={curr}>{CURRENCY_FLAGS[curr]} {curr}</option>))}
                   </select>
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">They receive</label>
+                <label className="block text-sm font-medium text-slate-700 mb-2">They receive</label>
                 <div className="relative">
-                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-medium">{CURRENCY_SYMBOLS[formData.destinationCurrency]}</span>
-                  <input type="text" value={receivedAmount} readOnly className="w-full pl-10 pr-20 py-4 text-xl font-semibold bg-gray-50 border border-gray-300 rounded-lg" />
-                  <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-medium text-gray-600">{CURRENCY_FLAGS[formData.destinationCurrency]} {formData.destinationCurrency}</span>
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 font-medium">{CURRENCY_SYMBOLS[formData.destinationCurrency]}</span>
+                  <input type="text" value={receivedAmount} readOnly className="w-full pl-10 pr-20 py-4 text-xl font-semibold bg-slate-50 border border-slate-200 rounded-xl" />
+                  <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-medium text-slate-600">{CURRENCY_FLAGS[formData.destinationCurrency]} {formData.destinationCurrency}</span>
                 </div>
               </div>
             </div>
@@ -547,45 +547,45 @@ const SendMoney: React.FC = () => {
             <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-4 border border-blue-100">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center">
-                  <span className="text-sm font-medium text-gray-700">Exchange Rate</span>
-                  {isLoadingRate && <div className="ml-2 w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />}
+                  <span className="text-sm font-medium text-slate-700">Exchange Rate</span>
+                  {isLoadingRate && <div className="ml-2 w-4 h-4 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />}
                 </div>
                 <div className="flex items-center space-x-2">
                   {rateLock ? (
-                    <div className="flex items-center px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm">
+                    <div className="flex items-center px-3 py-1 bg-emerald-100 text-emerald-700 rounded-full text-sm">
                       <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                       </svg>
                       Locked for {formatTimeRemaining(rateLock.expiresAt)}
                     </div>
-                  ) : <div className="text-xs text-gray-500">Refreshes in {rateRefreshCountdown}s</div>}
+                  ) : <div className="text-xs text-slate-500">Refreshes in {rateRefreshCountdown}s</div>}
                 </div>
               </div>
               <div className="flex items-center justify-between">
                 <div>
-                  <div className="text-2xl font-bold text-gray-900">1 {formData.currency} = {exchangeRate?.rate.toFixed(4) || '---'} {formData.destinationCurrency}</div>
-                  <div className="text-xs text-gray-500 mt-1">Mid-market rate: {exchangeRate?.rate ? (exchangeRate.rate * 1.003).toFixed(4) : '---'}</div>
+                  <div className="text-2xl font-bold text-slate-900">1 {formData.currency} = {exchangeRate?.rate.toFixed(4) || '---'} {formData.destinationCurrency}</div>
+                  <div className="text-xs text-slate-500 mt-1">Mid-market rate: {exchangeRate?.rate ? (exchangeRate.rate * 1.003).toFixed(4) : '---'}</div>
                 </div>
                 <div className="flex space-x-2">
                   {rateLock ? (
-                    <button type="button" onClick={handleUnlockRate} className="px-4 py-2 text-sm font-medium text-red-600 bg-red-50 rounded-lg hover:bg-red-100">Unlock</button>
+                    <button type="button" onClick={handleUnlockRate} className="px-4 py-2 text-sm font-medium text-red-600 bg-red-50 rounded-xl hover:bg-red-100">Unlock</button>
                   ) : (
                     <button type="button" onClick={handleLockRate} disabled={!exchangeRate || isLoadingRate}
-                      className="px-4 py-2 text-sm font-medium text-blue-600 bg-blue-100 rounded-lg hover:bg-blue-200 disabled:opacity-50">Lock Rate</button>
+                      className="px-4 py-2 text-sm font-medium text-indigo-600 bg-indigo-100 rounded-xl hover:bg-blue-200 disabled:opacity-50">Lock Rate</button>
                   )}
                   <button type="button" onClick={() => setShowRateHistory(!showRateHistory)}
-                    className="px-4 py-2 text-sm font-medium text-gray-600 bg-white rounded-lg hover:bg-gray-50 border border-gray-200">{showRateHistory ? 'Hide' : 'History'}</button>
+                    className="px-4 py-2 text-sm font-medium text-slate-600 bg-white rounded-xl hover:bg-slate-50 border border-slate-200">{showRateHistory ? 'Hide' : 'History'}</button>
                 </div>
               </div>
               {showRateHistory && rateHistory.length > 0 && (
                 <div className="mt-4 pt-4 border-t border-blue-200">
-                  <div className="text-sm font-medium text-gray-700 mb-2">7-Day Rate History</div>
+                  <div className="text-sm font-medium text-slate-700 mb-2">7-Day Rate History</div>
                   <div className="flex items-end space-x-1 h-16">
                     {rateHistory.map((h, i) => {
                       const max = Math.max(...rateHistory.map(r => r.rate));
                       const min = Math.min(...rateHistory.map(r => r.rate));
                       const height = ((h.rate - min) / (max - min || 1)) * 100;
-                      return <div key={i} className="flex-1 bg-blue-400 rounded-t hover:bg-blue-500" style={{ height: `${Math.max(20, height)}%` }} title={`${h.date}: ${h.rate.toFixed(4)}`} />;
+                      return <div key={i} className="flex-1 bg-blue-400 rounded-t hover:bg-indigo-500" style={{ height: `${Math.max(20, height)}%` }} title={`${h.date}: ${h.rate.toFixed(4)}`} />;
                     })}
                   </div>
                 </div>
@@ -593,56 +593,56 @@ const SendMoney: React.FC = () => {
             </div>
 
             {feeBreakdown && (
-              <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
-                <div className="text-sm font-medium text-gray-700 mb-3">Fee Breakdown</div>
+              <div className="bg-slate-50 rounded-xl p-4 border border-slate-200">
+                <div className="text-sm font-medium text-slate-700 mb-3">Fee Breakdown</div>
                 <div className="space-y-2">
-                  <div className="flex justify-between text-sm"><span className="text-gray-600">Transfer fee</span><span className="font-medium">{CURRENCY_SYMBOLS[formData.currency]}{feeBreakdown.transferFee.toFixed(2)}</span></div>
-                  {feeBreakdown.networkFee > 0 && <div className="flex justify-between text-sm"><span className="text-gray-600">Cash pickup fee</span><span className="font-medium">{CURRENCY_SYMBOLS[formData.currency]}{feeBreakdown.networkFee.toFixed(2)}</span></div>}
-                  <div className="flex justify-between text-sm text-gray-500"><span>Exchange margin (included)</span><span>{CURRENCY_SYMBOLS[formData.currency]}{feeBreakdown.exchangeMargin.toFixed(2)}</span></div>
-                  <div className="pt-2 border-t border-gray-200 flex justify-between">
-                    <span className="font-medium text-gray-900">Total fees</span>
-                    <span className="font-bold text-gray-900">{CURRENCY_SYMBOLS[formData.currency]}{feeBreakdown.totalFees.toFixed(2)} <span className="text-xs text-gray-500">({feeBreakdown.feePercentage}%)</span></span>
+                  <div className="flex justify-between text-sm"><span className="text-slate-600">Transfer fee</span><span className="font-medium">{CURRENCY_SYMBOLS[formData.currency]}{feeBreakdown.transferFee.toFixed(2)}</span></div>
+                  {feeBreakdown.networkFee > 0 && <div className="flex justify-between text-sm"><span className="text-slate-600">Cash pickup fee</span><span className="font-medium">{CURRENCY_SYMBOLS[formData.currency]}{feeBreakdown.networkFee.toFixed(2)}</span></div>}
+                  <div className="flex justify-between text-sm text-slate-500"><span>Exchange margin (included)</span><span>{CURRENCY_SYMBOLS[formData.currency]}{feeBreakdown.exchangeMargin.toFixed(2)}</span></div>
+                  <div className="pt-2 border-t border-slate-200 flex justify-between">
+                    <span className="font-medium text-slate-900">Total fees</span>
+                    <span className="font-bold text-slate-900">{CURRENCY_SYMBOLS[formData.currency]}{feeBreakdown.totalFees.toFixed(2)} <span className="text-xs text-slate-500">({feeBreakdown.feePercentage}%)</span></span>
                   </div>
                 </div>
               </div>
             )}
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-3">Delivery Method</label>
+              <label className="block text-sm font-medium text-slate-700 mb-3">Delivery Method</label>
               <div className="space-y-2">
                 {deliveryEstimates.map((estimate) => (
                   <label key={estimate.method} className={`flex items-center p-4 rounded-xl border-2 cursor-pointer transition-all ${
-                    formData.deliveryMethod === estimate.method ? 'border-blue-500 bg-blue-50' : estimate.available ? 'border-gray-200 hover:border-gray-300' : 'border-gray-100 bg-gray-50 opacity-50 cursor-not-allowed'
+                    formData.deliveryMethod === estimate.method ? 'border-indigo-500 bg-indigo-50' : estimate.available ? 'border-slate-200 hover:border-slate-200' : 'border-slate-100 bg-slate-50 opacity-50 cursor-not-allowed'
                   }`}>
                     <input type="radio" name="deliveryMethod" value={estimate.method} checked={formData.deliveryMethod === estimate.method}
                       onChange={handleChange} disabled={!estimate.available} className="sr-only" />
                     <span className="text-2xl mr-4">{getDeliveryMethodIcon(estimate.method)}</span>
                     <div className="flex-1">
-                      <div className="font-medium text-gray-900">{getDeliveryMethodLabel(estimate.method)}</div>
-                      <div className="text-sm text-gray-500">{estimate.estimatedTime}</div>
+                      <div className="font-medium text-slate-900">{getDeliveryMethodLabel(estimate.method)}</div>
+                      <div className="text-sm text-slate-500">{estimate.estimatedTime}</div>
                     </div>
                     {formData.deliveryMethod === estimate.method && (
-                      <svg className="w-5 h-5 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                      <svg className="w-5 h-5 text-indigo-500" fill="currentColor" viewBox="0 0 20 20">
                         <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                       </svg>
                     )}
-                    {!estimate.available && <span className="text-xs text-gray-400">Unavailable</span>}
+                    {!estimate.available && <span className="text-xs text-slate-400">Unavailable</span>}
                   </label>
                 ))}
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Note (optional)</label>
+              <label className="block text-sm font-medium text-slate-700 mb-2">Note (optional)</label>
               <textarea name="note" value={formData.note} onChange={handleChange} placeholder="Add a message for the recipient" rows={2}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 resize-none" />
+                className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 resize-none" />
             </div>
           </div>
         )}
 
         {step === 3 && (
           <div className="space-y-6">
-            <h2 className="text-lg font-semibold text-gray-900">Confirm Transfer</h2>
+            <h2 className="text-lg font-semibold text-slate-900">Confirm Transfer</h2>
             <div className="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl p-6 text-white">
               <div className="text-center mb-6">
                 <div className="text-sm opacity-80 mb-1">You're sending</div>
@@ -663,28 +663,28 @@ const SendMoney: React.FC = () => {
               </div>
             </div>
 
-            <div className="bg-gray-50 rounded-xl p-4 space-y-3">
-              <div className="flex justify-between py-2 border-b border-gray-200"><span className="text-gray-600">Recipient</span><span className="font-medium text-gray-900">{formData.recipientName}</span></div>
-              <div className="flex justify-between py-2 border-b border-gray-200"><span className="text-gray-600">{formData.recipientType === 'phone' ? 'Phone' : formData.recipientType === 'email' ? 'Email' : 'Account'}</span><span className="font-medium text-gray-900">{formData.recipient}</span></div>
-              <div className="flex justify-between py-2 border-b border-gray-200"><span className="text-gray-600">Exchange Rate</span><span className="font-medium text-gray-900">1 {formData.currency} = {(rateLock?.rate || exchangeRate?.rate || 0).toFixed(4)} {formData.destinationCurrency}{rateLock && <span className="ml-1 text-green-600 text-xs">(Locked)</span>}</span></div>
-              <div className="flex justify-between py-2 border-b border-gray-200"><span className="text-gray-600">Delivery Method</span><span className="font-medium text-gray-900">{getDeliveryMethodLabel(formData.deliveryMethod)}</span></div>
-              <div className="flex justify-between py-2 border-b border-gray-200"><span className="text-gray-600">Estimated Delivery</span><span className="font-medium text-gray-900">{deliveryEstimates.find(e => e.method === formData.deliveryMethod)?.estimatedTime}</span></div>
-              <div className="flex justify-between py-2 border-b border-gray-200"><span className="text-gray-600">Total Fees</span><span className="font-medium text-gray-900">{CURRENCY_SYMBOLS[formData.currency]}{feeBreakdown?.totalFees.toFixed(2) || '0.00'}</span></div>
-              {formData.note && <div className="flex justify-between py-2"><span className="text-gray-600">Note</span><span className="font-medium text-gray-900 text-right max-w-[200px]">{formData.note}</span></div>}
+            <div className="bg-slate-50 rounded-xl p-4 space-y-3">
+              <div className="flex justify-between py-2 border-b border-slate-200"><span className="text-slate-600">Recipient</span><span className="font-medium text-slate-900">{formData.recipientName}</span></div>
+              <div className="flex justify-between py-2 border-b border-slate-200"><span className="text-slate-600">{formData.recipientType === 'phone' ? 'Phone' : formData.recipientType === 'email' ? 'Email' : 'Account'}</span><span className="font-medium text-slate-900">{formData.recipient}</span></div>
+              <div className="flex justify-between py-2 border-b border-slate-200"><span className="text-slate-600">Exchange Rate</span><span className="font-medium text-slate-900">1 {formData.currency} = {(rateLock?.rate || exchangeRate?.rate || 0).toFixed(4)} {formData.destinationCurrency}{rateLock && <span className="ml-1 text-emerald-600 text-xs">(Locked)</span>}</span></div>
+              <div className="flex justify-between py-2 border-b border-slate-200"><span className="text-slate-600">Delivery Method</span><span className="font-medium text-slate-900">{getDeliveryMethodLabel(formData.deliveryMethod)}</span></div>
+              <div className="flex justify-between py-2 border-b border-slate-200"><span className="text-slate-600">Estimated Delivery</span><span className="font-medium text-slate-900">{deliveryEstimates.find(e => e.method === formData.deliveryMethod)?.estimatedTime}</span></div>
+              <div className="flex justify-between py-2 border-b border-slate-200"><span className="text-slate-600">Total Fees</span><span className="font-medium text-slate-900">{CURRENCY_SYMBOLS[formData.currency]}{feeBreakdown?.totalFees.toFixed(2) || '0.00'}</span></div>
+              {formData.note && <div className="flex justify-between py-2"><span className="text-slate-600">Note</span><span className="font-medium text-slate-900 text-right max-w-[200px]">{formData.note}</span></div>}
             </div>
 
-            <div className="bg-blue-50 rounded-xl p-4 flex justify-between items-center">
-              <span className="text-lg font-medium text-gray-900">Total to Pay</span>
-              <span className="text-2xl font-bold text-blue-600">{CURRENCY_SYMBOLS[formData.currency]}{(parseFloat(formData.amount) + (feeBreakdown?.totalFees || 0)).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+            <div className="bg-indigo-50 rounded-xl p-4 flex justify-between items-center">
+              <span className="text-lg font-medium text-slate-900">Total to Pay</span>
+              <span className="text-2xl font-bold text-indigo-600">{CURRENCY_SYMBOLS[formData.currency]}{(parseFloat(formData.amount) + (feeBreakdown?.totalFees || 0)).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
             </div>
 
             {!isOnline && (
-              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 flex items-start">
-                <svg className="w-5 h-5 text-yellow-500 mr-3 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="bg-amber-50 border border-yellow-200 rounded-xl p-4 flex items-start">
+                <svg className="w-5 h-5 text-amber-500 mr-3 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                 </svg>
                 <div>
-                  <p className="text-sm font-medium text-yellow-800">You're currently offline</p>
+                  <p className="text-sm font-medium text-amber-700">You're currently offline</p>
                   <p className="text-xs text-yellow-700 mt-1">This transfer will be queued and processed automatically when you're back online.</p>
                 </div>
               </div>
@@ -692,14 +692,14 @@ const SendMoney: React.FC = () => {
           </div>
         )}
 
-        <div className="flex justify-between mt-8 pt-6 border-t border-gray-200">
+        <div className="flex justify-between mt-8 pt-6 border-t border-slate-200">
           {step > 1 ? (
-            <button type="button" onClick={() => setStep(step - 1)} className="px-6 py-3 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 font-medium">Back</button>
+            <button type="button" onClick={() => setStep(step - 1)} className="px-6 py-3 text-slate-700 bg-slate-100 rounded-xl hover:bg-slate-200 font-medium">Back</button>
           ) : (
-            <button type="button" onClick={() => navigate(-1)} className="px-6 py-3 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 font-medium">Cancel</button>
+            <button type="button" onClick={() => navigate(-1)} className="px-6 py-3 text-slate-700 bg-slate-100 rounded-xl hover:bg-slate-200 font-medium">Cancel</button>
           )}
           <button type="submit" disabled={!isStepValid(step) || isSubmitting}
-            className="px-8 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center">
+            className="px-8 py-3 bg-gradient-to-r from-indigo-600 to-violet-600 text-white rounded-xl shadow-lg shadow-indigo-200 hover:bg-indigo-700 font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center">
             {isSubmitting ? (
               <><div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />Processing...</>
             ) : step === 3 ? (
