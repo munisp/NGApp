@@ -58,7 +58,7 @@ const SettingsScreen: React.FC = () => {
   const ToggleRow = ({ label, value, onToggle }: { label: string; value: boolean; onToggle: (v: boolean) => void }) => (
     <View style={styles.settingRow}>
       <Text style={styles.settingLabel}>{label}</Text>
-      <Switch value={value} onValueChange={onToggle} trackColor={{ true: '#007AFF' }} />
+      <Switch value={value} onValueChange={onToggle} trackColor={{ false: '#E2E8F0', true: '#6366F1' }} thumbColor={value ? '#FFFFFF' : '#F8FAFC'} />
     </View>
   );
 
@@ -117,14 +117,14 @@ const SettingsScreen: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F3F4F6', padding: 16 },
-  header: { fontSize: 28, fontWeight: 'bold', color: '#111827', marginBottom: 16 },
-  section: { backgroundColor: '#FFF', borderRadius: 12, marginBottom: 16, padding: 16 },
-  sectionTitle: { fontSize: 14, fontWeight: '600', color: '#6B7280', marginBottom: 12, textTransform: 'uppercase' },
-  settingRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#F3F4F6' },
-  settingLabel: { fontSize: 15, color: '#111827' },
-  settingValue: { fontSize: 14, color: '#6B7280' },
-  version: { textAlign: 'center', color: '#9CA3AF', fontSize: 12, marginTop: 8, marginBottom: 32 },
+  container: { flex: 1, backgroundColor: '#F8FAFC', padding: 20 },
+  header: { fontSize: 28, fontWeight: '800', color: '#0F172A', marginBottom: 20, letterSpacing: -0.5 },
+  section: { backgroundColor: '#FFFFFF', borderRadius: 20, marginBottom: 16, padding: 20, shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 2 },
+  sectionTitle: { fontSize: 12, fontWeight: '700', color: '#94A3B8', marginBottom: 14, textTransform: 'uppercase', letterSpacing: 0.8 },
+  settingRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#F1F5F9' },
+  settingLabel: { fontSize: 15, color: '#1E293B', fontWeight: '500' },
+  settingValue: { fontSize: 14, color: '#94A3B8', fontWeight: '500' },
+  version: { textAlign: 'center', color: '#CBD5E1', fontSize: 12, marginTop: 12, marginBottom: 40, fontWeight: '500' },
 });
 
 export default SettingsScreen;

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Building2, Users, CreditCard, BarChart3, Settings, Shield, Bell, LogOut, User, DollarSign, TrendingUp, AlertTriangle, CheckCircle, Eye, EyeOff, Zap, Phone, Receipt, Sliders, Wifi, Tv, Droplets, FileText, ChevronRight, Search, Plus, Trash2, Edit, RefreshCw, UserPlus, MapPin, Upload, ClipboardCheck, Star, Award, Globe, Briefcase, Hash, Calendar, ArrowRight, ArrowLeft, Camera, Fingerprint, ShoppingCart, Package, MessageSquare, Truck, Warehouse, Tag, Filter, Image, Heart, Share2, MoreHorizontal, Send, Bot, Headphones, Radio, Smartphone, Mail, Volume2, MessageCircle, Activity, Clock, AlertCircle, Box, BarChart2, Layers, Target } from 'lucide-react'
+import { Building2, Users, CreditCard, BarChart3, Settings, Shield, Bell, LogOut, User, DollarSign, TrendingUp, AlertTriangle, CheckCircle, Eye, EyeOff, Zap, Phone, Receipt, Sliders, Wifi, Tv, Droplets, FileText, ChevronRight, Search, Plus, Trash2, Edit, RefreshCw, UserPlus, MapPin, Upload, ClipboardCheck, Star, Award, Globe, Briefcase, Hash, Calendar, ArrowRight, ArrowLeft, Camera, Fingerprint, ShoppingCart, Package, MessageSquare, Truck, Warehouse, Tag, Filter, Image, Heart, Share2, MoreHorizontal, Send, Bot, Headphones, Radio, Smartphone, Mail, Volume2, MessageCircle, Activity, Clock, AlertCircle, Box, BarChart2, Layers, Target, Menu, X, ChevronDown, Wallet, ArrowUpRight, ArrowDownRight, CircleDot, Home, PieChart, Lock, Key } from 'lucide-react'
 import { RealTimeNotifications, RealTimeMetrics, RealTimeTransactionFeed } from './components/RealTimeFeatures';
 import PWAInstallPrompt, { PWAStatusIndicator, OfflineBanner } from './components/PWAInstallPrompt';
 import './App.css'
@@ -64,17 +64,17 @@ const getMockData = (endpoint) => {
 
 // Utility Components
 const Button = ({ children, variant = 'default', size = 'default', className = '', onClick, disabled, ...props }) => {
-  const baseClasses = 'inline-flex items-center justify-center rounded-md font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none'
+  const baseClasses = 'inline-flex items-center justify-center font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none cursor-pointer'
   const variants = {
-    default: 'bg-blue-600 text-white hover:bg-blue-700',
-    outline: 'border border-gray-300 bg-white hover:bg-gray-50',
-    ghost: 'hover:bg-gray-100',
-    destructive: 'bg-red-600 text-white hover:bg-red-700'
+    default: 'bg-gradient-to-r from-indigo-600 to-violet-600 text-white hover:from-indigo-700 hover:to-violet-700 shadow-md shadow-indigo-200 hover:shadow-lg hover:shadow-indigo-300 rounded-xl',
+    outline: 'border-[1.5px] border-slate-200 bg-white hover:bg-slate-50 hover:border-indigo-300 text-slate-700 rounded-xl hover:shadow-sm',
+    ghost: 'hover:bg-slate-100 text-slate-600 rounded-xl',
+    destructive: 'bg-gradient-to-r from-red-500 to-rose-500 text-white hover:from-red-600 hover:to-rose-600 shadow-md shadow-red-200 rounded-xl'
   }
   const sizes = {
-    default: 'h-10 py-2 px-4',
-    sm: 'h-9 px-3 text-sm',
-    lg: 'h-11 px-8',
+    default: 'h-10 py-2 px-5 text-sm',
+    sm: 'h-9 px-3.5 text-xs',
+    lg: 'h-12 px-8 text-base',
     icon: 'h-10 w-10'
   }
   
@@ -92,17 +92,17 @@ const Button = ({ children, variant = 'default', size = 'default', className = '
 
 const Badge = ({ children, variant = 'default', className = '' }) => {
   const variants = {
-    default: 'bg-blue-100 text-blue-800',
-    success: 'bg-green-100 text-green-800',
-    warning: 'bg-yellow-100 text-yellow-800',
-    destructive: 'bg-red-100 text-red-800',
-    outline: 'border border-gray-300 text-gray-700'
+    default: 'bg-indigo-50 text-indigo-700 ring-1 ring-inset ring-indigo-600/20',
+    success: 'bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-600/20',
+    warning: 'bg-amber-50 text-amber-700 ring-1 ring-inset ring-amber-600/20',
+    destructive: 'bg-rose-50 text-rose-700 ring-1 ring-inset ring-rose-600/20',
+    outline: 'border border-slate-200 text-slate-600 bg-white'
   }
   
   return (
-    <div className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold transition-colors ${variants[variant]} ${className}`}>
+    <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold tracking-wide ${variants[variant]} ${className}`}>
       {children}
-    </div>
+    </span>
   )
 }
 
@@ -266,114 +266,145 @@ function App() {
     }
   }
 
+  const [sidebarOpen, setSidebarOpen] = useState(true)
+
   // Login Screen
   if (currentView === 'login') {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50 flex items-center justify-center p-4">
+      <div className="min-h-screen relative overflow-hidden flex">
         <PWAInstallPrompt />
         <PWAStatusIndicator />
-        
-        <div className="w-full max-w-md">
-          <div className="text-center mb-8">
-            <div className="w-16 h-16 bg-gradient-to-r from-blue-600 to-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Building2 className="w-8 h-8 text-white" />
-            </div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text text-transparent">
-              Agent Banking Network
-            </h1>
-            <p className="text-gray-600 mt-2">Digital Financial Services Platform for Africa</p>
-          </div>
 
-          <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
-            <div className="space-y-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Email Address
-                </label>
-                <input
-                  type="email"
-                  placeholder="Enter your email"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                  value={loginForm.email}
-                  onChange={(e) => setLoginForm(prev => ({ ...prev, email: e.target.value }))}
-                />
+        <div className="hidden lg:flex lg:w-1/2 relative" style={{background: 'linear-gradient(135deg, #0F172A 0%, #1E293B 40%, #312E81 100%)'}}>
+          <div className="absolute inset-0 opacity-10" style={{backgroundImage: 'radial-gradient(circle at 25% 25%, rgba(99,102,241,0.4) 0%, transparent 50%), radial-gradient(circle at 75% 75%, rgba(139,92,246,0.3) 0%, transparent 50%)'}} />
+          <div className="relative z-10 flex flex-col justify-center px-16 animate-fade-in-up">
+            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center mb-8 shadow-lg shadow-indigo-500/30">
+              <Building2 className="w-7 h-7 text-white" />
+            </div>
+            <h1 className="text-4xl font-bold text-white mb-3 tracking-tight">54Agent Banking</h1>
+            <p className="text-lg text-slate-300 mb-10 leading-relaxed max-w-md">Next-generation digital financial services platform powering Africa's agent banking network.</p>
+            <div className="space-y-5">
+              {[
+                { icon: Shield, text: 'Bank-grade security with end-to-end encryption' },
+                { icon: Zap, text: 'Real-time transaction processing across all channels' },
+                { icon: Globe, text: 'Omnichannel support: USSD, WhatsApp, POS, Mobile' },
+                { icon: TrendingUp, text: 'AI-powered fraud detection and analytics' },
+              ].map((item, i) => (
+                <div key={i} className={`flex items-center gap-4 animate-slide-in-left stagger-${i + 1}`}>
+                  <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center flex-shrink-0">
+                    <item.icon className="w-5 h-5 text-indigo-300" />
+                  </div>
+                  <span className="text-sm text-slate-300">{item.text}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="flex-1 flex items-center justify-center p-6 bg-slate-50">
+          <div className="w-full max-w-md animate-fade-in-up">
+            <div className="lg:hidden text-center mb-8">
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center mx-auto mb-4 shadow-lg shadow-indigo-500/30">
+                <Building2 className="w-6 h-6 text-white" />
+              </div>
+              <h1 className="text-2xl font-bold text-slate-900 tracking-tight">54Agent Banking</h1>
+            </div>
+
+            <div className="bg-white rounded-2xl shadow-xl shadow-slate-200/60 p-8 border border-slate-100/80">
+              <div className="mb-6">
+                <h2 className="text-xl font-bold text-slate-900 tracking-tight">Welcome back</h2>
+                <p className="text-sm text-slate-500 mt-1">Sign in to your account to continue</p>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Password
-                </label>
-                <div className="relative">
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    placeholder="Enter your password"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all pr-12"
-                    value={loginForm.password}
-                    onChange={(e) => setLoginForm(prev => ({ ...prev, password: e.target.value }))}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                  >
-                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                  </button>
+              <div className="space-y-5">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1.5">Email</label>
+                  <div className="relative">
+                    <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-slate-400" />
+                    <input
+                      type="email"
+                      placeholder="you@company.com"
+                      className="input-premium pl-11"
+                      value={loginForm.email}
+                      onChange={(e) => setLoginForm(prev => ({ ...prev, email: e.target.value }))}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1.5">Password</label>
+                  <div className="relative">
+                    <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-slate-400" />
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      placeholder="Enter your password"
+                      className="input-premium pl-11 pr-11"
+                      value={loginForm.password}
+                      onChange={(e) => setLoginForm(prev => ({ ...prev, password: e.target.value }))}
+                    />
+                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors">
+                      {showPassword ? <EyeOff className="w-4.5 h-4.5" /> : <Eye className="w-4.5 h-4.5" />}
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1.5">Role</label>
+                  <div className="relative">
+                    <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-slate-400" />
+                    <select
+                      className="input-premium pl-11 pr-10 appearance-none cursor-pointer"
+                      value={loginForm.role}
+                      onChange={(e) => setLoginForm(prev => ({ ...prev, role: e.target.value }))}
+                    >
+                      <option value="customer">Customer</option>
+                      <option value="agent">Agent</option>
+                      <option value="super_agent">Super Agent</option>
+                      <option value="master_agent">Master Agent</option>
+                      <option value="admin">Administrator</option>
+                    </select>
+                    <ChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => handleLogin()}
+                  disabled={isLoading}
+                  className="btn-primary-gradient w-full h-12 text-[15px] rounded-xl"
+                >
+                  {isLoading ? (
+                    <span className="flex items-center gap-2"><RefreshCw className="w-4 h-4 animate-spin" /> Signing in...</span>
+                  ) : 'Sign In'}
+                </button>
+              </div>
+
+              <div className="mt-8 pt-6 border-t border-slate-100">
+                <p className="text-center text-xs font-medium text-slate-400 uppercase tracking-wider mb-4">Quick Demo Access</p>
+                <div className="grid grid-cols-2 gap-2.5">
+                  {[
+                    { role: 'customer', label: 'Customer', icon: User, color: 'text-indigo-600 bg-indigo-50' },
+                    { role: 'agent', label: 'Agent', icon: Users, color: 'text-emerald-600 bg-emerald-50' },
+                    { role: 'super_agent', label: 'Super Agent', icon: Building2, color: 'text-violet-600 bg-violet-50' },
+                    { role: 'admin', label: 'Admin', icon: Shield, color: 'text-amber-600 bg-amber-50' },
+                  ].map((item) => (
+                    <button
+                      key={item.role}
+                      onClick={() => handleLogin(item.role)}
+                      className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl border border-slate-200 hover:border-indigo-200 hover:bg-slate-50 transition-all text-sm font-medium text-slate-700 group"
+                    >
+                      <span className={`w-7 h-7 rounded-lg ${item.color} flex items-center justify-center transition-transform group-hover:scale-110`}>
+                        <item.icon className="w-3.5 h-3.5" />
+                      </span>
+                      {item.label}
+                    </button>
+                  ))}
                 </div>
               </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Login As
-                </label>
-                <select
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                  value={loginForm.role}
-                  onChange={(e) => setLoginForm(prev => ({ ...prev, role: e.target.value }))}
-                >
-                  <option value="customer">Customer</option>
-                  <option value="agent">Agent</option>
-                  <option value="super_agent">Super Agent</option>
-                  <option value="master_agent">Master Agent</option>
-                  <option value="admin">Administrator</option>
-                </select>
-              </div>
-
-              <Button
-                onClick={() => handleLogin()}
-                disabled={isLoading}
-                className="w-full bg-gradient-to-r from-blue-600 to-green-600 hover:from-blue-700 hover:to-green-700 text-white py-3 text-lg"
-              >
-                {isLoading ? 'Signing In...' : 'Sign In'}
-              </Button>
             </div>
 
-            <div className="mt-8 pt-6 border-t border-gray-100">
-              <p className="text-center text-sm text-gray-600 mb-4">Quick Demo Access</p>
-              <div className="grid grid-cols-2 gap-3">
-                <Button variant="outline" onClick={() => handleLogin('customer')} className="text-sm">
-                  <User className="w-4 h-4 mr-2" />
-                  Customer
-                </Button>
-                <Button variant="outline" onClick={() => handleLogin('agent')} className="text-sm">
-                  <Users className="w-4 h-4 mr-2" />
-                  Agent
-                </Button>
-                <Button variant="outline" onClick={() => handleLogin('super_agent')} className="text-sm">
-                  <Building2 className="w-4 h-4 mr-2" />
-                  Super Agent
-                </Button>
-                <Button variant="outline" onClick={() => handleLogin('admin')} className="text-sm">
-                  <Shield className="w-4 h-4 mr-2" />
-                  Admin
-                </Button>
-              </div>
-              <p className="text-center text-xs text-gray-500 mt-4">
-                Demo credentials: any email + "password123"
-              </p>
-              <div className="flex items-center justify-center mt-2">
-                <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
-                <span className="text-xs text-green-600">Real API Integration Active</span>
-              </div>
+            <div className="flex items-center justify-center mt-5 gap-2">
+              <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse-glow" />
+              <span className="text-xs text-slate-500">Connected to production API</span>
             </div>
           </div>
         </div>
@@ -383,118 +414,145 @@ function App() {
 
   // Dashboard Screen
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-slate-50/80">
       <PWAInstallPrompt />
       <PWAStatusIndicator />
       <OfflineBanner />
-      
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center space-x-4">
-              <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-green-600 rounded-lg flex items-center justify-center">
-                <Building2 className="w-5 h-5 text-white" />
-              </div>
-              <h1 className="text-xl font-semibold text-gray-900">Agent Banking Network</h1>
+
+      {/* Sidebar */}
+      <aside className={`sidebar-nav ${sidebarOpen ? '' : 'max-lg:!-translate-x-full'} max-lg:${sidebarOpen ? 'open' : ''}`}>
+        <div className="p-5 pb-3">
+          <div className="flex items-center gap-3 mb-8">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shadow-lg shadow-indigo-500/20">
+              <Building2 className="w-5 h-5 text-white" />
             </div>
-            
-            <div className="flex items-center space-x-4">
-              <RealTimeNotifications userRole={currentUser?.role} />
-              <div className="flex items-center space-x-2 text-sm text-gray-600">
-                <User className="w-4 h-4" />
-                <span className="capitalize">{currentUser?.role} {currentUser?.role === 'admin' ? 'Administrator' : ''}</span>
-              </div>
-              <Button variant="ghost" onClick={handleLogout} size="sm">
-                <LogOut className="w-4 h-4 mr-2" />
-                Logout
-              </Button>
+            <div>
+              <h1 className="text-[15px] font-bold text-white tracking-tight">54Agent</h1>
+              <p className="text-[11px] text-slate-400">Banking Platform</p>
             </div>
           </div>
-        </div>
-      </header>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Navigation */}
-        <nav className="flex space-x-1 mb-8 bg-white rounded-lg p-1 shadow-sm">
+          <div className="mb-6">
+            <div className="flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-white/5">
+              <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-indigo-400 to-violet-500 flex items-center justify-center text-white text-sm font-bold">
+                {(currentUser?.role || 'U')[0].toUpperCase()}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-white truncate capitalize">{currentUser?.role?.replace('_', ' ')}</p>
+                <p className="text-[11px] text-slate-400">Online</p>
+              </div>
+              <div className="w-2 h-2 rounded-full bg-emerald-400" />
+            </div>
+          </div>
+
+          <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest mb-2 px-2">Navigation</p>
+        </div>
+
+        <nav className="px-3 pb-4 flex-1">
           {getNavigationItems().map((item) => {
             const IconComponent = item.icon
             return (
-              <button
+              <div
                 key={item.id}
-                className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                  currentView === item.id
-                    ? 'bg-blue-100 text-blue-700'
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                }`}
-                onClick={() => setCurrentView(item.id)}
+                className={`nav-item ${currentView === item.id ? 'active' : ''}`}
+                onClick={() => { setCurrentView(item.id); if (window.innerWidth < 1024) setSidebarOpen(false) }}
               >
-                <IconComponent className="w-4 h-4" />
+                <IconComponent className="w-[18px] h-[18px]" />
                 <span>{item.label}</span>
-              </button>
+              </div>
             )
           })}
         </nav>
 
+        <div className="p-4 mt-auto border-t border-white/5">
+          <div
+            className="nav-item text-red-400 hover:text-red-300 hover:bg-red-500/10"
+            onClick={handleLogout}
+          >
+            <LogOut className="w-[18px] h-[18px]" />
+            <span>Sign Out</span>
+          </div>
+        </div>
+      </aside>
+
+      {/* Main Content */}
+      <div className="main-content">
+        {/* Top Header Bar */}
+        <header className="sticky top-0 z-30 glass border-b border-slate-200/60">
+          <div className="flex items-center justify-between h-16 px-6 lg:px-8">
+            <div className="flex items-center gap-4">
+              <button onClick={() => setSidebarOpen(!sidebarOpen)} className="lg:hidden p-2 rounded-xl hover:bg-slate-100 transition-colors text-slate-600">
+                {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+              </button>
+              <div>
+                <h2 className="text-lg font-bold text-slate-900 tracking-tight capitalize">
+                  {currentView === 'dashboard' ? (currentUser?.role === 'customer' ? 'Account Overview' : currentUser?.role === 'agent' ? 'Agent Dashboard' : 'System Overview') : currentView.replace('_', ' ')}
+                </h2>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <div className="search-box hidden md:block">
+                <Search className="search-icon" />
+                <input type="text" placeholder="Search..." className="w-56" />
+              </div>
+              <RealTimeNotifications userRole={currentUser?.role} />
+              <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-100 text-xs font-medium text-slate-600">
+                <div className="w-2 h-2 rounded-full bg-emerald-400" />
+                <span className="capitalize">{currentUser?.role?.replace('_', ' ')}</span>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        <div className="p-6 lg:p-8">
         {/* Dashboard Content */}
         {currentView === 'dashboard' && (
-          <div className="space-y-8">
+          <div className="space-y-8 animate-fade-in-up">
             {/* Real-time Metrics */}
-            <div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">
-                {currentUser?.role === 'customer' ? 'Account Overview' : 
-                 currentUser?.role === 'agent' ? 'Agent Dashboard' : 'System Overview'}
-              </h2>
-              <RealTimeMetrics userRole={currentUser?.role} />
-            </div>
+            <RealTimeMetrics userRole={currentUser?.role} />
 
             {/* Real-time Transaction Feed */}
             <RealTimeTransactionFeed userRole={currentUser?.role} />
 
             {/* Role-specific content */}
             {currentUser?.role === 'customer' && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="bg-white rounded-lg shadow p-6">
-                  <h3 className="text-lg font-semibold mb-4">Account Details</h3>
-                  <div className="space-y-3">
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Account Number</span>
-                      <span className="font-medium">1234567890</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Account Type</span>
-                      <span className="font-medium">Savings</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Status</span>
-                      <Badge variant="success">Active</Badge>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">KYC Status</span>
-                      <Badge variant="success">Verified</Badge>
-                    </div>
+              <div className="space-y-6">
+                <div className="card-premium p-6 animate-fade-in-up stagger-1">
+                  <div className="flex items-center justify-between mb-5">
+                    <h3 className="text-base font-semibold text-slate-900">Account Details</h3>
+                    <Badge variant="success">Active</Badge>
+                  </div>
+                  <div className="space-y-3.5">
+                    {[
+                      { label: 'Account Number', value: '1234567890' },
+                      { label: 'Account Type', value: 'Savings' },
+                      { label: 'KYC Status', badge: true, variant: 'success', value: 'Verified' },
+                    ].map((item, i) => (
+                      <div key={i} className="flex justify-between items-center py-1">
+                        <span className="text-sm text-slate-500">{item.label}</span>
+                        {item.badge ? <Badge variant={item.variant}>{item.value}</Badge> : <span className="text-sm font-semibold text-slate-900">{item.value}</span>}
+                      </div>
+                    ))}
                   </div>
                 </div>
 
-                <div className="bg-white rounded-lg shadow p-6">
-                  <h3 className="text-lg font-semibold mb-4">Quick Actions</h3>
-                  <div className="grid grid-cols-2 gap-3">
-                    <Button variant="outline" className="h-12" onClick={() => setCurrentView('transactions')}>
-                      <TrendingUp className="w-4 h-4 mr-2" />
-                      Deposit
-                    </Button>
-                    <Button variant="outline" className="h-12" onClick={() => setCurrentView('transactions')}>
-                      <DollarSign className="w-4 h-4 mr-2" />
-                      Withdraw
-                    </Button>
-                    <Button variant="outline" className="h-12" onClick={() => setCurrentView('transactions')}>
-                      <CreditCard className="w-4 h-4 mr-2" />
-                      Transfer
-                    </Button>
-                    <Button variant="outline" className="h-12" onClick={() => setCurrentView('analytics')}>
-                      <BarChart3 className="w-4 h-4 mr-2" />
-                      Statement
-                    </Button>
+                <div>
+                  <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-3">Quick Actions</h3>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    {[
+                      { icon: ArrowUpRight, label: 'Deposit', color: 'bg-emerald-50 text-emerald-600', view: 'transactions' },
+                      { icon: ArrowDownRight, label: 'Withdraw', color: 'bg-amber-50 text-amber-600', view: 'transactions' },
+                      { icon: CreditCard, label: 'Transfer', color: 'bg-indigo-50 text-indigo-600', view: 'transactions' },
+                      { icon: BarChart3, label: 'Statement', color: 'bg-violet-50 text-violet-600', view: 'analytics' },
+                    ].map((action) => (
+                      <button key={action.label} onClick={() => setCurrentView(action.view)} className="quick-action-btn">
+                        <div className={`icon-wrap ${action.color}`}>
+                          <action.icon className="w-5 h-5" />
+                        </div>
+                        <span className="text-xs font-medium text-slate-700">{action.label}</span>
+                      </button>
+                    ))}
                   </div>
                 </div>
               </div>
@@ -502,101 +560,68 @@ function App() {
 
             {(currentUser?.role === 'super_agent'|| currentUser?.role === 'master_agent') && (
               <div className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                  <div className="bg-white rounded-lg shadow p-6">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                        <Users className="w-5 h-5 text-blue-600" />
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-600">Sub-Agents</p>
-                        <p className="text-2xl font-bold">24</p>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="bg-white rounded-lg shadow p-6">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-                        <DollarSign className="w-5 h-5 text-green-600" />
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-600">Float Balance</p>
-                        <p className="text-2xl font-bold">{formatCurrency(2500000)}</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {[
+                    { icon: Users, label: 'Sub-Agents', value: '24', trend: '+3 this month', gradient: 'from-indigo-500 to-violet-600', shadow: 'shadow-indigo-500/20' },
+                    { icon: Wallet, label: 'Float Balance', value: formatCurrency(2500000), trend: '+12% vs last month', gradient: 'from-emerald-500 to-teal-600', shadow: 'shadow-emerald-500/20' },
+                    { icon: TrendingUp, label: 'Monthly Volume', value: formatCurrency(15800000), trend: '+18% growth', gradient: 'from-violet-500 to-purple-600', shadow: 'shadow-violet-500/20' },
+                    { icon: Award, label: 'Commission (MTD)', value: formatCurrency(185000), trend: 'On target', gradient: 'from-amber-500 to-orange-600', shadow: 'shadow-amber-500/20' },
+                  ].map((card, i) => (
+                    <div key={i} className={`stat-card bg-gradient-to-br ${card.gradient} shadow-lg ${card.shadow} animate-fade-in-up stagger-${i + 1}`}>
+                      <div className="relative z-10">
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center">
+                            <card.icon className="w-5 h-5 text-white" />
+                          </div>
+                          <ChevronRight className="w-4 h-4 text-white/50" />
+                        </div>
+                        <p className="text-sm text-white/70 mb-1">{card.label}</p>
+                        <p className="text-xl font-bold text-white">{card.value}</p>
+                        <p className="text-xs text-white/60 mt-1">{card.trend}</p>
                       </div>
                     </div>
-                  </div>
-                  <div className="bg-white rounded-lg shadow p-6">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
-                        <TrendingUp className="w-5 h-5 text-purple-600" />
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-600">Monthly Volume</p>
-                        <p className="text-2xl font-bold">{formatCurrency(15800000)}</p>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="bg-white rounded-lg shadow p-6">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center">
-                        <Award className="w-5 h-5 text-yellow-600" />
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-600">Commission (MTD)</p>
-                        <p className="text-2xl font-bold">{formatCurrency(185000)}</p>
-                      </div>
-                    </div>
-                  </div>
+                  ))}
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="bg-white rounded-lg shadow p-6">
-                    <h3 className="text-lg font-semibold mb-4">Super Agent Profile</h3>
-                    <div className="space-y-3">
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Agent Code</span>
-                        <span className="font-medium">SA-LG-001</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Territory</span>
-                        <span className="font-medium">Lagos & Ogun States</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Tier</span>
-                        <Badge variant="default">Super Agent</Badge>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">KYC Status</span>
-                        <Badge variant="success">Verified</Badge>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">KYB Status</span>
-                        <Badge variant="success">Verified</Badge>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Transaction Limit</span>
-                        <span className="font-medium">{formatCurrency(5000000)}/day</span>
-                      </div>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <div className="card-premium p-6 animate-fade-in-up stagger-3">
+                    <div className="flex items-center justify-between mb-5">
+                      <h3 className="text-base font-semibold text-slate-900">Agent Profile</h3>
+                      <Badge variant="default">Super Agent</Badge>
+                    </div>
+                    <div className="space-y-3.5">
+                      {[
+                        { label: 'Agent Code', value: 'SA-LG-001' },
+                        { label: 'Territory', value: 'Lagos & Ogun States' },
+                        { label: 'KYC Status', badge: true, variant: 'success', value: 'Verified' },
+                        { label: 'KYB Status', badge: true, variant: 'success', value: 'Verified' },
+                        { label: 'Transaction Limit', value: `${formatCurrency(5000000)}/day` },
+                      ].map((item, i) => (
+                        <div key={i} className="flex justify-between items-center py-1">
+                          <span className="text-sm text-slate-500">{item.label}</span>
+                          {item.badge ? <Badge variant={item.variant}>{item.value}</Badge> : <span className="text-sm font-semibold text-slate-900">{item.value}</span>}
+                        </div>
+                      ))}
                     </div>
                   </div>
 
-                  <div className="bg-white rounded-lg shadow p-6">
-                    <h3 className="text-lg font-semibold mb-4">Recent Onboarding Activity</h3>
-                    <div className="space-y-3">
+                  <div className="card-premium p-6 animate-fade-in-up stagger-4">
+                    <h3 className="text-base font-semibold text-slate-900 mb-5">Recent Onboarding</h3>
+                    <div className="space-y-2">
                       {[
                         { name: 'Adebayo Johnson', tier: 'Field Agent', status: 'approved', date: '2024-01-15' },
                         { name: 'Fatima Ibrahim', tier: 'Sub Agent', status: 'under_review', date: '2024-01-14' },
                         { name: 'Chukwu Emmanuel', tier: 'Field Agent', status: 'submitted', date: '2024-01-13' },
                         { name: 'Ngozi Okafor', tier: 'Sub Agent', status: 'approved', date: '2024-01-12' },
                       ].map((app, i) => (
-                        <div key={i} className="flex items-center justify-between p-2 rounded-lg hover:bg-gray-50">
-                          <div className="flex items-center space-x-3">
-                            <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                              <User className="w-4 h-4 text-blue-600" />
+                        <div key={i} className="flex items-center justify-between p-3 rounded-xl hover:bg-slate-50 transition-colors group cursor-pointer">
+                          <div className="flex items-center gap-3">
+                            <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-indigo-100 to-violet-100 flex items-center justify-center text-indigo-600 text-xs font-bold">
+                              {app.name.split(' ').map(n => n[0]).join('')}
                             </div>
                             <div>
-                              <p className="text-sm font-medium">{app.name}</p>
-                              <p className="text-xs text-gray-500">{app.tier} - {app.date}</p>
+                              <p className="text-sm font-medium text-slate-900">{app.name}</p>
+                              <p className="text-xs text-slate-400">{app.tier} · {app.date}</p>
                             </div>
                           </div>
                           <Badge variant={app.status === 'approved' ? 'success' : app.status === 'under_review' ? 'warning' : 'default'}>
@@ -611,97 +636,101 @@ function App() {
             )}
 
             {currentUser?.role === 'agent' && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="bg-white rounded-lg shadow p-6">
-                  <h3 className="text-lg font-semibold mb-4">Agent Profile</h3>
-                  <div className="space-y-3">
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Agent Code</span>
-                      <span className="font-medium">AG001</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Location</span>
-                      <span className="font-medium">Lagos, Nigeria</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Tier</span>
-                      <Badge variant="default">Super Agent</Badge>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Status</span>
-                      <Badge variant="success">Active</Badge>
-                    </div>
+              <div className="space-y-6">
+                <div className="card-premium p-6 animate-fade-in-up stagger-1">
+                  <div className="flex items-center justify-between mb-5">
+                    <h3 className="text-base font-semibold text-slate-900">Agent Profile</h3>
+                    <Badge variant="success">Active</Badge>
+                  </div>
+                  <div className="space-y-3.5">
+                    {[
+                      { label: 'Agent Code', value: 'AG001' },
+                      { label: 'Location', value: 'Lagos, Nigeria' },
+                      { label: 'Tier', badge: true, variant: 'default', value: 'Super Agent' },
+                    ].map((item, i) => (
+                      <div key={i} className="flex justify-between items-center py-1">
+                        <span className="text-sm text-slate-500">{item.label}</span>
+                        {item.badge ? <Badge variant={item.variant}>{item.value}</Badge> : <span className="text-sm font-semibold text-slate-900">{item.value}</span>}
+                      </div>
+                    ))}
                   </div>
                 </div>
 
-                <div className="bg-white rounded-lg shadow p-6">
-                  <h3 className="text-lg font-semibold mb-4">Agent Actions</h3>
-                  <div className="grid grid-cols-2 gap-3">
-                    <Button variant="outline" className="h-12" onClick={() => setCurrentView('customers')}>
-                      <Users className="w-4 h-4 mr-2" />
-                      New Customer
-                    </Button>
-                    <Button variant="outline" className="h-12" onClick={() => setCurrentView('transactions')}>
-                      <CreditCard className="w-4 h-4 mr-2" />
-                      Process Transaction
-                    </Button>
-                    <Button variant="outline" className="h-12" onClick={() => setCurrentView('cash')}>
-                      <DollarSign className="w-4 h-4 mr-2" />
-                      Cash Request
-                    </Button>
-                    <Button variant="outline" className="h-12" onClick={() => setCurrentView('analytics')}>
-                      <BarChart3 className="w-4 h-4 mr-2" />
-                      View Reports
-                    </Button>
+                <div>
+                  <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-3">Quick Actions</h3>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    {[
+                      { icon: UserPlus, label: 'New Customer', color: 'bg-indigo-50 text-indigo-600', view: 'customers' },
+                      { icon: CreditCard, label: 'Transaction', color: 'bg-emerald-50 text-emerald-600', view: 'transactions' },
+                      { icon: DollarSign, label: 'Cash Request', color: 'bg-amber-50 text-amber-600', view: 'cash' },
+                      { icon: BarChart3, label: 'Reports', color: 'bg-violet-50 text-violet-600', view: 'analytics' },
+                    ].map((action) => (
+                      <button key={action.label} onClick={() => setCurrentView(action.view)} className="quick-action-btn">
+                        <div className={`icon-wrap ${action.color}`}>
+                          <action.icon className="w-5 h-5" />
+                        </div>
+                        <span className="text-xs font-medium text-slate-700">{action.label}</span>
+                      </button>
+                    ))}
                   </div>
                 </div>
               </div>
             )}
 
             {currentUser?.role === 'admin' && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="bg-white rounded-lg shadow p-6">
-                  <h3 className="text-lg font-semibold mb-4">Security Alerts</h3>
-                  <div className="space-y-3">
-                    <div className="flex items-start space-x-3 p-3 bg-red-50 rounded-lg">
-                      <AlertTriangle className="w-5 h-5 text-red-500 mt-0.5" />
-                      <div>
-                        <p className="text-sm font-medium text-red-800">High-risk transaction detected</p>
-                        <p className="text-xs text-red-600">Agent AG045 • ₦500,000 withdrawal</p>
-                      </div>
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <div className="card-premium p-6 animate-fade-in-up stagger-1">
+                    <div className="flex items-center justify-between mb-5">
+                      <h3 className="text-base font-semibold text-slate-900">Security Alerts</h3>
+                      <Badge variant="destructive">2 active</Badge>
                     </div>
-                    <div className="flex items-start space-x-3 p-3 bg-yellow-50 rounded-lg">
-                      <AlertTriangle className="w-5 h-5 text-yellow-500 mt-0.5" />
-                      <div>
-                        <p className="text-sm font-medium text-yellow-800">Unusual activity pattern</p>
-                        <p className="text-xs text-yellow-600">Multiple failed login attempts</p>
+                    <div className="space-y-3">
+                      <div className="flex items-start gap-3 p-3.5 bg-rose-50 rounded-xl border border-rose-100">
+                        <div className="w-8 h-8 rounded-lg bg-rose-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                          <AlertTriangle className="w-4 h-4 text-rose-600" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-rose-900">High-risk transaction detected</p>
+                          <p className="text-xs text-rose-500 mt-0.5">Agent AG045 · ₦500,000 withdrawal</p>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-3 p-3.5 bg-amber-50 rounded-xl border border-amber-100">
+                        <div className="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                          <AlertTriangle className="w-4 h-4 text-amber-600" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-amber-900">Unusual activity pattern</p>
+                          <p className="text-xs text-amber-500 mt-0.5">Multiple failed login attempts</p>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
 
-                <div className="bg-white rounded-lg shadow p-6">
-                  <h3 className="text-lg font-semibold mb-4">System Status</h3>
-                  <div className="space-y-3">
-                    <div className="flex justify-between items-center">
-                      <span className="text-gray-600">API Gateway</span>
-                      <Badge variant="success">online</Badge>
+                  <div className="card-premium p-6 animate-fade-in-up stagger-2">
+                    <div className="flex items-center justify-between mb-5">
+                      <h3 className="text-base font-semibold text-slate-900">System Status</h3>
+                      <Badge variant="success">Operational</Badge>
                     </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-gray-600">Database</span>
-                      <Badge variant="success">online</Badge>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-gray-600">Payment Processing</span>
-                      <Badge variant="success">online</Badge>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-gray-600">Fraud Detection</span>
-                      <Badge variant="warning">degraded</Badge>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-gray-600">Online Agents</span>
-                      <span className="text-sm font-medium">892/1156</span>
+                    <div className="space-y-3">
+                      {[
+                        { name: 'API Gateway', status: 'online' },
+                        { name: 'Database', status: 'online' },
+                        { name: 'Payment Processing', status: 'online' },
+                        { name: 'Fraud Detection', status: 'degraded' },
+                      ].map((svc, i) => (
+                        <div key={i} className="flex justify-between items-center py-1.5">
+                          <div className="flex items-center gap-2.5">
+                            <div className={`w-2 h-2 rounded-full ${svc.status === 'online' ? 'bg-emerald-400' : 'bg-amber-400'}`} />
+                            <span className="text-sm text-slate-600">{svc.name}</span>
+                          </div>
+                          <Badge variant={svc.status === 'online' ? 'success' : 'warning'}>{svc.status}</Badge>
+                        </div>
+                      ))}
+                      <div className="flex justify-between items-center py-1.5 mt-2 pt-3 border-t border-slate-100">
+                        <span className="text-sm text-slate-600">Online Agents</span>
+                        <span className="text-sm font-bold text-slate-900">892 <span className="font-normal text-slate-400">/ 1,156</span></span>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -726,6 +755,7 @@ function App() {
         {currentView === 'agents' && <AgentsPage formatCurrency={formatCurrency} userRole={currentUser?.role} />}
         {currentView === 'system' && <SystemPage />}
         {currentView === 'security' && <SecurityPage />}
+        </div>
       </div>
     </div>
   )
