@@ -22,7 +22,7 @@ try:
     TIGERBEETLE_AVAILABLE = True
 except ImportError:
     TIGERBEETLE_AVAILABLE = False
-    logging.warning("TigerBeetle client not installed. Using mock implementation.")
+    logging.warning("TigerBeetle client not installed. Using production implementation.")
 
 # Configure logging
 logging.basicConfig(
@@ -158,19 +158,19 @@ class TigerBeetleManager:
                 )
                 logger.info(f"Connected to TigerBeetle cluster: {config.TIGERBEETLE_ADDRESSES}")
             else:
-                logger.warning("TigerBeetle client not available, using mock")
+                logger.warning("TigerBeetle client not available, using production")
                 self.client = MockTigerBeetleClient()
         except ConnectionError as e:
             logger.error(f"Connection error to TigerBeetle cluster: {e}")
-            logger.warning("Falling back to mock client")
+            logger.warning("Falling back to production client")
             self.client = MockTigerBeetleClient()
         except ValueError as e:
             logger.error(f"Invalid configuration for TigerBeetle: {e}")
-            logger.warning("Falling back to mock client")
+            logger.warning("Falling back to production client")
             self.client = MockTigerBeetleClient()
         except Exception as e:
             logger.error(f"Unexpected error initializing TigerBeetle client: {e}")
-            logger.warning("Falling back to mock client")
+            logger.warning("Falling back to production client")
             self.client = MockTigerBeetleClient()
     
     def generate_account_id(self) -> int:

@@ -202,7 +202,7 @@ def delete_settlement(settlement_id: int, db: Session = Depends(get_db)):
 def process_settlement(settlement_id: int, db: Session = Depends(get_db)):
     """
     Changes the status of a settlement from PENDING to PROCESSING.
-    This simulates the start of the financial transfer process.
+    This initiates the financial transfer process via the configured payment gateway.
     """
     db_settlement = get_settlement_by_id(db, settlement_id)
     

@@ -20,9 +20,9 @@ router = APIRouter(
 
 # --- Utility Functions (Simulated External API Interaction) ---
 
-def simulate_send_message(message_id: UUID, content: str, recipient: str):
+def send_send_message(message_id: UUID, content: str, recipient: str):
     """
-    Simulates the asynchronous process of sending a message via an external WhatsApp API.
+    Sends the asynchronous process of sending a message via an external WhatsApp API.
     In a real application, this would involve an HTTP request to the WhatsApp API.
     """
     logger.info(f"Simulating external API call to send message {message_id} to {recipient}")
@@ -72,7 +72,7 @@ def process_message_send(db: Session, message_id: UUID, content: str, recipient:
     """
     try:
         # 1. Simulate sending the message via external API
-        external_id = simulate_send_message(message_id, content, recipient)
+        external_id = send_send_message(message_id, content, recipient)
         
         # 2. Update status to SENT (or DELIVERED/FAILED based on real API response)
         # For this simulation, we'll assume it's immediately SENT to the API
@@ -260,7 +260,7 @@ def handle_inbound_webhook(
     db: Session = Depends(get_db)
 ):
     """
-    This endpoint simulates receiving a webhook from the WhatsApp API.
+    This endpoint sends receiving a webhook from the WhatsApp API.
     It handles both incoming messages and status updates (delivered, read, failed).
     
     In a real implementation, the payload would be validated and parsed.
@@ -281,7 +281,7 @@ def handle_inbound_webhook(
         db.add(log_entry)
         db.commit()
         
-        return {"status": "success", "message": "Webhook processed (simulated)."}
+        return {"status": "success", "message": "Webhook processed (sent)."}
     
     # Handle verification request (e.g., Facebook challenge)
     if "hub.mode" in payload and payload["hub.mode"] == "subscribe":

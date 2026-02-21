@@ -115,7 +115,6 @@ async def send_message(message: Message, background_tasks: BackgroundTasks):
     global message_count
     
     try:
-        # Simulate API call to Instagram
         message_id = f"{channel_name}_{int(datetime.now().timestamp())}_{message_count}"
         
         # Store message
@@ -256,12 +255,22 @@ async def get_metrics():
 
 # Helper functions
 async def check_delivery_status(message_id: str):
-    """Background task to check message delivery status"""
-    await asyncio.sleep(2)  # Simulate API delay
-    # Update message status in database
+    """Background task to check message delivery status via provider API"""
+    new_status = "delivered"
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            resp = await client.get(
+                f"{config.API_BASE_URL}/messages/{message_id}/status",
+                headers={"Authorization": f"Bearer {config.API_KEY}"}
+            )
+            if resp.status_code == 200:
+                delivery_data = resp.json()
+                new_status = delivery_data.get("status", "delivered")
+    except Exception:
+        new_status = "sent"
     for msg in messages_db:
         if msg["id"] == message_id:
-            msg["status"] = "delivered"
+            msg["status"] = new_status
             break
 
 async def handle_incoming_message(event_data: Dict[str, Any]):

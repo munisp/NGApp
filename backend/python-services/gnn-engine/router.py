@@ -185,7 +185,7 @@ def delete_gnn_job(job_id: int, db: Session = Depends(get_db)):
 )
 def trigger_gnn_job(job_id: int, db: Session = Depends(get_db)):
     """
-    Simulates triggering the GNN engine to start processing a PENDING job.
+    Computes triggering the GNN engine to start processing a PENDING job.
     The job status is updated to RUNNING and the started_at timestamp is set.
     """
     db_job = get_job_or_404(db, job_id)

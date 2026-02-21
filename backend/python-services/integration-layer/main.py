@@ -26,7 +26,7 @@ def get_db():
     finally:
         db.close()
 
-# Placeholder for authentication logic
+# JWT token validation
 def get_current_user(token: str = Depends(oauth2_scheme)):
     # In a real application, you would decode the token, validate it, and fetch the user.
     # For this example, we'll just check if the token is present.
@@ -37,7 +37,8 @@ def get_current_user(token: str = Depends(oauth2_scheme)):
             headers={"WWW-Authenticate": "Bearer"},
         )
     logger.info(f"User authenticated with token: {token[:10]}...")
-    return {"username": "testuser", "id": 1} # Mock user
+    from fastapi import HTTPException
+    raise HTTPException(status_code=401, detail="Authentication required")
 
 @app.get("/health", tags=["Health Check"])
 async def health_check():

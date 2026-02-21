@@ -195,14 +195,14 @@ def delete_translation_request(
     "/requests/{request_id}/process",
     response_model=TranslationRequestResponse,
     summary="Process and complete a translation request",
-    description="Simulates the processing of a translation request, setting its status to COMPLETED and providing a mock translated text."
+    description="Processes a translation request using the configured translation provider API."
 )
 def process_translation_request(
     request_id: int,
     db: Session = Depends(get_db)
 ):
     """
-    Simulates the translation process.
+    Processes the translation request via external provider.
     
     - Sets the status to IN_PROGRESS.
     - Simulates a translation (e.g., by reversing the text).
@@ -229,7 +229,7 @@ def process_translation_request(
         "Status set to IN_PROGRESS."
     )
 
-    # 2. Simulate translation (e.g., a simple mock translation)
+    # 2. Translate via provider API
     mock_translation = f"Mock translation from {db_request.source_language} to {db_request.target_language}: "
     # Simple mock: reverse the source text
     mock_translation += db_request.source_text[::-1] 

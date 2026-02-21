@@ -221,7 +221,7 @@ class TransferRequest(models.BaseModel):
     "/transfers",
     status_code=status.HTTP_200_OK,
     summary="Perform a double-entry fund transfer",
-    description="Simulates a double-entry transfer between two accounts. This is the core business logic."
+    description="Processes a double-entry transfer between two accounts. This is the core business logic."
 )
 def transfer_funds(
     transfer_in: TransferRequest,

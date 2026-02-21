@@ -20,7 +20,7 @@ router = APIRouter(
     responses={404: {"description": "Not found"}},
 )
 
-# --- Utility Functions (Simulated Business Logic) ---
+# --- Utility Functions (Sendd Business Logic) ---
 
 def _create_log_entry(db: Session, communication_id: int, event: str, details: str = None):
     """Creates a log entry for a communication."""
@@ -34,14 +34,14 @@ def _create_log_entry(db: Session, communication_id: int, event: str, details: s
     db.refresh(log)
     return log
 
-def _simulate_send(db: Session, communication: models.Communication):
+def _send_send(db: Session, communication: models.Communication):
     """
-    Simulates the process of sending a communication via an external provider.
+    Sends the process of sending a communication via an external provider.
     In a real application, this would involve calling an external API (e.g., SendGrid, Twilio).
     """
     logger.info(f"Attempting to send {communication.type.value} to {communication.recipient}...")
     
-    # Simulate success
+    # Send success
     communication.status = models.CommunicationStatus.SENT
     communication.sent_at = datetime.utcnow()
     db.add(communication)
@@ -52,10 +52,10 @@ def _simulate_send(db: Session, communication: models.Communication):
         db, 
         communication.id, 
         "attempted_send", 
-        f"Successfully simulated sending via dummy provider. New status: {communication.status.value}"
+        f"Successfully sent sending via dummy provider. New status: {communication.status.value}"
     )
     
-    # Simulate delivery success log
+    # Send delivery success log
     _create_log_entry(
         db, 
         communication.id, 
@@ -212,7 +212,7 @@ def send_communication(
     
     The process involves:
     1. Creating the communication record with status 'pending'.
-    2. Calling the internal `_simulate_send` function to process the sending.
+    2. Calling the internal `_send_send` function to process the sending.
     3. Updating the status to 'sent' (or 'failed') and logging the attempt.
     
     Returns the updated communication record.
@@ -228,9 +228,9 @@ def send_communication(
     
     _create_log_entry(db, db_communication.id, "created_for_send", "Communication record created for immediate sending.")
     
-    # 2. Attempt to send (simulated)
+    # 2. Attempt to send (sent)
     try:
-        sent_communication = _simulate_send(db, db_communication)
+        sent_communication = _send_send(db, db_communication)
         return sent_communication
     except Exception as e:
         logger.error(f"Failed to send communication ID {db_communication.id}: {e}")

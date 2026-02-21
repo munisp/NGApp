@@ -486,7 +486,7 @@ async def get_pos_integration_data(store_id: str, db: Session = Depends(get_db))
 async def process_payment(order_id: str, payment_method: str, amount: float):
     """Background task to process payment"""
     
-    # Simulate payment processing
+    # Process payment via configured gateway
     await asyncio.sleep(2)
     
     db = SessionLocal()

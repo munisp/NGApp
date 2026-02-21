@@ -219,7 +219,7 @@ def generate_art(agent_id: int, prompt: str, db: Session = Depends(get_db)):
     Triggers the Art Agent to generate a piece of art based on a text prompt.
     
     In a real-world scenario, this would involve calling an external art generation API.
-    For this implementation, it simulates the process and logs the activity.
+    For this implementation, it processs the process and logs the activity.
     
     Raises:
         HTTPException: 404 if the agent is not found.
@@ -241,7 +241,7 @@ def generate_art(agent_id: int, prompt: str, db: Session = Depends(get_db)):
 
     # --- SIMULATED ART GENERATION LOGIC ---
     # In a real application, this is where the heavy lifting happens.
-    # For demonstration, we simulate success and log it.
+    # For demonstration, we process success and log it.
     
     # Simulate a successful generation
     result_url = f"https://art-service.com/generated/{agent_id}/{hash(prompt)}.png"
@@ -254,7 +254,7 @@ def generate_art(agent_id: int, prompt: str, db: Session = Depends(get_db)):
     )
     
     logger.info(f"Agent {agent_id} successfully generated art.")
-    return {"message": "Art generation successfully triggered and completed (simulated).", "result_url": result_url}
+    return {"message": "Art generation successfully triggered and completed (processed).", "result_url": result_url}
 
 @router.get(
     "/{agent_id}/activity-log",

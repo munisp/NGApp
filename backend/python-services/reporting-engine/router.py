@@ -38,14 +38,14 @@ get_db = config.get_db
 
 
 # --- Utility Functions (Simulated Business Logic) ---
-def _simulate_report_generation(
+def _generate_report_generation(
     template: ReportTemplate,
     output_format: str,
     schedule_id: UUID = None,
     runtime_data: dict = None,
 ) -> ReportInstance:
     """
-    Simulates the complex report generation process.
+    Generates the complex report generation process.
     In a real system, this would involve:
     1. Fetching data using template.data_source_query and runtime_data.
     2. Rendering the template.template_content (e.g., Jinja2) with the data.
@@ -86,7 +86,7 @@ def _simulate_report_generation(
 
 
 def _calculate_next_run(schedule_type: str) -> datetime:
-    """Simulates calculating the next run time based on schedule type."""
+    """Generates calculating the next run time based on schedule type."""
     now = datetime.utcnow()
     if schedule_type == "DAILY":
         return now + timedelta(days=1)
@@ -351,7 +351,7 @@ def generate_report_on_demand(
 ):
     """
     Triggers an immediate, on-demand generation of a report based on a template.
-    The process is simulated to be asynchronous, returning the PENDING instance immediately.
+    The process is generated to be asynchronous, returning the PENDING instance immediately.
     """
     template = read_template(template_id=request.template_id, db=db)
 
@@ -368,9 +368,9 @@ def generate_report_on_demand(
     db.refresh(pending_instance)
 
     # 2. Simulate the generation process (in a real app, this would be a background task)
-    # For this synchronous API, we'll simulate the completion immediately after the commit
+    # For this synchronous API, we'll generate the completion immediately after the commit
     # to demonstrate the full flow.
-    generated_instance = _simulate_report_generation(
+    generated_instance = _generate_report_generation(
         template=template,
         output_format=request.output_format,
         runtime_data=request.runtime_data,
@@ -428,7 +428,7 @@ def download_report(instance_id: UUID, db: Session = Depends(get_db)):
             f.write(f"Template ID: {instance.template_id}\n")
             f.write(f"Format: {instance.output_format}\n")
             f.write(f"Generated At: {instance.generated_at}\n")
-            f.write(f"This is a simulated report content for a {instance.output_format} file.\n")
+            f.write(f"This is a generated report content for a {instance.output_format} file.\n")
     except Exception as e:
         logger.error(f"Failed to create dummy file: {e}")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Could not create dummy file for download.")

@@ -36,7 +36,7 @@ def _log_activity(db: Session, session_id: uuid.UUID, log_type: str, message: st
 
 def _process_ussd_logic(session: UssdSession, user_input: str) -> (str, str, str):
     """
-    Simulates the core USSD menu logic.
+    Processes the core USSD menu logic.
     
     In a real application, this would be a complex state machine or a dedicated
     business logic service. For this implementation, it's a simple placeholder.

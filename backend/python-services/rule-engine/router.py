@@ -181,7 +181,7 @@ class RuleExecutionResponse(models.BaseModel):
 @router.post("/execute", response_model=RuleExecutionResponse)
 def execute_rules(request: RuleExecutionRequest, db: Session = Depends(get_db)):
     """
-    Simulates the execution of active rules for a given tenant against an event payload.
+    Evaluates the execution of active rules for a given tenant against an event payload.
     
     This endpoint represents the core business logic of the rule engine.
     In a real-world scenario, this would involve complex rule parsing and evaluation.

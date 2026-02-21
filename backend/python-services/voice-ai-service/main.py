@@ -438,7 +438,7 @@ async def get_metrics():
 # Helper functions
 async def check_delivery_status(message_id: str):
     """Background task to check message delivery status"""
-    await asyncio.sleep(2)  # Simulate API delay
+    pass
     # Update message status in database
     for msg in messages_db:
         if msg["id"] == message_id:

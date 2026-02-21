@@ -177,7 +177,7 @@ def delete_ocr_job(job_id: uuid.UUID, db: Session = Depends(get_db)):
 )
 def process_ocr_job(job_id: uuid.UUID, db: Session = Depends(get_db)):
     """
-    Simulates the start of the OCR processing workflow for a PENDING job.
+    Processes the start of the OCR processing workflow for a PENDING job.
     
     In a real-world scenario, this would trigger an asynchronous worker process.
     For this API, it simply updates the status to PROCESSING.

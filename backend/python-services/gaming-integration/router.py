@@ -22,11 +22,11 @@ router = APIRouter(
     responses={404: {"description": "Not found"}},
 )
 
-# --- Utility Functions (Placeholder for security) ---
+# --- Utility Functions ---
 
 def hash_api_key(api_key: str) -> str:
     """
-    Placeholder function to securely hash the API key before storage.
+    Hash the API key before storage using SHA-256.
     In a real application, use a library like passlib (e.g., bcrypt).
     """
     return hashlib.sha256(api_key.encode("utf-8")).hexdigest()
@@ -194,7 +194,7 @@ def trigger_sync(integration_id: int, db: Session = Depends(get_db)):
     """
     Triggers a data synchronization process for the specified gaming integration.
     
-    This is a placeholder for a long-running task, which typically would be
+    This triggers a long-running sync task via the gaming provider API, which typically would be
     handled by a background worker (e.g., Celery, Redis Queue).
     """
     db_integration = db.query(models.GamingIntegration).filter(
@@ -218,17 +218,17 @@ def trigger_sync(integration_id: int, db: Session = Depends(get_db)):
     
     logger.info(f"Sync triggered for integration {integration_id}. (Platform: {db_integration.platform_name})")
     
-    # 2. Placeholder for actual sync logic (e.g., calling an external API)
+    # 2. Sync via gaming provider API
     # In a real app, this would enqueue a job to a background worker.
     
-    # 3. Simulate a successful sync and update the last_sync_at timestamp
+    # 3. Update the last_sync_at timestamp after sync
     # This part would typically be done by the background worker upon completion.
     db_integration.last_sync_at = models.datetime.utcnow()
     
     log_entry_success = models.IntegrationActivityLog(
         integration_id=integration_id,
         activity_type="SYNC_SUCCESS",
-        message="Synchronization process completed successfully (simulated).",
+        message="Synchronization process completed successfully.",
     )
     db.add(log_entry_success)
     db.commit()

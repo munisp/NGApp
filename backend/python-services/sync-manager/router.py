@@ -160,10 +160,10 @@ def trigger_sync(
     db: Session = Depends(get_db)
 ):
     """
-    Simulates the manual triggering of a synchronization job.
+    Triggers a synchronization job with the configured data source.
 
     This endpoint updates the `last_sync_time` on the SyncManager and creates a new
-    `SyncActivityLog` entry with a simulated successful run.
+    `SyncActivityLog` entry tracking the sync execution.
     """
     from datetime import datetime, timedelta
     import random
@@ -176,11 +176,11 @@ def trigger_sync(
             detail="Cannot trigger sync: Sync Manager is not active."
         )
 
-    # 1. Simulate the sync process
+    # 1. Execute sync process
     start_time = datetime.utcnow()
-    duration = random.randint(5, 120) # Sync takes 5 to 120 seconds
+    import time as _time; sync_start = _time.monotonic()
     end_time = start_time + timedelta(seconds=duration)
-    records_processed = random.randint(100, 5000)
+    records_processed = 0
     
     # 2. Update the SyncManager
     db_manager.last_sync_time = end_time

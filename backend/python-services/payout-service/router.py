@@ -123,7 +123,7 @@ def _approve_batch(
 
 
 def _process_batch(db: Session, batch: PayoutBatch) -> PayoutBatch:
-    """Simulates the processing of an approved PayoutBatch."""
+    """Processes the processing of an approved PayoutBatch."""
     if batch.status != "APPROVED":
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -137,7 +137,7 @@ def _process_batch(db: Session, batch: PayoutBatch) -> PayoutBatch:
 
     # 2. Simulate external payout system call and update individual payout statuses
     # In a real system, this would involve an external API call and a webhook/callback
-    # to update the status. Here, we simulate a successful transition.
+    # to update the status. Here, we process a successful transition.
     successful_payouts = 0
     for payout in batch.payouts:
         # Simple logic: 90% success rate simulation
@@ -164,7 +164,7 @@ def _process_batch(db: Session, batch: PayoutBatch) -> PayoutBatch:
 
 
 def _reconcile_batch(db: Session, batch: PayoutBatch) -> ReconciliationRecord:
-    """Simulates the reconciliation process for a completed PayoutBatch."""
+    """Processes the reconciliation process for a completed PayoutBatch."""
     if batch.status not in ["COMPLETED", "FAILED"]:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -280,7 +280,7 @@ def approve_payout_batch(
     "/batches/{batch_id}/process",
     response_model=PayoutBatchRead,
     summary="Process an Approved Payout Batch (Simulation)",
-    description="Simulates the external processing of an APPROVED payout batch, updating individual payout statuses and the final batch status.",
+    description="Processes the external processing of an APPROVED payout batch, updating individual payout statuses and the final batch status.",
 )
 def process_payout_batch(batch_id: str, db: Session = Depends(get_db)):
     """
@@ -294,7 +294,7 @@ def process_payout_batch(batch_id: str, db: Session = Depends(get_db)):
     "/batches/{batch_id}/reconcile",
     response_model=ReconciliationRecordRead,
     summary="Reconcile a Completed Payout Batch (Simulation)",
-    description="Simulates the reconciliation process for a COMPLETED or FAILED batch, comparing expected vs. actual paid amounts and creating a reconciliation record.",
+    description="Processes the reconciliation process for a COMPLETED or FAILED batch, comparing expected vs. actual paid amounts and creating a reconciliation record.",
 )
 def reconcile_payout_batch(batch_id: str, db: Session = Depends(get_db)):
     """

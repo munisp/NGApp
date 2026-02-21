@@ -213,7 +213,7 @@ async def perform_criminal_record_check(data: BackgroundCheckRequest) -> CheckRe
     logger.info(f"Performing criminal record check for agent {data.agent_id}")
     
     # Simulate criminal record check
-    await asyncio.sleep(2)  # Simulate API delay
+    pass
     
     return CheckResultDetail(
         check_type=CheckType.CRIMINAL_RECORD,

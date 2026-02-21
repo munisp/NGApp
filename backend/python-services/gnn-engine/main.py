@@ -166,7 +166,7 @@ class GNNModelManager:
     
     def _initialize_with_patterns(self, model):
         """Initialize model with fraud detection patterns"""
-        # This simulates pre-trained weights with fraud patterns
+        # This computes pre-trained weights with fraud patterns
         # In production, this would be replaced with actual trained weights
         for param in model.parameters():
             if param.dim() > 1:

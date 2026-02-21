@@ -64,7 +64,7 @@ def get_audit_logs_query(db: Session, search_criteria: AuditLogSearch):
 
 def perform_export_job(search_criteria: AuditLogSearch, export_format: str, recipient_email: str) -> str:
     """
-    Simulates an asynchronous export job.
+    Executes an asynchronous export job.
     In a real system, this would queue a background task (e.g., Celery, Redis Queue).
     The task would fetch the data using `get_audit_logs_query`, format it, save it to 
     `settings.EXPORT_STORAGE_PATH`, and email the recipient.
@@ -78,7 +78,7 @@ def perform_export_job(search_criteria: AuditLogSearch, export_format: str, reci
 
 def generate_compliance_report(report_data: ComplianceReport) -> str:
     """
-    Simulates an asynchronous compliance report generation job.
+    Executes an asynchronous compliance report generation job.
     In a real system, this would queue a background task.
     
     Returns a unique report ID.

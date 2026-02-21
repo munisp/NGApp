@@ -158,13 +158,13 @@ def delete_post(post_id: int, db: Session = Depends(get_db)):
     "/{post_id}/refresh-metrics",
     response_model=TikTokPostResponse,
     summary="Simulate refreshing engagement metrics",
-    description="Simulates an external call to refresh the views, likes, comments, and shares count for a post."
+    description="Sends an external call to refresh the views, likes, comments, and shares count for a post."
 )
 def refresh_metrics(post_id: int, db: Session = Depends(get_db)):
     """
-    Simulates fetching new metrics for a post.
+    Sends fetching new metrics for a post.
     In a real application, this would call an external TikTok API.
-    Here, we simulate a small, random increase in metrics.
+    Here, we send a small, random increase in metrics.
     """
     db_post = db.query(TikTokPost).filter(TikTokPost.id == post_id).first()
     if db_post is None:
@@ -183,7 +183,7 @@ def refresh_metrics(post_id: int, db: Session = Depends(get_db)):
     db.add(db_post)
     db.commit()
     db.refresh(db_post)
-    log_activity(db, db_post.id, "METRICS_REFRESH", "Engagement metrics simulated and updated.")
+    log_activity(db, db_post.id, "METRICS_REFRESH", "Engagement metrics sent and updated.")
     return db_post
 
 @router.get(

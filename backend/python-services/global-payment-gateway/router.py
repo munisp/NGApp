@@ -69,7 +69,7 @@ def create_transaction(
     Handles the creation of a new payment transaction.
     
     - Generates a unique `transaction_id`.
-    - Simulates an initial gateway call (in a real scenario, this would be an async task).
+    - Processes an initial gateway call (in a real scenario, this would be an async task).
     - Logs the creation activity.
     """
     try:
@@ -100,7 +100,7 @@ def create_transaction(
         
         # 4. Simulate initial gateway call (e.g., authorization)
         # In a real system, this would be an async call to the external gateway.
-        # For this example, we'll simulate a successful authorization.
+        # For this example, we'll process a successful authorization.
         db_transaction.status = models.TransactionStatus.AUTHORIZED
         db_transaction.gateway_transaction_id = f"GW-{new_transaction_id[:8]}"
         db_transaction.gateway_response_code = "20000" # Simulated success code

@@ -194,7 +194,7 @@ def send_sms_message(
     db: Session = Depends(config.get_db)
 ):
     """
-    Simulates the process of sending an SMS message. 
+    Sends the process of sending an SMS message. 
     It updates the status to SENT and records the sent time.
     """
     db_sms = get_sms_message(db, sms_id)
@@ -215,7 +215,7 @@ def send_sms_message(
     log = models.SMSActivityLog(
         sms_message=db_sms,
         activity_type="SEND_ATTEMPT",
-        details="SMS sending simulated and status updated to SENT."
+        details="SMS sending sent and status updated to SENT."
     )
     db.add(log)
     

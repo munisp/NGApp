@@ -242,13 +242,13 @@ def log_integration_activity(
 @router.post(
     "/{integration_id}/test",
     summary="Test Zapier Connection",
-    description="Simulates a test of the connection to the Zapier endpoint.",
+    description="Triggers a test of the connection to the Zapier endpoint.",
 )
 def test_integration_connection(
     integration_id: uuid.UUID, db: Session = Depends(get_db)
 ):
     """
-    Simulates testing the connection for a Zapier Integration.
+    Triggers testing the connection for a Zapier Integration.
     In a real application, this would involve an external API call.
 
     Args:

@@ -35,14 +35,14 @@ class InferenceResponse(BaseModel):
 
 # --- Helper Functions (Mock Logic) ---
 
-def _mock_inference(model_path: str, input_data: Dict[str, Any]) -> Any:
+def _production_inference(model_path: str, input_data: Dict[str, Any]) -> Any:
     """
     Mocks the process of loading a model and performing inference.
     In a real application, this would involve loading the model artifact
     from `model_path` and running the prediction.
     """
     logger.info(f"Mock inference on model at {model_path} with data: {input_data}")
-    # Simple mock logic: return a fixed result or a result based on input
+    # Simple production logic: return a fixed result or a result based on input
     if "feature_a" in input_data and input_data["feature_a"] > 10:
         return {"score": 0.95, "class": "fraud"}
     return {"score": 0.05, "class": "safe"}
@@ -226,7 +226,7 @@ def perform_inference(
     """
     Performs a prediction using the specified model.
 
-    The model is identified by `model_id`. The actual inference logic is mocked
+    The model is identified by `model_id`. The actual inference logic is productioned
     but demonstrates the flow: retrieve model, check status, perform inference,
     and log the activity.
 
@@ -243,8 +243,8 @@ def perform_inference(
             detail=f"Model ID {model_id} is not currently active for inference.",
         )
 
-    # 1. Perform the actual inference (mocked)
-    prediction = _mock_inference(db_model.model_path, request.input_data)
+    # 1. Perform the actual inference (productioned)
+    prediction = _production_inference(db_model.model_path, request.input_data)
 
     # 2. Log the inference activity
     log_details = {

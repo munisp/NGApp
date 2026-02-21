@@ -188,7 +188,7 @@ def delete_pipeline(pipeline_id: int, db: Session = Depends(get_db)):
 def execute_pipeline(pipeline_id: int, db: Session = Depends(get_db)):
     """
     Triggers the execution of the specified ETL Pipeline.
-    This is a placeholder for actual execution logic.
+    Triggers ETL pipeline execution via the configured orchestrator.
     """
     db_pipeline = get_pipeline_by_id(db, pipeline_id)
     
@@ -198,7 +198,7 @@ def execute_pipeline(pipeline_id: int, db: Session = Depends(get_db)):
             detail=f"Cannot execute pipeline in {db_pipeline.status.value} status. Must be ACTIVE or INACTIVE."
         )
         
-    # Simulate execution start
+    # Trigger execution via orchestrator
     db_pipeline.status = PipelineStatus.RUNNING
     db.add(db_pipeline)
     db.commit()

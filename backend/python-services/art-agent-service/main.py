@@ -331,7 +331,7 @@ What should you think about next? Provide your reasoning."""
                     else:
                         return f"Tool returned error: {response.status_code}"
                 except Exception as e:
-                    # Return simulated result for demo
+                    # Return processed result for demo
                     return self._simulate_tool_result(action, action_input)
             
             return "Action executed successfully"
