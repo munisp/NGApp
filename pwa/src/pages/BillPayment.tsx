@@ -7,7 +7,7 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000
 const BillPayment: React.FC = () => {
   const navigate = useNavigate();
   const isOnline = useIsOnline();
-  const pendingCount = usePendingCount();
+  const _pendingCount = usePendingCount();
   const { addPendingTransaction } = useOfflineStore();
 
   const [selectedCategory, setSelectedCategory] = useState('');
