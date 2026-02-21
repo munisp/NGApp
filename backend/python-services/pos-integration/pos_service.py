@@ -175,6 +175,78 @@ class MerchantTerminal(Base):
 # Create tables
 Base.metadata.create_all(bind=engine)
 
+
+class CircuitBreaker:
+    """Circuit breaker pattern for external service calls.
+    After `failure_threshold` consecutive failures, the circuit opens
+    and skips calls for `recovery_timeout` seconds before trying again."""
+
+    def __init__(self, name: str, failure_threshold: int = 3, recovery_timeout: float = 30.0):
+        self.name = name
+        self.failure_threshold = failure_threshold
+        self.recovery_timeout = recovery_timeout
+        self._failure_count = 0
+        self._last_failure_time: Optional[float] = None
+        self._state = "closed"  # closed | open | half_open
+
+    @property
+    def is_open(self) -> bool:
+        if self._state == "open":
+            import time as _t
+            if self._last_failure_time and (_t.time() - self._last_failure_time) > self.recovery_timeout:
+                self._state = "half_open"
+                return False
+            return True
+        return False
+
+    def record_success(self):
+        self._failure_count = 0
+        self._state = "closed"
+
+    def record_failure(self):
+        import time as _t
+        self._failure_count += 1
+        self._last_failure_time = _t.time()
+        if self._failure_count >= self.failure_threshold:
+            self._state = "open"
+            logger.warning(f"Circuit breaker '{self.name}' OPEN after {self._failure_count} failures")
+
+    def get_status(self) -> Dict[str, Any]:
+        return {
+            "name": self.name,
+            "state": self._state,
+            "failure_count": self._failure_count,
+            "threshold": self.failure_threshold,
+            "recovery_timeout": self.recovery_timeout,
+        }
+
+
+async def _retry_with_backoff(coro_factory, max_retries: int = 2, base_delay: float = 0.5):
+    """Retry an async call with exponential backoff.
+    `coro_factory` is a zero-arg callable that returns a new coroutine each time."""
+    last_exc = None
+    for attempt in range(max_retries + 1):
+        try:
+            return await coro_factory()
+        except Exception as exc:
+            last_exc = exc
+            if attempt < max_retries:
+                delay = base_delay * (2 ** attempt)
+                await asyncio.sleep(delay)
+    raise last_exc
+
+
+_scoring_analytics: Dict[str, Any] = {
+    "total_scored": 0,
+    "total_approved": 0,
+    "total_declined": 0,
+    "total_review": 0,
+    "total_errors": 0,
+    "score_sum": 0.0,
+    "recent_decisions": [],
+}
+
+
 class OfflineTransactionQueue:
     """Local store-and-forward queue for offline POS transactions.
     Persists queued transactions to a local JSON file so they survive restarts."""
@@ -254,6 +326,20 @@ class POSIntegrationService:
         self.targets_url = os.getenv("TARGETS_URL", "http://localhost:8000/projections-targets")
         self.qr_tickets_url = os.getenv("QR_TICKETS_URL", "http://localhost:8000/qr-tickets")
         self.inventory_url = os.getenv("INVENTORY_URL", "http://localhost:8000/inventory-management")
+
+        # Scoring configuration
+        self.scoring_mode = os.getenv("SCORING_MODE", "blocking")  # blocking | non_blocking | disabled
+        self.scoring_skip_threshold = float(os.getenv("SCORING_SKIP_THRESHOLD", "0"))  # skip scoring below this amount
+        self.scoring_cache_ttl = int(os.getenv("SCORING_CACHE_TTL", "60"))  # seconds
+
+        # Circuit breakers for feature services
+        self._circuit_breakers = {
+            "scoring": CircuitBreaker("scoring", failure_threshold=3, recovery_timeout=30.0),
+            "coa": CircuitBreaker("coa", failure_threshold=5, recovery_timeout=60.0),
+            "targets": CircuitBreaker("targets", failure_threshold=5, recovery_timeout=60.0),
+            "inventory": CircuitBreaker("inventory", failure_threshold=5, recovery_timeout=60.0),
+            "qr_tickets": CircuitBreaker("qr_tickets", failure_threshold=5, recovery_timeout=60.0),
+        }
 
         # Payment processor configurations
         self.payment_processors = {
@@ -348,9 +434,177 @@ class POSIntegrationService:
                 f"idem:{idempotency_key}", 86400, json.dumps(data)
             )
 
+    async def _get_cached_score(self, cache_key: str) -> Optional[Dict[str, Any]]:
+        """Check Redis for a cached scoring result."""
+        if self.redis_client and self.scoring_cache_ttl > 0:
+            try:
+                cached = await self.redis_client.get(f"score:{cache_key}")
+                if cached:
+                    return json.loads(cached)
+            except Exception:
+                pass
+        return None
+
+    async def _cache_score(self, cache_key: str, score_result: Dict[str, Any]):
+        """Cache a scoring result in Redis."""
+        if self.redis_client and self.scoring_cache_ttl > 0:
+            try:
+                await self.redis_client.setex(
+                    f"score:{cache_key}", self.scoring_cache_ttl, json.dumps(score_result)
+                )
+            except Exception:
+                pass
+
+    def _record_scoring_analytics(self, score_result: Optional[Dict[str, Any]], error: bool = False):
+        """Track scoring decisions for analytics."""
+        global _scoring_analytics
+        if error:
+            _scoring_analytics["total_errors"] += 1
+            return
+        if not score_result:
+            return
+        _scoring_analytics["total_scored"] += 1
+        recommendation = score_result.get("recommendation", "")
+        if recommendation == "approve":
+            _scoring_analytics["total_approved"] += 1
+        elif recommendation == "decline":
+            _scoring_analytics["total_declined"] += 1
+        elif recommendation == "review":
+            _scoring_analytics["total_review"] += 1
+        overall = score_result.get("overall_score", 0)
+        _scoring_analytics["score_sum"] += overall
+        _scoring_analytics["recent_decisions"].append({
+            "score": overall,
+            "risk_level": score_result.get("risk_level"),
+            "recommendation": recommendation,
+            "timestamp": datetime.utcnow().isoformat(),
+        })
+        if len(_scoring_analytics["recent_decisions"]) > 100:
+            _scoring_analytics["recent_decisions"] = _scoring_analytics["recent_decisions"][-100:]
+
+    async def _post_payment_tasks(self, transaction_id: str, payment_request: PaymentRequest, response: PaymentResponse):
+        """Run all non-blocking post-payment integrations concurrently as a background task.
+        Uses asyncio.gather() to parallelize COA, targets, inventory, and ledger calls."""
+        tb_sync_url = os.getenv("TIGERBEETLE_SYNC_URL", "http://localhost:8085")
+
+        async def _ledger_task():
+            cb = self._circuit_breakers.get("coa")
+            if cb and cb.is_open:
+                return
+            try:
+                async with httpx.AsyncClient(timeout=5.0) as tb_client:
+                    await tb_client.post(
+                        f"{tb_sync_url}/api/v1/sync/transfers",
+                        json={
+                            "debit_account_id": payment_request.merchant_id,
+                            "credit_account_id": "settlement_pool",
+                            "amount": payment_request.amount,
+                            "currency": payment_request.currency,
+                            "ledger_id": 1,
+                            "metadata": {
+                                "source": "pos",
+                                "transaction_id": transaction_id,
+                                "terminal_id": payment_request.terminal_id,
+                                "payment_method": payment_request.payment_method.value,
+                            },
+                        },
+                    )
+                logger.info(f"Ledger transfer recorded for txn {transaction_id}")
+            except Exception as ledger_err:
+                logger.warning(f"Ledger record failed (non-blocking): {ledger_err}")
+
+        async def _coa_task():
+            cb = self._circuit_breakers["coa"]
+            if cb.is_open:
+                return
+            try:
+                tx_type = "cash_in" if payment_request.payment_method == PaymentMethod.CASH else "transfer"
+                async with httpx.AsyncClient(timeout=5.0) as coa_client:
+                    await coa_client.post(
+                        f"{self.coa_url}/auto-post",
+                        params={
+                            "transaction_ref": transaction_id,
+                            "transaction_type": tx_type,
+                            "amount": payment_request.amount,
+                            "currency": payment_request.currency,
+                            "agent_id": payment_request.merchant_id,
+                        },
+                    )
+                cb.record_success()
+                logger.info(f"COA GL entry posted for txn {transaction_id}")
+            except Exception as coa_err:
+                cb.record_failure()
+                logger.debug(f"COA posting unavailable (non-blocking): {coa_err}")
+
+        async def _targets_task():
+            cb = self._circuit_breakers["targets"]
+            if cb.is_open:
+                return
+            try:
+                async with httpx.AsyncClient(timeout=5.0) as tgt_client:
+                    targets_resp = await tgt_client.get(
+                        f"{self.targets_url}/targets",
+                        params={"agent_id": payment_request.merchant_id, "status": "active"},
+                    )
+                    if targets_resp.status_code == 200:
+                        active_targets = targets_resp.json()
+                        for target in active_targets:
+                            metric = target.get("metric", "")
+                            if metric in ("transaction_count", "transaction_volume", "revenue"):
+                                record_value = 1 if metric == "transaction_count" else payment_request.amount
+                                await tgt_client.post(
+                                    f"{self.targets_url}/targets/{target['id']}/record-actual",
+                                    params={"value": record_value},
+                                )
+                cb.record_success()
+                logger.info(f"Target actuals recorded for agent {payment_request.merchant_id}")
+            except Exception as tgt_err:
+                cb.record_failure()
+                logger.debug(f"Targets recording unavailable (non-blocking): {tgt_err}")
+
+        async def _inventory_task():
+            cb = self._circuit_breakers["inventory"]
+            if cb.is_open:
+                return
+            try:
+                async with httpx.AsyncClient(timeout=3.0) as inv_client:
+                    inv_resp = await inv_client.get(
+                        f"{self.inventory_url}/agent/{payment_request.merchant_id}",
+                    )
+                    if inv_resp.status_code == 200:
+                        inv_data = inv_resp.json()
+                        for item in inv_data.get("inventory", []):
+                            if item.get("category") in ("pos_paper", "receipt_roll") and item.get("quantity", 0) > 0:
+                                await inv_client.post(
+                                    f"{self.inventory_url}/agent/{payment_request.merchant_id}/transfer",
+                                    json={
+                                        "item_id": item["item_id"],
+                                        "quantity": 1,
+                                        "transfer_type": "usage",
+                                        "reason": f"Auto-deduct for receipt print (txn {transaction_id})",
+                                        "from_agent_id": payment_request.merchant_id,
+                                        "to_agent_id": "consumed",
+                                    },
+                                )
+                                logger.debug(f"Auto-deducted receipt paper for agent {payment_request.merchant_id}")
+                                break
+                cb.record_success()
+            except Exception as inv_err:
+                cb.record_failure()
+                logger.debug(f"Inventory auto-deduct failed (non-blocking): {inv_err}")
+
+        try:
+            await asyncio.gather(
+                _ledger_task(), _coa_task(), _targets_task(), _inventory_task(),
+                return_exceptions=True,
+            )
+        except Exception:
+            pass
+
     async def process_payment(self, payment_request: PaymentRequest) -> PaymentResponse:
-        """Process a payment transaction with idempotency support.
-        If idempotency_key is provided and was already processed, returns the cached result."""
+        """Process a payment transaction with idempotency, circuit breakers,
+        configurable scoring (blocking/non-blocking/disabled), retry with backoff,
+        scoring cache, and parallelized post-payment background tasks."""
         db = SessionLocal()
         try:
             start_time = datetime.utcnow()
@@ -363,35 +617,49 @@ class POSIntegrationService:
 
             transaction_id = idem_key if idem_key else str(uuid.uuid4())
 
-            # --- Transaction Scoring (pre-payment risk check) ---
+            # --- Transaction Scoring with circuit breaker, cache, retry, and configurable mode ---
             score_result = None
-            try:
-                async with httpx.AsyncClient(timeout=5.0) as score_client:
-                    score_resp = await score_client.post(
-                        f"{self.scoring_url}/score",
-                        json={
-                            "sender_id": payment_request.merchant_id,
-                            "recipient_id": payment_request.customer_data.get("customer_id", "unknown") if payment_request.customer_data else "unknown",
-                            "amount": payment_request.amount,
-                            "currency": payment_request.currency,
-                            "transaction_type": "cash_in" if payment_request.payment_method == PaymentMethod.CASH else "merchant",
-                            "channel": "pos",
-                        },
-                    )
-                    if score_resp.status_code == 200:
-                        score_result = score_resp.json()
-                        if score_result.get("recommendation") == "decline":
-                            logger.warning(f"Transaction scoring declined txn {transaction_id}: score={score_result.get('overall_score')}")
-                            return PaymentResponse(
-                                transaction_id=transaction_id,
-                                status=TransactionStatus.DECLINED,
-                                amount=payment_request.amount,
-                                currency=payment_request.currency,
-                                error_message=f"Transaction declined by risk engine (score: {score_result.get('overall_score')}, level: {score_result.get('risk_level')})"
-                            )
-                        logger.info(f"Transaction score for {transaction_id}: {score_result.get('overall_score')} ({score_result.get('risk_level')})")
-            except Exception as score_err:
-                logger.debug(f"Transaction scoring unavailable (non-blocking): {score_err}")
+            scoring_cb = self._circuit_breakers["scoring"]
+            if self.scoring_mode != "disabled" and payment_request.amount >= self.scoring_skip_threshold and not scoring_cb.is_open:
+                score_payload = {
+                    "sender_id": payment_request.merchant_id,
+                    "recipient_id": payment_request.customer_data.get("customer_id", "unknown") if payment_request.customer_data else "unknown",
+                    "amount": payment_request.amount,
+                    "currency": payment_request.currency,
+                    "transaction_type": "cash_in" if payment_request.payment_method == PaymentMethod.CASH else "merchant",
+                    "channel": "pos",
+                }
+                cache_key = hashlib.md5(json.dumps(score_payload, sort_keys=True).encode()).hexdigest()
+                score_result = await self._get_cached_score(cache_key)
+
+                if not score_result:
+                    try:
+                        async def _do_score():
+                            async with httpx.AsyncClient(timeout=5.0) as sc:
+                                resp = await sc.post(f"{self.scoring_url}/score", json=score_payload)
+                                resp.raise_for_status()
+                                return resp.json()
+
+                        score_result = await _retry_with_backoff(_do_score, max_retries=1, base_delay=0.3)
+                        scoring_cb.record_success()
+                        await self._cache_score(cache_key, score_result)
+                    except Exception as score_err:
+                        scoring_cb.record_failure()
+                        self._record_scoring_analytics(None, error=True)
+                        logger.debug(f"Transaction scoring unavailable: {score_err}")
+
+                if score_result:
+                    self._record_scoring_analytics(score_result)
+                    if self.scoring_mode == "blocking" and score_result.get("recommendation") == "decline":
+                        logger.warning(f"Transaction scoring declined txn {transaction_id}: score={score_result.get('overall_score')}")
+                        return PaymentResponse(
+                            transaction_id=transaction_id,
+                            status=TransactionStatus.DECLINED,
+                            amount=payment_request.amount,
+                            currency=payment_request.currency,
+                            error_message=f"Transaction declined by risk engine (score: {score_result.get('overall_score')}, level: {score_result.get('risk_level')})"
+                        )
+                    logger.info(f"Transaction score for {transaction_id}: {score_result.get('overall_score')} ({score_result.get('risk_level')})")
 
             # Validate merchant and terminal
             terminal = db.query(MerchantTerminal).filter(
@@ -459,83 +727,6 @@ class POSIntegrationService:
             if idem_key:
                 await self._cache_idempotency(idem_key, response)
 
-            # Record to TigerBeetle ledger (non-blocking)
-            if response.status == TransactionStatus.APPROVED:
-                try:
-                    tb_sync_url = os.getenv("TIGERBEETLE_SYNC_URL", "http://localhost:8085")
-                    async with httpx.AsyncClient(timeout=5.0) as tb_client:
-                        await tb_client.post(
-                            f"{tb_sync_url}/api/v1/sync/transfers",
-                            json={
-                                "debit_account_id": payment_request.merchant_id,
-                                "credit_account_id": "settlement_pool",
-                                "amount": payment_request.amount,
-                                "currency": payment_request.currency,
-                                "ledger_id": 1,
-                                "metadata": {
-                                    "source": "pos",
-                                    "transaction_id": transaction_id,
-                                    "terminal_id": payment_request.terminal_id,
-                                    "payment_method": payment_request.payment_method.value,
-                                },
-                            },
-                        )
-                    logger.info(f"Ledger transfer recorded for txn {transaction_id}")
-                except Exception as ledger_err:
-                    logger.warning(f"Ledger record failed (non-blocking): {ledger_err}")
-
-            # --- COA GL Posting (non-blocking) ---
-            if response.status == TransactionStatus.APPROVED:
-                try:
-                    tx_type = "cash_in" if payment_request.payment_method == PaymentMethod.CASH else "transfer"
-                    async with httpx.AsyncClient(timeout=5.0) as coa_client:
-                        await coa_client.post(
-                            f"{self.coa_url}/auto-post",
-                            params={
-                                "transaction_ref": transaction_id,
-                                "transaction_type": tx_type,
-                                "amount": payment_request.amount,
-                                "currency": payment_request.currency,
-                                "agent_id": payment_request.merchant_id,
-                            },
-                        )
-                    logger.info(f"COA GL entry posted for txn {transaction_id}")
-                except Exception as coa_err:
-                    logger.debug(f"COA posting unavailable (non-blocking): {coa_err}")
-
-            # --- Record against Projections/Targets (non-blocking) ---
-            if response.status == TransactionStatus.APPROVED:
-                try:
-                    async with httpx.AsyncClient(timeout=5.0) as tgt_client:
-                        targets_resp = await tgt_client.get(
-                            f"{self.targets_url}/targets",
-                            params={"agent_id": payment_request.merchant_id, "status": "active"},
-                        )
-                        if targets_resp.status_code == 200:
-                            active_targets = targets_resp.json()
-                            for target in active_targets:
-                                metric = target.get("metric", "")
-                                if metric in ("transaction_count", "transaction_volume", "revenue"):
-                                    record_value = 1 if metric == "transaction_count" else payment_request.amount
-                                    await tgt_client.post(
-                                        f"{self.targets_url}/targets/{target['id']}/record-actual",
-                                        params={"value": record_value},
-                                    )
-                            logger.info(f"Target actuals recorded for agent {payment_request.merchant_id}")
-                except Exception as tgt_err:
-                    logger.debug(f"Targets recording unavailable (non-blocking): {tgt_err}")
-
-            # --- Track POS supply usage via Inventory (non-blocking) ---
-            if response.status == TransactionStatus.APPROVED and response.receipt_data:
-                try:
-                    async with httpx.AsyncClient(timeout=3.0) as inv_client:
-                        await inv_client.get(
-                            f"{self.inventory_url}/agent/{payment_request.merchant_id}",
-                        )
-                    logger.debug(f"Inventory check for agent {payment_request.merchant_id}")
-                except Exception:
-                    pass
-
             # Attach score to response metadata if available
             if score_result and response.receipt_data:
                 response.receipt_data["transaction_score"] = {
@@ -543,6 +734,10 @@ class POSIntegrationService:
                     "risk_level": score_result.get("risk_level"),
                     "recommendation": score_result.get("recommendation"),
                 }
+
+            # Fire all post-payment integrations as a background task (non-blocking, parallelized)
+            if response.status == TransactionStatus.APPROVED:
+                asyncio.create_task(self._post_payment_tasks(transaction_id, payment_request, response))
 
             # Send real-time update
             await self._send_transaction_update(transaction_id, response)
@@ -1748,6 +1943,35 @@ async def offline_queue_status():
 async def health_check():
     """Health check endpoint"""
     return await pos_service.health_check()
+
+@app.get("/scoring/analytics")
+async def scoring_analytics():
+    """Return scoring analytics: approval rate, avg score, decline trends."""
+    total = _scoring_analytics["total_scored"]
+    avg_score = round(_scoring_analytics["score_sum"] / max(total, 1), 1)
+    approval_rate = round(_scoring_analytics["total_approved"] / max(total, 1) * 100, 1)
+    decline_rate = round(_scoring_analytics["total_declined"] / max(total, 1) * 100, 1)
+    return {
+        "total_scored": total,
+        "total_approved": _scoring_analytics["total_approved"],
+        "total_declined": _scoring_analytics["total_declined"],
+        "total_review": _scoring_analytics["total_review"],
+        "total_errors": _scoring_analytics["total_errors"],
+        "avg_score": avg_score,
+        "approval_rate_pct": approval_rate,
+        "decline_rate_pct": decline_rate,
+        "recent_decisions": _scoring_analytics["recent_decisions"][-20:],
+    }
+
+
+@app.get("/circuit-breakers")
+async def circuit_breaker_status():
+    """Return circuit breaker status for all feature services."""
+    return {
+        name: cb.get_status()
+        for name, cb in pos_service._circuit_breakers.items()
+    }
+
 
 if __name__ == "__main__":
     import uvicorn

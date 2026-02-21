@@ -7,11 +7,15 @@ from enum import Enum
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, Field
 
+import logging
 import httpx
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/chart-of-accounts", tags=["chart-of-accounts"])
 
 TIGERBEETLE_SYNC_URL = os.getenv("TIGERBEETLE_SYNC_URL", "http://localhost:8085")
+TIGERBEETLE_GL_POST_ENABLED = os.getenv("TIGERBEETLE_GL_POST_ENABLED", "true").lower() == "true"
 
 
 class AccountType(str, Enum):
@@ -214,6 +218,27 @@ async def post_gl_entry(request: GLPostingRequest):
     posting_id = str(uuid.uuid4())
     now = datetime.utcnow().isoformat()
 
+    synced = False
+    tb_result = None
+
+    if TIGERBEETLE_GL_POST_ENABLED:
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                resp = await client.post(f"{TIGERBEETLE_SYNC_URL}/api/v1/gl/post", json={
+                    "debit_gl": request.debit_account_code,
+                    "credit_gl": request.credit_account_code,
+                    "amount": int(request.amount * 100),
+                    "reference": request.transaction_ref,
+                })
+                if resp.status_code == 200:
+                    tb_result = resp.json()
+                    synced = True
+                    logger.info(f"GL entry {posting_id} synced to TigerBeetle: {tb_result}")
+                else:
+                    logger.warning(f"TigerBeetle GL post returned {resp.status_code}: {resp.text}")
+        except Exception as e:
+            logger.warning(f"TigerBeetle GL post failed, falling back to local: {e}")
+
     _account_balances[request.debit_account_code] = _account_balances.get(request.debit_account_code, 0.0) + request.amount
     _account_balances[request.credit_account_code] = _account_balances.get(request.credit_account_code, 0.0) - request.amount
 
@@ -243,21 +268,10 @@ async def post_gl_entry(request: GLPostingRequest):
         "agent_id": request.agent_id,
         "narration": request.narration,
         "posted_at": now,
+        "synced_to_tigerbeetle": synced,
+        "tb_transfer_id": tb_result.get("transfer_id") if tb_result else None,
     }
     _gl_postings.append(posting)
-
-    synced = False
-    try:
-        async with httpx.AsyncClient(timeout=5.0) as client:
-            await client.post(f"{TIGERBEETLE_SYNC_URL}/api/v1/sync/transfers", json={
-                "debit_account": request.debit_account_code,
-                "credit_account": request.credit_account_code,
-                "amount": int(request.amount * 100),
-                "reference": request.transaction_ref,
-            })
-            synced = True
-    except Exception:
-        pass
 
     return GLPostingResponse(
         posting_id=posting_id,
@@ -345,3 +359,43 @@ async def get_trial_balance():
         "balanced": abs(total_debits - total_credits) < 0.01,
         "generated_at": datetime.utcnow().isoformat(),
     }
+
+
+@router.post("/register-gl-mappings")
+async def register_gl_mappings():
+    registered = 0
+    errors = []
+    for code, account in _coa_accounts.items():
+        try:
+            async with httpx.AsyncClient(timeout=5.0) as client:
+                resp = await client.post(f"{TIGERBEETLE_SYNC_URL}/api/v1/gl/mapping", json={
+                    "gl_code": code,
+                    "gl_name": account.account_name,
+                    "account_type": account.account_type.value,
+                    "ledger": 1,
+                })
+                if resp.status_code in (200, 201):
+                    registered += 1
+        except Exception as e:
+            errors.append({"code": code, "error": str(e)})
+    return {"registered": registered, "errors": errors, "total_accounts": len(_coa_accounts)}
+
+
+@router.post("/reconcile")
+async def reconcile_with_tigerbeetle():
+    postings_data = []
+    for p in _gl_postings:
+        postings_data.append({
+            "debit_account_code": p.get("debit", {}).get("account_code", ""),
+            "credit_account_code": p.get("credit", {}).get("account_code", ""),
+            "amount": p.get("debit", {}).get("amount", 0),
+            "transaction_ref": p.get("transaction_ref", ""),
+        })
+    try:
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            resp = await client.post(f"{TIGERBEETLE_SYNC_URL}/api/v1/gl/reconcile", json={"postings": postings_data})
+            if resp.status_code == 200:
+                return resp.json()
+            return {"error": f"Reconciliation returned {resp.status_code}", "detail": resp.text}
+    except Exception as e:
+        return {"error": f"Reconciliation failed: {e}"}

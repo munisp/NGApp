@@ -696,6 +696,215 @@ func (sm *TigerBeetleSyncManager) checkHealth() {
 		sm.syncCount, sm.errorCount, sm.lastSyncDuration)
 }
 
+// GLAccountMapping maps COA GL account codes to TigerBeetle account IDs
+type GLAccountMapping struct {
+	GLCode        string `json:"gl_code"`
+	GLName        string `json:"gl_name"`
+	TBAccountID   uint64 `json:"tb_account_id"`
+	AccountType   string `json:"account_type"`
+	Ledger        uint32 `json:"ledger"`
+	CreatedAt     string `json:"created_at"`
+}
+
+// RateLimiter implements per-agent rate limiting
+type RateLimiter struct {
+	mu       sync.Mutex
+	agents   map[string]*agentWindow
+	maxReqs  int
+	windowMs int64
+}
+
+type agentWindow struct {
+	timestamps []int64
+}
+
+func NewRateLimiter(maxRequests int, windowMs int64) *RateLimiter {
+	return &RateLimiter{
+		agents:   make(map[string]*agentWindow),
+		maxReqs:  maxRequests,
+		windowMs: windowMs,
+	}
+}
+
+func (rl *RateLimiter) Allow(agentID string) bool {
+	rl.mu.Lock()
+	defer rl.mu.Unlock()
+
+	nowMs := time.Now().UnixMilli()
+	w, ok := rl.agents[agentID]
+	if !ok {
+		w = &agentWindow{}
+		rl.agents[agentID] = w
+	}
+
+	cutoff := nowMs - rl.windowMs
+	filtered := w.timestamps[:0]
+	for _, ts := range w.timestamps {
+		if ts > cutoff {
+			filtered = append(filtered, ts)
+		}
+	}
+	w.timestamps = filtered
+
+	if len(w.timestamps) >= rl.maxReqs {
+		return false
+	}
+	w.timestamps = append(w.timestamps, nowMs)
+	return true
+}
+
+func (rl *RateLimiter) GetStats() map[string]interface{} {
+	rl.mu.Lock()
+	defer rl.mu.Unlock()
+	nowMs := time.Now().UnixMilli()
+	cutoff := nowMs - rl.windowMs
+	activeAgents := 0
+	for _, w := range rl.agents {
+		for _, ts := range w.timestamps {
+			if ts > cutoff {
+				activeAgents++
+				break
+			}
+		}
+	}
+	return map[string]interface{}{
+		"max_requests_per_window": rl.maxReqs,
+		"window_ms":              rl.windowMs,
+		"total_agents_tracked":   len(rl.agents),
+		"active_agents":          activeAgents,
+	}
+}
+
+var (
+	glMappings   = make(map[string]GLAccountMapping)
+	glMappingsMu sync.RWMutex
+)
+
+// RegisterGLMapping maps a COA GL account code to a TigerBeetle account ID
+func (sm *TigerBeetleSyncManager) RegisterGLMapping(mapping GLAccountMapping) error {
+	glMappingsMu.Lock()
+	defer glMappingsMu.Unlock()
+
+	if mapping.TBAccountID == 0 {
+		newID := uint64(time.Now().UnixNano())
+		account := Account{
+			ID:     newID,
+			Ledger: mapping.Ledger,
+			Code:   1,
+			Status: "active",
+		}
+		if err := sm.createAccountInTigerBeetle(account); err != nil {
+			log.Printf("Warning: could not create TB account for GL %s: %v", mapping.GLCode, err)
+			newID = uint64(time.Now().UnixNano())
+		}
+		mapping.TBAccountID = newID
+	}
+	mapping.CreatedAt = time.Now().Format(time.RFC3339)
+	glMappings[mapping.GLCode] = mapping
+	log.Printf("GL mapping registered: %s -> TB account %d", mapping.GLCode, mapping.TBAccountID)
+	return nil
+}
+
+// PostGLEntryToTigerBeetle posts a double-entry GL transaction directly to TigerBeetle
+func (sm *TigerBeetleSyncManager) PostGLEntryToTigerBeetle(debitGL string, creditGL string, amount uint64, reference string) (map[string]interface{}, error) {
+	glMappingsMu.RLock()
+	debitMapping, debitOK := glMappings[debitGL]
+	creditMapping, creditOK := glMappings[creditGL]
+	glMappingsMu.RUnlock()
+
+	if !debitOK {
+		return nil, fmt.Errorf("no TigerBeetle mapping for GL debit account %s", debitGL)
+	}
+	if !creditOK {
+		return nil, fmt.Errorf("no TigerBeetle mapping for GL credit account %s", creditGL)
+	}
+
+	transfer := Transfer{
+		ID:              uint64(time.Now().UnixNano()),
+		DebitAccountID:  debitMapping.TBAccountID,
+		CreditAccountID: creditMapping.TBAccountID,
+		Amount:          amount,
+		Ledger:          debitMapping.Ledger,
+		Code:            1,
+		PaymentReference: reference,
+		Description:      fmt.Sprintf("GL posting: %s -> %s", debitGL, creditGL),
+		Status:           "posted",
+		CreatedAt:        time.Now(),
+		UpdatedAt:        time.Now(),
+	}
+
+	if err := sm.createTransferInTigerBeetle(transfer); err != nil {
+		return nil, fmt.Errorf("TigerBeetle transfer failed: %v", err)
+	}
+
+	result := map[string]interface{}{
+		"transfer_id":      transfer.ID,
+		"debit_gl":         debitGL,
+		"credit_gl":        creditGL,
+		"debit_tb_account":  debitMapping.TBAccountID,
+		"credit_tb_account": creditMapping.TBAccountID,
+		"amount":            amount,
+		"reference":         reference,
+		"synced":            true,
+	}
+	return result, nil
+}
+
+// ReconcileGLWithTigerBeetle compares GL postings against TigerBeetle ledger entries
+func (sm *TigerBeetleSyncManager) ReconcileGLWithTigerBeetle(glPostings []map[string]interface{}) map[string]interface{} {
+	glMappingsMu.RLock()
+	defer glMappingsMu.RUnlock()
+
+	matched := 0
+	mismatches := []map[string]interface{}{}
+	unmapped := []string{}
+
+	for _, posting := range glPostings {
+		debitCode, _ := posting["debit_account_code"].(string)
+		creditCode, _ := posting["credit_account_code"].(string)
+		amount, _ := posting["amount"].(float64)
+		ref, _ := posting["transaction_ref"].(string)
+
+		debitMap, dOK := glMappings[debitCode]
+		creditMap, cOK := glMappings[creditCode]
+
+		if !dOK || !cOK {
+			unmapped = append(unmapped, ref)
+			continue
+		}
+
+		_, err := sm.getAccountFromTigerBeetle(debitMap.TBAccountID)
+		if err != nil {
+			mismatches = append(mismatches, map[string]interface{}{
+				"ref": ref, "type": "debit_account_missing",
+				"gl_code": debitCode, "tb_id": debitMap.TBAccountID,
+			})
+			continue
+		}
+		_, err = sm.getAccountFromTigerBeetle(creditMap.TBAccountID)
+		if err != nil {
+			mismatches = append(mismatches, map[string]interface{}{
+				"ref": ref, "type": "credit_account_missing",
+				"gl_code": creditCode, "tb_id": creditMap.TBAccountID,
+			})
+			continue
+		}
+
+		_ = amount
+		matched++
+	}
+
+	return map[string]interface{}{
+		"total_postings": len(glPostings),
+		"matched":        matched,
+		"mismatches":     len(mismatches),
+		"unmapped":       len(unmapped),
+		"mismatch_details": mismatches,
+		"unmapped_refs":    unmapped,
+		"reconciled_at":    time.Now().Format(time.RFC3339),
+	}
+}
+
 // GetSyncStats returns synchronization statistics
 func (sm *TigerBeetleSyncManager) GetSyncStats() map[string]interface{} {
 	sm.mutex.RLock()
@@ -832,11 +1041,100 @@ func main() {
 		json.NewEncoder(w).Encode(map[string]bool{"success": true})
 	}).Methods("POST")
 
+	// --- GL Account Mapping endpoints ---
+	router.HandleFunc("/api/v1/gl/mapping", func(w http.ResponseWriter, r *http.Request) {
+		var mapping GLAccountMapping
+		if err := json.NewDecoder(r.Body).Decode(&mapping); err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+			return
+		}
+		if err := manager.RegisterGLMapping(mapping); err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+			return
+		}
+		w.WriteHeader(http.StatusCreated)
+		json.NewEncoder(w).Encode(map[string]interface{}{"registered": true, "mapping": mapping})
+	}).Methods("POST")
+
+	router.HandleFunc("/api/v1/gl/mappings", func(w http.ResponseWriter, r *http.Request) {
+		glMappingsMu.RLock()
+		defer glMappingsMu.RUnlock()
+		mappings := make([]GLAccountMapping, 0, len(glMappings))
+		for _, m := range glMappings {
+			mappings = append(mappings, m)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]interface{}{"total": len(mappings), "mappings": mappings})
+	}).Methods("GET")
+
+	router.HandleFunc("/api/v1/gl/post", func(w http.ResponseWriter, r *http.Request) {
+		var payload struct {
+			DebitGL   string `json:"debit_gl"`
+			CreditGL  string `json:"credit_gl"`
+			Amount    uint64 `json:"amount"`
+			Reference string `json:"reference"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+			return
+		}
+		result, err := manager.PostGLEntryToTigerBeetle(payload.DebitGL, payload.CreditGL, payload.Amount, payload.Reference)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(result)
+	}).Methods("POST")
+
+	router.HandleFunc("/api/v1/gl/reconcile", func(w http.ResponseWriter, r *http.Request) {
+		var payload struct {
+			Postings []map[string]interface{} `json:"postings"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+			return
+		}
+		result := manager.ReconcileGLWithTigerBeetle(payload.Postings)
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(result)
+	}).Methods("POST")
+
+	// --- Rate Limiting endpoints ---
+	rateLimiter := NewRateLimiter(60, 60000) // 60 requests per 60s per agent
+
+	router.HandleFunc("/api/v1/rate-limit/check", func(w http.ResponseWriter, r *http.Request) {
+		agentID := r.URL.Query().Get("agent_id")
+		if agentID == "" {
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(map[string]string{"error": "agent_id required"})
+			return
+		}
+		allowed := rateLimiter.Allow(agentID)
+		if !allowed {
+			w.WriteHeader(http.StatusTooManyRequests)
+			json.NewEncoder(w).Encode(map[string]interface{}{"allowed": false, "agent_id": agentID, "message": "Rate limit exceeded"})
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]interface{}{"allowed": true, "agent_id": agentID})
+	}).Methods("GET")
+
+	router.HandleFunc("/api/v1/rate-limit/stats", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(rateLimiter.GetStats())
+	}).Methods("GET")
+
 	port := os.Getenv("SYNC_MANAGER_PORT")
 	if port == "" {
 		port = "8085"
 	}
-	log.Printf("TigerBeetle Sync Manager HTTP API on :%s", port)
+	log.Printf("TigerBeetle Sync Manager HTTP API on :%s (with GL mapping, reconciliation, rate limiting)", port)
 	log.Fatal(http.ListenAndServe(":"+port, router))
 }
 

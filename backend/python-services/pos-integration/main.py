@@ -17,6 +17,8 @@ import asyncpg
 import httpx
 import uvicorn
 import logging
+import time as _time
+from collections import defaultdict
 
 logger = logging.getLogger(__name__)
 
@@ -59,6 +61,42 @@ app.add_middleware(
 )
 
 stats = {"total_requests": 0, "start_time": datetime.utcnow()}
+
+RATE_LIMIT_MAX = int(os.getenv("POS_RATE_LIMIT_MAX", "60"))
+RATE_LIMIT_WINDOW_SEC = int(os.getenv("POS_RATE_LIMIT_WINDOW_SEC", "60"))
+_agent_requests: Dict[str, list] = defaultdict(list)
+_rate_limit_stats = {"blocked": 0, "total_checked": 0}
+
+
+@app.middleware("http")
+async def rate_limit_middleware(request: Request, call_next):
+    agent_id = request.headers.get("X-Agent-ID", "")
+    if agent_id:
+        _rate_limit_stats["total_checked"] += 1
+        now = _time.time()
+        cutoff = now - RATE_LIMIT_WINDOW_SEC
+        _agent_requests[agent_id] = [t for t in _agent_requests[agent_id] if t > cutoff]
+        if len(_agent_requests[agent_id]) >= RATE_LIMIT_MAX:
+            _rate_limit_stats["blocked"] += 1
+            from starlette.responses import JSONResponse
+            return JSONResponse(
+                status_code=429,
+                content={"error": "Rate limit exceeded", "agent_id": agent_id, "limit": RATE_LIMIT_MAX, "window_sec": RATE_LIMIT_WINDOW_SEC},
+            )
+        _agent_requests[agent_id].append(now)
+    response = await call_next(request)
+    return response
+
+
+@app.get("/rate-limit/stats")
+async def get_rate_limit_stats():
+    return {
+        "max_per_window": RATE_LIMIT_MAX,
+        "window_sec": RATE_LIMIT_WINDOW_SEC,
+        "agents_tracked": len(_agent_requests),
+        "total_checked": _rate_limit_stats["total_checked"],
+        "total_blocked": _rate_limit_stats["blocked"],
+    }
 
 
 @app.on_event("startup")

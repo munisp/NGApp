@@ -88,6 +88,18 @@ class ProjectionResponse(BaseModel):
 _targets: Dict[str, TargetResponse] = {}
 _actuals: Dict[str, float] = {}
 _history: Dict[str, List[Dict[str, Any]]] = {}
+_bank_agents: Dict[str, List[str]] = {}
+
+
+@router.post("/bank-agents")
+async def register_bank_agents(bank_id: str, agent_ids: List[str]):
+    _bank_agents[bank_id] = list(set(_bank_agents.get(bank_id, []) + agent_ids))
+    return {"bank_id": bank_id, "total_agents": len(_bank_agents[bank_id]), "agents": _bank_agents[bank_id]}
+
+
+@router.get("/bank-agents/{bank_id}")
+async def get_bank_agents(bank_id: str):
+    return {"bank_id": bank_id, "agents": _bank_agents.get(bank_id, [])}
 
 
 @router.post("/targets", response_model=TargetResponse)
@@ -120,6 +132,33 @@ async def create_target(request: TargetCreate):
         updated_at=now,
     )
     _targets[target_id] = target
+
+    if request.level == TargetLevel.BANK and request.bank_id:
+        agents = _bank_agents.get(request.bank_id, [])
+        if agents:
+            per_agent_value = round(request.target_value / len(agents), 2)
+            for aid in agents:
+                child_id = str(uuid.uuid4())
+                child = TargetResponse(
+                    id=child_id,
+                    level=TargetLevel.BANK_TO_AGENT,
+                    metric=request.metric,
+                    period=request.period,
+                    target_value=per_agent_value,
+                    actual_value=0.0,
+                    achievement_pct=0.0,
+                    currency=request.currency,
+                    bank_id=request.bank_id,
+                    agent_id=aid,
+                    territory_id=request.territory_id,
+                    start_date=request.start_date,
+                    end_date=request.end_date,
+                    notes=f"Auto-propagated from bank target {target_id} ({per_agent_value}/{request.target_value})",
+                    created_at=now,
+                    updated_at=now,
+                )
+                _targets[child_id] = child
+
     return target
 
 
@@ -358,3 +397,34 @@ async def agent_leaderboard(
         entry["rank"] = i + 1
 
     return {"leaderboard": leaderboard[:limit], "total_agents": len(leaderboard)}
+
+
+@router.post("/propagate/{bank_id}")
+async def propagate_bank_targets(bank_id: str):
+    agents = _bank_agents.get(bank_id, [])
+    if not agents:
+        raise HTTPException(status_code=400, detail=f"No agents registered for bank {bank_id}")
+    bank_targets = [t for t in _targets.values() if t.bank_id == bank_id and t.level == TargetLevel.BANK]
+    if not bank_targets:
+        raise HTTPException(status_code=404, detail=f"No bank-level targets found for {bank_id}")
+    created = 0
+    now = datetime.utcnow().isoformat()
+    for bt in bank_targets:
+        existing_agents = {t.agent_id for t in _targets.values() if t.bank_id == bank_id and t.level == TargetLevel.BANK_TO_AGENT and t.metric == bt.metric and t.period == bt.period}
+        missing_agents = [a for a in agents if a not in existing_agents]
+        if not missing_agents:
+            continue
+        per_agent = round(bt.target_value / len(agents), 2)
+        for aid in missing_agents:
+            child_id = str(uuid.uuid4())
+            child = TargetResponse(
+                id=child_id, level=TargetLevel.BANK_TO_AGENT, metric=bt.metric,
+                period=bt.period, target_value=per_agent, currency=bt.currency,
+                bank_id=bank_id, agent_id=aid, territory_id=bt.territory_id,
+                start_date=bt.start_date, end_date=bt.end_date,
+                notes=f"Propagated from bank target {bt.id}",
+                created_at=now, updated_at=now,
+            )
+            _targets[child_id] = child
+            created += 1
+    return {"bank_id": bank_id, "targets_propagated": created, "agents": len(agents)}

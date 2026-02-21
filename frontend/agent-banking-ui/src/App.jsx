@@ -4673,14 +4673,20 @@ function POSManagementPage({ formatCurrency }) {
 function POSTransactionScoringTab({ posApi, formatCurrency }) {
   const [scoreForm, setScoreForm] = useState({ sender_id: 'AGT-001', recipient_id: 'CUST-001', amount: 50000, currency: 'NGN', transaction_type: 'cash_in', channel: 'pos' })
   const [scoreResult, setScoreResult] = useState(null)
-  const [recentScores, setRecentScores] = useState([
-    { id: 'TXN-9001', amount: 150000, score: 92, risk_level: 'low', recommendation: 'approve', timestamp: '2024-01-15 10:30' },
-    { id: 'TXN-9002', amount: 500000, score: 45, risk_level: 'high', recommendation: 'review', timestamp: '2024-01-15 10:25' },
-    { id: 'TXN-9003', amount: 25000, score: 98, risk_level: 'low', recommendation: 'approve', timestamp: '2024-01-15 10:20' },
-    { id: 'TXN-9004', amount: 1000000, score: 18, risk_level: 'critical', recommendation: 'decline', timestamp: '2024-01-15 10:15' },
-    { id: 'TXN-9005', amount: 75000, score: 85, risk_level: 'low', recommendation: 'approve', timestamp: '2024-01-15 10:10' },
-  ])
+  const [recentScores, setRecentScores] = useState([])
+  const [analytics, setAnalytics] = useState(null)
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState(null)
+
+  useEffect(() => {
+    const loadAnalytics = async () => {
+      try {
+        const resp = await fetch(`${posApi}/pos/score-transaction`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sender_id: 'demo', recipient_id: 'demo', amount: 1, currency: 'NGN', transaction_type: 'cash_in', channel: 'pos' }) })
+        if (resp.ok) { const d = await resp.json(); if (d.overall_score) setRecentScores([{ id: 'INIT', amount: 1, score: d.overall_score, risk_level: d.risk_level, recommendation: d.recommendation, timestamp: new Date().toLocaleString() }]) }
+      } catch { setError('Scoring service unavailable - showing cached data') }
+    }
+    loadAnalytics()
+  }, [posApi])
 
   const handleScore = async () => {
     setLoading(true)
@@ -4733,14 +4739,21 @@ function POSTransactionScoringTab({ posApi, formatCurrency }) {
 }
 
 function POSGLPostingTab({ posApi, formatCurrency }) {
-  const [glEntries, setGlEntries] = useState([
-    { id: 'GL-001', transaction_ref: 'TXN-9001', type: 'cash_in', amount: 150000, debit_account: '1001-Cash', credit_account: '2001-AgentFloat', status: 'posted', timestamp: '2024-01-15 10:30' },
-    { id: 'GL-002', transaction_ref: 'TXN-9003', type: 'cash_in', amount: 25000, debit_account: '1001-Cash', credit_account: '2001-AgentFloat', status: 'posted', timestamp: '2024-01-15 10:20' },
-    { id: 'GL-003', transaction_ref: 'TXN-9005', type: 'transfer', amount: 75000, debit_account: '2001-AgentFloat', credit_account: '3001-BankSettlement', status: 'posted', timestamp: '2024-01-15 10:10' },
-    { id: 'GL-004', transaction_ref: 'TXN-8999', type: 'cash_out', amount: 200000, debit_account: '2001-AgentFloat', credit_account: '1001-Cash', status: 'pending', timestamp: '2024-01-15 10:05' },
-  ])
+  const [glEntries, setGlEntries] = useState([])
   const [postForm, setPostForm] = useState({ transaction_ref: '', transaction_type: 'cash_in', amount: 0, currency: 'NGN', agent_id: 'AGT-001' })
   const [loading, setLoading] = useState(false)
+  const [reconcileResult, setReconcileResult] = useState(null)
+  const [error, setError] = useState(null)
+
+  useEffect(() => {
+    const loadPostings = async () => {
+      try {
+        const resp = await fetch(`${posApi}/pos/gl-post?transaction_ref=init&transaction_type=cash_in&amount=0&currency=NGN&agent_id=system`, { method: 'POST' })
+        if (resp.ok) { setError(null) }
+      } catch { setError('GL posting service unavailable') }
+    }
+    loadPostings()
+  }, [posApi])
 
   const handlePost = async () => {
     setLoading(true)
@@ -4787,13 +4800,21 @@ function POSGLPostingTab({ posApi, formatCurrency }) {
 
 function POSTargetsTab({ posApi, formatCurrency }) {
   const [agentId, setAgentId] = useState('AGT-001')
-  const [targets, setTargets] = useState([
-    { id: 'TGT-001', metric: 'transaction_count', name: 'Daily Transactions', target_value: 100, actual_value: 78, unit: 'txns', period: 'daily', level: 'bank_assigned', status: 'active' },
-    { id: 'TGT-002', metric: 'transaction_volume', name: 'Monthly Volume', target_value: 50000000, actual_value: 32500000, unit: 'NGN', period: 'monthly', level: 'bank_level', status: 'active' },
-    { id: 'TGT-003', metric: 'revenue', name: 'Weekly Revenue', target_value: 500000, actual_value: 425000, unit: 'NGN', period: 'weekly', level: 'personal', status: 'active' },
-    { id: 'TGT-004', metric: 'new_customers', name: 'New Customers', target_value: 20, actual_value: 22, unit: 'customers', period: 'weekly', level: 'bank_assigned', status: 'active' },
-  ])
+  const [targets, setTargets] = useState([])
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState(null)
+
+  useEffect(() => {
+    const init = async () => {
+      setLoading(true)
+      try {
+        const resp = await fetch(`${posApi}/pos/agent-targets/${agentId}`)
+        if (resp.ok) { const data = await resp.json(); if (Array.isArray(data) && data.length) { setTargets(data); setError(null) } else { setError('No targets found - create targets via the Projections & Targets service') } }
+      } catch { setError('Targets service unavailable') }
+      setLoading(false)
+    }
+    init()
+  }, [posApi, agentId])
 
   const loadTargets = async () => {
     setLoading(true)
@@ -4844,16 +4865,12 @@ function POSTargetsTab({ posApi, formatCurrency }) {
 }
 
 function POSQRTicketsTab({ posApi }) {
-  const [tickets, setTickets] = useState([
-    { id: 'QRT-001', transaction_id: 'TXN-9001', ticket_type: 'payment_receipt', status: 'valid', created_at: '2024-01-15 10:30', scanned: false },
-    { id: 'QRT-002', transaction_id: 'TXN-9003', ticket_type: 'payment_receipt', status: 'valid', created_at: '2024-01-15 10:20', scanned: false },
-    { id: 'QRT-003', transaction_id: 'TXN-8998', ticket_type: 'payment_receipt', status: 'used', created_at: '2024-01-15 09:50', scanned: true },
-    { id: 'QRT-004', transaction_id: 'TXN-8990', ticket_type: 'payment_receipt', status: 'expired', created_at: '2024-01-14 16:00', scanned: false },
-  ])
+  const [tickets, setTickets] = useState([])
   const [verifyCode, setVerifyCode] = useState('')
   const [verifyResult, setVerifyResult] = useState(null)
   const [createForm, setCreateForm] = useState({ transaction_id: '', amount: 0, merchant_id: 'MRC-001' })
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState(null)
 
   const handleCreate = async () => {
     setLoading(true)
@@ -4916,15 +4933,28 @@ function POSQRTicketsTab({ posApi }) {
 
 function POSInventoryTab({ posApi }) {
   const [agentId, setAgentId] = useState('AGT-001')
-  const [inventory, setInventory] = useState([
-    { id: 'INV-001', item_name: 'SIM Cards', sku: 'SIM-STD', quantity: 150, min_threshold: 50, unit: 'pcs', category: 'telecom', last_restocked: '2024-01-10' },
-    { id: 'INV-002', item_name: 'POS Receipt Paper', sku: 'PRP-58MM', quantity: 12, min_threshold: 20, unit: 'rolls', category: 'supplies', last_restocked: '2024-01-08' },
-    { id: 'INV-003', item_name: 'Branded Flyers', sku: 'BFL-A5', quantity: 500, min_threshold: 100, unit: 'pcs', category: 'marketing', last_restocked: '2024-01-12' },
-    { id: 'INV-004', item_name: 'ID Card Sleeves', sku: 'ICS-STD', quantity: 30, min_threshold: 25, unit: 'pcs', category: 'supplies', last_restocked: '2024-01-05' },
-    { id: 'INV-005', item_name: 'Cash Seal Bags', sku: 'CSB-MED', quantity: 8, min_threshold: 15, unit: 'pcs', category: 'cash_handling', last_restocked: '2024-01-03' },
-  ])
+  const [inventory, setInventory] = useState([])
   const [loading, setLoading] = useState(false)
   const [deductForm, setDeductForm] = useState({ item_id: '', quantity: 1 })
+  const [error, setError] = useState(null)
+  const [lowStockAlerts, setLowStockAlerts] = useState([])
+
+  useEffect(() => {
+    const init = async () => {
+      setLoading(true)
+      try {
+        const resp = await fetch(`${posApi}/pos/inventory/${agentId}`)
+        if (resp.ok) {
+          const data = await resp.json()
+          if (data.items && data.items.length) { setInventory(data.items); setError(null) }
+          else if (Array.isArray(data) && data.length) { setInventory(data); setError(null) }
+          else { setError('No inventory data - add items via Inventory Management') }
+        }
+      } catch { setError('Inventory service unavailable') }
+      setLoading(false)
+    }
+    init()
+  }, [posApi, agentId])
 
   const loadInventory = async () => {
     setLoading(true)

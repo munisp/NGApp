@@ -50,6 +50,15 @@ class TransactionScoreResponse(BaseModel):
 
 _sender_history: Dict[str, List[Dict[str, Any]]] = {}
 _counterparty_history: Dict[str, int] = {}
+_scoring_analytics: Dict[str, Any] = {
+    "total_scored": 0,
+    "total_approved": 0,
+    "total_declined": 0,
+    "total_review": 0,
+    "score_sum": 0.0,
+    "recent_decisions": [],
+    "hourly_counts": {},
+}
 
 CHANNEL_RELIABILITY = {
     "pos": 95.0, "web": 92.0, "mobile": 90.0, "api": 93.0, "ussd": 85.0
@@ -212,6 +221,23 @@ async def score_transaction(request: TransactionScoreRequest):
     cp_key = f"{request.sender_id}->{request.recipient_id}"
     _counterparty_history[cp_key] = _counterparty_history.get(cp_key, 0) + 1
 
+    _scoring_analytics["total_scored"] += 1
+    _scoring_analytics["score_sum"] += overall
+    if recommendation == "approve":
+        _scoring_analytics["total_approved"] += 1
+    elif recommendation == "decline":
+        _scoring_analytics["total_declined"] += 1
+    elif recommendation == "review":
+        _scoring_analytics["total_review"] += 1
+    hour_key = datetime.utcnow().strftime("%Y-%m-%d-%H")
+    _scoring_analytics["hourly_counts"][hour_key] = _scoring_analytics["hourly_counts"].get(hour_key, 0) + 1
+    _scoring_analytics["recent_decisions"].append({
+        "ref": ref, "score": round(overall, 1), "decision": recommendation,
+        "risk": risk_level, "amount": request.amount, "at": datetime.utcnow().isoformat(),
+    })
+    if len(_scoring_analytics["recent_decisions"]) > 100:
+        _scoring_analytics["recent_decisions"] = _scoring_analytics["recent_decisions"][-100:]
+
     return TransactionScoreResponse(
         transaction_ref=ref,
         overall_score=round(overall, 1),
@@ -240,6 +266,25 @@ async def get_sender_score_history(sender_id: str):
         "transaction_count_1h": len([h for h in history if (datetime.utcnow() - h["time"]).total_seconds() < 3600]),
         "transaction_count_24h": len([h for h in history if (datetime.utcnow() - h["time"]).total_seconds() < 86400]),
         "total_transactions": len(history),
+    }
+
+
+@router.get("/analytics")
+async def get_scoring_analytics():
+    total = _scoring_analytics["total_scored"]
+    avg_score = round(_scoring_analytics["score_sum"] / max(total, 1), 1)
+    approval_rate = round(_scoring_analytics["total_approved"] / max(total, 1) * 100, 1)
+    decline_rate = round(_scoring_analytics["total_declined"] / max(total, 1) * 100, 1)
+    return {
+        "total_scored": total,
+        "total_approved": _scoring_analytics["total_approved"],
+        "total_declined": _scoring_analytics["total_declined"],
+        "total_review": _scoring_analytics["total_review"],
+        "avg_score": avg_score,
+        "approval_rate_pct": approval_rate,
+        "decline_rate_pct": decline_rate,
+        "hourly_counts": _scoring_analytics["hourly_counts"],
+        "recent_decisions": _scoring_analytics["recent_decisions"][-20:],
     }
 
 

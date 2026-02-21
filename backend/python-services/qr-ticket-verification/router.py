@@ -14,6 +14,7 @@ from pydantic import BaseModel, Field
 router = APIRouter(prefix="/qr-tickets", tags=["qr-ticket-verification"])
 
 QR_SECRET_KEY = os.getenv("QR_TICKET_SECRET_KEY", "default-qr-secret-change-in-production")
+QR_DEFAULT_TTL_HOURS = int(os.getenv("QR_TICKET_TTL_HOURS", "24"))
 
 
 class TicketType(str, Enum):
@@ -33,6 +34,20 @@ class TicketStatus(str, Enum):
     SUSPENDED = "suspended"
 
 
+class BulkVerifyRequest(BaseModel):
+    qr_codes: List[str] = Field(..., description="List of raw QR code data strings to verify")
+    scanner_agent_id: Optional[str] = None
+    scanner_location: Optional[str] = None
+
+
+class BulkVerifyResponse(BaseModel):
+    total: int
+    verified: int
+    failed: int
+    results: List[Dict[str, Any]]
+    verified_at: str
+
+
 class TicketCreate(BaseModel):
     ticket_type: TicketType
     event_name: str = Field(..., description="Event/service name")
@@ -42,6 +57,7 @@ class TicketCreate(BaseModel):
     currency: str = Field(default="NGN")
     valid_from: str = Field(..., description="ISO datetime")
     valid_until: str = Field(..., description="ISO datetime")
+    ttl_hours: Optional[int] = Field(default=None, description="Override default TTL in hours")
     max_uses: int = Field(default=1, ge=1, description="Max scan/verification count")
     venue: Optional[str] = None
     seat_info: Optional[str] = None
@@ -120,11 +136,23 @@ def _parse_qr_data(qr_data: str) -> Optional[Dict[str, Any]]:
 @router.post("/create", response_model=TicketResponse)
 async def create_ticket(request: TicketCreate):
     ticket_id = f"TKT-{uuid.uuid4().hex[:12].upper()}"
-    qr_data = _generate_qr_data(ticket_id, request.ticket_type.value, request.event_name, request.valid_until)
+
+    ttl = request.ttl_hours if request.ttl_hours is not None else QR_DEFAULT_TTL_HOURS
+    now_dt = datetime.utcnow()
+    enforced_valid_until = request.valid_until
+    try:
+        req_until = datetime.fromisoformat(request.valid_until.replace("Z", ""))
+        max_expiry = now_dt + timedelta(hours=ttl)
+        if req_until > max_expiry:
+            enforced_valid_until = max_expiry.isoformat()
+    except (ValueError, TypeError):
+        pass
+
+    qr_data = _generate_qr_data(ticket_id, request.ticket_type.value, request.event_name, enforced_valid_until)
     qr_signature = _sign_qr_data(qr_data)
     full_qr = f"{qr_data}.{qr_signature}"
 
-    now = datetime.utcnow().isoformat()
+    now = now_dt.isoformat()
     ticket = TicketResponse(
         ticket_id=ticket_id,
         ticket_type=request.ticket_type,
@@ -134,7 +162,7 @@ async def create_ticket(request: TicketCreate):
         amount=request.amount,
         currency=request.currency,
         valid_from=request.valid_from,
-        valid_until=request.valid_until,
+        valid_until=enforced_valid_until,
         max_uses=request.max_uses,
         use_count=0,
         status=TicketStatus.ACTIVE,
@@ -364,6 +392,42 @@ async def get_scan_log(
     if scanner_agent_id:
         logs = [l for l in logs if l.get("scanner_agent_id") == scanner_agent_id]
     return {"total": len(logs), "logs": logs[-limit:]}
+
+
+@router.post("/bulk-verify", response_model=BulkVerifyResponse)
+async def bulk_verify_tickets(request: BulkVerifyRequest):
+    """Verify multiple QR codes in a single request for auditor batch scanning."""
+    now = datetime.utcnow()
+    now_iso = now.isoformat()
+    results = []
+    verified_count = 0
+    failed_count = 0
+    for qr_code in request.qr_codes:
+        single_req = VerifyRequest(
+            qr_data=qr_code,
+            scanner_agent_id=request.scanner_agent_id,
+            scanner_location=request.scanner_location,
+        )
+        result = await verify_ticket(single_req)
+        entry = {
+            "qr_data_prefix": qr_code[:20] + "..." if len(qr_code) > 20 else qr_code,
+            "valid": result.valid,
+            "status": result.status,
+            "message": result.message,
+            "ticket_id": result.ticket_id,
+        }
+        results.append(entry)
+        if result.valid:
+            verified_count += 1
+        else:
+            failed_count += 1
+    return BulkVerifyResponse(
+        total=len(request.qr_codes),
+        verified=verified_count,
+        failed=failed_count,
+        results=results,
+        verified_at=now_iso,
+    )
 
 
 @router.get("/stats")

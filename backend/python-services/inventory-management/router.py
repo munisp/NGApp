@@ -1,4 +1,6 @@
+import os
 import uuid
+import logging
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 from enum import Enum
@@ -6,7 +8,15 @@ from enum import Enum
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, Field
 
+import httpx
+
+logger = logging.getLogger(__name__)
+
 router = APIRouter(prefix="/inventory-management", tags=["inventory-management"])
+
+WEBHOOK_URL = os.getenv("INVENTORY_WEBHOOK_URL", "")
+LOW_STOCK_WEBHOOK_ENABLED = os.getenv("LOW_STOCK_WEBHOOK_ENABLED", "true").lower() == "true"
+_webhook_log: List[Dict[str, Any]] = []
 
 
 class ItemCategory(str, Enum):
@@ -116,6 +126,33 @@ def _update_item_status(item: ItemResponse):
         item.status = ItemStatus.AVAILABLE
 
 
+async def _check_low_stock_webhook(item: ItemResponse, agent_id: Optional[str] = None):
+    if not LOW_STOCK_WEBHOOK_ENABLED:
+        return
+    if item.available_quantity > item.reorder_level:
+        return
+    payload = {
+        "alert_type": "low_stock",
+        "item_id": item.id,
+        "item_name": item.name,
+        "category": item.category.value,
+        "sku": item.sku,
+        "available_quantity": item.available_quantity,
+        "reorder_level": item.reorder_level,
+        "agent_id": agent_id,
+        "severity": "critical" if item.available_quantity == 0 else "warning",
+        "triggered_at": datetime.utcnow().isoformat(),
+    }
+    _webhook_log.append(payload)
+    if WEBHOOK_URL:
+        try:
+            async with httpx.AsyncClient(timeout=5.0) as client:
+                await client.post(WEBHOOK_URL, json=payload)
+            logger.info(f"Low stock webhook sent for {item.name} (qty={item.available_quantity})")
+        except Exception as e:
+            logger.warning(f"Low stock webhook failed: {e}")
+
+
 @router.get("/")
 async def root():
     return {"service": "inventory-management", "status": "ok", "total_items": len(_items)}
@@ -151,6 +188,9 @@ async def create_item(item: ItemCreate):
         updated_at=now,
     )
     _items[item_id] = response
+    if response.available_quantity <= response.reorder_level:
+        import asyncio
+        asyncio.create_task(_check_low_stock_webhook(response))
     return response
 
 
@@ -243,6 +283,8 @@ async def assign_to_agent(request: AgentAssignment):
     item.available_quantity -= request.quantity
     item.updated_at = now
     _update_item_status(item)
+    import asyncio
+    asyncio.create_task(_check_low_stock_webhook(item, request.agent_id))
 
     _agent_inventory.setdefault(request.agent_id, {})
     _agent_inventory[request.agent_id][request.item_id] = (
@@ -440,4 +482,31 @@ async def process_data(data: Dict[str, Any]):
             results.append(result)
         return {"processed": len(results), "results": results}
     return {"status": "unknown_action", "action": action}
+
+
+@router.get("/webhook-log")
+async def get_webhook_log(limit: int = Query(default=50, le=500)):
+    return {
+        "total": len(_webhook_log),
+        "webhook_url_configured": bool(WEBHOOK_URL),
+        "enabled": LOW_STOCK_WEBHOOK_ENABLED,
+        "alerts": _webhook_log[-limit:],
+    }
+
+
+@router.get("/low-stock-alerts")
+async def get_low_stock_alerts():
+    alerts = []
+    for item in _items.values():
+        if item.available_quantity <= item.reorder_level and item.quantity > 0:
+            alerts.append({
+                "item_id": item.id,
+                "item_name": item.name,
+                "category": item.category.value,
+                "sku": item.sku,
+                "available": item.available_quantity,
+                "reorder_level": item.reorder_level,
+                "severity": "critical" if item.available_quantity == 0 else "warning",
+            })
+    return {"total_alerts": len(alerts), "alerts": alerts}
 
