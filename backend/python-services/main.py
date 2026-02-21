@@ -1,7 +1,5 @@
 import sys as _sys, os as _os
 _sys.path.insert(0, _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), ".."))
-from shared.middleware import apply_middleware, ErrorResponse
-from shared.observability import setup_logging, get_logger, metrics_router, MetricsMiddleware
 """
 Master Main Application
 Registers all 120+ microservices with complete routing
@@ -9,13 +7,9 @@ Registers all 120+ microservices with complete routing
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-
-apply_middleware(app)
-setup_logging("agent-banking-platform---complete-api")
-app.include_router(metrics_router)
-
 import logging
 import sys
+import os
 from pathlib import Path
 
 # Configure logging
@@ -32,10 +26,16 @@ app = FastAPI(
     version="1.0.0"
 )
 
+from shared.middleware import apply_middleware, ErrorResponse
+from shared.observability import setup_logging, get_logger, metrics_router, MetricsMiddleware
+apply_middleware(app)
+setup_logging("agent-banking-platform---complete-api")
+app.include_router(metrics_router)
+
 # CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=os.getenv("ALLOWED_ORIGINS","http://localhost:5173,http://localhost:5174,http://localhost:3000").split(","),
+    allow_origins=os.getenv("ALLOWED_ORIGINS", "http://localhost:5173,http://localhost:5174,http://localhost:3000").split(","),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

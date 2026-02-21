@@ -1,4 +1,5 @@
 import logging
+import os
 from datetime import datetime, timedelta
 from typing import Annotated
 
@@ -144,22 +145,73 @@ async def send_sms(
     db: Session = Depends(get_db)
 ):
     logger.info(f"User {current_user.username} attempting to send SMS to {message_data.recipient}")
-    # Send SMS via external provider API
-    # In a real-world scenario, this would involve an HTTP request to an SMS gateway
     try:
-        # Send via configured SMS provider API
-        # response = await sms_provider_client.send_message(message_data.recipient, message_data.content)
-        # if response.success:
-        #     status = "sent"
-        #     delivery_report = response.message_id
-        # else:
-        #     status = "failed"
-        #     delivery_report = response.error_message
+        import httpx
+        sms_provider = os.getenv("SMS_PROVIDER", "africas_talking")
+        sms_api_key = os.getenv("SMS_API_KEY", "")
+        sms_sender_id = os.getenv("SMS_SENDER_ID", "AgentBank")
 
-        # Process provider response
-        status_str = "sent"
-        delivery_report_str = f"msg_{datetime.utcnow().strftime('%Y%m%d%H%M%S')}"
+        status_str = "failed"
+        delivery_report_str = ""
         sent_at_dt = datetime.utcnow()
+
+        if sms_api_key:
+            if sms_provider == "africas_talking":
+                at_url = "https://api.africastalking.com/version1/messaging"
+                at_username = os.getenv("AT_USERNAME", "sandbox")
+                async with httpx.AsyncClient(timeout=15.0) as client:
+                    resp = await client.post(
+                        at_url,
+                        headers={
+                            "apiKey": sms_api_key,
+                            "Content-Type": "application/x-www-form-urlencoded",
+                        },
+                        data={
+                            "username": at_username,
+                            "to": message_data.recipient,
+                            "message": message_data.content,
+                            "from": sms_sender_id,
+                        },
+                    )
+                    if resp.status_code in (200, 201):
+                        resp_data = resp.json()
+                        recipients = resp_data.get("SMSMessageData", {}).get("Recipients", [])
+                        if recipients and recipients[0].get("status") == "Success":
+                            status_str = "sent"
+                            delivery_report_str = recipients[0].get("messageId", "")
+                        else:
+                            delivery_report_str = str(resp_data)
+                    else:
+                        delivery_report_str = f"HTTP {resp.status_code}: {resp.text[:200]}"
+
+            elif sms_provider == "twilio":
+                twilio_sid = os.getenv("TWILIO_ACCOUNT_SID", "")
+                twilio_token = os.getenv("TWILIO_AUTH_TOKEN", "")
+                twilio_from = os.getenv("TWILIO_FROM_NUMBER", "")
+                twilio_url = f"https://api.twilio.com/2010-04-01/Accounts/{twilio_sid}/Messages.json"
+                async with httpx.AsyncClient(timeout=15.0) as client:
+                    resp = await client.post(
+                        twilio_url,
+                        auth=(twilio_sid, twilio_token),
+                        data={
+                            "To": message_data.recipient,
+                            "From": twilio_from,
+                            "Body": message_data.content,
+                        },
+                    )
+                    if resp.status_code in (200, 201):
+                        resp_data = resp.json()
+                        status_str = "sent"
+                        delivery_report_str = resp_data.get("sid", "")
+                    else:
+                        delivery_report_str = f"HTTP {resp.status_code}: {resp.text[:200]}"
+            else:
+                logger.warning(f"Unknown SMS provider: {sms_provider}")
+                delivery_report_str = f"Unknown provider: {sms_provider}"
+        else:
+            logger.warning("SMS_API_KEY not configured, message stored but not sent")
+            status_str = "queued"
+            delivery_report_str = f"queued_{datetime.utcnow().strftime('%Y%m%d%H%M%S')}"
 
         db_message = Message(
             sender=message_data.sender,

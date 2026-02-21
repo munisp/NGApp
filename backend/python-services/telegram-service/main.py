@@ -1,221 +1,214 @@
 import sys as _sys, os as _os
 _sys.path.insert(0, _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), ".."))
-from shared.middleware import apply_middleware, ErrorResponse
-from shared.observability import setup_logging, get_logger, metrics_router, MetricsMiddleware
-"""
-Telegram Integration Service
-Port: 8159
-"""
-from fastapi import FastAPI, HTTPException
+
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-
-apply_middleware(app)
-setup_logging("telegram-integration")
-app.include_router(metrics_router)
-
 from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
 from datetime import datetime
 import uvicorn
-
-# Redis-based storage (replaces in-memory dict)
 import os
 import json
-import redis
+import httpx
+import logging
 
-_redis_client = None
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
-def get_redis_client():
-    """Get Redis client - requires REDIS_URL environment variable"""
-    global _redis_client
-    if _redis_client is None:
-        redis_url = os.getenv("REDIS_URL")
-        if not redis_url:
-            raise ValueError("REDIS_URL environment variable is required for storage")
-        _redis_client = redis.from_url(redis_url, decode_responses=True)
-    return _redis_client
-
-def storage_get(key: str):
-    """Get value from Redis storage"""
-    try:
-        client = get_redis_client()
-        value = client.get(f"storage:{key}")
-        return json.loads(value) if value else None
-    except Exception as e:
-        print(f"Storage get error: {e}")
-        return None
-
-def storage_set(key: str, value, ttl: int = 86400):
-    """Set value in Redis storage with optional TTL (default 24h)"""
-    try:
-        client = get_redis_client()
-        client.setex(f"storage:{key}", ttl, json.dumps(value))
-        return True
-    except Exception as e:
-        print(f"Storage set error: {e}")
-        return False
-
-def storage_delete(key: str):
-    """Delete value from Redis storage"""
-    try:
-        client = get_redis_client()
-        client.delete(f"storage:{key}")
-        return True
-    except Exception as e:
-        print(f"Storage delete error: {e}")
-        return False
-
-def storage_keys(pattern: str = "*"):
-    """Get all keys matching pattern"""
-    try:
-        client = get_redis_client()
-        return [k.replace("storage:", "") for k in client.keys(f"storage:{pattern}")]
-    except Exception as e:
-        print(f"Storage keys error: {e}")
-        return []
-
-
+CHANNEL_NAME = "telegram"
+TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
+TELEGRAM_API_URL = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}"
+REDIS_URL = os.getenv("REDIS_URL", "")
 
 app = FastAPI(
-    title="Telegram Integration",
-    description="Telegram Integration for Agent Banking Platform",
-    version="1.0.0"
+    title="Telegram Service",
+    description="Telegram Bot API integration for Agent Banking",
+    version="2.0.0"
 )
+
+from shared.middleware import apply_middleware, ErrorResponse
+from shared.observability import setup_logging, get_logger, metrics_router, MetricsMiddleware
+apply_middleware(app)
+setup_logging("telegram-service")
+app.include_router(metrics_router)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=os.getenv("ALLOWED_ORIGINS","http://localhost:5173,http://localhost:5174,http://localhost:3000").split(","),
+    allow_origins=os.getenv("ALLOWED_ORIGINS", "http://localhost:5173,http://localhost:5174,http://localhost:3000").split(","),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# In-memory storage (replace with database in production)
-# storage = {}  # REPLACED: Use storage_get/storage_set functions instead
-stats = {
-    "total_requests": 0,
-    "total_items": 0,
-    "start_time": datetime.now()
-}
+_redis = None
 
-# Pydantic Models
-class Item(BaseModel):
-    id: Optional[str] = None
-    data: Dict[str, Any]
-    created_at: Optional[datetime] = None
-    updated_at: Optional[datetime] = None
+def _get_redis():
+    global _redis
+    if _redis is None and REDIS_URL:
+        try:
+            import redis as _redis_mod
+            _redis = _redis_mod.from_url(REDIS_URL, decode_responses=True)
+        except Exception:
+            pass
+    return _redis
+
+def storage_get(key: str):
+    r = _get_redis()
+    if r:
+        try:
+            value = r.get(f"tg:storage:{key}")
+            return json.loads(value) if value else None
+        except Exception:
+            pass
+    return None
+
+def storage_set(key: str, value, ttl: int = 86400):
+    r = _get_redis()
+    if r:
+        try:
+            r.setex(f"tg:storage:{key}", ttl, json.dumps(value, default=str))
+            return True
+        except Exception:
+            pass
+    return False
+
+def storage_delete(key: str):
+    r = _get_redis()
+    if r:
+        try:
+            r.delete(f"tg:storage:{key}")
+            return True
+        except Exception:
+            pass
+    return False
+
+def storage_keys(pattern: str = "*"):
+    r = _get_redis()
+    if r:
+        try:
+            return [k.replace("tg:storage:", "") for k in r.keys(f"tg:storage:{pattern}")]
+        except Exception:
+            pass
+    return []
+
+def _incr_counter(name: str) -> int:
+    r = _get_redis()
+    if r:
+        return r.incr(f"tg:counter:{name}")
+    return 0
+
+
+class SendMessageRequest(BaseModel):
+    chat_id: int
+    text: str
+    parse_mode: str = "HTML"
+    reply_markup: Optional[Dict[str, Any]] = None
+
+class WebhookUpdate(BaseModel):
+    update_id: int
+    message: Optional[Dict[str, Any]] = None
+    callback_query: Optional[Dict[str, Any]] = None
+
+
+async def _send_telegram_message(chat_id: int, text: str, reply_markup: Optional[dict] = None) -> dict:
+    if not TELEGRAM_BOT_TOKEN:
+        logger.warning("TELEGRAM_BOT_TOKEN not configured, message queued locally")
+        return {"ok": False, "queued_locally": True}
+
+    payload = {"chat_id": chat_id, "text": text, "parse_mode": "HTML"}
+    if reply_markup:
+        payload["reply_markup"] = reply_markup
+
+    async with httpx.AsyncClient(timeout=15.0) as client:
+        resp = await client.post(f"{TELEGRAM_API_URL}/sendMessage", json=payload)
+        if resp.status_code == 200:
+            return resp.json()
+        else:
+            logger.error(f"Telegram API error {resp.status_code}: {resp.text}")
+            raise HTTPException(status_code=502, detail=f"Telegram API error: {resp.status_code}")
+
 
 @app.get("/")
 async def root():
     return {
         "service": "telegram-service",
-        "description": "Telegram Integration",
-        "version": "1.0.0",
-        "port": 8159,
-        "status": "operational"
+        "channel": CHANNEL_NAME,
+        "version": "2.0.0",
+        "status": "operational",
+        "provider": "Telegram Bot API",
     }
 
 @app.get("/health")
 async def health_check():
-    uptime = (datetime.now() - stats["start_time"]).total_seconds()
+    r = _get_redis()
     return {
         "status": "healthy",
-        "uptime_seconds": int(uptime),
-        "total_requests": stats["total_requests"],
-        "total_items": stats["total_items"]
-    }
-
-@app.post("/items")
-async def create_item(item: Item):
-    """Create a new item"""
-    stats["total_requests"] += 1
-    item_id = f"item_{len(storage) + 1}"
-    item.id = item_id
-    item.created_at = datetime.now()
-    item.updated_at = datetime.now()
-    storage[item_id] = item.dict()
-    stats["total_items"] += 1
-    return {"success": True, "item_id": item_id, "item": item}
-
-@app.get("/items")
-async def list_items(skip: int = 0, limit: int = 100):
-    """List all items"""
-    stats["total_requests"] += 1
-    items = list(storage.values())[skip:skip+limit]
-    return {
-        "success": True,
-        "total": len(storage),
-        "items": items,
-        "skip": skip,
-        "limit": limit
-    }
-
-@app.get("/items/{item_id}")
-async def get_item(item_id: str):
-    """Get a specific item"""
-    stats["total_requests"] += 1
-    if item_id not in storage:
-        raise HTTPException(status_code=404, detail="Item not found")
-    return {"success": True, "item": storage[item_id]}
-
-@app.put("/items/{item_id}")
-async def update_item(item_id: str, item: Item):
-    """Update an item"""
-    stats["total_requests"] += 1
-    if item_id not in storage:
-        raise HTTPException(status_code=404, detail="Item not found")
-    item.id = item_id
-    item.updated_at = datetime.now()
-    item.created_at = storage[item_id].get("created_at", datetime.now())
-    storage[item_id] = item.dict()
-    return {"success": True, "item": item}
-
-@app.delete("/items/{item_id}")
-async def delete_item(item_id: str):
-    """Delete an item"""
-    stats["total_requests"] += 1
-    if item_id not in storage:
-        raise HTTPException(status_code=404, detail="Item not found")
-    del storage[item_id]
-    stats["total_items"] -= 1
-    return {"success": True, "message": "Item deleted"}
-
-@app.post("/process")
-async def process_data(data: Dict[str, Any]):
-    """Process data (service-specific logic)"""
-    stats["total_requests"] += 1
-    return {
-        "success": True,
-        "message": "Data processed successfully",
         "service": "telegram-service",
-        "processed_at": datetime.now().isoformat(),
-        "data": data
+        "redis": "connected" if r else "not_configured",
+        "bot_configured": bool(TELEGRAM_BOT_TOKEN),
     }
 
-@app.get("/search")
-async def search_items(query: str):
-    """Search items"""
-    stats["total_requests"] += 1
-    results = [item for item in storage.values() if query.lower() in str(item).lower()]
+@app.post("/send")
+async def send_message(req: SendMessageRequest):
+    _incr_counter("messages_sent")
+    result = await _send_telegram_message(req.chat_id, req.text, req.reply_markup)
+    return {"status": "sent" if result.get("ok") else "queued", "result": result}
+
+@app.post("/webhook")
+async def webhook_handler(request: Request):
+    body = await request.json()
+    logger.info("Telegram webhook event received")
+
+    if "message" in body:
+        msg = body["message"]
+        chat_id = msg.get("chat", {}).get("id")
+        text = msg.get("text", "")
+        sender = msg.get("from", {})
+        logger.info(f"Incoming from {sender.get('username', 'unknown')}: {text[:50]}")
+
+        storage_set(f"msg:{body.get('update_id', '')}", {
+            "chat_id": chat_id,
+            "text": text,
+            "sender": sender.get("username", ""),
+            "timestamp": datetime.now().isoformat(),
+        })
+        _incr_counter("messages_received")
+
+    elif "callback_query" in body:
+        query = body["callback_query"]
+        logger.info(f"Callback query: {query.get('data', '')}")
+        _incr_counter("callbacks_received")
+
+    return {"status": "processed"}
+
+@app.post("/set-webhook")
+async def set_webhook(url: str):
+    if not TELEGRAM_BOT_TOKEN:
+        raise HTTPException(status_code=400, detail="TELEGRAM_BOT_TOKEN not configured")
+    async with httpx.AsyncClient(timeout=15.0) as client:
+        resp = await client.post(
+            f"{TELEGRAM_API_URL}/setWebhook",
+            json={"url": url}
+        )
+        return resp.json()
+
+@app.get("/metrics")
+async def get_metrics():
+    r = _get_redis()
+    sent = int(r.get("tg:counter:messages_sent") or 0) if r else 0
+    received = int(r.get("tg:counter:messages_received") or 0) if r else 0
+    callbacks = int(r.get("tg:counter:callbacks_received") or 0) if r else 0
     return {
-        "success": True,
-        "query": query,
-        "total_results": len(results),
-        "results": results
+        "channel": CHANNEL_NAME,
+        "messages_sent": sent,
+        "messages_received": received,
+        "callbacks_received": callbacks,
+        "bot_configured": bool(TELEGRAM_BOT_TOKEN),
     }
 
 @app.get("/stats")
 async def get_statistics():
-    """Get service statistics"""
-    uptime = (datetime.now() - stats["start_time"]).total_seconds()
-    return {
-        "uptime_seconds": int(uptime),
-        "total_requests": stats["total_requests"],
-        "total_items": stats["total_items"],
-        "service": "telegram-service",
-        "port": 8159,
-        "status": "operational"
-    }
+    return await get_metrics()
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8159)

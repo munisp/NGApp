@@ -1,221 +1,178 @@
 import sys as _sys, os as _os
 _sys.path.insert(0, _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), ".."))
-from shared.middleware import apply_middleware, ErrorResponse
-from shared.observability import setup_logging, get_logger, metrics_router, MetricsMiddleware
 """
 Communication Gateway Service
+Unified omni-channel message routing across WhatsApp, Telegram, USSD, SMS
 Port: 8115
 """
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+from typing import Optional, Dict, Any
+from datetime import datetime
+import uvicorn
+import os
+import json
+import httpx
+import logging
 
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+REDIS_URL = os.getenv("REDIS_URL", "")
+WHATSAPP_SERVICE_URL = os.getenv("WHATSAPP_SERVICE_URL", "http://localhost:8140")
+TELEGRAM_SERVICE_URL = os.getenv("TELEGRAM_SERVICE_URL", "http://localhost:8159")
+USSD_SERVICE_URL = os.getenv("USSD_SERVICE_URL", "http://localhost:8141")
+SMS_GATEWAY_URL = os.getenv("SMS_GATEWAY_URL", "http://localhost:8142")
+
+app = FastAPI(
+    title="Communication Gateway",
+    description="Unified omni-channel message routing for Agent Banking",
+    version="2.0.0"
+)
+
+from shared.middleware import apply_middleware, ErrorResponse
+from shared.observability import setup_logging, get_logger, metrics_router, MetricsMiddleware
 apply_middleware(app)
 setup_logging("communication-gateway")
 app.include_router(metrics_router)
 
-from pydantic import BaseModel
-from typing import Optional, List, Dict, Any
-from datetime import datetime
-import uvicorn
-
-# Redis-based storage (replaces in-memory dict)
-import os
-import json
-import redis
-
-_redis_client = None
-
-def get_redis_client():
-    """Get Redis client - requires REDIS_URL environment variable"""
-    global _redis_client
-    if _redis_client is None:
-        redis_url = os.getenv("REDIS_URL")
-        if not redis_url:
-            raise ValueError("REDIS_URL environment variable is required for storage")
-        _redis_client = redis.from_url(redis_url, decode_responses=True)
-    return _redis_client
-
-def storage_get(key: str):
-    """Get value from Redis storage"""
-    try:
-        client = get_redis_client()
-        value = client.get(f"storage:{key}")
-        return json.loads(value) if value else None
-    except Exception as e:
-        print(f"Storage get error: {e}")
-        return None
-
-def storage_set(key: str, value, ttl: int = 86400):
-    """Set value in Redis storage with optional TTL (default 24h)"""
-    try:
-        client = get_redis_client()
-        client.setex(f"storage:{key}", ttl, json.dumps(value))
-        return True
-    except Exception as e:
-        print(f"Storage set error: {e}")
-        return False
-
-def storage_delete(key: str):
-    """Delete value from Redis storage"""
-    try:
-        client = get_redis_client()
-        client.delete(f"storage:{key}")
-        return True
-    except Exception as e:
-        print(f"Storage delete error: {e}")
-        return False
-
-def storage_keys(pattern: str = "*"):
-    """Get all keys matching pattern"""
-    try:
-        client = get_redis_client()
-        return [k.replace("storage:", "") for k in client.keys(f"storage:{pattern}")]
-    except Exception as e:
-        print(f"Storage keys error: {e}")
-        return []
-
-
-
-app = FastAPI(
-    title="Communication Gateway",
-    description="Communication Gateway for Agent Banking Platform",
-    version="1.0.0"
-)
-
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=os.getenv("ALLOWED_ORIGINS","http://localhost:5173,http://localhost:5174,http://localhost:3000").split(","),
+    allow_origins=os.getenv("ALLOWED_ORIGINS", "http://localhost:5173,http://localhost:5174,http://localhost:3000").split(","),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# In-memory storage (replace with database in production)
-# storage = {}  # REPLACED: Use storage_get/storage_set functions instead
-stats = {
-    "total_requests": 0,
-    "total_items": 0,
-    "start_time": datetime.now()
+_redis = None
+
+def _get_redis():
+    global _redis
+    if _redis is None and REDIS_URL:
+        try:
+            import redis as _redis_mod
+            _redis = _redis_mod.from_url(REDIS_URL, decode_responses=True)
+        except Exception:
+            pass
+    return _redis
+
+
+CHANNEL_URLS = {
+    "whatsapp": WHATSAPP_SERVICE_URL,
+    "telegram": TELEGRAM_SERVICE_URL,
+    "ussd": USSD_SERVICE_URL,
+    "sms": SMS_GATEWAY_URL,
 }
 
-# Pydantic Models
-class Item(BaseModel):
-    id: Optional[str] = None
-    data: Dict[str, Any]
-    created_at: Optional[datetime] = None
-    updated_at: Optional[datetime] = None
+
+class SendRequest(BaseModel):
+    channel: str
+    recipient: str
+    content: str
+    metadata: Optional[Dict[str, Any]] = None
+
+
+class ConversationContext(BaseModel):
+    user_id: str
+    channel: str
+
+
+async def _route_to_channel(channel: str, endpoint: str, payload: dict) -> dict:
+    base_url = CHANNEL_URLS.get(channel)
+    if not base_url:
+        raise HTTPException(status_code=400, detail=f"Unknown channel: {channel}")
+    async with httpx.AsyncClient(timeout=15.0) as client:
+        resp = await client.post(f"{base_url}{endpoint}", json=payload)
+        if resp.status_code < 300:
+            return resp.json()
+        raise HTTPException(status_code=resp.status_code, detail=resp.text[:500])
+
 
 @app.get("/")
 async def root():
     return {
         "service": "communication-gateway",
-        "description": "Communication Gateway",
-        "version": "1.0.0",
-        "port": 8115,
-        "status": "operational"
+        "version": "2.0.0",
+        "channels": list(CHANNEL_URLS.keys()),
+        "status": "operational",
     }
 
 @app.get("/health")
 async def health_check():
-    uptime = (datetime.now() - stats["start_time"]).total_seconds()
-    return {
-        "status": "healthy",
-        "uptime_seconds": int(uptime),
-        "total_requests": stats["total_requests"],
-        "total_items": stats["total_items"]
-    }
+    channel_health = {}
+    for ch, url in CHANNEL_URLS.items():
+        try:
+            async with httpx.AsyncClient(timeout=5.0) as client:
+                resp = await client.get(f"{url}/health")
+                channel_health[ch] = "healthy" if resp.status_code == 200 else "degraded"
+        except Exception:
+            channel_health[ch] = "unreachable"
+    return {"status": "healthy", "channels": channel_health}
 
-@app.post("/items")
-async def create_item(item: Item):
-    """Create a new item"""
-    stats["total_requests"] += 1
-    item_id = f"item_{len(storage) + 1}"
-    item.id = item_id
-    item.created_at = datetime.now()
-    item.updated_at = datetime.now()
-    storage[item_id] = item.dict()
-    stats["total_items"] += 1
-    return {"success": True, "item_id": item_id, "item": item}
+@app.post("/send")
+async def send_message(req: SendRequest):
+    channel = req.channel.lower()
+    r = _get_redis()
 
-@app.get("/items")
-async def list_items(skip: int = 0, limit: int = 100):
-    """List all items"""
-    stats["total_requests"] += 1
-    items = list(storage.values())[skip:skip+limit]
-    return {
-        "success": True,
-        "total": len(storage),
-        "items": items,
-        "skip": skip,
-        "limit": limit
-    }
+    if channel == "whatsapp":
+        result = await _route_to_channel("whatsapp", "/send", {
+            "recipient": req.recipient, "content": req.content, "message_type": "text"
+        })
+    elif channel == "telegram":
+        result = await _route_to_channel("telegram", "/send", {
+            "chat_id": int(req.recipient), "text": req.content
+        })
+    elif channel == "sms":
+        result = await _route_to_channel("sms", "/api/v1/sms-gateway/send", {
+            "recipient": req.recipient, "message": req.content
+        })
+    elif channel == "ussd":
+        raise HTTPException(status_code=400, detail="USSD is pull-based; use /ussd/callback instead")
+    else:
+        raise HTTPException(status_code=400, detail=f"Unsupported channel: {channel}")
 
-@app.get("/items/{item_id}")
-async def get_item(item_id: str):
-    """Get a specific item"""
-    stats["total_requests"] += 1
-    if item_id not in storage:
-        raise HTTPException(status_code=404, detail="Item not found")
-    return {"success": True, "item": storage[item_id]}
+    if r:
+        r.incr(f"gateway:sent:{channel}")
+        r.lpush(f"gateway:conversation:{req.recipient}", json.dumps({
+            "channel": channel, "direction": "outbound", "content": req.content,
+            "timestamp": datetime.utcnow().isoformat()
+        }, default=str))
+        r.ltrim(f"gateway:conversation:{req.recipient}", 0, 99)
 
-@app.put("/items/{item_id}")
-async def update_item(item_id: str, item: Item):
-    """Update an item"""
-    stats["total_requests"] += 1
-    if item_id not in storage:
-        raise HTTPException(status_code=404, detail="Item not found")
-    item.id = item_id
-    item.updated_at = datetime.now()
-    item.created_at = storage[item_id].get("created_at", datetime.now())
-    storage[item_id] = item.dict()
-    return {"success": True, "item": item}
+    return {"status": "sent", "channel": channel, "result": result}
 
-@app.delete("/items/{item_id}")
-async def delete_item(item_id: str):
-    """Delete an item"""
-    stats["total_requests"] += 1
-    if item_id not in storage:
-        raise HTTPException(status_code=404, detail="Item not found")
-    del storage[item_id]
-    stats["total_items"] -= 1
-    return {"success": True, "message": "Item deleted"}
+@app.get("/conversation/{user_id}")
+async def get_conversation(user_id: str, limit: int = 20):
+    r = _get_redis()
+    if not r:
+        return {"messages": [], "note": "Redis not configured"}
+    raw = r.lrange(f"gateway:conversation:{user_id}", 0, limit - 1)
+    messages = [json.loads(m) for m in raw]
+    return {"user_id": user_id, "messages": messages, "total": len(messages)}
 
-@app.post("/process")
-async def process_data(data: Dict[str, Any]):
-    """Process data (service-specific logic)"""
-    stats["total_requests"] += 1
-    return {
-        "success": True,
-        "message": "Data processed successfully",
-        "service": "communication-gateway",
-        "processed_at": datetime.now().isoformat(),
-        "data": data
-    }
+@app.get("/channels")
+async def list_channels():
+    return {"channels": [
+        {"name": "whatsapp", "url": WHATSAPP_SERVICE_URL, "protocol": "Meta Cloud API"},
+        {"name": "telegram", "url": TELEGRAM_SERVICE_URL, "protocol": "Telegram Bot API"},
+        {"name": "ussd", "url": USSD_SERVICE_URL, "protocol": "USSD Gateway (pull)"},
+        {"name": "sms", "url": SMS_GATEWAY_URL, "protocol": "Africa's Talking / Twilio"},
+    ]}
 
-@app.get("/search")
-async def search_items(query: str):
-    """Search items"""
-    stats["total_requests"] += 1
-    results = [item for item in storage.values() if query.lower() in str(item).lower()]
-    return {
-        "success": True,
-        "query": query,
-        "total_results": len(results),
-        "results": results
-    }
+@app.get("/metrics")
+async def get_metrics():
+    r = _get_redis()
+    if not r:
+        return {"channels": {}}
+    metrics = {}
+    for ch in CHANNEL_URLS:
+        metrics[ch] = int(r.get(f"gateway:sent:{ch}") or 0)
+    return {"messages_sent": metrics}
 
 @app.get("/stats")
 async def get_statistics():
-    """Get service statistics"""
-    uptime = (datetime.now() - stats["start_time"]).total_seconds()
-    return {
-        "uptime_seconds": int(uptime),
-        "total_requests": stats["total_requests"],
-        "total_items": stats["total_items"],
-        "service": "communication-gateway",
-        "port": 8115,
-        "status": "operational"
-    }
+    return await get_metrics()
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8115)
