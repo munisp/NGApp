@@ -127,9 +127,10 @@ class SettlementBatchCreate(BaseModel):
     settlement_period_start: date
     settlement_period_end: date
     settlement_rule_id: Optional[str] = None
-    agent_ids: Optional[List[str]] = None  # Specific agents or None for all
+    agent_ids: Optional[List[str]] = None
     description: Optional[str] = None
     auto_process: bool = False
+    idempotency_key: Optional[str] = None
 
 class SettlementBatchResponse(BaseModel):
     id: str
@@ -230,7 +231,16 @@ class SettlementEngine:
         self.http = http_client
     
     async def create_settlement_batch(self, batch_data: SettlementBatchCreate, created_by: str) -> str:
-        """Create a new settlement batch"""
+        """Create a new settlement batch with idempotency support."""
+        if batch_data.idempotency_key:
+            cached_batch_id = await self.redis.get(f"settlement_idempotency:{batch_data.idempotency_key}")
+            if cached_batch_id:
+                bid = cached_batch_id if isinstance(cached_batch_id, str) else cached_batch_id.decode()
+                existing = await self.db.fetchrow("SELECT id FROM settlement_batches WHERE id = $1", bid)
+                if existing:
+                    logger.info(f"Idempotency hit for settlement key={batch_data.idempotency_key}")
+                    return bid
+
         batch_id = str(uuid.uuid4())
         batch_number = await self._generate_batch_number()
         
@@ -300,7 +310,17 @@ class SettlementEngine:
                 json.dumps(item['payout_details']), item['status'].value, 0, datetime.utcnow())
         
         logger.info(f"Created settlement batch {batch_id} with {len(settlement_items)} items, total: {total_amount}")
-        
+
+        if batch_data.idempotency_key:
+            try:
+                await self.redis.setex(
+                    f"settlement_idempotency:{batch_data.idempotency_key}",
+                    86400,
+                    batch_id,
+                )
+            except Exception:
+                pass
+
         # Auto-process if requested
         if batch_data.auto_process and rule and rule['auto_approve']:
             if total_amount <= rule.get('auto_approve_threshold', Decimal("1000000")):

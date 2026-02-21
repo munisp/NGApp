@@ -2,10 +2,13 @@
 Metaverse Service
 Integration service for metaverse platforms and virtual economies
 """
-from fastapi import FastAPI, HTTPException
+import hashlib
+import json as json_mod
+
+from fastapi import FastAPI, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
-from typing import List, Optional, Dict, Any
+from typing import Dict, Any, List, Optional
 from datetime import datetime
 from enum import Enum
 import logging
@@ -139,13 +142,13 @@ class MetaverseStore(BaseModel):
     products: List[str] = []  # Product IDs
     is_open: bool = True
 
-# In-memory storage
 accounts_db: Dict[str, MetaverseAccount] = {}
 assets_db: Dict[str, VirtualAsset] = {}
 land_db: Dict[str, VirtualLand] = {}
 transactions_db: Dict[str, MetaverseTransaction] = {}
 events_db: Dict[str, VirtualEvent] = {}
 stores_db: Dict[str, MetaverseStore] = {}
+_idempotency_cache: Dict[str, Dict[str, Any]] = {}
 
 # API Endpoints
 
@@ -278,17 +281,41 @@ async def list_virtual_land(
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/transactions", response_model=MetaverseTransaction)
-async def create_transaction(transaction: MetaverseTransaction):
-    """Create a metaverse transaction"""
+async def create_transaction(
+    transaction: MetaverseTransaction,
+    idempotency_key: Optional[str] = Header(None, alias="Idempotency-Key"),
+):
+    """Create a metaverse transaction with idempotency support."""
     try:
+        if idempotency_key:
+            req_data = transaction.model_dump(exclude={"id", "timestamp", "status"})
+            req_hash = hashlib.sha256(json_mod.dumps(req_data, sort_keys=True, default=str).encode()).hexdigest()
+            cached = _idempotency_cache.get(idempotency_key)
+            if cached:
+                if cached["request_hash"] != req_hash:
+                    raise HTTPException(status_code=422, detail="Idempotency key reused with different request payload")
+                existing = transactions_db.get(cached["transaction_id"])
+                if existing:
+                    logger.info(f"Idempotency hit for key={idempotency_key}")
+                    return existing
+
         transaction.id = str(uuid.uuid4())
         transaction.timestamp = datetime.utcnow()
         transaction.status = "completed"
-        
+
         transactions_db[transaction.id] = transaction
-        
+
+        if idempotency_key:
+            req_data = transaction.model_dump(exclude={"id", "timestamp", "status"})
+            _idempotency_cache[idempotency_key] = {
+                "request_hash": hashlib.sha256(json_mod.dumps(req_data, sort_keys=True, default=str).encode()).hexdigest(),
+                "transaction_id": transaction.id,
+            }
+
         logger.info(f"Created transaction {transaction.id} for account {transaction.account_id}")
         return transaction
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error creating transaction: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))

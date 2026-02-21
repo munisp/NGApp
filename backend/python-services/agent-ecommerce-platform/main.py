@@ -121,6 +121,7 @@ class OrderCreateRequest(BaseModel):
     shipping_address: Dict[str, Any]
     billing_address: Optional[Dict[str, Any]] = None
     payment_method: str
+    idempotency_key: Optional[str] = None
 
 class StoreResponse(BaseModel):
     id: str
@@ -355,24 +356,42 @@ async def create_order(
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_db)
 ):
-    """Create a new order"""
-    
-    # Verify store exists
+    """Create a new order with idempotency support.
+    Set idempotency_key in request body to prevent duplicate orders."""
+
+    if order_data.idempotency_key:
+        idem_key = order_data.idempotency_key
+        cached = redis_client.get(f"order_idempotency:{idem_key}")
+        if cached:
+            existing_order_id = cached if isinstance(cached, str) else cached.decode()
+            existing = db.query(StoreOrder).filter(StoreOrder.id == existing_order_id).first()
+            if existing:
+                return OrderResponse(
+                    id=str(existing.id),
+                    store_id=str(existing.store_id),
+                    customer_id=existing.customer_id,
+                    order_number=existing.order_number,
+                    total_amount=existing.total_amount,
+                    currency=existing.currency,
+                    status=existing.status,
+                    payment_status=existing.payment_status,
+                    payment_method=existing.payment_method,
+                    order_items=json.loads(existing.order_items),
+                    created_at=existing.created_at
+                )
+
     store = db.query(AgentStore).filter(AgentStore.id == store_id).first()
     if not store:
         raise HTTPException(status_code=404, detail="Store not found")
-    
-    # Calculate total amount
+
     total_amount = 0
     for item in order_data.order_items:
         product = db.query(StoreProduct).filter(StoreProduct.id == item.get("product_id")).first()
         if product:
             total_amount += product.price * item.get("quantity", 1)
-    
-    # Generate order number
+
     order_number = f"ORD-{datetime.utcnow().strftime('%Y%m%d')}-{uuid.uuid4().hex[:8].upper()}"
-    
-    # Create new order
+
     new_order = StoreOrder(
         store_id=store_id,
         customer_id=order_data.customer_id,
@@ -383,14 +402,23 @@ async def create_order(
         billing_address=json.dumps(order_data.billing_address) if order_data.billing_address else None,
         order_items=json.dumps(order_data.order_items)
     )
-    
+
     db.add(new_order)
     db.commit()
     db.refresh(new_order)
-    
-    # Process payment in background
+
+    if order_data.idempotency_key:
+        try:
+            redis_client.setex(
+                f"order_idempotency:{order_data.idempotency_key}",
+                86400,
+                str(new_order.id),
+            )
+        except Exception:
+            pass
+
     background_tasks.add_task(process_payment, str(new_order.id), order_data.payment_method, total_amount)
-    
+
     return OrderResponse(
         id=str(new_order.id),
         store_id=str(new_order.store_id),

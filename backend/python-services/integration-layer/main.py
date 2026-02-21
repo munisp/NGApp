@@ -1,11 +1,16 @@
-from fastapi import FastAPI, Depends, HTTPException, status
+import hashlib
+import json
+from typing import Dict, Any, List, Optional
+
+from fastapi import FastAPI, Depends, Header, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
-from typing import List
 import logging
 
 from . import models
 from .models import SessionLocal, engine
+
+_txn_idempotency_cache: Dict[str, Dict[str, Any]] = {}
 
 models.Base.metadata.create_all(bind=engine)
 
@@ -102,12 +107,38 @@ async def delete_agent(agent_id: int, db: Session = Depends(get_db), current_use
 
 # Transaction Endpoints
 @app.post("/transactions/", response_model=models.Transaction, tags=["Transactions"])
-async def create_transaction(transaction: models.TransactionCreate, db: Session = Depends(get_db), current_user: dict = Depends(get_current_user)):
+async def create_transaction(
+    transaction: models.TransactionCreate,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+    idempotency_key: Optional[str] = Header(None, alias="Idempotency-Key"),
+):
+    """Create transaction with idempotency. Send Idempotency-Key header to prevent duplicates."""
     logger.info(f"Create transaction requested by user: {current_user['username']}")
+
+    if idempotency_key:
+        req_data = transaction.dict()
+        req_hash = hashlib.sha256(json.dumps(req_data, sort_keys=True, default=str).encode()).hexdigest()
+        cached = _txn_idempotency_cache.get(idempotency_key)
+        if cached:
+            if cached["request_hash"] != req_hash:
+                raise HTTPException(status_code=422, detail="Idempotency key reused with different request payload")
+            existing = db.query(models.Transaction).filter(models.Transaction.id == cached["transaction_id"]).first()
+            if existing:
+                logger.info(f"Idempotency hit for key={idempotency_key}")
+                return existing
+
     db_transaction = models.Transaction(**transaction.dict())
     db.add(db_transaction)
     db.commit()
     db.refresh(db_transaction)
+
+    if idempotency_key:
+        _txn_idempotency_cache[idempotency_key] = {
+            "request_hash": hashlib.sha256(json.dumps(transaction.dict(), sort_keys=True, default=str).encode()).hexdigest(),
+            "transaction_id": db_transaction.id,
+        }
+
     return db_transaction
 
 @app.get("/transactions/", response_model=List[models.Transaction], tags=["Transactions"])
