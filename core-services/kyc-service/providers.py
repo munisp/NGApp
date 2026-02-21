@@ -395,20 +395,46 @@ def get_bvn_provider() -> BVNProvider:
         return NIBSSBVNProvider()
 
 
+class OpenSourceLivenessAdapter(LivenessProvider):
+    """Adapter wrapping OpenSourceLivenessProvider to match LivenessProvider interface"""
+
+    async def check_liveness(
+        self,
+        selfie_url: str,
+        video_url: Optional[str] = None,
+        reference_image_url: Optional[str] = None
+    ) -> LivenessCheckResult:
+        from liveness_detection import get_opensource_liveness_provider
+        provider = get_opensource_liveness_provider()
+        result = await provider.check_liveness(selfie_url, video_url, reference_image_url)
+        return LivenessCheckResult(
+            is_live=result.is_live,
+            confidence_score=result.confidence_score,
+            face_match_score=result.face_match_score,
+            checks_passed=result.checks_passed,
+            checks_failed=result.checks_failed,
+            provider=result.provider,
+            provider_reference=result.provider_reference,
+            raw_response=result.raw_response,
+        )
+
+
 def get_liveness_provider() -> LivenessProvider:
     """Get configured liveness provider"""
-    provider = os.getenv("LIVENESS_PROVIDER", "smile_id")
-    
-    if provider == "smile_id":
+    provider = os.getenv("LIVENESS_PROVIDER", "opensource")
+
+    if provider == "opensource":
+        return OpenSourceLivenessAdapter()
+    elif provider == "smile_id":
         return SmileIDProvider()
     elif provider == "mock" and ENVIRONMENT in ("development", "test"):
         return MockLivenessProvider()
     elif provider == "mock":
         logger.error("Mock liveness provider not allowed outside development/test")
-        raise RuntimeError("Mock liveness provider not allowed in production. Set LIVENESS_PROVIDER to smile_id.")
+        raise RuntimeError("Mock liveness provider not allowed in production. Set LIVENESS_PROVIDER to opensource or smile_id.")
     else:
-        logger.warning(f"Unknown liveness provider: {provider}, falling back to smile_id")
-        return SmileIDProvider()
+        logger.warning(f"Unknown liveness provider: {provider}, falling back to opensource")
+        return OpenSourceLivenessAdapter()
 
 
 class OpenSourceDocumentAdapter(DocumentVerificationProvider):
