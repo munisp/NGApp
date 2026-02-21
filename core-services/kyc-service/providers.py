@@ -411,17 +411,43 @@ def get_liveness_provider() -> LivenessProvider:
         return SmileIDProvider()
 
 
+class OpenSourceDocumentAdapter(DocumentVerificationProvider):
+    """Adapter wrapping OpenSourceDocumentProvider to match DocumentVerificationProvider interface"""
+
+    async def verify_document(
+        self,
+        document_url: str,
+        document_type: str,
+        country: str = "NG"
+    ) -> DocumentVerificationResult:
+        from document_verification import get_opensource_document_provider
+        provider = get_opensource_document_provider()
+        result = await provider.verify_document(document_url, document_type, country)
+        return DocumentVerificationResult(
+            is_valid=result.is_valid,
+            document_type=result.document_type,
+            extracted_data=result.extracted_data,
+            confidence_score=result.confidence_score,
+            issues=result.issues,
+            provider=result.provider,
+            provider_reference=result.provider_reference,
+            raw_response=result.raw_response,
+        )
+
+
 def get_document_provider() -> DocumentVerificationProvider:
     """Get configured document verification provider"""
-    provider = os.getenv("DOCUMENT_PROVIDER", "smile_id")
-    
-    if provider == "smile_id":
+    provider = os.getenv("DOCUMENT_PROVIDER", "opensource")
+
+    if provider == "opensource":
+        return OpenSourceDocumentAdapter()
+    elif provider == "smile_id":
         return SmileIDProvider()
     elif provider == "mock" and ENVIRONMENT in ("development", "test"):
         return MockDocumentVerificationProvider()
     elif provider == "mock":
         logger.error("Mock document provider not allowed outside development/test")
-        raise RuntimeError("Mock document provider not allowed in production. Set DOCUMENT_PROVIDER to smile_id.")
+        raise RuntimeError("Mock document provider not allowed in production. Set DOCUMENT_PROVIDER to opensource or smile_id.")
     else:
-        logger.warning(f"Unknown document provider: {provider}, falling back to smile_id")
-        return SmileIDProvider()
+        logger.warning(f"Unknown document provider: {provider}, falling back to opensource")
+        return OpenSourceDocumentAdapter()

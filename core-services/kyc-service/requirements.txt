@@ -10,3 +10,7 @@ sqlalchemy==2.0.36
 psycopg2-binary==2.9.10
 boto3==1.35.81
 aiofiles==24.1.0
+paddleocr==2.9.1
+paddlepaddle==3.0.0b1
+PyJWT==2.10.1
+pillow==11.1.0

@@ -1,73 +1,74 @@
-from typing import Any, Dict, List, Optional, Union, Tuple
+"""
+Compliance KYC Gateway
 
-from fastapi import FastAPI, Request, status
-from fastapi.responses import JSONResponse
+Proxies compliance-related KYC requests (sanctions screening, PEP checks,
+adverse media) to the canonical KYC service at core-services/kyc-service.
+"""
+import os
+import logging
+import httpx
+import uvicorn
+from typing import Any, Dict
+from fastapi import FastAPI, Request, Depends, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from contextlib import asynccontextmanager
-from config import settings, logger
-from database import init_db
-from routers import kyc_router
+from fastapi.responses import JSONResponse
 
-# Custom Exception for the service
-class KYCServiceException(Exception):
-    def __init__(self, name: str, status_code: int = status.HTTP_400_BAD_REQUEST, detail: str = None) -> None:
-        self.name = name
-        self.status_code = status_code
-        self.detail = detail or f"An error occurred in the {name} service."
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+logger = logging.getLogger(__name__)
 
-# Lifespan context manager for startup/shutdown events
-@asynccontextmanager
-async def lifespan(app: FastAPI) -> None:
-    # Startup
-    logger.info(f"Starting up {settings.PROJECT_NAME}...")
-    
-    # Initialize database (create tables if they don't exist)
-    # In a real-world scenario, this might be handled by migrations (e.g., Alembic)
-    try:
-        await init_db()
-        logger.info("Database initialized successfully.")
-    except Exception as e:
-        logger.error(f"Failed to initialize database: {e}")
-        # Depending on the requirement, you might want to raise the exception or continue
-        # For a production-ready app, a failed DB connection on startup is critical.
-        # We'll log and continue for the sandbox environment.
-        pass
-
-    yield
-    
-    # Shutdown
-    logger.info(f"Shutting down {settings.PROJECT_NAME}...")
+KYC_CORE_URL = os.getenv("KYC_CORE_SERVICE_URL", "http://kyc-service:8015")
 
 app = FastAPI(
-    title=settings.PROJECT_NAME,
-    description="API service for Compliance and Know Your Customer (KYC) operations.",
-    version="1.0.0",
-    openapi_url=f"{settings.API_V1_STR}/openapi.json",
-    lifespan=lifespan
+    title="Compliance KYC Gateway",
+    description="Proxies to canonical KYC service for compliance operations (sanctions, PEP, adverse media).",
+    version="2.0.0",
 )
+app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True,
+                   allow_methods=["*"], allow_headers=["*"])
 
-# CORS Middleware
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"], # Should be restricted in production
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
 
-# Custom Exception Handler
-@app.exception_handler(KYCServiceException)
-async def kyc_service_exception_handler(request: Request, exc: KYCServiceException) -> None:
-    logger.error(f"KYCServiceException caught: {exc.name} - {exc.detail}")
-    return JSONResponse(
-        status_code=exc.status_code,
-        content={"message": exc.detail, "name": exc.name},
-    )
+async def verify_token(authorization: str = Header(...)):
+    if not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Invalid authorization header")
+    token = authorization[7:]
+    if not token or len(token) < 10:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    return token
 
-# Include Routapp.include_router(kyc_router, prefix=settings.API_V1_STR, tags=["KYC Operations"])Root endpoint for health check
-@app.get("/", status_code=status.HTTP_200_OK, include_in_schema=False)
+
+async def _proxy(method: str, path: str, request: Request, token: str):
+    headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
+    for h in ("X-Correlation-ID", "X-Request-ID"):
+        if h in request.headers:
+            headers[h] = request.headers[h]
+    body = await request.body()
+    params = dict(request.query_params)
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        resp = await client.request(method, f"{KYC_CORE_URL}{path}", headers=headers,
+                                     content=body, params=params)
+    return JSONResponse(status_code=resp.status_code, content=resp.json())
+
+
+@app.get("/health")
+async def health_check():
+    try:
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            resp = await client.get(f"{KYC_CORE_URL}/health")
+        upstream = resp.json()
+    except Exception as e:
+        upstream = {"error": str(e)}
+    return {"status": "healthy", "service": "compliance-kyc-gateway", "upstream": upstream}
+
+
+@app.api_route("/api/v1/compliance-kyc/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])
+async def proxy_compliance(path: str, request: Request, token: str = Depends(verify_token)):
+    return await _proxy(request.method, f"/v2/screening/{path}", request, token)
+
+
+@app.get("/", include_in_schema=False)
 async def root() -> Dict[str, Any]:
-    return {"message": f"{settings.PROJECT_NAME} is running."}
+    return {"message": "Compliance KYC Gateway is running", "version": "2.0.0"}
 
-# The application is ready to be run with uvicorn:
-# uvicorn main:app --reload
+
+if __name__ == "__main__":
+    uvicorn.run(app, host="0.0.0.0", port=int(os.getenv("PORT", "8100")))

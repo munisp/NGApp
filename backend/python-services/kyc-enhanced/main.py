@@ -1,85 +1,75 @@
-from typing import Any, Dict, List, Optional, Union, Tuple
+"""
+KYC Enhanced (EDD) Gateway
 
+Proxies Enhanced Due Diligence requests to the canonical KYC service
+at core-services/kyc-service. EDD cases are handled via the /v2/edd
+endpoints on the canonical service.
+"""
+import os
 import logging
-from fastapi import FastAPI, Request, status
-from fastapi.responses import JSONResponse
+import httpx
+import uvicorn
+from typing import Any, Dict
+from fastapi import FastAPI, Request, Depends, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from contextlib import asynccontextmanager
+from fastapi.responses import JSONResponse
 
-from config import settings
-from database import init_db
-from router import router as kyc_router # Assuming router.py will define 'router'
-
-# Setup logging
-logging.basicConfig(level=logging.getLevelName(settings.LOG_LEVEL),
-                    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
-# Custom Exception for the service
-class KYCServiceException(Exception):
-    def __init__(self, name: str, status_code: int = status.HTTP_400_BAD_REQUEST, detail: str = "Service error") -> None:
-        self.name = name
-        self.status_code = status_code
-        self.detail = detail
-        # Add a method to convert to FastAPI HTTPException-like structure
-        self.to_http_exception = lambda: JSONResponse(
-            status_code=self.status_code,
-            content={"message": self.detail, "exception": self.name},
-        )
-
-# Exception Handler
-async def kyc_exception_handler(request: Request, exc: KYCServiceException) -> None:
-    logger.error(f"KYCServiceException caught: {exc.name} - {exc.detail}", exc_info=True)
-    return JSONResponse(
-        status_code=exc.status_code,
-        content={"message": exc.detail, "exception": exc.name},
-    )
-
-@asynccontextmanager
-async def lifespan(app: FastAPI) -> None:
-    # Startup logic
-    logger.info(f"Starting up {settings.PROJECT_NAME} v{settings.VERSION}")
-    # Initialize database tables
-    try:
-        init_db()
-        logger.info("Database initialization complete.")
-    except Exception as e:
-        logger.error(f"Database initialization failed: {e}", exc_info=True)
-        # In a real app, you might want to raise an exception here to prevent startup
-    
-    yield
-    
-    # Shutdown logic
-    logger.info(f"Shutting down {settings.PROJECT_NAME}")
+KYC_CORE_URL = os.getenv("KYC_CORE_SERVICE_URL", "http://kyc-service:8015")
 
 app = FastAPI(
-    title=settings.PROJECT_NAME,
-    version=settings.VERSION,
-    debug=settings.DEBUG,
-    lifespan=lifespan,
-    description="API for Enhanced Know Your Customer (KYC) and Due Diligence (EDD) processes."
+    title="KYC Enhanced (EDD) Gateway",
+    description="Proxies to canonical KYC service for Enhanced Due Diligence operations.",
+    version="2.0.0",
 )
+app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True,
+                   allow_methods=["*"], allow_headers=["*"])
 
-# CORS Middleware
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"], # Should be restricted in production
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
 
-# Register custom exception handler
-app.add_exception_handler(KYCServiceException, kyc_exception_handler)
+async def verify_token(authorization: str = Header(...)):
+    if not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Invalid authorization header")
+    token = authorization[7:]
+    if not token or len(token) < 10:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    return token
 
-# Include routers
-app.include_router(kyc_router, prefix="/api/v1/kyc-enhanced", tags=["KYC Enhanced"])
+
+async def _proxy(method: str, path: str, request: Request, token: str):
+    headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
+    for h in ("X-Correlation-ID", "X-Request-ID"):
+        if h in request.headers:
+            headers[h] = request.headers[h]
+    body = await request.body()
+    params = dict(request.query_params)
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        resp = await client.request(method, f"{KYC_CORE_URL}{path}", headers=headers,
+                                     content=body, params=params)
+    return JSONResponse(status_code=resp.status_code, content=resp.json())
+
+
+@app.get("/health")
+async def health_check():
+    try:
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            resp = await client.get(f"{KYC_CORE_URL}/health")
+        upstream = resp.json()
+    except Exception as e:
+        upstream = {"error": str(e)}
+    return {"status": "healthy", "service": "kyc-enhanced-gateway", "upstream": upstream}
+
+
+@app.api_route("/api/v1/kyc-enhanced/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])
+async def proxy_edd(path: str, request: Request, token: str = Depends(verify_token)):
+    return await _proxy(request.method, f"/v2/{path}", request, token)
+
 
 @app.get("/", include_in_schema=False)
 async def root() -> Dict[str, Any]:
-    return {"message": f"{settings.PROJECT_NAME} is running", "version": settings.VERSION}
+    return {"message": "KYC Enhanced (EDD) Gateway is running", "version": "2.0.0"}
 
-# NOTE: The router import will fail until router.py is created, but the structure is correct.
-# The `KYCServiceException` is defined here for use in the router and service layers.
-# The `init_db()` call is synchronous and placed in the lifespan function for simplicity.
-# For a production async app, the database setup would be fully async.
+
+if __name__ == "__main__":
+    uvicorn.run(app, host="0.0.0.0", port=int(os.getenv("PORT", "8099")))

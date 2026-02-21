@@ -1,27 +1,30 @@
 """
-KYC Service
+KYC Service Gateway
 Port: 8098
+
+This is a thin gateway that proxies KYC requests to the canonical
+core-services/kyc-service. All KYC logic, PostgreSQL persistence,
+provider integrations, and authentication live in the canonical service.
+
+For direct access, use the canonical service at core-services/kyc-service (port 8015).
 """
-from fastapi import FastAPI, HTTPException, Depends, Header
-from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, Field
-from typing import Optional, List, Dict, Any
-from datetime import datetime
-import uuid
 import os
-import json
-import asyncpg
+import httpx
 import uvicorn
+from fastapi import FastAPI, HTTPException, Request, Depends, Header
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://remittance:remittance@localhost:5432/remittance")
+KYC_CORE_URL = os.getenv("KYC_CORE_SERVICE_URL", "http://kyc-service:8015")
 
-_db_pool = None
+app = FastAPI(
+    title="KYC Service Gateway",
+    description="Proxies to canonical KYC service at core-services/kyc-service",
+    version="2.0.0",
+)
+app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True,
+                   allow_methods=["*"], allow_headers=["*"])
 
-async def get_db_pool():
-    global _db_pool
-    if _db_pool is None:
-        _db_pool = await asyncpg.create_pool(DATABASE_URL, min_size=2, max_size=10)
-    return _db_pool
 
 async def verify_token(authorization: str = Header(...)):
     if not authorization.startswith("Bearer "):
@@ -31,146 +34,50 @@ async def verify_token(authorization: str = Header(...)):
         raise HTTPException(status_code=401, detail="Invalid token")
     return token
 
-app = FastAPI(title="KYC Service", description="KYC Service for Remittance Platform", version="1.0.0")
-app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 
-@app.on_event("startup")
-async def startup():
-    pool = await get_db_pool()
-    async with pool.acquire() as conn:
-        await conn.execute("""
-            CREATE TABLE IF NOT EXISTS kyc_verifications (
-                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-                user_id VARCHAR(255) NOT NULL,
-                verification_type VARCHAR(50) NOT NULL,
-                provider VARCHAR(50) DEFAULT 'nibss',
-                status VARCHAR(20) DEFAULT 'pending',
-                result JSONB,
-                risk_score DECIMAL(5,2),
-                expires_at TIMESTAMPTZ,
-                verified_at TIMESTAMPTZ,
-                document_type VARCHAR(30),
-                document_number VARCHAR(100),
-                created_at TIMESTAMPTZ DEFAULT NOW(),
-                updated_at TIMESTAMPTZ DEFAULT NOW()
-            )
-        """)
+async def _proxy(method: str, path: str, request: Request, token: str):
+    headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
+    for h in ("X-Correlation-ID", "X-Request-ID"):
+        if h in request.headers:
+            headers[h] = request.headers[h]
+    body = await request.body()
+    url = f"{KYC_CORE_URL}{path}"
+    params = dict(request.query_params)
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        resp = await client.request(method, url, headers=headers, content=body, params=params)
+    return JSONResponse(status_code=resp.status_code, content=resp.json())
+
 
 @app.get("/health")
 async def health_check():
     try:
-        pool = await get_db_pool()
-        async with pool.acquire() as conn:
-            await conn.fetchval("SELECT 1")
-        return {"status": "healthy", "service": "kyc-service", "database": "connected"}
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            resp = await client.get(f"{KYC_CORE_URL}/health")
+        upstream = resp.json()
     except Exception as e:
-        return {"status": "degraded", "service": "kyc-service", "error": str(e)}
+        upstream = {"error": str(e)}
+    return {"status": "healthy", "service": "kyc-service-gateway", "upstream": upstream}
 
 
-class ItemCreate(BaseModel):
-    user_id: str
-    verification_type: str
-    provider: Optional[str] = None
-    status: Optional[str] = None
-    result: Optional[Dict[str, Any]] = None
-    risk_score: Optional[float] = None
-    expires_at: Optional[str] = None
-    verified_at: Optional[str] = None
-    document_type: Optional[str] = None
-    document_number: Optional[str] = None
-
-class ItemUpdate(BaseModel):
-    user_id: Optional[str] = None
-    verification_type: Optional[str] = None
-    provider: Optional[str] = None
-    status: Optional[str] = None
-    result: Optional[Dict[str, Any]] = None
-    risk_score: Optional[float] = None
-    expires_at: Optional[str] = None
-    verified_at: Optional[str] = None
-    document_type: Optional[str] = None
-    document_number: Optional[str] = None
+@app.api_route("/api/v1/kyc-service/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])
+async def proxy_kyc(path: str, request: Request, token: str = Depends(verify_token)):
+    core_path = f"/{path}" if path else "/"
+    return await _proxy(request.method, core_path, request, token)
 
 
-@app.post("/api/v1/kyc-service")
-async def create_item(item: ItemCreate, token: str = Depends(verify_token)):
-    pool = await get_db_pool()
-    async with pool.acquire() as conn:
-        data = {k: v for k, v in item.dict().items() if v is not None}
-        if not data:
-            raise HTTPException(status_code=400, detail="No fields provided")
-        cols = list(data.keys())
-        vals = list(data.values())
-        for i in range(len(vals)):
-            if isinstance(vals[i], dict):
-                vals[i] = json.dumps(vals[i])
-        ph = ", ".join(["$" + str(i+1) for i in range(len(cols))])
-        query = f"INSERT INTO kyc_verifications ({', '.join(cols)}) VALUES ({ph}) RETURNING *"
-        row = await conn.fetchrow(query, *vals)
-        return dict(row)
+@app.api_route("/profiles/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])
+async def proxy_profiles(path: str, request: Request, token: str = Depends(verify_token)):
+    return await _proxy(request.method, f"/profiles/{path}", request, token)
 
 
-@app.get("/api/v1/kyc-service")
-async def list_items(skip: int = 0, limit: int = 50, token: str = Depends(verify_token)):
-    pool = await get_db_pool()
-    async with pool.acquire() as conn:
-        rows = await conn.fetch(
-            "SELECT * FROM kyc_verifications ORDER BY created_at DESC LIMIT $1 OFFSET $2",
-            limit, skip
-        )
-        total = await conn.fetchval("SELECT COUNT(*) FROM kyc_verifications")
-        return {"total": total, "items": [dict(r) for r in rows], "skip": skip, "limit": limit}
+@app.api_route("/documents/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])
+async def proxy_documents(path: str, request: Request, token: str = Depends(verify_token)):
+    return await _proxy(request.method, f"/documents/{path}", request, token)
 
 
-@app.get("/api/v1/kyc-service/{item_id}")
-async def get_item(item_id: str, token: str = Depends(verify_token)):
-    pool = await get_db_pool()
-    async with pool.acquire() as conn:
-        row = await conn.fetchrow("SELECT * FROM kyc_verifications WHERE id=$1", uuid.UUID(item_id))
-        if not row:
-            raise HTTPException(status_code=404, detail="Item not found")
-        return dict(row)
-
-
-@app.put("/api/v1/kyc-service/{item_id}")
-async def update_item(item_id: str, item: ItemUpdate, token: str = Depends(verify_token)):
-    pool = await get_db_pool()
-    async with pool.acquire() as conn:
-        existing = await conn.fetchrow("SELECT * FROM kyc_verifications WHERE id=$1", uuid.UUID(item_id))
-        if not existing:
-            raise HTTPException(status_code=404, detail="Item not found")
-        updates = {k: v for k, v in item.dict().items() if v is not None}
-        if not updates:
-            return dict(existing)
-        set_parts = []
-        params = [uuid.UUID(item_id)]
-        idx = 2
-        for k, v in updates.items():
-            set_parts.append(f"{k}=${idx}")
-            params.append(json.dumps(v) if isinstance(v, dict) else v)
-            idx += 1
-        query = f"UPDATE kyc_verifications SET {', '.join(set_parts)}, updated_at=NOW() WHERE id=$1 RETURNING *"
-        row = await conn.fetchrow(query, *params)
-        return dict(row)
-
-
-@app.delete("/api/v1/kyc-service/{item_id}")
-async def delete_item(item_id: str, token: str = Depends(verify_token)):
-    pool = await get_db_pool()
-    async with pool.acquire() as conn:
-        result = await conn.execute("DELETE FROM kyc_verifications WHERE id=$1", uuid.UUID(item_id))
-        if result == "DELETE 0":
-            raise HTTPException(status_code=404, detail="Item not found")
-        return {"deleted": True}
-
-
-@app.get("/api/v1/kyc-service/stats")
-async def get_stats(token: str = Depends(verify_token)):
-    pool = await get_db_pool()
-    async with pool.acquire() as conn:
-        total = await conn.fetchval("SELECT COUNT(*) FROM kyc_verifications")
-        today = await conn.fetchval("SELECT COUNT(*) FROM kyc_verifications WHERE created_at >= CURRENT_DATE")
-        return {"total": total, "today": today, "service": "kyc-service"}
+@app.api_route("/admin/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])
+async def proxy_admin(path: str, request: Request, token: str = Depends(verify_token)):
+    return await _proxy(request.method, f"/admin/{path}", request, token)
 
 
 if __name__ == "__main__":
