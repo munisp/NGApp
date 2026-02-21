@@ -250,7 +250,7 @@ func (s *POSManagementServer) healthMonitoringWorker() {
 }
 
 func (s *POSManagementServer) cleanupWorker() {
-	ticker := time.NewTicker(5 * time.minute)
+	ticker := time.NewTicker(5 * time.Minute)
 	defer ticker.Stop()
 
 	for range ticker.C {
@@ -741,7 +741,7 @@ func (s *POSManagementServer) signMessage(message interface{}) string {
 		log.Printf("Error marshaling message for signing: %v", err)
 		return ""
 	}
-	h := hmac.New(sha256.New, []byte(s.security.signingKey))
+	h := hmac.New(sha256.New, []byte(s.securityManager.signingKey))
 	h.Write(data)
 	return fmt.Sprintf("%x", h.Sum(nil))
 }

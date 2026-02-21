@@ -14,10 +14,6 @@ from datetime import datetime, timedelta
 from fastapi import FastAPI, HTTPException, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 
-apply_middleware(app)
-setup_logging("device-manager-service")
-app.include_router(metrics_router)
-
 from pydantic import BaseModel
 import redis.asyncio as redis
 from device_drivers import DeviceManager, DeviceInfo, DeviceStatus, DeviceProtocol
@@ -41,6 +37,10 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+apply_middleware(app)
+setup_logging("device-manager-service")
+app.include_router(metrics_router)
 
 # Pydantic models
 class DeviceRegistrationRequest(BaseModel):

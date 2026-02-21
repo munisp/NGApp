@@ -26,10 +26,6 @@ import redis.asyncio as redis
 from fastapi import FastAPI, HTTPException, BackgroundTasks, Depends
 from fastapi.middleware.cors import CORSMiddleware
 
-apply_middleware(app)
-setup_logging("tigerbeetle-zig-primary-service")
-app.include_router(metrics_router)
-
 from pydantic import BaseModel, Field
 import uvicorn
 
@@ -820,6 +816,10 @@ class TigerBeetleZigService:
 # Create service instance
 service = TigerBeetleZigService()
 app = service.app
+
+apply_middleware(app)
+setup_logging("tigerbeetle-zig-primary-service")
+app.include_router(metrics_router)
 
 if __name__ == "__main__":
     uvicorn.run(

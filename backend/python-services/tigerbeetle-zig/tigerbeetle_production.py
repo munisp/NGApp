@@ -25,10 +25,6 @@ import uuid
 from fastapi import FastAPI, HTTPException, BackgroundTasks, Depends
 from fastapi.middleware.cors import CORSMiddleware
 
-apply_middleware(app)
-setup_logging("tigerbeetle-production-service")
-app.include_router(metrics_router)
-
 from pydantic import BaseModel, Field, validator
 import uvicorn
 
@@ -58,6 +54,10 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+apply_middleware(app)
+setup_logging("tigerbeetle-production-service")
+app.include_router(metrics_router)
 
 # ==================== Configuration ====================
 

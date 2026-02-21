@@ -422,6 +422,31 @@ class POSIntegrationService:
             if idem_key:
                 await self._cache_idempotency(idem_key, response)
 
+            # Record to TigerBeetle ledger (non-blocking)
+            if response.status == TransactionStatus.APPROVED:
+                try:
+                    tb_sync_url = os.getenv("TIGERBEETLE_SYNC_URL", "http://localhost:8085")
+                    async with httpx.AsyncClient(timeout=5.0) as tb_client:
+                        await tb_client.post(
+                            f"{tb_sync_url}/api/v1/sync/transfers",
+                            json={
+                                "debit_account_id": payment_request.merchant_id,
+                                "credit_account_id": "settlement_pool",
+                                "amount": payment_request.amount,
+                                "currency": payment_request.currency,
+                                "ledger_id": 1,
+                                "metadata": {
+                                    "source": "pos",
+                                    "transaction_id": transaction_id,
+                                    "terminal_id": payment_request.terminal_id,
+                                    "payment_method": payment_request.payment_method.value,
+                                },
+                            },
+                        )
+                    logger.info(f"Ledger transfer recorded for txn {transaction_id}")
+                except Exception as ledger_err:
+                    logger.warning(f"Ledger record failed (non-blocking): {ledger_err}")
+
             # Send real-time update
             await self._send_transaction_update(transaction_id, response)
             

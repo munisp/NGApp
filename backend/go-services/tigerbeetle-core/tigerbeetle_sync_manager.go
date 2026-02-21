@@ -8,10 +8,13 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
+	"strings"
 	"sync"
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/gorilla/mux"
 	_ "github.com/lib/pq"
 	"github.com/redis/go-redis/v9"
 )
@@ -519,7 +522,7 @@ func (sm *TigerBeetleSyncManager) publishSyncEvent(event SyncEvent) {
 	}
 	
 	ctx := context.Background()
-	if err := sm.redis.Publish(ctx, "tigerbeetle:sync", data).Err(); err != nil {
+	if err := sm.redis.Publish(ctx, "tigerbeetle_sync", data).Err(); err != nil {
 		log.Printf("Failed to publish sync event: %v", err)
 	}
 }
@@ -643,7 +646,7 @@ func (sm *TigerBeetleSyncManager) markEventsProcessedOnEndpoint(events []SyncEve
 
 // Event processor for real-time sync
 func (sm *TigerBeetleSyncManager) eventProcessor(ctx context.Context) {
-	pubsub := sm.redis.Subscribe(ctx, "tigerbeetle:sync")
+	pubsub := sm.redis.Subscribe(ctx, "tigerbeetle_sync")
 	defer pubsub.Close()
 	
 	ch := pubsub.Channel()
@@ -710,21 +713,130 @@ func (sm *TigerBeetleSyncManager) GetSyncStats() map[string]interface{} {
 }
 
 func main() {
-	// Example usage
-	manager, err := NewTigerBeetleSyncManager(
-		"http://localhost:3000",                    // Zig endpoint
-		[]string{"http://localhost:3001", "http://localhost:3002"}, // Edge endpoints
-		"postgres://user:pass@localhost/tigerbeetle_db",
-		"redis://localhost:6379",
-	)
+	zigEndpoint := os.Getenv("ZIG_ENDPOINT")
+	if zigEndpoint == "" {
+		zigEndpoint = "http://localhost:8094"
+	}
+	edgeEndpointsStr := os.Getenv("EDGE_ENDPOINTS")
+	var edgeEndpoints []string
+	if edgeEndpointsStr != "" {
+		edgeEndpoints = strings.Split(edgeEndpointsStr, ",")
+	} else {
+		edgeEndpoints = []string{"http://localhost:8081", "http://localhost:8082"}
+	}
+	pgURL := os.Getenv("DATABASE_URL")
+	if pgURL == "" {
+		pgURL = "postgres://user:pass@localhost/tigerbeetle_db"
+	}
+	redisURL := os.Getenv("REDIS_URL")
+	if redisURL == "" {
+		redisURL = "redis://localhost:6379"
+	}
+
+	manager, err := NewTigerBeetleSyncManager(zigEndpoint, edgeEndpoints, pgURL, redisURL)
 	if err != nil {
 		log.Fatal(err)
 	}
-	
-	ctx := context.Background()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 	manager.Start(ctx)
-	
-	// Keep running
-	select {}
+
+	router := mux.NewRouter()
+
+	router.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+		stats := manager.GetSyncStats()
+		stats["status"] = "healthy"
+		stats["service"] = "tigerbeetle-sync-manager"
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(stats)
+	}).Methods("GET")
+
+	router.HandleFunc("/api/v1/sync/trigger", func(w http.ResponseWriter, r *http.Request) {
+		go manager.performSync()
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]interface{}{"triggered": true})
+	}).Methods("POST")
+
+	router.HandleFunc("/api/v1/sync/stats", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(manager.GetSyncStats())
+	}).Methods("GET")
+
+	router.HandleFunc("/api/v1/sync/events/pending", func(w http.ResponseWriter, r *http.Request) {
+		source := r.URL.Query().Get("source")
+		if source == "" {
+			source = "zig"
+		}
+		events, err := manager.getPendingSyncEvents(source)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(events)
+	}).Methods("GET")
+
+	router.HandleFunc("/api/v1/sync/events/processed", func(w http.ResponseWriter, r *http.Request) {
+		var payload struct {
+			EventIDs []string `json:"event_ids"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+			return
+		}
+		events := make([]SyncEvent, len(payload.EventIDs))
+		for i, id := range payload.EventIDs {
+			events[i] = SyncEvent{ID: id}
+		}
+		if err := manager.markEventsProcessed(events); err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]bool{"success": true})
+	}).Methods("POST")
+
+	router.HandleFunc("/api/v1/sync/accounts", func(w http.ResponseWriter, r *http.Request) {
+		var account Account
+		if err := json.NewDecoder(r.Body).Decode(&account); err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+			return
+		}
+		if err := manager.CreateAccountWithMetadata(account); err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+			return
+		}
+		w.WriteHeader(http.StatusCreated)
+		json.NewEncoder(w).Encode(map[string]bool{"success": true})
+	}).Methods("POST")
+
+	router.HandleFunc("/api/v1/sync/transfers", func(w http.ResponseWriter, r *http.Request) {
+		var transfer Transfer
+		if err := json.NewDecoder(r.Body).Decode(&transfer); err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+			return
+		}
+		if err := manager.CreateTransferWithMetadata(transfer); err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+			return
+		}
+		w.WriteHeader(http.StatusCreated)
+		json.NewEncoder(w).Encode(map[string]bool{"success": true})
+	}).Methods("POST")
+
+	port := os.Getenv("SYNC_MANAGER_PORT")
+	if port == "" {
+		port = "8085"
+	}
+	log.Printf("TigerBeetle Sync Manager HTTP API on :%s", port)
+	log.Fatal(http.ListenAndServe(":"+port, router))
 }
 

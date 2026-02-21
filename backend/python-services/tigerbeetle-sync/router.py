@@ -1,7 +1,9 @@
 import logging
+import os
 import uuid
 from typing import List
 
+import httpx
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
@@ -15,9 +17,10 @@ from models import (
     TigerBeetleSyncUpdate,
 )
 
-# --- Logging Setup ---
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
+
+SYNC_MANAGER_URL = os.getenv("SYNC_MANAGER_URL", "http://localhost:8085")
 
 # --- Router Setup ---
 router = APIRouter(
@@ -141,25 +144,36 @@ def delete_sync_config(sync_id: uuid.UUID, db: Session = Depends(get_db)):
 )
 def start_sync(sync_id: uuid.UUID, db: Session = Depends(get_db)):
     """
-    Marks the sync configuration status as 'ACTIVE' and logs the start event.
+    Marks the sync configuration status as 'ACTIVE', triggers the Go sync manager,
+    and logs the start event.
     """
     db_sync_config = get_sync_config_or_404(db, sync_id)
     
-    # Update status
     db_sync_config.status = "ACTIVE"
     db.add(db_sync_config)
     
-    # Log activity
+    trigger_result = "not_triggered"
+    try:
+        with httpx.Client(timeout=5.0) as client:
+            resp = client.post(f"{SYNC_MANAGER_URL}/api/v1/sync/trigger")
+            if resp.status_code == 200:
+                trigger_result = "triggered"
+            else:
+                trigger_result = f"failed_status_{resp.status_code}"
+    except Exception as e:
+        trigger_result = f"unreachable: {e}"
+        logger.warning(f"Could not trigger Go sync manager: {e}")
+    
     log_entry = TigerBeetleSyncActivityLog(
         sync_id=sync_id,
         log_level="INFO",
-        message="Synchronization job started.",
+        message=f"Synchronization job started. Go sync manager: {trigger_result}",
     )
     db.add(log_entry)
     
     db.commit()
     db.refresh(db_sync_config)
-    logger.info(f"Started sync job for config: {sync_id}")
+    logger.info(f"Started sync job for config: {sync_id}, trigger: {trigger_result}")
     return db_sync_config
 
 
