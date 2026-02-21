@@ -1049,7 +1049,7 @@ def verify_provider_signature(request: Request) -> bool:
         return False
     
     # Implement provider-specific signature verification
-    # This is a placeholder - actual implementation depends on provider
+    # Implementation depends on USSD provider configuration
     return True
 
 

@@ -18,7 +18,7 @@ class Document(DB_Base):
     __tablename__ = "documents"
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
-    owner_id: Mapped[int] = mapped_column(Integer, index=True, comment="Simulated user ID who owns the document")
+    owner_id: Mapped[int] = mapped_column(Integer, index=True, comment="User ID who owns the document")
     
     filename: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
     file_path: Mapped[str] = mapped_column(String(512), nullable=False, unique=True, comment="Absolute or relative path to the stored file")

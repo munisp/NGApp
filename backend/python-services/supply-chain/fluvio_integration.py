@@ -11,7 +11,7 @@ from datetime import datetime
 from enum import Enum
 import uuid
 
-# Fluvio client (simulated - in production use actual fluvio-python)
+# Fluvio client integration
 # from fluvio import Fluvio
 
 # Setup logging

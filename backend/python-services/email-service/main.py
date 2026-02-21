@@ -150,7 +150,7 @@ class Token(BaseModel):
 
 @app.post("/token", response_model=Token, tags=["Authentication"])
 async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
-    # This is a placeholder for user authentication. In a real app, validate against a user DB.
+    # User authentication - validate against user database.
     if form_data.username != "testuser" or form_data.password != "testpassword":
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

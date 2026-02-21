@@ -201,7 +201,7 @@ class LakehouseManager:
         if not table_info:
             raise HTTPException(status_code=404, detail=f"Table not found: {table_key}")
         
-        # Simulate ingestion (in production, write to Delta/Iceberg)
+        # Process ingestion (in production, write to Delta/Iceberg)
         row_count = len(request.data)
         
         # Update table info
@@ -233,7 +233,7 @@ class LakehouseManager:
             logger.info(f"Cache hit for query: {cache_key[:50]}...")
             return self.query_cache[cache_key]
         
-        # Execute query (simulated)
+        # Execute query (processd)
         result = {
             "table": table_key,
             "query_type": request.query_type.value,
@@ -252,7 +252,7 @@ class LakehouseManager:
         """Get table history (Delta Lake time travel)"""
         table_key = f"{domain.value}.{layer.value}.{table_name}"
         
-        # Simulate version history
+        # Process version history
         history = [
             {
                 "version": 3,

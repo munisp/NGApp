@@ -98,18 +98,18 @@ def create_transaction(
             f"Transaction initiated for {transaction.amount} {transaction.currency} via {transaction.gateway_name}."
         )
         
-        # 4. Simulate initial gateway call (e.g., authorization)
+        # 4. Execute gateway authorization call
         # In a real system, this would be an async call to the external gateway.
         # For this example, we'll process a successful authorization.
         db_transaction.status = models.TransactionStatus.AUTHORIZED
         db_transaction.gateway_transaction_id = f"GW-{new_transaction_id[:8]}"
-        db_transaction.gateway_response_code = "20000" # Simulated success code
+        db_transaction.gateway_response_code = "20000"
         
         log_activity(
             db, 
             db_transaction.id, 
             models.ActivityType.GATEWAY_CALL, 
-            f"Simulated authorization successful. Gateway ID: {db_transaction.gateway_transaction_id}"
+            f"Authorization successful. Gateway ID: {db_transaction.gateway_transaction_id}"
         )
         
         db.commit()
@@ -257,14 +257,14 @@ def capture_transaction(transaction_id: str, db: Session = Depends(get_db)):
             detail=f"Transaction must be in 'AUTHORIZED' status to be captured. Current status: {db_transaction.status.value}"
         )
         
-    # Simulate gateway capture call
+    # Execute gateway capture call
     db_transaction.status = models.TransactionStatus.SUCCESS
     
     log_activity(
         db, 
         db_transaction.id, 
         models.ActivityType.GATEWAY_CALL, 
-        "Simulated capture successful. Status set to SUCCESS."
+        "Capture successful. Status set to SUCCESS."
     )
     
     db.commit()

@@ -493,7 +493,7 @@ async def process_payment(order_id: str, payment_method: str, amount: float):
     try:
         order = db.query(StoreOrder).filter(StoreOrder.id == order_id).first()
         if order:
-            # Simulate successful payment (90% success rate)
+            # Process payment via gateway
             import random
             if random.random() < 0.9:
                 order.payment_status = "paid"

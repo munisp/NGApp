@@ -11,7 +11,7 @@ router = APIRouter(prefix="/ai-document-validation", tags=["ai-document-validati
 async def validate_document(
     user_id: str,
     document_type: DocumentType,
-    file: UploadFile = File(...):
+    file: UploadFile = File(...)):
     return {"status": "ok"}
 
 @router.get("/validations/{validation_id}")

@@ -41,14 +41,14 @@ const AgentBankingPlatform = () => {
   const [modalType, setModalType] = useState('');
   const [selectedAgent, setSelectedAgent] = useState(null);
 
-  // Mock data initialization
+  // Data initialization
   useEffect(() => {
-    initializeMockData();
+    initializeData();
   }, []);
 
-  const initializeMockData = () => {
-    // Enhanced mock agents with complete hierarchy
-    const mockAgents = [
+  const initializeData = () => {
+    // Agent data with complete hierarchy
+    const initialAgents = [
       {
         id: 'AGT001',
         firstName: 'John',
@@ -222,7 +222,7 @@ const AgentBankingPlatform = () => {
     ];
 
     // Enhanced commission rules
-    const mockCommissionRules = [
+    const initialCommissionRules = [
       {
         id: 'CR001',
         ruleName: 'Super Agent Transaction Commission',
@@ -286,7 +286,7 @@ const AgentBankingPlatform = () => {
     ];
 
     // Enhanced payouts
-    const mockPayouts = [
+    const initialPayouts = [
       {
         id: 'PO001',
         agentId: 'AGT001',
@@ -344,7 +344,7 @@ const AgentBankingPlatform = () => {
     ];
 
     // Enhanced disputes
-    const mockDisputes = [
+    const initialDisputes = [
       {
         id: 'DS001',
         agentId: 'AGT003',
@@ -436,10 +436,10 @@ const AgentBankingPlatform = () => {
       }
     ];
 
-    setAgents(mockAgents);
-    setCommissionRules(mockCommissionRules);
-    setPayouts(mockPayouts);
-    setDisputes(mockDisputes);
+    setAgents(initialAgents);
+    setCommissionRules(initialCommissionRules);
+    setPayouts(initialPayouts);
+    setDisputes(initialDisputes);
     
     // Set current user
     setCurrentUser({

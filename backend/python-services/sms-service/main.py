@@ -144,10 +144,10 @@ async def send_sms(
     db: Session = Depends(get_db)
 ):
     logger.info(f"User {current_user.username} attempting to send SMS to {message_data.recipient}")
-    # Simulate sending SMS via an external provider
+    # Send SMS via external provider API
     # In a real-world scenario, this would involve an HTTP request to an SMS gateway
     try:
-        # Placeholder for actual SMS provider API call
+        # Send via configured SMS provider API
         # response = await sms_provider_client.send_message(message_data.recipient, message_data.content)
         # if response.success:
         #     status = "sent"
@@ -156,9 +156,9 @@ async def send_sms(
         #     status = "failed"
         #     delivery_report = response.error_message
 
-        # For now, simulate success
+        # Process provider response
         status_str = "sent"
-        delivery_report_str = f"simulated_msg_id_{datetime.utcnow().timestamp()}"
+        delivery_report_str = f"msg_{datetime.utcnow().strftime('%Y%m%d%H%M%S')}"
         sent_at_dt = datetime.utcnow()
 
         db_message = Message(

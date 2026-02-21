@@ -135,7 +135,7 @@ def _process_batch(db: Session, batch: PayoutBatch) -> PayoutBatch:
     db.add(batch)
     db.flush()
 
-    # 2. Simulate external payout system call and update individual payout statuses
+    # 2. Execute payout via payment gateway and update individual payout statuses
     # In a real system, this would involve an external API call and a webhook/callback
     # to update the status. Here, we process a successful transition.
     successful_payouts = 0

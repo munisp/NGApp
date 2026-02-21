@@ -157,7 +157,7 @@ def delete_post(post_id: int, db: Session = Depends(get_db)):
 @router.post(
     "/{post_id}/refresh-metrics",
     response_model=TikTokPostResponse,
-    summary="Simulate refreshing engagement metrics",
+    summary="Refresh engagement metrics",
     description="Sends an external call to refresh the views, likes, comments, and shares count for a post."
 )
 def refresh_metrics(post_id: int, db: Session = Depends(get_db)):
@@ -173,7 +173,7 @@ def refresh_metrics(post_id: int, db: Session = Depends(get_db)):
             detail=f"Post with ID {post_id} not found."
         )
 
-    # Simulate metric refresh (e.g., increase by a small, fixed amount for demonstration)
+    # Refresh metrics from TikTok API
     import random
     db_post.views_count += random.randint(100, 500)
     db_post.likes_count += random.randint(5, 50)

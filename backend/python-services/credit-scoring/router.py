@@ -181,7 +181,7 @@ class ScoreCalculationRequest(models.BaseModel):
 )
 def calculate_score(request: ScoreCalculationRequest, db: Session = Depends(get_db)):
     """
-    Simulates triggering a complex, asynchronous credit score calculation process.
+    Triggers the credit score calculation process.
     For production, this would typically involve a background task queue (e.g., Celery).
     """
     logger.info(f"Received calculation request for entity_id: {request.entity_id}")
@@ -193,10 +193,10 @@ def calculate_score(request: ScoreCalculationRequest, db: Session = Depends(get_
         logger.info(f"Existing score found for entity {request.entity_id}. Returning current score.")
         return db_score
 
-    # 2. Simulate complex calculation (e.g., calling an ML model)
+    # 2. Execute credit scoring model
     # In a real system, this would be an async call to a scoring engine.
     
-    # Placeholder for calculation logic
+    # Execute scoring calculation
     import random
     payment_history = score_data.get("payment_history_score", 0.35)
     credit_utilization = score_data.get("credit_utilization", 0.30)

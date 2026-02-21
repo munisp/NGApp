@@ -16,7 +16,7 @@ async def metrics_endpoint():
     return {"status": "ok"}
 
 @router.post("/models/")
-def create_ml_model(model: schemas.MLModelCreate, db: Session = Depends(get_db):
+def create_ml_model(model: schemas.MLModelCreate, db: Session = Depends(get_db)):
     logger.info(f"Creating ML model: {model.name}")
     try:
         db_model = models.MLModel(**model.dict())
@@ -29,13 +29,13 @@ def create_ml_model(model: schemas.MLModelCreate, db: Session = Depends(get_db):
         raise HTTPException(status_code=500, detail=f"Internal Server Error: {e}")
 
 @router.get("/models/")
-def read_ml_models(skip: int = 0, limit: int = 100, db: Session = Depends(get_db):
+def read_ml_models(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     logger.info(f"Reading ML models (skip={skip}, limit={limit}).")
     models_list = db.query(models.MLModel).offset(skip).limit(limit).all()
     return models_list
 
 @router.get("/models/{model_id}")
-def read_ml_model(model_id: int, db: Session = Depends(get_db):
+def read_ml_model(model_id: int, db: Session = Depends(get_db)):
     logger.info(f"Reading ML model with ID: {model_id}")
     db_model = db.query(models.MLModel).filter(models.MLModel.id == model_id).first()
     if db_model is None:
@@ -44,7 +44,7 @@ def read_ml_model(model_id: int, db: Session = Depends(get_db):
     return db_model
 
 @router.put("/models/{model_id}")
-def update_ml_model(model_id: int, model: schemas.MLModelUpdate, db: Session = Depends(get_db):
+def update_ml_model(model_id: int, model: schemas.MLModelUpdate, db: Session = Depends(get_db)):
     logger.info(f"Updating ML model with ID: {model_id}")
     db_model = db.query(models.MLModel).filter(models.MLModel.id == model_id).first()
     if db_model is None:
@@ -61,7 +61,7 @@ def update_ml_model(model_id: int, model: schemas.MLModelUpdate, db: Session = D
         raise HTTPException(status_code=500, detail=f"Internal Server Error: {e}")
 
 @router.delete("/models/{model_id}")
-def delete_ml_model(model_id: int, db: Session = Depends(get_db):
+def delete_ml_model(model_id: int, db: Session = Depends(get_db)):
     logger.info(f"Deleting ML model with ID: {model_id}")
     db_model = db.query(models.MLModel).filter(models.MLModel.id == model_id).first()
     if db_model is None:
@@ -78,15 +78,15 @@ def delete_ml_model(model_id: int, db: Session = Depends(get_db):
 # Prediction Endpoints - protected by API key
 
 @router.post("/predictions/")
-def create_prediction(prediction: schemas.PredictionCreate, db: Session = Depends(get_db):
+def create_prediction(prediction: schemas.PredictionCreate, db: Session = Depends(get_db)):
     logger.info(f"Creating prediction for model ID: {prediction.model_id}")
     # In a real scenario, this would trigger an actual ML prediction
-    # For now, we\'ll just store the request and a dummy result
+    # For now, we'll just store the request and a dummy result
     try:
         db_prediction = models.Prediction(
             model_id=prediction.model_id,
             request_data=prediction.request_data,
-            prediction_result={"dummy_result": "predicted_value"} # Placeholder
+            prediction_result={"result": "pending_inference"}
         )
         db.add(db_prediction)
         db.commit()
@@ -97,13 +97,13 @@ def create_prediction(prediction: schemas.PredictionCreate, db: Session = Depend
         raise HTTPException(status_code=500, detail=f"Internal Server Error: {e}")
 
 @router.get("/predictions/")
-def read_predictions(skip: int = 0, limit: int = 100, db: Session = Depends(get_db):
+def read_predictions(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     logger.info(f"Reading predictions (skip={skip}, limit={limit}).")
     predictions_list = db.query(models.Prediction).offset(skip).limit(limit).all()
     return predictions_list
 
 @router.get("/predictions/{prediction_id}")
-def read_prediction(prediction_id: int, db: Session = Depends(get_db):
+def read_prediction(prediction_id: int, db: Session = Depends(get_db)):
     logger.info(f"Reading prediction with ID: {prediction_id}")
     db_prediction = db.query(models.Prediction).filter(models.Prediction.id == prediction_id).first()
     if db_prediction is None:

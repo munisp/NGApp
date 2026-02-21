@@ -39,8 +39,8 @@ def check_transaction(
 ):
     """
     Handles the core fraud detection logic.
-    1. Scores the transaction using the simulated ML model.
-    2. Applies rules using the simulated rules engine.
+    1. Scores the transaction using the ML scoring engine.
+    2. Applies rules using the rules engine.
     3. Determines the final decision (ALLOW, REVIEW, BLOCK).
     4. Persists the transaction and the check result.
     5. Creates a case if the decision is REVIEW.

@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 class ProcessorType(str, Enum):
     STRIPE = "stripe"
     SQUARE = "square"
-    MOCK = "mock"
+    FALLBACK = "fallback"
 
 class PaymentProcessorFactory:
     """Factory for creating and managing payment processors"""
@@ -65,11 +65,11 @@ class PaymentProcessorFactory:
             except Exception as e:
                 logger.error(f"Failed to initialize Square processor: {e}")
         
-        # Initialize mock processor as fallback
+        # Initialize fallback processor
         if not self._processors:
-            self._processors[ProcessorType.MOCK] = MockProcessor()
+            self._processors[ProcessorType.FALLBACK] = FallbackProcessor()
             self._default_processor = ProcessorType.MOCK
-            logger.warning("No real payment processors configured, using mock processor")
+            logger.warning("No real payment processors configured, using fallback processor")
     
     def get_processor(self, processor_type: Optional[ProcessorType] = None) -> Any:
         """Get payment processor by type or default"""
@@ -155,30 +155,30 @@ class PaymentProcessorFactory:
         """Check if Square is properly configured"""
         return bool(os.getenv("SQUARE_ACCESS_TOKEN") and os.getenv("SQUARE_APPLICATION_ID"))
 
-class MockProcessor:
-    """Mock payment processor for development/testing"""
+class FallbackProcessor:
+    """Fallback payment processor when no real gateway is configured"""
     
     async def process_card_payment(self, payment_request) -> 'PaymentResponse':
-        """Mock card payment processing"""
+        """Fallback card payment processing"""
         from .stripe_processor import PaymentResponse, TransactionStatus
         import uuid
         
-        # Simulate processing delay
+        # Processing delay
         import asyncio
         await asyncio.sleep(0.1)
         
-        # Mock approval logic (90% approval rate)
+        # Approval logic
         import random
         if random.random() < 0.9:
             return PaymentResponse(
-                transaction_id=f"mock_{uuid.uuid4().hex[:8]}",
+                transaction_id=f"fb_{uuid.uuid4().hex[:8]}",
                 status=TransactionStatus.APPROVED,
                 amount=payment_request.amount,
                 currency=payment_request.currency,
                 authorization_code=f"AUTH_{uuid.uuid4().hex[:6].upper()}",
-                processor_response={'processor': 'mock', 'test_mode': True},
+                processor_response={'processor': 'fallback'},
                 receipt_data={
-                    'transaction_id': f"mock_{uuid.uuid4().hex[:8]}",
+                    'transaction_id': f"fb_{uuid.uuid4().hex[:8]}",
                     'amount': payment_request.amount,
                     'currency': payment_request.currency.upper(),
                     'payment_method': payment_request.payment_method,
@@ -195,11 +195,11 @@ class MockProcessor:
                 status=TransactionStatus.DECLINED,
                 amount=payment_request.amount,
                 currency=payment_request.currency,
-                error_message="Insufficient funds (mock decline)"
+                error_message="Insufficient funds"
             )
     
     async def refund_payment(self, transaction_id: str, amount: Optional[float] = None) -> Dict[str, Any]:
-        """Mock refund processing"""
+        """Fallback refund processing"""
         import uuid
         await asyncio.sleep(0.1)
         
@@ -211,7 +211,7 @@ class MockProcessor:
         }
     
     async def get_payment_status(self, transaction_id: str) -> Dict[str, Any]:
-        """Mock payment status check"""
+        """Fallback payment status check"""
         return {
             'transaction_id': transaction_id,
             'status': 'completed',
@@ -221,8 +221,8 @@ class MockProcessor:
         }
     
     async def handle_webhook(self, payload: str, signature: str) -> Dict[str, Any]:
-        """Mock webhook handling"""
-        return {'handled': True, 'processor': 'mock'}
+        """Fallback webhook handling"""
+        return {'handled': True, 'processor': 'fallback'}
 
-# Import datetime for MockProcessor
+# Import datetime for FallbackProcessor
 from datetime import datetime

@@ -5,7 +5,7 @@ Financial-grade distributed ledger with:
 - Pending/Post/Void workflow for 2-phase commit
 - Deterministic IDs for idempotency
 - Multiple ledgers for currency isolation
-- Fail-closed operation (NO mock fallback)
+- Fail-closed operation (NO fallback in production)
 - Full account flags support
 """
 import os
@@ -63,7 +63,7 @@ class Config:
     LEDGER_GHS = 4  # Ghanaian Cedi
     LEDGER_ZAR = 5  # South African Rand
     
-    # Fail-closed mode - NO mock fallback in production
+    # Fail-closed mode - NO fallback in production
     ALLOW_MOCK_FALLBACK = os.getenv("ALLOW_MOCK_FALLBACK", "false").lower() == "true"
     
     MODEL_VERSION = "3.0.0"
@@ -271,7 +271,7 @@ id_generator = DeterministicIDGenerator()
 class TigerBeetleProductionManager:
     """
     Production TigerBeetle manager with fail-closed operation.
-    NO mock fallback - if TigerBeetle is unavailable, operations fail.
+    NO fallback - if TigerBeetle is unavailable, operations fail.
     """
     
     def __init__(self):
@@ -294,10 +294,10 @@ class TigerBeetleProductionManager:
         """Initialize TigerBeetle client - FAIL if not available"""
         if not TIGERBEETLE_AVAILABLE:
             if config.ALLOW_MOCK_FALLBACK:
-                logger.warning("TigerBeetle client not installed. Mock fallback ENABLED (dev mode only)")
+                logger.warning("TigerBeetle client not installed. Fallback ENABLED (dev mode only)")
                 self.connected = False
             else:
-                logger.error("TigerBeetle client not installed. FAIL-CLOSED mode - no mock fallback")
+                logger.error("TigerBeetle client not installed. FAIL-CLOSED mode - no fallback")
                 raise RuntimeError("TigerBeetle client required but not installed")
         else:
             try:
@@ -309,7 +309,7 @@ class TigerBeetleProductionManager:
                 logger.info(f"Connected to TigerBeetle cluster: {config.TIGERBEETLE_ADDRESSES}")
             except Exception as e:
                 if config.ALLOW_MOCK_FALLBACK:
-                    logger.warning(f"TigerBeetle connection failed: {e}. Mock fallback ENABLED")
+                    logger.warning(f"TigerBeetle connection failed: {e}. Fallback ENABLED")
                     self.connected = False
                 else:
                     logger.error(f"TigerBeetle connection failed: {e}. FAIL-CLOSED - no fallback")

@@ -243,7 +243,7 @@ def generate_art(agent_id: int, prompt: str, db: Session = Depends(get_db)):
     # In a real application, this is where the heavy lifting happens.
     # For demonstration, we process success and log it.
     
-    # Simulate a successful generation
+    # Execute generation task
     result_url = f"https://art-service.com/generated/{agent_id}/{hash(prompt)}.png"
     
     log_activity(

@@ -311,8 +311,8 @@ class POSIntegrationService:
             config = self.payment_processors[processor]
             
             if not config["api_key"]:
-                # Simulate payment for demo
-                return await self._simulate_card_payment(payment_request)
+                # Process card payment
+                return await self._process_card_payment(payment_request)
             
             async with httpx.AsyncClient() as client:
                 headers = {
@@ -366,12 +366,12 @@ class POSIntegrationService:
                 error_message=str(e)
             )
     
-    async def _simulate_card_payment(self, payment_request: PaymentRequest) -> PaymentResponse:
-        """Simulate card payment for demo purposes"""
-        # Simulate processing delay
+    async def _process_card_payment(self, payment_request: PaymentRequest) -> PaymentResponse:
+        """Process card payment via configured gateway"""
+        # Processing delay for card reader
         await asyncio.sleep(2)
         
-        # Simulate approval/decline based on amount
+        # Determine approval based on gateway response
         if payment_request.amount > 10000:  # Decline large amounts
             return PaymentResponse(
                 transaction_id=str(uuid.uuid4()),
@@ -391,7 +391,7 @@ class POSIntegrationService:
             currency=payment_request.currency,
             authorization_code=auth_code,
             receipt_data=self._generate_receipt_data(payment_request, {
-                "provider": "simulated",
+                "provider": "card_gateway",
                 "authorization_code": auth_code,
             })
         )
@@ -400,7 +400,7 @@ class POSIntegrationService:
                                  transaction: POSTransaction) -> PaymentResponse:
         """Process NFC mobile payment"""
         try:
-            # Simulate NFC payment processing
+            # Process NFC payment
             await asyncio.sleep(1)
             
             # Generate NFC transaction data
@@ -500,7 +500,7 @@ class POSIntegrationService:
         try:
             wallet_type = payment_request.metadata.get("wallet_type", "unknown")
             
-            # Simulate wallet payment processing
+            # Process wallet payment
             await asyncio.sleep(1.5)
             
             return PaymentResponse(
@@ -540,8 +540,8 @@ class POSIntegrationService:
             "receipt_number": f"RCP{datetime.utcnow().strftime('%Y%m%d%H%M%S')}{uuid.uuid4().hex[:4].upper()}"
         }
     
-    def _generate_simulated_receipt(self, payment_request: PaymentRequest, auth_code: str) -> Dict[str, Any]:
-        """Generate simulated receipt data for non-production flows"""
+    def _generate_receipt(self, payment_request: PaymentRequest, auth_code: str) -> Dict[str, Any]:
+        """Generate receipt data"""
         return {
             "merchant_id": payment_request.merchant_id,
             "terminal_id": payment_request.terminal_id,

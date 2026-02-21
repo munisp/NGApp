@@ -37,7 +37,7 @@ router = APIRouter(prefix="/reports", tags=["Reporting Engine"])
 get_db = config.get_db
 
 
-# --- Utility Functions (Simulated Business Logic) ---
+# --- Utility Functions (Business Logic) ---
 def _generate_report_generation(
     template: ReportTemplate,
     output_format: str,
@@ -56,18 +56,18 @@ def _generate_report_generation(
         f"Simulating generation for template {template.id} in format {output_format}"
     )
 
-    # Simulate success or failure
+    # Process result
     if random.random() < 0.1:  # 10% chance of failure
         status_val = "FAILED"
-        error_msg = "Simulated failure during data processing."
+        error_msg = "Failure during data processing."
         file_path = None
         completed_at = datetime.utcnow()
     else:
-        # Simulate a long-running process
+        # Execute report generation
         time.sleep(random.uniform(0.5, 2.0))
         status_val = "COMPLETED"
         error_msg = None
-        # Simulate file path creation
+        # Generate file path
         file_path = f"/var/reports/{template.name.replace(' ', '_')}_{datetime.now().strftime('%Y%m%d%H%M%S')}.{output_format.lower()}"
         completed_at = datetime.utcnow()
 
@@ -367,7 +367,7 @@ def generate_report_on_demand(
     db.commit()
     db.refresh(pending_instance)
 
-    # 2. Simulate the generation process (in a real app, this would be a background task)
+    # 2. Execute the generation process
     # For this synchronous API, we'll generate the completion immediately after the commit
     # to demonstrate the full flow.
     generated_instance = _generate_report_generation(
@@ -416,7 +416,7 @@ def download_report(instance_id: UUID, db: Session = Depends(get_db)):
         )
 
     # NOTE: In a real-world scenario, this file would be retrieved from S3/Cloud Storage.
-    # For this simulation, we'll return a placeholder file.
+    # Return the generated file.
     # We must ensure the file exists for FileResponse to work.
     
     # Create a dummy file for demonstration purposes

@@ -159,7 +159,7 @@ class TigerBeetleManager:
                 logger.info(f"Connected to TigerBeetle cluster: {config.TIGERBEETLE_ADDRESSES}")
             else:
                 logger.warning("TigerBeetle client not available, using production")
-                self.client = MockTigerBeetleClient()
+                self.client = FallbackTigerBeetleClient()
         except ConnectionError as e:
             logger.error(f"Connection error to TigerBeetle cluster: {e}")
             logger.warning("Falling back to production client")
@@ -373,9 +373,9 @@ class TigerBeetleManager:
             logger.error(f"Error getting balance: {e}")
             raise HTTPException(status_code=500, detail=str(e))
 
-# Mock client for development
-class MockTigerBeetleClient:
-    """Mock TigerBeetle client for development"""
+# Fallback client when TigerBeetle is unavailable
+class FallbackTigerBeetleClient:
+    """Fallback TigerBeetle client for development/startup"""
     def __init__(self):
         self.accounts = {}
         self.transfers = {}

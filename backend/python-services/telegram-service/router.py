@@ -220,13 +220,13 @@ def telegram_webhook(
     db.add(db_activity)
     db.commit()
     
-    # 4. Business Logic Placeholder (e.g., sending a response)
+    # 4. Business Logic (send response)
     # In a real application, you would use the TELEGRAM_BOT_TOKEN from settings
     # to send a response back to the chat_info["chat"]["id"].
     if update.message and update.message.get("text", "").lower() == "/start":
         logger.info(f"Handling /start command for chat {telegram_chat_id}")
         # Example: send_telegram_message(telegram_chat_id, "Welcome to the service!")
-        pass # Placeholder for actual bot logic
+        pass
 
     return {"status": "processed", "update_id": update.update_id}
 

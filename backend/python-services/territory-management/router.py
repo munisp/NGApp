@@ -37,7 +37,7 @@ def log_activity(db: Session, territory_id: uuid.UUID, action: str, user_id: str
 
 def get_current_user_id() -> str:
     """
-    Placeholder for actual user authentication/authorization logic.
+    User authentication/authorization via JWT.
     In a real application, this would extract the user ID from a JWT or session.
     """
     # For demonstration, we use a static user ID.

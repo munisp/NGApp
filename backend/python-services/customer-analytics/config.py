@@ -1,1 +1,54 @@
-"""\nConfiguration settings and database utilities for the customer-analytics service.\n"""\nfrom typing import Generator\n\nfrom sqlalchemy import create_engine\nfrom sqlalchemy.orm import sessionmaker, Session\nfrom pydantic_settings import BaseSettings, SettingsConfigDict\n\n# --- Settings Class ---\n\nclass Settings(BaseSettings):\n    """\n    Application settings loaded from environment variables or .env file.\n    """\n    model_config = SettingsConfigDict(env_file=".env", extra="ignore")\n\n    # Database settings\n    DATABASE_URL: str = "sqlite:///./customer_analytics.db"\n    \n    # Service settings\n    SERVICE_NAME: str = "customer-analytics"\n    API_V1_STR: str = "/api/v1"\n\nsettings = Settings()\n\n# --- Database Setup ---\n\n# The engine is the starting point for SQLAlchemy\nengine = create_engine(\n    settings.DATABASE_URL, \n    connect_args={"check_same_thread": False} if "sqlite" in settings.DATABASE_URL else {},\n    pool_pre_ping=True\n)\n\n# SessionLocal is a factory for new Session objects\nSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)\n\n# --- Dependency for FastAPI ---\n\ndef get_db() -> Generator[Session, None, None]:\n    """\n    Dependency function that yields a database session.\n    The session is automatically closed after the request is finished.\n    """\n    db = SessionLocal()\n    try:\n        yield db\n    finally:\n        db.close()\n\n# Export the settings instance\nconfig = settings\n
+"""
+Configuration settings and database utilities for the customer-analytics service.
+"""
+from typing import Generator
+
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker, Session
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+# --- Settings Class ---
+
+class Settings(BaseSettings):
+    """
+    Application settings loaded from environment variables or .env file.
+    """
+    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+
+    # Database settings
+    DATABASE_URL: str = "sqlite:///./customer_analytics.db"
+    
+    # Service settings
+    SERVICE_NAME: str = "customer-analytics"
+    API_V1_STR: str = "/api/v1"
+
+settings = Settings()
+
+# --- Database Setup ---
+
+# The engine is the starting point for SQLAlchemy
+engine = create_engine(
+    settings.DATABASE_URL, 
+    connect_args={"check_same_thread": False} if "sqlite" in settings.DATABASE_URL else {},
+    pool_pre_ping=True
+)
+
+# SessionLocal is a factory for new Session objects
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+# --- Dependency for FastAPI ---
+
+def get_db() -> Generator[Session, None, None]:
+    """
+    Dependency function that yields a database session.
+    The session is automatically closed after the request is finished.
+    """
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+# Export the settings instance
+config = settings
+

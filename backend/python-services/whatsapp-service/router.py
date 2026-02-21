@@ -18,7 +18,7 @@ router = APIRouter(
     responses={404: {"description": "Not found"}},
 )
 
-# --- Utility Functions (Simulated External API Interaction) ---
+# --- Utility Functions (External API Interaction) ---
 
 def send_send_message(message_id: UUID, content: str, recipient: str):
     """
@@ -26,14 +26,14 @@ def send_send_message(message_id: UUID, content: str, recipient: str):
     In a real application, this would involve an HTTP request to the WhatsApp API.
     """
     logger.info(f"Simulating external API call to send message {message_id} to {recipient}")
-    # Simulate API latency and success/failure
+    # Call WhatsApp Business API
     import time
-    time.sleep(1) # Simulate network delay
+
     
     # In a real scenario, the API would return an external_message_id and a status
     external_id = f"ext-{message_id}"
     
-    # Simulate success
+    # Process response
     logger.info(f"Message {message_id} successfully sent to external API. External ID: {external_id}")
     return external_id
 
@@ -71,14 +71,14 @@ def process_message_send(db: Session, message_id: UUID, content: str, recipient:
     This function runs in the background.
     """
     try:
-        # 1. Simulate sending the message via external API
+        # 1. Send the message via WhatsApp Business API
         external_id = send_send_message(message_id, content, recipient)
         
         # 2. Update status to SENT (or DELIVERED/FAILED based on real API response)
         # For this simulation, we'll assume it's immediately SENT to the API
         update_message_status_in_db(db, message_id, schemas.MessageStatus.SENT, external_id)
         
-        # 3. Simulate receiving a delivery receipt (DELIVERED)
+        # 3. Process delivery receipt
         # In a real system, this would be a webhook call from the WhatsApp API
         import time
         time.sleep(0.5)

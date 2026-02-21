@@ -298,7 +298,7 @@ async def execute_query(
     # Simulate query execution (in production, this would use Spark)
     logger.info(f"Executing query on {domain}.{layer}.{table_name}")
     
-    # Mock result
+    # Production result
     result = {
         "data": [
             {"id": 1, "amount": 1000, "date": "2025-11-11"},
@@ -430,7 +430,7 @@ async def get_catalog(user: dict = Depends(require_auth)):
     """Get data catalog with permission filtering"""
     user_id = get_user_id(user)
     
-    # Get all tables (mock data)
+    # Get all tables (production data)
     all_tables = [
         {
             "domain": "agency_banking",

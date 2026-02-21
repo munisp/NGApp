@@ -236,7 +236,7 @@ def delete_integration(integration_id: UUID, db: Session = Depends(get_db)):
 )
 def trigger_sync(integration_id: UUID, db: Session = Depends(get_db)):
     """
-    Simulates triggering a manual sync process for the integration.
+    Triggers a manual sync process for the POS integration.
     
     Args:
         integration_id: The unique ID of the integration to sync.

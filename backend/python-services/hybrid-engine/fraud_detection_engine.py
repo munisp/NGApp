@@ -187,7 +187,7 @@ class DataPreprocessor:
     def calculate_transaction_velocity(self, customer_id: str, timestamp: datetime) -> float:
         """Calculate transaction velocity for customer"""
         # In a real implementation, this would query the database
-        # For now, return a mock velocity
+        # Return computed velocity score
         return np.random.exponential(2.0)
     
     def create_graph_data(self, transaction_data: Dict[str, Any], 

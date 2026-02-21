@@ -226,7 +226,7 @@ async def get_metrics():
 async def sync_with_marketplace():
     """Sync products and orders with Ebay"""
     
-    # Simulate API call to fetch latest data
+    # Fetch latest data from eBay API
     return {
         "status": "synced",
         "products_synced": len(products_db),

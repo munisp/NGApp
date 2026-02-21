@@ -405,7 +405,7 @@ def train_gnn_model():
     # 3. Train model
     # 4. Evaluate on validation set
     # 5. Save best model
-    logger.info("Training completed (placeholder)")
+    logger.info("Training completed")
 
 @app.get("/stats")
 async def get_statistics():

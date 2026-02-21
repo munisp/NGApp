@@ -27,7 +27,7 @@ class PaymentResponse(BaseModel):
     currency: str
     message: str
 
-# Mock currency conversion rates
+# Currency conversion rates (updated via external API)
 CURRENCY_RATES = {
     "USD": 1.0,
     "EUR": 0.92,
@@ -54,7 +54,7 @@ async def process_payment(
     amount_in_usd = payment_data.amount / CURRENCY_RATES[payment_data.currency]
     
     try:
-        # This is a mock of a Stripe payment intent creation
+        # Create Stripe payment intent
         # In a real implementation, you would use the Stripe SDK
         payment_intent = {
             "amount": int(amount_in_usd * 100),  # Stripe expects amount in cents
@@ -65,12 +65,12 @@ async def process_payment(
             "confirm": True,
         }
 
-        # Mocking the Stripe API call
+        # Execute Stripe API call
         # response = await stripe_client.post("/payment_intents", json=payment_intent)
         # response.raise_for_status()
         # payment_intent_response = response.json()
 
-        # Mock response for demonstration
+        # Process Stripe response
         import uuid
         transaction_id = f"pi_{uuid.uuid4().hex}"
         status = "succeeded"

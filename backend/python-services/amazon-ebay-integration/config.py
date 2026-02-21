@@ -61,5 +61,5 @@ def init_db():
 if settings.DATABASE_URL.startswith("sqlite"):
     # Create the database file if it doesn't exist
     if not os.path.exists(settings.DATABASE_URL.replace("sqlite:///./", "")):
-        # This is a placeholder. The actual table creation will happen when models are imported.
+        # Table creation happens when models are imported.
         pass

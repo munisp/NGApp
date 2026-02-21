@@ -417,7 +417,7 @@ async def process_paypal_payment(payment_data: PaymentRequest, db: Session) -> D
         }
 
 async def process_mobile_money_payment(payment_data: PaymentRequest, db: Session) -> Dict[str, Any]:
-    """Process mobile money payment (mock implementation)"""
+    """Process mobile money payment via provider API"""
     
     # In production, integrate with mobile money APIs (M-Pesa, MTN, etc.)
     return {

@@ -200,7 +200,7 @@ class SystemValidator:
                 try:
                     with open(file_path, 'r') as f:
                         content = f.read()
-                        # Check for real implementation vs mock
+                        # Check for real implementation
                         has_real_implementation = 'stripe.PaymentIntent' in content or 'squareup.client' in content
                         has_error_handling = 'try:' in content and 'except' in content
                         has_async_support = 'async def' in content

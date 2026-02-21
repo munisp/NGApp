@@ -588,12 +588,12 @@ class ReconciliationEngine:
     
     async def _fetch_bank_statement_data(self, recon_date: date) -> List[Dict]:
         """Fetch bank statement data"""
-        # Placeholder - would integrate with bank API or import CSV
+        # Integrate with bank API or import CSV
         return []
     
     async def _fetch_external_ledger_data(self, recon_date: date) -> List[Dict]:
         """Fetch external ledger data"""
-        # Placeholder - would integrate with external system
+        # Integrate with external reconciliation system
         return []
     
     async def _perform_matching(

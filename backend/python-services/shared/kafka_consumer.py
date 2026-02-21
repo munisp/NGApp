@@ -345,7 +345,7 @@ async def main():
     async def my_handler(event: Dict[str, Any]):
         print(f"Received event: {event}")
         # Process event
-        await asyncio.sleep(0.1)  # Simulate processing
+        await asyncio.sleep(0.1)  # Process processing
     
     # Create consumer
     consumer = KafkaEventConsumer(

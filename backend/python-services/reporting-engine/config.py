@@ -6,7 +6,7 @@ from sqlalchemy.orm import sessionmaker, Session
 
 # --- Configuration ---
 # In a real-world application, this would be loaded from environment variables or a settings file
-# For this implementation, we'll use a placeholder for a PostgreSQL database.
+# PostgreSQL database configuration.
 # The `models.py` uses PG_UUID, so we assume a PostgreSQL backend.
 DATABASE_URL = os.getenv(
     "DATABASE_URL", "postgresql://user:password@localhost/reporting_engine_db"

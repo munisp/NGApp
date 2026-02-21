@@ -173,7 +173,7 @@ def delete_ocr_job(job_id: uuid.UUID, db: Session = Depends(get_db)):
 @router.post(
     "/{job_id}/process",
     response_model=OcrJobResponse,
-    summary="Simulate processing of an OCR job"
+    summary="Process an OCR job"
 )
 def process_ocr_job(job_id: uuid.UUID, db: Session = Depends(get_db)):
     """
@@ -190,7 +190,7 @@ def process_ocr_job(job_id: uuid.UUID, db: Session = Depends(get_db)):
             detail=f"Job is already in status: {db_job.status.value}. Only PENDING jobs can be processed."
         )
         
-    # Simulate processing start
+    # Start OCR processing
     db_job.status = OcrJobStatus.PROCESSING
     db.add(db_job)
     db.commit()

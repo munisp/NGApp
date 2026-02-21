@@ -22,7 +22,7 @@ class Settings(BaseSettings):
     # Database Settings
     DATABASE_URL: str = "sqlite:///./communication_shared.db"
     
-    # Secret Key for JWT/Security (Placeholder for production)
+    # Secret Key for JWT/Security
     SECRET_KEY: str = "a-very-secret-key-that-should-be-changed-in-production"
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30

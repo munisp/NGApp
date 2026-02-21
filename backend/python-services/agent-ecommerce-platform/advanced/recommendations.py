@@ -588,7 +588,7 @@ class AnalyticsEngine:
     
     async def _get_top_products(self, store_id: str, limit: int) -> List[Dict]:
         """Get top selling products"""
-        # Mock data
+        # Default data
         return [
             {"product_id": "p1", "name": "Product 1", "sales": 150, "revenue": 15000},
             {"product_id": "p2", "name": "Product 2", "sales": 120, "revenue": 12000},
@@ -609,7 +609,7 @@ class AnalyticsEngine:
         end_date: datetime
     ) -> List[Dict]:
         """Get revenue trend"""
-        # Mock data
+        # Default data
         days = (end_date - start_date).days
         trend = []
         

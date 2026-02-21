@@ -201,7 +201,7 @@ def delete_document(
 @router.post(
     "/{document_id}/verify",
     response_model=models.DocumentResponse,
-    summary="Simulate document verification process"
+    summary="Trigger document verification process"
 )
 def verify_document(
     document_id: uuid.UUID,
@@ -209,7 +209,7 @@ def verify_document(
     db: Session = Depends(get_db)
 ):
     """
-    Simulates an external process verifying the document content.
+    Triggers an external process to verify the document content.
     Updates the document status based on the verification result.
     """
     db_document = get_document_or_404(db, document_id)

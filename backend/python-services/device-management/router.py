@@ -8,11 +8,11 @@ from fastapi import APIRouter
 router = APIRouter(prefix="/device-management", tags=["device-management"])
 
 @router.post("/token")
-async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends():
+async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
     return {"status": "ok"}
 
 @router.post("/owners/")
-def create_device_owner(owner: schemas.DeviceOwnerCreate, db: Session = Depends(get_db):
+def create_device_owner(owner: schemas.DeviceOwnerCreate, db: Session = Depends(get_db)):
     logger.info(f"User {current_user} creating new device owner: {owner.name}")
     db_owner = models.DeviceOwner(name=owner.name, contact_person=owner.contact_person, contact_email=owner.contact_email)
     db.add(db_owner)
@@ -23,14 +23,14 @@ def create_device_owner(owner: schemas.DeviceOwnerCreate, db: Session = Depends(
     return db_owner
 
 @router.get("/owners/")
-def read_device_owners(skip: int = 0, limit: int = 100, db: Session = Depends(get_db):
+def read_device_owners(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     logger.info(f"User {current_user} fetching device owners.")
     owners = db.query(models.DeviceOwner).offset(skip).limit(limit).all()
     DB_OPERATION_COUNT.labels(operation='read', model='DeviceOwner', status='success').inc()
     return owners
 
 @router.get("/owners/{owner_id}")
-def read_device_owner(owner_id: int, db: Session = Depends(get_db):
+def read_device_owner(owner_id: int, db: Session = Depends(get_db)):
     logger.info(f"User {current_user} fetching device owner {owner_id}.")
     db_owner = db.query(models.DeviceOwner).filter(models.DeviceOwner.id == owner_id).first()
     if db_owner is None:
@@ -41,7 +41,7 @@ def read_device_owner(owner_id: int, db: Session = Depends(get_db):
     return db_owner
 
 @router.put("/owners/{owner_id}")
-def update_device_owner(owner_id: int, owner: schemas.DeviceOwnerUpdate, db: Session = Depends(get_db):
+def update_device_owner(owner_id: int, owner: schemas.DeviceOwnerUpdate, db: Session = Depends(get_db)):
     logger.info(f"User {current_user} updating device owner {owner_id}.")
     db_owner = db.query(models.DeviceOwner).filter(models.DeviceOwner.id == owner_id).first()
     if db_owner is None:
@@ -61,7 +61,7 @@ def update_device_owner(owner_id: int, owner: schemas.DeviceOwnerUpdate, db: Ses
     return db_owner
 
 @router.delete("/owners/{owner_id}")
-def delete_device_owner(owner_id: int, db: Session = Depends(get_db):
+def delete_device_owner(owner_id: int, db: Session = Depends(get_db)):
     logger.info(f"User {current_user} deleting device owner {owner_id}.")
     db_owner = db.query(models.DeviceOwner).filter(models.DeviceOwner.id == owner_id).first()
     if db_owner is None:
@@ -77,7 +77,7 @@ def delete_device_owner(owner_id: int, db: Session = Depends(get_db):
 # --- Device Endpoints ---
 
 @router.post("/devices/")
-def create_device(device: schemas.DeviceCreate, db: Session = Depends(get_db):
+def create_device(device: schemas.DeviceCreate, db: Session = Depends(get_db)):
     logger.info(f"User {current_user} creating new device: {device.serial_number}")
     db_device = models.Device(**device.model_dump())
     db.add(db_device)
@@ -88,14 +88,14 @@ def create_device(device: schemas.DeviceCreate, db: Session = Depends(get_db):
     return db_device
 
 @router.get("/devices/")
-def read_devices(skip: int = 0, limit: int = 100, db: Session = Depends(get_db):
+def read_devices(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     logger.info(f"User {current_user} fetching devices.")
     devices = db.query(models.Device).offset(skip).limit(limit).all()
     DB_OPERATION_COUNT.labels(operation='read', model='Device', status='success').inc()
     return devices
 
 @router.get("/devices/{device_id}")
-def read_device(device_id: int, db: Session = Depends(get_db):
+def read_device(device_id: int, db: Session = Depends(get_db)):
     logger.info(f"User {current_user} fetching device {device_id}.")
     db_device = db.query(models.Device).filter(models.Device.id == device_id).first()
     if db_device is None:
@@ -106,7 +106,7 @@ def read_device(device_id: int, db: Session = Depends(get_db):
     return db_device
 
 @router.put("/devices/{device_id}")
-def update_device(device_id: int, device: schemas.DeviceUpdate, db: Session = Depends(get_db):
+def update_device(device_id: int, device: schemas.DeviceUpdate, db: Session = Depends(get_db)):
     logger.info(f"User {current_user} updating device {device_id}.")
     db_device = db.query(models.Device).filter(models.Device.id == device_id).first()
     if db_device is None:
@@ -126,7 +126,7 @@ def update_device(device_id: int, device: schemas.DeviceUpdate, db: Session = De
     return db_device
 
 @router.delete("/devices/{device_id}")
-def delete_device(device_id: int, db: Session = Depends(get_db):
+def delete_device(device_id: int, db: Session = Depends(get_db)):
     logger.info(f"User {current_user} deleting device {device_id}.")
     db_device = db.query(models.Device).filter(models.Device.id == device_id).first()
     if db_device is None:

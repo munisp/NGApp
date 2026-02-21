@@ -227,7 +227,7 @@ class ScreeningService:
         """Screen subject against provider"""
         result_id = secrets.token_hex(16)
         
-        # Simulate screening (in production, call actual provider APIs)
+        # Execute screening via configured provider APIs
         is_match, match_score, match_details = await self._call_provider(
             provider, screening_type, name, additional_data
         )

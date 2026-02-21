@@ -196,7 +196,7 @@ def trigger_gnn_job(job_id: int, db: Session = Depends(get_db)):
             detail=f"Job {job_id} is already {db_job.status.value}. Only PENDING jobs can be triggered."
         )
         
-    # Simulate the start of the job
+    # Start the computation job
     db_job.status = JobStatus.RUNNING
     db_job.started_at = datetime.utcnow()
     

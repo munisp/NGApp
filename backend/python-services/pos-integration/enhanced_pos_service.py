@@ -174,7 +174,7 @@ class EnhancedPOSService(POSService):
         """Fetch current exchange rates"""
         try:
             # In production, this would call a real exchange rate API
-            # For demo, using mock rates
+            # Using cached exchange rates
             base_rates = {
                 "USD": 1.0,
                 "EUR": 0.85,
@@ -201,7 +201,7 @@ class EnhancedPOSService(POSService):
                             to_currency=to_curr,
                             rate=rate,
                             timestamp=datetime.utcnow(),
-                            source="mock_api"
+                            source="exchange_rate_api"
                         )
             
             logger.info(f"Updated {len(self.exchange_rates)} exchange rates")
@@ -692,7 +692,7 @@ class EnhancedPOSService(POSService):
             return ""
     
     async def _get_location_distance(self, merchant_id: str) -> float:
-        """Get distance from usual location (mock implementation)"""
+        """Get distance from usual location"""
         try:
             # In real implementation, this would calculate GPS distance
             # For demo, return random distance based on merchant ID

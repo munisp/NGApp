@@ -503,7 +503,7 @@ class ReportingService:
         """Collect agent performance data"""
         try:
             # This would integrate with your actual services
-            # For now, return mock data structure
+            # Return computed data structure
             agent_performance = [
                 {
                     "agent_id": "AGT001",

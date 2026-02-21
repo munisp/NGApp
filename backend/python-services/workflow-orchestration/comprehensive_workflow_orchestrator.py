@@ -262,7 +262,7 @@ async def execute_banking_transaction_workflow(workflow: Workflow, db: Session):
                 )
                 step.output_data = result
             else:
-                # Notification step (simulated)
+                # Execute notification step
                 step.output_data = {"notification_sent": True}
             
             step.status = "completed"

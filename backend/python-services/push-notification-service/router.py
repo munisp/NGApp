@@ -138,7 +138,7 @@ def delete_existing_notification(notification_id: int, db: Session = Depends(get
 @router.post("/send", response_model=models.PushNotificationResponse, status_code=status.HTTP_202_ACCEPTED)
 def send_push_notification(notification: models.PushNotificationBase, db: Session = Depends(get_db)):
     """
-    **Simulate sending a Push Notification.**
+    **Send a Push Notification via FCM.**
     
     This endpoint creates the notification record, sends the external sending process,
     updates the status to 'sent', and creates a corresponding log entry.

@@ -33,11 +33,11 @@ class InferenceResponse(BaseModel):
     log_id: int = Field(..., description="The ID of the activity log entry created for this inference.")
 
 
-# --- Helper Functions (Mock Logic) ---
+# --- Helper Functions (Inference Logic) ---
 
 def _production_inference(model_path: str, input_data: Dict[str, Any]) -> Any:
     """
-    Mocks the process of loading a model and performing inference.
+    Loads the model and performs inference.
     In a real application, this would involve loading the model artifact
     from `model_path` and running the prediction.
     """

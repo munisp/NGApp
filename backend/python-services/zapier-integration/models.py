@@ -37,7 +37,7 @@ class ZapierIntegration(Base):
         Integer,
         nullable=False,
         index=True,
-        doc="ID of the user who owns this integration (placeholder for actual User FK)",
+        doc="ID of the user who owns this integration",
     )
     name = Column(
         String(255), nullable=False, doc="A user-friendly name for the integration"

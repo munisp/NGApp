@@ -6,13 +6,13 @@ from pydantic import BaseModel, Field
 import enum
 
 # Assuming Base is imported from config.py in a real application, 
-# but for this single-file context, we'll define a placeholder Base
+# Base definition for standalone model usage
 # and rely on the config.py to have the real one.
 # For the purpose of this task, we will assume the Base is available.
 try:
     from config import Base
 except ImportError:
-    # Placeholder for Base if running models.py standalone
+    # Base for standalone model usage
     from sqlalchemy.ext.declarative import declarative_base
     Base = declarative_base()
 
@@ -103,7 +103,7 @@ class TransactionBase(BaseModel):
     currency: str = Field(..., min_length=3, max_length=3, description="Currency code (e.g., USD).")
     country: str = Field(..., min_length=2, max_length=2, description="2-letter country code of the transaction origin.")
     # Optional field for simulation in router.py
-    transaction_count_24h: Optional[int] = Field(0, description="Simulated velocity check feature.")
+    transaction_count_24h: Optional[int] = Field(0, description="24-hour transaction velocity count.")
 
 class FraudCheckResultBase(BaseModel):
     """Base schema for fraud check results."""

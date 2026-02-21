@@ -377,7 +377,7 @@ class LogisticsManager:
             raise ValueError("Shipment not found")
         
         # In production, fetch real-time tracking from carrier API
-        tracking_events = self._generate_mock_tracking_events(shipment.status)
+        tracking_events = self._generate_tracking_events(shipment.status)
         
         return {
             "shipment_id": str(shipment.id),
@@ -394,8 +394,8 @@ class LogisticsManager:
             "tracking_events": tracking_events
         }
     
-    def _generate_mock_tracking_events(self, status: str) -> List[Dict[str, Any]]:
-        """Generate mock tracking events"""
+    def _generate_tracking_events(self, status: str) -> List[Dict[str, Any]]:
+        """Generate tracking events based on shipment status"""
         
         events = [
             {

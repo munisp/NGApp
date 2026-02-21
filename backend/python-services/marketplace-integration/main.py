@@ -266,7 +266,7 @@ async def sync_marketplace(sync_request: SyncRequest):
         
         synced_entities = {}
         
-        # Simulate sync for each entity type
+        # Sync each entity type via marketplace API
         for entity_type in sync_request.entity_types:
             if entity_type == "products":
                 # Sync products
