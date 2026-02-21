@@ -5,8 +5,8 @@ const VirtualAccount: React.FC = () => {
   const [copied, setCopied] = useState('');
 
   const accounts = [
-    { id: '1', bankName: 'Wema Bank', accountNumber: '7821234567', accountName: 'John Doe - RemitFlow', balance: 150000, status: 'active' },
-    { id: '2', bankName: 'Providus Bank', accountNumber: '9801234567', accountName: 'John Doe - RemitFlow', balance: 75000, status: 'active' },
+    { id: '1', bankName: 'Wema Bank', accountNumber: '7821234567', accountName: 'John Doe - 54RemitFlow', balance: 150000, status: 'active' },
+    { id: '2', bankName: 'Providus Bank', accountNumber: '9801234567', accountName: 'John Doe - 54RemitFlow', balance: 75000, status: 'active' },
   ];
 
   const recentTransactions = [

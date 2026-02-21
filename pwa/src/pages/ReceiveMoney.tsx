@@ -11,7 +11,7 @@ const ReceiveMoney: React.FC = () => {
     { id: 'account', name: 'Bank Transfer', icon: 'M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4' },
   ];
 
-  const virtualAccount = { bankName: 'Wema Bank', accountNumber: '7821234567', accountName: 'John Doe - RemitFlow' };
+  const virtualAccount = { bankName: 'Wema Bank', accountNumber: '7821234567', accountName: 'John Doe - 54RemitFlow' };
 
   const handleCopy = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -77,8 +77,8 @@ const ReceiveMoney: React.FC = () => {
             <div className="p-4 bg-slate-50 rounded-xl">
               <p className="text-xs text-slate-500 mb-2">Your payment link</p>
               <div className="flex items-center gap-2">
-                <input type="text" value="https://pay.remitflow.com/u/johndoe" className="flex-1 px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm text-slate-700" readOnly />
-                <button onClick={() => handleCopy('https://pay.remitflow.com/u/johndoe')} className="px-4 py-2.5 text-sm font-medium text-indigo-600 bg-indigo-50 rounded-xl hover:bg-indigo-100 transition-colors">
+                <input type="text" value="https://pay.54remitflow.com/u/johndoe" className="flex-1 px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm text-slate-700" readOnly />
+                <button onClick={() => handleCopy('https://pay.54remitflow.com/u/johndoe')} className="px-4 py-2.5 text-sm font-medium text-indigo-600 bg-indigo-50 rounded-xl hover:bg-indigo-100 transition-colors">
                   {copied ? 'Copied!' : 'Copy'}
                 </button>
               </div>

@@ -105,7 +105,7 @@ const Layout: React.FC = () => {
           <path strokeLinecap="round" strokeLinejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
         </svg>
       </div>
-      <span className={`${size === 'sm' ? 'text-base' : 'text-lg'} font-bold bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent`}>RemitFlow</span>
+      <span className={`${size === 'sm' ? 'text-base' : 'text-lg'} font-bold bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent`}>54RemitFlow</span>
     </div>
   );
 

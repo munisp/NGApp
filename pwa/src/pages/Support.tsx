@@ -63,7 +63,7 @@ const Support: React.FC = () => {
       <div className="bg-white rounded-2xl border border-slate-100 p-5">
         <h2 className="text-base font-semibold text-slate-900 mb-4">Contact Information</h2>
         <div className="space-y-3">
-          {[{ icon: 'M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z', label: 'Email', value: 'support@remitflow.com', color: 'bg-indigo-50 text-indigo-600' },
+          {[{ icon: 'M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z', label: 'Email', value: 'support@54remitflow.com', color: 'bg-indigo-50 text-indigo-600' },
             { icon: 'M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z', label: 'Phone', value: '+234 800 123 4567', color: 'bg-emerald-50 text-emerald-600' },
             { icon: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z', label: 'Hours', value: '24/7 Support Available', color: 'bg-violet-50 text-violet-600' },
           ].map((item) => (

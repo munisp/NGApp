@@ -29,7 +29,7 @@ const Login: React.FC = () => {
             <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-white/20 backdrop-blur-sm">
               <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg>
             </div>
-            <span className="text-2xl font-bold">RemitFlow</span>
+            <span className="text-2xl font-bold">54RemitFlow</span>
           </div>
           <h1 className="text-4xl font-bold leading-tight mb-4">Send money anywhere in the world</h1>
           <p className="text-lg text-indigo-100 leading-relaxed">Fast, secure, and affordable cross-border transfers. Trusted by thousands across Africa and beyond.</p>
@@ -56,7 +56,7 @@ const Login: React.FC = () => {
             <div className="w-9 h-9 rounded-lg flex items-center justify-center bg-gradient-to-br from-indigo-600 to-violet-600">
               <svg className="w-4.5 h-4.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg>
             </div>
-            <span className="text-xl font-bold bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent">RemitFlow</span>
+            <span className="text-xl font-bold bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent">54RemitFlow</span>
           </div>
 
           <h2 className="text-2xl font-bold text-slate-900 mb-1">Welcome back</h2>
