@@ -1,6 +1,15 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import CertificatePinning from '../security/CertificatePinning';
 
+function generateIdempotencyKey(): string {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+    const r = (Math.random() * 16) | 0;
+    return (c === 'x' ? r : (r & 0x3) | 0x8).toString(16);
+  });
+}
+
+const WRITE_METHODS = new Set(['POST', 'PUT', 'DELETE']);
+
 interface ApiClientConfig {
   baseUrl: string;
   timeout: number;
@@ -29,6 +38,7 @@ class ApiClient {
   private static instance: ApiClient;
   private config: ApiClientConfig;
   private authToken: string | null = null;
+  private pendingKeys: Map<string, string> = new Map();
 
   private constructor() {
     const env = process.env.REACT_NATIVE_ENV || process.env.NODE_ENV || 'production';
@@ -82,6 +92,18 @@ class ApiClient {
     return `${base}${cleanPath}`;
   }
 
+  private getOrCreateIdempotencyKey(method: string, path: string, body?: string): string | null {
+    if (!WRITE_METHODS.has(method.toUpperCase())) return null;
+    const cacheKey = `${method}:${path}:${body || ''}`;
+    if (this.pendingKeys.has(cacheKey)) {
+      return this.pendingKeys.get(cacheKey)!;
+    }
+    const key = generateIdempotencyKey();
+    this.pendingKeys.set(cacheKey, key);
+    setTimeout(() => this.pendingKeys.delete(cacheKey), 60000);
+    return key;
+  }
+
   private async buildHeaders(options: RequestOptions): Promise<Record<string, string>> {
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
@@ -103,7 +125,12 @@ class ApiClient {
 
   async request<T = unknown>(path: string, options: RequestOptions = {}): Promise<ApiResponse<T>> {
     const url = this.buildUrl(path);
+    const method = (options.method || 'GET').toUpperCase();
+    const idempotencyKey = this.getOrCreateIdempotencyKey(method, path, options.body as string | undefined);
     const headers = await this.buildHeaders(options);
+    if (idempotencyKey) {
+      headers['Idempotency-Key'] = idempotencyKey;
+    }
     const timeout = options.timeout || this.config.timeout;
 
     let lastError: Error | null = null;

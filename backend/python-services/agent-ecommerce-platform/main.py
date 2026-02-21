@@ -3,7 +3,7 @@ Agent E-commerce Platform Service
 Enables agents to build and manage online stores integrated with banking services
 """
 
-from fastapi import FastAPI, HTTPException, Depends, BackgroundTasks
+from fastapi import FastAPI, HTTPException, Depends, BackgroundTasks, Header
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
@@ -121,7 +121,6 @@ class OrderCreateRequest(BaseModel):
     shipping_address: Dict[str, Any]
     billing_address: Optional[Dict[str, Any]] = None
     payment_method: str
-    idempotency_key: Optional[str] = None
 
 class StoreResponse(BaseModel):
     id: str
@@ -354,31 +353,40 @@ async def create_order(
     store_id: str,
     order_data: OrderCreateRequest,
     background_tasks: BackgroundTasks,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    idempotency_key: Optional[str] = Header(None, alias="Idempotency-Key"),
 ):
     """Create a new order with idempotency support.
-    Set idempotency_key in request body to prevent duplicate orders."""
+    Send an Idempotency-Key header to prevent duplicate orders."""
 
-    if order_data.idempotency_key:
-        idem_key = order_data.idempotency_key
-        cached = redis_client.get(f"order_idempotency:{idem_key}")
-        if cached:
-            existing_order_id = cached if isinstance(cached, str) else cached.decode()
-            existing = db.query(StoreOrder).filter(StoreOrder.id == existing_order_id).first()
-            if existing:
-                return OrderResponse(
-                    id=str(existing.id),
-                    store_id=str(existing.store_id),
-                    customer_id=existing.customer_id,
-                    order_number=existing.order_number,
-                    total_amount=existing.total_amount,
-                    currency=existing.currency,
-                    status=existing.status,
-                    payment_status=existing.payment_status,
-                    payment_method=existing.payment_method,
-                    order_items=json.loads(existing.order_items),
-                    created_at=existing.created_at
-                )
+    if idempotency_key:
+        idem_key = idempotency_key
+        try:
+            acquired = redis_client.set(f"order_idempotency:{idem_key}", "processing", nx=True, ex=86400)
+            if not acquired:
+                cached = redis_client.get(f"order_idempotency:{idem_key}")
+                if cached and cached != "processing":
+                    existing_order_id = cached if isinstance(cached, str) else cached.decode()
+                    existing = db.query(StoreOrder).filter(StoreOrder.id == existing_order_id).first()
+                    if existing:
+                        return OrderResponse(
+                            id=str(existing.id),
+                            store_id=str(existing.store_id),
+                            customer_id=existing.customer_id,
+                            order_number=existing.order_number,
+                            total_amount=existing.total_amount,
+                            currency=existing.currency,
+                            status=existing.status,
+                            payment_status=existing.payment_status,
+                            payment_method=existing.payment_method,
+                            order_items=json.loads(existing.order_items),
+                            created_at=existing.created_at
+                        )
+                    raise HTTPException(status_code=409, detail="Request is already being processed")
+        except HTTPException:
+            raise
+        except Exception as exc:
+            logging.getLogger(__name__).warning(f"Redis idempotency check failed: {exc}")
 
     store = db.query(AgentStore).filter(AgentStore.id == store_id).first()
     if not store:
@@ -407,10 +415,10 @@ async def create_order(
     db.commit()
     db.refresh(new_order)
 
-    if order_data.idempotency_key:
+    if idempotency_key:
         try:
             redis_client.setex(
-                f"order_idempotency:{order_data.idempotency_key}",
+                f"order_idempotency:{idempotency_key}",
                 86400,
                 str(new_order.id),
             )

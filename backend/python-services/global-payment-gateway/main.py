@@ -11,8 +11,21 @@ import json
 import httpx
 import os
 import logging
+import redis as _redis
+import sys
 
 logger = logging.getLogger(__name__)
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+from shared.idempotency import IdempotencyStore, request_hash as _idem_hash_util
+
+_redis_url = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+try:
+    _redis_client: Optional[_redis.Redis] = _redis.from_url(_redis_url, decode_responses=True)
+except Exception:
+    _redis_client = None
+
+_idem_store = IdempotencyStore("gpg-pay", _redis_client)
 
 app = FastAPI(
     title="Global Payment Gateway",
@@ -20,10 +33,11 @@ app = FastAPI(
     version="1.0.0"
 )
 
-_idempotency_cache: Dict[str, Dict[str, Any]] = {}
+@app.on_event("startup")
+async def _start_eviction():
+    _idem_store.start_eviction_job()
 
-
-def _idem_key_hash(key: str, request_data: Dict[str, Any]) -> str:
+def _idem_key_hash(request_data: Dict[str, Any]) -> str:
     payload = json.dumps(request_data, sort_keys=True, default=str)
     return hashlib.sha256(payload.encode()).hexdigest()
 
@@ -64,16 +78,21 @@ async def process_payment(
     Send an Idempotency-Key header to prevent duplicate charges."""
 
     if idempotency_key:
-        request_hash = _idem_key_hash(idempotency_key, payment_data.model_dump())
-        cached = _idempotency_cache.get(idempotency_key)
-        if cached:
-            if cached["request_hash"] != request_hash:
+        req_hash = _idem_key_hash(payment_data.model_dump())
+        cached_raw = _idem_store.check(idempotency_key, req_hash)
+        if cached_raw:
+            if cached_raw.get("request_hash") != req_hash:
                 raise HTTPException(
                     status_code=422,
                     detail="Idempotency key reused with different request payload",
                 )
-            logger.info(f"Idempotency hit for key={idempotency_key}")
-            return PaymentResponse(**cached["response"])
+            if cached_raw.get("status") == "completed" and cached_raw.get("response"):
+                logger.info(f"Idempotency hit for key={idempotency_key}")
+                return PaymentResponse(**json.loads(cached_raw["response"]))
+        else:
+            acquired = _idem_store.acquire(idempotency_key, req_hash)
+            if not acquired:
+                raise HTTPException(status_code=409, detail="Request is already being processed")
 
     if payment_data.currency not in CURRENCY_RATES:
         raise HTTPException(status_code=400, detail="Unsupported currency")
@@ -117,10 +136,11 @@ async def process_payment(
         }
 
         if idempotency_key:
-            _idempotency_cache[idempotency_key] = {
-                "request_hash": _idem_key_hash(idempotency_key, payment_data.model_dump()),
-                "response": response_data,
-            }
+            _idem_store.complete(
+                idempotency_key,
+                _idem_key_hash(payment_data.model_dump()),
+                json.dumps(response_data, default=str),
+            )
 
         return PaymentResponse(**response_data)
 

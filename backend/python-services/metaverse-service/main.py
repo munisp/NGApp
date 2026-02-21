@@ -4,7 +4,9 @@ Integration service for metaverse platforms and virtual economies
 """
 import hashlib
 import json as json_mod
+import sys
 
+import redis as _redis
 from fastapi import FastAPI, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
@@ -14,6 +16,17 @@ from enum import Enum
 import logging
 import os
 import uuid
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+from shared.idempotency import IdempotencyStore
+
+_redis_url = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+try:
+    _redis_client: Optional[_redis.Redis] = _redis.from_url(_redis_url, decode_responses=True)
+except Exception:
+    _redis_client = None
+
+_idem_store = IdempotencyStore("metaverse-txn", _redis_client)
 
 # Configure logging
 logging.basicConfig(
@@ -27,6 +40,10 @@ app = FastAPI(
     description="Integration service for metaverse platforms and virtual economies",
     version="1.0.0"
 )
+
+@app.on_event("startup")
+async def _start_eviction():
+    _idem_store.start_eviction_job()
 
 # CORS middleware
 app.add_middleware(
@@ -148,7 +165,6 @@ land_db: Dict[str, VirtualLand] = {}
 transactions_db: Dict[str, MetaverseTransaction] = {}
 events_db: Dict[str, VirtualEvent] = {}
 stores_db: Dict[str, MetaverseStore] = {}
-_idempotency_cache: Dict[str, Dict[str, Any]] = {}
 
 # API Endpoints
 
@@ -290,14 +306,18 @@ async def create_transaction(
         if idempotency_key:
             req_data = transaction.model_dump(exclude={"id", "timestamp", "status"})
             req_hash = hashlib.sha256(json_mod.dumps(req_data, sort_keys=True, default=str).encode()).hexdigest()
-            cached = _idempotency_cache.get(idempotency_key)
-            if cached:
-                if cached["request_hash"] != req_hash:
+            cached_raw = _idem_store.check(idempotency_key, req_hash)
+            if cached_raw:
+                if cached_raw.get("request_hash") != req_hash:
                     raise HTTPException(status_code=422, detail="Idempotency key reused with different request payload")
-                existing = transactions_db.get(cached["transaction_id"])
-                if existing:
+                txn_id = cached_raw.get("transaction_id") or cached_raw.get("response")
+                if txn_id and txn_id in transactions_db:
                     logger.info(f"Idempotency hit for key={idempotency_key}")
-                    return existing
+                    return transactions_db[txn_id]
+            else:
+                acquired = _idem_store.acquire(idempotency_key, req_hash)
+                if not acquired:
+                    raise HTTPException(status_code=409, detail="Request is already being processed")
 
         transaction.id = str(uuid.uuid4())
         transaction.timestamp = datetime.utcnow()
@@ -307,10 +327,11 @@ async def create_transaction(
 
         if idempotency_key:
             req_data = transaction.model_dump(exclude={"id", "timestamp", "status"})
-            _idempotency_cache[idempotency_key] = {
-                "request_hash": hashlib.sha256(json_mod.dumps(req_data, sort_keys=True, default=str).encode()).hexdigest(),
-                "transaction_id": transaction.id,
-            }
+            _idem_store.complete(
+                idempotency_key,
+                hashlib.sha256(json_mod.dumps(req_data, sort_keys=True, default=str).encode()).hexdigest(),
+                transaction.id,
+            )
 
         logger.info(f"Created transaction {transaction.id} for account {transaction.account_id}")
         return transaction

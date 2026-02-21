@@ -1,9 +1,12 @@
 import hashlib
 import json
 import logging
+import os
+import sys
 import uuid
 from typing import Dict, Any, List, Optional
 
+import redis as _redis
 from fastapi import APIRouter, Depends, Header, HTTPException, status
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
@@ -11,7 +14,17 @@ from sqlalchemy.exc import IntegrityError
 from . import models
 from .config import get_db
 
-_idempotency_cache: Dict[str, Dict[str, Any]] = {}
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+from shared.idempotency import IdempotencyStore
+
+_redis_url = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+try:
+    _redis_client: Optional[_redis.Redis] = _redis.from_url(_redis_url, decode_responses=True)
+except Exception:
+    _redis_client = None
+
+_idem_store = IdempotencyStore("gpg-txn", _redis_client)
+_idem_store.start_eviction_job()
 
 
 def _idem_hash(request_data: Dict[str, Any]) -> str:
@@ -81,19 +94,25 @@ def create_transaction(
     """
     if idempotency_key:
         req_hash = _idem_hash(transaction.model_dump())
-        cached = _idempotency_cache.get(idempotency_key)
-        if cached:
-            if cached["request_hash"] != req_hash:
+        cached_raw = _idem_store.check(idempotency_key, req_hash)
+        if cached_raw:
+            if cached_raw.get("request_hash") != req_hash:
                 raise HTTPException(
                     status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                     detail="Idempotency key reused with different request payload",
                 )
-            existing = db.query(models.PaymentTransaction).filter(
-                models.PaymentTransaction.transaction_id == cached["transaction_id"]
-            ).first()
-            if existing:
-                logger.info(f"Idempotency hit for key={idempotency_key}")
-                return existing
+            txn_id = cached_raw.get("transaction_id") or cached_raw.get("response")
+            if txn_id:
+                existing = db.query(models.PaymentTransaction).filter(
+                    models.PaymentTransaction.transaction_id == txn_id
+                ).first()
+                if existing:
+                    logger.info(f"Idempotency hit for key={idempotency_key}")
+                    return existing
+        else:
+            acquired = _idem_store.acquire(idempotency_key, req_hash)
+            if not acquired:
+                raise HTTPException(status_code=409, detail="Request is already being processed")
 
     try:
         new_transaction_id = str(uuid.uuid4())
@@ -133,10 +152,11 @@ def create_transaction(
         db.refresh(db_transaction)
 
         if idempotency_key:
-            _idempotency_cache[idempotency_key] = {
-                "request_hash": _idem_hash(transaction.model_dump()),
-                "transaction_id": new_transaction_id,
-            }
+            _idem_store.complete(
+                idempotency_key,
+                _idem_hash(transaction.model_dump()),
+                new_transaction_id,
+            )
 
         logger.info(f"Transaction {new_transaction_id} created and authorized.")
         return db_transaction
