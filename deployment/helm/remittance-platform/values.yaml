@@ -1,0 +1,200 @@
+# Default values for remittance-platform
+# This is a YAML-formatted file.
+
+global:
+  environment: production
+  domain: remittance.com
+  imageRegistry: docker.io
+  imagePullSecrets: []
+
+# PostgreSQL Configuration
+postgresql:
+  enabled: true
+  auth:
+    username: remittance
+    password: changeme123
+    database: remittance_db
+  primary:
+    persistence:
+      enabled: true
+      size: 50Gi
+      storageClass: standard
+    resources:
+      requests:
+        memory: 2Gi
+        cpu: 1000m
+      limits:
+        memory: 4Gi
+        cpu: 2000m
+
+# Redis Configuration
+redis:
+  enabled: true
+  auth:
+    enabled: true
+    password: changeme123
+  master:
+    persistence:
+      enabled: true
+      size: 10Gi
+    resources:
+      requests:
+        memory: 512Mi
+        cpu: 500m
+      limits:
+        memory: 1Gi
+        cpu: 1000m
+
+# Kafka Configuration
+kafka:
+  enabled: true
+  replicaCount: 3
+  auth:
+    clientProtocol: sasl
+    sasl:
+      mechanism: plain
+      users:
+        - remittance
+      passwords:
+        - changeme123
+  persistence:
+    enabled: true
+    size: 100Gi
+  resources:
+    requests:
+      memory: 2Gi
+      cpu: 1000m
+    limits:
+      memory: 4Gi
+      cpu: 2000m
+
+# Temporal Configuration
+temporal:
+  enabled: true
+  server:
+    replicaCount: 3
+    resources:
+      requests:
+        memory: 2Gi
+        cpu: 1000m
+      limits:
+        memory: 4Gi
+        cpu: 2000m
+
+# Backend Services Configuration
+backend:
+  fastapi:
+    enabled: true
+    replicaCount: 3
+    image:
+      repository: remittance/fastapi-backend
+      tag: "1.0.0"
+      pullPolicy: IfNotPresent
+    resources:
+      requests:
+        memory: 512Mi
+        cpu: 500m
+      limits:
+        memory: 1Gi
+        cpu: 1000m
+    autoscaling:
+      enabled: true
+      minReplicas: 3
+      maxReplicas: 10
+      targetCPUUtilizationPercentage: 70
+    
+  grpc:
+    enabled: true
+    replicaCount: 3
+    image:
+      repository: remittance/grpc-backend
+      tag: "1.0.0"
+      pullPolicy: IfNotPresent
+    resources:
+      requests:
+        memory: 512Mi
+        cpu: 500m
+      limits:
+        memory: 1Gi
+        cpu: 1000m
+    autoscaling:
+      enabled: true
+      minReplicas: 3
+      maxReplicas: 10
+      targetCPUUtilizationPercentage: 70
+
+  temporal_workers:
+    enabled: true
+    replicaCount: 5
+    image:
+      repository: remittance/temporal-workers
+      tag: "1.0.0"
+      pullPolicy: IfNotPresent
+    resources:
+      requests:
+        memory: 1Gi
+        cpu: 1000m
+      limits:
+        memory: 2Gi
+        cpu: 2000m
+
+# Frontend Configuration
+frontend:
+  web:
+    enabled: true
+    replicaCount: 3
+    image:
+      repository: remittance/web-frontend
+      tag: "1.0.0"
+      pullPolicy: IfNotPresent
+    resources:
+      requests:
+        memory: 256Mi
+        cpu: 250m
+      limits:
+        memory: 512Mi
+        cpu: 500m
+    autoscaling:
+      enabled: true
+      minReplicas: 3
+      maxReplicas: 10
+      targetCPUUtilizationPercentage: 70
+
+# Ingress Configuration
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+  hosts:
+    - host: api.remittance.com
+      paths:
+        - path: /
+          pathType: Prefix
+          service: fastapi-backend
+    - host: app.remittance.com
+      paths:
+        - path: /
+          pathType: Prefix
+          service: web-frontend
+  tls:
+    - secretName: remittance-tls
+      hosts:
+        - api.remittance.com
+        - app.remittance.com
+
+# Monitoring Configuration
+monitoring:
+  prometheus:
+    enabled: true
+  grafana:
+    enabled: true
+
+# Secrets (should be overridden in production)
+secrets:
+  jwtSecret: changeme-jwt-secret
+  databaseUrl: postgresql://remittance:changeme123@postgresql:5432/remittance_db
+  redisUrl: redis://:changeme123@redis-master:6379/0
+  kafkaBootstrapServers: kafka:9092
+  temporalHost: temporal-frontend:7233
