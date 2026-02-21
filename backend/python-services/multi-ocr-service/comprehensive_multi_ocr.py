@@ -1,3 +1,7 @@
+import sys as _sys, os as _os
+_sys.path.insert(0, _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), ".."))
+from shared.middleware import apply_middleware, ErrorResponse
+from shared.observability import setup_logging, get_logger, metrics_router, MetricsMiddleware
 """
 Comprehensive Multi-OCR Service
 Integrates PaddleOCR, EasyOCR, and OLMOCR for document processing
@@ -6,6 +10,11 @@ Port: 8024
 
 from fastapi import FastAPI, HTTPException, UploadFile, File, BackgroundTasks, Depends
 from fastapi.middleware.cors import CORSMiddleware
+
+apply_middleware(app)
+setup_logging("comprehensive-multi-ocr-service")
+app.include_router(metrics_router)
+
 from pydantic import BaseModel
 from typing import List, Optional, Dict, Any, Tuple
 from datetime import datetime
@@ -317,7 +326,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=os.getenv("ALLOWED_ORIGINS","http://localhost:5173,http://localhost:5174,http://localhost:3000").split(","),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

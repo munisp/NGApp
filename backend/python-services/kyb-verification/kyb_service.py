@@ -1,3 +1,7 @@
+import sys as _sys, os as _os
+_sys.path.insert(0, _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), ".."))
+from shared.middleware import apply_middleware, ErrorResponse
+from shared.observability import setup_logging, get_logger, metrics_router, MetricsMiddleware
 """
 KYB (Know Your Business) Verification Service
 Integrates with Temporal for comprehensive business verification and compliance
@@ -18,6 +22,11 @@ import httpx
 import pandas as pd
 from fastapi import FastAPI, HTTPException, UploadFile, File, Form, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
+
+apply_middleware(app)
+setup_logging("kyb-verification-service")
+app.include_router(metrics_router)
+
 from pydantic import BaseModel, Field, validator
 from sqlalchemy import create_engine, Column, String, Float, DateTime, Text, Integer, Boolean, JSON
 from sqlalchemy.ext.declarative import declarative_base
@@ -1090,7 +1099,7 @@ app = FastAPI(title="KYB Verification Service", version="2.0.0")
 # CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=os.getenv("ALLOWED_ORIGINS","http://localhost:5173,http://localhost:5174,http://localhost:3000").split(","),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

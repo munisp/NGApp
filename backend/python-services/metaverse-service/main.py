@@ -1,3 +1,7 @@
+import sys as _sys, os as _os
+_sys.path.insert(0, _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), ".."))
+from shared.middleware import apply_middleware, ErrorResponse
+from shared.observability import setup_logging, get_logger, metrics_router, MetricsMiddleware
 """
 Metaverse Service
 Integration service for metaverse platforms and virtual economies
@@ -9,6 +13,11 @@ import sys
 import redis as _redis
 from fastapi import FastAPI, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+
+apply_middleware(app)
+setup_logging("metaverse-service")
+app.include_router(metrics_router)
+
 from pydantic import BaseModel, Field
 from typing import Dict, Any, List, Optional
 from datetime import datetime
@@ -48,7 +57,7 @@ async def _start_eviction():
 # CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=os.getenv("ALLOWED_ORIGINS","http://localhost:5173,http://localhost:5174,http://localhost:3000").split(","),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

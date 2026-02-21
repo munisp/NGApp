@@ -1,3 +1,7 @@
+import sys as _sys, os as _os
+_sys.path.insert(0, _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), ".."))
+from shared.middleware import apply_middleware, ErrorResponse
+from shared.observability import setup_logging, get_logger, metrics_router, MetricsMiddleware
 """
 Example Service with Keycloak Authentication
 Agent Banking Platform V11.0
@@ -11,6 +15,11 @@ Date: November 11, 2025
 
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+
+apply_middleware(app)
+setup_logging("agent-banking-service")
+app.include_router(metrics_router)
+
 from pydantic import BaseModel
 from typing import Optional, List
 import logging
@@ -51,7 +60,7 @@ app = FastAPI(
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Configure appropriately for production
+    allow_origins=os.getenv("ALLOWED_ORIGINS","http://localhost:5173,http://localhost:5174,http://localhost:3000").split(","),  # Configure appropriately for production
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

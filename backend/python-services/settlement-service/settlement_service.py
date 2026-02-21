@@ -1,3 +1,7 @@
+import sys as _sys, os as _os
+_sys.path.insert(0, _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), ".."))
+from shared.middleware import apply_middleware, ErrorResponse
+from shared.observability import setup_logging, get_logger, metrics_router, MetricsMiddleware
 """
 Agent Banking Platform - Settlement Service
 Handles commission settlement processing with TigerBeetle ledger integration
@@ -17,6 +21,11 @@ import redis.asyncio as redis
 import httpx
 from fastapi import FastAPI, HTTPException, Depends, Query, BackgroundTasks, Header, status
 from fastapi.middleware.cors import CORSMiddleware
+
+apply_middleware(app)
+setup_logging("settlement-service")
+app.include_router(metrics_router)
+
 from pydantic import BaseModel, validator, Field
 import json
 
@@ -34,7 +43,7 @@ app = FastAPI(
 # CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=os.getenv("ALLOWED_ORIGINS","http://localhost:5173,http://localhost:5174,http://localhost:3000").split(","),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
