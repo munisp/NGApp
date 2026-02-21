@@ -185,6 +185,12 @@ SERVICE_MODULES = [
     "enhanced_platform", "infrastructure", "performance_optimization",
     # Cross-Border Services
     "cross_border",
+    # Transaction Scoring & COA Services
+    "transaction_scoring", "chart_of_accounts",
+    # Projections & Targets
+    "projections_targets",
+    # QR Ticket Verification
+    "qr_ticket_verification",
 ]
 
 registered_count = 10  # Already registered 10 critical services
