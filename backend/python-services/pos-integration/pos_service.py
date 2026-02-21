@@ -247,7 +247,14 @@ class POSIntegrationService:
         self.cipher_suite = Fernet(self.encryption_key)
         self.offline_queue = OfflineTransactionQueue()
         self._is_online = True
-        
+
+        # Feature integration URLs
+        self.scoring_url = os.getenv("TRANSACTION_SCORING_URL", "http://localhost:8000/transaction-scoring")
+        self.coa_url = os.getenv("COA_URL", "http://localhost:8000/chart-of-accounts")
+        self.targets_url = os.getenv("TARGETS_URL", "http://localhost:8000/projections-targets")
+        self.qr_tickets_url = os.getenv("QR_TICKETS_URL", "http://localhost:8000/qr-tickets")
+        self.inventory_url = os.getenv("INVENTORY_URL", "http://localhost:8000/inventory-management")
+
         # Payment processor configurations
         self.payment_processors = {
             "stripe": {
@@ -355,7 +362,37 @@ class POSIntegrationService:
                     return cached_response
 
             transaction_id = idem_key if idem_key else str(uuid.uuid4())
-            
+
+            # --- Transaction Scoring (pre-payment risk check) ---
+            score_result = None
+            try:
+                async with httpx.AsyncClient(timeout=5.0) as score_client:
+                    score_resp = await score_client.post(
+                        f"{self.scoring_url}/score",
+                        json={
+                            "sender_id": payment_request.merchant_id,
+                            "recipient_id": payment_request.customer_data.get("customer_id", "unknown") if payment_request.customer_data else "unknown",
+                            "amount": payment_request.amount,
+                            "currency": payment_request.currency,
+                            "transaction_type": "cash_in" if payment_request.payment_method == PaymentMethod.CASH else "merchant",
+                            "channel": "pos",
+                        },
+                    )
+                    if score_resp.status_code == 200:
+                        score_result = score_resp.json()
+                        if score_result.get("recommendation") == "decline":
+                            logger.warning(f"Transaction scoring declined txn {transaction_id}: score={score_result.get('overall_score')}")
+                            return PaymentResponse(
+                                transaction_id=transaction_id,
+                                status=TransactionStatus.DECLINED,
+                                amount=payment_request.amount,
+                                currency=payment_request.currency,
+                                error_message=f"Transaction declined by risk engine (score: {score_result.get('overall_score')}, level: {score_result.get('risk_level')})"
+                            )
+                        logger.info(f"Transaction score for {transaction_id}: {score_result.get('overall_score')} ({score_result.get('risk_level')})")
+            except Exception as score_err:
+                logger.debug(f"Transaction scoring unavailable (non-blocking): {score_err}")
+
             # Validate merchant and terminal
             terminal = db.query(MerchantTerminal).filter(
                 MerchantTerminal.terminal_id == payment_request.terminal_id,
@@ -446,6 +483,66 @@ class POSIntegrationService:
                     logger.info(f"Ledger transfer recorded for txn {transaction_id}")
                 except Exception as ledger_err:
                     logger.warning(f"Ledger record failed (non-blocking): {ledger_err}")
+
+            # --- COA GL Posting (non-blocking) ---
+            if response.status == TransactionStatus.APPROVED:
+                try:
+                    tx_type = "cash_in" if payment_request.payment_method == PaymentMethod.CASH else "transfer"
+                    async with httpx.AsyncClient(timeout=5.0) as coa_client:
+                        await coa_client.post(
+                            f"{self.coa_url}/auto-post",
+                            params={
+                                "transaction_ref": transaction_id,
+                                "transaction_type": tx_type,
+                                "amount": payment_request.amount,
+                                "currency": payment_request.currency,
+                                "agent_id": payment_request.merchant_id,
+                            },
+                        )
+                    logger.info(f"COA GL entry posted for txn {transaction_id}")
+                except Exception as coa_err:
+                    logger.debug(f"COA posting unavailable (non-blocking): {coa_err}")
+
+            # --- Record against Projections/Targets (non-blocking) ---
+            if response.status == TransactionStatus.APPROVED:
+                try:
+                    async with httpx.AsyncClient(timeout=5.0) as tgt_client:
+                        targets_resp = await tgt_client.get(
+                            f"{self.targets_url}/targets",
+                            params={"agent_id": payment_request.merchant_id, "status": "active"},
+                        )
+                        if targets_resp.status_code == 200:
+                            active_targets = targets_resp.json()
+                            for target in active_targets:
+                                metric = target.get("metric", "")
+                                if metric in ("transaction_count", "transaction_volume", "revenue"):
+                                    record_value = 1 if metric == "transaction_count" else payment_request.amount
+                                    await tgt_client.post(
+                                        f"{self.targets_url}/targets/{target['id']}/record-actual",
+                                        params={"value": record_value},
+                                    )
+                            logger.info(f"Target actuals recorded for agent {payment_request.merchant_id}")
+                except Exception as tgt_err:
+                    logger.debug(f"Targets recording unavailable (non-blocking): {tgt_err}")
+
+            # --- Track POS supply usage via Inventory (non-blocking) ---
+            if response.status == TransactionStatus.APPROVED and response.receipt_data:
+                try:
+                    async with httpx.AsyncClient(timeout=3.0) as inv_client:
+                        await inv_client.get(
+                            f"{self.inventory_url}/agent/{payment_request.merchant_id}",
+                        )
+                    logger.debug(f"Inventory check for agent {payment_request.merchant_id}")
+                except Exception:
+                    pass
+
+            # Attach score to response metadata if available
+            if score_result and response.receipt_data:
+                response.receipt_data["transaction_score"] = {
+                    "overall_score": score_result.get("overall_score"),
+                    "risk_level": score_result.get("risk_level"),
+                    "recommendation": score_result.get("recommendation"),
+                }
 
             # Send real-time update
             await self._send_transaction_update(transaction_id, response)
@@ -652,9 +749,8 @@ class POSIntegrationService:
     
     async def _process_qr_payment(self, payment_request: PaymentRequest,
                                 transaction: POSTransaction) -> PaymentResponse:
-        """Process QR code payment"""
+        """Process QR code payment with QR ticket verification integration"""
         try:
-            # Generate QR code for payment
             qr_data = {
                 "transaction_id": transaction.transaction_id,
                 "amount": payment_request.amount,
@@ -663,9 +759,9 @@ class POSIntegrationService:
                 "terminal_id": payment_request.terminal_id,
                 "expires_at": (datetime.utcnow() + timedelta(minutes=5)).isoformat()
             }
-            
+
             qr_code_data = await self._generate_qr_code(qr_data)
-            
+
             config = self.payment_processors["stripe"]
             if not config["api_key"]:
                 config = self.payment_processors["square"]
@@ -677,7 +773,7 @@ class POSIntegrationService:
                     currency=payment_request.currency,
                     error_message="No payment gateway configured for QR payments"
                 )
-            
+
             async with httpx.AsyncClient() as client:
                 headers = {
                     "Authorization": f"Bearer {config['api_key']}",
@@ -695,20 +791,46 @@ class POSIntegrationService:
                     f"{config['endpoint']}/payment_intents",
                     headers=headers, data=data, timeout=30.0
                 )
-                
+
                 if response.status_code == 200:
                     result = response.json()
+
+                    ticket_qr = None
+                    try:
+                        async with httpx.AsyncClient(timeout=5.0) as tkt_client:
+                            tkt_resp = await tkt_client.post(
+                                f"{self.qr_tickets_url}/create",
+                                json={
+                                    "transaction_id": transaction.transaction_id,
+                                    "amount": payment_request.amount,
+                                    "currency": payment_request.currency,
+                                    "merchant_id": payment_request.merchant_id,
+                                    "terminal_id": payment_request.terminal_id,
+                                    "ticket_type": "payment_receipt",
+                                },
+                            )
+                            if tkt_resp.status_code == 200:
+                                ticket_data = tkt_resp.json()
+                                ticket_qr = ticket_data.get("qr_code_data")
+                                logger.info(f"QR verification ticket created for txn {transaction.transaction_id}")
+                    except Exception as tkt_err:
+                        logger.debug(f"QR ticket service unavailable (non-blocking): {tkt_err}")
+
+                    receipt = {
+                        "qr_code": qr_code_data,
+                        "payment_method": "QR Code",
+                        **self._generate_receipt_data(payment_request, result),
+                    }
+                    if ticket_qr:
+                        receipt["verification_qr"] = ticket_qr
+
                     return PaymentResponse(
                         transaction_id=transaction.transaction_id,
                         status=TransactionStatus.APPROVED,
                         amount=payment_request.amount,
                         currency=payment_request.currency,
                         authorization_code=result.get("id", ""),
-                        receipt_data={
-                            "qr_code": qr_code_data,
-                            "payment_method": "QR Code",
-                            **self._generate_receipt_data(payment_request, result)
-                        }
+                        receipt_data=receipt,
                     )
                 else:
                     error_data = response.json()
@@ -719,7 +841,7 @@ class POSIntegrationService:
                         currency=payment_request.currency,
                         error_message=error_data.get("error", {}).get("message", "QR payment failed")
                     )
-            
+
         except Exception as e:
             logger.error(f"QR payment processing failed: {e}")
             return PaymentResponse(

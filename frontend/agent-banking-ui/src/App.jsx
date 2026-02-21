@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Building2, Users, CreditCard, BarChart3, Settings, Shield, Bell, LogOut, User, DollarSign, TrendingUp, AlertTriangle, CheckCircle, Eye, EyeOff, Zap, Phone, Receipt, Sliders, Wifi, Tv, Droplets, FileText, ChevronRight, Search, Plus, Trash2, Edit, RefreshCw, UserPlus, MapPin, Upload, ClipboardCheck, Star, Award, Globe, Briefcase, Hash, Calendar, ArrowRight, ArrowLeft, Camera, Fingerprint, ShoppingCart, Package, MessageSquare, Truck, Warehouse, Tag, Filter, Image, Heart, Share2, MoreHorizontal, Send, Bot, Headphones, Radio, Smartphone, Mail, Volume2, MessageCircle, Activity, Clock, AlertCircle, Box, BarChart2, Layers, Target, Menu, X, ChevronDown, Wallet, ArrowUpRight, ArrowDownRight, CircleDot, Home, PieChart, Lock, Key, Monitor, Power, RotateCw, Terminal, HardDrive, Signal, WifiOff, Download } from 'lucide-react'
+import { Building2, Users, CreditCard, BarChart3, Settings, Shield, Bell, LogOut, User, DollarSign, TrendingUp, AlertTriangle, CheckCircle, Eye, EyeOff, Zap, Phone, Receipt, Sliders, Wifi, Tv, Droplets, FileText, ChevronRight, Search, Plus, Trash2, Edit, RefreshCw, UserPlus, MapPin, Upload, ClipboardCheck, Star, Award, Globe, Briefcase, Hash, Calendar, ArrowRight, ArrowLeft, Camera, Fingerprint, ShoppingCart, Package, MessageSquare, Truck, Warehouse, Tag, Filter, Image, Heart, Share2, MoreHorizontal, Send, Bot, Headphones, Radio, Smartphone, Mail, Volume2, MessageCircle, Activity, Clock, AlertCircle, Box, BarChart2, Layers, Target, Menu, X, ChevronDown, Wallet, ArrowUpRight, ArrowDownRight, CircleDot, Home, PieChart, Lock, Key, Monitor, Power, RotateCw, Terminal, HardDrive, Signal, WifiOff, Download, BookOpen, QrCode, XCircle } from 'lucide-react'
 import { RealTimeNotifications, RealTimeMetrics, RealTimeTransactionFeed } from './components/RealTimeFeatures';
 import PWAInstallPrompt, { PWAStatusIndicator, OfflineBanner } from './components/PWAInstallPrompt';
 import './App.css'
@@ -4215,6 +4215,11 @@ function POSManagementPage({ formatCurrency }) {
     { id: 'audit', label: 'Audit Trail', icon: ClipboardCheck },
     { id: 'sync', label: 'Sync & Ledger', icon: RefreshCw },
     { id: 'export', label: 'Export', icon: FileText },
+    { id: 'scoring', label: 'Transaction Scoring', icon: Shield },
+    { id: 'gl_posting', label: 'GL Posting', icon: BookOpen },
+    { id: 'targets', label: 'Targets', icon: Target },
+    { id: 'qr_tickets', label: 'QR Tickets', icon: QrCode },
+    { id: 'pos_inventory', label: 'POS Inventory', icon: Package },
   ]
 
   const MiniChart = ({ data, color = '#6366f1' }) => {
@@ -4598,6 +4603,12 @@ function POSManagementPage({ formatCurrency }) {
         </div>
       )}
 
+      {activeTab === 'scoring' && <POSTransactionScoringTab posApi={POS_API} formatCurrency={formatCurrency} />}
+      {activeTab === 'gl_posting' && <POSGLPostingTab posApi={POS_API} formatCurrency={formatCurrency} />}
+      {activeTab === 'targets' && <POSTargetsTab posApi={POS_API} formatCurrency={formatCurrency} />}
+      {activeTab === 'qr_tickets' && <POSQRTicketsTab posApi={POS_API} />}
+      {activeTab === 'pos_inventory' && <POSInventoryTab posApi={POS_API} />}
+
       {detailTerminal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex justify-end" onClick={() => setDetailTerminal(null)}>
           <div className="w-full max-w-lg bg-white h-full overflow-y-auto shadow-2xl" onClick={e => e.stopPropagation()}>
@@ -4655,6 +4666,322 @@ function POSManagementPage({ formatCurrency }) {
           </div>
         </div>
       )}
+    </div>
+  )
+}
+
+function POSTransactionScoringTab({ posApi, formatCurrency }) {
+  const [scoreForm, setScoreForm] = useState({ sender_id: 'AGT-001', recipient_id: 'CUST-001', amount: 50000, currency: 'NGN', transaction_type: 'cash_in', channel: 'pos' })
+  const [scoreResult, setScoreResult] = useState(null)
+  const [recentScores, setRecentScores] = useState([
+    { id: 'TXN-9001', amount: 150000, score: 92, risk_level: 'low', recommendation: 'approve', timestamp: '2024-01-15 10:30' },
+    { id: 'TXN-9002', amount: 500000, score: 45, risk_level: 'high', recommendation: 'review', timestamp: '2024-01-15 10:25' },
+    { id: 'TXN-9003', amount: 25000, score: 98, risk_level: 'low', recommendation: 'approve', timestamp: '2024-01-15 10:20' },
+    { id: 'TXN-9004', amount: 1000000, score: 18, risk_level: 'critical', recommendation: 'decline', timestamp: '2024-01-15 10:15' },
+    { id: 'TXN-9005', amount: 75000, score: 85, risk_level: 'low', recommendation: 'approve', timestamp: '2024-01-15 10:10' },
+  ])
+  const [loading, setLoading] = useState(false)
+
+  const handleScore = async () => {
+    setLoading(true)
+    try {
+      const resp = await fetch(`${posApi}/pos/score-transaction`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(scoreForm) })
+      if (resp.ok) {
+        const data = await resp.json()
+        setScoreResult(data)
+        setRecentScores(prev => [{ id: `TXN-${Date.now()}`, amount: scoreForm.amount, score: data.overall_score, risk_level: data.risk_level, recommendation: data.recommendation, timestamp: new Date().toLocaleString() }, ...prev].slice(0, 20))
+      }
+    } catch { setScoreResult({ overall_score: 0, risk_level: 'error', recommendation: 'unavailable', error: 'Scoring service unavailable' }) }
+    setLoading(false)
+  }
+
+  const riskColor = (level) => level === 'low' ? 'text-green-600 bg-green-50' : level === 'medium' ? 'text-yellow-600 bg-yellow-50' : level === 'high' ? 'text-orange-600 bg-orange-50' : 'text-red-600 bg-red-50'
+  const recColor = (rec) => rec === 'approve' ? 'success' : rec === 'review' ? 'warning' : 'destructive'
+
+  return (
+    <div className="space-y-4">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        {[['Total Scored', recentScores.length, Shield, 'bg-blue-50', 'text-blue-600'], ['Approved', recentScores.filter(s => s.recommendation === 'approve').length, CheckCircle, 'bg-green-50', 'text-green-600'], ['Declined', recentScores.filter(s => s.recommendation === 'decline').length, AlertTriangle, 'bg-red-50', 'text-red-600'], ['Avg Score', recentScores.length ? Math.round(recentScores.reduce((s, r) => s + r.score, 0) / recentScores.length) : 0, Activity, 'bg-indigo-50', 'text-indigo-600']].map(([title, value, Icon, bg, color]) => (
+          <div key={title} className="bg-white rounded-xl shadow p-4"><div className="flex items-center space-x-3"><div className={`w-10 h-10 ${bg} rounded-full flex items-center justify-center`}><Icon className={`w-5 h-5 ${color}`} /></div><div><p className="text-sm text-gray-500">{title}</p><p className="text-xl font-bold">{value}</p></div></div></div>
+        ))}
+      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <div className="bg-white rounded-xl shadow p-6">
+          <h3 className="text-lg font-semibold mb-4">Score Transaction</h3>
+          <div className="space-y-3">
+            <div><label className="text-xs text-gray-500">Sender ID</label><input className="w-full px-3 py-2 border rounded-lg text-sm" value={scoreForm.sender_id} onChange={e => setScoreForm(p => ({ ...p, sender_id: e.target.value }))} /></div>
+            <div><label className="text-xs text-gray-500">Recipient ID</label><input className="w-full px-3 py-2 border rounded-lg text-sm" value={scoreForm.recipient_id} onChange={e => setScoreForm(p => ({ ...p, recipient_id: e.target.value }))} /></div>
+            <div><label className="text-xs text-gray-500">Amount (NGN)</label><input type="number" className="w-full px-3 py-2 border rounded-lg text-sm" value={scoreForm.amount} onChange={e => setScoreForm(p => ({ ...p, amount: Number(e.target.value) }))} /></div>
+            <div><label className="text-xs text-gray-500">Type</label><select className="w-full px-3 py-2 border rounded-lg text-sm" value={scoreForm.transaction_type} onChange={e => setScoreForm(p => ({ ...p, transaction_type: e.target.value }))}><option value="cash_in">Cash In</option><option value="cash_out">Cash Out</option><option value="transfer">Transfer</option><option value="merchant">Merchant</option></select></div>
+            <Button className="w-full" onClick={handleScore} disabled={loading}><Shield className="w-4 h-4 mr-1" />{loading ? 'Scoring...' : 'Score Transaction'}</Button>
+          </div>
+          {scoreResult && (
+            <div className={`mt-4 p-4 rounded-lg border ${scoreResult.recommendation === 'approve' ? 'bg-green-50 border-green-200' : scoreResult.recommendation === 'review' ? 'bg-yellow-50 border-yellow-200' : 'bg-red-50 border-red-200'}`}>
+              <div className="flex justify-between items-center mb-2"><span className="text-2xl font-bold">{scoreResult.overall_score}/100</span><Badge variant={recColor(scoreResult.recommendation)}>{scoreResult.recommendation}</Badge></div>
+              <p className="text-xs text-gray-500">Risk: {scoreResult.risk_level}</p>
+            </div>
+          )}
+        </div>
+        <div className="lg:col-span-2 bg-white rounded-xl shadow p-6">
+          <h3 className="text-lg font-semibold mb-4">Recent Scores</h3>
+          <div className="overflow-x-auto"><table className="w-full"><thead><tr className="border-b bg-gray-50"><th className="text-left p-3 text-xs text-gray-500">Transaction</th><th className="text-left p-3 text-xs text-gray-500">Amount</th><th className="text-left p-3 text-xs text-gray-500">Score</th><th className="text-left p-3 text-xs text-gray-500">Risk</th><th className="text-left p-3 text-xs text-gray-500">Decision</th><th className="text-left p-3 text-xs text-gray-500">Time</th></tr></thead>
+            <tbody>{recentScores.map(s => (<tr key={s.id} className="border-b hover:bg-gray-50"><td className="p-3 text-sm font-mono">{s.id}</td><td className="p-3 text-sm">{formatCurrency(s.amount)}</td><td className="p-3"><span className={`text-sm font-bold ${s.score >= 80 ? 'text-green-600' : s.score >= 50 ? 'text-yellow-600' : 'text-red-600'}`}>{s.score}</span></td><td className="p-3"><span className={`px-2 py-1 rounded-full text-xs font-medium ${riskColor(s.risk_level)}`}>{s.risk_level}</span></td><td className="p-3"><Badge variant={recColor(s.recommendation)}>{s.recommendation}</Badge></td><td className="p-3 text-xs text-gray-500">{s.timestamp}</td></tr>))}</tbody></table></div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function POSGLPostingTab({ posApi, formatCurrency }) {
+  const [glEntries, setGlEntries] = useState([
+    { id: 'GL-001', transaction_ref: 'TXN-9001', type: 'cash_in', amount: 150000, debit_account: '1001-Cash', credit_account: '2001-AgentFloat', status: 'posted', timestamp: '2024-01-15 10:30' },
+    { id: 'GL-002', transaction_ref: 'TXN-9003', type: 'cash_in', amount: 25000, debit_account: '1001-Cash', credit_account: '2001-AgentFloat', status: 'posted', timestamp: '2024-01-15 10:20' },
+    { id: 'GL-003', transaction_ref: 'TXN-9005', type: 'transfer', amount: 75000, debit_account: '2001-AgentFloat', credit_account: '3001-BankSettlement', status: 'posted', timestamp: '2024-01-15 10:10' },
+    { id: 'GL-004', transaction_ref: 'TXN-8999', type: 'cash_out', amount: 200000, debit_account: '2001-AgentFloat', credit_account: '1001-Cash', status: 'pending', timestamp: '2024-01-15 10:05' },
+  ])
+  const [postForm, setPostForm] = useState({ transaction_ref: '', transaction_type: 'cash_in', amount: 0, currency: 'NGN', agent_id: 'AGT-001' })
+  const [loading, setLoading] = useState(false)
+
+  const handlePost = async () => {
+    setLoading(true)
+    try {
+      const resp = await fetch(`${posApi}/pos/gl-post?transaction_ref=${postForm.transaction_ref}&transaction_type=${postForm.transaction_type}&amount=${postForm.amount}&currency=${postForm.currency}&agent_id=${postForm.agent_id}`, { method: 'POST' })
+      if (resp.ok) {
+        const data = await resp.json()
+        setGlEntries(prev => [{ id: `GL-${Date.now()}`, transaction_ref: postForm.transaction_ref, type: postForm.transaction_type, amount: postForm.amount, debit_account: data.debit_account || '1001-Cash', credit_account: data.credit_account || '2001-AgentFloat', status: 'posted', timestamp: new Date().toLocaleString() }, ...prev])
+      }
+    } catch {}
+    setLoading(false)
+  }
+
+  const totalDebits = glEntries.filter(e => e.status === 'posted').reduce((s, e) => s + e.amount, 0)
+  const totalCredits = totalDebits
+
+  return (
+    <div className="space-y-4">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        {[['GL Entries', glEntries.length, BookOpen, 'bg-blue-50', 'text-blue-600'], ['Total Debits', formatCurrency(totalDebits), ArrowUpRight, 'bg-green-50', 'text-green-600'], ['Total Credits', formatCurrency(totalCredits), ArrowDownRight, 'bg-red-50', 'text-red-600'], ['Pending', glEntries.filter(e => e.status === 'pending').length, Clock, 'bg-yellow-50', 'text-yellow-600']].map(([title, value, Icon, bg, color]) => (
+          <div key={title} className="bg-white rounded-xl shadow p-4"><div className="flex items-center space-x-3"><div className={`w-10 h-10 ${bg} rounded-full flex items-center justify-center`}><Icon className={`w-5 h-5 ${color}`} /></div><div><p className="text-sm text-gray-500">{title}</p><p className="text-xl font-bold">{typeof value === 'number' ? value : value}</p></div></div></div>
+        ))}
+      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <div className="bg-white rounded-xl shadow p-6">
+          <h3 className="text-lg font-semibold mb-4">Manual GL Post</h3>
+          <div className="space-y-3">
+            <div><label className="text-xs text-gray-500">Transaction Ref</label><input className="w-full px-3 py-2 border rounded-lg text-sm" placeholder="TXN-XXXX" value={postForm.transaction_ref} onChange={e => setPostForm(p => ({ ...p, transaction_ref: e.target.value }))} /></div>
+            <div><label className="text-xs text-gray-500">Type</label><select className="w-full px-3 py-2 border rounded-lg text-sm" value={postForm.transaction_type} onChange={e => setPostForm(p => ({ ...p, transaction_type: e.target.value }))}><option value="cash_in">Cash In</option><option value="cash_out">Cash Out</option><option value="transfer">Transfer</option></select></div>
+            <div><label className="text-xs text-gray-500">Amount</label><input type="number" className="w-full px-3 py-2 border rounded-lg text-sm" value={postForm.amount} onChange={e => setPostForm(p => ({ ...p, amount: Number(e.target.value) }))} /></div>
+            <div><label className="text-xs text-gray-500">Agent ID</label><input className="w-full px-3 py-2 border rounded-lg text-sm" value={postForm.agent_id} onChange={e => setPostForm(p => ({ ...p, agent_id: e.target.value }))} /></div>
+            <Button className="w-full" onClick={handlePost} disabled={loading}><BookOpen className="w-4 h-4 mr-1" />{loading ? 'Posting...' : 'Post GL Entry'}</Button>
+          </div>
+        </div>
+        <div className="lg:col-span-2 bg-white rounded-xl shadow p-6">
+          <h3 className="text-lg font-semibold mb-4">GL Journal</h3>
+          <div className="overflow-x-auto"><table className="w-full"><thead><tr className="border-b bg-gray-50"><th className="text-left p-3 text-xs text-gray-500">ID</th><th className="text-left p-3 text-xs text-gray-500">Txn Ref</th><th className="text-left p-3 text-xs text-gray-500">Type</th><th className="text-left p-3 text-xs text-gray-500">Amount</th><th className="text-left p-3 text-xs text-gray-500">Debit</th><th className="text-left p-3 text-xs text-gray-500">Credit</th><th className="text-left p-3 text-xs text-gray-500">Status</th></tr></thead>
+            <tbody>{glEntries.map(e => (<tr key={e.id} className="border-b hover:bg-gray-50"><td className="p-3 text-xs font-mono">{e.id}</td><td className="p-3 text-xs font-mono">{e.transaction_ref}</td><td className="p-3 text-xs">{e.type}</td><td className="p-3 text-sm font-medium">{formatCurrency(e.amount)}</td><td className="p-3 text-xs">{e.debit_account}</td><td className="p-3 text-xs">{e.credit_account}</td><td className="p-3"><Badge variant={e.status === 'posted' ? 'success' : 'warning'}>{e.status}</Badge></td></tr>))}</tbody></table></div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function POSTargetsTab({ posApi, formatCurrency }) {
+  const [agentId, setAgentId] = useState('AGT-001')
+  const [targets, setTargets] = useState([
+    { id: 'TGT-001', metric: 'transaction_count', name: 'Daily Transactions', target_value: 100, actual_value: 78, unit: 'txns', period: 'daily', level: 'bank_assigned', status: 'active' },
+    { id: 'TGT-002', metric: 'transaction_volume', name: 'Monthly Volume', target_value: 50000000, actual_value: 32500000, unit: 'NGN', period: 'monthly', level: 'bank_level', status: 'active' },
+    { id: 'TGT-003', metric: 'revenue', name: 'Weekly Revenue', target_value: 500000, actual_value: 425000, unit: 'NGN', period: 'weekly', level: 'personal', status: 'active' },
+    { id: 'TGT-004', metric: 'new_customers', name: 'New Customers', target_value: 20, actual_value: 22, unit: 'customers', period: 'weekly', level: 'bank_assigned', status: 'active' },
+  ])
+  const [loading, setLoading] = useState(false)
+
+  const loadTargets = async () => {
+    setLoading(true)
+    try {
+      const resp = await fetch(`${posApi}/pos/agent-targets/${agentId}`)
+      if (resp.ok) { const data = await resp.json(); if (Array.isArray(data) && data.length) setTargets(data) }
+    } catch {}
+    setLoading(false)
+  }
+
+  const progressPct = (actual, target) => Math.min(Math.round((actual / target) * 100), 100)
+  const progressColor = (pct) => pct >= 100 ? 'bg-green-500' : pct >= 75 ? 'bg-blue-500' : pct >= 50 ? 'bg-yellow-500' : 'bg-red-500'
+  const levelBadge = (level) => level === 'bank_level' ? 'bg-purple-100 text-purple-700' : level === 'bank_assigned' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'
+
+  return (
+    <div className="space-y-4">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        {[['Active Targets', targets.filter(t => t.status === 'active').length, Target, 'bg-blue-50', 'text-blue-600'], ['On Track', targets.filter(t => progressPct(t.actual_value, t.target_value) >= 75).length, TrendingUp, 'bg-green-50', 'text-green-600'], ['Behind', targets.filter(t => progressPct(t.actual_value, t.target_value) < 50).length, AlertTriangle, 'bg-red-50', 'text-red-600'], ['Achieved', targets.filter(t => t.actual_value >= t.target_value).length, Award, 'bg-yellow-50', 'text-yellow-600']].map(([title, value, Icon, bg, color]) => (
+          <div key={title} className="bg-white rounded-xl shadow p-4"><div className="flex items-center space-x-3"><div className={`w-10 h-10 ${bg} rounded-full flex items-center justify-center`}><Icon className={`w-5 h-5 ${color}`} /></div><div><p className="text-sm text-gray-500">{title}</p><p className="text-xl font-bold">{value}</p></div></div></div>
+        ))}
+      </div>
+      <div className="bg-white rounded-xl shadow p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold">Agent Targets & Projections</h3>
+          <div className="flex gap-2">
+            <input className="px-3 py-2 border rounded-lg text-sm" placeholder="Agent ID" value={agentId} onChange={e => setAgentId(e.target.value)} />
+            <Button size="sm" onClick={loadTargets} disabled={loading}><RefreshCw className={`w-4 h-4 mr-1 ${loading ? 'animate-spin' : ''}`} />Load</Button>
+          </div>
+        </div>
+        <div className="space-y-4">
+          {targets.map(t => {
+            const pct = progressPct(t.actual_value, t.target_value)
+            return (
+              <div key={t.id} className="border rounded-lg p-4">
+                <div className="flex justify-between items-start mb-2">
+                  <div><h4 className="font-medium text-sm">{t.name}</h4><p className="text-xs text-gray-500">{t.metric} ({t.period})</p></div>
+                  <div className="flex gap-2"><span className={`px-2 py-0.5 rounded-full text-xs font-medium ${levelBadge(t.level)}`}>{t.level.replace('_', ' ')}</span>{pct >= 100 && <Badge variant="success">Achieved</Badge>}</div>
+                </div>
+                <div className="flex justify-between text-sm mb-1"><span>{t.unit === 'NGN' ? formatCurrency(t.actual_value) : t.actual_value} / {t.unit === 'NGN' ? formatCurrency(t.target_value) : t.target_value}</span><span className="font-bold">{pct}%</span></div>
+                <div className="w-full bg-gray-200 rounded-full h-2.5"><div className={`h-2.5 rounded-full ${progressColor(pct)} transition-all`} style={{ width: `${pct}%` }} /></div>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function POSQRTicketsTab({ posApi }) {
+  const [tickets, setTickets] = useState([
+    { id: 'QRT-001', transaction_id: 'TXN-9001', ticket_type: 'payment_receipt', status: 'valid', created_at: '2024-01-15 10:30', scanned: false },
+    { id: 'QRT-002', transaction_id: 'TXN-9003', ticket_type: 'payment_receipt', status: 'valid', created_at: '2024-01-15 10:20', scanned: false },
+    { id: 'QRT-003', transaction_id: 'TXN-8998', ticket_type: 'payment_receipt', status: 'used', created_at: '2024-01-15 09:50', scanned: true },
+    { id: 'QRT-004', transaction_id: 'TXN-8990', ticket_type: 'payment_receipt', status: 'expired', created_at: '2024-01-14 16:00', scanned: false },
+  ])
+  const [verifyCode, setVerifyCode] = useState('')
+  const [verifyResult, setVerifyResult] = useState(null)
+  const [createForm, setCreateForm] = useState({ transaction_id: '', amount: 0, merchant_id: 'MRC-001' })
+  const [loading, setLoading] = useState(false)
+
+  const handleCreate = async () => {
+    setLoading(true)
+    try {
+      const resp = await fetch(`${posApi}/pos/qr-ticket/create`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...createForm, ticket_type: 'payment_receipt', currency: 'NGN' }) })
+      if (resp.ok) {
+        const data = await resp.json()
+        setTickets(prev => [{ id: data.ticket_id || `QRT-${Date.now()}`, transaction_id: createForm.transaction_id, ticket_type: 'payment_receipt', status: 'valid', created_at: new Date().toLocaleString(), scanned: false, qr_code_data: data.qr_code_data }, ...prev])
+      }
+    } catch {}
+    setLoading(false)
+  }
+
+  const handleVerify = async () => {
+    try {
+      const resp = await fetch(`${posApi}/pos/qr-ticket/verify`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ticket_id: verifyCode }) })
+      if (resp.ok) { setVerifyResult(await resp.json()) } else { setVerifyResult({ valid: false, error: 'Verification failed' }) }
+    } catch { setVerifyResult({ valid: false, error: 'Service unavailable' }) }
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        {[['Total Tickets', tickets.length, QrCode, 'bg-blue-50', 'text-blue-600'], ['Valid', tickets.filter(t => t.status === 'valid').length, CheckCircle, 'bg-green-50', 'text-green-600'], ['Used', tickets.filter(t => t.status === 'used').length, Eye, 'bg-gray-100', 'text-gray-600'], ['Expired', tickets.filter(t => t.status === 'expired').length, Clock, 'bg-red-50', 'text-red-600']].map(([title, value, Icon, bg, color]) => (
+          <div key={title} className="bg-white rounded-xl shadow p-4"><div className="flex items-center space-x-3"><div className={`w-10 h-10 ${bg} rounded-full flex items-center justify-center`}><Icon className={`w-5 h-5 ${color}`} /></div><div><p className="text-sm text-gray-500">{title}</p><p className="text-xl font-bold">{value}</p></div></div></div>
+        ))}
+      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <div className="space-y-4">
+          <div className="bg-white rounded-xl shadow p-6">
+            <h3 className="text-lg font-semibold mb-4">Create QR Ticket</h3>
+            <div className="space-y-3">
+              <div><label className="text-xs text-gray-500">Transaction ID</label><input className="w-full px-3 py-2 border rounded-lg text-sm" placeholder="TXN-XXXX" value={createForm.transaction_id} onChange={e => setCreateForm(p => ({ ...p, transaction_id: e.target.value }))} /></div>
+              <div><label className="text-xs text-gray-500">Amount</label><input type="number" className="w-full px-3 py-2 border rounded-lg text-sm" value={createForm.amount} onChange={e => setCreateForm(p => ({ ...p, amount: Number(e.target.value) }))} /></div>
+              <Button className="w-full" onClick={handleCreate} disabled={loading}><QrCode className="w-4 h-4 mr-1" />{loading ? 'Creating...' : 'Generate QR Ticket'}</Button>
+            </div>
+          </div>
+          <div className="bg-white rounded-xl shadow p-6">
+            <h3 className="text-lg font-semibold mb-4">Verify Ticket</h3>
+            <div className="space-y-3">
+              <div><label className="text-xs text-gray-500">Ticket ID / QR Code</label><input className="w-full px-3 py-2 border rounded-lg text-sm" placeholder="QRT-XXXX" value={verifyCode} onChange={e => setVerifyCode(e.target.value)} /></div>
+              <Button className="w-full" variant="outline" onClick={handleVerify}><Eye className="w-4 h-4 mr-1" />Verify</Button>
+            </div>
+            {verifyResult && (
+              <div className={`mt-3 p-3 rounded-lg ${verifyResult.valid ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'}`}>
+                <p className={`text-sm font-medium ${verifyResult.valid ? 'text-green-700' : 'text-red-700'}`}>{verifyResult.valid ? 'Valid ticket' : verifyResult.error || 'Invalid ticket'}</p>
+              </div>
+            )}
+          </div>
+        </div>
+        <div className="lg:col-span-2 bg-white rounded-xl shadow p-6">
+          <h3 className="text-lg font-semibold mb-4">QR Tickets</h3>
+          <div className="overflow-x-auto"><table className="w-full"><thead><tr className="border-b bg-gray-50"><th className="text-left p-3 text-xs text-gray-500">Ticket ID</th><th className="text-left p-3 text-xs text-gray-500">Transaction</th><th className="text-left p-3 text-xs text-gray-500">Type</th><th className="text-left p-3 text-xs text-gray-500">Status</th><th className="text-left p-3 text-xs text-gray-500">Created</th></tr></thead>
+            <tbody>{tickets.map(t => (<tr key={t.id} className="border-b hover:bg-gray-50"><td className="p-3 text-sm font-mono">{t.id}</td><td className="p-3 text-sm font-mono">{t.transaction_id}</td><td className="p-3 text-xs">{t.ticket_type}</td><td className="p-3"><Badge variant={t.status === 'valid' ? 'success' : t.status === 'used' ? 'warning' : 'destructive'}>{t.status}</Badge></td><td className="p-3 text-xs text-gray-500">{t.created_at}</td></tr>))}</tbody></table></div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function POSInventoryTab({ posApi }) {
+  const [agentId, setAgentId] = useState('AGT-001')
+  const [inventory, setInventory] = useState([
+    { id: 'INV-001', item_name: 'SIM Cards', sku: 'SIM-STD', quantity: 150, min_threshold: 50, unit: 'pcs', category: 'telecom', last_restocked: '2024-01-10' },
+    { id: 'INV-002', item_name: 'POS Receipt Paper', sku: 'PRP-58MM', quantity: 12, min_threshold: 20, unit: 'rolls', category: 'supplies', last_restocked: '2024-01-08' },
+    { id: 'INV-003', item_name: 'Branded Flyers', sku: 'BFL-A5', quantity: 500, min_threshold: 100, unit: 'pcs', category: 'marketing', last_restocked: '2024-01-12' },
+    { id: 'INV-004', item_name: 'ID Card Sleeves', sku: 'ICS-STD', quantity: 30, min_threshold: 25, unit: 'pcs', category: 'supplies', last_restocked: '2024-01-05' },
+    { id: 'INV-005', item_name: 'Cash Seal Bags', sku: 'CSB-MED', quantity: 8, min_threshold: 15, unit: 'pcs', category: 'cash_handling', last_restocked: '2024-01-03' },
+  ])
+  const [loading, setLoading] = useState(false)
+  const [deductForm, setDeductForm] = useState({ item_id: '', quantity: 1 })
+
+  const loadInventory = async () => {
+    setLoading(true)
+    try {
+      const resp = await fetch(`${posApi}/pos/inventory/${agentId}`)
+      if (resp.ok) { const data = await resp.json(); if (Array.isArray(data) && data.length) setInventory(data) }
+    } catch {}
+    setLoading(false)
+  }
+
+  const handleDeduct = async () => {
+    try {
+      await fetch(`${posApi}/pos/inventory/${agentId}/deduct`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ item_id: deductForm.item_id, quantity: deductForm.quantity, reason: 'POS usage' }) })
+      setInventory(prev => prev.map(i => i.id === deductForm.item_id ? { ...i, quantity: Math.max(0, i.quantity - deductForm.quantity) } : i))
+    } catch {}
+  }
+
+  const lowStock = inventory.filter(i => i.quantity <= i.min_threshold)
+  const outOfStock = inventory.filter(i => i.quantity === 0)
+
+  return (
+    <div className="space-y-4">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        {[['Total Items', inventory.length, Package, 'bg-blue-50', 'text-blue-600'], ['Low Stock', lowStock.length, AlertTriangle, 'bg-yellow-50', 'text-yellow-600'], ['Out of Stock', outOfStock.length, XCircle, 'bg-red-50', 'text-red-600'], ['Categories', [...new Set(inventory.map(i => i.category))].length, Layers, 'bg-indigo-50', 'text-indigo-600']].map(([title, value, Icon, bg, color]) => (
+          <div key={title} className="bg-white rounded-xl shadow p-4"><div className="flex items-center space-x-3"><div className={`w-10 h-10 ${bg} rounded-full flex items-center justify-center`}><Icon className={`w-5 h-5 ${color}`} /></div><div><p className="text-sm text-gray-500">{title}</p><p className="text-xl font-bold">{value}</p></div></div></div>
+        ))}
+      </div>
+      {lowStock.length > 0 && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
+          <div className="flex items-center gap-2 mb-2"><AlertTriangle className="w-5 h-5 text-yellow-600" /><h3 className="font-semibold text-yellow-800">Low Stock Alerts</h3></div>
+          <div className="flex flex-wrap gap-2">{lowStock.map(i => (<span key={i.id} className="px-3 py-1 bg-yellow-100 text-yellow-800 text-xs rounded-full font-medium">{i.item_name}: {i.quantity} {i.unit} (min: {i.min_threshold})</span>))}</div>
+        </div>
+      )}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <div className="space-y-4">
+          <div className="bg-white rounded-xl shadow p-6">
+            <h3 className="text-lg font-semibold mb-4">Agent Inventory</h3>
+            <div className="flex gap-2 mb-4">
+              <input className="flex-1 px-3 py-2 border rounded-lg text-sm" placeholder="Agent ID" value={agentId} onChange={e => setAgentId(e.target.value)} />
+              <Button size="sm" onClick={loadInventory} disabled={loading}><RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} /></Button>
+            </div>
+          </div>
+          <div className="bg-white rounded-xl shadow p-6">
+            <h3 className="text-lg font-semibold mb-4">Deduct Supply</h3>
+            <div className="space-y-3">
+              <div><label className="text-xs text-gray-500">Item</label><select className="w-full px-3 py-2 border rounded-lg text-sm" value={deductForm.item_id} onChange={e => setDeductForm(p => ({ ...p, item_id: e.target.value }))}><option value="">Select item</option>{inventory.map(i => <option key={i.id} value={i.id}>{i.item_name} ({i.quantity} avail)</option>)}</select></div>
+              <div><label className="text-xs text-gray-500">Quantity</label><input type="number" min="1" className="w-full px-3 py-2 border rounded-lg text-sm" value={deductForm.quantity} onChange={e => setDeductForm(p => ({ ...p, quantity: Number(e.target.value) }))} /></div>
+              <Button className="w-full" onClick={handleDeduct} disabled={!deductForm.item_id}><Package className="w-4 h-4 mr-1" />Deduct</Button>
+            </div>
+          </div>
+        </div>
+        <div className="lg:col-span-2 bg-white rounded-xl shadow p-6">
+          <h3 className="text-lg font-semibold mb-4">Inventory Items</h3>
+          <div className="overflow-x-auto"><table className="w-full"><thead><tr className="border-b bg-gray-50"><th className="text-left p-3 text-xs text-gray-500">Item</th><th className="text-left p-3 text-xs text-gray-500">SKU</th><th className="text-left p-3 text-xs text-gray-500">Qty</th><th className="text-left p-3 text-xs text-gray-500">Min</th><th className="text-left p-3 text-xs text-gray-500">Category</th><th className="text-left p-3 text-xs text-gray-500">Status</th><th className="text-left p-3 text-xs text-gray-500">Restocked</th></tr></thead>
+            <tbody>{inventory.map(i => (<tr key={i.id} className={`border-b hover:bg-gray-50 ${i.quantity <= i.min_threshold ? 'bg-yellow-50' : ''}`}><td className="p-3 text-sm font-medium">{i.item_name}</td><td className="p-3 text-xs font-mono">{i.sku}</td><td className="p-3 text-sm font-bold">{i.quantity} {i.unit}</td><td className="p-3 text-xs text-gray-500">{i.min_threshold}</td><td className="p-3 text-xs">{i.category}</td><td className="p-3"><Badge variant={i.quantity === 0 ? 'destructive' : i.quantity <= i.min_threshold ? 'warning' : 'success'}>{i.quantity === 0 ? 'Out of Stock' : i.quantity <= i.min_threshold ? 'Low' : 'OK'}</Badge></td><td className="p-3 text-xs text-gray-500">{i.last_restocked}</td></tr>))}</tbody></table></div>
+        </div>
+      </div>
     </div>
   )
 }
