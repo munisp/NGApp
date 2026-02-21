@@ -28,10 +28,19 @@ from typing import Optional, Dict, Any, List, Tuple
 from datetime import datetime
 from dataclasses import dataclass, field
 
+import threading
+
 import httpx
 import numpy as np
 
 logger = logging.getLogger(__name__)
+
+_model_lock = threading.Lock()
+_mediapipe_face_mesh = None
+_mediapipe_face_mesh_video = None
+_arcface_app = None
+_midas_model = None
+_midas_transform = None
 
 ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
 
@@ -43,13 +52,15 @@ LIVENESS_CONFIDENCE_THRESHOLD = float(os.getenv("LIVENESS_CONFIDENCE_THRESHOLD",
 LIVENESS_USE_VLM = os.getenv("LIVENESS_USE_VLM", "true").lower() == "true"
 LIVENESS_USE_DEPTH = os.getenv("LIVENESS_USE_DEPTH", "true").lower() == "true"
 
-EAR_OPEN_THRESHOLD = float(os.getenv("EAR_OPEN_THRESHOLD", "0.22"))
-EAR_BLINK_THRESHOLD = float(os.getenv("EAR_BLINK_THRESHOLD", "0.16"))
-TEXTURE_LAPLACIAN_MIN = float(os.getenv("TEXTURE_LAPLACIAN_MIN", "50.0"))
-TEXTURE_LAPLACIAN_MAX = float(os.getenv("TEXTURE_LAPLACIAN_MAX", "8000.0"))
-MOIRE_THRESHOLD = float(os.getenv("MOIRE_THRESHOLD", "0.15"))
-DEPTH_VARIANCE_MIN = float(os.getenv("DEPTH_VARIANCE_MIN", "0.02"))
-FACE_MATCH_THRESHOLD = float(os.getenv("FACE_MATCH_THRESHOLD", "0.4"))
+EAR_OPEN_THRESHOLD = float(os.getenv("EAR_OPEN_THRESHOLD", "0.21"))
+EAR_BLINK_THRESHOLD = float(os.getenv("EAR_BLINK_THRESHOLD", "0.18"))
+TEXTURE_LAPLACIAN_MIN = float(os.getenv("TEXTURE_LAPLACIAN_MIN", "80.0"))
+TEXTURE_LAPLACIAN_MAX = float(os.getenv("TEXTURE_LAPLACIAN_MAX", "5000.0"))
+MOIRE_THRESHOLD = float(os.getenv("MOIRE_THRESHOLD", "0.12"))
+DEPTH_VARIANCE_MIN = float(os.getenv("DEPTH_VARIANCE_MIN", "0.015"))
+FACE_MATCH_THRESHOLD = float(os.getenv("FACE_MATCH_THRESHOLD", "0.45"))
+MIDAS_MODEL_TYPE = os.getenv("MIDAS_MODEL_TYPE", "MiDaS_small")
+ARCFACE_MODEL_NAME = os.getenv("ARCFACE_MODEL_NAME", "buffalo_s")
 
 ACTIVE_LIVENESS_MIN_FRAMES = int(os.getenv("ACTIVE_LIVENESS_MIN_FRAMES", "5"))
 ACTIVE_LIVENESS_BLINK_REQUIRED = os.getenv("ACTIVE_LIVENESS_BLINK_REQUIRED", "true").lower() == "true"
@@ -181,6 +192,75 @@ def _head_pose_from_landmarks(landmarks: List[Tuple[float, float]]) -> Dict[str,
     return {"yaw": yaw, "pitch": pitch, "roll": roll}
 
 
+def _get_face_mesh_static():
+    global _mediapipe_face_mesh
+    if _mediapipe_face_mesh is None:
+        with _model_lock:
+            if _mediapipe_face_mesh is None:
+                import mediapipe as mp
+                _mediapipe_face_mesh = mp.solutions.face_mesh.FaceMesh(
+                    static_image_mode=True,
+                    max_num_faces=1,
+                    refine_landmarks=True,
+                    min_detection_confidence=0.5,
+                )
+                logger.info("MediaPipe FaceMesh (static) loaded")
+    return _mediapipe_face_mesh
+
+
+def _get_face_mesh_video():
+    global _mediapipe_face_mesh_video
+    if _mediapipe_face_mesh_video is None:
+        with _model_lock:
+            if _mediapipe_face_mesh_video is None:
+                import mediapipe as mp
+                _mediapipe_face_mesh_video = mp.solutions.face_mesh.FaceMesh(
+                    static_image_mode=False,
+                    max_num_faces=1,
+                    refine_landmarks=True,
+                    min_detection_confidence=0.5,
+                    min_tracking_confidence=0.5,
+                )
+                logger.info("MediaPipe FaceMesh (video) loaded")
+    return _mediapipe_face_mesh_video
+
+
+def _get_arcface_app():
+    global _arcface_app
+    if _arcface_app is None:
+        with _model_lock:
+            if _arcface_app is None:
+                from insightface.app import FaceAnalysis
+                _arcface_app = FaceAnalysis(
+                    name=ARCFACE_MODEL_NAME,
+                    providers=["CPUExecutionProvider"],
+                )
+                _arcface_app.prepare(ctx_id=-1, det_size=(640, 640))
+                logger.info("ArcFace model '%s' loaded", ARCFACE_MODEL_NAME)
+    return _arcface_app
+
+
+def _get_midas():
+    global _midas_model, _midas_transform
+    if _midas_model is None:
+        with _model_lock:
+            if _midas_model is None:
+                import torch
+                _midas_model = torch.hub.load(
+                    "intel-isl/MiDaS", MIDAS_MODEL_TYPE, trust_repo=True
+                )
+                _midas_model.eval()
+                transforms = torch.hub.load(
+                    "intel-isl/MiDaS", "transforms", trust_repo=True
+                )
+                if MIDAS_MODEL_TYPE == "MiDaS_small":
+                    _midas_transform = transforms.small_transform
+                else:
+                    _midas_transform = transforms.dpt_transform
+                logger.info("MiDaS model '%s' loaded", MIDAS_MODEL_TYPE)
+    return _midas_model, _midas_transform
+
+
 class FaceMeshAnalyzer:
     def analyze(self, image_data: bytes) -> Dict[str, Any]:
         try:
@@ -195,15 +275,9 @@ class FaceMeshAnalyzer:
             rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
             h, w = img.shape[:2]
 
-            face_mesh = mp.solutions.face_mesh.FaceMesh(
-                static_image_mode=True,
-                max_num_faces=1,
-                refine_landmarks=True,
-                min_detection_confidence=0.5,
-            )
+            face_mesh = _get_face_mesh_static()
 
             results = face_mesh.process(rgb)
-            face_mesh.close()
 
             if not results.multi_face_landmarks:
                 return {"face_detected": False, "error": "No face detected in image"}
@@ -250,7 +324,7 @@ class FaceMeshAnalyzer:
             logger.warning("MediaPipe not installed, face mesh analysis unavailable")
             return {"face_detected": False, "error": "mediapipe not installed"}
         except Exception as e:
-            logger.error(f"Face mesh analysis failed: {e}")
+            logger.error("Face mesh analysis failed: %s", e)
             return {"face_detected": False, "error": str(e)}
 
 
@@ -274,13 +348,7 @@ class ActiveLivenessAnalyzer:
                 total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
                 duration = total_frames / fps if fps > 0 else 0
 
-                face_mesh = mp.solutions.face_mesh.FaceMesh(
-                    static_image_mode=False,
-                    max_num_faces=1,
-                    refine_landmarks=True,
-                    min_detection_confidence=0.5,
-                    min_tracking_confidence=0.5,
-                )
+                face_mesh = _get_face_mesh_video()
 
                 ear_history: List[float] = []
                 mar_history: List[float] = []
@@ -319,7 +387,6 @@ class ActiveLivenessAnalyzer:
                         yaw_history.append(head_pose["yaw"])
 
                 cap.release()
-                face_mesh.close()
             finally:
                 os.unlink(tmp_path)
 
@@ -550,12 +617,7 @@ class DepthAnalyzer:
             if img is None:
                 return {"available": False, "error": "Could not decode image"}
 
-            model_type = "MiDaS_small"
-            midas = torch.hub.load("intel-isl/MiDaS", model_type, trust_repo=True)
-            midas.eval()
-
-            midas_transforms = torch.hub.load("intel-isl/MiDaS", "transforms", trust_repo=True)
-            transform = midas_transforms.small_transform
+            midas, transform = _get_midas()
 
             input_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
             input_batch = transform(input_rgb)
@@ -628,11 +690,7 @@ class FaceRecognizer:
             import cv2
             from insightface.app import FaceAnalysis
 
-            app = FaceAnalysis(
-                name="buffalo_l",
-                providers=["CPUExecutionProvider"],
-            )
-            app.prepare(ctx_id=-1, det_size=(640, 640))
+            app = _get_arcface_app()
 
             def _get_embedding(img_data: bytes) -> Optional[np.ndarray]:
                 nparr = np.frombuffer(img_data, np.uint8)
@@ -683,14 +741,8 @@ class FaceRecognizer:
                     return None
                 rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
-                face_mesh = mp.solutions.face_mesh.FaceMesh(
-                    static_image_mode=True,
-                    max_num_faces=1,
-                    refine_landmarks=True,
-                    min_detection_confidence=0.5,
-                )
+                face_mesh = _get_face_mesh_static()
                 results = face_mesh.process(rgb)
-                face_mesh.close()
 
                 if not results.multi_face_landmarks:
                     return None
