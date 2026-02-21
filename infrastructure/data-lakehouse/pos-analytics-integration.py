@@ -70,7 +70,7 @@ class POSAnalyticsLakehouseIntegration:
         """Setup configuration parameters"""
         self.config = {
             # Database connections
-            'postgres_url': os.getenv('POSTGRES_URL', os.getenv('DATABASE_URL', 'postgresql://postgres:password@localhost:5432/agent_banking')),
+            'postgres_url': os.getenv('POSTGRES_URL', os.getenv('DATABASE_URL', 'postgresql://postgres:password@localhost:5432/remittance')),
             'redis_url': os.getenv('REDIS_URL', os.getenv('REDIS_URL', 'redis://localhost:6379')),
             'mongo_url': os.getenv('MONGO_URL', os.getenv('MONGO_URL', 'mongodb://localhost:27017/')),
             

@@ -1,5 +1,5 @@
 """
-Agent Banking Platform - Settlement Service
+Remittance Platform - Settlement Service
 Handles commission settlement processing with TigerBeetle ledger integration
 Processes commission payouts, settlement batches, and approval workflows
 """
@@ -41,7 +41,7 @@ app.add_middleware(
 )
 
 # Configuration
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://banking_user:banking_pass@localhost:5432/agent_banking")
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://banking_user:banking_pass@localhost:5432/remittance")
 REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379")
 COMMISSION_SERVICE_URL = os.getenv("COMMISSION_SERVICE_URL", "http://localhost:8010")
 TIGERBEETLE_SERVICE_URL = os.getenv("TIGERBEETLE_SERVICE_URL", "http://localhost:8028")

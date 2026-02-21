@@ -343,7 +343,7 @@ masked = mask_sensitive_data("2348031234567", 4)     # "**********4567"
 
 ## Integration with Platform
 
-### **1. Agent Banking Platform**
+### **1. Remittance Platform**
 - All services now use same JWT authentication as POS, QR, and E-commerce
 - Unified logging format across all services
 - Consistent rate limiting policies
@@ -418,7 +418,7 @@ LOG_DIR=/var/log/communication-services
 WEBHOOK_SECRET=webhook-secret-change-me
 
 # Database
-DATABASE_URL=postgresql://postgres:password@localhost:5432/agent_banking
+DATABASE_URL=postgresql://postgres:password@localhost:5432/remittance
 
 # Redis
 REDIS_URL=redis://localhost:6379

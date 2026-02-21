@@ -2,7 +2,7 @@
 
 ## Overview
 
-This is a production-ready FastAPI service for the Agent Banking Platform, designed to manage and serve Machine Learning models and predictions. It includes comprehensive features such as API key authentication, logging, configuration management, and Prometheus metrics.
+This is a production-ready FastAPI service for the Remittance Platform, designed to manage and serve Machine Learning models and predictions. It includes comprehensive features such as API key authentication, logging, configuration management, and Prometheus metrics.
 
 ## Features
 

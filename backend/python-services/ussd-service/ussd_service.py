@@ -1,5 +1,5 @@
 """
-Production-Ready USSD Service for Agent Banking Platform
+Production-Ready USSD Service for Remittance Platform
 
 This module re-exports the production USSD service as the default entry point.
 The production service (ussd_service_production.py) provides:
@@ -372,7 +372,7 @@ class ProductionMenuBuilder:
     @staticmethod
     def main_menu() -> str:
         return (
-            "CON Welcome to Agent Banking\n"
+            "CON Welcome to Remittance Platform\n"
             "1. Check Balance\n"
             "2. Transfer Money\n"
             "3. View Orders\n"
@@ -549,7 +549,7 @@ class ProductionMenuBuilder:
         return (
             "END Customer Support\n\n"
             "Call: +234 803 123 4567\n"
-            "Email: support@agentbanking.ng\n"
+            "Email: support@remittance-platform.ng\n"
             "WhatsApp: +234 803 123 4567\n\n"
             "Hours: Mon-Sat 8AM-8PM"
         )
@@ -560,7 +560,7 @@ class ProductionMenuBuilder:
 
     @staticmethod
     def exit_message() -> str:
-        return "END Thank you for using Agent Banking!"
+        return "END Thank you for using Remittance Platform!"
 
     @staticmethod
     def service_unavailable() -> str:

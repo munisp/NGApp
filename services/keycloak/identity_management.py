@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Keycloak Identity and Access Management Integration
-Comprehensive authentication and authorization for Agent Banking Network
+Comprehensive authentication and authorization for Remittance Platform
 """
 
 import json
@@ -41,9 +41,9 @@ class ClientConfig:
     protocol: str = "openid-connect"
 
 class KeycloakManager:
-    """Comprehensive Keycloak Identity Management for Agent Banking Network"""
+    """Comprehensive Keycloak Identity Management for Remittance Platform"""
     
-    def __init__(self, server_url: str = "http://localhost:8080", realm: str = "agent-banking"):
+    def __init__(self, server_url: str = "http://localhost:8080", realm: str = "remittance"):
         self.server_url = server_url.rstrip('/')
         self.realm = realm
         self.admin_username = os.getenv("KEYCLOAK_ADMIN_USER", "admin")
@@ -85,15 +85,15 @@ class KeycloakManager:
             return None
     
     def create_realm(self) -> bool:
-        """Create Agent Banking Network realm"""
+        """Create Remittance Platform realm"""
         token = self.get_admin_token()
         if not token:
             return False
             
         realm_config = {
             "realm": self.realm,
-            "displayName": "Agent Banking Network",
-            "displayNameHtml": "<div class=\"kc-logo-text\"><span>Agent Banking Network</span></div>",
+            "displayName": "Remittance Platform",
+            "displayNameHtml": "<div class=\"kc-logo-text\"><span>Remittance Platform</span></div>",
             "enabled": True,
             "sslRequired": "external",
             "registrationAllowed": True,
@@ -112,7 +112,7 @@ class KeycloakManager:
             "quickLoginCheckMilliSeconds": 1000,
             "maxDeltaTimeSeconds": 43200,
             "failureFactor": 30,
-            "defaultRoles": ["default-roles-agent-banking", "offline_access", "uma_authorization"],
+            "defaultRoles": ["default-roles-remittance", "offline_access", "uma_authorization"],
             "requiredCredentials": ["password"],
             "passwordPolicy": "length(8) and digits(1) and lowerCase(1) and upperCase(1) and specialChars(1) and notUsername",
             "otpPolicyType": "totp",
@@ -122,7 +122,7 @@ class KeycloakManager:
             "otpPolicyLookAheadWindow": 1,
             "otpPolicyPeriod": 30,
             "otpSupportedApplications": ["FreeOTP", "Google Authenticator"],
-            "webAuthnPolicyRpEntityName": "Agent Banking Network",
+            "webAuthnPolicyRpEntityName": "Remittance Platform",
             "webAuthnPolicySignatureAlgorithms": ["ES256"],
             "webAuthnPolicyRpId": "",
             "webAuthnPolicyAttestationConveyancePreference": "not specified",
@@ -141,10 +141,10 @@ class KeycloakManager:
                 "port": "587",
                 "auth": "false",
                 "host": "localhost",
-                "replyToDisplayName": "Agent Banking Network",
-                "replyTo": "noreply@agentbanking.ng",
-                "fromDisplayName": "Agent Banking Network",
-                "from": "noreply@agentbanking.ng",
+                "replyToDisplayName": "Remittance Platform",
+                "replyTo": "noreply@remittance-platform.ng",
+                "fromDisplayName": "Remittance Platform",
+                "from": "noreply@remittance-platform.ng",
                 "envelopeFrom": "",
                 "ssl": "false",
                 "user": ""
@@ -216,7 +216,7 @@ class KeycloakManager:
         client_data = {
             "clientId": client_config.client_id,
             "name": client_config.client_id,
-            "description": f"Agent Banking Network - {client_config.client_id}",
+            "description": f"Remittance Platform - {client_config.client_id}",
             "enabled": True,
             "clientAuthenticatorType": "client-secret",
             "secret": client_config.client_secret,
@@ -504,7 +504,7 @@ class KeycloakManager:
             ClientConfig(
                 client_id="mobile-app",
                 client_secret=secrets.token_urlsafe(32),
-                redirect_uris=["http://localhost:3003/*", "agentbanking://callback"],
+                redirect_uris=["http://localhost:3003/*", "remittance://callback"],
                 web_origins=["http://localhost:3003"]
             ),
             ClientConfig(
@@ -541,7 +541,7 @@ class KeycloakManager:
             UserProfile(
                 user_id="admin001",
                 username="admin",
-                email="admin@agentbanking.ng",
+                email="admin@remittance-platform.ng",
                 first_name="System",
                 last_name="Administrator",
                 roles=["super-admin", "bank-admin"],
@@ -550,7 +550,7 @@ class KeycloakManager:
             UserProfile(
                 user_id="agent001",
                 username="agent.lagos.001",
-                email="agent001@agentbanking.ng",
+                email="agent001@remittance-platform.ng",
                 first_name="Adebayo",
                 last_name="Johnson",
                 roles=["banking-agent"],
@@ -559,7 +559,7 @@ class KeycloakManager:
             UserProfile(
                 user_id="manager001",
                 username="manager.southwest",
-                email="manager001@agentbanking.ng",
+                email="manager001@remittance-platform.ng",
                 first_name="Folake",
                 last_name="Adeyemi",
                 roles=["agent-manager"],
@@ -577,7 +577,7 @@ class KeycloakManager:
             UserProfile(
                 user_id="kyb001",
                 username="kyb.officer.001",
-                email="kyb001@agentbanking.ng",
+                email="kyb001@remittance-platform.ng",
                 first_name="Amina",
                 last_name="Hassan",
                 roles=["kyb-officer", "compliance-officer"],
@@ -652,7 +652,7 @@ class KeycloakManager:
         return yaml.dump(docker_compose, default_flow_style=False)
     
     def deploy_complete_setup(self) -> bool:
-        """Deploy complete Keycloak setup for Agent Banking Network"""
+        """Deploy complete Keycloak setup for Remittance Platform"""
         logger.info("🚀 Deploying Keycloak Identity Management Setup...")
         
         try:
@@ -691,7 +691,7 @@ class KeycloakManager:
 
 def main():
     """Main function to setup Keycloak Identity Management"""
-    print("🔐 Agent Banking Network - Keycloak Identity Management Setup")
+    print("🔐 Remittance Platform - Keycloak Identity Management Setup")
     print("=" * 65)
     
     keycloak = KeycloakManager()
@@ -702,7 +702,7 @@ def main():
         print("1. Start Keycloak: docker-compose -f /tmp/docker-compose-keycloak.yaml up -d")
         print("2. Access Admin Console: http://localhost:8080")
         print("3. Login with: admin / <set KEYCLOAK_ADMIN_PASSWORD>")
-        print("4. Switch to 'agent-banking' realm")
+        print("4. Switch to 'remittance' realm")
         print("5. Configure additional settings as needed")
     else:
         print("\n❌ Failed to configure Keycloak Identity Management")

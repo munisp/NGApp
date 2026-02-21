@@ -166,25 +166,25 @@ metadata:
 data:
   iceberg-catalog.yaml: |
     catalog:
-      name: agent_banking
+      name: remittance
       type: rest
       uri: http://iceberg-rest:8181
-      warehouse: s3://agent-banking-lakehouse/warehouse
+      warehouse: s3://remittance-lakehouse/warehouse
       
     storage:
       tiers:
         hot:
-          location: s3://agent-banking-lakehouse/hot/
+          location: s3://remittance-lakehouse/hot/
           retention_days: 7
           compaction_interval: 1h
           
         warm:
-          location: s3://agent-banking-lakehouse/warm/
+          location: s3://remittance-lakehouse/warm/
           retention_days: 90
           compaction_interval: 24h
           
         cold:
-          location: s3://agent-banking-lakehouse/cold/
+          location: s3://remittance-lakehouse/cold/
           retention_days: 2555
           compaction_interval: 168h
           
@@ -214,7 +214,7 @@ data:
     connector.name=iceberg
     iceberg.catalog.type=rest
     iceberg.rest-catalog.uri=http://iceberg-rest:8181
-    iceberg.rest-catalog.warehouse=s3://agent-banking-lakehouse/warehouse
+    iceberg.rest-catalog.warehouse=s3://remittance-lakehouse/warehouse
     
     # Storage tiering
     iceberg.file-format=PARQUET
@@ -310,7 +310,7 @@ data:
         LOOP
             -- Export partition to S3
             EXECUTE format(
-                'COPY %I TO PROGRAM ''aws s3 cp - s3://agent-banking-archive/%s/%s.csv.gz --content-encoding gzip''
+                'COPY %I TO PROGRAM ''aws s3 cp - s3://remittance-archive/%s/%s.csv.gz --content-encoding gzip''
                 WITH (FORMAT CSV, HEADER)',
                 v_partition_name,
                 p_table_name,
@@ -440,7 +440,7 @@ data:
     remote.log.storage.system.enable=true
     remote.log.storage.manager.class.name=org.apache.kafka.server.log.remote.storage.RemoteLogManagerConfig
     remote.log.storage.manager.impl.prefix=rsm.config.
-    rsm.config.s3.bucket.name=agent-banking-kafka-tiered
+    rsm.config.s3.bucket.name=remittance-kafka-tiered
     rsm.config.s3.region=us-east-1
     
     # Topic-specific retention

@@ -1,1 +1,1 @@
-# Ios App\n\nMobile application for Agent Banking Platform
+# Ios App\n\nMobile application for Remittance Platform

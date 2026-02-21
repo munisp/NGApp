@@ -1,6 +1,6 @@
 # SMS Service API
 
-This document provides a comprehensive guide to the SMS Service API, a FastAPI-based microservice designed for sending and managing SMS messages within the Agent Banking Platform.
+This document provides a comprehensive guide to the SMS Service API, a FastAPI-based microservice designed for sending and managing SMS messages within the Remittance Platform.
 
 ## Features
 

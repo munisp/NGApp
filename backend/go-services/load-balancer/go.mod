@@ -1,4 +1,4 @@
-module github.com/agent-banking-platform/load-balancer
+module github.com/remittance-platform/load-balancer
 
 go 1.21
 

@@ -24,7 +24,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 app = FastAPI(
-    title="Agent Banking Lakehouse (Authenticated)",
+    title="Remittance Platform Lakehouse (Authenticated)",
     description="Production-ready lakehouse with JWT authentication and RBAC",
     version="2.1.0"
 )
@@ -80,7 +80,7 @@ async def get_current_user_info(current_user: User = Depends(get_current_user)):
 async def root():
     """Health check - No authentication required"""
     return {
-        "service": "Agent Banking Lakehouse (Authenticated)",
+        "service": "Remittance Platform Lakehouse (Authenticated)",
         "version": "2.1.0",
         "status": "operational",
         "authentication": "JWT",
@@ -270,7 +270,7 @@ async def get_audit_logs(
 @app.on_event("startup")
 async def startup_event():
     """Initialize lakehouse on startup"""
-    logger.info("Starting Agent Banking Lakehouse with Authentication...")
+    logger.info("Starting Remittance Platform Lakehouse with Authentication...")
     logger.info("JWT Authentication: Enabled")
     logger.info("RBAC: Enabled (4 roles)")
     logger.info("Lakehouse ready!")

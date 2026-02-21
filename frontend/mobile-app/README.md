@@ -1,6 +1,6 @@
-# Agent Banking Mobile App
+# Remittance Platform Mobile App
 
-Production-ready React Native mobile application for the Agent Banking Platform.
+Production-ready React Native mobile application for the Remittance Platform.
 
 ## Features
 
@@ -60,7 +60,7 @@ src/
 Copy `.env.example` to `.env` and configure:
 
 ```
-API_URL=https://api.agent-banking.com
+API_URL=https://api.remittance.com
 ```
 
 ## Testing
@@ -81,4 +81,4 @@ cd android && ./gradlew assembleRelease
 
 ## License
 
-Proprietary - Agent Banking Platform
+Proprietary - Remittance Platform

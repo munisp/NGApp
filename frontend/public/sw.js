@@ -1,7 +1,7 @@
-// Agent Banking Platform Service Worker
+// Remittance Platform Service Worker
 // Version 1.0.0
 
-const CACHE_NAME = 'agent-banking-v1.0.0';
+const CACHE_NAME = 'remittance-v1.0.0';
 const OFFLINE_URL = '/offline.html';
 const FALLBACK_IMAGE = '/images/fallback-image.png';
 
@@ -375,7 +375,7 @@ self.addEventListener('push', event => {
         icon: '/icons/action-dismiss.png'
       }
     ],
-    tag: data.tag || 'agent-banking-notification',
+    tag: data.tag || 'remittance-notification',
     renotify: true,
     requireInteraction: data.requireInteraction || false,
     silent: data.silent || false,
@@ -537,4 +537,4 @@ async function performPeriodicSync() {
   }
 }
 
-console.log('Agent Banking Service Worker loaded successfully');
+console.log('Remittance Platform Service Worker loaded successfully');

@@ -106,7 +106,7 @@ func LoadConfig() *Config {
 	serverPort, _ := strconv.Atoi(getEnv("SERVER_PORT", "8112"))
 
 	return &Config{
-		DatabaseURL:     getEnv("DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/agent_banking?sslmode=disable"),
+		DatabaseURL:     getEnv("DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/remittance?sslmode=disable"),
 		RedisURL:        getEnv("REDIS_URL", "redis://localhost:6379"),
 		KafkaBootstrap:  getEnv("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092"),
 		CacheTTLSeconds: cacheTTL,

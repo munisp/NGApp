@@ -11,7 +11,7 @@ services:
       - "8030:8030"
       - "3001:3001"  # TigerBeetle Zig port
     environment:
-      - DATABASE_URL=postgresql://banking_user:secure_banking_password@postgres:5432/agent_banking
+      - DATABASE_URL=postgresql://banking_user:secure_banking_password@postgres:5432/remittance
       - REDIS_URL=redis://:redis_secure_password@redis:6379
       - TIGERBEETLE_DATA_FILE=/data/tigerbeetle_primary.tigerbeetle
       - TIGERBEETLE_PORT=3001
@@ -97,7 +97,7 @@ services:
     ports:
       - "8032:8032"
     environment:
-      - DATABASE_URL=postgresql://banking_user:secure_banking_password@postgres:5432/agent_banking
+      - DATABASE_URL=postgresql://banking_user:secure_banking_password@postgres:5432/remittance
       - REDIS_URL=redis://:redis_secure_password@redis:6379
       - SYNC_INTERVAL=5
       - HEARTBEAT_INTERVAL=30
@@ -121,7 +121,7 @@ services:
     image: postgres:15-alpine
     container_name: tigerbeetle-postgres
     environment:
-      - POSTGRES_DB=agent_banking
+      - POSTGRES_DB=remittance
       - POSTGRES_USER=banking_user
       - POSTGRES_PASSWORD=secure_banking_password
     volumes:
@@ -133,7 +133,7 @@ services:
       - tigerbeetle-network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U banking_user -d agent_banking"]
+      test: ["CMD-SHELL", "pg_isready -U banking_user -d remittance"]
       interval: 30s
       timeout: 10s
       retries: 3

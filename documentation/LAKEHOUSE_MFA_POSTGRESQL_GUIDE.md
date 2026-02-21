@@ -337,7 +337,7 @@ GRANT ALL PRIVILEGES ON DATABASE lakehouse_db TO lakehouse_app;
 ### **Step 2: Initialize Database Schema**
 
 ```bash
-cd /home/ubuntu/agent-banking-platform/backend/python-services/lakehouse-service
+cd /home/ubuntu/remittance-platform/backend/python-services/lakehouse-service
 
 # Run schema
 psql -U lakehouse_app -d lakehouse_db -f database_schema.sql
@@ -399,7 +399,7 @@ curl -X POST http://localhost:8070/auth/login \
   "user": {
     "user_id": "uuid",
     "username": "viewer",
-    "email": "viewer@agentbanking.com",
+    "email": "viewer@remittance-platform.com",
     "role": "viewer"
   }
 }

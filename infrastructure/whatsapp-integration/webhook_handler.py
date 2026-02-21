@@ -75,14 +75,14 @@ class WhatsAppWebhookHandler:
         
         # Auto-response templates
         self.response_templates = {
-            'welcome': "Welcome to Agent Banking Network! 🏦\n\nI'm your AI assistant. How can I help you today?\n\n• Check Balance\n• Transfer Money\n• Find Agent\n• Get Support\n\nReply with your choice or ask any question!",
+            'welcome': "Welcome to Remittance Platform! 🏦\n\nI'm your AI assistant. How can I help you today?\n\n• Check Balance\n• Transfer Money\n• Find Agent\n• Get Support\n\nReply with your choice or ask any question!",
             'balance_inquiry': "To check your account balance, please provide:\n1. Your account number\n2. Last 4 digits of your phone number\n\nOr visit any of our 50,000+ agents nationwide.",
             'transfer_help': "To transfer money:\n1. Dial *737*Amount*AccountNumber#\n2. Visit any agent location\n3. Use our mobile app\n\nTransfer fees start from ₦10. Need help finding an agent?",
-            'agent_location': "To find the nearest agent:\n1. Share your location\n2. Tell me your area/LGA\n3. Visit agentbanking.ng/locations\n\nWe have 50,000+ agents across Nigeria!",
+            'agent_location': "To find the nearest agent:\n1. Share your location\n2. Tell me your area/LGA\n3. Visit remittance-platform.ng/locations\n\nWe have 50,000+ agents across Nigeria!",
             'business_hours': "Our customer service is available:\n📞 24/7 for emergencies\n🏢 8AM - 6PM for general inquiries\n\nFor immediate assistance, visit any agent or use our USSD *737#",
-            'kyc_reminder': "Your KYC documents need updating! 📋\n\nRequired documents:\n• Valid ID (NIN, Passport, Driver's License)\n• Utility bill\n• Passport photo\n\nVisit any agent or update online at agentbanking.ng/kyc",
+            'kyc_reminder': "Your KYC documents need updating! 📋\n\nRequired documents:\n• Valid ID (NIN, Passport, Driver's License)\n• Utility bill\n• Passport photo\n\nVisit any agent or update online at remittance-platform.ng/kyc",
             'loan_info': "💰 Get instant loans up to ₦500,000!\n\nRequirements:\n• Active account (3+ months)\n• Regular transactions\n• Valid KYC\n\nApply: *737*59# or visit any agent",
-            'error': "I'm sorry, I didn't understand that. Please try again or contact our support team.\n\n📞 Call: 0700-AGENT-BANK\n💬 WhatsApp: +234-800-AGENT\n🌐 Web: agentbanking.ng/support"
+            'error': "I'm sorry, I didn't understand that. Please try again or contact our support team.\n\n📞 Call: 0700-REMIT\n💬 WhatsApp: +234-800-REMIT\n🌐 Web: remittance-platform.ng/support"
         }
         
         self.setup_routes()
@@ -439,13 +439,13 @@ class WhatsAppWebhookHandler:
                 return self.response_templates["error"]
             
             # Prepare context for AI
-            system_prompt = """You are a helpful AI assistant for Agent Banking Network, Nigeria's leading financial inclusion platform. 
+            system_prompt = """You are a helpful AI assistant for Remittance Platform, Nigeria's leading financial inclusion platform. 
 
 Key information:
 - We have 50,000+ agents nationwide
 - Services: Banking, transfers, deposits, withdrawals, loans, KYC
 - USSD code: *737#
-- Website: agentbanking.ng
+- Website: remittance-platform.ng
 - We're CBN licensed and regulated
 
 Guidelines:

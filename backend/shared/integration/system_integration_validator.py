@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Agent Banking Platform - System Integration and Validation Script
+Remittance Platform - System Integration and Validation Script
 Comprehensive validation of all implemented systems and their integration
 """
 
@@ -54,7 +54,7 @@ class SystemIntegrationValidator:
         
         # Configuration
         self.config = {
-            'database_url': os.getenv('DATABASE_URL', 'postgresql://user:password@localhost/agent_banking'),
+            'database_url': os.getenv('DATABASE_URL', 'postgresql://user:password@localhost/remittance'),
             'redis_url': os.getenv('REDIS_URL', 'redis://localhost:6379'),
             'base_url': os.getenv('BASE_URL', 'http://localhost:8000'),
             'frontend_url': os.getenv('FRONTEND_URL', 'http://localhost:5173'),
@@ -80,7 +80,7 @@ class SystemIntegrationValidator:
 
     async def run_validation(self) -> Dict[str, Any]:
         """Run comprehensive system validation"""
-        logger.info("🚀 Starting Agent Banking Platform System Validation")
+        logger.info("🚀 Starting Remittance Platform System Validation")
         logger.info("=" * 80)
         
         validation_phases = [
@@ -895,7 +895,7 @@ class SystemIntegrationValidator:
                 
                 # Check for key components
                 required_elements = [
-                    'Agent Banking Platform',
+                    'Remittance Platform',
                     'dashboard',
                     'transactions',
                     'customers',

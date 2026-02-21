@@ -36,7 +36,7 @@ type Config struct {
 
 func loadConfig() *Config {
 	return &Config{
-		DatabaseURL:    getEnv("DATABASE_URL", "postgres://user:password@${DB_HOST:-os.getenv("HOST", "os.getenv("HOST", "localhost")")}:${DB_PORT:-5432}/agent_banking_network?sslmode=disable"),
+		DatabaseURL:    getEnv("DATABASE_URL", "postgres://user:password@${DB_HOST:-os.getenv("HOST", "os.getenv("HOST", "localhost")")}:${DB_PORT:-5432}/remittance_network?sslmode=disable"),
 		ServerPort:     getEnv("SERVER_PORT", "8080"),
 		Environment:    getEnv("ENVIRONMENT", "development"),
 		LogLevel:       getEnv("LOG_LEVEL", "info"),

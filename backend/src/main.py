@@ -13,13 +13,13 @@ import random
 from decimal import Decimal
 
 app = Flask(__name__, static_folder=os.path.join(os.path.dirname(__file__), 'static'))
-app.config['SECRET_KEY'] = 'agent-banking-network-secret-key-2024'
+app.config['SECRET_KEY'] = 'remittance-network-secret-key-2024'
 
 # Enable CORS for all routes
 CORS(app, origins="*")
 
 # Database setup
-DATABASE_PATH = os.path.join(os.path.dirname(__file__), 'database', 'agent_banking.db')
+DATABASE_PATH = os.path.join(os.path.dirname(__file__), 'database', 'remittance.db')
 
 def init_database():
     """Initialize the database with tables and sample data"""
@@ -456,7 +456,7 @@ def serve(path):
             return send_from_directory(static_folder_path, 'index.html')
         else:
             return jsonify({
-                'message': 'Agent Banking Network API',
+                'message': 'Remittance Platform API',
                 'version': '1.0.0',
                 'endpoints': [
                     '/api/auth/login',

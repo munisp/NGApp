@@ -400,7 +400,7 @@ const Layout = ({ children }) => {
           <SheetContent side="left" className="w-64 p-0">
             <div className="flex flex-col h-full">
               <div className="p-4 border-b border-border">
-                <h2 className="text-xl font-bold">Agent Banking</h2>
+                <h2 className="text-xl font-bold">Remittance Platform</h2>
               </div>
               <nav className="flex flex-col p-4 space-y-2 flex-grow">
                 <Link to="/" className="flex items-center space-x-3 p-2 rounded-md hover:bg-accent hover:text-accent-foreground transition-colors">
@@ -436,7 +436,7 @@ const Layout = ({ children }) => {
             </div>
           </SheetContent>
         </Sheet>
-        <h1 className="text-xl font-bold">Agent Banking PWA</h1>
+        <h1 className="text-xl font-bold">Remittance Platform PWA</h1>
         {isAuthenticated ? (
           <Avatar className="h-8 w-8">
             <AvatarImage src="https://github.com/shadcn.png" alt="User Avatar" />

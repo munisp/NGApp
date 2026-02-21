@@ -1,7 +1,7 @@
 # HIGH PRIORITY FEATURES IMPLEMENTATION SUMMARY
 
 **Implementation Date:** $(date)
-**Platform:** Agent Banking Platform v1.0.0
+**Platform:** Remittance Platform v1.0.0
 
 ## Overview
 

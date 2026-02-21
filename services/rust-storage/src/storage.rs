@@ -98,7 +98,7 @@ impl StorageClient {
             &config.secret_key,
             None,
             None,
-            "agent-banking-storage",
+            "remittance-storage",
         );
 
         // Build S3 config

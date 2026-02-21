@@ -160,7 +160,7 @@ services:
     ports:
       - "9187:9187"
     environment:
-      - DATA_SOURCE_NAME=postgresql://postgres:password@postgres:5432/agent_banking?sslmode=disable
+      - DATA_SOURCE_NAME=postgresql://postgres:password@postgres:5432/remittance?sslmode=disable
     networks:
       - monitoring
       - pos-network

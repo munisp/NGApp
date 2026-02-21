@@ -120,7 +120,7 @@ func main() {
 func (gw *APIGateway) initDatabase() error {
 	dsn := os.Getenv("DATABASE_URL")
 	if dsn == "" {
-		dsn = "host=localhost user=postgres password=postgres dbname=agent_banking port=5432 sslmode=disable"
+		dsn = "host=localhost user=postgres password=postgres dbname=remittance port=5432 sslmode=disable"
 	}
 
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})

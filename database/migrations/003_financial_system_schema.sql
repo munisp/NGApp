@@ -1,5 +1,5 @@
 -- =====================================================
--- Agent Banking Platform - Financial System Schema
+-- Remittance Platform - Financial System Schema
 -- Migrations for Settlement, Reconciliation, and Enhanced Hierarchy
 -- Version: 3.0.0
 -- =====================================================

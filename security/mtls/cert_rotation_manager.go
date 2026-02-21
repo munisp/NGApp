@@ -223,7 +223,7 @@ func (m *CertRotationManager) generateSelfSignedCert() (*tls.Certificate, error)
 	template := x509.Certificate{
 		SerialNumber: serialNumber,
 		Subject: pkix.Name{
-			Organization:       []string{"Agent Banking Platform"},
+			Organization:       []string{"Remittance Platform"},
 			OrganizationalUnit: []string{"Services"},
 			CommonName:         m.config.ServiceName,
 		},

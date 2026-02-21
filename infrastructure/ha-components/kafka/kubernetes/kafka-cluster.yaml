@@ -16,7 +16,7 @@ metadata:
     app: kafka
 data:
   server.properties: |
-    # Apache Kafka High-Availability Configuration for Agent Banking Network
+    # Apache Kafka High-Availability Configuration for Remittance Platform
     broker.id=${KAFKA_BROKER_ID}
     listeners=PLAINTEXT://0.0.0.0:9092,SSL://0.0.0.0:9093,SASL_SSL://0.0.0.0:9094
     advertised.listeners=PLAINTEXT://${KAFKA_ADVERTISED_HOST}:9092,SSL://${KAFKA_ADVERTISED_HOST}:9093,SASL_SSL://${KAFKA_ADVERTISED_HOST}:9094
@@ -553,7 +553,7 @@ spec:
   - from:
     - namespaceSelector:
         matchLabels:
-          name: agent-banking-system
+          name: remittance-system
     - podSelector:
         matchLabels:
           app: zookeeper

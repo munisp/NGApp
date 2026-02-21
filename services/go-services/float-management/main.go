@@ -268,7 +268,7 @@ func initializeDatabase() (*gorm.DB, error) {
 		getEnv("DB_HOST", "localhost"),
 		getEnv("DB_USER", "postgres"),
 		getEnv("DB_PASSWORD", "password"),
-		getEnv("DB_NAME", "agent_banking"),
+		getEnv("DB_NAME", "remittance"),
 		getEnv("DB_PORT", "5432"),
 		getEnv("DB_SSLMODE", "disable"),
 	)

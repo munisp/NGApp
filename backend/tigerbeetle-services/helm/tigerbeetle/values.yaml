@@ -33,7 +33,7 @@ native:
   enabled: true
   replicas: 3
   image:
-    repository: agent-banking/tigerbeetle-native
+    repository: remittance/tigerbeetle-native
     tag: latest
     pullPolicy: IfNotPresent
   
@@ -61,7 +61,7 @@ primary:
   enabled: true
   replicas: 3
   image:
-    repository: agent-banking/tigerbeetle-primary
+    repository: remittance/tigerbeetle-primary
     tag: latest
     pullPolicy: IfNotPresent
   
@@ -88,7 +88,7 @@ edge:
   enabled: true
   replicas: 5
   image:
-    repository: agent-banking/tigerbeetle-edge
+    repository: remittance/tigerbeetle-edge
     tag: latest
     pullPolicy: IfNotPresent
   
@@ -142,7 +142,7 @@ postgresql:
   enabled: true
   host: postgresql
   port: 5432
-  database: agent_banking
+  database: remittance
 
 # Environment variables
 env:
@@ -151,7 +151,7 @@ env:
 
 # Secrets (override in production)
 secrets:
-  databaseUrl: "postgresql://user:password@postgresql:5432/agent_banking"
+  databaseUrl: "postgresql://user:password@postgresql:5432/remittance"
   redisUrl: "redis://redis:6379"
 
 # Ingress configuration

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Machine Learning Risk Assessment Service for Agent Banking Network
+Machine Learning Risk Assessment Service for Remittance Platform
 Advanced risk assessment using multiple ML models and real-time scoring
 """
 
@@ -58,7 +58,7 @@ class MLRiskAssessmentService:
                 port=os.getenv('DB_PORT', '5432'),
                 user=os.getenv('DB_USER', 'postgres'),
                 password=os.getenv('DB_PASSWORD', 'password'),
-                database=os.getenv('DB_NAME', 'agent_banking')
+                database=os.getenv('DB_NAME', 'remittance')
             )
             
             # Redis connection

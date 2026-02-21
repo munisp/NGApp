@@ -26,7 +26,7 @@ import {
 } from 'lucide-react';
 import './App.css';
 
-// Enhanced Agent Banking Platform with Complete Agent Management
+// Enhanced Remittance Platform with Complete Agent Management
 const AgentBankingPlatform = () => {
   // State management
   const [currentUser, setCurrentUser] = useState(null);
@@ -582,7 +582,7 @@ const AgentBankingPlatform = () => {
                 <Building className="w-8 h-8 text-white" />
               </div>
               <CardTitle className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                Agent Banking Platform
+                Remittance Platform
               </CardTitle>
               <CardDescription>
                 Complete Agent Management System
@@ -729,7 +729,7 @@ const AgentBankingPlatform = () => {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-2xl font-bold">Welcome back, {currentUser?.name}!</h1>
-              <p className="text-blue-100 mt-1">Here's your agent banking overview for today</p>
+              <p className="text-blue-100 mt-1">Here's your remittance overview for today</p>
             </div>
             <div className="text-right">
               <p className="text-sm text-blue-100">Today's Date</p>
@@ -1806,7 +1806,7 @@ const AgentBankingPlatform = () => {
               </div>
               {sidebarOpen && (
                 <div>
-                  <h1 className="text-lg font-bold text-gray-900">Agent Banking</h1>
+                  <h1 className="text-lg font-bold text-gray-900">Remittance Platform</h1>
                   <p className="text-sm text-gray-500">Management Platform</p>
                 </div>
               )}
@@ -1933,7 +1933,7 @@ const AgentBankingPlatform = () => {
                 {activeTab.replace('-', ' ')}
               </h2>
               <p className="text-gray-600">
-                {activeTab === 'dashboard' && 'Welcome back to your agent banking dashboard'}
+                {activeTab === 'dashboard' && 'Welcome back to your remittance dashboard'}
                 {activeTab === 'agents' && 'Manage your agent network and hierarchy'}
                 {activeTab === 'commission-rules' && 'Configure commission rules and rates'}
                 {activeTab === 'payouts' && 'Process and track commission payouts'}

@@ -4,8 +4,8 @@ import { Settings as SettingsIcon, User, Bell, Shield, Database, Globe, Save, Ke
 export default function Settings() {
   const [activeTab, setActiveTab] = useState('general');
   const [settings, setSettings] = useState({
-    platformName: 'Agent Banking Platform',
-    supportEmail: 'support@agentbanking.com',
+    platformName: 'Remittance Platform',
+    supportEmail: 'support@remittance-platform.com',
     timezone: 'Africa/Lagos',
     currency: 'NGN',
     language: 'en',

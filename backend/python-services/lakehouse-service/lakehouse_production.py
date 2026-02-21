@@ -38,7 +38,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 app = FastAPI(
-    title="Agent Banking Lakehouse",
+    title="Remittance Platform Lakehouse",
     description="Production-ready data lakehouse with Delta Lake and Iceberg",
     version="2.0.0"
 )
@@ -348,7 +348,7 @@ lakehouse = LakehouseManager()
 async def root():
     """Health check"""
     return {
-        "service": "Agent Banking Lakehouse",
+        "service": "Remittance Platform Lakehouse",
         "version": "2.0.0",
         "status": "operational",
         "delta_available": DELTA_AVAILABLE,
@@ -455,7 +455,7 @@ async def get_analytics_summary():
 @app.on_event("startup")
 async def startup_event():
     """Initialize lakehouse on startup"""
-    logger.info("Starting Agent Banking Lakehouse...")
+    logger.info("Starting Remittance Platform Lakehouse...")
     logger.info(f"Delta Lake available: {DELTA_AVAILABLE}")
     logger.info(f"Iceberg available: {ICEBERG_AVAILABLE}")
     logger.info("Lakehouse ready!")

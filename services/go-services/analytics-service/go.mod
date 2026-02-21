@@ -1,4 +1,4 @@
-module agent-banking/analytics-service
+module remittance/analytics-service
 
 go 1.21
 

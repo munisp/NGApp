@@ -1,4 +1,4 @@
-module github.com/agent-banking-platform/tigerbeetle-integrated
+module github.com/remittance-platform/tigerbeetle-integrated
 
 go 1.21
 

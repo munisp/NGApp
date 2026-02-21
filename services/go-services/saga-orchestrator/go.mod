@@ -1,4 +1,4 @@
-module agent-banking/saga-orchestrator
+module remittance/saga-orchestrator
 
 go 1.21
 

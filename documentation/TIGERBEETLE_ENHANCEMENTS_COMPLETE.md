@@ -223,7 +223,7 @@ I've successfully enhanced the existing TigerBeetle implementation with all 5 re
 
 ### 1. Docker Compose
 ```bash
-cd /home/ubuntu/agent-banking-platform/backend/tigerbeetle-services
+cd /home/ubuntu/remittance-platform/backend/tigerbeetle-services
 docker-compose up -d
 ```
 
@@ -235,7 +235,7 @@ kubectl apply -f k8s/deployment.yaml
 ### 3. Helm
 ```bash
 helm install tigerbeetle ./helm/tigerbeetle \
-  --namespace agent-banking \
+  --namespace remittance \
   --create-namespace
 ```
 
@@ -267,7 +267,7 @@ kubectl port-forward svc/grafana 3000:3000
 
 ### Run Unit Tests
 ```bash
-cd /home/ubuntu/agent-banking-platform/backend/tigerbeetle-services/tests
+cd /home/ubuntu/remittance-platform/backend/tigerbeetle-services/tests
 pytest test_tigerbeetle.py -v
 ```
 

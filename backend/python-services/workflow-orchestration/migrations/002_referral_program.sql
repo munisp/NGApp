@@ -1,6 +1,6 @@
 -- ============================================================================
 -- Referral Program Database Migration
--- Agent Banking Platform V11.0
+-- Remittance Platform V11.0
 -- 
 -- This migration creates all tables needed for the Referral Program Workflow.
 -- 

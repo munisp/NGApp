@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Fluvio and Kafka Streaming Integration for Agent Banking Network
+Fluvio and Kafka Streaming Integration for Remittance Platform
 Real-time event streaming and message processing
 """
 
@@ -688,7 +688,7 @@ class UnifiedStreamingPlatform:
 
 async def main():
     """Main function to demonstrate streaming integration"""
-    print("🌊 Agent Banking Network - Streaming Integration Platform")
+    print("🌊 Remittance Platform - Streaming Integration Platform")
     print("=" * 70)
     
     platform = UnifiedStreamingPlatform()

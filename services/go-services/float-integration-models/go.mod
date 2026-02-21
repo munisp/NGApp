@@ -1,4 +1,4 @@
-module agent-banking/float-integration-models
+module remittance/float-integration-models
 
 go 1.21
 

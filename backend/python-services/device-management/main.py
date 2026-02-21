@@ -14,7 +14,7 @@ from .metrics import REQUEST_COUNT, IN_PROGRESS_REQUESTS, DB_OPERATION_COUNT, ge
 models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Device Management Service",
-              description="API for managing devices and device owners in an Agent Banking Platform.",
+              description="API for managing devices and device owners in an Remittance Platform.",
               version="1.0.0")
 
 # Configure logger

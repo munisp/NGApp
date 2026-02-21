@@ -1,6 +1,6 @@
 """
 Referral Program Activity Implementations
-Agent Banking Platform V11.0
+Remittance Platform V11.0
 
 This module implements all activities for the Referral Program Workflow.
 
@@ -90,7 +90,7 @@ async def generate_referral_qr_code(referral_code: str, user_id: str) -> str:
     """
     # Create QR code
     qr = qrcode.QRCode(version=1, box_size=10, border=4)
-    qr_data = f"https://agentbanking.app/signup?ref={referral_code}"
+    qr_data = f"https://remittance.app/signup?ref={referral_code}"
     qr.add_data(qr_data)
     qr.make(fit=True)
     
@@ -128,7 +128,7 @@ async def create_referral_deep_link(referral_code: str, user_type: str) -> str:
     """
     # In production: use Branch.io or Firebase Dynamic Links
     # For now, return simple deep link
-    base_url = "https://agentbanking.app"
+    base_url = "https://remittance.app"
     deep_link = f"{base_url}/signup?ref={referral_code}&type={user_type}"
     
     activity.logger.info(f"Created deep link for referral {referral_code}")

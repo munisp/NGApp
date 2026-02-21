@@ -1,6 +1,6 @@
-# Agent Banking Platform - Shared Components Frontend Application
+# Remittance Platform - Shared Components Frontend Application
 
-This project implements a production-ready React frontend application for the Agent Banking Platform's shared components. It is built with modern web development best practices, focusing on a professional UI/UX, responsive design, and API integration readiness.
+This project implements a production-ready React frontend application for the Remittance Platform's shared components. It is built with modern web development best practices, focusing on a professional UI/UX, responsive design, and API integration readiness.
 
 ## Features
 
@@ -90,4 +90,4 @@ Loading and error states are demonstrated in the `HomePage.jsx` using the `useAp
 -   **Theming**: Tailwind CSS and shadcn/ui allow for easy theme customization by modifying `tailwind.config.js` and `src/App.css`.
 -   **Components**: New shadcn/ui components can be added using the `shadcn-ui` CLI if needed.
 
-This application serves as a robust foundation for building and integrating shared components within the Agent Banking Platform.
+This application serves as a robust foundation for building and integrating shared components within the Remittance Platform.

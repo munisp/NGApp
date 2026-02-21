@@ -242,7 +242,7 @@ type PBACEngineProduction struct {
 // NewPBACEngineProduction creates a production-ready PBAC engine
 func NewPBACEngineProduction(base *PBACEngine) *PBACEngineProduction {
 	permifyEndpoint := getEnvSafe("PERMIFY_ENDPOINT", "http://localhost:3478")
-	permifyTenant := getEnvSafe("PERMIFY_TENANT_ID", "agent-banking")
+	permifyTenant := getEnvSafe("PERMIFY_TENANT_ID", "remittance")
 
 	engine := &PBACEngineProduction{
 		PBACEngine:         base,

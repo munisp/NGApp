@@ -1,4 +1,4 @@
-module agent-banking/transaction-processing
+module remittance/transaction-processing
 
 go 1.21
 

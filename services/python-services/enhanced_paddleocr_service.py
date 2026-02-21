@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Enhanced PaddleOCR Service with OLMOCR and GOT-OCR2.0 Integration
-Production-ready document processing service for Agent Banking Platform
+Production-ready document processing service for Remittance Platform
 Achieves 99.2% accuracy across all Nigerian document types
 """
 

@@ -213,7 +213,7 @@ func NewEnhancedPOSGeoService() *EnhancedPOSGeoService {
 	}
 
 	// Try database connection with retry
-	dsn := "host=localhost user=postgres password=postgres dbname=agent_banking port=5432 sslmode=disable"
+	dsn := "host=localhost user=postgres password=postgres dbname=remittance port=5432 sslmode=disable"
 	if db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{}); err == nil {
 		persistence.db = db
 		persistence.dbHealthy = true

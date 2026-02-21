@@ -5,14 +5,14 @@ apiVersion: apisix.apache.org/v2
 kind: ApisixRoute
 metadata:
   name: ml-routing-service
-  namespace: agent-banking
+  namespace: remittance
 spec:
   http:
   # ML Routing Service - Predictions
   - name: ml-routing-predict
     match:
       hosts:
-        - api.agent-banking.local
+        - api.remittance.local
       paths:
         - /api/v1/ml/routing/predict
         - /api/v1/ml/routing/predict/*
@@ -39,7 +39,7 @@ spec:
   - name: ml-routing-outcome
     match:
       hosts:
-        - api.agent-banking.local
+        - api.remittance.local
       paths:
         - /api/v1/ml/routing/outcome
     backends:
@@ -61,7 +61,7 @@ spec:
   - name: ml-routing-forecast
     match:
       hosts:
-        - api.agent-banking.local
+        - api.remittance.local
       paths:
         - /api/v1/ml/routing/forecast
     backends:
@@ -83,7 +83,7 @@ spec:
   - name: ml-routing-train
     match:
       hosts:
-        - api.agent-banking.local
+        - api.remittance.local
       paths:
         - /api/v1/ml/routing/train
     backends:
@@ -112,7 +112,7 @@ spec:
   - name: ml-routing-metrics
     match:
       hosts:
-        - api.agent-banking.local
+        - api.remittance.local
       paths:
         - /api/v1/ml/routing/metrics
     backends:
@@ -128,7 +128,7 @@ spec:
   - name: ml-routing-features
     match:
       hosts:
-        - api.agent-banking.local
+        - api.remittance.local
       paths:
         - /api/v1/ml/routing/features/*
     backends:
@@ -148,7 +148,7 @@ spec:
   - name: ml-routing-bandit
     match:
       hosts:
-        - api.agent-banking.local
+        - api.remittance.local
       paths:
         - /api/v1/ml/routing/bandit/*
     backends:
@@ -164,7 +164,7 @@ spec:
   - name: ml-routing-health
     match:
       hosts:
-        - api.agent-banking.local
+        - api.remittance.local
       paths:
         - /api/v1/ml/routing/health
     backends:
@@ -179,14 +179,14 @@ apiVersion: apisix.apache.org/v2
 kind: ApisixRoute
 metadata:
   name: fraud-detection-service
-  namespace: agent-banking
+  namespace: remittance
 spec:
   http:
   # Fraud Detection - Real-time Detection
   - name: fraud-detect
     match:
       hosts:
-        - api.agent-banking.local
+        - api.remittance.local
       paths:
         - /api/v1/ml/fraud/detect
     backends:
@@ -213,7 +213,7 @@ spec:
   - name: fraud-batch-detect
     match:
       hosts:
-        - api.agent-banking.local
+        - api.remittance.local
       paths:
         - /api/v1/ml/fraud/batch
     backends:
@@ -235,7 +235,7 @@ spec:
   - name: fraud-train
     match:
       hosts:
-        - api.agent-banking.local
+        - api.remittance.local
       paths:
         - /api/v1/ml/fraud/train
     backends:
@@ -258,7 +258,7 @@ spec:
   - name: fraud-model-info
     match:
       hosts:
-        - api.agent-banking.local
+        - api.remittance.local
       paths:
         - /api/v1/ml/fraud/model
     backends:
@@ -274,7 +274,7 @@ spec:
   - name: fraud-health
     match:
       hosts:
-        - api.agent-banking.local
+        - api.remittance.local
       paths:
         - /api/v1/ml/fraud/health
     backends:
@@ -289,14 +289,14 @@ apiVersion: apisix.apache.org/v2
 kind: ApisixRoute
 metadata:
   name: credit-scoring-service
-  namespace: agent-banking
+  namespace: remittance
 spec:
   http:
   # Credit Scoring - Score Calculation
   - name: credit-score
     match:
       hosts:
-        - api.agent-banking.local
+        - api.remittance.local
       paths:
         - /api/v1/ml/credit/score
     backends:
@@ -318,7 +318,7 @@ spec:
   - name: credit-explain
     match:
       hosts:
-        - api.agent-banking.local
+        - api.remittance.local
       paths:
         - /api/v1/ml/credit/explain
     backends:
@@ -340,7 +340,7 @@ spec:
   - name: credit-health
     match:
       hosts:
-        - api.agent-banking.local
+        - api.remittance.local
       paths:
         - /api/v1/ml/credit/health
     backends:
@@ -355,14 +355,14 @@ apiVersion: apisix.apache.org/v2
 kind: ApisixRoute
 metadata:
   name: ai-ml-coordinator
-  namespace: agent-banking
+  namespace: remittance
 spec:
   http:
   # AI/ML Coordinator - Main API
   - name: aiml-api
     match:
       hosts:
-        - api.agent-banking.local
+        - api.remittance.local
       paths:
         - /api/v1/ml/*
     backends:
@@ -384,7 +384,7 @@ spec:
   - name: aiml-health
     match:
       hosts:
-        - api.agent-banking.local
+        - api.remittance.local
       paths:
         - /api/v1/ml/health
     backends:
@@ -400,7 +400,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: ml-routing-service
-  namespace: agent-banking
+  namespace: remittance
   labels:
     app: ml-routing-service
     component: ml
@@ -418,7 +418,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: fraud-detection-service
-  namespace: agent-banking
+  namespace: remittance
   labels:
     app: fraud-detection-service
     component: ml
@@ -436,7 +436,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: credit-scoring-service
-  namespace: agent-banking
+  namespace: remittance
   labels:
     app: credit-scoring-service
     component: ml
@@ -454,7 +454,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: ai-ml-services
-  namespace: agent-banking
+  namespace: remittance
   labels:
     app: ai-ml-services
     component: ml

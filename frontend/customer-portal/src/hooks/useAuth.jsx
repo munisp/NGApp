@@ -4,7 +4,7 @@ const AuthContext = createContext(null);
 
 const getAuthConfig = () => ({
   keycloakUrl: import.meta.env.VITE_KEYCLOAK_URL || 'http://localhost:8080',
-  realm: import.meta.env.VITE_KEYCLOAK_REALM || 'agent-banking',
+  realm: import.meta.env.VITE_KEYCLOAK_REALM || 'remittance',
   clientId: import.meta.env.VITE_KEYCLOAK_CLIENT_ID || 'customer-portal',
   apiUrl: import.meta.env.VITE_API_URL || 'http://localhost:8111'
 });

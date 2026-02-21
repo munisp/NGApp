@@ -495,7 +495,7 @@ func main() {
 	// Database connection
 	dbURL := os.Getenv("DATABASE_URL")
 	if dbURL == "" {
-		dbURL = "postgres://postgres:password@localhost/agent_banking?sslmode=disable"
+		dbURL = "postgres://postgres:password@localhost/remittance?sslmode=disable"
 	}
 
 	db, err := sql.Open("postgres", dbURL)

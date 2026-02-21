@@ -69,7 +69,7 @@ def storage_keys(pattern: str = "*"):
 
 app = FastAPI(
     title="Fraud Detection",
-    description="Fraud Detection for Agent Banking Platform",
+    description="Fraud Detection for Remittance Platform",
     version="1.0.0"
 )
 

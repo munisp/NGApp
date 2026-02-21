@@ -1,5 +1,5 @@
 # ✅ Integration, Merge, and Testing Verification Report
-## Agent Banking Platform - Production Code Fully Integrated
+## Remittance Platform - Production Code Fully Integrated
 
 **Date**: October 24, 2025  
 **Status**: ✅ **FULLY INTEGRATED, MERGED, AND TESTED**  
@@ -134,7 +134,7 @@
 pip install pytest requests
 
 # Run all tests
-cd /home/ubuntu/agent-banking-platform/tests
+cd /home/ubuntu/remittance-platform/tests
 pytest test_tigerbeetle_production.py -v
 
 # Run specific test
@@ -147,7 +147,7 @@ pytest test_tigerbeetle_production.py::TestTigerBeetleProduction::test_transfer_
 
 ### Complete Integrated Artifact
 
-**File**: `agent-banking-platform-INTEGRATED-TESTED.tar.gz`
+**File**: `remittance-platform-INTEGRATED-TESTED.tar.gz`
 - **Size**: 333 MB
 - **Created**: October 24, 2025
 - **Status**: ✅ **COMPLETE WITH ALL DEPENDENCIES**
@@ -320,7 +320,7 @@ self.models['bert'] = BertForSequenceClassification.from_pretrained(
 
 ```bash
 # Install dependencies
-cd /home/ubuntu/agent-banking-platform
+cd /home/ubuntu/remittance-platform
 pip install -r backend/python-services/tigerbeetle-zig/requirements.txt
 pip install pytest requests
 
@@ -333,7 +333,7 @@ pytest test_tigerbeetle_production.py -v --tb=short
 
 ```bash
 # Start TigerBeetle cluster (mock for testing)
-cd /home/ubuntu/agent-banking-platform
+cd /home/ubuntu/remittance-platform
 
 # Start service
 cd backend/python-services/tigerbeetle-zig
@@ -354,7 +354,7 @@ pkill -f "python main.py"
 
 ```bash
 # Start service
-cd /home/ubuntu/agent-banking-platform/backend/python-services/tigerbeetle-zig
+cd /home/ubuntu/remittance-platform/backend/python-services/tigerbeetle-zig
 python main.py
 
 # In another terminal, test endpoints
@@ -424,18 +424,18 @@ curl -X POST http://localhost:8160/accounts \
 
 1. **Extract the artifact**:
    ```bash
-   tar -xzf agent-banking-platform-INTEGRATED-TESTED.tar.gz
+   tar -xzf remittance-platform-INTEGRATED-TESTED.tar.gz
    ```
 
 2. **Run the tests**:
    ```bash
-   cd agent-banking-platform/tests
+   cd remittance-platform/tests
    pytest test_tigerbeetle_production.py -v
    ```
 
 3. **Deploy to production**:
    ```bash
-   cd agent-banking-platform/scripts
+   cd remittance-platform/scripts
    ./setup_tigerbeetle_cluster.sh
    ```
 

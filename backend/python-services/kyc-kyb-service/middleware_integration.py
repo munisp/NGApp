@@ -53,12 +53,12 @@ class MiddlewareConfig:
     
     # Keycloak
     keycloak_url: str = "http://localhost:8080"
-    keycloak_realm: str = "agent-banking"
+    keycloak_realm: str = "remittance"
     keycloak_client_id: str = "kyc-kyb-service"
     
     # Permify
     permify_host: str = "localhost:3476"
-    permify_tenant: str = "agent-banking"
+    permify_tenant: str = "remittance"
     
     # Redis
     redis_url: str = "redis://localhost:6379"

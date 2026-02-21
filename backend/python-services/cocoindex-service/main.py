@@ -1,6 +1,6 @@
 """
 CocoIndex Service
-Contextual Code Indexing and Retrieval for Agent Banking Platform
+Contextual Code Indexing and Retrieval for Remittance Platform
 Provides semantic code search and intelligent code recommendations
 """
 from fastapi import FastAPI, HTTPException, BackgroundTasks

@@ -1,5 +1,5 @@
 """
-Production-Ready USSD Service for Agent Banking Platform
+Production-Ready USSD Service for Remittance Platform
 Provides interactive menu system for feature phones with:
 - Redis session storage with TTL
 - Real backend API integration
@@ -437,7 +437,7 @@ class ProductionMenuBuilder:
     def main_menu() -> str:
         """Main menu"""
         return (
-            "CON Welcome to Agent Banking\n"
+            "CON Welcome to Remittance Platform\n"
             "1. Check Balance\n"
             "2. Transfer Money\n"
             "3. View Orders\n"
@@ -653,7 +653,7 @@ class ProductionMenuBuilder:
             "END Customer Support\n\n"
             "Call: +234 803 123 4567\n"
             "WhatsApp: +234 803 123 4567\n"
-            "Email: support@agentbanking.com\n\n"
+            "Email: support@remittance-platform.com\n\n"
             "Hours: Mon-Sat 8AM-8PM"
         )
     
@@ -665,7 +665,7 @@ class ProductionMenuBuilder:
     @staticmethod
     def exit_message() -> str:
         """Exit message"""
-        return "END Thank you for using Agent Banking!"
+        return "END Thank you for using Remittance Platform!"
     
     @staticmethod
     def service_unavailable() -> str:

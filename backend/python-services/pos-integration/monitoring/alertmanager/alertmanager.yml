@@ -1,7 +1,7 @@
 global:
   smtp_smarthost: 'localhost:587'
-  smtp_from: 'alerts@agent-banking-platform.com'
-  smtp_auth_username: 'alerts@agent-banking-platform.com'
+  smtp_from: 'alerts@remittance-platform.com'
+  smtp_auth_username: 'alerts@remittance-platform.com'
   smtp_auth_password: 'your-smtp-password'
   slack_api_url: 'https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK'
 
@@ -89,7 +89,7 @@ receivers:
   # Default receiver
   - name: 'default-receiver'
     email_configs:
-      - to: 'ops-team@agent-banking-platform.com'
+      - to: 'ops-team@remittance-platform.com'
         subject: '[POS Alert] {{ .GroupLabels.alertname }}'
         body: |
           {{ range .Alerts }}
@@ -101,7 +101,7 @@ receivers:
   # Critical alerts receiver
   - name: 'critical-alerts'
     email_configs:
-      - to: 'critical-alerts@agent-banking-platform.com'
+      - to: 'critical-alerts@remittance-platform.com'
         subject: '[CRITICAL] POS System Alert - {{ .GroupLabels.alertname }}'
         body: |
           🚨 CRITICAL ALERT 🚨
@@ -135,7 +135,7 @@ receivers:
   # Service down alerts
   - name: 'service-down-alerts'
     email_configs:
-      - to: 'service-alerts@agent-banking-platform.com'
+      - to: 'service-alerts@remittance-platform.com'
         subject: '[SERVICE DOWN] {{ .GroupLabels.service }} is down'
         body: |
           ⚠️ SERVICE DOWN ALERT ⚠️
@@ -164,7 +164,7 @@ receivers:
   # Payment system critical alerts
   - name: 'payment-critical-alerts'
     email_configs:
-      - to: 'payment-team@agent-banking-platform.com'
+      - to: 'payment-team@remittance-platform.com'
         subject: '[PAYMENT CRITICAL] {{ .GroupLabels.alertname }}'
         body: |
           💳 PAYMENT SYSTEM CRITICAL ALERT 💳
@@ -183,7 +183,7 @@ receivers:
   # Fraud detection critical alerts
   - name: 'fraud-critical-alerts'
     email_configs:
-      - to: 'fraud-team@agent-banking-platform.com'
+      - to: 'fraud-team@remittance-platform.com'
         subject: '[FRAUD CRITICAL] {{ .GroupLabels.alertname }}'
         body: |
           🛡️ FRAUD DETECTION CRITICAL ALERT 🛡️
@@ -202,7 +202,7 @@ receivers:
   # Database critical alerts
   - name: 'database-critical-alerts'
     email_configs:
-      - to: 'database-team@agent-banking-platform.com'
+      - to: 'database-team@remittance-platform.com'
         subject: '[DATABASE CRITICAL] {{ .GroupLabels.alertname }}'
         body: |
           🗄️ DATABASE CRITICAL ALERT 🗄️
@@ -221,7 +221,7 @@ receivers:
   # Warning alerts receiver
   - name: 'warning-alerts'
     email_configs:
-      - to: 'warnings@agent-banking-platform.com'
+      - to: 'warnings@remittance-platform.com'
         subject: '[WARNING] POS System - {{ .GroupLabels.alertname }}'
         body: |
           ⚠️ WARNING ALERT ⚠️
@@ -249,7 +249,7 @@ receivers:
   # Business warnings
   - name: 'business-warnings'
     email_configs:
-      - to: 'business-team@agent-banking-platform.com'
+      - to: 'business-team@remittance-platform.com'
         subject: '[BUSINESS WARNING] {{ .GroupLabels.alertname }}'
         body: |
           📈 BUSINESS METRIC WARNING 📈
@@ -264,7 +264,7 @@ receivers:
   # Device warnings
   - name: 'device-warnings'
     email_configs:
-      - to: 'device-team@agent-banking-platform.com'
+      - to: 'device-team@remittance-platform.com'
         subject: '[DEVICE WARNING] {{ .GroupLabels.alertname }}'
         body: |
           🖥️ DEVICE WARNING 🖥️
@@ -279,7 +279,7 @@ receivers:
   # Info alerts receiver
   - name: 'info-alerts'
     email_configs:
-      - to: 'info@agent-banking-platform.com'
+      - to: 'info@remittance-platform.com'
         subject: '[INFO] POS System - {{ .GroupLabels.alertname }}'
         body: |
           ℹ️ INFORMATION ALERT ℹ️

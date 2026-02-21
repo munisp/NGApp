@@ -21,7 +21,7 @@ logger = logging.getLogger(settings.APP_NAME)
 
 app = FastAPI(
     title=settings.APP_NAME,
-    description="Data Warehouse Service for Agent Banking Platform",
+    description="Data Warehouse Service for Remittance Platform",
     version="1.0.0",
 )
 

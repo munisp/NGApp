@@ -1,4 +1,4 @@
-# Fluvio Streaming Platform Configuration for Agent Banking Network
+# Fluvio Streaming Platform Configuration for Remittance Platform
 # High-Availability Real-time Data Streaming optimized for Nigerian banking workloads
 
 apiVersion: v1
@@ -19,11 +19,11 @@ metadata:
     app: fluvio
 data:
   fluvio.toml: |
-    # Fluvio Configuration for Agent Banking Network
+    # Fluvio Configuration for Remittance Platform
     
     [cluster]
     # Cluster configuration for HA deployment
-    name = "agent-banking-cluster"
+    name = "remittance-cluster"
     namespace = "fluvio-system"
     
     # Replication settings for banking data durability
@@ -73,7 +73,7 @@ data:
     
     [networking]
     # Network configuration for Nigerian infrastructure
-    public_endpoint = "fluvio-cluster.agent-banking.local"
+    public_endpoint = "fluvio-cluster.remittance.local"
     private_endpoint = "fluvio-cluster.fluvio-system.svc.cluster.local"
     
     # Connection settings optimized for varying network conditions
@@ -692,7 +692,7 @@ spec:
   - from:
     - namespaceSelector:
         matchLabels:
-          name: agent-banking-system
+          name: remittance-system
     - podSelector:
         matchLabels:
           app: fluvio-spu

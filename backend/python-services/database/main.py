@@ -93,7 +93,7 @@ async def http_exception_handler(request, exc):
 @app.get("/", tags=["Health Check"])
 async def root():
     logger.info("Root endpoint accessed.")
-    return {"message": "Agent Banking DB Service is running!"}
+    return {"message": "Remittance Platform DB Service is running!"}
 
 @app.get("/health", tags=["Health Check"])
 async def health_check(db: Session = Depends(get_db)):

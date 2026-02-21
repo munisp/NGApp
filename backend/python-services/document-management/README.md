@@ -1,6 +1,6 @@
 # Document Management Service
 
-This is a production-ready FastAPI service for managing documents within the Agent Banking Platform. It provides secure API endpoints for user management, document upload, retrieval, and deletion, as well as permission management.
+This is a production-ready FastAPI service for managing documents within the Remittance Platform. It provides secure API endpoints for user management, document upload, retrieval, and deletion, as well as permission management.
 
 ## Features
 

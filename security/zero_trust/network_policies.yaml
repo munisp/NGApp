@@ -1,11 +1,11 @@
-# Zero-Trust Network Policies for Agent Banking Platform
+# Zero-Trust Network Policies for Remittance Platform
 # Default deny-all with explicit allow rules
 
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
   name: default-deny-all
-  namespace: agent-banking
+  namespace: remittance
 spec:
   podSelector: {}
   policyTypes:
@@ -18,7 +18,7 @@ apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
   name: allow-dns
-  namespace: agent-banking
+  namespace: remittance
 spec:
   podSelector: {}
   policyTypes:
@@ -40,7 +40,7 @@ apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
   name: apisix-gateway-policy
-  namespace: agent-banking
+  namespace: remittance
 spec:
   podSelector:
     matchLabels:
@@ -74,7 +74,7 @@ apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
   name: backend-services-policy
-  namespace: agent-banking
+  namespace: remittance
 spec:
   podSelector:
     matchLabels:
@@ -115,7 +115,7 @@ apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
   name: tigerbeetle-policy
-  namespace: agent-banking
+  namespace: remittance
 spec:
   podSelector:
     matchLabels:
@@ -146,7 +146,7 @@ apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
   name: postgres-policy
-  namespace: agent-banking
+  namespace: remittance
 spec:
   podSelector:
     matchLabels:
@@ -177,7 +177,7 @@ apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
   name: redis-policy
-  namespace: agent-banking
+  namespace: remittance
 spec:
   podSelector:
     matchLabels:
@@ -208,7 +208,7 @@ apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
   name: kafka-policy
-  namespace: agent-banking
+  namespace: remittance
 spec:
   podSelector:
     matchLabels:
@@ -246,7 +246,7 @@ apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
   name: keycloak-policy
-  namespace: agent-banking
+  namespace: remittance
 spec:
   podSelector:
     matchLabels:
@@ -280,7 +280,7 @@ apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
   name: mojaloop-policy
-  namespace: agent-banking
+  namespace: remittance
 spec:
   podSelector:
     matchLabels:
@@ -321,7 +321,7 @@ apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
   name: rustfs-policy
-  namespace: agent-banking
+  namespace: remittance
 spec:
   podSelector:
     matchLabels:
@@ -345,7 +345,7 @@ apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
   name: temporal-policy
-  namespace: agent-banking
+  namespace: remittance
 spec:
   podSelector:
     matchLabels:

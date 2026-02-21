@@ -20,7 +20,7 @@ import os
 import sys
 
 # Add shared libraries to path
-sys.path.append("/home/ubuntu/agent-banking-platform-unified/backend/python-services/shared")
+sys.path.append("/home/ubuntu/remittance-platform-unified/backend/python-services/shared")
 
 from keycloak_auth import KeycloakAuth, require_auth, get_user_id
 from permify_client import PermifyClient

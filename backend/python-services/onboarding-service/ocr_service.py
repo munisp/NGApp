@@ -66,7 +66,7 @@ class ProcessingStatus(str, Enum):
 class ServiceConfig:
     database_url: str = field(default_factory=lambda: os.getenv(
         "DATABASE_URL",
-        "postgresql://postgres:postgres@localhost:5432/agent_banking"
+        "postgresql://postgres:postgres@localhost:5432/remittance"
     ))
     redis_url: str = field(default_factory=lambda: os.getenv("REDIS_URL", "redis://localhost:6379"))
     kafka_bootstrap_servers: str = field(default_factory=lambda: os.getenv("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092"))

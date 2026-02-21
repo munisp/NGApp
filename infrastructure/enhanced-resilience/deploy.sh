@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Enhanced Resilience Platform Deployment Script
-# Deploys the complete Agent Banking Platform with 10/10 resilience features
+# Deploys the complete Remittance Platform with 10/10 resilience features
 
 set -e
 
@@ -15,7 +15,7 @@ CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
 # Configuration
-PLATFORM_NAME="Enhanced Resilience Agent Banking Platform"
+PLATFORM_NAME="Enhanced Resilience Remittance Platform"
 VERSION="1.0.0"
 DEPLOYMENT_DATE=$(date '+%Y-%m-%d %H:%M:%S')
 LOG_FILE="deployment_$(date '+%Y%m%d_%H%M%S').log"
@@ -376,7 +376,7 @@ NINMOBILE_USSD_GATEWAY=https://api.9mobile.com.ng/ussd
 # Cloud Backup Configuration
 AWS_ACCESS_KEY_ID=your_aws_access_key
 AWS_SECRET_ACCESS_KEY=your_aws_secret_key
-AWS_S3_BUCKET=agent-banking-backups
+AWS_S3_BUCKET=remittance-backups
 
 # Alert Configuration
 ALERT_WEBHOOK_URL=https://hooks.slack.com/services/your/webhook/url
@@ -613,7 +613,7 @@ display_summary() {
     
     cat << EOF
 
-🌟 Enhanced Resilience Agent Banking Platform Deployed Successfully!
+🌟 Enhanced Resilience Remittance Platform Deployed Successfully!
 
 📊 Platform Information:
    Name: $PLATFORM_NAME
@@ -675,7 +675,7 @@ main() {
     # Trap errors and cleanup
     trap cleanup_on_failure ERR
     
-    print_header "🌟 Enhanced Resilience Agent Banking Platform Deployment"
+    print_header "🌟 Enhanced Resilience Remittance Platform Deployment"
     print_header "Version: $VERSION"
     print_header "Starting deployment at: $DEPLOYMENT_DATE"
     

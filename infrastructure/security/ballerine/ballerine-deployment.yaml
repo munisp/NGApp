@@ -15,12 +15,12 @@ data:
   config.json: |
     {
       "app": {
-        "name": "Agent Banking KYB Service",
+        "name": "Remittance Platform KYB Service",
         "version": "1.0.0",
         "environment": "production",
         "port": 3000,
         "cors": {
-          "origin": ["https://app.agent-banking.local", "http://localhost:3000"],
+          "origin": ["https://app.remittance.local", "http://localhost:3000"],
           "credentials": true
         }
       },
@@ -43,7 +43,7 @@ data:
       "redis": {
         "host": "redis-master",
         "port": 6379,
-        "password": "agent-banking-redis",
+        "password": "remittance-redis",
         "db": 2
       },
       "auth": {
@@ -52,7 +52,7 @@ data:
           "expiresIn": "24h"
         },
         "keycloak": {
-          "realm": "agent-banking",
+          "realm": "remittance",
           "authServerUrl": "http://keycloak:8080",
           "clientId": "workflow-kyb",
           "clientSecret": "${KEYCLOAK_CLIENT_SECRET}"
@@ -155,7 +155,7 @@ data:
       },
       "storage": {
         "provider": "s3",
-        "bucket": "agent-banking-kyb-documents",
+        "bucket": "remittance-kyb-documents",
         "region": "us-east-1",
         "accessKeyId": "minio-access-key",
         "secretAccessKey": "minio-secret-key",
@@ -165,11 +165,11 @@ data:
       "notifications": {
         "email": {
           "provider": "smtp",
-          "host": "smtp.agent-banking.com",
+          "host": "smtp.remittance.com",
           "port": 587,
           "secure": false,
           "auth": {
-            "user": "kyb@agent-banking.com",
+            "user": "kyb@remittance.com",
             "pass": "smtp-password"
           }
         },
@@ -418,14 +418,14 @@ spec:
         - name: DATABASE_URL
           value: "postgresql://${TEMPORAL_DB_USER}:${TEMPORAL_DB_PASSWORD}@postgresql:5432/temporal"
         - name: REDIS_URL
-          value: "redis://:agent-banking-redis@redis-master:6379/2"
+          value: "redis://:remittance-redis@redis-master:6379/2"
         - name: JWT_SECRET
           valueFrom:
             secretKeyRef:
               name: temporal-db-credentials
               key: JWT_SECRET
         - name: KEYCLOAK_REALM
-          value: "agent-banking"
+          value: "remittance"
         - name: KEYCLOAK_AUTH_SERVER_URL
           value: "http://keycloak:8080"
         - name: KEYCLOAK_CLIENT_ID
@@ -487,9 +487,9 @@ spec:
         - name: REACT_APP_API_URL
           value: "temporal-frontend:7233"
         - name: REACT_APP_KEYCLOAK_URL
-          value: "https://keycloak.agent-banking.local"
+          value: "https://keycloak.remittance.local"
         - name: REACT_APP_KEYCLOAK_REALM
-          value: "agent-banking"
+          value: "remittance"
         - name: REACT_APP_KEYCLOAK_CLIENT_ID
           value: "workflow-kyb"
         resources:
@@ -617,10 +617,10 @@ metadata:
 spec:
   tls:
   - hosts:
-    - temporal-api.agent-banking.local
+    - temporal-api.remittance.local
     secretName: temporal-api-tls
   rules:
-  - host: temporal-api.agent-banking.local
+  - host: temporal-api.remittance.local
     http:
       paths:
       - path: /
@@ -643,10 +643,10 @@ metadata:
 spec:
   tls:
   - hosts:
-    - temporal-ui.agent-banking.local
+    - temporal-ui.remittance.local
     secretName: temporal-ui-tls
   rules:
-  - host: temporal-ui.agent-banking.local
+  - host: temporal-ui.remittance.local
     http:
       paths:
       - path: /

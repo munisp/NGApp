@@ -69,7 +69,7 @@ def storage_keys(pattern: str = "*"):
 
 app = FastAPI(
     title="OCR Processing",
-    description="OCR Processing for Agent Banking Platform",
+    description="OCR Processing for Remittance Platform",
     version="1.0.0"
 )
 

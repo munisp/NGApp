@@ -79,11 +79,11 @@ class TokenClaims:
 class JWTValidatorConfig:
     """Configuration for JWT validator"""
     # Keycloak/OIDC settings
-    issuer: str = os.getenv("JWT_ISSUER", "https://auth.agentbanking.com/realms/agent-banking")
-    jwks_uri: str = os.getenv("JWT_JWKS_URI", "https://auth.agentbanking.com/realms/agent-banking/protocol/openid-connect/certs")
+    issuer: str = os.getenv("JWT_ISSUER", "https://auth.remittance-platform.com/realms/remittance")
+    jwks_uri: str = os.getenv("JWT_JWKS_URI", "https://auth.remittance-platform.com/realms/remittance/protocol/openid-connect/certs")
     
     # Audience validation
-    expected_audiences: List[str] = field(default_factory=lambda: os.getenv("JWT_AUDIENCES", "agent-banking-api,agent-banking-web").split(","))
+    expected_audiences: List[str] = field(default_factory=lambda: os.getenv("JWT_AUDIENCES", "remittance-api,remittance-web").split(","))
     
     # Token settings
     clock_skew_seconds: int = int(os.getenv("JWT_CLOCK_SKEW", "30"))
@@ -97,7 +97,7 @@ class JWTValidatorConfig:
     # Security settings
     allowed_algorithms: List[str] = field(default_factory=lambda: ["RS256", "RS384", "RS512", "ES256", "ES384", "ES512"])
     revocation_check_enabled: bool = True
-    revocation_endpoint: str = os.getenv("JWT_REVOCATION_ENDPOINT", "https://auth.agentbanking.com/realms/agent-banking/protocol/openid-connect/token/introspect")
+    revocation_endpoint: str = os.getenv("JWT_REVOCATION_ENDPOINT", "https://auth.remittance-platform.com/realms/remittance/protocol/openid-connect/token/introspect")
     
     # Service identity
     service_name: str = os.getenv("SERVICE_NAME", "unknown-service")
@@ -206,7 +206,7 @@ class JWTValidator:
         self._revocation_checker: Optional[TokenRevocationChecker] = None
         
         if self.config.revocation_check_enabled:
-            client_id = os.getenv("OIDC_CLIENT_ID", "agent-banking-service")
+            client_id = os.getenv("OIDC_CLIENT_ID", "remittance-service")
             client_secret = os.getenv("OIDC_CLIENT_SECRET", "")
             if client_secret:
                 self._revocation_checker = TokenRevocationChecker(
@@ -595,8 +595,8 @@ if __name__ == "__main__":
     
     async def main():
         config = JWTValidatorConfig(
-            issuer="https://auth.agentbanking.com/realms/agent-banking",
-            expected_audiences=["agent-banking-api"]
+            issuer="https://auth.remittance-platform.com/realms/remittance",
+            expected_audiences=["remittance-api"]
         )
         
         validator = JWTValidator(config)

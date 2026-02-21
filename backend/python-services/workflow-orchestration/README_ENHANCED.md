@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Enhanced Workflow Orchestration Service provides Temporal.io-based workflow orchestration for all 30 user journeys in the Agent Banking Platform. It manages complex, multi-step business processes with reliability, durability, and observability.
+The Enhanced Workflow Orchestration Service provides Temporal.io-based workflow orchestration for all 30 user journeys in the Remittance Platform. It manages complex, multi-step business processes with reliability, durability, and observability.
 
 ## Features
 
@@ -272,7 +272,7 @@ curl -X POST http://localhost:8023/api/v1/workflows/agent_onboarding-123/signal 
 
 ### Install Dependencies
 ```bash
-cd /home/ubuntu/agent-banking-platform/backend/python-services/workflow-orchestration
+cd /home/ubuntu/remittance-platform/backend/python-services/workflow-orchestration
 pip install -r requirements.txt
 ```
 
@@ -299,7 +299,7 @@ uvicorn main_enhanced:app --host 0.0.0.0 --port 8023 --workers 4
 # Temporal
 TEMPORAL_HOST=localhost:7233
 TEMPORAL_NAMESPACE=default
-TEMPORAL_TASK_QUEUE=agent-banking-workflows
+TEMPORAL_TASK_QUEUE=remittance-workflows
 
 # Service URLs
 FRAUD_DETECTION_URL=http://localhost:8010

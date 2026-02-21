@@ -1,6 +1,6 @@
 """
 Ollama Service
-Local LLM Service for Agent Banking Platform
+Local LLM Service for Remittance Platform
 Provides local LLM inference using Ollama
 """
 from fastapi import FastAPI, HTTPException, BackgroundTasks
@@ -240,7 +240,7 @@ class OllamaEngine:
         """Banking-specific AI assistant"""
         try:
             # Create system prompt for banking
-            system_prompt = """You are a helpful banking assistant for an agent banking platform. 
+            system_prompt = """You are a helpful banking assistant for an remittance platform. 
             You help agents with:
             - Transaction processing
             - Account management

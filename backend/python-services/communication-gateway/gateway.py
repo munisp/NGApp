@@ -1,5 +1,5 @@
 """
-Communication Gateway for Agent Banking Platform
+Communication Gateway for Remittance Platform
 Orchestrates all communication services and provides unified API
 """
 

@@ -1,12 +1,12 @@
 # 🧪 End-to-End Testing Environment - Setup Guide
 
-## Complete Testing Stack for Agent Banking Platform
+## Complete Testing Stack for Remittance Platform
 
 ---
 
 ## 📦 What's Included
 
-I've created a **production-grade end-to-end testing environment** with everything you need to test the unified Agent Banking Platform.
+I've created a **production-grade end-to-end testing environment** with everything you need to test the unified Remittance Platform.
 
 ### **Testing Stack (20+ Services)**
 
@@ -171,7 +171,7 @@ Edit `docker-compose.yml` to customize:
 ```yaml
 environment:
   # Database
-  POSTGRES_DB: agent_banking_test
+  POSTGRES_DB: remittance_test
   POSTGRES_USER: abp_test
   POSTGRES_PASSWORD: test_password_123
   
@@ -433,5 +433,5 @@ cd e2e-testing-environment
 
 ---
 
-**Ready to test the Agent Banking Platform with confidence!** ✅🧪🚀
+**Ready to test the Remittance Platform with confidence!** ✅🧪🚀
 

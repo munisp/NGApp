@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Production-Ready Fluvio Streaming Service for Agent Banking Platform
+Production-Ready Fluvio Streaming Service for Remittance Platform
 Real Fluvio client integration with Python
 """
 
@@ -290,7 +290,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="Fluvio Streaming Service",
-    description="Production-ready Fluvio streaming for Agent Banking Platform",
+    description="Production-ready Fluvio streaming for Remittance Platform",
     version="1.0.0",
     lifespan=lifespan
 )

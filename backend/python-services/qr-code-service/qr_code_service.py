@@ -124,7 +124,7 @@ async def generate_qr_image(data: Dict[str, Any]) -> tuple[str, bytes]:
 async def upload_qr_to_s3(qr_id: str, img_bytes: bytes) -> str:
     """Upload QR code image to S3"""
     try:
-        bucket = os.getenv("S3_BUCKET_NAME", "agent-banking-qrcodes")
+        bucket = os.getenv("S3_BUCKET_NAME", "remittance-qrcodes")
         key = f"qrcodes/{qr_id}.png"
         
         s3_client.put_object(
@@ -509,7 +509,7 @@ async def startup():
     
     # Initialize database
     db_pool = await asyncpg.create_pool(
-        os.getenv("DATABASE_URL", "postgresql://agent_user:agent_password@localhost/agent_banking_db"),
+        os.getenv("DATABASE_URL", "postgresql://agent_user:agent_password@localhost/remittance_db"),
         min_size=5,
         max_size=20
     )

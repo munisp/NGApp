@@ -109,7 +109,7 @@ async def login_endpoint(login_request: LoginRequest):
         "user": {
             "user_id": "admin-001",
             "username": "admin",
-            "email": "admin@agentbanking.com",
+            "email": "admin@remittance-platform.com",
             "role": "admin"
         }
     }
@@ -150,7 +150,7 @@ async def get_current_user_info(
     {
         "user_id": "admin-001",
         "username": "admin",
-        "email": "admin@agentbanking.com",
+        "email": "admin@remittance-platform.com",
         "role": "admin",
         "is_active": true
     }
@@ -488,7 +488,7 @@ async def log_access(user: User, endpoint: str, action: str, resource: str):
 
 ### **1. Install Backend Dependencies**
 ```bash
-cd /home/ubuntu/agent-banking-platform/backend/python-services/lakehouse-service
+cd /home/ubuntu/remittance-platform/backend/python-services/lakehouse-service
 pip3 install -r requirements_auth.txt
 ```
 
@@ -508,7 +508,7 @@ python3 lakehouse_with_auth.py
 
 ### **4. Start Frontend Dashboard**
 ```bash
-cd /home/ubuntu/agent-banking-platform/frontend/lakehouse-dashboard
+cd /home/ubuntu/remittance-platform/frontend/lakehouse-dashboard
 npm install
 npm run dev
 # Runs on http://localhost:3000
@@ -535,7 +535,7 @@ curl -X POST http://localhost:8070/auth/login \
   "user": {
     "user_id": "admin-001",
     "username": "admin",
-    "email": "admin@agentbanking.com",
+    "email": "admin@remittance-platform.com",
     "role": "admin"
   }
 }

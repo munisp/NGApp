@@ -1,6 +1,6 @@
 """
 Unified Analytics Service with Dapr Service Mesh Integration
-Agent Banking Platform V11.0
+Remittance Platform V11.0
 
 This service integrates with:
 - Dapr for service-to-service communication with Lakehouse Service

@@ -29,7 +29,7 @@ data:
     https-port=8443
     
     # Hostname
-    hostname=keycloak.agent-banking.local
+    hostname=keycloak.remittance.local
     hostname-strict=false
     hostname-strict-https=false
     
@@ -206,7 +206,7 @@ spec:
         - name: KC_DB_PASSWORD
           value: "keycloak123"
         - name: KC_HOSTNAME
-          value: "keycloak.agent-banking.local"
+          value: "keycloak.remittance.local"
         - name: KC_HOSTNAME_STRICT
           value: "false"
         - name: KC_HOSTNAME_STRICT_HTTPS
@@ -307,10 +307,10 @@ metadata:
 spec:
   tls:
   - hosts:
-    - keycloak.agent-banking.local
+    - keycloak.remittance.local
     secretName: keycloak-tls
   rules:
-  - host: keycloak.agent-banking.local
+  - host: keycloak.remittance.local
     http:
       paths:
       - path: /
@@ -364,14 +364,14 @@ spec:
             grep -o '"access_token":"[^"]*' | \
             grep -o '[^"]*$')
           
-          # Create Agent Banking realm
+          # Create Remittance Platform realm
           curl -X POST \
             "http://keycloak:8080/admin/realms" \
             -H "Authorization: Bearer $ADMIN_TOKEN" \
             -H "Content-Type: application/json" \
             -d '{
-              "realm": "agent-banking",
-              "displayName": "Agent Banking Network",
+              "realm": "remittance",
+              "displayName": "Remittance Platform",
               "enabled": true,
               "sslRequired": "external",
               "registrationAllowed": false,
@@ -396,9 +396,9 @@ spec:
               "otpPolicyLookAheadWindow": 1,
               "otpPolicyPeriod": 30,
               "otpSupportedApplications": ["FreeOTP", "Google Authenticator"],
-              "webAuthnPolicyRpEntityName": "Agent Banking Network",
+              "webAuthnPolicyRpEntityName": "Remittance Platform",
               "webAuthnPolicySignatureAlgorithms": ["ES256", "RS256"],
-              "webAuthnPolicyRpId": "agent-banking.local",
+              "webAuthnPolicyRpId": "remittance.local",
               "webAuthnPolicyAttestationConveyancePreference": "not specified",
               "webAuthnPolicyAuthenticatorAttachment": "not specified",
               "webAuthnPolicyRequireResidentKey": "not specified",
@@ -414,14 +414,14 @@ spec:
                 "contentSecurityPolicy": "frame-src '\''self'\''; frame-ancestors '\''self'\''; object-src '\''none'\'';"
               },
               "smtpServer": {
-                "replyToDisplayName": "Agent Banking Network",
+                "replyToDisplayName": "Remittance Platform",
                 "starttls": "false",
                 "auth": "false",
                 "port": "587",
                 "host": "localhost",
-                "replyTo": "noreply@agent-banking.com",
-                "from": "noreply@agent-banking.com",
-                "fromDisplayName": "Agent Banking Network",
+                "replyTo": "noreply@remittance.com",
+                "from": "noreply@remittance.com",
+                "fromDisplayName": "Remittance Platform",
                 "ssl": "false"
               },
               "loginTheme": "keycloak",
@@ -430,7 +430,7 @@ spec:
               "emailTheme": "keycloak"
             }'
           
-          echo "Agent Banking realm created successfully"
+          echo "Remittance Platform realm created successfully"
 ---
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
@@ -452,10 +452,10 @@ metadata:
   name: keycloak-realm-config
   namespace: keycloak
 data:
-  agent-banking-realm.json: |
+  remittance-realm.json: |
     {
-      "realm": "agent-banking",
-      "displayName": "Agent Banking Network",
+      "realm": "remittance",
+      "displayName": "Remittance Platform",
       "enabled": true,
       "sslRequired": "external",
       "registrationAllowed": false,
@@ -497,18 +497,18 @@ data:
       },
       "clients": [
         {
-          "clientId": "agent-banking-web",
-          "name": "Agent Banking Web Application",
-          "description": "Web application for agent banking",
+          "clientId": "remittance-web",
+          "name": "Remittance Platform Web Application",
+          "description": "Web application for remittance",
           "enabled": true,
           "clientAuthenticatorType": "client-secret",
           "secret": "web-client-secret-123",
           "redirectUris": [
-            "https://app.agent-banking.local/*",
+            "https://app.remittance.local/*",
             "http://localhost:3000/*"
           ],
           "webOrigins": [
-            "https://app.agent-banking.local",
+            "https://app.remittance.local",
             "http://localhost:3000"
           ],
           "protocol": "openid-connect",
@@ -534,14 +534,14 @@ data:
           ]
         },
         {
-          "clientId": "agent-banking-mobile",
-          "name": "Agent Banking Mobile Application",
-          "description": "Mobile application for agent banking",
+          "clientId": "remittance-mobile",
+          "name": "Remittance Platform Mobile Application",
+          "description": "Mobile application for remittance",
           "enabled": true,
           "clientAuthenticatorType": "client-secret",
           "secret": "mobile-client-secret-123",
           "redirectUris": [
-            "agentbanking://callback",
+            "remittance://callback",
             "http://localhost:8080/callback"
           ],
           "protocol": "openid-connect",
@@ -564,8 +564,8 @@ data:
           ]
         },
         {
-          "clientId": "agent-banking-api",
-          "name": "Agent Banking API",
+          "clientId": "remittance-api",
+          "name": "Remittance Platform API",
           "description": "API client for backend services",
           "enabled": true,
           "clientAuthenticatorType": "client-secret",
@@ -639,7 +639,7 @@ data:
       ],
       "authenticationFlows": [
         {
-          "alias": "agent-banking-browser",
+          "alias": "remittance-browser",
           "description": "Browser based authentication with MFA",
           "providerId": "basic-flow",
           "topLevel": true,
@@ -667,7 +667,7 @@ data:
               "autheticatorFlow": false
             },
             {
-              "flowAlias": "agent-banking-forms",
+              "flowAlias": "remittance-forms",
               "requirement": "ALTERNATIVE",
               "priority": 30,
               "userSetupAllowed": false,
@@ -676,7 +676,7 @@ data:
           ]
         },
         {
-          "alias": "agent-banking-forms",
+          "alias": "remittance-forms",
           "description": "Username, password, otp and other auth forms.",
           "providerId": "basic-flow",
           "topLevel": false,
@@ -690,7 +690,7 @@ data:
               "autheticatorFlow": false
             },
             {
-              "flowAlias": "agent-banking-browser-conditional-otp",
+              "flowAlias": "remittance-browser-conditional-otp",
               "requirement": "CONDITIONAL",
               "priority": 20,
               "userSetupAllowed": false,
@@ -699,7 +699,7 @@ data:
           ]
         },
         {
-          "alias": "agent-banking-browser-conditional-otp",
+          "alias": "remittance-browser-conditional-otp",
           "description": "Flow to determine if the OTP is required for the authentication",
           "providerId": "basic-flow",
           "topLevel": false,
@@ -722,7 +722,7 @@ data:
           ]
         }
       ],
-      "browserFlow": "agent-banking-browser",
+      "browserFlow": "remittance-browser",
       "registrationFlow": "registration",
       "directGrantFlow": "direct grant",
       "resetCredentialsFlow": "reset credentials",

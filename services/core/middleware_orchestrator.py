@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Middleware Orchestrator for Agent Banking Network
+Middleware Orchestrator for Remittance Platform
 Integrates Dapr, Temporal, Fluvio, APISIX, Keycloak, Kafka, Redis, Permify
 """
 
@@ -41,7 +41,7 @@ class MiddlewareConfig:
 class MiddlewareOrchestrator:
     """
     Core middleware orchestrator that manages all middleware components
-    and provides unified interface for the Agent Banking Network
+    and provides unified interface for the Remittance Platform
     """
     
     def __init__(self, config: MiddlewareConfig):
@@ -437,7 +437,7 @@ class MiddlewareOrchestrator:
                 "zipkin": {
                     "endpoint": "http://localhost:9411/api/v2/spans",
                     "sample_ratio": 1,
-                    "service_name": "agent-banking-network",
+                    "service_name": "remittance-network",
                     "server_addr": "localhost:9411"
                 },
                 "request-id": {
@@ -459,8 +459,8 @@ class MiddlewareOrchestrator:
         try:
             # Configure Keycloak realm for banking
             keycloak_realm_config = {
-                "realm": "agent-banking-network",
-                "displayName": "Agent Banking Network",
+                "realm": "remittance-network",
+                "displayName": "Remittance Platform",
                 "enabled": True,
                 "sslRequired": "external",
                 "registrationAllowed": False,
@@ -530,7 +530,7 @@ class MiddlewareOrchestrator:
                     "name": "Mobile Banking Application",
                     "enabled": True,
                     "publicClient": True,
-                    "redirectUris": ["com.agentbanking://callback"],
+                    "redirectUris": ["com.remittance://callback"],
                     "standardFlowEnabled": True,
                     "implicitFlowEnabled": False,
                     "directAccessGrantsEnabled": True

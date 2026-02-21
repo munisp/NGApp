@@ -34,8 +34,8 @@ if [ -z "$1" ]; then
 fi
 
 TEMPLATE_NAME=$1
-TEMPLATE_DIR="/home/ubuntu/agent-banking-platform/frontend/storefront-templates/$TEMPLATE_NAME"
-STOREFRONT_DIR="/home/ubuntu/agent-banking-platform/frontend/agent-storefront"
+TEMPLATE_DIR="/home/ubuntu/remittance-platform/frontend/storefront-templates/$TEMPLATE_NAME"
+STOREFRONT_DIR="/home/ubuntu/remittance-platform/frontend/agent-storefront"
 
 # Check if template exists
 if [ ! -d "$TEMPLATE_DIR" ]; then

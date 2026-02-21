@@ -1,6 +1,6 @@
 """
 Production-Ready Neural Network Service
-Multi-purpose deep learning service for Agent Banking Platform
+Multi-purpose deep learning service for Remittance Platform
 Supports multiple architectures: CNN, RNN, LSTM, Transformer, BERT
 """
 import os

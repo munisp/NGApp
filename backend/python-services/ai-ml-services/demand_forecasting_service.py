@@ -177,7 +177,7 @@ async def init_db():
             port=5432,
             user=os.getenv('DB_USER', 'postgres'),
             password=os.getenv('DB_PASSWORD', ''),
-            database="agent_banking",
+            database="remittance",
             min_size=10,
             max_size=20
         )

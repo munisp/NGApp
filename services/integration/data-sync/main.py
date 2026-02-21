@@ -203,7 +203,7 @@ class DataSyncService:
             self.redis = await aioredis.from_url(redis_url, decode_responses=True)
             
             # Initialize PostgreSQL
-            db_url = os.getenv("DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/agent_banking")
+            db_url = os.getenv("DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/remittance")
             self.db_pool = await asyncpg.create_pool(db_url)
             
             # Create tables

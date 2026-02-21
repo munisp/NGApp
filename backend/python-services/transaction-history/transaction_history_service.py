@@ -1,5 +1,5 @@
 """
-Transaction History Service for Agent Banking Platform
+Transaction History Service for Remittance Platform
 Provides comprehensive transaction tracking, querying, and historical analysis
 """
 

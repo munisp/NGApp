@@ -1,4 +1,4 @@
-# Kafka Libraries for Agent Banking Platform V11.0
+# Kafka Libraries for Remittance Platform V11.0
 # Date: November 11, 2025
 
 # Kafka client

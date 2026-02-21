@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Advanced OCR Engines Service for Agent Banking Network
+Advanced OCR Engines Service for Remittance Platform
 Implements OLMOCR and GOT-OCR2.0 for document verification and text extraction
 Optimized for Nigerian banking documents and multi-language support
 """
@@ -477,7 +477,7 @@ class OCREngineService:
             db_config = {
                 'host': os.getenv('DB_HOST', os.getenv('HOST', 'localhost')),
                 'port': os.getenv('DB_PORT', '5432'),
-                'database': os.getenv('DB_NAME', 'agent_banking'),
+                'database': os.getenv('DB_NAME', 'remittance'),
                 'user': os.getenv('DB_USER', 'postgres'),
                 os.getenv('DB_PASSWORD', 'password'): os.getenv('DB_PASSWORD', os.getenv('DB_PASSWORD', 'password'))
             }

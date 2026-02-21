@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 TigerBeetle HTTP API Service
-High-performance accounting engine HTTP wrapper for Agent Banking Network
+High-performance accounting engine HTTP wrapper for Remittance Platform
 """
 
 import os

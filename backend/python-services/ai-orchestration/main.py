@@ -1,5 +1,5 @@
 """
-AI Orchestration Service for Agent Banking Platform
+AI Orchestration Service for Remittance Platform
 Coordinates AI/ML models for fraud detection, credit scoring, and risk assessment
 """
 

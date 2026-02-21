@@ -69,7 +69,7 @@ def storage_keys(pattern: str = "*"):
 
 app = FastAPI(
     title="Document Processing",
-    description="Document Processing for Agent Banking Platform",
+    description="Document Processing for Remittance Platform",
     version="1.0.0"
 )
 

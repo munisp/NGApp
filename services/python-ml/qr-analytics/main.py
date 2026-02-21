@@ -58,7 +58,7 @@ class QRAnalyticsEngine:
             'port': os.getenv('DB_PORT', '5432'),
             'user': os.getenv('DB_USER', 'postgres'),
             os.getenv('DB_PASSWORD', 'password'): os.getenv('DB_PASSWORD', os.getenv('DB_PASSWORD', 'password')),
-            'database': os.getenv('DB_NAME', 'agent_banking')
+            'database': os.getenv('DB_NAME', 'remittance')
         }
         
         self.redis_client = redis.Redis(

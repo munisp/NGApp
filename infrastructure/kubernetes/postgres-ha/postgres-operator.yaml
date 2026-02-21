@@ -92,7 +92,7 @@ data:
   
   # Backup settings
   logical_backup_docker_image: "registry.opensource.zalan.do/acid/logical-backup:v1.10.1"
-  logical_backup_s3_bucket: "agent-banking-postgres-backups"
+  logical_backup_s3_bucket: "remittance-postgres-backups"
   logical_backup_s3_region: "us-east-1"
   logical_backup_schedule: "0 3 * * *"
   

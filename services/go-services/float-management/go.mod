@@ -1,4 +1,4 @@
-module agent-banking/float-management
+module remittance/float-management
 
 go 1.21
 

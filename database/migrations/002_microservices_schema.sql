@@ -1,4 +1,4 @@
--- Agent Banking Platform - Microservices Database Schema
+-- Remittance Platform - Microservices Database Schema
 -- Version: 1.0.0
 -- Description: Database schema for new microservices (Auth, E-commerce, Communication, Analytics)
 
@@ -223,30 +223,30 @@ CREATE INDEX idx_email_templates_name ON email_templates(name);
 INSERT INTO email_templates (name, subject, body_text, body_html, variables) VALUES
 (
     'welcome',
-    'Welcome to Agent Banking Platform!',
-    'Hello {{name}},\n\nWelcome to Agent Banking Platform! Your account has been successfully created.\n\nBest regards,\nAgent Banking Team',
-    '<html><body><h1>Hello {{name}}</h1><p>Welcome to Agent Banking Platform! Your account has been successfully created.</p><p>Best regards,<br>Agent Banking Team</p></body></html>',
+    'Welcome to Remittance Platform!',
+    'Hello {{name}},\n\nWelcome to Remittance Platform! Your account has been successfully created.\n\nBest regards,\nRemittance Platform Team',
+    '<html><body><h1>Hello {{name}}</h1><p>Welcome to Remittance Platform! Your account has been successfully created.</p><p>Best regards,<br>Remittance Platform Team</p></body></html>',
     '["name"]'::jsonb
 ),
 (
     'password_reset',
     'Password Reset Request',
-    'Hello {{name}},\n\nYou requested a password reset. Click the link below to reset your password:\n\n{{reset_link}}\n\nThis link expires in {{expiry_hours}} hours.\n\nBest regards,\nAgent Banking Team',
-    '<html><body><h1>Hello {{name}}</h1><p>You requested a password reset. Click the link below to reset your password:</p><p><a href="{{reset_link}}">Reset Password</a></p><p>This link expires in {{expiry_hours}} hours.</p><p>Best regards,<br>Agent Banking Team</p></body></html>',
+    'Hello {{name}},\n\nYou requested a password reset. Click the link below to reset your password:\n\n{{reset_link}}\n\nThis link expires in {{expiry_hours}} hours.\n\nBest regards,\nRemittance Platform Team',
+    '<html><body><h1>Hello {{name}}</h1><p>You requested a password reset. Click the link below to reset your password:</p><p><a href="{{reset_link}}">Reset Password</a></p><p>This link expires in {{expiry_hours}} hours.</p><p>Best regards,<br>Remittance Platform Team</p></body></html>',
     '["name", "reset_link", "expiry_hours"]'::jsonb
 ),
 (
     'order_confirmation',
     'Order Confirmation - Order #{{order_number}}',
-    'Hello {{name}},\n\nThank you for your order! Your order #{{order_number}} has been confirmed.\n\nOrder Total: {{total}}\n\nWe will send you another email when your order ships.\n\nBest regards,\nAgent Banking Team',
-    '<html><body><h1>Hello {{name}}</h1><p>Thank you for your order! Your order #{{order_number}} has been confirmed.</p><p><strong>Order Total: {{total}}</strong></p><p>We will send you another email when your order ships.</p><p>Best regards,<br>Agent Banking Team</p></body></html>',
+    'Hello {{name}},\n\nThank you for your order! Your order #{{order_number}} has been confirmed.\n\nOrder Total: {{total}}\n\nWe will send you another email when your order ships.\n\nBest regards,\nRemittance Platform Team',
+    '<html><body><h1>Hello {{name}}</h1><p>Thank you for your order! Your order #{{order_number}} has been confirmed.</p><p><strong>Order Total: {{total}}</strong></p><p>We will send you another email when your order ships.</p><p>Best regards,<br>Remittance Platform Team</p></body></html>',
     '["name", "order_number", "total"]'::jsonb
 ),
 (
     'order_shipped',
     'Your Order Has Shipped - Order #{{order_number}}',
-    'Hello {{name}},\n\nGreat news! Your order #{{order_number}} has shipped.\n\nTracking Number: {{tracking_number}}\nCarrier: {{carrier}}\n\nTrack your order: {{tracking_url}}\n\nBest regards,\nAgent Banking Team',
-    '<html><body><h1>Hello {{name}}</h1><p>Great news! Your order #{{order_number}} has shipped.</p><p><strong>Tracking Number:</strong> {{tracking_number}}<br><strong>Carrier:</strong> {{carrier}}</p><p><a href="{{tracking_url}}">Track Your Order</a></p><p>Best regards,<br>Agent Banking Team</p></body></html>',
+    'Hello {{name}},\n\nGreat news! Your order #{{order_number}} has shipped.\n\nTracking Number: {{tracking_number}}\nCarrier: {{carrier}}\n\nTrack your order: {{tracking_url}}\n\nBest regards,\nRemittance Platform Team',
+    '<html><body><h1>Hello {{name}}</h1><p>Great news! Your order #{{order_number}} has shipped.</p><p><strong>Tracking Number:</strong> {{tracking_number}}<br><strong>Carrier:</strong> {{carrier}}</p><p><a href="{{tracking_url}}">Track Your Order</a></p><p>Best regards,<br>Remittance Platform Team</p></body></html>',
     '["name", "order_number", "tracking_number", "carrier", "tracking_url"]'::jsonb
 )
 ON CONFLICT (name) DO NOTHING;

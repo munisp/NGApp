@@ -1,5 +1,5 @@
 """
-Risk Assessment Service for Agent Banking Platform
+Risk Assessment Service for Remittance Platform
 Provides comprehensive risk assessment for transactions, customers, and portfolios
 """
 

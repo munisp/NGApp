@@ -1,4 +1,4 @@
-module agent-banking/fraud-detection
+module remittance/fraud-detection
 
 go 1.21
 

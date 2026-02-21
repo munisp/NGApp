@@ -74,7 +74,7 @@ class RiskLevel(str, Enum):
 class ServiceConfig:
     database_url: str = field(default_factory=lambda: os.getenv(
         "DATABASE_URL",
-        "postgresql://postgres:postgres@localhost:5432/agent_banking"
+        "postgresql://postgres:postgres@localhost:5432/remittance"
     ))
     redis_url: str = field(default_factory=lambda: os.getenv("REDIS_URL", "redis://localhost:6379"))
     kafka_bootstrap_servers: str = field(default_factory=lambda: os.getenv("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092"))
@@ -214,8 +214,8 @@ class TemporalWorkflowClient:
             response = await self._client.post(
                 "/api/v1/namespaces/default/workflows",
                 json={
-                    "workflowId": f"agent-banking-{workflow_type}-{uuid.uuid4().hex[:8]}",
-                    "workflowType": {"name": f"agent-banking-{workflow_type}"},
+                    "workflowId": f"remittance-{workflow_type}-{uuid.uuid4().hex[:8]}",
+                    "workflowType": {"name": f"remittance-{workflow_type}"},
                     "taskQueue": {"name": "kyc-kyb-verification"},
                     "input": {
                         "payloads": [{
@@ -228,7 +228,7 @@ class TemporalWorkflowClient:
                 result = response.json()
                 return {
                     "id": result.get("workflowId", result.get("runId", str(uuid.uuid4()))),
-                    "workflowDefinitionId": f"agent-banking-{workflow_type}",
+                    "workflowDefinitionId": f"remittance-{workflow_type}",
                     "status": "active",
                     "context": {"entity": entity_data, "documents": [], "pluginsOutput": {}},
                     "createdAt": datetime.utcnow().isoformat()
@@ -243,7 +243,7 @@ class TemporalWorkflowClient:
         workflow_id = str(uuid.uuid4())
         return {
             "id": workflow_id,
-            "workflowDefinitionId": f"agent-banking-{workflow_type}",
+            "workflowDefinitionId": f"remittance-{workflow_type}",
             "status": "active",
             "context": {
                 "entity": entity_data,

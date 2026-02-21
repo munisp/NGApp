@@ -1,6 +1,6 @@
 """
 WebSocket Service
-Real-time bidirectional communication service for Agent Banking Platform
+Real-time bidirectional communication service for Remittance Platform
 """
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -290,7 +290,7 @@ async def websocket_endpoint(websocket: WebSocket, agent_id: str):
         await manager.send_personal_message(
             json.dumps({
                 "type": "system",
-                "content": "Connected to Agent Banking Platform WebSocket Service",
+                "content": "Connected to Remittance Platform WebSocket Service",
                 "timestamp": datetime.utcnow().isoformat()
             }),
             websocket

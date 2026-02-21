@@ -1,4 +1,4 @@
-module agent-banking/notification
+module remittance/notification
 
 go 1.21
 

@@ -1,5 +1,5 @@
 """
-Kafka Consumer Library for Agent Banking Platform V11.0
+Kafka Consumer Library for Remittance Platform V11.0
 
 Provides a reusable Kafka consumer for consuming events in microservices.
 

@@ -1,4 +1,4 @@
--- Comprehensive Agent Banking Network Database Schema
+-- Comprehensive Remittance Platform Database Schema
 -- Production-grade PostgreSQL schema with advanced features
 
 -- Enable required extensions
@@ -962,6 +962,6 @@ COMMENT ON TABLE audit_logs IS 'Comprehensive audit trail for compliance';
 COMMENT ON TABLE account_ledger IS 'Double-entry bookkeeping ledger';
 
 -- Grant permissions (adjust as needed for your environment)
--- GRANT SELECT, INSERT, UPDATE ON ALL TABLES IN SCHEMA public TO agent_banking_app;
--- GRANT USAGE ON ALL SEQUENCES IN SCHEMA public TO agent_banking_app;
+-- GRANT SELECT, INSERT, UPDATE ON ALL TABLES IN SCHEMA public TO remittance_app;
+-- GRANT USAGE ON ALL SEQUENCES IN SCHEMA public TO remittance_app;
 

@@ -69,7 +69,7 @@ def storage_keys(pattern: str = "*"):
 
 app = FastAPI(
     title="Role-Based Access Control",
-    description="Role-Based Access Control for Agent Banking Platform",
+    description="Role-Based Access Control for Remittance Platform",
     version="1.0.0"
 )
 

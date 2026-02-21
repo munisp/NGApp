@@ -1,5 +1,5 @@
 """
-Dapr Client Library for Agent Banking Platform V11.0
+Dapr Client Library for Remittance Platform V11.0
 
 Provides a reusable Dapr client for microservices integration.
 
@@ -34,7 +34,7 @@ logger = logging.getLogger(__name__)
 
 class AgentBankingDaprClient:
     """
-    Dapr client wrapper for Agent Banking Platform.
+    Dapr client wrapper for Remittance Platform.
     
     Usage:
         client = AgentBankingDaprClient()

@@ -69,7 +69,7 @@ def storage_keys(pattern: str = "*"):
 
 app = FastAPI(
     title="Zapier Integration",
-    description="Zapier Integration for Agent Banking Platform",
+    description="Zapier Integration for Remittance Platform",
     version="1.0.0"
 )
 

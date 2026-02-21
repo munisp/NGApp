@@ -1,6 +1,6 @@
 """
 Biller Integration Service
-Utility bill payment integration for Agent Banking Platform
+Utility bill payment integration for Remittance Platform
 
 Features:
 - Electricity (PHCN/prepaid meters: AEDC, IKEDC, EKEDC, BEDC, KEDCO, etc.)

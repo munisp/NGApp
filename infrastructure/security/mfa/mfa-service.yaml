@@ -37,7 +37,7 @@ data:
     redis:
       host: "redis-master"
       port: 6379
-      password: "agent-banking-redis"
+      password: "remittance-redis"
       database: 3
       pool_size: 10
       timeout: "5s"
@@ -49,7 +49,7 @@ data:
         refresh_expiry: "24h"
       
       keycloak:
-        realm: "agent-banking"
+        realm: "remittance"
         auth_server_url: "http://keycloak:8080"
         client_id: "mfa-service"
         client_secret: "mfa-client-secret-123"
@@ -62,7 +62,7 @@ data:
           account_sid: "twilio-account-sid"
           auth_token: "twilio-auth-token"
           from_number: "+1234567890"
-          template: "Your Agent Banking verification code is: {code}"
+          template: "Your Remittance Platform verification code is: {code}"
           code_length: 6
           code_expiry: "5m"
           max_attempts: 3
@@ -71,14 +71,14 @@ data:
         email:
           enabled: true
           provider: "smtp"
-          host: "smtp.agent-banking.com"
+          host: "smtp.remittance.com"
           port: 587
-          username: "mfa@agent-banking.com"
+          username: "mfa@remittance.com"
           password: "smtp-password"
-          from_email: "mfa@agent-banking.com"
-          from_name: "Agent Banking Network"
+          from_email: "mfa@remittance.com"
+          from_name: "Remittance Platform"
           template: |
-            Subject: Agent Banking Verification Code
+            Subject: Remittance Platform Verification Code
             
             Your verification code is: {code}
             
@@ -92,7 +92,7 @@ data:
         
         totp:
           enabled: true
-          issuer: "Agent Banking Network"
+          issuer: "Remittance Platform"
           algorithm: "SHA1"
           digits: 6
           period: 30
@@ -101,10 +101,10 @@ data:
         
         webauthn:
           enabled: true
-          rp_id: "agent-banking.local"
-          rp_name: "Agent Banking Network"
-          rp_icon: "https://agent-banking.local/icon.png"
-          origin: "https://agent-banking.local"
+          rp_id: "remittance.local"
+          rp_name: "Remittance Platform"
+          rp_icon: "https://remittance.local/icon.png"
+          origin: "https://remittance.local"
           timeout: 60000
           user_verification: "preferred"
           attestation: "none"
@@ -196,7 +196,7 @@ spec:
     spec:
       containers:
       - name: mfa-service
-        image: agent-banking/mfa-service:latest
+        image: remittance/mfa-service:latest
         ports:
         - containerPort: 8080
           name: http
@@ -208,7 +208,7 @@ spec:
         - name: DATABASE_URL
           value: "postgres://mfa:mfa123@postgresql:5432/mfa?sslmode=disable"
         - name: REDIS_URL
-          value: "redis://:agent-banking-redis@redis-master:6379/3"
+          value: "redis://:remittance-redis@redis-master:6379/3"
         - name: JWT_SECRET
           value: "mfa-jwt-secret-key-123"
         - name: ENCRYPTION_KEY
@@ -270,10 +270,10 @@ metadata:
 spec:
   tls:
   - hosts:
-    - mfa.agent-banking.local
+    - mfa.remittance.local
     secretName: mfa-tls
   rules:
-  - host: mfa.agent-banking.local
+  - host: mfa.remittance.local
     http:
       paths:
       - path: /
@@ -331,9 +331,9 @@ spec:
           done
           
           # Create MFA database and user
-          PGPASSWORD=agent-banking-postgres psql -h postgresql -U postgres -c "CREATE DATABASE mfa;"
-          PGPASSWORD=agent-banking-postgres psql -h postgresql -U postgres -c "CREATE USER mfa WITH PASSWORD 'mfa123';"
-          PGPASSWORD=agent-banking-postgres psql -h postgresql -U postgres -c "GRANT ALL PRIVILEGES ON DATABASE mfa TO mfa;"
+          PGPASSWORD=remittance-postgres psql -h postgresql -U postgres -c "CREATE DATABASE mfa;"
+          PGPASSWORD=remittance-postgres psql -h postgresql -U postgres -c "CREATE USER mfa WITH PASSWORD 'mfa123';"
+          PGPASSWORD=remittance-postgres psql -h postgresql -U postgres -c "GRANT ALL PRIVILEGES ON DATABASE mfa TO mfa;"
           
           # Create MFA tables
           PGPASSWORD=mfa123 psql -h postgresql -U mfa -d mfa << 'EOF'
@@ -440,15 +440,15 @@ data:
   openapi.yaml: |
     openapi: 3.0.3
     info:
-      title: Agent Banking MFA Service API
-      description: Multi-Factor Authentication service for Agent Banking Network
+      title: Remittance Platform MFA Service API
+      description: Multi-Factor Authentication service for Remittance Platform
       version: 1.0.0
       contact:
-        name: Agent Banking Team
-        email: support@agent-banking.com
+        name: Remittance Platform Team
+        email: support@remittance.com
     
     servers:
-      - url: https://mfa.agent-banking.local
+      - url: https://mfa.remittance.local
         description: Production server
     
     security:

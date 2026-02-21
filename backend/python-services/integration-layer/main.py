@@ -9,7 +9,7 @@ from .models import SessionLocal, engine
 
 models.Base.metadata.create_all(bind=engine)
 
-app = FastAPI(title="Agent Banking Platform Integration Service")
+app = FastAPI(title="Remittance Platform Integration Service")
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')

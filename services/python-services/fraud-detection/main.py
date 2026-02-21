@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Advanced Fraud Detection Service for Agent Banking Network
+Advanced Fraud Detection Service for Remittance Platform
 Real-time fraud detection using machine learning and rule-based systems
 """
 
@@ -55,7 +55,7 @@ class FraudDetectionService:
                 port=os.getenv('DB_PORT', '5432'),
                 user=os.getenv('DB_USER', 'postgres'),
                 password=os.getenv('DB_PASSWORD', 'password'),
-                database=os.getenv('DB_NAME', 'agent_banking')
+                database=os.getenv('DB_NAME', 'remittance')
             )
             
             # Redis connection

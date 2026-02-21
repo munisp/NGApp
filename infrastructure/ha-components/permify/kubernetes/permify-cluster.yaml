@@ -17,7 +17,7 @@ metadata:
 data:
   config.yaml: |
     # Permify Authorization Service Configuration
-    # High-Availability setup for Agent Banking Network
+    # High-Availability setup for Remittance Platform
     
     server:
       http:
@@ -88,7 +88,7 @@ data:
         timeout: 5m
 
   schema.perm: |
-    // Agent Banking Network Authorization Schema
+    // Remittance Platform Authorization Schema
     
     entity user {}
     
@@ -154,8 +154,8 @@ data:
 #   - postgres-password: PostgreSQL password
 #
 # Required AWS Secrets Manager entries:
-#   - agent-banking/permify (with property: api-key)
-#   - agent-banking/permify/database (with properties: username, password)
+#   - remittance/permify (with property: api-key)
+#   - remittance/permify/database (with properties: username, password)
 #
 # To deploy without External Secrets (development only), create a Secret manually:
 # kubectl create secret generic permify-secrets \
@@ -357,7 +357,7 @@ spec:
   - from:
     - namespaceSelector:
         matchLabels:
-          name: agent-banking-system
+          name: remittance-system
     ports:
     - protocol: TCP
       port: 3476

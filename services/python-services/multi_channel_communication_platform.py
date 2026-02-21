@@ -218,7 +218,7 @@ class VoiceService:
             response = VoiceResponse()
             
             # Welcome message
-            response.say("Welcome to Agent Banking Network. Your call is important to us.")
+            response.say("Welcome to Remittance Platform. Your call is important to us.")
             
             # Gather input for routing
             gather = Gather(
@@ -323,16 +323,16 @@ class VoiceService:
         response = VoiceResponse()
         
         if call_type == "outbound":
-            response.say("Hello, this is a call from Agent Banking Network. Please hold while we connect you.")
+            response.say("Hello, this is a call from Remittance Platform. Please hold while we connect you.")
             response.play("http://demo.twilio.com/docs/classic.mp3")
         elif call_type == "survey":
             gather = Gather(num_digits=1, action="/api/voice/survey", method="POST")
             gather.say("Please rate your experience from 1 to 5, with 5 being excellent.")
             response.append(gather)
         elif call_type == "notification":
-            response.say("This is an important notification from Agent Banking Network. Your account has been updated.")
+            response.say("This is an important notification from Remittance Platform. Your account has been updated.")
         else:
-            response.say("Thank you for calling Agent Banking Network.")
+            response.say("Thank you for calling Remittance Platform.")
         
         return str(response)
 
@@ -788,11 +788,11 @@ class WhatsAppService:
                 self.send_message(from_number, response)
                 
             elif 'hello' in content_lower or 'hi' in content_lower:
-                response = "Hello! Welcome to Agent Banking Network. How can I assist you today? Type 'menu' to see available options."
+                response = "Hello! Welcome to Remittance Platform. How can I assist you today? Type 'menu' to see available options."
                 self.send_message(from_number, response)
                 
             elif 'menu' in content_lower:
-                response = """🏦 *Agent Banking Network*
+                response = """🏦 *Remittance Platform*
 
 Please select an option:
 1️⃣ Account Services
@@ -856,35 +856,35 @@ class EmailService:
         """Load email templates"""
         return {
             "welcome": {
-                "subject": "Welcome to Agent Banking Network",
+                "subject": "Welcome to Remittance Platform",
                 "html": """
                 <html>
                 <body>
-                    <h2>Welcome to Agent Banking Network!</h2>
+                    <h2>Welcome to Remittance Platform!</h2>
                     <p>Dear {{customer_name}},</p>
-                    <p>Thank you for joining Agent Banking Network. We're excited to serve you.</p>
+                    <p>Thank you for joining Remittance Platform. We're excited to serve you.</p>
                     <p>Your account details:</p>
                     <ul>
                         <li>Account Number: {{account_number}}</li>
                         <li>Agent ID: {{agent_id}}</li>
                     </ul>
-                    <p>Best regards,<br>Agent Banking Network Team</p>
+                    <p>Best regards,<br>Remittance Platform Team</p>
                 </body>
                 </html>
                 """,
                 "text": """
-                Welcome to Agent Banking Network!
+                Welcome to Remittance Platform!
                 
                 Dear {{customer_name}},
                 
-                Thank you for joining Agent Banking Network. We're excited to serve you.
+                Thank you for joining Remittance Platform. We're excited to serve you.
                 
                 Your account details:
                 - Account Number: {{account_number}}
                 - Agent ID: {{agent_id}}
                 
                 Best regards,
-                Agent Banking Network Team
+                Remittance Platform Team
                 """
             },
             "transaction_receipt": {
@@ -902,7 +902,7 @@ class EmailService:
                         <tr><td><strong>Date</strong></td><td>{{date}}</td></tr>
                         <tr><td><strong>Balance</strong></td><td>₦{{balance}}</td></tr>
                     </table>
-                    <p>Thank you for using Agent Banking Network.</p>
+                    <p>Thank you for using Remittance Platform.</p>
                 </body>
                 </html>
                 """

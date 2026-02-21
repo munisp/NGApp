@@ -1,15 +1,15 @@
 heat_template_version: 2021-04-16
 
 description: >
-  Agent Banking Network OpenStack Infrastructure Template
-  This template creates the complete cloud infrastructure for the Agent Banking Network platform
+  Remittance Platform OpenStack Infrastructure Template
+  This template creates the complete cloud infrastructure for the Remittance Platform platform
   including compute instances, networking, storage, and security groups.
 
 parameters:
   key_name:
     type: string
     description: Name of keypair to assign to servers
-    default: agent-banking-key
+    default: remittance-key
   
   image:
     type: string
@@ -46,13 +46,13 @@ resources:
   private_net:
     type: OS::Neutron::Net
     properties:
-      name: agent-banking-private-net
+      name: remittance-private-net
       admin_state_up: true
 
   private_subnet:
     type: OS::Neutron::Subnet
     properties:
-      name: agent-banking-private-subnet
+      name: remittance-private-subnet
       network_id: { get_resource: private_net }
       cidr: 10.0.0.0/24
       gateway_ip: 10.0.0.1
@@ -64,7 +64,7 @@ resources:
   router:
     type: OS::Neutron::Router
     properties:
-      name: agent-banking-router
+      name: remittance-router
       external_gateway_info:
         network: { get_param: public_net }
 
@@ -78,7 +78,7 @@ resources:
   master_security_group:
     type: OS::Neutron::SecurityGroup
     properties:
-      name: agent-banking-master-sg
+      name: remittance-master-sg
       description: Security group for Kubernetes master nodes
       rules:
         - remote_ip_prefix: 0.0.0.0/0
@@ -109,7 +109,7 @@ resources:
   worker_security_group:
     type: OS::Neutron::SecurityGroup
     properties:
-      name: agent-banking-worker-sg
+      name: remittance-worker-sg
       description: Security group for Kubernetes worker nodes
       rules:
         - remote_ip_prefix: 0.0.0.0/0
@@ -136,7 +136,7 @@ resources:
   database_security_group:
     type: OS::Neutron::SecurityGroup
     properties:
-      name: agent-banking-database-sg
+      name: remittance-database-sg
       description: Security group for database nodes
       rules:
         - remote_ip_prefix: 0.0.0.0/0
@@ -160,56 +160,56 @@ resources:
   master_volume_1:
     type: OS::Cinder::Volume
     properties:
-      name: agent-banking-master-1-volume
+      name: remittance-master-1-volume
       size: 100
       volume_type: ssd
 
   master_volume_2:
     type: OS::Cinder::Volume
     properties:
-      name: agent-banking-master-2-volume
+      name: remittance-master-2-volume
       size: 100
       volume_type: ssd
 
   master_volume_3:
     type: OS::Cinder::Volume
     properties:
-      name: agent-banking-master-3-volume
+      name: remittance-master-3-volume
       size: 100
       volume_type: ssd
 
   worker_volume_1:
     type: OS::Cinder::Volume
     properties:
-      name: agent-banking-worker-1-volume
+      name: remittance-worker-1-volume
       size: 200
       volume_type: ssd
 
   worker_volume_2:
     type: OS::Cinder::Volume
     properties:
-      name: agent-banking-worker-2-volume
+      name: remittance-worker-2-volume
       size: 200
       volume_type: ssd
 
   worker_volume_3:
     type: OS::Cinder::Volume
     properties:
-      name: agent-banking-worker-3-volume
+      name: remittance-worker-3-volume
       size: 200
       volume_type: ssd
 
   database_volume_1:
     type: OS::Cinder::Volume
     properties:
-      name: agent-banking-database-1-volume
+      name: remittance-database-1-volume
       size: 500
       volume_type: high-iops
 
   database_volume_2:
     type: OS::Cinder::Volume
     properties:
-      name: agent-banking-database-2-volume
+      name: remittance-database-2-volume
       size: 500
       volume_type: high-iops
 
@@ -217,7 +217,7 @@ resources:
   master_node_1:
     type: OS::Nova::Server
     properties:
-      name: agent-banking-master-1
+      name: remittance-master-1
       image: { get_param: image }
       flavor: { get_param: flavor_master }
       key_name: { get_param: key_name }
@@ -266,7 +266,7 @@ resources:
   master_node_2:
     type: OS::Nova::Server
     properties:
-      name: agent-banking-master-2
+      name: remittance-master-2
       image: { get_param: image }
       flavor: { get_param: flavor_master }
       key_name: { get_param: key_name }
@@ -286,7 +286,7 @@ resources:
   master_node_3:
     type: OS::Nova::Server
     properties:
-      name: agent-banking-master-3
+      name: remittance-master-3
       image: { get_param: image }
       flavor: { get_param: flavor_master }
       key_name: { get_param: key_name }
@@ -307,7 +307,7 @@ resources:
   worker_node_1:
     type: OS::Nova::Server
     properties:
-      name: agent-banking-worker-1
+      name: remittance-worker-1
       image: { get_param: image }
       flavor: { get_param: flavor_worker }
       key_name: { get_param: key_name }
@@ -327,7 +327,7 @@ resources:
   worker_node_2:
     type: OS::Nova::Server
     properties:
-      name: agent-banking-worker-2
+      name: remittance-worker-2
       image: { get_param: image }
       flavor: { get_param: flavor_worker }
       key_name: { get_param: key_name }
@@ -347,7 +347,7 @@ resources:
   worker_node_3:
     type: OS::Nova::Server
     properties:
-      name: agent-banking-worker-3
+      name: remittance-worker-3
       image: { get_param: image }
       flavor: { get_param: flavor_worker }
       key_name: { get_param: key_name }
@@ -368,7 +368,7 @@ resources:
   database_node_1:
     type: OS::Nova::Server
     properties:
-      name: agent-banking-database-1
+      name: remittance-database-1
       image: { get_param: image }
       flavor: { get_param: flavor_database }
       key_name: { get_param: key_name }
@@ -387,7 +387,7 @@ resources:
   database_node_2:
     type: OS::Nova::Server
     properties:
-      name: agent-banking-database-2
+      name: remittance-database-2
       image: { get_param: image }
       flavor: { get_param: flavor_database }
       key_name: { get_param: key_name }
@@ -483,7 +483,7 @@ resources:
   api_gateway_pool:
     type: OS::Neutron::LBaaS::Pool
     properties:
-      name: agent-banking-api-pool
+      name: remittance-api-pool
       protocol: HTTP
       lb_algorithm: ROUND_ROBIN
       subnet: { get_resource: private_subnet }
@@ -491,7 +491,7 @@ resources:
   api_gateway_listener:
     type: OS::Neutron::LBaaS::Listener
     properties:
-      name: agent-banking-api-listener
+      name: remittance-api-listener
       protocol: HTTP
       protocol_port: 80
       loadbalancer: { get_resource: api_gateway_loadbalancer }
@@ -500,7 +500,7 @@ resources:
   api_gateway_loadbalancer:
     type: OS::Neutron::LBaaS::LoadBalancer
     properties:
-      name: agent-banking-api-lb
+      name: remittance-api-lb
       vip_subnet: { get_resource: private_subnet }
 
   api_gateway_floating_ip:

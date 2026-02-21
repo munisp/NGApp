@@ -1,4 +1,4 @@
-module agent-banking/id-generation-service
+module remittance/id-generation-service
 
 go 1.21
 

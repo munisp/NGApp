@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Agent Banking Platform - Middleware Stack Deployment Script
+# Remittance Platform - Middleware Stack Deployment Script
 # This script deploys the complete middleware stack including:
 # - APISIX API Gateway
 # - Keycloak Identity Management
@@ -13,7 +13,7 @@
 
 set -e
 
-echo "🚀 Starting Agent Banking Platform Middleware Deployment"
+echo "🚀 Starting Remittance Platform Middleware Deployment"
 echo "========================================================"
 
 # Colors for output
@@ -98,7 +98,7 @@ conf:
     access_log:
       file_path: logs/access.log
 authentication:
-  secret: agent-banking-dashboard-secret
+  secret: remittance-dashboard-secret
   expire_time: 3600
   users:
     - username: admin
@@ -131,7 +131,7 @@ authn:
   method: preshared
   preshared:
     keys:
-      - "agent-banking-platform-key"
+      - "remittance-platform-key"
 
 database:
   engine: postgres
@@ -207,7 +207,7 @@ scrape_configs:
     static_configs:
       - targets: ['redis:6379']
 
-  - job_name: 'agent-banking-services'
+  - job_name: 'remittance-services'
     static_configs:
       - targets: ['host.docker.internal:8082', 'host.docker.internal:8090', 'host.docker.internal:8094']
 EOF
@@ -379,7 +379,7 @@ verify_deployment() {
     echo "• APISIX Dashboard:      admin / admin123"
     echo "• Grafana:               admin / admin123"
     echo "• MinIO:                 minioadmin / minioadmin123"
-    echo "• Vault Root Token:      agent-banking-root-token"
+    echo "• Vault Root Token:      remittance-root-token"
     echo ""
     
     # Health check
@@ -411,7 +411,7 @@ verify_deployment() {
 
 # Main deployment flow
 main() {
-    echo "Agent Banking Platform - Middleware Stack Deployment"
+    echo "Remittance Platform - Middleware Stack Deployment"
     echo "===================================================="
     echo ""
     
@@ -427,7 +427,7 @@ main() {
     echo "🎉 Middleware Stack Deployment Completed Successfully!"
     echo "======================================================"
     echo ""
-    echo "The Agent Banking Platform middleware stack is now running."
+    echo "The Remittance Platform middleware stack is now running."
     echo "You can access the services using the URLs provided above."
     echo ""
     echo "To stop the stack: docker-compose -f docker-compose-middleware.yml down"

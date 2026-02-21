@@ -2,7 +2,7 @@ apiVersion: keda.sh/v1alpha1
 kind: ScaledObject
 metadata:
   name: whatsapp-service-scaler
-  namespace: agent-banking
+  namespace: remittance
   labels:
     app: whatsapp-service
     component: autoscaler
@@ -42,7 +42,7 @@ spec:
   # Redis queue for WhatsApp messages
   - type: redis
     metadata:
-      address: redis.agent-banking.svc.cluster.local:6379
+      address: redis.remittance.svc.cluster.local:6379
       listName: whatsapp_message_queue
       listLength: "20"
       enableTLS: "false"
@@ -52,7 +52,7 @@ spec:
   # Redis queue for WhatsApp media processing
   - type: redis
     metadata:
-      address: redis.agent-banking.svc.cluster.local:6379
+      address: redis.remittance.svc.cluster.local:6379
       listName: whatsapp_media_queue
       listLength: "10"
       enableTLS: "false"
@@ -84,7 +84,7 @@ apiVersion: keda.sh/v1alpha1
 kind: ScaledObject
 metadata:
   name: sms-service-scaler
-  namespace: agent-banking
+  namespace: remittance
   labels:
     app: sms-service
     component: autoscaler
@@ -124,7 +124,7 @@ spec:
   # Redis queue for SMS messages
   - type: redis
     metadata:
-      address: redis.agent-banking.svc.cluster.local:6379
+      address: redis.remittance.svc.cluster.local:6379
       listName: sms_message_queue
       listLength: "50"
       enableTLS: "false"
@@ -134,7 +134,7 @@ spec:
   # Redis queue for SMS delivery reports
   - type: redis
     metadata:
-      address: redis.agent-banking.svc.cluster.local:6379
+      address: redis.remittance.svc.cluster.local:6379
       listName: sms_delivery_queue
       listLength: "30"
       enableTLS: "false"
@@ -156,7 +156,7 @@ apiVersion: keda.sh/v1alpha1
 kind: ScaledObject
 metadata:
   name: ussd-service-scaler
-  namespace: agent-banking
+  namespace: remittance
   labels:
     app: ussd-service
     component: autoscaler
@@ -196,7 +196,7 @@ spec:
   # Redis queue for USSD sessions
   - type: redis
     metadata:
-      address: redis.agent-banking.svc.cluster.local:6379
+      address: redis.remittance.svc.cluster.local:6379
       listName: ussd_session_queue
       listLength: "30"
       enableTLS: "false"
@@ -206,7 +206,7 @@ spec:
   # Redis active sessions count
   - type: redis
     metadata:
-      address: redis.agent-banking.svc.cluster.local:6379
+      address: redis.remittance.svc.cluster.local:6379
       listName: ussd_active_sessions
       listLength: "100"
       enableTLS: "false"
@@ -238,7 +238,7 @@ apiVersion: keda.sh/v1alpha1
 kind: ScaledObject
 metadata:
   name: notification-service-scaler
-  namespace: agent-banking
+  namespace: remittance
   labels:
     app: notification-service
     component: autoscaler
@@ -278,7 +278,7 @@ spec:
   # Redis notification queue
   - type: redis
     metadata:
-      address: redis.agent-banking.svc.cluster.local:6379
+      address: redis.remittance.svc.cluster.local:6379
       listName: notification_queue
       listLength: "25"
       enableTLS: "false"
@@ -288,7 +288,7 @@ spec:
   # Redis email queue
   - type: redis
     metadata:
-      address: redis.agent-banking.svc.cluster.local:6379
+      address: redis.remittance.svc.cluster.local:6379
       listName: email_notification_queue
       listLength: "15"
       enableTLS: "false"
@@ -310,7 +310,7 @@ apiVersion: keda.sh/v1alpha1
 kind: ScaledObject
 metadata:
   name: communication-platform-scaler
-  namespace: agent-banking
+  namespace: remittance
   labels:
     app: communication-platform
     component: autoscaler
@@ -350,7 +350,7 @@ spec:
   # Redis multi-channel message queue
   - type: redis
     metadata:
-      address: redis.agent-banking.svc.cluster.local:6379
+      address: redis.remittance.svc.cluster.local:6379
       listName: multi_channel_queue
       listLength: "40"
       enableTLS: "false"
@@ -360,7 +360,7 @@ spec:
   # Redis priority message queue
   - type: redis
     metadata:
-      address: redis.agent-banking.svc.cluster.local:6379
+      address: redis.remittance.svc.cluster.local:6379
       listName: priority_message_queue
       listLength: "10"
       enableTLS: "false"

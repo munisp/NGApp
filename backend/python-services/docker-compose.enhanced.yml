@@ -4,9 +4,9 @@ services:
   # PostgreSQL Database
   postgres:
     image: postgres:15-alpine
-    container_name: agent-banking-postgres
+    container_name: remittance-postgres
     environment:
-      POSTGRES_DB: agent_banking
+      POSTGRES_DB: remittance
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
     ports:
@@ -15,7 +15,7 @@ services:
       - postgres_data:/var/lib/postgresql/data
       - ./agent-performance/migrations:/docker-entrypoint-initdb.d
     networks:
-      - agent-banking-network
+      - remittance-network
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
@@ -25,13 +25,13 @@ services:
   # Redis Cache
   redis:
     image: redis:7-alpine
-    container_name: agent-banking-redis
+    container_name: remittance-redis
     ports:
       - "6379:6379"
     volumes:
       - redis_data:/data
     networks:
-      - agent-banking-network
+      - remittance-network
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
@@ -41,7 +41,7 @@ services:
   # Temporal Server
   temporal:
     image: temporalio/auto-setup:latest
-    container_name: agent-banking-temporal
+    container_name: remittance-temporal
     ports:
       - "7233:7233"
       - "8088:8088"
@@ -53,7 +53,7 @@ services:
       - POSTGRES_SEEDS=postgres
       - DYNAMIC_CONFIG_FILE_PATH=config/dynamicconfig/development-sql.yaml
     networks:
-      - agent-banking-network
+      - remittance-network
     depends_on:
       postgres:
         condition: service_healthy
@@ -72,7 +72,7 @@ services:
     environment:
       - DB_HOST=postgres
       - DB_PORT=5432
-      - DB_NAME=agent_banking
+      - DB_NAME=remittance
       - DB_USER=postgres
       - DB_PASSWORD=postgres
       - REDIS_URL=redis://redis:6379
@@ -80,7 +80,7 @@ services:
     ports:
       - "8050:8050"
     networks:
-      - agent-banking-network
+      - remittance-network
     depends_on:
       postgres:
         condition: service_healthy
@@ -102,7 +102,7 @@ services:
     environment:
       - TEMPORAL_HOST=temporal:7233
       - TEMPORAL_NAMESPACE=default
-      - TEMPORAL_TASK_QUEUE=agent-banking-workflows
+      - TEMPORAL_TASK_QUEUE=remittance-workflows
       - FRAUD_DETECTION_URL=http://fraud-detection:8010
       - KYC_SERVICE_URL=http://kyc-service:8011
       - LEDGER_SERVICE_URL=http://ledger-service:8005
@@ -114,7 +114,7 @@ services:
     ports:
       - "8023:8023"
     networks:
-      - agent-banking-network
+      - remittance-network
     depends_on:
       temporal:
         condition: service_healthy
@@ -128,19 +128,19 @@ services:
   # Temporal Web UI
   temporal-web:
     image: temporalio/ui:latest
-    container_name: agent-banking-temporal-web
+    container_name: remittance-temporal-web
     environment:
       - TEMPORAL_ADDRESS=temporal:7233
       - TEMPORAL_CORS_ORIGINS=http://localhost:8088
     ports:
       - "8088:8088"
     networks:
-      - agent-banking-network
+      - remittance-network
     depends_on:
       - temporal
 
 networks:
-  agent-banking-network:
+  remittance-network:
     driver: bridge
 
 volumes:

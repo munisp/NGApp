@@ -990,13 +990,13 @@
         "has_index_html": true,
         "implemented": true
       },
-      "agent-banking-frontend": {
+      "remittance-frontend": {
         "has_package_json": true,
         "has_src": true,
         "has_index_html": true,
         "implemented": true
       },
-      "agent-banking-ui": {
+      "remittance-ui": {
         "has_package_json": true,
         "has_src": true,
         "has_index_html": true,
@@ -1132,7 +1132,7 @@
       "use_translation_hook": true
     },
     "examples": {
-      "agent_banking": true,
+      "remittance": true,
       "ecommerce": true,
       "inventory": true
     }

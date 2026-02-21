@@ -1,4 +1,4 @@
-// API Client for Agent Banking Platform
+// API Client for Remittance Platform
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8020'
 const PAYMENT_API_URL = import.meta.env.VITE_PAYMENT_GATEWAY_URL || 'http://localhost:8021'
 const KYB_API_URL = import.meta.env.VITE_KYB_API_URL || 'http://localhost:8121'

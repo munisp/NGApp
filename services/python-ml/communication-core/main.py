@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Communication Core Service
-Core communication infrastructure for agent banking network
+Core communication infrastructure for remittance network
 Handles SMS, email, push notifications, and real-time messaging
 """
 
@@ -30,7 +30,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Configuration
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres:postgres123@localhost:5432/agent_banking")
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres:postgres123@localhost:5432/remittance")
 REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379")
 SERVICE_PORT = int(os.getenv("SERVICE_PORT", "8130"))
 
@@ -49,7 +49,7 @@ FCM_SERVER_KEY = os.getenv("FCM_SERVER_KEY", "")
 # FastAPI app
 app = FastAPI(
     title="Communication Core",
-    description="Core communication infrastructure for agent banking network",
+    description="Core communication infrastructure for remittance network",
     version="1.0.0"
 )
 
@@ -278,8 +278,8 @@ async def init_default_templates():
             "template_id": "WELCOME_EMAIL",
             "name": "Welcome Email",
             "message_type": "EMAIL",
-            "subject_template": "Welcome to Agent Banking Network",
-            "content_template": "Dear {name}, Welcome to our Agent Banking Network! Your account has been successfully created. Agent ID: {agent_id}",
+            "subject_template": "Welcome to Remittance Platform",
+            "content_template": "Dear {name}, Welcome to our Remittance Platform! Your account has been successfully created. Agent ID: {agent_id}",
             "variables": ["name", "agent_id"]
         },
         {
@@ -508,7 +508,7 @@ class CommunicationEngine:
             msg = MIMEMultipart()
             msg['From'] = SMTP_USERNAME
             msg['To'] = email
-            msg['Subject'] = request.subject or "Agent Banking Network Notification"
+            msg['Subject'] = request.subject or "Remittance Platform Notification"
             
             msg.attach(MIMEText(request.content, 'plain'))
             
@@ -551,7 +551,7 @@ class CommunicationEngine:
             payload = {
                 'to': fcm_token,
                 'notification': {
-                    'title': request.subject or 'Agent Banking Network',
+                    'title': request.subject or 'Remittance Platform',
                     'body': request.content
                 },
                 'data': request.metadata or {}

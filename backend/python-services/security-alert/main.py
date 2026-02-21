@@ -1,6 +1,6 @@
 """
 Security Alert Service
-Real-time security monitoring and alerting system for Agent Banking Platform
+Real-time security monitoring and alerting system for Remittance Platform
 
 Features:
 - Real-time threat detection
@@ -29,7 +29,7 @@ import logging
 DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/security_alerts")
 REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379")
 KEYCLOAK_URL = os.getenv("KEYCLOAK_URL", "http://localhost:8080")
-KEYCLOAK_REALM = os.getenv("KEYCLOAK_REALM", "agent-banking")
+KEYCLOAK_REALM = os.getenv("KEYCLOAK_REALM", "remittance")
 KAFKA_BOOTSTRAP_SERVERS = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092")
 TWILIO_ACCOUNT_SID = os.getenv("TWILIO_ACCOUNT_SID")
 TWILIO_AUTH_TOKEN = os.getenv("TWILIO_AUTH_TOKEN")

@@ -5,7 +5,7 @@ apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
   name: transaction-service-hpa
-  namespace: agent-banking
+  namespace: remittance
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
@@ -59,7 +59,7 @@ apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
   name: transfer-service-hpa
-  namespace: agent-banking
+  namespace: remittance
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
@@ -100,7 +100,7 @@ apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
   name: kyc-service-hpa
-  namespace: agent-banking
+  namespace: remittance
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
@@ -145,7 +145,7 @@ apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
   name: ml-routing-service-hpa
-  namespace: agent-banking
+  namespace: remittance
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
@@ -187,7 +187,7 @@ apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
   name: api-gateway-hpa
-  namespace: agent-banking
+  namespace: remittance
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
@@ -229,7 +229,7 @@ apiVersion: autoscaling.k8s.io/v1
 kind: VerticalPodAutoscaler
 metadata:
   name: transaction-service-vpa
-  namespace: agent-banking
+  namespace: remittance
 spec:
   targetRef:
     apiVersion: apps/v1
@@ -253,7 +253,7 @@ apiVersion: autoscaling.k8s.io/v1
 kind: VerticalPodAutoscaler
 metadata:
   name: postgres-vpa
-  namespace: agent-banking
+  namespace: remittance
 spec:
   targetRef:
     apiVersion: apps/v1
@@ -277,7 +277,7 @@ apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
   name: transaction-service-pdb
-  namespace: agent-banking
+  namespace: remittance
 spec:
   minAvailable: 2
   selector:
@@ -289,7 +289,7 @@ apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
   name: transfer-service-pdb
-  namespace: agent-banking
+  namespace: remittance
 spec:
   minAvailable: 1
   selector:
@@ -301,7 +301,7 @@ apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
   name: apisix-pdb
-  namespace: agent-banking
+  namespace: remittance
 spec:
   minAvailable: 2
   selector:
@@ -313,8 +313,8 @@ spec:
 apiVersion: v1
 kind: ResourceQuota
 metadata:
-  name: agent-banking-quota
-  namespace: agent-banking
+  name: remittance-quota
+  namespace: remittance
 spec:
   hard:
     requests.cpu: "50"
@@ -329,8 +329,8 @@ spec:
 apiVersion: v1
 kind: LimitRange
 metadata:
-  name: agent-banking-limits
-  namespace: agent-banking
+  name: remittance-limits
+  namespace: remittance
 spec:
   limits:
     - type: Container

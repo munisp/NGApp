@@ -32,11 +32,11 @@ from online_learning import OnlineLearningPipeline
 logger = logging.getLogger(__name__)
 
 # Configuration - Production defaults for K8s deployment
-DB_URL = os.getenv("DATABASE_URL", "postgresql://postgres:postgres@postgres.agent-banking.svc.cluster.local:5432/multibank")
-REDIS_URL = os.getenv("REDIS_URL", "redis://redis.agent-banking.svc.cluster.local:6379/0")
-KAFKA_BOOTSTRAP = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "kafka.agent-banking.svc.cluster.local:9092")
+DB_URL = os.getenv("DATABASE_URL", "postgresql://postgres:postgres@postgres.remittance.svc.cluster.local:5432/multibank")
+REDIS_URL = os.getenv("REDIS_URL", "redis://redis.remittance.svc.cluster.local:6379/0")
+KAFKA_BOOTSTRAP = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "kafka.remittance.svc.cluster.local:9092")
 MODEL_DIR = os.getenv("MODEL_DIR", "/var/lib/ml-models")
-S3_ENDPOINT = os.getenv("S3_ENDPOINT", "http://rustfs.agent-banking.svc.cluster.local:9000")
+S3_ENDPOINT = os.getenv("S3_ENDPOINT", "http://rustfs.remittance.svc.cluster.local:9000")
 S3_MODEL_BUCKET = os.getenv("S3_MODEL_BUCKET", "ml-routing-models")
 
 

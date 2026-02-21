@@ -52,7 +52,7 @@ models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
     title="Analytics Dashboard Service",
-    description="API for managing and retrieving analytics data for the Agent Banking Platform.",
+    description="API for managing and retrieving analytics data for the Remittance Platform.",
     version="1.0.0",
     docs_url="/docs",
     redoc_url="/redoc",

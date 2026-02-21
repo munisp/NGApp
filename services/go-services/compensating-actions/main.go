@@ -21,7 +21,7 @@ import (
 
 // Configuration
 var (
-	databaseURL = getEnv("DATABASE_URL", "postgresql://postgres:postgres123@localhost:5432/agent_banking")
+	databaseURL = getEnv("DATABASE_URL", "postgresql://postgres:postgres123@localhost:5432/remittance")
 	redisURL    = getEnv("REDIS_URL", "redis://localhost:6379")
 	servicePort = getEnv("SERVICE_PORT", "8150")
 )

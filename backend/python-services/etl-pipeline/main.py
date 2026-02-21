@@ -11,7 +11,7 @@ import uvicorn
 
 app = FastAPI(
     title="ETL Pipeline Service",
-    description="ETL Pipeline for Agent Banking Platform",
+    description="ETL Pipeline for Remittance Platform",
     version="1.0.0"
 )
 

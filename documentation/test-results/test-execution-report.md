@@ -1,7 +1,7 @@
 # Test Execution Report
 
 **Generated:** December 13, 2024
-**Platform:** Agent Banking Platform
+**Platform:** Remittance Platform
 **Test Framework:** pytest 7.4.4
 
 ## Executive Summary
@@ -82,7 +82,7 @@ All unit tests pass successfully after fixes were applied. The test suite valida
 - test_decimal_precision_preserved[999999.99]: PASSED
 - test_decimal_precision_preserved[0.001]: PASSED
 
-### Agent Banking Invariants (2 tests)
+### Remittance Platform Invariants (2 tests)
 - test_float_account_conservation: PASSED
 - test_commission_calculation_invariant: PASSED
 

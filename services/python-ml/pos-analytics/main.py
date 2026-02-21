@@ -165,7 +165,7 @@ class POSAnalyticsService:
         self.config = {
             'db_host': os.getenv('DB_HOST', os.getenv('HOST', 'localhost')),
             'db_port': int(os.getenv('DB_PORT', 5432)),
-            'db_name': os.getenv('DB_NAME', 'agent_banking'),
+            'db_name': os.getenv('DB_NAME', 'remittance'),
             'db_user': os.getenv('DB_USER', 'postgres'),
             'db_password': os.getenv('DB_PASSWORD', os.getenv('DB_PASSWORD', 'password')),
             'redis_host': os.getenv('REDIS_HOST', os.getenv('HOST', 'localhost')),
@@ -365,7 +365,7 @@ class POSAnalyticsService:
             async with aiohttp.ClientSession() as session:
                 headers = {'Authorization': f'Bearer {token}'}
                 async with session.get(
-                    f"{self.config['keycloak_url']}/auth/realms/agent-banking/protocol/openid_connect/userinfo",
+                    f"{self.config['keycloak_url']}/auth/realms/remittance/protocol/openid_connect/userinfo",
                     headers=headers
                 ) as response:
                     if response.status == 200:

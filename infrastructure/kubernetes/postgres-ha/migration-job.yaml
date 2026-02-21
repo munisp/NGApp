@@ -4,7 +4,7 @@ apiVersion: batch/v1
 kind: Job
 metadata:
   name: mojaloop-db-migrations
-  namespace: agent-banking
+  namespace: remittance
   labels:
     app: mojaloop-migrations
     component: database
@@ -25,7 +25,7 @@ spec:
             - -c
             - |
               echo "Waiting for PostgreSQL to be ready..."
-              until nc -z mojaloop-postgres-primary.agent-banking.svc.cluster.local 5432; do
+              until nc -z mojaloop-postgres-primary.remittance.svc.cluster.local 5432; do
                 echo "PostgreSQL not ready, waiting..."
                 sleep 5
               done
@@ -73,7 +73,7 @@ spec:
                   name: mojaloop.mojaloop-postgres.credentials.postgresql.acid.zalan.do
                   key: connection-string
             - name: PGHOST
-              value: "mojaloop-postgres-primary.agent-banking.svc.cluster.local"
+              value: "mojaloop-postgres-primary.remittance.svc.cluster.local"
             - name: PGPORT
               value: "5432"
             - name: PGDATABASE
@@ -109,7 +109,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: mojaloop-migrations
-  namespace: agent-banking
+  namespace: remittance
 data:
   alembic.ini: |
     [alembic]
@@ -162,7 +162,7 @@ apiVersion: batch/v1
 kind: Job
 metadata:
   name: mojaloop-db-migrations-hook
-  namespace: agent-banking
+  namespace: remittance
   annotations:
     "helm.sh/hook": pre-upgrade,pre-install
     "helm.sh/hook-weight": "-5"
@@ -187,12 +187,12 @@ spec:
             - sh
             - -c
             - |
-              until nc -z mojaloop-postgres-primary.agent-banking.svc.cluster.local 5432; do
+              until nc -z mojaloop-postgres-primary.remittance.svc.cluster.local 5432; do
                 sleep 5
               done
       containers:
         - name: migrations
-          image: agent-banking/mojaloop-migrations:latest
+          image: remittance/mojaloop-migrations:latest
           command: ["python", "-m", "alembic", "upgrade", "head"]
           env:
             - name: DATABASE_URL
@@ -213,14 +213,14 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: mojaloop-migrations
-  namespace: agent-banking
+  namespace: remittance
 ---
 # Role for migrations
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
   name: mojaloop-migrations
-  namespace: agent-banking
+  namespace: remittance
 rules:
   - apiGroups: [""]
     resources: ["secrets"]
@@ -233,7 +233,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
   name: mojaloop-migrations
-  namespace: agent-banking
+  namespace: remittance
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
@@ -241,4 +241,4 @@ roleRef:
 subjects:
   - kind: ServiceAccount
     name: mojaloop-migrations
-    namespace: agent-banking
+    namespace: remittance

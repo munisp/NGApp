@@ -1,5 +1,5 @@
 """
-Comprehensive Load Tests for Agent Banking Platform
+Comprehensive Load Tests for Remittance Platform
 Tests critical paths: cash-in/out, transfers, KYC, balance inquiries
 """
 
@@ -32,7 +32,7 @@ def generate_idempotency_key():
 class AgentCashOperationsUser(HttpUser):
     """
     Simulates agent performing cash-in and cash-out operations.
-    This is the most critical path for agent banking.
+    This is the most critical path for remittance.
     """
     
     wait_time = between(1, 3)

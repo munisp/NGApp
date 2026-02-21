@@ -85,7 +85,7 @@ async def init_db():
     db_pool = await asyncpg.create_pool(
         host=os.getenv('DB_HOST', 'localhost'),
         port=5432,
-        database='agent_banking',
+        database='remittance',
         user=os.getenv('DB_USER', 'postgres'),
         password=os.getenv('DB_PASSWORD', ''),
         min_size=5,
@@ -190,7 +190,7 @@ async def send_apns_notification(token: str, notification: Dict) -> bool:
                 f"https://api.push.apple.com/3/device/{token}",
                 headers={
                     "authorization": f"bearer {APNS_KEY}",
-                    "apns-topic": "com.agentbanking.app",
+                    "apns-topic": "com.remittance.app",
                     "apns-priority": "10" if notification.get("priority") == "high" else "5",
                     "apns-expiration": str(int((datetime.utcnow() + timedelta(seconds=notification.get("ttl", 86400))).timestamp()))
                 },

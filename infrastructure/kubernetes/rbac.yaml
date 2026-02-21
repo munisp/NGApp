@@ -1,13 +1,13 @@
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: agent-banking-service-account
-  namespace: agent-banking
+  name: remittance-service-account
+  namespace: remittance
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: agent-banking-cluster-role
+  name: remittance-cluster-role
 rules:
 - apiGroups: [""]
   resources: ["pods", "services", "endpoints", "persistentvolumeclaims", "events", "configmaps", "secrets"]
@@ -34,21 +34,21 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: agent-banking-cluster-role-binding
+  name: remittance-cluster-role-binding
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: agent-banking-cluster-role
+  name: remittance-cluster-role
 subjects:
 - kind: ServiceAccount
-  name: agent-banking-service-account
-  namespace: agent-banking
+  name: remittance-service-account
+  namespace: remittance
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  namespace: agent-banking
-  name: agent-banking-role
+  namespace: remittance
+  name: remittance-role
 rules:
 - apiGroups: [""]
   resources: ["pods", "services", "endpoints", "persistentvolumeclaims", "events", "configmaps", "secrets"]
@@ -63,27 +63,27 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: agent-banking-role-binding
-  namespace: agent-banking
+  name: remittance-role-binding
+  namespace: remittance
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
-  name: agent-banking-role
+  name: remittance-role
 subjects:
 - kind: ServiceAccount
-  name: agent-banking-service-account
-  namespace: agent-banking
+  name: remittance-service-account
+  namespace: remittance
 ---
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: agent-banking-security-service-account
-  namespace: agent-banking-security
+  name: remittance-security-service-account
+  namespace: remittance-security
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: agent-banking-security-cluster-role
+  name: remittance-security-cluster-role
 rules:
 - apiGroups: [""]
   resources: ["pods", "services", "endpoints", "events", "configmaps", "secrets", "nodes"]
@@ -104,26 +104,26 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: agent-banking-security-cluster-role-binding
+  name: remittance-security-cluster-role-binding
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: agent-banking-security-cluster-role
+  name: remittance-security-cluster-role
 subjects:
 - kind: ServiceAccount
-  name: agent-banking-security-service-account
-  namespace: agent-banking-security
+  name: remittance-security-service-account
+  namespace: remittance-security
 ---
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: agent-banking-monitoring-service-account
-  namespace: agent-banking-monitoring
+  name: remittance-monitoring-service-account
+  namespace: remittance-monitoring
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: agent-banking-monitoring-cluster-role
+  name: remittance-monitoring-cluster-role
 rules:
 - apiGroups: [""]
   resources: ["nodes", "nodes/proxy", "services", "endpoints", "pods"]
@@ -137,27 +137,27 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: agent-banking-monitoring-cluster-role-binding
+  name: remittance-monitoring-cluster-role-binding
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: agent-banking-monitoring-cluster-role
+  name: remittance-monitoring-cluster-role
 subjects:
 - kind: ServiceAccount
-  name: agent-banking-monitoring-service-account
-  namespace: agent-banking-monitoring
+  name: remittance-monitoring-service-account
+  namespace: remittance-monitoring
 ---
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: agent-banking-data-service-account
-  namespace: agent-banking-data
+  name: remittance-data-service-account
+  namespace: remittance-data
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  namespace: agent-banking-data
-  name: agent-banking-data-role
+  namespace: remittance-data
+  name: remittance-data-role
 rules:
 - apiGroups: [""]
   resources: ["pods", "services", "endpoints", "persistentvolumeclaims", "events", "configmaps", "secrets"]
@@ -172,22 +172,22 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: agent-banking-data-role-binding
-  namespace: agent-banking-data
+  name: remittance-data-role-binding
+  namespace: remittance-data
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
-  name: agent-banking-data-role
+  name: remittance-data-role
 subjects:
 - kind: ServiceAccount
-  name: agent-banking-data-service-account
-  namespace: agent-banking-data
+  name: remittance-data-service-account
+  namespace: remittance-data
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: agent-banking-network-policy
-  namespace: agent-banking
+  name: remittance-network-policy
+  namespace: remittance
 spec:
   podSelector: {}
   policyTypes:
@@ -197,16 +197,16 @@ spec:
   - from:
     - namespaceSelector:
         matchLabels:
-          name: agent-banking
+          name: remittance
     - namespaceSelector:
         matchLabels:
-          name: agent-banking-security
+          name: remittance-security
     - namespaceSelector:
         matchLabels:
-          name: agent-banking-monitoring
+          name: remittance-monitoring
     - namespaceSelector:
         matchLabels:
-          name: agent-banking-data
+          name: remittance-data
     ports:
     - protocol: TCP
       port: 8080
@@ -218,16 +218,16 @@ spec:
   - to:
     - namespaceSelector:
         matchLabels:
-          name: agent-banking
+          name: remittance
     - namespaceSelector:
         matchLabels:
-          name: agent-banking-security
+          name: remittance-security
     - namespaceSelector:
         matchLabels:
-          name: agent-banking-monitoring
+          name: remittance-monitoring
     - namespaceSelector:
         matchLabels:
-          name: agent-banking-data
+          name: remittance-data
   - to: []
     ports:
     - protocol: TCP
@@ -242,8 +242,8 @@ spec:
 apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
-  name: agent-banking-pdb
-  namespace: agent-banking
+  name: remittance-pdb
+  namespace: remittance
 spec:
   minAvailable: 2
   selector:
@@ -253,8 +253,8 @@ spec:
 apiVersion: v1
 kind: LimitRange
 metadata:
-  name: agent-banking-limit-range
-  namespace: agent-banking
+  name: remittance-limit-range
+  namespace: remittance
 spec:
   limits:
   - default:
@@ -275,8 +275,8 @@ spec:
 apiVersion: v1
 kind: ResourceQuota
 metadata:
-  name: agent-banking-resource-quota
-  namespace: agent-banking
+  name: remittance-resource-quota
+  namespace: remittance
 spec:
   hard:
     requests.cpu: "50"

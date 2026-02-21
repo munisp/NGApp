@@ -69,7 +69,7 @@ def storage_keys(pattern: str = "*"):
 
 app = FastAPI(
     title="Data Lakehouse",
-    description="Data Lakehouse for Agent Banking Platform",
+    description="Data Lakehouse for Remittance Platform",
     version="1.0.0"
 )
 

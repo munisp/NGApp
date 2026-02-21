@@ -1,6 +1,6 @@
 # Edge Deployment Service
 
-This service manages the deployment and lifecycle of edge devices within the Agent Banking Platform. It provides APIs for registering devices, initiating and tracking deployments, and monitoring device health.
+This service manages the deployment and lifecycle of edge devices within the Remittance Platform. It provides APIs for registering devices, initiating and tracking deployments, and monitoring device health.
 
 ## Features
 

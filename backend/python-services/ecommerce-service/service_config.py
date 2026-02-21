@@ -15,7 +15,7 @@ class DatabaseConfig:
     """Database configuration"""
     host: str = field(default_factory=lambda: os.getenv("DB_HOST", "localhost"))
     port: int = field(default_factory=lambda: int(os.getenv("DB_PORT", "5432")))
-    database: str = field(default_factory=lambda: os.getenv("DB_NAME", "agent_banking"))
+    database: str = field(default_factory=lambda: os.getenv("DB_NAME", "remittance"))
     user: str = field(default_factory=lambda: os.getenv("DB_USER", "postgres"))
     password: str = field(default_factory=lambda: os.getenv("DB_PASSWORD", ""))
     

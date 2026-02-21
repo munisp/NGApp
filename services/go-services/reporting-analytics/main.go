@@ -223,7 +223,7 @@ func main() {
 func loadConfig() *Config {
 	return &Config{
 		Port:        getEnv("PORT", "8089"),
-		DatabaseURL: getEnv("DATABASE_URL", "postgres://user:password@os.getenv("HOST", "os.getenv("HOST", "localhost")")/agent_banking?sslmode=disable"),
+		DatabaseURL: getEnv("DATABASE_URL", "postgres://user:password@os.getenv("HOST", "os.getenv("HOST", "localhost")")/remittance?sslmode=disable"),
 		RedisURL:    getEnv("REDIS_URL", "redis://os.getenv("HOST", "os.getenv("HOST", "localhost")"):6379"),
 	}
 }

@@ -1,57 +1,57 @@
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: agent-banking
+  name: remittance
   labels:
-    name: agent-banking
+    name: remittance
     environment: production
-    project: agent-banking-network
+    project: remittance-network
 ---
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: agent-banking-dev
+  name: remittance-dev
   labels:
-    name: agent-banking-dev
+    name: remittance-dev
     environment: development
-    project: agent-banking-network
+    project: remittance-network
 ---
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: agent-banking-staging
+  name: remittance-staging
   labels:
-    name: agent-banking-staging
+    name: remittance-staging
     environment: staging
-    project: agent-banking-network
+    project: remittance-network
 ---
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: agent-banking-security
+  name: remittance-security
   labels:
-    name: agent-banking-security
+    name: remittance-security
     environment: production
-    project: agent-banking-network
+    project: remittance-network
     component: security
 ---
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: agent-banking-monitoring
+  name: remittance-monitoring
   labels:
-    name: agent-banking-monitoring
+    name: remittance-monitoring
     environment: production
-    project: agent-banking-network
+    project: remittance-network
     component: monitoring
 ---
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: agent-banking-data
+  name: remittance-data
   labels:
-    name: agent-banking-data
+    name: remittance-data
     environment: production
-    project: agent-banking-network
+    project: remittance-network
     component: data-platform
 

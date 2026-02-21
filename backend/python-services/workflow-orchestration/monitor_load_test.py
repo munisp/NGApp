@@ -1,6 +1,6 @@
 """
 Load Test Monitoring and Reporting Script
-Agent Banking Platform V11.0
+Remittance Platform V11.0
 
 Real-time monitoring and reporting for load tests.
 
@@ -23,7 +23,7 @@ import json
 
 DATABASE_URL = os.getenv(
     "DATABASE_URL",
-    "postgresql://workflow_service:password@localhost:5432/agent_banking_platform"
+    "postgresql://workflow_service:password@localhost:5432/remittance_platform"
 )
 
 

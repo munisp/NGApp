@@ -1,6 +1,6 @@
-# Agent Banking Platform - Analytics Dashboard Frontend
+# Remittance Platform - Analytics Dashboard Frontend
 
-This project implements a complete, production-ready React frontend application for an Agent Banking Platform's analytics dashboard. It is built with modern web development best practices, focusing on a professional UI/UX, responsiveness, and API integration readiness.
+This project implements a complete, production-ready React frontend application for an Remittance Platform's analytics dashboard. It is built with modern web development best practices, focusing on a professional UI/UX, responsiveness, and API integration readiness.
 
 ## Features
 

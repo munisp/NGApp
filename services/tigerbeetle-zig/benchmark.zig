@@ -1,5 +1,5 @@
 // TigerBeetle Zig Performance Benchmark
-// High-performance accounting engine benchmarks for Agent Banking Network
+// High-performance accounting engine benchmarks for Remittance Platform
 
 const std = @import("std");
 const print = std.debug.print;
@@ -264,7 +264,7 @@ pub fn main() !void {
     const allocator = gpa.allocator();
     
     print("🚀 TigerBeetle Zig Performance Benchmark\n");
-    print("High-Performance Accounting Engine for Agent Banking Network\n");
+    print("High-Performance Accounting Engine for Remittance Platform\n");
     print("=========================================================\n\n");
     
     const config = BenchmarkConfig{};

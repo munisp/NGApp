@@ -1,4 +1,4 @@
-// build.gradle.kts - Agent Banking Android App Configuration
+// build.gradle.kts - Remittance Platform Android App Configuration
 // Production-grade Gradle configuration with security and performance optimizations
 
 plugins {
@@ -11,11 +11,11 @@ plugins {
 }
 
 android {
-    namespace = "com.agentbanking.app"
+    namespace = "com.remittance.app"
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.agentbanking.app"
+        applicationId = "com.remittance.app"
         minSdk = 24
         targetSdk = 34
         versionCode = 1
@@ -30,8 +30,8 @@ android {
         )
         
         // Build config fields
-        buildConfigField("String", "API_BASE_URL", "\"https://api.agentbanking.com\"")
-        buildConfigField("String", "AUTH_URL", "\"https://auth.agentbanking.com\"")
+        buildConfigField("String", "API_BASE_URL", "\"https://api.remittance-platform.com\"")
+        buildConfigField("String", "AUTH_URL", "\"https://auth.remittance-platform.com\"")
         buildConfigField("Boolean", "ENABLE_CERTIFICATE_PINNING", "true")
         buildConfigField("Boolean", "ENABLE_ROOT_DETECTION", "true")
         buildConfigField("Boolean", "ENABLE_PLAY_INTEGRITY", "true")
@@ -45,7 +45,7 @@ android {
             // These should be loaded from environment variables or secure storage
             storeFile = file(System.getenv("KEYSTORE_PATH") ?: "release.keystore")
             storePassword = System.getenv("KEYSTORE_PASSWORD") ?: ""
-            keyAlias = System.getenv("KEY_ALIAS") ?: "agent-banking"
+            keyAlias = System.getenv("KEY_ALIAS") ?: "remittance"
             keyPassword = System.getenv("KEY_PASSWORD") ?: ""
         }
     }
@@ -82,7 +82,7 @@ android {
             applicationIdSuffix = ".staging"
             versionNameSuffix = "-staging"
             
-            buildConfigField("String", "API_BASE_URL", "\"https://staging-api.agentbanking.com\"")
+            buildConfigField("String", "API_BASE_URL", "\"https://staging-api.remittance-platform.com\"")
         }
     }
 
@@ -235,7 +235,7 @@ dependencies {
 
 // Sentry configuration
 sentry {
-    org.set("agent-banking")
+    org.set("remittance")
     projectName.set("android-app")
     
     // Enable source context for better stack traces

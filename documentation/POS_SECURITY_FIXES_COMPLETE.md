@@ -348,7 +348,7 @@ Improvement:          +85 points
 ### 1. Install Dependencies
 
 ```bash
-cd /home/ubuntu/agent-banking-platform/backend/python-services/pos-integration
+cd /home/ubuntu/remittance-platform/backend/python-services/pos-integration
 pip3 install -r requirements_secure.txt
 ```
 
@@ -371,7 +371,7 @@ python3 pos_service_secure.py
 ### 4. Start Go Fluvio Consumer
 
 ```bash
-cd /home/ubuntu/agent-banking-platform/backend/go-services/pos-fluvio-consumer
+cd /home/ubuntu/remittance-platform/backend/go-services/pos-fluvio-consumer
 go run main.go
 ```
 
@@ -461,7 +461,7 @@ curl -X POST http://localhost:8090/payments/process-with-token \
 ### Run Security Tests
 
 ```bash
-cd /home/ubuntu/agent-banking-platform/backend/python-services/pos-integration
+cd /home/ubuntu/remittance-platform/backend/python-services/pos-integration
 pytest tests/ -v --cov=. --cov-report=html
 ```
 

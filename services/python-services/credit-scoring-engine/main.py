@@ -25,7 +25,7 @@ from sklearn.model_selection import train_test_split
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres:postgres123@localhost:5432/agent_banking")
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres:postgres123@localhost:5432/remittance")
 REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379")
 SERVICE_PORT = int(os.getenv("SERVICE_PORT", "8142"))
 

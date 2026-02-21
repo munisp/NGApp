@@ -1,5 +1,5 @@
 """
-Credit Scoring Service for Agent Banking Platform
+Credit Scoring Service for Remittance Platform
 Provides credit scoring and risk assessment capabilities
 """
 

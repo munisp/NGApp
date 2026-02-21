@@ -25,7 +25,7 @@ from activities import ACTIVITIES
 # Configuration
 TEMPORAL_HOST = os.getenv("TEMPORAL_HOST", "localhost:7233")
 TEMPORAL_NAMESPACE = os.getenv("TEMPORAL_NAMESPACE", "default")
-TASK_QUEUE = os.getenv("TEMPORAL_TASK_QUEUE", "agent-banking-workflows")
+TASK_QUEUE = os.getenv("TEMPORAL_TASK_QUEUE", "remittance-workflows")
 
 # Global Temporal client
 temporal_client: Optional[Client] = None

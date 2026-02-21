@@ -194,7 +194,7 @@ class EventSigner:
         payload: Dict[str, Any],
         key_id: str,
         algorithm: SignatureAlgorithm = SignatureAlgorithm.RSA_SHA256,
-        issuer: str = "agent-banking-platform",
+        issuer: str = "remittance-platform",
         audience: str = "",
         chain_id: str = None
     ) -> SignedEvent:

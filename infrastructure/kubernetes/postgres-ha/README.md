@@ -89,17 +89,17 @@ kubectl apply -f migration-job.yaml
 
 ### Through PgBouncer (Recommended)
 ```
-postgresql://mojaloop:PASSWORD@pgbouncer.agent-banking.svc.cluster.local:6432/mojaloop
+postgresql://mojaloop:PASSWORD@pgbouncer.remittance.svc.cluster.local:6432/mojaloop
 ```
 
 ### Direct to Primary
 ```
-postgresql://mojaloop:PASSWORD@mojaloop-postgres-primary.agent-banking.svc.cluster.local:5432/mojaloop
+postgresql://mojaloop:PASSWORD@mojaloop-postgres-primary.remittance.svc.cluster.local:5432/mojaloop
 ```
 
 ### Direct to Replica (Read-Only)
 ```
-postgresql://mojaloop:PASSWORD@mojaloop-postgres-replica.agent-banking.svc.cluster.local:5432/mojaloop
+postgresql://mojaloop:PASSWORD@mojaloop-postgres-replica.remittance.svc.cluster.local:5432/mojaloop
 ```
 
 ## Schema Organization
@@ -203,26 +203,26 @@ The reconciliation service ensures Postgres state matches TigerBeetle truth.
 
 ### Check Cluster Status
 ```bash
-kubectl get postgresql -n agent-banking
-kubectl describe postgresql mojaloop-postgres -n agent-banking
+kubectl get postgresql -n remittance
+kubectl describe postgresql mojaloop-postgres -n remittance
 ```
 
 ### Check Pod Status
 ```bash
-kubectl get pods -n agent-banking -l cluster-name=mojaloop-postgres
+kubectl get pods -n remittance -l cluster-name=mojaloop-postgres
 ```
 
 ### View Patroni Status
 ```bash
-kubectl exec -it mojaloop-postgres-0 -n agent-banking -- patronictl list
+kubectl exec -it mojaloop-postgres-0 -n remittance -- patronictl list
 ```
 
 ### Check Replication Lag
 ```bash
-kubectl exec -it mojaloop-postgres-0 -n agent-banking -- psql -c "SELECT * FROM pg_stat_replication;"
+kubectl exec -it mojaloop-postgres-0 -n remittance -- psql -c "SELECT * FROM pg_stat_replication;"
 ```
 
 ### View PgBouncer Stats
 ```bash
-kubectl exec -it pgbouncer-xxx -n agent-banking -- psql -p 6432 pgbouncer -c "SHOW POOLS;"
+kubectl exec -it pgbouncer-xxx -n remittance -- psql -p 6432 pgbouncer -c "SHOW POOLS;"
 ```

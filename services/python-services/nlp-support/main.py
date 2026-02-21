@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 NLP Support Service
-Advanced Natural Language Processing platform for agent banking network
+Advanced Natural Language Processing platform for remittance network
 with multilingual support, sentiment analysis, intent classification, and chatbot capabilities
 """
 
@@ -50,7 +50,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Configuration
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres:postgres123@localhost:5432/agent_banking")
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres:postgres123@localhost:5432/remittance")
 REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379")
 SERVICE_PORT = int(os.getenv("SERVICE_PORT", "8138"))
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
@@ -843,7 +843,7 @@ class NLPEngine:
         """Generate response using OpenAI"""
         try:
             prompt = f"""
-            You are a helpful banking assistant for an agent banking network in Nigeria.
+            You are a helpful banking assistant for an remittance network in Nigeria.
             User message: {message}
             Detected intent: {intent.value}
             

@@ -299,7 +299,7 @@ class PushNotificationService {
     // Show notification
     if (payload.notification) {
       this.showNotification(
-        payload.notification.title || 'Agent Banking',
+        payload.notification.title || 'Remittance Platform',
         {
           body: payload.notification.body,
           icon: payload.notification.icon || '/icons/icon-192x192.png',

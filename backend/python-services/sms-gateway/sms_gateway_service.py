@@ -1,5 +1,5 @@
 """
-SMS Gateway Service for Agent Banking Platform
+SMS Gateway Service for Remittance Platform
 Parses and executes SMS banking commands with:
 - PIN/OTP verification for all transactions
 - Rate limiting and fraud detection
@@ -33,7 +33,7 @@ db_pool = None
 class Config:
     """Service configuration from environment variables"""
     REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379")
-    DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://banking_user:banking_pass@localhost:5432/agent_banking")
+    DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://banking_user:banking_pass@localhost:5432/remittance")
     API_BASE_URL = os.getenv("API_BASE_URL", "http://localhost:8000/api/v1")
     
     # SMS Provider settings
@@ -830,13 +830,13 @@ class SMSCommandExecutor:
     
     async def _send_otp_sms(self, phone: str, otp: str) -> None:
         """Send OTP via SMS"""
-        message = f"Your Agent Banking OTP is: {otp}. Valid for 5 minutes. Do not share this code."
+        message = f"Your Remittance Platform OTP is: {otp}. Valid for 5 minutes. Do not share this code."
         await SMSSender.send(phone, message)
     
     def _get_help_message(self) -> str:
         """Get help message"""
         return (
-            "Agent Banking SMS Commands:\n"
+            "Remittance Platform SMS Commands:\n"
             "BAL*PIN - Check balance\n"
             "TRANSFER*phone*amount*PIN - Send money\n"
             "STMT*days*PIN - Mini statement\n"

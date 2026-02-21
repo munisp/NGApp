@@ -1,4 +1,4 @@
-module github.com/agent-banking-platform/hierarchy-engine
+module github.com/remittance-platform/hierarchy-engine
 
 go 1.21
 

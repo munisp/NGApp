@@ -1,4 +1,4 @@
-module github.com/agent-banking-network/connectivity-monitor
+module github.com/remittance-network/connectivity-monitor
 
 go 1.18
 

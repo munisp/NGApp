@@ -9,7 +9,7 @@ export interface OnboardingScreen {
 }
 
 export const ONBOARDING_SCREENS: OnboardingScreen[] = [
-  { id: 1, title: 'Welcome to Agent Banking', description: 'Your complete financial solution', animation: 'welcome' },
+  { id: 1, title: 'Welcome to Remittance Platform', description: 'Your complete financial solution', animation: 'welcome' },
   { id: 2, title: 'Instant Transfers', description: 'Send money in seconds', animation: 'transfer' },
   { id: 3, title: 'Bank-Level Security', description: 'Enterprise encryption', animation: 'security' },
   { id: 4, title: 'Smart Insights', description: 'Track and save', animation: 'insights' },

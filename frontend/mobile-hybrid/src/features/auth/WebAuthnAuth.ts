@@ -10,7 +10,7 @@ export class WebAuthnAuth {
 
     const publicKeyCredentialCreationOptions: PublicKeyCredentialCreationOptions = {
       challenge,
-      rp: { name: 'Agent Banking' },
+      rp: { name: 'Remittance Platform' },
       user: {
         id: new Uint8Array(16),
         name: username,

@@ -1,6 +1,6 @@
 """
 User Migration Script for Keycloak
-Agent Banking Platform V11.0
+Remittance Platform V11.0
 
 Migrates existing users from the database to Keycloak.
 
@@ -328,7 +328,7 @@ async def main():
     )
     parser.add_argument(
         "--realm",
-        default=os.getenv("KEYCLOAK_REALM", "agent-banking"),
+        default=os.getenv("KEYCLOAK_REALM", "remittance"),
         help="Keycloak realm name"
     )
     parser.add_argument(
@@ -354,7 +354,7 @@ async def main():
     )
     parser.add_argument(
         "--db-name",
-        default=os.getenv("DB_NAME", "agent_banking"),
+        default=os.getenv("DB_NAME", "remittance"),
         help="Database name"
     )
     parser.add_argument(

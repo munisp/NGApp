@@ -69,7 +69,7 @@ def storage_keys(pattern: str = "*"):
 
 app = FastAPI(
     title="Backup Management",
-    description="Backup Management for Agent Banking Platform",
+    description="Backup Management for Remittance Platform",
     version="1.0.0"
 )
 

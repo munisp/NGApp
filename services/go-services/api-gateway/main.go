@@ -723,7 +723,7 @@ func (gw *APIGateway) proxyHandler(serviceName string) gin.HandlerFunc {
 		// Customize the proxy
 		proxy.ModifyResponse = func(resp *http.Response) error {
 			// Add custom headers
-			resp.Header.Set("X-Proxied-By", "Agent-Banking-Gateway")
+			resp.Header.Set("X-Proxied-By", "Remittance-Gateway")
 			return nil
 		}
 

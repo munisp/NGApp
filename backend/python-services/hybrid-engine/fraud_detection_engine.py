@@ -1,5 +1,5 @@
 """
-Hybrid Fraud Detection Engine for Agent Banking Platform
+Hybrid Fraud Detection Engine for Remittance Platform
 Implements five-layer architecture combining rule-based and ML/DL/GNN approaches
 """
 

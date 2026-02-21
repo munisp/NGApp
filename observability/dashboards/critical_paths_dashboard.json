@@ -12,7 +12,7 @@
       }
     ]
   },
-  "description": "Critical User Journeys - Agent Banking Platform",
+  "description": "Critical User Journeys - Remittance Platform",
   "editable": true,
   "gnetId": null,
   "graphTooltip": 0,
@@ -436,12 +436,12 @@
   "refresh": "30s",
   "schemaVersion": 30,
   "style": "dark",
-  "tags": ["agent-banking", "slo", "critical-paths"],
+  "tags": ["remittance", "slo", "critical-paths"],
   "templating": {"list": []},
   "time": {"from": "now-1h", "to": "now"},
   "timepicker": {},
   "timezone": "",
-  "title": "Agent Banking - Critical User Journeys",
-  "uid": "agent-banking-critical-paths",
+  "title": "Remittance Platform - Critical User Journeys",
+  "uid": "remittance-critical-paths",
   "version": 1
 }

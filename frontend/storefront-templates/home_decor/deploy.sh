@@ -5,11 +5,11 @@
 echo "Deploying HomeStyle Decor..."
 
 # Copy template to storefront
-cp -r /home/ubuntu/agent-banking-platform/frontend/storefront-templates/home_decor/* \
-      /home/ubuntu/agent-banking-platform/frontend/agent-storefront/
+cp -r /home/ubuntu/remittance-platform/frontend/storefront-templates/home_decor/* \
+      /home/ubuntu/remittance-platform/frontend/agent-storefront/
 
 # Update configuration
-cd /home/ubuntu/agent-banking-platform/frontend/agent-storefront
+cd /home/ubuntu/remittance-platform/frontend/agent-storefront
 cat config.json
 
 echo "Template deployed successfully!"

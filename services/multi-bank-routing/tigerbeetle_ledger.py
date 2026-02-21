@@ -105,7 +105,7 @@ class TigerBeetleLedger:
         """Initialize the ledger and create system accounts"""
         if self.db_pool is None:
             self.db_pool = await asyncpg.create_pool(
-                os.getenv("DATABASE_URL", "postgresql://localhost/agent_banking"),
+                os.getenv("DATABASE_URL", "postgresql://localhost/remittance"),
                 min_size=5,
                 max_size=20
             )

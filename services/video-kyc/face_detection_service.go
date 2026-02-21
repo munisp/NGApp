@@ -231,7 +231,7 @@ func (s *FaceDetectionService) initializeClassifiers() {
 func (s *FaceDetectionService) initializeDatabase() {
 	dbURL := os.Getenv("DATABASE_URL")
 	if dbURL == "" {
-		dbURL = "postgres://postgres:password@localhost:5432/agent_banking?sslmode=disable"
+		dbURL = "postgres://postgres:password@localhost:5432/remittance?sslmode=disable"
 	}
 	
 	var err error

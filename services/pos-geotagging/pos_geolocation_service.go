@@ -86,7 +86,7 @@ type POSGeoService struct {
 // NewPOSGeoService creates a new POS geolocation service
 func NewPOSGeoService() *POSGeoService {
 	// Database connection
-	dsn := "host=localhost user=postgres password=postgres dbname=agent_banking port=5432 sslmode=disable"
+	dsn := "host=localhost user=postgres password=postgres dbname=remittance port=5432 sslmode=disable"
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
 		log.Printf("Failed to connect to database: %v", err)

@@ -44,7 +44,7 @@ class MiddlewareConfig:
     
     # Keycloak
     keycloak_url: str = os.getenv("KEYCLOAK_URL", "http://localhost:8080")
-    keycloak_realm: str = os.getenv("KEYCLOAK_REALM", "agent-banking")
+    keycloak_realm: str = os.getenv("KEYCLOAK_REALM", "remittance")
     keycloak_client_id: str = os.getenv("KEYCLOAK_CLIENT_ID", "mojaloop-services")
     keycloak_client_secret: str = os.getenv("KEYCLOAK_CLIENT_SECRET", "")
     

@@ -1,4 +1,4 @@
-module agent-banking/cash-management
+module remittance/cash-management
 
 go 1.21
 

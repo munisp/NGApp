@@ -1,8 +1,8 @@
-# ETL Pipeline Service for Agent Banking Platform
+# ETL Pipeline Service for Remittance Platform
 
 ## Overview
 
-This service provides a robust and scalable **Extract, Transform, Load (ETL) pipeline** for the Agent Banking Platform. It is built using FastAPI, SQLAlchemy for database interactions, and Pydantic for data validation and serialization. The service includes features such as user authentication, ETL job management, and background task processing for ETL operations.
+This service provides a robust and scalable **Extract, Transform, Load (ETL) pipeline** for the Remittance Platform. It is built using FastAPI, SQLAlchemy for database interactions, and Pydantic for data validation and serialization. The service includes features such as user authentication, ETL job management, and background task processing for ETL operations.
 
 ## Features
 

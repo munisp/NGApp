@@ -1,4 +1,4 @@
-# 🎯 Agent Banking Platform - Executive Summary
+# 🎯 Remittance Platform - Executive Summary
 
 **Project:** Unified Mobile Banking Platform  
 **Version:** 3.0.0  

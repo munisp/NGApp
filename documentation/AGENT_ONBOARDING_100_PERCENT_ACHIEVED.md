@@ -337,13 +337,13 @@ async def get_statistics():
 
 ```bash
 # 1. Navigate to service directory
-cd /home/ubuntu/agent-banking-platform/backend/python-services/onboarding-service
+cd /home/ubuntu/remittance-platform/backend/python-services/onboarding-service
 
 # 2. Install dependencies
 pip install fastapi uvicorn sqlalchemy pydantic[email] psycopg2-binary httpx aiofiles python-jose[cryptography]
 
 # 3. Set environment variables
-export DATABASE_URL="postgresql://user:password@localhost/agent_banking"
+export DATABASE_URL="postgresql://user:password@localhost/remittance"
 export JWT_SECRET="your-secret-key"
 
 # 4. Start the service

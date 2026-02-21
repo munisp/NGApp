@@ -133,7 +133,7 @@ class Config:
     # Database configuration
     DB_HOST = os.getenv('DB_HOST', 'os.getenv("HOST", "os.getenv("HOST", "os.getenv("HOST", "os.getenv("HOST", "os.getenv("HOST", "os.getenv("HOST", "os.getenv("HOST", "os.getenv("HOST", "localhost")")")")")")")")')
     DB_PORT = os.getenv('DB_PORT', '5432')
-    DB_NAME = os.getenv('DB_NAME', 'agent_banking_network')
+    DB_NAME = os.getenv('DB_NAME', 'remittance_network')
     DB_USER = os.getenv('DB_USER', 'postgres')
     DB_PASSWORD = os.getenv('DB_PASSWORD', 'password')
     
@@ -364,7 +364,7 @@ class SecurityManager:
     
     def _derive_key(self, password: bytes) -> bytes:
         """Derive encryption key from password"""
-        salt = b'agent_banking_salt'  # In production, use random salt per encryption
+        salt = b'remittance_salt'  # In production, use random salt per encryption
         kdf = PBKDF2HMAC(
             algorithm=hashes.SHA256(),
             length=32,

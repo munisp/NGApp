@@ -371,7 +371,7 @@ RetryConfig(
 DatabaseNode(
     host="localhost",
     port=5432,
-    database="agent_banking",
+    database="remittance",
     user="postgres",
     password="password",
     role="primary",  # or "replica"

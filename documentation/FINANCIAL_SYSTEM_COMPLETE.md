@@ -1,6 +1,6 @@
 # 🎉 Financial System Implementation Complete!
 
-## Agent Banking Platform - Settlement, Reconciliation & TigerBeetle Integration
+## Remittance Platform - Settlement, Reconciliation & TigerBeetle Integration
 
 **Status:** ✅ **PRODUCTION READY**  
 **Version:** 2.0.0  
@@ -311,7 +311,7 @@
 
 ```bash
 # Run migrations
-psql -U banking_user -d agent_banking -f database/migrations/003_financial_system_schema.sql
+psql -U banking_user -d remittance -f database/migrations/003_financial_system_schema.sql
 ```
 
 **2. Install Python Dependencies**
@@ -345,7 +345,7 @@ go build -o hierarchy-engine main.go
 **4. Configure Environment**
 
 ```bash
-export DATABASE_URL="postgresql://banking_user:banking_pass@localhost:5432/agent_banking"
+export DATABASE_URL="postgresql://banking_user:banking_pass@localhost:5432/remittance"
 export REDIS_URL="redis://localhost:6379"
 export COMMISSION_SERVICE_URL="http://localhost:8010"
 export SETTLEMENT_SERVICE_URL="http://localhost:8020"

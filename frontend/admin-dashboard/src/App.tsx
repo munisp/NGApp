@@ -754,7 +754,7 @@ const api = {
     return {
       id: '1',
       name: 'Adebayo Ogundimu',
-      email: 'adebayo.ogundimu@agentbanking.ng',
+      email: 'adebayo.ogundimu@remittance-platform.ng',
       role: 'super_admin',
       avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face',
       permissions: [
@@ -985,7 +985,7 @@ const Header: React.FC<{
               <Building className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h1 className="text-xl font-bold text-gray-900">Agent Banking</h1>
+              <h1 className="text-xl font-bold text-gray-900">Remittance Platform</h1>
               <p className="text-xs text-gray-500">Admin Dashboard</p>
             </div>
           </div>
@@ -1232,7 +1232,7 @@ const Sidebar: React.FC<{
               <Building className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h2 className="text-lg font-bold text-gray-900">Agent Banking</h2>
+              <h2 className="text-lg font-bold text-gray-900">Remittance Platform</h2>
               <p className="text-sm text-gray-500">Admin Dashboard</p>
             </div>
           </div>
@@ -1245,7 +1245,7 @@ const Sidebar: React.FC<{
           {/* Footer */}
           <div className="p-4 border-t border-gray-200">
             <div className="text-xs text-gray-500 text-center">
-              <p>Agent Banking Network v2.0</p>
+              <p>Remittance Platform v2.0</p>
               <p>© 2024 All rights reserved</p>
             </div>
           </div>
@@ -1402,9 +1402,9 @@ const App: React.FC = () => {
         <ErrorBoundary FallbackComponent={ErrorFallback}>
           <Router>
             <Helmet>
-              <title>Agent Banking Network - Admin Dashboard</title>
-              <meta name="description" content="Comprehensive admin dashboard for Agent Banking Network operations in Nigeria" />
-              <meta name="keywords" content="agent banking, nigeria, fintech, admin dashboard, banking operations" />
+              <title>Remittance Platform - Admin Dashboard</title>
+              <meta name="description" content="Comprehensive admin dashboard for Remittance Platform operations in Nigeria" />
+              <meta name="keywords" content="remittance, nigeria, fintech, admin dashboard, banking operations" />
               <meta name="viewport" content="width=device-width, initial-scale=1.0" />
               <link rel="icon" type="image/x-icon" href="/favicon.ico" />
             </Helmet>

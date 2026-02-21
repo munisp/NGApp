@@ -1,4 +1,4 @@
-module agent-banking/compensating-actions
+module remittance/compensating-actions
 
 go 1.21
 

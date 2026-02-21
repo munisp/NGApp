@@ -81,7 +81,7 @@ function App() {
               <Shield className="h-8 w-8 text-blue-600" />
               <div>
                 <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Super Admin Portal</h1>
-                <p className="text-sm text-slate-600 dark:text-slate-400">Agent Banking Platform Management</p>
+                <p className="text-sm text-slate-600 dark:text-slate-400">Remittance Platform Management</p>
               </div>
             </div>
             <div className="flex items-center space-x-4">

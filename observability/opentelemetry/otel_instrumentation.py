@@ -1,5 +1,5 @@
 """
-OpenTelemetry Standardization for Agent Banking Platform
+OpenTelemetry Standardization for Remittance Platform
 Unified traces, metrics, and log correlation across all Go/Python services
 """
 
@@ -37,7 +37,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class OTelConfig:
     """OpenTelemetry configuration"""
-    service_name: str = os.getenv("SERVICE_NAME", "agent-banking-service")
+    service_name: str = os.getenv("SERVICE_NAME", "remittance-service")
     service_version: str = os.getenv("SERVICE_VERSION", "1.0.0")
     environment: str = os.getenv("DEPLOYMENT_ENVIRONMENT", "development")
     
@@ -68,7 +68,7 @@ class OTelConfig:
 
 class OTelInstrumentation:
     """
-    OpenTelemetry instrumentation manager for the Agent Banking Platform.
+    OpenTelemetry instrumentation manager for the Remittance Platform.
     Provides unified tracing, metrics, and logging across all services.
     """
     
@@ -105,7 +105,7 @@ class OTelInstrumentation:
             SERVICE_NAME: self.config.service_name,
             SERVICE_VERSION: self.config.service_version,
             DEPLOYMENT_ENVIRONMENT: self.config.environment,
-            "service.namespace": "agent-banking",
+            "service.namespace": "remittance",
             "host.name": os.getenv("HOSTNAME", "unknown"),
         })
     

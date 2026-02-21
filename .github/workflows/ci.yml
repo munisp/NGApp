@@ -34,16 +34,13 @@ jobs:
           pip install ruff mypy bandit
       
       - name: Lint Go code
-        run: golangci-lint run --timeout=5m || true
-        continue-on-error: true
+        run: golangci-lint run --timeout=5m
       
       - name: Lint Python code
-        run: ruff check backend/python-services/ --ignore=E501,F401 || true
-        continue-on-error: true
+        run: ruff check backend/python-services/ --ignore=E501,F401
       
       - name: Security scan Python
-        run: bandit -r backend/python-services/ -ll -ii || true
-        continue-on-error: true
+        run: bandit -r backend/python-services/ -ll -ii
 
   test-go:
     name: Go Tests
@@ -70,8 +67,7 @@ jobs:
         env:
           DATABASE_URL: postgres://test:test@localhost:5432/test?sslmode=disable
           REDIS_URL: redis://localhost:6379/0
-        run: go test -v -race ./... || true
-        continue-on-error: true
+        run: go test -v -race ./...
 
   test-python:
     name: Python Tests
@@ -100,8 +96,7 @@ jobs:
         env:
           DATABASE_URL: postgres://test:test@localhost:5432/test?sslmode=disable
           REDIS_URL: redis://localhost:6379/0
-        run: pytest tests/ -v --cov=backend || true
-        continue-on-error: true
+        run: pytest tests/ -v --cov=backend
 
   security:
     name: Security Scan
@@ -120,7 +115,6 @@ jobs:
         with:
           path: ./
           extra_args: --only-verified
-        continue-on-error: true
 
   build:
     name: Build Docker Images
@@ -134,6 +128,5 @@ jobs:
           for dockerfile in $(find . -name "Dockerfile" -type f | head -5); do
             dir=$(dirname "$dockerfile")
             name=$(basename "$dir")
-            docker build -t "agent-banking/$name:test" "$dir" || true
+            docker build -t "remittance/$name:test" "$dir" || true
           done
-        continue-on-error: true

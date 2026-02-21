@@ -2,7 +2,7 @@ apiVersion: keda.sh/v1alpha1
 kind: ScaledObject
 metadata:
   name: connectivity-monitor-scaler
-  namespace: agent-banking
+  namespace: remittance
   labels:
     app: connectivity-monitor
     component: autoscaler
@@ -42,7 +42,7 @@ spec:
   # Redis queue for connectivity checks
   - type: redis
     metadata:
-      address: redis.agent-banking.svc.cluster.local:6379
+      address: redis.remittance.svc.cluster.local:6379
       listName: connectivity_check_queue
       listLength: "10"
       enableTLS: "false"
@@ -74,7 +74,7 @@ apiVersion: keda.sh/v1alpha1
 kind: ScaledObject
 metadata:
   name: connectivity-resilience-scaler
-  namespace: agent-banking
+  namespace: remittance
   labels:
     app: connectivity-resilience
     component: autoscaler
@@ -114,7 +114,7 @@ spec:
   # Redis queue for resilience operations
   - type: redis
     metadata:
-      address: redis.agent-banking.svc.cluster.local:6379
+      address: redis.remittance.svc.cluster.local:6379
       listName: resilience_operation_queue
       listLength: "15"
       enableTLS: "false"
@@ -146,7 +146,7 @@ apiVersion: keda.sh/v1alpha1
 kind: ScaledObject
 metadata:
   name: rural-banking-scaler
-  namespace: agent-banking
+  namespace: remittance
   labels:
     app: rural-banking-service
     component: autoscaler
@@ -186,7 +186,7 @@ spec:
   # Redis queue for rural banking operations
   - type: redis
     metadata:
-      address: redis.agent-banking.svc.cluster.local:6379
+      address: redis.remittance.svc.cluster.local:6379
       listName: rural_banking_queue
       listLength: "8"
       enableTLS: "false"
@@ -218,7 +218,7 @@ apiVersion: keda.sh/v1alpha1
 kind: ScaledObject
 metadata:
   name: ultra-low-bandwidth-scaler
-  namespace: agent-banking
+  namespace: remittance
   labels:
     app: ultra-low-bandwidth-service
     component: autoscaler
@@ -258,7 +258,7 @@ spec:
   # Redis queue for low bandwidth operations
   - type: redis
     metadata:
-      address: redis.agent-banking.svc.cluster.local:6379
+      address: redis.remittance.svc.cluster.local:6379
       listName: low_bandwidth_queue
       listLength: "5"
       enableTLS: "false"
@@ -290,7 +290,7 @@ apiVersion: keda.sh/v1alpha1
 kind: ScaledObject
 metadata:
   name: power-management-scaler
-  namespace: agent-banking
+  namespace: remittance
   labels:
     app: power-management-service
     component: autoscaler
@@ -327,7 +327,7 @@ spec:
   # Redis queue for power management events
   - type: redis
     metadata:
-      address: redis.agent-banking.svc.cluster.local:6379
+      address: redis.remittance.svc.cluster.local:6379
       listName: power_management_queue
       listLength: "3"
       enableTLS: "false"

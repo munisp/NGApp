@@ -11,11 +11,11 @@ YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
 # Configuration
-DB_URL="${1:-postgresql://postgres:password@localhost:5432/agent_banking}"
+DB_URL="${1:-postgresql://postgres:password@localhost:5432/remittance}"
 SEED_FILE="$(dirname "$0")/seed_data.sql"
 
 echo -e "${GREEN}╔══════════════════════════════════════════════════════════╗${NC}"
-echo -e "${GREEN}║     Agent Banking Platform - Load Seed Data             ║${NC}"
+echo -e "${GREEN}║     Remittance Platform - Load Seed Data             ║${NC}"
 echo -e "${GREEN}╚══════════════════════════════════════════════════════════╝${NC}"
 echo ""
 

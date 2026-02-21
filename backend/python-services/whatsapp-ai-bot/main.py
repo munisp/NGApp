@@ -141,7 +141,7 @@ async def get_ai_response(message: str, user_id: str, language: str = "en") -> s
     history = conversation_history.get(user_id, [])
     
     # Build context
-    context = "You are a helpful banking assistant for Agent Banking Platform. "
+    context = "You are a helpful banking assistant for Remittance Platform. "
     context += "Provide concise, accurate responses about banking services. "
     context += "You can help with: checking balance, transferring money, transaction history, "
     context += "fraud detection, account management. Keep responses short and friendly."
@@ -322,11 +322,11 @@ async def handle_greeting(language: str) -> str:
     """Handle greeting messages"""
     
     responses = {
-        "en": "Hello! Welcome to Agent Banking. How can I help you today?\n\nType:\n• 'balance' - Check balance\n• 'transfer' - Send money\n• 'history' - View transactions\n• 'help' - Get help",
-        "yo": "Ẹ ku abọ si Agent Banking! Bawo ni mo ṣe le ran ọ lọwọ loni?\n\nTẹ:\n• 'balance' - Ṣayẹwo iye owo\n• 'transfer' - Fi owo ranṣẹ\n• 'history' - Wo awọn iṣowo\n• 'help' - Gba iranlọwọ",
-        "ig": "Nnọọ! Nnọọ na Agent Banking. Kedu ka m ga-esi nyere gị aka taa?\n\nPịnye:\n• 'balance' - Lelee ego\n• 'transfer' - Zipu ego\n• 'history' - Lee azụmahịa\n• 'help' - Nweta enyemaka",
-        "ha": "Sannu! Barka da zuwa Agent Banking. Ta yaya zan iya taimaka muku yau?\n\nRubuta:\n• 'balance' - Duba kuɗi\n• 'transfer' - Tura kuɗi\n• 'history' - Duba ciniki\n• 'help' - Neman taimako",
-        "pcm": "How far! Welcome to Agent Banking. How I fit help you today?\n\nType:\n• 'balance' - Check money\n• 'transfer' - Send money\n• 'history' - See transactions\n• 'help' - Get help"
+        "en": "Hello! Welcome to Remittance Platform. How can I help you today?\n\nType:\n• 'balance' - Check balance\n• 'transfer' - Send money\n• 'history' - View transactions\n• 'help' - Get help",
+        "yo": "Ẹ ku abọ si Remittance Platform! Bawo ni mo ṣe le ran ọ lọwọ loni?\n\nTẹ:\n• 'balance' - Ṣayẹwo iye owo\n• 'transfer' - Fi owo ranṣẹ\n• 'history' - Wo awọn iṣowo\n• 'help' - Gba iranlọwọ",
+        "ig": "Nnọọ! Nnọọ na Remittance Platform. Kedu ka m ga-esi nyere gị aka taa?\n\nPịnye:\n• 'balance' - Lelee ego\n• 'transfer' - Zipu ego\n• 'history' - Lee azụmahịa\n• 'help' - Nweta enyemaka",
+        "ha": "Sannu! Barka da zuwa Remittance Platform. Ta yaya zan iya taimaka muku yau?\n\nRubuta:\n• 'balance' - Duba kuɗi\n• 'transfer' - Tura kuɗi\n• 'history' - Duba ciniki\n• 'help' - Neman taimako",
+        "pcm": "How far! Welcome to Remittance Platform. How I fit help you today?\n\nType:\n• 'balance' - Check money\n• 'transfer' - Send money\n• 'history' - See transactions\n• 'help' - Get help"
     }
     
     return responses.get(language, responses["en"])

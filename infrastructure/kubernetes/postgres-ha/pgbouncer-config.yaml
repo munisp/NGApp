@@ -4,21 +4,21 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: pgbouncer-config
-  namespace: agent-banking
+  namespace: remittance
 data:
   pgbouncer.ini: |
     [databases]
     ; Primary database for read-write operations
-    mojaloop = host=mojaloop-postgres-primary.agent-banking.svc.cluster.local port=5432 dbname=mojaloop
-    central_ledger = host=mojaloop-postgres-primary.agent-banking.svc.cluster.local port=5432 dbname=mojaloop
-    settlement = host=mojaloop-postgres-primary.agent-banking.svc.cluster.local port=5432 dbname=mojaloop
-    participant_registry = host=mojaloop-postgres-primary.agent-banking.svc.cluster.local port=5432 dbname=mojaloop
-    transfers = host=mojaloop-postgres-primary.agent-banking.svc.cluster.local port=5432 dbname=mojaloop
-    quotes = host=mojaloop-postgres-primary.agent-banking.svc.cluster.local port=5432 dbname=mojaloop
+    mojaloop = host=mojaloop-postgres-primary.remittance.svc.cluster.local port=5432 dbname=mojaloop
+    central_ledger = host=mojaloop-postgres-primary.remittance.svc.cluster.local port=5432 dbname=mojaloop
+    settlement = host=mojaloop-postgres-primary.remittance.svc.cluster.local port=5432 dbname=mojaloop
+    participant_registry = host=mojaloop-postgres-primary.remittance.svc.cluster.local port=5432 dbname=mojaloop
+    transfers = host=mojaloop-postgres-primary.remittance.svc.cluster.local port=5432 dbname=mojaloop
+    quotes = host=mojaloop-postgres-primary.remittance.svc.cluster.local port=5432 dbname=mojaloop
     
     ; Read replicas for read-only operations
-    mojaloop_ro = host=mojaloop-postgres-replica.agent-banking.svc.cluster.local port=5432 dbname=mojaloop
-    central_ledger_ro = host=mojaloop-postgres-replica.agent-banking.svc.cluster.local port=5432 dbname=mojaloop
+    mojaloop_ro = host=mojaloop-postgres-replica.remittance.svc.cluster.local port=5432 dbname=mojaloop
+    central_ledger_ro = host=mojaloop-postgres-replica.remittance.svc.cluster.local port=5432 dbname=mojaloop
     
     [pgbouncer]
     ; Connection settings
@@ -95,7 +95,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: pgbouncer
-  namespace: agent-banking
+  namespace: remittance
   labels:
     app: pgbouncer
     component: connection-pooler
@@ -133,7 +133,7 @@ spec:
             - name: PGBOUNCER_DATABASE
               value: "mojaloop"
             - name: POSTGRESQL_HOST
-              value: "mojaloop-postgres-primary.agent-banking.svc.cluster.local"
+              value: "mojaloop-postgres-primary.remittance.svc.cluster.local"
             - name: POSTGRESQL_PORT
               value: "5432"
             - name: PGBOUNCER_PORT
@@ -205,7 +205,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: pgbouncer
-  namespace: agent-banking
+  namespace: remittance
   labels:
     app: pgbouncer
 spec:
@@ -227,7 +227,7 @@ apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
   name: pgbouncer-pdb
-  namespace: agent-banking
+  namespace: remittance
 spec:
   minAvailable: 1
   selector:

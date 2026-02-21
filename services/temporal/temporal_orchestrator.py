@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Temporal Workflow Orchestrator for Agent Banking Network
+Temporal Workflow Orchestrator for Remittance Platform
 Implements complex, long-running workflows with state persistence and fault tolerance
 """
 
@@ -86,7 +86,7 @@ class TemporalOrchestrator:
     def __init__(self, temporal_host: str = "localhost", temporal_port: int = 7233):
         self.temporal_host = temporal_host
         self.temporal_port = temporal_port
-        self.temporal_namespace = "agent-banking-network"
+        self.temporal_namespace = "remittance-network"
         
         # Workflow registry with persistence
         self.active_workflows: Dict[str, TemporalWorkflow] = {}

@@ -19,11 +19,11 @@ import redis.asyncio as redis
 logger = logging.getLogger(__name__)
 
 # Configuration
-REDIS_HOST = os.getenv('REDIS_HOST', 'redis.agent-banking.svc.cluster.local')
+REDIS_HOST = os.getenv('REDIS_HOST', 'redis.remittance.svc.cluster.local')
 REDIS_PORT = os.getenv('REDIS_PORT', '6379')
 REDIS_URL = os.getenv('REDIS_URL', f'redis://{REDIS_HOST}:{REDIS_PORT}')
-DB_URL = os.getenv('DATABASE_URL', 'postgresql://postgres:postgres@postgres.agent-banking.svc.cluster.local:5432/multibank')
-KAFKA_BOOTSTRAP = os.getenv('KAFKA_BOOTSTRAP_SERVERS', 'kafka.agent-banking.svc.cluster.local:9092')
+DB_URL = os.getenv('DATABASE_URL', 'postgresql://postgres:postgres@postgres.remittance.svc.cluster.local:5432/multibank')
+KAFKA_BOOTSTRAP = os.getenv('KAFKA_BOOTSTRAP_SERVERS', 'kafka.remittance.svc.cluster.local:9092')
 
 
 class PipelineStatus(str, Enum):

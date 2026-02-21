@@ -1,6 +1,6 @@
 """
 Referral Program Workflow Implementation
-Agent Banking Platform V11.0
+Remittance Platform V11.0
 
 This module implements the Referral Program Workflow for viral growth.
 
@@ -134,13 +134,13 @@ class ReferralCodeGenerationWorkflow:
         # Step 4: Create share message
         if input.user_type == "agent":
             share_message = (
-                f"Join me on Agent Banking and earn ₦1,000! "
+                f"Join me on Remittance Platform and earn ₦1,000! "
                 f"Use my code {referral_code} when you sign up. "
                 f"Download: {deep_link}"
             )
         else:
             share_message = (
-                f"Get ₦500 free when you join Agent Banking! "
+                f"Get ₦500 free when you join Remittance Platform! "
                 f"Use code {referral_code} at signup. "
                 f"Download: {deep_link}"
             )

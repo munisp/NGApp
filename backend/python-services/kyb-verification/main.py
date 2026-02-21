@@ -28,7 +28,7 @@ ALLOWED_ORIGINS = os.getenv(
 
 app = FastAPI(
     title="KYB Verification Service",
-    description="KYB Verification for Agent Banking Platform — delegates to kyb_service, deep_kyb, and kyc_kyb_service",
+    description="KYB Verification for Remittance Platform — delegates to kyb_service, deep_kyb, and kyc_kyb_service",
     version="2.0.0"
 )
 

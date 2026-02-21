@@ -31,7 +31,7 @@ class TestAccountCreation:
                 f"{BASE_URL_PRIMARY}/accounts",
                 json={
                     "id": random.randint(1, 1000000),
-                    "ledger": 1,  # Agent Banking
+                    "ledger": 1,  # Remittance Platform
                     "code": 1,    # Agent Wallet
                     "user_data": 0
                 }
@@ -48,7 +48,7 @@ class TestAccountCreation:
                 f"{BASE_URL_PRIMARY}/accounts",
                 json={
                     "id": random.randint(1, 1000000),
-                    "ledger": 1,  # Agent Banking
+                    "ledger": 1,  # Remittance Platform
                     "code": 2,    # Customer Wallet
                     "user_data": 0
                 }

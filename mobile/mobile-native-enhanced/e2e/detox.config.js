@@ -1,5 +1,5 @@
 // detox.config.js - Detox E2E Test Configuration
-// Production-grade end-to-end testing for Agent Banking Mobile
+// Production-grade end-to-end testing for Remittance Platform Mobile
 
 /** @type {Detox.DetoxConfig} */
 module.exports = {

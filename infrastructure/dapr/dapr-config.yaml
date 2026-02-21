@@ -1,8 +1,8 @@
 apiVersion: dapr.io/v1alpha1
 kind: Configuration
 metadata:
-  name: agent-banking-config
-  namespace: agent-banking
+  name: remittance-config
+  namespace: remittance
 spec:
   tracing:
     samplingRate: "1"
@@ -17,12 +17,12 @@ spec:
         deniedSecrets: ["super-secret"]
   accessControl:
     defaultAction: "allow"
-    trustDomain: "agent-banking"
+    trustDomain: "remittance"
     policies:
     - appId: "agent-management"
       defaultAction: "allow"
-      trustDomain: "agent-banking"
-      namespace: "agent-banking"
+      trustDomain: "remittance"
+      namespace: "remittance"
       operations:
       - name: "/api/v1/agents"
         httpVerb: ["GET", "POST"]
@@ -32,8 +32,8 @@ spec:
         action: "allow"
     - appId: "transaction-processing"
       defaultAction: "allow"
-      trustDomain: "agent-banking"
-      namespace: "agent-banking"
+      trustDomain: "remittance"
+      namespace: "remittance"
       operations:
       - name: "/api/v1/transactions"
         httpVerb: ["POST"]
@@ -51,7 +51,7 @@ apiVersion: dapr.io/v1alpha1
 kind: Component
 metadata:
   name: statestore
-  namespace: agent-banking
+  namespace: remittance
 spec:
   type: state.redis
   version: v1
@@ -78,17 +78,17 @@ apiVersion: dapr.io/v1alpha1
 kind: Component
 metadata:
   name: pubsub
-  namespace: agent-banking
+  namespace: remittance
 spec:
   type: pubsub.kafka
   version: v1
   metadata:
   - name: brokers
-    value: "agent-banking-kafka-bootstrap:9092"
+    value: "remittance-kafka-bootstrap:9092"
   - name: consumerGroup
-    value: "agent-banking-group"
+    value: "remittance-group"
   - name: clientID
-    value: "agent-banking-client"
+    value: "remittance-client"
   - name: authType
     value: "none"
   - name: maxMessageBytes
@@ -106,7 +106,7 @@ apiVersion: dapr.io/v1alpha1
 kind: Component
 metadata:
   name: secretstore
-  namespace: agent-banking
+  namespace: remittance
 spec:
   type: secretstores.kubernetes
   version: v1
@@ -116,7 +116,7 @@ spec:
   - name: vaultServerURL
     value: "https://vault:8200"
   - name: vaultKubernetesRole
-    value: "agent-banking"
+    value: "remittance"
   scopes:
   - agent-management
   - transaction-processing
@@ -126,17 +126,17 @@ apiVersion: dapr.io/v1alpha1
 kind: Component
 metadata:
   name: bindings-kafka
-  namespace: agent-banking
+  namespace: remittance
 spec:
   type: bindings.kafka
   version: v1
   metadata:
   - name: brokers
-    value: "agent-banking-kafka-bootstrap:9092"
+    value: "remittance-kafka-bootstrap:9092"
   - name: topics
     value: "transactions,agent-events,fraud-alerts"
   - name: consumerGroup
-    value: "agent-banking-bindings"
+    value: "remittance-bindings"
   - name: publishTopic
     value: "agent-events"
   - name: authType
@@ -149,7 +149,7 @@ apiVersion: dapr.io/v1alpha1
 kind: Component
 metadata:
   name: postgres-binding
-  namespace: agent-banking
+  namespace: remittance
 spec:
   type: bindings.postgres
   version: v1
@@ -172,8 +172,8 @@ spec:
 apiVersion: dapr.io/v1alpha1
 kind: Resiliency
 metadata:
-  name: agent-banking-resiliency
-  namespace: agent-banking
+  name: remittance-resiliency
+  namespace: remittance
 spec:
   policies:
     retries:
@@ -226,7 +226,7 @@ apiVersion: v1
 kind: Secret
 metadata:
   name: redis-secret
-  namespace: agent-banking
+  namespace: remittance
 type: Opaque
 data:
   password: YWdlbnQtYmFua2luZy1yZWRpcw==  # base64 encoded password
@@ -235,7 +235,7 @@ apiVersion: v1
 kind: Secret
 metadata:
   name: postgres-secret
-  namespace: agent-banking
+  namespace: remittance
 type: Opaque
 data:
   connectionString: cG9zdGdyZXNxbDovL3VzZXI6cGFzc3dvcmRAcG9zdGdyZXM6NTQzMi9hZ2VudF9iYW5raW5n  # base64 encoded connection string

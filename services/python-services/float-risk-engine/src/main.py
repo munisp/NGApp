@@ -123,7 +123,7 @@ class RiskAssessmentEngine:
             f"{os.getenv('DB_PASSWORD', 'password')}@"
             f"{os.getenv('DB_HOST', 'localhost')}:"
             f"{os.getenv('DB_PORT', '5432')}/"
-            f"{os.getenv('DB_NAME', 'agent_banking')}"
+            f"{os.getenv('DB_NAME', 'remittance')}"
         )
         self.db_engine = create_engine(db_url)
         logger.info("Database connection initialized")

@@ -1,5 +1,5 @@
 /**
- * Agent Banking Mobile Application
+ * Remittance Platform Mobile Application
  * Main App Component with Navigation and State Management
  */
 

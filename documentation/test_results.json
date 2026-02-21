@@ -41,12 +41,12 @@
       "tested": 100,
       "errors": 6,
       "error_details": [
-        "/home/ubuntu/agent-banking-platform/backend/python-services/data-warehouse/main.py: unexpected character after line continuation character (main.py, line 19)",
-        "/home/ubuntu/agent-banking-platform/backend/python-services/database/main.py: unexpected character after line continuation character (main.py, line 22)",
-        "/home/ubuntu/agent-banking-platform/backend/python-services/edge-deployment/main.py: unexpected character after line continuation character (main.py, line 15)",
-        "/home/ubuntu/agent-banking-platform/backend/python-services/email-service/models.py: invalid syntax (models.py, line 36)",
-        "/home/ubuntu/agent-banking-platform/backend/python-services/hierarchy-service/main.py: f-string: unmatched '[' (main.py, line 69)",
-        "/home/ubuntu/agent-banking-platform/backend/python-services/ml-engine/main.py: unexpected character after line continuation character (main.py, line 13)"
+        "/home/ubuntu/remittance-platform/backend/python-services/data-warehouse/main.py: unexpected character after line continuation character (main.py, line 19)",
+        "/home/ubuntu/remittance-platform/backend/python-services/database/main.py: unexpected character after line continuation character (main.py, line 22)",
+        "/home/ubuntu/remittance-platform/backend/python-services/edge-deployment/main.py: unexpected character after line continuation character (main.py, line 15)",
+        "/home/ubuntu/remittance-platform/backend/python-services/email-service/models.py: invalid syntax (models.py, line 36)",
+        "/home/ubuntu/remittance-platform/backend/python-services/hierarchy-service/main.py: f-string: unmatched '[' (main.py, line 69)",
+        "/home/ubuntu/remittance-platform/backend/python-services/ml-engine/main.py: unexpected character after line continuation character (main.py, line 13)"
       ]
     },
     "docker_configs": {

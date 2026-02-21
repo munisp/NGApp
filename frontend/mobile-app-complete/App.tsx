@@ -1,5 +1,5 @@
 /**
- * Agent Banking Platform - Mobile Application
+ * Remittance Platform - Mobile Application
  * Main Application Entry Point
  */
 

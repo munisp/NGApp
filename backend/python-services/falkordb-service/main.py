@@ -1,6 +1,6 @@
 """
 FalkorDB Service
-Graph Database Service for Agent Banking Platform
+Graph Database Service for Remittance Platform
 Provides graph-based data storage and querying using FalkorDB
 """
 from fastapi import FastAPI, HTTPException, BackgroundTasks
@@ -41,7 +41,7 @@ class Config:
     FALKORDB_HOST = os.getenv("FALKORDB_HOST", "localhost")
     FALKORDB_PORT = int(os.getenv("FALKORDB_PORT", "6379"))
     FALKORDB_PASSWORD = os.getenv("FALKORDB_PASSWORD", None)
-    DEFAULT_GRAPH = os.getenv("DEFAULT_GRAPH", "agent_banking")
+    DEFAULT_GRAPH = os.getenv("DEFAULT_GRAPH", "remittance")
 
 config = Config()
 

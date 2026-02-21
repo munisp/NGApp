@@ -1,5 +1,5 @@
 groups:
-  - name: agent-banking-alerts
+  - name: remittance-alerts
     rules:
       - alert: ServiceDown
         expr: up == 0

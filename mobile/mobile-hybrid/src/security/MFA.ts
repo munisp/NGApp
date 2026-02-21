@@ -43,7 +43,7 @@ class MFA {
   async setupTOTP(userId: string): Promise<TOTPSetup> {
     const secret = this.generateSecret();
     const totp = new OTPAuth.TOTP({
-      issuer: 'Agent Banking',
+      issuer: 'Remittance Platform',
       label: userId,
       algorithm: 'SHA1',
       digits: 6,
@@ -100,7 +100,7 @@ class MFA {
     const code = this.generateOTP();
     
     try {
-      await fetch('https://api.agentbanking.com/mfa/sms', {
+      await fetch('https://api.remittance-platform.com/mfa/sms', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ phoneNumber, code }),
@@ -148,7 +148,7 @@ class MFA {
     const code = this.generateOTP();
     
     try {
-      await fetch('https://api.agentbanking.com/mfa/email', {
+      await fetch('https://api.remittance-platform.com/mfa/email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, code }),

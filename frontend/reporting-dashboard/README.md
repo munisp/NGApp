@@ -1,6 +1,6 @@
-# Agent Banking Platform - Reporting Dashboard
+# Remittance Platform - Reporting Dashboard
 
-This is a complete, production-ready React application for the Agent Banking Platform's reporting dashboard. It is built with modern web development best practices in mind, focusing on performance, responsiveness, and a professional user experience.
+This is a complete, production-ready React application for the Remittance Platform's reporting dashboard. It is built with modern web development best practices in mind, focusing on performance, responsiveness, and a professional user experience.
 
 ## Features
 

@@ -16,12 +16,12 @@ metadata:
     app: openappsec
 data:
   # open-appsec Web Application Firewall Configuration
-  # High-Availability setup for Agent Banking Network Security
+  # High-Availability setup for Remittance Platform Security
   
   local_policy.yaml: |
-    # Agent Banking Network WAF Policy
+    # Remittance Platform WAF Policy
     policies:
-      - name: agent-banking-waf-policy
+      - name: remittance-waf-policy
         mode: prevent-learn
         practices:
           - web-attacks
@@ -158,7 +158,7 @@ data:
 #   - fog-token: OpenAppSec fog service token
 #
 # Required AWS Secrets Manager entries:
-#   - agent-banking/openappsec (with properties: agent-token, fog-token)
+#   - remittance/openappsec (with properties: agent-token, fog-token)
 #
 # To deploy without External Secrets (development only), create a Secret manually:
 # kubectl create secret generic openappsec-secrets \
@@ -352,7 +352,7 @@ data:
     [FILTER]
         Name          modify
         Match         openappsec.*
-        Add           cluster agent-banking-network
+        Add           cluster remittance-network
         Add           component openappsec
 
     [OUTPUT]

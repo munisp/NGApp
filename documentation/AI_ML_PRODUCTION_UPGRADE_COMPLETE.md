@@ -376,7 +376,7 @@ spec:
     spec:
       containers:
       - name: gnn-engine
-        image: agent-banking/gnn-engine:2.0.0
+        image: remittance/gnn-engine:2.0.0
         ports:
         - containerPort: 8080
         resources:

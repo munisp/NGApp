@@ -69,7 +69,7 @@ def storage_keys(pattern: str = "*"):
 
 app = FastAPI(
     title="TigerBeetle Sync",
-    description="TigerBeetle Sync for Agent Banking Platform",
+    description="TigerBeetle Sync for Remittance Platform",
     version="1.0.0"
 )
 

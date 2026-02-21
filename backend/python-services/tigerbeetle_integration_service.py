@@ -142,7 +142,7 @@ async def init_db():
     db_port = os.getenv("DB_PORT", "5432")
     db_user = os.getenv("DB_USER")
     db_password = os.getenv("DB_PASSWORD")
-    db_name = os.getenv("DB_NAME", "agent_banking")
+    db_name = os.getenv("DB_NAME", "remittance")
     redis_url = os.getenv("REDIS_URL")
     
     # Validate required configuration

@@ -1,8 +1,8 @@
-# GNN Engine Service for Agent Banking Platform
+# GNN Engine Service for Remittance Platform
 
 ## Overview
 
-This service is a core component of the Agent Banking Platform, designed to detect financial fraud using Graph Neural Networks (GNNs). It provides a robust, production-ready FastAPI application with comprehensive features including API endpoints for fraud detection, database integration, authentication, error handling, logging, configuration management, health checks, and metrics.
+This service is a core component of the Remittance Platform, designed to detect financial fraud using Graph Neural Networks (GNNs). It provides a robust, production-ready FastAPI application with comprehensive features including API endpoints for fraud detection, database integration, authentication, error handling, logging, configuration management, health checks, and metrics.
 
 ## Features
 

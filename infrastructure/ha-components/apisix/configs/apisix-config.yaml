@@ -1,5 +1,5 @@
 # APISIX API Gateway Configuration
-# High-Availability API Gateway for Agent Banking Network
+# High-Availability API Gateway for Remittance Platform
 # Optimized for Nigerian Banking Operations
 
 deployment:
@@ -65,9 +65,9 @@ apisix:
 
 etcd:
   host:
-    - "http://etcd-0.etcd-headless.agent-banking.svc.cluster.local:2379"
-    - "http://etcd-1.etcd-headless.agent-banking.svc.cluster.local:2379"
-    - "http://etcd-2.etcd-headless.agent-banking.svc.cluster.local:2379"
+    - "http://etcd-0.etcd-headless.remittance.svc.cluster.local:2379"
+    - "http://etcd-1.etcd-headless.remittance.svc.cluster.local:2379"
+    - "http://etcd-2.etcd-headless.remittance.svc.cluster.local:2379"
   prefix: "/apisix"
   timeout: 30
   startup_retry: 2
@@ -167,11 +167,11 @@ discovery:
     default_weight: 50
     namespace_selector:
       equal:
-        - agent-banking
-        - agent-banking-system
+        - remittance
+        - remittance-system
     label_selector:
       equal:
-        app.kubernetes.io/part-of: agent-banking-network
+        app.kubernetes.io/part-of: remittance-network
 
 # Wasm Configuration
 wasm:
@@ -309,10 +309,10 @@ monitoring:
 
   # Grafana Dashboard Integration
   grafana:
-    dashboard_url: "http://grafana.agent-banking.svc.cluster.local:3000"
+    dashboard_url: "http://grafana.remittance.svc.cluster.local:3000"
     
   # Jaeger Tracing
   jaeger:
-    endpoint: "http://jaeger-collector.agent-banking.svc.cluster.local:14268/api/traces"
+    endpoint: "http://jaeger-collector.remittance.svc.cluster.local:14268/api/traces"
     sample_ratio: 0.1
 

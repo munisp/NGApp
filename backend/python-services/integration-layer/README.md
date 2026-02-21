@@ -1,6 +1,6 @@
-# Agent Banking Platform Integration Service
+# Remittance Platform Integration Service
 
-This is a production-ready FastAPI service for the Agent Banking Platform, providing integration with various backend services like PostgreSQL, Redis, and S3 (though Redis and S3 integrations are conceptual in this version).
+This is a production-ready FastAPI service for the Remittance Platform, providing integration with various backend services like PostgreSQL, Redis, and S3 (though Redis and S3 integrations are conceptual in this version).
 
 ## Features
 
@@ -18,7 +18,7 @@ This is a production-ready FastAPI service for the Agent Banking Platform, provi
 ## Project Structure
 
 ```
-agent_banking_service/
+remittance_service/
 ├── main.py
 ├── models.py
 ├── config.py (planned)
@@ -38,7 +38,7 @@ agent_banking_service/
 1.  **Clone the repository** (if applicable):
     ```bash
     git clone <repository_url>
-    cd agent_banking_service
+    cd remittance_service
     ```
 
 2.  **Create a virtual environment**:

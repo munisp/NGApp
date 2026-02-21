@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Fluvio MQTT Integration Service for Agent Banking Network
+Fluvio MQTT Integration Service for Remittance Platform
 Comprehensive IoT connectivity and real-time data streaming
 Zero placeholders, zero mocks - production ready
 """
@@ -40,7 +40,7 @@ class Config:
     # Database
     db_host: str = os.getenv("DB_HOST", "localhost")
     db_port: int = int(os.getenv("DB_PORT", "5432"))
-    db_name: str = os.getenv("DB_NAME", "agent_banking_network")
+    db_name: str = os.getenv("DB_NAME", "remittance_network")
     db_user: str = os.getenv("DB_USER", "postgres")
     db_password: str = os.getenv("DB_PASSWORD", "password")
     
@@ -59,7 +59,7 @@ class Config:
     
     # Fluvio
     fluvio_cluster: str = os.getenv("FLUVIO_CLUSTER", "localhost:9003")
-    fluvio_topic_prefix: str = os.getenv("FLUVIO_TOPIC_PREFIX", "agent-banking")
+    fluvio_topic_prefix: str = os.getenv("FLUVIO_TOPIC_PREFIX", "remittance")
     
     # Service
     service_port: int = int(os.getenv("SERVICE_PORT", "8080"))
@@ -955,7 +955,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="Fluvio MQTT Integration Service",
-    description="IoT connectivity and real-time data streaming for Agent Banking Network",
+    description="IoT connectivity and real-time data streaming for Remittance Platform",
     version="1.0.0",
     lifespan=lifespan
 )

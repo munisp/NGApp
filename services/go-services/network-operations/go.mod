@@ -1,3 +1,3 @@
-module agent-banking-network/network-operations
+module remittance-network/network-operations
 
 go 1.21

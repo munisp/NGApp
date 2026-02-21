@@ -1,4 +1,4 @@
-# PostgreSQL High-Availability Cluster Configuration for Agent Banking Network
+# PostgreSQL High-Availability Cluster Configuration for Remittance Platform
 # Enterprise-grade PostgreSQL cluster optimized for Nigerian banking workloads
 
 apiVersion: v1
@@ -19,7 +19,7 @@ metadata:
     app: postgresql
 data:
   postgresql.conf: |
-    # PostgreSQL Configuration for Agent Banking Network
+    # PostgreSQL Configuration for Remittance Platform
     
     # Connection Settings
     listen_addresses = '*'
@@ -153,7 +153,7 @@ data:
     host    replication     replicator      192.168.0.0/16          scram-sha-256
 
   banking-schema.sql: |
-    -- Banking Schema for Agent Banking Network
+    -- Banking Schema for Remittance Platform
     -- Comprehensive database schema for Nigerian banking operations
     
     -- Create banking database
@@ -1259,7 +1259,7 @@ spec:
           name: dapr-system
     - namespaceSelector:
         matchLabels:
-          name: agent-banking-system
+          name: remittance-system
     - podSelector:
         matchLabels:
           app: postgresql

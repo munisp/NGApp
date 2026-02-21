@@ -55,7 +55,7 @@ data:
         "hostname": "redis-master",
         "port": 6379,
         "use_ssl": false,
-        "password": "agent-banking-redis",
+        "password": "remittance-redis",
         "database": 1
       },
       "opensearch": {
@@ -127,9 +127,9 @@ spec:
         - name: APP__PORT
           value: "4000"
         - name: APP__BASE_URL
-          value: "http://opencti.agent-banking.local"
+          value: "http://opencti.remittance.local"
         - name: APP__ADMIN__EMAIL
-          value: "admin@agent-banking.com"
+          value: "admin@remittance.com"
         - name: APP__ADMIN__PASSWORD
           value: "ChangeMe123!"
         - name: APP__ADMIN__TOKEN
@@ -463,10 +463,10 @@ metadata:
 spec:
   tls:
   - hosts:
-    - opencti.agent-banking.local
+    - opencti.remittance.local
     secretName: opencti-tls
   rules:
-  - host: opencti.agent-banking.local
+  - host: opencti.remittance.local
     http:
       paths:
       - path: /

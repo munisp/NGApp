@@ -284,15 +284,15 @@ class AuditTrailService:
     def __init__(self):
         self.db_url = os.getenv(
             "DATABASE_URL",
-            "postgresql://postgres:postgres@postgres.agent-banking.svc.cluster.local:5432/multibank"
+            "postgresql://postgres:postgres@postgres.remittance.svc.cluster.local:5432/multibank"
         )
         self.redis_url = os.getenv(
             "REDIS_URL",
-            "redis://redis.agent-banking.svc.cluster.local:6379"
+            "redis://redis.remittance.svc.cluster.local:6379"
         )
         self.kafka_bootstrap = os.getenv(
             "KAFKA_BOOTSTRAP_SERVERS",
-            "kafka.agent-banking.svc.cluster.local:9092"
+            "kafka.remittance.svc.cluster.local:9092"
         )
         
         self.db_pool: Optional[asyncpg.Pool] = None

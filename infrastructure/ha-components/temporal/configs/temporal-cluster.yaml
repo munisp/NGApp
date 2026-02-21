@@ -1,4 +1,4 @@
-# Temporal Workflow Orchestration Configuration for Agent Banking Network
+# Temporal Workflow Orchestration Configuration for Remittance Platform
 # High-Availability Temporal Cluster optimized for Nigerian banking workflows
 
 apiVersion: v1
@@ -19,7 +19,7 @@ metadata:
     app: temporal
 data:
   config.yaml: |
-    # Temporal Server Configuration for Agent Banking Network
+    # Temporal Server Configuration for Remittance Platform
     
     # Global configuration
     global:
@@ -1035,7 +1035,7 @@ spec:
   - from:
     - namespaceSelector:
         matchLabels:
-          name: agent-banking-system
+          name: remittance-system
     - namespaceSelector:
         matchLabels:
           name: dapr-system

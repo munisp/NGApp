@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "Agent Banking",
-    "slug": "agent-banking-mobile",
+    "name": "Remittance Platform",
+    "slug": "remittance-mobile",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -16,14 +16,14 @@
     "assetBundlePatterns": ["**/*"],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.agentbanking.mobile"
+      "bundleIdentifier": "com.remittance.mobile"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#667eea"
       },
-      "package": "com.agentbanking.mobile",
+      "package": "com.remittance.mobile",
       "permissions": [
         "CAMERA",
         "ACCESS_FINE_LOCATION",

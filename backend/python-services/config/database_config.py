@@ -65,7 +65,7 @@ def get_database_config() -> DatabaseConfig:
         return DatabaseConfig(
             host=parsed.hostname or "localhost",
             port=parsed.port or 5432,
-            database=parsed.path.lstrip("/") if parsed.path else "agent_banking",
+            database=parsed.path.lstrip("/") if parsed.path else "remittance",
             user=parsed.username or "postgres",
             password=parsed.password or "",
             ssl_mode=os.getenv("DB_SSL_MODE", "prefer"),
@@ -89,7 +89,7 @@ def get_database_config() -> DatabaseConfig:
     return DatabaseConfig(
         host=host,
         port=int(port) if port else 5432,
-        database=database or "agent_banking",
+        database=database or "remittance",
         user=user,
         password=password,
         ssl_mode=os.getenv("DB_SSL_MODE", "prefer"),

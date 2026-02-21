@@ -1,5 +1,5 @@
 """
-Permify Client Library for Agent Banking Platform V11.0
+Permify Client Library for Remittance Platform V11.0
 
 Provides a reusable Permify client for fine-grained authorization.
 
@@ -32,7 +32,7 @@ logger = logging.getLogger(__name__)
 
 class PermifyClient:
     """
-    Permify client wrapper for Agent Banking Platform.
+    Permify client wrapper for Remittance Platform.
     
     Usage:
         client = PermifyClient()
@@ -59,7 +59,7 @@ class PermifyClient:
     def __init__(
         self,
         endpoint: Optional[str] = None,
-        tenant_id: str = "agent-banking",
+        tenant_id: str = "remittance",
         api_key: Optional[str] = None,
         cache_ttl: int = 300  # 5 minutes
     ):

@@ -992,7 +992,7 @@ class IntelligentAutomationService:
         self.postgres_config = postgres_config or {
             'host': 'os.getenv("HOST", "os.getenv("HOST", "os.getenv("HOST", "os.getenv("HOST", "os.getenv("HOST", "os.getenv("HOST", "os.getenv("HOST", "os.getenv("HOST", "os.getenv("HOST", "os.getenv("HOST", "localhost")")")")")")")")")")',
             'port': '5432',
-            'database': 'agent_banking',
+            'database': 'remittance',
             'user': 'postgres',
             'password': 'password'
         }

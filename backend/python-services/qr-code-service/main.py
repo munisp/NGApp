@@ -69,7 +69,7 @@ def storage_keys(pattern: str = "*"):
 
 app = FastAPI(
     title="QR Code Service",
-    description="QR Code Service for Agent Banking Platform",
+    description="QR Code Service for Remittance Platform",
     version="1.0.0"
 )
 

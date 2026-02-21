@@ -1,4 +1,4 @@
-module agent-banking-network/pos-hardware-management
+module remittance-network/pos-hardware-management
 
 go 1.21
 

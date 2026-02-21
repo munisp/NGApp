@@ -1,16 +1,16 @@
 # Multi-lingual Platform Implementation
-## Nigerian Languages Across Agent Banking, E-commerce & Inventory
+## Nigerian Languages Across Remittance Platform, E-commerce & Inventory
 
 **Date**: October 14, 2025  
 **Status**: ✅ **FULLY IMPLEMENTED**  
-**Coverage**: Agent Banking, E-commerce, Inventory Management, All Frontend Apps
+**Coverage**: Remittance Platform, E-commerce, Inventory Management, All Frontend Apps
 
 ---
 
 ## 🎉 Executive Summary
 
-The Agent Banking Platform now has **comprehensive multi-lingual support** across **ALL modules**:
-- ✅ Agent Banking
+The Remittance Platform now has **comprehensive multi-lingual support** across **ALL modules**:
+- ✅ Remittance Platform
 - ✅ E-commerce
 - ✅ Inventory Management
 - ✅ Customer Portal
@@ -43,7 +43,7 @@ The Agent Banking Platform now has **comprehensive multi-lingual support** acros
 
 ## 🌍 Translation Coverage
 
-### Agent Banking Module (8 UI Elements)
+### Remittance Platform Module (8 UI Elements)
 
 | UI Element | English | Yoruba | Igbo | Hausa | Pidgin |
 |------------|---------|--------|------|-------|--------|
@@ -119,7 +119,7 @@ The Agent Banking Platform now has **comprehensive multi-lingual support** acros
 ```
 ┌─────────────────────────────────────────────────────────┐
 │              Frontend Applications (22)                  │
-│  (Agent Banking, E-commerce, Inventory, etc.)           │
+│  (Remittance Platform, E-commerce, Inventory, etc.)           │
 └─────────────────────────────────────────────────────────┘
                             │
                             ▼
@@ -191,7 +191,7 @@ GET  /stats                 - Service statistics
 import { useTranslation, LanguageSelector } from '../shared/useTranslation';
 
 function MyComponent() {
-  const { t, language, changeLanguage } = useTranslation('agent_banking');
+  const { t, language, changeLanguage } = useTranslation('remittance');
   
   return (
     <div>
@@ -209,7 +209,7 @@ function MyComponent() {
 ### 1. Start the Multi-lingual Integration Service
 
 ```bash
-cd /home/ubuntu/agent-banking-platform/backend/python-services/multilingual-integration-service
+cd /home/ubuntu/remittance-platform/backend/python-services/multilingual-integration-service
 python3 main.py &
 ```
 
@@ -221,7 +221,7 @@ import { TranslationProvider } from './shared/useTranslation';
 
 function App() {
   return (
-    <TranslationProvider module="agent_banking" defaultLanguage="en">
+    <TranslationProvider module="remittance" defaultLanguage="en">
       <YourApp />
     </TranslationProvider>
   );
@@ -235,7 +235,7 @@ function App() {
 import { useTranslation, LanguageSelector } from './shared/useTranslation';
 
 function Dashboard() {
-  const { t } = useTranslation('agent_banking');
+  const { t } = useTranslation('remittance');
   
   return (
     <div>
@@ -254,7 +254,7 @@ function Dashboard() {
 
 ## 📱 Example Implementations
 
-### Agent Banking Dashboard
+### Remittance Platform Dashboard
 **File**: `/frontend/agent-portal/src/components/MultilingualDashboard.jsx`
 
 **Features**:
@@ -295,8 +295,8 @@ function Dashboard() {
 # Get all translations in Yoruba
 curl http://localhost:8097/translations?language=yo
 
-# Get Agent Banking translations in Igbo
-curl http://localhost:8097/translations/agent_banking?language=ig
+# Get Remittance Platform translations in Igbo
+curl http://localhost:8097/translations/remittance?language=ig
 
 # Translate UI elements
 curl -X POST http://localhost:8097/translate/ui \
@@ -352,12 +352,12 @@ curl -X POST http://localhost:8097/translate/ui \
 - [x] useTranslation React hook
 - [x] TranslationProvider component
 - [x] LanguageSelector component
-- [x] Agent Banking example
+- [x] Remittance Platform example
 - [x] E-commerce example
 - [x] Inventory example
 
 ### Integration
-- [x] Agent Banking module
+- [x] Remittance Platform module
 - [x] E-commerce module
 - [x] Inventory module
 - [x] Common UI elements
@@ -377,7 +377,7 @@ curl -X POST http://localhost:8097/translate/ui \
 
 | Module | UI Elements | Languages | Status |
 |--------|-------------|-----------|--------|
-| Agent Banking | 8 | 5 | ✅ Complete |
+| Remittance Platform | 8 | 5 | ✅ Complete |
 | E-commerce | 9 | 5 | ✅ Complete |
 | Inventory | 6 | 5 | ✅ Complete |
 | Common UI | 12 | 5 | ✅ Complete |
@@ -424,7 +424,7 @@ curl -X POST http://localhost:8097/translate/ui \
 **What We Built**:
 ✅ **1 New Backend Service** (Multi-lingual Integration Service)  
 ✅ **1 React Hook** (useTranslation)  
-✅ **3 Example Implementations** (Agent Banking, E-commerce, Inventory)  
+✅ **3 Example Implementations** (Remittance Platform, E-commerce, Inventory)  
 ✅ **40 UI Elements Translated** across 5 modules  
 ✅ **5 Languages Supported** (375M+ speakers)  
 ✅ **100% Coverage** of major Nigerian languages

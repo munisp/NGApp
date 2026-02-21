@@ -1,6 +1,6 @@
 """
 Load Testing Script for Agent Hierarchy & Override Commission Workflow
-Agent Banking Platform V11.0
+Remittance Platform V11.0
 
 This script implements comprehensive load testing using Locust framework.
 

@@ -1,4 +1,4 @@
-module agent-banking/audit-compliance
+module remittance/audit-compliance
 
 go 1.21
 

@@ -1,4 +1,4 @@
-module github.com/agent-banking-network/account-services
+module github.com/remittance-network/account-services
 
 go 1.21
 

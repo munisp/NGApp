@@ -790,7 +790,7 @@ func main() {
 	// Database connection
 	dsn := os.Getenv("DATABASE_URL")
 	if dsn == "" {
-		dsn = "postgres://agent_banking:agent_banking@postgresql:5432/agent_banking?sslmode=disable"
+		dsn = "postgres://remittance:remittance@postgresql:5432/remittance?sslmode=disable"
 	}
 
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{

@@ -1,5 +1,5 @@
 # IT Operations Runbook - Grafana Monitoring Stack
-## Agent Banking Platform - Ansible Automation Guide
+## Remittance Platform - Ansible Automation Guide
 
 **Version:** 1.0  
 **Last Updated:** October 29, 2025  
@@ -50,8 +50,8 @@ ansible monitoring -i inventories/production -m shell -a "journalctl -u grafana-
 
 | Environment | Grafana | Prometheus | AlertManager |
 |-------------|---------|------------|--------------|
-| **Production** | https://monitoring.agentbanking.com | https://prometheus.agentbanking.com | https://alerts.agentbanking.com |
-| **Staging** | https://staging-monitoring.agentbanking.com | http://staging-prometheus:9090 | http://staging-alerts:9093 |
+| **Production** | https://monitoring.remittance-platform.com | https://prometheus.remittance-platform.com | https://alerts.remittance-platform.com |
+| **Staging** | https://staging-monitoring.remittance-platform.com | http://staging-prometheus:9090 | http://staging-alerts:9093 |
 
 ### **Credentials**
 
@@ -102,7 +102,7 @@ ansible monitoring -i inventories/production -m shell -a "systemctl status grafa
 ```bash
 # Check dashboard count
 curl -s -u admin:$GRAFANA_ADMIN_PASSWORD \
-  https://monitoring.agentbanking.com/api/search?type=dash-db | \
+  https://monitoring.remittance-platform.com/api/search?type=dash-db | \
   jq '. | length'
 ```
 
@@ -115,7 +115,7 @@ curl -s -u admin:$GRAFANA_ADMIN_PASSWORD \
 
 ```bash
 # Check target health
-curl -s https://prometheus.agentbanking.com/api/v1/targets | \
+curl -s https://prometheus.remittance-platform.com/api/v1/targets | \
   jq '.data.activeTargets[] | select(.health != "up") | {job: .labels.job, health: .health}'
 ```
 
@@ -128,7 +128,7 @@ curl -s https://prometheus.agentbanking.com/api/v1/targets | \
 
 ```bash
 # Check for firing alerts
-curl -s https://alerts.agentbanking.com/api/v2/alerts | \
+curl -s https://alerts.remittance-platform.com/api/v2/alerts | \
   jq '[.[] | select(.status.state == "active")] | length'
 ```
 
@@ -181,7 +181,7 @@ ansible monitoring -i inventories/production -m shell \
 
 #### **Executive Dashboard Review**
 
-**Access:** https://monitoring.agentbanking.com/d/executive-dashboard
+**Access:** https://monitoring.remittance-platform.com/d/executive-dashboard
 
 **Key Metrics to Watch:**
 
@@ -211,7 +211,7 @@ ansible monitoring -i inventories/production -m shell \
 
 #### **Security Dashboard Review**
 
-**Access:** https://monitoring.agentbanking.com/d/security-dashboard
+**Access:** https://monitoring.remittance-platform.com/d/security-dashboard
 
 **Key Metrics to Watch:**
 
@@ -241,7 +241,7 @@ ansible monitoring -i inventories/production -m shell \
 
 #### **Engineering Dashboard Review**
 
-**Access:** https://monitoring.agentbanking.com/d/engineering-dashboard
+**Access:** https://monitoring.remittance-platform.com/d/engineering-dashboard
 
 **Key Metrics to Watch:**
 
@@ -299,7 +299,7 @@ ansible-playbook -i inventories/staging playbooks/restore-backup.yml \
 
 ```bash
 # List S3 backups
-aws s3 ls s3://agent-banking-monitoring-backups/ --recursive | tail -10
+aws s3 ls s3://remittance-monitoring-backups/ --recursive | tail -10
 ```
 
 **Expected:** Backups uploaded to S3
@@ -320,7 +320,7 @@ aws s3 ls s3://agent-banking-monitoring-backups/ --recursive | tail -10
 # Check dashboard load times
 curl -w "@curl-format.txt" -o /dev/null -s \
   -u admin:$GRAFANA_ADMIN_PASSWORD \
-  https://monitoring.agentbanking.com/api/dashboards/uid/executive-dashboard
+  https://monitoring.remittance-platform.com/api/dashboards/uid/executive-dashboard
 ```
 
 **Expected:** Response time < 500ms
@@ -329,7 +329,7 @@ curl -w "@curl-format.txt" -o /dev/null -s \
 
 ```bash
 # Check slow queries
-curl -s https://prometheus.agentbanking.com/api/v1/status/tsdb | jq '.data'
+curl -s https://prometheus.remittance-platform.com/api/v1/status/tsdb | jq '.data'
 ```
 
 **Look for:**
@@ -371,8 +371,8 @@ ansible monitoring -i inventories/production -m shell \
 
 ```bash
 # Check certificate expiry
-echo | openssl s_client -servername monitoring.agentbanking.com \
-  -connect monitoring.agentbanking.com:443 2>/dev/null | \
+echo | openssl s_client -servername monitoring.remittance-platform.com \
+  -connect monitoring.remittance-platform.com:443 2>/dev/null | \
   openssl x509 -noout -dates
 ```
 
@@ -470,11 +470,11 @@ ansible-playbook -i inventories/staging playbooks/ci-cd-deploy.yml \
 
 ```bash
 # 1. Access Grafana
-open https://staging-monitoring.agentbanking.com
+open https://staging-monitoring.remittance-platform.com
 
 # 2. Verify dashboards load
 curl -s -u admin:$GRAFANA_ADMIN_PASSWORD \
-  https://staging-monitoring.agentbanking.com/api/search?type=dash-db | \
+  https://staging-monitoring.remittance-platform.com/api/search?type=dash-db | \
   jq '.[].title'
 
 # 3. Check Prometheus
@@ -510,7 +510,7 @@ ansible monitoring -i inventories/production -m shell \
   -a "ls -lh /var/backups/grafana/$(date +%Y-%m-%d)/" -b
 
 # 3. Verify S3 backup
-aws s3 ls s3://agent-banking-monitoring-backups/$(date +%Y-%m-%d)/
+aws s3 ls s3://remittance-monitoring-backups/$(date +%Y-%m-%d)/
 ```
 
 **Expected:** Backup files created with today's date
@@ -548,7 +548,7 @@ ansible-playbook -i inventories/production playbooks/ci-cd-deploy.yml \
 
 # 2. Verify dashboards
 curl -s -u admin:$GRAFANA_ADMIN_PASSWORD \
-  https://monitoring.agentbanking.com/api/search?type=dash-db | \
+  https://monitoring.remittance-platform.com/api/search?type=dash-db | \
   jq '.[].title'
 
 # 3. Check all services
@@ -562,13 +562,13 @@ ansible monitoring -i inventories/production -m systemd \
   -a "name=alertmanager" -b
 
 # 4. Verify Prometheus targets
-curl -s https://prometheus.agentbanking.com/api/v1/targets | \
+curl -s https://prometheus.remittance-platform.com/api/v1/targets | \
   jq '.data.activeTargets[] | select(.health != "up")'
 
 # Expected: Empty (all targets healthy)
 
 # 5. Check for alerts
-curl -s https://alerts.agentbanking.com/api/v2/alerts | \
+curl -s https://alerts.remittance-platform.com/api/v2/alerts | \
   jq '[.[] | select(.status.state == "active")]'
 
 # Expected: Empty or known alerts only
@@ -782,7 +782,7 @@ ansible monitoring -i inventories/production -m systemd \
 # 6. Wait 30 seconds and verify
 sleep 30
 curl -s -u admin:$GRAFANA_ADMIN_PASSWORD \
-  https://monitoring.agentbanking.com/api/search?type=dash-db | \
+  https://monitoring.remittance-platform.com/api/search?type=dash-db | \
   jq '.[].title'
 ```
 
@@ -794,7 +794,7 @@ curl -s -u admin:$GRAFANA_ADMIN_PASSWORD \
 
 ```bash
 # 1. Identify down targets
-curl -s https://prometheus.agentbanking.com/api/v1/targets | \
+curl -s https://prometheus.remittance-platform.com/api/v1/targets | \
   jq '.data.activeTargets[] | select(.health != "up") | {job: .labels.job, instance: .labels.instance, error: .lastError}'
 
 # 2. Check target connectivity
@@ -824,7 +824,7 @@ ansible monitoring -i inventories/production -m shell \
   -a "killall -HUP prometheus" -b
 
 # 7. Verify target is now up
-curl -s https://prometheus.agentbanking.com/api/v1/targets | \
+curl -s https://prometheus.remittance-platform.com/api/v1/targets | \
   jq '.data.activeTargets[] | select(.labels.instance == "target-host:9100") | .health'
 ```
 
@@ -959,7 +959,7 @@ ansible-playbook -i inventories/production playbooks/deploy-monitoring.yml
 ```bash
 # 1. Check if dashboard exists in API
 curl -s -u admin:$GRAFANA_ADMIN_PASSWORD \
-  https://monitoring.agentbanking.com/api/search?query=executive | jq '.'
+  https://monitoring.remittance-platform.com/api/search?query=executive | jq '.'
 
 # 2. Check dashboard JSON is valid
 ansible monitoring -i inventories/production -m shell \
@@ -989,11 +989,11 @@ ansible monitoring -i inventories/production -m systemd \
 
 ```bash
 # 1. Check Prometheus query performance
-curl -s 'https://prometheus.agentbanking.com/api/v1/query?query=up' \
+curl -s 'https://prometheus.remittance-platform.com/api/v1/query?query=up' \
   -w "\nTime: %{time_total}s\n"
 
 # 2. Check for high cardinality
-curl -s https://prometheus.agentbanking.com/api/v1/status/tsdb | \
+curl -s https://prometheus.remittance-platform.com/api/v1/status/tsdb | \
   jq '.data.seriesCountByMetricName | to_entries | sort_by(.value) | reverse | .[0:10]'
 
 # 3. Check Grafana resource usage
@@ -1207,7 +1207,7 @@ ansible-playbook -i inventories/production playbooks/ci-cd-deploy.yml \
 
 # 5. Verify dashboards
 curl -s -u admin:$GRAFANA_ADMIN_PASSWORD \
-  https://monitoring.agentbanking.com/api/search?type=dash-db | \
+  https://monitoring.remittance-platform.com/api/search?type=dash-db | \
   jq '.[].title'
 
 # 6. Announce completion
@@ -1297,8 +1297,8 @@ ansible monitoring -i inventories/production -m shell \
 
 ```bash
 # 1. Check certificate expiry
-echo | openssl s_client -servername monitoring.agentbanking.com \
-  -connect monitoring.agentbanking.com:443 2>/dev/null | \
+echo | openssl s_client -servername monitoring.remittance-platform.com \
+  -connect monitoring.remittance-platform.com:443 2>/dev/null | \
   openssl x509 -noout -dates
 
 # 2. Obtain new certificate
@@ -1316,8 +1316,8 @@ ansible monitoring -i inventories/production -m systemd \
   -a "name=nginx state=reloaded" -b
 
 # 5. Verify new certificate
-echo | openssl s_client -servername monitoring.agentbanking.com \
-  -connect monitoring.agentbanking.com:443 2>/dev/null | \
+echo | openssl s_client -servername monitoring.remittance-platform.com \
+  -connect monitoring.remittance-platform.com:443 2>/dev/null | \
   openssl x509 -noout -dates
 ```
 
@@ -1335,7 +1335,7 @@ NEW_PASSWORD=$(openssl rand -base64 32)
 curl -X PUT \
   -H "Content-Type: application/json" \
   -u admin:$GRAFANA_ADMIN_PASSWORD \
-  https://monitoring.agentbanking.com/api/user/password \
+  https://monitoring.remittance-platform.com/api/user/password \
   -d "{\"oldPassword\":\"$GRAFANA_ADMIN_PASSWORD\",\"newPassword\":\"$NEW_PASSWORD\",\"confirmNew\":\"$NEW_PASSWORD\"}"
 
 # 3. Update in secrets management
@@ -1350,7 +1350,7 @@ export GRAFANA_ADMIN_PASSWORD="$NEW_PASSWORD"
 
 # 6. Test new password
 curl -s -u admin:$NEW_PASSWORD \
-  https://monitoring.agentbanking.com/api/org
+  https://monitoring.remittance-platform.com/api/org
 
 # 7. Notify team
 # Post in #devops: "Grafana admin password rotated - check 1Password"
@@ -1366,7 +1366,7 @@ curl -s -u admin:$NEW_PASSWORD \
 |------|---------|-----------|---------|
 | Current | See PagerDuty | See PagerDuty | See PagerDuty |
 
-**PagerDuty:** https://agentbanking.pagerduty.com
+**PagerDuty:** https://remittance.pagerduty.com
 
 ### **Escalation Path**
 
@@ -1465,6 +1465,6 @@ Print this checklist and keep it handy:
 **Next Review:** November 29, 2025  
 
 **Questions or Issues?**  
-Contact: devops@agentbanking.com  
+Contact: devops@remittance-platform.com  
 Slack: #devops
 

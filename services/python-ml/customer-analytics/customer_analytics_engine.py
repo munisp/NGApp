@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Agent Banking Network - Customer Analytics Engine
+Remittance Platform - Customer Analytics Engine
 Advanced ML-powered customer analytics and insights service for Nigerian banking
 
 This service provides comprehensive customer analytics including:
@@ -132,7 +132,7 @@ class CustomerAnalyticsConfig:
     """Configuration for Customer Analytics Engine"""
     
     # Database configuration
-    database_url: str = os.getenv('DATABASE_URL', os.getenv('DATABASE_URL', 'postgresql://postgres:password@localhost:5432/agent_banking'))
+    database_url: str = os.getenv('DATABASE_URL', os.getenv('DATABASE_URL', 'postgresql://postgres:password@localhost:5432/remittance'))
     redis_url: str = os.getenv('REDIS_URL', 'redis://localhost:6379/3')
     mongodb_url: str = os.getenv('MONGODB_URL', 'mongodb://localhost:27017/customer_analytics')
     

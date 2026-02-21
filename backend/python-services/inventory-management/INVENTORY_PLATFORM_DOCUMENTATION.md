@@ -2,10 +2,10 @@
 
 ## Overview
 
-The Inventory Management Platform is a robust B2B supply chain solution that integrates agents with manufacturers, provides credit facilities, and manages shipping and logistics. It's fully integrated into the Agent Banking Platform.
+The Inventory Management Platform is a robust B2B supply chain solution that integrates agents with manufacturers, provides credit facilities, and manages shipping and logistics. It's fully integrated into the Remittance Platform.
 
 **Port**: 8027  
-**Database**: PostgreSQL (agent_banking)  
+**Database**: PostgreSQL (remittance)  
 **Cache**: Redis  
 **API Style**: RESTful
 
@@ -578,7 +578,7 @@ PREPARING → IN_TRANSIT → OUT_FOR_DELIVERY → DELIVERED
 
 ---
 
-## 🔗 Integration with Agent Banking Platform
+## 🔗 Integration with Remittance Platform
 
 ### Connected Services
 
@@ -712,7 +712,7 @@ DATABASE_HOST=localhost
 DATABASE_PORT=5432
 DATABASE_USER=postgres
 DATABASE_PASSWORD=postgres
-DATABASE_NAME=agent_banking
+DATABASE_NAME=remittance
 REDIS_URL=redis://localhost:6379
 PORT=8027
 ```

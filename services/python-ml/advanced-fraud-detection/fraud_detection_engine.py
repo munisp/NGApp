@@ -48,16 +48,16 @@ class FraudDetectionConfig:
     
     def __init__(self):
         # Build Redis URL from components or use full URL - FIXED malformed URL
-        redis_host = os.getenv('REDIS_HOST', 'redis.agent-banking.svc.cluster.local')
+        redis_host = os.getenv('REDIS_HOST', 'redis.remittance.svc.cluster.local')
         redis_port = os.getenv('REDIS_PORT', '6379')
         self.redis_url = os.getenv('REDIS_URL', f'redis://{redis_host}:{redis_port}')
         
         # Model storage - use S3/RustFS for production persistence
         self.model_path = os.getenv('MODEL_PATH', '/var/lib/fraud-models')
         self.s3_model_bucket = os.getenv('S3_MODEL_BUCKET', 'fraud-detection-models')
-        self.s3_endpoint = os.getenv('S3_ENDPOINT', 'http://rustfs.agent-banking.svc.cluster.local:9000')
+        self.s3_endpoint = os.getenv('S3_ENDPOINT', 'http://rustfs.remittance.svc.cluster.local:9000')
         
-        self.mlflow_tracking_uri = os.getenv('MLFLOW_TRACKING_URI', 'http://mlflow.agent-banking.svc.cluster.local:5000')
+        self.mlflow_tracking_uri = os.getenv('MLFLOW_TRACKING_URI', 'http://mlflow.remittance.svc.cluster.local:5000')
         self.batch_size = int(os.getenv('BATCH_SIZE', '32'))
         self.learning_rate = float(os.getenv('LEARNING_RATE', '0.001'))
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')

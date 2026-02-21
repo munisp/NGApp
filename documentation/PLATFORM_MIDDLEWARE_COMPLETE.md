@@ -391,7 +391,7 @@ docker run -d -p 7233:7233 temporalio/auto-setup
 ### **2. Start Unified Platform Middleware**
 
 ```bash
-cd /home/ubuntu/agent-banking-platform/backend/python-services/platform-middleware
+cd /home/ubuntu/remittance-platform/backend/python-services/platform-middleware
 python unified_middleware.py
 
 # Service runs on: http://localhost:8090
@@ -400,7 +400,7 @@ python unified_middleware.py
 ### **3. Start Omnichannel Middleware**
 
 ```bash
-cd /home/ubuntu/agent-banking-platform/backend/python-services/omnichannel-middleware
+cd /home/ubuntu/remittance-platform/backend/python-services/omnichannel-middleware
 python middleware_integration.py
 
 # Service runs on: http://localhost:8060
@@ -486,5 +486,5 @@ tail -f /var/log/communication-services/middleware.log
 
 **Status:** ✅ **FULLY INTEGRATED** 🚀
 
-The Agent Banking Platform now has a **world-class microservices architecture** with complete middleware integration across all services!
+The Remittance Platform now has a **world-class microservices architecture** with complete middleware integration across all services!
 

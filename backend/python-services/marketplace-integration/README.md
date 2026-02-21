@@ -77,4 +77,4 @@ Interactive API documentation available at:
 
 ## License
 
-Proprietary - Agent Banking Platform V11.0
+Proprietary - Remittance Platform V11.0
