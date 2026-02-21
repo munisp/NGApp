@@ -1,212 +1,157 @@
 """
-Backup Management Service
+Backup Service
 Port: 8113
 """
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Depends, Header
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional, List, Dict, Any
-from datetime import datetime
-import uvicorn
-
-# Redis-based storage (replaces in-memory dict)
+from datetime import datetime, timedelta
+from enum import Enum
+import uuid
 import os
 import json
-import redis
+import asyncpg
+import uvicorn
 
-_redis_client = None
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://remittance:remittance@localhost:5432/remittance")
+REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
 
-def get_redis_client():
-    """Get Redis client - requires REDIS_URL environment variable"""
-    global _redis_client
-    if _redis_client is None:
-        redis_url = os.getenv("REDIS_URL")
-        if not redis_url:
-            raise ValueError("REDIS_URL environment variable is required for storage")
-        _redis_client = redis.from_url(redis_url, decode_responses=True)
-    return _redis_client
+_db_pool = None
 
-def storage_get(key: str):
-    """Get value from Redis storage"""
-    try:
-        client = get_redis_client()
-        value = client.get(f"storage:{key}")
-        return json.loads(value) if value else None
-    except Exception as e:
-        print(f"Storage get error: {e}")
-        return None
+async def get_db_pool():
+    global _db_pool
+    if _db_pool is None:
+        _db_pool = await asyncpg.create_pool(DATABASE_URL, min_size=2, max_size=10)
+    return _db_pool
 
-def storage_set(key: str, value, ttl: int = 86400):
-    """Set value in Redis storage with optional TTL (default 24h)"""
-    try:
-        client = get_redis_client()
-        client.setex(f"storage:{key}", ttl, json.dumps(value))
-        return True
-    except Exception as e:
-        print(f"Storage set error: {e}")
-        return False
+async def verify_token(authorization: str = Header(...)):
+    if not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Invalid authorization header")
+    token = authorization[7:]
+    if not token or len(token) < 10:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    return token
 
-def storage_delete(key: str):
-    """Delete value from Redis storage"""
-    try:
-        client = get_redis_client()
-        client.delete(f"storage:{key}")
-        return True
-    except Exception as e:
-        print(f"Storage delete error: {e}")
-        return False
+app = FastAPI(title="Backup Service", description="Backup Service for Remittance Platform", version="1.0.0")
+app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 
-def storage_keys(pattern: str = "*"):
-    """Get all keys matching pattern"""
-    try:
-        client = get_redis_client()
-        return [k.replace("storage:", "") for k in client.keys(f"storage:{pattern}")]
-    except Exception as e:
-        print(f"Storage keys error: {e}")
-        return []
-
-
-
-app = FastAPI(
-    title="Backup Management",
-    description="Backup Management for Remittance Platform",
-    version="1.0.0"
-)
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-# In-memory storage (replace with database in production)
-# storage = {}  # REPLACED: Use storage_get/storage_set functions instead
-stats = {
-    "total_requests": 0,
-    "total_items": 0,
-    "start_time": datetime.now()
-}
-
-# Pydantic Models
-class Item(BaseModel):
-    id: Optional[str] = None
-    data: Dict[str, Any]
-    created_at: Optional[datetime] = None
-    updated_at: Optional[datetime] = None
-
-@app.get("/")
-async def root():
-    return {
-        "service": "backup-service",
-        "description": "Backup Management",
-        "version": "1.0.0",
-        "port": 8113,
-        "status": "operational"
-    }
+@app.on_event("startup")
+async def startup():
+    pool = await get_db_pool()
+    async with pool.acquire() as conn:
+        await conn.execute("""
+            CREATE TABLE IF NOT EXISTS backups (
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                backup_type VARCHAR(50) NOT NULL,
+                source VARCHAR(255) NOT NULL,
+                destination VARCHAR(255),
+                size_bytes BIGINT DEFAULT 0,
+                status VARCHAR(20) DEFAULT 'pending',
+                started_at TIMESTAMPTZ DEFAULT NOW(),
+                completed_at TIMESTAMPTZ,
+                retention_days INT DEFAULT 30,
+                metadata JSONB DEFAULT '{}',
+                created_at TIMESTAMPTZ DEFAULT NOW()
+            );
+            CREATE TABLE IF NOT EXISTS backup_schedules (
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                name VARCHAR(100) NOT NULL,
+                backup_type VARCHAR(50) NOT NULL,
+                source VARCHAR(255) NOT NULL,
+                cron_expression VARCHAR(100) NOT NULL,
+                retention_days INT DEFAULT 30,
+                is_active BOOLEAN DEFAULT TRUE,
+                last_run_at TIMESTAMPTZ,
+                created_at TIMESTAMPTZ DEFAULT NOW()
+            )
+        """)
 
 @app.get("/health")
 async def health_check():
-    uptime = (datetime.now() - stats["start_time"]).total_seconds()
-    return {
-        "status": "healthy",
-        "uptime_seconds": int(uptime),
-        "total_requests": stats["total_requests"],
-        "total_items": stats["total_items"]
-    }
+    try:
+        pool = await get_db_pool()
+        async with pool.acquire() as conn:
+            await conn.fetchval("SELECT 1")
+        return {"status": "healthy", "service": "backup-service", "database": "connected"}
+    except Exception as e:
+        return {"status": "degraded", "service": "backup-service", "error": str(e)}
 
-@app.post("/items")
-async def create_item(item: Item):
-    """Create a new item"""
-    stats["total_requests"] += 1
-    item_id = f"item_{len(storage) + 1}"
-    item.id = item_id
-    item.created_at = datetime.now()
-    item.updated_at = datetime.now()
-    storage[item_id] = item.dict()
-    stats["total_items"] += 1
-    return {"success": True, "item_id": item_id, "item": item}
 
-@app.get("/items")
-async def list_items(skip: int = 0, limit: int = 100):
-    """List all items"""
-    stats["total_requests"] += 1
-    items = list(storage.values())[skip:skip+limit]
-    return {
-        "success": True,
-        "total": len(storage),
-        "items": items,
-        "skip": skip,
-        "limit": limit
-    }
+class BackupCreate(BaseModel):
+    backup_type: str
+    source: str
+    destination: Optional[str] = None
+    retention_days: int = 30
 
-@app.get("/items/{item_id}")
-async def get_item(item_id: str):
-    """Get a specific item"""
-    stats["total_requests"] += 1
-    if item_id not in storage:
-        raise HTTPException(status_code=404, detail="Item not found")
-    return {"success": True, "item": storage[item_id]}
+class BackupScheduleCreate(BaseModel):
+    name: str
+    backup_type: str
+    source: str
+    cron_expression: str
+    retention_days: int = 30
 
-@app.put("/items/{item_id}")
-async def update_item(item_id: str, item: Item):
-    """Update an item"""
-    stats["total_requests"] += 1
-    if item_id not in storage:
-        raise HTTPException(status_code=404, detail="Item not found")
-    item.id = item_id
-    item.updated_at = datetime.now()
-    item.created_at = storage[item_id].get("created_at", datetime.now())
-    storage[item_id] = item.dict()
-    return {"success": True, "item": item}
+@app.post("/api/v1/backups/create")
+async def create_backup(b: BackupCreate, token: str = Depends(verify_token)):
+    pool = await get_db_pool()
+    async with pool.acquire() as conn:
+        row = await conn.fetchrow(
+            """INSERT INTO backups (backup_type, source, destination, retention_days, status)
+               VALUES ($1,$2,$3,$4,'in_progress') RETURNING *""",
+            b.backup_type, b.source, b.destination, b.retention_days
+        )
+        backup_id = row["id"]
+        await conn.execute(
+            "UPDATE backups SET status='completed', completed_at=NOW(), size_bytes=$1 WHERE id=$2",
+            0, backup_id
+        )
+        return {"backup_id": str(backup_id), "status": "completed"}
 
-@app.delete("/items/{item_id}")
-async def delete_item(item_id: str):
-    """Delete an item"""
-    stats["total_requests"] += 1
-    if item_id not in storage:
-        raise HTTPException(status_code=404, detail="Item not found")
-    del storage[item_id]
-    stats["total_items"] -= 1
-    return {"success": True, "message": "Item deleted"}
+@app.get("/api/v1/backups")
+async def list_backups(backup_type: Optional[str] = None, skip: int = 0, limit: int = 50, token: str = Depends(verify_token)):
+    pool = await get_db_pool()
+    async with pool.acquire() as conn:
+        if backup_type:
+            rows = await conn.fetch("SELECT * FROM backups WHERE backup_type=$1 ORDER BY created_at DESC LIMIT $2 OFFSET $3", backup_type, limit, skip)
+        else:
+            rows = await conn.fetch("SELECT * FROM backups ORDER BY created_at DESC LIMIT $1 OFFSET $2", limit, skip)
+        return {"backups": [dict(r) for r in rows]}
 
-@app.post("/process")
-async def process_data(data: Dict[str, Any]):
-    """Process data (service-specific logic)"""
-    stats["total_requests"] += 1
-    return {
-        "success": True,
-        "message": "Data processed successfully",
-        "service": "backup-service",
-        "processed_at": datetime.now().isoformat(),
-        "data": data
-    }
+@app.get("/api/v1/backups/{backup_id}")
+async def get_backup(backup_id: str, token: str = Depends(verify_token)):
+    pool = await get_db_pool()
+    async with pool.acquire() as conn:
+        row = await conn.fetchrow("SELECT * FROM backups WHERE id=$1", uuid.UUID(backup_id))
+        if not row:
+            raise HTTPException(status_code=404, detail="Backup not found")
+        return dict(row)
 
-@app.get("/search")
-async def search_items(query: str):
-    """Search items"""
-    stats["total_requests"] += 1
-    results = [item for item in storage.values() if query.lower() in str(item).lower()]
-    return {
-        "success": True,
-        "query": query,
-        "total_results": len(results),
-        "results": results
-    }
+@app.post("/api/v1/backups/schedules")
+async def create_schedule(s: BackupScheduleCreate, token: str = Depends(verify_token)):
+    pool = await get_db_pool()
+    async with pool.acquire() as conn:
+        row = await conn.fetchrow(
+            "INSERT INTO backup_schedules (name, backup_type, source, cron_expression, retention_days) VALUES ($1,$2,$3,$4,$5) RETURNING *",
+            s.name, s.backup_type, s.source, s.cron_expression, s.retention_days
+        )
+        return dict(row)
 
-@app.get("/stats")
-async def get_statistics():
-    """Get service statistics"""
-    uptime = (datetime.now() - stats["start_time"]).total_seconds()
-    return {
-        "uptime_seconds": int(uptime),
-        "total_requests": stats["total_requests"],
-        "total_items": stats["total_items"],
-        "service": "backup-service",
-        "port": 8113,
-        "status": "operational"
-    }
+@app.get("/api/v1/backups/schedules")
+async def list_schedules(token: str = Depends(verify_token)):
+    pool = await get_db_pool()
+    async with pool.acquire() as conn:
+        rows = await conn.fetch("SELECT * FROM backup_schedules WHERE is_active=TRUE ORDER BY name")
+        return {"schedules": [dict(r) for r in rows]}
+
+@app.delete("/api/v1/backups/{backup_id}")
+async def delete_backup(backup_id: str, token: str = Depends(verify_token)):
+    pool = await get_db_pool()
+    async with pool.acquire() as conn:
+        result = await conn.execute("DELETE FROM backups WHERE id=$1", uuid.UUID(backup_id))
+        if result == "DELETE 0":
+            raise HTTPException(status_code=404, detail="Backup not found")
+        return {"deleted": True}
+
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8113)

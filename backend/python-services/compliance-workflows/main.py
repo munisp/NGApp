@@ -1,212 +1,141 @@
 """
-Compliance Workflows Service
+Compliance Workflows
 Port: 8117
 """
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Depends, Header
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional, List, Dict, Any
-from datetime import datetime
-import uvicorn
-
-# Redis-based storage (replaces in-memory dict)
+from datetime import datetime, timedelta
+from enum import Enum
+import uuid
 import os
 import json
-import redis
+import asyncpg
+import uvicorn
 
-_redis_client = None
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://remittance:remittance@localhost:5432/remittance")
+REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
 
-def get_redis_client():
-    """Get Redis client - requires REDIS_URL environment variable"""
-    global _redis_client
-    if _redis_client is None:
-        redis_url = os.getenv("REDIS_URL")
-        if not redis_url:
-            raise ValueError("REDIS_URL environment variable is required for storage")
-        _redis_client = redis.from_url(redis_url, decode_responses=True)
-    return _redis_client
+_db_pool = None
 
-def storage_get(key: str):
-    """Get value from Redis storage"""
-    try:
-        client = get_redis_client()
-        value = client.get(f"storage:{key}")
-        return json.loads(value) if value else None
-    except Exception as e:
-        print(f"Storage get error: {e}")
-        return None
+async def get_db_pool():
+    global _db_pool
+    if _db_pool is None:
+        _db_pool = await asyncpg.create_pool(DATABASE_URL, min_size=2, max_size=10)
+    return _db_pool
 
-def storage_set(key: str, value, ttl: int = 86400):
-    """Set value in Redis storage with optional TTL (default 24h)"""
-    try:
-        client = get_redis_client()
-        client.setex(f"storage:{key}", ttl, json.dumps(value))
-        return True
-    except Exception as e:
-        print(f"Storage set error: {e}")
-        return False
+async def verify_token(authorization: str = Header(...)):
+    if not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Invalid authorization header")
+    token = authorization[7:]
+    if not token or len(token) < 10:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    return token
 
-def storage_delete(key: str):
-    """Delete value from Redis storage"""
-    try:
-        client = get_redis_client()
-        client.delete(f"storage:{key}")
-        return True
-    except Exception as e:
-        print(f"Storage delete error: {e}")
-        return False
+app = FastAPI(title="Compliance Workflows", description="Compliance Workflows for Remittance Platform", version="1.0.0")
+app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 
-def storage_keys(pattern: str = "*"):
-    """Get all keys matching pattern"""
-    try:
-        client = get_redis_client()
-        return [k.replace("storage:", "") for k in client.keys(f"storage:{pattern}")]
-    except Exception as e:
-        print(f"Storage keys error: {e}")
-        return []
-
-
-
-app = FastAPI(
-    title="Compliance Workflows",
-    description="Compliance Workflows for Remittance Platform",
-    version="1.0.0"
-)
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-# In-memory storage (replace with database in production)
-# storage = {}  # REPLACED: Use storage_get/storage_set functions instead
-stats = {
-    "total_requests": 0,
-    "total_items": 0,
-    "start_time": datetime.now()
-}
-
-# Pydantic Models
-class Item(BaseModel):
-    id: Optional[str] = None
-    data: Dict[str, Any]
-    created_at: Optional[datetime] = None
-    updated_at: Optional[datetime] = None
-
-@app.get("/")
-async def root():
-    return {
-        "service": "compliance-workflows",
-        "description": "Compliance Workflows",
-        "version": "1.0.0",
-        "port": 8117,
-        "status": "operational"
-    }
+@app.on_event("startup")
+async def startup():
+    pool = await get_db_pool()
+    async with pool.acquire() as conn:
+        await conn.execute("""
+            CREATE TABLE IF NOT EXISTS compliance_workflows (
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                workflow_type VARCHAR(50) NOT NULL,
+                entity_id VARCHAR(255) NOT NULL,
+                entity_type VARCHAR(50) NOT NULL,
+                current_step VARCHAR(50) DEFAULT 'initiated',
+                status VARCHAR(20) DEFAULT 'in_progress',
+                steps_completed JSONB DEFAULT '[]',
+                assigned_to VARCHAR(255),
+                priority VARCHAR(20) DEFAULT 'normal',
+                due_date TIMESTAMPTZ,
+                notes TEXT,
+                created_at TIMESTAMPTZ DEFAULT NOW(),
+                updated_at TIMESTAMPTZ DEFAULT NOW()
+            );
+            CREATE INDEX IF NOT EXISTS idx_cw_status ON compliance_workflows(status);
+            CREATE INDEX IF NOT EXISTS idx_cw_assigned ON compliance_workflows(assigned_to)
+        """)
 
 @app.get("/health")
 async def health_check():
-    uptime = (datetime.now() - stats["start_time"]).total_seconds()
-    return {
-        "status": "healthy",
-        "uptime_seconds": int(uptime),
-        "total_requests": stats["total_requests"],
-        "total_items": stats["total_items"]
-    }
+    try:
+        pool = await get_db_pool()
+        async with pool.acquire() as conn:
+            await conn.fetchval("SELECT 1")
+        return {"status": "healthy", "service": "compliance-workflows", "database": "connected"}
+    except Exception as e:
+        return {"status": "degraded", "service": "compliance-workflows", "error": str(e)}
 
-@app.post("/items")
-async def create_item(item: Item):
-    """Create a new item"""
-    stats["total_requests"] += 1
-    item_id = f"item_{len(storage) + 1}"
-    item.id = item_id
-    item.created_at = datetime.now()
-    item.updated_at = datetime.now()
-    storage[item_id] = item.dict()
-    stats["total_items"] += 1
-    return {"success": True, "item_id": item_id, "item": item}
 
-@app.get("/items")
-async def list_items(skip: int = 0, limit: int = 100):
-    """List all items"""
-    stats["total_requests"] += 1
-    items = list(storage.values())[skip:skip+limit]
-    return {
-        "success": True,
-        "total": len(storage),
-        "items": items,
-        "skip": skip,
-        "limit": limit
-    }
+class WorkflowCreate(BaseModel):
+    workflow_type: str
+    entity_id: str
+    entity_type: str
+    assigned_to: Optional[str] = None
+    priority: str = "normal"
+    due_date: Optional[datetime] = None
 
-@app.get("/items/{item_id}")
-async def get_item(item_id: str):
-    """Get a specific item"""
-    stats["total_requests"] += 1
-    if item_id not in storage:
-        raise HTTPException(status_code=404, detail="Item not found")
-    return {"success": True, "item": storage[item_id]}
+class WorkflowStepUpdate(BaseModel):
+    step_name: str
+    status: str
+    notes: Optional[str] = None
 
-@app.put("/items/{item_id}")
-async def update_item(item_id: str, item: Item):
-    """Update an item"""
-    stats["total_requests"] += 1
-    if item_id not in storage:
-        raise HTTPException(status_code=404, detail="Item not found")
-    item.id = item_id
-    item.updated_at = datetime.now()
-    item.created_at = storage[item_id].get("created_at", datetime.now())
-    storage[item_id] = item.dict()
-    return {"success": True, "item": item}
+@app.post("/api/v1/compliance-workflows")
+async def create_workflow(wf: WorkflowCreate, token: str = Depends(verify_token)):
+    pool = await get_db_pool()
+    async with pool.acquire() as conn:
+        row = await conn.fetchrow(
+            """INSERT INTO compliance_workflows (workflow_type, entity_id, entity_type, assigned_to, priority, due_date)
+               VALUES ($1,$2,$3,$4,$5,$6) RETURNING *""",
+            wf.workflow_type, wf.entity_id, wf.entity_type, wf.assigned_to, wf.priority, wf.due_date
+        )
+        return dict(row)
 
-@app.delete("/items/{item_id}")
-async def delete_item(item_id: str):
-    """Delete an item"""
-    stats["total_requests"] += 1
-    if item_id not in storage:
-        raise HTTPException(status_code=404, detail="Item not found")
-    del storage[item_id]
-    stats["total_items"] -= 1
-    return {"success": True, "message": "Item deleted"}
+@app.get("/api/v1/compliance-workflows")
+async def list_workflows(status: Optional[str] = None, assigned_to: Optional[str] = None,
+                         skip: int = 0, limit: int = 50, token: str = Depends(verify_token)):
+    pool = await get_db_pool()
+    async with pool.acquire() as conn:
+        conditions, params = [], []
+        idx = 1
+        if status:
+            conditions.append(f"status=${idx}"); params.append(status); idx += 1
+        if assigned_to:
+            conditions.append(f"assigned_to=${idx}"); params.append(assigned_to); idx += 1
+        where = "WHERE " + " AND ".join(conditions) if conditions else ""
+        params.extend([limit, skip])
+        rows = await conn.fetch(f"SELECT * FROM compliance_workflows {where} ORDER BY created_at DESC LIMIT ${idx} OFFSET ${idx+1}", *params)
+        return {"workflows": [dict(r) for r in rows]}
 
-@app.post("/process")
-async def process_data(data: Dict[str, Any]):
-    """Process data (service-specific logic)"""
-    stats["total_requests"] += 1
-    return {
-        "success": True,
-        "message": "Data processed successfully",
-        "service": "compliance-workflows",
-        "processed_at": datetime.now().isoformat(),
-        "data": data
-    }
+@app.put("/api/v1/compliance-workflows/{wf_id}/step")
+async def advance_step(wf_id: str, step: WorkflowStepUpdate, token: str = Depends(verify_token)):
+    pool = await get_db_pool()
+    async with pool.acquire() as conn:
+        wf = await conn.fetchrow("SELECT * FROM compliance_workflows WHERE id=$1", uuid.UUID(wf_id))
+        if not wf:
+            raise HTTPException(status_code=404, detail="Workflow not found")
+        steps = json.loads(wf["steps_completed"]) if isinstance(wf["steps_completed"], str) else list(wf["steps_completed"])
+        steps.append({"step": step.step_name, "status": step.status, "notes": step.notes, "completed_at": datetime.utcnow().isoformat(), "by": token[:36]})
+        new_status = "completed" if step.status == "final" else "in_progress"
+        row = await conn.fetchrow(
+            "UPDATE compliance_workflows SET current_step=$1, steps_completed=$2, status=$3, updated_at=NOW() WHERE id=$4 RETURNING *",
+            step.step_name, json.dumps(steps), new_status, uuid.UUID(wf_id)
+        )
+        return dict(row)
 
-@app.get("/search")
-async def search_items(query: str):
-    """Search items"""
-    stats["total_requests"] += 1
-    results = [item for item in storage.values() if query.lower() in str(item).lower()]
-    return {
-        "success": True,
-        "query": query,
-        "total_results": len(results),
-        "results": results
-    }
+@app.get("/api/v1/compliance-workflows/{wf_id}")
+async def get_workflow(wf_id: str, token: str = Depends(verify_token)):
+    pool = await get_db_pool()
+    async with pool.acquire() as conn:
+        row = await conn.fetchrow("SELECT * FROM compliance_workflows WHERE id=$1", uuid.UUID(wf_id))
+        if not row:
+            raise HTTPException(status_code=404, detail="Workflow not found")
+        return dict(row)
 
-@app.get("/stats")
-async def get_statistics():
-    """Get service statistics"""
-    uptime = (datetime.now() - stats["start_time"]).total_seconds()
-    return {
-        "uptime_seconds": int(uptime),
-        "total_requests": stats["total_requests"],
-        "total_items": stats["total_items"],
-        "service": "compliance-workflows",
-        "port": 8117,
-        "status": "operational"
-    }
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8117)

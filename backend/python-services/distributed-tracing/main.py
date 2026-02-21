@@ -1,99 +1,171 @@
 """
-Distributed Tracing Service - Production Implementation
-OpenTelemetry-based distributed tracing
+Distributed Tracing
+Port: 8086
 """
-
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException, Depends, Header
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
-from typing import Dict, List, Optional
+from typing import Optional, List, Dict, Any
 from datetime import datetime
-import uvicorn
 import uuid
-import logging
+import os
+import json
+import asyncpg
+import uvicorn
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://remittance:remittance@localhost:5432/remittance")
 
-app = FastAPI(title="Distributed Tracing", version="2.0.0")
+_db_pool = None
+
+async def get_db_pool():
+    global _db_pool
+    if _db_pool is None:
+        _db_pool = await asyncpg.create_pool(DATABASE_URL, min_size=2, max_size=10)
+    return _db_pool
+
+async def verify_token(authorization: str = Header(...)):
+    if not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Invalid authorization header")
+    token = authorization[7:]
+    if not token or len(token) < 10:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    return token
+
+app = FastAPI(title="Distributed Tracing", description="Distributed Tracing for Remittance Platform", version="1.0.0")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 
-class Span(BaseModel):
-    span_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    trace_id: str
-    parent_span_id: Optional[str] = None
-    service_name: str
-    operation_name: str
-    start_time: datetime
-    end_time: Optional[datetime] = None
-    duration_ms: Optional[int] = None
-    tags: Dict[str, str] = {}
-
-class CreateSpanRequest(BaseModel):
-    trace_id: str
-    parent_span_id: Optional[str] = None
-    service_name: str
-    operation_name: str
-    tags: Dict[str, str] = {}
-
-spans_db: Dict[str, Span] = {}
-traces_index: Dict[str, List[str]] = {}
-
-class DistributedTracingService:
-    @staticmethod
-    async def create_span(request: CreateSpanRequest) -> Span:
-        span = Span(
-            trace_id=request.trace_id,
-            parent_span_id=request.parent_span_id,
-            service_name=request.service_name,
-            operation_name=request.operation_name,
-            start_time=datetime.utcnow(),
-            tags=request.tags
-        )
-        spans_db[span.span_id] = span
-        
-        if request.trace_id not in traces_index:
-            traces_index[request.trace_id] = []
-        traces_index[request.trace_id].append(span.span_id)
-        
-        logger.info(f"Created span {span.span_id} for trace {request.trace_id}")
-        return span
-    
-    @staticmethod
-    async def end_span(span_id: str) -> Span:
-        if span_id not in spans_db:
-            raise HTTPException(status_code=404, detail="Span not found")
-        
-        span = spans_db[span_id]
-        span.end_time = datetime.utcnow()
-        span.duration_ms = int((span.end_time - span.start_time).total_seconds() * 1000)
-        
-        logger.info(f"Ended span {span_id}, duration: {span.duration_ms}ms")
-        return span
-    
-    @staticmethod
-    async def get_trace(trace_id: str) -> List[Span]:
-        if trace_id not in traces_index:
-            return []
-        
-        span_ids = traces_index[trace_id]
-        return [spans_db[sid] for sid in span_ids]
-
-@app.post("/api/v1/spans", response_model=Span)
-async def create_span(request: CreateSpanRequest):
-    return await DistributedTracingService.create_span(request)
-
-@app.post("/api/v1/spans/{span_id}/end", response_model=Span)
-async def end_span(span_id: str):
-    return await DistributedTracingService.end_span(span_id)
-
-@app.get("/api/v1/traces/{trace_id}", response_model=List[Span])
-async def get_trace(trace_id: str):
-    return await DistributedTracingService.get_trace(trace_id)
+@app.on_event("startup")
+async def startup():
+    pool = await get_db_pool()
+    async with pool.acquire() as conn:
+        await conn.execute("""
+            CREATE TABLE IF NOT EXISTS traces (
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                trace_id VARCHAR(255) NOT NULL,
+                span_id VARCHAR(255) NOT NULL,
+                parent_span_id VARCHAR(255),
+                service_name VARCHAR(100) NOT NULL,
+                operation VARCHAR(255),
+                duration_ms INT,
+                status_code INT,
+                tags JSONB DEFAULT '{}',
+                created_at TIMESTAMPTZ DEFAULT NOW(),
+                updated_at TIMESTAMPTZ DEFAULT NOW()
+            )
+        """)
 
 @app.get("/health")
 async def health_check():
-    return {"status": "healthy", "service": "distributed-tracing", "version": "2.0.0"}
+    try:
+        pool = await get_db_pool()
+        async with pool.acquire() as conn:
+            await conn.fetchval("SELECT 1")
+        return {"status": "healthy", "service": "distributed-tracing", "database": "connected"}
+    except Exception as e:
+        return {"status": "degraded", "service": "distributed-tracing", "error": str(e)}
+
+
+class ItemCreate(BaseModel):
+    trace_id: str
+    span_id: str
+    parent_span_id: Optional[str] = None
+    service_name: str
+    operation: Optional[str] = None
+    duration_ms: Optional[int] = None
+    status_code: Optional[int] = None
+    tags: Optional[Dict[str, Any]] = None
+
+class ItemUpdate(BaseModel):
+    trace_id: Optional[str] = None
+    span_id: Optional[str] = None
+    parent_span_id: Optional[str] = None
+    service_name: Optional[str] = None
+    operation: Optional[str] = None
+    duration_ms: Optional[int] = None
+    status_code: Optional[int] = None
+    tags: Optional[Dict[str, Any]] = None
+
+
+@app.post("/api/v1/distributed-tracing")
+async def create_item(item: ItemCreate, token: str = Depends(verify_token)):
+    pool = await get_db_pool()
+    async with pool.acquire() as conn:
+        data = {k: v for k, v in item.dict().items() if v is not None}
+        if not data:
+            raise HTTPException(status_code=400, detail="No fields provided")
+        cols = list(data.keys())
+        vals = list(data.values())
+        for i in range(len(vals)):
+            if isinstance(vals[i], dict):
+                vals[i] = json.dumps(vals[i])
+        ph = ", ".join(["$" + str(i+1) for i in range(len(cols))])
+        query = f"INSERT INTO traces ({', '.join(cols)}) VALUES ({ph}) RETURNING *"
+        row = await conn.fetchrow(query, *vals)
+        return dict(row)
+
+
+@app.get("/api/v1/distributed-tracing")
+async def list_items(skip: int = 0, limit: int = 50, token: str = Depends(verify_token)):
+    pool = await get_db_pool()
+    async with pool.acquire() as conn:
+        rows = await conn.fetch(
+            "SELECT * FROM traces ORDER BY created_at DESC LIMIT $1 OFFSET $2",
+            limit, skip
+        )
+        total = await conn.fetchval("SELECT COUNT(*) FROM traces")
+        return {"total": total, "items": [dict(r) for r in rows], "skip": skip, "limit": limit}
+
+
+@app.get("/api/v1/distributed-tracing/{item_id}")
+async def get_item(item_id: str, token: str = Depends(verify_token)):
+    pool = await get_db_pool()
+    async with pool.acquire() as conn:
+        row = await conn.fetchrow("SELECT * FROM traces WHERE id=$1", uuid.UUID(item_id))
+        if not row:
+            raise HTTPException(status_code=404, detail="Item not found")
+        return dict(row)
+
+
+@app.put("/api/v1/distributed-tracing/{item_id}")
+async def update_item(item_id: str, item: ItemUpdate, token: str = Depends(verify_token)):
+    pool = await get_db_pool()
+    async with pool.acquire() as conn:
+        existing = await conn.fetchrow("SELECT * FROM traces WHERE id=$1", uuid.UUID(item_id))
+        if not existing:
+            raise HTTPException(status_code=404, detail="Item not found")
+        updates = {k: v for k, v in item.dict().items() if v is not None}
+        if not updates:
+            return dict(existing)
+        set_parts = []
+        params = [uuid.UUID(item_id)]
+        idx = 2
+        for k, v in updates.items():
+            set_parts.append(f"{k}=${idx}")
+            params.append(json.dumps(v) if isinstance(v, dict) else v)
+            idx += 1
+        query = f"UPDATE traces SET {', '.join(set_parts)}, updated_at=NOW() WHERE id=$1 RETURNING *"
+        row = await conn.fetchrow(query, *params)
+        return dict(row)
+
+
+@app.delete("/api/v1/distributed-tracing/{item_id}")
+async def delete_item(item_id: str, token: str = Depends(verify_token)):
+    pool = await get_db_pool()
+    async with pool.acquire() as conn:
+        result = await conn.execute("DELETE FROM traces WHERE id=$1", uuid.UUID(item_id))
+        if result == "DELETE 0":
+            raise HTTPException(status_code=404, detail="Item not found")
+        return {"deleted": True}
+
+
+@app.get("/api/v1/distributed-tracing/stats")
+async def get_stats(token: str = Depends(verify_token)):
+    pool = await get_db_pool()
+    async with pool.acquire() as conn:
+        total = await conn.fetchval("SELECT COUNT(*) FROM traces")
+        today = await conn.fetchval("SELECT COUNT(*) FROM traces WHERE created_at >= CURRENT_DATE")
+        return {"total": total, "today": today, "service": "distributed-tracing"}
+
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8086)

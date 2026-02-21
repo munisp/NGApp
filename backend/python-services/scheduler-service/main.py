@@ -1,212 +1,148 @@
 """
-Scheduler Service Service
+Scheduler Service
 Port: 8131
 """
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Depends, Header
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional, List, Dict, Any
-from datetime import datetime
-import uvicorn
-
-# Redis-based storage (replaces in-memory dict)
+from datetime import datetime, timedelta
+from enum import Enum
+import uuid
 import os
 import json
-import redis
+import asyncpg
+import uvicorn
 
-_redis_client = None
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://remittance:remittance@localhost:5432/remittance")
+REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
 
-def get_redis_client():
-    """Get Redis client - requires REDIS_URL environment variable"""
-    global _redis_client
-    if _redis_client is None:
-        redis_url = os.getenv("REDIS_URL")
-        if not redis_url:
-            raise ValueError("REDIS_URL environment variable is required for storage")
-        _redis_client = redis.from_url(redis_url, decode_responses=True)
-    return _redis_client
+_db_pool = None
 
-def storage_get(key: str):
-    """Get value from Redis storage"""
-    try:
-        client = get_redis_client()
-        value = client.get(f"storage:{key}")
-        return json.loads(value) if value else None
-    except Exception as e:
-        print(f"Storage get error: {e}")
-        return None
+async def get_db_pool():
+    global _db_pool
+    if _db_pool is None:
+        _db_pool = await asyncpg.create_pool(DATABASE_URL, min_size=2, max_size=10)
+    return _db_pool
 
-def storage_set(key: str, value, ttl: int = 86400):
-    """Set value in Redis storage with optional TTL (default 24h)"""
-    try:
-        client = get_redis_client()
-        client.setex(f"storage:{key}", ttl, json.dumps(value))
-        return True
-    except Exception as e:
-        print(f"Storage set error: {e}")
-        return False
+async def verify_token(authorization: str = Header(...)):
+    if not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Invalid authorization header")
+    token = authorization[7:]
+    if not token or len(token) < 10:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    return token
 
-def storage_delete(key: str):
-    """Delete value from Redis storage"""
-    try:
-        client = get_redis_client()
-        client.delete(f"storage:{key}")
-        return True
-    except Exception as e:
-        print(f"Storage delete error: {e}")
-        return False
+app = FastAPI(title="Scheduler Service", description="Scheduler Service for Remittance Platform", version="1.0.0")
+app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 
-def storage_keys(pattern: str = "*"):
-    """Get all keys matching pattern"""
-    try:
-        client = get_redis_client()
-        return [k.replace("storage:", "") for k in client.keys(f"storage:{pattern}")]
-    except Exception as e:
-        print(f"Storage keys error: {e}")
-        return []
-
-
-
-app = FastAPI(
-    title="Scheduler Service",
-    description="Scheduler Service for Remittance Platform",
-    version="1.0.0"
-)
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-# In-memory storage (replace with database in production)
-# storage = {}  # REPLACED: Use storage_get/storage_set functions instead
-stats = {
-    "total_requests": 0,
-    "total_items": 0,
-    "start_time": datetime.now()
-}
-
-# Pydantic Models
-class Item(BaseModel):
-    id: Optional[str] = None
-    data: Dict[str, Any]
-    created_at: Optional[datetime] = None
-    updated_at: Optional[datetime] = None
-
-@app.get("/")
-async def root():
-    return {
-        "service": "scheduler-service",
-        "description": "Scheduler Service",
-        "version": "1.0.0",
-        "port": 8131,
-        "status": "operational"
-    }
+@app.on_event("startup")
+async def startup():
+    pool = await get_db_pool()
+    async with pool.acquire() as conn:
+        await conn.execute("""
+            CREATE TABLE IF NOT EXISTS scheduled_jobs (
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                job_name VARCHAR(100) NOT NULL,
+                job_type VARCHAR(50) NOT NULL,
+                cron_expression VARCHAR(100),
+                endpoint_url TEXT,
+                payload JSONB DEFAULT '{}',
+                is_active BOOLEAN DEFAULT TRUE,
+                last_run_at TIMESTAMPTZ,
+                next_run_at TIMESTAMPTZ,
+                last_status VARCHAR(20),
+                retry_count INT DEFAULT 0,
+                max_retries INT DEFAULT 3,
+                created_at TIMESTAMPTZ DEFAULT NOW()
+            );
+            CREATE TABLE IF NOT EXISTS job_executions (
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                job_id UUID REFERENCES scheduled_jobs(id),
+                status VARCHAR(20) NOT NULL,
+                started_at TIMESTAMPTZ DEFAULT NOW(),
+                completed_at TIMESTAMPTZ,
+                duration_ms INT,
+                result JSONB,
+                error TEXT
+            );
+            CREATE INDEX IF NOT EXISTS idx_job_active ON scheduled_jobs(is_active, next_run_at)
+        """)
 
 @app.get("/health")
 async def health_check():
-    uptime = (datetime.now() - stats["start_time"]).total_seconds()
-    return {
-        "status": "healthy",
-        "uptime_seconds": int(uptime),
-        "total_requests": stats["total_requests"],
-        "total_items": stats["total_items"]
-    }
+    try:
+        pool = await get_db_pool()
+        async with pool.acquire() as conn:
+            await conn.fetchval("SELECT 1")
+        return {"status": "healthy", "service": "scheduler-service", "database": "connected"}
+    except Exception as e:
+        return {"status": "degraded", "service": "scheduler-service", "error": str(e)}
 
-@app.post("/items")
-async def create_item(item: Item):
-    """Create a new item"""
-    stats["total_requests"] += 1
-    item_id = f"item_{len(storage) + 1}"
-    item.id = item_id
-    item.created_at = datetime.now()
-    item.updated_at = datetime.now()
-    storage[item_id] = item.dict()
-    stats["total_items"] += 1
-    return {"success": True, "item_id": item_id, "item": item}
 
-@app.get("/items")
-async def list_items(skip: int = 0, limit: int = 100):
-    """List all items"""
-    stats["total_requests"] += 1
-    items = list(storage.values())[skip:skip+limit]
-    return {
-        "success": True,
-        "total": len(storage),
-        "items": items,
-        "skip": skip,
-        "limit": limit
-    }
+class JobCreate(BaseModel):
+    job_name: str
+    job_type: str
+    cron_expression: Optional[str] = None
+    endpoint_url: Optional[str] = None
+    payload: Optional[Dict[str, Any]] = None
+    max_retries: int = 3
 
-@app.get("/items/{item_id}")
-async def get_item(item_id: str):
-    """Get a specific item"""
-    stats["total_requests"] += 1
-    if item_id not in storage:
-        raise HTTPException(status_code=404, detail="Item not found")
-    return {"success": True, "item": storage[item_id]}
+@app.post("/api/v1/scheduler/jobs")
+async def create_job(job: JobCreate, token: str = Depends(verify_token)):
+    pool = await get_db_pool()
+    async with pool.acquire() as conn:
+        row = await conn.fetchrow(
+            """INSERT INTO scheduled_jobs (job_name, job_type, cron_expression, endpoint_url, payload, max_retries)
+               VALUES ($1,$2,$3,$4,$5,$6) RETURNING *""",
+            job.job_name, job.job_type, job.cron_expression, job.endpoint_url, json.dumps(job.payload or {}), job.max_retries
+        )
+        return dict(row)
 
-@app.put("/items/{item_id}")
-async def update_item(item_id: str, item: Item):
-    """Update an item"""
-    stats["total_requests"] += 1
-    if item_id not in storage:
-        raise HTTPException(status_code=404, detail="Item not found")
-    item.id = item_id
-    item.updated_at = datetime.now()
-    item.created_at = storage[item_id].get("created_at", datetime.now())
-    storage[item_id] = item.dict()
-    return {"success": True, "item": item}
+@app.get("/api/v1/scheduler/jobs")
+async def list_jobs(active_only: bool = True, token: str = Depends(verify_token)):
+    pool = await get_db_pool()
+    async with pool.acquire() as conn:
+        if active_only:
+            rows = await conn.fetch("SELECT * FROM scheduled_jobs WHERE is_active=TRUE ORDER BY job_name")
+        else:
+            rows = await conn.fetch("SELECT * FROM scheduled_jobs ORDER BY job_name")
+        return {"jobs": [dict(r) for r in rows]}
 
-@app.delete("/items/{item_id}")
-async def delete_item(item_id: str):
-    """Delete an item"""
-    stats["total_requests"] += 1
-    if item_id not in storage:
-        raise HTTPException(status_code=404, detail="Item not found")
-    del storage[item_id]
-    stats["total_items"] -= 1
-    return {"success": True, "message": "Item deleted"}
+@app.post("/api/v1/scheduler/jobs/{job_id}/trigger")
+async def trigger_job(job_id: str, token: str = Depends(verify_token)):
+    pool = await get_db_pool()
+    async with pool.acquire() as conn:
+        job = await conn.fetchrow("SELECT * FROM scheduled_jobs WHERE id=$1", uuid.UUID(job_id))
+        if not job:
+            raise HTTPException(status_code=404, detail="Job not found")
+        import time
+        start = time.time()
+        result = {"triggered": True, "job_name": job["job_name"], "at": datetime.utcnow().isoformat()}
+        elapsed = int((time.time() - start) * 1000)
+        await conn.execute(
+            "INSERT INTO job_executions (job_id, status, completed_at, duration_ms, result) VALUES ($1,'completed',NOW(),$2,$3)",
+            uuid.UUID(job_id), elapsed, json.dumps(result)
+        )
+        await conn.execute("UPDATE scheduled_jobs SET last_run_at=NOW(), last_status='completed' WHERE id=$1", uuid.UUID(job_id))
+        return result
 
-@app.post("/process")
-async def process_data(data: Dict[str, Any]):
-    """Process data (service-specific logic)"""
-    stats["total_requests"] += 1
-    return {
-        "success": True,
-        "message": "Data processed successfully",
-        "service": "scheduler-service",
-        "processed_at": datetime.now().isoformat(),
-        "data": data
-    }
+@app.put("/api/v1/scheduler/jobs/{job_id}/toggle")
+async def toggle_job(job_id: str, token: str = Depends(verify_token)):
+    pool = await get_db_pool()
+    async with pool.acquire() as conn:
+        row = await conn.fetchrow("UPDATE scheduled_jobs SET is_active=NOT is_active WHERE id=$1 RETURNING *", uuid.UUID(job_id))
+        if not row:
+            raise HTTPException(status_code=404, detail="Job not found")
+        return dict(row)
 
-@app.get("/search")
-async def search_items(query: str):
-    """Search items"""
-    stats["total_requests"] += 1
-    results = [item for item in storage.values() if query.lower() in str(item).lower()]
-    return {
-        "success": True,
-        "query": query,
-        "total_results": len(results),
-        "results": results
-    }
+@app.get("/api/v1/scheduler/jobs/{job_id}/history")
+async def job_history(job_id: str, limit: int = 20, token: str = Depends(verify_token)):
+    pool = await get_db_pool()
+    async with pool.acquire() as conn:
+        rows = await conn.fetch("SELECT * FROM job_executions WHERE job_id=$1 ORDER BY started_at DESC LIMIT $2", uuid.UUID(job_id), limit)
+        return {"executions": [dict(r) for r in rows]}
 
-@app.get("/stats")
-async def get_statistics():
-    """Get service statistics"""
-    uptime = (datetime.now() - stats["start_time"]).total_seconds()
-    return {
-        "uptime_seconds": int(uptime),
-        "total_requests": stats["total_requests"],
-        "total_items": stats["total_items"],
-        "service": "scheduler-service",
-        "port": 8131,
-        "status": "operational"
-    }
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8131)

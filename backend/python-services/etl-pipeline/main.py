@@ -1,127 +1,171 @@
 """
-ETL Pipeline Service
+ETL Pipeline
 Port: 8070
 """
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Depends, Header
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional, List, Dict, Any
 from datetime import datetime
+import uuid
+import os
+import json
+import asyncpg
 import uvicorn
 
-app = FastAPI(
-    title="ETL Pipeline Service",
-    description="ETL Pipeline for Remittance Platform",
-    version="1.0.0"
-)
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://remittance:remittance@localhost:5432/remittance")
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+_db_pool = None
 
-# Statistics
-stats = {
-    "total_requests": 0,
-    "total_pipelines": 0,
-    "start_time": datetime.now()
-}
+async def get_db_pool():
+    global _db_pool
+    if _db_pool is None:
+        _db_pool = await asyncpg.create_pool(DATABASE_URL, min_size=2, max_size=10)
+    return _db_pool
 
-# In-memory storage
-pipelines = {}
+async def verify_token(authorization: str = Header(...)):
+    if not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Invalid authorization header")
+    token = authorization[7:]
+    if not token or len(token) < 10:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    return token
 
-class Pipeline(BaseModel):
-    id: Optional[str] = None
-    name: str
-    source: str
-    destination: str
-    transformations: List[str]
-    schedule: Optional[str] = None
-    status: str = "active"
+app = FastAPI(title="ETL Pipeline", description="ETL Pipeline for Remittance Platform", version="1.0.0")
+app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 
-@app.get("/")
-async def root():
-    return {
-        "service": "etl-pipeline",
-        "description": "ETL Pipeline Service",
-        "version": "1.0.0",
-        "port": 8070
-    }
+@app.on_event("startup")
+async def startup():
+    pool = await get_db_pool()
+    async with pool.acquire() as conn:
+        await conn.execute("""
+            CREATE TABLE IF NOT EXISTS etl_jobs (
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                pipeline_name VARCHAR(100) NOT NULL,
+                source_type VARCHAR(50) NOT NULL,
+                destination_type VARCHAR(50) NOT NULL,
+                status VARCHAR(20) DEFAULT 'pending',
+                rows_processed BIGINT DEFAULT 0,
+                errors_count INT DEFAULT 0,
+                started_at TIMESTAMPTZ DEFAULT NOW(),
+                completed_at TIMESTAMPTZ,
+                created_at TIMESTAMPTZ DEFAULT NOW(),
+                updated_at TIMESTAMPTZ DEFAULT NOW()
+            )
+        """)
 
 @app.get("/health")
 async def health_check():
-    uptime = (datetime.now() - stats["start_time"]).total_seconds()
-    return {
-        "status": "healthy",
-        "uptime_seconds": int(uptime),
-        "total_requests": stats["total_requests"],
-        "total_pipelines": stats["total_pipelines"]
-    }
+    try:
+        pool = await get_db_pool()
+        async with pool.acquire() as conn:
+            await conn.fetchval("SELECT 1")
+        return {"status": "healthy", "service": "etl-pipeline", "database": "connected"}
+    except Exception as e:
+        return {"status": "degraded", "service": "etl-pipeline", "error": str(e)}
 
-@app.post("/pipelines")
-async def create_pipeline(pipeline: Pipeline):
-    """Create a new ETL pipeline"""
-    stats["total_requests"] += 1
-    pipeline_id = f"pipeline_{len(pipelines) + 1}"
-    pipeline.id = pipeline_id
-    pipelines[pipeline_id] = pipeline.dict()
-    stats["total_pipelines"] += 1
-    return {"success": True, "pipeline_id": pipeline_id, "pipeline": pipeline}
 
-@app.get("/pipelines")
-async def list_pipelines():
-    """List all pipelines"""
-    stats["total_requests"] += 1
-    return {
-        "success": True,
-        "total": len(pipelines),
-        "pipelines": list(pipelines.values())
-    }
+class ItemCreate(BaseModel):
+    pipeline_name: str
+    source_type: str
+    destination_type: str
+    status: Optional[str] = None
+    rows_processed: Optional[int] = None
+    errors_count: Optional[int] = None
+    started_at: Optional[str] = None
+    completed_at: Optional[str] = None
 
-@app.get("/pipelines/{pipeline_id}")
-async def get_pipeline(pipeline_id: str):
-    """Get a specific pipeline"""
-    stats["total_requests"] += 1
-    if pipeline_id not in pipelines:
-        raise HTTPException(status_code=404, detail="Pipeline not found")
-    return {"success": True, "pipeline": pipelines[pipeline_id]}
+class ItemUpdate(BaseModel):
+    pipeline_name: Optional[str] = None
+    source_type: Optional[str] = None
+    destination_type: Optional[str] = None
+    status: Optional[str] = None
+    rows_processed: Optional[int] = None
+    errors_count: Optional[int] = None
+    started_at: Optional[str] = None
+    completed_at: Optional[str] = None
 
-@app.post("/pipelines/{pipeline_id}/run")
-async def run_pipeline(pipeline_id: str):
-    """Run a pipeline"""
-    stats["total_requests"] += 1
-    if pipeline_id not in pipelines:
-        raise HTTPException(status_code=404, detail="Pipeline not found")
-    return {
-        "success": True,
-        "message": "Pipeline execution started",
-        "pipeline_id": pipeline_id
-    }
 
-@app.delete("/pipelines/{pipeline_id}")
-async def delete_pipeline(pipeline_id: str):
-    """Delete a pipeline"""
-    stats["total_requests"] += 1
-    if pipeline_id not in pipelines:
-        raise HTTPException(status_code=404, detail="Pipeline not found")
-    del pipelines[pipeline_id]
-    stats["total_pipelines"] -= 1
-    return {"success": True, "message": "Pipeline deleted"}
+@app.post("/api/v1/etl-pipeline")
+async def create_item(item: ItemCreate, token: str = Depends(verify_token)):
+    pool = await get_db_pool()
+    async with pool.acquire() as conn:
+        data = {k: v for k, v in item.dict().items() if v is not None}
+        if not data:
+            raise HTTPException(status_code=400, detail="No fields provided")
+        cols = list(data.keys())
+        vals = list(data.values())
+        for i in range(len(vals)):
+            if isinstance(vals[i], dict):
+                vals[i] = json.dumps(vals[i])
+        ph = ", ".join(["$" + str(i+1) for i in range(len(cols))])
+        query = f"INSERT INTO etl_jobs ({', '.join(cols)}) VALUES ({ph}) RETURNING *"
+        row = await conn.fetchrow(query, *vals)
+        return dict(row)
 
-@app.get("/stats")
-async def get_statistics():
-    """Get service statistics"""
-    uptime = (datetime.now() - stats["start_time"]).total_seconds()
-    return {
-        "uptime_seconds": int(uptime),
-        "total_requests": stats["total_requests"],
-        "total_pipelines": stats["total_pipelines"],
-        "service": "etl-pipeline",
-        "port": 8070
-    }
+
+@app.get("/api/v1/etl-pipeline")
+async def list_items(skip: int = 0, limit: int = 50, token: str = Depends(verify_token)):
+    pool = await get_db_pool()
+    async with pool.acquire() as conn:
+        rows = await conn.fetch(
+            "SELECT * FROM etl_jobs ORDER BY created_at DESC LIMIT $1 OFFSET $2",
+            limit, skip
+        )
+        total = await conn.fetchval("SELECT COUNT(*) FROM etl_jobs")
+        return {"total": total, "items": [dict(r) for r in rows], "skip": skip, "limit": limit}
+
+
+@app.get("/api/v1/etl-pipeline/{item_id}")
+async def get_item(item_id: str, token: str = Depends(verify_token)):
+    pool = await get_db_pool()
+    async with pool.acquire() as conn:
+        row = await conn.fetchrow("SELECT * FROM etl_jobs WHERE id=$1", uuid.UUID(item_id))
+        if not row:
+            raise HTTPException(status_code=404, detail="Item not found")
+        return dict(row)
+
+
+@app.put("/api/v1/etl-pipeline/{item_id}")
+async def update_item(item_id: str, item: ItemUpdate, token: str = Depends(verify_token)):
+    pool = await get_db_pool()
+    async with pool.acquire() as conn:
+        existing = await conn.fetchrow("SELECT * FROM etl_jobs WHERE id=$1", uuid.UUID(item_id))
+        if not existing:
+            raise HTTPException(status_code=404, detail="Item not found")
+        updates = {k: v for k, v in item.dict().items() if v is not None}
+        if not updates:
+            return dict(existing)
+        set_parts = []
+        params = [uuid.UUID(item_id)]
+        idx = 2
+        for k, v in updates.items():
+            set_parts.append(f"{k}=${idx}")
+            params.append(json.dumps(v) if isinstance(v, dict) else v)
+            idx += 1
+        query = f"UPDATE etl_jobs SET {', '.join(set_parts)}, updated_at=NOW() WHERE id=$1 RETURNING *"
+        row = await conn.fetchrow(query, *params)
+        return dict(row)
+
+
+@app.delete("/api/v1/etl-pipeline/{item_id}")
+async def delete_item(item_id: str, token: str = Depends(verify_token)):
+    pool = await get_db_pool()
+    async with pool.acquire() as conn:
+        result = await conn.execute("DELETE FROM etl_jobs WHERE id=$1", uuid.UUID(item_id))
+        if result == "DELETE 0":
+            raise HTTPException(status_code=404, detail="Item not found")
+        return {"deleted": True}
+
+
+@app.get("/api/v1/etl-pipeline/stats")
+async def get_stats(token: str = Depends(verify_token)):
+    pool = await get_db_pool()
+    async with pool.acquire() as conn:
+        total = await conn.fetchval("SELECT COUNT(*) FROM etl_jobs")
+        today = await conn.fetchval("SELECT COUNT(*) FROM etl_jobs WHERE created_at >= CURRENT_DATE")
+        return {"total": total, "today": today, "service": "etl-pipeline"}
+
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8070)
