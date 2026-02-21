@@ -229,6 +229,7 @@ function App() {
           { id: 'ecommerce', label: 'Ecommerce', icon: ShoppingCart },
           { id: 'inventory', label: 'Inventory', icon: Package },
           { id: 'omnichannel', label: 'Channels', icon: MessageSquare },
+          { id: 'pos_management', label: 'POS Management', icon: Monitor },
           { id: 'agents', label: 'My Agents', icon: Users },
           { id: 'analytics', label: 'Analytics', icon: BarChart3 },
           { id: 'cash', label: 'Cash Management', icon: DollarSign }
@@ -240,6 +241,7 @@ function App() {
           { id: 'transactions', label: 'Transactions', icon: CreditCard },
           { id: 'bills', label: 'Bills Payment', icon: Receipt },
           { id: 'airtime', label: 'Airtime & Data', icon: Phone },
+          { id: 'pos_management', label: 'POS Management', icon: Monitor },
           { id: 'agents', label: 'My Agents', icon: Users },
           { id: 'analytics', label: 'Analytics', icon: BarChart3 },
           { id: 'cash', label: 'Cash Management', icon: DollarSign },
@@ -4025,29 +4027,49 @@ function POSManagementPage({ formatCurrency }) {
   const POS_API = 'http://localhost:8126'
   const [activeTab, setActiveTab] = useState('terminals')
   const [terminals, setTerminals] = useState([
-    { id: 'TRM-001', name: 'Main Counter POS', type: 'integrated_pos', merchant_id: 'MRC-001', location: 'Lagos - Ikeja Branch', status: 'online', firmware: 'v3.2.1', last_heartbeat: '2024-01-15T10:30:00Z', total_transactions: 12847, battery: 85, signal_strength: 92, ip_address: '192.168.1.101' },
-    { id: 'TRM-002', name: 'Card Reader A', type: 'card_reader', merchant_id: 'MRC-001', location: 'Lagos - Ikeja Branch', status: 'online', firmware: 'v3.2.1', last_heartbeat: '2024-01-15T10:29:00Z', total_transactions: 8432, battery: 72, signal_strength: 88, ip_address: '192.168.1.102' },
-    { id: 'TRM-003', name: 'Mobile POS Agent', type: 'card_reader', merchant_id: 'MRC-002', location: 'Abuja - Wuse Branch', status: 'offline', firmware: 'v3.1.0', last_heartbeat: '2024-01-15T08:15:00Z', total_transactions: 5621, battery: 12, signal_strength: 0, ip_address: '192.168.2.50' },
-    { id: 'TRM-004', name: 'Kiosk Terminal', type: 'integrated_pos', merchant_id: 'MRC-003', location: 'Port Harcourt HQ', status: 'maintenance', firmware: 'v3.0.5', last_heartbeat: '2024-01-14T16:00:00Z', total_transactions: 3291, battery: 100, signal_strength: 95, ip_address: '192.168.3.10' },
-    { id: 'TRM-005', name: 'Receipt Printer B', type: 'receipt_printer', merchant_id: 'MRC-001', location: 'Lagos - Ikeja Branch', status: 'error', firmware: 'v2.8.3', last_heartbeat: '2024-01-15T09:45:00Z', total_transactions: 0, battery: null, signal_strength: 78, ip_address: '192.168.1.103' },
-    { id: 'TRM-006', name: 'Barcode Scanner C', type: 'barcode_scanner', merchant_id: 'MRC-002', location: 'Abuja - Wuse Branch', status: 'online', firmware: 'v1.5.2', last_heartbeat: '2024-01-15T10:28:00Z', total_transactions: 920, battery: 94, signal_strength: 91, ip_address: '192.168.2.51' },
+    { id: 'TRM-001', name: 'Main Counter POS', type: 'integrated_pos', merchant_id: 'MRC-001', location: 'Lagos - Ikeja Branch', region: 'Lagos', lat: 6.6018, lng: 3.3515, status: 'online', firmware: 'v3.2.1', last_heartbeat: '2024-01-15T10:30:00Z', total_transactions: 12847, success_rate: 98.2, avg_processing_ms: 1250, error_rate: 1.8, battery: 85, signal_strength: 92, ip_address: '192.168.1.101', tags: ['high-volume', 'flagship'], group: 'Lagos-Main', uptime_hours: 720, last_error: null, config: { nfc_enabled: true, qr_enabled: true, receipt_auto: true, timeout_sec: 30 }, tx_history: [320, 340, 310, 360, 380, 350, 370, 390, 400, 385, 410, 420] },
+    { id: 'TRM-002', name: 'Card Reader A', type: 'card_reader', merchant_id: 'MRC-001', location: 'Lagos - Ikeja Branch', region: 'Lagos', lat: 6.6018, lng: 3.3515, status: 'online', firmware: 'v3.2.1', last_heartbeat: '2024-01-15T10:29:00Z', total_transactions: 8432, success_rate: 97.5, avg_processing_ms: 980, error_rate: 2.5, battery: 72, signal_strength: 88, ip_address: '192.168.1.102', tags: ['card-only'], group: 'Lagos-Main', uptime_hours: 680, last_error: '2024-01-14 Card read timeout', config: { nfc_enabled: false, qr_enabled: false, receipt_auto: true, timeout_sec: 25 }, tx_history: [200, 220, 210, 240, 230, 250, 260, 270, 255, 280, 290, 285] },
+    { id: 'TRM-003', name: 'Mobile POS Agent', type: 'card_reader', merchant_id: 'MRC-002', location: 'Abuja - Wuse Branch', region: 'Abuja', lat: 9.0765, lng: 7.4986, status: 'offline', firmware: 'v3.1.0', last_heartbeat: '2024-01-15T08:15:00Z', total_transactions: 5621, success_rate: 94.1, avg_processing_ms: 1800, error_rate: 5.9, battery: 12, signal_strength: 0, ip_address: '192.168.2.50', tags: ['mobile', 'field-agent'], group: 'Abuja-Field', uptime_hours: 340, last_error: '2024-01-15 Connection lost', config: { nfc_enabled: true, qr_enabled: true, receipt_auto: false, timeout_sec: 45 }, tx_history: [150, 160, 140, 170, 155, 0, 0, 0, 0, 0, 0, 0] },
+    { id: 'TRM-004', name: 'Kiosk Terminal', type: 'integrated_pos', merchant_id: 'MRC-003', location: 'Port Harcourt HQ', region: 'Port Harcourt', lat: 4.8156, lng: 7.0498, status: 'maintenance', firmware: 'v3.0.5', last_heartbeat: '2024-01-14T16:00:00Z', total_transactions: 3291, success_rate: 96.8, avg_processing_ms: 1100, error_rate: 3.2, battery: 100, signal_strength: 95, ip_address: '192.168.3.10', tags: ['kiosk', 'self-service'], group: 'PH-HQ', uptime_hours: 500, last_error: '2024-01-14 Scheduled maintenance', config: { nfc_enabled: true, qr_enabled: true, receipt_auto: true, timeout_sec: 60 }, tx_history: [80, 90, 85, 95, 100, 88, 92, 0, 0, 0, 0, 0] },
+    { id: 'TRM-005', name: 'Receipt Printer B', type: 'receipt_printer', merchant_id: 'MRC-001', location: 'Lagos - Ikeja Branch', region: 'Lagos', lat: 6.6018, lng: 3.3515, status: 'error', firmware: 'v2.8.3', last_heartbeat: '2024-01-15T09:45:00Z', total_transactions: 0, success_rate: 0, avg_processing_ms: 0, error_rate: 100, battery: null, signal_strength: 78, ip_address: '192.168.1.103', tags: ['peripheral'], group: 'Lagos-Main', uptime_hours: 0, last_error: '2024-01-15 Paper jam detected', config: { nfc_enabled: false, qr_enabled: false, receipt_auto: true, timeout_sec: 10 }, tx_history: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] },
+    { id: 'TRM-006', name: 'Barcode Scanner C', type: 'barcode_scanner', merchant_id: 'MRC-002', location: 'Abuja - Wuse Branch', region: 'Abuja', lat: 9.0765, lng: 7.4986, status: 'online', firmware: 'v1.5.2', last_heartbeat: '2024-01-15T10:28:00Z', total_transactions: 920, success_rate: 99.1, avg_processing_ms: 350, error_rate: 0.9, battery: 94, signal_strength: 91, ip_address: '192.168.2.51', tags: ['scanner'], group: 'Abuja-Field', uptime_hours: 600, last_error: null, config: { nfc_enabled: false, qr_enabled: false, receipt_auto: false, timeout_sec: 15 }, tx_history: [20, 25, 22, 30, 28, 35, 32, 38, 40, 36, 42, 45] },
   ])
   const [selectedTerminal, setSelectedTerminal] = useState(null)
+  const [detailTerminal, setDetailTerminal] = useState(null)
   const [commandLog, setCommandLog] = useState([
-    { id: 1, terminal_id: 'TRM-001', command: 'REBOOT', status: 'completed', sent_at: '2024-01-15 09:00:00', completed_at: '2024-01-15 09:01:30' },
-    { id: 2, terminal_id: 'TRM-003', command: 'DIAGNOSTICS', status: 'failed', sent_at: '2024-01-15 08:30:00', completed_at: null },
-    { id: 3, terminal_id: 'TRM-004', command: 'UPDATE_CONFIG', status: 'completed', sent_at: '2024-01-14 16:00:00', completed_at: '2024-01-14 16:00:05' },
+    { id: 1, terminal_id: 'TRM-001', command: 'REBOOT', status: 'completed', sent_at: '2024-01-15 09:00:00', completed_at: '2024-01-15 09:01:30', user: 'admin' },
+    { id: 2, terminal_id: 'TRM-003', command: 'DIAGNOSTICS', status: 'failed', sent_at: '2024-01-15 08:30:00', completed_at: null, user: 'admin' },
+    { id: 3, terminal_id: 'TRM-004', command: 'UPDATE_CONFIG', status: 'completed', sent_at: '2024-01-14 16:00:00', completed_at: '2024-01-14 16:00:05', user: 'super_agent' },
   ])
   const [updates, setUpdates] = useState([
-    { id: 'UPD-001', version: 'v3.2.2', type: 'firmware', status: 'available', release_date: '2024-01-14', size: '24.5 MB', changelog: 'Security patches, NFC improvements, bug fixes', compatible_devices: ['integrated_pos', 'card_reader'] },
-    { id: 'UPD-002', version: 'v1.6.0', type: 'firmware', status: 'deploying', release_date: '2024-01-13', size: '8.2 MB', changelog: 'New barcode formats, improved scanning speed', compatible_devices: ['barcode_scanner'], deployed_count: 3, total_count: 5 },
-    { id: 'UPD-003', version: 'v2.9.0', type: 'firmware', status: 'completed', release_date: '2024-01-10', size: '12.1 MB', changelog: 'Receipt formatting update, thermal print optimization', compatible_devices: ['receipt_printer'], deployed_count: 8, total_count: 8 },
+    { id: 'UPD-001', version: 'v3.2.2', type: 'firmware', status: 'available', release_date: '2024-01-14', size: '24.5 MB', changelog: 'Security patches, NFC improvements, bug fixes', compatible_devices: ['integrated_pos', 'card_reader'], rollback_version: 'v3.2.1' },
+    { id: 'UPD-002', version: 'v1.6.0', type: 'firmware', status: 'deploying', release_date: '2024-01-13', size: '8.2 MB', changelog: 'New barcode formats, improved scanning speed', compatible_devices: ['barcode_scanner'], deployed_count: 3, total_count: 5, rollback_version: 'v1.5.2' },
+    { id: 'UPD-003', version: 'v2.9.0', type: 'firmware', status: 'completed', release_date: '2024-01-10', size: '12.1 MB', changelog: 'Receipt formatting update, thermal print optimization', compatible_devices: ['receipt_printer'], deployed_count: 8, total_count: 8, rollback_version: 'v2.8.3' },
   ])
   const [mgmtHealth, setMgmtHealth] = useState({ status: 'healthy', connected_terminals: 4, uptime: '14d 6h 23m' })
   const [syncStats, setSyncStats] = useState({ total_syncs: 1247, pending_events: 3, last_sync: '2024-01-15T10:29:00Z', resolution_rate: 99.2 })
   const [commandInput, setCommandInput] = useState('')
   const [searchTerm, setSearchTerm] = useState('')
   const [filterStatus, setFilterStatus] = useState('all')
+  const [filterGroup, setFilterGroup] = useState('all')
+  const [selectedIds, setSelectedIds] = useState([])
+  const [viewMode, setViewMode] = useState('grid')
+  const [alerts, setAlerts] = useState([
+    { id: 'ALT-001', type: 'battery_low', terminal_id: 'TRM-003', message: 'Battery critically low (12%)', severity: 'critical', timestamp: '2024-01-15T08:20:00Z', acknowledged: false },
+    { id: 'ALT-002', type: 'offline', terminal_id: 'TRM-003', message: 'Terminal went offline', severity: 'critical', timestamp: '2024-01-15T08:15:00Z', acknowledged: false },
+    { id: 'ALT-003', type: 'error', terminal_id: 'TRM-005', message: 'Paper jam detected', severity: 'high', timestamp: '2024-01-15T09:45:00Z', acknowledged: false },
+    { id: 'ALT-004', type: 'firmware_outdated', terminal_id: 'TRM-004', message: 'Firmware v3.0.5 is 2 versions behind', severity: 'medium', timestamp: '2024-01-14T16:00:00Z', acknowledged: true },
+    { id: 'ALT-005', type: 'error_rate', terminal_id: 'TRM-003', message: 'Error rate above 5% threshold (5.9%)', severity: 'high', timestamp: '2024-01-15T07:00:00Z', acknowledged: true },
+  ])
+  const [alertConfig, setAlertConfig] = useState({ battery_threshold: 20, offline_notify: true, error_rate_threshold: 5, firmware_outdated_notify: true })
+  const [provisionStep, setProvisionStep] = useState(0)
+  const [provisionData, setProvisionData] = useState({ name: '', type: 'integrated_pos', merchant_id: '', location: '', region: '', firmware: 'v3.2.2', tags: '', group: '' })
+  const [maintenanceSchedule, setMaintenanceSchedule] = useState([
+    { id: 'MAINT-001', terminal_id: 'TRM-004', date: '2024-01-14', time: '16:00', duration: '2h', reason: 'Firmware update + hardware check', status: 'completed' },
+    { id: 'MAINT-002', terminal_id: 'TRM-001', date: '2024-01-20', time: '22:00', duration: '1h', reason: 'Scheduled security patch', status: 'scheduled' },
+    { id: 'MAINT-003', terminal_id: 'TRM-002', date: '2024-01-25', time: '03:00', duration: '30m', reason: 'Config optimization', status: 'scheduled' },
+  ])
+  const [exportFormat, setExportFormat] = useState('csv')
 
   const loadTerminals = async () => {
     try {
@@ -4055,14 +4077,12 @@ function POSManagementPage({ formatCurrency }) {
       if (resp.ok) { const data = await resp.json(); if (Array.isArray(data)) setTerminals(data) }
     } catch {}
   }
-
   const loadHealth = async () => {
     try {
       const resp = await fetch(`${POS_API}/management/health`)
       if (resp.ok) setMgmtHealth(await resp.json())
     } catch {}
   }
-
   const loadSyncStats = async () => {
     try {
       const resp = await fetch(`${POS_API}/sync/stats`)
@@ -4072,8 +4092,29 @@ function POSManagementPage({ formatCurrency }) {
 
   useEffect(() => { loadTerminals(); loadHealth(); loadSyncStats() }, [])
 
+  useEffect(() => {
+    const wsUrl = POS_API.replace('http', 'ws') + '/ws/terminals'
+    let ws
+    try {
+      ws = new WebSocket(wsUrl)
+      ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data)
+          if (data.type === 'status_update') {
+            setTerminals(prev => prev.map(t => t.id === data.terminal_id ? { ...t, ...data.updates } : t))
+          }
+          if (data.type === 'alert') {
+            setAlerts(prev => [{ ...data.alert, id: `ALT-${Date.now()}`, acknowledged: false }, ...prev])
+          }
+        } catch {}
+      }
+      ws.onclose = () => { setTimeout(() => {}, 5000) }
+    } catch {}
+    return () => { if (ws) ws.close() }
+  }, [])
+
   const sendCommand = async (terminalId, command) => {
-    const newLog = { id: commandLog.length + 1, terminal_id: terminalId, command, status: 'pending', sent_at: new Date().toLocaleString(), completed_at: null }
+    const newLog = { id: Date.now(), terminal_id: terminalId, command, status: 'pending', sent_at: new Date().toLocaleString(), completed_at: null, user: 'admin' }
     setCommandLog(prev => [newLog, ...prev])
     try {
       const resp = await fetch(`${POS_API}/management/terminals/${terminalId}/command`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ command, data: {} }) })
@@ -4082,19 +4123,75 @@ function POSManagementPage({ formatCurrency }) {
     } catch { setCommandLog(prev => prev.map(l => l.id === newLog.id ? { ...l, status: 'failed' } : l)) }
   }
 
+  const sendBatchCommand = async (command) => {
+    for (const tid of selectedIds) { await sendCommand(tid, command) }
+    setSelectedIds([])
+  }
+
   const deployUpdate = async (updateId) => {
     setUpdates(prev => prev.map(u => u.id === updateId ? { ...u, status: 'deploying', deployed_count: 0 } : u))
-    try {
-      await fetch(`${POS_API}/management/updates/deploy`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ update_id: updateId }) })
-    } catch {}
+    try { await fetch(`${POS_API}/management/updates/deploy`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ update_id: updateId }) }) } catch {}
   }
+
+  const rollbackUpdate = async (updateId, rollbackVersion) => {
+    setUpdates(prev => prev.map(u => u.id === updateId ? { ...u, status: 'rolling_back' } : u))
+    try { await fetch(`${POS_API}/management/updates/rollback`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ update_id: updateId, target_version: rollbackVersion }) }) } catch {}
+    setTimeout(() => setUpdates(prev => prev.map(u => u.id === updateId ? { ...u, status: 'available' } : u)), 2000)
+  }
+
+  const acknowledgeAlert = (alertId) => { setAlerts(prev => prev.map(a => a.id === alertId ? { ...a, acknowledged: true } : a)) }
+
+  const handleProvision = () => {
+    const newTerminal = { id: `TRM-${String(terminals.length + 1).padStart(3, '0')}`, ...provisionData, status: 'offline', last_heartbeat: new Date().toISOString(), total_transactions: 0, success_rate: 0, avg_processing_ms: 0, error_rate: 0, battery: 100, signal_strength: 0, ip_address: '0.0.0.0', tags: provisionData.tags.split(',').map(t => t.trim()).filter(Boolean), uptime_hours: 0, last_error: null, config: { nfc_enabled: true, qr_enabled: true, receipt_auto: true, timeout_sec: 30 }, tx_history: [0,0,0,0,0,0,0,0,0,0,0,0], lat: 6.5, lng: 3.4 }
+    setTerminals(prev => [...prev, newTerminal])
+    setProvisionStep(0)
+    setProvisionData({ name: '', type: 'integrated_pos', merchant_id: '', location: '', region: '', firmware: 'v3.2.2', tags: '', group: '' })
+    setActiveTab('terminals')
+  }
+
+  const exportData = () => {
+    let content = ''
+    if (exportFormat === 'csv') {
+      content = 'ID,Name,Type,Status,Location,Firmware,Transactions,Battery,Signal,Health Score\n'
+      terminals.forEach(t => { content += `${t.id},${t.name},${t.type},${t.status},${t.location},${t.firmware},${t.total_transactions},${t.battery || 'N/A'},${t.signal_strength},${calcHealthScore(t)}\n` })
+    } else {
+      content = JSON.stringify({ report_date: new Date().toISOString(), terminals: terminals.map(t => ({ ...t, health_score: calcHealthScore(t) })), summary: { total: terminals.length, online: onlineCount, offline: offlineCount, errors: errorCount, avg_health: Math.round(terminals.reduce((s, t) => s + calcHealthScore(t), 0) / terminals.length) } }, null, 2)
+    }
+    const blob = new Blob([content], { type: exportFormat === 'csv' ? 'text/csv' : 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url; a.download = `pos-terminals-report.${exportFormat}`; a.click()
+    URL.revokeObjectURL(url)
+  }
+
+  const toggleSelectTerminal = (id) => { setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]) }
+  const selectAll = () => { setSelectedIds(filteredTerminals.map(t => t.id)) }
+  const deselectAll = () => { setSelectedIds([]) }
 
   const statusColor = (s) => s === 'online' ? 'text-green-600 bg-green-50' : s === 'offline' ? 'text-gray-500 bg-gray-100' : s === 'error' ? 'text-red-600 bg-red-50' : 'text-yellow-600 bg-yellow-50'
   const statusIcon = (s) => s === 'online' ? Signal : s === 'offline' ? WifiOff : s === 'error' ? AlertTriangle : RotateCw
 
+  const calcHealthScore = (t) => {
+    let score = 0
+    if (t.status === 'online') score += 30; else if (t.status === 'maintenance') score += 15
+    score += Math.min(20, (t.uptime_hours || 0) / 36)
+    score += Math.min(20, ((100 - (t.error_rate || 0)) / 5))
+    if (t.battery !== null) score += Math.min(15, t.battery / 7)
+    else score += 15
+    score += Math.min(15, (t.signal_strength || 0) / 7)
+    return Math.min(100, Math.round(score))
+  }
+
+  const healthColor = (score) => score >= 80 ? 'text-green-600' : score >= 50 ? 'text-yellow-600' : 'text-red-600'
+  const healthBg = (score) => score >= 80 ? 'bg-green-500' : score >= 50 ? 'bg-yellow-500' : 'bg-red-500'
+
+  const groups = [...new Set(terminals.map(t => t.group).filter(Boolean))]
+  const allTags = [...new Set(terminals.flatMap(t => t.tags || []))]
+
   const filteredTerminals = terminals.filter(t => {
     if (filterStatus !== 'all' && t.status !== filterStatus) return false
-    if (searchTerm && !t.name.toLowerCase().includes(searchTerm.toLowerCase()) && !t.id.toLowerCase().includes(searchTerm.toLowerCase()) && !t.location.toLowerCase().includes(searchTerm.toLowerCase())) return false
+    if (filterGroup !== 'all' && t.group !== filterGroup) return false
+    if (searchTerm && !t.name.toLowerCase().includes(searchTerm.toLowerCase()) && !t.id.toLowerCase().includes(searchTerm.toLowerCase()) && !t.location.toLowerCase().includes(searchTerm.toLowerCase()) && !(t.tags || []).some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()))) return false
     return true
   })
 
@@ -4102,92 +4199,148 @@ function POSManagementPage({ formatCurrency }) {
   const offlineCount = terminals.filter(t => t.status === 'offline').length
   const errorCount = terminals.filter(t => t.status === 'error').length
   const totalTxns = terminals.reduce((sum, t) => sum + t.total_transactions, 0)
+  const avgHealth = terminals.length ? Math.round(terminals.reduce((s, t) => s + calcHealthScore(t), 0) / terminals.length) : 0
+  const unacknowledgedAlerts = alerts.filter(a => !a.acknowledged).length
 
   const tabs = [
     { id: 'terminals', label: 'Terminals', icon: Monitor },
     { id: 'commands', label: 'Remote Commands', icon: Terminal },
-    { id: 'updates', label: 'Firmware Updates', icon: Download },
+    { id: 'updates', label: 'Firmware', icon: Download },
+    { id: 'health', label: 'Health Scores', icon: Activity },
+    { id: 'alerts', label: `Alerts${unacknowledgedAlerts ? ` (${unacknowledgedAlerts})` : ''}`, icon: Bell },
+    { id: 'map', label: 'Map View', icon: MapPin },
+    { id: 'analytics', label: 'Analytics', icon: BarChart2 },
+    { id: 'provision', label: 'Provision', icon: Plus },
+    { id: 'maintenance', label: 'Maintenance', icon: Calendar },
+    { id: 'audit', label: 'Audit Trail', icon: ClipboardCheck },
     { id: 'sync', label: 'Sync & Ledger', icon: RefreshCw },
+    { id: 'export', label: 'Export', icon: FileText },
   ]
+
+  const MiniChart = ({ data, color = '#6366f1' }) => {
+    const max = Math.max(...data, 1)
+    return (<svg viewBox="0 0 120 40" className="w-full h-10"><polyline fill="none" stroke={color} strokeWidth="2" points={data.map((v, i) => `${(i / (data.length - 1)) * 120},${40 - (v / max) * 36}`).join(' ')} />{data.map((v, i) => (<circle key={i} cx={(i / (data.length - 1)) * 120} cy={40 - (v / max) * 36} r="1.5" fill={color} />))}</svg>)
+  }
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold text-gray-900">POS Management</h2>
         <div className="flex gap-2">
+          {selectedIds.length > 0 && (
+            <div className="flex items-center gap-2 bg-indigo-50 px-3 py-1 rounded-lg">
+              <span className="text-sm text-indigo-700 font-medium">{selectedIds.length} selected</span>
+              <Button size="sm" onClick={() => sendBatchCommand('REBOOT')}><Power className="w-3 h-3 mr-1" />Batch Reboot</Button>
+              <Button size="sm" variant="outline" onClick={() => sendBatchCommand('FORCE_SYNC')}>Batch Sync</Button>
+              <Button size="sm" variant="ghost" onClick={deselectAll}><X className="w-3 h-3" /></Button>
+            </div>
+          )}
           <Button variant="outline" size="sm" onClick={() => { loadTerminals(); loadHealth(); loadSyncStats() }}><RefreshCw className="w-4 h-4 mr-1" />Refresh</Button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
         {[
-          ['Total Terminals', terminals.length, Monitor, 'bg-blue-50', 'text-blue-600'],
+          ['Terminals', terminals.length, Monitor, 'bg-blue-50', 'text-blue-600'],
           ['Online', onlineCount, Signal, 'bg-green-50', 'text-green-600'],
           ['Offline', offlineCount, WifiOff, 'bg-gray-100', 'text-gray-500'],
           ['Errors', errorCount, AlertTriangle, 'bg-red-50', 'text-red-600'],
-          ['Total Transactions', totalTxns.toLocaleString(), CreditCard, 'bg-indigo-50', 'text-indigo-600'],
+          ['Avg Health', `${avgHealth}/100`, Activity, avgHealth >= 80 ? 'bg-green-50' : 'bg-yellow-50', avgHealth >= 80 ? 'text-green-600' : 'text-yellow-600'],
+          ['Transactions', totalTxns.toLocaleString(), CreditCard, 'bg-indigo-50', 'text-indigo-600'],
         ].map(([title, value, Icon, bg, color]) => (
-          <div key={title} className="bg-white rounded-xl shadow p-4">
-            <div className="flex items-center space-x-3">
-              <div className={`w-10 h-10 ${bg} rounded-full flex items-center justify-center`}><Icon className={`w-5 h-5 ${color}`} /></div>
-              <div><p className="text-sm text-gray-500">{title}</p><p className="text-xl font-bold">{value}</p></div>
+          <div key={title} className="bg-white rounded-xl shadow p-3">
+            <div className="flex items-center space-x-2">
+              <div className={`w-9 h-9 ${bg} rounded-full flex items-center justify-center`}><Icon className={`w-4 h-4 ${color}`} /></div>
+              <div><p className="text-xs text-gray-500">{title}</p><p className="text-lg font-bold">{value}</p></div>
             </div>
           </div>
         ))}
       </div>
 
-      <div className="flex gap-2 border-b">
+      <div className="flex gap-1 border-b overflow-x-auto pb-px">
         {tabs.map(tab => (
-          <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${activeTab === tab.id ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
-            <tab.icon className="w-4 h-4" />{tab.label}
+          <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`flex items-center gap-1.5 px-3 py-2 text-xs font-medium border-b-2 transition-colors whitespace-nowrap ${activeTab === tab.id ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
+            <tab.icon className="w-3.5 h-3.5" />{tab.label}
           </button>
         ))}
       </div>
 
       {activeTab === 'terminals' && (
         <div className="space-y-4">
-          <div className="flex gap-3">
-            <div className="relative flex-1"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" /><input type="text" placeholder="Search terminals..." className="w-full pl-9 pr-3 py-2 border rounded-lg text-sm" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} /></div>
+          <div className="flex gap-3 flex-wrap">
+            <div className="relative flex-1 min-w-[200px]"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" /><input type="text" placeholder="Search terminals, tags..." className="w-full pl-9 pr-3 py-2 border rounded-lg text-sm" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} /></div>
             <select className="px-3 py-2 border rounded-lg text-sm" value={filterStatus} onChange={e => setFilterStatus(e.target.value)}><option value="all">All Status</option><option value="online">Online</option><option value="offline">Offline</option><option value="error">Error</option><option value="maintenance">Maintenance</option></select>
+            <select className="px-3 py-2 border rounded-lg text-sm" value={filterGroup} onChange={e => setFilterGroup(e.target.value)}><option value="all">All Groups</option>{groups.map(g => <option key={g} value={g}>{g}</option>)}</select>
+            <div className="flex border rounded-lg overflow-hidden">
+              <button onClick={() => setViewMode('grid')} className={`px-3 py-2 text-sm ${viewMode === 'grid' ? 'bg-indigo-50 text-indigo-600' : 'text-gray-500'}`}><Layers className="w-4 h-4" /></button>
+              <button onClick={() => setViewMode('list')} className={`px-3 py-2 text-sm ${viewMode === 'list' ? 'bg-indigo-50 text-indigo-600' : 'text-gray-500'}`}><Menu className="w-4 h-4" /></button>
+            </div>
+            <Button variant="outline" size="sm" onClick={selectedIds.length === filteredTerminals.length ? deselectAll : selectAll}><CheckCircle className="w-3 h-3 mr-1" />{selectedIds.length === filteredTerminals.length ? 'Deselect All' : 'Select All'}</Button>
           </div>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {filteredTerminals.map(t => {
-              const SIcon = statusIcon(t.status)
-              return (
-                <div key={t.id} className={`bg-white rounded-xl shadow p-5 border-l-4 ${t.status === 'online' ? 'border-green-500' : t.status === 'offline' ? 'border-gray-300' : t.status === 'error' ? 'border-red-500' : 'border-yellow-500'} cursor-pointer hover:shadow-md transition-shadow`} onClick={() => setSelectedTerminal(selectedTerminal?.id === t.id ? null : t)}>
-                  <div className="flex justify-between items-start mb-3">
-                    <div>
-                      <h3 className="font-semibold text-gray-900">{t.name}</h3>
-                      <p className="text-xs text-gray-500 font-mono">{t.id}</p>
-                    </div>
-                    <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${statusColor(t.status)}`}><SIcon className="w-3 h-3" />{t.status}</span>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2 text-sm">
-                    <div><span className="text-gray-500">Location:</span> <span className="font-medium">{t.location}</span></div>
-                    <div><span className="text-gray-500">Type:</span> <span className="font-medium capitalize">{t.type.replace(/_/g, ' ')}</span></div>
-                    <div><span className="text-gray-500">Firmware:</span> <span className="font-mono text-xs">{t.firmware}</span></div>
-                    <div><span className="text-gray-500">Transactions:</span> <span className="font-medium">{t.total_transactions.toLocaleString()}</span></div>
-                    {t.battery !== null && <div><span className="text-gray-500">Battery:</span> <span className={`font-medium ${t.battery < 20 ? 'text-red-600' : t.battery < 50 ? 'text-yellow-600' : 'text-green-600'}`}>{t.battery}%</span></div>}
-                    <div><span className="text-gray-500">Signal:</span> <span className="font-medium">{t.signal_strength}%</span></div>
-                  </div>
-                  {selectedTerminal?.id === t.id && (
-                    <div className="mt-4 pt-4 border-t">
-                      <div className="flex flex-wrap gap-2">
-                        <Button size="sm" onClick={(e) => { e.stopPropagation(); sendCommand(t.id, 'REBOOT') }}><Power className="w-3 h-3 mr-1" />Reboot</Button>
-                        <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); sendCommand(t.id, 'DIAGNOSTICS') }}><Activity className="w-3 h-3 mr-1" />Diagnostics</Button>
-                        <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); sendCommand(t.id, 'UPDATE_CONFIG') }}><Settings className="w-3 h-3 mr-1" />Update Config</Button>
-                        <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); sendCommand(t.id, 'CLEAR_CACHE') }}><Trash2 className="w-3 h-3 mr-1" />Clear Cache</Button>
+
+          {viewMode === 'grid' ? (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              {filteredTerminals.map(t => {
+                const SIcon = statusIcon(t.status)
+                const hs = calcHealthScore(t)
+                const isSelected = selectedIds.includes(t.id)
+                return (
+                  <div key={t.id} className={`bg-white rounded-xl shadow p-5 border-l-4 ${t.status === 'online' ? 'border-green-500' : t.status === 'offline' ? 'border-gray-300' : t.status === 'error' ? 'border-red-500' : 'border-yellow-500'} ${isSelected ? 'ring-2 ring-indigo-400' : ''} hover:shadow-md transition-all`}>
+                    <div className="flex justify-between items-start mb-3">
+                      <div className="flex items-center gap-2">
+                        <input type="checkbox" checked={isSelected} onChange={() => toggleSelectTerminal(t.id)} className="w-4 h-4 text-indigo-600 rounded" onClick={e => e.stopPropagation()} />
+                        <div>
+                          <h3 className="font-semibold text-gray-900">{t.name}</h3>
+                          <p className="text-xs text-gray-500 font-mono">{t.id} | {t.group}</p>
+                        </div>
                       </div>
-                      <div className="mt-3 text-xs text-gray-500">
-                        <p>IP: {t.ip_address} | Merchant: {t.merchant_id}</p>
-                        <p>Last heartbeat: {new Date(t.last_heartbeat).toLocaleString()}</p>
+                      <div className="flex items-center gap-2">
+                        <span className={`text-xs font-bold ${healthColor(hs)}`}>{hs}</span>
+                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${statusColor(t.status)}`}><SIcon className="w-3 h-3" />{t.status}</span>
                       </div>
                     </div>
-                  )}
-                </div>
-              )
-            })}
-          </div>
+                    <div className="grid grid-cols-3 gap-2 text-xs mb-3">
+                      <div><span className="text-gray-500">Location:</span><br/><span className="font-medium">{t.location}</span></div>
+                      <div><span className="text-gray-500">Firmware:</span><br/><span className="font-mono">{t.firmware}</span></div>
+                      <div><span className="text-gray-500">Txns:</span><br/><span className="font-medium">{t.total_transactions.toLocaleString()}</span></div>
+                      {t.battery !== null && <div><span className="text-gray-500">Battery:</span><br/><span className={`font-medium ${t.battery < 20 ? 'text-red-600' : t.battery < 50 ? 'text-yellow-600' : 'text-green-600'}`}>{t.battery}%</span></div>}
+                      <div><span className="text-gray-500">Signal:</span><br/><span className="font-medium">{t.signal_strength}%</span></div>
+                      <div><span className="text-gray-500">Success:</span><br/><span className="font-medium">{t.success_rate}%</span></div>
+                    </div>
+                    {(t.tags || []).length > 0 && <div className="flex flex-wrap gap-1 mb-3">{t.tags.map(tag => <span key={tag} className="px-2 py-0.5 bg-slate-100 text-slate-600 text-xs rounded-full">{tag}</span>)}</div>}
+                    <MiniChart data={t.tx_history || []} />
+                    <div className="mt-3 pt-3 border-t flex justify-between items-center">
+                      <div className="flex flex-wrap gap-1">
+                        <Button size="sm" onClick={() => sendCommand(t.id, 'REBOOT')}><Power className="w-3 h-3 mr-1" />Reboot</Button>
+                        <Button size="sm" variant="outline" onClick={() => sendCommand(t.id, 'DIAGNOSTICS')}><Activity className="w-3 h-3 mr-1" />Diag</Button>
+                        <Button size="sm" variant="outline" onClick={() => sendCommand(t.id, 'FORCE_SYNC')}><RefreshCw className="w-3 h-3 mr-1" />Sync</Button>
+                      </div>
+                      <Button size="sm" variant="ghost" onClick={() => setDetailTerminal(t)}><Eye className="w-3 h-3 mr-1" />Details</Button>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          ) : (
+            <div className="bg-white rounded-xl shadow overflow-x-auto">
+              <table className="w-full">
+                <thead><tr className="border-b bg-gray-50"><th className="p-3 text-left text-xs"><input type="checkbox" checked={selectedIds.length === filteredTerminals.length && filteredTerminals.length > 0} onChange={selectedIds.length === filteredTerminals.length ? deselectAll : selectAll} className="w-4 h-4" /></th><th className="p-3 text-left text-xs">Terminal</th><th className="p-3 text-left text-xs">Status</th><th className="p-3 text-left text-xs">Health</th><th className="p-3 text-left text-xs">Location</th><th className="p-3 text-left text-xs">Firmware</th><th className="p-3 text-left text-xs">Txns</th><th className="p-3 text-left text-xs">Battery</th><th className="p-3 text-left text-xs">Signal</th><th className="p-3 text-left text-xs">Actions</th></tr></thead>
+                <tbody>{filteredTerminals.map(t => { const hs = calcHealthScore(t); return (
+                  <tr key={t.id} className="border-b hover:bg-gray-50">
+                    <td className="p-3"><input type="checkbox" checked={selectedIds.includes(t.id)} onChange={() => toggleSelectTerminal(t.id)} className="w-4 h-4" /></td>
+                    <td className="p-3"><span className="font-medium text-sm">{t.name}</span><br/><span className="text-xs text-gray-500 font-mono">{t.id}</span></td>
+                    <td className="p-3"><span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${statusColor(t.status)}`}>{t.status}</span></td>
+                    <td className="p-3"><span className={`text-sm font-bold ${healthColor(hs)}`}>{hs}/100</span></td>
+                    <td className="p-3 text-sm">{t.location}</td>
+                    <td className="p-3 text-xs font-mono">{t.firmware}</td>
+                    <td className="p-3 text-sm">{t.total_transactions.toLocaleString()}</td>
+                    <td className="p-3 text-sm">{t.battery !== null ? `${t.battery}%` : '-'}</td>
+                    <td className="p-3 text-sm">{t.signal_strength}%</td>
+                    <td className="p-3"><Button size="sm" variant="ghost" onClick={() => setDetailTerminal(t)}><Eye className="w-3 h-3" /></Button></td>
+                  </tr>)})}</tbody>
+              </table>
+            </div>
+          )}
         </div>
       )}
 
@@ -4195,21 +4348,14 @@ function POSManagementPage({ formatCurrency }) {
         <div className="space-y-4">
           <div className="bg-white rounded-xl shadow p-6">
             <h3 className="text-lg font-semibold mb-4">Send Command</h3>
-            <div className="flex gap-3">
+            <div className="flex gap-3 flex-wrap">
               <select className="px-3 py-2 border rounded-lg text-sm" value={selectedTerminal?.id || ''} onChange={e => setSelectedTerminal(terminals.find(t => t.id === e.target.value) || null)}>
                 <option value="">Select Terminal</option>
                 {terminals.map(t => <option key={t.id} value={t.id}>{t.id} - {t.name}</option>)}
               </select>
               <select className="px-3 py-2 border rounded-lg text-sm" value={commandInput} onChange={e => setCommandInput(e.target.value)}>
                 <option value="">Select Command</option>
-                <option value="REBOOT">Reboot</option>
-                <option value="DIAGNOSTICS">Run Diagnostics</option>
-                <option value="UPDATE_CONFIG">Update Configuration</option>
-                <option value="CLEAR_CACHE">Clear Cache</option>
-                <option value="ENABLE_DEBUG">Enable Debug Mode</option>
-                <option value="DISABLE_DEBUG">Disable Debug Mode</option>
-                <option value="FORCE_SYNC">Force Sync</option>
-                <option value="SCREENSHOT">Capture Screenshot</option>
+                <option value="REBOOT">Reboot</option><option value="DIAGNOSTICS">Run Diagnostics</option><option value="UPDATE_CONFIG">Update Configuration</option><option value="CLEAR_CACHE">Clear Cache</option><option value="ENABLE_DEBUG">Enable Debug Mode</option><option value="DISABLE_DEBUG">Disable Debug Mode</option><option value="FORCE_SYNC">Force Sync</option><option value="SCREENSHOT">Capture Screenshot</option><option value="RESTART_SERVICE">Restart Service</option><option value="FACTORY_RESET">Factory Reset</option>
               </select>
               <Button onClick={() => { if (selectedTerminal && commandInput) { sendCommand(selectedTerminal.id, commandInput); setCommandInput('') } }} disabled={!selectedTerminal || !commandInput}><Send className="w-4 h-4 mr-1" />Send</Button>
             </div>
@@ -4217,20 +4363,8 @@ function POSManagementPage({ formatCurrency }) {
           <div className="bg-white rounded-xl shadow p-6">
             <h3 className="text-lg font-semibold mb-4">Command History</h3>
             <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead><tr className="border-b"><th className="text-left p-3 text-sm text-gray-500">Terminal</th><th className="text-left p-3 text-sm text-gray-500">Command</th><th className="text-left p-3 text-sm text-gray-500">Status</th><th className="text-left p-3 text-sm text-gray-500">Sent</th><th className="text-left p-3 text-sm text-gray-500">Completed</th></tr></thead>
-                <tbody>
-                  {commandLog.map(l => (
-                    <tr key={l.id} className="border-b hover:bg-gray-50">
-                      <td className="p-3 text-sm font-mono">{l.terminal_id}</td>
-                      <td className="p-3"><span className="font-mono text-xs bg-gray-100 px-2 py-1 rounded">{l.command}</span></td>
-                      <td className="p-3"><Badge variant={l.status === 'completed' ? 'success' : l.status === 'failed' ? 'destructive' : 'warning'}>{l.status}</Badge></td>
-                      <td className="p-3 text-sm">{l.sent_at}</td>
-                      <td className="p-3 text-sm">{l.completed_at || '-'}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              <table className="w-full"><thead><tr className="border-b"><th className="text-left p-3 text-xs text-gray-500">Terminal</th><th className="text-left p-3 text-xs text-gray-500">Command</th><th className="text-left p-3 text-xs text-gray-500">Status</th><th className="text-left p-3 text-xs text-gray-500">User</th><th className="text-left p-3 text-xs text-gray-500">Sent</th><th className="text-left p-3 text-xs text-gray-500">Completed</th></tr></thead>
+              <tbody>{commandLog.map(l => (<tr key={l.id} className="border-b hover:bg-gray-50"><td className="p-3 text-sm font-mono">{l.terminal_id}</td><td className="p-3"><span className="font-mono text-xs bg-gray-100 px-2 py-1 rounded">{l.command}</span></td><td className="p-3"><Badge variant={l.status === 'completed' ? 'success' : l.status === 'failed' ? 'destructive' : 'warning'}>{l.status}</Badge></td><td className="p-3 text-sm">{l.user}</td><td className="p-3 text-sm">{l.sent_at}</td><td className="p-3 text-sm">{l.completed_at || '-'}</td></tr>))}</tbody></table>
             </div>
           </div>
         </div>
@@ -4244,26 +4378,16 @@ function POSManagementPage({ formatCurrency }) {
                 <div>
                   <div className="flex items-center gap-3 mb-1">
                     <h3 className="text-lg font-semibold">{u.version}</h3>
-                    <Badge variant={u.status === 'available' ? 'default' : u.status === 'deploying' ? 'warning' : 'success'}>{u.status}</Badge>
-                    <span className="text-xs text-gray-400">{u.type}</span>
+                    <Badge variant={u.status === 'available' ? 'default' : u.status === 'deploying' ? 'warning' : u.status === 'rolling_back' ? 'destructive' : 'success'}>{u.status}</Badge>
                   </div>
                   <p className="text-sm text-gray-600 mb-2">{u.changelog}</p>
-                  <div className="flex gap-4 text-xs text-gray-500">
-                    <span>Released: {u.release_date}</span>
-                    <span>Size: {u.size}</span>
-                    <span>Devices: {u.compatible_devices.map(d => d.replace(/_/g, ' ')).join(', ')}</span>
-                  </div>
+                  <div className="flex gap-4 text-xs text-gray-500"><span>Released: {u.release_date}</span><span>Size: {u.size}</span><span>Devices: {u.compatible_devices.map(d => d.replace(/_/g, ' ')).join(', ')}</span></div>
                 </div>
-                <div className="text-right">
+                <div className="flex gap-2">
                   {u.status === 'available' && <Button size="sm" onClick={() => deployUpdate(u.id)}><Download className="w-4 h-4 mr-1" />Deploy</Button>}
-                  {u.status === 'deploying' && (
-                    <div>
-                      <p className="text-sm font-medium text-yellow-600 mb-1">Deploying...</p>
-                      <div className="w-32 bg-gray-200 rounded-full h-2"><div className="bg-yellow-500 h-2 rounded-full" style={{ width: `${((u.deployed_count || 0) / (u.total_count || 1)) * 100}%` }} /></div>
-                      <p className="text-xs text-gray-500 mt-1">{u.deployed_count}/{u.total_count} devices</p>
-                    </div>
-                  )}
-                  {u.status === 'completed' && <p className="text-sm text-green-600 font-medium">{u.deployed_count}/{u.total_count} deployed</p>}
+                  {u.status === 'deploying' && (<div className="text-right"><p className="text-sm font-medium text-yellow-600 mb-1">Deploying...</p><div className="w-32 bg-gray-200 rounded-full h-2"><div className="bg-yellow-500 h-2 rounded-full" style={{ width: `${((u.deployed_count || 0) / (u.total_count || 1)) * 100}%` }} /></div><p className="text-xs text-gray-500 mt-1">{u.deployed_count}/{u.total_count}</p></div>)}
+                  {u.status === 'completed' && (<div className="flex gap-2 items-center"><p className="text-sm text-green-600 font-medium">{u.deployed_count}/{u.total_count}</p><Button size="sm" variant="outline" onClick={() => rollbackUpdate(u.id, u.rollback_version)}><RotateCw className="w-3 h-3 mr-1" />Rollback</Button></div>)}
+                  {u.status === 'rolling_back' && <p className="text-sm text-red-600 font-medium">Rolling back...</p>}
                 </div>
               </div>
             </div>
@@ -4271,42 +4395,261 @@ function POSManagementPage({ formatCurrency }) {
         </div>
       )}
 
-      {activeTab === 'sync' && (
+      {activeTab === 'health' && (
         <div className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            {[
-              ['Total Syncs', syncStats.total_syncs || 0, RefreshCw, 'bg-blue-50', 'text-blue-600'],
-              ['Pending Events', syncStats.pending_events || 0, Clock, 'bg-yellow-50', 'text-yellow-600'],
-              ['Resolution Rate', `${syncStats.resolution_rate || 100}%`, CheckCircle, 'bg-green-50', 'text-green-600'],
-              ['Mgmt Server', mgmtHealth.status || 'unknown', HardDrive, mgmtHealth.status === 'healthy' ? 'bg-green-50' : 'bg-red-50', mgmtHealth.status === 'healthy' ? 'text-green-600' : 'text-red-600'],
-            ].map(([title, value, Icon, bg, color]) => (
-              <div key={title} className="bg-white rounded-xl shadow p-4">
-                <div className="flex items-center space-x-3">
-                  <div className={`w-10 h-10 ${bg} rounded-full flex items-center justify-center`}><Icon className={`w-5 h-5 ${color}`} /></div>
-                  <div><p className="text-sm text-gray-500">{title}</p><p className="text-xl font-bold">{value}</p></div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {terminals.map(t => { const hs = calcHealthScore(t); return (
+              <div key={t.id} className="bg-white rounded-xl shadow p-5">
+                <div className="flex justify-between items-center mb-3">
+                  <div><h3 className="font-semibold text-sm">{t.name}</h3><p className="text-xs text-gray-500">{t.id}</p></div>
+                  <div className={`text-2xl font-bold ${healthColor(hs)}`}>{hs}</div>
                 </div>
+                <div className="w-full bg-gray-200 rounded-full h-3 mb-3"><div className={`h-3 rounded-full ${healthBg(hs)}`} style={{ width: `${hs}%` }} /></div>
+                <div className="space-y-2 text-xs">
+                  <div className="flex justify-between"><span className="text-gray-500">Status</span><span className={`font-medium ${t.status === 'online' ? 'text-green-600' : 'text-red-600'}`}>{t.status} (+{t.status === 'online' ? 30 : t.status === 'maintenance' ? 15 : 0})</span></div>
+                  <div className="flex justify-between"><span className="text-gray-500">Uptime</span><span>{t.uptime_hours}h</span></div>
+                  <div className="flex justify-between"><span className="text-gray-500">Error Rate</span><span className={t.error_rate > 5 ? 'text-red-600' : ''}>{t.error_rate}%</span></div>
+                  <div className="flex justify-between"><span className="text-gray-500">Battery</span><span>{t.battery !== null ? `${t.battery}%` : 'N/A'}</span></div>
+                  <div className="flex justify-between"><span className="text-gray-500">Signal</span><span>{t.signal_strength}%</span></div>
+                  {t.last_error && <div className="mt-2 p-2 bg-red-50 rounded text-red-700 text-xs">{t.last_error}</div>}
+                </div>
+              </div>
+            )})}
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'alerts' && (
+        <div className="space-y-4">
+          <div className="bg-white rounded-xl shadow p-6">
+            <h3 className="text-lg font-semibold mb-4">Alert Configuration</h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div><label className="text-xs text-gray-500 block mb-1">Battery Threshold (%)</label><input type="number" className="w-full px-3 py-2 border rounded-lg text-sm" value={alertConfig.battery_threshold} onChange={e => setAlertConfig(prev => ({ ...prev, battery_threshold: parseInt(e.target.value) || 0 }))} /></div>
+              <div><label className="text-xs text-gray-500 block mb-1">Error Rate Threshold (%)</label><input type="number" className="w-full px-3 py-2 border rounded-lg text-sm" value={alertConfig.error_rate_threshold} onChange={e => setAlertConfig(prev => ({ ...prev, error_rate_threshold: parseInt(e.target.value) || 0 }))} /></div>
+              <div className="flex items-end gap-2"><label className="text-xs text-gray-500">Offline alerts</label><input type="checkbox" checked={alertConfig.offline_notify} onChange={e => setAlertConfig(prev => ({ ...prev, offline_notify: e.target.checked }))} className="w-4 h-4" /></div>
+              <div className="flex items-end gap-2"><label className="text-xs text-gray-500">Firmware alerts</label><input type="checkbox" checked={alertConfig.firmware_outdated_notify} onChange={e => setAlertConfig(prev => ({ ...prev, firmware_outdated_notify: e.target.checked }))} className="w-4 h-4" /></div>
+            </div>
+          </div>
+          <div className="space-y-2">
+            {alerts.map(a => (
+              <div key={a.id} className={`bg-white rounded-xl shadow p-4 flex justify-between items-center ${a.acknowledged ? 'opacity-60' : ''} ${a.severity === 'critical' ? 'border-l-4 border-red-500' : a.severity === 'high' ? 'border-l-4 border-orange-500' : 'border-l-4 border-yellow-400'}`}>
+                <div className="flex items-center gap-3">
+                  <AlertTriangle className={`w-5 h-5 ${a.severity === 'critical' ? 'text-red-600' : a.severity === 'high' ? 'text-orange-600' : 'text-yellow-600'}`} />
+                  <div><p className="text-sm font-medium">{a.message}</p><p className="text-xs text-gray-500">{a.terminal_id} | {new Date(a.timestamp).toLocaleString()} | {a.type}</p></div>
+                </div>
+                {!a.acknowledged && <Button size="sm" variant="outline" onClick={() => acknowledgeAlert(a.id)}>Acknowledge</Button>}
               </div>
             ))}
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="bg-white rounded-xl shadow p-6">
-              <h3 className="text-lg font-semibold mb-4">TigerBeetle Ledger Integration</h3>
-              <p className="text-sm text-gray-600 mb-4">Every approved POS payment is automatically recorded as a double-entry transfer in the TigerBeetle distributed ledger.</p>
-              <div className="space-y-3">
-                <div className="flex justify-between text-sm"><span className="text-gray-500">Ledger Endpoint</span><span className="font-mono text-xs">localhost:8085</span></div>
-                <div className="flex justify-between text-sm"><span className="text-gray-500">Sync Manager</span><Badge variant="success">Connected</Badge></div>
-                <div className="flex justify-between text-sm"><span className="text-gray-500">Last Sync</span><span>{syncStats.last_sync ? new Date(syncStats.last_sync).toLocaleString() : 'N/A'}</span></div>
-                <div className="flex justify-between text-sm"><span className="text-gray-500">Pending Events</span><span className="font-bold">{syncStats.pending_events || 0}</span></div>
+        </div>
+      )}
+
+      {activeTab === 'map' && (
+        <div className="space-y-4">
+          <div className="bg-white rounded-xl shadow p-6">
+            <h3 className="text-lg font-semibold mb-4">Terminal Locations</h3>
+            <div className="relative bg-gradient-to-br from-green-50 to-blue-50 rounded-xl overflow-hidden" style={{ height: '450px' }}>
+              <div className="absolute inset-0 opacity-20" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'60\' height=\'60\' viewBox=\'0 0 60 60\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'none\' fill-rule=\'evenodd\'%3E%3Cpath d=\'M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4z\' fill=\'%236366f1\' fill-opacity=\'0.15\'/%3E%3C/g%3E%3C/svg%3E")' }} />
+              {Object.entries(terminals.reduce((acc, t) => { const key = t.region || 'Unknown'; if (!acc[key]) acc[key] = []; acc[key].push(t); return acc }, {})).map(([region, regionTerminals]) => {
+                const positions = { 'Lagos': { top: '55%', left: '25%' }, 'Abuja': { top: '35%', left: '45%' }, 'Port Harcourt': { top: '65%', left: '40%' } }
+                const pos = positions[region] || { top: '50%', left: '50%' }
+                const onlineHere = regionTerminals.filter(t => t.status === 'online').length
+                const totalHere = regionTerminals.length
+                return (
+                  <div key={region} className="absolute transform -translate-x-1/2 -translate-y-1/2 cursor-pointer group" style={pos}>
+                    <div className={`w-12 h-12 rounded-full flex items-center justify-center text-white text-sm font-bold shadow-lg ${onlineHere === totalHere ? 'bg-green-500' : onlineHere > 0 ? 'bg-yellow-500' : 'bg-red-500'}`}>{totalHere}</div>
+                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block">
+                      <div className="bg-slate-900 text-white p-3 rounded-lg text-xs whitespace-nowrap shadow-xl">
+                        <p className="font-bold mb-1">{region}</p>
+                        {regionTerminals.map(t => (<p key={t.id} className="flex items-center gap-2"><span className={`w-2 h-2 rounded-full ${t.status === 'online' ? 'bg-green-400' : t.status === 'offline' ? 'bg-gray-400' : t.status === 'error' ? 'bg-red-400' : 'bg-yellow-400'}`} />{t.name} ({t.status})</p>))}
+                      </div>
+                    </div>
+                    <p className="text-center text-xs font-medium mt-1">{region}</p>
+                  </div>
+                )
+              })}
+              <div className="absolute bottom-4 right-4 bg-white rounded-lg p-3 shadow text-xs space-y-1">
+                <p className="font-medium mb-2">Legend</p>
+                {[['bg-green-500', 'All Online'], ['bg-yellow-500', 'Partial'], ['bg-red-500', 'All Offline']].map(([c, l]) => (<div key={l} className="flex items-center gap-2"><div className={`w-3 h-3 rounded-full ${c}`} />{l}</div>))}
               </div>
             </div>
-            <div className="bg-white rounded-xl shadow p-6">
-              <h3 className="text-lg font-semibold mb-4">Management Server</h3>
-              <p className="text-sm text-gray-600 mb-4">Go-based POS management server for remote terminal control, firmware updates, and health monitoring.</p>
-              <div className="space-y-3">
-                <div className="flex justify-between text-sm"><span className="text-gray-500">Status</span><Badge variant={mgmtHealth.status === 'healthy' ? 'success' : 'destructive'}>{mgmtHealth.status}</Badge></div>
-                <div className="flex justify-between text-sm"><span className="text-gray-500">Connected Terminals</span><span className="font-bold">{mgmtHealth.connected_terminals || 0}</span></div>
-                <div className="flex justify-between text-sm"><span className="text-gray-500">Uptime</span><span>{mgmtHealth.uptime || 'N/A'}</span></div>
-                <div className="flex justify-between text-sm"><span className="text-gray-500">Endpoint</span><span className="font-mono text-xs">localhost:8443</span></div>
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'analytics' && (
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {terminals.filter(t => t.total_transactions > 0).map(t => (
+              <div key={t.id} className="bg-white rounded-xl shadow p-5">
+                <div className="flex justify-between items-center mb-3"><h3 className="font-semibold text-sm">{t.name}</h3><Badge variant={t.status === 'online' ? 'success' : 'destructive'}>{t.status}</Badge></div>
+                <div className="grid grid-cols-3 gap-3 text-xs mb-3">
+                  <div className="bg-blue-50 rounded-lg p-2 text-center"><p className="text-gray-500">Total Txns</p><p className="text-lg font-bold text-blue-600">{t.total_transactions.toLocaleString()}</p></div>
+                  <div className="bg-green-50 rounded-lg p-2 text-center"><p className="text-gray-500">Success</p><p className="text-lg font-bold text-green-600">{t.success_rate}%</p></div>
+                  <div className="bg-indigo-50 rounded-lg p-2 text-center"><p className="text-gray-500">Avg Time</p><p className="text-lg font-bold text-indigo-600">{t.avg_processing_ms}ms</p></div>
+                </div>
+                <p className="text-xs text-gray-500 mb-1">Monthly Transaction Trend</p>
+                <MiniChart data={t.tx_history || []} />
+                <div className="mt-2 flex justify-between text-xs text-gray-400"><span>Jan</span><span>Feb</span><span>Mar</span><span>Apr</span><span>May</span><span>Jun</span><span>Jul</span><span>Aug</span><span>Sep</span><span>Oct</span><span>Nov</span><span>Dec</span></div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'provision' && (
+        <div className="bg-white rounded-xl shadow p-6">
+          <h3 className="text-lg font-semibold mb-2">Provision New Terminal</h3>
+          <p className="text-sm text-gray-500 mb-6">Register and configure a new POS terminal in the network.</p>
+          <div className="flex gap-4 mb-6">{['Device Info', 'Configuration', 'Review'].map((step, i) => (<div key={step} className={`flex items-center gap-2 ${i <= provisionStep ? 'text-indigo-600' : 'text-gray-400'}`}><div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${i <= provisionStep ? 'bg-indigo-100 text-indigo-600' : 'bg-gray-100'}`}>{i + 1}</div><span className="text-sm font-medium">{step}</span>{i < 2 && <ChevronRight className="w-4 h-4 text-gray-300" />}</div>))}</div>
+          {provisionStep === 0 && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div><label className="text-sm text-gray-600 block mb-1">Terminal Name</label><input className="w-full px-3 py-2 border rounded-lg text-sm" value={provisionData.name} onChange={e => setProvisionData(p => ({ ...p, name: e.target.value }))} placeholder="e.g., Main Counter POS" /></div>
+                <div><label className="text-sm text-gray-600 block mb-1">Type</label><select className="w-full px-3 py-2 border rounded-lg text-sm" value={provisionData.type} onChange={e => setProvisionData(p => ({ ...p, type: e.target.value }))}><option value="integrated_pos">Integrated POS</option><option value="card_reader">Card Reader</option><option value="receipt_printer">Receipt Printer</option><option value="barcode_scanner">Barcode Scanner</option></select></div>
+                <div><label className="text-sm text-gray-600 block mb-1">Merchant ID</label><input className="w-full px-3 py-2 border rounded-lg text-sm" value={provisionData.merchant_id} onChange={e => setProvisionData(p => ({ ...p, merchant_id: e.target.value }))} placeholder="MRC-XXX" /></div>
+                <div><label className="text-sm text-gray-600 block mb-1">Location</label><input className="w-full px-3 py-2 border rounded-lg text-sm" value={provisionData.location} onChange={e => setProvisionData(p => ({ ...p, location: e.target.value }))} placeholder="e.g., Lagos - Victoria Island" /></div>
+              </div>
+              <Button onClick={() => setProvisionStep(1)} disabled={!provisionData.name || !provisionData.merchant_id}>Next <ArrowRight className="w-4 h-4 ml-1" /></Button>
+            </div>
+          )}
+          {provisionStep === 1 && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div><label className="text-sm text-gray-600 block mb-1">Region</label><input className="w-full px-3 py-2 border rounded-lg text-sm" value={provisionData.region} onChange={e => setProvisionData(p => ({ ...p, region: e.target.value }))} placeholder="e.g., Lagos" /></div>
+                <div><label className="text-sm text-gray-600 block mb-1">Group</label><input className="w-full px-3 py-2 border rounded-lg text-sm" value={provisionData.group} onChange={e => setProvisionData(p => ({ ...p, group: e.target.value }))} placeholder="e.g., Lagos-Main" /></div>
+                <div><label className="text-sm text-gray-600 block mb-1">Firmware</label><select className="w-full px-3 py-2 border rounded-lg text-sm" value={provisionData.firmware} onChange={e => setProvisionData(p => ({ ...p, firmware: e.target.value }))}><option value="v3.2.2">v3.2.2 (Latest)</option><option value="v3.2.1">v3.2.1</option><option value="v3.1.0">v3.1.0</option></select></div>
+                <div><label className="text-sm text-gray-600 block mb-1">Tags (comma-separated)</label><input className="w-full px-3 py-2 border rounded-lg text-sm" value={provisionData.tags} onChange={e => setProvisionData(p => ({ ...p, tags: e.target.value }))} placeholder="e.g., high-volume, flagship" /></div>
+              </div>
+              <div className="flex gap-2"><Button variant="outline" onClick={() => setProvisionStep(0)}><ArrowLeft className="w-4 h-4 mr-1" />Back</Button><Button onClick={() => setProvisionStep(2)}>Next <ArrowRight className="w-4 h-4 ml-1" /></Button></div>
+            </div>
+          )}
+          {provisionStep === 2 && (
+            <div className="space-y-4">
+              <div className="bg-gray-50 rounded-lg p-4 space-y-2 text-sm">
+                {Object.entries(provisionData).filter(([, v]) => v).map(([k, v]) => (<div key={k} className="flex justify-between"><span className="text-gray-500 capitalize">{k.replace(/_/g, ' ')}</span><span className="font-medium">{v}</span></div>))}
+              </div>
+              <div className="flex gap-2"><Button variant="outline" onClick={() => setProvisionStep(1)}><ArrowLeft className="w-4 h-4 mr-1" />Back</Button><Button onClick={handleProvision}><Plus className="w-4 h-4 mr-1" />Provision Terminal</Button></div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {activeTab === 'maintenance' && (
+        <div className="space-y-4">
+          <div className="bg-white rounded-xl shadow p-6">
+            <h3 className="text-lg font-semibold mb-4">Maintenance Schedule</h3>
+            <div className="overflow-x-auto">
+              <table className="w-full"><thead><tr className="border-b"><th className="text-left p-3 text-xs text-gray-500">ID</th><th className="text-left p-3 text-xs text-gray-500">Terminal</th><th className="text-left p-3 text-xs text-gray-500">Date</th><th className="text-left p-3 text-xs text-gray-500">Time</th><th className="text-left p-3 text-xs text-gray-500">Duration</th><th className="text-left p-3 text-xs text-gray-500">Reason</th><th className="text-left p-3 text-xs text-gray-500">Status</th></tr></thead>
+              <tbody>{maintenanceSchedule.map(m => (<tr key={m.id} className="border-b hover:bg-gray-50"><td className="p-3 text-xs font-mono">{m.id}</td><td className="p-3 text-sm">{m.terminal_id}</td><td className="p-3 text-sm">{m.date}</td><td className="p-3 text-sm">{m.time}</td><td className="p-3 text-sm">{m.duration}</td><td className="p-3 text-sm">{m.reason}</td><td className="p-3"><Badge variant={m.status === 'completed' ? 'success' : m.status === 'scheduled' ? 'default' : 'warning'}>{m.status}</Badge></td></tr>))}</tbody></table>
+            </div>
+          </div>
+          <div className="bg-white rounded-xl shadow p-6">
+            <h3 className="text-lg font-semibold mb-4">Schedule New Maintenance</h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <select className="px-3 py-2 border rounded-lg text-sm"><option value="">Select Terminal</option>{terminals.map(t => <option key={t.id} value={t.id}>{t.id} - {t.name}</option>)}</select>
+              <input type="date" className="px-3 py-2 border rounded-lg text-sm" />
+              <input type="time" className="px-3 py-2 border rounded-lg text-sm" />
+              <input type="text" placeholder="Duration (e.g., 1h)" className="px-3 py-2 border rounded-lg text-sm" />
+            </div>
+            <div className="mt-3"><input type="text" placeholder="Reason for maintenance" className="w-full px-3 py-2 border rounded-lg text-sm" /></div>
+            <Button className="mt-3"><Calendar className="w-4 h-4 mr-1" />Schedule</Button>
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'audit' && (
+        <div className="bg-white rounded-xl shadow p-6">
+          <h3 className="text-lg font-semibold mb-4">Audit Trail</h3>
+          <p className="text-sm text-gray-500 mb-4">Complete log of all POS management actions with user attribution.</p>
+          <div className="overflow-x-auto">
+            <table className="w-full"><thead><tr className="border-b bg-gray-50"><th className="text-left p-3 text-xs text-gray-500">Timestamp</th><th className="text-left p-3 text-xs text-gray-500">User</th><th className="text-left p-3 text-xs text-gray-500">Action</th><th className="text-left p-3 text-xs text-gray-500">Terminal</th><th className="text-left p-3 text-xs text-gray-500">Details</th><th className="text-left p-3 text-xs text-gray-500">Result</th></tr></thead>
+            <tbody>{commandLog.map(l => (<tr key={l.id} className="border-b hover:bg-gray-50"><td className="p-3 text-xs">{l.sent_at}</td><td className="p-3 text-sm">{l.user}</td><td className="p-3"><span className="font-mono text-xs bg-gray-100 px-2 py-1 rounded">{l.command}</span></td><td className="p-3 text-sm font-mono">{l.terminal_id}</td><td className="p-3 text-xs text-gray-500">Remote command via POS Management UI</td><td className="p-3"><Badge variant={l.status === 'completed' ? 'success' : l.status === 'failed' ? 'destructive' : 'warning'}>{l.status}</Badge></td></tr>))}</tbody></table>
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'sync' && (
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            {[['Total Syncs', syncStats.total_syncs || 0, RefreshCw, 'bg-blue-50', 'text-blue-600'], ['Pending Events', syncStats.pending_events || 0, Clock, 'bg-yellow-50', 'text-yellow-600'], ['Resolution Rate', `${syncStats.resolution_rate || 100}%`, CheckCircle, 'bg-green-50', 'text-green-600'], ['Mgmt Server', mgmtHealth.status || 'unknown', HardDrive, mgmtHealth.status === 'healthy' ? 'bg-green-50' : 'bg-red-50', mgmtHealth.status === 'healthy' ? 'text-green-600' : 'text-red-600']].map(([title, value, Icon, bg, color]) => (
+              <div key={title} className="bg-white rounded-xl shadow p-4"><div className="flex items-center space-x-3"><div className={`w-10 h-10 ${bg} rounded-full flex items-center justify-center`}><Icon className={`w-5 h-5 ${color}`} /></div><div><p className="text-sm text-gray-500">{title}</p><p className="text-xl font-bold">{value}</p></div></div></div>
+            ))}
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="bg-white rounded-xl shadow p-6"><h3 className="text-lg font-semibold mb-4">TigerBeetle Ledger</h3><div className="space-y-3"><div className="flex justify-between text-sm"><span className="text-gray-500">Endpoint</span><span className="font-mono text-xs">localhost:8085</span></div><div className="flex justify-between text-sm"><span className="text-gray-500">Sync Manager</span><Badge variant="success">Connected</Badge></div><div className="flex justify-between text-sm"><span className="text-gray-500">Last Sync</span><span>{syncStats.last_sync ? new Date(syncStats.last_sync).toLocaleString() : 'N/A'}</span></div><div className="flex justify-between text-sm"><span className="text-gray-500">Pending</span><span className="font-bold">{syncStats.pending_events || 0}</span></div></div></div>
+            <div className="bg-white rounded-xl shadow p-6"><h3 className="text-lg font-semibold mb-4">Management Server</h3><div className="space-y-3"><div className="flex justify-between text-sm"><span className="text-gray-500">Status</span><Badge variant={mgmtHealth.status === 'healthy' ? 'success' : 'destructive'}>{mgmtHealth.status}</Badge></div><div className="flex justify-between text-sm"><span className="text-gray-500">Terminals</span><span className="font-bold">{mgmtHealth.connected_terminals || 0}</span></div><div className="flex justify-between text-sm"><span className="text-gray-500">Uptime</span><span>{mgmtHealth.uptime || 'N/A'}</span></div><div className="flex justify-between text-sm"><span className="text-gray-500">Endpoint</span><span className="font-mono text-xs">localhost:8443</span></div></div></div>
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'export' && (
+        <div className="bg-white rounded-xl shadow p-6">
+          <h3 className="text-lg font-semibold mb-4">Export Reports</h3>
+          <p className="text-sm text-gray-500 mb-4">Download terminal status, health scores, and transaction data.</p>
+          <div className="flex gap-4 items-end">
+            <div><label className="text-sm text-gray-600 block mb-1">Format</label><select className="px-3 py-2 border rounded-lg text-sm" value={exportFormat} onChange={e => setExportFormat(e.target.value)}><option value="csv">CSV</option><option value="json">JSON</option></select></div>
+            <Button onClick={exportData}><FileText className="w-4 h-4 mr-1" />Download Report</Button>
+          </div>
+          <div className="mt-6 p-4 bg-gray-50 rounded-lg text-xs text-gray-500">
+            <p className="font-medium mb-2">Report includes:</p>
+            <ul className="list-disc list-inside space-y-1"><li>All {terminals.length} terminals with current status</li><li>Health scores (0-100) per terminal</li><li>Transaction counts and success rates</li><li>Battery and signal levels</li><li>Firmware versions</li><li>Group and tag assignments</li></ul>
+          </div>
+        </div>
+      )}
+
+      {detailTerminal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex justify-end" onClick={() => setDetailTerminal(null)}>
+          <div className="w-full max-w-lg bg-white h-full overflow-y-auto shadow-2xl" onClick={e => e.stopPropagation()}>
+            <div className="sticky top-0 bg-white border-b p-4 flex justify-between items-center z-10">
+              <div><h2 className="text-lg font-bold">{detailTerminal.name}</h2><p className="text-xs text-gray-500 font-mono">{detailTerminal.id}</p></div>
+              <button onClick={() => setDetailTerminal(null)} className="p-2 hover:bg-gray-100 rounded-lg"><X className="w-5 h-5" /></button>
+            </div>
+            <div className="p-6 space-y-6">
+              <div className="flex items-center justify-between">
+                <Badge variant={detailTerminal.status === 'online' ? 'success' : detailTerminal.status === 'error' ? 'destructive' : 'warning'}>{detailTerminal.status}</Badge>
+                <span className={`text-2xl font-bold ${healthColor(calcHealthScore(detailTerminal))}`}>{calcHealthScore(detailTerminal)}/100</span>
+              </div>
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                {[['Type', detailTerminal.type.replace(/_/g, ' ')], ['Location', detailTerminal.location], ['Region', detailTerminal.region], ['Group', detailTerminal.group], ['Merchant', detailTerminal.merchant_id], ['Firmware', detailTerminal.firmware], ['IP Address', detailTerminal.ip_address], ['Uptime', `${detailTerminal.uptime_hours}h`]].map(([k, v]) => (
+                  <div key={k}><span className="text-gray-500 text-xs">{k}</span><p className="font-medium">{v}</p></div>
+                ))}
+              </div>
+              <div>
+                <h3 className="font-semibold text-sm mb-2">Transaction Trend</h3>
+                <MiniChart data={detailTerminal.tx_history || []} />
+              </div>
+              <div className="grid grid-cols-3 gap-3">
+                <div className="bg-blue-50 rounded-lg p-3 text-center"><p className="text-xs text-gray-500">Transactions</p><p className="text-xl font-bold text-blue-600">{detailTerminal.total_transactions.toLocaleString()}</p></div>
+                <div className="bg-green-50 rounded-lg p-3 text-center"><p className="text-xs text-gray-500">Success</p><p className="text-xl font-bold text-green-600">{detailTerminal.success_rate}%</p></div>
+                <div className="bg-indigo-50 rounded-lg p-3 text-center"><p className="text-xs text-gray-500">Avg Time</p><p className="text-xl font-bold text-indigo-600">{detailTerminal.avg_processing_ms}ms</p></div>
+              </div>
+              <div>
+                <h3 className="font-semibold text-sm mb-2">Hardware</h3>
+                <div className="space-y-2">
+                  {detailTerminal.battery !== null && <div><div className="flex justify-between text-xs mb-1"><span>Battery</span><span>{detailTerminal.battery}%</span></div><div className="w-full bg-gray-200 rounded-full h-2"><div className={`h-2 rounded-full ${detailTerminal.battery > 50 ? 'bg-green-500' : detailTerminal.battery > 20 ? 'bg-yellow-500' : 'bg-red-500'}`} style={{ width: `${detailTerminal.battery}%` }} /></div></div>}
+                  <div><div className="flex justify-between text-xs mb-1"><span>Signal</span><span>{detailTerminal.signal_strength}%</span></div><div className="w-full bg-gray-200 rounded-full h-2"><div className="bg-blue-500 h-2 rounded-full" style={{ width: `${detailTerminal.signal_strength}%` }} /></div></div>
+                </div>
+              </div>
+              <div>
+                <h3 className="font-semibold text-sm mb-2">Configuration</h3>
+                <div className="bg-gray-50 rounded-lg p-3 space-y-2 text-xs">{Object.entries(detailTerminal.config || {}).map(([k, v]) => (<div key={k} className="flex justify-between"><span className="text-gray-500">{k.replace(/_/g, ' ')}</span><span className="font-medium">{String(v)}</span></div>))}</div>
+              </div>
+              {detailTerminal.tags?.length > 0 && <div><h3 className="font-semibold text-sm mb-2">Tags</h3><div className="flex flex-wrap gap-1">{detailTerminal.tags.map(tag => <span key={tag} className="px-2 py-1 bg-slate-100 text-slate-600 text-xs rounded-full">{tag}</span>)}</div></div>}
+              {detailTerminal.last_error && <div className="bg-red-50 border border-red-200 rounded-lg p-3"><p className="text-xs text-red-600 font-medium">Last Error</p><p className="text-sm text-red-700">{detailTerminal.last_error}</p></div>}
+              <div>
+                <h3 className="font-semibold text-sm mb-2">Quick Actions</h3>
+                <div className="flex flex-wrap gap-2">
+                  <Button size="sm" onClick={() => sendCommand(detailTerminal.id, 'REBOOT')}><Power className="w-3 h-3 mr-1" />Reboot</Button>
+                  <Button size="sm" variant="outline" onClick={() => sendCommand(detailTerminal.id, 'DIAGNOSTICS')}><Activity className="w-3 h-3 mr-1" />Diagnostics</Button>
+                  <Button size="sm" variant="outline" onClick={() => sendCommand(detailTerminal.id, 'UPDATE_CONFIG')}><Settings className="w-3 h-3 mr-1" />Config</Button>
+                  <Button size="sm" variant="outline" onClick={() => sendCommand(detailTerminal.id, 'FORCE_SYNC')}><RefreshCw className="w-3 h-3 mr-1" />Sync</Button>
+                  <Button size="sm" variant="outline" onClick={() => sendCommand(detailTerminal.id, 'CLEAR_CACHE')}><Trash2 className="w-3 h-3 mr-1" />Cache</Button>
+                </div>
+              </div>
+              <div>
+                <h3 className="font-semibold text-sm mb-2">Recent Commands</h3>
+                <div className="space-y-1">{commandLog.filter(l => l.terminal_id === detailTerminal.id).slice(0, 5).map(l => (<div key={l.id} className="flex justify-between items-center text-xs bg-gray-50 rounded p-2"><span className="font-mono">{l.command}</span><Badge variant={l.status === 'completed' ? 'success' : l.status === 'failed' ? 'destructive' : 'warning'}>{l.status}</Badge></div>))}</div>
               </div>
             </div>
           </div>
