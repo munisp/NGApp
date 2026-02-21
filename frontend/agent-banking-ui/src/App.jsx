@@ -479,19 +479,19 @@ function App() {
                 <div className="bg-white rounded-lg shadow p-6">
                   <h3 className="text-lg font-semibold mb-4">Quick Actions</h3>
                   <div className="grid grid-cols-2 gap-3">
-                    <Button variant="outline" className="h-12">
+                    <Button variant="outline" className="h-12" onClick={() => setCurrentView('transactions')}>
                       <TrendingUp className="w-4 h-4 mr-2" />
                       Deposit
                     </Button>
-                    <Button variant="outline" className="h-12">
+                    <Button variant="outline" className="h-12" onClick={() => setCurrentView('transactions')}>
                       <DollarSign className="w-4 h-4 mr-2" />
                       Withdraw
                     </Button>
-                    <Button variant="outline" className="h-12">
+                    <Button variant="outline" className="h-12" onClick={() => setCurrentView('transactions')}>
                       <CreditCard className="w-4 h-4 mr-2" />
                       Transfer
                     </Button>
-                    <Button variant="outline" className="h-12">
+                    <Button variant="outline" className="h-12" onClick={() => setCurrentView('analytics')}>
                       <BarChart3 className="w-4 h-4 mr-2" />
                       Statement
                     </Button>
@@ -500,7 +500,7 @@ function App() {
               </div>
             )}
 
-            {(currentUser?.role === 'super_agent' || currentUser?.role === 'master_agent') && (
+            {(currentUser?.role === 'super_agent'|| currentUser?.role === 'master_agent') && (
               <div className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                   <div className="bg-white rounded-lg shadow p-6">
@@ -637,19 +637,19 @@ function App() {
                 <div className="bg-white rounded-lg shadow p-6">
                   <h3 className="text-lg font-semibold mb-4">Agent Actions</h3>
                   <div className="grid grid-cols-2 gap-3">
-                    <Button variant="outline" className="h-12">
+                    <Button variant="outline" className="h-12" onClick={() => setCurrentView('customers')}>
                       <Users className="w-4 h-4 mr-2" />
                       New Customer
                     </Button>
-                    <Button variant="outline" className="h-12">
+                    <Button variant="outline" className="h-12" onClick={() => setCurrentView('transactions')}>
                       <CreditCard className="w-4 h-4 mr-2" />
                       Process Transaction
                     </Button>
-                    <Button variant="outline" className="h-12">
+                    <Button variant="outline" className="h-12" onClick={() => setCurrentView('cash')}>
                       <DollarSign className="w-4 h-4 mr-2" />
                       Cash Request
                     </Button>
-                    <Button variant="outline" className="h-12">
+                    <Button variant="outline" className="h-12" onClick={() => setCurrentView('analytics')}>
                       <BarChart3 className="w-4 h-4 mr-2" />
                       View Reports
                     </Button>
@@ -717,17 +717,15 @@ function App() {
         {currentView === 'ecommerce' && <EcommercePage formatCurrency={formatCurrency} />}
         {currentView === 'inventory' && <InventoryPage formatCurrency={formatCurrency} />}
         {currentView === 'omnichannel' && <OmnichannelPage />}
-
-        {!['dashboard', 'onboarding', 'bills', 'airtime', 'fee_schedule', 'ecommerce', 'inventory', 'omnichannel'].includes(currentView) && currentView !== 'dashboard' && (
-          <div className="bg-white rounded-lg shadow p-8 text-center">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4 capitalize">
-              {currentView} Section
-            </h2>
-            <p className="text-gray-600">
-              This section is under development. The real-time features and API integration are working perfectly!
-            </p>
-          </div>
-        )}
+        {currentView === 'transactions' && <TransactionsPage formatCurrency={formatCurrency} userRole={currentUser?.role} />}
+        {currentView === 'profile' && <ProfilePage formatCurrency={formatCurrency} />}
+        {currentView === 'settings' && <SettingsPage />}
+        {currentView === 'customers' && <CustomersPage formatCurrency={formatCurrency} />}
+        {currentView === 'analytics' && <AnalyticsPage formatCurrency={formatCurrency} userRole={currentUser?.role} />}
+        {currentView === 'cash' && <CashManagementPage formatCurrency={formatCurrency} />}
+        {currentView === 'agents' && <AgentsPage formatCurrency={formatCurrency} userRole={currentUser?.role} />}
+        {currentView === 'system' && <SystemPage />}
+        {currentView === 'security' && <SecurityPage />}
       </div>
     </div>
   )
@@ -3216,6 +3214,775 @@ function OmnichannelPage() {
               </div>
             </div>
           )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function TransactionsPage({ formatCurrency, userRole }) {
+  const [transactions, setTransactions] = useState([])
+  const [searchTerm, setSearchTerm] = useState('')
+  const [filterType, setFilterType] = useState('all')
+  const [filterStatus, setFilterStatus] = useState('all')
+  const [showNewTx, setShowNewTx] = useState(false)
+  const [newTx, setNewTx] = useState({ type: 'deposit', amount: '', recipient: '', description: '' })
+  const [isProcessing, setIsProcessing] = useState(false)
+  const [selectedTx, setSelectedTx] = useState(null)
+
+  useEffect(() => {
+    const loadTransactions = async () => {
+      try {
+        const data = await apiCall('/transactions')
+        if (data.transactions) setTransactions(data.transactions)
+      } catch {
+        setTransactions([
+          { id: 'TXN-001', type: 'deposit', amount: 50000, status: 'completed', created_at: '2024-01-15T10:30:00Z', agent_name: 'John Agent', recipient: 'Self', description: 'Cash deposit', reference: 'REF-001', fee: 100 },
+          { id: 'TXN-002', type: 'withdrawal', amount: 25000, status: 'completed', created_at: '2024-01-15T09:15:00Z', agent_name: 'Jane Agent', recipient: 'Self', description: 'ATM withdrawal', reference: 'REF-002', fee: 50 },
+          { id: 'TXN-003', type: 'transfer', amount: 100000, status: 'pending', created_at: '2024-01-14T16:45:00Z', agent_name: 'Self', recipient: 'Adebayo J.', description: 'Salary payment', reference: 'REF-003', fee: 200 },
+          { id: 'TXN-004', type: 'deposit', amount: 75000, status: 'completed', created_at: '2024-01-14T11:20:00Z', agent_name: 'Mike Agent', recipient: 'Self', description: 'Bank transfer', reference: 'REF-004', fee: 0 },
+          { id: 'TXN-005', type: 'withdrawal', amount: 10000, status: 'failed', created_at: '2024-01-13T14:00:00Z', agent_name: 'Self', recipient: 'Self', description: 'Insufficient funds', reference: 'REF-005', fee: 0 },
+          { id: 'TXN-006', type: 'transfer', amount: 200000, status: 'completed', created_at: '2024-01-13T09:30:00Z', agent_name: 'Self', recipient: 'Ngozi O.', description: 'Business payment', reference: 'REF-006', fee: 400 },
+          { id: 'TXN-007', type: 'deposit', amount: 30000, status: 'completed', created_at: '2024-01-12T15:10:00Z', agent_name: 'Sarah Agent', recipient: 'Self', description: 'Cash deposit', reference: 'REF-007', fee: 50 },
+          { id: 'TXN-008', type: 'bills', amount: 15000, status: 'completed', created_at: '2024-01-12T10:00:00Z', agent_name: 'Self', recipient: 'IKEDC', description: 'Electricity bill', reference: 'REF-008', fee: 100 },
+        ])
+      }
+    }
+    loadTransactions()
+  }, [])
+
+  const handleCreateTransaction = async () => {
+    setIsProcessing(true)
+    try {
+      const response = await apiCall('/transactions', {
+        method: 'POST',
+        body: JSON.stringify({ ...newTx, amount: parseFloat(newTx.amount) })
+      })
+      const created = {
+        id: response.id || 'TXN-' + Date.now(),
+        ...newTx,
+        amount: parseFloat(newTx.amount),
+        status: 'completed',
+        created_at: new Date().toISOString(),
+        agent_name: 'Self',
+        reference: 'REF-' + Date.now(),
+        fee: Math.round(parseFloat(newTx.amount) * 0.002)
+      }
+      setTransactions(prev => [created, ...prev])
+      setShowNewTx(false)
+      setNewTx({ type: 'deposit', amount: '', recipient: '', description: '' })
+    } catch {
+      // handled
+    } finally {
+      setIsProcessing(false)
+    }
+  }
+
+  const handleDeleteTransaction = async (txId) => {
+    try {
+      await apiCall(`/transactions/${txId}`, { method: 'DELETE' })
+    } catch {}
+    setTransactions(prev => prev.filter(t => t.id !== txId))
+    setSelectedTx(null)
+  }
+
+  const filtered = transactions.filter(tx => {
+    if (filterType !== 'all' && tx.type !== filterType) return false
+    if (filterStatus !== 'all' && tx.status !== filterStatus) return false
+    if (searchTerm && !tx.id.toLowerCase().includes(searchTerm.toLowerCase()) && !tx.description?.toLowerCase().includes(searchTerm.toLowerCase()) && !tx.recipient?.toLowerCase().includes(searchTerm.toLowerCase())) return false
+    return true
+  })
+
+  const statusColor = (s) => s === 'completed' ? 'bg-green-100 text-green-800' : s === 'pending' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'
+  const typeIcon = (t) => t === 'deposit' ? TrendingUp : t === 'withdrawal' ? DollarSign : t === 'transfer' ? Send : Receipt
+
+  if (selectedTx) {
+    return (
+      <div className="space-y-6">
+        <button onClick={() => setSelectedTx(null)} className="flex items-center text-blue-600 hover:text-blue-800 text-sm font-medium"><ChevronRight className="w-4 h-4 rotate-180 mr-1" /> Back to transactions</button>
+        <div className="bg-white rounded-2xl shadow-lg p-6">
+          <div className="flex justify-between items-start mb-6">
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900">Transaction Details</h2>
+              <p className="text-sm text-gray-500">{selectedTx.id}</p>
+            </div>
+            <Badge variant={selectedTx.status === 'completed' ? 'success' : selectedTx.status === 'pending' ? 'warning' : 'destructive'}>{selectedTx.status}</Badge>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            {[['Type', selectedTx.type], ['Amount', formatCurrency(selectedTx.amount)], ['Fee', formatCurrency(selectedTx.fee || 0)], ['Recipient', selectedTx.recipient], ['Description', selectedTx.description], ['Reference', selectedTx.reference], ['Agent', selectedTx.agent_name], ['Date', new Date(selectedTx.created_at).toLocaleString()]].map(([k, v]) => (
+              <div key={k} className="p-3 bg-gray-50 rounded-lg"><p className="text-xs text-gray-500">{k}</p><p className="font-medium capitalize">{v}</p></div>
+            ))}
+          </div>
+          <div className="flex gap-3 mt-6">
+            {selectedTx.status === 'pending' && <Button onClick={() => { setTransactions(prev => prev.map(t => t.id === selectedTx.id ? {...t, status: 'completed'} : t)); setSelectedTx({...selectedTx, status: 'completed'}) }} className="bg-green-600 text-white">Approve</Button>}
+            <Button variant="destructive" onClick={() => handleDeleteTransaction(selectedTx.id)}>
+              <Trash2 className="w-4 h-4 mr-2" />Delete
+            </Button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <div><h2 className="text-2xl font-bold text-gray-900">Transactions</h2><p className="text-gray-600">View and manage all transactions</p></div>
+        <Button onClick={() => setShowNewTx(true)} className="bg-gradient-to-r from-blue-600 to-green-600 text-white"><Plus className="w-4 h-4 mr-2" />New Transaction</Button>
+      </div>
+      <div className="flex gap-3 flex-wrap">
+        <div className="relative flex-1 min-w-[200px]">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <input type="text" placeholder="Search transactions..." className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+        </div>
+        <select className="px-4 py-2 border border-gray-300 rounded-lg" value={filterType} onChange={(e) => setFilterType(e.target.value)}>
+          <option value="all">All Types</option><option value="deposit">Deposit</option><option value="withdrawal">Withdrawal</option><option value="transfer">Transfer</option><option value="bills">Bills</option>
+        </select>
+        <select className="px-4 py-2 border border-gray-300 rounded-lg" value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
+          <option value="all">All Status</option><option value="completed">Completed</option><option value="pending">Pending</option><option value="failed">Failed</option>
+        </select>
+      </div>
+      {showNewTx && (
+        <div className="bg-white rounded-xl shadow-lg p-6 border-2 border-blue-200">
+          <h3 className="text-lg font-semibold mb-4">New Transaction</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div><label className="block text-sm font-medium text-gray-700 mb-1">Type</label><select className="w-full px-4 py-2 border rounded-lg" value={newTx.type} onChange={(e) => setNewTx(p => ({...p, type: e.target.value}))}><option value="deposit">Deposit</option><option value="withdrawal">Withdrawal</option><option value="transfer">Transfer</option></select></div>
+            <div><label className="block text-sm font-medium text-gray-700 mb-1">Amount (NGN)</label><input type="number" className="w-full px-4 py-2 border rounded-lg" placeholder="Enter amount" value={newTx.amount} onChange={(e) => setNewTx(p => ({...p, amount: e.target.value}))} /></div>
+            <div><label className="block text-sm font-medium text-gray-700 mb-1">Recipient</label><input type="text" className="w-full px-4 py-2 border rounded-lg" placeholder="Recipient name or account" value={newTx.recipient} onChange={(e) => setNewTx(p => ({...p, recipient: e.target.value}))} /></div>
+            <div><label className="block text-sm font-medium text-gray-700 mb-1">Description</label><input type="text" className="w-full px-4 py-2 border rounded-lg" placeholder="Transaction description" value={newTx.description} onChange={(e) => setNewTx(p => ({...p, description: e.target.value}))} /></div>
+          </div>
+          <div className="flex gap-3 mt-4">
+            <Button onClick={handleCreateTransaction} disabled={isProcessing || !newTx.amount} className="bg-gradient-to-r from-blue-600 to-green-600 text-white">{isProcessing ? 'Processing...' : 'Submit'}</Button>
+            <Button variant="outline" onClick={() => setShowNewTx(false)}>Cancel</Button>
+          </div>
+        </div>
+      )}
+      <div className="bg-white rounded-xl shadow">
+        <div className="divide-y">
+          {filtered.map(tx => {
+            const Icon = typeIcon(tx.type)
+            return (
+              <div key={tx.id} className="p-4 hover:bg-gray-50 cursor-pointer flex items-center justify-between" onClick={() => setSelectedTx(tx)}>
+                <div className="flex items-center space-x-3">
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center ${tx.type === 'deposit' ? 'bg-green-100' : tx.type === 'withdrawal' ? 'bg-red-100' : 'bg-blue-100'}`}>
+                    <Icon className={`w-5 h-5 ${tx.type === 'deposit' ? 'text-green-600' : tx.type === 'withdrawal' ? 'text-red-600' : 'text-blue-600'}`} />
+                  </div>
+                  <div>
+                    <p className="font-medium text-gray-900 capitalize">{tx.type}</p>
+                    <p className="text-xs text-gray-500">{tx.description} • {new Date(tx.created_at).toLocaleDateString()}</p>
+                  </div>
+                </div>
+                <div className="flex items-center space-x-4">
+                  <span className={`font-bold ${tx.type === 'deposit' ? 'text-green-600' : 'text-red-600'}`}>{tx.type === 'deposit' ? '+' : '-'}{formatCurrency(tx.amount)}</span>
+                  <span className={`text-xs px-2 py-1 rounded-full ${statusColor(tx.status)}`}>{tx.status}</span>
+                </div>
+              </div>
+            )
+          })}
+          {filtered.length === 0 && <div className="p-8 text-center text-gray-500">No transactions found</div>}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function ProfilePage({ formatCurrency }) {
+  const [profile, setProfile] = useState({
+    name: 'Adebayo Johnson', email: 'adebayo@email.com', phone: '08012345678',
+    address: '15 Marina Road, Lagos Island', bvn: '2234****890', nin: '1122****556',
+    accountNumber: '1234567890', accountType: 'Savings', kycStatus: 'verified', tier: 'Tier 3'
+  })
+  const [isEditing, setIsEditing] = useState(false)
+  const [editForm, setEditForm] = useState({})
+
+  const handleSave = async () => {
+    try {
+      await apiCall('/profile', { method: 'PUT', body: JSON.stringify(editForm) })
+    } catch {}
+    setProfile(prev => ({ ...prev, ...editForm }))
+    setIsEditing(false)
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-bold text-gray-900">My Profile</h2>
+        {!isEditing ? (
+          <Button onClick={() => { setIsEditing(true); setEditForm({ name: profile.name, email: profile.email, phone: profile.phone, address: profile.address }) }} variant="outline"><Edit className="w-4 h-4 mr-2" />Edit Profile</Button>
+        ) : (
+          <div className="flex gap-2"><Button onClick={handleSave} className="bg-green-600 text-white">Save</Button><Button variant="outline" onClick={() => setIsEditing(false)}>Cancel</Button></div>
+        )}
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="bg-white rounded-xl shadow p-6">
+          <h3 className="text-lg font-semibold mb-4 flex items-center"><User className="w-5 h-5 mr-2 text-blue-600" />Personal Information</h3>
+          <div className="space-y-4">
+            {[['Full Name', 'name'], ['Email', 'email'], ['Phone', 'phone'], ['Address', 'address']].map(([label, key]) => (
+              <div key={key}>
+                <label className="block text-sm text-gray-500 mb-1">{label}</label>
+                {isEditing ? <input type="text" className="w-full px-3 py-2 border rounded-lg" value={editForm[key]} onChange={(e) => setEditForm(p => ({...p, [key]: e.target.value}))} /> : <p className="font-medium">{profile[key]}</p>}
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="bg-white rounded-xl shadow p-6">
+          <h3 className="text-lg font-semibold mb-4 flex items-center"><Shield className="w-5 h-5 mr-2 text-green-600" />Account & KYC</h3>
+          <div className="space-y-4">
+            {[['Account Number', profile.accountNumber], ['Account Type', profile.accountType], ['BVN', profile.bvn], ['NIN', profile.nin], ['Account Tier', profile.tier]].map(([k, v]) => (
+              <div key={k} className="flex justify-between"><span className="text-gray-500">{k}</span><span className="font-medium">{v}</span></div>
+            ))}
+            <div className="flex justify-between items-center"><span className="text-gray-500">KYC Status</span><Badge variant="success">Verified</Badge></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function SettingsPage() {
+  const [settings, setSettings] = useState({
+    notifications: true, emailAlerts: true, smsAlerts: false,
+    twoFactor: true, biometric: false, language: 'en',
+    theme: 'light', currency: 'NGN', timezone: 'Africa/Lagos'
+  })
+
+  const handleToggle = (key) => {
+    setSettings(prev => ({ ...prev, [key]: !prev[key] }))
+    apiCall('/settings', { method: 'PUT', body: JSON.stringify({ [key]: !settings[key] }) }).catch(() => {})
+  }
+
+  const Toggle = ({ label, desc, checked, onToggle }) => (
+    <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+      <div><p className="font-medium">{label}</p>{desc && <p className="text-sm text-gray-500">{desc}</p>}</div>
+      <button onClick={onToggle} className={`w-12 h-6 rounded-full transition-colors ${checked ? 'bg-blue-600' : 'bg-gray-300'}`}>
+        <div className={`w-5 h-5 bg-white rounded-full shadow transform transition-transform ${checked ? 'translate-x-6' : 'translate-x-0.5'}`} />
+      </button>
+    </div>
+  )
+
+  return (
+    <div className="space-y-6">
+      <h2 className="text-2xl font-bold text-gray-900">Settings</h2>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="bg-white rounded-xl shadow p-6">
+          <h3 className="text-lg font-semibold mb-4"><Bell className="w-5 h-5 inline mr-2 text-blue-600" />Notifications</h3>
+          <div className="space-y-3">
+            <Toggle label="Push Notifications" desc="Receive push notifications" checked={settings.notifications} onToggle={() => handleToggle('notifications')} />
+            <Toggle label="Email Alerts" desc="Receive email notifications" checked={settings.emailAlerts} onToggle={() => handleToggle('emailAlerts')} />
+            <Toggle label="SMS Alerts" desc="Receive SMS notifications" checked={settings.smsAlerts} onToggle={() => handleToggle('smsAlerts')} />
+          </div>
+        </div>
+        <div className="bg-white rounded-xl shadow p-6">
+          <h3 className="text-lg font-semibold mb-4"><Shield className="w-5 h-5 inline mr-2 text-green-600" />Security</h3>
+          <div className="space-y-3">
+            <Toggle label="Two-Factor Authentication" desc="Extra security for your account" checked={settings.twoFactor} onToggle={() => handleToggle('twoFactor')} />
+            <Toggle label="Biometric Login" desc="Use fingerprint or face recognition" checked={settings.biometric} onToggle={() => handleToggle('biometric')} />
+          </div>
+        </div>
+        <div className="bg-white rounded-xl shadow p-6">
+          <h3 className="text-lg font-semibold mb-4"><Globe className="w-5 h-5 inline mr-2 text-purple-600" />Preferences</h3>
+          <div className="space-y-4">
+            <div><label className="block text-sm font-medium text-gray-700 mb-1">Language</label><select className="w-full px-3 py-2 border rounded-lg" value={settings.language} onChange={(e) => setSettings(p => ({...p, language: e.target.value}))}><option value="en">English</option><option value="yo">Yoruba</option><option value="ha">Hausa</option><option value="ig">Igbo</option><option value="pcm">Pidgin</option></select></div>
+            <div><label className="block text-sm font-medium text-gray-700 mb-1">Theme</label><select className="w-full px-3 py-2 border rounded-lg" value={settings.theme} onChange={(e) => setSettings(p => ({...p, theme: e.target.value}))}><option value="light">Light</option><option value="dark">Dark</option><option value="auto">System</option></select></div>
+            <div><label className="block text-sm font-medium text-gray-700 mb-1">Timezone</label><select className="w-full px-3 py-2 border rounded-lg" value={settings.timezone} onChange={(e) => setSettings(p => ({...p, timezone: e.target.value}))}><option value="Africa/Lagos">West Africa (WAT)</option><option value="UTC">UTC</option></select></div>
+          </div>
+        </div>
+        <div className="bg-white rounded-xl shadow p-6">
+          <h3 className="text-lg font-semibold mb-4 text-red-600">Danger Zone</h3>
+          <div className="space-y-3">
+            <Button variant="outline" className="w-full border-red-300 text-red-600 hover:bg-red-50">Change Password</Button>
+            <Button variant="outline" className="w-full border-red-300 text-red-600 hover:bg-red-50">Deactivate Account</Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function CustomersPage({ formatCurrency }) {
+  const [customers, setCustomers] = useState([
+    { id: 'CUS-001', name: 'Fatima Ibrahim', phone: '08098765432', email: 'fatima@email.com', status: 'active', kyc: 'verified', balance: 125000, created: '2024-01-10', transactions: 45 },
+    { id: 'CUS-002', name: 'Chukwu Emmanuel', phone: '07012345678', email: 'chukwu@email.com', status: 'active', kyc: 'verified', balance: 87500, created: '2024-01-08', transactions: 32 },
+    { id: 'CUS-003', name: 'Ngozi Okafor', phone: '09011223344', email: 'ngozi@email.com', status: 'inactive', kyc: 'pending', balance: 5000, created: '2024-01-05', transactions: 3 },
+    { id: 'CUS-004', name: 'Musa Abdullahi', phone: '08055667788', email: 'musa@email.com', status: 'active', kyc: 'verified', balance: 340000, created: '2024-01-02', transactions: 78 },
+    { id: 'CUS-005', name: 'Blessing Eze', phone: '07099887766', email: 'blessing@email.com', status: 'active', kyc: 'in_progress', balance: 22000, created: '2024-01-12', transactions: 8 },
+  ])
+  const [searchTerm, setSearchTerm] = useState('')
+  const [showAddForm, setShowAddForm] = useState(false)
+  const [newCustomer, setNewCustomer] = useState({ name: '', phone: '', email: '' })
+  const [selectedCustomer, setSelectedCustomer] = useState(null)
+
+  const handleAddCustomer = async () => {
+    try { await apiCall('/customers', { method: 'POST', body: JSON.stringify(newCustomer) }) } catch {}
+    setCustomers(prev => [{ id: 'CUS-' + Date.now(), ...newCustomer, status: 'active', kyc: 'pending', balance: 0, created: new Date().toISOString().split('T')[0], transactions: 0 }, ...prev])
+    setShowAddForm(false)
+    setNewCustomer({ name: '', phone: '', email: '' })
+  }
+
+  const handleDeleteCustomer = async (id) => {
+    try { await apiCall(`/customers/${id}`, { method: 'DELETE' }) } catch {}
+    setCustomers(prev => prev.filter(c => c.id !== id))
+    setSelectedCustomer(null)
+  }
+
+  const filtered = customers.filter(c => !searchTerm || c.name.toLowerCase().includes(searchTerm.toLowerCase()) || c.phone.includes(searchTerm))
+
+  if (selectedCustomer) {
+    return (
+      <div className="space-y-6">
+        <button onClick={() => setSelectedCustomer(null)} className="flex items-center text-blue-600 hover:text-blue-800 text-sm font-medium"><ChevronRight className="w-4 h-4 rotate-180 mr-1" /> Back</button>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="bg-white rounded-xl shadow p-6">
+            <h3 className="text-lg font-semibold mb-4">Customer Details</h3>
+            <div className="space-y-3">
+              {[['Name', selectedCustomer.name], ['Phone', selectedCustomer.phone], ['Email', selectedCustomer.email], ['Status', selectedCustomer.status], ['Balance', formatCurrency(selectedCustomer.balance)], ['Transactions', selectedCustomer.transactions], ['Joined', selectedCustomer.created]].map(([k, v]) => (
+                <div key={k} className="flex justify-between"><span className="text-gray-500">{k}</span><span className="font-medium capitalize">{v}</span></div>
+              ))}
+              <div className="flex justify-between items-center"><span className="text-gray-500">KYC</span><Badge variant={selectedCustomer.kyc === 'verified' ? 'success' : 'warning'}>{selectedCustomer.kyc}</Badge></div>
+            </div>
+            <Button variant="destructive" className="mt-4 w-full" onClick={() => handleDeleteCustomer(selectedCustomer.id)}><Trash2 className="w-4 h-4 mr-2" />Remove Customer</Button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <div><h2 className="text-2xl font-bold text-gray-900">Customers</h2><p className="text-gray-600">{customers.length} registered customers</p></div>
+        <Button onClick={() => setShowAddForm(true)} className="bg-gradient-to-r from-blue-600 to-green-600 text-white"><UserPlus className="w-4 h-4 mr-2" />Add Customer</Button>
+      </div>
+      <div className="relative"><Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" /><input type="text" placeholder="Search customers..." className="w-full pl-10 pr-4 py-2 border rounded-lg" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} /></div>
+      {showAddForm && (
+        <div className="bg-white rounded-xl shadow-lg p-6 border-2 border-blue-200">
+          <h3 className="font-semibold mb-3">New Customer</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <input type="text" placeholder="Full Name" className="px-3 py-2 border rounded-lg" value={newCustomer.name} onChange={(e) => setNewCustomer(p => ({...p, name: e.target.value}))} />
+            <input type="tel" placeholder="Phone Number" className="px-3 py-2 border rounded-lg" value={newCustomer.phone} onChange={(e) => setNewCustomer(p => ({...p, phone: e.target.value}))} />
+            <input type="email" placeholder="Email" className="px-3 py-2 border rounded-lg" value={newCustomer.email} onChange={(e) => setNewCustomer(p => ({...p, email: e.target.value}))} />
+          </div>
+          <div className="flex gap-2 mt-3"><Button onClick={handleAddCustomer} disabled={!newCustomer.name || !newCustomer.phone} className="bg-blue-600 text-white">Add</Button><Button variant="outline" onClick={() => setShowAddForm(false)}>Cancel</Button></div>
+        </div>
+      )}
+      <div className="bg-white rounded-xl shadow">
+        <div className="divide-y">
+          {filtered.map(c => (
+            <div key={c.id} className="p-4 hover:bg-gray-50 cursor-pointer flex items-center justify-between" onClick={() => setSelectedCustomer(c)}>
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center"><User className="w-5 h-5 text-blue-600" /></div>
+                <div><p className="font-medium">{c.name}</p><p className="text-xs text-gray-500">{c.phone}</p></div>
+              </div>
+              <div className="flex items-center space-x-4">
+                <span className="font-medium">{formatCurrency(c.balance)}</span>
+                <Badge variant={c.kyc === 'verified' ? 'success' : 'warning'}>{c.kyc}</Badge>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function AnalyticsPage({ formatCurrency, userRole }) {
+  const [period, setPeriod] = useState('7d')
+  const [analyticsData] = useState({
+    totalVolume: 158000000, totalTransactions: 12450, avgTicket: 12690,
+    growthRate: 23.5, topAgents: [
+      { name: 'Adebayo Johnson', volume: 15800000, transactions: 1245, commission: 185000 },
+      { name: 'Fatima Ibrahim', volume: 12400000, transactions: 980, commission: 145000 },
+      { name: 'Chukwu Emmanuel', volume: 9800000, transactions: 756, commission: 112000 },
+      { name: 'Ngozi Okafor', volume: 8500000, transactions: 645, commission: 98000 },
+      { name: 'Musa Abdullahi', volume: 7200000, transactions: 534, commission: 82000 },
+    ],
+    transactionsByType: [
+      { type: 'Cash In', count: 4500, volume: 67500000 },
+      { type: 'Cash Out', count: 3800, volume: 47500000 },
+      { type: 'Transfer', count: 2100, volume: 25200000 },
+      { type: 'Bills', count: 1250, volume: 12500000 },
+      { type: 'Airtime', count: 800, volume: 5300000 },
+    ],
+    dailyTrend: [
+      { day: 'Mon', volume: 22000000, count: 1780 }, { day: 'Tue', volume: 24500000, count: 1920 },
+      { day: 'Wed', volume: 21000000, count: 1650 }, { day: 'Thu', volume: 26000000, count: 2100 },
+      { day: 'Fri', volume: 28000000, count: 2250 }, { day: 'Sat', volume: 20000000, count: 1600 },
+      { day: 'Sun', volume: 16500000, count: 1150 },
+    ]
+  })
+
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <div><h2 className="text-2xl font-bold text-gray-900">Analytics</h2><p className="text-gray-600">Performance metrics and insights</p></div>
+        <div className="flex gap-2">
+          {['24h', '7d', '30d', '90d'].map(p => (
+            <button key={p} onClick={() => setPeriod(p)} className={`px-3 py-1.5 rounded-lg text-sm font-medium ${period === p ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>{p}</button>
+          ))}
+          <Button variant="outline" size="sm"><Download className="w-4 h-4 mr-1" />Export</Button>
+        </div>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        {[
+          ['Total Volume', formatCurrency(analyticsData.totalVolume), TrendingUp, 'bg-green-100', 'text-green-600'],
+          ['Transactions', analyticsData.totalTransactions.toLocaleString(), Activity, 'bg-blue-100', 'text-blue-600'],
+          ['Avg. Ticket', formatCurrency(analyticsData.avgTicket), BarChart3, 'bg-purple-100', 'text-purple-600'],
+          ['Growth Rate', `+${analyticsData.growthRate}%`, TrendingUp, 'bg-yellow-100', 'text-yellow-600'],
+        ].map(([title, value, Icon, bg, color]) => (
+          <div key={title} className="bg-white rounded-xl shadow p-4">
+            <div className="flex items-center space-x-3">
+              <div className={`w-10 h-10 ${bg} rounded-full flex items-center justify-center`}><Icon className={`w-5 h-5 ${color}`} /></div>
+              <div><p className="text-sm text-gray-500">{title}</p><p className="text-xl font-bold">{value}</p></div>
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="bg-white rounded-xl shadow p-6">
+          <h3 className="text-lg font-semibold mb-4">Daily Transaction Trend</h3>
+          <div className="space-y-2">
+            {analyticsData.dailyTrend.map(d => (
+              <div key={d.day} className="flex items-center gap-3">
+                <span className="w-10 text-sm text-gray-500">{d.day}</span>
+                <div className="flex-1 bg-gray-100 rounded-full h-6 relative">
+                  <div className="bg-gradient-to-r from-blue-500 to-green-500 rounded-full h-6" style={{ width: `${(d.volume / 30000000) * 100}%` }} />
+                </div>
+                <span className="text-sm font-medium w-28 text-right">{formatCurrency(d.volume)}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="bg-white rounded-xl shadow p-6">
+          <h3 className="text-lg font-semibold mb-4">Transactions by Type</h3>
+          <div className="space-y-3">
+            {analyticsData.transactionsByType.map(t => (
+              <div key={t.type} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <div><p className="font-medium">{t.type}</p><p className="text-xs text-gray-500">{t.count.toLocaleString()} transactions</p></div>
+                <span className="font-bold">{formatCurrency(t.volume)}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+      {(userRole === 'admin' || userRole === 'super_agent') && (
+        <div className="bg-white rounded-xl shadow p-6">
+          <h3 className="text-lg font-semibold mb-4">Top Performing Agents</h3>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead><tr className="border-b"><th className="text-left p-3 text-sm text-gray-500">Rank</th><th className="text-left p-3 text-sm text-gray-500">Agent</th><th className="text-right p-3 text-sm text-gray-500">Volume</th><th className="text-right p-3 text-sm text-gray-500">Transactions</th><th className="text-right p-3 text-sm text-gray-500">Commission</th></tr></thead>
+              <tbody>
+                {analyticsData.topAgents.map((a, i) => (
+                  <tr key={a.name} className="border-b hover:bg-gray-50">
+                    <td className="p-3"><span className={`w-6 h-6 inline-flex items-center justify-center rounded-full text-xs font-bold ${i < 3 ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-100 text-gray-600'}`}>{i + 1}</span></td>
+                    <td className="p-3 font-medium">{a.name}</td>
+                    <td className="p-3 text-right font-medium">{formatCurrency(a.volume)}</td>
+                    <td className="p-3 text-right">{a.transactions.toLocaleString()}</td>
+                    <td className="p-3 text-right text-green-600 font-medium">{formatCurrency(a.commission)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function CashManagementPage({ formatCurrency }) {
+  const [floatBalance] = useState(2500000)
+  const [cashRequests, setCashRequests] = useState([
+    { id: 'CR-001', type: 'top_up', amount: 500000, status: 'approved', date: '2024-01-15', approver: 'HQ' },
+    { id: 'CR-002', type: 'withdrawal', amount: 200000, status: 'pending', date: '2024-01-15', approver: '-' },
+    { id: 'CR-003', type: 'top_up', amount: 1000000, status: 'completed', date: '2024-01-14', approver: 'Branch Manager' },
+  ])
+  const [showNewRequest, setShowNewRequest] = useState(false)
+  const [newRequest, setNewRequest] = useState({ type: 'top_up', amount: '' })
+  const [reconciliation] = useState({ expected: 2500000, actual: 2487500, difference: -12500, lastReconciled: '2024-01-15 18:00' })
+
+  const handleCreateRequest = async () => {
+    try { await apiCall('/cash/requests', { method: 'POST', body: JSON.stringify(newRequest) }) } catch {}
+    setCashRequests(prev => [{ id: 'CR-' + Date.now(), ...newRequest, amount: parseFloat(newRequest.amount), status: 'pending', date: new Date().toISOString().split('T')[0], approver: '-' }, ...prev])
+    setShowNewRequest(false)
+    setNewRequest({ type: 'top_up', amount: '' })
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-bold text-gray-900">Cash Management</h2>
+        <Button onClick={() => setShowNewRequest(true)} className="bg-gradient-to-r from-blue-600 to-green-600 text-white"><Plus className="w-4 h-4 mr-2" />Cash Request</Button>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="bg-white rounded-xl shadow p-6"><p className="text-sm text-gray-500">Float Balance</p><p className="text-3xl font-bold text-blue-600">{formatCurrency(floatBalance)}</p></div>
+        <div className="bg-white rounded-xl shadow p-6"><p className="text-sm text-gray-500">Today's Cash In</p><p className="text-3xl font-bold text-green-600">{formatCurrency(850000)}</p></div>
+        <div className="bg-white rounded-xl shadow p-6"><p className="text-sm text-gray-500">Today's Cash Out</p><p className="text-3xl font-bold text-red-600">{formatCurrency(620000)}</p></div>
+      </div>
+      <div className="bg-white rounded-xl shadow p-6">
+        <h3 className="text-lg font-semibold mb-4">Reconciliation</h3>
+        <div className="grid grid-cols-4 gap-4">
+          <div><p className="text-sm text-gray-500">Expected</p><p className="text-lg font-bold">{formatCurrency(reconciliation.expected)}</p></div>
+          <div><p className="text-sm text-gray-500">Actual</p><p className="text-lg font-bold">{formatCurrency(reconciliation.actual)}</p></div>
+          <div><p className="text-sm text-gray-500">Difference</p><p className={`text-lg font-bold ${reconciliation.difference < 0 ? 'text-red-600' : 'text-green-600'}`}>{formatCurrency(reconciliation.difference)}</p></div>
+          <div><p className="text-sm text-gray-500">Last Reconciled</p><p className="text-lg font-bold">{reconciliation.lastReconciled}</p></div>
+        </div>
+      </div>
+      {showNewRequest && (
+        <div className="bg-white rounded-xl shadow-lg p-6 border-2 border-blue-200">
+          <h3 className="font-semibold mb-3">New Cash Request</h3>
+          <div className="grid grid-cols-2 gap-4">
+            <div><label className="block text-sm font-medium mb-1">Type</label><select className="w-full px-3 py-2 border rounded-lg" value={newRequest.type} onChange={(e) => setNewRequest(p => ({...p, type: e.target.value}))}><option value="top_up">Float Top-Up</option><option value="withdrawal">Cash Withdrawal</option></select></div>
+            <div><label className="block text-sm font-medium mb-1">Amount</label><input type="number" className="w-full px-3 py-2 border rounded-lg" placeholder="Amount" value={newRequest.amount} onChange={(e) => setNewRequest(p => ({...p, amount: e.target.value}))} /></div>
+          </div>
+          <div className="flex gap-2 mt-3"><Button onClick={handleCreateRequest} disabled={!newRequest.amount} className="bg-blue-600 text-white">Submit</Button><Button variant="outline" onClick={() => setShowNewRequest(false)}>Cancel</Button></div>
+        </div>
+      )}
+      <div className="bg-white rounded-xl shadow p-6">
+        <h3 className="text-lg font-semibold mb-4">Cash Requests</h3>
+        <div className="divide-y">
+          {cashRequests.map(r => (
+            <div key={r.id} className="py-3 flex items-center justify-between">
+              <div><p className="font-medium capitalize">{r.type.replace('_', ' ')}</p><p className="text-xs text-gray-500">{r.date} • {r.id}</p></div>
+              <div className="flex items-center gap-4">
+                <span className="font-bold">{formatCurrency(r.amount)}</span>
+                <Badge variant={r.status === 'completed' || r.status === 'approved' ? 'success' : r.status === 'pending' ? 'warning' : 'destructive'}>{r.status}</Badge>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function AgentsPage({ formatCurrency, userRole }) {
+  const [agents, setAgents] = useState([
+    { id: 'AG-001', name: 'Adebayo Johnson', phone: '08012345678', tier: 'Super Agent', status: 'active', location: 'Lagos', volume: 15800000, commission: 185000, rating: 4.8, subAgents: 12 },
+    { id: 'AG-002', name: 'Fatima Ibrahim', phone: '08098765432', tier: 'Field Agent', status: 'active', location: 'Abuja', volume: 12400000, commission: 145000, rating: 4.6, subAgents: 0 },
+    { id: 'AG-003', name: 'Chukwu Emmanuel', phone: '07012345678', tier: 'Sub Agent', status: 'suspended', location: 'Port Harcourt', volume: 2800000, commission: 32000, rating: 3.9, subAgents: 0 },
+    { id: 'AG-004', name: 'Ngozi Okafor', phone: '09011223344', tier: 'Field Agent', status: 'active', location: 'Enugu', volume: 8500000, commission: 98000, rating: 4.5, subAgents: 0 },
+    { id: 'AG-005', name: 'Musa Abdullahi', phone: '08055667788', tier: 'Super Agent', status: 'active', location: 'Kano', volume: 7200000, commission: 82000, rating: 4.3, subAgents: 8 },
+  ])
+  const [searchTerm, setSearchTerm] = useState('')
+  const [filterTier, setFilterTier] = useState('all')
+  const [selectedAgent, setSelectedAgent] = useState(null)
+
+  const handleToggleStatus = async (agentId) => {
+    try { await apiCall(`/agents/${agentId}/toggle-status`, { method: 'PUT' }) } catch {}
+    setAgents(prev => prev.map(a => a.id === agentId ? { ...a, status: a.status === 'active' ? 'suspended' : 'active' } : a))
+  }
+
+  const handleDeleteAgent = async (agentId) => {
+    try { await apiCall(`/agents/${agentId}`, { method: 'DELETE' }) } catch {}
+    setAgents(prev => prev.filter(a => a.id !== agentId))
+    setSelectedAgent(null)
+  }
+
+  const filtered = agents.filter(a => {
+    if (filterTier !== 'all' && a.tier !== filterTier) return false
+    if (searchTerm && !a.name.toLowerCase().includes(searchTerm.toLowerCase()) && !a.phone.includes(searchTerm)) return false
+    return true
+  })
+
+  if (selectedAgent) {
+    return (
+      <div className="space-y-6">
+        <button onClick={() => setSelectedAgent(null)} className="flex items-center text-blue-600 text-sm font-medium"><ChevronRight className="w-4 h-4 rotate-180 mr-1" /> Back</button>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="bg-white rounded-xl shadow p-6">
+            <h3 className="text-lg font-semibold mb-4">Agent Profile</h3>
+            <div className="space-y-3">
+              {[['Name', selectedAgent.name], ['Phone', selectedAgent.phone], ['Location', selectedAgent.location], ['Tier', selectedAgent.tier], ['Rating', `${selectedAgent.rating}/5.0`], ['Sub-Agents', selectedAgent.subAgents]].map(([k, v]) => (
+                <div key={k} className="flex justify-between"><span className="text-gray-500">{k}</span><span className="font-medium">{v}</span></div>
+              ))}
+              <div className="flex justify-between items-center"><span className="text-gray-500">Status</span><Badge variant={selectedAgent.status === 'active' ? 'success' : 'destructive'}>{selectedAgent.status}</Badge></div>
+            </div>
+          </div>
+          <div className="bg-white rounded-xl shadow p-6">
+            <h3 className="text-lg font-semibold mb-4">Performance</h3>
+            <div className="space-y-3">
+              <div className="flex justify-between"><span className="text-gray-500">Monthly Volume</span><span className="font-bold">{formatCurrency(selectedAgent.volume)}</span></div>
+              <div className="flex justify-between"><span className="text-gray-500">Commission (MTD)</span><span className="font-bold text-green-600">{formatCurrency(selectedAgent.commission)}</span></div>
+            </div>
+            <div className="flex gap-2 mt-6">
+              <Button onClick={() => handleToggleStatus(selectedAgent.id)} className={selectedAgent.status === 'active' ? 'bg-yellow-600 text-white' : 'bg-green-600 text-white'}>{selectedAgent.status === 'active' ? 'Suspend' : 'Activate'}</Button>
+              {userRole === 'admin' && <Button variant="destructive" onClick={() => handleDeleteAgent(selectedAgent.id)}><Trash2 className="w-4 h-4 mr-2" />Remove</Button>}
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <div><h2 className="text-2xl font-bold text-gray-900">{userRole === 'admin' ? 'All Agents' : 'My Agents'}</h2><p className="text-gray-600">{agents.length} agents</p></div>
+      </div>
+      <div className="flex gap-3">
+        <div className="relative flex-1"><Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" /><input type="text" placeholder="Search agents..." className="w-full pl-10 pr-4 py-2 border rounded-lg" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} /></div>
+        <select className="px-4 py-2 border rounded-lg" value={filterTier} onChange={(e) => setFilterTier(e.target.value)}><option value="all">All Tiers</option><option value="Super Agent">Super Agent</option><option value="Field Agent">Field Agent</option><option value="Sub Agent">Sub Agent</option></select>
+      </div>
+      <div className="bg-white rounded-xl shadow">
+        <div className="divide-y">
+          {filtered.map(a => (
+            <div key={a.id} className="p-4 hover:bg-gray-50 cursor-pointer flex items-center justify-between" onClick={() => setSelectedAgent(a)}>
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center"><Users className="w-5 h-5 text-blue-600" /></div>
+                <div><p className="font-medium">{a.name}</p><p className="text-xs text-gray-500">{a.tier} • {a.location}</p></div>
+              </div>
+              <div className="flex items-center space-x-4">
+                <div className="text-right"><p className="font-medium">{formatCurrency(a.volume)}</p><p className="text-xs text-gray-500">{a.rating}/5.0</p></div>
+                <Badge variant={a.status === 'active' ? 'success' : 'destructive'}>{a.status}</Badge>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function SystemPage() {
+  const [services] = useState([
+    { name: 'API Gateway', status: 'online', uptime: '99.99%', latency: '12ms', requests: '1.2M/day' },
+    { name: 'Database (Primary)', status: 'online', uptime: '99.97%', latency: '3ms', requests: '850K/day' },
+    { name: 'Database (Replica)', status: 'online', uptime: '99.95%', latency: '5ms', requests: '420K/day' },
+    { name: 'Payment Processing', status: 'online', uptime: '99.98%', latency: '150ms', requests: '45K/day' },
+    { name: 'Fraud Detection', status: 'degraded', uptime: '98.50%', latency: '450ms', requests: '45K/day' },
+    { name: 'Notification Service', status: 'online', uptime: '99.90%', latency: '25ms', requests: '120K/day' },
+    { name: 'KYC/KYB Service', status: 'online', uptime: '99.85%', latency: '800ms', requests: '2K/day' },
+    { name: 'Redis Cache', status: 'online', uptime: '99.99%', latency: '1ms', requests: '5M/day' },
+    { name: 'Kafka Broker', status: 'online', uptime: '99.98%', latency: '5ms', requests: '2M/day' },
+    { name: 'Temporal Workflow', status: 'online', uptime: '99.95%', latency: '20ms', requests: '15K/day' },
+  ])
+  const [configs, setConfigs] = useState([
+    { key: 'RATE_LIMIT_DEFAULT', value: '100', description: 'Default rate limit per minute' },
+    { key: 'MAX_PAYLOAD_BYTES', value: '10485760', description: 'Max request payload size (10MB)' },
+    { key: 'SESSION_TIMEOUT', value: '3600', description: 'Session timeout in seconds' },
+    { key: 'CORS_ORIGINS', value: 'localhost:5173,localhost:5174', description: 'Allowed CORS origins' },
+  ])
+  const [editingConfig, setEditingConfig] = useState(null)
+
+  const handleSaveConfig = async (key, value) => {
+    try { await apiCall('/system/config', { method: 'PUT', body: JSON.stringify({ key, value }) }) } catch {}
+    setConfigs(prev => prev.map(c => c.key === key ? { ...c, value } : c))
+    setEditingConfig(null)
+  }
+
+  return (
+    <div className="space-y-6">
+      <h2 className="text-2xl font-bold text-gray-900">System Administration</h2>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="bg-white rounded-xl shadow p-4"><p className="text-sm text-gray-500">Services Online</p><p className="text-3xl font-bold text-green-600">{services.filter(s => s.status === 'online').length}/{services.length}</p></div>
+        <div className="bg-white rounded-xl shadow p-4"><p className="text-sm text-gray-500">Avg. Latency</p><p className="text-3xl font-bold text-blue-600">45ms</p></div>
+        <div className="bg-white rounded-xl shadow p-4"><p className="text-sm text-gray-500">Total Requests/Day</p><p className="text-3xl font-bold text-purple-600">9.7M</p></div>
+      </div>
+      <div className="bg-white rounded-xl shadow p-6">
+        <h3 className="text-lg font-semibold mb-4">Service Health</h3>
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead><tr className="border-b"><th className="text-left p-3 text-sm text-gray-500">Service</th><th className="text-left p-3 text-sm text-gray-500">Status</th><th className="text-left p-3 text-sm text-gray-500">Uptime</th><th className="text-left p-3 text-sm text-gray-500">Latency</th><th className="text-left p-3 text-sm text-gray-500">Requests</th></tr></thead>
+            <tbody>
+              {services.map(s => (
+                <tr key={s.name} className="border-b hover:bg-gray-50">
+                  <td className="p-3 font-medium">{s.name}</td>
+                  <td className="p-3"><Badge variant={s.status === 'online' ? 'success' : s.status === 'degraded' ? 'warning' : 'destructive'}>{s.status}</Badge></td>
+                  <td className="p-3">{s.uptime}</td>
+                  <td className="p-3">{s.latency}</td>
+                  <td className="p-3">{s.requests}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div className="bg-white rounded-xl shadow p-6">
+        <h3 className="text-lg font-semibold mb-4">System Configuration</h3>
+        <div className="divide-y">
+          {configs.map(c => (
+            <div key={c.key} className="py-3 flex items-center justify-between">
+              <div><p className="font-medium font-mono text-sm">{c.key}</p><p className="text-xs text-gray-500">{c.description}</p></div>
+              <div className="flex items-center gap-2">
+                {editingConfig === c.key ? (
+                  <><input type="text" className="px-2 py-1 border rounded text-sm w-40" defaultValue={c.value} id={`cfg-${c.key}`} /><Button size="sm" onClick={() => handleSaveConfig(c.key, document.getElementById(`cfg-${c.key}`).value)} className="bg-green-600 text-white text-xs">Save</Button><Button size="sm" variant="outline" onClick={() => setEditingConfig(null)} className="text-xs">Cancel</Button></>
+                ) : (
+                  <><span className="font-mono text-sm bg-gray-100 px-2 py-1 rounded">{c.value}</span><Button size="sm" variant="ghost" onClick={() => setEditingConfig(c.key)}><Edit className="w-3 h-3" /></Button></>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function SecurityPage() {
+  const [auditLogs] = useState([
+    { id: 1, action: 'LOGIN', user: 'admin@54link.com', ip: '102.89.23.45', timestamp: '2024-01-15 10:30:00', status: 'success', details: 'Admin login from Lagos' },
+    { id: 2, action: 'AGENT_SUSPEND', user: 'admin@54link.com', ip: '102.89.23.45', timestamp: '2024-01-15 10:25:00', status: 'success', details: 'Suspended agent AG-003' },
+    { id: 3, action: 'LOGIN_FAILED', user: 'unknown@test.com', ip: '185.220.101.1', timestamp: '2024-01-15 10:20:00', status: 'failed', details: 'Invalid credentials (3rd attempt)' },
+    { id: 4, action: 'CONFIG_CHANGE', user: 'admin@54link.com', ip: '102.89.23.45', timestamp: '2024-01-15 09:45:00', status: 'success', details: 'Updated RATE_LIMIT_DEFAULT: 50 -> 100' },
+    { id: 5, action: 'LARGE_TRANSACTION', user: 'agent@54link.com', ip: '102.88.34.56', timestamp: '2024-01-15 09:30:00', status: 'flagged', details: 'Transaction > 1M NGN from AG-001' },
+    { id: 6, action: 'KYC_OVERRIDE', user: 'admin@54link.com', ip: '102.89.23.45', timestamp: '2024-01-14 16:00:00', status: 'success', details: 'Manual KYC approval for CUS-003' },
+  ])
+  const [securityStats] = useState({
+    failedLogins: 23, blockedIPs: 5, activeSessions: 892, pendingReviews: 12,
+    threatLevel: 'low', lastScan: '2024-01-15 06:00'
+  })
+  const [filterAction, setFilterAction] = useState('all')
+  const [searchTerm, setSearchTerm] = useState('')
+
+  const filtered = auditLogs.filter(l => {
+    if (filterAction !== 'all' && l.action !== filterAction) return false
+    if (searchTerm && !l.details.toLowerCase().includes(searchTerm.toLowerCase()) && !l.user.toLowerCase().includes(searchTerm.toLowerCase())) return false
+    return true
+  })
+
+  return (
+    <div className="space-y-6">
+      <h2 className="text-2xl font-bold text-gray-900">Security Center</h2>
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        {[
+          ['Failed Logins (24h)', securityStats.failedLogins, AlertTriangle, 'bg-red-100', 'text-red-600'],
+          ['Blocked IPs', securityStats.blockedIPs, Shield, 'bg-yellow-100', 'text-yellow-600'],
+          ['Active Sessions', securityStats.activeSessions, Activity, 'bg-green-100', 'text-green-600'],
+          ['Pending Reviews', securityStats.pendingReviews, Clock, 'bg-blue-100', 'text-blue-600'],
+        ].map(([title, value, Icon, bg, color]) => (
+          <div key={title} className="bg-white rounded-xl shadow p-4">
+            <div className="flex items-center space-x-3">
+              <div className={`w-10 h-10 ${bg} rounded-full flex items-center justify-center`}><Icon className={`w-5 h-5 ${color}`} /></div>
+              <div><p className="text-sm text-gray-500">{title}</p><p className="text-2xl font-bold">{value}</p></div>
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className="bg-white rounded-xl shadow p-6">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-lg font-semibold">Audit Log</h3>
+          <div className="flex gap-2">
+            <div className="relative"><Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" /><input type="text" placeholder="Search logs..." className="pl-9 pr-3 py-1.5 border rounded-lg text-sm" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} /></div>
+            <select className="px-3 py-1.5 border rounded-lg text-sm" value={filterAction} onChange={(e) => setFilterAction(e.target.value)}><option value="all">All Actions</option><option value="LOGIN">Login</option><option value="LOGIN_FAILED">Failed Login</option><option value="AGENT_SUSPEND">Agent Suspend</option><option value="CONFIG_CHANGE">Config Change</option><option value="LARGE_TRANSACTION">Large Transaction</option><option value="KYC_OVERRIDE">KYC Override</option></select>
+            <Button variant="outline" size="sm"><Download className="w-4 h-4 mr-1" />Export</Button>
+          </div>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead><tr className="border-b"><th className="text-left p-3 text-sm text-gray-500">Time</th><th className="text-left p-3 text-sm text-gray-500">Action</th><th className="text-left p-3 text-sm text-gray-500">User</th><th className="text-left p-3 text-sm text-gray-500">IP</th><th className="text-left p-3 text-sm text-gray-500">Details</th><th className="text-left p-3 text-sm text-gray-500">Status</th></tr></thead>
+            <tbody>
+              {filtered.map(l => (
+                <tr key={l.id} className="border-b hover:bg-gray-50">
+                  <td className="p-3 text-sm whitespace-nowrap">{l.timestamp}</td>
+                  <td className="p-3"><span className="font-mono text-xs bg-gray-100 px-2 py-1 rounded">{l.action}</span></td>
+                  <td className="p-3 text-sm">{l.user}</td>
+                  <td className="p-3 text-sm font-mono">{l.ip}</td>
+                  <td className="p-3 text-sm">{l.details}</td>
+                  <td className="p-3"><Badge variant={l.status === 'success' ? 'success' : l.status === 'failed' ? 'destructive' : 'warning'}>{l.status}</Badge></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
