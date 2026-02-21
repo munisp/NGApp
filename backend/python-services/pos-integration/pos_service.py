@@ -86,6 +86,7 @@ class PaymentRequest:
     merchant_id: str
     terminal_id: str
     transaction_reference: str
+    idempotency_key: Optional[str] = None
     customer_data: Optional[Dict[str, Any]] = None
     metadata: Optional[Dict[str, Any]] = None
 
@@ -165,6 +166,69 @@ class MerchantTerminal(Base):
 # Create tables
 Base.metadata.create_all(bind=engine)
 
+class OfflineTransactionQueue:
+    """Local store-and-forward queue for offline POS transactions.
+    Persists queued transactions to a local JSON file so they survive restarts."""
+
+    def __init__(self, queue_file: str = "/tmp/pos_offline_queue.json"):
+        self.queue_file = queue_file
+        self._queue: List[Dict[str, Any]] = []
+        self._load()
+
+    def _load(self):
+        try:
+            if os.path.exists(self.queue_file):
+                with open(self.queue_file, "r") as f:
+                    self._queue = json.load(f)
+                logger.info(f"Loaded {len(self._queue)} offline transactions from {self.queue_file}")
+        except Exception as e:
+            logger.warning(f"Failed to load offline queue: {e}")
+            self._queue = []
+
+    def _persist(self):
+        try:
+            with open(self.queue_file, "w") as f:
+                json.dump(self._queue, f)
+        except Exception as e:
+            logger.error(f"Failed to persist offline queue: {e}")
+
+    def enqueue(self, payment_data: Dict[str, Any]):
+        entry = {
+            "queued_at": datetime.utcnow().isoformat(),
+            "attempts": 0,
+            "status": "queued",
+            "payment": payment_data,
+        }
+        self._queue.append(entry)
+        self._persist()
+        logger.info(f"Queued offline transaction (queue size={len(self._queue)})")
+
+    def peek_all(self) -> List[Dict[str, Any]]:
+        return [e for e in self._queue if e["status"] == "queued"]
+
+    def mark_synced(self, index: int):
+        if 0 <= index < len(self._queue):
+            self._queue[index]["status"] = "synced"
+            self._queue[index]["synced_at"] = datetime.utcnow().isoformat()
+            self._persist()
+
+    def mark_failed(self, index: int, error: str):
+        if 0 <= index < len(self._queue):
+            self._queue[index]["attempts"] += 1
+            self._queue[index]["last_error"] = error
+            if self._queue[index]["attempts"] >= 5:
+                self._queue[index]["status"] = "permanently_failed"
+            self._persist()
+
+    def purge_synced(self):
+        self._queue = [e for e in self._queue if e["status"] not in ("synced",)]
+        self._persist()
+
+    @property
+    def pending_count(self) -> int:
+        return sum(1 for e in self._queue if e["status"] == "queued")
+
+
 class POSIntegrationService:
     def __init__(self):
         self.redis_client = None
@@ -172,6 +236,8 @@ class POSIntegrationService:
         self.active_websockets = {}
         self.encryption_key = os.getenv("POS_ENCRYPTION_KEY", Fernet.generate_key())
         self.cipher_suite = Fernet(self.encryption_key)
+        self.offline_queue = OfflineTransactionQueue()
+        self._is_online = True
         
         # Payment processor configurations
         self.payment_processors = {
@@ -200,13 +266,12 @@ class POSIntegrationService:
     async def initialize(self):
         """Initialize the POS integration service"""
         try:
-            # Initialize Redis for caching and real-time communication
             redis_url = os.getenv("REDIS_URL", "redis://localhost:6379")
             self.redis_client = await aioredis.from_url(redis_url)
             
-            # Start device discovery and monitoring
             asyncio.create_task(self._device_discovery_loop())
             asyncio.create_task(self._device_monitoring_loop())
+            asyncio.create_task(self._offline_sync_loop())
             
             logger.info("POS Integration Service initialized successfully")
             
@@ -214,12 +279,73 @@ class POSIntegrationService:
             logger.error(f"Failed to initialize POS Integration Service: {e}")
             self.redis_client = None
     
+    async def _check_idempotency(self, idempotency_key: str, db) -> Optional[PaymentResponse]:
+        """Check if a request with this idempotency key was already processed.
+        Returns the cached response if found, None otherwise."""
+        if self.redis_client:
+            cached = await self.redis_client.get(f"idem:{idempotency_key}")
+            if cached:
+                data = json.loads(cached)
+                logger.info(f"Idempotency hit for key={idempotency_key}")
+                return PaymentResponse(
+                    transaction_id=data["transaction_id"],
+                    status=TransactionStatus(data["status"]),
+                    amount=data["amount"],
+                    currency=data["currency"],
+                    authorization_code=data.get("authorization_code"),
+                    receipt_data=data.get("receipt_data"),
+                    error_message=data.get("error_message"),
+                    processing_time=data.get("processing_time", 0.0)
+                )
+
+        existing = db.query(POSTransaction).filter(
+            POSTransaction.transaction_id == idempotency_key
+        ).first()
+        if existing and existing.status != TransactionStatus.PENDING.value:
+            logger.info(f"Idempotency hit (DB) for key={idempotency_key}")
+            return PaymentResponse(
+                transaction_id=existing.transaction_id,
+                status=TransactionStatus(existing.status),
+                amount=existing.amount,
+                currency=existing.currency,
+                authorization_code=existing.authorization_code,
+                receipt_data=existing.receipt_data,
+                error_message=existing.error_message,
+                processing_time=existing.processing_time or 0.0
+            )
+        return None
+
+    async def _cache_idempotency(self, idempotency_key: str, response: PaymentResponse):
+        """Cache the response for an idempotency key (TTL 24h)."""
+        if self.redis_client:
+            data = {
+                "transaction_id": response.transaction_id,
+                "status": response.status.value if isinstance(response.status, TransactionStatus) else response.status,
+                "amount": response.amount,
+                "currency": response.currency,
+                "authorization_code": response.authorization_code,
+                "receipt_data": response.receipt_data,
+                "error_message": response.error_message,
+                "processing_time": response.processing_time
+            }
+            await self.redis_client.setex(
+                f"idem:{idempotency_key}", 86400, json.dumps(data)
+            )
+
     async def process_payment(self, payment_request: PaymentRequest) -> PaymentResponse:
-        """Process a payment transaction"""
+        """Process a payment transaction with idempotency support.
+        If idempotency_key is provided and was already processed, returns the cached result."""
         db = SessionLocal()
         try:
             start_time = datetime.utcnow()
-            transaction_id = str(uuid.uuid4())
+
+            idem_key = payment_request.idempotency_key or payment_request.transaction_reference
+            if idem_key:
+                cached_response = await self._check_idempotency(idem_key, db)
+                if cached_response is not None:
+                    return cached_response
+
+            transaction_id = idem_key if idem_key else str(uuid.uuid4())
             
             # Validate merchant and terminal
             terminal = db.query(MerchantTerminal).filter(
@@ -283,6 +409,10 @@ class POSIntegrationService:
             
             db.commit()
             
+            # Cache idempotency response
+            if idem_key:
+                await self._cache_idempotency(idem_key, response)
+
             # Send real-time update
             await self._send_transaction_update(transaction_id, response)
             
@@ -1214,6 +1344,101 @@ class POSIntegrationService:
         finally:
             db.close()
     
+    async def _check_connectivity(self) -> bool:
+        """Check if we can reach external payment gateways."""
+        try:
+            async with httpx.AsyncClient() as client:
+                resp = await client.get("https://api.stripe.com/v1", timeout=5.0)
+                return resp.status_code in (200, 401, 403)
+        except Exception:
+            return False
+
+    async def _offline_sync_loop(self):
+        """Background loop that drains the offline queue when connectivity returns."""
+        while True:
+            try:
+                await asyncio.sleep(30)
+                pending = self.offline_queue.peek_all()
+                if not pending:
+                    continue
+
+                online = await self._check_connectivity()
+                if not online:
+                    self._is_online = False
+                    logger.info(f"Still offline — {self.offline_queue.pending_count} transactions queued")
+                    continue
+
+                self._is_online = True
+                logger.info(f"Connectivity restored — syncing {len(pending)} offline transactions")
+
+                for idx, entry in enumerate(self.offline_queue._queue):
+                    if entry["status"] != "queued":
+                        continue
+                    try:
+                        payment_data = entry["payment"]
+                        payment_request = PaymentRequest(
+                            amount=payment_data["amount"],
+                            currency=payment_data["currency"],
+                            payment_method=PaymentMethod(payment_data["payment_method"]),
+                            merchant_id=payment_data["merchant_id"],
+                            terminal_id=payment_data["terminal_id"],
+                            transaction_reference=payment_data["transaction_reference"],
+                            idempotency_key=payment_data.get("idempotency_key"),
+                            customer_data=payment_data.get("customer_data"),
+                            metadata=payment_data.get("metadata")
+                        )
+                        await self.process_payment(payment_request)
+                        self.offline_queue.mark_synced(idx)
+                        logger.info(f"Synced offline transaction {payment_data.get('transaction_reference')}")
+                    except Exception as e:
+                        self.offline_queue.mark_failed(idx, str(e))
+                        logger.warning(f"Failed to sync offline transaction: {e}")
+
+                self.offline_queue.purge_synced()
+
+            except Exception as e:
+                logger.error(f"Offline sync loop error: {e}")
+                await asyncio.sleep(60)
+
+    async def queue_offline_payment(self, payment_request: PaymentRequest) -> Dict[str, Any]:
+        """Queue a payment for later processing when connectivity is unavailable."""
+        payment_data = {
+            "amount": payment_request.amount,
+            "currency": payment_request.currency,
+            "payment_method": payment_request.payment_method.value,
+            "merchant_id": payment_request.merchant_id,
+            "terminal_id": payment_request.terminal_id,
+            "transaction_reference": payment_request.transaction_reference,
+            "idempotency_key": payment_request.idempotency_key,
+            "customer_data": payment_request.customer_data,
+            "metadata": payment_request.metadata,
+        }
+        self.offline_queue.enqueue(payment_data)
+        return {
+            "status": "queued",
+            "message": "Payment queued for processing when connectivity is restored",
+            "queue_position": self.offline_queue.pending_count,
+            "transaction_reference": payment_request.transaction_reference
+        }
+
+    async def get_offline_queue_status(self) -> Dict[str, Any]:
+        """Return current offline queue status."""
+        return {
+            "is_online": self._is_online,
+            "pending_count": self.offline_queue.pending_count,
+            "queue": [
+                {
+                    "transaction_reference": e["payment"].get("transaction_reference"),
+                    "amount": e["payment"].get("amount"),
+                    "status": e["status"],
+                    "queued_at": e["queued_at"],
+                    "attempts": e["attempts"],
+                }
+                for e in self.offline_queue._queue
+                if e["status"] in ("queued", "permanently_failed")
+            ]
+        }
+
     async def health_check(self) -> Dict[str, Any]:
         """Health check endpoint"""
         db = SessionLocal()
@@ -1242,11 +1467,13 @@ class POSIntegrationService:
             "status": "healthy" if db_healthy else "unhealthy",
             "timestamp": datetime.utcnow().isoformat(),
             "service": "pos-integration-service",
-            "version": "1.0.0",
+            "version": "2.0.0",
             "components": {
                 "database": db_healthy,
                 "redis": redis_healthy,
-                "connected_devices": connected_devices_count
+                "connected_devices": connected_devices_count,
+                "is_online": self._is_online,
+                "offline_queue_pending": self.offline_queue.pending_count
             }
         }
 
@@ -1273,6 +1500,7 @@ class PaymentRequestModel(BaseModel):
     merchant_id: str
     terminal_id: str
     transaction_reference: str
+    idempotency_key: Optional[str] = None
     customer_data: Optional[Dict[str, Any]] = None
     metadata: Optional[Dict[str, Any]] = None
 
@@ -1348,6 +1576,17 @@ async def websocket_endpoint(websocket: WebSocket, terminal_id: str):
     except WebSocketDisconnect:
         if terminal_id in pos_service.active_websockets:
             del pos_service.active_websockets[terminal_id]
+
+@app.post("/queue-offline-payment")
+async def queue_offline_payment(request: PaymentRequestModel):
+    """Queue a payment for offline processing"""
+    payment_request = PaymentRequest(**request.dict())
+    return await pos_service.queue_offline_payment(payment_request)
+
+@app.get("/offline-queue-status")
+async def offline_queue_status():
+    """Get offline queue status"""
+    return await pos_service.get_offline_queue_status()
 
 @app.get("/health")
 async def health_check():
