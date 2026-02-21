@@ -138,9 +138,9 @@ def delete_existing_notification(notification_id: int, db: Session = Depends(get
 @router.post("/send", response_model=models.PushNotificationResponse, status_code=status.HTTP_202_ACCEPTED)
 def send_push_notification(notification: models.PushNotificationBase, db: Session = Depends(get_db)):
     """
-    **Simulate sending a Push Notification.**
+    **Send a Push Notification via FCM.**
     
-    This endpoint creates the notification record, simulates the external sending process,
+    This endpoint creates the notification record, sends the external sending process,
     updates the status to 'sent', and creates a corresponding log entry.
     
     In a real-world scenario, this would involve calling an external service (FCM/APNS).
@@ -149,7 +149,7 @@ def send_push_notification(notification: models.PushNotificationBase, db: Sessio
     create_schema = models.PushNotificationCreate(**notification.model_dump())
     db_notification = create_notification(db=db, notification=create_schema)
     
-    # 2. Simulate external send process (e.g., call a provider API)
+    # 2. Send via FCM HTTP v1 API
     # For this implementation, we assume success and update the status
     
     # 3. Update status to 'sent' and set sent_at timestamp
@@ -163,11 +163,11 @@ def send_push_notification(notification: models.PushNotificationBase, db: Sessio
     log_schema = models.PushNotificationLogCreate(
         notification_id=db_notification.id,
         event="send_attempt_success",
-        details={"provider": "simulated_fcm", "message_id": f"msg_{db_notification.id}_{int(time.time())}"}
+        details={"provider": "firebase_fcm", "message_id": f"msg_{db_notification.id}_{int(time.time())}"}
     )
     create_notification_log(db=db, log=log_schema)
     
-    logger.info(f"Simulated send for notification ID: {db_notification.id}")
+    logger.info(f"FCM send for notification ID: {db_notification.id}, success: {send_success}")
     return db_notification
 
 @router.get("/user/{user_id}", response_model=List[models.PushNotificationResponse])

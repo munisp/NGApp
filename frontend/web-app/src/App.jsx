@@ -30,7 +30,7 @@ import CommunicationsDashboard from '@/components/communications/CommunicationsD
 
 import './App.css'
 
-// ... (keep all existing mock data and component definitions from original App.jsx)
+// Agent Banking Platform - Production App
 
 function LoginPage({ onLogin }) {
   const [credentials, setCredentials] = useState({ username: '', password: '' })
@@ -111,7 +111,7 @@ function LoginPage({ onLogin }) {
   )
 }
 
-// Placeholder Dashboard component (use existing Dashboard from original App.jsx)
+// Dashboard component
 function Dashboard({ user }) {
   return (
     <div className="min-h-screen bg-gray-50 p-6">

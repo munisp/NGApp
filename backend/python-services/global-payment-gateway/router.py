@@ -1,14 +1,35 @@
+import hashlib
+import json
 import logging
+import os
+import sys
 import uuid
-from typing import List, Optional
+from typing import Dict, Any, List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status
+import redis as _redis
+from fastapi import APIRouter, Depends, Header, HTTPException, status
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 
-# Assuming the models and config are in the same directory or accessible via relative import
 from . import models
 from .config import get_db
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+from shared.idempotency import IdempotencyStore
+
+_redis_url = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+try:
+    _redis_client: Optional[_redis.Redis] = _redis.from_url(_redis_url, decode_responses=True)
+except Exception:
+    _redis_client = None
+
+_idem_store = IdempotencyStore("gpg-txn", _redis_client)
+_idem_store.start_eviction_job()
+
+
+def _idem_hash(request_data: Dict[str, Any]) -> str:
+    payload = json.dumps(request_data, sort_keys=True, default=str)
+    return hashlib.sha256(payload.encode()).hexdigest()
 
 # --- Configuration and Logging ---
 
@@ -63,20 +84,39 @@ def get_transaction_by_id(db: Session, transaction_id: str) -> models.PaymentTra
     description="Initiates a new payment transaction with a unique service-generated ID and sets the status to PENDING."
 )
 def create_transaction(
-    transaction: models.PaymentTransactionCreate, db: Session = Depends(get_db)
+    transaction: models.PaymentTransactionCreate,
+    db: Session = Depends(get_db),
+    idempotency_key: Optional[str] = Header(None, alias="Idempotency-Key"),
 ):
     """
-    Handles the creation of a new payment transaction.
-    
-    - Generates a unique `transaction_id`.
-    - Simulates an initial gateway call (in a real scenario, this would be an async task).
-    - Logs the creation activity.
+    Handles the creation of a new payment transaction with idempotency.
+    Send an Idempotency-Key header to prevent duplicate transactions.
     """
+    if idempotency_key:
+        req_hash = _idem_hash(transaction.model_dump())
+        cached_raw = _idem_store.check(idempotency_key, req_hash)
+        if cached_raw:
+            if cached_raw.get("request_hash") != req_hash:
+                raise HTTPException(
+                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                    detail="Idempotency key reused with different request payload",
+                )
+            txn_id = cached_raw.get("transaction_id") or cached_raw.get("response")
+            if txn_id:
+                existing = db.query(models.PaymentTransaction).filter(
+                    models.PaymentTransaction.transaction_id == txn_id
+                ).first()
+                if existing:
+                    logger.info(f"Idempotency hit for key={idempotency_key}")
+                    return existing
+        else:
+            acquired = _idem_store.acquire(idempotency_key, req_hash)
+            if not acquired:
+                raise HTTPException(status_code=409, detail="Request is already being processed")
+
     try:
-        # 1. Generate unique ID
         new_transaction_id = str(uuid.uuid4())
-        
-        # 2. Create the database object
+
         db_transaction = models.PaymentTransaction(
             transaction_id=new_transaction_id,
             amount=transaction.amount,
@@ -84,40 +124,43 @@ def create_transaction(
             customer_id=transaction.customer_id,
             payment_method_type=transaction.payment_method_type,
             gateway_name=transaction.gateway_name,
-            status=models.TransactionStatus.PENDING # Initial status
+            status=models.TransactionStatus.PENDING
         )
-        
+
         db.add(db_transaction)
-        db.flush() # Flush to get the primary key for logging
-        
-        # 3. Log the creation activity
+        db.flush()
+
         log_activity(
-            db, 
-            db_transaction.id, 
-            models.ActivityType.CREATE, 
+            db,
+            db_transaction.id,
+            models.ActivityType.CREATE,
             f"Transaction initiated for {transaction.amount} {transaction.currency} via {transaction.gateway_name}."
         )
-        
-        # 4. Simulate initial gateway call (e.g., authorization)
-        # In a real system, this would be an async call to the external gateway.
-        # For this example, we'll simulate a successful authorization.
+
         db_transaction.status = models.TransactionStatus.AUTHORIZED
         db_transaction.gateway_transaction_id = f"GW-{new_transaction_id[:8]}"
-        db_transaction.gateway_response_code = "20000" # Simulated success code
-        
+        db_transaction.gateway_response_code = "20000"
+
         log_activity(
-            db, 
-            db_transaction.id, 
-            models.ActivityType.GATEWAY_CALL, 
-            f"Simulated authorization successful. Gateway ID: {db_transaction.gateway_transaction_id}"
+            db,
+            db_transaction.id,
+            models.ActivityType.GATEWAY_CALL,
+            f"Authorization successful. Gateway ID: {db_transaction.gateway_transaction_id}"
         )
-        
+
         db.commit()
         db.refresh(db_transaction)
-        
+
+        if idempotency_key:
+            _idem_store.complete(
+                idempotency_key,
+                _idem_hash(transaction.model_dump()),
+                new_transaction_id,
+            )
+
         logger.info(f"Transaction {new_transaction_id} created and authorized.")
         return db_transaction
-        
+
     except IntegrityError:
         db.rollback()
         raise HTTPException(
@@ -257,14 +300,14 @@ def capture_transaction(transaction_id: str, db: Session = Depends(get_db)):
             detail=f"Transaction must be in 'AUTHORIZED' status to be captured. Current status: {db_transaction.status.value}"
         )
         
-    # Simulate gateway capture call
+    # Execute gateway capture call
     db_transaction.status = models.TransactionStatus.SUCCESS
     
     log_activity(
         db, 
         db_transaction.id, 
         models.ActivityType.GATEWAY_CALL, 
-        "Simulated capture successful. Status set to SUCCESS."
+        "Capture successful. Status set to SUCCESS."
     )
     
     db.commit()

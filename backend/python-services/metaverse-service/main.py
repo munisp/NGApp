@@ -1,16 +1,41 @@
+import sys as _sys, os as _os
+_sys.path.insert(0, _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), ".."))
+from shared.middleware import apply_middleware, ErrorResponse
+from shared.observability import setup_logging, get_logger, metrics_router, MetricsMiddleware
 """
 Metaverse Service
 Integration service for metaverse platforms and virtual economies
 """
-from fastapi import FastAPI, HTTPException
+import hashlib
+import json as json_mod
+import sys
+
+import redis as _redis
+from fastapi import FastAPI, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+
+apply_middleware(app)
+setup_logging("metaverse-service")
+app.include_router(metrics_router)
+
 from pydantic import BaseModel, Field
-from typing import List, Optional, Dict, Any
+from typing import Dict, Any, List, Optional
 from datetime import datetime
 from enum import Enum
 import logging
 import os
 import uuid
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+from shared.idempotency import IdempotencyStore
+
+_redis_url = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+try:
+    _redis_client: Optional[_redis.Redis] = _redis.from_url(_redis_url, decode_responses=True)
+except Exception:
+    _redis_client = None
+
+_idem_store = IdempotencyStore("metaverse-txn", _redis_client)
 
 # Configure logging
 logging.basicConfig(
@@ -25,10 +50,14 @@ app = FastAPI(
     version="1.0.0"
 )
 
+@app.on_event("startup")
+async def _start_eviction():
+    _idem_store.start_eviction_job()
+
 # CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=os.getenv("ALLOWED_ORIGINS","http://localhost:5173,http://localhost:5174,http://localhost:3000").split(","),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -139,7 +168,6 @@ class MetaverseStore(BaseModel):
     products: List[str] = []  # Product IDs
     is_open: bool = True
 
-# In-memory storage
 accounts_db: Dict[str, MetaverseAccount] = {}
 assets_db: Dict[str, VirtualAsset] = {}
 land_db: Dict[str, VirtualLand] = {}
@@ -278,17 +306,46 @@ async def list_virtual_land(
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/transactions", response_model=MetaverseTransaction)
-async def create_transaction(transaction: MetaverseTransaction):
-    """Create a metaverse transaction"""
+async def create_transaction(
+    transaction: MetaverseTransaction,
+    idempotency_key: Optional[str] = Header(None, alias="Idempotency-Key"),
+):
+    """Create a metaverse transaction with idempotency support."""
     try:
+        if idempotency_key:
+            req_data = transaction.model_dump(exclude={"id", "timestamp", "status"})
+            req_hash = hashlib.sha256(json_mod.dumps(req_data, sort_keys=True, default=str).encode()).hexdigest()
+            cached_raw = _idem_store.check(idempotency_key, req_hash)
+            if cached_raw:
+                if cached_raw.get("request_hash") != req_hash:
+                    raise HTTPException(status_code=422, detail="Idempotency key reused with different request payload")
+                txn_id = cached_raw.get("transaction_id") or cached_raw.get("response")
+                if txn_id and txn_id in transactions_db:
+                    logger.info(f"Idempotency hit for key={idempotency_key}")
+                    return transactions_db[txn_id]
+            else:
+                acquired = _idem_store.acquire(idempotency_key, req_hash)
+                if not acquired:
+                    raise HTTPException(status_code=409, detail="Request is already being processed")
+
         transaction.id = str(uuid.uuid4())
         transaction.timestamp = datetime.utcnow()
         transaction.status = "completed"
-        
+
         transactions_db[transaction.id] = transaction
-        
+
+        if idempotency_key:
+            req_data = transaction.model_dump(exclude={"id", "timestamp", "status"})
+            _idem_store.complete(
+                idempotency_key,
+                hashlib.sha256(json_mod.dumps(req_data, sort_keys=True, default=str).encode()).hexdigest(),
+                transaction.id,
+            )
+
         logger.info(f"Created transaction {transaction.id} for account {transaction.account_id}")
         return transaction
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error creating transaction: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))

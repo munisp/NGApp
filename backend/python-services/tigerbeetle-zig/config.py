@@ -10,7 +10,7 @@ class Settings:
     Application settings, primarily for database connection.
     In a real application, this would use environment variables or a configuration file.
     """
-    # Use a placeholder for the database URL. In a production environment, this
+    # Database URL configuration. In a production environment, this
     # would be loaded from an environment variable (e.g., os.getenv("DATABASE_URL")).
     DATABASE_URL: str = os.getenv(
         "DATABASE_URL",

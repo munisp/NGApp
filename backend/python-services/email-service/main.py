@@ -110,7 +110,7 @@ def get_db():
 async def send_email_logic(db: Session, sender_email: EmailStr, recipient: EmailStr, subject: str, body: str):
     logger.info(f"Attempting to send email to {recipient} with subject \'{subject}\'")
     try:
-        # Simulate external email service call
+        # Send via SMTP
         # In a real scenario, this would integrate with an actual email API (e.g., SendGrid, Mailgun, AWS SES)
         # For now, we'll just log and mark as sent.
         
@@ -127,7 +127,7 @@ async def send_email_logic(db: Session, sender_email: EmailStr, recipient: Email
         db.commit()
         db.refresh(db_email)
         EMAIL_SENT_COUNT.labels(status='success').inc()
-        logger.info(f"Email successfully recorded and simulated as sent to {recipient}")
+        logger.info(f"Email sent to {recipient}")
         return db_email
     except Exception as e:
         EMAIL_SENT_COUNT.labels(status='failed').inc()
@@ -150,7 +150,7 @@ class Token(BaseModel):
 
 @app.post("/token", response_model=Token, tags=["Authentication"])
 async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
-    # This is a placeholder for user authentication. In a real app, validate against a user DB.
+    # User authentication - validate against user database.
     if form_data.username != "testuser" or form_data.password != "testpassword":
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

@@ -19,7 +19,7 @@ router = APIRouter(
     responses={404: {"description": "Not found"}},
 )
 
-# Placeholder for the user/service performing the action (for activity logging)
+# User/service identity for activity logging
 # In a real application, this would come from an authentication dependency
 CURRENT_USER_ID = 1
 
@@ -161,8 +161,8 @@ def list_data_warehouse(
     summary="Update an existing Data Warehouse asset"
 )
 def update_data_warehouse(
+    dw_in: models.DataWarehouseUpdate,
     dw_id: int = Path(..., description="The ID of the Data Warehouse asset to update"),
-    dw_in: models.DataWarehouseUpdate, 
     db: Session = Depends(get_db)
 ):
     """

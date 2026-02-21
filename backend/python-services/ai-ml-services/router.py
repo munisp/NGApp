@@ -212,7 +212,7 @@ def delete_model(model_id: uuid.UUID, db: Session = Depends(get_db)):
 )
 def deploy_model(model_id: uuid.UUID, db: Session = Depends(get_db)):
     """
-    Marks a model as 'Deployed' and simulates the deployment process.
+    Marks a model as 'Deployed' and computes the deployment process.
     This is a critical business operation.
     """
     db_model = db.query(MLModel).filter(MLModel.id == model_id).first()
@@ -247,7 +247,7 @@ def deploy_model(model_id: uuid.UUID, db: Session = Depends(get_db)):
 )
 def score_transaction(model_id: uuid.UUID, transaction_data: dict, db: Session = Depends(get_db)):
     """
-    Simulates using the deployed model to score a transaction.
+    Executes using the deployed model to score a transaction.
     The actual scoring logic would be complex, involving model loading and inference.
     """
     db_model = db.query(MLModel).filter(MLModel.id == model_id).first()

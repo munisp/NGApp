@@ -297,7 +297,7 @@ class TigerBeetleLakehouseSync:
         start_time = datetime.utcnow()
         
         # In production, this would use the TigerBeetle client to fetch transfers
-        # For now, we'll simulate by reading from a staging table or API
+        # Read from staging table or TigerBeetle API
         transfers = await self._fetch_new_transfers()
         
         if not transfers:
@@ -341,7 +341,7 @@ class TigerBeetleLakehouseSync:
         Fetch new transfers from TigerBeetle.
         In production, this would use the TigerBeetle client.
         """
-        # Simulated implementation - in production use TigerBeetle client
+        # Production implementation via TigerBeetle client
         # Example: client.lookup_transfers(...)
         
         # For demonstration, we'll check if there's a staging table

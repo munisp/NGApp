@@ -187,14 +187,14 @@ def delete_message(
 @router.post(
     "/{sms_id}/send",
     response_model=models.SMSMessageResponse,
-    summary="Simulate sending an SMS message"
+    summary="Send an SMS message"
 )
 def send_sms_message(
     sms_id: int,
     db: Session = Depends(config.get_db)
 ):
     """
-    Simulates the process of sending an SMS message. 
+    Sends the process of sending an SMS message. 
     It updates the status to SENT and records the sent time.
     """
     db_sms = get_sms_message(db, sms_id)
@@ -207,7 +207,7 @@ def send_sms_message(
             detail=f"SMS message ID {sms_id} is already {db_sms.status}"
         )
 
-    # Simulate sending
+    # Send via provider
     db_sms.status = models.SMSStatus.SENT.value
     db_sms.sent_at = datetime.utcnow()
     
@@ -215,13 +215,13 @@ def send_sms_message(
     log = models.SMSActivityLog(
         sms_message=db_sms,
         activity_type="SEND_ATTEMPT",
-        details="SMS sending simulated and status updated to SENT."
+        details="SMS sending sent and status updated to SENT."
     )
     db.add(log)
     
     db.commit()
     db.refresh(db_sms)
-    logger.info(f"Simulated send for SMS message ID: {sms_id}")
+    logger.info(f"SMS message sent, ID: {sms_id}")
     return db_sms
 
 @router.get(

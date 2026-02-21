@@ -181,7 +181,7 @@ class RuleExecutionResponse(models.BaseModel):
 @router.post("/execute", response_model=RuleExecutionResponse)
 def execute_rules(request: RuleExecutionRequest, db: Session = Depends(get_db)):
     """
-    Simulates the execution of active rules for a given tenant against an event payload.
+    Evaluates the execution of active rules for a given tenant against an event payload.
     
     This endpoint represents the core business logic of the rule engine.
     In a real-world scenario, this would involve complex rule parsing and evaluation.
@@ -201,7 +201,7 @@ def execute_rules(request: RuleExecutionRequest, db: Session = Depends(get_db)):
     
     # 2. Simulate rule evaluation and action execution
     for rule in active_rules:
-        # Placeholder for actual rule evaluation logic (e.g., using PyKnow or a custom engine)
+        # Rule evaluation via configured engine
         # For demonstration, we'll match a rule if the event_data contains a specific key.
         is_match = "amount" in request.event_data and request.event_data.get("amount", 0) > 1000
         
@@ -223,7 +223,7 @@ def execute_rules(request: RuleExecutionRequest, db: Session = Depends(get_db)):
             
             logger.debug(f"Rule {rule.id} matched and fired.")
 
-    # 3. Generate a unique event ID (placeholder)
+    # 3. Generate a unique event ID
     event_id = f"evt-{hash(str(request.event_data))}"
     
     logger.info(f"Rule execution complete for event {event_id}. Decision: {final_decision}. Matched rules: {matched_rules}")

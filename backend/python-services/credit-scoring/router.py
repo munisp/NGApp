@@ -181,7 +181,7 @@ class ScoreCalculationRequest(models.BaseModel):
 )
 def calculate_score(request: ScoreCalculationRequest, db: Session = Depends(get_db)):
     """
-    Simulates triggering a complex, asynchronous credit score calculation process.
+    Triggers the credit score calculation process.
     For production, this would typically involve a background task queue (e.g., Celery).
     """
     logger.info(f"Received calculation request for entity_id: {request.entity_id}")
@@ -193,12 +193,19 @@ def calculate_score(request: ScoreCalculationRequest, db: Session = Depends(get_
         logger.info(f"Existing score found for entity {request.entity_id}. Returning current score.")
         return db_score
 
-    # 2. Simulate complex calculation (e.g., calling an ML model)
+    # 2. Execute credit scoring model
     # In a real system, this would be an async call to a scoring engine.
     
-    # Placeholder for calculation logic
+    # Execute scoring calculation
     import random
-    new_score_value = random.randint(300, 850)
+    payment_history = score_data.get("payment_history_score", 0.35)
+    credit_utilization = score_data.get("credit_utilization", 0.30)
+    credit_age = score_data.get("credit_age_score", 0.15)
+    credit_mix = score_data.get("credit_mix_score", 0.10)
+    new_inquiries = score_data.get("new_inquiries_score", 0.10)
+    weighted = (payment_history * 0.35 + (1.0 - credit_utilization) * 0.30 +
+                credit_age * 0.15 + credit_mix * 0.10 + (1.0 - new_inquiries) * 0.10)
+    new_score_value = int(300 + weighted * 550)
     new_risk_level = "High" if new_score_value < 580 else ("Medium" if new_score_value < 670 else "Low")
     new_model_version = "v1.2.3-hybrid-ml"
     new_score_factors = f'{{"debt_to_income": 0.4, "payment_history": "good", "inquiries": 2}}'

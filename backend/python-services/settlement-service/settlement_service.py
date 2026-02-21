@@ -1,3 +1,7 @@
+import sys as _sys, os as _os
+_sys.path.insert(0, _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), ".."))
+from shared.middleware import apply_middleware, ErrorResponse
+from shared.observability import setup_logging, get_logger, metrics_router, MetricsMiddleware
 """
 Remittance Platform - Settlement Service
 Handles commission settlement processing with TigerBeetle ledger integration
@@ -15,8 +19,13 @@ from enum import Enum
 import asyncpg
 import redis.asyncio as redis
 import httpx
-from fastapi import FastAPI, HTTPException, Depends, Query, BackgroundTasks, status
+from fastapi import FastAPI, HTTPException, Depends, Query, BackgroundTasks, Header, status
 from fastapi.middleware.cors import CORSMiddleware
+
+apply_middleware(app)
+setup_logging("settlement-service")
+app.include_router(metrics_router)
+
 from pydantic import BaseModel, validator, Field
 import json
 
@@ -34,7 +43,7 @@ app = FastAPI(
 # CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=os.getenv("ALLOWED_ORIGINS","http://localhost:5173,http://localhost:5174,http://localhost:3000").split(","),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -127,7 +136,7 @@ class SettlementBatchCreate(BaseModel):
     settlement_period_start: date
     settlement_period_end: date
     settlement_rule_id: Optional[str] = None
-    agent_ids: Optional[List[str]] = None  # Specific agents or None for all
+    agent_ids: Optional[List[str]] = None
     description: Optional[str] = None
     auto_process: bool = False
 
@@ -229,8 +238,22 @@ class SettlementEngine:
         self.redis = redis_connection
         self.http = http_client
     
-    async def create_settlement_batch(self, batch_data: SettlementBatchCreate, created_by: str) -> str:
-        """Create a new settlement batch"""
+    async def create_settlement_batch(self, batch_data: SettlementBatchCreate, created_by: str, idempotency_key: Optional[str] = None) -> str:
+        """Create a new settlement batch with idempotency support."""
+        if idempotency_key:
+            try:
+                acquired = await self.redis.set(f"settlement_idempotency:{idempotency_key}", "processing", nx=True, ex=86400)
+                if not acquired:
+                    cached_batch_id = await self.redis.get(f"settlement_idempotency:{idempotency_key}")
+                    if cached_batch_id and cached_batch_id != "processing":
+                        bid = cached_batch_id if isinstance(cached_batch_id, str) else cached_batch_id.decode()
+                        existing = await self.db.fetchrow("SELECT id FROM settlement_batches WHERE id = $1", bid)
+                        if existing:
+                            logger.info(f"Idempotency hit for settlement key={idempotency_key}")
+                            return bid
+            except Exception as exc:
+                logger.warning(f"Redis idempotency check failed: {exc}")
+
         batch_id = str(uuid.uuid4())
         batch_number = await self._generate_batch_number()
         
@@ -300,7 +323,17 @@ class SettlementEngine:
                 json.dumps(item['payout_details']), item['status'].value, 0, datetime.utcnow())
         
         logger.info(f"Created settlement batch {batch_id} with {len(settlement_items)} items, total: {total_amount}")
-        
+
+        if idempotency_key:
+            try:
+                await self.redis.setex(
+                    f"settlement_idempotency:{idempotency_key}",
+                    86400,
+                    batch_id,
+                )
+            except Exception:
+                pass
+
         # Auto-process if requested
         if batch_data.auto_process and rule and rule['auto_approve']:
             if total_amount <= rule.get('auto_approve_threshold', Decimal("1000000")):
@@ -772,16 +805,17 @@ async def list_settlement_rules(
 async def create_settlement_batch(
     batch_data: SettlementBatchCreate,
     created_by: str = "system",
-    background_tasks: BackgroundTasks = None
+    background_tasks: BackgroundTasks = None,
+    idempotency_key: Optional[str] = Header(None, alias="Idempotency-Key"),
 ):
-    """Create a new settlement batch"""
+    """Create a new settlement batch. Send Idempotency-Key header to prevent duplicates."""
     conn = await get_db_connection()
     redis_conn = await get_redis_connection()
     http = await get_http_client()
     
     try:
         engine = SettlementEngine(conn, redis_conn, http)
-        batch_id = await engine.create_settlement_batch(batch_data, created_by)
+        batch_id = await engine.create_settlement_batch(batch_data, created_by, idempotency_key=idempotency_key)
         
         # Fetch created batch
         batch = await conn.fetchrow("SELECT * FROM settlement_batches WHERE id = $1", batch_id)

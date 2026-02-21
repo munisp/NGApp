@@ -3,25 +3,56 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8020
 const PAYMENT_API_URL = import.meta.env.VITE_PAYMENT_GATEWAY_URL || 'http://localhost:8021'
 const KYB_API_URL = import.meta.env.VITE_KYB_API_URL || 'http://localhost:8121'
 
+function generateIdempotencyKey() {
+  return crypto.randomUUID ? crypto.randomUUID() : (
+    'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+      const r = (Math.random() * 16) | 0
+      return (c === 'x' ? r : (r & 0x3) | 0x8).toString(16)
+    })
+  )
+}
+
+const WRITE_METHODS = new Set(['POST', 'PUT', 'DELETE'])
+
 class APIClient {
   constructor(baseURL) {
     this.baseURL = baseURL
+    this._pendingKeys = new Map()
+  }
+
+  _getOrCreateIdempotencyKey(method, endpoint, data) {
+    if (!WRITE_METHODS.has(method)) return null
+    const cacheKey = `${method}:${endpoint}:${JSON.stringify(data || '')}`
+    if (this._pendingKeys.has(cacheKey)) {
+      return this._pendingKeys.get(cacheKey)
+    }
+    const key = generateIdempotencyKey()
+    this._pendingKeys.set(cacheKey, key)
+    setTimeout(() => this._pendingKeys.delete(cacheKey), 60000)
+    return key
   }
 
   async request(endpoint, options = {}) {
     const url = `${this.baseURL}${endpoint}`
-    const config = {
-      headers: {
-        'Content-Type': 'application/json',
-        ...options.headers
-      },
-      ...options
+    const method = (options.method || 'GET').toUpperCase()
+    const idempotencyKey = this._getOrCreateIdempotencyKey(method, endpoint, options.body)
+    const headers = {
+      'Content-Type': 'application/json',
+      ...options.headers
     }
+    if (idempotencyKey) {
+      headers['Idempotency-Key'] = idempotencyKey
+    }
+    const config = { headers, ...options }
 
     try {
       const response = await fetch(url, config)
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`)
+      }
+      if (idempotencyKey) {
+        const cacheKey = `${method}:${endpoint}:${JSON.stringify(options.body || '')}`
+        this._pendingKeys.delete(cacheKey)
       }
       return await response.json()
     } catch (error) {
@@ -30,12 +61,10 @@ class APIClient {
     }
   }
 
-  // GET request
   get(endpoint, options = {}) {
     return this.request(endpoint, { method: 'GET', ...options })
   }
 
-  // POST request
   post(endpoint, data, options = {}) {
     return this.request(endpoint, {
       method: 'POST',
@@ -44,7 +73,6 @@ class APIClient {
     })
   }
 
-  // PUT request
   put(endpoint, data, options = {}) {
     return this.request(endpoint, {
       method: 'PUT',
@@ -53,7 +81,6 @@ class APIClient {
     })
   }
 
-  // DELETE request
   delete(endpoint, options = {}) {
     return this.request(endpoint, { method: 'DELETE', ...options })
   }

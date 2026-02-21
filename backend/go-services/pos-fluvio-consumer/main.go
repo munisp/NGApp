@@ -1,10 +1,13 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
+	"net/http"
 	"os"
 	"os/signal"
 	"sync"
@@ -64,18 +67,25 @@ type FraudAlert struct {
 // ============================================================================
 
 type FluvioConsumer struct {
-	topics   []string
-	handlers map[string]EventHandler
-	wg       sync.WaitGroup
-	ctx      context.Context
-	cancel   context.CancelFunc
+	topics     []string
+	handlers   map[string]EventHandler
+	wg         sync.WaitGroup
+	ctx        context.Context
+	cancel     context.CancelFunc
+	fluvioURL  string
+	httpClient *http.Client
 }
 
 type EventHandler func(event POSEvent) error
 
 func NewFluvioConsumer() *FluvioConsumer {
 	ctx, cancel := context.WithCancel(context.Background())
-	
+
+	fluvioURL := os.Getenv("FLUVIO_HTTP_URL")
+	if fluvioURL == "" {
+		fluvioURL = "http://localhost:9003"
+	}
+
 	return &FluvioConsumer{
 		topics: []string{
 			"pos-transactions",
@@ -84,9 +94,11 @@ func NewFluvioConsumer() *FluvioConsumer {
 			"pos-fraud-alerts",
 			"pos-analytics",
 		},
-		handlers: make(map[string]EventHandler),
-		ctx:      ctx,
-		cancel:   cancel,
+		handlers:   make(map[string]EventHandler),
+		ctx:        ctx,
+		cancel:     cancel,
+		fluvioURL:  fluvioURL,
+		httpClient: &http.Client{Timeout: 10 * time.Second},
 	}
 }
 
@@ -110,26 +122,83 @@ func (fc *FluvioConsumer) Start() error {
 
 func (fc *FluvioConsumer) consumeTopic(topic string) {
 	defer fc.wg.Done()
-	
-	log.Printf("📡 Consuming from topic: %s", topic)
-	
-	// In production, use Fluvio Go SDK
-	// For now, simulate event consumption
+
+	log.Printf("📡 Consuming from topic: %s (Fluvio: %s)", topic, fc.fluvioURL)
+
 	ticker := time.NewTicker(5 * time.Second)
 	defer ticker.Stop()
-	
+
+	offset := 0
+
 	for {
 		select {
 		case <-fc.ctx.Done():
 			log.Printf("Stopping consumer for topic: %s", topic)
 			return
-			
+
 		case <-ticker.C:
-			// Simulate receiving events
-			// In production, this would be: consumer.Stream().Next()
-			fc.processEvent(topic, fc.generateMockEvent(topic))
+			events, newOffset, err := fc.fetchFromFluvio(topic, offset)
+			if err != nil {
+				log.Printf("⚠ Fluvio fetch failed for %s (offset %d): %v", topic, offset, err)
+				continue
+			}
+			for _, event := range events {
+				fc.processEvent(topic, event)
+			}
+			if newOffset > offset {
+				offset = newOffset
+			}
 		}
 	}
+}
+
+func (fc *FluvioConsumer) fetchFromFluvio(topic string, offset int) ([]POSEvent, int, error) {
+	url := fmt.Sprintf("%s/api/consumer/stream/%s?offset=%d&count=10", fc.fluvioURL, topic, offset)
+
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, offset, fmt.Errorf("failed to create request: %w", err)
+	}
+	req.Header.Set("Accept", "application/json")
+
+	resp, err := fc.httpClient.Do(req)
+	if err != nil {
+		return nil, offset, fmt.Errorf("HTTP request failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, offset, fmt.Errorf("Fluvio returned HTTP %d", resp.StatusCode)
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, offset, fmt.Errorf("failed to read response: %w", err)
+	}
+
+	var records []struct {
+		Offset int             `json:"offset"`
+		Value  json.RawMessage `json:"value"`
+	}
+	if err := json.Unmarshal(body, &records); err != nil {
+		return nil, offset, fmt.Errorf("failed to parse response: %w", err)
+	}
+
+	var events []POSEvent
+	newOffset := offset
+	for _, rec := range records {
+		var event POSEvent
+		if err := json.Unmarshal(rec.Value, &event); err != nil {
+			log.Printf("⚠ Failed to parse event at offset %d: %v", rec.Offset, err)
+			continue
+		}
+		events = append(events, event)
+		if rec.Offset >= newOffset {
+			newOffset = rec.Offset + 1
+		}
+	}
+
+	return events, newOffset, nil
 }
 
 func (fc *FluvioConsumer) processEvent(topic string, event POSEvent) {
@@ -144,36 +213,6 @@ func (fc *FluvioConsumer) processEvent(topic string, event POSEvent) {
 	}
 }
 
-func (fc *FluvioConsumer) generateMockEvent(topic string) POSEvent {
-	// Generate mock events for demonstration
-	now := time.Now().UTC().Format(time.RFC3339)
-	
-	switch topic {
-	case "pos-transactions":
-		return POSEvent{
-			EventID:    fmt.Sprintf("evt_%d", time.Now().UnixNano()),
-			EventType:  "transaction",
-			Timestamp:  now,
-			MerchantID: "merchant_001",
-			TerminalID: "terminal_001",
-			Data: map[string]interface{}{
-				"transaction_id": fmt.Sprintf("txn_%d", time.Now().UnixNano()),
-				"amount":         100.50,
-				"currency":       "USD",
-				"status":         "approved",
-			},
-		}
-	default:
-		return POSEvent{
-			EventID:    fmt.Sprintf("evt_%d", time.Now().UnixNano()),
-			EventType:  "generic",
-			Timestamp:  now,
-			MerchantID: "merchant_001",
-			TerminalID: "terminal_001",
-			Data:       make(map[string]interface{}),
-		}
-	}
-}
 
 func (fc *FluvioConsumer) Stop() {
 	log.Println("🛑 Stopping Fluvio POS Consumer...")
@@ -277,10 +316,17 @@ func (tp *TransactionProcessor) ProcessAnalyticsEvent(event POSEvent) error {
 // ============================================================================
 
 type FluvioProducer struct {
-	topics map[string]bool
+	topics     map[string]bool
+	fluvioURL  string
+	httpClient *http.Client
 }
 
 func NewFluvioProducer() *FluvioProducer {
+	fluvioURL := os.Getenv("FLUVIO_HTTP_URL")
+	if fluvioURL == "" {
+		fluvioURL = "http://localhost:9003"
+	}
+
 	return &FluvioProducer{
 		topics: map[string]bool{
 			"pos-commands":       true,
@@ -288,7 +334,31 @@ func NewFluvioProducer() *FluvioProducer {
 			"pos-fraud-rules":    true,
 			"pos-price-updates":  true,
 		},
+		fluvioURL:  fluvioURL,
+		httpClient: &http.Client{Timeout: 10 * time.Second},
 	}
+}
+
+func (fp *FluvioProducer) produce(topic string, data []byte) error {
+	url := fmt.Sprintf("%s/api/producer/send/%s", fp.fluvioURL, topic)
+	req, err := http.NewRequest("POST", url, bytes.NewReader(data))
+	if err != nil {
+		return fmt.Errorf("failed to create request: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := fp.httpClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("HTTP request failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
+		return fmt.Errorf("Fluvio producer returned HTTP %d", resp.StatusCode)
+	}
+
+	log.Printf("Produced %d bytes to %s", len(data), topic)
+	return nil
 }
 
 func (fp *FluvioProducer) SendCommand(command map[string]interface{}) error {
@@ -296,14 +366,8 @@ func (fp *FluvioProducer) SendCommand(command map[string]interface{}) error {
 	if err != nil {
 		return err
 	}
-	
 	log.Printf("📤 Sending command: %s", command["command_type"])
-	
-	// In production, use Fluvio producer:
-	// producer.Send("pos-commands", data)
-	
-	_ = data // Placeholder
-	return nil
+	return fp.produce("pos-commands", data)
 }
 
 func (fp *FluvioProducer) SendConfigUpdate(config map[string]interface{}) error {
@@ -311,11 +375,8 @@ func (fp *FluvioProducer) SendConfigUpdate(config map[string]interface{}) error 
 	if err != nil {
 		return err
 	}
-	
 	log.Printf("📤 Sending config update: %s", config["config_key"])
-	
-	_ = data // Placeholder
-	return nil
+	return fp.produce("pos-config-updates", data)
 }
 
 func (fp *FluvioProducer) SendFraudRule(rule map[string]interface{}) error {
@@ -323,11 +384,8 @@ func (fp *FluvioProducer) SendFraudRule(rule map[string]interface{}) error {
 	if err != nil {
 		return err
 	}
-	
 	log.Printf("📤 Sending fraud rule: %s", rule["rule_id"])
-	
-	_ = data // Placeholder
-	return nil
+	return fp.produce("pos-fraud-rules", data)
 }
 
 func (fp *FluvioProducer) SendPriceUpdate(price map[string]interface{}) error {
@@ -335,11 +393,8 @@ func (fp *FluvioProducer) SendPriceUpdate(price map[string]interface{}) error {
 	if err != nil {
 		return err
 	}
-	
 	log.Printf("📤 Sending price update: %s", price["product_id"])
-	
-	_ = data // Placeholder
-	return nil
+	return fp.produce("pos-price-updates", data)
 }
 
 // ============================================================================
@@ -347,10 +402,10 @@ func (fp *FluvioProducer) SendPriceUpdate(price map[string]interface{}) error {
 // ============================================================================
 
 func main() {
-	log.Println("=" * 80)
+	log.Println("================================================================================")
 	log.Println("POS Fluvio Integration Service (Go)")
 	log.Println("Bi-directional real-time event streaming")
-	log.Println("=" * 80)
+	log.Println("================================================================================")
 	
 	// Create consumer
 	consumer := NewFluvioConsumer()
@@ -373,7 +428,7 @@ func main() {
 	// Create producer
 	producer := NewFluvioProducer()
 	
-	// Simulate sending commands (bi-directional)
+	// Send initial commands (bi-directional)
 	go func() {
 		time.Sleep(10 * time.Second)
 		

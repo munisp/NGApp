@@ -161,18 +161,29 @@ async def upload_document(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    # In a real application, this would upload to S3 or another storage service
-    # For now, we'll just simulate saving the file path
-    # S3 Integration Placeholder: In a production environment, this would upload to S3.
-    # For this implementation, we'll simulate the S3 path.
-    s3_file_path = f"s3://{os.getenv('S3_BUCKET_NAME', 'your-s3-bucket')}/documents/{current_user.id}/{file.filename}"
-    logger.info(f"Simulating S3 upload to: {s3_file_path}")
-    # In a real scenario, you would use boto3 here to upload the file:
-    # import boto3
-    # s3_client = boto3.client('s3', aws_access_key_id=os.getenv('AWS_ACCESS_KEY_ID'),
-    #                          aws_secret_access_key=os.getenv('AWS_SECRET_ACCESS_KEY'),
-    #                          region_name=os.getenv('AWS_REGION'))
-    # s3_client.upload_fileobj(file.file, os.getenv('S3_BUCKET_NAME'), f"documents/{current_user.id}/{file.filename}")
+    import boto3
+    from botocore.exceptions import ClientError, NoCredentialsError
+    bucket_name = os.getenv('S3_BUCKET_NAME', 'agent-banking-documents')
+    s3_key = f"documents/{current_user.id}/{file.filename}"
+    s3_file_path = f"s3://{bucket_name}/{s3_key}"
+    try:
+        s3_client = boto3.client(
+            's3',
+            aws_access_key_id=os.getenv('AWS_ACCESS_KEY_ID'),
+            aws_secret_access_key=os.getenv('AWS_SECRET_ACCESS_KEY'),
+            region_name=os.getenv('AWS_REGION', 'eu-west-1'),
+            endpoint_url=os.getenv('S3_ENDPOINT_URL'),
+        )
+        s3_client.upload_fileobj(
+            file.file,
+            bucket_name,
+            s3_key,
+            ExtraArgs={'ContentType': file.content_type or 'application/octet-stream'}
+        )
+        logger.info(f"S3 upload complete: {s3_file_path}")
+    except (ClientError, NoCredentialsError) as e:
+        logger.error(f"S3 upload failed: {e}")
+        raise HTTPException(status_code=500, detail=f"File storage error: {e}")
     file_location = s3_file_path
 
     db_document = Document(
@@ -226,16 +237,22 @@ async def delete_document(document_id: int, current_user: User = Depends(get_cur
         if not permission:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to delete this document")
     
-    # S3 Integration Placeholder: In a production environment, this would delete from S3.
-    logger.info(f"Simulating S3 deletion for: {document.file_path}")
-    # In a real scenario, you would use boto3 here to delete the file:
-    # import boto3
-    # s3_client = boto3.client('s3', aws_access_key_id=os.getenv('AWS_ACCESS_KEY_ID'),
-    #                          aws_secret_access_key=os.getenv('AWS_SECRET_ACCESS_KEY'),
-    #                          region_name=os.getenv('AWS_REGION'))
-    # bucket_name = os.getenv('S3_BUCKET_NAME')
-    # s3_key = document.file_path.replace(f"s3://{bucket_name}/", "")
-    # s3_client.delete_object(Bucket=bucket_name, Key=s3_key)
+    import boto3
+    from botocore.exceptions import ClientError, NoCredentialsError
+    bucket_name = os.getenv('S3_BUCKET_NAME', 'agent-banking-documents')
+    try:
+        s3_client = boto3.client(
+            's3',
+            aws_access_key_id=os.getenv('AWS_ACCESS_KEY_ID'),
+            aws_secret_access_key=os.getenv('AWS_SECRET_ACCESS_KEY'),
+            region_name=os.getenv('AWS_REGION', 'eu-west-1'),
+            endpoint_url=os.getenv('S3_ENDPOINT_URL'),
+        )
+        s3_key = document.file_path.replace(f"s3://{bucket_name}/", "")
+        s3_client.delete_object(Bucket=bucket_name, Key=s3_key)
+        logger.info(f"S3 deletion complete: {document.file_path}")
+    except (ClientError, NoCredentialsError) as e:
+        logger.warning(f"S3 deletion failed (proceeding with DB delete): {e}")
 
     db.delete(document)
     db.commit()

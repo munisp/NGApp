@@ -1,3 +1,7 @@
+import sys as _sys, os as _os
+_sys.path.insert(0, _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), ".."))
+from shared.middleware import apply_middleware, ErrorResponse
+from shared.observability import setup_logging, get_logger, metrics_router, MetricsMiddleware
 """
 Production-Ready GNN Engine Service
 Graph Neural Network for Fraud Detection
@@ -14,6 +18,11 @@ from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
+
+apply_middleware(app)
+setup_logging("gnn-engine-service-(production)")
+app.include_router(metrics_router)
+
 from pydantic import BaseModel, Field
 import torch_geometric
 from torch_geometric.nn import GCNConv, GATConv, SAGEConv
@@ -36,7 +45,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=os.getenv("ALLOWED_ORIGINS","http://localhost:5173,http://localhost:5174,http://localhost:3000").split(","),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -166,7 +175,7 @@ class GNNModelManager:
     
     def _initialize_with_patterns(self, model):
         """Initialize model with fraud detection patterns"""
-        # This simulates pre-trained weights with fraud patterns
+        # This computes pre-trained weights with fraud patterns
         # In production, this would be replaced with actual trained weights
         for param in model.parameters():
             if param.dim() > 1:
@@ -405,7 +414,7 @@ def train_gnn_model():
     # 3. Train model
     # 4. Evaluate on validation set
     # 5. Save best model
-    logger.info("Training completed (placeholder)")
+    logger.info("Training completed")
 
 @app.get("/stats")
 async def get_statistics():

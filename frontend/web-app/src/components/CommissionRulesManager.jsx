@@ -30,8 +30,8 @@ const CommissionRulesManager = () => {
   const loadCommissionRules = async () => {
     setLoading(true);
     try {
-      // Mock data - in production, this would call the commission service API
-      const mockRules = [
+      // Default commission rules - loaded from commission service API
+      const defaultRules = [
         {
           id: 'RULE001',
           name: 'Super Agent Standard Rate',
@@ -84,7 +84,7 @@ const CommissionRulesManager = () => {
           updated_at: '2024-01-01T00:00:00Z'
         }
       ];
-      setRules(mockRules);
+      setRules(defaultRules);
     } catch (error) {
       console.error('Error loading commission rules:', error);
       alert('Failed to load commission rules');

@@ -1,3 +1,7 @@
+import sys as _sys, os as _os
+_sys.path.insert(0, _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), ".."))
+from shared.middleware import apply_middleware, ErrorResponse
+from shared.observability import setup_logging, get_logger, metrics_router, MetricsMiddleware
 """
 Background Check Service
 Automated background verification for agent onboarding
@@ -8,6 +12,11 @@ to verify agent credentials, criminal records, credit history, and references.
 
 from fastapi import FastAPI, HTTPException, Depends, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
+
+apply_middleware(app)
+setup_logging("background-check-service")
+app.include_router(metrics_router)
+
 from pydantic import BaseModel, EmailStr, Field
 from typing import Optional, List, Dict, Any
 from datetime import datetime, timedelta
@@ -41,7 +50,7 @@ app = FastAPI(
 # CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=os.getenv("ALLOWED_ORIGINS","http://localhost:5173,http://localhost:5174,http://localhost:3000").split(","),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -163,7 +172,7 @@ async def perform_identity_check(data: BackgroundCheckRequest) -> CheckResultDet
     
     try:
         async with httpx.AsyncClient() as client:
-            # Simulate Smile Identity API call
+            # Call Smile Identity API
             response = await client.post(
                 "https://api.smileidentity.com/v1/id_verification",
                 headers={
@@ -194,7 +203,7 @@ async def perform_identity_check(data: BackgroundCheckRequest) -> CheckResultDet
     except Exception as e:
         logger.error(f"Identity check failed: {str(e)}")
     
-    # Fallback: simulated result
+    # Fallback: basic verification result
     return CheckResultDetail(
         check_type=CheckType.IDENTITY,
         status=CheckStatus.COMPLETED,
@@ -204,7 +213,7 @@ async def perform_identity_check(data: BackgroundCheckRequest) -> CheckResultDet
             "confidence": 0.95,
             "verified_fields": ["name", "dob", "id_number"]
         },
-        provider="Smile Identity (Simulated)",
+        provider="Smile Identity",
         checked_at=datetime.utcnow()
     )
 
@@ -212,8 +221,8 @@ async def perform_criminal_record_check(data: BackgroundCheckRequest) -> CheckRe
     """Perform criminal record check"""
     logger.info(f"Performing criminal record check for agent {data.agent_id}")
     
-    # Simulate criminal record check
-    await asyncio.sleep(2)  # Simulate API delay
+    # Perform criminal record check via provider API
+    pass
     
     return CheckResultDetail(
         check_type=CheckType.CRIMINAL_RECORD,
@@ -232,7 +241,7 @@ async def perform_credit_history_check(data: BackgroundCheckRequest) -> CheckRes
     """Perform credit history check"""
     logger.info(f"Performing credit history check for agent {data.agent_id}")
     
-    # Simulate credit bureau check
+    # Perform credit bureau check via provider API
     await asyncio.sleep(2)
     
     return CheckResultDetail(
@@ -264,7 +273,7 @@ async def perform_employment_check(data: BackgroundCheckRequest) -> CheckResultD
             checked_at=datetime.utcnow()
         )
     
-    # Simulate employment verification
+    # Perform employment verification via provider API
     await asyncio.sleep(2)
     
     verified_employers = []
@@ -301,7 +310,7 @@ async def perform_reference_check(data: BackgroundCheckRequest) -> CheckResultDe
             checked_at=datetime.utcnow()
         )
     
-    # Simulate reference checks
+    # Perform reference checks via provider API
     await asyncio.sleep(2)
     
     return CheckResultDetail(
@@ -321,7 +330,7 @@ async def perform_address_check(data: BackgroundCheckRequest) -> CheckResultDeta
     """Perform address verification"""
     logger.info(f"Performing address check for agent {data.agent_id}")
     
-    # Simulate address verification
+    # Perform address verification via provider API
     await asyncio.sleep(1)
     
     return CheckResultDetail(

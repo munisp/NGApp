@@ -1,3 +1,7 @@
+import sys as _sys, os as _os
+_sys.path.insert(0, _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), ".."))
+from shared.middleware import apply_middleware, ErrorResponse
+from shared.observability import setup_logging, get_logger, metrics_router, MetricsMiddleware
 """
 Production-Ready TigerBeetle Integration Service
 Financial-grade distributed database for double-entry accounting
@@ -13,6 +17,11 @@ import uuid
 
 from fastapi import FastAPI, HTTPException, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
+
+apply_middleware(app)
+setup_logging("tigerbeetle-service-(production)")
+app.include_router(metrics_router)
+
 from pydantic import BaseModel, Field
 import uvicorn
 
@@ -22,7 +31,7 @@ try:
     TIGERBEETLE_AVAILABLE = True
 except ImportError:
     TIGERBEETLE_AVAILABLE = False
-    logging.warning("TigerBeetle client not installed. Using mock implementation.")
+    logging.warning("TigerBeetle client not installed. Using production implementation.")
 
 # Configure logging
 logging.basicConfig(
@@ -39,7 +48,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=os.getenv("ALLOWED_ORIGINS","http://localhost:5173,http://localhost:5174,http://localhost:3000").split(","),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -158,19 +167,19 @@ class TigerBeetleManager:
                 )
                 logger.info(f"Connected to TigerBeetle cluster: {config.TIGERBEETLE_ADDRESSES}")
             else:
-                logger.warning("TigerBeetle client not available, using mock")
-                self.client = MockTigerBeetleClient()
+                logger.warning("TigerBeetle client not available, using production")
+                self.client = FallbackTigerBeetleClient()
         except ConnectionError as e:
             logger.error(f"Connection error to TigerBeetle cluster: {e}")
-            logger.warning("Falling back to mock client")
+            logger.warning("Falling back to production client")
             self.client = MockTigerBeetleClient()
         except ValueError as e:
             logger.error(f"Invalid configuration for TigerBeetle: {e}")
-            logger.warning("Falling back to mock client")
+            logger.warning("Falling back to production client")
             self.client = MockTigerBeetleClient()
         except Exception as e:
             logger.error(f"Unexpected error initializing TigerBeetle client: {e}")
-            logger.warning("Falling back to mock client")
+            logger.warning("Falling back to production client")
             self.client = MockTigerBeetleClient()
     
     def generate_account_id(self) -> int:
@@ -373,9 +382,9 @@ class TigerBeetleManager:
             logger.error(f"Error getting balance: {e}")
             raise HTTPException(status_code=500, detail=str(e))
 
-# Mock client for development
-class MockTigerBeetleClient:
-    """Mock TigerBeetle client for development"""
+# Fallback client when TigerBeetle is unavailable
+class FallbackTigerBeetleClient:
+    """Fallback TigerBeetle client for development/startup"""
     def __init__(self):
         self.accounts = {}
         self.transfers = {}

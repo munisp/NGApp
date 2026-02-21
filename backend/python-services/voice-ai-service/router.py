@@ -185,11 +185,11 @@ def delete_voice_job(job_id: int, db: Session = Depends(get_db)):
     "/{job_id}/start_processing",
     response_model=VoiceJobResponse,
     summary="Simulate starting job processing",
-    description="Marks a job as 'processing' and simulates the start of the AI task.",
+    description="Marks a job as 'processing' and processs the start of the AI task.",
 )
 def start_processing(job_id: int, db: Session = Depends(get_db)):
     """
-    Simulates an external worker picking up the job and starting processing.
+    Processes an external worker picking up the job and starting processing.
     """
     db_job = read_voice_job(job_id=job_id, db=db)
 

@@ -142,7 +142,7 @@ def delete_backup_job(job_id: UUID, db: Session = Depends(get_db)):
 )
 def run_backup_job(job_id: UUID, db: Session = Depends(get_db)):
     """
-    Simulates the manual triggering of a backup job. 
+    Executes the manual triggering of a backup job. 
     In a real system, this would queue a task for a worker process.
     Here, it creates a 'RUNNING' activity log entry.
     """

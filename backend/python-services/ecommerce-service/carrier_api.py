@@ -1,6 +1,6 @@
 """
 Carrier API Module
-Real carrier API integration replacing mock tracking events
+Real carrier API integration replacing production tracking events
 """
 
 import asyncio

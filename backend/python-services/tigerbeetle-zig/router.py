@@ -1,7 +1,9 @@
 import logging
+import os
 from typing import List
 from uuid import UUID
 
+import httpx
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
@@ -10,9 +12,22 @@ from sqlalchemy import select, func
 from . import models
 from .config import get_db
 
-# Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+SYNC_MANAGER_URL = os.getenv("SYNC_MANAGER_URL", "http://localhost:8085")
+
+
+async def _publish_sync_event(event_type: str, operation: str, data: dict):
+    try:
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            if event_type == "account":
+                await client.post(f"{SYNC_MANAGER_URL}/api/v1/sync/accounts", json=data)
+            elif event_type == "transfer":
+                await client.post(f"{SYNC_MANAGER_URL}/api/v1/sync/transfers", json=data)
+            logger.info(f"Sync event published: {event_type}/{operation}")
+    except Exception as e:
+        logger.warning(f"Failed to publish sync event: {e}")
 
 router = APIRouter(
     prefix="/tigerbeetle-zig",
@@ -221,7 +236,7 @@ class TransferRequest(models.BaseModel):
     "/transfers",
     status_code=status.HTTP_200_OK,
     summary="Perform a double-entry fund transfer",
-    description="Simulates a double-entry transfer between two accounts. This is the core business logic."
+    description="Processes a double-entry transfer between two accounts. This is the core business logic."
 )
 def transfer_funds(
     transfer_in: TransferRequest,
@@ -286,6 +301,29 @@ def transfer_funds(
     try:
         db.commit()
         logger.info(f"Successful transfer of {amount} from {debit_account.account_id} to {credit_account.account_id}")
+
+        import asyncio
+        try:
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                loop.create_task(_publish_sync_event("transfer", "create", {
+                    "debit_account_id": str(transfer_in.debit_account_id),
+                    "credit_account_id": str(transfer_in.credit_account_id),
+                    "amount": amount,
+                    "currency": debit_account.currency_code,
+                    "description": transfer_in.description,
+                }))
+            else:
+                loop.run_until_complete(_publish_sync_event("transfer", "create", {
+                    "debit_account_id": str(transfer_in.debit_account_id),
+                    "credit_account_id": str(transfer_in.credit_account_id),
+                    "amount": amount,
+                    "currency": debit_account.currency_code,
+                    "description": transfer_in.description,
+                }))
+        except Exception as sync_err:
+            logger.warning(f"Sync event publish failed (non-blocking): {sync_err}")
+
         return {"message": "Transfer successful", "transaction_amount": amount}
     except IntegrityError as e:
         db.rollback()

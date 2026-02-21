@@ -15,7 +15,7 @@ async def health_check():
 async def initialize_float(
     agent_id: str,
     initial_balance: Decimal,
-    min_threshold: Decimal = Decimal("10000"):
+    min_threshold: Decimal = Decimal("10000")):
     return {"status": "ok"}
 
 @router.get("/float/{agent_id}")

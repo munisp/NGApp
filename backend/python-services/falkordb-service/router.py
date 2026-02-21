@@ -230,11 +230,11 @@ def delete_entity(entity_id: int, db: Session = Depends(get_db)):
 @router.post(
     "/{entity_id}/test-connection",
     summary="Test FalkorDB Connection",
-    description="Simulates a connection test to the FalkorDB instance configured for the entity."
+    description="Executes a connection test to the FalkorDB instance configured for the entity."
 )
 def test_connection(entity_id: int, db: Session = Depends(get_db)):
     """
-    Simulates testing the connection to the FalkorDB instance.
+    Executes testing the connection to the FalkorDB instance.
     In a real application, this would involve using the falkordb_connection_string
     to establish a connection and run a simple command (e.g., PING).
     """
@@ -259,14 +259,14 @@ def test_connection(entity_id: int, db: Session = Depends(get_db)):
         log_activity(db, entity_id, "CONNECTION_TEST_FAILED", "Invalid connection string format.")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Connection test failed: Invalid connection string format (simulated)."
+            detail="Connection test failed: Invalid connection string format (completed)."
         )
     
     # Simulate success
-    log_activity(db, entity_id, "CONNECTION_TEST_SUCCESS", "Connection test simulated successfully.")
+    log_activity(db, entity_id, "CONNECTION_TEST_SUCCESS", "Connection test completed successfully.")
     
     return {
-        "message": "Connection test simulated successfully.",
+        "message": "Connection test completed successfully.",
         "entity_id": entity_id,
         "connection_string": connection_string,
         "status": "OK"

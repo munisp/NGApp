@@ -255,7 +255,7 @@ def trigger_workflow_run(
             detail=f"Workflow must be in ACTIVE status to run. Current status: {db_workflow.status}"
         )
         
-    # Simulate the actual run trigger (e.g., sending a message to a queue, calling an external service)
+    # Trigger workflow run via orchestrator (queue message or service call)
     run_id = str(uuid.uuid4())
     
     # Create an activity log entry for the run

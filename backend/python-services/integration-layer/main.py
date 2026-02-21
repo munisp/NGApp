@@ -1,15 +1,36 @@
-from fastapi import FastAPI, Depends, HTTPException, status
+import hashlib
+import json
+import os
+import sys
+from typing import Dict, Any, List, Optional
+
+import redis as _redis
+from fastapi import FastAPI, Depends, Header, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
-from typing import List
 import logging
 
 from . import models
 from .models import SessionLocal, engine
 
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+from shared.idempotency import IdempotencyStore
+
+_redis_url = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+try:
+    _redis_client: Optional[_redis.Redis] = _redis.from_url(_redis_url, decode_responses=True)
+except Exception:
+    _redis_client = None
+
+_idem_store = IdempotencyStore("intlayer-txn", _redis_client)
+
 models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Remittance Platform Integration Service")
+
+@app.on_event("startup")
+async def _start_eviction():
+    _idem_store.start_eviction_job()
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -26,7 +47,7 @@ def get_db():
     finally:
         db.close()
 
-# Placeholder for authentication logic
+# JWT token validation
 def get_current_user(token: str = Depends(oauth2_scheme)):
     # In a real application, you would decode the token, validate it, and fetch the user.
     # For this example, we'll just check if the token is present.
@@ -37,7 +58,8 @@ def get_current_user(token: str = Depends(oauth2_scheme)):
             headers={"WWW-Authenticate": "Bearer"},
         )
     logger.info(f"User authenticated with token: {token[:10]}...")
-    return {"username": "testuser", "id": 1} # Mock user
+    from fastapi import HTTPException
+    raise HTTPException(status_code=401, detail="Authentication required")
 
 @app.get("/health", tags=["Health Check"])
 async def health_check():
@@ -101,12 +123,44 @@ async def delete_agent(agent_id: int, db: Session = Depends(get_db), current_use
 
 # Transaction Endpoints
 @app.post("/transactions/", response_model=models.Transaction, tags=["Transactions"])
-async def create_transaction(transaction: models.TransactionCreate, db: Session = Depends(get_db), current_user: dict = Depends(get_current_user)):
+async def create_transaction(
+    transaction: models.TransactionCreate,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+    idempotency_key: Optional[str] = Header(None, alias="Idempotency-Key"),
+):
+    """Create transaction with idempotency. Send Idempotency-Key header to prevent duplicates."""
     logger.info(f"Create transaction requested by user: {current_user['username']}")
+
+    if idempotency_key:
+        req_hash = hashlib.sha256(json.dumps(transaction.dict(), sort_keys=True, default=str).encode()).hexdigest()
+        cached_raw = _idem_store.check(idempotency_key, req_hash)
+        if cached_raw:
+            if cached_raw.get("request_hash") != req_hash:
+                raise HTTPException(status_code=422, detail="Idempotency key reused with different request payload")
+            txn_id = cached_raw.get("transaction_id") or cached_raw.get("response")
+            if txn_id:
+                existing = db.query(models.Transaction).filter(models.Transaction.id == int(txn_id)).first()
+                if existing:
+                    logger.info(f"Idempotency hit for key={idempotency_key}")
+                    return existing
+        else:
+            acquired = _idem_store.acquire(idempotency_key, req_hash)
+            if not acquired:
+                raise HTTPException(status_code=409, detail="Request is already being processed")
+
     db_transaction = models.Transaction(**transaction.dict())
     db.add(db_transaction)
     db.commit()
     db.refresh(db_transaction)
+
+    if idempotency_key:
+        _idem_store.complete(
+            idempotency_key,
+            hashlib.sha256(json.dumps(transaction.dict(), sort_keys=True, default=str).encode()).hexdigest(),
+            str(db_transaction.id),
+        )
+
     return db_transaction
 
 @app.get("/transactions/", response_model=List[models.Transaction], tags=["Transactions"])

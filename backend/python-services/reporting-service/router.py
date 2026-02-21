@@ -19,7 +19,7 @@ async def get_report(report_id: str):
 async def list_reports(
     report_type: Optional[ReportType] = None,
     start_date: Optional[str] = None,
-    limit: int = Query(10, le=100):
+    limit: int = Query(10, le=100)):
     return {"status": "ok"}
 
 @router.delete("/reports/{report_id}")

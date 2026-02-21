@@ -118,7 +118,7 @@ class RealTimeDataFlow:
         self.processing_metrics[record.record_id] = metrics
         self.source_stats[record.source]["ingested"] += 1
         
-        # Simulate ingestion delay
+        # Process ingestion delay
         await asyncio.sleep(0.01)
         
         # Process through bronze layer
@@ -149,7 +149,7 @@ class RealTimeDataFlow:
                 "metadata": record.metadata
             }
             
-            # Simulate bronze storage
+            # Process bronze storage
             await asyncio.sleep(0.02)
             
             self.layer_stats[MedallionLayer.BRONZE]["records"] += 1
@@ -193,7 +193,7 @@ class RealTimeDataFlow:
                 "quality_score": await self._calculate_quality_score(enriched_data)
             }
             
-            # Simulate silver storage
+            # Process silver storage
             await asyncio.sleep(0.03)
             
             self.layer_stats[MedallionLayer.SILVER]["records"] += 1
@@ -236,7 +236,7 @@ class RealTimeDataFlow:
                 "gold_timestamp": datetime.utcnow().isoformat()
             }
             
-            # Simulate gold storage
+            # Process gold storage
             await asyncio.sleep(0.04)
             
             self.layer_stats[MedallionLayer.GOLD]["records"] += 1
@@ -281,7 +281,7 @@ class RealTimeDataFlow:
                 "platinum_timestamp": datetime.utcnow().isoformat()
             }
             
-            # Simulate platinum storage
+            # Process platinum storage
             await asyncio.sleep(0.02)
             
             self.layer_stats[MedallionLayer.PLATINUM]["records"] += 1
@@ -423,12 +423,12 @@ class RealTimeDataFlow:
         return features
     
     async def _generate_predictions(self, features: Dict, source: DataSource) -> Dict:
-        """Generate predictions (simulated)"""
+        """Generate predictions (processd)"""
         predictions = {
             "predicted_at": datetime.utcnow().isoformat()
         }
         
-        # Simulate predictions
+        # Process predictions
         if source == DataSource.ECOMMERCE:
             predictions["predicted_next_order_value"] = features.get("revenue", 0) * 1.05
             predictions["churn_probability"] = 0.15
@@ -440,10 +440,10 @@ class RealTimeDataFlow:
         return predictions
     
     async def _detect_anomalies(self, features: Dict, source: DataSource) -> List[Dict]:
-        """Detect anomalies (simulated)"""
+        """Detect anomalies (processd)"""
         anomalies = []
         
-        # Simulate anomaly detection
+        # Process anomaly detection
         if source == DataSource.ECOMMERCE:
             revenue = features.get("revenue", 0)
             if revenue > 10000:

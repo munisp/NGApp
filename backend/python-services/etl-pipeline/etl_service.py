@@ -308,7 +308,7 @@ class ETLManager:
     
     async def _extract(self, config: PipelineConfig) -> List[Dict[str, Any]]:
         """Extract data from source"""
-        # Simulate data extraction
+        # Extract data from source
         # In production, this would call actual source APIs
         
         sample_data = {

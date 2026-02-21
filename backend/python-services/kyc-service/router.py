@@ -343,7 +343,7 @@ def update_document_status(
 
         # Only update if the current status is PENDING or IN_REVIEW (to avoid overriding manual rejection/approval)
         if application.current_status in [KYCStatus.PENDING, KYCStatus.IN_REVIEW]:
-            # Use a placeholder ID for automated process (e.g., 0)
+            # Use system ID for automated process
             _update_application_status(
                 db=db,
                 application=application,

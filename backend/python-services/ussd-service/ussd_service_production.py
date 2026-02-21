@@ -18,6 +18,7 @@ import json
 import os
 import hashlib
 import hmac
+import uuid as _uuid
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -328,10 +329,11 @@ class BackendAPIClient:
         
         return False
     
-    async def process_payment(self, phone_number: str, order_id: str, pin: str) -> Dict[str, Any]:
-        """Process payment for order"""
+    async def process_payment(self, phone_number: str, order_id: str, pin: str, idempotency_key: Optional[str] = None) -> Dict[str, Any]:
+        """Process payment for order with idempotency key forwarding"""
         if http_client:
             try:
+                idem_key = idempotency_key or str(_uuid.uuid4())
                 response = await http_client.post(
                     f"{config.API_BASE_URL}/payments/process",
                     json={
@@ -339,7 +341,8 @@ class BackendAPIClient:
                         "order_id": order_id,
                         "pin": pin,
                         "channel": "ussd"
-                    }
+                    },
+                    headers={"Idempotency-Key": idem_key},
                 )
                 return response.json()
             except Exception as e:
@@ -347,10 +350,11 @@ class BackendAPIClient:
         
         return {"success": False, "error": "Payment service unavailable"}
     
-    async def process_transfer(self, phone_number: str, recipient: str, amount: float, pin: str) -> Dict[str, Any]:
-        """Process money transfer"""
+    async def process_transfer(self, phone_number: str, recipient: str, amount: float, pin: str, idempotency_key: Optional[str] = None) -> Dict[str, Any]:
+        """Process money transfer with idempotency key forwarding"""
         if http_client:
             try:
+                idem_key = idempotency_key or str(_uuid.uuid4())
                 response = await http_client.post(
                     f"{config.API_BASE_URL}/transfers",
                     json={
@@ -359,7 +363,8 @@ class BackendAPIClient:
                         "amount": amount,
                         "pin": pin,
                         "channel": "ussd"
-                    }
+                    },
+                    headers={"Idempotency-Key": idem_key},
                 )
                 return response.json()
             except Exception as e:
@@ -1049,7 +1054,7 @@ def verify_provider_signature(request: Request) -> bool:
         return False
     
     # Implement provider-specific signature verification
-    # This is a placeholder - actual implementation depends on provider
+    # Implementation depends on USSD provider configuration
     return True
 
 

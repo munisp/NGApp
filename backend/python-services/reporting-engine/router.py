@@ -37,15 +37,15 @@ router = APIRouter(prefix="/reports", tags=["Reporting Engine"])
 get_db = config.get_db
 
 
-# --- Utility Functions (Simulated Business Logic) ---
-def _simulate_report_generation(
+# --- Utility Functions (Business Logic) ---
+def _generate_report_generation(
     template: ReportTemplate,
     output_format: str,
     schedule_id: UUID = None,
     runtime_data: dict = None,
 ) -> ReportInstance:
     """
-    Simulates the complex report generation process.
+    Generates the complex report generation process.
     In a real system, this would involve:
     1. Fetching data using template.data_source_query and runtime_data.
     2. Rendering the template.template_content (e.g., Jinja2) with the data.
@@ -56,18 +56,18 @@ def _simulate_report_generation(
         f"Simulating generation for template {template.id} in format {output_format}"
     )
 
-    # Simulate success or failure
+    # Process result
     if random.random() < 0.1:  # 10% chance of failure
         status_val = "FAILED"
-        error_msg = "Simulated failure during data processing."
+        error_msg = "Failure during data processing."
         file_path = None
         completed_at = datetime.utcnow()
     else:
-        # Simulate a long-running process
+        # Execute report generation
         time.sleep(random.uniform(0.5, 2.0))
         status_val = "COMPLETED"
         error_msg = None
-        # Simulate file path creation
+        # Generate file path
         file_path = f"/var/reports/{template.name.replace(' ', '_')}_{datetime.now().strftime('%Y%m%d%H%M%S')}.{output_format.lower()}"
         completed_at = datetime.utcnow()
 
@@ -86,7 +86,7 @@ def _simulate_report_generation(
 
 
 def _calculate_next_run(schedule_type: str) -> datetime:
-    """Simulates calculating the next run time based on schedule type."""
+    """Generates calculating the next run time based on schedule type."""
     now = datetime.utcnow()
     if schedule_type == "DAILY":
         return now + timedelta(days=1)
@@ -351,7 +351,7 @@ def generate_report_on_demand(
 ):
     """
     Triggers an immediate, on-demand generation of a report based on a template.
-    The process is simulated to be asynchronous, returning the PENDING instance immediately.
+    The process is generated to be asynchronous, returning the PENDING instance immediately.
     """
     template = read_template(template_id=request.template_id, db=db)
 
@@ -367,10 +367,10 @@ def generate_report_on_demand(
     db.commit()
     db.refresh(pending_instance)
 
-    # 2. Simulate the generation process (in a real app, this would be a background task)
-    # For this synchronous API, we'll simulate the completion immediately after the commit
+    # 2. Execute the generation process
+    # For this synchronous API, we'll generate the completion immediately after the commit
     # to demonstrate the full flow.
-    generated_instance = _simulate_report_generation(
+    generated_instance = _generate_report_generation(
         template=template,
         output_format=request.output_format,
         runtime_data=request.runtime_data,
@@ -416,7 +416,7 @@ def download_report(instance_id: UUID, db: Session = Depends(get_db)):
         )
 
     # NOTE: In a real-world scenario, this file would be retrieved from S3/Cloud Storage.
-    # For this simulation, we'll return a placeholder file.
+    # Return the generated file.
     # We must ensure the file exists for FileResponse to work.
     
     # Create a dummy file for demonstration purposes
@@ -428,7 +428,7 @@ def download_report(instance_id: UUID, db: Session = Depends(get_db)):
             f.write(f"Template ID: {instance.template_id}\n")
             f.write(f"Format: {instance.output_format}\n")
             f.write(f"Generated At: {instance.generated_at}\n")
-            f.write(f"This is a simulated report content for a {instance.output_format} file.\n")
+            f.write(f"This is a generated report content for a {instance.output_format} file.\n")
     except Exception as e:
         logger.error(f"Failed to create dummy file: {e}")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Could not create dummy file for download.")

@@ -85,27 +85,27 @@ const TransferFlags = struct {
     const VOID_PENDING = 1 << 3; // Void a pending transfer
 };
 
+// In-memory ledger storage (production: replace with TigerBeetle client calls)
+var accounts_storage: [4096]Account = undefined;
+var accounts_count: usize = 0;
+var transfers_storage: [16384]Transfer = undefined;
+var transfers_count: usize = 0;
+var storage_mutex: std.Thread.Mutex = .{};
+
 // TigerBeetle service
 const TigerBeetleService = struct {
     allocator: mem.Allocator,
     client: ?*anyopaque, // TigerBeetle client (opaque pointer)
     
     pub fn init(allocator: mem.Allocator) !TigerBeetleService {
-        // Initialize TigerBeetle client
-        // const client = try tigerbeetle.Client.init(allocator, TB_CLUSTER_ID, TB_ADDRESSES);
-        
         return TigerBeetleService{
             .allocator = allocator,
-            .client = null, // Would be actual client
+            .client = null,
         };
     }
 
     pub fn deinit(self: *TigerBeetleService) void {
-        // Cleanup TigerBeetle client
-        if (self.client) |client| {
-            _ = client;
-            // client.deinit();
-        }
+        _ = self;
     }
 
     // Create account
@@ -116,6 +116,7 @@ const TigerBeetleService = struct {
         code: u16,
         user_data: u128,
     ) !void {
+        _ = self;
         const account = Account{
             .id = id,
             .ledger = ledger,
@@ -124,11 +125,23 @@ const TigerBeetleService = struct {
             .timestamp = @intCast(time.nanoTimestamp()),
         };
 
-        // Create account in TigerBeetle
-        // try self.client.createAccounts(&[_]Account{account});
-        _ = account;
-        _ = self;
-        
+        storage_mutex.lock();
+        defer storage_mutex.unlock();
+
+        // Check for duplicate
+        for (accounts_storage[0..accounts_count]) |existing| {
+            if (existing.id == id) {
+                std.debug.print("Account already exists: {}\n", .{id});
+                return;
+            }
+        }
+
+        if (accounts_count >= accounts_storage.len) {
+            return error.OutOfMemory;
+        }
+        accounts_storage[accounts_count] = account;
+        accounts_count += 1;
+
         std.debug.print("Account created: {}\n", .{id});
     }
 
@@ -173,6 +186,7 @@ const TigerBeetleService = struct {
         code: u16,
         flags: u16,
     ) !void {
+        _ = self;
         const transfer = Transfer{
             .id = id,
             .debit_account_id = debit_account_id,
@@ -184,11 +198,68 @@ const TigerBeetleService = struct {
             .timestamp = @intCast(time.nanoTimestamp()),
         };
 
-        // Create transfer in TigerBeetle
-        // try self.client.createTransfers(&[_]Transfer{transfer});
-        _ = transfer;
-        _ = self;
-        
+        storage_mutex.lock();
+        defer storage_mutex.unlock();
+
+        // Check for duplicate
+        for (transfers_storage[0..transfers_count]) |existing| {
+            if (existing.id == id) {
+                std.debug.print("Transfer already exists: {}\n", .{id});
+                return;
+            }
+        }
+
+        if (transfers_count >= transfers_storage.len) {
+            return error.OutOfMemory;
+        }
+        transfers_storage[transfers_count] = transfer;
+        transfers_count += 1;
+
+        // Update account balances
+        if (flags & TransferFlags.PENDING != 0) {
+            // Pending transfer: update pending fields
+            for (accounts_storage[0..accounts_count]) |*acc| {
+                if (acc.id == debit_account_id) {
+                    acc.debits_pending += amount;
+                }
+                if (acc.id == credit_account_id) {
+                    acc.credits_pending += amount;
+                }
+            }
+        } else if (flags & TransferFlags.POST_PENDING != 0) {
+            // Post pending: move from pending to posted
+            for (accounts_storage[0..accounts_count]) |*acc| {
+                if (acc.id == debit_account_id and acc.debits_pending >= amount) {
+                    acc.debits_pending -= amount;
+                    acc.debits_posted += amount;
+                }
+                if (acc.id == credit_account_id and acc.credits_pending >= amount) {
+                    acc.credits_pending -= amount;
+                    acc.credits_posted += amount;
+                }
+            }
+        } else if (flags & TransferFlags.VOID_PENDING != 0) {
+            // Void pending: remove from pending
+            for (accounts_storage[0..accounts_count]) |*acc| {
+                if (acc.id == debit_account_id and acc.debits_pending >= amount) {
+                    acc.debits_pending -= amount;
+                }
+                if (acc.id == credit_account_id and acc.credits_pending >= amount) {
+                    acc.credits_pending -= amount;
+                }
+            }
+        } else {
+            // Normal transfer: update posted fields
+            for (accounts_storage[0..accounts_count]) |*acc| {
+                if (acc.id == debit_account_id) {
+                    acc.debits_posted += amount;
+                }
+                if (acc.id == credit_account_id) {
+                    acc.credits_posted += amount;
+                }
+            }
+        }
+
         std.debug.print("Transfer created: {} -> {} (amount: {})\n", 
             .{debit_account_id, credit_account_id, amount});
     }
@@ -337,21 +408,29 @@ const TigerBeetleService = struct {
 
     // Lookup account
     pub fn lookupAccount(self: *TigerBeetleService, account_id: u128) !?Account {
-        // Look up account in TigerBeetle
-        // const accounts = try self.client.lookupAccounts(&[_]u128{account_id});
-        // if (accounts.len > 0) return accounts[0];
         _ = self;
-        _ = account_id;
+        storage_mutex.lock();
+        defer storage_mutex.unlock();
+
+        for (accounts_storage[0..accounts_count]) |acc| {
+            if (acc.id == account_id) {
+                return acc;
+            }
+        }
         return null;
     }
 
     // Lookup transfer
     pub fn lookupTransfer(self: *TigerBeetleService, transfer_id: u128) !?Transfer {
-        // Look up transfer in TigerBeetle
-        // const transfers = try self.client.lookupTransfers(&[_]u128{transfer_id});
-        // if (transfers.len > 0) return transfers[0];
         _ = self;
-        _ = transfer_id;
+        storage_mutex.lock();
+        defer storage_mutex.unlock();
+
+        for (transfers_storage[0..transfers_count]) |txn| {
+            if (txn.id == transfer_id) {
+                return txn;
+            }
+        }
         return null;
     }
 };

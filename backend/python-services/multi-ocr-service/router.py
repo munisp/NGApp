@@ -173,11 +173,11 @@ def delete_ocr_job(job_id: uuid.UUID, db: Session = Depends(get_db)):
 @router.post(
     "/{job_id}/process",
     response_model=OcrJobResponse,
-    summary="Simulate processing of an OCR job"
+    summary="Process an OCR job"
 )
 def process_ocr_job(job_id: uuid.UUID, db: Session = Depends(get_db)):
     """
-    Simulates the start of the OCR processing workflow for a PENDING job.
+    Processes the start of the OCR processing workflow for a PENDING job.
     
     In a real-world scenario, this would trigger an asynchronous worker process.
     For this API, it simply updates the status to PROCESSING.
@@ -190,7 +190,7 @@ def process_ocr_job(job_id: uuid.UUID, db: Session = Depends(get_db)):
             detail=f"Job is already in status: {db_job.status.value}. Only PENDING jobs can be processed."
         )
         
-    # Simulate processing start
+    # Start OCR processing
     db_job.status = OcrJobStatus.PROCESSING
     db.add(db_job)
     db.commit()

@@ -64,7 +64,7 @@ def get_audit_logs_query(db: Session, search_criteria: AuditLogSearch):
 
 def perform_export_job(search_criteria: AuditLogSearch, export_format: str, recipient_email: str) -> str:
     """
-    Simulates an asynchronous export job.
+    Executes an asynchronous export job.
     In a real system, this would queue a background task (e.g., Celery, Redis Queue).
     The task would fetch the data using `get_audit_logs_query`, format it, save it to 
     `settings.EXPORT_STORAGE_PATH`, and email the recipient.
@@ -78,7 +78,7 @@ def perform_export_job(search_criteria: AuditLogSearch, export_format: str, reci
 
 def generate_compliance_report(report_data: ComplianceReport) -> str:
     """
-    Simulates an asynchronous compliance report generation job.
+    Executes an asynchronous compliance report generation job.
     In a real system, this would queue a background task.
     
     Returns a unique report ID.
@@ -188,7 +188,7 @@ def export_logs(export_request: models.AuditLogExport, db: Session = Depends(get
     if log_count == 0:
         raise HTTPException(status_code=404, detail="No logs found matching the export criteria.")
         
-    # Simulate queuing the export job
+    # Queue the export job
     export_id = perform_export_job(
         export_request.search_criteria,
         export_request.export_format,
@@ -214,7 +214,7 @@ def compliance_report(report_request: ComplianceReport):
     if report_request.start_time >= report_request.end_time:
         raise HTTPException(status_code=400, detail="start_time must be before end_time.")
         
-    # Simulate queuing the report generation job
+    # Queue the report generation job
     report_id = generate_compliance_report(report_request)
     
     return ComplianceReportResponse(

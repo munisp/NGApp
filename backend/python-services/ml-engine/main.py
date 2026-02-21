@@ -10,7 +10,7 @@ from . import models, schemas, database, security, metrics
 from .config import settings
 
 # Configure logging
-logging.basicConfig(level=settings.log_level, format=\'%(asctime)s - %(name)s - %(levelname)s - %(message)s\')
+logging.basicConfig(level=settings.log_level, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
 app = FastAPI(title="ML Engine Service", description="Machine Learning Engine for Remittance Platform")
@@ -112,12 +112,12 @@ def delete_ml_model(model_id: int, db: Session = Depends(get_db), api_key: str =
 def create_prediction(prediction: schemas.PredictionCreate, db: Session = Depends(get_db), api_key: str = Security(security.get_api_key)):
     logger.info(f"Creating prediction for model ID: {prediction.model_id}")
     # In a real scenario, this would trigger an actual ML prediction
-    # For now, we\'ll just store the request and a dummy result
+    # For now, we'll just store the request and a dummy result
     try:
         db_prediction = models.Prediction(
             model_id=prediction.model_id,
             request_data=prediction.request_data,
-            prediction_result={"dummy_result": "predicted_value"} # Placeholder
+            prediction_result={"result": "pending_inference"}
         )
         db.add(db_prediction)
         db.commit()

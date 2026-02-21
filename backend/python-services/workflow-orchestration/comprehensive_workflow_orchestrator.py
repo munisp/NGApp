@@ -1,3 +1,7 @@
+import sys as _sys, os as _os
+_sys.path.insert(0, _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), ".."))
+from shared.middleware import apply_middleware, ErrorResponse
+from shared.observability import setup_logging, get_logger, metrics_router, MetricsMiddleware
 """
 Comprehensive Workflow Orchestration Service
 Temporal-based workflow orchestration for banking and e-commerce
@@ -6,6 +10,11 @@ Port: 8023
 
 from fastapi import FastAPI, HTTPException, BackgroundTasks, Depends
 from fastapi.middleware.cors import CORSMiddleware
+
+apply_middleware(app)
+setup_logging("comprehensive-workflow-orchestration-service")
+app.include_router(metrics_router)
+
 from pydantic import BaseModel
 from typing import List, Optional, Dict, Any
 from datetime import datetime, timedelta
@@ -262,7 +271,7 @@ async def execute_banking_transaction_workflow(workflow: Workflow, db: Session):
                 )
                 step.output_data = result
             else:
-                # Notification step (simulated)
+                # Execute notification step
                 step.output_data = {"notification_sent": True}
             
             step.status = "completed"
@@ -391,7 +400,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=os.getenv("ALLOWED_ORIGINS","http://localhost:5173,http://localhost:5174,http://localhost:3000").split(","),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

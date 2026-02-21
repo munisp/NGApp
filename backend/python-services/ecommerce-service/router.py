@@ -31,7 +31,7 @@ def log_activity(
     entity_id: int,
     details: Optional[str] = None,
     product_id: Optional[int] = None,
-    user_id: Optional[str] = "system", # Placeholder for user authentication
+    user_id: Optional[str] = "system",
 ):
     """
     Creates an entry in the activity log table.

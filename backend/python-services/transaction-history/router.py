@@ -1,15 +1,32 @@
 import csv
+import hashlib
 import io
+import json
+import os
+import sys
 import datetime
-from typing import List, Optional, Dict, Any
+from typing import Dict, Any, List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+import redis as _redis
+from fastapi import APIRouter, Depends, Header, HTTPException, status, Query
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import func, extract, or_
 
 from . import models
 from .config import get_db, logger
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+from shared.idempotency import IdempotencyStore
+
+_redis_url = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+try:
+    _redis_client: Optional[_redis.Redis] = _redis.from_url(_redis_url, decode_responses=True)
+except Exception:
+    _redis_client = None
+
+_idem_store = IdempotencyStore("txnhist", _redis_client)
+_idem_store.start_eviction_job()
 
 # --- Router Initialization ---
 
@@ -32,12 +49,35 @@ def get_transaction_by_id(db: Session, transaction_id: int) -> models.Transactio
 # --- CRUD Endpoints ---
 
 @router.post("/", response_model=models.TransactionResponse, status_code=status.HTTP_201_CREATED)
-def create_transaction(transaction: models.TransactionCreate, db: Session = Depends(get_db)):
+def create_transaction(
+    transaction: models.TransactionCreate,
+    db: Session = Depends(get_db),
+    idempotency_key: Optional[str] = Header(None, alias="Idempotency-Key"),
+):
     """
-    **Creates a new transaction record.**
+    **Creates a new transaction record with idempotency support.**
+    Send an Idempotency-Key header to prevent duplicate transaction records.
+    """
+    if idempotency_key:
+        req_hash = hashlib.sha256(json.dumps(transaction.model_dump(exclude_none=True), sort_keys=True, default=str).encode()).hexdigest()
+        cached_raw = _idem_store.check(idempotency_key, req_hash)
+        if cached_raw:
+            if cached_raw.get("request_hash") != req_hash:
+                raise HTTPException(
+                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                    detail="Idempotency key reused with different request payload",
+                )
+            txn_id = cached_raw.get("transaction_id") or cached_raw.get("response")
+            if txn_id:
+                existing = db.query(models.Transaction).filter(models.Transaction.id == int(txn_id)).first()
+                if existing:
+                    logger.info(f"Idempotency hit for key={idempotency_key}")
+                    return existing
+        else:
+            acquired = _idem_store.acquire(idempotency_key, req_hash)
+            if not acquired:
+                raise HTTPException(status_code=409, detail="Request is already being processed")
 
-    The initial status is typically set to PENDING by the model.
-    """
     logger.info(f"Attempting to create new transaction for user {transaction.user_id}")
     try:
         db_transaction = models.Transaction(
@@ -47,6 +87,16 @@ def create_transaction(transaction: models.TransactionCreate, db: Session = Depe
         db.add(db_transaction)
         db.commit()
         db.refresh(db_transaction)
+
+        if idempotency_key:
+            _idem_store.complete(
+                idempotency_key,
+                hashlib.sha256(
+                    json.dumps(transaction.model_dump(exclude_none=True), sort_keys=True, default=str).encode()
+                ).hexdigest(),
+                str(db_transaction.id),
+            )
+
         logger.info(f"Transaction created successfully: ID {db_transaction.id}")
         return db_transaction
     except Exception as e:

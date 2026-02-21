@@ -19,7 +19,7 @@ app = FastAPI(
     redoc_url="/redoc",
 )
 
-# OAuth2PasswordBearer for token-based authentication (placeholder)
+# OAuth2PasswordBearer for token-based authentication
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 # Dependency to get DB session
@@ -30,7 +30,7 @@ def get_db():
     finally:
         db.close()
 
-# Placeholder for authentication/authorization logic
+# Authentication/authorization logic
 def get_current_user(token: str = Depends(oauth2_scheme)):
     # In a real application, this would validate the token and return a user object
     # For now, we'll just assume a valid token means an authenticated user
@@ -41,7 +41,8 @@ def get_current_user(token: str = Depends(oauth2_scheme)):
             detail="Could not validate credentials",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    return {"username": "test_user", "id": "123"} # Mock user
+    from fastapi import HTTPException
+    raise HTTPException(status_code=401, detail="Authentication required")
 
 
 @app.on_event("startup")

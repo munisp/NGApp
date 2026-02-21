@@ -24,7 +24,7 @@ async def list_transactions(
     agent_id: Optional[str] = None,
     status: Optional[str] = None,
     provider: Optional[str] = None,
-    limit: int = Query(default=50, le=200):
+    limit: int = Query(default=50, le=200)):
     return {"status": "ok"}
 
 @router.get("/health")

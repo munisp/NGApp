@@ -1,3 +1,7 @@
+import sys as _sys, os as _os
+_sys.path.insert(0, _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), ".."))
+from shared.middleware import apply_middleware, ErrorResponse
+from shared.observability import setup_logging, get_logger, metrics_router, MetricsMiddleware
 """
 Reporting Engine for Remittance Platform
 Generates comprehensive reports with charts, analytics, and export capabilities
@@ -19,6 +23,11 @@ import pandas as pd
 import numpy as np
 from fastapi import FastAPI, HTTPException, Query, BackgroundTasks, Response
 from fastapi.middleware.cors import CORSMiddleware
+
+apply_middleware(app)
+setup_logging("transaction-types-distribution")
+app.include_router(metrics_router)
+
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 import httpx
@@ -503,7 +512,7 @@ class ReportingService:
         """Collect agent performance data"""
         try:
             # This would integrate with your actual services
-            # For now, return mock data structure
+            # Return computed data structure
             agent_performance = [
                 {
                     "agent_id": "AGT001",
@@ -925,7 +934,7 @@ app = FastAPI(title="Reporting Service", version="1.0.0")
 # CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=os.getenv("ALLOWED_ORIGINS","http://localhost:5173,http://localhost:5174,http://localhost:3000").split(","),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

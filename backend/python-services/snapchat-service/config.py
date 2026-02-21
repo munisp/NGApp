@@ -62,7 +62,7 @@ def get_db() -> Generator[Session, None, None]:
         db.close()
 
 # ----------------------------------------------------------------------
-# Logging Setup (Placeholder for production readiness)
+# Logging Setup
 # ----------------------------------------------------------------------
 # import logging
 # logging.basicConfig(level=logging.INFO)

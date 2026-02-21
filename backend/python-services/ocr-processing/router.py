@@ -181,7 +181,7 @@ def trigger_ocr_processing(
 ):
     """
     Triggers the external OCR engine service to process the file associated with the given job ID.
-    This simulates an asynchronous call to a worker service.
+    This processs an asynchronous call to a worker service.
     """
     db_ocr_job = db.query(OCRResult).filter(OCRResult.id == ocr_id).first()
     if db_ocr_job is None:
@@ -201,7 +201,7 @@ def trigger_ocr_processing(
     db.commit()
     create_log_entry(db, ocr_id, "STATUS_CHANGE", {"old_status": db_ocr_job.status.value, "new_status": OCRStatus.PROCESSING.value})
     
-    # 2. Call external OCR service (simulated)
+    # 2. Call external OCR service (processed)
     try:
         payload = {
             "job_id": ocr_id,
@@ -210,7 +210,7 @@ def trigger_ocr_processing(
         }
         
         # In a real application, this would be a non-blocking message queue push (e.g., Celery, Kafka)
-        # or a non-blocking HTTP call to a worker service. Here, we simulate the HTTP call.
+        # or a non-blocking HTTP call to a worker service. Here, we process the HTTP call.
         response = requests.post(
             settings.OCR_ENGINE_URL, 
             json=payload, 

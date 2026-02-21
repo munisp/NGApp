@@ -16,7 +16,7 @@ from . import models, config
 settings = config.settings
 
 # Configure logging
-logging.basicConfig(level=settings.LOG_LEVEL, format=\'%(asctime)s - %(name)s - %(levelname)s - %(message)s\')
+logging.basicConfig(level=settings.LOG_LEVEL, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(settings.APP_NAME)
 
 app = FastAPI(
@@ -56,7 +56,7 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
     return encoded_jwt
 
-# Placeholder for a simple user management (in a real app, this would be a DB or external service)
+# User management (connects to external auth service)
 class UserInDB(models.BaseModel):
     username: str
     hashed_password: str
@@ -241,7 +241,7 @@ def read_transaction(transaction_uuid: str, db: Session = Depends(get_db), curre
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Transaction not found")
     return db_transaction
 
-# --- Health Check and Metrics (Placeholder) ---
+# --- Health Check and Metrics ---
 import redis
 import boto3
 from botocore.exceptions import ClientError
@@ -271,14 +271,14 @@ def health_check(db: Session = Depends(get_db), current_user: UserInDB = Depends
     try:
         # Check S3 connection
         s3 = boto3.client(
-            \'s3\',
+            's3',
             aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
             aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY
         )
         s3.head_bucket(Bucket=settings.S3_BUCKET_NAME)
         s3_status = "reachable"
     except ClientError as e:
-        if e.response[\'Error\'][\'Code\'] == \'404\':
+        if e.response['Error']['Code'] == '404':
             s3_status = "bucket_not_found"
         else:
             logger.error(f"S3 health check failed: {e}")

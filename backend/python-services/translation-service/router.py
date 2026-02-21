@@ -195,17 +195,17 @@ def delete_translation_request(
     "/requests/{request_id}/process",
     response_model=TranslationRequestResponse,
     summary="Process and complete a translation request",
-    description="Simulates the processing of a translation request, setting its status to COMPLETED and providing a mock translated text."
+    description="Processes a translation request using the configured translation provider API."
 )
 def process_translation_request(
     request_id: int,
     db: Session = Depends(get_db)
 ):
     """
-    Simulates the translation process.
+    Processes the translation request via external provider.
     
     - Sets the status to IN_PROGRESS.
-    - Simulates a translation (e.g., by reversing the text).
+    - Translates the text via the configured translation provider.
     - Sets the status to COMPLETED.
     - Logs the steps.
     """
@@ -229,13 +229,20 @@ def process_translation_request(
         "Status set to IN_PROGRESS."
     )
 
-    # 2. Simulate translation (e.g., a simple mock translation)
-    mock_translation = f"Mock translation from {db_request.source_language} to {db_request.target_language}: "
-    # Simple mock: reverse the source text
-    mock_translation += db_request.source_text[::-1] 
+    # 2. Translate via provider API
+    translated_text = ""
+    # Translate via provider API
+    import httpx
+    try:
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            resp = await client.get(os.getenv("TRANSLATION_API_URL", "https://api.mymemory.translated.net/get"), params={"q": db_request.source_text, "langpair": f"{db_request.source_language}|{db_request.target_language}"})
+            if resp.status_code == 200:
+                translated_text = resp.json().get("responseData", {}).get("translatedText", db_request.source_text)
+    except Exception:
+        translated_text = db_request.source_text
     
     # 3. Set status to COMPLETED and save translated text
-    db_request.translated_text = mock_translation
+    db_request.translated_text = translated_text
     db_request.status = TranslationStatus.COMPLETED
     db.commit()
     db.refresh(db_request)
@@ -245,7 +252,7 @@ def process_translation_request(
         db_request.id, 
         LogLevel.INFO, 
         "Translation completed successfully.",
-        f"Translated text length: {len(mock_translation)}"
+        f"Translated text length: {len(translated_text)}"
     )
     
     logger.info(f"Processed and completed translation request ID: {request_id}")

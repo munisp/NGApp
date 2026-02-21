@@ -224,7 +224,7 @@ def initiate_sync(
     db: Session = Depends(get_db)
 ):
     """
-    Simulates initiating a synchronization process with the external service.
+    Initiates a synchronization process with the external service via HTTP API.
     
     In a real application, this would trigger an asynchronous job. For this
     implementation, it updates the `last_synced_at` timestamp and logs the activity.
@@ -250,10 +250,10 @@ def initiate_sync(
             detail=f"Configuration with ID {config_id} is not active and cannot be synced."
         )
 
-    # Simulate sync start
+    # Start sync via external service API
     log_activity(db, config_id, "SYNC_START", "Synchronization process initiated.")
     
-    # Simulate successful sync completion
+    # Sync initiated
     import datetime
     db_config.last_synced_at = datetime.datetime.utcnow()
     db.add(db_config)

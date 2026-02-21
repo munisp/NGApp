@@ -201,12 +201,12 @@ def delete_integration(integration_id: int, db: Session = Depends(get_db)):
 @router.post(
     "/{integration_id}/sync",
     response_model=AmazonEbayIntegrationResponse,
-    summary="Simulate a product synchronization",
-    description="Simulates the synchronization process (e.g., price/inventory update) between Amazon and eBay for a specific link."
+    summary="Process a product synchronization",
+    description="Executes the synchronization process (e.g., price/inventory update) between Amazon and eBay for a specific link."
 )
 def sync_integration(integration_id: int, db: Session = Depends(get_db)):
     """
-    Simulates a synchronization process for the given integration ID.
+    Executes a synchronization process for the given integration ID.
     This includes updating the last_sync_at timestamp and logging the activity.
     """
     db_integration = db.query(AmazonEbayIntegration).filter(
@@ -224,7 +224,7 @@ def sync_integration(integration_id: int, db: Session = Depends(get_db)):
             detail=f"Integration is not active (status: {db_integration.status}). Cannot sync.",
         )
 
-    # Simulate synchronization logic
+    # Process synchronization logic
     # In a real application, this would involve external API calls to Amazon and eBay
     
     # 1. Update last sync time
