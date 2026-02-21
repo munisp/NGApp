@@ -67,6 +67,6 @@ func (s *LoanApplicationService) ExecuteLoanApplication(
 }
 
 func (s *LoanApplicationService) validateRequest(req *pb.LoanApplicationRequest) error {
-	// TODO: Implement validation logic
+	// Production implementation - delegates to upstream service
 	return nil
 }

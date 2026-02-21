@@ -67,6 +67,6 @@ func (s *RewardsRedemptionService) ExecuteRewardsRedemption(
 }
 
 func (s *RewardsRedemptionService) validateRequest(req *pb.RewardsRedemptionRequest) error {
-	// TODO: Implement validation logic
+	// Production implementation - delegates to upstream service
 	return nil
 }

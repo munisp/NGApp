@@ -191,6 +191,18 @@ SERVICE_MODULES = [
     "projections_targets",
     # QR Ticket Verification
     "qr_ticket_verification",
+    # Admin Services (sub-modules)
+    "admin_services",
+    # CDP Service
+    "cdp_service",
+    # Enterprise Services (sub-modules)
+    "enterprise_services",
+    # Financial Services (sub-modules)
+    "financial_services",
+    # Payment Gateway Service
+    "payment_gateway_service",
+    # Security Services (sub-modules)
+    "security_services",
 ]
 
 registered_count = 10  # Already registered 10 critical services

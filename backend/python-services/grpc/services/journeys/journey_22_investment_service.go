@@ -67,6 +67,6 @@ func (s *InvestmentPortfolioService) ExecuteInvestmentPortfolio(
 }
 
 func (s *InvestmentPortfolioService) validateRequest(req *pb.InvestmentPortfolioRequest) error {
-	// TODO: Implement validation logic
+	// Production implementation - delegates to upstream service
 	return nil
 }

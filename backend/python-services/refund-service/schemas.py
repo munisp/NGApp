@@ -9,7 +9,10 @@ from datetime import datetime
 
 class RefundServiceBase(BaseModel):
     """Base schema for refund service"""
-    # TODO: Add base fields
+    amount: float
+    currency: str = "NGN"
+    reason: str
+    transaction_id: str
     pass
 
 class RefundServiceCreate(RefundServiceBase):
@@ -18,7 +21,8 @@ class RefundServiceCreate(RefundServiceBase):
 
 class RefundServiceUpdate(BaseModel):
     """Schema for updating refund service"""
-    # TODO: Add update fields (all optional)
+    status: Optional[str] = None
+    notes: Optional[str] = None
     pass
 
 class RefundServiceResponse(RefundServiceBase):

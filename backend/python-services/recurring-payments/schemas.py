@@ -1,32 +1,34 @@
-"""
-Recurring Payments Schemas
-Pydantic schemas for recurring payments
-"""
-
+"""Recurring Payments Schemas"""
 from pydantic import BaseModel, Field
-from typing import Optional, Dict, Any
-from datetime import datetime
+from typing import Optional
+from enum import Enum
 
-class RecurringPaymentsBase(BaseModel):
-    """Base schema for recurring payments"""
-    # TODO: Add base fields
-    pass
+class FrequencyEnum(str, Enum):
+    daily = "daily"
+    weekly = "weekly"
+    biweekly = "biweekly"
+    monthly = "monthly"
 
-class RecurringPaymentsCreate(RecurringPaymentsBase):
-    """Schema for creating recurring payments"""
-    pass
+class RecurringPaymentBase(BaseModel):
+    amount: float = Field(..., gt=0)
+    currency: str = Field(default="NGN", max_length=3)
+    recipient: str
+    frequency: FrequencyEnum = FrequencyEnum.monthly
+    start_date: str
 
-class RecurringPaymentsUpdate(BaseModel):
-    """Schema for updating recurring payments"""
-    # TODO: Add update fields (all optional)
-    pass
+class RecurringPaymentCreate(RecurringPaymentBase):
+    user_id: str
 
-class RecurringPaymentsResponse(RecurringPaymentsBase):
-    """Schema for recurring payments response"""
+class RecurringPaymentUpdate(BaseModel):
+    amount: Optional[float] = None
+    currency: Optional[str] = None
+    recipient: Optional[str] = None
+    frequency: Optional[FrequencyEnum] = None
+
+class RecurringPaymentResponse(RecurringPaymentBase):
     id: str
-    created_at: datetime
-    updated_at: datetime
+    user_id: str
     status: str
-    
-    class Config:
-        from_attributes = True
+    next_execution: Optional[str] = None
+    execution_count: int = 0
+    created_at: str

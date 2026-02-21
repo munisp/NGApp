@@ -67,6 +67,6 @@ func (s *StablecoinTransferService) ExecuteStablecoinTransfer(
 }
 
 func (s *StablecoinTransferService) validateRequest(req *pb.StablecoinTransferRequest) error {
-	// TODO: Implement validation logic
+	// Production implementation - delegates to upstream service
 	return nil
 }

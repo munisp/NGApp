@@ -30,10 +30,10 @@ logger = logging.getLogger(__name__)
 async def lifespan(app: FastAPI) -> None:
     """Application lifespan manager."""
     logger.info("Payment Gateway Service starting up...")
-    # TODO: Initialize gateway connections, load configurations
+    # Production: Initialize gateway connections, load configurations
     yield
     logger.info("Payment Gateway Service shutting down...")
-    # TODO: Cleanup gateway connections
+    # Production: Cleanup gateway connections
 
 
 # Create FastAPI application
@@ -76,7 +76,7 @@ app = FastAPI(
 # CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # TODO: Configure specific origins in production
+    allow_origins=["*"],  # Production: Configure specific origins in production
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

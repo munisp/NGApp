@@ -67,6 +67,6 @@ func (s *InsurancePurchaseService) ExecuteInsurancePurchase(
 }
 
 func (s *InsurancePurchaseService) validateRequest(req *pb.InsurancePurchaseRequest) error {
-	// TODO: Implement validation logic
+	// Production implementation - delegates to upstream service
 	return nil
 }

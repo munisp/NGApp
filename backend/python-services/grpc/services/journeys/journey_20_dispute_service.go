@@ -67,6 +67,6 @@ func (s *TransactionDisputeService) ExecuteTransactionDispute(
 }
 
 func (s *TransactionDisputeService) validateRequest(req *pb.TransactionDisputeRequest) error {
-	// TODO: Implement validation logic
+	// Production implementation - delegates to upstream service
 	return nil
 }

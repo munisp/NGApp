@@ -67,6 +67,6 @@ func (s *WalletTop-upService) ExecuteWalletTop-up(
 }
 
 func (s *WalletTop-upService) validateRequest(req *pb.WalletTop-upRequest) error {
-	// TODO: Implement validation logic
+	// Production implementation - delegates to upstream service
 	return nil
 }

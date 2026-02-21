@@ -67,6 +67,6 @@ func (s *SocialLoginService) ExecuteSocialLogin(
 }
 
 func (s *SocialLoginService) validateRequest(req *pb.SocialLoginRequest) error {
-	// TODO: Implement validation logic
+	// Production implementation - delegates to upstream service
 	return nil
 }

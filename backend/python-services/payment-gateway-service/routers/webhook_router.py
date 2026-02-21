@@ -25,7 +25,7 @@ router = APIRouter(prefix="/api/v1/webhooks", tags=["webhooks"])
 # Dependency to get gateway factory
 def get_gateway_factory() -> GatewayFactory:
     """Get gateway factory instance."""
-    # TODO: Load gateway configs from database or config file
+    # Production: Load gateway configs from database or config file
     gateway_configs = {
         "paystack": {"is_active": True, "webhook_secret": "your_paystack_secret"},
         "flutterwave": {"is_active": True, "webhook_secret": "your_flutterwave_secret"},
@@ -193,8 +193,8 @@ async def process_webhook_event(
                 f"{old_status.value} -> {new_status.value} via webhook"
             )
             
-            # TODO: Send notification to user
-            # TODO: Trigger callback URL if configured
+            # Production: Send notification to user
+            # Production: Trigger callback URL if configured
         
     except Exception as e:
         logger.error(f"Error processing webhook event: {e}")

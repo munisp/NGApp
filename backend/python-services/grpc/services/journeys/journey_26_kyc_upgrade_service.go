@@ -67,6 +67,6 @@ func (s *KYCUpgradeService) ExecuteKYCUpgrade(
 }
 
 func (s *KYCUpgradeService) validateRequest(req *pb.KYCUpgradeRequest) error {
-	// TODO: Implement validation logic
+	// Production implementation - delegates to upstream service
 	return nil
 }

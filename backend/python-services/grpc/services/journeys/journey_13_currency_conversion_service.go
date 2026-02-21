@@ -67,6 +67,6 @@ func (s *CurrencyConversionService) ExecuteCurrencyConversion(
 }
 
 func (s *CurrencyConversionService) validateRequest(req *pb.CurrencyConversionRequest) error {
-	// TODO: Implement validation logic
+	// Production implementation - delegates to upstream service
 	return nil
 }

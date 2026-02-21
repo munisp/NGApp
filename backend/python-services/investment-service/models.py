@@ -1,27 +1,15 @@
-"""
-Investment Service Models
-Database models for investment service
-"""
-
-from sqlalchemy import Column, String, DateTime, Integer, Float, Boolean, Text, JSON
-from sqlalchemy.ext.declarative import declarative_base
+"""Investment Service Models"""
 from datetime import datetime
-import uuid
+from typing import Optional
 
-Base = declarative_base()
-
-class InvestmentService(Base):
-    """
-    Investment Service model
-    """
-    __tablename__ = "investment_service"
-    
-    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
-    status = Column(String, default="active", nullable=False)
-    
-    # TODO: Add model-specific fields
-    
-    def __repr__(self):
-        return f"<InvestmentService(id={self.id})>"
+class Investment:
+    def __init__(self, id: str, user_id: str, product_id: str, amount: float,
+                 currency: str = "NGN", status: str = "active"):
+        self.id = id
+        self.user_id = user_id
+        self.product_id = product_id
+        self.amount = amount
+        self.currency = currency
+        self.status = status
+        self.invested_at: str = datetime.utcnow().isoformat()
+        self.returns: float = 0.0

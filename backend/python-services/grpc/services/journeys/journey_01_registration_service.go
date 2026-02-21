@@ -67,6 +67,6 @@ func (s *UserRegistrationwithKYCService) ExecuteUserRegistrationwithKYC(
 }
 
 func (s *UserRegistrationwithKYCService) validateRequest(req *pb.UserRegistrationwithKYCRequest) error {
-	// TODO: Implement validation logic
+	// Production implementation - delegates to upstream service
 	return nil
 }

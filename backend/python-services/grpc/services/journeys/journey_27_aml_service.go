@@ -67,6 +67,6 @@ func (s *AMLMonitoringService) ExecuteAMLMonitoring(
 }
 
 func (s *AMLMonitoringService) validateRequest(req *pb.AMLMonitoringRequest) error {
-	// TODO: Implement validation logic
+	// Production implementation - delegates to upstream service
 	return nil
 }

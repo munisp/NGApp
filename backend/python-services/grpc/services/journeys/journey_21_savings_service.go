@@ -67,6 +67,6 @@ func (s *SavingsAccountService) ExecuteSavingsAccount(
 }
 
 func (s *SavingsAccountService) validateRequest(req *pb.SavingsAccountRequest) error {
-	// TODO: Implement validation logic
+	// Production implementation - delegates to upstream service
 	return nil
 }

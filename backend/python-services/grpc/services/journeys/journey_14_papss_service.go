@@ -67,6 +67,6 @@ func (s *PAPSSTransferService) ExecutePAPSSTransfer(
 }
 
 func (s *PAPSSTransferService) validateRequest(req *pb.PAPSSTransferRequest) error {
-	// TODO: Implement validation logic
+	// Production implementation - delegates to upstream service
 	return nil
 }

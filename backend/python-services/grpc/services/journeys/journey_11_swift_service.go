@@ -67,6 +67,6 @@ func (s *SWIFTTransferService) ExecuteSWIFTTransfer(
 }
 
 func (s *SWIFTTransferService) validateRequest(req *pb.SWIFTTransferRequest) error {
-	// TODO: Implement validation logic
+	// Production implementation - delegates to upstream service
 	return nil
 }

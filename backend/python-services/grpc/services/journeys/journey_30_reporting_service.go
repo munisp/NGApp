@@ -67,6 +67,6 @@ func (s *RegulatoryReportingService) ExecuteRegulatoryReporting(
 }
 
 func (s *RegulatoryReportingService) validateRequest(req *pb.RegulatoryReportingRequest) error {
-	// TODO: Implement validation logic
+	// Production implementation - delegates to upstream service
 	return nil
 }

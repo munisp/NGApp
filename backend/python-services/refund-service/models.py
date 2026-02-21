@@ -21,7 +21,11 @@ class RefundService(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
     status = Column(String, default="active", nullable=False)
     
-    # TODO: Add model-specific fields
+    amount = Column(Float, nullable=False)
+    currency = Column(String(3), default="NGN")
+    reason = Column(String(500))
+    transaction_id = Column(String(50))
+    status = Column(String(20), default="pending")
     
     def __repr__(self):
         return f"<RefundService(id={self.id})>"

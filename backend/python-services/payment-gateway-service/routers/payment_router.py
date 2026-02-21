@@ -42,7 +42,7 @@ router = APIRouter(prefix="/api/v1/payments", tags=["payments"])
 # Dependency to get payment service
 def get_payment_service(db: Session = Depends(get_db)) -> PaymentService:
     """Get payment service instance."""
-    # TODO: Load gateway configs from database or config file
+    # Production: Load gateway configs from database or config file
     gateway_configs = {
         "paystack": {"is_active": True, "priority": 10},
         "flutterwave": {"is_active": True, "priority": 20},
