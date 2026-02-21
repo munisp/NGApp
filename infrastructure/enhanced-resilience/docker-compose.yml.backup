@@ -25,7 +25,7 @@ services:
     container_name: postgres-resilient
     restart: unless-stopped
     environment:
-      POSTGRES_DB: agent_banking_resilient
+      POSTGRES_DB: remittance_resilient
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres123
       POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C"
@@ -51,7 +51,7 @@ services:
     restart: unless-stopped
     environment:
       - SERVICE_PORT=8090
-      - DATABASE_URL=postgresql://postgres:postgres123@postgres-resilient:5432/agent_banking_resilient
+      - DATABASE_URL=postgresql://postgres:postgres123@postgres-resilient:5432/remittance_resilient
       - REDIS_URL=redis://redis-resilient:6379
       - UPS_DEVICE=/dev/ttyUSB0
       - SOLAR_CONTROLLER_IP=192.168.1.100
@@ -86,7 +86,7 @@ services:
     restart: unless-stopped
     environment:
       - SERVICE_PORT=8150
-      - DATABASE_URL=postgresql://postgres:postgres123@postgres-resilient:5432/agent_banking_resilient
+      - DATABASE_URL=postgresql://postgres:postgres123@postgres-resilient:5432/remittance_resilient
       - REDIS_URL=redis://redis-resilient:6379
       - TWILIO_ACCOUNT_SID=${TWILIO_ACCOUNT_SID}
       - TWILIO_AUTH_TOKEN=${TWILIO_AUTH_TOKEN}
@@ -156,7 +156,7 @@ services:
     restart: unless-stopped
     environment:
       - SERVICE_PORT=8081
-      - DATABASE_URL=postgresql://postgres:postgres123@postgres-resilient:5432/agent_banking_resilient
+      - DATABASE_URL=postgresql://postgres:postgres123@postgres-resilient:5432/remittance_resilient
       - REDIS_URL=redis://redis-resilient:6379
       - POWER_MANAGER_URL=http://power-manager:8090
       - BANDWIDTH_SERVICE_URL=http://ultra-bandwidth:8150
@@ -221,7 +221,7 @@ services:
     environment:
       - SERVICE_PORT=3001
       - TIGERBEETLE_CORE_URL=http://tigerbeetle-core:3000
-      - DATABASE_URL=postgresql://postgres:postgres123@postgres-resilient:5432/agent_banking_resilient
+      - DATABASE_URL=postgresql://postgres:postgres123@postgres-resilient:5432/remittance_resilient
       - REDIS_URL=redis://redis-resilient:6379
       - POWER_MANAGER_URL=http://power-manager:8090
       - BANDWIDTH_SERVICE_URL=http://ultra-bandwidth:8150
@@ -459,7 +459,7 @@ services:
     environment:
       - BACKUP_INTERVAL=1h
       - BACKUP_RETENTION=30d
-      - DATABASE_URL=postgresql://postgres:postgres123@postgres-resilient:5432/agent_banking_resilient
+      - DATABASE_URL=postgresql://postgres:postgres123@postgres-resilient:5432/remittance_resilient
       - REDIS_URL=redis://redis-resilient:6379
       - BACKUP_STORAGE=/app/backups
       - CLOUD_BACKUP_ENABLED=true

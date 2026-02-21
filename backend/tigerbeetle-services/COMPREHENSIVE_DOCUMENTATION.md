@@ -48,7 +48,7 @@ TigerBeetle is a high-performance distributed financial accounting database that
 
 ```
 ┌──────────────────────────────────────────────────────────────────┐
-│                    Agent Banking Platform                         │
+│                    Remittance Platform                         │
 ├──────────────────────────────────────────────────────────────────┤
 │                                                                   │
 │  ┌────────────┐  ┌────────────┐  ┌────────────┐  ┌───────────┐ │
@@ -120,7 +120,7 @@ tigerbeetle start --addresses=127.0.0.1:3001 /var/lib/tigerbeetle/0_0.tigerbeetl
 #### 3. Start Services with Docker Compose
 
 ```bash
-cd /home/ubuntu/agent-banking-platform/backend/tigerbeetle-services
+cd /home/ubuntu/remittance-platform/backend/tigerbeetle-services
 docker-compose up -d
 ```
 
@@ -664,7 +664,7 @@ A: Add more replicas to the cluster (3, 5, or 7 nodes).
 
 | Code | Ledger | Description |
 |------|--------|-------------|
-| 1 | Agent Banking | Agent transactions |
+| 1 | Remittance Platform | Agent transactions |
 | 2 | E-commerce | Online orders |
 | 3 | POS Transactions | Point of sale |
 | 4 | Supply Chain | Supply chain payments |

@@ -8,10 +8,10 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
-	"github.com/agent-banking/transaction-processing/models"
-	"github.com/agent-banking/transaction-processing/services"
-	"github.com/agent-banking/transaction-processing/utils"
-	"github.com/agent-banking/transaction-processing/validators"
+	"github.com/remittance/transaction-processing/models"
+	"github.com/remittance/transaction-processing/services"
+	"github.com/remittance/transaction-processing/utils"
+	"github.com/remittance/transaction-processing/validators"
 )
 
 type TransactionHandler struct {

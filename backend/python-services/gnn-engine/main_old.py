@@ -50,7 +50,7 @@ def get_api_key(api_key: str = Security(api_key_header)):
 
 # --- FastAPI App Initialization --- #
 app = FastAPI(
-    title="GNN Engine Service for Agent Banking Platform",
+    title="GNN Engine Service for Remittance Platform",
     description="A service to detect financial fraud using Graph Neural Networks, integrated with existing platform services.",
     version="1.0.0",
     docs_url="/docs",

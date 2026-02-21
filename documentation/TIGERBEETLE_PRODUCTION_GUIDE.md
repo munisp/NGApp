@@ -1,5 +1,5 @@
 # TigerBeetle Production Implementation Guide
-## Financial-Grade Distributed Database for Agent Banking
+## Financial-Grade Distributed Database for Remittance Platform
 
 **Date**: October 14, 2025  
 **Status**: ✅ **PRODUCTION-READY IMPLEMENTATION**  
@@ -233,7 +233,7 @@ export TIGERBEETLE_CLUSTER_ID=0
 export TIGERBEETLE_ADDRESSES="3000,3001,3002"
 
 # Start service
-cd /home/ubuntu/agent-banking-platform/backend/python-services/tigerbeetle-zig
+cd /home/ubuntu/remittance-platform/backend/python-services/tigerbeetle-zig
 python main_production.py
 ```
 

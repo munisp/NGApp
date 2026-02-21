@@ -2,7 +2,7 @@ apiVersion: dapr.io/v1alpha1
 kind: Component
 metadata:
   name: lakehouse-pubsub
-  namespace: agent-banking
+  namespace: remittance
 spec:
   type: pubsub.kafka
   version: v1
@@ -28,7 +28,7 @@ apiVersion: dapr.io/v1alpha1
 kind: Subscription
 metadata:
   name: lakehouse-transactions-subscription
-  namespace: agent-banking
+  namespace: remittance
 spec:
   pubsubname: lakehouse-pubsub
   topic: lakehouse.transactions
@@ -40,7 +40,7 @@ apiVersion: dapr.io/v1alpha1
 kind: Subscription
 metadata:
   name: lakehouse-payments-subscription
-  namespace: agent-banking
+  namespace: remittance
 spec:
   pubsubname: lakehouse-pubsub
   topic: lakehouse.payments
@@ -52,7 +52,7 @@ apiVersion: dapr.io/v1alpha1
 kind: Subscription
 metadata:
   name: lakehouse-routing-subscription
-  namespace: agent-banking
+  namespace: remittance
 spec:
   pubsubname: lakehouse-pubsub
   topic: lakehouse.routing
@@ -64,7 +64,7 @@ apiVersion: dapr.io/v1alpha1
 kind: Subscription
 metadata:
   name: lakehouse-float-subscription
-  namespace: agent-banking
+  namespace: remittance
 spec:
   pubsubname: lakehouse-pubsub
   topic: lakehouse.float
@@ -76,7 +76,7 @@ apiVersion: dapr.io/v1alpha1
 kind: Subscription
 metadata:
   name: lakehouse-commissions-subscription
-  namespace: agent-banking
+  namespace: remittance
 spec:
   pubsubname: lakehouse-pubsub
   topic: lakehouse.commissions
@@ -88,7 +88,7 @@ apiVersion: dapr.io/v1alpha1
 kind: Subscription
 metadata:
   name: lakehouse-fraud-subscription
-  namespace: agent-banking
+  namespace: remittance
 spec:
   pubsubname: lakehouse-pubsub
   topic: lakehouse.fraud
@@ -100,7 +100,7 @@ apiVersion: dapr.io/v1alpha1
 kind: Subscription
 metadata:
   name: lakehouse-ledger-subscription
-  namespace: agent-banking
+  namespace: remittance
 spec:
   pubsubname: lakehouse-pubsub
   topic: lakehouse.ledger
@@ -112,7 +112,7 @@ apiVersion: dapr.io/v1alpha1
 kind: Subscription
 metadata:
   name: lakehouse-mojaloop-subscription
-  namespace: agent-banking
+  namespace: remittance
 spec:
   pubsubname: lakehouse-pubsub
   topic: lakehouse.mojaloop
@@ -124,7 +124,7 @@ apiVersion: dapr.io/v1alpha1
 kind: Subscription
 metadata:
   name: lakehouse-agents-subscription
-  namespace: agent-banking
+  namespace: remittance
 spec:
   pubsubname: lakehouse-pubsub
   topic: lakehouse.agents
@@ -136,7 +136,7 @@ apiVersion: dapr.io/v1alpha1
 kind: Subscription
 metadata:
   name: lakehouse-analytics-subscription
-  namespace: agent-banking
+  namespace: remittance
 spec:
   pubsubname: lakehouse-pubsub
   topic: lakehouse.analytics
@@ -148,7 +148,7 @@ apiVersion: dapr.io/v1alpha1
 kind: Subscription
 metadata:
   name: lakehouse-ml-features-subscription
-  namespace: agent-banking
+  namespace: remittance
 spec:
   pubsubname: lakehouse-pubsub
   topic: lakehouse.ml-features

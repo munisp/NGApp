@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Delta Lake Setup and Configuration for Agent Banking Network
+Delta Lake Setup and Configuration for Remittance Platform
 Implements ACID transactions, schema evolution, and time travel for banking data
 Optimized for Nigerian banking compliance and regulatory requirements
 """
@@ -492,7 +492,7 @@ echo "Spark environment configured for Delta Lake"
         with open(vacuum_script, 'w') as f:
             f.write("""#!/usr/bin/env python3
 \"\"\"
-Delta Lake Vacuum Script for Agent Banking Network
+Delta Lake Vacuum Script for Remittance Platform
 Removes old files and optimizes storage
 \"\"\"
 
@@ -550,7 +550,7 @@ if __name__ == "__main__":
         with open(optimize_script, 'w') as f:
             f.write("""#!/usr/bin/env python3
 \"\"\"
-Delta Lake Optimize Script for Agent Banking Network
+Delta Lake Optimize Script for Remittance Platform
 Compacts small files and optimizes table layout
 \"\"\"
 
@@ -613,7 +613,7 @@ if __name__ == "__main__":
         with open(health_script, 'w') as f:
             f.write("""#!/usr/bin/env python3
 \"\"\"
-Delta Lake Health Check Script for Agent Banking Network
+Delta Lake Health Check Script for Remittance Platform
 Monitors table health and performance metrics
 \"\"\"
 
@@ -721,7 +721,7 @@ if __name__ == "__main__":
         # Create cron jobs configuration
         cron_config = self.config_path / "cron_jobs.txt"
         with open(cron_config, 'w') as f:
-            f.write("""# Delta Lake Maintenance Cron Jobs for Agent Banking Network
+            f.write("""# Delta Lake Maintenance Cron Jobs for Remittance Platform
 # Add these to your crontab: crontab -e
 
 # Daily vacuum at 2 AM
@@ -798,7 +798,7 @@ if __name__ == "__main__":
 
 def main():
     """Main setup function"""
-    print("🏗️ Setting up Delta Lake for Agent Banking Network...")
+    print("🏗️ Setting up Delta Lake for Remittance Platform...")
     
     setup = DeltaLakeSetup()
     
@@ -810,7 +810,7 @@ def main():
         setup.create_sample_data()
         
         print(f"""
-🎉 Delta Lake is ready for Agent Banking Network!
+🎉 Delta Lake is ready for Remittance Platform!
 
 📁 Installation Path: {setup.base_path}
 📊 Data Path: {setup.data_path}

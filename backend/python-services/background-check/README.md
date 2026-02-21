@@ -1,6 +1,6 @@
 # Background Check Service
 
-Automated background verification service for agent onboarding in the Agent Banking Platform V11.0.
+Automated background verification service for agent onboarding in the Remittance Platform V11.0.
 
 ## Overview
 
@@ -131,7 +131,7 @@ DATABASE_URL=postgresql://user:pass@localhost:5432/background_check
 
 # Keycloak
 KEYCLOAK_URL=http://localhost:8080
-KEYCLOAK_REALM=agent-banking
+KEYCLOAK_REALM=remittance
 KEYCLOAK_CLIENT_ID=background-check-service
 
 # Permify

@@ -1,4 +1,4 @@
-# Dapr Configuration for Agent Banking Network
+# Dapr Configuration for Remittance Platform
 # High-Availability Distributed Application Runtime optimized for Nigerian banking microservices
 
 apiVersion: v1
@@ -60,11 +60,11 @@ data:
       # Access control for banking services
       accessControl:
         defaultAction: "deny"
-        trustDomain: "agent-banking.local"
+        trustDomain: "remittance.local"
         policies:
         - appId: "transaction-service"
           defaultAction: "allow"
-          trustDomain: "agent-banking.local"
+          trustDomain: "remittance.local"
           namespace: "banking-services"
           operations:
           - name: "process-transaction"
@@ -75,7 +75,7 @@ data:
             action: "allow"
         - appId: "fraud-detection"
           defaultAction: "allow"
-          trustDomain: "agent-banking.local"
+          trustDomain: "remittance.local"
           namespace: "banking-services"
           operations:
           - name: "analyze-transaction"
@@ -86,7 +86,7 @@ data:
             action: "allow"
         - appId: "notification-service"
           defaultAction: "allow"
-          trustDomain: "agent-banking.local"
+          trustDomain: "remittance.local"
           namespace: "banking-services"
           operations:
           - name: "send-notification"
@@ -94,7 +94,7 @@ data:
             action: "allow"
         - appId: "customer-service"
           defaultAction: "allow"
-          trustDomain: "agent-banking.local"
+          trustDomain: "remittance.local"
           namespace: "banking-services"
           operations:
           - name: "get-customer"
@@ -640,7 +640,7 @@ spec:
         - "--log-as-json"
         - "--enable-metrics=true"
         - "--metrics-port=9090"
-        - "--trust-domain=agent-banking.local"
+        - "--trust-domain=remittance.local"
         ports:
         - containerPort: 50001
           name: grpc
@@ -919,7 +919,7 @@ spec:
   - from:
     - namespaceSelector:
         matchLabels:
-          name: agent-banking-system
+          name: remittance-system
     - podSelector:
         matchLabels:
           app: dapr-sentry

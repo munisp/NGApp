@@ -1,4 +1,4 @@
-//! Agent Banking Platform - High-Performance Storage Service
+//! Remittance Platform - High-Performance Storage Service
 //! 
 //! This service provides S3-compatible storage operations using RustFS as the backend.
 //! It offers 2.3x better performance than MinIO for small objects while maintaining
@@ -92,7 +92,7 @@ async fn main() -> anyhow::Result<()> {
         .with_target(false)
         .init();
 
-    info!("Starting Agent Banking Storage Service");
+    info!("Starting Remittance Platform Storage Service");
 
     // Load configuration
     let config = config::load_config()?;
@@ -171,7 +171,7 @@ async fn health_check(State(state): State<AppState>) -> Json<HealthResponse> {
     
     Json(HealthResponse {
         status: if storage_healthy { "healthy".to_string() } else { "degraded".to_string() },
-        service: "agent-banking-storage".to_string(),
+        service: "remittance-storage".to_string(),
         version: env!("CARGO_PKG_VERSION").to_string(),
         storage_backend: "rustfs".to_string(),
         storage_healthy,
@@ -183,7 +183,7 @@ async fn readiness_check(State(state): State<AppState>) -> Result<Json<HealthRes
     match state.storage.health_check().await {
         Ok(_) => Ok(Json(HealthResponse {
             status: "ready".to_string(),
-            service: "agent-banking-storage".to_string(),
+            service: "remittance-storage".to_string(),
             version: env!("CARGO_PKG_VERSION").to_string(),
             storage_backend: "rustfs".to_string(),
             storage_healthy: true,

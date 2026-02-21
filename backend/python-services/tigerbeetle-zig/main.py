@@ -75,7 +75,7 @@ stats = {
 # ==================== Enums ====================
 
 class AccountType(str, Enum):
-    """TigerBeetle account types for Agent Banking"""
+    """TigerBeetle account types for Remittance Platform"""
     AGENT_ASSET = "agent_asset"  # Agent's cash/balance
     AGENT_LIABILITY = "agent_liability"  # Agent's credit line
     CUSTOMER_ASSET = "customer_asset"  # Customer account

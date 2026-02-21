@@ -324,7 +324,7 @@ Middleware API (Express)
 ### **Directory Structure**
 
 ```
-agent-banking-platform/
+remittance-platform/
 ├── frontend/mobile-native-enhanced/src/analytics/
 │   ├── AnalyticsEngine.ts           (564 lines)
 │   ├── ABTestingFramework.ts        (193 lines)

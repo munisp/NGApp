@@ -1,221 +1,155 @@
-import sys as _sys, os as _os
-_sys.path.insert(0, _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), ".."))
-from shared.middleware import apply_middleware, ErrorResponse
-from shared.observability import setup_logging, get_logger, metrics_router, MetricsMiddleware
 """
 Audit Logging Service
 Port: 8112
 """
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Depends, Header
 from fastapi.middleware.cors import CORSMiddleware
-
-apply_middleware(app)
-setup_logging("audit-logging")
-app.include_router(metrics_router)
-
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional, List, Dict, Any
-from datetime import datetime
-import uvicorn
-
-# Redis-based storage (replaces in-memory dict)
+from datetime import datetime, timedelta
+from enum import Enum
+import uuid
 import os
 import json
-import redis
+import asyncpg
+import uvicorn
 
-_redis_client = None
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://remittance:remittance@localhost:5432/remittance")
+REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
 
-def get_redis_client():
-    """Get Redis client - requires REDIS_URL environment variable"""
-    global _redis_client
-    if _redis_client is None:
-        redis_url = os.getenv("REDIS_URL")
-        if not redis_url:
-            raise ValueError("REDIS_URL environment variable is required for storage")
-        _redis_client = redis.from_url(redis_url, decode_responses=True)
-    return _redis_client
+_db_pool = None
 
-def storage_get(key: str):
-    """Get value from Redis storage"""
-    try:
-        client = get_redis_client()
-        value = client.get(f"storage:{key}")
-        return json.loads(value) if value else None
-    except Exception as e:
-        print(f"Storage get error: {e}")
-        return None
+async def get_db_pool():
+    global _db_pool
+    if _db_pool is None:
+        _db_pool = await asyncpg.create_pool(DATABASE_URL, min_size=2, max_size=10)
+    return _db_pool
 
-def storage_set(key: str, value, ttl: int = 86400):
-    """Set value in Redis storage with optional TTL (default 24h)"""
-    try:
-        client = get_redis_client()
-        client.setex(f"storage:{key}", ttl, json.dumps(value))
-        return True
-    except Exception as e:
-        print(f"Storage set error: {e}")
-        return False
+async def verify_token(authorization: str = Header(...)):
+    if not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Invalid authorization header")
+    token = authorization[7:]
+    if not token or len(token) < 10:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    return token
 
-def storage_delete(key: str):
-    """Delete value from Redis storage"""
-    try:
-        client = get_redis_client()
-        client.delete(f"storage:{key}")
-        return True
-    except Exception as e:
-        print(f"Storage delete error: {e}")
-        return False
+app = FastAPI(title="Audit Logging Service", description="Audit Logging Service for Remittance Platform", version="1.0.0")
+app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 
-def storage_keys(pattern: str = "*"):
-    """Get all keys matching pattern"""
-    try:
-        client = get_redis_client()
-        return [k.replace("storage:", "") for k in client.keys(f"storage:{pattern}")]
-    except Exception as e:
-        print(f"Storage keys error: {e}")
-        return []
-
-
-
-app = FastAPI(
-    title="Audit Logging",
-    description="Audit Logging for Agent Banking Platform",
-    version="1.0.0"
-)
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=os.getenv("ALLOWED_ORIGINS","http://localhost:5173,http://localhost:5174,http://localhost:3000").split(","),
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-# In-memory storage (replace with database in production)
-# storage = {}  # REPLACED: Use storage_get/storage_set functions instead
-stats = {
-    "total_requests": 0,
-    "total_items": 0,
-    "start_time": datetime.now()
-}
-
-# Pydantic Models
-class Item(BaseModel):
-    id: Optional[str] = None
-    data: Dict[str, Any]
-    created_at: Optional[datetime] = None
-    updated_at: Optional[datetime] = None
-
-@app.get("/")
-async def root():
-    return {
-        "service": "audit-service",
-        "description": "Audit Logging",
-        "version": "1.0.0",
-        "port": 8112,
-        "status": "operational"
-    }
+@app.on_event("startup")
+async def startup():
+    pool = await get_db_pool()
+    async with pool.acquire() as conn:
+        await conn.execute("""
+            CREATE TABLE IF NOT EXISTS audit_logs (
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                user_id VARCHAR(255),
+                action VARCHAR(100) NOT NULL,
+                resource_type VARCHAR(100),
+                resource_id VARCHAR(255),
+                details JSONB DEFAULT '{}',
+                ip_address VARCHAR(45),
+                user_agent TEXT,
+                status VARCHAR(20) DEFAULT 'success',
+                created_at TIMESTAMPTZ DEFAULT NOW()
+            );
+            CREATE INDEX IF NOT EXISTS idx_audit_user ON audit_logs(user_id);
+            CREATE INDEX IF NOT EXISTS idx_audit_action ON audit_logs(action);
+            CREATE INDEX IF NOT EXISTS idx_audit_created ON audit_logs(created_at)
+        """)
 
 @app.get("/health")
 async def health_check():
-    uptime = (datetime.now() - stats["start_time"]).total_seconds()
-    return {
-        "status": "healthy",
-        "uptime_seconds": int(uptime),
-        "total_requests": stats["total_requests"],
-        "total_items": stats["total_items"]
-    }
+    try:
+        pool = await get_db_pool()
+        async with pool.acquire() as conn:
+            await conn.fetchval("SELECT 1")
+        return {"status": "healthy", "service": "audit-service", "database": "connected"}
+    except Exception as e:
+        return {"status": "degraded", "service": "audit-service", "error": str(e)}
 
-@app.post("/items")
-async def create_item(item: Item):
-    """Create a new item"""
-    stats["total_requests"] += 1
-    item_id = f"item_{len(storage) + 1}"
-    item.id = item_id
-    item.created_at = datetime.now()
-    item.updated_at = datetime.now()
-    storage[item_id] = item.dict()
-    stats["total_items"] += 1
-    return {"success": True, "item_id": item_id, "item": item}
 
-@app.get("/items")
-async def list_items(skip: int = 0, limit: int = 100):
-    """List all items"""
-    stats["total_requests"] += 1
-    items = list(storage.values())[skip:skip+limit]
-    return {
-        "success": True,
-        "total": len(storage),
-        "items": items,
-        "skip": skip,
-        "limit": limit
-    }
+class AuditLogCreate(BaseModel):
+    action: str
+    resource_type: Optional[str] = None
+    resource_id: Optional[str] = None
+    details: Optional[Dict[str, Any]] = None
+    ip_address: Optional[str] = None
+    user_agent: Optional[str] = None
 
-@app.get("/items/{item_id}")
-async def get_item(item_id: str):
-    """Get a specific item"""
-    stats["total_requests"] += 1
-    if item_id not in storage:
-        raise HTTPException(status_code=404, detail="Item not found")
-    return {"success": True, "item": storage[item_id]}
+class AuditLogResponse(BaseModel):
+    id: str
+    user_id: Optional[str]
+    action: str
+    resource_type: Optional[str]
+    resource_id: Optional[str]
+    details: Optional[Dict[str, Any]]
+    ip_address: Optional[str]
+    status: str
+    created_at: datetime
 
-@app.put("/items/{item_id}")
-async def update_item(item_id: str, item: Item):
-    """Update an item"""
-    stats["total_requests"] += 1
-    if item_id not in storage:
-        raise HTTPException(status_code=404, detail="Item not found")
-    item.id = item_id
-    item.updated_at = datetime.now()
-    item.created_at = storage[item_id].get("created_at", datetime.now())
-    storage[item_id] = item.dict()
-    return {"success": True, "item": item}
+@app.post("/api/v1/audit/logs", response_model=Dict)
+async def create_audit_log(log: AuditLogCreate, token: str = Depends(verify_token)):
+    pool = await get_db_pool()
+    async with pool.acquire() as conn:
+        row = await conn.fetchrow(
+            """INSERT INTO audit_logs (user_id, action, resource_type, resource_id, details, ip_address, user_agent)
+               VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id, created_at""",
+            token[:36], log.action, log.resource_type, log.resource_id,
+            json.dumps(log.details or {}), log.ip_address, log.user_agent
+        )
+        return {"id": str(row["id"]), "created_at": row["created_at"].isoformat()}
 
-@app.delete("/items/{item_id}")
-async def delete_item(item_id: str):
-    """Delete an item"""
-    stats["total_requests"] += 1
-    if item_id not in storage:
-        raise HTTPException(status_code=404, detail="Item not found")
-    del storage[item_id]
-    stats["total_items"] -= 1
-    return {"success": True, "message": "Item deleted"}
+@app.get("/api/v1/audit/logs")
+async def list_audit_logs(
+    user_id: Optional[str] = None, action: Optional[str] = None,
+    resource_type: Optional[str] = None, skip: int = 0, limit: int = 50,
+    token: str = Depends(verify_token)
+):
+    pool = await get_db_pool()
+    async with pool.acquire() as conn:
+        conditions = []
+        params = []
+        idx = 1
+        if user_id:
+            conditions.append(f"user_id = ${idx}")
+            params.append(user_id)
+            idx += 1
+        if action:
+            conditions.append(f"action = ${idx}")
+            params.append(action)
+            idx += 1
+        if resource_type:
+            conditions.append(f"resource_type = ${idx}")
+            params.append(resource_type)
+            idx += 1
+        where = "WHERE " + " AND ".join(conditions) if conditions else ""
+        params.extend([limit, skip])
+        rows = await conn.fetch(
+            f"SELECT * FROM audit_logs {where} ORDER BY created_at DESC LIMIT ${idx} OFFSET ${idx+1}",
+            *params
+        )
+        total = await conn.fetchval(f"SELECT COUNT(*) FROM audit_logs {where}", *params[:-2]) if params[:-2] else await conn.fetchval("SELECT COUNT(*) FROM audit_logs")
+        return {"total": total, "logs": [dict(r) for r in rows], "skip": skip, "limit": limit}
 
-@app.post("/process")
-async def process_data(data: Dict[str, Any]):
-    """Process data (service-specific logic)"""
-    stats["total_requests"] += 1
-    return {
-        "success": True,
-        "message": "Data processed successfully",
-        "service": "audit-service",
-        "processed_at": datetime.now().isoformat(),
-        "data": data
-    }
+@app.get("/api/v1/audit/logs/{log_id}")
+async def get_audit_log(log_id: str, token: str = Depends(verify_token)):
+    pool = await get_db_pool()
+    async with pool.acquire() as conn:
+        row = await conn.fetchrow("SELECT * FROM audit_logs WHERE id = $1", uuid.UUID(log_id))
+        if not row:
+            raise HTTPException(status_code=404, detail="Audit log not found")
+        return dict(row)
 
-@app.get("/search")
-async def search_items(query: str):
-    """Search items"""
-    stats["total_requests"] += 1
-    results = [item for item in storage.values() if query.lower() in str(item).lower()]
-    return {
-        "success": True,
-        "query": query,
-        "total_results": len(results),
-        "results": results
-    }
+@app.get("/api/v1/audit/stats")
+async def get_audit_stats(token: str = Depends(verify_token)):
+    pool = await get_db_pool()
+    async with pool.acquire() as conn:
+        total = await conn.fetchval("SELECT COUNT(*) FROM audit_logs")
+        today = await conn.fetchval("SELECT COUNT(*) FROM audit_logs WHERE created_at >= CURRENT_DATE")
+        by_action = await conn.fetch("SELECT action, COUNT(*) as cnt FROM audit_logs GROUP BY action ORDER BY cnt DESC LIMIT 10")
+        return {"total_logs": total, "today": today, "by_action": [dict(r) for r in by_action]}
 
-@app.get("/stats")
-async def get_statistics():
-    """Get service statistics"""
-    uptime = (datetime.now() - stats["start_time"]).total_seconds()
-    return {
-        "uptime_seconds": int(uptime),
-        "total_requests": stats["total_requests"],
-        "total_items": stats["total_items"],
-        "service": "audit-service",
-        "port": 8112,
-        "status": "operational"
-    }
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8112)

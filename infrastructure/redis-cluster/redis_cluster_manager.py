@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Redis Cluster Management System for Agent Banking Network
+Redis Cluster Management System for Remittance Platform
 Provides complete Redis cluster setup, monitoring, and management
 Optimized for high-availability banking operations
 """
@@ -142,7 +142,7 @@ class NodeStatus:
 class RedisConfigGenerator:
     """Generate Redis configuration files"""
     
-    def __init__(self, base_dir: str = "/home/ubuntu/agent-banking-network/infrastructure/redis-cluster"):
+    def __init__(self, base_dir: str = "/home/ubuntu/remittance-network/infrastructure/redis-cluster"):
         self.base_dir = Path(base_dir)
         self.config_dir = self.base_dir / "config"
         self.data_dir = self.base_dir / "data"
@@ -775,7 +775,7 @@ class BankingCacheManager:
 
 def create_default_cluster_config() -> ClusterConfig:
     """Create default cluster configuration"""
-    base_dir = "/home/ubuntu/agent-banking-network/infrastructure/redis-cluster"
+    base_dir = "/home/ubuntu/remittance-network/infrastructure/redis-cluster"
     
     # Master nodes
     master_nodes = []
@@ -844,7 +844,7 @@ def create_default_cluster_config() -> ClusterConfig:
         sentinel_nodes.append(node)
     
     return ClusterConfig(
-        cluster_name="agent-banking-cluster",
+        cluster_name="remittance-cluster",
         nodes=master_nodes + replica_nodes,
         sentinel_nodes=sentinel_nodes,
         cluster_require_full_coverage=True,

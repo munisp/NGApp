@@ -68,15 +68,15 @@ class CrashReportingService {
       Sentry.init({
         dsn,
         environment,
-        release: `agent-banking@${release}`,
+        release: `remittance@${release}`,
         
         // Performance monitoring
         integrations: [
           new BrowserTracing({
             tracingOrigins: [
               'localhost',
-              /^https:\/\/.*\.agentbanking\.com/,
-              /^https:\/\/api\.agentbanking\.com/
+              /^https:\/\/.*\.remittance\.com/,
+              /^https:\/\/api\.remittance\.com/
             ],
             routingInstrumentation: Sentry.reactRouterV6Instrumentation
           })

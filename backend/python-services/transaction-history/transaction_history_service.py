@@ -3,7 +3,7 @@ _sys.path.insert(0, _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), 
 from shared.middleware import apply_middleware, ErrorResponse
 from shared.observability import setup_logging, get_logger, metrics_router, MetricsMiddleware
 """
-Transaction History Service for Agent Banking Platform
+Transaction History Service for Remittance Platform
 Provides comprehensive transaction tracking, querying, and historical analysis
 """
 

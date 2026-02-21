@@ -35,19 +35,19 @@ class DatabaseConfig:
     # Primary connection (through PgBouncer)
     DATABASE_URL = os.getenv(
         "DATABASE_URL",
-        "postgresql://mojaloop:mojaloop@pgbouncer.agent-banking.svc.cluster.local:6432/mojaloop"
+        "postgresql://mojaloop:mojaloop@pgbouncer.remittance.svc.cluster.local:6432/mojaloop"
     )
     
     # Direct primary connection (for migrations and admin)
     DATABASE_URL_DIRECT = os.getenv(
         "DATABASE_URL_DIRECT",
-        "postgresql://mojaloop:mojaloop@mojaloop-postgres-primary.agent-banking.svc.cluster.local:5432/mojaloop"
+        "postgresql://mojaloop:mojaloop@mojaloop-postgres-primary.remittance.svc.cluster.local:5432/mojaloop"
     )
     
     # Read replica connection (for read-heavy operations)
     DATABASE_URL_REPLICA = os.getenv(
         "DATABASE_URL_REPLICA",
-        "postgresql://mojaloop:mojaloop@mojaloop-postgres-replica.agent-banking.svc.cluster.local:5432/mojaloop"
+        "postgresql://mojaloop:mojaloop@mojaloop-postgres-replica.remittance.svc.cluster.local:5432/mojaloop"
     )
     
     # Connection pool settings

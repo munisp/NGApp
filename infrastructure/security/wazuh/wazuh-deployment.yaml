@@ -21,8 +21,8 @@ data:
         <logall_json>no</logall_json>
         <email_notification>no</email_notification>
         <smtp_server>localhost</smtp_server>
-        <email_from>wazuh@agent-banking.com</email_from>
-        <email_to>security@agent-banking.com</email_to>
+        <email_from>wazuh@remittance.com</email_from>
+        <email_to>security@remittance.com</email_to>
         <hostname>wazuh-manager</hostname>
         <email_maxperhour>12</email_maxperhour>
         <email_log_source>alerts.log</email_log_source>
@@ -793,10 +793,10 @@ metadata:
 spec:
   tls:
   - hosts:
-    - wazuh.agent-banking.local
+    - wazuh.remittance.local
     secretName: wazuh-tls
   rules:
-  - host: wazuh.agent-banking.local
+  - host: wazuh.remittance.local
     http:
       paths:
       - path: /

@@ -1,6 +1,6 @@
 /**
  * Dashboard Screen
- * Main dashboard for agent banking operations
+ * Main dashboard for remittance operations
  */
 
 import React, {useEffect, useState} from 'react';

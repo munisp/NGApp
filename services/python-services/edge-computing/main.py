@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Edge Computing Service for Agent Banking Network
+Edge Computing Service for Remittance Platform
 Provides edge computing capabilities for distributed processing and real-time analytics
 """
 
@@ -49,7 +49,7 @@ class EdgeComputingService:
                 port=os.getenv('DB_PORT', '5432'),
                 user=os.getenv('DB_USER', 'postgres'),
                 password=os.getenv('DB_PASSWORD', 'password'),
-                database=os.getenv('DB_NAME', 'agent_banking')
+                database=os.getenv('DB_NAME', 'remittance')
             )
             
             # Redis connection

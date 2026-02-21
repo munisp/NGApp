@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Unified Streaming Platform - Fluvio + Kafka Integration
-Seamless integration between Fluvio and Kafka for Agent Banking Platform
+Seamless integration between Fluvio and Kafka for Remittance Platform
 """
 
 import asyncio
@@ -421,7 +421,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="Unified Streaming Platform",
-    description="Fluvio + Kafka Integration for Agent Banking Platform",
+    description="Fluvio + Kafka Integration for Remittance Platform",
     version="1.0.0",
     lifespan=lifespan
 )

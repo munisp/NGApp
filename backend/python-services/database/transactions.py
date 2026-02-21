@@ -1,5 +1,5 @@
 """
-Transaction Management Utilities for Agent Banking Platform
+Transaction Management Utilities for Remittance Platform
 
 This module provides production-ready transaction management with:
 - Automatic commit/rollback

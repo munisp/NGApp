@@ -12,7 +12,7 @@
 ┌─────────────────────────────────────────────────────────────────────┐
 │                        DATA SOURCES                                  │
 ├──────────────┬──────────────┬──────────────┬──────────────┬─────────┤
-│  E-commerce  │     POS      │ Supply Chain │Agent Banking │ Customer│
+│  E-commerce  │     POS      │ Supply Chain │Remittance Platform │ Customer│
 │   Orders     │ Transactions │  Inventory   │ Transactions │   KYC   │
 └──────┬───────┴──────┬───────┴──────┬───────┴──────┬───────┴────┬────┘
        │              │              │              │             │
@@ -498,7 +498,7 @@ curl http://localhost:8073/flow/visualization
 │  │ E-commerce    │   523    │    520    │    3    │        │
 │  │ POS           │  1,000   │    993    │    7    │        │
 │  │ Supply Chain  │   342    │    340    │    2    │        │
-│  │ Agent Banking │   856    │    854    │    2    │        │
+│  │ Remittance Platform │   856    │    854    │    2    │        │
 │  │ Customer      │   234    │    233    │    1    │        │
 │  └───────────────┴──────────┴───────────┴─────────┘        │
 └─────────────────────────────────────────────────────────────┘
@@ -526,7 +526,7 @@ curl http://localhost:8073/flow/visualization
 
 ```bash
 # Start real-time data flow service
-cd /home/ubuntu/agent-banking-platform/backend/python-services/lakehouse-service
+cd /home/ubuntu/remittance-platform/backend/python-services/lakehouse-service
 python realtime_data_flow.py
 
 # Service runs on: http://localhost:8073

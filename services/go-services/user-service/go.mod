@@ -1,4 +1,4 @@
-module agent-banking/user-service
+module remittance/user-service
 
 go 1.21
 

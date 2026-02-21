@@ -3,7 +3,7 @@ _sys.path.insert(0, _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), 
 from shared.middleware import apply_middleware, ErrorResponse
 from shared.observability import setup_logging, get_logger, metrics_router, MetricsMiddleware
 """
-AI Orchestration Service for Agent Banking Platform
+AI Orchestration Service for Remittance Platform
 Coordinates AI/ML models for fraud detection, credit scoring, and risk assessment
 """
 

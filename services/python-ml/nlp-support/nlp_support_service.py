@@ -246,9 +246,9 @@ class CustomerSupportChatbot:
         """Load response templates for different intents"""
         return {
             "greeting": [
-                "Hello! Welcome to Agent Banking Network. How can I assist you today?",
+                "Hello! Welcome to Remittance Platform. How can I assist you today?",
                 "Hi there! I'm here to help you with your banking needs. What can I do for you?",
-                "Good day! Thank you for contacting Agent Banking Network. How may I help you?"
+                "Good day! Thank you for contacting Remittance Platform. How may I help you?"
             ],
             "account_inquiry": [
                 "I'd be happy to help you with your account inquiry. {}",
@@ -588,7 +588,7 @@ class NLPSupportService:
         self.postgres_config = postgres_config or {
             'host': 'os.getenv("HOST", "os.getenv("HOST", "os.getenv("HOST", "os.getenv("HOST", "os.getenv("HOST", "os.getenv("HOST", "os.getenv("HOST", "os.getenv("HOST", "localhost")")")")")")")")',
             'port': '5432',
-            'database': 'agent_banking',
+            'database': 'remittance',
             'user': 'postgres',
             'password': 'password'
         }

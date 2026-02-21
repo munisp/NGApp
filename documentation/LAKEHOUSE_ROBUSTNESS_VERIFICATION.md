@@ -451,19 +451,19 @@ pip install fastapi uvicorn pyspark delta-spark \
 
 ```bash
 # 1. Start lakehouse service
-cd /home/ubuntu/agent-banking-platform/backend/python-services/lakehouse-service
+cd /home/ubuntu/remittance-platform/backend/python-services/lakehouse-service
 python lakehouse_complete.py  # Port 8070
 
 # 2. Start ETL pipeline
-cd /home/ubuntu/agent-banking-platform/backend/python-services/etl-pipeline
+cd /home/ubuntu/remittance-platform/backend/python-services/etl-pipeline
 python etl_service.py  # Port 8071
 
 # 3. Start analytics service
-cd /home/ubuntu/agent-banking-platform/backend/python-services/unified-analytics
+cd /home/ubuntu/remittance-platform/backend/python-services/unified-analytics
 python analytics_service.py  # Port 8072
 
 # 4. Start dashboard
-cd /home/ubuntu/agent-banking-platform/frontend/lakehouse-dashboard
+cd /home/ubuntu/remittance-platform/frontend/lakehouse-dashboard
 npm install && npm run dev  # Port 3000
 ```
 

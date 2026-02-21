@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Enhanced Dapr Workflow Engine for Agent Banking Network
+Enhanced Dapr Workflow Engine for Remittance Platform
 Implements distributed workflows using Dapr runtime with State Management and Pub/Sub
 """
 

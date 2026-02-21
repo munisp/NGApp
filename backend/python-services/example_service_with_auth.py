@@ -4,7 +4,7 @@ from shared.middleware import apply_middleware, ErrorResponse
 from shared.observability import setup_logging, get_logger, metrics_router, MetricsMiddleware
 """
 Example Service with Keycloak Authentication
-Agent Banking Platform V11.0
+Remittance Platform V11.0
 
 This example demonstrates how to integrate Keycloak authentication
 into existing FastAPI microservices.
@@ -28,7 +28,7 @@ import httpx
 import uuid as uuid_mod
 
 DATABASE_SERVICE_URL = os.getenv("DATABASE_SERVICE_URL", "http://database-service:8080")
-KEYCLOAK_ADMIN_URL = os.getenv("KEYCLOAK_URL", "http://keycloak:8080") + "/admin/realms/agent-banking"
+KEYCLOAK_ADMIN_URL = os.getenv("KEYCLOAK_URL", "http://keycloak:8080") + "/admin/realms/remittance"
 TEMPORAL_URL = os.getenv("TEMPORAL_URL", "http://temporal:7233")
 
 # Import Keycloak authentication
@@ -51,7 +51,7 @@ logger = logging.getLogger(__name__)
 
 # Initialize FastAPI app
 app = FastAPI(
-    title="Agent Banking Service",
+    title="Remittance Platform Service",
     description="Example service with Keycloak authentication",
     version="1.0.0"
 )
@@ -70,8 +70,8 @@ app.add_middleware(
 # Initialize Keycloak auth
 auth = KeycloakAuth(
     server_url="http://keycloak:8080",
-    realm="agent-banking",
-    client_id="agent-banking-api"
+    realm="remittance",
+    client_id="remittance-api"
 )
 
 
@@ -112,14 +112,14 @@ class TransactionResponse(BaseModel):
 @app.get("/health")
 async def health_check():
     """Health check endpoint."""
-    return {"status": "healthy", "service": "agent-banking-service"}
+    return {"status": "healthy", "service": "remittance-service"}
 
 
 @app.get("/")
 async def root():
     """Root endpoint."""
     return {
-        "service": "Agent Banking Service",
+        "service": "Remittance Platform Service",
         "version": "1.0.0",
         "authentication": "Keycloak OAuth 2.0 / OpenID Connect"
     }
@@ -452,7 +452,7 @@ async def assign_role(
 @app.on_event("startup")
 async def startup_event():
     """Application startup event."""
-    logger.info("Agent Banking Service starting up...")
+    logger.info("Remittance Platform Service starting up...")
     logger.info(f"Keycloak server: {auth.server_url}")
     logger.info(f"Keycloak realm: {auth.realm}")
     logger.info(f"Client ID: {auth.client_id}")
@@ -462,7 +462,7 @@ async def startup_event():
 @app.on_event("shutdown")
 async def shutdown_event():
     """Application shutdown event."""
-    logger.info("Agent Banking Service shutting down...")
+    logger.info("Remittance Platform Service shutting down...")
 
 
 # ============================================================================

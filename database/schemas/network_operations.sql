@@ -258,8 +258,8 @@ CREATE TABLE settlement_entries (
     
     -- Agent account information
     agent_account_number VARCHAR(50),
-    agent_bank_code VARCHAR(20),
-    agent_bank_name VARCHAR(100),
+    partner_bank_code VARCHAR(20),
+    partner_bank_name VARCHAR(100),
     
     -- Processing status
     status VARCHAR(30) NOT NULL DEFAULT 'pending',
@@ -484,8 +484,8 @@ CREATE TABLE commission_payment_entries (
     
     -- Agent payment information
     agent_account_number VARCHAR(50),
-    agent_bank_code VARCHAR(20),
-    agent_bank_name VARCHAR(100),
+    partner_bank_code VARCHAR(20),
+    partner_bank_name VARCHAR(100),
     
     -- Processing status
     status VARCHAR(30) NOT NULL DEFAULT 'pending',

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Advanced Monitoring and Observability Service for Agent Banking Network
+Advanced Monitoring and Observability Service for Remittance Platform
 
 This service provides comprehensive monitoring, alerting, and observability
 capabilities for the entire banking platform including:
@@ -134,7 +134,7 @@ class MonitoringService:
             self.db = psycopg2.connect(
                 host=self.config.get('db_host', 'localhost'),
                 port=self.config.get('db_port', 5432),
-                database=self.config.get('db_name', 'agent_banking'),
+                database=self.config.get('db_name', 'remittance'),
                 user=self.config.get('db_user', 'postgres'),
                 password=self.config.get('db_password', 'password')
             )
@@ -1122,7 +1122,7 @@ DASHBOARD_TEMPLATE = """
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Agent Banking Network - Monitoring Dashboard</title>
+    <title>Remittance Platform - Monitoring Dashboard</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; }
@@ -1137,7 +1137,7 @@ DASHBOARD_TEMPLATE = """
     </style>
 </head>
 <body>
-    <h1>Agent Banking Network - Real-Time Monitoring</h1>
+    <h1>Remittance Platform - Real-Time Monitoring</h1>
     
     <div class="dashboard">
         <div class="card">
@@ -1286,7 +1286,7 @@ def main():
         'debug': os.getenv('DEBUG', 'false').lower() == 'true',
         'db_host': os.getenv('DB_HOST', 'localhost'),
         'db_port': int(os.getenv('DB_PORT', 5432)),
-        'db_name': os.getenv('DB_NAME', 'agent_banking'),
+        'db_name': os.getenv('DB_NAME', 'remittance'),
         'db_user': os.getenv('DB_USER', 'postgres'),
         'db_password': os.getenv('DB_PASSWORD', 'password'),
         'redis_host': os.getenv('REDIS_HOST', 'localhost'),

@@ -1,6 +1,6 @@
 # Ray Configuration for Distributed Computing
 
-cluster_name: agent-banking-ray
+cluster_name: remittance-ray
 
 # Cloud provider configuration
 provider:

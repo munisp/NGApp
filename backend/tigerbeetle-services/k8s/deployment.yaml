@@ -4,7 +4,7 @@ apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: tigerbeetle
-  namespace: agent-banking
+  namespace: remittance
   labels:
     app: tigerbeetle
     component: database
@@ -72,7 +72,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: tigerbeetle
-  namespace: agent-banking
+  namespace: remittance
   labels:
     app: tigerbeetle
 spec:
@@ -89,7 +89,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: tigerbeetle-native
-  namespace: agent-banking
+  namespace: remittance
   labels:
     app: tigerbeetle-native
     component: api
@@ -110,7 +110,7 @@ spec:
     spec:
       containers:
       - name: tigerbeetle-native
-        image: agent-banking/tigerbeetle-native:latest
+        image: remittance/tigerbeetle-native:latest
         ports:
         - containerPort: 8094
           name: http
@@ -145,7 +145,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: tigerbeetle-native
-  namespace: agent-banking
+  namespace: remittance
   labels:
     app: tigerbeetle-native
 spec:
@@ -163,7 +163,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: tigerbeetle-primary
-  namespace: agent-banking
+  namespace: remittance
   labels:
     app: tigerbeetle-primary
     component: api
@@ -184,7 +184,7 @@ spec:
     spec:
       containers:
       - name: tigerbeetle-primary
-        image: agent-banking/tigerbeetle-primary:latest
+        image: remittance/tigerbeetle-primary:latest
         ports:
         - containerPort: 8091
           name: http
@@ -226,7 +226,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: tigerbeetle-primary
-  namespace: agent-banking
+  namespace: remittance
   labels:
     app: tigerbeetle-primary
 spec:
@@ -244,7 +244,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: tigerbeetle-edge
-  namespace: agent-banking
+  namespace: remittance
   labels:
     app: tigerbeetle-edge
     component: api
@@ -265,7 +265,7 @@ spec:
     spec:
       containers:
       - name: tigerbeetle-edge
-        image: agent-banking/tigerbeetle-edge:latest
+        image: remittance/tigerbeetle-edge:latest
         ports:
         - containerPort: 8092
           name: http
@@ -302,7 +302,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: tigerbeetle-edge
-  namespace: agent-banking
+  namespace: remittance
   labels:
     app: tigerbeetle-edge
 spec:
@@ -320,7 +320,7 @@ apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
   name: tigerbeetle-native-hpa
-  namespace: agent-banking
+  namespace: remittance
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
@@ -348,7 +348,7 @@ apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
   name: tigerbeetle-primary-hpa
-  namespace: agent-banking
+  namespace: remittance
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
@@ -370,7 +370,7 @@ apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
   name: tigerbeetle-edge-hpa
-  namespace: agent-banking
+  namespace: remittance
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
@@ -392,7 +392,7 @@ apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
   name: tigerbeetle-pdb
-  namespace: agent-banking
+  namespace: remittance
 spec:
   minAvailable: 2
   selector:
@@ -405,7 +405,7 @@ apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
   name: tigerbeetle-network-policy
-  namespace: agent-banking
+  namespace: remittance
 spec:
   podSelector:
     matchLabels:

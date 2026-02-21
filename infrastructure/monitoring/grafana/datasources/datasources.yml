@@ -11,7 +11,7 @@ datasources:
   - name: PostgreSQL
     type: postgres
     url: postgresql:5432
-    database: agent_banking
+    database: remittance
     user: postgres
     secureJsonData:
       password: password

@@ -3,7 +3,7 @@ _sys.path.insert(0, _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), 
 from shared.middleware import apply_middleware, ErrorResponse
 from shared.observability import setup_logging, get_logger, metrics_router, MetricsMiddleware
 """
-Comprehensive Notification Service for Agent Banking Platform
+Comprehensive Notification Service for Remittance Platform
 Handles multi-channel notifications including email, SMS, push notifications, and WebSocket
 """
 
@@ -224,7 +224,7 @@ class EmailService:
         self.smtp_port = int(os.getenv("SMTP_PORT", "587"))
         self.smtp_username = os.getenv("SMTP_USERNAME", "")
         self.smtp_password = os.getenv("SMTP_PASSWORD", "")
-        self.from_email = os.getenv("FROM_EMAIL", "noreply@agentbanking.com")
+        self.from_email = os.getenv("FROM_EMAIL", "noreply@remittance-platform.com")
         
         # AWS SES configuration (alternative to SMTP)
         self.use_ses = os.getenv("USE_SES", "false").lower() == "true"
@@ -495,7 +495,7 @@ class TemplateEngine:
                 <li>Reference: {{ transaction_id }}</li>
             </ul>
             <p>If you did not authorize this transaction, please contact us immediately.</p>
-            <p>Best regards,<br>Agent Banking Team</p>
+            <p>Best regards,<br>Remittance Platform Team</p>
         </body>
         </html>
         """
@@ -522,7 +522,7 @@ class TemplateEngine:
                 <li>Contact us immediately at {{ support_phone }}</li>
             </ul>
             <p>Your account has been temporarily secured as a precautionary measure.</p>
-            <p>Agent Banking Security Team</p>
+            <p>Remittance Platform Security Team</p>
         </body>
         </html>
         """

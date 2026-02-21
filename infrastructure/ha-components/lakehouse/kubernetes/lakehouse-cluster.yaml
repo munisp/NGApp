@@ -16,7 +16,7 @@ metadata:
     app: lakehouse
 data:
   # Apache Iceberg + Trino Data Lakehouse Configuration
-  # High-Availability setup for Agent Banking Network Analytics
+  # High-Availability setup for Remittance Platform Analytics
   
   trino-config.properties: |
     coordinator=true
@@ -99,7 +99,7 @@ data:
       </property>
       <property>
         <name>hive.metastore.warehouse.dir</name>
-        <value>s3a://agent-banking-lakehouse/warehouse</value>
+        <value>s3a://remittance-lakehouse/warehouse</value>
       </property>
       <property>
         <name>fs.s3a.endpoint</name>
@@ -134,8 +134,8 @@ data:
 #   - postgres-password: PostgreSQL password for Hive Metastore
 #
 # Required AWS Secrets Manager entries:
-#   - agent-banking/lakehouse/s3 (with properties: access-key, secret-key, endpoint)
-#   - agent-banking/lakehouse/database (with property: password)
+#   - remittance/lakehouse/s3 (with properties: access-key, secret-key, endpoint)
+#   - remittance/lakehouse/database (with property: password)
 #
 # To deploy without External Secrets (development only), create a Secret manually:
 # kubectl create secret generic lakehouse-secrets \
@@ -590,7 +590,7 @@ spec:
   - from:
     - namespaceSelector:
         matchLabels:
-          name: agent-banking-system
+          name: remittance-system
     ports:
     - protocol: TCP
       port: 8080

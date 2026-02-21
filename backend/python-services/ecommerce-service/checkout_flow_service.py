@@ -106,7 +106,7 @@ async def init_db():
     db_pool = await asyncpg.create_pool(
         host=os.getenv('DB_HOST', 'localhost'),
         port=5432,
-        database='agent_banking',
+        database='remittance',
         user=os.getenv('DB_USER', 'postgres'),
         password=os.getenv('DB_PASSWORD', ''),
         min_size=5,

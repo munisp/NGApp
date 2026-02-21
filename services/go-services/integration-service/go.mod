@@ -1,4 +1,4 @@
-module agent-banking/integration-service
+module remittance/integration-service
 
 go 1.21
 

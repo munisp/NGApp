@@ -35,7 +35,7 @@ export default function Login() {
             <div className="w-16 h-16 bg-primary-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
               <span className="text-white font-bold text-2xl">AB</span>
             </div>
-            <h1 className="text-2xl font-bold text-gray-900">Agent Banking</h1>
+            <h1 className="text-2xl font-bold text-gray-900">Remittance Platform</h1>
             <p className="text-gray-500 mt-1">Management Dashboard</p>
           </div>
 

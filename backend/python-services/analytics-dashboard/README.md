@@ -1,7 +1,7 @@
 
 # Analytics Dashboard Service
 
-This service provides a robust and scalable backend for the Agent Banking Platform's analytics dashboard. It is built using FastAPI, SQLAlchemy, and PostgreSQL, designed for production readiness with comprehensive features including data management, authentication, authorization, logging, and health checks.
+This service provides a robust and scalable backend for the Remittance Platform's analytics dashboard. It is built using FastAPI, SQLAlchemy, and PostgreSQL, designed for production readiness with comprehensive features including data management, authentication, authorization, logging, and health checks.
 
 ## Features
 

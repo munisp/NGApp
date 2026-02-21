@@ -2,7 +2,7 @@
 
 ## Executive Summary
 
-Based on the **3 critical vulnerabilities** identified in the Agent Banking Platform, here are the **top 3 open-source tools** that provide the best coverage and ROI for automated security scanning in your CI/CD pipeline.
+Based on the **3 critical vulnerabilities** identified in the Remittance Platform, here are the **top 3 open-source tools** that provide the best coverage and ROI for automated security scanning in your CI/CD pipeline.
 
 ---
 
@@ -397,7 +397,7 @@ semgrep --config=auto --error /path/to/code
 semgrep --config=auto --baseline-commit=main /path/to/code
 ```
 
-### **Custom Rules for Agent Banking Platform:**
+### **Custom Rules for Remittance Platform:**
 
 ```yaml
 # rules/sql-injection.yml
@@ -693,7 +693,7 @@ gitleaks detect --source . --baseline-path .gitleaks-baseline.json
 
 ```toml
 # .gitleaks.toml
-title = "Agent Banking Platform - Gitleaks Config"
+title = "Remittance Platform - Gitleaks Config"
 
 [extend]
 useDefault = true

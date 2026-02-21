@@ -1,6 +1,6 @@
 """
 Agent Hierarchy & Override Commission Workflow Implementation
-Agent Banking Platform V11.0
+Remittance Platform V11.0
 
 This module implements the Agent Hierarchy Workflow for MLM-style agent recruitment.
 

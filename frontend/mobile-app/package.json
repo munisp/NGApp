@@ -1,7 +1,7 @@
 {
-  "name": "agent-banking-app",
+  "name": "remittance-app",
   "version": "1.0.0",
-  "description": "Agent Banking Mobile Application with Offline Capabilities",
+  "description": "Remittance Platform Mobile Application with Offline Capabilities",
   "main": "index.js",
   "scripts": {
     "android": "react-native run-android",

@@ -41,7 +41,7 @@ class DataSource(str, Enum):
     ECOMMERCE = "ecommerce"
     POS = "pos"
     SUPPLY_CHAIN = "supply_chain"
-    AGENT_BANKING = "agent_banking"
+    REMITTANCE = "remittance"
     CUSTOMER = "customer"
     COMMUNICATION = "communication"
 

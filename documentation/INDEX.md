@@ -1,6 +1,6 @@
-# Agent Banking Platform Documentation Index
+# Remittance Platform Documentation Index
 
-This index provides quick access to the essential documentation for the Agent Banking Platform.
+This index provides quick access to the essential documentation for the Remittance Platform.
 
 ## Essential Guides
 

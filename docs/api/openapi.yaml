@@ -1,8 +1,8 @@
 openapi: 3.1.0
 info:
-  title: Agent Banking Platform API
+  title: Remittance Platform API
   description: |
-    Comprehensive API for the Agent Banking Platform supporting:
+    Comprehensive API for the Remittance Platform supporting:
     - Agent management and hierarchy
     - Customer accounts and KYC
     - Transaction processing (QR payments, P2P, cash in/out)
@@ -13,15 +13,15 @@ info:
   version: 2.0.0
   contact:
     name: API Support
-    email: api-support@agentbanking.com
+    email: api-support@remittance-platform.com
   license:
     name: Proprietary
-    url: https://agentbanking.com/license
+    url: https://remittance-platform.com/license
 
 servers:
-  - url: https://api.agentbanking.com/v1
+  - url: https://api.remittance-platform.com/v1
     description: Production
-  - url: https://staging-api.agentbanking.com/v1
+  - url: https://staging-api.remittance-platform.com/v1
     description: Staging
   - url: http://localhost:8000/v1
     description: Development

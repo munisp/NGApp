@@ -139,7 +139,7 @@ class OnlineLearningProducer:
     
     def __init__(
         self,
-        bootstrap_servers: str = "kafka.agent-banking.svc.cluster.local:9092",
+        bootstrap_servers: str = "kafka.remittance.svc.cluster.local:9092",
         client_id: str = "multibank-ml-producer"
     ):
         self.bootstrap_servers = bootstrap_servers
@@ -242,7 +242,7 @@ class OnlineLearningConsumer:
     
     def __init__(
         self,
-        bootstrap_servers: str = "kafka.agent-banking.svc.cluster.local:9092",
+        bootstrap_servers: str = "kafka.remittance.svc.cluster.local:9092",
         group_id: str = "multibank-ml-consumer",
         db_pool: asyncpg.Pool = None,
         redis_client: redis.Redis = None
@@ -451,7 +451,7 @@ class OnlineLearningPipeline:
         self,
         db_pool: asyncpg.Pool,
         redis_client: redis.Redis,
-        bootstrap_servers: str = "kafka.agent-banking.svc.cluster.local:9092",
+        bootstrap_servers: str = "kafka.remittance.svc.cluster.local:9092",
         model_dir: str = "/var/lib/ml-models"
     ):
         self.db_pool = db_pool

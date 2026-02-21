@@ -14,7 +14,7 @@ interface LakehouseEvent {
 class LakehouseService {
   private s3Client: S3Client;
   private pgPool: Pool;
-  private bucket: string = 'agent-banking-lakehouse';
+  private bucket: string = 'remittance-lakehouse';
   private batchSize: number = 1000;
   private eventBatch: LakehouseEvent[] = [];
 

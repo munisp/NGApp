@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Permify Authorization Engine for Agent Banking Network
+Permify Authorization Engine for Remittance Platform
 Fine-grained permission management and policy enforcement
 """
 
@@ -34,7 +34,7 @@ class PolicyRule:
     description: str
 
 class PermifyManager:
-    """Comprehensive Permify Authorization Manager for Agent Banking Network"""
+    """Comprehensive Permify Authorization Manager for Remittance Platform"""
     
     def __init__(self, api_url: str = "http://localhost:3476", grpc_url: str = "localhost:3478"):
         self.api_url = api_url.rstrip('/')
@@ -343,11 +343,11 @@ entity audit_log {
         # Organization relationships
         relationships = [
             # Organization structure
-            ("organization", "agent-banking-ng", "admin", "user", "admin001"),
-            ("organization", "agent-banking-ng", "member", "user", "manager001"),
-            ("organization", "agent-banking-ng", "member", "user", "kyb001"),
-            ("organization", "agent-banking-ng", "member", "user", "compliance001"),
-            ("organization", "agent-banking-ng", "viewer", "user", "auditor001"),
+            ("organization", "remittance-ng", "admin", "user", "admin001"),
+            ("organization", "remittance-ng", "member", "user", "manager001"),
+            ("organization", "remittance-ng", "member", "user", "kyb001"),
+            ("organization", "remittance-ng", "member", "user", "compliance001"),
+            ("organization", "remittance-ng", "viewer", "user", "auditor001"),
             
             # Agent relationships
             ("agent", "AGT001", "owner", "user", "agent001"),
@@ -595,7 +595,7 @@ entity audit_log {
 
 def main():
     """Main function to setup Permify Authorization Engine"""
-    print("🔐 Agent Banking Network - Permify Authorization Engine Setup")
+    print("🔐 Remittance Platform - Permify Authorization Engine Setup")
     print("=" * 70)
     
     permify = PermifyManager()

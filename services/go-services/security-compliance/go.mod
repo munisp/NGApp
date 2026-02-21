@@ -1,3 +1,3 @@
-module agent-banking-network/security-compliance
+module remittance-network/security-compliance
 
 go 1.21

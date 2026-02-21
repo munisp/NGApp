@@ -1,4 +1,4 @@
-// TigerBeetle Zig Implementation for Agent Banking Network
+// TigerBeetle Zig Implementation for Remittance Platform
 // High-performance double-entry bookkeeping accounting engine
 // Optimized for Nigerian banking operations
 
@@ -376,7 +376,7 @@ pub fn main() !void {
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
     
-    print("🚀 TigerBeetle Zig Implementation for Agent Banking Network\n");
+    print("🚀 TigerBeetle Zig Implementation for Remittance Platform\n");
     print("High-Performance Double-Entry Bookkeeping Engine\n");
     print("Optimized for Nigerian Banking Operations\n\n");
     

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Advanced Hybrid Fraud Detection Service for Agent Banking Network
+Advanced Hybrid Fraud Detection Service for Remittance Platform
 Combines rule-based detection with ML, Deep Learning, and Graph Neural Networks
 """
 

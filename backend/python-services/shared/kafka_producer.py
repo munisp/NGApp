@@ -1,5 +1,5 @@
 """
-Kafka Producer Library for Agent Banking Platform V11.0
+Kafka Producer Library for Remittance Platform V11.0
 
 Provides a reusable Kafka producer for publishing events from microservices.
 
@@ -49,7 +49,7 @@ class KafkaEventProducer:
     def __init__(
         self,
         bootstrap_servers: Optional[str] = None,
-        client_id: str = "agent-banking-producer",
+        client_id: str = "remittance-producer",
         compression_type: str = "snappy",
         acks: str = "all",
         retries: int = 3,

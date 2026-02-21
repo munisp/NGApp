@@ -9,9 +9,9 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
       manifest: {
-        name: 'Agent Banking Management',
+        name: 'Remittance Platform Management',
         short_name: 'ABM Admin',
-        description: 'Comprehensive management dashboard for Agent Banking Platform',
+        description: 'Comprehensive management dashboard for Remittance Platform',
         theme_color: '#1e40af',
         background_color: '#ffffff',
         display: 'standalone',

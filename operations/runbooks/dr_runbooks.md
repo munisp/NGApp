@@ -55,11 +55,11 @@ curl -s http://tigerbeetle:3000/health
 kubectl scale statefulset tigerbeetle -n tigerbeetle --replicas=0
 
 # 2. List available backups
-aws s3 ls s3://agent-banking-backups/tigerbeetle/
+aws s3 ls s3://remittance-backups/tigerbeetle/
 
 # 3. Download latest backup
-BACKUP_DATE=$(aws s3 ls s3://agent-banking-backups/tigerbeetle/ | tail -1 | awk '{print $4}')
-aws s3 cp s3://agent-banking-backups/tigerbeetle/$BACKUP_DATE /tmp/tigerbeetle-backup.tar.gz
+BACKUP_DATE=$(aws s3 ls s3://remittance-backups/tigerbeetle/ | tail -1 | awk '{print $4}')
+aws s3 cp s3://remittance-backups/tigerbeetle/$BACKUP_DATE /tmp/tigerbeetle-backup.tar.gz
 
 # 4. Clear existing data
 kubectl exec -n tigerbeetle tigerbeetle-0 -- rm -rf /data/*
@@ -139,7 +139,7 @@ kubectl rollout restart deployment -n default -l depends-on=postgresql
 kubectl scale statefulset postgresql -n postgres --replicas=0
 
 # 2. Download WAL archives
-aws s3 sync s3://agent-banking-backups/postgres/wal/ /tmp/wal/
+aws s3 sync s3://remittance-backups/postgres/wal/ /tmp/wal/
 
 # 3. Create recovery.conf
 cat > /tmp/recovery.conf << EOF
@@ -161,7 +161,7 @@ kubectl scale statefulset postgresql -n postgres --replicas=1
 kubectl exec -n postgres postgresql-0 -- psql -U postgres -c "SELECT 1;"
 
 # Check table counts
-kubectl exec -n postgres postgresql-0 -- psql -U postgres -d agent_banking -c "
+kubectl exec -n postgres postgresql-0 -- psql -U postgres -d remittance -c "
 SELECT schemaname, relname, n_live_tup 
 FROM pg_stat_user_tables 
 ORDER BY n_live_tup DESC 
@@ -191,13 +191,13 @@ curl -s http://api-gateway/health | jq '.database'
 # 1. Generate new CA (if CA compromised)
 openssl genrsa -out /tmp/ca.key 4096
 openssl req -new -x509 -days 365 -key /tmp/ca.key -out /tmp/ca.crt \
-  -subj "/CN=Agent Banking CA/O=Agent Banking/C=KE"
+  -subj "/CN=Remittance Platform CA/O=Remittance Platform/C=KE"
 
 # 2. Generate new service certificates
 for SERVICE in api-gateway transaction-service auth-service; do
   openssl genrsa -out /tmp/${SERVICE}.key 2048
   openssl req -new -key /tmp/${SERVICE}.key -out /tmp/${SERVICE}.csr \
-    -subj "/CN=${SERVICE}/O=Agent Banking/C=KE"
+    -subj "/CN=${SERVICE}/O=Remittance Platform/C=KE"
   openssl x509 -req -in /tmp/${SERVICE}.csr -CA /tmp/ca.crt -CAkey /tmp/ca.key \
     -CAcreateserial -out /tmp/${SERVICE}.crt -days 90
 done
@@ -325,7 +325,7 @@ curl -s http://reconciliation-service:8080/results/latest | jq '.'
 curl -s http://tigerbeetle:3000/accounts/export > /tmp/tb_balances.json
 
 # 2. Export PostgreSQL balances
-kubectl exec -n postgres postgresql-0 -- psql -U postgres -d agent_banking -c "
+kubectl exec -n postgres postgresql-0 -- psql -U postgres -d remittance -c "
 COPY (
   SELECT agent_id, SUM(amount) as balance 
   FROM transactions 
@@ -371,7 +371,7 @@ kubectl get pods -n keycloak
 
 # 2. Export realm (backup)
 kubectl exec -n keycloak deploy/keycloak -- \
-  /opt/keycloak/bin/kc.sh export --dir /tmp/export --realm agent-banking
+  /opt/keycloak/bin/kc.sh export --dir /tmp/export --realm remittance
 
 # 3. Import realm (restore)
 kubectl exec -n keycloak deploy/keycloak -- \
@@ -379,7 +379,7 @@ kubectl exec -n keycloak deploy/keycloak -- \
 
 # 4. Clear caches
 kubectl exec -n keycloak deploy/keycloak -- \
-  /opt/keycloak/bin/kcadm.sh update realms/agent-banking \
+  /opt/keycloak/bin/kcadm.sh update realms/remittance \
   -s 'eventsEnabled=true' --server http://localhost:8080 \
   --realm master --user admin --password $KEYCLOAK_ADMIN_PASSWORD
 ```

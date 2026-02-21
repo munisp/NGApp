@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-APISIX API Gateway Configuration for Agent Banking Network
+APISIX API Gateway Configuration for Remittance Platform
 Comprehensive routing, security, and middleware integration
 """
 
@@ -26,7 +26,7 @@ class RouteConfig:
     priority: int = 0
 
 class APISIXGatewayManager:
-    """Comprehensive APISIX API Gateway Manager for Agent Banking Network"""
+    """Comprehensive APISIX API Gateway Manager for Remittance Platform"""
     
     def __init__(self, admin_url: str = "http://localhost:9180", admin_key: str = "edd1c9f034335f136f87ad84b625c8f1"):
         self.admin_url = admin_url
@@ -143,7 +143,7 @@ class APISIXGatewayManager:
             },
             "response-rewrite": {
                 "headers": {
-                    "X-Powered-By": "Agent Banking Network",
+                    "X-Powered-By": "Remittance Platform",
                     "X-API-Version": "v6.0.0-ULTIMATE"
                 }
             }
@@ -212,7 +212,7 @@ class APISIXGatewayManager:
             "zipkin": {
                 "endpoint": "http://localhost:9411/api/v2/spans",
                 "sample_ratio": 1,
-                "service_name": "agent-banking-network",
+                "service_name": "remittance-network",
                 "server_addr": "localhost:9411"
             },
             "request-id": {
@@ -396,7 +396,7 @@ class APISIXGatewayManager:
 
 def main():
     """Main function to setup APISIX API Gateway"""
-    print("🚀 Agent Banking Network - APISIX API Gateway Setup")
+    print("🚀 Remittance Platform - APISIX API Gateway Setup")
     print("=" * 60)
     
     gateway = APISIXGatewayManager()

@@ -60,7 +60,7 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: kafka-data-pvc
-  namespace: agent-banking
+  namespace: remittance
 spec:
   accessModes:
     - ReadWriteOnce
@@ -73,7 +73,7 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: temporal-data-pvc
-  namespace: agent-banking
+  namespace: remittance
 spec:
   accessModes:
     - ReadWriteOnce
@@ -86,7 +86,7 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: postgres-data-pvc
-  namespace: agent-banking
+  namespace: remittance
 spec:
   accessModes:
     - ReadWriteOnce
@@ -99,7 +99,7 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: redis-data-pvc
-  namespace: agent-banking
+  namespace: remittance
 spec:
   accessModes:
     - ReadWriteOnce
@@ -112,7 +112,7 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: opensearch-data-pvc
-  namespace: agent-banking-data
+  namespace: remittance-data
 spec:
   accessModes:
     - ReadWriteOnce

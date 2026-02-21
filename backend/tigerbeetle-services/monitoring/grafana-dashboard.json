@@ -1,7 +1,7 @@
 {
   "dashboard": {
     "title": "TigerBeetle Monitoring Dashboard",
-    "tags": ["tigerbeetle", "financial", "agent-banking"],
+    "tags": ["tigerbeetle", "financial", "remittance"],
     "timezone": "browser",
     "schemaVersion": 16,
     "version": 1,

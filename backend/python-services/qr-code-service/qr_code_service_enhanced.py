@@ -404,7 +404,7 @@ async def generate_qr_image(
 async def upload_qr_to_s3(qr_id: str, img_bytes: bytes, content_type: str) -> str:
     """Upload QR code image to S3"""
     try:
-        bucket = os.getenv("S3_BUCKET_NAME", "agent-banking-qrcodes")
+        bucket = os.getenv("S3_BUCKET_NAME", "remittance-qrcodes")
         ext = content_type.split("/")[-1]
         key = f"qrcodes/{qr_id}.{ext}"
         

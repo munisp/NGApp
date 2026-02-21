@@ -12,32 +12,32 @@
           {
             "name": "Platform Directory Exists",
             "status": "PASS",
-            "details": "Path: /home/ubuntu/agent-banking-platform/frontend/mobile-native-enhanced/src"
+            "details": "Path: /home/ubuntu/remittance-platform/frontend/mobile-native-enhanced/src"
           },
           {
             "name": "Security Directory",
             "status": "PASS",
-            "details": "Path: /home/ubuntu/agent-banking-platform/frontend/mobile-native-enhanced/src/security"
+            "details": "Path: /home/ubuntu/remittance-platform/frontend/mobile-native-enhanced/src/security"
           },
           {
             "name": "Performance Directory",
             "status": "PASS",
-            "details": "Path: /home/ubuntu/agent-banking-platform/frontend/mobile-native-enhanced/src/performance"
+            "details": "Path: /home/ubuntu/remittance-platform/frontend/mobile-native-enhanced/src/performance"
           },
           {
             "name": "Analytics Directory",
             "status": "PASS",
-            "details": "Path: /home/ubuntu/agent-banking-platform/frontend/mobile-native-enhanced/src/analytics"
+            "details": "Path: /home/ubuntu/remittance-platform/frontend/mobile-native-enhanced/src/analytics"
           },
           {
             "name": "Advanced Directory",
             "status": "PASS",
-            "details": "Path: /home/ubuntu/agent-banking-platform/frontend/mobile-native-enhanced/src/advanced"
+            "details": "Path: /home/ubuntu/remittance-platform/frontend/mobile-native-enhanced/src/advanced"
           },
           {
             "name": "Utils Directory",
             "status": "PASS",
-            "details": "Path: /home/ubuntu/agent-banking-platform/frontend/mobile-native-enhanced/src/utils"
+            "details": "Path: /home/ubuntu/remittance-platform/frontend/mobile-native-enhanced/src/utils"
           }
         ],
         "passed": 6,
@@ -242,32 +242,32 @@
           {
             "name": "Platform Directory Exists",
             "status": "PASS",
-            "details": "Path: /home/ubuntu/agent-banking-platform/frontend/mobile-pwa/src"
+            "details": "Path: /home/ubuntu/remittance-platform/frontend/mobile-pwa/src"
           },
           {
             "name": "Security Directory",
             "status": "PASS",
-            "details": "Path: /home/ubuntu/agent-banking-platform/frontend/mobile-pwa/src/security"
+            "details": "Path: /home/ubuntu/remittance-platform/frontend/mobile-pwa/src/security"
           },
           {
             "name": "Performance Directory",
             "status": "PASS",
-            "details": "Path: /home/ubuntu/agent-banking-platform/frontend/mobile-pwa/src/performance"
+            "details": "Path: /home/ubuntu/remittance-platform/frontend/mobile-pwa/src/performance"
           },
           {
             "name": "Analytics Directory",
             "status": "PASS",
-            "details": "Path: /home/ubuntu/agent-banking-platform/frontend/mobile-pwa/src/analytics"
+            "details": "Path: /home/ubuntu/remittance-platform/frontend/mobile-pwa/src/analytics"
           },
           {
             "name": "Advanced Directory",
             "status": "PASS",
-            "details": "Path: /home/ubuntu/agent-banking-platform/frontend/mobile-pwa/src/advanced"
+            "details": "Path: /home/ubuntu/remittance-platform/frontend/mobile-pwa/src/advanced"
           },
           {
             "name": "Utils Directory",
             "status": "PASS",
-            "details": "Path: /home/ubuntu/agent-banking-platform/frontend/mobile-pwa/src/utils"
+            "details": "Path: /home/ubuntu/remittance-platform/frontend/mobile-pwa/src/utils"
           }
         ],
         "passed": 6,
@@ -472,32 +472,32 @@
           {
             "name": "Platform Directory Exists",
             "status": "PASS",
-            "details": "Path: /home/ubuntu/agent-banking-platform/frontend/mobile-hybrid/src"
+            "details": "Path: /home/ubuntu/remittance-platform/frontend/mobile-hybrid/src"
           },
           {
             "name": "Security Directory",
             "status": "PASS",
-            "details": "Path: /home/ubuntu/agent-banking-platform/frontend/mobile-hybrid/src/security"
+            "details": "Path: /home/ubuntu/remittance-platform/frontend/mobile-hybrid/src/security"
           },
           {
             "name": "Performance Directory",
             "status": "PASS",
-            "details": "Path: /home/ubuntu/agent-banking-platform/frontend/mobile-hybrid/src/performance"
+            "details": "Path: /home/ubuntu/remittance-platform/frontend/mobile-hybrid/src/performance"
           },
           {
             "name": "Analytics Directory",
             "status": "PASS",
-            "details": "Path: /home/ubuntu/agent-banking-platform/frontend/mobile-hybrid/src/analytics"
+            "details": "Path: /home/ubuntu/remittance-platform/frontend/mobile-hybrid/src/analytics"
           },
           {
             "name": "Advanced Directory",
             "status": "PASS",
-            "details": "Path: /home/ubuntu/agent-banking-platform/frontend/mobile-hybrid/src/advanced"
+            "details": "Path: /home/ubuntu/remittance-platform/frontend/mobile-hybrid/src/advanced"
           },
           {
             "name": "Utils Directory",
             "status": "PASS",
-            "details": "Path: /home/ubuntu/agent-banking-platform/frontend/mobile-hybrid/src/utils"
+            "details": "Path: /home/ubuntu/remittance-platform/frontend/mobile-hybrid/src/utils"
           }
         ],
         "passed": 6,

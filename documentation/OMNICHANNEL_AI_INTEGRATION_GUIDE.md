@@ -196,11 +196,11 @@ Bot (Pidgin): "Money wey dey your account na ₦10,500.00"
 
 | Language | Phrase |
 |----------|--------|
-| English | Welcome to Agent Banking! How can I help you today? |
-| Yoruba | Ẹ ku abọ si Agent Banking! Bawo ni mo ṣe le ran ọ lọwọ loni? |
-| Igbo | Nnọọ na Agent Banking! Kedu ka m ga-esi nyere gị aka taa? |
-| Hausa | Barka da zuwa Agent Banking! Ta yaya zan iya taimaka muku yau? |
-| Pidgin | Welcome to Agent Banking! How I fit help you today? |
+| English | Welcome to Remittance Platform! How can I help you today? |
+| Yoruba | Ẹ ku abọ si Remittance Platform! Bawo ni mo ṣe le ran ọ lọwọ loni? |
+| Igbo | Nnọọ na Remittance Platform! Kedu ka m ga-esi nyere gị aka taa? |
+| Hausa | Barka da zuwa Remittance Platform! Ta yaya zan iya taimaka muku yau? |
+| Pidgin | Welcome to Remittance Platform! How I fit help you today? |
 
 #### 5. Transaction Success
 
@@ -399,11 +399,11 @@ AUTO_DETECT_LANGUAGE=true
 
 ```bash
 # 1. Start Translation Service
-cd /home/ubuntu/agent-banking-platform/backend/python-services/translation-service
+cd /home/ubuntu/remittance-platform/backend/python-services/translation-service
 python3 main.py &
 
 # 2. Start WhatsApp AI Bot
-cd /home/ubuntu/agent-banking-platform/backend/python-services/whatsapp-ai-bot
+cd /home/ubuntu/remittance-platform/backend/python-services/whatsapp-ai-bot
 python3 main.py &
 
 # 3. Verify services are running

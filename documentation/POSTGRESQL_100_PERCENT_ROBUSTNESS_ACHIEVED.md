@@ -57,7 +57,7 @@ from pydantic import BaseSettings, validator
 class Settings(BaseSettings):
     DATABASE_URL: str = os.getenv(
         "DATABASE_URL", 
-        "postgresql://agent_banking:secure_password@localhost:5432/agent_banking_db"
+        "postgresql://remittance:secure_password@localhost:5432/remittance_db"
     )
     
     @validator("DATABASE_URL")

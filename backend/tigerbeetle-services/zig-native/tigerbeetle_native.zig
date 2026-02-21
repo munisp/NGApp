@@ -1,6 +1,6 @@
 // TigerBeetle Native Zig Service
 // High-performance financial accounting engine
-// Provides maximum throughput (1M+ TPS) for the Agent Banking Platform
+// Provides maximum throughput (1M+ TPS) for the Remittance Platform
 
 const std = @import("std");
 const http = std.http;
@@ -67,7 +67,7 @@ const AccountType = enum(u16) {
 
 // Ledger codes for different business domains
 const LedgerCode = enum(u32) {
-    agent_banking = 1,
+    remittance = 1,
     ecommerce = 2,
     pos_transactions = 3,
     supply_chain = 4,
@@ -149,7 +149,7 @@ const TigerBeetleService = struct {
     pub fn createAgentWallet(self: *TigerBeetleService, agent_id: u128) !void {
         try self.createAccount(
             agent_id,
-            @intFromEnum(LedgerCode.agent_banking),
+            @intFromEnum(LedgerCode.remittance),
             @intFromEnum(AccountType.agent_wallet),
             0,
         );
@@ -159,7 +159,7 @@ const TigerBeetleService = struct {
     pub fn createCustomerWallet(self: *TigerBeetleService, customer_id: u128) !void {
         try self.createAccount(
             customer_id,
-            @intFromEnum(LedgerCode.agent_banking),
+            @intFromEnum(LedgerCode.remittance),
             @intFromEnum(AccountType.customer_wallet),
             0,
         );
@@ -338,7 +338,7 @@ const TigerBeetleService = struct {
             customer_account,
             agent_account,
             amount,
-            @intFromEnum(LedgerCode.agent_banking),
+            @intFromEnum(LedgerCode.remittance),
             1,
             TransferFlags.LINKED,
         );

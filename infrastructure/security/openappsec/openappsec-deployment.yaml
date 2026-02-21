@@ -19,8 +19,8 @@ data:
         mode: "blocking"
         sensitivity: "high"
         custom_rules:
-          - name: "agent-banking-rules"
-            description: "Custom rules for agent banking platform"
+          - name: "remittance-rules"
+            description: "Custom rules for remittance platform"
             rules:
               - id: 1001
                 description: "Block SQL injection attempts"
@@ -207,8 +207,8 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: agent-banking-ingress
-  namespace: agent-banking
+  name: remittance-ingress
+  namespace: remittance
   annotations:
     kubernetes.io/ingress.class: "openappsec"
     openappsec.io/waf-enabled: "true"
@@ -218,10 +218,10 @@ metadata:
 spec:
   tls:
   - hosts:
-    - api.agent-banking.com
-    secretName: agent-banking-tls
+    - api.remittance.com
+    secretName: remittance-tls
   rules:
-  - host: api.agent-banking.com
+  - host: api.remittance.com
     http:
       paths:
       - path: /api/v1/agents

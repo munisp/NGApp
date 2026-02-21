@@ -1,11 +1,11 @@
 #!/bin/bash
 
-# KEDA Deployment Script for Agent Banking Platform
+# KEDA Deployment Script for Remittance Platform
 # This script deploys KEDA and all ScaledObjects for the platform
 
 set -e
 
-echo "🚀 KEDA Deployment Script for Agent Banking Platform"
+echo "🚀 KEDA Deployment Script for Remittance Platform"
 echo "=================================================="
 
 # Function to check if kubectl is available
@@ -43,8 +43,8 @@ install_keda() {
 
 # Function to create namespace
 create_namespace() {
-    echo "🏗️ Creating agent-banking namespace..."
-    kubectl create namespace agent-banking --dry-run=client -o yaml | kubectl apply -f -
+    echo "🏗️ Creating remittance namespace..."
+    kubectl create namespace remittance --dry-run=client -o yaml | kubectl apply -f -
     echo "✅ Namespace created/updated"
 }
 
@@ -89,15 +89,15 @@ verify_keda_deployment() {
     
     # Check ScaledObjects
     echo "Checking ScaledObjects..."
-    kubectl get scaledobjects -n agent-banking
+    kubectl get scaledobjects -n remittance
     
     # Check ScaledJobs
     echo "Checking ScaledJobs..."
-    kubectl get scaledjobs -n agent-banking
+    kubectl get scaledjobs -n remittance
     
     # Check HPA created by KEDA
     echo "Checking HPA created by KEDA..."
-    kubectl get hpa -n agent-banking
+    kubectl get hpa -n remittance
     
     echo "✅ KEDA deployment verification completed"
 }
@@ -116,15 +116,15 @@ test_keda_scaling() {
     
     echo "⚠️  Manual testing required:"
     echo "   1. Add messages to Redis queues"
-    echo "   2. Monitor scaling with: kubectl get pods -n agent-banking -w"
-    echo "   3. Check KEDA metrics with: kubectl get scaledobjects -n agent-banking"
+    echo "   2. Monitor scaling with: kubectl get pods -n remittance -w"
+    echo "   3. Check KEDA metrics with: kubectl get scaledobjects -n remittance"
     
     echo "✅ KEDA scaling test setup completed"
 }
 
 # Main execution
 main() {
-    echo "🎯 Starting KEDA deployment for Agent Banking Platform..."
+    echo "🎯 Starting KEDA deployment for Remittance Platform..."
     
     check_kubectl
     check_cluster
@@ -148,10 +148,10 @@ main() {
     echo "   3. Validate performance under various load conditions"
     echo ""
     echo "🔧 Useful commands:"
-    echo "   kubectl get scaledobjects -n agent-banking"
-    echo "   kubectl get hpa -n agent-banking"
+    echo "   kubectl get scaledobjects -n remittance"
+    echo "   kubectl get hpa -n remittance"
     echo "   kubectl logs -n keda deployment/keda-operator"
-    echo "   kubectl describe scaledobject <name> -n agent-banking"
+    echo "   kubectl describe scaledobject <name> -n remittance"
 }
 
 # Execute main function

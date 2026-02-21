@@ -3,7 +3,7 @@ _sys.path.insert(0, _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), 
 from shared.middleware import apply_middleware, ErrorResponse
 from shared.observability import setup_logging, get_logger, metrics_router, MetricsMiddleware
 """
-Hybrid Fraud Detection Engine for Agent Banking Platform
+Hybrid Fraud Detection Engine for Remittance Platform
 Implements five-layer architecture combining rule-based and ML/DL/GNN approaches
 """
 

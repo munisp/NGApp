@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Advanced Credit Scoring Engine for Agent Banking Network
+Advanced Credit Scoring Engine for Remittance Platform
 Implements ensemble models, alternative data integration, regulatory compliance,
 and explainable AI for Nigerian banking credit assessment
 """
@@ -775,9 +775,9 @@ class RegulatoryCompliance:
             
             # Contact information
             notice['contact_information'] = {
-                'company': 'Agent Banking Network',
+                'company': 'Remittance Platform',
                 'phone': '+234-800-BANKING',
-                'email': 'credit@agentbanking.ng',
+                'email': 'credit@remittance-platform.ng',
                 'address': 'Lagos, Nigeria'
             }
         
@@ -842,7 +842,7 @@ class CreditScoringService:
             self.db_config = {
                 'host': os.getenv('DB_HOST', os.getenv('HOST', 'localhost')),
                 'port': os.getenv('DB_PORT', '5432'),
-                'database': os.getenv('DB_NAME', 'agent_banking'),
+                'database': os.getenv('DB_NAME', 'remittance'),
                 'user': os.getenv('DB_USER', 'postgres'),
                 os.getenv('DB_PASSWORD', 'password'): os.getenv('DB_PASSWORD', os.getenv('DB_PASSWORD', 'password'))
             }

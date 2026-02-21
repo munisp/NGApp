@@ -215,27 +215,27 @@ numpy==1.26.2
 
 ### Run Migrations
 ```bash
-cd /home/ubuntu/agent-banking-platform/database
-./run_migrations.sh postgresql://postgres:password@localhost:5432/agent_banking
+cd /home/ubuntu/remittance-platform/database
+./run_migrations.sh postgresql://postgres:password@localhost:5432/remittance
 ```
 
 ### Load Seed Data
 ```bash
-cd /home/ubuntu/agent-banking-platform/database
-./load_seed_data.sh postgresql://postgres:password@localhost:5432/agent_banking
+cd /home/ubuntu/remittance-platform/database
+./load_seed_data.sh postgresql://postgres:password@localhost:5432/remittance
 ```
 
 ### Build Docker Images
 ```bash
-cd /home/ubuntu/agent-banking-platform
+cd /home/ubuntu/remittance-platform
 
 # Authentication service
-docker build -t agent-banking/auth:latest \
+docker build -t remittance/auth:latest \
   -f backend/python-services/authentication-service/Dockerfile \
   backend/python-services/authentication-service/
 
 # Checkout service
-docker build -t agent-banking/checkout:latest \
+docker build -t remittance/checkout:latest \
   -f backend/python-services/ecommerce-service/Dockerfile.checkout_flow \
   backend/python-services/ecommerce-service/
 ```
@@ -295,10 +295,10 @@ All artifacts are production-ready:
 
 ## File Locations
 
-All artifacts are in `/home/ubuntu/agent-banking-platform/`:
+All artifacts are in `/home/ubuntu/remittance-platform/`:
 
 ```
-agent-banking-platform/
+remittance-platform/
 ├── database/
 │   ├── migrations/
 │   │   ├── 001_initial_schema.sql (existing)

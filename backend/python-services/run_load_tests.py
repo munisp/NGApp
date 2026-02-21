@@ -1,6 +1,6 @@
 """
 Load Testing Execution Script
-Agent Banking Platform V11.0
+Remittance Platform V11.0
 
 Executes 4 load test scenarios and generates performance report.
 
@@ -124,7 +124,7 @@ class LoadTestSimulator:
     def run_all_scenarios(self):
         """Run all 4 load test scenarios."""
         print("\n" + "="*80)
-        print("AGENT BANKING PLATFORM V11.0 - LOAD TESTING")
+        print("REMITTANCE PLATFORM V11.0 - LOAD TESTING")
         print("="*80)
         print(f"Start Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
         print("="*80)
@@ -157,7 +157,7 @@ def generate_report(results: List[Dict]) -> str:
     report = []
     
     report.append("# LOAD TESTING PERFORMANCE REPORT")
-    report.append("## Agent Banking Platform V11.0")
+    report.append("## Remittance Platform V11.0")
     report.append("")
     report.append(f"**Generated:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     report.append(f"**Test Duration:** {sum(r['actual_duration'] for r in results):.1f} seconds")

@@ -4,7 +4,7 @@ from shared.middleware import apply_middleware, ErrorResponse
 from shared.observability import setup_logging, get_logger, metrics_router, MetricsMiddleware
 """
 Amazon-eBay Integration Service
-Integrates Agent Banking Platform with Amazon and eBay marketplaces
+Integrates Remittance Platform with Amazon and eBay marketplaces
 """
 from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware

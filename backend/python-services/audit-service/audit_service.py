@@ -3,7 +3,7 @@ _sys.path.insert(0, _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), 
 from shared.middleware import apply_middleware, ErrorResponse
 from shared.observability import setup_logging, get_logger, metrics_router, MetricsMiddleware
 """
-Comprehensive Audit Service for Agent Banking Platform
+Comprehensive Audit Service for Remittance Platform
 Tracks all system activities, changes, and compliance events
 """
 
@@ -56,9 +56,9 @@ class AuditService:
             self.db_pool = await asyncpg.create_pool(
                 host="postgres",
                 port=5432,
-                user="agent_banking_user", 
+                user="remittance_user", 
                 password=os.getenv('DB_PASSWORD', ''),
-                database="agent_banking_db",
+                database="remittance_db",
                 min_size=5,
                 max_size=20
             )
@@ -183,7 +183,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="Audit Service",
-    description="Comprehensive audit service for Agent Banking Platform",
+    description="Comprehensive audit service for Remittance Platform",
     version="1.0.0",
     lifespan=lifespan
 )

@@ -1,8 +1,8 @@
-# RBAC Service for Agent Banking Platform
+# RBAC Service for Remittance Platform
 
 ## Overview
 
-This is a production-ready Role-Based Access Control (RBAC) service built with FastAPI, designed for integration into an Agent Banking Platform. It provides robust authentication and authorization mechanisms, managing users, roles, and permissions to secure access to various functionalities within the platform.
+This is a production-ready Role-Based Access Control (RBAC) service built with FastAPI, designed for integration into an Remittance Platform. It provides robust authentication and authorization mechanisms, managing users, roles, and permissions to secure access to various functionalities within the platform.
 
 ## Features
 

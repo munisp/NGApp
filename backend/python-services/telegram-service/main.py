@@ -1,214 +1,165 @@
-import sys as _sys, os as _os
-_sys.path.insert(0, _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), ".."))
-
-from fastapi import FastAPI, HTTPException, Request
+"""
+Telegram Integration
+Port: 8159
+"""
+from fastapi import FastAPI, HTTPException, Depends, Header
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional, List, Dict, Any
 from datetime import datetime
-import uvicorn
+import uuid
 import os
 import json
-import httpx
-import logging
+import asyncpg
+import uvicorn
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://remittance:remittance@localhost:5432/remittance")
 
-CHANNEL_NAME = "telegram"
-TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
-TELEGRAM_API_URL = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}"
-REDIS_URL = os.getenv("REDIS_URL", "")
+_db_pool = None
 
-app = FastAPI(
-    title="Telegram Service",
-    description="Telegram Bot API integration for Agent Banking",
-    version="2.0.0"
-)
+async def get_db_pool():
+    global _db_pool
+    if _db_pool is None:
+        _db_pool = await asyncpg.create_pool(DATABASE_URL, min_size=2, max_size=10)
+    return _db_pool
 
-from shared.middleware import apply_middleware, ErrorResponse
-from shared.observability import setup_logging, get_logger, metrics_router, MetricsMiddleware
-apply_middleware(app)
-setup_logging("telegram-service")
-app.include_router(metrics_router)
+async def verify_token(authorization: str = Header(...)):
+    if not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Invalid authorization header")
+    token = authorization[7:]
+    if not token or len(token) < 10:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    return token
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=os.getenv("ALLOWED_ORIGINS", "http://localhost:5173,http://localhost:5174,http://localhost:3000").split(","),
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+app = FastAPI(title="Telegram Integration", description="Telegram Integration for Remittance Platform", version="1.0.0")
+app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 
-_redis = None
-
-def _get_redis():
-    global _redis
-    if _redis is None and REDIS_URL:
-        try:
-            import redis as _redis_mod
-            _redis = _redis_mod.from_url(REDIS_URL, decode_responses=True)
-        except Exception:
-            pass
-    return _redis
-
-def storage_get(key: str):
-    r = _get_redis()
-    if r:
-        try:
-            value = r.get(f"tg:storage:{key}")
-            return json.loads(value) if value else None
-        except Exception:
-            pass
-    return None
-
-def storage_set(key: str, value, ttl: int = 86400):
-    r = _get_redis()
-    if r:
-        try:
-            r.setex(f"tg:storage:{key}", ttl, json.dumps(value, default=str))
-            return True
-        except Exception:
-            pass
-    return False
-
-def storage_delete(key: str):
-    r = _get_redis()
-    if r:
-        try:
-            r.delete(f"tg:storage:{key}")
-            return True
-        except Exception:
-            pass
-    return False
-
-def storage_keys(pattern: str = "*"):
-    r = _get_redis()
-    if r:
-        try:
-            return [k.replace("tg:storage:", "") for k in r.keys(f"tg:storage:{pattern}")]
-        except Exception:
-            pass
-    return []
-
-def _incr_counter(name: str) -> int:
-    r = _get_redis()
-    if r:
-        return r.incr(f"tg:counter:{name}")
-    return 0
-
-
-class SendMessageRequest(BaseModel):
-    chat_id: int
-    text: str
-    parse_mode: str = "HTML"
-    reply_markup: Optional[Dict[str, Any]] = None
-
-class WebhookUpdate(BaseModel):
-    update_id: int
-    message: Optional[Dict[str, Any]] = None
-    callback_query: Optional[Dict[str, Any]] = None
-
-
-async def _send_telegram_message(chat_id: int, text: str, reply_markup: Optional[dict] = None) -> dict:
-    if not TELEGRAM_BOT_TOKEN:
-        logger.warning("TELEGRAM_BOT_TOKEN not configured, message queued locally")
-        return {"ok": False, "queued_locally": True}
-
-    payload = {"chat_id": chat_id, "text": text, "parse_mode": "HTML"}
-    if reply_markup:
-        payload["reply_markup"] = reply_markup
-
-    async with httpx.AsyncClient(timeout=15.0) as client:
-        resp = await client.post(f"{TELEGRAM_API_URL}/sendMessage", json=payload)
-        if resp.status_code == 200:
-            return resp.json()
-        else:
-            logger.error(f"Telegram API error {resp.status_code}: {resp.text}")
-            raise HTTPException(status_code=502, detail=f"Telegram API error: {resp.status_code}")
-
-
-@app.get("/")
-async def root():
-    return {
-        "service": "telegram-service",
-        "channel": CHANNEL_NAME,
-        "version": "2.0.0",
-        "status": "operational",
-        "provider": "Telegram Bot API",
-    }
+@app.on_event("startup")
+async def startup():
+    pool = await get_db_pool()
+    async with pool.acquire() as conn:
+        await conn.execute("""
+            CREATE TABLE IF NOT EXISTS telegram_messages (
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                chat_id VARCHAR(100),
+                user_id VARCHAR(255),
+                message_type VARCHAR(30) DEFAULT 'notification',
+                content TEXT NOT NULL,
+                status VARCHAR(20) DEFAULT 'pending',
+                sent_at TIMESTAMPTZ,
+                created_at TIMESTAMPTZ DEFAULT NOW(),
+                updated_at TIMESTAMPTZ DEFAULT NOW()
+            )
+        """)
 
 @app.get("/health")
 async def health_check():
-    r = _get_redis()
-    return {
-        "status": "healthy",
-        "service": "telegram-service",
-        "redis": "connected" if r else "not_configured",
-        "bot_configured": bool(TELEGRAM_BOT_TOKEN),
-    }
+    try:
+        pool = await get_db_pool()
+        async with pool.acquire() as conn:
+            await conn.fetchval("SELECT 1")
+        return {"status": "healthy", "service": "telegram-service", "database": "connected"}
+    except Exception as e:
+        return {"status": "degraded", "service": "telegram-service", "error": str(e)}
 
-@app.post("/send")
-async def send_message(req: SendMessageRequest):
-    _incr_counter("messages_sent")
-    result = await _send_telegram_message(req.chat_id, req.text, req.reply_markup)
-    return {"status": "sent" if result.get("ok") else "queued", "result": result}
 
-@app.post("/webhook")
-async def webhook_handler(request: Request):
-    body = await request.json()
-    logger.info("Telegram webhook event received")
+class ItemCreate(BaseModel):
+    chat_id: Optional[str] = None
+    user_id: Optional[str] = None
+    message_type: Optional[str] = None
+    content: str
+    status: Optional[str] = None
+    sent_at: Optional[str] = None
 
-    if "message" in body:
-        msg = body["message"]
-        chat_id = msg.get("chat", {}).get("id")
-        text = msg.get("text", "")
-        sender = msg.get("from", {})
-        logger.info(f"Incoming from {sender.get('username', 'unknown')}: {text[:50]}")
+class ItemUpdate(BaseModel):
+    chat_id: Optional[str] = None
+    user_id: Optional[str] = None
+    message_type: Optional[str] = None
+    content: Optional[str] = None
+    status: Optional[str] = None
+    sent_at: Optional[str] = None
 
-        storage_set(f"msg:{body.get('update_id', '')}", {
-            "chat_id": chat_id,
-            "text": text,
-            "sender": sender.get("username", ""),
-            "timestamp": datetime.now().isoformat(),
-        })
-        _incr_counter("messages_received")
 
-    elif "callback_query" in body:
-        query = body["callback_query"]
-        logger.info(f"Callback query: {query.get('data', '')}")
-        _incr_counter("callbacks_received")
+@app.post("/api/v1/telegram-service")
+async def create_item(item: ItemCreate, token: str = Depends(verify_token)):
+    pool = await get_db_pool()
+    async with pool.acquire() as conn:
+        data = {k: v for k, v in item.dict().items() if v is not None}
+        if not data:
+            raise HTTPException(status_code=400, detail="No fields provided")
+        cols = list(data.keys())
+        vals = list(data.values())
+        for i in range(len(vals)):
+            if isinstance(vals[i], dict):
+                vals[i] = json.dumps(vals[i])
+        ph = ", ".join(["$" + str(i+1) for i in range(len(cols))])
+        query = f"INSERT INTO telegram_messages ({', '.join(cols)}) VALUES ({ph}) RETURNING *"
+        row = await conn.fetchrow(query, *vals)
+        return dict(row)
 
-    return {"status": "processed"}
 
-@app.post("/set-webhook")
-async def set_webhook(url: str):
-    if not TELEGRAM_BOT_TOKEN:
-        raise HTTPException(status_code=400, detail="TELEGRAM_BOT_TOKEN not configured")
-    async with httpx.AsyncClient(timeout=15.0) as client:
-        resp = await client.post(
-            f"{TELEGRAM_API_URL}/setWebhook",
-            json={"url": url}
+@app.get("/api/v1/telegram-service")
+async def list_items(skip: int = 0, limit: int = 50, token: str = Depends(verify_token)):
+    pool = await get_db_pool()
+    async with pool.acquire() as conn:
+        rows = await conn.fetch(
+            "SELECT * FROM telegram_messages ORDER BY created_at DESC LIMIT $1 OFFSET $2",
+            limit, skip
         )
-        return resp.json()
+        total = await conn.fetchval("SELECT COUNT(*) FROM telegram_messages")
+        return {"total": total, "items": [dict(r) for r in rows], "skip": skip, "limit": limit}
 
-@app.get("/metrics")
-async def get_metrics():
-    r = _get_redis()
-    sent = int(r.get("tg:counter:messages_sent") or 0) if r else 0
-    received = int(r.get("tg:counter:messages_received") or 0) if r else 0
-    callbacks = int(r.get("tg:counter:callbacks_received") or 0) if r else 0
-    return {
-        "channel": CHANNEL_NAME,
-        "messages_sent": sent,
-        "messages_received": received,
-        "callbacks_received": callbacks,
-        "bot_configured": bool(TELEGRAM_BOT_TOKEN),
-    }
 
-@app.get("/stats")
-async def get_statistics():
-    return await get_metrics()
+@app.get("/api/v1/telegram-service/{item_id}")
+async def get_item(item_id: str, token: str = Depends(verify_token)):
+    pool = await get_db_pool()
+    async with pool.acquire() as conn:
+        row = await conn.fetchrow("SELECT * FROM telegram_messages WHERE id=$1", uuid.UUID(item_id))
+        if not row:
+            raise HTTPException(status_code=404, detail="Item not found")
+        return dict(row)
+
+
+@app.put("/api/v1/telegram-service/{item_id}")
+async def update_item(item_id: str, item: ItemUpdate, token: str = Depends(verify_token)):
+    pool = await get_db_pool()
+    async with pool.acquire() as conn:
+        existing = await conn.fetchrow("SELECT * FROM telegram_messages WHERE id=$1", uuid.UUID(item_id))
+        if not existing:
+            raise HTTPException(status_code=404, detail="Item not found")
+        updates = {k: v for k, v in item.dict().items() if v is not None}
+        if not updates:
+            return dict(existing)
+        set_parts = []
+        params = [uuid.UUID(item_id)]
+        idx = 2
+        for k, v in updates.items():
+            set_parts.append(f"{k}=${idx}")
+            params.append(json.dumps(v) if isinstance(v, dict) else v)
+            idx += 1
+        query = f"UPDATE telegram_messages SET {', '.join(set_parts)}, updated_at=NOW() WHERE id=$1 RETURNING *"
+        row = await conn.fetchrow(query, *params)
+        return dict(row)
+
+
+@app.delete("/api/v1/telegram-service/{item_id}")
+async def delete_item(item_id: str, token: str = Depends(verify_token)):
+    pool = await get_db_pool()
+    async with pool.acquire() as conn:
+        result = await conn.execute("DELETE FROM telegram_messages WHERE id=$1", uuid.UUID(item_id))
+        if result == "DELETE 0":
+            raise HTTPException(status_code=404, detail="Item not found")
+        return {"deleted": True}
+
+
+@app.get("/api/v1/telegram-service/stats")
+async def get_stats(token: str = Depends(verify_token)):
+    pool = await get_db_pool()
+    async with pool.acquire() as conn:
+        total = await conn.fetchval("SELECT COUNT(*) FROM telegram_messages")
+        today = await conn.fetchval("SELECT COUNT(*) FROM telegram_messages WHERE created_at >= CURRENT_DATE")
+        return {"total": total, "today": today, "service": "telegram-service"}
+
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8159)

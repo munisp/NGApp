@@ -96,7 +96,7 @@ class SystemValidator:
             'nginx.conf'
         ]
         
-        base_path = Path('/home/ubuntu/agent-banking-platform-complete/edge-services/pos-integration')
+        base_path = Path('/home/ubuntu/remittance-platform-complete/edge-services/pos-integration')
         missing_files = []
         present_files = []
         
@@ -191,7 +191,7 @@ class SystemValidator:
             'payment_processors/processor_factory.py'
         ]
         
-        base_path = Path('/home/ubuntu/agent-banking-platform-complete/edge-services/pos-integration')
+        base_path = Path('/home/ubuntu/remittance-platform-complete/edge-services/pos-integration')
         implementation_status = {}
         
         for file_name in processor_files:
@@ -266,14 +266,14 @@ class SystemValidator:
             'mobile-app/src/services/PaymentService.ts': 'Payment Service'
         }
         
-        base_path = Path('/home/ubuntu/agent-banking-platform-complete/edge-services/pos-integration')
-        mobile_path = Path('/home/ubuntu/agent-banking-platform-complete/mobile-app')
+        base_path = Path('/home/ubuntu/remittance-platform-complete/edge-services/pos-integration')
+        mobile_path = Path('/home/ubuntu/remittance-platform-complete/mobile-app')
         
         component_status = {}
         
         for file_name, description in qr_components.items():
             if 'mobile-app' in file_name:
-                file_path = Path('/home/ubuntu/agent-banking-platform-complete') / file_name
+                file_path = Path('/home/ubuntu/remittance-platform-complete') / file_name
             else:
                 file_path = base_path / file_name
             
@@ -360,7 +360,7 @@ class SystemValidator:
             'device_manager_service.py'
         ]
         
-        base_path = Path('/home/ubuntu/agent-banking-platform-complete/edge-services/pos-integration')
+        base_path = Path('/home/ubuntu/remittance-platform-complete/edge-services/pos-integration')
         device_status = {}
         
         for file_name in device_files:
@@ -438,7 +438,7 @@ class SystemValidator:
         logger.info("🛡️ Validating Fraud Detection...")
         
         # Check enhanced POS service for fraud detection
-        enhanced_pos_path = Path('/home/ubuntu/agent-banking-platform-complete/edge-services/pos-integration/enhanced_pos_service.py')
+        enhanced_pos_path = Path('/home/ubuntu/remittance-platform-complete/edge-services/pos-integration/enhanced_pos_service.py')
         fraud_features = {}
         
         if enhanced_pos_path.exists():
@@ -507,7 +507,7 @@ class SystemValidator:
         """Validate exchange rate service"""
         logger.info("💱 Validating Exchange Rate Service...")
         
-        exchange_rate_path = Path('/home/ubuntu/agent-banking-platform-complete/edge-services/pos-integration/exchange_rate_service.py')
+        exchange_rate_path = Path('/home/ubuntu/remittance-platform-complete/edge-services/pos-integration/exchange_rate_service.py')
         exchange_features = {}
         
         if exchange_rate_path.exists():
@@ -579,7 +579,7 @@ class SystemValidator:
             'monitoring/docker-compose.monitoring.yml'
         ]
         
-        base_path = Path('/home/ubuntu/agent-banking-platform-complete/edge-services/pos-integration')
+        base_path = Path('/home/ubuntu/remittance-platform-complete/edge-services/pos-integration')
         monitoring_status = {}
         
         for file_name in monitoring_files:
@@ -659,7 +659,7 @@ class SystemValidator:
             'tests/load/test_load_performance.py'
         ]
         
-        base_path = Path('/home/ubuntu/agent-banking-platform-complete/edge-services/pos-integration')
+        base_path = Path('/home/ubuntu/remittance-platform-complete/edge-services/pos-integration')
         test_status = {}
         
         for file_name in test_files:
@@ -724,7 +724,7 @@ class SystemValidator:
         }
         
         # Check QR validation service for security features
-        qr_service_path = Path('/home/ubuntu/agent-banking-platform-complete/edge-services/pos-integration/qr_validation_service.py')
+        qr_service_path = Path('/home/ubuntu/remittance-platform-complete/edge-services/pos-integration/qr_validation_service.py')
         if qr_service_path.exists():
             try:
                 with open(qr_service_path, 'r') as f:
@@ -738,7 +738,7 @@ class SystemValidator:
                 logger.warning(f"Could not check QR service security: {e}")
         
         # Check enhanced POS service for fraud detection
-        enhanced_pos_path = Path('/home/ubuntu/agent-banking-platform-complete/edge-services/pos-integration/enhanced_pos_service.py')
+        enhanced_pos_path = Path('/home/ubuntu/remittance-platform-complete/edge-services/pos-integration/enhanced_pos_service.py')
         if enhanced_pos_path.exists():
             try:
                 with open(enhanced_pos_path, 'r') as f:
@@ -749,7 +749,7 @@ class SystemValidator:
                 logger.warning(f"Could not check enhanced POS security: {e}")
         
         # Check Nginx configuration for SSL/TLS
-        nginx_path = Path('/home/ubuntu/agent-banking-platform-complete/edge-services/pos-integration/nginx.conf')
+        nginx_path = Path('/home/ubuntu/remittance-platform-complete/edge-services/pos-integration/nginx.conf')
         if nginx_path.exists():
             try:
                 with open(nginx_path, 'r') as f:
@@ -872,7 +872,7 @@ class SystemValidator:
         }
         
         # Check enhanced POS service
-        enhanced_pos_path = Path('/home/ubuntu/agent-banking-platform-complete/edge-services/pos-integration/enhanced_pos_service.py')
+        enhanced_pos_path = Path('/home/ubuntu/remittance-platform-complete/edge-services/pos-integration/enhanced_pos_service.py')
         if enhanced_pos_path.exists():
             try:
                 with open(enhanced_pos_path, 'r') as f:
@@ -886,7 +886,7 @@ class SystemValidator:
                 logger.warning(f"Could not check enhanced POS business logic: {e}")
         
         # Check device drivers
-        device_drivers_path = Path('/home/ubuntu/agent-banking-platform-complete/edge-services/pos-integration/device_drivers.py')
+        device_drivers_path = Path('/home/ubuntu/remittance-platform-complete/edge-services/pos-integration/device_drivers.py')
         if device_drivers_path.exists():
             try:
                 with open(device_drivers_path, 'r') as f:
@@ -897,7 +897,7 @@ class SystemValidator:
                 logger.warning(f"Could not check device drivers: {e}")
         
         # Check QR validation service
-        qr_service_path = Path('/home/ubuntu/agent-banking-platform-complete/edge-services/pos-integration/qr_validation_service.py')
+        qr_service_path = Path('/home/ubuntu/remittance-platform-complete/edge-services/pos-integration/qr_validation_service.py')
         if qr_service_path.exists():
             try:
                 with open(qr_service_path, 'r') as f:
@@ -908,7 +908,7 @@ class SystemValidator:
                 logger.warning(f"Could not check QR service business logic: {e}")
         
         # Check exchange rate service
-        exchange_rate_path = Path('/home/ubuntu/agent-banking-platform-complete/edge-services/pos-integration/exchange_rate_service.py')
+        exchange_rate_path = Path('/home/ubuntu/remittance-platform-complete/edge-services/pos-integration/exchange_rate_service.py')
         if exchange_rate_path.exists():
             try:
                 with open(exchange_rate_path, 'r') as f:
@@ -918,7 +918,7 @@ class SystemValidator:
                 logger.warning(f"Could not check exchange rate service: {e}")
         
         # Check monitoring configuration
-        prometheus_path = Path('/home/ubuntu/agent-banking-platform-complete/edge-services/pos-integration/monitoring/prometheus/prometheus.yml')
+        prometheus_path = Path('/home/ubuntu/remittance-platform-complete/edge-services/pos-integration/monitoring/prometheus/prometheus.yml')
         if prometheus_path.exists():
             business_features['monitoring_metrics'] = True
         
@@ -1054,7 +1054,7 @@ class SystemValidator:
 
 async def main():
     """Main validation function"""
-    print("🔍 Agent Banking Platform - Complete System Validation")
+    print("🔍 Remittance Platform - Complete System Validation")
     print("=" * 60)
     
     validator = SystemValidator()

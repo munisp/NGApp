@@ -5,7 +5,7 @@ services:
   postgresql:
     image: postgres:15
     environment:
-      POSTGRES_DB: agent_banking
+      POSTGRES_DB: remittance
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: ${DB_PASSWORD:-password}
     ports:
@@ -127,4 +127,4 @@ volumes:
 
 networks:
   default:
-    name: agent-banking-network
+    name: remittance-network

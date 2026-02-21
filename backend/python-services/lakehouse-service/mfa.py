@@ -69,7 +69,7 @@ class MFAManager:
     def generate_qr_code(
         secret: str,
         username: str,
-        issuer: str = "Agent Banking Lakehouse"
+        issuer: str = "Remittance Platform Lakehouse"
     ) -> str:
         """
         Generate QR code for TOTP setup
@@ -105,7 +105,7 @@ class MFAManager:
         return f"data:image/png;base64,{img_base64}"
     
     @staticmethod
-    def setup_mfa(username: str, issuer: str = "Agent Banking Lakehouse") -> MFASetupResponse:
+    def setup_mfa(username: str, issuer: str = "Remittance Platform Lakehouse") -> MFASetupResponse:
         """
         Set up MFA for a user
         Returns secret, QR code, and backup codes

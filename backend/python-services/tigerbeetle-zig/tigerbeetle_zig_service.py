@@ -105,7 +105,7 @@ class TigerBeetleZigService:
         )
         
         # Configuration
-        self.database_url = os.getenv("DATABASE_URL", "postgresql://banking_user:secure_banking_password@localhost:5432/agent_banking")
+        self.database_url = os.getenv("DATABASE_URL", "postgresql://banking_user:secure_banking_password@localhost:5432/remittance")
         self.redis_url = os.getenv("REDIS_URL", "redis://:redis_secure_password@localhost:6379")
         self.tigerbeetle_data_file = os.getenv("TIGERBEETLE_DATA_FILE", "/tmp/tigerbeetle_data.tigerbeetle")
         self.tigerbeetle_port = int(os.getenv("TIGERBEETLE_PORT", "3001"))

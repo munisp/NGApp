@@ -1,6 +1,6 @@
 # Loan Management Service
 
-Production-ready implementation for Agent Banking Platform V11.0.
+Production-ready implementation for Remittance Platform V11.0.
 
 ## Status
 ✅ Directory structure created

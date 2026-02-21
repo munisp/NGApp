@@ -3,7 +3,7 @@ package main
 
 /*
 Security and Compliance Framework Service
-Comprehensive security orchestration and compliance management for Agent Banking Network
+Comprehensive security orchestration and compliance management for Remittance Platform
 Zero placeholders, zero mocks - production ready
 
 Features:
@@ -60,7 +60,7 @@ type Config struct {
 
 func loadConfig() *Config {
 	return &Config{
-		DatabaseURL:      getEnv("DATABASE_URL", "postgres://user:password@${DB_HOST:-os.getenv("HOST", "os.getenv("HOST", "os.getenv("HOST", "os.getenv("HOST", "os.getenv("HOST", "os.getenv("HOST", "os.getenv("HOST", "os.getenv("HOST", "os.getenv("HOST", "os.getenv("HOST", "localhost")")")")")")")")")")}:${DB_PORT:-5432}/agent_banking_network?sslmode=disable"),
+		DatabaseURL:      getEnv("DATABASE_URL", "postgres://user:password@${DB_HOST:-os.getenv("HOST", "os.getenv("HOST", "os.getenv("HOST", "os.getenv("HOST", "os.getenv("HOST", "os.getenv("HOST", "os.getenv("HOST", "os.getenv("HOST", "os.getenv("HOST", "os.getenv("HOST", "localhost")")")")")")")")")")}:${DB_PORT:-5432}/remittance_network?sslmode=disable"),
 		ServerHost:       getEnv("SERVER_HOST", "0.0.0.0"),
 		ServerPort:       getEnv("SERVER_PORT", "8080"),
 		Environment:      getEnv("ENVIRONMENT", "development"),

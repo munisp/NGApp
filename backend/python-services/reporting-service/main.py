@@ -1,202 +1,114 @@
 """
 Reporting Service
-Generates financial and operational reports
+Port: 8000
 """
-
-from fastapi import FastAPI, HTTPException, Query
-from pydantic import BaseModel
-from typing import List, Optional, Dict
+from fastapi import FastAPI, HTTPException, Depends, Header
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel, Field
+from typing import Optional, List, Dict, Any
 from datetime import datetime, timedelta
 from enum import Enum
+import uuid
+import os
+import json
+import asyncpg
 import uvicorn
 
-app = FastAPI(title="Reporting Service")
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://remittance:remittance@localhost:5432/remittance")
+REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
 
-class ReportType(str, Enum):
-    TRANSACTION_SUMMARY = "transaction_summary"
-    AGENT_PERFORMANCE = "agent_performance"
-    COMMISSION_REPORT = "commission_report"
-    FLOAT_UTILIZATION = "float_utilization"
-    FRAUD_ANALYSIS = "fraud_analysis"
-    RECONCILIATION = "reconciliation"
+_db_pool = None
 
-class ReportFormat(str, Enum):
-    PDF = "pdf"
-    EXCEL = "excel"
-    CSV = "csv"
-    JSON = "json"
+async def get_db_pool():
+    global _db_pool
+    if _db_pool is None:
+        _db_pool = await asyncpg.create_pool(DATABASE_URL, min_size=2, max_size=10)
+    return _db_pool
 
-class ReportRequest(BaseModel):
-    reportType: ReportType
-    startDate: str
-    endDate: str
-    format: ReportFormat = ReportFormat.JSON
-    filters: Optional[Dict] = {}
+async def verify_token(authorization: str = Header(...)):
+    if not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Invalid authorization header")
+    token = authorization[7:]
+    if not token or len(token) < 10:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    return token
 
-class ReportResponse(BaseModel):
-    reportId: str
-    reportType: str
-    status: str
-    generatedAt: str
-    downloadUrl: Optional[str] = None
-    data: Optional[Dict] = None
+app = FastAPI(title="Reporting Service", description="Reporting Service for Remittance Platform", version="1.0.0")
+app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 
-# In-memory report storage
-reports: Dict[str, Dict] = {}
-
-@app.post("/reports/generate")
-async def generate_report(request: ReportRequest):
-    """Generate a new report"""
-    
-    report_id = f"RPT-{datetime.utcnow().strftime('%Y%m%d%H%M%S')}"
-    
-    # Generate report data based on type
-    report_data = {}
-    
-    if request.reportType == ReportType.TRANSACTION_SUMMARY:
-        report_data = {
-            "totalTransactions": 15234,
-            "totalVolume": 45678900,
-            "successRate": 98.5,
-            "avgTransactionValue": 2998.5,
-            "byChannel": {
-                "mobile": 12000,
-                "web": 2000,
-                "ussd": 1234
-            }
-        }
-    
-    elif request.reportType == ReportType.AGENT_PERFORMANCE:
-        report_data = {
-            "totalAgents": 1250,
-            "activeAgents": 1100,
-            "topPerformers": [
-                {"agentId": "AGT-001", "transactions": 450, "volume": 1350000},
-                {"agentId": "AGT-002", "transactions": 420, "volume": 1260000},
-                {"agentId": "AGT-003", "transactions": 390, "volume": 1170000}
-            ],
-            "avgTransactionsPerAgent": 12.3
-        }
-    
-    elif request.reportType == ReportType.COMMISSION_REPORT:
-        report_data = {
-            "totalCommission": 456789,
-            "paidCommission": 400000,
-            "pendingCommission": 56789,
-            "byAgent": [
-                {"agentId": "AGT-001", "commission": 15000, "status": "paid"},
-                {"agentId": "AGT-002", "commission": 14000, "status": "paid"}
-            ]
-        }
-    
-    elif request.reportType == ReportType.FLOAT_UTILIZATION:
-        report_data = {
-            "totalFloat": 50000000,
-            "utilizedFloat": 35000000,
-            "availableFloat": 15000000,
-            "utilizationRate": 70.0,
-            "byAgent": [
-                {"agentId": "AGT-001", "allocated": 100000, "utilized": 75000},
-                {"agentId": "AGT-002", "allocated": 100000, "utilized": 80000}
-            ]
-        }
-    
-    elif request.reportType == ReportType.FRAUD_ANALYSIS:
-        report_data = {
-            "totalAlerts": 45,
-            "confirmedFraud": 12,
-            "falsePositives": 33,
-            "blockedAmount": 567890,
-            "topPatterns": [
-                {"pattern": "velocity_fraud", "count": 15},
-                {"pattern": "location_mismatch", "count": 10}
-            ]
-        }
-    
-    elif request.reportType == ReportType.RECONCILIATION:
-        report_data = {
-            "totalRecords": 15234,
-            "matched": 15200,
-            "unmatched": 34,
-            "discrepancyAmount": 12345,
-            "reconciliationRate": 99.78
-        }
-    
-    # Store report
-    reports[report_id] = {
-        "reportId": report_id,
-        "reportType": request.reportType,
-        "startDate": request.startDate,
-        "endDate": request.endDate,
-        "format": request.format,
-        "status": "completed",
-        "generatedAt": datetime.utcnow().isoformat(),
-        "data": report_data
-    }
-    
-    download_url = f"/reports/{report_id}/download" if request.format != ReportFormat.JSON else None
-    
-    return ReportResponse(
-        reportId=report_id,
-        reportType=request.reportType,
-        status="completed",
-        generatedAt=reports[report_id]["generatedAt"],
-        downloadUrl=download_url,
-        data=report_data if request.format == ReportFormat.JSON else None
-    )
-
-@app.get("/reports/{report_id}")
-async def get_report(report_id: str):
-    """Get report details"""
-    
-    if report_id not in reports:
-        raise HTTPException(status_code=404, detail="Report not found")
-    
-    report = reports[report_id]
-    
-    return ReportResponse(
-        reportId=report["reportId"],
-        reportType=report["reportType"],
-        status=report["status"],
-        generatedAt=report["generatedAt"],
-        data=report["data"]
-    )
-
-@app.get("/reports")
-async def list_reports(
-    report_type: Optional[ReportType] = None,
-    start_date: Optional[str] = None,
-    limit: int = Query(10, le=100)
-):
-    """List reports with filters"""
-    
-    filtered_reports = list(reports.values())
-    
-    if report_type:
-        filtered_reports = [r for r in filtered_reports if r["reportType"] == report_type]
-    
-    if start_date:
-        filtered_reports = [r for r in filtered_reports if r["startDate"] >= start_date]
-    
-    return {
-        "reports": filtered_reports[:limit],
-        "total": len(filtered_reports)
-    }
-
-@app.delete("/reports/{report_id}")
-async def delete_report(report_id: str):
-    """Delete a report"""
-    
-    if report_id not in reports:
-        raise HTTPException(status_code=404, detail="Report not found")
-    
-    del reports[report_id]
-    
-    return {"status": "deleted"}
+@app.on_event("startup")
+async def startup():
+    pool = await get_db_pool()
+    async with pool.acquire() as conn:
+        await conn.execute("""
+            CREATE TABLE IF NOT EXISTS reports (
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                report_type VARCHAR(50) NOT NULL,
+                title VARCHAR(255) NOT NULL,
+                parameters JSONB DEFAULT '{}',
+                status VARCHAR(20) DEFAULT 'pending',
+                result JSONB,
+                generated_by VARCHAR(255),
+                file_url TEXT,
+                created_at TIMESTAMPTZ DEFAULT NOW(),
+                completed_at TIMESTAMPTZ
+            );
+            CREATE INDEX IF NOT EXISTS idx_report_type ON reports(report_type);
+            CREATE INDEX IF NOT EXISTS idx_report_status ON reports(status)
+        """)
 
 @app.get("/health")
-async def health():
-    return {"status": "healthy", "service": "reporting-service"}
+async def health_check():
+    try:
+        pool = await get_db_pool()
+        async with pool.acquire() as conn:
+            await conn.fetchval("SELECT 1")
+        return {"status": "healthy", "service": "reporting-service", "database": "connected"}
+    except Exception as e:
+        return {"status": "degraded", "service": "reporting-service", "error": str(e)}
+
+
+class ReportRequest(BaseModel):
+    report_type: str
+    title: str
+    parameters: Optional[Dict[str, Any]] = None
+
+@app.post("/api/v1/reports/generate")
+async def generate_report(req: ReportRequest, token: str = Depends(verify_token)):
+    pool = await get_db_pool()
+    async with pool.acquire() as conn:
+        row = await conn.fetchrow(
+            """INSERT INTO reports (report_type, title, parameters, generated_by, status)
+               VALUES ($1, $2, $3, $4, 'processing') RETURNING *""",
+            req.report_type, req.title, json.dumps(req.parameters or {}), token[:36]
+        )
+        report_id = row["id"]
+        result = {"summary": f"Report {req.report_type} generated", "parameters": req.parameters, "generated_at": datetime.utcnow().isoformat()}
+        await conn.execute(
+            "UPDATE reports SET status='completed', result=$1, completed_at=NOW() WHERE id=$2",
+            json.dumps(result), report_id
+        )
+        return {"report_id": str(report_id), "status": "completed", "result": result}
+
+@app.get("/api/v1/reports")
+async def list_reports(report_type: Optional[str] = None, skip: int = 0, limit: int = 50, token: str = Depends(verify_token)):
+    pool = await get_db_pool()
+    async with pool.acquire() as conn:
+        if report_type:
+            rows = await conn.fetch("SELECT * FROM reports WHERE report_type=$1 ORDER BY created_at DESC LIMIT $2 OFFSET $3", report_type, limit, skip)
+        else:
+            rows = await conn.fetch("SELECT * FROM reports ORDER BY created_at DESC LIMIT $1 OFFSET $2", limit, skip)
+        return {"reports": [dict(r) for r in rows]}
+
+@app.get("/api/v1/reports/{report_id}")
+async def get_report(report_id: str, token: str = Depends(verify_token)):
+    pool = await get_db_pool()
+    async with pool.acquire() as conn:
+        row = await conn.fetchrow("SELECT * FROM reports WHERE id=$1", uuid.UUID(report_id))
+        if not row:
+            raise HTTPException(status_code=404, detail="Report not found")
+        return dict(row)
+
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)

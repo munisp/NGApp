@@ -1,6 +1,6 @@
 """
 Keycloak JWT Authentication Middleware
-Agent Banking Platform V11.0
+Remittance Platform V11.0
 
 Provides JWT token validation and user context extraction for FastAPI services.
 
@@ -9,8 +9,8 @@ Usage:
     
     auth = KeycloakAuth(
         server_url="http://keycloak:8080",
-        realm="agent-banking",
-        client_id="agent-banking-api"
+        realm="remittance",
+        client_id="remittance-api"
     )
     
     @app.get("/protected")
@@ -69,8 +69,8 @@ class KeycloakAuth:
             cache_ttl: JWKS cache TTL in seconds
         """
         self.server_url = server_url or os.getenv("KEYCLOAK_SERVER_URL", "http://keycloak:8080")
-        self.realm = realm or os.getenv("KEYCLOAK_REALM", "agent-banking")
-        self.client_id = client_id or os.getenv("KEYCLOAK_CLIENT_ID", "agent-banking-api")
+        self.realm = realm or os.getenv("KEYCLOAK_REALM", "remittance")
+        self.client_id = client_id or os.getenv("KEYCLOAK_CLIENT_ID", "remittance-api")
         self.verify_signature = verify_signature
         self.verify_audience = verify_audience
         

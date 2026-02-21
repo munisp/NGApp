@@ -1,8 +1,8 @@
-# Agent Banking DB Service
+# Remittance Platform DB Service
 
 ## Overview
 
-This project implements a complete, production-ready FastAPI database service for an Agent Banking Platform. It provides RESTful APIs for managing agents, customers, accounts, and transactions. The service is designed with best practices in mind, including robust error handling, logging, authentication, and configuration management.
+This project implements a complete, production-ready FastAPI database service for an Remittance Platform. It provides RESTful APIs for managing agents, customers, accounts, and transactions. The service is designed with best practices in mind, including robust error handling, logging, authentication, and configuration management.
 
 ## Features
 
@@ -38,7 +38,7 @@ This project implements a complete, production-ready FastAPI database service fo
 
 ```bash
 git clone <repository_url>
-cd agent_banking_db_service
+cd remittance_db_service
 ```
 
 ### 2. Create a virtual environment and activate it

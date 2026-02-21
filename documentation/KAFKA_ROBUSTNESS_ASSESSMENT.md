@@ -109,7 +109,7 @@ import faust
 from faust import App, Record, Stream
 
 self.app = App(
-    'agent-banking-streaming',
+    'remittance-streaming',
     broker=f'kafka://{kafka_bootstrap_servers}',
     value_serializer='json'
 )
@@ -351,7 +351,7 @@ producer_config = {
 ```python
 consumer_config = {
     'bootstrap.servers': kafka_servers,
-    'group.id': 'agent-banking-consumers',
+    'group.id': 'remittance-consumers',
     'auto.offset.reset': 'earliest',
     'enable.auto.commit': False  # Manual commit for reliability
 }

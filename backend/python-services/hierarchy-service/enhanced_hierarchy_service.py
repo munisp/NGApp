@@ -3,7 +3,7 @@ _sys.path.insert(0, _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), 
 from shared.middleware import apply_middleware, ErrorResponse
 from shared.observability import setup_logging, get_logger, metrics_router, MetricsMiddleware
 """
-Agent Banking Platform - Enhanced Hierarchy Service
+Remittance Platform - Enhanced Hierarchy Service
 Python API layer with Go-powered hierarchy traversal engine
 Provides comprehensive hierarchy management with caching and validation
 """
@@ -50,7 +50,7 @@ app.add_middleware(
 )
 
 # Configuration
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://banking_user:banking_pass@localhost:5432/agent_banking")
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://banking_user:banking_pass@localhost:5432/remittance")
 REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379")
 HIERARCHY_GO_SERVICE = os.getenv("HIERARCHY_GO_SERVICE", "http://localhost:8050")
 
@@ -171,7 +171,7 @@ class GoHierarchyEngine:
         try:
             # Call Go service via subprocess (or HTTP in production)
             result = subprocess.run(
-                ['go', 'run', '/home/ubuntu/agent-banking-platform/backend/go-services/hierarchy-engine/main.go',
+                ['go', 'run', '/home/ubuntu/remittance-platform/backend/go-services/hierarchy-engine/main.go',
                  'ancestors', node_id],
                 capture_output=True,
                 text=True,
@@ -193,7 +193,7 @@ class GoHierarchyEngine:
         """Get all descendants of a node using Go service"""
         try:
             result = subprocess.run(
-                ['go', 'run', '/home/ubuntu/agent-banking-platform/backend/go-services/hierarchy-engine/main.go',
+                ['go', 'run', '/home/ubuntu/remittance-platform/backend/go-services/hierarchy-engine/main.go',
                  'descendants', node_id],
                 capture_output=True,
                 text=True,
@@ -213,7 +213,7 @@ class GoHierarchyEngine:
         """Detect if adding parent would create a cycle"""
         try:
             result = subprocess.run(
-                ['go', 'run', '/home/ubuntu/agent-banking-platform/backend/go-services/hierarchy-engine/main.go',
+                ['go', 'run', '/home/ubuntu/remittance-platform/backend/go-services/hierarchy-engine/main.go',
                  'detect-cycle', node_id, parent_id],
                 capture_output=True,
                 text=True,

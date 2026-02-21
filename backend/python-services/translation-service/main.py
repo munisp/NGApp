@@ -87,11 +87,11 @@ BANKING_PHRASES = {
     },
     # Welcome message
     "welcome": {
-        "en": "Welcome to Agent Banking! How can I help you today?",
-        "yo": "Ẹ ku abọ si Agent Banking! Bawo ni mo ṣe le ran ọ lọwọ loni?",
-        "ig": "Nnọọ na Agent Banking! Kedu ka m ga-esi nyere gị aka taa?",
-        "ha": "Barka da zuwa Agent Banking! Ta yaya zan iya taimaka muku yau?",
-        "pcm": "Welcome to Agent Banking! How I fit help you today?"
+        "en": "Welcome to Remittance Platform! How can I help you today?",
+        "yo": "Ẹ ku abọ si Remittance Platform! Bawo ni mo ṣe le ran ọ lọwọ loni?",
+        "ig": "Nnọọ na Remittance Platform! Kedu ka m ga-esi nyere gị aka taa?",
+        "ha": "Barka da zuwa Remittance Platform! Ta yaya zan iya taimaka muku yau?",
+        "pcm": "Welcome to Remittance Platform! How I fit help you today?"
     },
     # Successful transaction
     "success": {

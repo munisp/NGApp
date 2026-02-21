@@ -1,5 +1,5 @@
 """
-Customer Analytics Service for Agent Banking Platform
+Customer Analytics Service for Remittance Platform
 Provides comprehensive customer behavior analysis, segmentation, and insights
 """
 
@@ -103,9 +103,9 @@ class CustomerAnalyticsService:
             self.db_pool = await asyncpg.create_pool(
                 host="postgres",
                 port=5432,
-                user="agent_banking_user",
+                user="remittance_user",
                 password=os.getenv('DB_PASSWORD', ''),
-                database="agent_banking_db",
+                database="remittance_db",
                 min_size=5,
                 max_size=20
             )
@@ -738,7 +738,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="Customer Analytics Service",
-    description="Comprehensive customer behavior analysis and segmentation for Agent Banking Platform",
+    description="Comprehensive customer behavior analysis and segmentation for Remittance Platform",
     version="1.0.0",
     lifespan=lifespan
 )

@@ -1,7 +1,7 @@
 {
-  "name": "agent-banking-management-pwa",
+  "name": "remittance-management-pwa",
   "version": "1.0.0",
-  "description": "Comprehensive PWA for Agent Banking Platform Management",
+  "description": "Comprehensive PWA for Remittance Platform Management",
   "type": "module",
   "scripts": {
     "dev": "vite",

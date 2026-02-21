@@ -78,7 +78,7 @@ def storage_keys(pattern: str = "*"):
 
 app = FastAPI(
     title="Hybrid Engine",
-    description="Hybrid Engine for Agent Banking Platform",
+    description="Hybrid Engine for Remittance Platform",
     version="1.0.0"
 )
 

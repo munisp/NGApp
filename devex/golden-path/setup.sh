@@ -28,7 +28,7 @@ command_exists() {
 print_banner() {
     echo ""
     echo "╔══════════════════════════════════════════════════════════════╗"
-    echo "║           Agent Banking Platform - Golden Path Setup         ║"
+    echo "║           Remittance Platform - Golden Path Setup         ║"
     echo "╚══════════════════════════════════════════════════════════════╝"
     echo ""
 }
@@ -194,7 +194,7 @@ setup_database() {
         log_info "Running database migrations..."
         # Use migrate tool or custom migration script
         if command_exists migrate; then
-            migrate -path migrations -database "postgres://postgres:postgres@localhost:5432/agent_banking?sslmode=disable" up
+            migrate -path migrations -database "postgres://postgres:postgres@localhost:5432/remittance?sslmode=disable" up
         elif [ -f "scripts/migrate.sh" ]; then
             ./scripts/migrate.sh
         fi
@@ -225,7 +225,7 @@ setup_env() {
     if [ ! -f ".env.local" ]; then
         cat > .env.local << 'EOF'
 # Local development overrides
-DATABASE_URL=postgres://postgres:postgres@localhost:5432/agent_banking?sslmode=disable
+DATABASE_URL=postgres://postgres:postgres@localhost:5432/remittance?sslmode=disable
 REDIS_URL=redis://localhost:6379
 KAFKA_BOOTSTRAP_SERVERS=localhost:9092
 KEYCLOAK_URL=http://localhost:8080

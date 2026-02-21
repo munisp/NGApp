@@ -2,7 +2,7 @@ apiVersion: keda.sh/v1alpha1
 kind: ScaledObject
 metadata:
   name: tigerbeetle-scaler
-  namespace: agent-banking
+  namespace: remittance
   labels:
     app: tigerbeetle-service
     component: autoscaler
@@ -42,7 +42,7 @@ spec:
   # Redis transaction queue trigger
   - type: redis
     metadata:
-      address: redis.agent-banking.svc.cluster.local:6379
+      address: redis.remittance.svc.cluster.local:6379
       listName: tigerbeetle_transaction_queue
       listLength: "50"
       enableTLS: "false"
@@ -52,7 +52,7 @@ spec:
   # Redis account creation queue
   - type: redis
     metadata:
-      address: redis.agent-banking.svc.cluster.local:6379
+      address: redis.remittance.svc.cluster.local:6379
       listName: tigerbeetle_account_queue
       listLength: "20"
       enableTLS: "false"
@@ -114,7 +114,7 @@ apiVersion: keda.sh/v1alpha1
 kind: ScaledJob
 metadata:
   name: tigerbeetle-batch-processor
-  namespace: agent-banking
+  namespace: remittance
   labels:
     app: tigerbeetle-batch-processor
     component: batch-autoscaler
@@ -127,13 +127,13 @@ spec:
       spec:
         containers:
         - name: tigerbeetle-batch-processor
-          image: agent-banking/tigerbeetle:latest
+          image: remittance/tigerbeetle:latest
           command: ["./tigerbeetle-core", "--batch-mode"]
           env:
           - name: BATCH_SIZE
             value: "10000"
           - name: REDIS_HOST
-            value: redis.agent-banking.svc.cluster.local
+            value: redis.remittance.svc.cluster.local
           - name: TB_CLUSTER_ID
             value: "0"
           resources:
@@ -155,7 +155,7 @@ spec:
   # Redis list trigger for batch transactions
   - type: redis
     metadata:
-      address: redis.agent-banking.svc.cluster.local:6379
+      address: redis.remittance.svc.cluster.local:6379
       listName: tigerbeetle_batch_queue
       listLength: "1000"
       enableTLS: "false"

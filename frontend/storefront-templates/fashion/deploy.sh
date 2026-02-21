@@ -5,11 +5,11 @@
 echo "Deploying Afro Chic Boutique..."
 
 # Copy template to storefront
-cp -r /home/ubuntu/agent-banking-platform/frontend/storefront-templates/fashion/* \
-      /home/ubuntu/agent-banking-platform/frontend/agent-storefront/
+cp -r /home/ubuntu/remittance-platform/frontend/storefront-templates/fashion/* \
+      /home/ubuntu/remittance-platform/frontend/agent-storefront/
 
 # Update configuration
-cd /home/ubuntu/agent-banking-platform/frontend/agent-storefront
+cd /home/ubuntu/remittance-platform/frontend/agent-storefront
 cat config.json
 
 echo "Template deployed successfully!"

@@ -115,7 +115,7 @@ class DRConfig:
     wal_retention_days: int = 7
     
     # Storage
-    backup_bucket: str = "agent-banking-backups"
+    backup_bucket: str = "remittance-backups"
     backup_region: str = "us-east-1"
     
     # DR site
@@ -132,14 +132,14 @@ class PostgresBackupManager:
     
     def __init__(self, config: DRConfig):
         self.config = config
-        self.db_host = os.getenv("POSTGRES_HOST", "postgres.agent-banking.svc.cluster.local")
+        self.db_host = os.getenv("POSTGRES_HOST", "postgres.remittance.svc.cluster.local")
         self.db_port = os.getenv("POSTGRES_PORT", "5432")
         self.db_user = os.getenv("POSTGRES_USER", "postgres")
         self.db_password = os.getenv("POSTGRES_PASSWORD", "postgres")
         
         self.s3_client = boto3.client(
             's3',
-            endpoint_url=os.getenv("S3_ENDPOINT", "http://rustfs.agent-banking.svc.cluster.local:9000"),
+            endpoint_url=os.getenv("S3_ENDPOINT", "http://rustfs.remittance.svc.cluster.local:9000"),
             aws_access_key_id=os.getenv("S3_ACCESS_KEY"),
             aws_secret_access_key=os.getenv("S3_SECRET_KEY"),
             config=Config(signature_version='s3v4')
@@ -286,12 +286,12 @@ class RedisBackupManager:
         self.config = config
         self.redis_url = os.getenv(
             "REDIS_URL",
-            "redis://redis.agent-banking.svc.cluster.local:6379"
+            "redis://redis.remittance.svc.cluster.local:6379"
         )
         
         self.s3_client = boto3.client(
             's3',
-            endpoint_url=os.getenv("S3_ENDPOINT", "http://rustfs.agent-banking.svc.cluster.local:9000"),
+            endpoint_url=os.getenv("S3_ENDPOINT", "http://rustfs.remittance.svc.cluster.local:9000"),
             aws_access_key_id=os.getenv("S3_ACCESS_KEY"),
             aws_secret_access_key=os.getenv("S3_SECRET_KEY"),
             config=Config(signature_version='s3v4')
@@ -349,7 +349,7 @@ class DisasterRecoveryService:
         self.config = config or DRConfig()
         self.db_url = os.getenv(
             "DATABASE_URL",
-            "postgresql://postgres:postgres@postgres.agent-banking.svc.cluster.local:5432/multibank"
+            "postgresql://postgres:postgres@postgres.remittance.svc.cluster.local:5432/multibank"
         )
         
         self.db_pool: Optional[asyncpg.Pool] = None

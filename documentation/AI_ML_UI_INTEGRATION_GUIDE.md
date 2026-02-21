@@ -1,5 +1,5 @@
 # AI/ML Services UI Integration Guide
-## Agent Banking Platform - User Interface Layer
+## Remittance Platform - User Interface Layer
 
 **Date**: October 14, 2025  
 **Status**: ✅ **FULLY INTEGRATED**
@@ -8,7 +8,7 @@
 
 ## Overview
 
-This document describes the complete UI/UX integration of the five AI/ML services into the Agent Banking Platform. All services now have comprehensive, user-friendly interfaces accessible to different stakeholders.
+This document describes the complete UI/UX integration of the five AI/ML services into the Remittance Platform. All services now have comprehensive, user-friendly interfaces accessible to different stakeholders.
 
 ---
 
@@ -518,7 +518,7 @@ CocoIndex (8090)
 
 ```bash
 # Navigate to AI/ML Dashboard
-cd /home/ubuntu/agent-banking-platform/frontend/ai-ml-dashboard
+cd /home/ubuntu/remittance-platform/frontend/ai-ml-dashboard
 
 # Install dependencies (if not already installed)
 pnpm install

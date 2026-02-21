@@ -1,4 +1,4 @@
-module agent-banking-network/customer-onboarding
+module remittance-network/customer-onboarding
 
 go 1.21
 

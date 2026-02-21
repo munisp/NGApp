@@ -1,6 +1,6 @@
 """
 Test Data Generation Script for Load Testing
-Agent Banking Platform V11.0
+Remittance Platform V11.0
 
 Generates 15,000 agents with hierarchical relationships for load testing.
 
@@ -22,7 +22,7 @@ import asyncpg
 # Database configuration
 DATABASE_URL = os.getenv(
     "DATABASE_URL",
-    "postgresql://workflow_service:password@localhost:5432/agent_banking_platform"
+    "postgresql://workflow_service:password@localhost:5432/remittance_platform"
 )
 
 

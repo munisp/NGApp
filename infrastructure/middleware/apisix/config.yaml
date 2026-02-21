@@ -13,7 +13,7 @@ deployment:
   admin:
     admin_key:
       - name: "admin"
-        key: agent-banking-admin-key
+        key: remittance-admin-key
         role: admin
     enable_admin_cors: true
     admin_listen:

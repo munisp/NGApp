@@ -1,4 +1,4 @@
-module agent-banking/customer-management
+module remittance/customer-management
 
 go 1.21
 

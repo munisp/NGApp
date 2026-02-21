@@ -1,6 +1,6 @@
 """
 Wallet Service with Dapr Integration
-Agent Banking Platform V11.0
+Remittance Platform V11.0
 
 Features:
 - Get wallet balance
@@ -22,7 +22,7 @@ from typing import Dict, Any, Optional, List
 from fastapi import FastAPI, HTTPException, Depends
 from pydantic import BaseModel
 
-sys.path.insert(0, "/home/ubuntu/agent-banking-platform/backend/python-services/shared")
+sys.path.insert(0, "/home/ubuntu/remittance-platform/backend/python-services/shared")
 
 from dapr_client import AgentBankingDaprClient
 from permify_client import PermifyClient

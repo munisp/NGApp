@@ -1,3 +1,3 @@
-module agent-banking-network/reporting-analytics
+module remittance-network/reporting-analytics
 
 go 1.21

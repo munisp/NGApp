@@ -21,11 +21,11 @@ from botocore.config import Config
 logger = logging.getLogger(__name__)
 
 # Configuration
-REDIS_HOST = os.getenv('REDIS_HOST', 'redis.agent-banking.svc.cluster.local')
+REDIS_HOST = os.getenv('REDIS_HOST', 'redis.remittance.svc.cluster.local')
 REDIS_PORT = os.getenv('REDIS_PORT', '6379')
 REDIS_URL = os.getenv('REDIS_URL', f'redis://{REDIS_HOST}:{REDIS_PORT}')
-DB_URL = os.getenv('DATABASE_URL', 'postgresql://postgres:postgres@postgres.agent-banking.svc.cluster.local:5432/multibank')
-S3_ENDPOINT = os.getenv('S3_ENDPOINT', 'http://rustfs.agent-banking.svc.cluster.local:9000')
+DB_URL = os.getenv('DATABASE_URL', 'postgresql://postgres:postgres@postgres.remittance.svc.cluster.local:5432/multibank')
+S3_ENDPOINT = os.getenv('S3_ENDPOINT', 'http://rustfs.remittance.svc.cluster.local:9000')
 S3_MODEL_BUCKET = os.getenv('S3_MODEL_BUCKET', 'ml-model-registry')
 S3_ACCESS_KEY = os.getenv('S3_ACCESS_KEY', 'minioadmin')
 S3_SECRET_KEY = os.getenv('S3_SECRET_KEY', 'minioadmin')

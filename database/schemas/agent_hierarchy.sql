@@ -1,4 +1,4 @@
--- Agent Banking Network - 4-Tier Agent Hierarchy Database Schema
+-- Remittance Platform - 4-Tier Agent Hierarchy Database Schema
 -- Comprehensive schema for Master Agents, Super Agents, Agents, and Sub Agents
 
 -- Enable UUID extension

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Insurance Suite Service
-Comprehensive insurance management platform for agent banking network
+Comprehensive insurance management platform for remittance network
 Handles policy management, claims processing, risk assessment, and premium calculations
 """
 
@@ -29,14 +29,14 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Configuration
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres:postgres123@localhost:5432/agent_banking")
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres:postgres123@localhost:5432/remittance")
 REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379")
 SERVICE_PORT = int(os.getenv("SERVICE_PORT", "8133"))
 
 # FastAPI app
 app = FastAPI(
     title="Insurance Suite",
-    description="Comprehensive insurance management platform for agent banking network",
+    description="Comprehensive insurance management platform for remittance network",
     version="1.0.0"
 )
 

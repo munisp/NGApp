@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 
 # Create FastAPI app
 app = FastAPI(
-    title="Agent Banking Platform - Complete API",
+    title="Remittance Platform - Complete API",
     description="Unified API for all 120+ microservices",
     version="1.0.0"
 )
@@ -196,7 +196,7 @@ for service_module in SERVICE_MODULES:
 async def root():
     """Root endpoint"""
     return {
-        "message": "Agent Banking Platform API",
+        "message": "Remittance Platform API",
         "version": "1.0.0",
         "services_registered": registered_count,
         "services_failed": failed_count,
@@ -229,7 +229,7 @@ async def list_services():
 
 if __name__ == "__main__":
     import uvicorn
-    logger.info(f"🚀 Starting Agent Banking Platform API")
+    logger.info(f"🚀 Starting Remittance Platform API")
     logger.info(f"📊 Registered Services: {registered_count}")
     logger.info(f"⚠️  Failed Services: {failed_count}")
     uvicorn.run(app, host="0.0.0.0", port=8000)

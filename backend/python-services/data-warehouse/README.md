@@ -1,6 +1,6 @@
-# Data Warehouse Service for Agent Banking Platform
+# Data Warehouse Service for Remittance Platform
 
-This service provides a robust and scalable data warehouse solution for the Agent Banking Platform, built with FastAPI. It offers a set of APIs to manage dimensional data (Agents, Customers, Locations) and fact data (Transactions), along with authentication, authorization, logging, and health monitoring capabilities.
+This service provides a robust and scalable data warehouse solution for the Remittance Platform, built with FastAPI. It offers a set of APIs to manage dimensional data (Agents, Customers, Locations) and fact data (Transactions), along with authentication, authorization, logging, and health monitoring capabilities.
 
 ## Features
 

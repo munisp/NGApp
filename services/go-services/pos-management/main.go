@@ -255,7 +255,7 @@ func NewPOSManagementService() *POSManagementService {
 		getEnv("DB_HOST", "localhost"),
 		getEnv("DB_USER", "postgres"),
 		getEnv("DB_PASSWORD", "password"),
-		getEnv("DB_NAME", "agent_banking"),
+		getEnv("DB_NAME", "remittance"),
 		getEnv("DB_PORT", "5432"),
 	)
 
@@ -1200,7 +1200,7 @@ func (s *POSManagementService) validatePBACPermission(c *gin.Context, resource, 
 
 func (s *POSManagementService) validateKeycloakToken(token string) (map[string]interface{}, error) {
 	req, err := http.NewRequest("GET", 
-		fmt.Sprintf("%s/auth/realms/agent-banking/protocol/openid_connect/userinfo", s.keycloakClient.BaseURL), 
+		fmt.Sprintf("%s/auth/realms/remittance/protocol/openid_connect/userinfo", s.keycloakClient.BaseURL), 
 		nil)
 	if err != nil {
 		return nil, err
@@ -1515,7 +1515,7 @@ func (s *POSManagementService) HealthCheck(c *gin.Context) {
 	}
 
 	// Check Keycloak connectivity
-	req, err := http.NewRequest("GET", s.keycloakClient.BaseURL+"/auth/realms/agent-banking", nil)
+	req, err := http.NewRequest("GET", s.keycloakClient.BaseURL+"/auth/realms/remittance", nil)
 	if err == nil {
 		resp, err := s.keycloakClient.httpClient.Do(req)
 		if err != nil || resp.StatusCode != http.StatusOK {

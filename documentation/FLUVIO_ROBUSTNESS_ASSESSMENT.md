@@ -409,7 +409,7 @@ producer_config = {
 consumer = await self.client.consumer_with_config(
     topic,
     partition=0,
-    config={'group.id': 'agent-banking-consumers'}
+    config={'group.id': 'remittance-consumers'}
 )
 
 # Monitoring

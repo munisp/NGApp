@@ -1,6 +1,6 @@
 """
 Compliance Reporting Service
-Automated regulatory compliance reporting for Agent Banking Platform
+Automated regulatory compliance reporting for Remittance Platform
 
 Features:
 - CBN (Central Bank of Nigeria) reporting

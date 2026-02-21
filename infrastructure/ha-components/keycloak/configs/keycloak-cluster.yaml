@@ -1,4 +1,4 @@
-# Keycloak Identity and Access Management Configuration for Agent Banking Network
+# Keycloak Identity and Access Management Configuration for Remittance Platform
 # High-Availability Keycloak Cluster optimized for Nigerian banking identity management
 
 apiVersion: v1
@@ -19,7 +19,7 @@ metadata:
     app: keycloak
 data:
   keycloak.conf: |
-    # Keycloak Configuration for Agent Banking Network
+    # Keycloak Configuration for Remittance Platform
     
     # Database configuration for HA clustering
     db=postgres
@@ -36,7 +36,7 @@ data:
     cache-config-file=cache-ispn-jdbc-ping.xml
     
     # HTTP/HTTPS configuration
-    hostname=keycloak.agent-banking.local
+    hostname=keycloak.remittance.local
     hostname-strict=false
     hostname-strict-https=false
     http-enabled=true
@@ -176,8 +176,8 @@ data:
   banking-realm.json: |
     {
       "realm": "banking",
-      "displayName": "Agent Banking Network",
-      "displayNameHtml": "<div class=\"kc-logo-text\"><span>Agent Banking Network</span></div>",
+      "displayName": "Remittance Platform",
+      "displayNameHtml": "<div class=\"kc-logo-text\"><span>Remittance Platform</span></div>",
       "enabled": true,
       "sslRequired": "external",
       "registrationAllowed": false,
@@ -319,7 +319,7 @@ data:
         "cibaInterval": "5",
         "cibaAuthRequestedUserHint": "login_hint",
         "parRequestUriLifespan": "60",
-        "frontendUrl": "https://keycloak.agent-banking.local/auth",
+        "frontendUrl": "https://keycloak.remittance.local/auth",
         "adminEventsEnabled": "true",
         "adminEventsDetailsEnabled": "true",
         "eventsEnabled": "true",
@@ -450,8 +450,8 @@ data:
       "clients": [
         {
           "clientId": "banking-client",
-          "name": "Agent Banking Network Client",
-          "description": "Main client application for Agent Banking Network",
+          "name": "Remittance Platform Client",
+          "description": "Main client application for Remittance Platform",
           "enabled": true,
           "clientAuthenticatorType": "client-secret",
           "secret": "banking-client-secret-change-in-production",
@@ -599,10 +599,10 @@ data:
         "auth": "true",
         "port": "587",
         "host": "smtp.gmail.com",
-        "replyToDisplayName": "Agent Banking Network",
-        "replyTo": "noreply@agent-banking.local",
-        "fromDisplayName": "Agent Banking Network",
-        "from": "noreply@agent-banking.local",
+        "replyToDisplayName": "Remittance Platform",
+        "replyTo": "noreply@remittance.local",
+        "fromDisplayName": "Remittance Platform",
+        "from": "noreply@remittance.local",
         "user": "${KEYCLOAK_SMTP_USER}"
       },
       "eventsConfig": {
@@ -937,7 +937,7 @@ spec:
             -s username=admin \
             -s enabled=true \
             -s emailVerified=true \
-            -s email=admin@agent-banking.local \
+            -s email=admin@remittance.local \
             -s firstName=Banking \
             -s lastName=Administrator || true
           
@@ -992,7 +992,7 @@ spec:
   - from:
     - namespaceSelector:
         matchLabels:
-          name: agent-banking-system
+          name: remittance-system
     - namespaceSelector:
         matchLabels:
           name: dapr-system

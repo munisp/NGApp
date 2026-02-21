@@ -26,7 +26,7 @@ _idem_store = IdempotencyStore("intlayer-txn", _redis_client)
 
 models.Base.metadata.create_all(bind=engine)
 
-app = FastAPI(title="Agent Banking Platform Integration Service")
+app = FastAPI(title="Remittance Platform Integration Service")
 
 @app.on_event("startup")
 async def _start_eviction():

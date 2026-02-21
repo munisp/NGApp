@@ -15,7 +15,7 @@ metadata:
   labels:
     app: tigerbeetle
 data:
-  # TigerBeetle cluster configuration for Agent Banking Network
+  # TigerBeetle cluster configuration for Remittance Platform
   # High-performance financial ledger with strict consistency guarantees
   cluster-id: "0"
   replica-count: "3"
@@ -68,7 +68,7 @@ data:
 #   - ca-cert: CA certificate for verification
 #
 # Required AWS Secrets Manager entries:
-#   - agent-banking/tigerbeetle/tls (with properties: cert, key, ca-cert)
+#   - remittance/tigerbeetle/tls (with properties: cert, key, ca-cert)
 #
 # To deploy without External Secrets (development only), create a Secret manually:
 # kubectl create secret generic tigerbeetle-secrets \
@@ -287,7 +287,7 @@ spec:
   - from:
     - namespaceSelector:
         matchLabels:
-          name: agent-banking-system
+          name: remittance-system
     ports:
     - protocol: TCP
       port: 3000

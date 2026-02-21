@@ -1,4 +1,4 @@
-# Podfile - Agent Banking iOS Dependencies
+# Podfile - Remittance Platform iOS Dependencies
 # Production-grade CocoaPods configuration
 
 platform :ios, '14.0'

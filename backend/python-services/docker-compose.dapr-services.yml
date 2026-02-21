@@ -15,7 +15,7 @@ services:
       - PERMIFY_ENDPOINT=http://permify:3478
       - KEYCLOAK_SERVER_URL=http://keycloak:8080
     networks:
-      - agent-banking-network
+      - remittance-network
     depends_on:
       - dapr-placement
       - permify
@@ -52,7 +52,7 @@ services:
       - PERMIFY_ENDPOINT=http://permify:3478
       - KEYCLOAK_SERVER_URL=http://keycloak:8080
     networks:
-      - agent-banking-network
+      - remittance-network
     depends_on:
       - dapr-placement
       - permify
@@ -89,7 +89,7 @@ services:
       - PERMIFY_ENDPOINT=http://permify:3478
       - KEYCLOAK_SERVER_URL=http://keycloak:8080
     networks:
-      - agent-banking-network
+      - remittance-network
     depends_on:
       - dapr-placement
       - permify
@@ -113,5 +113,5 @@ services:
       - analytics-service
 
 networks:
-  agent-banking-network:
+  remittance-network:
     external: true

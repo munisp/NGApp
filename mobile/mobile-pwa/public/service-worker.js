@@ -1,5 +1,5 @@
 /**
- * Production Service Worker for Agent Banking PWA
+ * Production Service Worker for Remittance Platform PWA
  * 
  * Features:
  * - App shell caching for instant loading
@@ -338,7 +338,7 @@ self.addEventListener('push', (event) => {
   console.log('[SW] Push notification received');
   
   let data = {
-    title: 'Agent Banking',
+    title: 'Remittance Platform',
     body: 'You have a new notification',
     icon: '/icons/icon-192x192.png',
     badge: '/icons/badge-72x72.png',

@@ -125,7 +125,7 @@ async def init_db():
     db_port = os.getenv("DB_PORT", "5432")
     db_user = os.getenv("DB_USER")
     db_password = os.getenv("DB_PASSWORD")
-    db_name = os.getenv("DB_NAME", "agent_banking")
+    db_name = os.getenv("DB_NAME", "remittance")
     
     if not all([db_host, db_user, db_password]):
         raise ValueError(
@@ -267,7 +267,7 @@ def generate_mfa_secret() -> str:
 def generate_qr_code(username: str, secret: str) -> str:
     """Generate QR code for MFA setup"""
     totp = pyotp.TOTP(secret)
-    uri = totp.provisioning_uri(username, issuer_name="Agent Banking Platform")
+    uri = totp.provisioning_uri(username, issuer_name="Remittance Platform")
     
     qr = qrcode.QRCode(version=1, box_size=10, border=5)
     qr.add_data(uri)

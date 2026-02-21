@@ -2,7 +2,7 @@
 
 ## Executive Summary
 
-**Project Name:** Agent Banking Platform - Security Hardening & Tool Implementation  
+**Project Name:** Remittance Platform - Security Hardening & Tool Implementation  
 **Duration:** 4 weeks (20 business days)  
 **Budget:** $45,000 - $65,000  
 **Team Size:** 5-7 people  
@@ -286,7 +286,7 @@
 - [ ] Install Semgrep in CI/CD pipeline
 - [ ] Configure Semgrep with OWASP Top 10 rules
 - [ ] Configure Semgrep with security-audit rules
-- [ ] Create custom rules for Agent Banking Platform
+- [ ] Create custom rules for Remittance Platform
 - [ ] Set up SARIF upload to GitHub Security
 - [ ] Configure to fail on ERROR severity
 - [ ] Create baseline scan

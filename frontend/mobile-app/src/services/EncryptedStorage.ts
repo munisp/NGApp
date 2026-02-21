@@ -41,7 +41,7 @@ interface StorageMetrics {
  * Secure key management using device keychain
  */
 class KeyManager {
-  private static readonly KEY_SERVICE = 'com.agentbanking.encryption';
+  private static readonly KEY_SERVICE = 'com.remittance.encryption';
   private static readonly KEY_ACCOUNT = 'master_key';
   private static cachedKey: string | null = null;
 
@@ -100,7 +100,7 @@ class KeyManager {
     const buildNumber = DeviceInfo.getBuildNumber();
     
     // Combine device identifiers
-    const deviceData = `${deviceId}:${bundleId}:${buildNumber}:agent_banking_v1`;
+    const deviceData = `${deviceId}:${bundleId}:${buildNumber}:remittance_v1`;
     
     // Derive key using PBKDF2
     const salt = CryptoJS.SHA256(deviceId).toString();

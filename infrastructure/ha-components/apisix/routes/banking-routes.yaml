@@ -1,7 +1,7 @@
 # APISIX Banking Routes Configuration
-# Comprehensive routing for Agent Banking Network services
+# Comprehensive routing for Remittance Platform services
 
-# Agent Banking Network Service Routes
+# Remittance Platform Service Routes
 routes:
   # Authentication Service Routes
   - id: "auth-login"
@@ -11,8 +11,8 @@ routes:
     upstream:
       type: roundrobin
       nodes:
-        "user-service.agent-banking.svc.cluster.local:8080": 1
-        "user-service-backup.agent-banking.svc.cluster.local:8080": 1
+        "user-service.remittance.svc.cluster.local:8080": 1
+        "user-service-backup.remittance.svc.cluster.local:8080": 1
     plugins:
       cors:
         allow_origins: "*"
@@ -42,7 +42,7 @@ routes:
     upstream:
       type: roundrobin
       nodes:
-        "user-service.agent-banking.svc.cluster.local:8080": 1
+        "user-service.remittance.svc.cluster.local:8080": 1
     plugins:
       cors:
         allow_origins: "*"
@@ -61,8 +61,8 @@ routes:
     upstream:
       type: roundrobin
       nodes:
-        "transaction-service.agent-banking.svc.cluster.local:8080": 1
-        "transaction-service-backup.agent-banking.svc.cluster.local:8080": 1
+        "transaction-service.remittance.svc.cluster.local:8080": 1
+        "transaction-service-backup.remittance.svc.cluster.local:8080": 1
     plugins:
       jwt-auth:
         header: "Authorization"
@@ -100,7 +100,7 @@ routes:
     upstream:
       type: roundrobin
       nodes:
-        "transaction-service.agent-banking.svc.cluster.local:8080": 1
+        "transaction-service.remittance.svc.cluster.local:8080": 1
     plugins:
       jwt-auth: {}
       cors:
@@ -128,7 +128,7 @@ routes:
     upstream:
       type: roundrobin
       nodes:
-        "account-services.agent-banking.svc.cluster.local:8080": 1
+        "account-services.remittance.svc.cluster.local:8080": 1
     plugins:
       jwt-auth: {}
       cors:
@@ -150,7 +150,7 @@ routes:
     upstream:
       type: roundrobin
       nodes:
-        "account-services.agent-banking.svc.cluster.local:8080": 1
+        "account-services.remittance.svc.cluster.local:8080": 1
     plugins:
       jwt-auth: {}
       cors:
@@ -169,7 +169,7 @@ routes:
     upstream:
       type: roundrobin
       nodes:
-        "agent-management.agent-banking.svc.cluster.local:8080": 1
+        "agent-management.remittance.svc.cluster.local:8080": 1
     plugins:
       jwt-auth: {}
       cors:
@@ -189,7 +189,7 @@ routes:
     upstream:
       type: roundrobin
       nodes:
-        "agent-management.agent-banking.svc.cluster.local:8080": 1
+        "agent-management.remittance.svc.cluster.local:8080": 1
     plugins:
       jwt-auth: {}
       cors:
@@ -208,7 +208,7 @@ routes:
     upstream:
       type: roundrobin
       nodes:
-        "notification-service.agent-banking.svc.cluster.local:8080": 1
+        "notification-service.remittance.svc.cluster.local:8080": 1
     plugins:
       jwt-auth: {}
       cors:
@@ -227,7 +227,7 @@ routes:
     upstream:
       type: roundrobin
       nodes:
-        "customer-analytics.agent-banking.svc.cluster.local:5000": 1
+        "customer-analytics.remittance.svc.cluster.local:5000": 1
     plugins:
       jwt-auth: {}
       cors:
@@ -248,7 +248,7 @@ routes:
     upstream:
       type: roundrobin
       nodes:
-        "fraud-detection.agent-banking.svc.cluster.local:5000": 1
+        "fraud-detection.remittance.svc.cluster.local:5000": 1
     plugins:
       jwt-auth: {}
       cors:
@@ -269,7 +269,7 @@ routes:
     upstream:
       type: roundrobin
       nodes:
-        "tigerbeetle-api.agent-banking.svc.cluster.local:8081": 1
+        "tigerbeetle-api.remittance.svc.cluster.local:8081": 1
     plugins:
       jwt-auth: {}
       cors:
@@ -287,7 +287,7 @@ routes:
     upstream:
       type: roundrobin
       nodes:
-        "tigerbeetle-api.agent-banking.svc.cluster.local:8081": 1
+        "tigerbeetle-api.remittance.svc.cluster.local:8081": 1
     plugins:
       jwt-auth: {}
       cors:
@@ -308,7 +308,7 @@ routes:
     upstream:
       type: roundrobin
       nodes:
-        "customer-journey.agent-banking.svc.cluster.local:8080": 1
+        "customer-journey.remittance.svc.cluster.local:8080": 1
     plugins:
       jwt-auth: {}
       cors:
@@ -327,7 +327,7 @@ routes:
     upstream:
       type: roundrobin
       nodes:
-        "ocr-engines.agent-banking.svc.cluster.local:5000": 1
+        "ocr-engines.remittance.svc.cluster.local:5000": 1
     plugins:
       jwt-auth: {}
       cors:
@@ -355,7 +355,7 @@ routes:
     upstream:
       type: roundrobin
       nodes:
-        "biometric-auth.agent-banking.svc.cluster.local:5000": 1
+        "biometric-auth.remittance.svc.cluster.local:5000": 1
     plugins:
       jwt-auth: {}
       cors:
@@ -374,9 +374,9 @@ routes:
     upstream:
       type: roundrobin
       nodes:
-        "user-service.agent-banking.svc.cluster.local:8080": 1
-        "transaction-service.agent-banking.svc.cluster.local:8080": 1
-        "notification-service.agent-banking.svc.cluster.local:8080": 1
+        "user-service.remittance.svc.cluster.local:8080": 1
+        "transaction-service.remittance.svc.cluster.local:8080": 1
+        "notification-service.remittance.svc.cluster.local:8080": 1
     plugins:
       cors:
         allow_origins: "*"
@@ -395,8 +395,8 @@ routes:
     upstream:
       type: roundrobin
       nodes:
-        "agent-portal.agent-banking.svc.cluster.local:3000": 1
-        "admin-dashboard.agent-banking.svc.cluster.local:3000": 1
+        "agent-portal.remittance.svc.cluster.local:3000": 1
+        "admin-dashboard.remittance.svc.cluster.local:3000": 1
     plugins:
       cors:
         allow_origins: "*"
@@ -440,8 +440,8 @@ upstreams:
     name: "User Service Cluster"
     type: roundrobin
     nodes:
-      "user-service.agent-banking.svc.cluster.local:8080": 1
-      "user-service-backup.agent-banking.svc.cluster.local:8080": 1
+      "user-service.remittance.svc.cluster.local:8080": 1
+      "user-service-backup.remittance.svc.cluster.local:8080": 1
     health_checker:
       active:
         timeout: 5
@@ -464,8 +464,8 @@ upstreams:
     name: "Transaction Service Cluster"
     type: roundrobin
     nodes:
-      "transaction-service.agent-banking.svc.cluster.local:8080": 1
-      "transaction-service-backup.agent-banking.svc.cluster.local:8080": 1
+      "transaction-service.remittance.svc.cluster.local:8080": 1
+      "transaction-service-backup.remittance.svc.cluster.local:8080": 1
     health_checker:
       active:
         timeout: 5
@@ -481,8 +481,8 @@ upstreams:
     name: "ML Services Cluster"
     type: roundrobin
     nodes:
-      "fraud-detection.agent-banking.svc.cluster.local:5000": 1
-      "customer-analytics.agent-banking.svc.cluster.local:5000": 1
+      "fraud-detection.remittance.svc.cluster.local:5000": 1
+      "customer-analytics.remittance.svc.cluster.local:5000": 1
     health_checker:
       active:
         timeout: 10
@@ -496,11 +496,11 @@ upstreams:
 
 # Consumer Configuration for JWT Auth
 consumers:
-  - username: "agent-banking-frontend"
+  - username: "remittance-frontend"
     plugins:
       jwt-auth:
-        key: "agent-banking-jwt-key"
-        secret: "agent-banking-jwt-secret"
+        key: "remittance-jwt-key"
+        secret: "remittance-jwt-secret"
         algorithm: "HS256"
         exp: 86400
 
@@ -533,7 +533,7 @@ consumers:
     upstream:
       type: roundrobin
       nodes:
-        "commission-service.agent-banking.svc.cluster.local:8000": 1
+        "commission-service.remittance.svc.cluster.local:8000": 1
     plugins:
       jwt-auth: {}
       cors:
@@ -552,7 +552,7 @@ consumers:
     upstream:
       type: roundrobin
       nodes:
-        "float-management.agent-banking.svc.cluster.local:8080": 1
+        "float-management.remittance.svc.cluster.local:8080": 1
     plugins:
       jwt-auth: {}
       cors:
@@ -571,7 +571,7 @@ consumers:
     upstream:
       type: roundrobin
       nodes:
-        "settlement-service.agent-banking.svc.cluster.local:8000": 1
+        "settlement-service.remittance.svc.cluster.local:8000": 1
     plugins:
       jwt-auth: {}
       limit-req:
@@ -586,7 +586,7 @@ consumers:
     upstream:
       type: roundrobin
       nodes:
-        "reconciliation-service.agent-banking.svc.cluster.local:8000": 1
+        "reconciliation-service.remittance.svc.cluster.local:8000": 1
     plugins:
       jwt-auth: {}
       limit-req:
@@ -601,7 +601,7 @@ consumers:
     upstream:
       type: roundrobin
       nodes:
-        "pos-management.agent-banking.svc.cluster.local:8080": 1
+        "pos-management.remittance.svc.cluster.local:8080": 1
     plugins:
       jwt-auth: {}
       limit-req:
@@ -616,7 +616,7 @@ consumers:
     upstream:
       type: roundrobin
       nodes:
-        "qr-service.agent-banking.svc.cluster.local:8080": 1
+        "qr-service.remittance.svc.cluster.local:8080": 1
     plugins:
       jwt-auth: {}
       limit-req:
@@ -631,7 +631,7 @@ consumers:
     upstream:
       type: roundrobin
       nodes:
-        "loyalty-service.agent-banking.svc.cluster.local:8000": 1
+        "loyalty-service.remittance.svc.cluster.local:8000": 1
     plugins:
       jwt-auth: {}
       limit-req:
@@ -646,7 +646,7 @@ consumers:
     upstream:
       type: roundrobin
       nodes:
-        "kyc-service.agent-banking.svc.cluster.local:8000": 1
+        "kyc-service.remittance.svc.cluster.local:8000": 1
     plugins:
       jwt-auth: {}
       limit-req:
@@ -661,7 +661,7 @@ consumers:
     upstream:
       type: roundrobin
       nodes:
-        "kyb-verification.agent-banking.svc.cluster.local:8000": 1
+        "kyb-verification.remittance.svc.cluster.local:8000": 1
     plugins:
       jwt-auth: {}
       limit-req:
@@ -676,7 +676,7 @@ consumers:
     upstream:
       type: roundrobin
       nodes:
-        "ussd-service.agent-banking.svc.cluster.local:8000": 1
+        "ussd-service.remittance.svc.cluster.local:8000": 1
     plugins:
       limit-req:
         rate: 1000
@@ -690,7 +690,7 @@ consumers:
     upstream:
       type: roundrobin
       nodes:
-        "sms-gateway.agent-banking.svc.cluster.local:8000": 1
+        "sms-gateway.remittance.svc.cluster.local:8000": 1
     plugins:
       jwt-auth: {}
       limit-req:
@@ -705,7 +705,7 @@ consumers:
     upstream:
       type: roundrobin
       nodes:
-        "inventory-management.agent-banking.svc.cluster.local:8000": 1
+        "inventory-management.remittance.svc.cluster.local:8000": 1
     plugins:
       jwt-auth: {}
       limit-req:
@@ -720,7 +720,7 @@ consumers:
     upstream:
       type: roundrobin
       nodes:
-        "payment-gateway.agent-banking.svc.cluster.local:8000": 1
+        "payment-gateway.remittance.svc.cluster.local:8000": 1
     plugins:
       jwt-auth: {}
       limit-req:
@@ -735,7 +735,7 @@ consumers:
     upstream:
       type: roundrobin
       nodes:
-        "cash-management.agent-banking.svc.cluster.local:8080": 1
+        "cash-management.remittance.svc.cluster.local:8080": 1
     plugins:
       jwt-auth: {}
       limit-req:
@@ -750,7 +750,7 @@ consumers:
     upstream:
       type: roundrobin
       nodes:
-        "risk-assessment.agent-banking.svc.cluster.local:8000": 1
+        "risk-assessment.remittance.svc.cluster.local:8000": 1
     plugins:
       jwt-auth: {}
       limit-req:
@@ -765,7 +765,7 @@ consumers:
     upstream:
       type: roundrobin
       nodes:
-        "credit-scoring.agent-banking.svc.cluster.local:8000": 1
+        "credit-scoring.remittance.svc.cluster.local:8000": 1
     plugins:
       jwt-auth: {}
       limit-req:
@@ -780,7 +780,7 @@ consumers:
     upstream:
       type: roundrobin
       nodes:
-        "onboarding-service.agent-banking.svc.cluster.local:8000": 1
+        "onboarding-service.remittance.svc.cluster.local:8000": 1
     plugins:
       jwt-auth: {}
       limit-req:
@@ -795,7 +795,7 @@ consumers:
     upstream:
       type: roundrobin
       nodes:
-        "reporting-service.agent-banking.svc.cluster.local:8000": 1
+        "reporting-service.remittance.svc.cluster.local:8000": 1
     plugins:
       jwt-auth: {}
       limit-req:

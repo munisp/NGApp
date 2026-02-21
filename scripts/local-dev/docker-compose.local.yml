@@ -7,7 +7,7 @@ services:
   # PostgreSQL
   postgres:
     image: postgres:15-alpine
-    container_name: agent-banking-postgres
+    container_name: remittance-postgres
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
@@ -26,7 +26,7 @@ services:
   # Redis
   redis:
     image: redis:7-alpine
-    container_name: agent-banking-redis
+    container_name: remittance-redis
     ports:
       - "6379:6379"
     volumes:
@@ -40,7 +40,7 @@ services:
   # Kafka (using Redpanda for lighter footprint)
   redpanda:
     image: redpandadata/redpanda:latest
-    container_name: agent-banking-kafka
+    container_name: remittance-kafka
     command:
       - redpanda
       - start
@@ -65,7 +65,7 @@ services:
   # MinIO (S3-compatible storage for local dev)
   minio:
     image: minio/minio:latest
-    container_name: agent-banking-minio
+    container_name: remittance-minio
     command: server /data --console-address ":9001"
     environment:
       MINIO_ROOT_USER: minioadmin
@@ -84,7 +84,7 @@ services:
   # Keycloak
   keycloak:
     image: quay.io/keycloak/keycloak:latest
-    container_name: agent-banking-keycloak
+    container_name: remittance-keycloak
     command: start-dev
     environment:
       KEYCLOAK_ADMIN: admin
@@ -102,7 +102,7 @@ services:
   # Temporal
   temporal:
     image: temporalio/auto-setup:latest
-    container_name: agent-banking-temporal
+    container_name: remittance-temporal
     environment:
       - DB=postgresql
       - DB_PORT=5432
@@ -118,7 +118,7 @@ services:
   # Temporal UI
   temporal-ui:
     image: temporalio/ui:latest
-    container_name: agent-banking-temporal-ui
+    container_name: remittance-temporal-ui
     environment:
       - TEMPORAL_ADDRESS=temporal:7233
     ports:
@@ -129,7 +129,7 @@ services:
   # APISIX Gateway
   apisix:
     image: apache/apisix:latest
-    container_name: agent-banking-apisix
+    container_name: remittance-apisix
     volumes:
       - ./apisix/config.yaml:/usr/local/apisix/conf/config.yaml
     ports:
@@ -144,7 +144,7 @@ services:
     build:
       context: ../../backend/python-services
       dockerfile: Dockerfile.dev
-    container_name: agent-banking-backend
+    container_name: remittance-backend
     environment:
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/multibank
       REDIS_URL: redis://redis:6379
@@ -170,7 +170,7 @@ services:
     build:
       context: ../../frontend/management-pwa
       dockerfile: Dockerfile.dev
-    container_name: agent-banking-frontend
+    container_name: remittance-frontend
     environment:
       REACT_APP_API_URL: http://localhost:9080/api
       REACT_APP_KEYCLOAK_URL: http://localhost:8080
@@ -184,7 +184,7 @@ services:
   # Grafana
   grafana:
     image: grafana/grafana:latest
-    container_name: agent-banking-grafana
+    container_name: remittance-grafana
     environment:
       GF_SECURITY_ADMIN_USER: admin
       GF_SECURITY_ADMIN_PASSWORD: admin
@@ -198,7 +198,7 @@ services:
   # Prometheus
   prometheus:
     image: prom/prometheus:latest
-    container_name: agent-banking-prometheus
+    container_name: remittance-prometheus
     ports:
       - "9090:9090"
     volumes:
@@ -210,7 +210,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.seed
-    container_name: agent-banking-seed
+    container_name: remittance-seed
     environment:
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/multibank
       REDIS_URL: redis://redis:6379
@@ -229,4 +229,4 @@ volumes:
 
 networks:
   default:
-    name: agent-banking-network
+    name: remittance-network

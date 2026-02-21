@@ -88,11 +88,11 @@ export function TranslationProvider({ children, defaultLanguage = 'en', module }
  * useTranslation Hook
  * Use this in your components to access translations
  * 
- * @param {string} module - Module name (agent_banking, ecommerce, inventory, common, messages)
+ * @param {string} module - Module name (remittance, ecommerce, inventory, common, messages)
  * @returns {object} - Translation functions and state
  * 
  * @example
- * const { t, language, changeLanguage } = useTranslation('agent_banking');
+ * const { t, language, changeLanguage } = useTranslation('remittance');
  * 
  * return (
  *   <div>
@@ -147,7 +147,7 @@ export function LanguageSelector({ className = '' }) {
  * Component-based translation (alternative to hook)
  * 
  * @example
- * <Translate module="agent_banking" text="dashboard" />
+ * <Translate module="remittance" text="dashboard" />
  */
 export function Translate({ module, text, fallback }) {
   const { t } = useTranslation(module);

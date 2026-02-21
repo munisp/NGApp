@@ -2,7 +2,7 @@ apiVersion: keda.sh/v1alpha1
 kind: ScaledObject
 metadata:
   name: aiml-service-scaler
-  namespace: agent-banking
+  namespace: remittance
   labels:
     app: aiml-service
     component: autoscaler
@@ -42,7 +42,7 @@ spec:
   # Redis queue for document processing
   - type: redis
     metadata:
-      address: redis.agent-banking.svc.cluster.local:6379
+      address: redis.remittance.svc.cluster.local:6379
       listName: document_processing_queue
       listLength: "5"
       enableTLS: "false"
@@ -52,7 +52,7 @@ spec:
   # Redis queue for OCR processing
   - type: redis
     metadata:
-      address: redis.agent-banking.svc.cluster.local:6379
+      address: redis.remittance.svc.cluster.local:6379
       listName: ocr_processing_queue
       listLength: "3"
       enableTLS: "false"
@@ -94,7 +94,7 @@ apiVersion: keda.sh/v1alpha1
 kind: ScaledObject
 metadata:
   name: paddleocr-service-scaler
-  namespace: agent-banking
+  namespace: remittance
   labels:
     app: paddleocr-service
     component: autoscaler
@@ -134,7 +134,7 @@ spec:
   # Redis queue for OCR tasks
   - type: redis
     metadata:
-      address: redis.agent-banking.svc.cluster.local:6379
+      address: redis.remittance.svc.cluster.local:6379
       listName: ocr_task_queue
       listLength: "1"
       enableTLS: "false"
@@ -156,7 +156,7 @@ apiVersion: keda.sh/v1alpha1
 kind: ScaledObject
 metadata:
   name: coco-index-scaler
-  namespace: agent-banking
+  namespace: remittance
   labels:
     app: coco-index-service
     component: autoscaler
@@ -193,7 +193,7 @@ spec:
   # Redis queue for indexing tasks
   - type: redis
     metadata:
-      address: redis.agent-banking.svc.cluster.local:6379
+      address: redis.remittance.svc.cluster.local:6379
       listName: coco_indexing_queue
       listLength: "1"
       enableTLS: "false"
@@ -205,7 +205,7 @@ apiVersion: keda.sh/v1alpha1
 kind: ScaledObject
 metadata:
   name: epr-kgqa-scaler
-  namespace: agent-banking
+  namespace: remittance
   labels:
     app: epr-kgqa-service
     component: autoscaler
@@ -242,7 +242,7 @@ spec:
   # Redis queue for knowledge graph queries
   - type: redis
     metadata:
-      address: redis.agent-banking.svc.cluster.local:6379
+      address: redis.remittance.svc.cluster.local:6379
       listName: kgqa_query_queue
       listLength: "1"
       enableTLS: "false"
@@ -264,7 +264,7 @@ apiVersion: keda.sh/v1alpha1
 kind: ScaledObject
 metadata:
   name: falkor-db-scaler
-  namespace: agent-banking
+  namespace: remittance
   labels:
     app: falkor-db-service
     component: autoscaler
@@ -304,7 +304,7 @@ spec:
   # Redis queue for database operations
   - type: redis
     metadata:
-      address: redis.agent-banking.svc.cluster.local:6379
+      address: redis.remittance.svc.cluster.local:6379
       listName: falkor_db_queue
       listLength: "8"
       enableTLS: "false"
@@ -336,7 +336,7 @@ apiVersion: keda.sh/v1alpha1
 kind: ScaledObject
 metadata:
   name: ollama-service-scaler
-  namespace: agent-banking
+  namespace: remittance
   labels:
     app: ollama-service
     component: autoscaler
@@ -373,7 +373,7 @@ spec:
   # Redis queue for LLM inference
   - type: redis
     metadata:
-      address: redis.agent-banking.svc.cluster.local:6379
+      address: redis.remittance.svc.cluster.local:6379
       listName: ollama_inference_queue
       listLength: "1"
       enableTLS: "false"
@@ -395,7 +395,7 @@ apiVersion: keda.sh/v1alpha1
 kind: ScaledObject
 metadata:
   name: art-service-scaler
-  namespace: agent-banking
+  namespace: remittance
   labels:
     app: art-service
     component: autoscaler
@@ -432,7 +432,7 @@ spec:
   # Redis queue for art generation
   - type: redis
     metadata:
-      address: redis.agent-banking.svc.cluster.local:6379
+      address: redis.remittance.svc.cluster.local:6379
       listName: art_generation_queue
       listLength: "1"
       enableTLS: "false"

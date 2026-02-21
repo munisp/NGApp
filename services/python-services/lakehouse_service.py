@@ -531,7 +531,7 @@ class LakehouseService:
         
         trino_user = os.getenv("TRINO_USER", "lakehouse")
         trino_catalog = os.getenv("TRINO_CATALOG", "iceberg")
-        trino_schema = os.getenv("TRINO_SCHEMA", "agent_banking")
+        trino_schema = os.getenv("TRINO_SCHEMA", "remittance")
         
         headers = {
             "X-Trino-User": trino_user,

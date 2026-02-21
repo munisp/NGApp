@@ -30,8 +30,8 @@ SMTP_HOST = os.getenv("SMTP_HOST", "smtp.gmail.com")
 SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
 SMTP_USER = os.getenv("SMTP_USER", "")
 SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "")
-FROM_EMAIL = os.getenv("FROM_EMAIL", "noreply@agent-banking.com")
-FROM_NAME = os.getenv("FROM_NAME", "Agent Banking Platform")
+FROM_EMAIL = os.getenv("FROM_EMAIL", "noreply@remittance.com")
+FROM_NAME = os.getenv("FROM_NAME", "Remittance Platform")
 
 # Models
 class EmailRecipient(BaseModel):
@@ -70,10 +70,10 @@ EMAIL_TEMPLATES = {
     "welcome": """
     <html>
     <body>
-        <h1>Welcome to Agent Banking Platform, {{ name }}!</h1>
+        <h1>Welcome to Remittance Platform, {{ name }}!</h1>
         <p>Thank you for joining us. We're excited to have you on board.</p>
         <p>Your account has been successfully created.</p>
-        <p>Best regards,<br>The Agent Banking Team</p>
+        <p>Best regards,<br>The Remittance Platform Team</p>
     </body>
     </html>
     """,
@@ -87,7 +87,7 @@ EMAIL_TEMPLATES = {
         <p><a href="{{ reset_link }}">Reset Password</a></p>
         <p>This link will expire in {{ expiry_hours }} hours.</p>
         <p>If you didn't request this, please ignore this email.</p>
-        <p>Best regards,<br>The Agent Banking Team</p>
+        <p>Best regards,<br>The Remittance Platform Team</p>
     </body>
     </html>
     """,
@@ -106,7 +106,7 @@ EMAIL_TEMPLATES = {
         </ul>
         <p><strong>Total: ${{ total }}</strong></p>
         <p>We'll send you another email when your order ships.</p>
-        <p>Best regards,<br>The Agent Banking Team</p>
+        <p>Best regards,<br>The Remittance Platform Team</p>
     </body>
     </html>
     """,
@@ -121,7 +121,7 @@ EMAIL_TEMPLATES = {
         <p><strong>Carrier:</strong> {{ carrier }}</p>
         <p>You can track your shipment using the tracking number above.</p>
         <p>Estimated delivery: {{ estimated_delivery }}</p>
-        <p>Best regards,<br>The Agent Banking Team</p>
+        <p>Best regards,<br>The Remittance Platform Team</p>
     </body>
     </html>
     """,
@@ -134,7 +134,7 @@ EMAIL_TEMPLATES = {
         <p>Your order #{{ order_number }} has been delivered.</p>
         <p>We hope you enjoy your purchase!</p>
         <p>If you have any questions or concerns, please don't hesitate to contact us.</p>
-        <p>Best regards,<br>The Agent Banking Team</p>
+        <p>Best regards,<br>The Remittance Platform Team</p>
     </body>
     </html>
     """,
@@ -148,7 +148,7 @@ EMAIL_TEMPLATES = {
         <p><strong>Payment Method:</strong> {{ payment_method }}</p>
         <p><strong>Transaction ID:</strong> {{ transaction_id }}</p>
         <p>Thank you for your payment!</p>
-        <p>Best regards,<br>The Agent Banking Team</p>
+        <p>Best regards,<br>The Remittance Platform Team</p>
     </body>
     </html>
     """,
@@ -178,7 +178,7 @@ EMAIL_TEMPLATES = {
         <p>Your verification code is: <strong>{{ code }}</strong></p>
         <p>This code will expire in {{ expiry_minutes }} minutes.</p>
         <p>If you didn't request this code, please ignore this email.</p>
-        <p>Best regards,<br>The Agent Banking Team</p>
+        <p>Best regards,<br>The Remittance Platform Team</p>
     </body>
     </html>
     """
@@ -190,7 +190,7 @@ async def init_db():
     db_pool = await asyncpg.create_pool(
         host=os.getenv('DB_HOST', 'localhost'),
         port=5432,
-        database='agent_banking',
+        database='remittance',
         user=os.getenv('DB_USER', 'postgres'),
         password=os.getenv('DB_PASSWORD', ''),
         min_size=5,

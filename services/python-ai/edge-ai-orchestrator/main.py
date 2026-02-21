@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Edge AI Orchestrator Service
-Comprehensive edge computing and distributed AI platform for Agent Banking Network
+Comprehensive edge computing and distributed AI platform for Remittance Platform
 Zero placeholders, zero mocks - production ready
 
 Features:
@@ -101,7 +101,7 @@ class Config:
     """Configuration management for Edge AI Orchestrator"""
     
     def __init__(self):
-        self.database_url = os.getenv("DATABASE_URL", "postgresql://user:password@os.getenv("HOST", "os.getenv("HOST", "os.getenv("HOST", "os.getenv("HOST", "os.getenv("HOST", "os.getenv("HOST", "os.getenv("HOST", "os.getenv("HOST", "os.getenv("HOST", "os.getenv("HOST", "os.getenv("HOST", "os.getenv("HOST", "localhost")")")")")")")")")")")"):5432/agent_banking_network")
+        self.database_url = os.getenv("DATABASE_URL", "postgresql://user:password@os.getenv("HOST", "os.getenv("HOST", "os.getenv("HOST", "os.getenv("HOST", "os.getenv("HOST", "os.getenv("HOST", "os.getenv("HOST", "os.getenv("HOST", "os.getenv("HOST", "os.getenv("HOST", "os.getenv("HOST", "os.getenv("HOST", "localhost")")")")")")")")")")")"):5432/remittance_network")
         self.redis_url = os.getenv("REDIS_URL", "redis://os.getenv("HOST", "os.getenv("HOST", "os.getenv("HOST", "os.getenv("HOST", "os.getenv("HOST", "os.getenv("HOST", "os.getenv("HOST", "os.getenv("HOST", "os.getenv("HOST", "os.getenv("HOST", "os.getenv("HOST", "os.getenv("HOST", "localhost")")")")")")")")")")")"):6379")
         self.mlflow_tracking_uri = os.getenv("MLFLOW_TRACKING_URI", "http://os.getenv("HOST", "os.getenv("HOST", "os.getenv("HOST", "os.getenv("HOST", "os.getenv("HOST", "os.getenv("HOST", "os.getenv("HOST", "os.getenv("HOST", "os.getenv("HOST", "os.getenv("HOST", "os.getenv("HOST", "os.getenv("HOST", "localhost")")")")")")")")")")")"):5000")
         self.server_host = os.getenv("SERVER_HOST", "0.0.0.0")
@@ -116,7 +116,7 @@ class Config:
         self.federated_learning_rounds = int(os.getenv("FEDERATED_LEARNING_ROUNDS", "10"))
         self.model_update_threshold = float(os.getenv("MODEL_UPDATE_THRESHOLD", "0.05"))
 
-        self.database_url = os.getenv("DATABASE_URL", "postgresql://user:password@os.getenv("HOST", "os.getenv("HOST", "os.getenv("HOST", "os.getenv("HOST", "os.getenv("HOST", "os.getenv("HOST", "os.getenv("HOST", "os.getenv("HOST", "os.getenv("HOST", "os.getenv("HOST", "os.getenv("HOST", "os.getenv("HOST", "localhost")")")")")")")")")")")"):5432/agent_banking_network")
+        self.database_url = os.getenv("DATABASE_URL", "postgresql://user:password@os.getenv("HOST", "os.getenv("HOST", "os.getenv("HOST", "os.getenv("HOST", "os.getenv("HOST", "os.getenv("HOST", "os.getenv("HOST", "os.getenv("HOST", "os.getenv("HOST", "os.getenv("HOST", "os.getenv("HOST", "os.getenv("HOST", "localhost")")")")")")")")")")")"):5432/remittance_network")
         self.redis_url = os.getenv("REDIS_URL", "redis://os.getenv("HOST", "os.getenv("HOST", "os.getenv("HOST", "os.getenv("HOST", "os.getenv("HOST", "os.getenv("HOST", "os.getenv("HOST", "os.getenv("HOST", "os.getenv("HOST", "os.getenv("HOST", "os.getenv("HOST", "os.getenv("HOST", "localhost")")")")")")")")")")")"):6379")
         self.mlflow_tracking_uri = os.getenv("MLFLOW_TRACKING_URI", "http://os.getenv("HOST", "os.getenv("HOST", "os.getenv("HOST", "os.getenv("HOST", "os.getenv("HOST", "os.getenv("HOST", "os.getenv("HOST", "os.getenv("HOST", "os.getenv("HOST", "os.getenv("HOST", "os.getenv("HOST", "os.getenv("HOST", "localhost")")")")")")")")")")")"):5000")
         self.server_host = os.getenv("SERVER_HOST", "0.0.0.0")
@@ -1854,7 +1854,7 @@ class EdgeAIOrchestrator:
 
 app = FastAPI(
     title="Edge AI Orchestrator",
-    description="Comprehensive edge computing and distributed AI platform for Agent Banking Network",
+    description="Comprehensive edge computing and distributed AI platform for Remittance Platform",
     version="1.0.0"
 )
 

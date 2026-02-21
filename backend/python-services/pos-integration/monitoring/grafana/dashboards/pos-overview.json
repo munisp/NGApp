@@ -1,7 +1,7 @@
 {
   "dashboard": {
     "id": null,
-    "title": "Agent Banking POS - Overview Dashboard",
+    "title": "Remittance Platform POS - Overview Dashboard",
     "tags": ["pos", "banking", "overview"],
     "style": "dark",
     "timezone": "browser",

@@ -4,7 +4,7 @@ from shared.middleware import apply_middleware, ErrorResponse
 from shared.observability import setup_logging, get_logger, metrics_router, MetricsMiddleware
 """
 Voice Assistant Service
-AI-powered voice assistant integration for Agent Banking Platform
+AI-powered voice assistant integration for Remittance Platform
 Supports Google Assistant, Alexa, Siri, and custom voice interfaces
 """
 from fastapi import FastAPI, HTTPException, UploadFile, File
@@ -383,7 +383,7 @@ async def google_assistant_webhook(data: Dict[str, Any]):
         # Return Google Assistant response format
         
         return {
-            "fulfillmentText": "Response from Agent Banking Platform",
+            "fulfillmentText": "Response from Remittance Platform",
             "fulfillmentMessages": []
         }
     except Exception as e:
@@ -405,7 +405,7 @@ async def alexa_webhook(data: Dict[str, Any]):
             "response": {
                 "outputSpeech": {
                     "type": "PlainText",
-                    "text": "Response from Agent Banking Platform"
+                    "text": "Response from Remittance Platform"
                 },
                 "shouldEndSession": False
             }

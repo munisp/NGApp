@@ -4,10 +4,10 @@
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: agent-banking
+  name: remittance
   labels:
-    app.kubernetes.io/name: agent-banking
-    app.kubernetes.io/part-of: agent-banking-platform
+    app.kubernetes.io/name: remittance
+    app.kubernetes.io/part-of: remittance-platform
 
 ---
 # Commission Service Deployment
@@ -15,7 +15,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: commission-service
-  namespace: agent-banking
+  namespace: remittance
   labels:
     app: commission-service
     tier: backend
@@ -36,7 +36,7 @@ spec:
     spec:
       containers:
       - name: commission-service
-        image: agent-banking/commission-service:latest
+        image: remittance/commission-service:latest
         ports:
         - containerPort: 8000
         env:
@@ -75,7 +75,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: commission-service
-  namespace: agent-banking
+  namespace: remittance
 spec:
   selector:
     app: commission-service
@@ -90,7 +90,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: float-management
-  namespace: agent-banking
+  namespace: remittance
   labels:
     app: float-management
     tier: backend
@@ -111,7 +111,7 @@ spec:
     spec:
       containers:
       - name: float-management
-        image: agent-banking/float-management:latest
+        image: remittance/float-management:latest
         ports:
         - containerPort: 8080
         env:
@@ -144,7 +144,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: float-management
-  namespace: agent-banking
+  namespace: remittance
 spec:
   selector:
     app: float-management
@@ -159,7 +159,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: settlement-service
-  namespace: agent-banking
+  namespace: remittance
   labels:
     app: settlement-service
     tier: backend
@@ -180,7 +180,7 @@ spec:
     spec:
       containers:
       - name: settlement-service
-        image: agent-banking/settlement-service:latest
+        image: remittance/settlement-service:latest
         ports:
         - containerPort: 8000
         env:
@@ -208,7 +208,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: settlement-service
-  namespace: agent-banking
+  namespace: remittance
 spec:
   selector:
     app: settlement-service
@@ -223,7 +223,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: reconciliation-service
-  namespace: agent-banking
+  namespace: remittance
   labels:
     app: reconciliation-service
     tier: backend
@@ -244,7 +244,7 @@ spec:
     spec:
       containers:
       - name: reconciliation-service
-        image: agent-banking/reconciliation-service:latest
+        image: remittance/reconciliation-service:latest
         ports:
         - containerPort: 8000
         env:
@@ -272,7 +272,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: reconciliation-service
-  namespace: agent-banking
+  namespace: remittance
 spec:
   selector:
     app: reconciliation-service
@@ -287,7 +287,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: pos-management
-  namespace: agent-banking
+  namespace: remittance
   labels:
     app: pos-management
     tier: backend
@@ -308,7 +308,7 @@ spec:
     spec:
       containers:
       - name: pos-management
-        image: agent-banking/pos-management:latest
+        image: remittance/pos-management:latest
         ports:
         - containerPort: 8080
         env:
@@ -341,7 +341,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: pos-management
-  namespace: agent-banking
+  namespace: remittance
 spec:
   selector:
     app: pos-management
@@ -356,7 +356,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: qr-service
-  namespace: agent-banking
+  namespace: remittance
   labels:
     app: qr-service
     tier: backend
@@ -377,7 +377,7 @@ spec:
     spec:
       containers:
       - name: qr-service
-        image: agent-banking/qr-service:latest
+        image: remittance/qr-service:latest
         ports:
         - containerPort: 8080
         env:
@@ -405,7 +405,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: qr-service
-  namespace: agent-banking
+  namespace: remittance
 spec:
   selector:
     app: qr-service
@@ -420,7 +420,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: kyc-service
-  namespace: agent-banking
+  namespace: remittance
   labels:
     app: kyc-service
     tier: backend
@@ -441,7 +441,7 @@ spec:
     spec:
       containers:
       - name: kyc-service
-        image: agent-banking/kyc-service:latest
+        image: remittance/kyc-service:latest
         ports:
         - containerPort: 8000
         env:
@@ -474,7 +474,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: kyc-service
-  namespace: agent-banking
+  namespace: remittance
 spec:
   selector:
     app: kyc-service
@@ -489,7 +489,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: kyb-verification
-  namespace: agent-banking
+  namespace: remittance
   labels:
     app: kyb-verification
     tier: backend
@@ -510,7 +510,7 @@ spec:
     spec:
       containers:
       - name: kyb-verification
-        image: agent-banking/kyb-verification:latest
+        image: remittance/kyb-verification:latest
         ports:
         - containerPort: 8000
         env:
@@ -538,7 +538,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: kyb-verification
-  namespace: agent-banking
+  namespace: remittance
 spec:
   selector:
     app: kyb-verification
@@ -553,7 +553,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: ussd-service
-  namespace: agent-banking
+  namespace: remittance
   labels:
     app: ussd-service
     tier: backend
@@ -574,7 +574,7 @@ spec:
     spec:
       containers:
       - name: ussd-service
-        image: agent-banking/ussd-service:latest
+        image: remittance/ussd-service:latest
         ports:
         - containerPort: 8000
         env:
@@ -607,7 +607,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: ussd-service
-  namespace: agent-banking
+  namespace: remittance
 spec:
   selector:
     app: ussd-service
@@ -622,7 +622,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: sms-gateway
-  namespace: agent-banking
+  namespace: remittance
   labels:
     app: sms-gateway
     tier: backend
@@ -643,7 +643,7 @@ spec:
     spec:
       containers:
       - name: sms-gateway
-        image: agent-banking/sms-gateway:latest
+        image: remittance/sms-gateway:latest
         ports:
         - containerPort: 8000
         env:
@@ -676,7 +676,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: sms-gateway
-  namespace: agent-banking
+  namespace: remittance
 spec:
   selector:
     app: sms-gateway
@@ -691,7 +691,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: loyalty-service
-  namespace: agent-banking
+  namespace: remittance
   labels:
     app: loyalty-service
     tier: backend
@@ -712,7 +712,7 @@ spec:
     spec:
       containers:
       - name: loyalty-service
-        image: agent-banking/loyalty-service:latest
+        image: remittance/loyalty-service:latest
         ports:
         - containerPort: 8000
         env:
@@ -740,7 +740,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: loyalty-service
-  namespace: agent-banking
+  namespace: remittance
 spec:
   selector:
     app: loyalty-service
@@ -755,7 +755,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: inventory-management
-  namespace: agent-banking
+  namespace: remittance
   labels:
     app: inventory-management
     tier: backend
@@ -776,7 +776,7 @@ spec:
     spec:
       containers:
       - name: inventory-management
-        image: agent-banking/inventory-management:latest
+        image: remittance/inventory-management:latest
         ports:
         - containerPort: 8000
         env:
@@ -804,7 +804,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: inventory-management
-  namespace: agent-banking
+  namespace: remittance
 spec:
   selector:
     app: inventory-management
@@ -819,7 +819,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: payment-gateway
-  namespace: agent-banking
+  namespace: remittance
   labels:
     app: payment-gateway
     tier: backend
@@ -840,7 +840,7 @@ spec:
     spec:
       containers:
       - name: payment-gateway
-        image: agent-banking/payment-gateway:latest
+        image: remittance/payment-gateway:latest
         ports:
         - containerPort: 8000
         env:
@@ -873,7 +873,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: payment-gateway
-  namespace: agent-banking
+  namespace: remittance
 spec:
   selector:
     app: payment-gateway
@@ -888,7 +888,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: risk-assessment
-  namespace: agent-banking
+  namespace: remittance
   labels:
     app: risk-assessment
     tier: backend
@@ -909,7 +909,7 @@ spec:
     spec:
       containers:
       - name: risk-assessment
-        image: agent-banking/risk-assessment:latest
+        image: remittance/risk-assessment:latest
         ports:
         - containerPort: 8000
         env:
@@ -937,7 +937,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: risk-assessment
-  namespace: agent-banking
+  namespace: remittance
 spec:
   selector:
     app: risk-assessment
@@ -952,7 +952,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: credit-scoring
-  namespace: agent-banking
+  namespace: remittance
   labels:
     app: credit-scoring
     tier: backend
@@ -973,7 +973,7 @@ spec:
     spec:
       containers:
       - name: credit-scoring
-        image: agent-banking/credit-scoring:latest
+        image: remittance/credit-scoring:latest
         ports:
         - containerPort: 8000
         env:
@@ -1001,7 +1001,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: credit-scoring
-  namespace: agent-banking
+  namespace: remittance
 spec:
   selector:
     app: credit-scoring
@@ -1016,7 +1016,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: onboarding-service
-  namespace: agent-banking
+  namespace: remittance
   labels:
     app: onboarding-service
     tier: backend
@@ -1037,7 +1037,7 @@ spec:
     spec:
       containers:
       - name: onboarding-service
-        image: agent-banking/onboarding-service:latest
+        image: remittance/onboarding-service:latest
         ports:
         - containerPort: 8000
         env:
@@ -1065,7 +1065,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: onboarding-service
-  namespace: agent-banking
+  namespace: remittance
 spec:
   selector:
     app: onboarding-service
@@ -1080,7 +1080,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: reporting-service
-  namespace: agent-banking
+  namespace: remittance
   labels:
     app: reporting-service
     tier: backend
@@ -1101,7 +1101,7 @@ spec:
     spec:
       containers:
       - name: reporting-service
-        image: agent-banking/reporting-service:latest
+        image: remittance/reporting-service:latest
         ports:
         - containerPort: 8000
         env:
@@ -1134,7 +1134,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: reporting-service
-  namespace: agent-banking
+  namespace: remittance
 spec:
   selector:
     app: reporting-service

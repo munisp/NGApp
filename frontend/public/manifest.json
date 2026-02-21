@@ -1,7 +1,7 @@
 {
-  "name": "Agent Banking Platform",
+  "name": "Remittance Platform",
   "short_name": "AgentBank",
-  "description": "Comprehensive agent banking platform with offline capabilities",
+  "description": "Comprehensive remittance platform with offline capabilities",
   "version": "1.0.0",
   "start_url": "/",
   "display": "standalone",
@@ -18,14 +18,14 @@
       "sizes": "1280x720",
       "type": "image/png",
       "form_factor": "wide",
-      "label": "Agent Banking Dashboard - Desktop View"
+      "label": "Remittance Platform Dashboard - Desktop View"
     },
     {
       "src": "/images/screenshot-narrow.png",
       "sizes": "750x1334",
       "type": "image/png",
       "form_factor": "narrow",
-      "label": "Agent Banking Dashboard - Mobile View"
+      "label": "Remittance Platform Dashboard - Mobile View"
     }
   ],
   "icons": [
@@ -135,12 +135,12 @@
   "related_applications": [
     {
       "platform": "play",
-      "url": "https://play.google.com/store/apps/details?id=com.agentbanking.app",
-      "id": "com.agentbanking.app"
+      "url": "https://play.google.com/store/apps/details?id=com.remittance.app",
+      "id": "com.remittance.app"
     },
     {
       "platform": "itunes",
-      "url": "https://apps.apple.com/app/agent-banking/id123456789",
+      "url": "https://apps.apple.com/app/remittance/id123456789",
       "id": "123456789"
     }
   ],
@@ -154,7 +154,7 @@
   "handle_links": "preferred",
   "protocol_handlers": [
     {
-      "protocol": "web+agentbanking",
+      "protocol": "web+remittance",
       "url": "/handle?protocol=%s"
     }
   ],

@@ -1,6 +1,6 @@
-# Customer Portal - Agent Banking Platform
+# Customer Portal - Remittance Platform
 
-This is a production-ready React frontend application for the Agent Banking Platform's Customer Portal. It is built with modern web development best practices, focusing on a professional UI/UX, responsive design, and API integration readiness.
+This is a production-ready React frontend application for the Remittance Platform's Customer Portal. It is built with modern web development best practices, focusing on a professional UI/UX, responsive design, and API integration readiness.
 
 ## Features
 

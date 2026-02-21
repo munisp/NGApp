@@ -1,4 +1,4 @@
-# TigerBeetle Integration for Agent Banking Platform
+# TigerBeetle Integration for Remittance Platform
 
 This directory contains the complete TigerBeetle integration with both Zig (primary) and Go (edge) implementations, providing high-performance accounting capabilities with bidirectional synchronization.
 
@@ -339,7 +339,7 @@ curl -X POST http://localhost:8032/sync/trigger
 docker logs tigerbeetle-postgres
 
 # Test database connection
-docker exec -it tigerbeetle-postgres psql -U banking_user -d agent_banking -c "SELECT 1;"
+docker exec -it tigerbeetle-postgres psql -U banking_user -d remittance -c "SELECT 1;"
 ```
 
 ### Log Locations
@@ -349,7 +349,7 @@ docker exec -it tigerbeetle-postgres psql -U banking_user -d agent_banking -c "S
 - **PostgreSQL**: `docker logs tigerbeetle-postgres`
 - **Redis**: `docker logs tigerbeetle-redis`
 
-## Integration with Agent Banking Platform
+## Integration with Remittance Platform
 
 ### Transaction Service Integration
 ```python
@@ -408,4 +408,4 @@ pip install locust
 locust -f load_test.py --host=http://localhost:8030
 ```
 
-This TigerBeetle integration provides a complete, production-ready accounting system with high performance, reliability, and scalability for the Agent Banking Platform.
+This TigerBeetle integration provides a complete, production-ready accounting system with high performance, reliability, and scalability for the Remittance Platform.

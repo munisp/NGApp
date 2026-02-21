@@ -1,4 +1,4 @@
-# Fastfile - Agent Banking Mobile CI/CD Pipeline
+# Fastfile - Remittance Platform Mobile CI/CD Pipeline
 # Production-grade build, test, and deployment automation
 
 default_platform(:ios)
@@ -8,7 +8,7 @@ ENV["FASTLANE_SKIP_UPDATE_CHECK"] = "1"
 ENV["FASTLANE_HIDE_CHANGELOG"] = "1"
 
 # Shared configuration
-BUNDLE_ID = "com.agentbanking.app"
+BUNDLE_ID = "com.remittance.app"
 TEAM_ID = ENV["APPLE_TEAM_ID"]
 APP_STORE_CONNECT_API_KEY_ID = ENV["APP_STORE_CONNECT_API_KEY_ID"]
 APP_STORE_CONNECT_ISSUER_ID = ENV["APP_STORE_CONNECT_ISSUER_ID"]
@@ -132,7 +132,7 @@ platform :ios do
     
     # Upload dSYMs to Sentry
     sentry_upload_dsym(
-      org_slug: "agent-banking",
+      org_slug: "remittance",
       project_slug: "ios-app",
       dsym_path: "./build/AgentBanking.app.dSYM.zip"
     )
@@ -162,7 +162,7 @@ platform :ios do
     
     # Upload dSYMs to Sentry
     sentry_upload_dsym(
-      org_slug: "agent-banking",
+      org_slug: "remittance",
       project_slug: "ios-app",
       dsym_path: "./build/AgentBanking.app.dSYM.zip"
     )
@@ -290,7 +290,7 @@ platform :android do
     
     # Upload ProGuard mapping to Sentry
     sentry_upload_proguard(
-      org_slug: "agent-banking",
+      org_slug: "remittance",
       project_slug: "android-app",
       android_manifest_path: "./android/app/src/main/AndroidManifest.xml",
       mapping_path: "./android/app/build/outputs/mapping/productionRelease/mapping.txt"
@@ -320,7 +320,7 @@ platform :android do
     
     # Upload ProGuard mapping to Sentry
     sentry_upload_proguard(
-      org_slug: "agent-banking",
+      org_slug: "remittance",
       project_slug: "android-app",
       android_manifest_path: "./android/app/src/main/AndroidManifest.xml",
       mapping_path: "./android/app/build/outputs/mapping/productionRelease/mapping.txt"

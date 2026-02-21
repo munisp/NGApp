@@ -1,10 +1,10 @@
 #!/bin/bash
-# Test Runner Script for Agent Banking Platform
+# Test Runner Script for Remittance Platform
 
 set -e
 
 echo "=================================="
-echo "Agent Banking Platform Test Runner"
+echo "Remittance Platform Test Runner"
 echo "=================================="
 
 # Colors

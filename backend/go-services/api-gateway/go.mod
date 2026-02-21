@@ -1,4 +1,4 @@
-module github.com/agent-banking-platform/api-gateway
+module github.com/remittance-platform/api-gateway
 
 go 1.21
 

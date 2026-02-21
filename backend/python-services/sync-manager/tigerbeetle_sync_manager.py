@@ -78,7 +78,7 @@ class TigerBeetleSyncManager:
         )
         
         # Configuration
-        self.database_url = os.getenv("DATABASE_URL", "postgresql://banking_user:secure_banking_password@localhost:5432/agent_banking")
+        self.database_url = os.getenv("DATABASE_URL", "postgresql://banking_user:secure_banking_password@localhost:5432/remittance")
         self.redis_url = os.getenv("REDIS_URL", "redis://:redis_secure_password@localhost:6379")
         self.sync_interval = int(os.getenv("SYNC_INTERVAL", "5"))  # seconds
         self.heartbeat_interval = int(os.getenv("HEARTBEAT_INTERVAL", "30"))  # seconds

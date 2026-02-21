@@ -28,11 +28,11 @@
         "files": 12,
         "size": 68896
       },
-      "agent-banking-frontend": {
+      "remittance-frontend": {
         "files": 57,
         "size": 252236
       },
-      "agent-banking-source": {
+      "remittance-source": {
         "files": 211,
         "size": 19547977
       },

@@ -1,6 +1,6 @@
 # Phase 2 Deployment Guide: Agent Hierarchy & Override Commission Workflow
 
-**Agent Banking Platform V11.0**  
+**Remittance Platform V11.0**  
 **Date:** November 11, 2025  
 **Author:** Manus AI  
 **Status:** Production Ready
@@ -29,7 +29,7 @@ pip3 install temporalio asyncpg redis
 
 ### Database Access
 - PostgreSQL connection string with admin privileges
-- Database: `agent_banking_platform`
+- Database: `remittance_platform`
 - User: `workflow_service` (with appropriate permissions)
 
 ---
@@ -42,10 +42,10 @@ Run the database migration script to create all required tables:
 
 ```bash
 # Connect to PostgreSQL
-psql -h localhost -U postgres -d agent_banking_platform
+psql -h localhost -U postgres -d remittance_platform
 
 # Run migration script
-\i /home/ubuntu/agent-banking-platform/backend/python-services/workflow-orchestration/migrations/003_agent_hierarchy.sql
+\i /home/ubuntu/remittance-platform/backend/python-services/workflow-orchestration/migrations/003_agent_hierarchy.sql
 
 # Verify tables created
 \dt agent_hierarchy override_commissions team_performance recruitment_bonuses team_messages team_reports
@@ -68,14 +68,14 @@ Copy workflow and activity files to the production server:
 
 ```bash
 # Copy workflow definitions
-cp workflows_hierarchy.py /opt/agent-banking-platform/workflows/
+cp workflows_hierarchy.py /opt/remittance-platform/workflows/
 
 # Copy activity implementations
-cp activities_hierarchy.py /opt/agent-banking-platform/activities/
+cp activities_hierarchy.py /opt/remittance-platform/activities/
 
 # Set permissions
-chmod 644 /opt/agent-banking-platform/workflows/workflows_hierarchy.py
-chmod 644 /opt/agent-banking-platform/activities/activities_hierarchy.py
+chmod 644 /opt/remittance-platform/workflows/workflows_hierarchy.py
+chmod 644 /opt/remittance-platform/activities/activities_hierarchy.py
 ```
 
 ### Step 3: Configure Environment Variables
@@ -84,7 +84,7 @@ Add the following environment variables to your `.env` file:
 
 ```bash
 # Database Configuration
-DATABASE_URL=postgresql://workflow_service:password@localhost:5432/agent_banking_platform
+DATABASE_URL=postgresql://workflow_service:password@localhost:5432/remittance_platform
 DATABASE_POOL_SIZE=20
 DATABASE_MAX_OVERFLOW=10
 
@@ -120,7 +120,7 @@ Start the Temporal worker to execute workflows and activities:
 
 ```bash
 # Navigate to workflow directory
-cd /opt/agent-banking-platform
+cd /opt/remittance-platform
 
 # Start worker (production mode)
 python3 -m workflow_orchestration.worker \
@@ -143,7 +143,7 @@ After=network.target postgresql.service redis.service temporal.service
 [Service]
 Type=simple
 User=workflow
-WorkingDirectory=/opt/agent-banking-platform
+WorkingDirectory=/opt/remittance-platform
 Environment="PATH=/usr/local/bin:/usr/bin"
 ExecStart=/usr/bin/python3 -m workflow_orchestration.worker --task-queue workflow-orchestration
 Restart=always
@@ -159,14 +159,14 @@ Run verification tests to ensure everything is working:
 
 ```bash
 # Run integration tests
-cd /home/ubuntu/agent-banking-platform/backend/python-services/workflow-orchestration
+cd /home/ubuntu/remittance-platform/backend/python-services/workflow-orchestration
 pytest test_final_3_workflows.py::TestAgentHierarchyWorkflow -v
 
 # Check worker logs
 sudo journalctl -u temporal-worker-hierarchy -f
 
 # Verify database connections
-psql -h localhost -U workflow_service -d agent_banking_platform -c "SELECT COUNT(*) FROM agent_hierarchy;"
+psql -h localhost -U workflow_service -d remittance_platform -c "SELECT COUNT(*) FROM agent_hierarchy;"
 ```
 
 ### Step 6: Initialize Scheduled Jobs
@@ -180,13 +180,13 @@ crontab -e
 # Add the following jobs:
 
 # Refresh hierarchy leaderboard every 5 minutes
-*/5 * * * * psql -h localhost -U workflow_service -d agent_banking_platform -c "SELECT refresh_hierarchy_leaderboard();"
+*/5 * * * * psql -h localhost -U workflow_service -d remittance_platform -c "SELECT refresh_hierarchy_leaderboard();"
 
 # Refresh monthly override summary every hour
-0 * * * * psql -h localhost -U workflow_service -d agent_banking_platform -c "SELECT refresh_monthly_override_summary();"
+0 * * * * psql -h localhost -U workflow_service -d remittance_platform -c "SELECT refresh_monthly_override_summary();"
 
 # Generate team reports daily at midnight
-0 0 * * * python3 /opt/agent-banking-platform/scripts/generate_daily_reports.py
+0 0 * * * python3 /opt/remittance-platform/scripts/generate_daily_reports.py
 ```
 
 ---
@@ -347,7 +347,7 @@ sudo systemctl stop temporal-worker-hierarchy
 
 ```bash
 # Connect to database
-psql -h localhost -U postgres -d agent_banking_platform
+psql -h localhost -U postgres -d remittance_platform
 
 # Drop tables (WARNING: This will delete all data)
 DROP TABLE IF EXISTS team_reports CASCADE;
@@ -373,8 +373,8 @@ DROP FUNCTION IF EXISTS refresh_hierarchy_leaderboard();
 ### Step 3: Remove Workflow Files
 
 ```bash
-rm /opt/agent-banking-platform/workflows/workflows_hierarchy.py
-rm /opt/agent-banking-platform/activities/activities_hierarchy.py
+rm /opt/remittance-platform/workflows/workflows_hierarchy.py
+rm /opt/remittance-platform/activities/activities_hierarchy.py
 ```
 
 ### Step 4: Restart Previous Version
@@ -559,9 +559,9 @@ EXECUTE FUNCTION log_hierarchy_changes();
 ## Support
 
 For issues or questions, contact:
-- **Email:** support@agentbanking.app
+- **Email:** support@remittance.app
 - **Slack:** #agent-hierarchy-workflow
-- **Documentation:** https://docs.agentbanking.app/hierarchy
+- **Documentation:** https://docs.remittance.app/hierarchy
 
 ---
 

@@ -8,7 +8,7 @@
 
 ## Executive Summary
 
-The Agent Banking Platform's lakehouse implementation has achieved **perfect robustness** across all components. Starting from **95.6/100**, we identified and fixed **2 critical issues** to reach **100/100**.
+The Remittance Platform's lakehouse implementation has achieved **perfect robustness** across all components. Starting from **95.6/100**, we identified and fixed **2 critical issues** to reach **100/100**.
 
 ### Component Scores (All Perfect)
 

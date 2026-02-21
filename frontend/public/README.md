@@ -1,6 +1,6 @@
-# Agent Banking Platform Frontend
+# Remittance Platform Frontend
 
-This is a complete, production-ready React application for the Agent Banking Platform public website. It is built with modern web development best practices and incorporates a range of powerful technologies to deliver a responsive, professional, and highly interactive user experience.
+This is a complete, production-ready React application for the Remittance Platform public website. It is built with modern web development best practices and incorporates a range of powerful technologies to deliver a responsive, professional, and highly interactive user experience.
 
 ## Features
 
@@ -20,7 +20,7 @@ This is a complete, production-ready React application for the Agent Banking Pla
 ## Project Structure
 
 ```
-agent-banking-platform-frontend/
+remittance-platform-frontend/
 ├── public/
 ├── src/
 │   ├── assets/             # Static assets like images
@@ -63,7 +63,7 @@ Make sure you have Node.js (v18 or higher) and pnpm installed on your machine.
 
     ```bash
     git clone <repository-url>
-    cd agent-banking-platform-frontend
+    cd remittance-platform-frontend
     ```
 
 2.  **Install dependencies:**

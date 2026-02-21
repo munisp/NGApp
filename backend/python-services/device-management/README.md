@@ -1,7 +1,7 @@
 # Device Management Service
 
 ## Project Description
-This is a **COMPLETE, PRODUCTION-READY** implementation of a Device Management Service for an Agent Banking Platform. It provides a robust and scalable backend for managing various devices and their owners, ensuring secure and efficient operations.
+This is a **COMPLETE, PRODUCTION-READY** implementation of a Device Management Service for an Remittance Platform. It provides a robust and scalable backend for managing various devices and their owners, ensuring secure and efficient operations.
 
 ## Features
 - **Full FastAPI Service**: Implemented with all necessary endpoints for device and device owner management.

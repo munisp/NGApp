@@ -47,7 +47,7 @@ func loadConfig() *Config {
 	return &Config{
 		DBHost:     getEnv("DB_HOST", "os.getenv("HOST", "os.getenv("HOST", "os.getenv("HOST", "os.getenv("HOST", "localhost")")")")"),
 		DBPort:     getEnv("DB_PORT", "5432"),
-		DBName:     getEnv("DB_NAME", "agent_banking_network"),
+		DBName:     getEnv("DB_NAME", "remittance_network"),
 		DBUser:     getEnv("DB_USER", "postgres"),
 		DBPassword: getEnv("DB_PASSWORD", "password"),
 		RedisHost:  getEnv("REDIS_HOST", "os.getenv("HOST", "os.getenv("HOST", "os.getenv("HOST", "os.getenv("HOST", "localhost")")")")"),
@@ -317,8 +317,8 @@ type SettlementEntry struct {
 	TotalCommissionsEarned  float64                `json:"total_commissions_earned" gorm:"type:decimal(15,2);not null;default:0.00"`
 	NetSettlementAmount     float64                `json:"net_settlement_amount" gorm:"type:decimal(15,2);not null"`
 	AgentAccountNumber      *string                `json:"agent_account_number" gorm:"type:varchar(50)"`
-	AgentBankCode           *string                `json:"agent_bank_code" gorm:"type:varchar(20)"`
-	AgentBankName           *string                `json:"agent_bank_name" gorm:"type:varchar(100)"`
+	PartnerBankCode           *string                `json:"partner_bank_code" gorm:"type:varchar(20)"`
+	PartnerBankName           *string                `json:"partner_bank_name" gorm:"type:varchar(100)"`
 	Status                  string                 `json:"status" gorm:"type:varchar(30);not null;default:'pending'"`
 	ProcessedAt             *time.Time             `json:"processed_at"`
 	BankTransactionReference *string               `json:"bank_transaction_reference" gorm:"type:varchar(100)"`

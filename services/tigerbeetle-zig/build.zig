@@ -12,7 +12,7 @@ pub fn build(b: *std.Build) void {
 
     // Create the main executable
     const exe = b.addExecutable(.{
-        .name = "tigerbeetle-agent-banking",
+        .name = "tigerbeetle-remittance",
         .root_source_file = .{ .path = "main.zig" },
         .target = target,
         .optimize = optimize,
@@ -32,7 +32,7 @@ pub fn build(b: *std.Build) void {
     }
 
     // Create a run step that can be invoked with `zig build run`
-    const run_step = b.step("run", "Run the TigerBeetle Agent Banking application");
+    const run_step = b.step("run", "Run the TigerBeetle Remittance Platform application");
     run_step.dependOn(&run_cmd.step);
 
     // Create unit tests

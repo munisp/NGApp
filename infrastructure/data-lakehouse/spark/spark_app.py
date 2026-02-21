@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Spark Application for Agent Banking Data Processing
+Spark Application for Remittance Platform Data Processing
 """
 
 from pyspark.sql import SparkSession

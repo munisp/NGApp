@@ -1,6 +1,6 @@
-# offline-pwa - Agent Banking Platform Frontend
+# offline-pwa - Remittance Platform Frontend
 
-This is a complete, production-ready React application serving as the frontend for an Agent Banking Platform. It is built with modern web development best practices, focusing on a clean UI/UX, responsiveness, and easy integration with backend services.
+This is a complete, production-ready React application serving as the frontend for an Remittance Platform. It is built with modern web development best practices, focusing on a clean UI/UX, responsiveness, and easy integration with backend services.
 
 ## Features
 

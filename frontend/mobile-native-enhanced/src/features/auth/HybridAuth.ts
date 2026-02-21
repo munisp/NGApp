@@ -3,7 +3,7 @@ import { NativeBiometric } from '@capgo/capacitor-native-biometric';
 
 export class HybridAuth {
   async emailPasswordLogin(email: string, password: string): Promise<any> {
-    const response = await fetch('https://api.agent-banking.com/auth/login', {
+    const response = await fetch('https://api.remittance.com/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password }),
@@ -30,7 +30,7 @@ export class HybridAuth {
       });
 
       if (verified) {
-        const credentials = await NativeBiometric.getCredentials({ server: 'agent-banking' });
+        const credentials = await NativeBiometric.getCredentials({ server: 'remittance' });
         return this.emailPasswordLogin(credentials.username, credentials.password);
       }
       throw new Error('Authentication failed');
@@ -43,7 +43,7 @@ export class HybridAuth {
     await NativeBiometric.setCredentials({
       username,
       password,
-      server: 'agent-banking',
+      server: 'remittance',
     });
   }
 }

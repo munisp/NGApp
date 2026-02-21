@@ -1,6 +1,6 @@
-# Agent Banking Platform PWA
+# Remittance Platform PWA
 
-This is a complete, production-ready React Progressive Web Application (PWA) for an Agent Banking Platform. It is built with modern web development best practices in mind, featuring a responsive design, professional UI/UX, and a robust technology stack.
+This is a complete, production-ready React Progressive Web Application (PWA) for an Remittance Platform. It is built with modern web development best practices in mind, featuring a responsive design, professional UI/UX, and a robust technology stack.
 
 ## Features
 

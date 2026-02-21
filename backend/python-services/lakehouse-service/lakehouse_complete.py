@@ -37,7 +37,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 app = FastAPI(
-    title="Agent Banking Lakehouse (Complete)",
+    title="Remittance Platform Lakehouse (Complete)",
     description="Production-ready lakehouse with JWT authentication, MFA, and PostgreSQL",
     version="3.0.0"
 )
@@ -57,7 +57,7 @@ app.add_middleware(
 @app.on_event("startup")
 async def startup_event():
     """Initialize database and lakehouse on startup"""
-    logger.info("Starting Agent Banking Lakehouse (Complete)...")
+    logger.info("Starting Remittance Platform Lakehouse (Complete)...")
     await init_db_pool()
     logger.info("✓ Database connected")
     logger.info("✓ JWT Authentication enabled")
@@ -251,7 +251,7 @@ async def disable_mfa_endpoint(
 async def root():
     """Health check - No authentication required"""
     return {
-        "service": "Agent Banking Lakehouse (Complete)",
+        "service": "Remittance Platform Lakehouse (Complete)",
         "version": "3.0.0",
         "status": "operational",
         "features": {

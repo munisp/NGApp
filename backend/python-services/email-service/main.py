@@ -18,7 +18,7 @@ from sqlalchemy.orm import Session
 # Initialize FastAPI app
 app = FastAPI(
     title="Email Service",
-    description="API for sending and managing emails within the Agent Banking Platform.",
+    description="API for sending and managing emails within the Remittance Platform.",
     version="1.0.0",
 )
 
@@ -168,7 +168,7 @@ class EmailSendRequest(BaseModel):
     recipient_email: EmailStr
     subject: str
     body: str
-    sender_email: EmailStr = EmailStr("noreply@agentbanking.com") # Default sender
+    sender_email: EmailStr = EmailStr("noreply@remittance-platform.com") # Default sender
 
 @app.post("/emails/send", response_model=EmailResponse, status_code=status.HTTP_200_OK, tags=["Emails"])
 async def send_email(request: EmailSendRequest, current_user: dict = Depends(get_current_user), db: Session = Depends(get_db)):

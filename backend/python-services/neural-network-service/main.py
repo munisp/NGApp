@@ -4,7 +4,7 @@ from shared.middleware import apply_middleware, ErrorResponse
 from shared.observability import setup_logging, get_logger, metrics_router, MetricsMiddleware
 """
 Production-Ready Neural Network Service
-Multi-purpose deep learning service for Agent Banking Platform
+Multi-purpose deep learning service for Remittance Platform
 Supports multiple architectures: CNN, RNN, LSTM, Transformer, BERT
 """
 import os

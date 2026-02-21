@@ -312,7 +312,7 @@ func (s *MonitoringIntegrationService) initializeMetrics() {
 func (s *MonitoringIntegrationService) initializeDatabase() {
 	dbURL := os.Getenv("DATABASE_URL")
 	if dbURL == "" {
-		dbURL = "postgres://postgres:postgres@localhost:5432/agent_banking?sslmode=disable"
+		dbURL = "postgres://postgres:postgres@localhost:5432/remittance?sslmode=disable"
 	}
 
 	var err error

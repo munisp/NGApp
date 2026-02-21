@@ -185,7 +185,7 @@ class DocumentAnalysisEngine:
             # PostgreSQL connection
             self.db_connection = psycopg2.connect(
                 host=os.getenv('DB_HOST', 'localhost'),
-                database="agent_banking",
+                database="remittance",
                 user=os.getenv('DB_USER', 'postgres'),
                 password=os.getenv('DB_PASSWORD', ''),
                 port="5432"

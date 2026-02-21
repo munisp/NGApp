@@ -397,7 +397,7 @@ if TEMPORAL_AVAILABLE:
         logger.info(f"Assigning training for agent: {input_data.get('agent_id')}")
         
         training_modules = [
-            {"id": "TRN001", "name": "Agent Banking Basics", "duration_hours": 2},
+            {"id": "TRN001", "name": "Remittance Platform Basics", "duration_hours": 2},
             {"id": "TRN002", "name": "KYC/AML Compliance", "duration_hours": 1},
             {"id": "TRN003", "name": "Transaction Processing", "duration_hours": 2},
             {"id": "TRN004", "name": "Customer Service", "duration_hours": 1},
@@ -572,7 +572,7 @@ if TEMPORAL_AVAILABLE:
                     send_notification,
                     {
                         "type": "manual_review_required",
-                        "recipient": "compliance@agentbanking.com",
+                        "recipient": "compliance@remittance-platform.com",
                         "agent_id": agent_id,
                         "risk_level": risk_level
                     },

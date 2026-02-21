@@ -141,7 +141,7 @@ func NewQRService() *QRService {
 	dbPort := getEnv("DB_PORT", "5432")
 	dbUser := getEnv("DB_USER", "postgres")
 	dbPassword := getEnv("DB_PASSWORD", "password")
-	dbName := getEnv("DB_NAME", "agent_banking")
+	dbName := getEnv("DB_NAME", "remittance")
 
 	dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
 		dbHost, dbPort, dbUser, dbPassword, dbName)
@@ -172,7 +172,7 @@ func NewQRService() *QRService {
 	}
 
 	// Encryption key
-	encryptionKey := []byte(getEnv("ENCRYPTION_KEY", "agent-banking-qr-key-32-bytes!"))
+	encryptionKey := []byte(getEnv("ENCRYPTION_KEY", "remittance-qr-key-32-bytes!"))
 	if len(encryptionKey) != 32 {
 		// Ensure 32 bytes for AES-256
 		hash := sha256.Sum256(encryptionKey)

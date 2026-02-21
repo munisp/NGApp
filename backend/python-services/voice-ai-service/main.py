@@ -166,7 +166,7 @@ class OllamaClient:
     
     async def generate_response(self, prompt: str, context: Dict[str, Any] = None) -> str:
         """Generate conversational response using Ollama"""
-        system_prompt = """You are a helpful voice AI assistant for an agent banking platform. 
+        system_prompt = """You are a helpful voice AI assistant for an remittance platform. 
         You help customers with account inquiries, transfers, bill payments, and finding agents.
         Be concise and helpful. Respond in a natural conversational tone suitable for voice."""
         

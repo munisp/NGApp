@@ -1,5 +1,5 @@
 # Wazuh SIEM Security Monitoring Deployment
-# Comprehensive security monitoring for Agent Banking Network
+# Comprehensive security monitoring for Remittance Platform
 
 apiVersion: v1
 kind: Namespace
@@ -7,7 +7,7 @@ metadata:
   name: wazuh-system
   labels:
     name: wazuh-system
-    security.agent-banking.com/monitoring: "enabled"
+    security.remittance.com/monitoring: "enabled"
 
 ---
 # Wazuh Manager ConfigMap
@@ -26,8 +26,8 @@ data:
         <logall_json>no</logall_json>
         <email_notification>yes</email_notification>
         <smtp_server>localhost</smtp_server>
-        <email_from>wazuh@agent-banking.local</email_from>
-        <email_to>security@agent-banking.local</email_to>
+        <email_from>wazuh@remittance.local</email_from>
+        <email_to>security@remittance.local</email_to>
         <hostname>wazuh-manager</hostname>
         <email_maxperhour>12</email_maxperhour>
         <email_log_source>alerts.log</email_log_source>
@@ -107,7 +107,7 @@ data:
 
       <syscheck>
         <!-- Banking application file integrity monitoring -->
-        <directories check_all="yes" realtime="yes">/opt/agent-banking</directories>
+        <directories check_all="yes" realtime="yes">/opt/remittance</directories>
         <directories check_all="yes" realtime="yes">/etc/ssl</directories>
         <directories check_all="yes" realtime="yes">/etc/pki</directories>
         <directories check_all="yes" realtime="yes">/var/lib/postgresql</directories>
@@ -134,15 +134,15 @@ data:
         <ignore>/etc/svc/volatile</ignore>
         
         <!-- Banking-specific ignores -->
-        <ignore>/opt/agent-banking/logs</ignore>
-        <ignore>/opt/agent-banking/tmp</ignore>
+        <ignore>/opt/remittance/logs</ignore>
+        <ignore>/opt/remittance/tmp</ignore>
         <ignore>/var/lib/postgresql/*/pg_log</ignore>
         <ignore>/var/lib/redis/dump.rdb</ignore>
         
         <!-- Check the file, but never compute the diff -->
         <nodiff>/etc/ssl/private.key</nodiff>
-        <nodiff>/opt/agent-banking/config/database.yml</nodiff>
-        <nodiff>/opt/agent-banking/config/secrets.yml</nodiff>
+        <nodiff>/opt/remittance/config/database.yml</nodiff>
+        <nodiff>/opt/remittance/config/secrets.yml</nodiff>
         
         <skip_nfs>yes</skip_nfs>
         <skip_dev>yes</skip_dev>
@@ -271,22 +271,22 @@ data:
       <!-- Banking-specific monitoring -->
       <localfile>
         <log_format>json</log_format>
-        <location>/opt/agent-banking/logs/application.log</location>
+        <location>/opt/remittance/logs/application.log</location>
       </localfile>
       
       <localfile>
         <log_format>json</log_format>
-        <location>/opt/agent-banking/logs/transaction.log</location>
+        <location>/opt/remittance/logs/transaction.log</location>
       </localfile>
       
       <localfile>
         <log_format>json</log_format>
-        <location>/opt/agent-banking/logs/fraud.log</location>
+        <location>/opt/remittance/logs/fraud.log</location>
       </localfile>
       
       <localfile>
         <log_format>json</log_format>
-        <location>/opt/agent-banking/logs/audit.log</location>
+        <location>/opt/remittance/logs/audit.log</location>
       </localfile>
       
       <!-- PostgreSQL logs -->
@@ -471,7 +471,7 @@ data:
     </ossec_config>
 
   banking_rules.xml: |
-    <!-- Banking-specific security rules for Agent Banking Network -->
+    <!-- Banking-specific security rules for Remittance Platform -->
     <group name="banking,">
       
       <!-- Transaction monitoring rules -->
@@ -529,7 +529,7 @@ data:
       <!-- System integrity monitoring -->
       <rule id="100008" level="12">
         <if_sid>550</if_sid>
-        <match>/opt/agent-banking</match>
+        <match>/opt/remittance</match>
         <description>Banking application files modified</description>
         <group>banking,integrity,application</group>
       </rule>

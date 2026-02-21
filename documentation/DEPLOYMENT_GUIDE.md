@@ -1,4 +1,4 @@
-# Agent Banking Platform - Deployment Guide
+# Remittance Platform - Deployment Guide
 
 **Version:** 1.0.0  
 **Last Updated:** January 2025  
@@ -65,7 +65,7 @@ redis-cli --version  # >= 7.0
 
 ```bash
 # If from archive
-cd /path/to/agent-banking-platform
+cd /path/to/remittance-platform
 
 # Verify structure
 ls -la
@@ -142,7 +142,7 @@ curl http://localhost:8030/health  # POS
 ### Full Stack Deployment
 
 ```bash
-cd /home/ubuntu/agent-banking-platform
+cd /home/ubuntu/remittance-platform
 
 # Build all images
 docker-compose build
@@ -198,15 +198,15 @@ sudo apt-get install postgresql-15
 
 # Create database
 sudo -u postgres psql
-CREATE DATABASE agent_banking;
-CREATE USER agent_banking_user WITH PASSWORD 'secure_password';
-GRANT ALL PRIVILEGES ON DATABASE agent_banking TO agent_banking_user;
+CREATE DATABASE remittance;
+CREATE USER remittance_user WITH PASSWORD 'secure_password';
+GRANT ALL PRIVILEGES ON DATABASE remittance TO remittance_user;
 \q
 
 # Load schemas
-psql -U agent_banking_user -d agent_banking -f database/schemas/supply_chain_schema.sql
-psql -U agent_banking_user -d agent_banking -f database/security/row_level_security.sql
-psql -U agent_banking_user -d agent_banking -f database/performance/materialized_views.sql
+psql -U remittance_user -d remittance -f database/schemas/supply_chain_schema.sql
+psql -U remittance_user -d remittance -f database/security/row_level_security.sql
+psql -U remittance_user -d remittance -f database/performance/materialized_views.sql
 ```
 
 ### 2. Redis Setup
@@ -279,8 +279,8 @@ npm start &
 DATABASE_CONFIG = {
     "host": "localhost",
     "port": 5432,
-    "database": "agent_banking",
-    "user": "agent_banking_user",
+    "database": "remittance",
+    "user": "remittance_user",
     "password": os.getenv("POSTGRES_PASSWORD"),
     "min_pool_size": 5,
     "max_pool_size": 20
@@ -374,7 +374,7 @@ done
 
 ```bash
 # Database
-psql -U agent_banking_user -d agent_banking -c "SELECT 1;"
+psql -U remittance_user -d remittance -c "SELECT 1;"
 
 # Redis
 redis-cli ping
@@ -398,7 +398,7 @@ curl http://localhost:8001/health
 sudo systemctl status postgresql
 
 # Check connection
-psql -U agent_banking_user -d agent_banking
+psql -U remittance_user -d remittance
 
 # Check logs
 sudo tail -f /var/log/postgresql/postgresql-15-main.log
@@ -457,7 +457,7 @@ sudo systemctl restart docker
 
 ```bash
 # Fix file permissions
-sudo chown -R $USER:$USER /home/ubuntu/agent-banking-platform
+sudo chown -R $USER:$USER /home/ubuntu/remittance-platform
 
 # Fix Docker socket permissions
 sudo chmod 666 /var/run/docker.sock
@@ -616,9 +616,9 @@ python manage.py migrate app_name migration_name
 
 ```bash
 # Configure log rotation
-sudo nano /etc/logrotate.d/agent-banking
+sudo nano /etc/logrotate.d/remittance
 
-/var/log/agent-banking/*.log {
+/var/log/remittance/*.log {
     daily
     rotate 30
     compress
@@ -633,16 +633,16 @@ sudo nano /etc/logrotate.d/agent-banking
 
 ## Support
 
-**Documentation:** https://docs.agent-banking-platform.com  
-**Issues:** https://github.com/agent-banking-platform/issues  
-**Email:** support@agent-banking-platform.com  
-**Slack:** https://agent-banking-platform.slack.com
+**Documentation:** https://docs.remittance-platform.com  
+**Issues:** https://github.com/remittance-platform/issues  
+**Email:** support@remittance-platform.com  
+**Slack:** https://remittance-platform.slack.com
 
 ---
 
 ## License
 
-Copyright © 2025 Agent Banking Platform. All rights reserved.
+Copyright © 2025 Remittance Platform. All rights reserved.
 
 ---
 

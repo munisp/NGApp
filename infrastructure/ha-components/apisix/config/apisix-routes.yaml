@@ -554,7 +554,7 @@ upstreams:
           http_failures: 3
 
 consumers:
-  - username: agent-banking-admin
+  - username: remittance-admin
     plugins:
       key-auth:
         key: "${ADMIN_API_KEY}"
@@ -563,7 +563,7 @@ consumers:
         secret: "${JWT_SECRET}"
         algorithm: HS256
 
-  - username: agent-banking-service
+  - username: remittance-service
     plugins:
       key-auth:
         key: "${SERVICE_API_KEY}"
@@ -572,7 +572,7 @@ consumers:
         secret: "${JWT_SECRET}"
         algorithm: HS256
 
-  - username: agent-banking-mobile
+  - username: remittance-mobile
     plugins:
       key-auth:
         key: "${MOBILE_API_KEY}"

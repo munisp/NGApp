@@ -1,5 +1,5 @@
 # Dapr and Permify Client Libraries
-# Agent Banking Platform V11.0
+# Remittance Platform V11.0
 
 # Dapr SDK
 dapr==1.12.0

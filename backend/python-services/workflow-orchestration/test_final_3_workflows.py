@@ -1,6 +1,6 @@
 """
 Integration Tests for Final 3 Workflows
-Agent Banking Platform V11.0
+Remittance Platform V11.0
 
 This module contains comprehensive integration tests for:
 1. Referral Program Workflow
@@ -69,7 +69,7 @@ class TestReferralProgramWorkflow:
         assert len(result.referral_code) == 8
         assert result.referral_qr_code_url is not None
         assert result.referral_deep_link is not None
-        assert "Agent Banking" in result.share_message
+        assert "Remittance Platform" in result.share_message
     
     @pytest.mark.asyncio
     async def test_referral_signup_success(self):

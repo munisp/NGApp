@@ -1116,7 +1116,7 @@ func main() {
 	// Default configuration
 	config := &ServiceConfig{
 		Port:                8094,
-		DatabaseURL:         "host=localhost user=postgres password=postgres dbname=agent_banking port=5432 sslmode=disable",
+		DatabaseURL:         "host=localhost user=postgres password=postgres dbname=remittance port=5432 sslmode=disable",
 		RedisURL:            "localhost:6379",
 		DataDirectory:       "./data/standalone_pos",
 		MaxTerminals:        100000,

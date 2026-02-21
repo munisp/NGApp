@@ -1,4 +1,4 @@
--- Agent Banking Platform - Seed Data
+-- Remittance Platform - Seed Data
 -- Version: 1.0.0
 -- Description: Sample data for development and testing
 
@@ -8,7 +8,7 @@
 
 -- Insert test users (passwords are hashed with bcrypt: "Password123!")
 INSERT INTO users (email, password_hash, full_name, role, is_active, is_verified) VALUES
-('admin@agent-banking.com', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5GyYIeWEgZK8W', 'System Administrator', 'admin', TRUE, TRUE),
+('admin@remittance.com', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5GyYIeWEgZK8W', 'System Administrator', 'admin', TRUE, TRUE),
 ('john.doe@example.com', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5GyYIeWEgZK8W', 'John Doe', 'customer', TRUE, TRUE),
 ('jane.smith@example.com', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5GyYIeWEgZK8W', 'Jane Smith', 'customer', TRUE, TRUE),
 ('bob.wilson@example.com', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5GyYIeWEgZK8W', 'Bob Wilson', 'customer', TRUE, TRUE),
@@ -198,7 +198,7 @@ BEGIN
     RAISE NOTICE '  - 12 inventory records';
     RAISE NOTICE '';
     RAISE NOTICE 'Test user credentials:';
-    RAISE NOTICE '  Email: admin@agent-banking.com';
+    RAISE NOTICE '  Email: admin@remittance.com';
     RAISE NOTICE '  Password: Password123!';
 END $$;
 

@@ -1,8 +1,8 @@
-# 📚 Agent Banking Platform - API Documentation
+# 📚 Remittance Platform - API Documentation
 
 **Version:** 1.0.0  
 **Date:** October 29, 2025  
-**Base URL:** `https://api.agentbanking.com/v1`
+**Base URL:** `https://api.remittance-platform.com/v1`
 
 ---
 
@@ -171,7 +171,7 @@ Authorization: Bearer <token>
 Content-Type: application/json
 
 {
-  "domain": "api.agentbanking.com",
+  "domain": "api.remittance-platform.com",
   "certificate_hash": "sha256/AAAAAAAAAA..."
 }
 ```
@@ -376,7 +376,7 @@ language: en-US
   "confidence": 0.95,
   "response": {
     "text": "Your current balance is 50,000 Naira",
-    "audio_url": "https://cdn.agentbanking.com/audio/response_123.mp3",
+    "audio_url": "https://cdn.remittance-platform.com/audio/response_123.mp3",
     "data": {
       "balance": 50000.00,
       "currency": "NGN"
@@ -406,7 +406,7 @@ Content-Type: application/json
 {
   "qr_code_id": "qr_123",
   "qr_code_data": "data:image/png;base64,iVBORw0KGgo...",
-  "qr_code_string": "agentbanking://pay?id=qr_123&amount=5000",
+  "qr_code_string": "remittance://pay?id=qr_123&amount=5000",
   "expires_at": "2025-10-29T10:35:00Z"
 }
 ```
@@ -418,7 +418,7 @@ Authorization: Bearer <token>
 Content-Type: application/json
 
 {
-  "qr_code_string": "agentbanking://pay?id=qr_123&amount=5000"
+  "qr_code_string": "remittance://pay?id=qr_123&amount=5000"
 }
 ```
 
@@ -662,7 +662,7 @@ def verify_webhook(payload, signature, secret):
 ### **JavaScript/TypeScript**
 
 ```typescript
-import { AgentBankingClient } from '@agentbanking/sdk';
+import { AgentBankingClient } from '@remittance/sdk';
 
 const client = new AgentBankingClient({
   apiKey: 'your_api_key',
@@ -683,7 +683,7 @@ const transaction = await client.transactions.create({
 ### **Python**
 
 ```python
-from agentbanking import Client
+from remittance import Client
 
 client = Client(api_key='your_api_key')
 
@@ -701,7 +701,7 @@ transaction = client.transactions.create(
 ### **React Native**
 
 ```typescript
-import { useAgentBanking } from '@agentbanking/react-native';
+import { useAgentBanking } from '@remittance/react-native';
 
 function TransferScreen() {
   const { createTransaction } = useAgentBanking();
@@ -722,12 +722,12 @@ function TransferScreen() {
 
 ### **Sandbox Environment**
 
-**Base URL:** `https://sandbox-api.agentbanking.com/v1`
+**Base URL:** `https://sandbox-api.remittance-platform.com/v1`
 
 ### **Test Credentials**
 
 ```
-Email: test@agentbanking.com
+Email: test@remittance-platform.com
 Password: Test123!
 PIN: 1234
 ```

@@ -1,5 +1,5 @@
 export const config = {
-  API_URL: process.env.API_URL || 'https://api.agent-banking.com',
+  API_URL: process.env.API_URL || 'https://api.remittance.com',
   API_TIMEOUT: 30000,
   CACHE_DURATION: 300000,
   MAX_RETRY_ATTEMPTS: 3,

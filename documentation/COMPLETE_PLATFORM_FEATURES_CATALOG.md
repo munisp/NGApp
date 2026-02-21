@@ -1,4 +1,4 @@
-# Agent Banking Platform - Complete Features Catalog
+# Remittance Platform - Complete Features Catalog
 
 **Version:** 1.0.0  
 **Total Services:** 139 Microservices (122 Python + 17 Go)  

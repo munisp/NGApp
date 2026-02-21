@@ -20,7 +20,7 @@ models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
     title="Edge Deployment Service",
-    description="API for managing edge device deployments in the Agent Banking Platform.",
+    description="API for managing edge device deployments in the Remittance Platform.",
     version="1.0.0",
 )
 

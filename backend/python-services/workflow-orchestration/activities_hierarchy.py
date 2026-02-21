@@ -1,6 +1,6 @@
 """
 Agent Hierarchy & Override Commission Activity Implementations
-Agent Banking Platform V11.0
+Remittance Platform V11.0
 
 This module implements all activities for the Agent Hierarchy Workflow.
 
@@ -801,7 +801,7 @@ async def generate_team_report(
     }
     
     # In production: upload to S3 and return URL
-    report_url = f"https://reports.agentbanking.app/{report_id}.pdf"
+    report_url = f"https://reports.remittance.app/{report_id}.pdf"
     
     activity.logger.info(f"Generated team report {report_id} for agent {agent_id}")
     

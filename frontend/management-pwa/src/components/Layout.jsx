@@ -71,7 +71,7 @@ export default function Layout() {
             <div className="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center">
               <span className="text-white font-bold text-sm">AB</span>
             </div>
-            <span className="font-semibold text-gray-900">Agent Banking</span>
+            <span className="font-semibold text-gray-900">Remittance Platform</span>
           </div>
           <button 
             className="lg:hidden p-2 text-gray-500 hover:text-gray-700"

@@ -1,4 +1,4 @@
-module agent-banking/commission-settlement
+module remittance/commission-settlement
 
 go 1.21
 

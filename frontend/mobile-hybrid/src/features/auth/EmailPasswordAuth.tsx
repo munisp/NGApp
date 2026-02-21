@@ -19,7 +19,7 @@ export const EmailPasswordAuth = ({ onSuccess }: any) => {
     setLoading(true);
     try {
       const hashedPassword = await hashPassword(password);
-      const response = await fetch('https://api.agent-banking.com/auth/login', {
+      const response = await fetch('https://api.remittance.com/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password: hashedPassword }),

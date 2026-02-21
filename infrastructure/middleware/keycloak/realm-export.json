@@ -1,8 +1,8 @@
 {
-  "realm": "agent-banking",
+  "realm": "remittance",
   "enabled": true,
-  "displayName": "Agent Banking Platform",
-  "displayNameHtml": "<div class=\"kc-logo-text\"><span>Agent Banking Platform</span></div>",
+  "displayName": "Remittance Platform",
+  "displayNameHtml": "<div class=\"kc-logo-text\"><span>Remittance Platform</span></div>",
   "notBefore": 0,
   "defaultSignatureAlgorithm": "RS256",
   "revokeRefreshToken": false,
@@ -52,35 +52,35 @@
         "description": "Super Administrator with full system access",
         "composite": false,
         "clientRole": false,
-        "containerId": "agent-banking"
+        "containerId": "remittance"
       },
       {
         "name": "policy_admin",
         "description": "Policy Administrator with policy management access",
         "composite": false,
         "clientRole": false,
-        "containerId": "agent-banking"
+        "containerId": "remittance"
       },
       {
         "name": "compliance_officer",
         "description": "Compliance Officer with regulatory oversight access",
         "composite": false,
         "clientRole": false,
-        "containerId": "agent-banking"
+        "containerId": "remittance"
       },
       {
         "name": "reviewer",
         "description": "Policy Reviewer with review and approval access",
         "composite": false,
         "clientRole": false,
-        "containerId": "agent-banking"
+        "containerId": "remittance"
       },
       {
         "name": "viewer",
         "description": "Viewer with read-only access",
         "composite": false,
         "clientRole": false,
-        "containerId": "agent-banking"
+        "containerId": "remittance"
       }
     ]
   },
@@ -121,7 +121,7 @@
       "emailVerified": true,
       "firstName": "System",
       "lastName": "Administrator",
-      "email": "admin@agentbanking.com",
+      "email": "admin@remittance-platform.com",
       "credentials": [
         {
           "type": "password",
@@ -138,7 +138,7 @@
       "emailVerified": true,
       "firstName": "Policy",
       "lastName": "Administrator",
-      "email": "policy@agentbanking.com",
+      "email": "policy@remittance-platform.com",
       "credentials": [
         {
           "type": "password",
@@ -155,7 +155,7 @@
       "emailVerified": true,
       "firstName": "Compliance",
       "lastName": "Officer",
-      "email": "compliance@agentbanking.com",
+      "email": "compliance@remittance-platform.com",
       "credentials": [
         {
           "type": "password",
@@ -169,21 +169,21 @@
   ],
   "clients": [
     {
-      "clientId": "agent-banking-platform",
-      "name": "Agent Banking Platform",
-      "description": "Main application client for Agent Banking Platform",
+      "clientId": "remittance-platform",
+      "name": "Remittance Platform",
+      "description": "Main application client for Remittance Platform",
       "enabled": true,
       "clientAuthenticatorType": "client-secret",
-      "secret": "agent-banking-secret-2024",
+      "secret": "remittance-secret-2024",
       "redirectUris": [
         "http://localhost:3000/*",
         "http://localhost:8080/*",
-        "https://agentbanking.com/*"
+        "https://remittance-platform.com/*"
       ],
       "webOrigins": [
         "http://localhost:3000",
         "http://localhost:8080",
-        "https://agentbanking.com"
+        "https://remittance-platform.com"
       ],
       "standardFlowEnabled": true,
       "implicitFlowEnabled": false,
@@ -271,8 +271,8 @@
   ],
   "clientScopes": [
     {
-      "name": "agent-banking-scope",
-      "description": "Agent Banking Platform specific scope",
+      "name": "remittance-scope",
+      "description": "Remittance Platform specific scope",
       "protocol": "openid-connect",
       "attributes": {
         "include.in.token.scope": "true",
@@ -314,7 +314,7 @@
     "role_list",
     "profile",
     "email",
-    "agent-banking-scope"
+    "remittance-scope"
   ],
   "browserFlow": "browser",
   "registrationFlow": "registration",
@@ -329,7 +329,7 @@
     "cibaAuthRequestedUserHint": "login_hint",
     "parRequestUriLifespan": "60",
     "frontendUrl": "",
-    "consoleDisplayName": "Agent Banking Platform"
+    "consoleDisplayName": "Remittance Platform"
   },
   "keycloakVersion": "23.0.1",
   "userManagedAccessAllowed": false,

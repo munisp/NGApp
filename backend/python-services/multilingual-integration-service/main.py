@@ -5,7 +5,7 @@ from shared.observability import setup_logging, get_logger, metrics_router, Metr
 """
 Multi-lingual Integration Service
 Provides comprehensive translation across all platform modules:
-- Agent Banking
+- Remittance Platform
 - E-commerce
 - Inventory Management
 - Customer Portal
@@ -44,8 +44,8 @@ TRANSLATION_SERVICE = "http://localhost:8095"
 
 # Comprehensive UI translations for all modules
 UI_TRANSLATIONS = {
-    # Agent Banking Module
-    "agent_banking": {
+    # Remittance Platform Module
+    "remittance": {
         "dashboard": {
             "en": "Dashboard",
             "yo": "Pátákó",
@@ -347,7 +347,7 @@ UI_TRANSLATIONS = {
 
 # Models
 class TranslateUIRequest(BaseModel):
-    module: str  # agent_banking, ecommerce, inventory, common, messages
+    module: str  # remittance, ecommerce, inventory, common, messages
     keys: List[str]  # List of UI keys to translate
     target_language: str
 

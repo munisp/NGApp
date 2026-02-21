@@ -63,7 +63,7 @@ data:
       enabled: true
       method: preshared
       keys:
-        - "agent-banking-auth-key-123"
+        - "remittance-auth-key-123"
     
     service:
       circuit_breaker: false
@@ -311,9 +311,9 @@ spec:
           curl -X POST \
             "http://permify:3477/v1/schemas/write" \
             -H "Content-Type: application/json" \
-            -H "Authorization: Bearer agent-banking-auth-key-123" \
+            -H "Authorization: Bearer remittance-auth-key-123" \
             -d '{
-              "tenant_id": "agent-banking",
+              "tenant_id": "remittance",
               "schema": "entity user {}\n\nentity organization {\n    relation admin @user\n    relation member @user\n    \n    permission view = admin or member\n    permission edit = admin\n    permission delete = admin\n}\n\nentity bank {\n    relation admin @user\n    relation manager @user\n    relation employee @user\n    relation agent @user\n    \n    permission view = admin or manager or employee or agent\n    permission manage_agents = admin or manager\n    permission process_transactions = admin or manager or employee or agent\n    permission view_reports = admin or manager\n    permission manage_settings = admin\n}\n\nentity agent {\n    relation owner @user\n    relation supervisor @user\n    relation bank @bank\n    \n    permission view = owner or supervisor or bank.admin or bank.manager\n    permission edit = owner or supervisor or bank.admin or bank.manager\n    permission activate = bank.admin or bank.manager\n    permission deactivate = bank.admin or bank.manager\n    permission view_transactions = owner or supervisor or bank.admin or bank.manager\n    permission process_transactions = owner and bank.process_transactions\n}\n\nentity customer {\n    relation owner @user\n    relation agent @agent\n    relation bank @bank\n    \n    permission view = owner or agent.owner or bank.admin or bank.manager or bank.employee\n    permission edit = owner or agent.owner or bank.admin or bank.manager\n    permission view_transactions = owner or agent.owner or bank.admin or bank.manager\n    permission create_transactions = owner or agent.owner\n}\n\nentity transaction {\n    relation initiator @user\n    relation agent @agent\n    relation customer @customer\n    relation bank @bank\n    \n    permission view = initiator or agent.owner or customer.owner or bank.admin or bank.manager or bank.employee\n    permission approve = agent.owner or bank.admin or bank.manager\n    permission reject = agent.owner or bank.admin or bank.manager\n    permission reverse = bank.admin or bank.manager\n    permission audit = bank.admin or bank.manager\n}\n\nentity account {\n    relation owner @user\n    relation agent @agent\n    relation bank @bank\n    \n    permission view = owner or agent.owner or bank.admin or bank.manager or bank.employee\n    permission deposit = agent.owner or bank.admin or bank.manager or bank.employee\n    permission withdraw = agent.owner or bank.admin or bank.manager or bank.employee\n    permission transfer = owner or agent.owner or bank.admin or bank.manager\n    permission freeze = bank.admin or bank.manager\n    permission close = bank.admin or bank.manager\n}\n\nentity commission {\n    relation agent @agent\n    relation bank @bank\n    \n    permission view = agent.owner or bank.admin or bank.manager\n    permission calculate = bank.admin or bank.manager\n    permission pay = bank.admin or bank.manager\n    permission audit = bank.admin or bank.manager\n}\n\nentity report {\n    relation bank @bank\n    relation agent @agent\n    \n    permission view = bank.admin or bank.manager or agent.owner\n    permission generate = bank.admin or bank.manager\n    permission export = bank.admin or bank.manager\n    permission audit = bank.admin\n}\n\nentity audit_log {\n    relation bank @bank\n    \n    permission view = bank.admin\n    permission export = bank.admin\n}\n\nentity system_setting {\n    relation bank @bank\n    \n    permission view = bank.admin or bank.manager\n    permission edit = bank.admin\n}\n\nentity api_key {\n    relation owner @user\n    relation bank @bank\n    \n    permission view = owner or bank.admin\n    permission create = bank.admin\n    permission revoke = owner or bank.admin\n    permission use = owner\n}"
             }'
           
@@ -345,10 +345,10 @@ metadata:
 spec:
   tls:
   - hosts:
-    - permify.agent-banking.local
+    - permify.remittance.local
     secretName: permify-tls
   rules:
-  - host: permify.agent-banking.local
+  - host: permify.remittance.local
     http:
       paths:
       - path: /

@@ -311,7 +311,7 @@ class LocalSecretsBackend(SecretsBackend):
         kdf = PBKDF2HMAC(
             algorithm=hashes.SHA256(),
             length=32,
-            salt=b"agent-banking-secrets",
+            salt=b"remittance-secrets",
             iterations=100000,
             backend=default_backend()
         )

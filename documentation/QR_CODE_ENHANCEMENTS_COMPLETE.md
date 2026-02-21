@@ -397,7 +397,7 @@ ALLOWED_ORIGINS = [
 
 ```bash
 # Database
-DATABASE_URL=postgresql://postgres:password@localhost:5432/agent_banking
+DATABASE_URL=postgresql://postgres:password@localhost:5432/remittance
 
 # Redis
 REDIS_URL=redis://localhost:6379
@@ -406,7 +406,7 @@ REDIS_URL=redis://localhost:6379
 AWS_ACCESS_KEY_ID=your-access-key
 AWS_SECRET_ACCESS_KEY=your-secret-key
 AWS_REGION=us-east-1
-S3_BUCKET_NAME=agent-banking-qrcodes
+S3_BUCKET_NAME=remittance-qrcodes
 
 # Security
 JWT_SECRET=your-jwt-secret-change-in-production
@@ -419,7 +419,7 @@ ALLOWED_ORIGINS=http://localhost:3000,https://marketplace.example.com
 ### **Run Service**
 
 ```bash
-cd /home/ubuntu/agent-banking-platform/backend/python-services/qr-code-service
+cd /home/ubuntu/remittance-platform/backend/python-services/qr-code-service
 
 # Install dependencies
 pip install fastapi uvicorn qrcode pillow reportlab \

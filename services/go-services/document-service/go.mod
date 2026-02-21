@@ -1,4 +1,4 @@
-module agent-banking/document-service
+module remittance/document-service
 
 go 1.21
 

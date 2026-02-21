@@ -19,7 +19,7 @@ from fastapi import FastAPI, HTTPException, Depends, Header
 from pydantic import BaseModel
 
 # Add shared directory to path
-sys.path.insert(0, "/home/ubuntu/agent-banking-platform/backend/python-services/shared")
+sys.path.insert(0, "/home/ubuntu/remittance-platform/backend/python-services/shared")
 
 from dapr_client import AgentBankingDaprClient
 from permify_client import PermifyClient

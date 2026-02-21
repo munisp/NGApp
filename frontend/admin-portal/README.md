@@ -1,7 +1,7 @@
-# Agent Banking Platform Admin Portal
+# Remittance Platform Admin Portal
 
 ## Description
-This project implements a complete, production-ready React frontend application for an Agent Banking Platform Admin Portal. It provides a modern, responsive, and functional interface for managing agents, customers, transactions, and viewing dashboard analytics.
+This project implements a complete, production-ready React frontend application for an Remittance Platform Admin Portal. It provides a modern, responsive, and functional interface for managing agents, customers, transactions, and viewing dashboard analytics.
 
 ## Features
 - **Dashboard**: Overview of key metrics including total revenue, active agents, transactions, and active customers. Includes a monthly revenue and transactions chart and a list of recent transactions.

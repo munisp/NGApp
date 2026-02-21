@@ -1,6 +1,6 @@
 """
 Initialize Permify Relationships
-Agent Banking Platform V11.0
+Remittance Platform V11.0
 
 Creates initial relationships for:
 - Organizations
@@ -15,7 +15,7 @@ Date: November 11, 2025
 
 import asyncio
 import sys
-sys.path.insert(0, "/home/ubuntu/agent-banking-platform/backend/python-services/shared")
+sys.path.insert(0, "/home/ubuntu/remittance-platform/backend/python-services/shared")
 
 from permify_client import PermifyClient
 

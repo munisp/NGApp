@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Redis Cluster Manager for Agent Banking Network
+Redis Cluster Manager for Remittance Platform
 High-availability caching, session management, and real-time data
 """
 
@@ -45,7 +45,7 @@ class SessionData:
     user_agent: str = None
 
 class RedisClusterManager:
-    """Comprehensive Redis cluster manager for Agent Banking Network"""
+    """Comprehensive Redis cluster manager for Remittance Platform"""
     
     def __init__(self, nodes: List[Dict[str, Any]] = None):
         self.nodes = nodes or [
@@ -974,7 +974,7 @@ class RedisClusterManager:
 
 def main():
     """Main function to demonstrate Redis cluster management"""
-    print("🔴 Agent Banking Network - Redis Cluster Manager")
+    print("🔴 Remittance Platform - Redis Cluster Manager")
     print("=" * 70)
     
     cluster = RedisClusterManager()

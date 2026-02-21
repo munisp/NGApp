@@ -196,7 +196,7 @@ async def start_workflow(self, workflow: WorkflowDefinition) -> bool:
 ### Step 1: Install Dependencies
 
 ```bash
-cd /home/ubuntu/agent-banking-platform/services/dapr
+cd /home/ubuntu/remittance-platform/services/dapr
 pip install -r requirements_enhanced.txt
 ```
 

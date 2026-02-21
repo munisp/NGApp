@@ -522,7 +522,7 @@ async def example_usage():
     primary = DatabaseNode(
         host=os.getenv('DB_HOST', 'localhost'),
         port=5432,
-        database="agent_banking",
+        database="remittance",
         user=os.getenv('DB_USER', 'postgres'),
         password=os.getenv('DB_PASSWORD', ''),
         role="primary"
@@ -531,7 +531,7 @@ async def example_usage():
     replica1 = DatabaseNode(
         host="replica1.example.com",
         port=5432,
-        database="agent_banking",
+        database="remittance",
         user=os.getenv('DB_USER', 'postgres'),
         password=os.getenv('DB_PASSWORD', ''),
         role="replica",
@@ -541,7 +541,7 @@ async def example_usage():
     replica2 = DatabaseNode(
         host="replica2.example.com",
         port=5432,
-        database="agent_banking",
+        database="remittance",
         user=os.getenv('DB_USER', 'postgres'),
         password=os.getenv('DB_PASSWORD', ''),
         role="replica",

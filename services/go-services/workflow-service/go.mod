@@ -1,4 +1,4 @@
-module agent-banking/workflow-service
+module remittance/workflow-service
 
 go 1.21
 

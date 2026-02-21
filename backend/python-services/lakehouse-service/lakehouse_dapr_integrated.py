@@ -4,7 +4,7 @@ from shared.middleware import apply_middleware, ErrorResponse
 from shared.observability import setup_logging, get_logger, metrics_router, MetricsMiddleware
 """
 Lakehouse Service with Dapr Service Mesh Integration
-Agent Banking Platform V11.0
+Remittance Platform V11.0
 
 This service integrates with:
 - Dapr for service-to-service communication, state management, and pub/sub

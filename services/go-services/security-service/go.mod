@@ -1,4 +1,4 @@
-module agent-banking-network/security-service
+module remittance-network/security-service
 
 go 1.23.0
 

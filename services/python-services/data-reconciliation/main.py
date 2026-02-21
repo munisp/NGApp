@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Data Reconciliation Service for Agent Banking Network
+Data Reconciliation Service for Remittance Platform
 Automated reconciliation between TigerBeetle and PostgreSQL
 No mocks, no placeholders - production ready
 """
@@ -43,7 +43,7 @@ class Config:
     # Database
     db_host: str = os.getenv("DB_HOST", "localhost")
     db_port: int = int(os.getenv("DB_PORT", "5432"))
-    db_name: str = os.getenv("DB_NAME", "agent_banking_network")
+    db_name: str = os.getenv("DB_NAME", "remittance_network")
     db_user: str = os.getenv("DB_USER", "postgres")
     db_password: str = os.getenv("DB_PASSWORD", "password")
     

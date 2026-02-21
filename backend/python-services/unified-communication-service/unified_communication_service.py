@@ -1,5 +1,5 @@
 """
-Unified Communication Service for Agent Banking Platform
+Unified Communication Service for Remittance Platform
 Supports WhatsApp, SMS, and USSD with automatic failover and delivery tracking
 """
 

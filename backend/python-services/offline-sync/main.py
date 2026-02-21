@@ -13,7 +13,7 @@ from ..config.settings import get_settings
 # Initialize FastAPI app
 app = FastAPI(
     title=get_settings().app_name,
-    description="Service for managing offline synchronization of agent banking data.",
+    description="Service for managing offline synchronization of remittance data.",
     version="1.0.0",
 )
 

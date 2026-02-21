@@ -2,7 +2,7 @@
 
 ## Overview
 
-This service provides a robust and scalable API for managing hierarchical structures within the Agent Banking Platform. It is built using FastAPI, SQLAlchemy, and PostgreSQL, designed for production readiness with comprehensive error handling, logging, authentication, and API documentation.
+This service provides a robust and scalable API for managing hierarchical structures within the Remittance Platform. It is built using FastAPI, SQLAlchemy, and PostgreSQL, designed for production readiness with comprehensive error handling, logging, authentication, and API documentation.
 
 ## Features
 

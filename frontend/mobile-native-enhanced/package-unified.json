@@ -1,7 +1,7 @@
 {
-  "name": "agent-banking-platform-unified",
+  "name": "remittance-platform-unified",
   "version": "3.0.0",
-  "description": "Agent Banking Platform - Unified Mobile App with 60 Features (Security: 25, Performance: 20, Advanced: 15)",
+  "description": "Remittance Platform - Unified Mobile App with 60 Features (Security: 25, Performance: 20, Advanced: 15)",
   "main": "index.js",
   "scripts": {
     "android": "react-native run-android",

@@ -183,8 +183,8 @@ func (s *IntegrationService) insertDefaultIntegrations() {
 			Provider: "Keycloak",
 			Endpoint: "http://localhost:8080/auth",
 			AuthType: "oauth2",
-			Credentials: `{"client_id": "agent-banking", "client_secret": "secret"}`,
-			Configuration: `{"realm": "agent-banking", "scope": "openid profile"}`,
+			Credentials: `{"client_id": "remittance", "client_secret": "secret"}`,
+			Configuration: `{"realm": "remittance", "scope": "openid profile"}`,
 			Status:   "active",
 			IsActive: true,
 		},
@@ -771,7 +771,7 @@ func main() {
 	dbPort := getEnv("DB_PORT", "5432")
 	dbUser := getEnv("DB_USER", "postgres")
 	dbPassword := getEnv("DB_PASSWORD", "password")
-	dbName := getEnv("DB_NAME", "agent_banking")
+	dbName := getEnv("DB_NAME", "remittance")
 
 	dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
 		dbHost, dbPort, dbUser, dbPassword, dbName)

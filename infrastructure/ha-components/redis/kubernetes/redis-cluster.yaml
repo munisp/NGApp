@@ -16,7 +16,7 @@ metadata:
     app: redis
 data:
   redis.conf: |
-    # Redis Cluster Configuration for Agent Banking Network
+    # Redis Cluster Configuration for Remittance Platform
     port 6379
     tls-port 6380
     tcp-backlog 511
@@ -524,7 +524,7 @@ metadata:
     app: redis-sentinel
 data:
   sentinel.conf: |
-    # Redis Sentinel Configuration for Agent Banking Network HA
+    # Redis Sentinel Configuration for Remittance Platform HA
     port 26379
     dir /var/lib/redis-sentinel
     
@@ -593,7 +593,7 @@ spec:
   - from:
     - namespaceSelector:
         matchLabels:
-          name: agent-banking-system
+          name: remittance-system
     - podSelector:
         matchLabels:
           app: redis

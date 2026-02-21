@@ -2,7 +2,7 @@
 
 ## Overview
 
-This service provides a robust and scalable rule engine for the Agent Banking Platform. It allows for the dynamic definition, evaluation, and execution of business rules, enabling flexible and adaptive decision-making processes. The service is built using FastAPI, SQLAlchemy for ORM, and PostgreSQL as the primary data store.
+This service provides a robust and scalable rule engine for the Remittance Platform. It allows for the dynamic definition, evaluation, and execution of business rules, enabling flexible and adaptive decision-making processes. The service is built using FastAPI, SQLAlchemy for ORM, and PostgreSQL as the primary data store.
 
 ## Features
 

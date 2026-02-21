@@ -1,7 +1,7 @@
 {
-  "name": "agent-banking-admin-dashboard",
+  "name": "remittance-admin-dashboard",
   "version": "2.0.0",
-  "description": "Comprehensive Admin Dashboard for Agent Banking Network - Nigerian Banking Operations",
+  "description": "Comprehensive Admin Dashboard for Remittance Platform - Nigerian Banking Operations",
   "private": true,
   "type": "module",
   "scripts": {
@@ -19,10 +19,10 @@
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
     "analyze": "npm run build && npx vite-bundle-analyzer dist/stats.html",
-    "docker:build": "docker build -t agent-banking-admin .",
-    "docker:run": "docker run -p 3001:80 agent-banking-admin",
-    "deploy:staging": "npm run build && aws s3 sync dist/ s3://agent-banking-admin-staging",
-    "deploy:production": "npm run build && aws s3 sync dist/ s3://agent-banking-admin-prod"
+    "docker:build": "docker build -t remittance-admin .",
+    "docker:run": "docker run -p 3001:80 remittance-admin",
+    "deploy:staging": "npm run build && aws s3 sync dist/ s3://remittance-admin-staging",
+    "deploy:production": "npm run build && aws s3 sync dist/ s3://remittance-admin-prod"
   },
   "dependencies": {
     "react": "^18.2.0",

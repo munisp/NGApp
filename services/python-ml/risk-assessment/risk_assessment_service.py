@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Comprehensive Risk Assessment and Scoring Service for Agent Banking Network
+Comprehensive Risk Assessment and Scoring Service for Remittance Platform
 Provides multi-dimensional risk analysis, credit scoring, and regulatory compliance
 """
 
@@ -207,7 +207,7 @@ class RiskAssessmentService:
         self.postgres_config = postgres_config or {
             'host': 'os.getenv("HOST", "os.getenv("HOST", "os.getenv("HOST", "os.getenv("HOST", "os.getenv("HOST", "os.getenv("HOST", "localhost")")")")")")',
             'port': '5432',
-            'database': 'agent_banking',
+            'database': 'remittance',
             'user': 'postgres',
             'password': 'password'
         }

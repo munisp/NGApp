@@ -1,4 +1,4 @@
-# Agent Banking Platform - Multi-Platform Mobile Apps
+# Remittance Platform - Multi-Platform Mobile Apps
 ## 30 UX Enhancements Implementation
 
 **Version:** 2.0  
@@ -178,21 +178,21 @@ Create `.env` files in each platform directory:
 
 **Native (.env):**
 ```
-API_BASE_URL=https://api.agentbanking.com
+API_BASE_URL=https://api.remittance-platform.com
 SENTRY_DSN=your_sentry_dsn
 FIREBASE_API_KEY=your_firebase_key
 ```
 
 **PWA (.env):**
 ```
-VITE_API_BASE_URL=https://api.agentbanking.com
+VITE_API_BASE_URL=https://api.remittance-platform.com
 VITE_FIREBASE_API_KEY=your_firebase_key
 ```
 
 **Hybrid (.env):**
 ```
-VITE_API_BASE_URL=https://api.agentbanking.com
-CAPACITOR_APP_ID=com.agentbanking.app
+VITE_API_BASE_URL=https://api.remittance-platform.com
+CAPACITOR_APP_ID=com.remittance.app
 ```
 
 ### **API Integration**
@@ -362,7 +362,7 @@ This is a production implementation. For contributions:
 
 ## 📄 License
 
-Proprietary - Agent Banking Platform  
+Proprietary - Remittance Platform  
 © 2025 All Rights Reserved
 
 ---
@@ -370,9 +370,9 @@ Proprietary - Agent Banking Platform
 ## 🆘 Support
 
 For issues or questions:
-- **Email:** support@agentbanking.com
-- **Documentation:** https://docs.agentbanking.com
-- **Status:** https://status.agentbanking.com
+- **Email:** support@remittance-platform.com
+- **Documentation:** https://docs.remittance-platform.com
+- **Status:** https://status.remittance-platform.com
 
 ---
 

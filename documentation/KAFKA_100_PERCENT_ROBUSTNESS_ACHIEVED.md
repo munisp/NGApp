@@ -99,7 +99,7 @@ self.producer_config = {
 ```python
 self.consumer_config = {
     'bootstrap.servers': kafka_bootstrap_servers,
-    'group.id': 'agent-banking-consumers',  # Consumer group
+    'group.id': 'remittance-consumers',  # Consumer group
     'auto.offset.reset': 'earliest',
     'enable.auto.commit': False,  # Manual commit
     'isolation.level': 'read_committed',
@@ -187,7 +187,7 @@ self.app = App(
 | **Replication Factor** | 1 | 3 | ✅ Fixed |
 | **Producer Acks** | 1 (default) | all | ✅ Fixed |
 | **Idempotence** | False | True | ✅ Fixed |
-| **Consumer Group** | None | agent-banking-consumers | ✅ Fixed |
+| **Consumer Group** | None | remittance-consumers | ✅ Fixed |
 | **Offset Reset** | Not configured | earliest | ✅ Fixed |
 | **Auto Commit** | True (default) | False (manual) | ✅ Fixed |
 | **Isolation Level** | Not configured | read_committed | ✅ Fixed |
@@ -305,7 +305,7 @@ assert self.producer_config['compression.type'] == 'snappy'
 assert self.producer_config['retries'] == 3
 
 # Verify consumer configuration
-assert self.consumer_config['group.id'] == 'agent-banking-consumers'
+assert self.consumer_config['group.id'] == 'remittance-consumers'
 assert self.consumer_config['auto.offset.reset'] == 'earliest'
 assert self.consumer_config['enable.auto.commit'] == False
 assert self.consumer_config['isolation.level'] == 'read_committed'
@@ -379,7 +379,7 @@ tail -f logs/kafka-streaming.log
 
 ```bash
 # Check producer metrics
-kafka-consumer-groups --bootstrap-server localhost:9092 --describe --group agent-banking-consumers
+kafka-consumer-groups --bootstrap-server localhost:9092 --describe --group remittance-consumers
 
 # Check topic replication
 kafka-topics --bootstrap-server localhost:9092 --describe --topic transactions

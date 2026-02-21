@@ -1,380 +1,178 @@
-import sys as _sys, os as _os
-_sys.path.insert(0, _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), ".."))
-from shared.middleware import apply_middleware, ErrorResponse
-from shared.observability import setup_logging, get_logger, metrics_router, MetricsMiddleware
-from fastapi import FastAPI, HTTPException, Depends
+"""
+Float Management Service
+Port: 8010
+"""
+from fastapi import FastAPI, HTTPException, Depends, Header
 from fastapi.middleware.cors import CORSMiddleware
-
-apply_middleware(app)
-setup_logging("float-management-service")
-app.include_router(metrics_router)
-
 from pydantic import BaseModel, Field
-from typing import List, Optional, Dict
+from typing import Optional, List, Dict, Any
 from datetime import datetime, timedelta
-from decimal import Decimal
+from enum import Enum
 import uuid
+import os
+import json
+import asyncpg
+import uvicorn
 
-app = FastAPI(
-    title="Float Management Service",
-    description="Manages agent float balances, rebalancing, and liquidity",
-    version="1.0.0"
-)
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://remittance:remittance@localhost:5432/remittance")
+REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=os.getenv("ALLOWED_ORIGINS","http://localhost:5173,http://localhost:5174,http://localhost:3000").split(","),
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+_db_pool = None
 
-class FloatBalance(BaseModel):
-    agent_id: str
-    currency: str = "NGN"
-    available_balance: Decimal
-    reserved_balance: Decimal
-    total_balance: Decimal
-    min_balance_threshold: Decimal
-    max_balance_threshold: Decimal
-    last_updated: datetime
+async def get_db_pool():
+    global _db_pool
+    if _db_pool is None:
+        _db_pool = await asyncpg.create_pool(DATABASE_URL, min_size=2, max_size=10)
+    return _db_pool
 
-class FloatTransaction(BaseModel):
-    transaction_id: str
-    agent_id: str
-    transaction_type: str  # CREDIT, DEBIT, RESERVE, RELEASE
-    amount: Decimal
-    currency: str = "NGN"
-    balance_before: Decimal
-    balance_after: Decimal
-    timestamp: datetime
-    reference: Optional[str] = None
+async def verify_token(authorization: str = Header(...)):
+    if not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Invalid authorization header")
+    token = authorization[7:]
+    if not token or len(token) < 10:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    return token
 
-class FloatRebalanceRequest(BaseModel):
-    agent_id: str
-    amount: Decimal
-    rebalance_type: str  # TOP_UP, WITHDRAW
-    reason: Optional[str] = None
+app = FastAPI(title="Float Management Service", description="Float Management Service for Remittance Platform", version="1.0.0")
+app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 
-class FloatAlert(BaseModel):
-    alert_id: str
-    agent_id: str
-    alert_type: str  # LOW_BALANCE, HIGH_BALANCE, NEGATIVE_BALANCE
-    current_balance: Decimal
-    threshold: Decimal
-    severity: str  # INFO, WARNING, CRITICAL
-    timestamp: datetime
-
-# In-memory storage
-float_balances = {}
-float_transactions = []
-float_alerts = []
+@app.on_event("startup")
+async def startup():
+    pool = await get_db_pool()
+    async with pool.acquire() as conn:
+        await conn.execute("""
+            CREATE TABLE IF NOT EXISTS float_accounts (
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                account_id VARCHAR(255) UNIQUE NOT NULL,
+                currency VARCHAR(3) NOT NULL DEFAULT 'NGN',
+                balance DECIMAL(18,2) NOT NULL DEFAULT 0,
+                min_balance DECIMAL(18,2) DEFAULT 0,
+                max_balance DECIMAL(18,2) DEFAULT 999999999,
+                status VARCHAR(20) DEFAULT 'active',
+                last_topup_at TIMESTAMPTZ,
+                created_at TIMESTAMPTZ DEFAULT NOW(),
+                updated_at TIMESTAMPTZ DEFAULT NOW()
+            );
+            CREATE TABLE IF NOT EXISTS float_transactions (
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                account_id VARCHAR(255) NOT NULL,
+                txn_type VARCHAR(20) NOT NULL,
+                amount DECIMAL(18,2) NOT NULL,
+                balance_before DECIMAL(18,2) NOT NULL,
+                balance_after DECIMAL(18,2) NOT NULL,
+                reference VARCHAR(255),
+                description TEXT,
+                created_at TIMESTAMPTZ DEFAULT NOW()
+            );
+            CREATE INDEX IF NOT EXISTS idx_float_acct ON float_transactions(account_id, created_at DESC)
+        """)
 
 @app.get("/health")
 async def health_check():
-    return {
-        "status": "healthy",
-        "service": "float-service",
-        "timestamp": datetime.utcnow().isoformat()
-    }
+    try:
+        pool = await get_db_pool()
+        async with pool.acquire() as conn:
+            await conn.fetchval("SELECT 1")
+        return {"status": "healthy", "service": "float-service", "database": "connected"}
+    except Exception as e:
+        return {"status": "degraded", "service": "float-service", "error": str(e)}
 
-@app.post("/float/initialize")
-async def initialize_float(
-    agent_id: str,
-    initial_balance: Decimal,
-    min_threshold: Decimal = Decimal("10000"),
-    max_threshold: Decimal = Decimal("1000000")
-):
-    """
-    Initialize float account for an agent
-    """
-    if agent_id in float_balances:
-        raise HTTPException(status_code=400, detail="Float account already exists")
-    
-    float_balance = FloatBalance(
-        agent_id=agent_id,
-        currency="NGN",
-        available_balance=initial_balance,
-        reserved_balance=Decimal("0"),
-        total_balance=initial_balance,
-        min_balance_threshold=min_threshold,
-        max_balance_threshold=max_threshold,
-        last_updated=datetime.utcnow()
-    )
-    
-    float_balances[agent_id] = float_balance.dict()
-    
-    # Record transaction
-    transaction = FloatTransaction(
-        transaction_id=str(uuid.uuid4()),
-        agent_id=agent_id,
-        transaction_type="CREDIT",
-        amount=initial_balance,
-        currency="NGN",
-        balance_before=Decimal("0"),
-        balance_after=initial_balance,
-        timestamp=datetime.utcnow(),
-        reference="Initial float"
-    )
-    float_transactions.append(transaction.dict())
-    
-    return float_balance
 
-@app.get("/float/{agent_id}")
-async def get_float_balance(agent_id: str):
-    """
-    Get current float balance for an agent
-    """
-    if agent_id not in float_balances:
-        raise HTTPException(status_code=404, detail="Float account not found")
-    
-    return float_balances[agent_id]
-
-@app.post("/float/{agent_id}/reserve")
-async def reserve_float(
-    agent_id: str,
-    amount: Decimal,
+class FloatTopupRequest(BaseModel):
+    account_id: str
+    amount: float
     reference: Optional[str] = None
-):
-    """
-    Reserve float for a pending transaction
-    """
-    if agent_id not in float_balances:
-        raise HTTPException(status_code=404, detail="Float account not found")
-    
-    balance = float_balances[agent_id]
-    
-    if balance["available_balance"] < amount:
-        raise HTTPException(status_code=400, detail="Insufficient float balance")
-    
-    # Update balances
-    balance_before = balance["available_balance"]
-    balance["available_balance"] -= amount
-    balance["reserved_balance"] += amount
-    balance["last_updated"] = datetime.utcnow().isoformat()
-    
-    float_balances[agent_id] = balance
-    
-    # Record transaction
-    transaction = FloatTransaction(
-        transaction_id=str(uuid.uuid4()),
-        agent_id=agent_id,
-        transaction_type="RESERVE",
-        amount=amount,
-        currency="NGN",
-        balance_before=balance_before,
-        balance_after=balance["available_balance"],
-        timestamp=datetime.utcnow(),
-        reference=reference
-    )
-    float_transactions.append(transaction.dict())
-    
-    # Check for low balance alert
-    check_balance_alerts(agent_id, balance)
-    
-    return {
-        "status": "reserved",
-        "available_balance": balance["available_balance"],
-        "reserved_balance": balance["reserved_balance"]
-    }
+    description: Optional[str] = None
 
-@app.post("/float/{agent_id}/commit")
-async def commit_reserved_float(
-    agent_id: str,
-    amount: Decimal,
+class FloatDebitRequest(BaseModel):
+    account_id: str
+    amount: float
     reference: Optional[str] = None
-):
-    """
-    Commit reserved float (deduct from reserved balance)
-    """
-    if agent_id not in float_balances:
-        raise HTTPException(status_code=404, detail="Float account not found")
-    
-    balance = float_balances[agent_id]
-    
-    if balance["reserved_balance"] < amount:
-        raise HTTPException(status_code=400, detail="Insufficient reserved balance")
-    
-    # Update balances
-    balance_before = balance["total_balance"]
-    balance["reserved_balance"] -= amount
-    balance["total_balance"] -= amount
-    balance["last_updated"] = datetime.utcnow().isoformat()
-    
-    float_balances[agent_id] = balance
-    
-    # Record transaction
-    transaction = FloatTransaction(
-        transaction_id=str(uuid.uuid4()),
-        agent_id=agent_id,
-        transaction_type="DEBIT",
-        amount=amount,
-        currency="NGN",
-        balance_before=balance_before,
-        balance_after=balance["total_balance"],
-        timestamp=datetime.utcnow(),
-        reference=reference
-    )
-    float_transactions.append(transaction.dict())
-    
-    return {
-        "status": "committed",
-        "total_balance": balance["total_balance"]
-    }
+    description: Optional[str] = None
 
-@app.post("/float/{agent_id}/release")
-async def release_reserved_float(
-    agent_id: str,
-    amount: Decimal,
-    reference: Optional[str] = None
-):
-    """
-    Release reserved float (return to available balance)
-    """
-    if agent_id not in float_balances:
-        raise HTTPException(status_code=404, detail="Float account not found")
-    
-    balance = float_balances[agent_id]
-    
-    if balance["reserved_balance"] < amount:
-        raise HTTPException(status_code=400, detail="Insufficient reserved balance")
-    
-    # Update balances
-    balance_before = balance["available_balance"]
-    balance["reserved_balance"] -= amount
-    balance["available_balance"] += amount
-    balance["last_updated"] = datetime.utcnow().isoformat()
-    
-    float_balances[agent_id] = balance
-    
-    # Record transaction
-    transaction = FloatTransaction(
-        transaction_id=str(uuid.uuid4()),
-        agent_id=agent_id,
-        transaction_type="RELEASE",
-        amount=amount,
-        currency="NGN",
-        balance_before=balance_before,
-        balance_after=balance["available_balance"],
-        timestamp=datetime.utcnow(),
-        reference=reference
-    )
-    float_transactions.append(transaction.dict())
-    
-    return {
-        "status": "released",
-        "available_balance": balance["available_balance"]
-    }
+@app.post("/api/v1/float/accounts")
+async def create_float_account(account_id: str, currency: str = "NGN", token: str = Depends(verify_token)):
+    pool = await get_db_pool()
+    async with pool.acquire() as conn:
+        try:
+            row = await conn.fetchrow(
+                "INSERT INTO float_accounts (account_id, currency) VALUES ($1, $2) RETURNING *",
+                account_id, currency
+            )
+            return dict(row)
+        except asyncpg.UniqueViolationError:
+            raise HTTPException(status_code=409, detail="Float account already exists")
 
-@app.post("/float/{agent_id}/rebalance")
-async def rebalance_float(
-    agent_id: str,
-    request: FloatRebalanceRequest
-):
-    """
-    Rebalance agent float (top-up or withdraw)
-    """
-    if agent_id not in float_balances:
-        raise HTTPException(status_code=404, detail="Float account not found")
-    
-    balance = float_balances[agent_id]
-    balance_before = balance["total_balance"]
-    
-    if request.rebalance_type == "TOP_UP":
-        balance["available_balance"] += request.amount
-        balance["total_balance"] += request.amount
-        transaction_type = "CREDIT"
-    elif request.rebalance_type == "WITHDRAW":
-        if balance["available_balance"] < request.amount:
-            raise HTTPException(status_code=400, detail="Insufficient available balance")
-        balance["available_balance"] -= request.amount
-        balance["total_balance"] -= request.amount
-        transaction_type = "DEBIT"
-    else:
-        raise HTTPException(status_code=400, detail="Invalid rebalance type")
-    
-    balance["last_updated"] = datetime.utcnow().isoformat()
-    float_balances[agent_id] = balance
-    
-    # Record transaction
-    transaction = FloatTransaction(
-        transaction_id=str(uuid.uuid4()),
-        agent_id=agent_id,
-        transaction_type=transaction_type,
-        amount=request.amount,
-        currency="NGN",
-        balance_before=balance_before,
-        balance_after=balance["total_balance"],
-        timestamp=datetime.utcnow(),
-        reference=f"Rebalance: {request.reason or request.rebalance_type}"
-    )
-    float_transactions.append(transaction.dict())
-    
-    return {
-        "status": "rebalanced",
-        "total_balance": balance["total_balance"],
-        "available_balance": balance["available_balance"]
-    }
+@app.get("/api/v1/float/accounts/{account_id}")
+async def get_float_account(account_id: str, token: str = Depends(verify_token)):
+    pool = await get_db_pool()
+    async with pool.acquire() as conn:
+        row = await conn.fetchrow("SELECT * FROM float_accounts WHERE account_id=$1", account_id)
+        if not row:
+            raise HTTPException(status_code=404, detail="Float account not found")
+        return dict(row)
 
-@app.get("/float/{agent_id}/transactions")
-async def get_float_transactions(
-    agent_id: str,
-    limit: int = 100
-):
-    """
-    Get float transaction history for an agent
-    """
-    agent_transactions = [
-        t for t in float_transactions
-        if t["agent_id"] == agent_id
-    ]
-    
-    return agent_transactions[-limit:]
+@app.post("/api/v1/float/topup")
+async def topup_float(req: FloatTopupRequest, token: str = Depends(verify_token)):
+    pool = await get_db_pool()
+    async with pool.acquire() as conn:
+        async with conn.transaction():
+            acct = await conn.fetchrow("SELECT * FROM float_accounts WHERE account_id=$1 FOR UPDATE", req.account_id)
+            if not acct:
+                raise HTTPException(status_code=404, detail="Float account not found")
+            balance_before = float(acct["balance"])
+            balance_after = balance_before + req.amount
+            if balance_after > float(acct["max_balance"]):
+                raise HTTPException(status_code=400, detail="Topup would exceed max balance")
+            await conn.execute(
+                "UPDATE float_accounts SET balance=$1, last_topup_at=NOW(), updated_at=NOW() WHERE account_id=$2",
+                balance_after, req.account_id
+            )
+            await conn.execute(
+                """INSERT INTO float_transactions (account_id, txn_type, amount, balance_before, balance_after, reference, description)
+                   VALUES ($1,'topup',$2,$3,$4,$5,$6)""",
+                req.account_id, req.amount, balance_before, balance_after, req.reference, req.description
+            )
+        return {"account_id": req.account_id, "amount": req.amount, "balance_before": balance_before, "balance_after": balance_after}
 
-@app.get("/float/{agent_id}/alerts")
-async def get_float_alerts(agent_id: str):
-    """
-    Get float balance alerts for an agent
-    """
-    agent_alerts = [
-        a for a in float_alerts
-        if a["agent_id"] == agent_id
-    ]
-    
-    return agent_alerts
+@app.post("/api/v1/float/debit")
+async def debit_float(req: FloatDebitRequest, token: str = Depends(verify_token)):
+    pool = await get_db_pool()
+    async with pool.acquire() as conn:
+        async with conn.transaction():
+            acct = await conn.fetchrow("SELECT * FROM float_accounts WHERE account_id=$1 FOR UPDATE", req.account_id)
+            if not acct:
+                raise HTTPException(status_code=404, detail="Float account not found")
+            balance_before = float(acct["balance"])
+            balance_after = balance_before - req.amount
+            if balance_after < float(acct["min_balance"]):
+                raise HTTPException(status_code=400, detail="Insufficient float balance")
+            await conn.execute("UPDATE float_accounts SET balance=$1, updated_at=NOW() WHERE account_id=$2", balance_after, req.account_id)
+            await conn.execute(
+                """INSERT INTO float_transactions (account_id, txn_type, amount, balance_before, balance_after, reference, description)
+                   VALUES ($1,'debit',$2,$3,$4,$5,$6)""",
+                req.account_id, req.amount, balance_before, balance_after, req.reference, req.description
+            )
+        return {"account_id": req.account_id, "amount": req.amount, "balance_before": balance_before, "balance_after": balance_after}
 
-def check_balance_alerts(agent_id: str, balance: Dict):
-    """
-    Check and create alerts for balance thresholds
-    """
-    available = Decimal(str(balance["available_balance"]))
-    min_threshold = Decimal(str(balance["min_balance_threshold"]))
-    max_threshold = Decimal(str(balance["max_balance_threshold"]))
-    
-    if available < min_threshold:
-        alert = FloatAlert(
-            alert_id=str(uuid.uuid4()),
-            agent_id=agent_id,
-            alert_type="LOW_BALANCE",
-            current_balance=available,
-            threshold=min_threshold,
-            severity="WARNING" if available > min_threshold * Decimal("0.5") else "CRITICAL",
-            timestamp=datetime.utcnow()
+@app.get("/api/v1/float/transactions/{account_id}")
+async def list_float_transactions(account_id: str, skip: int = 0, limit: int = 50, token: str = Depends(verify_token)):
+    pool = await get_db_pool()
+    async with pool.acquire() as conn:
+        rows = await conn.fetch(
+            "SELECT * FROM float_transactions WHERE account_id=$1 ORDER BY created_at DESC LIMIT $2 OFFSET $3",
+            account_id, limit, skip
         )
-        float_alerts.append(alert.dict())
-    
-    if available > max_threshold:
-        alert = FloatAlert(
-            alert_id=str(uuid.uuid4()),
-            agent_id=agent_id,
-            alert_type="HIGH_BALANCE",
-            current_balance=available,
-            threshold=max_threshold,
-            severity="INFO",
-            timestamp=datetime.utcnow()
-        )
-        float_alerts.append(alert.dict())
+        return {"transactions": [dict(r) for r in rows]}
+
+@app.get("/api/v1/float/summary")
+async def float_summary(token: str = Depends(verify_token)):
+    pool = await get_db_pool()
+    async with pool.acquire() as conn:
+        accounts = await conn.fetch("SELECT * FROM float_accounts WHERE status='active'")
+        total_balance = sum(float(a["balance"]) for a in accounts)
+        return {"total_accounts": len(accounts), "total_balance": total_balance, "accounts": [dict(a) for a in accounts]}
+
 
 if __name__ == "__main__":
-    import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8010)

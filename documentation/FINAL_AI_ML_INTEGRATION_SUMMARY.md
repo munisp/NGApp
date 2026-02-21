@@ -1,4 +1,4 @@
-# Agent Banking Platform - AI/ML Integration Complete
+# Remittance Platform - AI/ML Integration Complete
 ## Final Summary Report
 
 **Date**: October 14, 2025  
@@ -9,7 +9,7 @@
 
 ## 🎉 Executive Summary
 
-The Agent Banking Platform has been successfully enhanced with **five cutting-edge AI/ML services**, each with **full backend implementation** and **comprehensive user interfaces**. The platform now offers intelligent, autonomous capabilities that transform traditional banking operations into an AI-powered, future-ready system.
+The Remittance Platform has been successfully enhanced with **five cutting-edge AI/ML services**, each with **full backend implementation** and **comprehensive user interfaces**. The platform now offers intelligent, autonomous capabilities that transform traditional banking operations into an AI-powered, future-ready system.
 
 ---
 
@@ -409,7 +409,7 @@ CocoIndex (Code Search)
 
 ```bash
 # 1. Start Backend Services
-cd /home/ubuntu/agent-banking-platform/backend/python-services
+cd /home/ubuntu/remittance-platform/backend/python-services
 
 # Start each service (in separate terminals)
 cd cocoindex-service && python3 main.py &
@@ -419,7 +419,7 @@ cd epr-kgqa-service && python3 main.py &
 cd art-agent-service && python3 main.py &
 
 # 2. Start Frontend
-cd /home/ubuntu/agent-banking-platform/frontend/ai-ml-dashboard
+cd /home/ubuntu/remittance-platform/frontend/ai-ml-dashboard
 pnpm install
 pnpm run dev --host
 
@@ -431,11 +431,11 @@ pnpm run dev --host
 
 ```bash
 # 1. Build Frontend
-cd /home/ubuntu/agent-banking-platform/frontend/ai-ml-dashboard
+cd /home/ubuntu/remittance-platform/frontend/ai-ml-dashboard
 pnpm run build
 
 # 2. Deploy with Docker Compose
-cd /home/ubuntu/agent-banking-platform
+cd /home/ubuntu/remittance-platform
 docker-compose up -d
 
 # 3. Access Production
@@ -602,7 +602,7 @@ curl -X POST http://localhost:8094/execute \
 - [x] Final Summary (this document)
 
 ### ✅ Artifacts (1/1)
-- [x] agent-banking-platform-WITH-AI-ML-UI.tar.gz (333 MB)
+- [x] remittance-platform-WITH-AI-ML-UI.tar.gz (333 MB)
 
 ---
 
@@ -722,7 +722,7 @@ curl -X POST http://localhost:8094/execute \
 
 ---
 
-**The Agent Banking Platform is now a world-class, AI-powered, autonomous banking system with intuitive user interfaces that make advanced AI capabilities accessible to all stakeholders!** 🎉
+**The Remittance Platform is now a world-class, AI-powered, autonomous banking system with intuitive user interfaces that make advanced AI capabilities accessible to all stakeholders!** 🎉
 
 ---
 

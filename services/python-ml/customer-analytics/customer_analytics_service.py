@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Advanced Customer Analytics and Segmentation Service for Agent Banking Network
+Advanced Customer Analytics and Segmentation Service for Remittance Platform
 Provides ML-powered customer insights, segmentation, and behavioral analysis
 """
 
@@ -210,7 +210,7 @@ class CustomerAnalyticsService:
         self.postgres_config = postgres_config or {
             'host': 'os.getenv("HOST", "os.getenv("HOST", "os.getenv("HOST", "os.getenv("HOST", "os.getenv("HOST", "os.getenv("HOST", "localhost")")")")")")',
             'port': '5432',
-            'database': 'agent_banking',
+            'database': 'remittance',
             'user': 'postgres',
             'password': 'password'
         }

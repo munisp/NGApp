@@ -1,7 +1,7 @@
 """
 Workflow Orchestration: Next 5 Priority Workflows Implementation
 
-This module implements the next 5 priority workflows for the Agent Banking Platform V11.0:
+This module implements the next 5 priority workflows for the Remittance Platform V11.0:
 1. QR Code Payment Workflow (Priority #6, Score: 7.45)
 2. Offline Transaction Workflow (Priority #7, Score: 7.35)
 3. Account 2FA Workflow (Priority #8, Score: 7.25)

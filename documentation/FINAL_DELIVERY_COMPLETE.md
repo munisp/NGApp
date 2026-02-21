@@ -1,4 +1,4 @@
-# Agent Banking Platform - Final Delivery
+# Remittance Platform - Final Delivery
 ## Complete Implementation with AI/ML + Omni-Channel + Multi-lingual Support
 
 **Date**: October 14, 2025  
@@ -9,7 +9,7 @@
 
 ## 🎉 Executive Summary
 
-The **Agent Banking Platform** is now **fully complete** with cutting-edge AI/ML capabilities, omni-channel communication, and multi-lingual support for Nigerian languages. This is a **world-class, production-ready, enterprise-grade platform** that exceeds all original specifications.
+The **Remittance Platform** is now **fully complete** with cutting-edge AI/ML capabilities, omni-channel communication, and multi-lingual support for Nigerian languages. This is a **world-class, production-ready, enterprise-grade platform** that exceeds all original specifications.
 
 ---
 
@@ -277,8 +277,8 @@ The **Agent Banking Platform** is now **fully complete** with cutting-edge AI/ML
 
 ```bash
 # 1. Extract the artifact
-tar -xzf agent-banking-platform-COMPLETE-OMNICHANNEL-AI.tar.gz
-cd agent-banking-platform
+tar -xzf remittance-platform-COMPLETE-OMNICHANNEL-AI.tar.gz
+cd remittance-platform
 
 # 2. Start AI/ML Services
 cd backend/python-services
@@ -312,7 +312,7 @@ pnpm run dev --host
 
 ```bash
 # Use Docker Compose
-cd agent-banking-platform
+cd remittance-platform
 docker-compose up -d
 
 # All services will start automatically
@@ -464,7 +464,7 @@ docker-compose up -d
 - [x] Final Delivery Summary (this document)
 
 ### Artifacts (1/1) ✅
-- [x] agent-banking-platform-COMPLETE-OMNICHANNEL-AI.tar.gz (333 MB)
+- [x] remittance-platform-COMPLETE-OMNICHANNEL-AI.tar.gz (333 MB)
 
 ---
 
@@ -593,7 +593,7 @@ docker-compose up -d
 
 ## ✅ Final Confirmation
 
-**I confirm that the Agent Banking Platform is:**
+**I confirm that the Remittance Platform is:**
 
 1. ✅ **100% Complete** - All 156 components implemented
 2. ✅ **Fully Integrated** - AI/ML + Omni-channel + Multi-lingual

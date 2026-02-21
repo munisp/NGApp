@@ -231,7 +231,7 @@ if __name__ == "__main__":
         temporal=TemporalConfig(),
         keycloak=KeycloakConfig(
             url=os.getenv("KEYCLOAK_URL", "http://localhost:8080"),
-            realm=os.getenv("KEYCLOAK_REALM", "agent-banking"),
+            realm=os.getenv("KEYCLOAK_REALM", "remittance"),
             client_id=os.getenv("KEYCLOAK_CLIENT_ID", "workflow-orchestrator"),
             client_secret=os.getenv("KEYCLOAK_CLIENT_SECRET", ""),
             admin_user=os.getenv("KEYCLOAK_ADMIN_USER", "admin"),

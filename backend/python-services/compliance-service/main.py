@@ -1,221 +1,174 @@
-import sys as _sys, os as _os
-_sys.path.insert(0, _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), ".."))
-from shared.middleware import apply_middleware, ErrorResponse
-from shared.observability import setup_logging, get_logger, metrics_router, MetricsMiddleware
 """
-Compliance Management Service
+Compliance Service
 Port: 8116
 """
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Depends, Header
 from fastapi.middleware.cors import CORSMiddleware
-
-apply_middleware(app)
-setup_logging("compliance-management")
-app.include_router(metrics_router)
-
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional, List, Dict, Any
-from datetime import datetime
-import uvicorn
-
-# Redis-based storage (replaces in-memory dict)
+from datetime import datetime, timedelta
+from enum import Enum
+import uuid
 import os
 import json
-import redis
+import asyncpg
+import uvicorn
 
-_redis_client = None
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://remittance:remittance@localhost:5432/remittance")
+REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
 
-def get_redis_client():
-    """Get Redis client - requires REDIS_URL environment variable"""
-    global _redis_client
-    if _redis_client is None:
-        redis_url = os.getenv("REDIS_URL")
-        if not redis_url:
-            raise ValueError("REDIS_URL environment variable is required for storage")
-        _redis_client = redis.from_url(redis_url, decode_responses=True)
-    return _redis_client
+_db_pool = None
 
-def storage_get(key: str):
-    """Get value from Redis storage"""
-    try:
-        client = get_redis_client()
-        value = client.get(f"storage:{key}")
-        return json.loads(value) if value else None
-    except Exception as e:
-        print(f"Storage get error: {e}")
-        return None
+async def get_db_pool():
+    global _db_pool
+    if _db_pool is None:
+        _db_pool = await asyncpg.create_pool(DATABASE_URL, min_size=2, max_size=10)
+    return _db_pool
 
-def storage_set(key: str, value, ttl: int = 86400):
-    """Set value in Redis storage with optional TTL (default 24h)"""
-    try:
-        client = get_redis_client()
-        client.setex(f"storage:{key}", ttl, json.dumps(value))
-        return True
-    except Exception as e:
-        print(f"Storage set error: {e}")
-        return False
+async def verify_token(authorization: str = Header(...)):
+    if not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Invalid authorization header")
+    token = authorization[7:]
+    if not token or len(token) < 10:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    return token
 
-def storage_delete(key: str):
-    """Delete value from Redis storage"""
-    try:
-        client = get_redis_client()
-        client.delete(f"storage:{key}")
-        return True
-    except Exception as e:
-        print(f"Storage delete error: {e}")
-        return False
+app = FastAPI(title="Compliance Service", description="Compliance Service for Remittance Platform", version="1.0.0")
+app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 
-def storage_keys(pattern: str = "*"):
-    """Get all keys matching pattern"""
-    try:
-        client = get_redis_client()
-        return [k.replace("storage:", "") for k in client.keys(f"storage:{pattern}")]
-    except Exception as e:
-        print(f"Storage keys error: {e}")
-        return []
-
-
-
-app = FastAPI(
-    title="Compliance Management",
-    description="Compliance Management for Agent Banking Platform",
-    version="1.0.0"
-)
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=os.getenv("ALLOWED_ORIGINS","http://localhost:5173,http://localhost:5174,http://localhost:3000").split(","),
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-# In-memory storage (replace with database in production)
-# storage = {}  # REPLACED: Use storage_get/storage_set functions instead
-stats = {
-    "total_requests": 0,
-    "total_items": 0,
-    "start_time": datetime.now()
-}
-
-# Pydantic Models
-class Item(BaseModel):
-    id: Optional[str] = None
-    data: Dict[str, Any]
-    created_at: Optional[datetime] = None
-    updated_at: Optional[datetime] = None
-
-@app.get("/")
-async def root():
-    return {
-        "service": "compliance-service",
-        "description": "Compliance Management",
-        "version": "1.0.0",
-        "port": 8116,
-        "status": "operational"
-    }
+@app.on_event("startup")
+async def startup():
+    pool = await get_db_pool()
+    async with pool.acquire() as conn:
+        await conn.execute("""
+            CREATE TABLE IF NOT EXISTS compliance_checks (
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                user_id VARCHAR(255) NOT NULL,
+                check_type VARCHAR(50) NOT NULL,
+                status VARCHAR(20) DEFAULT 'pending',
+                risk_level VARCHAR(20) DEFAULT 'low',
+                details JSONB DEFAULT '{}',
+                reviewer_id VARCHAR(255),
+                reviewed_at TIMESTAMPTZ,
+                expires_at TIMESTAMPTZ,
+                created_at TIMESTAMPTZ DEFAULT NOW()
+            );
+            CREATE TABLE IF NOT EXISTS compliance_rules (
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                rule_name VARCHAR(100) NOT NULL,
+                rule_type VARCHAR(50) NOT NULL,
+                conditions JSONB NOT NULL,
+                action VARCHAR(50) DEFAULT 'flag',
+                is_active BOOLEAN DEFAULT TRUE,
+                created_at TIMESTAMPTZ DEFAULT NOW()
+            );
+            CREATE INDEX IF NOT EXISTS idx_comp_user ON compliance_checks(user_id);
+            CREATE INDEX IF NOT EXISTS idx_comp_status ON compliance_checks(status)
+        """)
 
 @app.get("/health")
 async def health_check():
-    uptime = (datetime.now() - stats["start_time"]).total_seconds()
-    return {
-        "status": "healthy",
-        "uptime_seconds": int(uptime),
-        "total_requests": stats["total_requests"],
-        "total_items": stats["total_items"]
-    }
+    try:
+        pool = await get_db_pool()
+        async with pool.acquire() as conn:
+            await conn.fetchval("SELECT 1")
+        return {"status": "healthy", "service": "compliance-service", "database": "connected"}
+    except Exception as e:
+        return {"status": "degraded", "service": "compliance-service", "error": str(e)}
 
-@app.post("/items")
-async def create_item(item: Item):
-    """Create a new item"""
-    stats["total_requests"] += 1
-    item_id = f"item_{len(storage) + 1}"
-    item.id = item_id
-    item.created_at = datetime.now()
-    item.updated_at = datetime.now()
-    storage[item_id] = item.dict()
-    stats["total_items"] += 1
-    return {"success": True, "item_id": item_id, "item": item}
 
-@app.get("/items")
-async def list_items(skip: int = 0, limit: int = 100):
-    """List all items"""
-    stats["total_requests"] += 1
-    items = list(storage.values())[skip:skip+limit]
-    return {
-        "success": True,
-        "total": len(storage),
-        "items": items,
-        "skip": skip,
-        "limit": limit
-    }
+class ComplianceCheckCreate(BaseModel):
+    user_id: str
+    check_type: str
+    details: Optional[Dict[str, Any]] = None
 
-@app.get("/items/{item_id}")
-async def get_item(item_id: str):
-    """Get a specific item"""
-    stats["total_requests"] += 1
-    if item_id not in storage:
-        raise HTTPException(status_code=404, detail="Item not found")
-    return {"success": True, "item": storage[item_id]}
+class ComplianceRuleCreate(BaseModel):
+    rule_name: str
+    rule_type: str
+    conditions: Dict[str, Any]
+    action: str = "flag"
 
-@app.put("/items/{item_id}")
-async def update_item(item_id: str, item: Item):
-    """Update an item"""
-    stats["total_requests"] += 1
-    if item_id not in storage:
-        raise HTTPException(status_code=404, detail="Item not found")
-    item.id = item_id
-    item.updated_at = datetime.now()
-    item.created_at = storage[item_id].get("created_at", datetime.now())
-    storage[item_id] = item.dict()
-    return {"success": True, "item": item}
+@app.post("/api/v1/compliance/checks")
+async def create_check(check: ComplianceCheckCreate, token: str = Depends(verify_token)):
+    pool = await get_db_pool()
+    async with pool.acquire() as conn:
+        risk = "low"
+        if check.details:
+            amount = check.details.get("amount", 0)
+            if amount > 1000000:
+                risk = "high"
+            elif amount > 100000:
+                risk = "medium"
+        row = await conn.fetchrow(
+            """INSERT INTO compliance_checks (user_id, check_type, risk_level, details)
+               VALUES ($1,$2,$3,$4) RETURNING *""",
+            check.user_id, check.check_type, risk, json.dumps(check.details or {})
+        )
+        return dict(row)
 
-@app.delete("/items/{item_id}")
-async def delete_item(item_id: str):
-    """Delete an item"""
-    stats["total_requests"] += 1
-    if item_id not in storage:
-        raise HTTPException(status_code=404, detail="Item not found")
-    del storage[item_id]
-    stats["total_items"] -= 1
-    return {"success": True, "message": "Item deleted"}
+@app.get("/api/v1/compliance/checks")
+async def list_checks(user_id: Optional[str] = None, status: Optional[str] = None,
+                      risk_level: Optional[str] = None, skip: int = 0, limit: int = 50,
+                      token: str = Depends(verify_token)):
+    pool = await get_db_pool()
+    async with pool.acquire() as conn:
+        conditions, params = [], []
+        idx = 1
+        if user_id:
+            conditions.append(f"user_id=${idx}"); params.append(user_id); idx += 1
+        if status:
+            conditions.append(f"status=${idx}"); params.append(status); idx += 1
+        if risk_level:
+            conditions.append(f"risk_level=${idx}"); params.append(risk_level); idx += 1
+        where = "WHERE " + " AND ".join(conditions) if conditions else ""
+        params.extend([limit, skip])
+        rows = await conn.fetch(f"SELECT * FROM compliance_checks {where} ORDER BY created_at DESC LIMIT ${idx} OFFSET ${idx+1}", *params)
+        return {"checks": [dict(r) for r in rows]}
 
-@app.post("/process")
-async def process_data(data: Dict[str, Any]):
-    """Process data (service-specific logic)"""
-    stats["total_requests"] += 1
-    return {
-        "success": True,
-        "message": "Data processed successfully",
-        "service": "compliance-service",
-        "processed_at": datetime.now().isoformat(),
-        "data": data
-    }
+@app.put("/api/v1/compliance/checks/{check_id}/review")
+async def review_check(check_id: str, status: str, token: str = Depends(verify_token)):
+    pool = await get_db_pool()
+    async with pool.acquire() as conn:
+        row = await conn.fetchrow(
+            "UPDATE compliance_checks SET status=$1, reviewer_id=$2, reviewed_at=NOW() WHERE id=$3 RETURNING *",
+            status, token[:36], uuid.UUID(check_id)
+        )
+        if not row:
+            raise HTTPException(status_code=404, detail="Check not found")
+        return dict(row)
 
-@app.get("/search")
-async def search_items(query: str):
-    """Search items"""
-    stats["total_requests"] += 1
-    results = [item for item in storage.values() if query.lower() in str(item).lower()]
-    return {
-        "success": True,
-        "query": query,
-        "total_results": len(results),
-        "results": results
-    }
+@app.post("/api/v1/compliance/rules")
+async def create_rule(rule: ComplianceRuleCreate, token: str = Depends(verify_token)):
+    pool = await get_db_pool()
+    async with pool.acquire() as conn:
+        row = await conn.fetchrow(
+            "INSERT INTO compliance_rules (rule_name, rule_type, conditions, action) VALUES ($1,$2,$3,$4) RETURNING *",
+            rule.rule_name, rule.rule_type, json.dumps(rule.conditions), rule.action
+        )
+        return dict(row)
 
-@app.get("/stats")
-async def get_statistics():
-    """Get service statistics"""
-    uptime = (datetime.now() - stats["start_time"]).total_seconds()
-    return {
-        "uptime_seconds": int(uptime),
-        "total_requests": stats["total_requests"],
-        "total_items": stats["total_items"],
-        "service": "compliance-service",
-        "port": 8116,
-        "status": "operational"
-    }
+@app.get("/api/v1/compliance/rules")
+async def list_rules(token: str = Depends(verify_token)):
+    pool = await get_db_pool()
+    async with pool.acquire() as conn:
+        rows = await conn.fetch("SELECT * FROM compliance_rules WHERE is_active=TRUE ORDER BY rule_name")
+        return {"rules": [dict(r) for r in rows]}
+
+@app.post("/api/v1/compliance/screen-transaction")
+async def screen_transaction(data: Dict[str, Any], token: str = Depends(verify_token)):
+    pool = await get_db_pool()
+    async with pool.acquire() as conn:
+        rules = await conn.fetch("SELECT * FROM compliance_rules WHERE is_active=TRUE")
+        flags = []
+        for rule in rules:
+            conditions = json.loads(rule["conditions"]) if isinstance(rule["conditions"], str) else rule["conditions"]
+            for field, threshold in conditions.items():
+                val = data.get(field)
+                if val is not None and isinstance(threshold, (int, float)) and isinstance(val, (int, float)) and val > threshold:
+                    flags.append({"rule": rule["rule_name"], "action": rule["action"], "field": field, "value": val, "threshold": threshold})
+        status = "blocked" if any(f["action"] == "block" for f in flags) else "flagged" if flags else "approved"
+        return {"status": status, "flags": flags, "checked_rules": len(rules)}
+
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8116)

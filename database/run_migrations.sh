@@ -11,11 +11,11 @@ YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
 # Configuration
-DB_URL="${1:-postgresql://postgres:password@localhost:5432/agent_banking}"
+DB_URL="${1:-postgresql://postgres:password@localhost:5432/remittance}"
 MIGRATIONS_DIR="$(dirname "$0")/migrations"
 
 echo -e "${GREEN}╔══════════════════════════════════════════════════════════╗${NC}"
-echo -e "${GREEN}║     Agent Banking Platform - Database Migrations        ║${NC}"
+echo -e "${GREEN}║     Remittance Platform - Database Migrations        ║${NC}"
 echo -e "${GREEN}╚══════════════════════════════════════════════════════════╝${NC}"
 echo ""
 

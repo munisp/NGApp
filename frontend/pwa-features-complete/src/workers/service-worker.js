@@ -5,7 +5,7 @@ import { ExpirationPlugin } from 'workbox-expiration';
 import { CacheableResponsePlugin } from 'workbox-cacheable-response';
 
 const CACHE_VERSION = 'v1';
-const CACHE_NAME = `agent-banking-pwa-${CACHE_VERSION}`;
+const CACHE_NAME = `remittance-pwa-${CACHE_VERSION}`;
 
 precacheAndRoute(self.__WB_MANIFEST || []);
 
@@ -169,7 +169,7 @@ async function openIndexedDB() {
 
 self.addEventListener('push', (event) => {
   const data = event.data ? event.data.json() : {};
-  const title = data.title || 'Agent Banking Platform';
+  const title = data.title || 'Remittance Platform';
   const options = {
     body: data.body || 'You have a new notification',
     icon: '/icon-192x192.png',
@@ -212,7 +212,7 @@ self.addEventListener('activate', (event) => {
     caches.keys().then((cacheNames) => {
       return Promise.all(
         cacheNames
-          .filter((cacheName) => cacheName.startsWith('agent-banking-pwa-') && cacheName !== CACHE_NAME)
+          .filter((cacheName) => cacheName.startsWith('remittance-pwa-') && cacheName !== CACHE_NAME)
           .map((cacheName) => caches.delete(cacheName))
       );
     })

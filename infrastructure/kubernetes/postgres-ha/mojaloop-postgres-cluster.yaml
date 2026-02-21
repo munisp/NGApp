@@ -4,13 +4,13 @@ apiVersion: acid.zalan.do/v1
 kind: postgresql
 metadata:
   name: mojaloop-postgres
-  namespace: agent-banking
+  namespace: remittance
   labels:
     application: mojaloop
-    team: agent-banking
+    team: remittance
 spec:
   # Team ID for operator
-  teamId: "agent-banking"
+  teamId: "remittance"
   
   # PostgreSQL version
   postgresql:
@@ -244,7 +244,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: mojaloop-postgres-primary
-  namespace: agent-banking
+  namespace: remittance
   labels:
     application: mojaloop
     spilo-role: master
@@ -267,7 +267,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: mojaloop-postgres-replica
-  namespace: agent-banking
+  namespace: remittance
   labels:
     application: mojaloop
     spilo-role: replica
@@ -290,7 +290,7 @@ apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
   name: mojaloop-postgres-pdb
-  namespace: agent-banking
+  namespace: remittance
 spec:
   minAvailable: 2
   selector:
@@ -303,7 +303,7 @@ apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
   name: mojaloop-postgres
-  namespace: agent-banking
+  namespace: remittance
   labels:
     app: mojaloop-postgres
 spec:

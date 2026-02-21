@@ -1,5 +1,5 @@
 # KYC (Know Your Customer) Implementation Guide
-## Comprehensive Identity Verification for Agent Banking Platform
+## Comprehensive Identity Verification for Remittance Platform
 
 **Date**: October 14, 2025  
 **Status**: ✅ **FULLY IMPLEMENTED**  
@@ -9,7 +9,7 @@
 
 ## 🎉 Executive Summary
 
-The Agent Banking Platform now has **comprehensive KYC (Know Your Customer) implementation** that is fully compliant with Nigerian banking regulations. This is **essential** for:
+The Remittance Platform now has **comprehensive KYC (Know Your Customer) implementation** that is fully compliant with Nigerian banking regulations. This is **essential** for:
 
 1. **Regulatory Compliance** - CBN, NIMC, NIBSS requirements
 2. **AML/CFT** - Anti-Money Laundering / Counter-Financing of Terrorism
@@ -494,7 +494,7 @@ curl http://localhost:8098/stats
 ### Start KYC Service
 
 ```bash
-cd /home/ubuntu/agent-banking-platform/backend/python-services/kyc-service
+cd /home/ubuntu/remittance-platform/backend/python-services/kyc-service
 python3 main.py &
 ```
 

@@ -1,279 +1,165 @@
-import sys as _sys, os as _os
-_sys.path.insert(0, _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), ".."))
-
-from fastapi import FastAPI, HTTPException, Request
+"""
+USSD Service
+Port: 8141
+"""
+from fastapi import FastAPI, HTTPException, Depends, Header
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
-from typing import Optional, Dict, Any
+from pydantic import BaseModel, Field
+from typing import Optional, List, Dict, Any
 from datetime import datetime
-import uvicorn
+import uuid
 import os
 import json
-import httpx
-import logging
+import asyncpg
+import uvicorn
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://remittance:remittance@localhost:5432/remittance")
 
-CHANNEL_NAME = "ussd"
-REDIS_URL = os.getenv("REDIS_URL", "")
-API_BASE_URL = os.getenv("API_BASE_URL", "http://localhost:8000/api/v1")
+_db_pool = None
 
-app = FastAPI(
-    title="USSD Service",
-    description="USSD interactive menu service for Agent Banking (feature phones)",
-    version="2.0.0"
-)
+async def get_db_pool():
+    global _db_pool
+    if _db_pool is None:
+        _db_pool = await asyncpg.create_pool(DATABASE_URL, min_size=2, max_size=10)
+    return _db_pool
 
-from shared.middleware import apply_middleware, ErrorResponse
-from shared.observability import setup_logging, get_logger, metrics_router, MetricsMiddleware
-apply_middleware(app)
-setup_logging("ussd-service")
-app.include_router(metrics_router)
+async def verify_token(authorization: str = Header(...)):
+    if not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Invalid authorization header")
+    token = authorization[7:]
+    if not token or len(token) < 10:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    return token
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=os.getenv("ALLOWED_ORIGINS", "http://localhost:5173,http://localhost:5174,http://localhost:3000").split(","),
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+app = FastAPI(title="USSD Service", description="USSD Service for Remittance Platform", version="1.0.0")
+app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 
-_redis = None
-
-def _get_redis():
-    global _redis
-    if _redis is None and REDIS_URL:
-        try:
-            import redis as _redis_mod
-            _redis = _redis_mod.from_url(REDIS_URL, decode_responses=True)
-        except Exception:
-            pass
-    return _redis
-
-def _get_session(session_id: str) -> dict:
-    r = _get_redis()
-    if r:
-        try:
-            data = r.get(f"ussd:session:{session_id}")
-            if data:
-                r.expire(f"ussd:session:{session_id}", 300)
-                return json.loads(data)
-        except Exception:
-            pass
-    return {"state": "main_menu", "data": {}, "history": []}
-
-def _save_session(session_id: str, session: dict):
-    r = _get_redis()
-    if r:
-        try:
-            r.setex(f"ussd:session:{session_id}", 300, json.dumps(session, default=str))
-        except Exception:
-            pass
-
-def _incr_counter(name: str) -> int:
-    r = _get_redis()
-    if r:
-        return r.incr(f"ussd:counter:{name}")
-    return 0
-
-
-class USSDRequest(BaseModel):
-    sessionId: str
-    serviceCode: str
-    phoneNumber: str
-    text: str
-
-
-MAIN_MENU = (
-    "CON Welcome to Agent Banking\n"
-    "1. Check Balance\n"
-    "2. Transfer Money\n"
-    "3. View Orders\n"
-    "4. Mini Statement\n"
-    "5. Customer Support\n"
-    "0. Exit"
-)
-
-
-async def _handle_ussd_input(session_id: str, phone: str, text: str) -> str:
-    _incr_counter("requests")
-    session = _get_session(session_id)
-    state = session.get("state", "main_menu")
-    parts = text.split("*") if text else []
-    current_input = parts[-1] if parts else ""
-
-    if not text or text == "":
-        session["state"] = "main_menu"
-        _save_session(session_id, session)
-        return MAIN_MENU
-
-    if state == "main_menu":
-        if current_input == "1":
-            session["state"] = "enter_pin"
-            session["data"]["action"] = "balance"
-            _save_session(session_id, session)
-            return "CON Enter your 4-digit PIN:"
-        elif current_input == "2":
-            session["state"] = "transfer_recipient"
-            _save_session(session_id, session)
-            return "CON Enter recipient phone number:"
-        elif current_input == "3":
-            session["state"] = "main_menu"
-            _save_session(session_id, session)
-            return "END Order viewing requires PIN. Feature coming soon."
-        elif current_input == "4":
-            session["state"] = "enter_pin"
-            session["data"]["action"] = "statement"
-            _save_session(session_id, session)
-            return "CON Enter your 4-digit PIN:"
-        elif current_input == "5":
-            return (
-                "END Customer Support\n"
-                "Call: 0800-AGENT-BANK\n"
-                "SMS: HELP to 33033\n"
-                "WhatsApp: +234 803 123 4567"
+@app.on_event("startup")
+async def startup():
+    pool = await get_db_pool()
+    async with pool.acquire() as conn:
+        await conn.execute("""
+            CREATE TABLE IF NOT EXISTS ussd_sessions (
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                session_id VARCHAR(255) NOT NULL,
+                phone_number VARCHAR(20) NOT NULL,
+                current_menu VARCHAR(50),
+                session_data JSONB DEFAULT '{}',
+                status VARCHAR(20) DEFAULT 'active',
+                expires_at TIMESTAMPTZ,
+                created_at TIMESTAMPTZ DEFAULT NOW(),
+                updated_at TIMESTAMPTZ DEFAULT NOW()
             )
-        elif current_input == "0":
-            return "END Thank you for using Agent Banking."
-        else:
-            return "CON Invalid option.\n" + MAIN_MENU
-
-    elif state == "enter_pin":
-        action = session.get("data", {}).get("action", "")
-        if len(current_input) == 4 and current_input.isdigit():
-            try:
-                async with httpx.AsyncClient(timeout=10.0) as client:
-                    resp = await client.post(
-                        f"{API_BASE_URL}/auth/verify-pin",
-                        json={"phone": phone, "pin": current_input}
-                    )
-                    if resp.status_code == 200 and resp.json().get("valid"):
-                        if action == "balance":
-                            bal_resp = await client.get(
-                                f"{API_BASE_URL}/accounts/balance",
-                                params={"phone": phone}
-                            )
-                            if bal_resp.status_code == 200:
-                                bal = bal_resp.json()
-                                return f"END Your Balance\nNGN {bal.get('balance', 0):,.2f}\nAvailable: NGN {bal.get('available_balance', 0):,.2f}"
-                            return "END Unable to fetch balance. Try again later."
-                        elif action == "statement":
-                            stmt_resp = await client.get(
-                                f"{API_BASE_URL}/transactions/mini-statement",
-                                params={"phone": phone, "limit": 5}
-                            )
-                            if stmt_resp.status_code == 200:
-                                txns = stmt_resp.json().get("transactions", [])
-                                if not txns:
-                                    return "END No recent transactions."
-                                lines = "END Mini Statement\n"
-                                for t in txns[:5]:
-                                    lines += f"{t.get('date','')}: {t.get('type','')}: NGN {t.get('amount', 0):,.0f}\n"
-                                return lines
-                            return "END Unable to fetch statement. Try again later."
-                    else:
-                        return "END Invalid PIN. Please try again."
-            except Exception as e:
-                logger.error(f"USSD API call error: {e}")
-                return "END Service temporarily unavailable."
-        else:
-            return "CON Invalid PIN format. Enter 4 digits:"
-
-    elif state == "transfer_recipient":
-        if len(current_input) >= 10 and current_input.isdigit():
-            session["state"] = "transfer_amount"
-            session["data"]["recipient"] = current_input
-            _save_session(session_id, session)
-            return "CON Enter amount to transfer (NGN):"
-        else:
-            return "CON Invalid phone number. Enter recipient phone:"
-
-    elif state == "transfer_amount":
-        try:
-            amount = float(current_input)
-            if amount <= 0:
-                return "CON Amount must be positive. Enter amount:"
-            session["state"] = "transfer_pin"
-            session["data"]["amount"] = amount
-            _save_session(session_id, session)
-            recipient = session["data"].get("recipient", "")
-            return f"CON Transfer NGN {amount:,.2f} to {recipient}\nEnter PIN to confirm:"
-        except ValueError:
-            return "CON Invalid amount. Enter amount (NGN):"
-
-    elif state == "transfer_pin":
-        if len(current_input) == 4 and current_input.isdigit():
-            recipient = session["data"].get("recipient", "")
-            amount = session["data"].get("amount", 0)
-            try:
-                async with httpx.AsyncClient(timeout=15.0) as client:
-                    resp = await client.post(
-                        f"{API_BASE_URL}/transfers",
-                        json={
-                            "sender_phone": phone,
-                            "recipient_phone": recipient,
-                            "amount": amount,
-                            "pin": current_input,
-                            "channel": "ussd"
-                        }
-                    )
-                    if resp.status_code == 200 and resp.json().get("success"):
-                        _incr_counter("transfers")
-                        return f"END Transfer successful!\nNGN {amount:,.2f} sent to {recipient}"
-                    else:
-                        error = resp.json().get("error", "Transfer failed")
-                        return f"END {error}"
-            except Exception as e:
-                logger.error(f"Transfer API error: {e}")
-                return "END Transfer service unavailable. Try again later."
-        else:
-            return "CON Invalid PIN. Enter 4-digit PIN:"
-
-    return "END Session expired. Dial again to start."
-
-
-@app.get("/")
-async def root():
-    return {
-        "service": "ussd-service",
-        "channel": CHANNEL_NAME,
-        "version": "2.0.0",
-        "status": "operational",
-    }
+        """)
 
 @app.get("/health")
 async def health_check():
-    r = _get_redis()
-    return {
-        "status": "healthy",
-        "service": "ussd-service",
-        "redis": "connected" if r else "not_configured",
-    }
+    try:
+        pool = await get_db_pool()
+        async with pool.acquire() as conn:
+            await conn.fetchval("SELECT 1")
+        return {"status": "healthy", "service": "ussd-service", "database": "connected"}
+    except Exception as e:
+        return {"status": "degraded", "service": "ussd-service", "error": str(e)}
 
-@app.post("/ussd/callback")
-async def ussd_callback(req: USSDRequest):
-    response_text = await _handle_ussd_input(req.sessionId, req.phoneNumber, req.text)
-    return response_text
 
-@app.post("/process")
-async def process_ussd(req: USSDRequest):
-    return await ussd_callback(req)
+class ItemCreate(BaseModel):
+    session_id: str
+    phone_number: str
+    current_menu: Optional[str] = None
+    session_data: Optional[Dict[str, Any]] = None
+    status: Optional[str] = None
+    expires_at: Optional[str] = None
 
-@app.get("/metrics")
-async def get_metrics():
-    r = _get_redis()
-    requests = int(r.get("ussd:counter:requests") or 0) if r else 0
-    transfers = int(r.get("ussd:counter:transfers") or 0) if r else 0
-    return {
-        "channel": CHANNEL_NAME,
-        "total_requests": requests,
-        "total_transfers": transfers,
-    }
+class ItemUpdate(BaseModel):
+    session_id: Optional[str] = None
+    phone_number: Optional[str] = None
+    current_menu: Optional[str] = None
+    session_data: Optional[Dict[str, Any]] = None
+    status: Optional[str] = None
+    expires_at: Optional[str] = None
 
-@app.get("/stats")
-async def get_statistics():
-    return await get_metrics()
+
+@app.post("/api/v1/ussd-service")
+async def create_item(item: ItemCreate, token: str = Depends(verify_token)):
+    pool = await get_db_pool()
+    async with pool.acquire() as conn:
+        data = {k: v for k, v in item.dict().items() if v is not None}
+        if not data:
+            raise HTTPException(status_code=400, detail="No fields provided")
+        cols = list(data.keys())
+        vals = list(data.values())
+        for i in range(len(vals)):
+            if isinstance(vals[i], dict):
+                vals[i] = json.dumps(vals[i])
+        ph = ", ".join(["$" + str(i+1) for i in range(len(cols))])
+        query = f"INSERT INTO ussd_sessions ({', '.join(cols)}) VALUES ({ph}) RETURNING *"
+        row = await conn.fetchrow(query, *vals)
+        return dict(row)
+
+
+@app.get("/api/v1/ussd-service")
+async def list_items(skip: int = 0, limit: int = 50, token: str = Depends(verify_token)):
+    pool = await get_db_pool()
+    async with pool.acquire() as conn:
+        rows = await conn.fetch(
+            "SELECT * FROM ussd_sessions ORDER BY created_at DESC LIMIT $1 OFFSET $2",
+            limit, skip
+        )
+        total = await conn.fetchval("SELECT COUNT(*) FROM ussd_sessions")
+        return {"total": total, "items": [dict(r) for r in rows], "skip": skip, "limit": limit}
+
+
+@app.get("/api/v1/ussd-service/{item_id}")
+async def get_item(item_id: str, token: str = Depends(verify_token)):
+    pool = await get_db_pool()
+    async with pool.acquire() as conn:
+        row = await conn.fetchrow("SELECT * FROM ussd_sessions WHERE id=$1", uuid.UUID(item_id))
+        if not row:
+            raise HTTPException(status_code=404, detail="Item not found")
+        return dict(row)
+
+
+@app.put("/api/v1/ussd-service/{item_id}")
+async def update_item(item_id: str, item: ItemUpdate, token: str = Depends(verify_token)):
+    pool = await get_db_pool()
+    async with pool.acquire() as conn:
+        existing = await conn.fetchrow("SELECT * FROM ussd_sessions WHERE id=$1", uuid.UUID(item_id))
+        if not existing:
+            raise HTTPException(status_code=404, detail="Item not found")
+        updates = {k: v for k, v in item.dict().items() if v is not None}
+        if not updates:
+            return dict(existing)
+        set_parts = []
+        params = [uuid.UUID(item_id)]
+        idx = 2
+        for k, v in updates.items():
+            set_parts.append(f"{k}=${idx}")
+            params.append(json.dumps(v) if isinstance(v, dict) else v)
+            idx += 1
+        query = f"UPDATE ussd_sessions SET {', '.join(set_parts)}, updated_at=NOW() WHERE id=$1 RETURNING *"
+        row = await conn.fetchrow(query, *params)
+        return dict(row)
+
+
+@app.delete("/api/v1/ussd-service/{item_id}")
+async def delete_item(item_id: str, token: str = Depends(verify_token)):
+    pool = await get_db_pool()
+    async with pool.acquire() as conn:
+        result = await conn.execute("DELETE FROM ussd_sessions WHERE id=$1", uuid.UUID(item_id))
+        if result == "DELETE 0":
+            raise HTTPException(status_code=404, detail="Item not found")
+        return {"deleted": True}
+
+
+@app.get("/api/v1/ussd-service/stats")
+async def get_stats(token: str = Depends(verify_token)):
+    pool = await get_db_pool()
+    async with pool.acquire() as conn:
+        total = await conn.fetchval("SELECT COUNT(*) FROM ussd_sessions")
+        today = await conn.fetchval("SELECT COUNT(*) FROM ussd_sessions WHERE created_at >= CURRENT_DATE")
+        return {"total": total, "today": today, "service": "ussd-service"}
+
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8141)

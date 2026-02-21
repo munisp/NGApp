@@ -1,4 +1,4 @@
-module agent-banking/customer-journey
+module remittance/customer-journey
 
 go 1.21
 

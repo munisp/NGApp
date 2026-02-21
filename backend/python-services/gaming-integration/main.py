@@ -4,7 +4,7 @@ from shared.middleware import apply_middleware, ErrorResponse
 from shared.observability import setup_logging, get_logger, metrics_router, MetricsMiddleware
 """
 Gaming Integration Service
-Integrates gaming platforms and in-game purchases with Agent Banking Platform
+Integrates gaming platforms and in-game purchases with Remittance Platform
 """
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware

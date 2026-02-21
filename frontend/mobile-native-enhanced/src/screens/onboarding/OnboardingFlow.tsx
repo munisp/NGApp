@@ -26,7 +26,7 @@ interface OnboardingScreen {
 const ONBOARDING_SCREENS: OnboardingScreen[] = [
   {
     id: 1,
-    title: 'Welcome to Agent Banking',
+    title: 'Welcome to Remittance Platform',
     description: 'Your complete financial solution',
     animation: 'welcome',
   },

@@ -1,6 +1,6 @@
 # UI/UX, PWA, Mobile & Dashboard Robustness Assessment
 
-## Agent Banking Platform - Frontend Analysis
+## Remittance Platform - Frontend Analysis
 
 **Assessment Date:** October 27, 2025  
 **Platform Version:** 2.0.0
@@ -27,8 +27,8 @@
 | Application | Files | Technology | Status |
 |-------------|-------|------------|--------|
 | **web-app** | 124 | React + Vite | ✅ **PRIMARY** |
-| **agent-banking-ui** | 59 | React + Vite | ✅ Complete |
-| **agent-banking-frontend** | 55 | React + Vite | ✅ Complete |
+| **remittance-ui** | 59 | React + Vite | ✅ Complete |
+| **remittance-frontend** | 55 | React + Vite | ✅ Complete |
 | **ai-ml-dashboard** | 58 | React | ✅ Complete |
 | **lakehouse-dashboard** | 53 | React | ✅ Complete |
 | **agent-storefront** | 52 | React | ✅ Complete |
@@ -134,7 +134,7 @@
 ✅ **Web App Manifest** (manifest.json)
 ```json
 {
-  "name": "Agent Banking Platform",
+  "name": "Remittance Platform",
   "short_name": "AgentBank",
   "display": "standalone",
   "theme_color": "#3498db",
@@ -483,7 +483,7 @@ mobile-app/src/
 **IndexedDB for Offline Data:**
 ```javascript
 // MISSING: Local database for offline transactions
-const db = await openDB('agent-banking', 1, {
+const db = await openDB('remittance', 1, {
   upgrade(db) {
     db.createObjectStore('transactions');
     db.createObjectStore('customers');

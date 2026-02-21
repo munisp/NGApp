@@ -3,7 +3,7 @@ _sys.path.insert(0, _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), 
 from shared.middleware import apply_middleware, ErrorResponse
 from shared.observability import setup_logging, get_logger, metrics_router, MetricsMiddleware
 """
-Communication Gateway for Agent Banking Platform
+Communication Gateway for Remittance Platform
 Orchestrates all communication services and provides unified API
 """
 

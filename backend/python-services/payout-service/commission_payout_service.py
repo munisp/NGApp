@@ -3,7 +3,7 @@ _sys.path.insert(0, _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), 
 from shared.middleware import apply_middleware, ErrorResponse
 from shared.observability import setup_logging, get_logger, metrics_router, MetricsMiddleware
 """
-Agent Banking Platform - Commission Payout and Dispute Resolution Service
+Remittance Platform - Commission Payout and Dispute Resolution Service
 Handles commission payouts, dispute management, and reconciliation processes
 """
 
@@ -50,7 +50,7 @@ app.add_middleware(
 )
 
 # Configuration
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://banking_user:banking_pass@localhost:5432/agent_banking")
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://banking_user:banking_pass@localhost:5432/remittance")
 REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379")
 PAYMENT_SERVICE_URL = os.getenv("PAYMENT_SERVICE_URL", "http://localhost:8040")
 
@@ -444,7 +444,7 @@ class PayoutProcessingEngine:
             
             # Get bank account details
             bank_account = await self.db.fetchrow(
-                "SELECT * FROM agent_bank_accounts WHERE id = $1 AND agent_id = $2",
+                "SELECT * FROM partner_bank_accounts WHERE id = $1 AND agent_id = $2",
                 request.bank_account_id, request.agent_id
             )
             

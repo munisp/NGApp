@@ -5,13 +5,13 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: postgresql-performance-config
-  namespace: agent-banking
+  namespace: remittance
   labels:
     app: postgresql
     component: performance-optimization
 data:
   postgresql.conf: |
-    # PostgreSQL Performance Configuration for Agent Banking Network
+    # PostgreSQL Performance Configuration for Remittance Platform
     # Optimized for high-volume banking transactions and Nigerian network conditions
     
     # Connection Settings
@@ -190,9 +190,9 @@ data:
     host    all             all             192.168.0.0/16          md5
     
     # SSL connections for banking applications
-    hostssl agent_banking   agent_banking_user  0.0.0.0/0           md5
-    hostssl agent_banking   readonly_user       0.0.0.0/0           md5
-    hostssl agent_banking   analytics_user      0.0.0.0/0           md5
+    hostssl remittance   remittance_user  0.0.0.0/0           md5
+    hostssl remittance   readonly_user       0.0.0.0/0           md5
+    hostssl remittance   analytics_user      0.0.0.0/0           md5
     
     # Replication connections
     host    replication     replicator      10.0.0.0/8              md5

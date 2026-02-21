@@ -1,4 +1,4 @@
--- Agent Banking Platform - Complete Agent Management Database Schema
+-- Remittance Platform - Complete Agent Management Database Schema
 -- Implements hierarchical agent structure and comprehensive commission system
 
 -- Create extension for UUID generation
@@ -718,4 +718,4 @@ CREATE INDEX idx_agent_performance_summary_rank ON agent_performance_summary(tie
 -- Refresh materialized view (should be done periodically)
 REFRESH MATERIALIZED VIEW agent_performance_summary;
 
-COMMENT ON DATABASE agent_banking IS 'Agent Banking Platform - Complete Agent Management and Commission System Database';
+COMMENT ON DATABASE remittance IS 'Remittance Platform - Complete Agent Management and Commission System Database';

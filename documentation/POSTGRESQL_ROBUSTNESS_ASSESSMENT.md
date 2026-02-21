@@ -366,7 +366,7 @@ from pydantic import BaseSettings
 class Settings(BaseSettings):
     DATABASE_URL: str = os.getenv(
         "DATABASE_URL",
-        "postgresql://user:password@localhost:5432/agent_banking"
+        "postgresql://user:password@localhost:5432/remittance"
     )
     
     # Connection pool settings

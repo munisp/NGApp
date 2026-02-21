@@ -416,7 +416,7 @@ class TestAmountInvariants:
 
 
 class TestAgentBankingInvariants:
-    """Test agent banking specific invariants"""
+    """Test remittance specific invariants"""
     
     @pytest.fixture
     def ledger(self):

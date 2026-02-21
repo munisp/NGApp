@@ -1,5 +1,5 @@
 -- Migration: 001_initial_schema.sql
--- Description: Initial database schema for Agent Banking Network
+-- Description: Initial database schema for Remittance Platform
 -- Version: 1.0.0
 -- Date: 2024-01-01
 
@@ -805,7 +805,7 @@ ON CONFLICT (code) DO NOTHING;
 
 -- Record migration as applied
 INSERT INTO schema_migrations (version, description, checksum) VALUES 
-('001_initial_schema', 'Initial database schema for Agent Banking Network', 'abc123def456')
+('001_initial_schema', 'Initial database schema for Remittance Platform', 'abc123def456')
 ON CONFLICT (version) DO NOTHING;
 
 -- Migration completed

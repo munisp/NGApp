@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 app = FastAPI(
     title="Hierarchy Service API",
-    description="API for managing hierarchical structures within the Agent Banking Platform.",
+    description="API for managing hierarchical structures within the Remittance Platform.",
     version="1.0.0",
     docs_url="/docs",
     redoc_url="/redoc",

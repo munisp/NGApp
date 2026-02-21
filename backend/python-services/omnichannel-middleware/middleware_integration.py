@@ -55,7 +55,7 @@ class Config:
     PERMIFY_URL = os.getenv("PERMIFY_URL", "http://localhost:3476")
     
     # Database
-    DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres:password@localhost:5432/agent_banking")
+    DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres:password@localhost:5432/remittance")
 
 config = Config()
 
