@@ -2,7 +2,7 @@ import sys as _sys, os as _os
 _sys.path.insert(0, _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), ".."))
 """
 Master Main Application
-Registers all 120+ microservices with complete routing
+Registers all 162 microservices with complete routing
 """
 
 from fastapi import FastAPI
@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 # Create FastAPI app
 app = FastAPI(
     title="Remittance Platform - Complete API",
-    description="Unified API for all 120+ microservices",
+    description="Unified API for all 162 microservices",
     version="1.0.0"
 )
 
@@ -113,7 +113,7 @@ try:
 except Exception as e:
     logger.warning(f"⚠️  Could not register email-service: {e}")
 
-# Auto-register all services - COMPLETE LIST OF ALL 134 ROUTERS
+# Auto-register all services - COMPLETE LIST OF ALL 162 ROUTERS
 # This list includes all services with router.py files in the backend/python-services directory
 SERVICE_MODULES = [
     # Agent & Hierarchy Services
@@ -129,7 +129,7 @@ SERVICE_MODULES = [
     "inventory_management", "metaverse_service",
     # Analytics & Data Services
     "analytics_service", "customer_analytics", "data_warehouse", "etl_pipeline", "unified_analytics",
-    "analytics_dashboard", "business_intelligence", "monitoring_dashboard",
+    "analytics_dashboard", "business_intelligence", "monitoring_dashboard", "monitoring",
     # Communication Services
     "communication_service", "communication_shared", "discord_service", "messenger_service",
     "push_notification_service", "rcs_service", "sms_service", "snapchat_service", "telegram_service",
@@ -142,28 +142,35 @@ SERVICE_MODULES = [
     "authentication_service", "security_monitoring",
     "mfa", "rbac", "security_alert", "background_check",
     # Compliance & KYC/KYB Services
-    "compliance_workflows", "kyb_verification",
-    "aml_monitoring", "compliance_reporting", "kyc_kyb_service",
-    # Financial Services
-    "credit_scoring", "global_payment_gateway", "loyalty_service", "settlement_service",
+    "compliance_workflows", "kyb_verification", "compliance_kyc",
+    "aml_monitoring", "compliance_reporting", "kyc_kyb_service", "kyc_enhanced",
+    # Core Banking & Financial Services
+    "core_banking", "credit_scoring", "global_payment_gateway", "loyalty_service", "settlement_service",
     "float_service", "loan_management", "payment_gateway", "reconciliation_service",
-    "biller_integration", "promotion_service",
+    "biller_integration", "promotion_service", "investment_service", "recurring_payments",
+    "refund_service", "rewards", "rewards_service", "multi_currency_accounts",
+    # Payment Integration Services
+    "payment", "payment_corridors", "payment_processing",
+    "cips_integration", "fps_integration", "nibss_integration", "open_banking",
+    "papss_integration", "sepa_instant", "upi_connector", "upi_integration",
+    # Stablecoin & DeFi Services
+    "stablecoin_defi", "stablecoin_integration", "stablecoin_v2",
     # Integration Services
-    "falkordb_service", "fluvio_streaming", "google_assistant_service", "hierarchy_service",
-    "hybrid_engine", "integration_layer", "lakehouse_service", "multi_ocr_service",
+    "api_gateway", "falkordb_service", "fluvio_streaming", "google_assistant_service", "hierarchy_service",
+    "hybrid_engine", "integration_layer", "integrations", "lakehouse_service", "multi_ocr_service",
     "ocr_processing", "offline_sync", "pos_integration", "risk_assessment", "rule_engine",
     "supply_chain", "sync_manager", "territory_management", "tigerbeetle_sync", "tigerbeetle_zig",
     "unified_streaming", "ussd_service", "workflow_orchestration", "workflow_service", "zapier_integration",
     "workflow_integration", "integration_service", "middleware_integration",
-    "platform_middleware", "zapier_service",
-    # Customer Services
-    "customer_service", "onboarding_service",
+    "platform_middleware", "zapier_service", "white_label_api",
+    # Customer & Onboarding Services
+    "customer_service", "onboarding_service", "user_onboarding_enhanced",
     # Document Services
     "document_management", "document_processing",
     # Dispute & Art Services
     "dispute_resolution", "art_agent_service",
     # Backup & Database Services
-    "backup_service", "database",
+    "backup_service", "database", "postgres_production",
     # Device & Edge Services
     "device_management", "edge_computing", "edge_deployment",
     # Geospatial & Territory Services
@@ -174,6 +181,28 @@ SERVICE_MODULES = [
     "reporting_service", "scheduler_service",
     # User Management
     "user_management",
+    # Platform & Infrastructure Services
+    "enhanced_platform", "infrastructure", "performance_optimization",
+    # Cross-Border Services
+    "cross_border",
+    # Transaction Scoring & COA Services
+    "transaction_scoring", "chart_of_accounts",
+    # Projections & Targets
+    "projections_targets",
+    # QR Ticket Verification
+    "qr_ticket_verification",
+    # Admin Services (sub-modules)
+    "admin_services",
+    # CDP Service
+    "cdp_service",
+    # Enterprise Services (sub-modules)
+    "enterprise_services",
+    # Financial Services (sub-modules)
+    "financial_services",
+    # Payment Gateway Service
+    "payment_gateway_service",
+    # Security Services (sub-modules)
+    "security_services",
 ]
 
 registered_count = 10  # Already registered 10 critical services

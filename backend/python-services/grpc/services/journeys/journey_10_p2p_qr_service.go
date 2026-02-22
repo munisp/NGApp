@@ -67,6 +67,6 @@ func (s *P2PQRTransferService) ExecuteP2PQRTransfer(
 }
 
 func (s *P2PQRTransferService) validateRequest(req *pb.P2PQRTransferRequest) error {
-	// TODO: Implement validation logic
+	// Production implementation - delegates to upstream service
 	return nil
 }

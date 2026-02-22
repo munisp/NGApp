@@ -1,32 +1,23 @@
-"""
-Investment Service Schemas
-Pydantic schemas for investment service
-"""
-
+"""Investment Service Schemas"""
 from pydantic import BaseModel, Field
-from typing import Optional, Dict, Any
-from datetime import datetime
+from typing import Optional
 
-class InvestmentServiceBase(BaseModel):
-    """Base schema for investment service"""
-    # TODO: Add base fields
-    pass
+class InvestmentBase(BaseModel):
+    product_id: str
+    amount: float = Field(..., gt=0)
+    currency: str = Field(default="NGN", max_length=3)
 
-class InvestmentServiceCreate(InvestmentServiceBase):
-    """Schema for creating investment service"""
-    pass
+class InvestmentCreate(InvestmentBase):
+    user_id: str
+    source_goal: Optional[str] = None
 
-class InvestmentServiceUpdate(BaseModel):
-    """Schema for updating investment service"""
-    # TODO: Add update fields (all optional)
-    pass
+class InvestmentUpdate(BaseModel):
+    amount: Optional[float] = None
+    status: Optional[str] = None
 
-class InvestmentServiceResponse(InvestmentServiceBase):
-    """Schema for investment service response"""
+class InvestmentResponse(InvestmentBase):
     id: str
-    created_at: datetime
-    updated_at: datetime
+    user_id: str
     status: str
-    
-    class Config:
-        from_attributes = True
+    invested_at: str
+    returns: Optional[float] = None

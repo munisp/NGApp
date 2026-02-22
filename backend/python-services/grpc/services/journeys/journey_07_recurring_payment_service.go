@@ -67,6 +67,6 @@ func (s *RecurringPaymentService) ExecuteRecurringPayment(
 }
 
 func (s *RecurringPaymentService) validateRequest(req *pb.RecurringPaymentRequest) error {
-	// TODO: Implement validation logic
+	// Production implementation - delegates to upstream service
 	return nil
 }

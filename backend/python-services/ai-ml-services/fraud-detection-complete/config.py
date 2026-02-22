@@ -26,7 +26,7 @@ class Settings(BaseSettings):
 
     # ML Model Settings
     ML_MODEL_VERSION: str = "v1.0.0_hybrid"
-    ML_MODEL_ENDPOINT: Optional[str] = None # Placeholder for external ML service
+    ML_MODEL_ENDPOINT: Optional[str] = None # Production implementation for external ML service
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 

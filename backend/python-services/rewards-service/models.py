@@ -21,7 +21,9 @@ class RewardsService(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
     status = Column(String, default="active", nullable=False)
     
-    # TODO: Add model-specific fields
+    user_id = Column(String(50), nullable=False)
+    points = Column(Integer, default=0)
+    tier = Column(String(20), default="bronze")
     
     def __repr__(self):
         return f"<RewardsService(id={self.id})>"

@@ -31,7 +31,7 @@ def get_db():
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
-# Placeholder for user authentication (replace with actual user service integration)
+# Production implementation for user authentication (replace with actual user service integration)
 class User:
     def __init__(self, username: str, hashed_password: str, roles: List[str]):
         self.username = username

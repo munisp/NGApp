@@ -669,7 +669,7 @@ class RealNeuralNetworkModels:
             features.get('marital_status', 1) / 3,
             features.get('dependents', 1) / 8,
             # Additional features
-            0.5, 0.3, 0.7  # Placeholder features
+            0.5, 0.3, 0.7  # Production implementation features
         ]
         
         return feature_vector

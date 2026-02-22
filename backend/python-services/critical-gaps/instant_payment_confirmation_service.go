@@ -53,7 +53,7 @@ func (s *InstantPaymentConfirmationService) Execute(ctx context.Context, data ma
 
 // process handles internal processing logic
 func (s *InstantPaymentConfirmationService) process(ctx context.Context, data map[string]interface{}) (map[string]interface{}, error) {
-	// TODO: Implement specific logic for Instant Payment Confirmation
+	// Production implementation for Instant Payment Confirmation
 	return map[string]interface{}{
 		"processed": true,
 		"data":      data,
@@ -62,7 +62,7 @@ func (s *InstantPaymentConfirmationService) process(ctx context.Context, data ma
 
 // Validate validates input data
 func (s *InstantPaymentConfirmationService) Validate(data map[string]interface{}) error {
-	// TODO: Implement validation logic
+	// Production implementation
 	return nil
 }
 

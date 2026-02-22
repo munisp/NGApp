@@ -1,27 +1,19 @@
-"""
-Recurring Payments Models
-Database models for recurring payments
-"""
-
-from sqlalchemy import Column, String, DateTime, Integer, Float, Boolean, Text, JSON
-from sqlalchemy.ext.declarative import declarative_base
+"""Recurring Payments Models"""
 from datetime import datetime
-import uuid
+from typing import Optional
 
-Base = declarative_base()
-
-class RecurringPayments(Base):
-    """
-    Recurring Payments model
-    """
-    __tablename__ = "recurring_payments"
-    
-    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
-    status = Column(String, default="active", nullable=False)
-    
-    # TODO: Add model-specific fields
-    
-    def __repr__(self):
-        return f"<RecurringPayments(id={self.id})>"
+class RecurringPayment:
+    def __init__(self, id: str, user_id: str, amount: float, currency: str,
+                 recipient: str, frequency: str, start_date: str, status: str = "active"):
+        self.id = id
+        self.user_id = user_id
+        self.amount = amount
+        self.currency = currency
+        self.recipient = recipient
+        self.frequency = frequency
+        self.start_date = start_date
+        self.status = status
+        self.next_execution: Optional[str] = start_date
+        self.execution_count: int = 0
+        self.last_executed: Optional[str] = None
+        self.created_at: str = datetime.utcnow().isoformat()

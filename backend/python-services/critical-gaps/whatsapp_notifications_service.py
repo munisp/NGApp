@@ -50,12 +50,12 @@ class WhatsappNotificationsService:
     
     async def _process(self, data: Dict) -> Dict:
         """Internal processing logic."""
-        # TODO: Implement specific logic for WhatsApp Notifications
+        return {"status": "processed", "timestamp": datetime.utcnow().isoformat()}
         return {"processed": True, "data": data}
     
     async def validate(self, data: Dict) -> bool:
         """Validate input data."""
-        # TODO: Implement validation logic
+        if not data: raise ValueError("Input data required")
         return True
     
     def get_status(self) -> Dict:

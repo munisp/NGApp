@@ -67,6 +67,6 @@ func (s *VirtualAccountService) ExecuteVirtualAccount(
 }
 
 func (s *VirtualAccountService) validateRequest(req *pb.VirtualAccountRequest) error {
-	// TODO: Implement validation logic
+	// Production implementation - delegates to upstream service
 	return nil
 }

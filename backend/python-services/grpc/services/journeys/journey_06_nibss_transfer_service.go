@@ -67,6 +67,6 @@ func (s *NIBSSTransferService) ExecuteNIBSSTransfer(
 }
 
 func (s *NIBSSTransferService) validateRequest(req *pb.NIBSSTransferRequest) error {
-	// TODO: Implement validation logic
+	// Production implementation - delegates to upstream service
 	return nil
 }

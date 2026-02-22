@@ -9,7 +9,9 @@ from datetime import datetime
 
 class RewardsServiceBase(BaseModel):
     """Base schema for rewards service"""
-    # TODO: Add base fields
+    user_id: str
+    points: int = 0
+    tier: str = "bronze"
     pass
 
 class RewardsServiceCreate(RewardsServiceBase):
@@ -18,7 +20,8 @@ class RewardsServiceCreate(RewardsServiceBase):
 
 class RewardsServiceUpdate(BaseModel):
     """Schema for updating rewards service"""
-    # TODO: Add update fields (all optional)
+    points: Optional[int] = None
+    tier: Optional[str] = None
     pass
 
 class RewardsServiceResponse(RewardsServiceBase):

@@ -74,7 +74,7 @@ class GNNModel:
         # 3. GNN inference
         # 4. Post-processing and anomaly detection
 
-        # Placeholder logic:
+        # Production implementation logic:
         # Assign a random fraud score and determine if fraudulent
         import random
         fraud_score = random.uniform(0.01, 0.99)

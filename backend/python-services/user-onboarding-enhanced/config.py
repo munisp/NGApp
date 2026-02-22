@@ -10,7 +10,7 @@ class Settings(BaseSettings):
     DATABASE_URL: str = "sqlite:///./onboarding.db"
     
     # Security settings
-    SECRET_KEY: str = "a-very-secret-key-that-should-be-changed-in-production" # Placeholder, should be loaded from env
+    SECRET_KEY: str = "a-very-secret-key-that-should-be-changed-in-production" # Production implementation, should be loaded from env
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     

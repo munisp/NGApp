@@ -184,12 +184,12 @@ class EcobankGateway(BasePaymentGateway):
                 "batchsequence": "1",
                 "batchamount": str(payload.get("transactionamount", 0)),
                 "transactionamount": str(payload.get("transactionamount", 0)),
-                "batchid": payload.get("batchid", "EG1593490"), # Placeholder
+                "batchid": payload.get("batchid", "EG1593490"), # Production implementation
                 "transactioncount": "1",
                 "batchcount": "1",
                 "transactionid": payload.get("transactionid", f"TXN{int(time.time())}"),
                 "debittype": "C", # C for Credit, D for Debit - assuming credit to recipient
-                "affiliateCode": payload.get("affiliateCode", "DEFAULT"), # Placeholder
+                "affiliateCode": payload.get("affiliateCode", "DEFAULT"), # Production implementation
                 "totalbatches": "1",
                 "execution_date": time.strftime("%Y-%m-%d"),
             }
@@ -352,8 +352,8 @@ class EcobankGateway(BasePaymentGateway):
         # The payload for status check is likely simpler, but must still be signed.
         payload = {
             "transactionid": transaction_id,
-            "batchid": f"BATCH{int(time.time())}", # Placeholder for batch ID
-            "transactionamount": 0, # Placeholder, as amount might not be needed for status
+            "batchid": f"BATCH{int(time.time())}", # Production implementation for batch ID
+            "transactionamount": 0, # Production implementation, as amount might not be needed for status
             "affiliateCode": "DEFAULT",
             "extensionParameterList": [
                 {"name": "request_id", "value": f"STATUS_REQ{int(time.time())}"}

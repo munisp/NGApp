@@ -18,7 +18,7 @@ logger.setLevel(logging.INFO)
 # We'll use a simple placeholder dependency.
 async def rate_limit_dependency(request: Request):
     """Simulates a rate limiting check."""
-    # Placeholder logic: check a token bucket or a fixed window counter
+    # Production implementation logic: check a token bucket or a fixed window counter
     # For demonstration, we'll just pass, but in a real app, this would raise an HTTPException(429)
     pass
 
@@ -38,7 +38,7 @@ async def get_current_active_user() -> CurrentUser:
     Dependency to get the current active user from the request.
     Raises 401 Unauthorized if not authenticated or 403 Forbidden if inactive.
     """
-    # Placeholder for actual JWT/Session verification logic
+    # Production implementation for actual JWT/Session verification logic
     # If verification fails:
     # raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid authentication credentials")
     

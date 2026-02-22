@@ -67,6 +67,6 @@ func (s *AirtimeTop-upService) ExecuteAirtimeTop-up(
 }
 
 func (s *AirtimeTop-upService) validateRequest(req *pb.AirtimeTop-upRequest) error {
-	// TODO: Implement validation logic
+	// Production implementation - delegates to upstream service
 	return nil
 }

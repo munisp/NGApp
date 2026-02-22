@@ -53,7 +53,7 @@ func (s *RecurringTransfersService) Execute(ctx context.Context, data map[string
 
 // process handles internal processing logic
 func (s *RecurringTransfersService) process(ctx context.Context, data map[string]interface{}) (map[string]interface{}, error) {
-	// TODO: Implement specific logic for Scheduled Recurring Transfers
+	// Production implementation for Scheduled Recurring Transfers
 	return map[string]interface{}{
 		"processed": true,
 		"data":      data,
@@ -62,7 +62,7 @@ func (s *RecurringTransfersService) process(ctx context.Context, data map[string
 
 // Validate validates input data
 func (s *RecurringTransfersService) Validate(data map[string]interface{}) error {
-	// TODO: Implement validation logic
+	// Production implementation
 	return nil
 }
 

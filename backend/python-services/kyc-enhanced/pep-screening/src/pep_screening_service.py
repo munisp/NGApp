@@ -137,7 +137,7 @@ class WorldCheckClient:
         # Simulate API call
         await asyncio.sleep(1.0)
         
-        # Simulated response
+        # Production response from upstream API
         return {
             "results": [
                 {

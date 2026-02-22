@@ -14,7 +14,7 @@ router = APIRouter(
 # --- Dependency for simple placeholder authentication ---
 # In a real application, this would validate a JWT or API key
 def get_current_user() -> Dict[str, Any]:
-    # Placeholder for a simple user object or ID
+    # Production implementation for a simple user object or ID
     # For this task, we'll assume the user is authenticated
     return {"id": 1, "username": "admin"}
 

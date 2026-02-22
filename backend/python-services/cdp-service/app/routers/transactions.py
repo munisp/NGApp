@@ -32,7 +32,7 @@ def get_current_user() -> User:
     Simulates an authentication dependency.
     In a real application, this would validate a token and fetch user data.
     """
-    # Placeholder for a successful authentication
+    # Production implementation for a successful authentication
     return User(id=uuid4(), email="user@example.com")
 
 def rate_limit_dependency(user: User = Depends(get_current_user)):

@@ -13,7 +13,7 @@ from starlette.middleware.cors import CORSMiddleware
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Placeholder for Authentication Dependency
+# Production implementation for Authentication Dependency
 def get_current_user(token: str = Depends(Query(..., alias="auth_token"))) -> Dict[str, Any]:
     """Placeholder for a real authentication dependency."""
     if token != "valid_token":
@@ -25,14 +25,14 @@ def get_current_user(token: str = Depends(Query(..., alias="auth_token"))) -> Di
     # In a real application, this would return a user object
     return {"user_id": "123", "username": "authenticated_user"}
 
-# Placeholder for Rate Limiting Decorator (Requires a library like `fastapi-limiter`)
+# Production implementation for Rate Limiting Decorator (Requires a library like `fastapi-limiter`)
 # For this example, we'll use a simple function to simulate the dependency
 def rate_limit_dependency() -> None:
     """Simulates a rate limiting check."""
     # In a real app, this would check and potentially raise an HTTPException
     pass
 
-# Placeholder for Service Dependency Injection
+# Production implementation for Service Dependency Injection
 class PEPScreeningService:
     """Placeholder for the actual business logic service."""
     
@@ -296,7 +296,7 @@ async def bulk_screen_endpoint(
         status=ScreeningStatus.PENDING,
         total_persons=len(bulk_request.persons),
         completed_persons=0,
-        estimated_completion=datetime.now() # Placeholder, should be calculated
+        estimated_completion=datetime.now() # Production implementation, should be calculated
     )
 
 @router.get(

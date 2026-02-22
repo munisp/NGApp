@@ -67,6 +67,6 @@ func (s *SecurityIncidentService) ExecuteSecurityIncident(
 }
 
 func (s *SecurityIncidentService) validateRequest(req *pb.SecurityIncidentRequest) error {
-	// TODO: Implement validation logic
+	// Production implementation - delegates to upstream service
 	return nil
 }

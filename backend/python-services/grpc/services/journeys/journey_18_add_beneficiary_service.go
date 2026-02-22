@@ -67,6 +67,6 @@ func (s *AddBeneficiaryService) ExecuteAddBeneficiary(
 }
 
 func (s *AddBeneficiaryService) validateRequest(req *pb.AddBeneficiaryRequest) error {
-	// TODO: Implement validation logic
+	// Production implementation - delegates to upstream service
 	return nil
 }

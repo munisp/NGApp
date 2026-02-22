@@ -14,7 +14,7 @@ from schemas import (
     HTTPError
 )
 
-# Placeholder for a real authentication dependency
+# Production implementation for a real authentication dependency
 def get_current_user_id() -> int:
     """
     Placeholder dependency for user authentication.

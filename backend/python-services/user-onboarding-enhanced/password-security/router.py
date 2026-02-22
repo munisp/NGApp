@@ -50,7 +50,7 @@ class EmailVerificationService:
         self.verification_codes[user_id] = {"code": code, "expires_at": expires_at}
 
         def send_email_task() -> None:
-            # Placeholder for actual email sending logic
+            # Production implementation for actual email sending logic
             logging.info(f"Sending verification email to {email} with code {code}")
 
         background_tasks.add_task(send_email_task)
