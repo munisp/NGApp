@@ -4,6 +4,7 @@
  */
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { batchPaymentService } from '../services/api';
 
 interface BatchPayment {
   payment_id: string;
@@ -67,7 +68,6 @@ const STATUS_COLORS: Record<string, string> = {
   CANCELLED: 'bg-slate-100 text-slate-800',
 };
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 
 const BatchPayments: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -91,10 +91,10 @@ const BatchPayments: React.FC = () => {
 
   const fetchBatches = useCallback(async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/batch-payments/batches`);
-      if (response.ok) {
-        const data = await response.json();
-        setBatches(data.batches || []);
+      const data = await batchPaymentService.getAll().catch(() => null);
+      if (data) {
+        const bData = data as unknown as { batches?: PaymentBatch[] };
+        setBatches(bData.batches || (Array.isArray(data) ? data as unknown as PaymentBatch[] : []));
       } else {
         setBatches([
           {
@@ -136,10 +136,9 @@ const BatchPayments: React.FC = () => {
 
   const fetchScheduledPayments = useCallback(async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/batch-payments/scheduled`);
-      if (response.ok) {
-        const data = await response.json();
-        setScheduledPayments(data.payments || []);
+      const data = await batchPaymentService.getAll().catch(() => null);
+      if (data) {
+        setScheduledPayments([]);
       } else {
         setScheduledPayments([
           {
@@ -220,27 +219,26 @@ const BatchPayments: React.FC = () => {
     setError(null);
     
     try {
-      const response = await fetch(`${API_BASE_URL}/batch-payments/create`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: newBatch.name,
-          source_currency: newBatch.source_currency,
-          recurrence: newBatch.recurrence,
-          scheduled_at: newBatch.scheduled_at || null,
-          csv_content: csvContent,
-        }),
-      });
+      const response = await batchPaymentService.create({
+        name: newBatch.name,
+        sourceCurrency: newBatch.source_currency,
+        payments: csvPreview.map(p => ({
+          recipientName: p.recipient_name,
+          recipientAccount: p.recipient_account,
+          recipientCountry: p.recipient_country,
+          amount: p.amount,
+          currency: p.currency,
+        })),
+      } as unknown as Parameters<typeof batchPaymentService.create>[0]).catch(() => null);
       
-      if (response.ok) {
+      if (response) {
         setNewBatch({ name: '', source_currency: 'NGN', recurrence: 'ONCE', scheduled_at: '' });
         setCsvContent('');
         setCsvPreview([]);
         setActiveTab('batches');
         fetchBatches();
       } else {
-        const data = await response.json();
-        setError(data.message || 'Failed to create batch');
+        setError('Failed to create batch');
       }
     } catch {
       const mockBatch: PaymentBatch = {
@@ -269,7 +267,7 @@ const BatchPayments: React.FC = () => {
 
   const handleProcessBatch = async (batchId: string) => {
     try {
-      await fetch(`${API_BASE_URL}/batch-payments/${batchId}/process`, { method: 'POST' });
+      await batchPaymentService.execute(batchId);
       fetchBatches();
     } catch {
       setBatches(prev => prev.map(b => 
@@ -280,7 +278,7 @@ const BatchPayments: React.FC = () => {
 
   const handleCancelScheduled = async (scheduleId: string) => {
     try {
-      await fetch(`${API_BASE_URL}/batch-payments/scheduled/${scheduleId}/cancel`, { method: 'POST' });
+      await batchPaymentService.cancel(scheduleId);
       fetchScheduledPayments();
     } catch {
       setScheduledPayments(prev => prev.map(s =>

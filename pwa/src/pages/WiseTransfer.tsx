@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { wiseTransferService } from '../services/api';
 
 interface WiseQuote {
   id: string;
@@ -33,9 +34,7 @@ interface WiseTransfer {
   createdAt: string;
 }
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-
-const SUPPORTED_CURRENCIES = [
+const SUPPORTED_CURRENCIES= [
   { code: 'USD', name: 'US Dollar', flag: '🇺🇸' },
   { code: 'GBP', name: 'British Pound', flag: '🇬🇧' },
   { code: 'EUR', name: 'Euro', flag: '🇪🇺' },
@@ -82,17 +81,13 @@ export default function WiseTransfer() {
   const loadData = async () => {
     setIsLoading(true);
     try {
-      const [recipientsRes, transfersRes] = await Promise.all([
-        fetch(`${API_BASE_URL}/api/wise/recipients`, {
-          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
-        }),
-        fetch(`${API_BASE_URL}/api/wise/transfers`, {
-          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
-        }),
+      const [recipientsData, transfersData] = await Promise.all([
+        wiseTransferService.getRecipients().catch(() => null),
+        wiseTransferService.getTransfers().catch(() => null),
       ]);
 
-      if (recipientsRes.ok) {
-        setRecipients(await recipientsRes.json());
+      if (recipientsData) {
+        setRecipients(recipientsData as unknown as WiseRecipient[]);
       } else {
         setRecipients([
           {
@@ -114,8 +109,8 @@ export default function WiseTransfer() {
         ]);
       }
 
-      if (transfersRes.ok) {
-        setTransfers(await transfersRes.json());
+      if (transfersData) {
+        setTransfers(transfersData as unknown as WiseTransfer[]);
       } else {
         setTransfers([
           {
@@ -161,21 +156,14 @@ export default function WiseTransfer() {
 
   const getQuote = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/wise/quote`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          sourceCurrency: formData.sourceCurrency,
-          targetCurrency: formData.targetCurrency,
-          sourceAmount: parseFloat(formData.amount),
-        }),
-      });
+      const quoteData = await wiseTransferService.getQuote({
+        sourceCurrency: formData.sourceCurrency,
+        targetCurrency: formData.targetCurrency,
+        sourceAmount: parseFloat(formData.amount),
+      }).catch(() => null);
 
-      if (response.ok) {
-        setQuote(await response.json());
+      if (quoteData) {
+        setQuote(quoteData as unknown as WiseQuote);
       } else {
         // Mock quote
         const rates: Record<string, number> = {
@@ -229,19 +217,15 @@ export default function WiseTransfer() {
     setSuccessMessage('');
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/wise/transfer`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          quoteId: quote.id,
-          recipientId: formData.recipientId,
-        }),
-      });
+      const response = await wiseTransferService.createTransfer({
+        recipientId: formData.recipientId,
+        sourceCurrency: formData.sourceCurrency,
+        targetCurrency: formData.targetCurrency,
+        sourceAmount: quote.sourceAmount,
+        reference: quote.id,
+      }).catch(() => null);
 
-      if (response.ok) {
+      if (response) {
         setSuccessMessage('Transfer initiated successfully!');
         setFormData({ ...formData, amount: '', recipientId: '' });
         setQuote(null);

@@ -6,8 +6,7 @@
 import React, { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useOfflineStore, useIsOnline } from '../stores/offlineStore';
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+import { propertyKycService } from '../services/api';
 
 // Types
 interface PartyIdentity {
@@ -217,20 +216,19 @@ const PropertyKYC: React.FC = () => {
         return;
       }
 
-      const response = await fetch(`${API_BASE_URL}/property-kyc/transactions`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(transactionData),
-        signal: AbortSignal.timeout(30000),
-      });
+      const result = await propertyKycService.createTransaction({
+        propertyType: 'residential',
+        propertyAddress: purchaseAgreement.propertyAddress,
+        purchasePrice: parseFloat(purchaseAgreement.propertyValue) || 0,
+        buyerId: '',
+      }).catch(() => null);
 
-      if (response.ok) {
-        const data = await response.json();
-        setSuccessMessage(`Property KYC submitted successfully! Reference: ${data.transactionId}`);
+      if (result) {
+        const data = result as unknown as { transactionId?: string; id?: string };
+        setSuccessMessage(`Property KYC submitted successfully! Reference: ${data.transactionId || data.id || 'N/A'}`);
         setTimeout(() => navigate('/transactions'), 3000);
       } else {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Submission failed');
+        throw new Error('Submission failed');
       }
     } catch (err) {
       if (!isOnline) {

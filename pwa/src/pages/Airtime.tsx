@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useOfflineStore, useIsOnline, usePendingCount } from '../stores/offlineStore';
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+import { airtimeService } from '../services/api';
 
 const Airtime: React.FC = () => {
   const navigate = useNavigate();
@@ -51,15 +50,9 @@ const Airtime: React.FC = () => {
         setTimeout(() => navigate('/transactions'), 2000);
         return;
       }
-      const response = await fetch(`${API_BASE_URL}/airtime/purchase`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(purchaseData), signal: AbortSignal.timeout(30000),
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setSuccessMessage(`${activeTab === 'airtime' ? 'Airtime' : 'Data'} purchase successful! Ref: ${data.reference}`);
-        setTimeout(() => navigate('/transactions'), 2000);
-      } else { const d = await response.json(); throw new Error(d.message || 'Purchase failed'); }
+      const res = await airtimeService.purchase(purchaseData);
+      setSuccessMessage(`${activeTab === 'airtime' ? 'Airtime' : 'Data'} purchase successful! Ref: ${res.data?.id || 'N/A'}`);
+      setTimeout(() => navigate('/transactions'), 2000);
     } catch (err) {
       if (!isOnline || (err instanceof Error && err.name === 'AbortError')) {
         const txnId = addPendingTransaction({ type: 'airtime', data: purchaseData });

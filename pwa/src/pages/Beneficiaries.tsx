@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { SearchBar } from '../components/SearchBar';
+import { beneficiaryService } from '../services/api';
 
 interface Beneficiary {
   id: string;
@@ -15,7 +16,6 @@ interface Beneficiary {
   totalTransactions: number;
 }
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 export default function Beneficiaries() {
   const [beneficiaries, setBeneficiaries] = useState<Beneficiary[]>([]);
@@ -45,16 +45,10 @@ export default function Beneficiaries() {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await fetch(`${API_BASE_URL}/api/beneficiaries`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        },
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setBeneficiaries(data);
+      const res = await beneficiaryService.getAll();
+      if (res.data && res.data.length > 0) {
+        setBeneficiaries(res.data);
       } else {
-        // Use mock data if API fails
         setBeneficiaries([
           {
             id: '1',
@@ -148,14 +142,7 @@ export default function Beneficiaries() {
       )
     );
     try {
-      await fetch(`${API_BASE_URL}/api/beneficiaries/${beneficiary.id}/favorite`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ isFavorite: !beneficiary.isFavorite }),
-      });
+      await beneficiaryService.toggleFavorite(beneficiary.id, !beneficiary.isFavorite);
     } catch {
       // Revert on error
       setBeneficiaries((prev) =>
@@ -172,12 +159,7 @@ export default function Beneficiaries() {
     setShowDeleteConfirm(false);
     setBeneficiaryToDelete(null);
     try {
-      await fetch(`${API_BASE_URL}/api/beneficiaries/${beneficiaryToDelete.id}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        },
-      });
+      await beneficiaryService.delete(beneficiaryToDelete.id);
     } catch {
       loadBeneficiaries();
     }
@@ -202,14 +184,7 @@ export default function Beneficiaries() {
       email: '',
     });
     try {
-      await fetch(`${API_BASE_URL}/api/beneficiaries`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
-      });
+      await beneficiaryService.create(formData);
     } catch {
       // Keep optimistic update
     }

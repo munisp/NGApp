@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { paymentPerformanceService } from '../services/api';
 
 interface PerformanceMetric {
   label: string;
@@ -29,7 +30,6 @@ interface TimeSeriesData {
   count: number;
 }
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 export default function PaymentPerformance() {
   const [timeRange, setTimeRange] = useState<'7d' | '30d' | '90d' | '1y'>('30d');
@@ -46,16 +46,13 @@ export default function PaymentPerformance() {
   const loadPerformanceData = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/api/analytics/performance?range=${timeRange}`, {
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
-      });
+      const data = await paymentPerformanceService.getMetrics({ period: timeRange }).catch(() => null) as Record<string, unknown> | null;
 
-      if (response.ok) {
-        const data = await response.json();
-        setMetrics(data.metrics);
-        setStats(data.stats);
-        setCurrencyBreakdown(data.currencyBreakdown);
-        setTimeSeries(data.timeSeries);
+      if (data && data.metrics) {
+        setMetrics(data.metrics as unknown as PerformanceMetric[]);
+        setStats(data.stats as unknown as TransactionStats);
+        setCurrencyBreakdown(data.currencyBreakdown as unknown as CurrencyBreakdown[]);
+        setTimeSeries(data.timeSeries as unknown as TimeSeriesData[]);
       } else {
         // Mock data
         setMetrics([

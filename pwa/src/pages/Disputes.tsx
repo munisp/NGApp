@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
-
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+import { disputeService, transactionService } from '../services/api';
 
 interface Dispute {
   id: string;
@@ -45,16 +44,9 @@ export default function Disputes() {
 
   const fetchDisputes = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE_URL}/api/disputes`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setDisputes(data);
+      const data = await disputeService.getAll().catch(() => null);
+      if (data) {
+        setDisputes(data as unknown as Dispute[]);
       } else {
         // Use mock data if API fails
         setDisputes([
@@ -94,16 +86,9 @@ export default function Disputes() {
 
   const fetchTransactions = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE_URL}/api/v1/transactions/history`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setTransactions(data);
+      const data = await transactionService.getHistory().catch(() => null);
+      if (data) {
+        setTransactions(data as unknown as Transaction[]);
       } else {
         setTransactions([
           {
@@ -135,21 +120,13 @@ export default function Disputes() {
     setError(null);
 
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE_URL}/api/disputes`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          transaction_id: selectedTransaction,
-          dispute_type: disputeType,
-          description: description
-        })
-      });
+      const response = await disputeService.create({
+        transactionId: selectedTransaction,
+        type: disputeType as 'unauthorized' | 'wrong_amount' | 'not_received' | 'duplicate' | 'other',
+        description: description
+      } as unknown as Parameters<typeof disputeService.create>[0]).catch(() => null);
 
-      if (response.ok) {
+      if (response) {
         setSuccess('Dispute created successfully. Our team will review it within 24-48 hours.');
         setShowCreateModal(false);
         setSelectedTransaction('');
@@ -157,8 +134,7 @@ export default function Disputes() {
         setDescription('');
         fetchDisputes();
       } else {
-        const data = await response.json();
-        setError(data.detail || 'Failed to create dispute');
+        setError('Failed to create dispute');
       }
     } catch (err) {
       setError('Network error. Please try again.');

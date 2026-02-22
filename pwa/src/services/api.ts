@@ -485,6 +485,323 @@ export const savingsService = {
     api.post<SavingsWithdrawal>(`/savings/goals/${goalId}/withdraw`, { amount }),
 };
 
+// Notification Service
+export const notificationService = {
+  getAll: (params?: { page?: number; limit?: number; unreadOnly?: boolean }) =>
+    api.get<{ notifications: Notification[]; total: number; unread: number }>(
+      `/notifications?${new URLSearchParams(params as Record<string, string>).toString()}`
+    ),
+
+  markRead: (id: string) =>
+    api.put<Notification>(`/notifications/${id}/read`),
+
+  markAllRead: () =>
+    api.put<{ updated: number }>('/notifications/read-all'),
+
+  getPreferences: () =>
+    api.get<NotificationPreferences>('/notifications/preferences'),
+
+  updatePreferences: (data: Partial<NotificationPreferences>) =>
+    api.put<NotificationPreferences>('/notifications/preferences', data),
+
+  delete: (id: string) =>
+    api.delete<void>(`/notifications/${id}`),
+};
+
+// Settings Service
+export const settingsService = {
+  getPreferences: () =>
+    api.get<UserPreferences>('/settings/preferences'),
+
+  updatePreferences: (data: Partial<UserPreferences>) =>
+    api.put<UserPreferences>('/settings/preferences', data),
+
+  getSecuritySettings: () =>
+    api.get<SecuritySettings>('/settings/security'),
+
+  updateSecuritySettings: (data: Partial<SecuritySettings>) =>
+    api.put<SecuritySettings>('/settings/security', data),
+};
+
+// Support Service
+export const supportService = {
+  createTicket: (data: CreateSupportTicketRequest) =>
+    api.post<SupportTicket>('/support/tickets', data),
+
+  getTickets: () =>
+    api.get<SupportTicket[]>('/support/tickets'),
+
+  getTicket: (id: string) =>
+    api.get<SupportTicket>(`/support/tickets/${id}`),
+
+  addMessage: (ticketId: string, message: string) =>
+    api.post<SupportMessage>(`/support/tickets/${ticketId}/messages`, { message }),
+
+  getFaqs: () =>
+    api.get<FAQ[]>('/support/faqs'),
+};
+
+// Profile Service
+export const profileService = {
+  getProfile: () =>
+    api.get<UserProfile>('/profile'),
+
+  updateProfile: (data: Partial<UserProfile>) =>
+    api.put<UserProfile>('/profile', data),
+
+  uploadAvatar: (file: File) => {
+    const formData = new FormData();
+    formData.append('avatar', file);
+    return api.post<{ avatarUrl: string }>('/profile/avatar', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
+
+  changePassword: (currentPassword: string, newPassword: string) =>
+    api.post<{ message: string }>('/profile/change-password', { currentPassword, newPassword }),
+
+  getLinkedAccounts: () =>
+    api.get<LinkedAccount[]>('/profile/linked-accounts'),
+
+  linkAccount: (data: LinkAccountRequest) =>
+    api.post<LinkedAccount>('/profile/linked-accounts', data),
+
+  unlinkAccount: (id: string) =>
+    api.delete<void>(`/profile/linked-accounts/${id}`),
+};
+
+// Dashboard Service
+export const dashboardService = {
+  getSummary: () =>
+    api.get<DashboardSummary>('/dashboard/summary'),
+};
+
+
+// Beneficiary Service
+export const beneficiaryService = {
+  getAll: () =>
+    api.get<Beneficiary[]>('/beneficiaries'),
+
+  getById: (id: string) =>
+    api.get<Beneficiary>(`/beneficiaries/${id}`),
+
+  create: (data: CreateBeneficiaryRequest) =>
+    api.post<Beneficiary>('/beneficiaries', data),
+
+  update: (id: string, data: Partial<CreateBeneficiaryRequest>) =>
+    api.put<Beneficiary>(`/beneficiaries/${id}`, data),
+
+  delete: (id: string) =>
+    api.delete<void>(`/beneficiaries/${id}`),
+
+  toggleFavorite: (id: string, isFavorite: boolean) =>
+    api.put<Beneficiary>(`/beneficiaries/${id}/favorite`, { isFavorite }),
+};
+
+// Dispute Service
+export const disputeService = {
+  getAll: (params?: { status?: string; page?: number }) =>
+    api.get<{ disputes: Dispute[]; total: number }>(
+      `/disputes?${new URLSearchParams(params as Record<string, string>).toString()}`
+    ),
+
+  getById: (id: string) =>
+    api.get<Dispute>(`/disputes/${id}`),
+
+  create: (data: CreateDisputeRequest) =>
+    api.post<Dispute>('/disputes', data),
+
+  addMessage: (id: string, message: string) =>
+    api.post<DisputeMessage>(`/disputes/${id}/messages`, { message }),
+
+  cancel: (id: string) =>
+    api.post<Dispute>(`/disputes/${id}/cancel`),
+};
+
+// Audit Log Service
+export const auditLogService = {
+  getAll: (params?: { page?: number; limit?: number; action?: string; startDate?: string; endDate?: string }) =>
+    api.get<{ logs: AuditLog[]; total: number }>(
+      `/audit-logs?${new URLSearchParams(params as Record<string, string>).toString()}`
+    ),
+
+  export: (format: 'csv' | 'json', params?: { startDate?: string; endDate?: string }) =>
+    api.get<Blob>(`/audit-logs/export?format=${format}&${new URLSearchParams(params as Record<string, string>).toString()}`),
+};
+
+// Security Service
+export const securityService = {
+  getSettings: () =>
+    api.get<SecuritySettings>('/security/settings'),
+
+  updateSettings: (data: Partial<SecuritySettings>) =>
+    api.put<SecuritySettings>('/security/settings', data),
+
+  enableTwoFactor: () =>
+    api.post<{ qrCode: string; secret: string }>('/security/2fa/enable'),
+
+  verifyTwoFactor: (code: string) =>
+    api.post<{ verified: boolean }>('/security/2fa/verify', { code }),
+
+  disableTwoFactor: (code: string) =>
+    api.post<void>('/security/2fa/disable', { code }),
+
+  changePin: (currentPin: string, newPin: string) =>
+    api.post<void>('/security/pin/change', { currentPin, newPin }),
+
+  getLoginHistory: () =>
+    api.get<LoginHistoryEntry[]>('/security/login-history'),
+
+  getSecurityScore: () =>
+    api.get<{ score: number; recommendations: SecurityRecommendation[] }>('/security/score'),
+
+  revokeDevice: (deviceId: string) =>
+    api.delete<void>(`/security/devices/${deviceId}`),
+};
+
+// Batch Payment Service
+export const batchPaymentService = {
+  getAll: () =>
+    api.get<BatchPayment[]>('/batch-payments'),
+
+  getById: (id: string) =>
+    api.get<BatchPayment>(`/batch-payments/${id}`),
+
+  create: (data: CreateBatchPaymentRequest) =>
+    api.post<BatchPayment>('/batch-payments', data),
+
+  execute: (id: string) =>
+    api.post<BatchPayment>(`/batch-payments/${id}/execute`),
+
+  cancel: (id: string) =>
+    api.post<BatchPayment>(`/batch-payments/${id}/cancel`),
+};
+
+// Stablecoin Service
+export const stablecoinService = {
+  getBalances: () =>
+    api.get<StablecoinBalance[]>('/stablecoin/balances'),
+
+  buy: (data: { coin: string; amount: number; paymentCurrency: string }) =>
+    api.post<StablecoinTransaction>('/stablecoin/buy', data),
+
+  sell: (data: { coin: string; amount: number; receiveCurrency: string }) =>
+    api.post<StablecoinTransaction>('/stablecoin/sell', data),
+
+  send: (data: { coin: string; amount: number; address: string }) =>
+    api.post<StablecoinTransaction>('/stablecoin/send', data),
+
+  convert: (data: { fromCoin: string; toCoin: string; amount: number }) =>
+    api.post<StablecoinTransaction>('/stablecoin/convert', data),
+
+  getHistory: () =>
+    api.get<StablecoinTransaction[]>('/stablecoin/history'),
+
+  getRates: () =>
+    api.get<StablecoinRate[]>('/stablecoin/rates'),
+};
+
+// FX Alert Service
+export const fxAlertService = {
+  getAll: () =>
+    api.get<FXAlert[]>('/fx-alerts'),
+
+  create: (data: CreateFXAlertRequest) =>
+    api.post<FXAlert>('/fx-alerts', data),
+
+  delete: (id: string) =>
+    api.delete<void>(`/fx-alerts/${id}`),
+
+  getRewards: () =>
+    api.get<FXReward[]>('/fx-alerts/rewards'),
+
+  claimReward: (id: string) =>
+    api.post<FXReward>(`/fx-alerts/rewards/${id}/claim`),
+};
+
+// Account Health Service
+export const accountHealthService = {
+  getHealth: () =>
+    api.get<AccountHealth>('/account/health'),
+
+  getRecommendations: () =>
+    api.get<HealthRecommendation[]>('/account/health/recommendations'),
+
+  dismissRecommendation: (id: string) =>
+    api.post<void>(`/account/health/recommendations/${id}/dismiss`),
+};
+
+// Payment Performance Service
+export const paymentPerformanceService = {
+  getMetrics: (params?: { period?: string }) =>
+    api.get<PaymentPerformanceMetrics>(
+      `/payments/performance?${new URLSearchParams(params as Record<string, string>).toString()}`
+    ),
+
+  getInsights: () =>
+    api.get<PaymentInsight[]>('/payments/performance/insights'),
+};
+
+// Receive Money Service
+export const receiveMoneyService = {
+  generateQR: (amount?: number, currency?: string) =>
+    api.post<{ qrCode: string; paymentId: string }>('/receive/qr', { amount, currency }),
+
+  createPaymentLink: (data: { amount: number; currency: string; description?: string }) =>
+    api.post<{ link: string; paymentId: string }>('/receive/payment-link', data),
+
+  getVirtualAccount: () =>
+    api.get<{ bankName: string; accountNumber: string; accountName: string }>('/receive/virtual-account'),
+};
+
+// M-Pesa Service
+export const mpesaService = {
+  getAccount: () =>
+    api.get<{ phoneNumber: string; balance: number; currency: string; name: string; tier: string }>('/mpesa/account'),
+
+  getTransactions: () =>
+    api.get<{ id: string; type: string; amount: number; currency: string; recipient: string; status: string; date: string }[]>('/mpesa/transactions'),
+
+  sendMoney: (data: { phoneNumber: string; amount: number; description?: string }) =>
+    api.post<{ transactionId: string; status: string }>('/mpesa/send', data),
+
+  payBill: (data: { businessNumber: string; accountNumber: string; amount: number }) =>
+    api.post<{ transactionId: string; status: string }>('/mpesa/paybill', data),
+
+  buyGoods: (data: { tillNumber: string; amount: number }) =>
+    api.post<{ transactionId: string; status: string }>('/mpesa/buygoods', data),
+
+  withdraw: (data: { agentNumber: string; amount: number }) =>
+    api.post<{ transactionId: string; status: string }>('/mpesa/withdraw', data),
+};
+
+// Wise Transfer Service
+export const wiseTransferService = {
+  getRecipients: () =>
+    api.get<{ id: string; name: string; email: string; currency: string; accountNumber: string; bankCode: string; country: string }[]>('/wise/recipients'),
+
+  getTransfers: () =>
+    api.get<{ id: string; recipientName: string; amount: number; currency: string; targetAmount: number; targetCurrency: string; status: string; date: string; fee: number; rate: number }[]>('/wise/transfers'),
+
+  getQuote: (data: { sourceCurrency: string; targetCurrency: string; sourceAmount: number }) =>
+    api.post<{ targetAmount: number; rate: number; fee: number; estimatedDelivery: string }>('/wise/quote', data),
+
+  createTransfer: (data: { recipientId: string; sourceCurrency: string; targetCurrency: string; sourceAmount: number; reference?: string }) =>
+    api.post<{ transferId: string; status: string }>('/wise/transfer', data),
+
+  addRecipient: (data: { name: string; email: string; currency: string; accountNumber: string; bankCode: string; country: string }) =>
+    api.post<{ id: string }>('/wise/recipients', data),
+};
+
+// Transfer Tracking Service
+export const transferTrackingService = {
+  getTracking: (transferId: string) =>
+    api.get<{ transfer_id: string; tracking_id: string; current_state: string; progress_percent: number; sender_name: string; recipient_name: string; amount: number; currency: string; destination_currency: string; destination_amount: number; corridor: string; created_at: string; estimated_completion: string; events: { state: string; timestamp: string; description: string; location?: string }[] }>(`/transfers/${transferId}/tracking`),
+
+  updateNotificationPrefs: (transferId: string, data: { channel: string; enabled: boolean }) =>
+    api.put<void>(`/transfers/${transferId}/notifications`, data),
+};
+
 // ============================================
 // Type Definitions
 // ============================================
@@ -976,6 +1293,332 @@ export interface SavingsWithdrawal {
   amount: number;
   penalty?: number;
   createdAt: string;
+}
+
+// Notification types
+export interface Notification {
+  id: string;
+  type: 'transaction' | 'security' | 'promotion' | 'system' | 'kyc';
+  title: string;
+  message: string;
+  read: boolean;
+  createdAt: string;
+  actionUrl?: string;
+}
+
+export interface NotificationPreferences {
+  email: boolean;
+  push: boolean;
+  sms: boolean;
+  transactionAlerts: boolean;
+  securityAlerts: boolean;
+  promotionalAlerts: boolean;
+}
+
+// Settings types
+export interface UserPreferences {
+  language: string;
+  currency: string;
+  theme: 'light' | 'dark' | 'system';
+  biometricAuth: boolean;
+  twoFactorAuth: boolean;
+  transactionNotifications: boolean;
+  marketingEmails: boolean;
+  autoLogoutMinutes: number;
+}
+
+export interface SecuritySettings {
+  twoFactorEnabled: boolean;
+  biometricEnabled: boolean;
+  loginNotifications: boolean;
+  transactionPin: boolean;
+  trustedDevices: { id: string; name: string; lastUsed: string }[];
+}
+
+// Support types
+export interface CreateSupportTicketRequest {
+  subject: string;
+  category: string;
+  message: string;
+  priority?: string;
+}
+
+export interface SupportTicket {
+  id: string;
+  subject: string;
+  category: string;
+  status: 'open' | 'in_progress' | 'resolved' | 'closed';
+  priority: string;
+  createdAt: string;
+  updatedAt: string;
+  messages: SupportMessage[];
+}
+
+export interface SupportMessage {
+  id: string;
+  sender: 'user' | 'agent';
+  message: string;
+  createdAt: string;
+}
+
+export interface FAQ {
+  id: string;
+  question: string;
+  answer: string;
+  category: string;
+}
+
+// Profile types
+export interface UserProfile {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  phone: string;
+  dateOfBirth?: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  country?: string;
+  avatarUrl?: string;
+  kycTier: number;
+  createdAt: string;
+}
+
+export interface LinkedAccount {
+  id: string;
+  bankName: string;
+  accountNumber: string;
+  accountName: string;
+  bankCode: string;
+  isDefault: boolean;
+}
+
+export interface LinkAccountRequest {
+  bankCode: string;
+  accountNumber: string;
+}
+
+// Dashboard types
+export interface DashboardSummary {
+  balance: { currency: string; amount: number }[];
+  recentTransactions: Transaction[];
+  exchangeRates: ExchangeRate[];
+  stats: {
+    totalSent: number;
+    totalReceived: number;
+    transactionCount: number;
+  };
+}
+
+
+// Beneficiary types
+export interface Beneficiary {
+  id: string;
+  name: string;
+  accountNumber: string;
+  bankName: string;
+  bankCode: string;
+  phoneNumber?: string;
+  email?: string;
+  isFavorite: boolean;
+  lastUsed?: string;
+  totalTransactions: number;
+}
+
+export interface CreateBeneficiaryRequest {
+  name: string;
+  accountNumber: string;
+  bankName: string;
+  bankCode: string;
+  phoneNumber?: string;
+  email?: string;
+}
+
+// Dispute types
+export interface Dispute {
+  id: string;
+  transactionId: string;
+  transactionRef: string;
+  type: string;
+  reason: string;
+  amount: number;
+  currency: string;
+  status: 'open' | 'under_review' | 'resolved' | 'rejected' | 'closed';
+  resolution?: string;
+  createdAt: string;
+  updatedAt: string;
+  messages: DisputeMessage[];
+}
+
+export interface CreateDisputeRequest {
+  transactionId: string;
+  type: string;
+  reason: string;
+  description: string;
+}
+
+export interface DisputeMessage {
+  id: string;
+  sender: 'user' | 'support';
+  message: string;
+  createdAt: string;
+}
+
+// Audit Log types
+export interface AuditLog {
+  id: string;
+  action: string;
+  resource: string;
+  details: string;
+  ipAddress: string;
+  userAgent: string;
+  createdAt: string;
+}
+
+// Security types
+export interface LoginHistoryEntry {
+  id: string;
+  ipAddress: string;
+  device: string;
+  location: string;
+  timestamp: string;
+  success: boolean;
+}
+
+export interface SecurityRecommendation {
+  id: string;
+  title: string;
+  description: string;
+  priority: 'high' | 'medium' | 'low';
+  action: string;
+  completed: boolean;
+}
+
+// Batch Payment types
+export interface BatchPayment {
+  id: string;
+  name: string;
+  totalAmount: number;
+  currency: string;
+  recipientCount: number;
+  status: 'draft' | 'pending' | 'processing' | 'completed' | 'failed';
+  payments: BatchPaymentItem[];
+  createdAt: string;
+  scheduledAt?: string;
+}
+
+export interface BatchPaymentItem {
+  recipientName: string;
+  accountNumber: string;
+  bankCode: string;
+  amount: number;
+  status: string;
+  reference?: string;
+}
+
+export interface CreateBatchPaymentRequest {
+  name: string;
+  currency: string;
+  payments: Omit<BatchPaymentItem, 'status' | 'reference'>[];
+  scheduledAt?: string;
+}
+
+// Stablecoin types
+export interface StablecoinBalance {
+  coin: string;
+  symbol: string;
+  balance: number;
+  usdValue: number;
+}
+
+export interface StablecoinTransaction {
+  id: string;
+  type: 'buy' | 'sell' | 'send' | 'receive' | 'convert';
+  coin: string;
+  amount: number;
+  usdValue: number;
+  status: string;
+  createdAt: string;
+}
+
+export interface StablecoinRate {
+  coin: string;
+  usdRate: number;
+  ngnRate: number;
+  change24h: number;
+}
+
+// FX Alert types
+export interface FXAlert {
+  id: string;
+  fromCurrency: string;
+  toCurrency: string;
+  targetRate: number;
+  currentRate: number;
+  direction: 'above' | 'below';
+  status: 'active' | 'triggered' | 'expired';
+  createdAt: string;
+}
+
+export interface CreateFXAlertRequest {
+  fromCurrency: string;
+  toCurrency: string;
+  targetRate: number;
+  direction: 'above' | 'below';
+}
+
+export interface FXReward {
+  id: string;
+  type: string;
+  description: string;
+  amount: number;
+  currency: string;
+  status: 'available' | 'claimed' | 'expired';
+  expiresAt: string;
+}
+
+// Account Health types
+export interface AccountHealth {
+  score: number;
+  maxScore: number;
+  level: 'excellent' | 'good' | 'fair' | 'needs_improvement';
+  categories: {
+    name: string;
+    score: number;
+    maxScore: number;
+    status: string;
+  }[];
+}
+
+export interface HealthRecommendation {
+  id: string;
+  title: string;
+  description: string;
+  impact: number;
+  category: string;
+  actionUrl?: string;
+}
+
+// Payment Performance types
+export interface PaymentPerformanceMetrics {
+  totalVolume: number;
+  totalCount: number;
+  successRate: number;
+  averageProcessingTime: number;
+  volumeByDay: { date: string; amount: number; count: number }[];
+  volumeByCurrency: { currency: string; amount: number; count: number }[];
+  volumeByType: { type: string; amount: number; count: number }[];
+}
+
+export interface PaymentInsight {
+  id: string;
+  title: string;
+  description: string;
+  type: 'positive' | 'neutral' | 'negative';
+  metric: string;
+  value: number;
+  change: number;
 }
 
 export default api;

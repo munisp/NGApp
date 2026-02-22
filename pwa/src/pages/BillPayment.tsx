@@ -1,13 +1,11 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useOfflineStore, useIsOnline, usePendingCount } from '../stores/offlineStore';
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+import { useOfflineStore, useIsOnline } from '../stores/offlineStore';
+import { billPaymentService } from '../services/api';
 
 const BillPayment: React.FC = () => {
   const navigate = useNavigate();
   const isOnline = useIsOnline();
-  const _pendingCount = usePendingCount();
   const { addPendingTransaction } = useOfflineStore();
 
   const [selectedCategory, setSelectedCategory] = useState('');
@@ -47,9 +45,8 @@ const BillPayment: React.FC = () => {
     const paymentData = { category: selectedCategory, provider: selectedProvider, accountNumber: meterNumber, amount: parseFloat(amount) + 100 };
     try {
       if (!isOnline) { const txnId = addPendingTransaction({ type: 'bill_payment', data: paymentData }); setSuccessMessage(`Payment queued. Ref: ${txnId}`); setTimeout(() => navigate('/transactions'), 2000); return; }
-      const response = await fetch(`${API_BASE_URL}/bills/pay`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(paymentData), signal: AbortSignal.timeout(30000) });
-      if (response.ok) { const data = await response.json(); setSuccessMessage(`Payment successful! Ref: ${data.reference}`); setTimeout(() => navigate('/transactions'), 2000); }
-      else { const d = await response.json(); throw new Error(d.message || 'Payment failed'); }
+      const res = await billPaymentService.pay({ category: selectedCategory, billerId: selectedProvider, customerId: meterNumber, amount: parseFloat(amount) });
+      setSuccessMessage(`Payment successful! Ref: ${res.data?.id || 'N/A'}`); setTimeout(() => navigate('/transactions'), 2000);
     } catch (err) {
       if (!isOnline || (err instanceof Error && err.name === 'AbortError')) { const txnId = addPendingTransaction({ type: 'bill_payment', data: paymentData }); setSuccessMessage(`Offline. Queued. Ref: ${txnId}`); setTimeout(() => navigate('/transactions'), 2000); }
       else { setError(err instanceof Error ? err.message : 'Failed to process payment'); }

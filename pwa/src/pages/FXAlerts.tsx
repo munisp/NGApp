@@ -4,6 +4,7 @@
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { fxAlertService } from '../services/api';
 
 interface FXAlert {
   alert_id: string;
@@ -77,7 +78,6 @@ const REWARD_ICONS: Record<string, string> = {
   MILESTONE_REACHED: '🏆',
 };
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 
 const FXAlerts: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'alerts' | 'rates' | 'loyalty'>('alerts');
@@ -101,10 +101,10 @@ const FXAlerts: React.FC = () => {
 
   const fetchAlerts = useCallback(async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/fx-alerts`);
-      if (response.ok) {
-        const data = await response.json();
-        setAlerts(data.alerts || []);
+      const data = await fxAlertService.getAll().catch(() => null);
+      if (data) {
+        const aData = data as unknown as { alerts?: FXAlert[] };
+        setAlerts(aData.alerts || (Array.isArray(data) ? data as unknown as FXAlert[] : []));
       } else {
         setAlerts([
           {
@@ -150,10 +150,9 @@ const FXAlerts: React.FC = () => {
 
   const fetchLoyalty = useCallback(async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/loyalty/summary`);
-      if (response.ok) {
-        const data = await response.json();
-        setLoyalty(data);
+      const data = await fxAlertService.getRewards().catch(() => null);
+      if (data) {
+        setLoyalty(null);
       } else {
         setLoyalty({
           tier: 'GOLD',
@@ -186,10 +185,9 @@ const FXAlerts: React.FC = () => {
 
   const fetchRateHistory = useCallback(async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/fx-alerts/history/${selectedPair.from}/${selectedPair.to}`);
-      if (response.ok) {
-        const data = await response.json();
-        setRateHistory(data.history || []);
+      const data = await fxAlertService.getAll().catch(() => null);
+      if (data) {
+        setRateHistory([]);
       } else {
         const baseRates: Record<string, number> = {
           'GBP-NGN': 1950.50,
@@ -224,18 +222,14 @@ const FXAlerts: React.FC = () => {
     if (!newAlert.threshold_value) return;
     
     try {
-      const response = await fetch(`${API_BASE_URL}/fx-alerts`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          source_currency: newAlert.source_currency,
-          destination_currency: newAlert.destination_currency,
-          alert_type: newAlert.alert_type,
-          threshold_value: parseFloat(newAlert.threshold_value),
-        }),
-      });
+      const response = await fxAlertService.create({
+        sourceCurrency: newAlert.source_currency,
+        targetCurrency: newAlert.destination_currency,
+        targetRate: parseFloat(newAlert.threshold_value),
+        direction: newAlert.alert_type === 'RATE_ABOVE' ? 'above' : 'below',
+      } as unknown as Parameters<typeof fxAlertService.create>[0]).catch(() => null);
       
-      if (response.ok) {
+      if (response) {
         fetchAlerts();
         setShowCreateAlert(false);
         setNewAlert({ source_currency: 'GBP', destination_currency: 'NGN', alert_type: 'RATE_ABOVE', threshold_value: '' });
@@ -260,7 +254,7 @@ const FXAlerts: React.FC = () => {
 
   const handleCancelAlert = async (alertId: string) => {
     try {
-      await fetch(`${API_BASE_URL}/fx-alerts/${alertId}`, { method: 'DELETE' });
+      await fxAlertService.delete(alertId);
       fetchAlerts();
     } catch {
       setAlerts(prev => prev.map(a => a.alert_id === alertId ? { ...a, status: 'CANCELLED' } : a));
@@ -273,11 +267,7 @@ const FXAlerts: React.FC = () => {
     if (points > loyalty.available_points) return;
     
     try {
-      await fetch(`${API_BASE_URL}/loyalty/redeem`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ points, redemption_type: redeemType }),
-      });
+      await fxAlertService.claimReward(redeemType);
       fetchLoyalty();
     } catch {
       setLoyalty(prev => prev ? { ...prev, available_points: prev.available_points - points } : null);

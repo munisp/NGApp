@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { SearchBar } from '../components/SearchBar';
+import { transactionService } from '../services/api';
 import { searchService, TransactionSearchResult, SearchFilters } from '../services/searchService';
 
 interface Transaction {
@@ -46,14 +47,21 @@ const Transactions: React.FC = () => {
 
   const searchTransactions = useCallback(async (query: string, typeFilter: string) => {
     if (!useOpenSearch) {
-      const filtered = mockTransactions.filter((tx) => {
-        if (typeFilter !== 'all' && tx.type !== typeFilter) return false;
-        if (query && !tx.description.toLowerCase().includes(query.toLowerCase()) && !tx.reference.toLowerCase().includes(query.toLowerCase())) return false;
-        return true;
-      });
-      setTransactions(filtered);
-      setTotal(filtered.length);
-      return;
+      try {
+        const res = await transactionService.getHistory({ type: typeFilter !== 'all' ? typeFilter : undefined });
+        const txList = ((res.data as unknown as { transactions?: unknown[] })?.transactions || res.data) as unknown as { id: string; type: string; amount: number; currency: string; status: string; description?: string; recipient?: string; sender?: string; createdAt: string; reference: string }[];
+        if (Array.isArray(txList)) {
+          const mapped = txList.map((t) => ({ id: t.id, type: (t.type as Transaction['type']) || 'sent', amount: t.amount, currency: t.currency, status: (t.status as Transaction['status']) || 'completed', description: t.description || t.recipient || 'Transaction', date: t.createdAt, reference: t.reference }));
+          setTransactions(mapped); setTotal(mapped.length); return;
+        }
+      } catch {
+        const filtered = mockTransactions.filter((tx) => {
+          if (typeFilter !== 'all' && tx.type !== typeFilter) return false;
+          if (query && !tx.description.toLowerCase().includes(query.toLowerCase()) && !tx.reference.toLowerCase().includes(query.toLowerCase())) return false;
+          return true;
+        });
+        setTransactions(filtered); setTotal(filtered.length); return;
+      }
     }
     setIsLoading(true);
     try {

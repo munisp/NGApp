@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { securityService } from '../services/api';
 
 interface LoginSession {
   id: string;
@@ -27,7 +28,6 @@ interface SecuritySettings {
   transactionPin: boolean;
 }
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 export default function Security() {
   const [activeTab, setActiveTab] = useState<'overview' | 'sessions' | 'activity'>('overview');
@@ -68,19 +68,13 @@ export default function Security() {
   const loadSecurityData = async () => {
     setIsLoading(true);
     try {
-      const [sessionsRes, eventsRes, settingsRes] = await Promise.all([
-        fetch(`${API_BASE_URL}/api/security/sessions`, {
-          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
-        }),
-        fetch(`${API_BASE_URL}/api/security/events`, {
-          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
-        }),
-        fetch(`${API_BASE_URL}/api/security/settings`, {
-          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
-        }),
+      const [sessionsData, eventsData, settingsData] = await Promise.all([
+        securityService.getLoginHistory().catch(() => null),
+        securityService.getLoginHistory().catch(() => null),
+        securityService.getSettings().catch(() => null),
       ]);
 
-      if (sessionsRes.ok) setSessions(await sessionsRes.json());
+      if (sessionsData) setSessions(sessionsData as unknown as LoginSession[]);
       else {
         setSessions([
           {
@@ -113,7 +107,7 @@ export default function Security() {
         ]);
       }
 
-      if (eventsRes.ok) setEvents(await eventsRes.json());
+      if (eventsData) setEvents(eventsData as unknown as SecurityEvent[]);
       else {
         setEvents([
           {
@@ -143,7 +137,7 @@ export default function Security() {
         ]);
       }
 
-      if (settingsRes.ok) setSettings(await settingsRes.json());
+      if (settingsData) setSettings(settingsData as unknown as SecuritySettings);
     } catch {
       // Use mock data
     } finally {
@@ -154,10 +148,7 @@ export default function Security() {
   const revokeSession = async (sessionId: string) => {
     setSessions((prev) => prev.filter((s) => s.id !== sessionId));
     try {
-      await fetch(`${API_BASE_URL}/api/security/sessions/${sessionId}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
-      });
+      await securityService.revokeDevice(sessionId);
       setSuccessMessage('Session revoked successfully');
     } catch {
       setErrorMessage('Failed to revoke session');
@@ -167,10 +158,7 @@ export default function Security() {
   const revokeAllSessions = async () => {
     setSessions((prev) => prev.filter((s) => s.isCurrent));
     try {
-      await fetch(`${API_BASE_URL}/api/security/sessions/revoke-all`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
-      });
+      await securityService.revokeDevice('all');
       setSuccessMessage('All other sessions revoked');
     } catch {
       setErrorMessage('Failed to revoke sessions');
@@ -189,19 +177,9 @@ export default function Security() {
     }
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/security/change-password`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          currentPassword: passwordForm.currentPassword,
-          newPassword: passwordForm.newPassword,
-        }),
-      });
+      const response = await securityService.changePin(passwordForm.currentPassword, passwordForm.newPassword).catch(() => null);
 
-      if (response.ok) {
+      if (response) {
         setSuccessMessage('Password changed successfully');
         setShowChangePassword(false);
         setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
@@ -229,14 +207,7 @@ export default function Security() {
     }
 
     try {
-      await fetch(`${API_BASE_URL}/api/security/setup-pin`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ pin: pinForm.pin }),
-      });
+      await securityService.changePin('', pinForm.pin);
       setSuccessMessage('PIN set up successfully');
       setShowSetupPin(false);
       setPinForm({ pin: '', confirmPin: '' });

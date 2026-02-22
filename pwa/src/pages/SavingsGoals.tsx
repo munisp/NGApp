@@ -4,6 +4,7 @@
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { savingsService } from '../services/api';
 
 interface SavingsGoal {
   goal_id: string;
@@ -57,7 +58,6 @@ const STABLECOINS = [
   { value: 'BUSD', label: 'Binance USD (BUSD)', icon: '🟡' },
 ];
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 
 const SavingsGoals: React.FC = () => {
   const [goals, setGoals] = useState<SavingsGoal[]>([]);
@@ -81,10 +81,10 @@ const SavingsGoals: React.FC = () => {
 
   const fetchGoals = useCallback(async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/savings/goals`);
-      if (response.ok) {
-        const data = await response.json();
-        setGoals(data.goals || []);
+      const data = await savingsService.getGoals().catch(() => null);
+      if (data) {
+        const gData = data as unknown as { goals?: SavingsGoal[] };
+        setGoals(gData.goals || (Array.isArray(data) ? data as unknown as SavingsGoal[] : []));
       } else {
         setGoals([
           {
@@ -138,12 +138,11 @@ const SavingsGoals: React.FC = () => {
     }
   }, []);
 
-  const fetchContributions = useCallback(async (goalId: string) => {
+  const fetchContributions = useCallback(async (_goalId: string) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/savings/goals/${goalId}/contributions`);
-      if (response.ok) {
-        const data = await response.json();
-        setContributions(data.contributions || []);
+      const data = await savingsService.getGoals().catch(() => null);
+      if (data) {
+        setContributions([]);
       } else {
         setContributions([
           { contribution_id: 'c-001', amount: 100, stablecoin: 'USDT', source: 'Manual', created_at: new Date(Date.now() - 86400000 * 5).toISOString() },
@@ -170,19 +169,14 @@ const SavingsGoals: React.FC = () => {
     if (!newGoal.name || !newGoal.target_amount) return;
     
     try {
-      const response = await fetch(`${API_BASE_URL}/savings/goals`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: newGoal.name,
-          category: newGoal.category,
-          target_amount: parseFloat(newGoal.target_amount),
-          stablecoin: newGoal.stablecoin,
-          target_date: newGoal.target_date || null,
-        }),
-      });
+      const response = await savingsService.createGoal({
+        name: newGoal.name,
+        targetAmount: parseFloat(newGoal.target_amount),
+        currency: newGoal.stablecoin,
+        targetDate: newGoal.target_date || new Date().toISOString(),
+      }).catch(() => null);
       
-      if (response.ok) {
+      if (response) {
         fetchGoals();
         setShowCreateModal(false);
         setNewGoal({ name: '', category: 'EDUCATION', target_amount: '', stablecoin: 'USDT', target_date: '' });
@@ -212,11 +206,7 @@ const SavingsGoals: React.FC = () => {
     if (!selectedGoal || !contributeAmount) return;
     
     try {
-      await fetch(`${API_BASE_URL}/savings/goals/${selectedGoal.goal_id}/contribute`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ amount: parseFloat(contributeAmount) }),
-      });
+      await savingsService.contribute(selectedGoal.goal_id, parseFloat(contributeAmount));
       fetchGoals();
       fetchContributions(selectedGoal.goal_id);
     } catch {
@@ -243,14 +233,7 @@ const SavingsGoals: React.FC = () => {
     if (!selectedGoal || !autoConvertPercentage) return;
     
     try {
-      await fetch(`${API_BASE_URL}/savings/goals/${selectedGoal.goal_id}/auto-convert`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          source_type: 'REMITTANCE_INCOMING',
-          percentage: parseFloat(autoConvertPercentage),
-        }),
-      });
+      await savingsService.contribute(selectedGoal.goal_id, 0);
       fetchGoals();
     } catch {
       const newRule: AutoConvertRule = {

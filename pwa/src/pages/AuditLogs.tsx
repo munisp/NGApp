@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { SearchBar } from '../components/SearchBar';
+import { auditLogService } from '../services/api';
 
 interface AuditLog {
   id: string;
@@ -23,7 +24,6 @@ interface AuditFilters {
   search: string;
 }
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 export default function AuditLogs() {
   const [logs, setLogs] = useState<AuditLog[]>([]);
@@ -46,19 +46,14 @@ export default function AuditLogs() {
   const loadLogs = async () => {
     setIsLoading(true);
     try {
-      const params = new URLSearchParams();
-      if (filters.category) params.append('category', filters.category);
-      if (filters.status) params.append('status', filters.status);
-      if (filters.dateFrom) params.append('dateFrom', filters.dateFrom);
-      if (filters.dateTo) params.append('dateTo', filters.dateTo);
-      if (filters.search) params.append('search', filters.search);
+      const data = await auditLogService.getAll({
+        action: filters.category || undefined,
+        startDate: filters.dateFrom || undefined,
+        endDate: filters.dateTo || undefined,
+      }).catch(() => null);
 
-      const response = await fetch(`${API_BASE_URL}/api/audit/logs?${params}`, {
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
-      });
-
-      if (response.ok) {
-        setLogs(await response.json());
+      if (data) {
+        setLogs(data as unknown as AuditLog[]);
       } else {
         // Mock data
         setLogs([

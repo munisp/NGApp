@@ -5,6 +5,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { transferTrackingService } from '../services/api';
 
 interface TrackingEvent {
   state: string;
@@ -49,8 +50,6 @@ const CORRIDOR_LABELS: Record<string, string> = {
   SWIFT: 'SWIFT Network',
 };
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
-
 const TransferTracking: React.FC = () => {
   const { transferId } = useParams<{ transferId: string }>();
   const navigate = useNavigate();
@@ -69,10 +68,9 @@ const TransferTracking: React.FC = () => {
     if (!transferId) return;
     
     try {
-      const response = await fetch(`${API_BASE_URL}/transfers/${transferId}/tracking`);
-      if (response.ok) {
-        const data = await response.json();
-        setTracking(data);
+      const data = await transferTrackingService.getTracking(transferId).catch(() => null);
+      if (data) {
+        setTracking(data as unknown as TransferTracking);
       } else {
         setTracking({
           transfer_id: transferId,
@@ -132,11 +130,7 @@ const TransferTracking: React.FC = () => {
   const updateNotificationPrefs = async (channel: string, enabled: boolean) => {
     setNotificationPrefs(prev => ({ ...prev, [channel]: enabled }));
     try {
-      await fetch(`${API_BASE_URL}/transfers/${transferId}/notifications`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ channel, enabled }),
-      });
+      await transferTrackingService.updateNotificationPrefs(transferId!, { channel, enabled });
     } catch {
       // Ignore errors
     }

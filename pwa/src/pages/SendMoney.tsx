@@ -6,6 +6,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useOfflineStore, useIsOnline, usePendingCount } from '../stores/offlineStore';
+import { transactionService, exchangeRateService } from '../services/api';
 
 // Types
 interface ExchangeRate {
@@ -109,8 +110,6 @@ const MOCK_RATES: Record<string, Record<string, number>> = {
   NGN: { GHS: 0.0078, KES: 0.085, ZAR: 0.012, USD: 0.00065, GBP: 0.00051 },
 };
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
-
 const SendMoney: React.FC = () => {
   const navigate = useNavigate();
   const isOnline = useIsOnline();
@@ -174,18 +173,11 @@ const SendMoney: React.FC = () => {
     const cacheKey = `rate_${formData.currency}_${formData.destinationCurrency}`;
 
     try {
-      const response = await fetch(
-        `${API_BASE_URL}/exchange-rates/${formData.currency}/${formData.destinationCurrency}`,
-        { signal: AbortSignal.timeout(5000) }
-      );
-      if (response.ok) {
-        const data = await response.json();
-        setExchangeRate(data);
-        cacheData(cacheKey, data, 5);
-        setRateRefreshCountdown(30);
-      } else {
-        throw new Error('API error');
-      }
+      const res = await exchangeRateService.getRate(formData.currency, formData.destinationCurrency);
+      const data = res.data as unknown as ExchangeRate;
+      setExchangeRate(data);
+      cacheData(cacheKey, data, 5);
+      setRateRefreshCountdown(30);
     } catch {
       const cached = getCachedData<ExchangeRate>(cacheKey);
       if (cached) {
@@ -216,14 +208,9 @@ const SendMoney: React.FC = () => {
 
   const fetchRateHistory = useCallback(async () => {
     try {
-      const response = await fetch(
-        `${API_BASE_URL}/exchange-rates/history/${formData.currency}/${formData.destinationCurrency}?days=7`,
-        { signal: AbortSignal.timeout(5000) }
-      );
-      if (response.ok) {
-        const data = await response.json();
-        setRateHistory(data.map((h: { date: string; rate: number }) => ({ date: h.date, rate: h.rate })));
-      }
+      const res = await exchangeRateService.getHistory(formData.currency, formData.destinationCurrency, 7);
+      const data = res.data as { date: string; rate: number }[];
+      setRateHistory(data.map((h) => ({ date: h.date, rate: h.rate })));
     } catch {
       const baseRate = exchangeRate?.rate || 1500;
       const mockHistory = Array.from({ length: 7 }, (_, i) => ({
@@ -237,22 +224,8 @@ const SendMoney: React.FC = () => {
   const handleLockRate = async () => {
     if (!exchangeRate) return;
     try {
-      const response = await fetch(`${API_BASE_URL}/exchange-rates/lock`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          from: formData.currency,
-          to: formData.destinationCurrency,
-          amount: parseFloat(formData.amount) || 0,
-        }),
-        signal: AbortSignal.timeout(5000),
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setRateLock(data);
-      } else {
-        throw new Error('API error');
-      }
+      const res = await exchangeRateService.lockRate(formData.currency, formData.destinationCurrency, parseFloat(formData.amount) || 0);
+      setRateLock(res.data as unknown as RateLock);
     } catch {
       const lockDuration = 600;
       setRateLock({
@@ -270,10 +243,7 @@ const SendMoney: React.FC = () => {
   const handleUnlockRate = async () => {
     if (rateLock && !rateLock.id.startsWith('local_')) {
       try {
-        await fetch(`${API_BASE_URL}/exchange-rates/lock/${rateLock.id}`, {
-          method: 'DELETE',
-          signal: AbortSignal.timeout(5000),
-        });
+        await exchangeRateService.unlockRate(rateLock.id);
       } catch {
         // Ignore errors
       }
@@ -311,21 +281,9 @@ const SendMoney: React.FC = () => {
         return;
       }
 
-      const response = await fetch(`${API_BASE_URL}/transactions/transfer`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(transferData),
-        signal: AbortSignal.timeout(30000),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setSuccessMessage(`Transfer initiated successfully! Reference: ${data.reference}`);
-        setTimeout(() => navigate('/transactions'), 2000);
-      } else {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Transfer failed');
-      }
+      const res = await transactionService.transfer(transferData);
+      setSuccessMessage(`Transfer initiated successfully! Reference: ${res.data?.reference || 'N/A'}`);
+      setTimeout(() => navigate('/transactions'), 2000);
     } catch (err) {
       if (!isOnline || (err instanceof Error && err.name === 'AbortError')) {
         const txnId = addPendingTransaction({ type: 'transfer', data: transferData });

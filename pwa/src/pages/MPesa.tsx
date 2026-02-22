@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { mpesaService } from '../services/api';
 
 interface MPesaTransaction {
   id: string;
@@ -20,7 +21,6 @@ interface MPesaAccount {
   isLinked: boolean;
 }
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 export default function MPesa() {
   const [activeTab, setActiveTab] = useState<'send' | 'withdraw' | 'history'>('send');
@@ -52,17 +52,13 @@ export default function MPesa() {
   const loadMPesaData = async () => {
     setIsLoading(true);
     try {
-      const [accountRes, transactionsRes] = await Promise.all([
-        fetch(`${API_BASE_URL}/api/mpesa/account`, {
-          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
-        }),
-        fetch(`${API_BASE_URL}/api/mpesa/transactions`, {
-          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
-        }),
+      const [accountData, transactionsData] = await Promise.all([
+        mpesaService.getAccount().catch(() => null),
+        mpesaService.getTransactions().catch(() => null),
       ]);
 
-      if (accountRes.ok) {
-        setLinkedAccount(await accountRes.json());
+      if (accountData) {
+        setLinkedAccount(accountData as unknown as MPesaAccount);
       } else {
         // Mock data
         setLinkedAccount({
@@ -74,8 +70,8 @@ export default function MPesa() {
         });
       }
 
-      if (transactionsRes.ok) {
-        setTransactions(await transactionsRes.json());
+      if (transactionsData) {
+        setTransactions(transactionsData as unknown as MPesaTransaction[]);
       } else {
         // Mock data
         setTransactions([
@@ -135,20 +131,13 @@ export default function MPesa() {
     setSuccessMessage('');
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/mpesa/send`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          phoneNumber: sendForm.phoneNumber,
-          amount: parseFloat(sendForm.amount),
-          description: sendForm.description,
-        }),
-      });
+      const response = await mpesaService.sendMoney({
+        phoneNumber: sendForm.phoneNumber,
+        amount: parseFloat(sendForm.amount),
+        description: sendForm.description,
+      }).catch(() => null);
 
-      if (response.ok) {
+      if (response) {
         setSuccessMessage(`Successfully sent KES ${sendForm.amount} to ${sendForm.phoneNumber}`);
         setSendForm({ phoneNumber: '', amount: '', description: '' });
         loadMPesaData();
@@ -171,18 +160,12 @@ export default function MPesa() {
     setSuccessMessage('');
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/mpesa/withdraw`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          amount: parseFloat(withdrawForm.amount),
-        }),
-      });
+      const response = await mpesaService.withdraw({
+        agentNumber: '',
+        amount: parseFloat(withdrawForm.amount),
+      }).catch(() => null);
 
-      if (response.ok) {
+      if (response) {
         setSuccessMessage(`Successfully withdrew KES ${withdrawForm.amount} to your M-PESA`);
         setWithdrawForm({ amount: '' });
         loadMPesaData();
