@@ -31,12 +31,12 @@ describe("ErrorBoundary", () => {
       </ErrorBoundary>
     );
     expect(screen.getByText("Something went wrong")).toBeInTheDocument();
-    expect(screen.getByText("Reload Page")).toBeInTheDocument();
+    expect(screen.getByText("Try Again")).toBeInTheDocument();
   });
 
-  it("renders custom fallback message", () => {
+  it("renders custom fallback when provided", () => {
     render(
-      <ErrorBoundary fallbackMessage="Custom error">
+      <ErrorBoundary fallback={<div>Custom error</div>}>
         <ThrowError />
       </ErrorBoundary>
     );
@@ -55,6 +55,6 @@ describe("InlineError", () => {
 
   it("renders default message when none provided", () => {
     render(<InlineError />);
-    expect(screen.getByText("Something went wrong")).toBeInTheDocument();
+    expect(screen.getByText("Failed to load")).toBeInTheDocument();
   });
 });
