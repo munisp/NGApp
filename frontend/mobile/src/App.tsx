@@ -15,6 +15,7 @@ import TradeDetailScreen from "./screens/TradeDetailScreen";
 import NotificationsScreen from "./screens/NotificationsScreen";
 
 import { colors } from "./styles/theme";
+import { getLinkingConfig } from "./services/deeplink";
 import type { RootStackParamList, MainTabParamList } from "./types";
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -80,7 +81,7 @@ function MainTabs() {
 export default function App() {
   return (
     <SafeAreaProvider>
-      <NavigationContainer theme={navTheme}>
+      <NavigationContainer theme={navTheme} linking={getLinkingConfig()}>
         <StatusBar style="light" />
         <Stack.Navigator
           screenOptions={{

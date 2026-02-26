@@ -2,12 +2,23 @@
 
 import { useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
+import dynamic from "next/dynamic";
 import AppShell from "@/components/layout/AppShell";
-import PriceChart from "@/components/trading/PriceChart";
 import OrderBookView from "@/components/trading/OrderBook";
 import OrderEntry from "@/components/trading/OrderEntry";
+import { ErrorBoundary } from "@/components/common/ErrorBoundary";
 import { useMarketStore, useTradingStore } from "@/lib/store";
 import { formatPrice, formatPercent, formatVolume, getPriceColorClass, cn } from "@/lib/utils";
+
+// Dynamic imports for heavy chart components (no SSR)
+const AdvancedChart = dynamic(() => import("@/components/trading/AdvancedChart"), {
+  ssr: false,
+  loading: () => <div className="flex items-center justify-center h-full text-gray-500">Loading chart...</div>,
+});
+const DepthChart = dynamic(() => import("@/components/trading/DepthChart"), {
+  ssr: false,
+  loading: () => <div className="flex items-center justify-center h-32 text-gray-500">Loading depth...</div>,
+});
 
 export default function TradePage() {
   return (
@@ -74,9 +85,19 @@ function TradePageContent() {
 
         {/* Main Trading Layout */}
         <div className="grid gap-4 lg:grid-cols-[1fr_260px_280px]">
-          {/* Chart */}
-          <div className="card min-h-[400px] lg:min-h-[500px]">
-            <PriceChart symbol={selectedSymbol} basePrice={commodity.lastPrice} />
+          {/* Chart + Depth */}
+          <div className="space-y-2">
+            <ErrorBoundary fallback={<div className="p-8 text-center text-gray-500">Chart failed to load</div>}>
+              <div className="card min-h-[400px] lg:min-h-[500px]">
+                <AdvancedChart symbol={selectedSymbol} basePrice={commodity.lastPrice} />
+              </div>
+            </ErrorBoundary>
+            <ErrorBoundary fallback={<div className="p-4 text-center text-gray-500">Depth chart failed to load</div>}>
+              <div className="card">
+                <h3 className="text-sm font-semibold mb-2">Market Depth</h3>
+                <DepthChart symbol={selectedSymbol} />
+              </div>
+            </ErrorBoundary>
           </div>
 
           {/* Order Book */}
