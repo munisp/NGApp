@@ -1,0 +1,33 @@
+{
+  "expo": {
+    "name": "NEXCOM Exchange",
+    "slug": "nexcom-exchange",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "splash": {
+      "backgroundColor": "#0f172a"
+    },
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "exchange.nexcom.mobile",
+      "infoPlist": {
+        "NSFaceIDUsageDescription": "Use Face ID for quick and secure login"
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#0f172a"
+      },
+      "package": "exchange.nexcom.mobile",
+      "permissions": ["USE_BIOMETRIC", "USE_FINGERPRINT"]
+    },
+    "plugins": [
+      "expo-local-authentication",
+      "expo-notifications",
+      "expo-secure-store"
+    ]
+  }
+}

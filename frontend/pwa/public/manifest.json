@@ -1,0 +1,43 @@
+{
+  "name": "NEXCOM Exchange",
+  "short_name": "NEXCOM",
+  "description": "Next-Generation Commodity Exchange - Trade agricultural commodities, precious metals, energy, and carbon credits",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
+  "orientation": "any",
+  "categories": ["finance", "business"],
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "Trade",
+      "url": "/trade",
+      "description": "Open the trading terminal"
+    },
+    {
+      "name": "Markets",
+      "url": "/markets",
+      "description": "View all commodity markets"
+    },
+    {
+      "name": "Portfolio",
+      "url": "/portfolio",
+      "description": "View your portfolio"
+    }
+  ]
+}
