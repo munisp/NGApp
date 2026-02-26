@@ -3,6 +3,7 @@
 import { useState } from "react";
 import AppShell from "@/components/layout/AppShell";
 import { useMarketStore } from "@/lib/store";
+import { useMarkets } from "@/lib/api-hooks";
 import { formatPrice, formatPercent, formatVolume, getPriceColorClass, getCategoryIcon, cn } from "@/lib/utils";
 import Link from "next/link";
 
@@ -10,7 +11,8 @@ type Category = "all" | "agricultural" | "precious_metals" | "energy" | "carbon_
 type SortField = "symbol" | "lastPrice" | "changePercent24h" | "volume24h";
 
 export default function MarketsPage() {
-  const { commodities, watchlist, toggleWatchlist } = useMarketStore();
+  const { commodities } = useMarkets();
+  const { watchlist, toggleWatchlist } = useMarketStore();
   const [category, setCategory] = useState<Category>("all");
   const [search, setSearch] = useState("");
   const [sortField, setSortField] = useState<SortField>("volume24h");

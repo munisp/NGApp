@@ -8,6 +8,7 @@ import OrderBookView from "@/components/trading/OrderBook";
 import OrderEntry from "@/components/trading/OrderEntry";
 import { ErrorBoundary } from "@/components/common/ErrorBoundary";
 import { useMarketStore, useTradingStore } from "@/lib/store";
+import { useMarkets, useOrders, useTrades, useCreateOrder, useCancelOrder } from "@/lib/api-hooks";
 import { formatPrice, formatPercent, formatVolume, getPriceColorClass, cn } from "@/lib/utils";
 
 // Dynamic imports for heavy chart components (no SSR)
@@ -31,8 +32,11 @@ export default function TradePage() {
 function TradePageContent() {
   const searchParams = useSearchParams();
   const initialSymbol = searchParams.get("symbol") || "MAIZE";
-  const { commodities } = useMarketStore();
-  const { orders, trades } = useTradingStore();
+  const { commodities } = useMarkets();
+  const { orders } = useOrders();
+  const { trades } = useTrades();
+  const { createOrder } = useCreateOrder();
+  const { cancelOrder } = useCancelOrder();
   const [selectedSymbol, setSelectedSymbol] = useState(initialSymbol);
   const [bottomTab, setBottomTab] = useState<"orders" | "trades" | "positions">("orders");
 
@@ -110,8 +114,15 @@ function TradePageContent() {
             <OrderEntry
               symbol={selectedSymbol}
               currentPrice={commodity.lastPrice}
-              onSubmit={(order) => {
-                console.log("Order submitted:", order);
+              onSubmit={async (order) => {
+                await createOrder({
+                  symbol: selectedSymbol,
+                  side: order.side,
+                  type: order.type,
+                  quantity: order.quantity,
+                  price: order.price,
+                  stopPrice: order.stopPrice,
+                });
               }}
             />
           </div>
@@ -177,7 +188,10 @@ function TradePageContent() {
                       </td>
                       <td className="text-right">
                         {(o.status === "OPEN" || o.status === "PENDING") && (
-                          <button className="text-[10px] text-red-400 hover:text-red-300">Cancel</button>
+                          <button
+                            onClick={() => cancelOrder(o.id)}
+                            className="text-[10px] text-red-400 hover:text-red-300"
+                          >Cancel</button>
                         )}
                       </td>
                     </tr>

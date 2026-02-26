@@ -2,10 +2,12 @@
 
 import AppShell from "@/components/layout/AppShell";
 import { useTradingStore } from "@/lib/store";
+import { usePortfolio, useClosePosition } from "@/lib/api-hooks";
 import { formatCurrency, formatPercent, formatPrice, getPriceColorClass, cn } from "@/lib/utils";
 
 export default function PortfolioPage() {
-  const { portfolio, positions } = useTradingStore();
+  const { portfolio, positions } = usePortfolio();
+  const { closePosition } = useClosePosition();
 
   const totalUnrealized = positions.reduce((sum, p) => sum + p.unrealizedPnl, 0);
   const totalRealized = positions.reduce((sum, p) => sum + p.realizedPnl, 0);
@@ -96,7 +98,10 @@ export default function PortfolioPage() {
                     <td className="text-right font-mono text-gray-400">{formatCurrency(pos.margin)}</td>
                     <td className="text-right font-mono text-red-400">{formatPrice(pos.liquidationPrice)}</td>
                     <td className="text-right">
-                      <button className="btn-danger text-xs px-2 py-1">Close</button>
+                      <button
+                        onClick={() => closePosition(pos.symbol)}
+                        className="btn-danger text-xs px-2 py-1"
+                      >Close</button>
                     </td>
                   </tr>
                 ))}

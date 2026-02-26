@@ -3,11 +3,14 @@
 import { useState } from "react";
 import AppShell from "@/components/layout/AppShell";
 import { useTradingStore } from "@/lib/store";
+import { useOrders, useTrades, useCancelOrder } from "@/lib/api-hooks";
 import { formatPrice, formatCurrency, formatDateTime, cn } from "@/lib/utils";
 import type { OrderStatus } from "@/types";
 
 export default function OrdersPage() {
-  const { orders, trades } = useTradingStore();
+  const { orders } = useOrders();
+  const { trades } = useTrades();
+  const { cancelOrder } = useCancelOrder();
   const [tab, setTab] = useState<"open" | "history" | "trades">("open");
   const [statusFilter, setStatusFilter] = useState<OrderStatus | "ALL">("ALL");
 
@@ -89,7 +92,10 @@ export default function OrdersPage() {
                         </td>
                         {tab === "open" && (
                           <td className="text-right">
-                            <button className="text-xs text-red-400 hover:text-red-300 font-medium">
+                            <button
+                              onClick={() => cancelOrder(o.id)}
+                              className="text-xs text-red-400 hover:text-red-300 font-medium"
+                            >
                               Cancel
                             </button>
                           </td>

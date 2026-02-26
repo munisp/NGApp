@@ -2,12 +2,15 @@
 
 import AppShell from "@/components/layout/AppShell";
 import { useMarketStore, useTradingStore } from "@/lib/store";
+import { useMarkets, useOrders, useTrades, usePortfolio } from "@/lib/api-hooks";
 import { formatCurrency, formatPercent, formatVolume, getPriceColorClass, getCategoryIcon, formatPrice } from "@/lib/utils";
 import Link from "next/link";
 
 export default function DashboardPage() {
-  const { commodities } = useMarketStore();
-  const { portfolio, positions, orders, trades } = useTradingStore();
+  const { commodities } = useMarkets();
+  const { portfolio, positions } = usePortfolio();
+  const { orders } = useOrders();
+  const { trades } = useTrades();
 
   return (
     <AppShell>

@@ -3,51 +3,32 @@
 import { useState } from "react";
 import AppShell from "@/components/layout/AppShell";
 import { useMarketStore } from "@/lib/store";
+import { useMarkets, useAlerts } from "@/lib/api-hooks";
 import { formatPrice, cn } from "@/lib/utils";
 
-interface Alert {
-  id: string;
-  symbol: string;
-  condition: "above" | "below";
-  targetPrice: number;
-  active: boolean;
-  createdAt: string;
-}
-
 export default function AlertsPage() {
-  const { commodities } = useMarketStore();
-  const [alerts, setAlerts] = useState<Alert[]>([
-    { id: "a1", symbol: "MAIZE", condition: "above", targetPrice: 290.00, active: true, createdAt: "2026-02-25T10:00:00Z" },
-    { id: "a2", symbol: "GOLD", condition: "below", targetPrice: 2300.00, active: true, createdAt: "2026-02-24T15:00:00Z" },
-    { id: "a3", symbol: "CRUDE_OIL", condition: "above", targetPrice: 80.00, active: false, createdAt: "2026-02-23T09:00:00Z" },
-  ]);
+  const { commodities } = useMarkets();
 
+  const { alerts, createAlert, updateAlert, deleteAlert } = useAlerts();
   const [showForm, setShowForm] = useState(false);
   const [newSymbol, setNewSymbol] = useState("MAIZE");
   const [newCondition, setNewCondition] = useState<"above" | "below">("above");
   const [newPrice, setNewPrice] = useState("");
 
-  const handleCreate = () => {
+  const handleCreate = async () => {
     if (!newPrice) return;
-    const alert: Alert = {
-      id: `a${Date.now()}`,
+    await createAlert({
       symbol: newSymbol,
       condition: newCondition,
       targetPrice: Number(newPrice),
-      active: true,
-      createdAt: new Date().toISOString(),
-    };
-    setAlerts([alert, ...alerts]);
+    });
     setShowForm(false);
     setNewPrice("");
   };
 
   const toggleAlert = (id: string) => {
-    setAlerts(alerts.map((a) => a.id === id ? { ...a, active: !a.active } : a));
-  };
-
-  const deleteAlert = (id: string) => {
-    setAlerts(alerts.filter((a) => a.id !== id));
+    const alert = alerts.find((a) => a.id === id);
+    if (alert) updateAlert(id, { active: !alert.active });
   };
 
   return (

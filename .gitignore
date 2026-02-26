@@ -57,3 +57,4 @@ htmlcov/
 .terraform/
 *.tfstate
 *.tfstate.backup
+services/gateway/gateway

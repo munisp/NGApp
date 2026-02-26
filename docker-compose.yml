@@ -375,6 +375,94 @@ services:
     networks:
       - nexcom-network
 
+  # ==========================================================================
+  # Permify (Fine-Grained Authorization)
+  # ==========================================================================
+  permify:
+    image: ghcr.io/permify/permify:latest
+    container_name: nexcom-permify
+    restart: unless-stopped
+    command: serve
+    environment:
+      PERMIFY_DATABASE_ENGINE: postgres
+      PERMIFY_DATABASE_URI: "postgres://nexcom:${POSTGRES_PASSWORD:-nexcom_dev}@postgres:5432/nexcom"
+    ports:
+      - "3476:3476"
+      - "3478:3478"
+    depends_on:
+      - postgres
+    networks:
+      - nexcom-network
+
+  # ==========================================================================
+  # NEXCOM API Gateway (Go)
+  # ==========================================================================
+  gateway:
+    build:
+      context: ./services/gateway
+      dockerfile: Dockerfile
+    container_name: nexcom-gateway
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      PORT: "8000"
+      ENVIRONMENT: development
+      KAFKA_BROKERS: kafka:9092
+      REDIS_URL: redis:6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-nexcom_dev}
+      TEMPORAL_HOST: temporal:7233
+      TIGERBEETLE_ADDRESSES: tigerbeetle:3001
+      DAPR_HTTP_PORT: "3500"
+      DAPR_GRPC_PORT: "50001"
+      FLUVIO_ENDPOINT: fluvio:9003
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: nexcom
+      KEYCLOAK_CLIENT_ID: nexcom-gateway
+      PERMIFY_ENDPOINT: permify:3476
+      POSTGRES_URL: postgres://nexcom:${POSTGRES_PASSWORD:-nexcom_dev}@postgres:5432/nexcom
+      APISIX_ADMIN_URL: http://apisix:9180
+      CORS_ORIGINS: http://localhost:3000,http://localhost:19006
+    depends_on:
+      - kafka
+      - redis
+      - temporal
+      - keycloak
+      - permify
+      - tigerbeetle
+      - fluvio
+      - dapr-placement
+    networks:
+      - nexcom-network
+
+  # ==========================================================================
+  # NEXCOM Analytics Service (Python)
+  # ==========================================================================
+  analytics:
+    build:
+      context: ./services/analytics
+      dockerfile: Dockerfile
+    container_name: nexcom-analytics
+    restart: unless-stopped
+    ports:
+      - "8002:8001"
+    environment:
+      PORT: "8001"
+      ENVIRONMENT: development
+      KAFKA_BROKERS: kafka:9092
+      REDIS_URL: redis:6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-nexcom_dev}
+      TEMPORAL_HOST: temporal:7233
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: nexcom
+      KEYCLOAK_CLIENT_ID: nexcom-analytics
+      PERMIFY_ENDPOINT: permify:3476
+    depends_on:
+      - kafka
+      - redis
+    networks:
+      - nexcom-network
+
 # ============================================================================
 # Networks
 # ============================================================================
