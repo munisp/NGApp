@@ -1,13 +1,14 @@
 //! High Availability & Disaster Recovery Module.
 //! Implements active-passive failover with state replication,
 //! health checking, and automatic leader election.
+#![allow(dead_code)]
 
 use crate::types::*;
 use chrono::Utc;
 use parking_lot::RwLock;
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
-use tracing::{error, info, warn};
+use tracing::{info, warn};
 
 /// Health check status for a service component.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]

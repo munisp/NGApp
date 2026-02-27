@@ -1,6 +1,7 @@
 //! Lock-free orderbook with price-time priority (FIFO).
 //! Uses BTreeMap for sorted price levels and VecDeque for time-ordered queues.
 //! All operations target microsecond latency.
+#![allow(dead_code)]
 
 use crate::types::*;
 use chrono::Utc;
@@ -462,7 +463,7 @@ impl OrderBookManager {
     }
 
     /// Get or create an orderbook for a symbol.
-    pub fn get_or_create(&self, symbol: &str) -> dashmap::mapref::one::Ref<String, RwLock<OrderBook>> {
+    pub fn get_or_create(&self, symbol: &str) -> dashmap::mapref::one::Ref<'_, String, RwLock<OrderBook>> {
         if !self.books.contains_key(symbol) {
             self.books
                 .insert(symbol.to_string(), RwLock::new(OrderBook::new(symbol.to_string())));

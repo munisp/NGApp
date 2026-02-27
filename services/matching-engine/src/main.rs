@@ -11,6 +11,7 @@ mod futures;
 mod ha;
 mod options;
 mod orderbook;
+pub mod persistence;
 mod surveillance;
 mod types;
 

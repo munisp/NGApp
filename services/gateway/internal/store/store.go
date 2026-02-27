@@ -26,6 +26,8 @@ type Store struct {
 	preferences   map[string]models.UserPreferences // userID -> Preferences
 	notifications map[string][]models.Notification  // userID -> []Notification
 	tickers       map[string]models.MarketTicker    // symbol -> Ticker
+	accounts      map[string]models.Account         // accountID -> Account
+	auditLog      []models.AuditEntry               // append-only audit log
 }
 
 func New() *Store {
@@ -39,6 +41,8 @@ func New() *Store {
 		preferences:   make(map[string]models.UserPreferences),
 		notifications: make(map[string][]models.Notification),
 		tickers:       make(map[string]models.MarketTicker),
+		accounts:      make(map[string]models.Account),
+		auditLog:      make([]models.AuditEntry, 0),
 	}
 	s.seedData()
 	return s
@@ -736,6 +740,123 @@ func toLower(s string) string {
 		b[i] = c
 	}
 	return string(b)
+}
+
+// ============================================================
+// Accounts CRUD
+// ============================================================
+
+func (s *Store) GetAccounts() []models.Account {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	var result []models.Account
+	for _, a := range s.accounts {
+		result = append(result, a)
+	}
+	return result
+}
+
+func (s *Store) GetAccount(id string) (models.Account, bool) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	a, ok := s.accounts[id]
+	return a, ok
+}
+
+func (s *Store) CreateAccount(req models.CreateAccountRequest) models.Account {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	account := models.Account{
+		ID:        "acc-" + uuid.New().String()[:8],
+		UserID:    req.UserID,
+		Type:      req.Type,
+		Currency:  req.Currency,
+		Balance:   0,
+		Available: 0,
+		Locked:    0,
+		Status:    "active",
+		Tier:      models.TierRetailTrader,
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	}
+	s.accounts[account.ID] = account
+	s.auditLog = append(s.auditLog, models.AuditEntry{
+		ID:        "aud-" + uuid.New().String()[:8],
+		UserID:    req.UserID,
+		Action:    "CREATE_ACCOUNT",
+		Resource:  "account:" + account.ID,
+		Details:   fmt.Sprintf("Created %s account in %s", req.Type, req.Currency),
+		Timestamp: time.Now(),
+	})
+	return account
+}
+
+func (s *Store) UpdateAccount(id string, req models.UpdateAccountRequest) (models.Account, bool) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	account, ok := s.accounts[id]
+	if !ok {
+		return models.Account{}, false
+	}
+	if req.Status != nil {
+		account.Status = *req.Status
+	}
+	if req.Tier != nil {
+		account.Tier = models.AccountTier(*req.Tier)
+	}
+	account.UpdatedAt = time.Now()
+	s.accounts[id] = account
+	s.auditLog = append(s.auditLog, models.AuditEntry{
+		ID:        "aud-" + uuid.New().String()[:8],
+		UserID:    account.UserID,
+		Action:    "UPDATE_ACCOUNT",
+		Resource:  "account:" + id,
+		Details:   "Account updated",
+		Timestamp: time.Now(),
+	})
+	return account, true
+}
+
+func (s *Store) DeleteAccount(id string) bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	account, ok := s.accounts[id]
+	if !ok {
+		return false
+	}
+	delete(s.accounts, id)
+	s.auditLog = append(s.auditLog, models.AuditEntry{
+		ID:        "aud-" + uuid.New().String()[:8],
+		UserID:    account.UserID,
+		Action:    "DELETE_ACCOUNT",
+		Resource:  "account:" + id,
+		Details:   "Account deleted",
+		Timestamp: time.Now(),
+	})
+	return true
+}
+
+// ============================================================
+// Audit Log
+// ============================================================
+
+func (s *Store) GetAuditLog() []models.AuditEntry {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	result := make([]models.AuditEntry, len(s.auditLog))
+	copy(result, s.auditLog)
+	return result
+}
+
+func (s *Store) GetAuditEntry(id string) (models.AuditEntry, bool) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	for _, e := range s.auditLog {
+		if e.ID == id {
+			return e, true
+		}
+	}
+	return models.AuditEntry{}, false
 }
 
 func seedCommodities() []models.Commodity {

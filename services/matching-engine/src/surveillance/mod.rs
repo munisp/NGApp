@@ -1,6 +1,7 @@
 //! Market Surveillance & Regulatory Compliance Module.
 //! Detects spoofing, layering, wash trading, front-running, and other market abuse.
 //! Maintains WORM-compliant audit trail and position limit enforcement.
+#![allow(dead_code)]
 
 use crate::types::*;
 use chrono::{Duration, Utc};

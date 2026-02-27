@@ -1,6 +1,7 @@
 //! Physical Delivery Infrastructure.
 //! Warehouse management, electronic warehouse receipts, delivery logistics,
 //! and commodity grading/certification.
+#![allow(dead_code)]
 
 use crate::types::*;
 use chrono::Utc;

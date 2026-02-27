@@ -166,6 +166,57 @@ func (s *Server) SetupRoutes() *gin.Engine {
 
 			// Middleware status
 			protected.GET("/middleware/status", s.middlewareStatus)
+
+			// Matching Engine proxy routes
+			me := protected.Group("/matching-engine")
+			{
+				me.GET("/status", s.matchingEngineStatus)
+				me.GET("/depth/:symbol", s.matchingEngineDepth)
+				me.GET("/symbols", s.matchingEngineSymbols)
+				me.GET("/futures/contracts", s.matchingEngineFutures)
+				me.GET("/options/contracts", s.matchingEngineOptions)
+				me.GET("/clearing/positions/:account_id", s.matchingEnginePositions)
+				me.GET("/surveillance/alerts", s.matchingEngineSurveillance)
+				me.GET("/delivery/warehouses", s.matchingEngineWarehouses)
+				me.GET("/audit/entries", s.matchingEngineAudit)
+			}
+
+			// Ingestion Engine proxy routes
+			ing := protected.Group("/ingestion")
+			{
+				ing.GET("/feeds", s.ingestionFeeds)
+				ing.POST("/feeds/:id/start", s.ingestionStartFeed)
+				ing.POST("/feeds/:id/stop", s.ingestionStopFeed)
+				ing.GET("/feeds/metrics", s.ingestionMetrics)
+				ing.GET("/lakehouse/status", s.ingestionLakehouseStatus)
+				ing.GET("/lakehouse/catalog", s.ingestionLakehouseCatalog)
+				ing.GET("/schema-registry", s.ingestionSchemaRegistry)
+				ing.GET("/pipeline/status", s.ingestionPipelineStatus)
+			}
+
+			// Platform health aggregator
+			protected.GET("/platform/health", s.platformHealth)
+
+			// Accounts CRUD (for accounts table)
+			accounts := protected.Group("/accounts")
+			{
+				accounts.GET("", s.listAccounts)
+				accounts.POST("", s.createAccount)
+				accounts.GET("/:id", s.getAccount)
+				accounts.PATCH("/:id", s.updateAccount)
+				accounts.DELETE("/:id", s.deleteAccount)
+			}
+
+			// Audit Log CRUD
+			auditLog := protected.Group("/audit-log")
+			{
+				auditLog.GET("", s.listAuditLog)
+				auditLog.GET("/:id", s.getAuditEntry)
+			}
+
+			// WebSocket endpoint for real-time notifications
+			protected.GET("/ws/notifications", s.wsNotifications)
+			protected.GET("/ws/market-data", s.wsMarketData)
 		}
 	}
 

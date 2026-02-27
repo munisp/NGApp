@@ -1,13 +1,11 @@
 //! Futures contract lifecycle management.
 //! Handles listing, trading, expiry, settlement, rollover, and delivery months.
+#![allow(dead_code)]
 
 use crate::types::*;
 use chrono::{Datelike, Duration, NaiveDate, Utc};
 use dashmap::DashMap;
-use parking_lot::RwLock;
-use std::collections::HashMap;
-use tracing::{info, warn};
-use uuid::Uuid;
+use tracing::info;
 
 /// Month codes per CME convention.
 pub fn month_code(month: u32) -> char {
@@ -251,7 +249,7 @@ impl FuturesManager {
 
         // Calculate dates
         let expiry = NaiveDate::from_ymd_opt(year, month, 1)
-            .and_then(|d| {
+            .and_then(|_d| {
                 // Last business day of the month before delivery month
                 let last_day = if month == 12 {
                     NaiveDate::from_ymd_opt(year + 1, 1, 1)

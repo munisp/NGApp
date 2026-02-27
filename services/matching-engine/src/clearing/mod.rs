@@ -1,6 +1,7 @@
 //! Central Counterparty (CCP) Clearing Module.
 //! Implements novation, multilateral netting, default waterfall,
 //! margin methodology (SPAN-like portfolio margining), and mark-to-market.
+#![allow(dead_code)]
 
 use crate::types::*;
 use chrono::Utc;

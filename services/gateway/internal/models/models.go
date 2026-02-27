@@ -339,9 +339,48 @@ type OrderWorkflowInput struct {
 }
 
 type SettlementWorkflowInput struct {
-	TradeID string  `json:"tradeId"`
-	BuyerID string  `json:"buyerId"`
-	SellerID string `json:"sellerId"`
-	Amount  float64 `json:"amount"`
-	Symbol  string  `json:"symbol"`
+	TradeID  string  `json:"tradeId"`
+	BuyerID  string  `json:"buyerId"`
+	SellerID string  `json:"sellerId"`
+	Amount   float64 `json:"amount"`
+	Symbol   string  `json:"symbol"`
+}
+
+// ============================================================
+// Account & Audit Log Models (Improvement #18)
+// ============================================================
+
+type Account struct {
+	ID        string      `json:"id"`
+	UserID    string      `json:"userId"`
+	Type      string      `json:"type"`
+	Currency  string      `json:"currency"`
+	Balance   float64     `json:"balance"`
+	Available float64     `json:"available"`
+	Locked    float64     `json:"locked"`
+	Status    string      `json:"status"`
+	Tier      AccountTier `json:"tier"`
+	CreatedAt time.Time   `json:"createdAt"`
+	UpdatedAt time.Time   `json:"updatedAt"`
+}
+
+type CreateAccountRequest struct {
+	UserID   string `json:"userId" binding:"required"`
+	Type     string `json:"type" binding:"required"`
+	Currency string `json:"currency" binding:"required"`
+}
+
+type UpdateAccountRequest struct {
+	Status *string  `json:"status,omitempty"`
+	Tier   *string  `json:"tier,omitempty"`
+}
+
+type AuditEntry struct {
+	ID        string    `json:"id"`
+	UserID    string    `json:"userId"`
+	Action    string    `json:"action"`
+	Resource  string    `json:"resource"`
+	Details   string    `json:"details"`
+	IP        string    `json:"ip"`
+	Timestamp time.Time `json:"timestamp"`
 }

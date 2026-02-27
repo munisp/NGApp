@@ -1,11 +1,12 @@
 //! FIX Protocol Gateway (FIX 4.4).
 //! Implements FIX session layer (logon, heartbeat, sequence numbers)
 //! and application layer (NewOrderSingle, ExecutionReport, MarketData).
+#![allow(dead_code)]
 
 use crate::types::*;
 use chrono::Utc;
 use std::collections::HashMap;
-use tracing::{debug, info, warn};
+use tracing::{info, warn};
 
 /// FIX message delimiter.
 const SOH: char = '\x01';
@@ -357,7 +358,7 @@ impl FixGateway {
     }
 
     /// Create or get a session for a client.
-    pub fn get_or_create_session(&self, client_comp_id: &str) -> dashmap::mapref::one::RefMut<String, FixSession> {
+    pub fn get_or_create_session(&self, client_comp_id: &str) -> dashmap::mapref::one::RefMut<'_, String, FixSession> {
         if !self.sessions.contains_key(client_comp_id) {
             self.sessions.insert(
                 client_comp_id.to_string(),

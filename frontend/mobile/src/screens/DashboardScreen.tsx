@@ -10,29 +10,44 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
 import { colors, spacing, fontSize, borderRadius } from "../styles/theme";
+import { usePortfolio, useMarkets } from "../hooks/useApi";
 
-const positions = [
-  { symbol: "MAIZE", side: "LONG", qty: 100, entry: 282.0, current: 285.5, pnl: 350.0, pnlPct: 1.24 },
-  { symbol: "GOLD", side: "SHORT", qty: 4, entry: 2349.8, current: 2345.6, pnl: 16.8, pnlPct: 0.18 },
-  { symbol: "COFFEE", side: "LONG", qty: 20, entry: 4518.5, current: 4520.0, pnl: 30.0, pnlPct: 0.03 },
-  { symbol: "CRUDE_OIL", side: "LONG", qty: 200, entry: 76.5, current: 78.42, pnl: 384.0, pnlPct: 2.51 },
-];
-
-const watchlist = [
-  { symbol: "MAIZE", name: "Maize", price: 285.5, change: 1.15, icon: "🌾" },
-  { symbol: "GOLD", name: "Gold", price: 2345.6, change: 0.53, icon: "🥇" },
-  { symbol: "COFFEE", name: "Coffee", price: 4520.0, change: 1.01, icon: "☕" },
-  { symbol: "CRUDE_OIL", name: "Crude Oil", price: 78.42, change: 1.59, icon: "⚡" },
-  { symbol: "CARBON", name: "Carbon Credits", price: 65.2, change: 1.32, icon: "🌿" },
-];
+const ICONS: Record<string, string> = {
+  MAIZE: "M", GOLD: "Au", COFFEE: "C", CRUDE_OIL: "O",
+  CARBON: "CO", WHEAT: "W", COCOA: "Co", SILVER: "Ag",
+  NAT_GAS: "NG", TEA: "T",
+};
 
 export default function DashboardScreen() {
   const navigation = useNavigation();
+  const { data: portfolioData, refetch: refetchPortfolio } = usePortfolio();
+  const { data: marketsData, refetch: refetchMarkets } = useMarkets();
   const [refreshing, setRefreshing] = React.useState(false);
+
+  const positions = (portfolioData?.positions || []).map((p: any) => ({
+    symbol: p.symbol,
+    side: p.side === "BUY" ? "LONG" : p.side === "SELL" ? "SHORT" : p.side,
+    qty: p.quantity,
+    entry: p.averageEntryPrice,
+    current: p.currentPrice,
+    pnl: p.unrealizedPnl,
+    pnlPct: p.unrealizedPnlPercent,
+  }));
+
+  const commodities = (marketsData as any)?.commodities || [];
+  const watchlist = commodities.slice(0, 5).map((c: any) => ({
+    symbol: c.symbol,
+    name: c.name,
+    price: c.lastPrice,
+    change: c.changePercent24h,
+    icon: ICONS[c.symbol] || c.symbol.charAt(0),
+  }));
 
   const onRefresh = () => {
     setRefreshing(true);
-    setTimeout(() => setRefreshing(false), 1500);
+    Promise.all([refetchPortfolio(), refetchMarkets()]).finally(() =>
+      setRefreshing(false)
+    );
   };
 
   return (

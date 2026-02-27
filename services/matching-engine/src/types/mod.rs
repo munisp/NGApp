@@ -1,5 +1,6 @@
 //! Core domain types for the NEXCOM matching engine.
 //! All monetary values use i64 fixed-point (8 decimal places) to avoid floating-point issues.
+#![allow(dead_code)]
 
 use chrono::{DateTime, Utc};
 use ordered_float::OrderedFloat;

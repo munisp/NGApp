@@ -395,6 +395,191 @@ services:
       - nexcom-network
 
   # ==========================================================================
+  # NEXCOM Matching Engine (Rust)
+  # ==========================================================================
+  matching-engine:
+    build:
+      context: ./services/matching-engine
+      dockerfile: Dockerfile
+    container_name: nexcom-matching-engine
+    restart: unless-stopped
+    ports:
+      - "8010:8010"
+    environment:
+      PORT: "8010"
+      NODE_ID: nexcom-primary
+      NODE_ROLE: primary
+      RUST_LOG: nexcom_matching_engine=info
+    networks:
+      - nexcom-network
+
+  # ==========================================================================
+  # NEXCOM Trading Engine (Go)
+  # ==========================================================================
+  trading-engine:
+    build:
+      context: ./services/trading-engine
+      dockerfile: Dockerfile
+    container_name: nexcom-trading-engine
+    restart: unless-stopped
+    ports:
+      - "8011:8011"
+    environment:
+      PORT: "8011"
+      KAFKA_BROKERS: kafka:9092
+      REDIS_URL: redis:6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-nexcom_dev}
+    depends_on:
+      - kafka
+      - redis
+    networks:
+      - nexcom-network
+
+  # ==========================================================================
+  # NEXCOM Market Data (Go)
+  # ==========================================================================
+  market-data:
+    build:
+      context: ./services/market-data
+      dockerfile: Dockerfile
+    container_name: nexcom-market-data
+    restart: unless-stopped
+    ports:
+      - "8012:8002"
+      - "8013:8003"
+    environment:
+      KAFKA_BROKERS: kafka:9092
+      REDIS_URL: redis:6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-nexcom_dev}
+    depends_on:
+      - kafka
+      - redis
+    networks:
+      - nexcom-network
+
+  # ==========================================================================
+  # NEXCOM Risk Management (Go)
+  # ==========================================================================
+  risk-management:
+    build:
+      context: ./services/risk-management
+      dockerfile: Dockerfile
+    container_name: nexcom-risk-management
+    restart: unless-stopped
+    ports:
+      - "8014:8004"
+    environment:
+      KAFKA_BROKERS: kafka:9092
+      REDIS_URL: redis:6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-nexcom_dev}
+    depends_on:
+      - kafka
+      - redis
+    networks:
+      - nexcom-network
+
+  # ==========================================================================
+  # NEXCOM Settlement (Rust)
+  # ==========================================================================
+  settlement:
+    build:
+      context: ./services/settlement
+      dockerfile: Dockerfile
+    container_name: nexcom-settlement
+    restart: unless-stopped
+    ports:
+      - "8015:8005"
+    environment:
+      TIGERBEETLE_ADDRESSES: tigerbeetle:3001
+      KAFKA_BROKERS: kafka:9092
+    depends_on:
+      - tigerbeetle
+      - kafka
+    networks:
+      - nexcom-network
+
+  # ==========================================================================
+  # NEXCOM User Management (TypeScript)
+  # ==========================================================================
+  user-management:
+    build:
+      context: ./services/user-management
+      dockerfile: Dockerfile
+    container_name: nexcom-user-management
+    restart: unless-stopped
+    ports:
+      - "8016:8006"
+    environment:
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: nexcom
+      POSTGRES_URL: postgres://nexcom:${POSTGRES_PASSWORD:-nexcom_dev}@postgres:5432/nexcom
+    depends_on:
+      - keycloak
+      - postgres
+    networks:
+      - nexcom-network
+
+  # ==========================================================================
+  # NEXCOM AI/ML (Python)
+  # ==========================================================================
+  ai-ml:
+    build:
+      context: ./services/ai-ml
+      dockerfile: Dockerfile
+    container_name: nexcom-ai-ml
+    restart: unless-stopped
+    ports:
+      - "8017:8007"
+    environment:
+      KAFKA_BROKERS: kafka:9092
+      REDIS_URL: redis:6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-nexcom_dev}
+    depends_on:
+      - kafka
+      - redis
+    networks:
+      - nexcom-network
+
+  # ==========================================================================
+  # NEXCOM Notification (TypeScript)
+  # ==========================================================================
+  notification:
+    build:
+      context: ./services/notification
+      dockerfile: Dockerfile
+    container_name: nexcom-notification
+    restart: unless-stopped
+    ports:
+      - "8018:8008"
+    environment:
+      KAFKA_BROKERS: kafka:9092
+      REDIS_URL: redis:6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-nexcom_dev}
+    depends_on:
+      - kafka
+      - redis
+    networks:
+      - nexcom-network
+
+  # ==========================================================================
+  # NEXCOM Blockchain (Rust)
+  # ==========================================================================
+  blockchain:
+    build:
+      context: ./services/blockchain
+      dockerfile: Dockerfile
+    container_name: nexcom-blockchain
+    restart: unless-stopped
+    ports:
+      - "8019:8009"
+    environment:
+      KAFKA_BROKERS: kafka:9092
+    depends_on:
+      - kafka
+    networks:
+      - nexcom-network
+
+  # ==========================================================================
   # NEXCOM API Gateway (Go)
   # ==========================================================================
   gateway:
@@ -485,7 +670,7 @@ services:
       POSTGRES_URL: postgresql://nexcom:${POSTGRES_PASSWORD:-nexcom_dev}@postgres:5432/nexcom
       TEMPORAL_HOST: temporal:7233
       TIGERBEETLE_ADDRESSES: tigerbeetle:3001
-      MATCHING_ENGINE_URL: http://matching-engine:8080
+      MATCHING_ENGINE_URL: http://matching-engine:8010
       MINIO_ENDPOINT: minio:9000
       LAKEHOUSE_BASE: /data/lakehouse
     volumes:

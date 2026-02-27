@@ -1,5 +1,6 @@
 //! Options pricing and trading engine.
 //! Implements Black-76 model for options on futures, with Greeks calculation.
+#![allow(dead_code)]
 
 use crate::types::*;
 use chrono::Utc;

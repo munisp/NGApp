@@ -1,16 +1,17 @@
 ##############################################################################
 # NEXCOM Exchange - APISIX Routes & Upstreams (Declarative)
-# Defines all API routes, upstreams, and plugin configurations
+# All API traffic routes through the Go Gateway as the primary API layer.
+# APISIX provides edge-level rate limiting, WAF, and Kafka logging.
 ##############################################################################
 
 routes:
   # --------------------------------------------------------------------------
-  # Trading Engine API
+  # Primary Gateway Route — all /api/v1/* traffic goes to Go Gateway
   # --------------------------------------------------------------------------
-  - uri: /api/v1/orders*
-    name: trading-engine-orders
-    methods: ["GET", "POST", "PUT", "DELETE"]
-    upstream_id: trading-engine
+  - uri: /api/v1/*
+    name: gateway-primary
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
+    upstream_id: gateway
     plugins:
       openid-connect:
         client_id: nexcom-api
@@ -19,14 +20,14 @@ routes:
         bearer_only: true
         scope: "openid"
       limit-count:
-        count: 1000
+        count: 5000
         time_window: 60
         key_type: "var"
         key: "remote_addr"
         rejected_code: 429
       cors:
         allow_origins: "**"
-        allow_methods: "GET,POST,PUT,DELETE,OPTIONS"
+        allow_methods: "GET,POST,PUT,PATCH,DELETE,OPTIONS"
         allow_headers: "Authorization,Content-Type,X-Request-ID"
         max_age: 3600
       kafka-logger:
@@ -37,73 +38,14 @@ routes:
         kafka_topic: "nexcom-api-logs"
         batch_max_size: 100
 
-  - uri: /api/v1/orderbook*
-    name: trading-engine-orderbook
-    methods: ["GET"]
-    upstream_id: trading-engine
-    plugins:
-      limit-count:
-        count: 5000
-        time_window: 60
-        key_type: "var"
-        key: "remote_addr"
-
   # --------------------------------------------------------------------------
-  # Market Data API
+  # Auth Routes (public, no OIDC)
   # --------------------------------------------------------------------------
-  - uri: /api/v1/market*
-    name: market-data
-    methods: ["GET"]
-    upstream_id: market-data
-    plugins:
-      limit-count:
-        count: 10000
-        time_window: 60
-        key_type: "var"
-        key: "remote_addr"
-
-  - uri: /ws/v1/market*
-    name: market-data-websocket
-    upstream_id: market-data-ws
-    enable_websocket: true
-
-  # --------------------------------------------------------------------------
-  # Settlement API
-  # --------------------------------------------------------------------------
-  - uri: /api/v1/settlement*
-    name: settlement
-    methods: ["GET", "POST"]
-    upstream_id: settlement
-    plugins:
-      openid-connect:
-        client_id: nexcom-api
-        client_secret: "${KEYCLOAK_CLIENT_SECRET}"
-        discovery: "http://keycloak:8080/realms/nexcom/.well-known/openid-configuration"
-        bearer_only: true
-
-  # --------------------------------------------------------------------------
-  # User Management API
-  # --------------------------------------------------------------------------
-  - uri: /api/v1/users*
-    name: user-management
-    methods: ["GET", "POST", "PUT", "DELETE"]
-    upstream_id: user-management
-    plugins:
-      openid-connect:
-        client_id: nexcom-api
-        client_secret: "${KEYCLOAK_CLIENT_SECRET}"
-        discovery: "http://keycloak:8080/realms/nexcom/.well-known/openid-configuration"
-        bearer_only: true
-      limit-count:
-        count: 500
-        time_window: 60
-        key_type: "var"
-        key: "remote_addr"
-
-  - uri: /api/v1/auth*
-    name: auth
+  - uri: /api/v1/auth/*
+    name: auth-public
     methods: ["POST"]
-    upstream_id: user-management
+    upstream_id: gateway
+    priority: 10
     plugins:
       limit-count:
         count: 30
@@ -113,130 +55,39 @@ routes:
         rejected_code: 429
 
   # --------------------------------------------------------------------------
-  # Risk Management API
+  # WebSocket Route — real-time market data via Gateway
   # --------------------------------------------------------------------------
-  - uri: /api/v1/risk*
-    name: risk-management
-    methods: ["GET", "POST"]
-    upstream_id: risk-management
-    plugins:
-      openid-connect:
-        client_id: nexcom-api
-        client_secret: "${KEYCLOAK_CLIENT_SECRET}"
-        discovery: "http://keycloak:8080/realms/nexcom/.well-known/openid-configuration"
-        bearer_only: true
+  - uri: /ws/v1/*
+    name: gateway-websocket
+    upstream_id: gateway
+    enable_websocket: true
 
   # --------------------------------------------------------------------------
-  # AI/ML API
-  # --------------------------------------------------------------------------
-  - uri: /api/v1/ai*
-    name: ai-ml
-    methods: ["GET", "POST"]
-    upstream_id: ai-ml
-    plugins:
-      openid-connect:
-        client_id: nexcom-api
-        client_secret: "${KEYCLOAK_CLIENT_SECRET}"
-        discovery: "http://keycloak:8080/realms/nexcom/.well-known/openid-configuration"
-        bearer_only: true
-      limit-count:
-        count: 100
-        time_window: 60
-
-  # --------------------------------------------------------------------------
-  # Notification API
-  # --------------------------------------------------------------------------
-  - uri: /api/v1/notifications*
-    name: notifications
-    methods: ["GET", "POST", "PUT"]
-    upstream_id: notification
-    plugins:
-      openid-connect:
-        client_id: nexcom-api
-        client_secret: "${KEYCLOAK_CLIENT_SECRET}"
-        discovery: "http://keycloak:8080/realms/nexcom/.well-known/openid-configuration"
-        bearer_only: true
-
-  # --------------------------------------------------------------------------
-  # Blockchain API
-  # --------------------------------------------------------------------------
-  - uri: /api/v1/blockchain*
-    name: blockchain
-    methods: ["GET", "POST"]
-    upstream_id: blockchain
-    plugins:
-      openid-connect:
-        client_id: nexcom-api
-        client_secret: "${KEYCLOAK_CLIENT_SECRET}"
-        discovery: "http://keycloak:8080/realms/nexcom/.well-known/openid-configuration"
-        bearer_only: true
-
-  # --------------------------------------------------------------------------
-  # Health Check
+  # Health Check (public, no auth)
   # --------------------------------------------------------------------------
   - uri: /health
     name: health-check
     methods: ["GET"]
-    upstream_id: trading-engine
+    upstream_id: gateway
     plugins: {}
 
 # ============================================================================
-# Upstreams
+# Upstreams — single primary: Go Gateway handles all routing
 # ============================================================================
 upstreams:
-  - id: trading-engine
+  - id: gateway
     type: roundrobin
     nodes:
-      "trading-engine:8001": 1
+      "gateway:8000": 1
     checks:
       active:
         type: http
-        http_path: /healthz
+        http_path: /health
         healthy:
           interval: 5
           successes: 2
         unhealthy:
           interval: 5
           http_failures: 3
-
-  - id: market-data
-    type: roundrobin
-    nodes:
-      "market-data:8002": 1
-
-  - id: market-data-ws
-    type: roundrobin
-    nodes:
-      "market-data:8003": 1
-
-  - id: risk-management
-    type: roundrobin
-    nodes:
-      "risk-management:8004": 1
-
-  - id: settlement
-    type: roundrobin
-    nodes:
-      "settlement:8005": 1
-
-  - id: user-management
-    type: roundrobin
-    nodes:
-      "user-management:8006": 1
-
-  - id: notification
-    type: roundrobin
-    nodes:
-      "notification:8007": 1
-
-  - id: ai-ml
-    type: roundrobin
-    nodes:
-      "ai-ml:8008": 1
-
-  - id: blockchain
-    type: roundrobin
-    nodes:
-      "blockchain:8009": 1
 
 #END
