@@ -463,6 +463,45 @@ services:
     networks:
       - nexcom-network
 
+  # ==========================================================================
+  # NEXCOM Universal Ingestion Engine (Python)
+  # ==========================================================================
+  ingestion-engine:
+    build:
+      context: ./services/ingestion-engine
+      dockerfile: Dockerfile
+    container_name: nexcom-ingestion-engine
+    restart: unless-stopped
+    ports:
+      - "8005:8005"
+    environment:
+      PORT: "8005"
+      ENVIRONMENT: development
+      KAFKA_BROKERS: kafka:9092
+      REDIS_URL: redis:6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-nexcom_dev}
+      FLUVIO_ENDPOINT: fluvio:9003
+      OPENSEARCH_URL: http://opensearch:9200
+      POSTGRES_URL: postgresql://nexcom:${POSTGRES_PASSWORD:-nexcom_dev}@postgres:5432/nexcom
+      TEMPORAL_HOST: temporal:7233
+      TIGERBEETLE_ADDRESSES: tigerbeetle:3001
+      MATCHING_ENGINE_URL: http://matching-engine:8080
+      MINIO_ENDPOINT: minio:9000
+      LAKEHOUSE_BASE: /data/lakehouse
+    volumes:
+      - lakehouse-data:/data/lakehouse
+    depends_on:
+      - kafka
+      - redis
+      - opensearch
+      - temporal
+      - tigerbeetle
+      - fluvio
+      - minio
+      - postgres
+    networks:
+      - nexcom-network
+
 # ============================================================================
 # Networks
 # ============================================================================
@@ -483,3 +522,4 @@ volumes:
   fluvio-data:
   wazuh-data:
   minio-data:
+  lakehouse-data:
