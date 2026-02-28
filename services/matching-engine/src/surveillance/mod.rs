@@ -7,6 +7,7 @@ use crate::types::*;
 use chrono::{Duration, Utc};
 use dashmap::DashMap;
 use parking_lot::RwLock;
+use sha2::{Sha256, Digest};
 use std::collections::{HashMap, VecDeque};
 use tracing::{info, warn};
 use uuid::Uuid;
@@ -526,15 +527,12 @@ impl AuditTrail {
             account_id,
             data
         );
-        // Simple hash (in production: SHA-256)
-        let checksum = format!("{:016x}", {
-            let mut hash: u64 = 0xcbf29ce484222325;
-            for byte in checksum_input.bytes() {
-                hash ^= byte as u64;
-                hash = hash.wrapping_mul(0x100000001b3);
-            }
-            hash
-        });
+        // SHA-256 checksum for regulatory-grade audit trail
+        let checksum = {
+            let mut hasher = Sha256::new();
+            hasher.update(checksum_input.as_bytes());
+            hex::encode(hasher.finalize())
+        };
 
         let entry = AuditEntry {
             id: Uuid::new_v4(),
@@ -573,14 +571,11 @@ impl AuditTrail {
                 entry.account_id,
                 entry.data
             );
-            let expected = format!("{:016x}", {
-                let mut hash: u64 = 0xcbf29ce484222325;
-                for byte in expected_input.bytes() {
-                    hash ^= byte as u64;
-                    hash = hash.wrapping_mul(0x100000001b3);
-                }
-                hash
-            });
+            let expected = {
+                let mut hasher = Sha256::new();
+                hasher.update(expected_input.as_bytes());
+                hex::encode(hasher.finalize())
+            };
 
             if entry.checksum != expected {
                 warn!(

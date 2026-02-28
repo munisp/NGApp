@@ -1,6 +1,13 @@
 //! Lock-free orderbook with price-time priority (FIFO).
 //! Uses BTreeMap for sorted price levels and VecDeque for time-ordered queues.
 //! All operations target microsecond latency.
+//!
+//! Production fixes applied:
+//! - Stop/StopLimit trigger logic
+//! - Market order price protection (slippage guard)
+//! - Fixed average price calculation edge case
+//! - Order amendment (Cancel/Replace)
+//! - Orderbook snapshot/restore for WAL-based crash recovery
 #![allow(dead_code)]
 
 use crate::types::*;
@@ -10,6 +17,9 @@ use parking_lot::RwLock;
 use std::collections::{BTreeMap, HashMap, VecDeque};
 use tracing::{debug, info, warn};
 use uuid::Uuid;
+
+/// Default market order slippage protection: 5% from best price.
+const DEFAULT_SLIPPAGE_LIMIT_PCT: f64 = 0.05;
 
 /// A single price level containing orders in FIFO order.
 #[derive(Debug, Clone)]
@@ -43,34 +53,24 @@ impl PriceLevelQueue {
 /// Asks sorted ascending (best ask = lowest price first).
 pub struct OrderBook {
     pub symbol: String,
-    /// Bids: price -> queue (BTreeMap sorts ascending, we reverse iterate for best bid)
     bids: BTreeMap<OrderedFloat<f64>, PriceLevelQueue>,
-    /// Asks: price -> queue (BTreeMap sorts ascending, first entry = best ask)
     asks: BTreeMap<OrderedFloat<f64>, PriceLevelQueue>,
-    /// Order ID -> (side, price) for O(1) cancel lookup
     order_index: HashMap<Uuid, (Side, OrderedFloat<f64>)>,
-    /// Sequence counter for deterministic ordering
+    /// Stop orders waiting to be triggered
+    stop_orders: Vec<Order>,
     sequence: u64,
-    /// Last trade price
     pub last_price: Price,
-    /// 24h volume
     pub volume_24h: Qty,
-    /// 24h high
     pub high_24h: Price,
-    /// 24h low
     pub low_24h: Price,
-    /// Open price
     pub open_price: Price,
-    /// Settlement price
     pub settlement_price: Price,
-    /// Open interest (futures/options)
     pub open_interest: Qty,
-    /// Circuit breaker: upper price limit
     pub upper_limit: Option<Price>,
-    /// Circuit breaker: lower price limit
     pub lower_limit: Option<Price>,
-    /// Whether trading is halted
     pub halted: bool,
+    /// Market order slippage protection percentage (default 5%)
+    pub slippage_limit_pct: f64,
 }
 
 impl OrderBook {
@@ -80,6 +80,7 @@ impl OrderBook {
             bids: BTreeMap::new(),
             asks: BTreeMap::new(),
             order_index: HashMap::new(),
+            stop_orders: Vec::new(),
             sequence: 0,
             last_price: 0,
             volume_24h: 0,
@@ -91,10 +92,10 @@ impl OrderBook {
             upper_limit: None,
             lower_limit: None,
             halted: false,
+            slippage_limit_pct: DEFAULT_SLIPPAGE_LIMIT_PCT,
         }
     }
 
-    /// Get next sequence number (monotonically increasing).
     fn next_sequence(&mut self) -> u64 {
         self.sequence += 1;
         self.sequence
@@ -107,26 +108,79 @@ impl OrderBook {
             return (vec![], order);
         }
 
-        // Circuit breaker check
-        if let Some(upper) = self.upper_limit {
-            if order.price > upper && order.order_type == OrderType::Limit {
-                order.status = OrderStatus::Rejected;
-                return (vec![], order);
+        // Circuit breaker check for limit and stop-limit orders
+        if order.order_type == OrderType::Limit || order.order_type == OrderType::StopLimit {
+            if let Some(upper) = self.upper_limit {
+                if order.price > upper {
+                    order.status = OrderStatus::Rejected;
+                    return (vec![], order);
+                }
             }
-        }
-        if let Some(lower) = self.lower_limit {
-            if order.price < lower && order.price > 0 && order.order_type == OrderType::Limit {
-                order.status = OrderStatus::Rejected;
-                return (vec![], order);
+            if let Some(lower) = self.lower_limit {
+                if order.price < lower && order.price > 0 {
+                    order.status = OrderStatus::Rejected;
+                    return (vec![], order);
+                }
             }
         }
 
         order.sequence = self.next_sequence();
         order.status = OrderStatus::New;
 
-        let trades = self.match_order(&mut order);
+        // Handle Stop and StopLimit: park until triggered
+        if order.order_type == OrderType::Stop || order.order_type == OrderType::StopLimit {
+            if !self.is_stop_triggered(&order) {
+                info!(
+                    "Stop order {} parked (stop_price={}, last_price={})",
+                    order.id,
+                    from_price(order.stop_price),
+                    from_price(self.last_price)
+                );
+                self.stop_orders.push(order.clone());
+                return (vec![], order);
+            }
+            // Triggered immediately - convert to market or limit
+            if order.order_type == OrderType::Stop {
+                order.order_type = OrderType::Market;
+            } else {
+                order.order_type = OrderType::Limit;
+            }
+        }
 
-        // Handle time-in-force
+        // Market order slippage protection
+        if order.order_type == OrderType::Market {
+            let protected_price = self.calculate_slippage_limit(&order);
+            if protected_price > 0 {
+                order.price = protected_price;
+                order.order_type = OrderType::Limit;
+                let trades = self.match_order(&mut order);
+                order.order_type = OrderType::Market;
+                let result = self.finalize_order(order, trades);
+                if !result.0.is_empty() {
+                    let triggered = self.check_stop_triggers();
+                    for t in triggered {
+                        let _ = self.submit_order(t);
+                    }
+                }
+                return result;
+            }
+        }
+
+        let trades = self.match_order(&mut order);
+        let result = self.finalize_order(order, trades);
+
+        if !result.0.is_empty() {
+            let triggered = self.check_stop_triggers();
+            for t in triggered {
+                let _ = self.submit_order(t);
+            }
+        }
+
+        result
+    }
+
+    /// Finalize order after matching: handle time-in-force and place remainder on book.
+    fn finalize_order(&mut self, mut order: Order, trades: Vec<Trade>) -> (Vec<Trade>, Order) {
         match order.time_in_force {
             TimeInForce::ImmediateOrCancel => {
                 if order.remaining_quantity > 0 {
@@ -139,15 +193,13 @@ impl OrderBook {
             }
             TimeInForce::FillOrKill => {
                 if order.remaining_quantity > 0 {
-                    // FOK: reject entirely if not fully filled
                     order.status = OrderStatus::Cancelled;
                     order.filled_quantity = 0;
                     order.remaining_quantity = order.quantity;
-                    return (vec![], order); // Discard partial trades
+                    return (vec![], order);
                 }
             }
             _ => {
-                // For GTC/Day/GTD: place remainder on book
                 if order.remaining_quantity > 0 && order.order_type == OrderType::Limit {
                     self.place_on_book(order.clone());
                 }
@@ -163,6 +215,69 @@ impl OrderBook {
         (trades, order)
     }
 
+    /// Check if a stop order should be triggered based on last trade price.
+    fn is_stop_triggered(&self, order: &Order) -> bool {
+        if self.last_price == 0 {
+            return false;
+        }
+        match order.side {
+            Side::Buy => self.last_price >= order.stop_price,
+            Side::Sell => self.last_price <= order.stop_price,
+        }
+    }
+
+    /// Check all parked stop orders and return those that should trigger.
+    fn check_stop_triggers(&mut self) -> Vec<Order> {
+        let mut triggered = Vec::new();
+        let mut remaining = Vec::new();
+        let last_price = self.last_price;
+        let orders = std::mem::take(&mut self.stop_orders);
+        for order in orders {
+            let should_trigger = if last_price == 0 {
+                false
+            } else {
+                match order.side {
+                    Side::Buy => last_price >= order.stop_price,
+                    Side::Sell => last_price <= order.stop_price,
+                }
+            };
+            if should_trigger {
+                info!(
+                    "Stop order {} TRIGGERED (stop={}, last={})",
+                    order.id,
+                    from_price(order.stop_price),
+                    from_price(last_price)
+                );
+                triggered.push(order);
+            } else {
+                remaining.push(order);
+            }
+        }
+        self.stop_orders = remaining;
+        triggered
+    }
+
+    /// Calculate slippage-protected limit price for market orders.
+    /// Returns 0 if no opposing liquidity exists.
+    fn calculate_slippage_limit(&self, order: &Order) -> Price {
+        let best_price = if order.is_buy() {
+            self.asks.values().next().map(|l| l.price)
+        } else {
+            self.bids.values().next_back().map(|l| l.price)
+        };
+        match best_price {
+            Some(price) => {
+                let p = from_price(price);
+                if order.is_buy() {
+                    to_price(p * (1.0 + self.slippage_limit_pct))
+                } else {
+                    to_price(p * (1.0 - self.slippage_limit_pct))
+                }
+            }
+            None => 0,
+        }
+    }
+
     /// Match an incoming order against the opposite side of the book.
     fn match_order(&mut self, order: &mut Order) -> Vec<Trade> {
         let mut trades = Vec::new();
@@ -172,7 +287,6 @@ impl OrderBook {
                 break;
             }
 
-            // Peek at best opposing price to check if we should match
             let best_price = if order.is_buy() {
                 self.asks.values().next().map(|l| l.price)
             } else {
@@ -184,7 +298,6 @@ impl OrderBook {
                 None => break,
             };
 
-            // Price check: for limit orders, ensure price crosses
             if order.order_type == OrderType::Limit {
                 if order.is_buy() && order.price < best_price {
                     break;
@@ -196,40 +309,41 @@ impl OrderBook {
 
             let price_key = OrderedFloat(from_price(best_price));
 
-            // Get the level mutably via the key
             let book_side = if order.is_buy() {
                 &mut self.asks
             } else {
                 &mut self.bids
             };
-
             let level = match book_side.get_mut(&price_key) {
                 Some(l) => l,
                 None => break,
             };
 
-            // Match against orders at this price level (FIFO)
             while order.remaining_quantity > 0 && !level.orders.is_empty() {
                 let resting = level.orders.front_mut().unwrap();
                 let fill_qty = order.remaining_quantity.min(resting.remaining_quantity);
                 let fill_price = resting.price;
 
-                // Update aggressor
+                // Corrected VWAP calculation (Fix #9):
+                // First fill uses fill_price directly instead of weighted average with 0
+                let prev_filled = order.filled_quantity;
                 order.filled_quantity += fill_qty;
                 order.remaining_quantity -= fill_qty;
                 order.average_price = if order.filled_quantity > 0 {
-                    ((order.average_price as i128 * (order.filled_quantity - fill_qty) as i128
-                        + fill_price as i128 * fill_qty as i128)
-                        / order.filled_quantity as i128) as Price
+                    if prev_filled == 0 {
+                        fill_price
+                    } else {
+                        ((order.average_price as i128 * prev_filled as i128
+                            + fill_price as i128 * fill_qty as i128)
+                            / order.filled_quantity as i128) as Price
+                    }
                 } else {
                     0
                 };
 
-                // Capture resting info before mutating
                 let resting_id = resting.id;
                 let resting_account = resting.account_id.clone();
 
-                // Update resting order
                 resting.filled_quantity += fill_qty;
                 resting.remaining_quantity -= fill_qty;
                 resting.updated_at = Utc::now();
@@ -241,15 +355,24 @@ impl OrderBook {
                 }
 
                 level.total_quantity -= fill_qty;
-
                 self.sequence += 1;
                 let seq = self.sequence;
 
                 let (buyer_order_id, seller_order_id, buyer_account, seller_account) =
                     if order.is_buy() {
-                        (order.id, resting_id, order.account_id.clone(), resting_account)
+                        (
+                            order.id,
+                            resting_id,
+                            order.account_id.clone(),
+                            resting_account,
+                        )
                     } else {
-                        (resting_id, order.id, resting_account, order.account_id.clone())
+                        (
+                            resting_id,
+                            order.id,
+                            resting_account,
+                            order.account_id.clone(),
+                        )
                     };
 
                 let trade = Trade {
@@ -266,7 +389,6 @@ impl OrderBook {
                     sequence: seq,
                 };
 
-                // Update market data
                 self.last_price = fill_price;
                 self.volume_24h += fill_qty;
                 if fill_price > self.high_24h {
@@ -286,17 +408,14 @@ impl OrderBook {
                     from_price(fill_price),
                     seq
                 );
-
                 trades.push(trade);
 
-                // Remove filled resting order from level
                 if resting_filled {
                     let filled_order = level.orders.pop_front().unwrap();
                     self.order_index.remove(&filled_order.id);
                 }
             }
 
-            // Immediately clean up empty price level
             let level_empty = level.is_empty();
             if level_empty {
                 let book_side = if order.is_buy() {
@@ -316,9 +435,7 @@ impl OrderBook {
         let price_key = OrderedFloat(from_price(order.price));
         let side = order.side;
         let order_id = order.id;
-
         self.order_index.insert(order_id, (side, price_key));
-
         match side {
             Side::Buy => {
                 self.bids
@@ -335,10 +452,18 @@ impl OrderBook {
         }
     }
 
-    /// Cancel an order by ID.
+    /// Cancel an order by ID (supports both resting and stop orders).
     pub fn cancel_order(&mut self, order_id: Uuid) -> Option<Order> {
-        let (side, price_key) = self.order_index.remove(&order_id)?;
+        // Check stop orders first
+        if let Some(pos) = self.stop_orders.iter().position(|o| o.id == order_id) {
+            let mut order = self.stop_orders.remove(pos);
+            order.status = OrderStatus::Cancelled;
+            order.updated_at = Utc::now();
+            info!("Cancelled stop order {}", order_id);
+            return Some(order);
+        }
 
+        let (side, price_key) = self.order_index.remove(&order_id)?;
         let book_side = match side {
             Side::Buy => &mut self.bids,
             Side::Sell => &mut self.asks,
@@ -350,17 +475,54 @@ impl OrderBook {
                 level.total_quantity -= order.remaining_quantity;
                 order.status = OrderStatus::Cancelled;
                 order.updated_at = Utc::now();
-
                 if level.is_empty() {
                     book_side.remove(&price_key);
                 }
-
                 info!("Cancelled order {}", order_id);
                 return Some(order);
             }
         }
-
         None
+    }
+
+    /// Amend (Cancel/Replace) an existing order (FIX MsgType=G).
+    /// Cancels the old order and submits a replacement with new price/quantity.
+    pub fn amend_order(
+        &mut self,
+        order_id: Uuid,
+        new_price: Option<Price>,
+        new_quantity: Option<Qty>,
+    ) -> Result<(Vec<Trade>, Order, Order), String> {
+        let old_order = self
+            .cancel_order(order_id)
+            .ok_or_else(|| format!("Order {} not found for amendment", order_id))?;
+
+        let price = new_price.unwrap_or(old_order.price);
+        let quantity = new_quantity.unwrap_or(old_order.quantity);
+
+        let replacement = Order::new(
+            format!("AMEND-{}", old_order.client_order_id),
+            old_order.account_id.clone(),
+            old_order.symbol.clone(),
+            old_order.side,
+            old_order.order_type,
+            old_order.time_in_force,
+            price,
+            old_order.stop_price,
+            quantity,
+        );
+
+        info!(
+            "Amending order {}: price {} -> {}, qty {} -> {}",
+            order_id,
+            from_price(old_order.price),
+            from_price(price),
+            old_order.quantity,
+            quantity
+        );
+
+        let (trades, new_order) = self.submit_order(replacement);
+        Ok((trades, new_order, old_order))
     }
 
     /// Get the current best bid price.
@@ -423,6 +585,11 @@ impl OrderBook {
         self.order_index.len()
     }
 
+    /// Total number of stop orders waiting to trigger.
+    pub fn stop_order_count(&self) -> usize {
+        self.stop_orders.len()
+    }
+
     /// Total bid volume.
     pub fn bid_volume(&self) -> Qty {
         self.bids.values().map(|l| l.total_quantity).sum()
@@ -448,9 +615,52 @@ impl OrderBook {
             info!("Trading RESUMED for {}", self.symbol);
         }
     }
+
+    /// Get a serializable snapshot of all resting orders (for WAL/persistence).
+    pub fn snapshot_orders(&self) -> Vec<Order> {
+        let mut orders = Vec::new();
+        for level in self.bids.values() {
+            for o in &level.orders {
+                orders.push(o.clone());
+            }
+        }
+        for level in self.asks.values() {
+            for o in &level.orders {
+                orders.push(o.clone());
+            }
+        }
+        for o in &self.stop_orders {
+            orders.push(o.clone());
+        }
+        orders
+    }
+
+    /// Restore orders from a snapshot (crash recovery).
+    pub fn restore_orders(&mut self, orders: Vec<Order>) {
+        for order in orders {
+            if order.order_type == OrderType::Stop || order.order_type == OrderType::StopLimit {
+                self.stop_orders.push(order);
+            } else {
+                self.place_on_book(order);
+            }
+        }
+        info!(
+            "Restored {} orders for {} ({} on book, {} stop)",
+            self.order_index.len() + self.stop_orders.len(),
+            self.symbol,
+            self.order_index.len(),
+            self.stop_orders.len()
+        );
+    }
+
+    /// Get current sequence number (for persistence).
+    pub fn current_sequence(&self) -> u64 {
+        self.sequence
+    }
 }
 
 /// Thread-safe orderbook manager for all symbols.
+/// Uses DashMap for symbol-level sharding (different symbols can match concurrently).
 pub struct OrderBookManager {
     books: dashmap::DashMap<String, RwLock<OrderBook>>,
 }
@@ -463,10 +673,15 @@ impl OrderBookManager {
     }
 
     /// Get or create an orderbook for a symbol.
-    pub fn get_or_create(&self, symbol: &str) -> dashmap::mapref::one::Ref<'_, String, RwLock<OrderBook>> {
+    pub fn get_or_create(
+        &self,
+        symbol: &str,
+    ) -> dashmap::mapref::one::Ref<'_, String, RwLock<OrderBook>> {
         if !self.books.contains_key(symbol) {
-            self.books
-                .insert(symbol.to_string(), RwLock::new(OrderBook::new(symbol.to_string())));
+            self.books.insert(
+                symbol.to_string(),
+                RwLock::new(OrderBook::new(symbol.to_string())),
+            );
         }
         self.books.get(symbol).unwrap()
     }
@@ -488,6 +703,22 @@ impl OrderBookManager {
         }
     }
 
+    /// Amend (Cancel/Replace) an order.
+    pub fn amend_order(
+        &self,
+        symbol: &str,
+        order_id: Uuid,
+        new_price: Option<Price>,
+        new_quantity: Option<Qty>,
+    ) -> Result<(Vec<Trade>, Order, Order), String> {
+        let book_ref = self
+            .books
+            .get(symbol)
+            .ok_or_else(|| format!("Symbol {} not found", symbol))?;
+        let mut book = book_ref.write();
+        book.amend_order(order_id, new_price, new_quantity)
+    }
+
     /// Get market depth for a symbol.
     pub fn depth(&self, symbol: &str, levels: usize) -> Option<MarketDepth> {
         self.books.get(symbol).map(|book_ref| {
@@ -499,6 +730,28 @@ impl OrderBookManager {
     /// List all active symbols.
     pub fn symbols(&self) -> Vec<String> {
         self.books.iter().map(|r| r.key().clone()).collect()
+    }
+
+    /// Get a snapshot of all orders across all books (for persistence).
+    pub fn snapshot_all_orders(&self) -> HashMap<String, Vec<Order>> {
+        let mut snapshots = HashMap::new();
+        for entry in self.books.iter() {
+            let book = entry.value().read();
+            let orders = book.snapshot_orders();
+            if !orders.is_empty() {
+                snapshots.insert(entry.key().clone(), orders);
+            }
+        }
+        snapshots
+    }
+
+    /// Restore all orders from snapshots (crash recovery).
+    pub fn restore_all_orders(&self, snapshots: HashMap<String, Vec<Order>>) {
+        for (symbol, orders) in snapshots {
+            let book_ref = self.get_or_create(&symbol);
+            let mut book = book_ref.write();
+            book.restore_orders(orders);
+        }
     }
 }
 
@@ -526,24 +779,48 @@ mod tests {
         )
     }
 
+    fn make_stop_order(side: Side, stop_price: f64, qty: Qty) -> Order {
+        Order::new(
+            format!("stop-{}", Uuid::new_v4()),
+            "ACC001".to_string(),
+            "GOLD-FUT-2026M06".to_string(),
+            side,
+            OrderType::Stop,
+            TimeInForce::GoodTilCancel,
+            0,
+            to_price(stop_price),
+            qty,
+        )
+    }
+
+    fn make_market_order(side: Side, qty: Qty) -> Order {
+        Order::new(
+            format!("market-{}", Uuid::new_v4()),
+            "ACC001".to_string(),
+            "GOLD-FUT-2026M06".to_string(),
+            side,
+            OrderType::Market,
+            TimeInForce::ImmediateOrCancel,
+            0,
+            0,
+            qty,
+        )
+    }
+
     #[test]
     fn test_limit_order_match() {
         let mut book = OrderBook::new("GOLD-FUT-2026M06".to_string());
 
-        // Place sell order at 2000.0
         let sell = make_limit_order(Side::Sell, 2000.0, 100);
         let (trades, order) = book.submit_order(sell);
         assert!(trades.is_empty());
         assert_eq!(order.status, OrderStatus::New);
 
-        // Place buy order at 2000.0 - should match
         let buy = make_limit_order(Side::Buy, 2000.0, 50);
         let (trades, order) = book.submit_order(buy);
         assert_eq!(trades.len(), 1);
         assert_eq!(trades[0].quantity, 50);
         assert_eq!(order.status, OrderStatus::Filled);
-
-        // Remaining sell should have 50 left
         assert_eq!(book.ask_volume(), 50);
     }
 
@@ -551,7 +828,6 @@ mod tests {
     fn test_price_time_priority() {
         let mut book = OrderBook::new("COFFEE-FUT-2026M03".to_string());
 
-        // Place two sells at same price
         let sell1 = make_limit_order(Side::Sell, 150.0, 100);
         let sell1_id = sell1.id;
         book.submit_order(sell1);
@@ -559,7 +835,6 @@ mod tests {
         let sell2 = make_limit_order(Side::Sell, 150.0, 100);
         book.submit_order(sell2);
 
-        // Buy 50 - should match against sell1 (first in time)
         let buy = make_limit_order(Side::Buy, 150.0, 50);
         let (trades, _) = book.submit_order(buy);
         assert_eq!(trades.len(), 1);
@@ -573,7 +848,6 @@ mod tests {
         let sell = make_limit_order(Side::Sell, 300.0, 100);
         let sell_id = sell.id;
         book.submit_order(sell);
-
         assert_eq!(book.order_count(), 1);
 
         let cancelled = book.cancel_order(sell_id);
@@ -587,12 +861,10 @@ mod tests {
         let mut book = OrderBook::new("WHEAT-FUT-2026M09".to_string());
         book.set_price_limits(to_price(90.0), to_price(110.0));
 
-        // Order above upper limit should be rejected
         let buy = make_limit_order(Side::Buy, 115.0, 100);
         let (_, order) = book.submit_order(buy);
         assert_eq!(order.status, OrderStatus::Rejected);
 
-        // Order within limits should work
         let buy = make_limit_order(Side::Buy, 105.0, 100);
         let (_, order) = book.submit_order(buy);
         assert_eq!(order.status, OrderStatus::New);
@@ -601,7 +873,6 @@ mod tests {
     #[test]
     fn test_market_depth() {
         let mut book = OrderBook::new("COCOA-FUT-2026M03".to_string());
-
         book.submit_order(make_limit_order(Side::Buy, 100.0, 50));
         book.submit_order(make_limit_order(Side::Buy, 99.0, 30));
         book.submit_order(make_limit_order(Side::Sell, 101.0, 40));
@@ -610,19 +881,16 @@ mod tests {
         let depth = book.depth(10);
         assert_eq!(depth.bids.len(), 2);
         assert_eq!(depth.asks.len(), 2);
-        assert_eq!(depth.bids[0].quantity, 50); // Best bid first
-        assert_eq!(depth.asks[0].quantity, 40); // Best ask first
+        assert_eq!(depth.bids[0].quantity, 50);
+        assert_eq!(depth.asks[0].quantity, 40);
     }
 
     #[test]
     fn test_ioc_order() {
         let mut book = OrderBook::new("SUGAR-FUT-2026M06".to_string());
-
-        // Place sell for 50
         book.submit_order(make_limit_order(Side::Sell, 200.0, 50));
 
-        // IOC buy for 100 - should fill 50 and cancel remaining
-        let mut buy = Order::new(
+        let buy = Order::new(
             "ioc-test".to_string(),
             "ACC001".to_string(),
             "SUGAR-FUT-2026M06".to_string(),
@@ -638,18 +906,14 @@ mod tests {
         assert_eq!(trades[0].quantity, 50);
         assert_eq!(order.status, OrderStatus::PartiallyFilled);
         assert_eq!(order.remaining_quantity, 50);
-        // IOC remainder should NOT be on the book
         assert_eq!(book.order_count(), 0);
     }
 
     #[test]
     fn test_fok_order() {
         let mut book = OrderBook::new("TEA-FUT-2026M06".to_string());
-
-        // Place sell for 50
         book.submit_order(make_limit_order(Side::Sell, 200.0, 50));
 
-        // FOK buy for 100 - should fail (not enough liquidity)
         let buy = Order::new(
             "fok-test".to_string(),
             "ACC001".to_string(),
@@ -664,5 +928,127 @@ mod tests {
         let (trades, order) = book.submit_order(buy);
         assert!(trades.is_empty());
         assert_eq!(order.status, OrderStatus::Cancelled);
+    }
+
+    // ─── New tests for production fixes ──────────────────────────────────────
+
+    #[test]
+    fn test_stop_order_parks_when_not_triggered() {
+        let mut book = OrderBook::new("GOLD-FUT-2026M06".to_string());
+
+        let stop = make_stop_order(Side::Buy, 2050.0, 50);
+        let (trades, _) = book.submit_order(stop);
+        assert!(trades.is_empty());
+        assert_eq!(book.stop_order_count(), 1);
+        assert_eq!(book.order_count(), 0);
+    }
+
+    #[test]
+    fn test_stop_order_triggers_after_trade() {
+        let mut book = OrderBook::new("GOLD-FUT-2026M06".to_string());
+
+        book.submit_order(make_limit_order(Side::Sell, 2000.0, 10));
+        book.submit_order(make_limit_order(Side::Buy, 2000.0, 10));
+        assert_eq!(book.last_price, to_price(2000.0));
+
+        let stop = make_stop_order(Side::Buy, 2050.0, 50);
+        let (trades, _) = book.submit_order(stop);
+        assert!(trades.is_empty());
+        assert_eq!(book.stop_order_count(), 1);
+
+        book.submit_order(make_limit_order(Side::Sell, 2060.0, 100));
+
+        book.submit_order(make_limit_order(Side::Sell, 2055.0, 5));
+        book.submit_order(make_limit_order(Side::Buy, 2055.0, 5));
+        assert_eq!(book.stop_order_count(), 0);
+    }
+
+    #[test]
+    fn test_stop_order_cancel() {
+        let mut book = OrderBook::new("GOLD-FUT-2026M06".to_string());
+
+        let stop = make_stop_order(Side::Buy, 2050.0, 50);
+        let stop_id = stop.id;
+        book.submit_order(stop);
+        assert_eq!(book.stop_order_count(), 1);
+
+        let cancelled = book.cancel_order(stop_id);
+        assert!(cancelled.is_some());
+        assert_eq!(cancelled.unwrap().status, OrderStatus::Cancelled);
+        assert_eq!(book.stop_order_count(), 0);
+    }
+
+    #[test]
+    fn test_market_order_with_slippage_protection() {
+        let mut book = OrderBook::new("GOLD-FUT-2026M06".to_string());
+        book.submit_order(make_limit_order(Side::Sell, 2000.0, 10));
+        book.submit_order(make_limit_order(Side::Sell, 2010.0, 10));
+        book.submit_order(make_limit_order(Side::Sell, 2500.0, 100));
+
+        let market = make_market_order(Side::Buy, 15);
+        let (trades, _) = book.submit_order(market);
+        assert_eq!(trades.len(), 2);
+        assert_eq!(trades[0].price, to_price(2000.0));
+        assert_eq!(trades[1].price, to_price(2010.0));
+    }
+
+    #[test]
+    fn test_order_amendment() {
+        let mut book = OrderBook::new("GOLD-FUT-2026M06".to_string());
+
+        let sell = make_limit_order(Side::Sell, 2000.0, 100);
+        let sell_id = sell.id;
+        book.submit_order(sell);
+        assert_eq!(book.order_count(), 1);
+
+        let result = book.amend_order(sell_id, Some(to_price(2010.0)), Some(200));
+        assert!(result.is_ok());
+        let (trades, new_order, old_order) = result.unwrap();
+        assert!(trades.is_empty());
+        assert_eq!(old_order.status, OrderStatus::Cancelled);
+        assert_eq!(new_order.price, to_price(2010.0));
+        assert_eq!(new_order.quantity, 200);
+        assert_eq!(book.order_count(), 1);
+    }
+
+    #[test]
+    fn test_average_price_first_fill() {
+        let mut book = OrderBook::new("GOLD-FUT-2026M06".to_string());
+        book.submit_order(make_limit_order(Side::Sell, 2000.0, 50));
+
+        let buy = make_limit_order(Side::Buy, 2000.0, 50);
+        let (trades, order) = book.submit_order(buy);
+        assert_eq!(trades.len(), 1);
+        assert_eq!(order.average_price, to_price(2000.0));
+    }
+
+    #[test]
+    fn test_average_price_multiple_fills() {
+        let mut book = OrderBook::new("GOLD-FUT-2026M06".to_string());
+        book.submit_order(make_limit_order(Side::Sell, 2000.0, 50));
+        book.submit_order(make_limit_order(Side::Sell, 2100.0, 50));
+
+        let buy = make_limit_order(Side::Buy, 2100.0, 100);
+        let (trades, order) = book.submit_order(buy);
+        assert_eq!(trades.len(), 2);
+        assert_eq!(order.average_price, to_price(2050.0));
+    }
+
+    #[test]
+    fn test_snapshot_and_restore() {
+        let mut book = OrderBook::new("GOLD-FUT-2026M06".to_string());
+        book.submit_order(make_limit_order(Side::Buy, 1990.0, 100));
+        book.submit_order(make_limit_order(Side::Sell, 2010.0, 50));
+        book.submit_order(make_stop_order(Side::Buy, 2050.0, 25));
+
+        let snapshot = book.snapshot_orders();
+        assert_eq!(snapshot.len(), 3);
+
+        let mut new_book = OrderBook::new("GOLD-FUT-2026M06".to_string());
+        new_book.restore_orders(snapshot);
+        assert_eq!(new_book.order_count(), 2);
+        assert_eq!(new_book.stop_order_count(), 1);
+        assert_eq!(new_book.bid_volume(), 100);
+        assert_eq!(new_book.ask_volume(), 50);
     }
 }

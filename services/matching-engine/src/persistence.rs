@@ -4,6 +4,7 @@
 
 use serde::{Deserialize, Serialize};
 use std::fs;
+use std::io::Write;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
@@ -23,11 +24,22 @@ pub struct EngineSnapshot {
     pub surveillance_alerts: usize,
 }
 
+/// Write-Ahead Log entry for crash recovery.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct WalEntry {
+    pub sequence: u64,
+    pub operation: String,
+    pub payload: serde_json::Value,
+    pub timestamp: String,
+}
+
 /// Manages state persistence to disk and optionally Redis.
+/// Implements Write-Ahead Log (WAL) for crash recovery.
 pub struct PersistenceManager {
     data_dir: PathBuf,
     redis_url: Option<String>,
     running: Arc<AtomicBool>,
+    wal_sequence: std::sync::atomic::AtomicU64,
 }
 
 impl PersistenceManager {
@@ -44,7 +56,83 @@ impl PersistenceManager {
             data_dir: path,
             redis_url,
             running: Arc::new(AtomicBool::new(false)),
+            wal_sequence: std::sync::atomic::AtomicU64::new(0),
         }
+    }
+
+    // ─── WAL (Write-Ahead Log) ───────────────────────────────────────────────
+
+    /// Write an entry to the WAL before applying state changes.
+    pub fn wal_write(&self, operation: &str, payload: serde_json::Value) -> Result<u64, String> {
+        let seq = self.wal_sequence.fetch_add(1, Ordering::SeqCst) + 1;
+        let entry = WalEntry {
+            sequence: seq,
+            operation: operation.to_string(),
+            payload,
+            timestamp: chrono::Utc::now().to_rfc3339(),
+        };
+
+        let wal_path = self.data_dir.join("wal.jsonl");
+        let line = serde_json::to_string(&entry)
+            .map_err(|e| format!("Failed to serialize WAL entry: {}", e))?;
+
+        let mut file = fs::OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(&wal_path)
+            .map_err(|e| format!("Failed to open WAL file: {}", e))?;
+
+        writeln!(file, "{}", line)
+            .map_err(|e| format!("Failed to write WAL entry: {}", e))?;
+
+        file.sync_all()
+            .map_err(|e| format!("Failed to fsync WAL: {}", e))?;
+
+        Ok(seq)
+    }
+
+    /// Replay WAL entries for crash recovery. Returns entries in order.
+    pub fn wal_replay(&self) -> Vec<WalEntry> {
+        let wal_path = self.data_dir.join("wal.jsonl");
+        if !wal_path.exists() {
+            return Vec::new();
+        }
+
+        match fs::read_to_string(&wal_path) {
+            Ok(content) => {
+                let mut entries: Vec<WalEntry> = content
+                    .lines()
+                    .filter_map(|line| serde_json::from_str(line).ok())
+                    .collect();
+                entries.sort_by_key(|e| e.sequence);
+
+                // Update sequence counter to max
+                if let Some(max_seq) = entries.last().map(|e| e.sequence) {
+                    self.wal_sequence.store(max_seq, Ordering::SeqCst);
+                }
+
+                info!("WAL replay: {} entries recovered", entries.len());
+                entries
+            }
+            Err(e) => {
+                error!("Failed to read WAL file: {}", e);
+                Vec::new()
+            }
+        }
+    }
+
+    /// Truncate WAL after a successful snapshot (checkpoint).
+    pub fn wal_checkpoint(&self) -> Result<(), String> {
+        let wal_path = self.data_dir.join("wal.jsonl");
+        fs::write(&wal_path, "")
+            .map_err(|e| format!("Failed to truncate WAL: {}", e))?;
+        info!("WAL checkpoint: log truncated");
+        Ok(())
+    }
+
+    /// Get current WAL sequence number.
+    pub fn wal_sequence(&self) -> u64 {
+        self.wal_sequence.load(Ordering::Relaxed)
     }
 
     /// Save an engine snapshot to disk as JSON.
@@ -145,7 +233,7 @@ impl PersistenceManager {
         self.running.store(false, Ordering::Relaxed);
     }
 
-    /// Save snapshot to Redis (best-effort, logs errors).
+    /// Save snapshot to Redis using proper RESP protocol client.
     fn save_to_redis(&self, url: &str, snapshot: &EngineSnapshot) {
         let json = match serde_json::to_string(snapshot) {
             Ok(j) => j,
@@ -155,8 +243,6 @@ impl PersistenceManager {
             }
         };
 
-        // Use a simple TCP connection to SET the key (minimal Redis protocol)
-        // In production, use the redis crate. Here we keep it zero-dependency.
         let addr = url
             .strip_prefix("redis://")
             .unwrap_or(url)
@@ -167,20 +253,81 @@ impl PersistenceManager {
             std::time::Duration::from_secs(2),
         ) {
             Ok(mut stream) => {
-                use std::io::Write;
+                // RESP protocol: SET key value with proper framing
+                let key = "nexcom:engine:snapshot";
                 let cmd = format!(
-                    "*3\r\n$3\r\nSET\r\n$24\r\nnexcom:engine:snapshot\r\n${}\r\n{}\r\n",
-                    json.len(),
-                    json
+                    "*3\r\n$3\r\nSET\r\n${}\r\n{}\r\n${}\r\n{}\r\n",
+                    key.len(), key, json.len(), json
                 );
                 if let Err(e) = stream.write_all(cmd.as_bytes()) {
                     warn!("Failed to write to Redis at {}: {}", addr, e);
-                } else {
-                    info!("Saved snapshot to Redis at {}", addr);
+                    return;
                 }
+
+                // Read response to verify success
+                use std::io::Read;
+                let mut buf = [0u8; 64];
+                match stream.read(&mut buf) {
+                    Ok(n) => {
+                        let response = String::from_utf8_lossy(&buf[..n]);
+                        if response.starts_with("+OK") {
+                            info!("Saved snapshot to Redis at {}", addr);
+                        } else {
+                            warn!("Redis unexpected response: {}", response.trim());
+                        }
+                    }
+                    Err(e) => {
+                        warn!("Failed to read Redis response: {}", e);
+                    }
+                }
+
+                // Also store WAL sequence for crash recovery coordination
+                let wal_seq = self.wal_sequence.load(Ordering::Relaxed);
+                let wal_cmd = format!(
+                    "*3\r\n$3\r\nSET\r\n$24\r\nnexcom:engine:wal_seq\r\n${}\r\n{}\r\n",
+                    wal_seq.to_string().len(), wal_seq
+                );
+                let _ = stream.write_all(wal_cmd.as_bytes());
             }
             Err(e) => {
                 warn!("Could not connect to Redis at {}: {} (snapshot saved to disk only)", addr, e);
+            }
+        }
+    }
+
+    // ─── Orderbook Snapshot Persistence ───────────────────────────────────────
+
+    /// Save orderbook snapshots to disk.
+    pub fn save_orderbook_snapshot(&self, orders: &[(String, Vec<serde_json::Value>)]) -> Result<(), String> {
+        let path = self.data_dir.join("orderbook-snapshot.json");
+        let json = serde_json::to_string_pretty(orders)
+            .map_err(|e| format!("Failed to serialize orderbook snapshot: {}", e))?;
+        fs::write(&path, &json)
+            .map_err(|e| format!("Failed to write orderbook snapshot: {}", e))?;
+        info!("Saved orderbook snapshot ({} symbols)", orders.len());
+        Ok(())
+    }
+
+    /// Load orderbook snapshots from disk.
+    pub fn load_orderbook_snapshot(&self) -> Option<Vec<(String, Vec<serde_json::Value>)>> {
+        let path = self.data_dir.join("orderbook-snapshot.json");
+        if !path.exists() {
+            return None;
+        }
+        match fs::read_to_string(&path) {
+            Ok(json) => match serde_json::from_str(&json) {
+                Ok(data) => {
+                    info!("Loaded orderbook snapshot from {:?}", path);
+                    Some(data)
+                }
+                Err(e) => {
+                    error!("Failed to parse orderbook snapshot: {}", e);
+                    None
+                }
+            },
+            Err(e) => {
+                error!("Failed to read orderbook snapshot: {}", e);
+                None
             }
         }
     }

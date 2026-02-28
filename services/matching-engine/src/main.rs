@@ -19,13 +19,14 @@ use axum::{
     extract::{Path, Query, State},
     http::StatusCode,
     response::Json,
-    routing::{delete, get, post},
+    routing::{delete, get, post, put},
     Router,
 };
 use engine::ExchangeEngine;
 use std::collections::HashMap;
 use std::sync::Arc;
 use tower_http::cors::{Any, CorsLayer};
+use tower_http::limit::RequestBodyLimitLayer;
 use tracing::info;
 use types::*;
 
@@ -74,6 +75,10 @@ async fn main() {
             "/api/v1/orders/:symbol/:order_id",
             delete(cancel_order),
         )
+        .route(
+            "/api/v1/orders/:symbol/:order_id/amend",
+            put(amend_order),
+        )
         // Market Data
         .route("/api/v1/depth/:symbol", get(market_depth))
         .route("/api/v1/symbols", get(list_symbols))
@@ -121,6 +126,7 @@ async fn main() {
         // FIX
         .route("/api/v1/fix/sessions", get(fix_sessions))
         .route("/api/v1/fix/message", post(fix_message))
+        .layer(RequestBodyLimitLayer::new(1024 * 1024)) // 1MB request body limit
         .layer(cors)
         .with_state(engine);
 
@@ -204,6 +210,47 @@ async fn cancel_order(
             "order_id": order.id,
             "status": order.status,
         })))),
+        Err(e) => Ok(Json(ApiResponse::<serde_json::Value>::err(e))),
+    }
+}
+
+#[derive(serde::Deserialize)]
+struct AmendOrderRequest {
+    price: Option<f64>,
+    quantity: Option<f64>,
+}
+
+async fn amend_order(
+    State(engine): State<AppState>,
+    Path((symbol, order_id)): Path<(String, String)>,
+    Json(req): Json<AmendOrderRequest>,
+) -> Result<Json<ApiResponse<serde_json::Value>>, StatusCode> {
+    let uuid = uuid::Uuid::parse_str(&order_id).map_err(|_| StatusCode::BAD_REQUEST)?;
+    let new_price = req.price.map(to_price);
+    let new_quantity = req.quantity.map(|q| (q * 1_000_000.0) as Qty);
+
+    match engine.amend_order(&symbol, uuid, new_price, new_quantity) {
+        Ok((trades, new_order, old_order)) => {
+            let response = serde_json::json!({
+                "old_order": {
+                    "id": old_order.id,
+                    "status": old_order.status,
+                },
+                "new_order": {
+                    "id": new_order.id,
+                    "status": new_order.status,
+                    "price": from_price(new_order.price),
+                    "quantity": new_order.quantity,
+                    "filled_quantity": new_order.filled_quantity,
+                },
+                "trades": trades.iter().map(|t| serde_json::json!({
+                    "id": t.id,
+                    "price": from_price(t.price),
+                    "quantity": t.quantity,
+                })).collect::<Vec<_>>(),
+            });
+            Ok(Json(ApiResponse::ok(response)))
+        }
         Err(e) => Ok(Json(ApiResponse::<serde_json::Value>::err(e))),
     }
 }
