@@ -5,6 +5,34 @@ import AppShell from "@/components/layout/AppShell";
 import { useUserStore } from "@/lib/store";
 import { useProfile, useUpdateProfile, usePreferences, useSessions, useNotifications } from "@/lib/api-hooks";
 import { cn } from "@/lib/utils";
+import {
+  User,
+  ShieldCheck,
+  Lock,
+  Settings,
+  Edit3,
+  Save,
+  X,
+  CheckCircle2,
+  AlertTriangle,
+  Key,
+  Smartphone,
+  Monitor,
+  Bell,
+  Mail,
+  MessageSquare,
+  Phone,
+  Globe,
+  Clock,
+  BarChart3,
+} from "lucide-react";
+
+const TAB_CONFIG = {
+  profile: { label: "Profile", icon: User },
+  kyc: { label: "KYC Verification", icon: ShieldCheck },
+  security: { label: "Security", icon: Lock },
+  preferences: { label: "Preferences", icon: Settings },
+};
 
 export default function AccountPage() {
   const { user } = useProfile();
@@ -23,31 +51,47 @@ export default function AccountPage() {
   return (
     <AppShell>
       <div className="space-y-6">
-        <h1 className="text-2xl font-bold">Account</h1>
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Account</h1>
+          <p className="mt-1 text-sm text-gray-500">Manage your profile, security, and preferences</p>
+        </div>
 
         {/* Tabs */}
-        <div className="flex items-center gap-4 border-b border-surface-700">
-          {(["profile", "kyc", "security", "preferences"] as const).map((t) => (
-            <button
-              key={t}
-              onClick={() => setTab(t)}
-              className={cn(
-                "pb-3 text-sm font-medium capitalize transition-colors border-b-2",
-                tab === t
-                  ? "border-brand-500 text-white"
-                  : "border-transparent text-gray-500 hover:text-gray-300"
-              )}
-            >
-              {t === "kyc" ? "KYC Verification" : t}
-            </button>
-          ))}
+        <div className="flex items-center gap-1" style={{ borderBottom: "1px solid rgba(255, 255, 255, 0.04)" }}>
+          {(["profile", "kyc", "security", "preferences"] as const).map((t) => {
+            const config = TAB_CONFIG[t];
+            const Icon = config.icon;
+            return (
+              <button
+                key={t}
+                onClick={() => setTab(t)}
+                className={cn(
+                  "relative flex items-center gap-2 px-4 pb-3 pt-1 text-[13px] font-medium transition-colors",
+                  tab === t
+                    ? "text-white"
+                    : "text-gray-600 hover:text-gray-400"
+                )}
+              >
+                <Icon className="h-3.5 w-3.5" />
+                {config.label}
+                {tab === t && (
+                  <div className="absolute bottom-0 left-1/2 -translate-x-1/2 h-0.5 w-10 rounded-full bg-brand-500" />
+                )}
+              </button>
+            );
+          })}
         </div>
 
         {/* Profile */}
         {tab === "profile" && (
           <div className="grid gap-6 lg:grid-cols-2">
             <div className="card space-y-4">
-              <h2 className="text-lg font-semibold">Personal Information</h2>
+              <div className="flex items-center gap-2.5">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-500/10">
+                  <User className="h-4 w-4 text-brand-400" />
+                </div>
+                <h2 className="text-[15px] font-semibold">Personal Information</h2>
+              </div>
               <div className="space-y-3">
                 <Field label="Full Name" value={user?.name ?? ""} />
                 <Field label="Email" value={user?.email ?? ""} />
@@ -115,7 +159,12 @@ export default function AccountPage() {
             </div>
 
             <div className="card space-y-4">
-              <h2 className="text-lg font-semibold">Account Status</h2>
+              <div className="flex items-center gap-2.5">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/10">
+                  <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+                </div>
+                <h2 className="text-[15px] font-semibold">Account Status</h2>
+              </div>
               <div className="space-y-4">
                 <StatusRow label="Email Verified" status={true} />
                 <StatusRow label="Phone Verified" status={true} />
@@ -126,7 +175,12 @@ export default function AccountPage() {
             </div>
 
             <div className="card space-y-4">
-              <h2 className="text-lg font-semibold">Trading Limits</h2>
+              <div className="flex items-center gap-2.5">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500/10">
+                  <BarChart3 className="h-4 w-4 text-amber-400" />
+                </div>
+                <h2 className="text-[15px] font-semibold">Trading Limits</h2>
+              </div>
               <div className="space-y-3">
                 <LimitRow label="Daily Trading Limit" current="$45,230" max="$500,000" pct={9} />
                 <LimitRow label="Max Order Size" current="-" max="10,000 lots" pct={0} />
@@ -136,7 +190,12 @@ export default function AccountPage() {
             </div>
 
             <div className="card space-y-4">
-              <h2 className="text-lg font-semibold">Recent Activity</h2>
+              <div className="flex items-center gap-2.5">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-500/10">
+                  <Clock className="h-4 w-4 text-blue-400" />
+                </div>
+                <h2 className="text-[15px] font-semibold">Recent Activity</h2>
+              </div>
               <div className="space-y-2">
                 {notifications.slice(0, 5).map((n) => (
                   <div key={n.id} className="flex items-start gap-2 rounded-lg bg-surface-900 p-3">
@@ -189,7 +248,12 @@ export default function AccountPage() {
         {tab === "security" && (
           <div className="max-w-2xl space-y-4">
             <div className="card">
-              <h2 className="text-lg font-semibold mb-4">Change Password</h2>
+              <div className="flex items-center gap-2.5 mb-4">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-500/10">
+                  <Lock className="h-4 w-4 text-red-400" />
+                </div>
+                <h2 className="text-[15px] font-semibold">Change Password</h2>
+              </div>
               <div className="space-y-3">
                   <div>
                     <label className="text-xs text-gray-500">Current Password</label>
@@ -252,7 +316,7 @@ export default function AccountPage() {
             <div className="card">
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="text-lg font-semibold">Two-Factor Authentication</h2>
+                  <h2 className="text-[15px] font-semibold">Two-Factor Authentication</h2>
                   <p className="text-sm text-gray-400 mt-1">Add an extra layer of security to your account</p>
                 </div>
                 <button
@@ -275,7 +339,7 @@ export default function AccountPage() {
             <div className="card">
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="text-lg font-semibold">API Keys</h2>
+                  <h2 className="text-[15px] font-semibold">API Keys</h2>
                   <p className="text-sm text-gray-400 mt-1">Manage programmatic access to your account</p>
                 </div>
                 <button
@@ -297,7 +361,12 @@ export default function AccountPage() {
             </div>
 
             <div className="card">
-              <h2 className="text-lg font-semibold mb-4">Active Sessions</h2>
+              <div className="flex items-center gap-2.5 mb-4">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-purple-500/10">
+                  <Monitor className="h-4 w-4 text-purple-400" />
+                </div>
+                <h2 className="text-[15px] font-semibold">Active Sessions</h2>
+              </div>
               <div className="space-y-3">
                 {sessions.length > 0 ? sessions.map((s) => (
                   <div key={String(s.id)} className="flex items-center justify-between rounded-lg bg-surface-900 p-3">
@@ -344,7 +413,12 @@ export default function AccountPage() {
         {tab === "preferences" && (
           <div className="max-w-2xl space-y-4">
             <div className="card space-y-4">
-              <h2 className="text-lg font-semibold">Notification Preferences</h2>
+              <div className="flex items-center gap-2.5">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-500/10">
+                  <Bell className="h-4 w-4 text-blue-400" />
+                </div>
+                <h2 className="text-[15px] font-semibold">Notification Preferences</h2>
+              </div>
               <PreferenceToggle label="Order Filled" description="Get notified when your orders are filled" defaultOn />
               <PreferenceToggle label="Price Alerts" description="Receive price alert notifications" defaultOn />
               <PreferenceToggle label="Margin Warnings" description="Alerts when margin utilization is high" defaultOn />
@@ -354,7 +428,12 @@ export default function AccountPage() {
             </div>
 
             <div className="card space-y-4">
-              <h2 className="text-lg font-semibold">Notification Channels</h2>
+              <div className="flex items-center gap-2.5">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/10">
+                  <MessageSquare className="h-4 w-4 text-emerald-400" />
+                </div>
+                <h2 className="text-[15px] font-semibold">Notification Channels</h2>
+              </div>
               <PreferenceToggle label="Email" description="Receive notifications via email" defaultOn />
               <PreferenceToggle label="SMS" description="Receive notifications via SMS" defaultOn />
               <PreferenceToggle label="Push Notifications" description="Browser and mobile push notifications" defaultOn />
@@ -362,7 +441,12 @@ export default function AccountPage() {
             </div>
 
             <div className="card space-y-4">
-              <h2 className="text-lg font-semibold">Display Settings</h2>
+              <div className="flex items-center gap-2.5">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-500/10">
+                  <Globe className="h-4 w-4 text-violet-400" />
+                </div>
+                <h2 className="text-[15px] font-semibold">Display Settings</h2>
+              </div>
               <div>
                 <label className="text-xs text-gray-500">Default Currency</label>
                 <select className="input-field mt-1">
@@ -442,10 +526,10 @@ function KYCStep({ step, label, status, description }: {
     <div className="flex items-start gap-3">
       <div className={cn(
         "flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold",
-        status === "completed" ? "bg-green-500 text-white" :
-        status === "pending" ? "bg-yellow-500 text-black" : "bg-red-500 text-white"
+        status === "completed" ? "bg-emerald-500/20 text-emerald-400" :
+        status === "pending" ? "bg-amber-500/20 text-amber-400" : "bg-red-500/20 text-red-400"
       )}>
-        {status === "completed" ? "✓" : step}
+        {status === "completed" ? <CheckCircle2 className="h-4 w-4" /> : step}
       </div>
       <div>
         <p className="text-sm font-medium">{label}</p>

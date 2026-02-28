@@ -10,20 +10,48 @@ import { ErrorBoundary } from "@/components/common/ErrorBoundary";
 import { useMarketStore, useTradingStore } from "@/lib/store";
 import { useMarkets, useOrders, useTrades, useCreateOrder, useCancelOrder } from "@/lib/api-hooks";
 import { formatPrice, formatPercent, formatVolume, getPriceColorClass, cn } from "@/lib/utils";
+import {
+  ArrowUpRight,
+  ArrowDownRight,
+  BarChart3,
+  Clock,
+  X,
+  Layers,
+} from "lucide-react";
 
 // Dynamic imports for heavy chart components (no SSR)
 const AdvancedChart = dynamic(() => import("@/components/trading/AdvancedChart"), {
   ssr: false,
-  loading: () => <div className="flex items-center justify-center h-full text-gray-500">Loading chart...</div>,
+  loading: () => (
+    <div className="flex items-center justify-center h-full">
+      <div className="flex flex-col items-center gap-3">
+        <div className="h-8 w-8 rounded-lg border-2 border-brand-500/30 border-t-brand-500 animate-spin" />
+        <span className="text-xs text-gray-600">Loading chart...</span>
+      </div>
+    </div>
+  ),
 });
 const DepthChart = dynamic(() => import("@/components/trading/DepthChart"), {
   ssr: false,
-  loading: () => <div className="flex items-center justify-center h-32 text-gray-500">Loading depth...</div>,
+  loading: () => (
+    <div className="flex items-center justify-center h-32">
+      <span className="text-xs text-gray-600">Loading depth...</span>
+    </div>
+  ),
 });
 
 export default function TradePage() {
   return (
-    <Suspense fallback={<AppShell><div className="flex items-center justify-center h-64 text-gray-500">Loading trading terminal...</div></AppShell>}>
+    <Suspense fallback={
+      <AppShell>
+        <div className="flex items-center justify-center h-64">
+          <div className="flex flex-col items-center gap-3">
+            <div className="h-10 w-10 rounded-xl border-2 border-brand-500/30 border-t-brand-500 animate-spin" />
+            <span className="text-sm text-gray-500">Loading trading terminal...</span>
+          </div>
+        </div>
+      </AppShell>
+    }>
       <TradePageContent />
     </Suspense>
   );
@@ -43,18 +71,22 @@ function TradePageContent() {
   const commodity = commodities.find((c) => c.symbol === selectedSymbol) ?? commodities[0];
   const symbolOrders = orders.filter((o) => o.symbol === selectedSymbol);
   const symbolTrades = trades.filter((t) => t.symbol === selectedSymbol);
+  const isUp = commodity.changePercent24h >= 0;
 
   return (
     <AppShell>
       <div className="space-y-4">
         {/* Symbol Header */}
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            {/* Symbol Selector */}
+          <div className="flex items-center gap-5">
             <select
               value={selectedSymbol}
               onChange={(e) => setSelectedSymbol(e.target.value)}
-              className="rounded-lg bg-surface-800 border border-surface-700 px-3 py-2 text-sm font-bold text-white focus:outline-none focus:border-brand-500"
+              className="rounded-xl py-2.5 px-4 text-sm font-bold text-white appearance-none cursor-pointer focus:outline-none"
+              style={{
+                background: "rgba(30, 41, 59, 0.6)",
+                border: "1px solid rgba(255, 255, 255, 0.06)",
+              }}
             >
               {commodities.map((c) => (
                 <option key={c.symbol} value={c.symbol}>
@@ -63,54 +95,59 @@ function TradePageContent() {
               ))}
             </select>
 
-            <div>
-              <span className="text-2xl font-bold font-mono">{formatPrice(commodity.lastPrice)}</span>
-              <span className={`ml-2 text-sm font-medium ${getPriceColorClass(commodity.changePercent24h)}`}>
+            <div className="flex items-baseline gap-3">
+              <span className="text-3xl font-bold font-mono tracking-tight">{formatPrice(commodity.lastPrice)}</span>
+              <span className={cn(
+                "flex items-center gap-1 text-sm font-bold",
+                isUp ? "text-emerald-400" : "text-red-400"
+              )}>
+                {isUp ? <ArrowUpRight className="h-4 w-4" /> : <ArrowDownRight className="h-4 w-4" />}
                 {formatPercent(commodity.changePercent24h)}
               </span>
             </div>
           </div>
 
-          <div className="hidden md:flex items-center gap-6 text-xs text-gray-400">
-            <div>
-              <span className="text-gray-600">24h High </span>
-              <span className="font-mono text-white">{formatPrice(commodity.high24h)}</span>
-            </div>
-            <div>
-              <span className="text-gray-600">24h Low </span>
-              <span className="font-mono text-white">{formatPrice(commodity.low24h)}</span>
-            </div>
-            <div>
-              <span className="text-gray-600">24h Vol </span>
-              <span className="font-mono text-white">{formatVolume(commodity.volume24h)} {commodity.unit}</span>
-            </div>
+          <div className="hidden md:flex items-center gap-1">
+            {[
+              { label: "24h High", value: formatPrice(commodity.high24h), color: "text-emerald-400" },
+              { label: "24h Low", value: formatPrice(commodity.low24h), color: "text-red-400" },
+              { label: "24h Vol", value: `${formatVolume(commodity.volume24h)} ${commodity.unit}`, color: "text-white" },
+            ].map((stat) => (
+              <div key={stat.label} className="rounded-lg px-3 py-1.5" style={{ background: "rgba(255, 255, 255, 0.02)" }}>
+                <span className="text-[10px] font-medium text-gray-600 uppercase">{stat.label}</span>
+                <span className={cn("ml-2 font-mono text-xs font-semibold", stat.color)}>{stat.value}</span>
+              </div>
+            ))}
           </div>
         </div>
 
         {/* Main Trading Layout */}
         <div className="grid gap-4 lg:grid-cols-[1fr_260px_280px]">
           {/* Chart + Depth */}
-          <div className="space-y-2">
-            <ErrorBoundary fallback={<div className="p-8 text-center text-gray-500">Chart failed to load</div>}>
-              <div className="card min-h-[400px] lg:min-h-[500px]">
+          <div className="space-y-3">
+            <ErrorBoundary fallback={<div className="card p-8 text-center text-gray-500">Chart failed to load</div>}>
+              <div className="card min-h-[400px] lg:min-h-[500px] !p-3">
                 <AdvancedChart symbol={selectedSymbol} basePrice={commodity.lastPrice} />
               </div>
             </ErrorBoundary>
-            <ErrorBoundary fallback={<div className="p-4 text-center text-gray-500">Depth chart failed to load</div>}>
-              <div className="card">
-                <h3 className="text-sm font-semibold mb-2">Market Depth</h3>
+            <ErrorBoundary fallback={<div className="card p-4 text-center text-gray-500">Depth chart failed to load</div>}>
+              <div className="card !p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <Layers className="h-4 w-4 text-blue-400" />
+                  <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-400">Market Depth</h3>
+                </div>
                 <DepthChart symbol={selectedSymbol} />
               </div>
             </ErrorBoundary>
           </div>
 
           {/* Order Book */}
-          <div className="card hidden lg:block min-h-[500px]">
+          <div className="card hidden lg:block min-h-[500px] !p-3">
             <OrderBookView symbol={selectedSymbol} />
           </div>
 
           {/* Order Entry */}
-          <div className="card">
+          <div className="card !p-4">
             <OrderEntry
               symbol={selectedSymbol}
               currentPrice={commodity.lastPrice}
@@ -130,23 +167,28 @@ function TradePageContent() {
 
         {/* Bottom Panel - Orders/Trades */}
         <div className="card">
-          <div className="flex items-center gap-4 border-b border-surface-700 mb-3">
+          <div className="flex items-center gap-1 mb-4" style={{ borderBottom: "1px solid rgba(255, 255, 255, 0.04)" }}>
             {(["orders", "trades", "positions"] as const).map((tab) => (
               <button
                 key={tab}
                 onClick={() => setBottomTab(tab)}
                 className={cn(
-                  "pb-2 text-sm font-medium capitalize transition-colors border-b-2",
+                  "relative px-4 pb-3 pt-1 text-[13px] font-medium capitalize transition-colors",
                   bottomTab === tab
-                    ? "border-brand-500 text-white"
-                    : "border-transparent text-gray-500 hover:text-gray-300"
+                    ? "text-white"
+                    : "text-gray-600 hover:text-gray-400"
                 )}
               >
                 {tab}
                 {tab === "orders" && symbolOrders.length > 0 && (
-                  <span className="ml-1 rounded-full bg-surface-700 px-1.5 py-0.5 text-[10px]">
+                  <span className="ml-1.5 rounded-full px-1.5 py-0.5 text-[10px] font-bold"
+                    style={{ background: "rgba(16, 185, 129, 0.1)", color: "#34d399" }}
+                  >
                     {symbolOrders.length}
                   </span>
+                )}
+                {bottomTab === tab && (
+                  <div className="absolute bottom-0 left-1/2 -translate-x-1/2 h-0.5 w-8 rounded-full bg-brand-500" />
                 )}
               </button>
             ))}
@@ -156,29 +198,31 @@ function TradePageContent() {
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="text-left text-xs text-gray-500 border-b border-surface-700">
-                    <th className="pb-2">Time</th>
-                    <th className="pb-2">Side</th>
-                    <th className="pb-2">Type</th>
-                    <th className="pb-2 text-right">Price</th>
-                    <th className="pb-2 text-right">Qty</th>
-                    <th className="pb-2 text-right">Filled</th>
-                    <th className="pb-2 text-right">Status</th>
-                    <th className="pb-2 text-right">Action</th>
+                  <tr className="text-left">
+                    <th className="table-header"><Clock className="inline h-3 w-3 mr-1 opacity-50" />Time</th>
+                    <th className="table-header">Side</th>
+                    <th className="table-header">Type</th>
+                    <th className="table-header text-right">Price</th>
+                    <th className="table-header text-right">Qty</th>
+                    <th className="table-header text-right">Filled</th>
+                    <th className="table-header text-right">Status</th>
+                    <th className="table-header text-right">Action</th>
                   </tr>
                 </thead>
                 <tbody>
                   {orders.map((o) => (
                     <tr key={o.id} className="table-row">
-                      <td className="py-2 text-xs text-gray-400">
+                      <td className="py-3 text-[11px] text-gray-500 font-mono">
                         {new Date(o.createdAt).toLocaleTimeString()}
                       </td>
-                      <td className={o.side === "BUY" ? "text-up" : "text-down"}>{o.side}</td>
-                      <td className="text-gray-400">{o.type}</td>
-                      <td className="text-right font-mono">{formatPrice(o.price)}</td>
-                      <td className="text-right">{o.quantity}</td>
-                      <td className="text-right">{o.filledQuantity}/{o.quantity}</td>
-                      <td className="text-right">
+                      <td className="py-3">
+                        <span className={cn("text-[11px] font-bold", o.side === "BUY" ? "text-emerald-400" : "text-red-400")}>{o.side}</span>
+                      </td>
+                      <td className="py-3 text-[13px] text-gray-400">{o.type}</td>
+                      <td className="py-3 text-right font-mono text-[13px]">{formatPrice(o.price)}</td>
+                      <td className="py-3 text-right text-[13px]">{o.quantity}</td>
+                      <td className="py-3 text-right text-[13px] text-gray-400">{o.filledQuantity}/{o.quantity}</td>
+                      <td className="py-3 text-right">
                         <span className={
                           o.status === "FILLED" ? "badge-success" :
                           o.status === "OPEN" || o.status === "PARTIAL" ? "badge-warning" : "badge-danger"
@@ -186,12 +230,14 @@ function TradePageContent() {
                           {o.status}
                         </span>
                       </td>
-                      <td className="text-right">
+                      <td className="py-3 text-right">
                         {(o.status === "OPEN" || o.status === "PENDING") && (
                           <button
                             onClick={() => cancelOrder(o.id)}
-                            className="text-[10px] text-red-400 hover:text-red-300"
-                          >Cancel</button>
+                            className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[10px] font-semibold text-red-400 hover:bg-red-500/10 transition-colors"
+                          >
+                            <X className="h-3 w-3" /> Cancel
+                          </button>
                         )}
                       </td>
                     </tr>
@@ -205,28 +251,32 @@ function TradePageContent() {
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="text-left text-xs text-gray-500 border-b border-surface-700">
-                    <th className="pb-2">Time</th>
-                    <th className="pb-2">Symbol</th>
-                    <th className="pb-2">Side</th>
-                    <th className="pb-2 text-right">Price</th>
-                    <th className="pb-2 text-right">Qty</th>
-                    <th className="pb-2 text-right">Fee</th>
-                    <th className="pb-2 text-right">Settlement</th>
+                  <tr className="text-left">
+                    <th className="table-header">Time</th>
+                    <th className="table-header">Symbol</th>
+                    <th className="table-header">Side</th>
+                    <th className="table-header text-right">Price</th>
+                    <th className="table-header text-right">Qty</th>
+                    <th className="table-header text-right">Fee</th>
+                    <th className="table-header text-right">Settlement</th>
                   </tr>
                 </thead>
                 <tbody>
                   {trades.map((t) => (
                     <tr key={t.id} className="table-row">
-                      <td className="py-2 text-xs text-gray-400">
+                      <td className="py-3 text-[11px] text-gray-500 font-mono">
                         {new Date(t.timestamp).toLocaleTimeString()}
                       </td>
-                      <td className="font-medium">{t.symbol}</td>
-                      <td className={t.side === "BUY" ? "text-up" : "text-down"}>{t.side}</td>
-                      <td className="text-right font-mono">{formatPrice(t.price)}</td>
-                      <td className="text-right">{t.quantity}</td>
-                      <td className="text-right text-gray-400">${t.fee.toFixed(2)}</td>
-                      <td className="text-right">
+                      <td className="py-3 font-semibold text-[13px]">{t.symbol}</td>
+                      <td className="py-3">
+                        <span className={cn("text-[11px] font-bold", t.side === "BUY" ? "text-emerald-400" : "text-red-400")}>
+                          {t.side}
+                        </span>
+                      </td>
+                      <td className="py-3 text-right font-mono text-[13px]">{formatPrice(t.price)}</td>
+                      <td className="py-3 text-right text-[13px]">{t.quantity}</td>
+                      <td className="py-3 text-right text-[13px] text-gray-500">${t.fee.toFixed(2)}</td>
+                      <td className="py-3 text-right">
                         <span className={
                           t.settlementStatus === "settled" ? "badge-success" :
                           t.settlementStatus === "pending" ? "badge-warning" : "badge-danger"
@@ -242,8 +292,10 @@ function TradePageContent() {
           )}
 
           {bottomTab === "positions" && (
-            <div className="text-center py-8 text-sm text-gray-500">
-              No open positions for this symbol. Place an order to open a position.
+            <div className="flex flex-col items-center justify-center py-12 text-gray-600">
+              <BarChart3 className="h-8 w-8 mb-3 opacity-30" />
+              <p className="text-sm font-medium">No open positions for this symbol</p>
+              <p className="text-xs mt-1">Place an order to open a position</p>
             </div>
           )}
         </div>

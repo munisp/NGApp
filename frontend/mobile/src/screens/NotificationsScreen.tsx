@@ -7,6 +7,8 @@ import {
   TouchableOpacity,
 } from "react-native";
 import { colors, spacing, fontSize, borderRadius } from "../styles/theme";
+import Icon from "../components/Icon";
+import type { IconName } from "../components/Icon";
 
 interface NotificationItem {
   id: string;
@@ -27,12 +29,12 @@ const initialNotifications: NotificationItem[] = [
   { id: "7", type: "alert", title: "Price Alert", message: "GOLD dropped below $2,340.00", read: true, timestamp: "1 week ago" },
 ];
 
-const typeIcons: Record<string, string> = {
-  trade: "📈",
-  alert: "🔔",
-  margin: "⚠️",
-  system: "🔧",
-  kyc: "🛡",
+const typeIcons: Record<string, IconName> = {
+  trade: "trending-up",
+  alert: "bell",
+  margin: "alert-triangle",
+  system: "settings",
+  kyc: "shield",
 };
 
 const typeColors: Record<string, string> = {
@@ -40,7 +42,7 @@ const typeColors: Record<string, string> = {
   alert: colors.warning,
   margin: colors.down,
   system: colors.text.muted,
-  kyc: colors.brand.primary,
+  kyc: colors.info,
 };
 
 export default function NotificationsScreen() {
@@ -59,9 +61,15 @@ export default function NotificationsScreen() {
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.unreadText}>{unread} unread</Text>
+        <View style={styles.headerLeft}>
+          <View style={styles.unreadBadge}>
+            <Text style={styles.unreadBadgeText}>{unread}</Text>
+          </View>
+          <Text style={styles.unreadText}>unread notifications</Text>
+        </View>
         {unread > 0 && (
-          <TouchableOpacity onPress={markAllRead}>
+          <TouchableOpacity onPress={markAllRead} style={styles.markAllButton} activeOpacity={0.7}>
+            <Icon name="check" size={14} color={colors.brand.primary} />
             <Text style={styles.markAllText}>Mark all read</Text>
           </TouchableOpacity>
         )}
@@ -71,29 +79,45 @@ export default function NotificationsScreen() {
         data={notifications}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContent}
-        renderItem={({ item }) => (
-          <TouchableOpacity
-            style={[styles.notifCard, !item.read && styles.unreadCard]}
-            onPress={() => markRead(item.id)}
-          >
-            <View style={styles.notifLeft}>
-              <View style={[styles.iconCircle, { backgroundColor: typeColors[item.type] + "20" }]}>
-                <Text style={styles.icon}>{typeIcons[item.type]}</Text>
+        renderItem={({ item }) => {
+          const iconName = typeIcons[item.type] || "bell";
+          const iconColor = typeColors[item.type] || colors.text.muted;
+          return (
+            <TouchableOpacity
+              style={[styles.notifCard, !item.read && styles.unreadCard]}
+              onPress={() => markRead(item.id)}
+              activeOpacity={0.7}
+            >
+              <View style={styles.notifLeft}>
+                <View style={[styles.iconCircle, { backgroundColor: iconColor + "18" }]}>
+                  <Icon name={iconName} size={18} color={iconColor} />
+                </View>
+                {!item.read && <View style={styles.unreadDot} />}
               </View>
-              {!item.read && <View style={styles.unreadDot} />}
-            </View>
-            <View style={styles.notifContent}>
-              <View style={styles.notifHeader}>
-                <Text style={styles.notifTitle}>{item.title}</Text>
-                <Text style={styles.notifTime}>{item.timestamp}</Text>
+              <View style={styles.notifContent}>
+                <View style={styles.notifHeader}>
+                  <Text style={[styles.notifTitle, !item.read && styles.notifTitleUnread]}>{item.title}</Text>
+                  <View style={styles.timeRow}>
+                    <Icon name="clock" size={10} color={colors.text.muted} />
+                    <Text style={styles.notifTime}>{item.timestamp}</Text>
+                  </View>
+                </View>
+                <Text style={styles.notifMessage} numberOfLines={2}>{item.message}</Text>
+                <View style={[styles.typeBadge, { backgroundColor: iconColor + "12" }]}>
+                  <Text style={[styles.typeBadgeText, { color: iconColor }]}>{item.type.toUpperCase()}</Text>
+                </View>
               </View>
-              <Text style={styles.notifMessage} numberOfLines={2}>{item.message}</Text>
-            </View>
-          </TouchableOpacity>
-        )}
+            </TouchableOpacity>
+          );
+        }}
+        ItemSeparatorComponent={() => <View style={styles.separator} />}
         ListEmptyComponent={
           <View style={styles.emptyState}>
-            <Text style={styles.emptyText}>No notifications</Text>
+            <View style={styles.emptyIconBg}>
+              <Icon name="bell-off" size={32} color={colors.text.muted} />
+            </View>
+            <Text style={styles.emptyTitle}>All caught up!</Text>
+            <Text style={styles.emptyText}>No notifications at this time</Text>
           </View>
         }
       />
@@ -103,21 +127,31 @@ export default function NotificationsScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg.primary },
-  header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: spacing.xl, paddingVertical: spacing.md, borderBottomWidth: 1, borderBottomColor: colors.border },
+  header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: spacing.xl, paddingVertical: spacing.lg, borderBottomWidth: 1, borderBottomColor: colors.border },
+  headerLeft: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
+  unreadBadge: { backgroundColor: colors.brand.primary, borderRadius: 10, minWidth: 20, height: 20, alignItems: "center", justifyContent: "center", paddingHorizontal: 6 },
+  unreadBadgeText: { fontSize: 11, fontWeight: "800", color: colors.white },
   unreadText: { fontSize: fontSize.sm, color: colors.text.muted },
-  markAllText: { fontSize: fontSize.sm, color: colors.brand.primary, fontWeight: "600" },
+  markAllButton: { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "rgba(16, 185, 129, 0.08)", borderRadius: borderRadius.sm, paddingHorizontal: spacing.md, paddingVertical: spacing.xs },
+  markAllText: { fontSize: fontSize.sm, color: colors.brand.primary, fontWeight: "700" },
   listContent: { paddingVertical: spacing.sm },
-  notifCard: { flexDirection: "row", paddingHorizontal: spacing.xl, paddingVertical: spacing.lg, borderBottomWidth: 1, borderBottomColor: colors.border },
-  unreadCard: { backgroundColor: "rgba(22, 163, 74, 0.03)" },
+  notifCard: { flexDirection: "row", paddingHorizontal: spacing.xl, paddingVertical: spacing.lg },
+  unreadCard: { backgroundColor: "rgba(16, 185, 129, 0.03)" },
   notifLeft: { position: "relative", marginRight: spacing.md },
-  iconCircle: { width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center" },
-  icon: { fontSize: 18 },
-  unreadDot: { position: "absolute", top: 0, right: 0, width: 10, height: 10, borderRadius: 5, backgroundColor: colors.brand.primary, borderWidth: 2, borderColor: colors.bg.primary },
+  iconCircle: { width: 44, height: 44, borderRadius: borderRadius.md, alignItems: "center", justifyContent: "center" },
+  unreadDot: { position: "absolute", top: -1, right: -1, width: 12, height: 12, borderRadius: 6, backgroundColor: colors.brand.primary, borderWidth: 2, borderColor: colors.bg.primary },
   notifContent: { flex: 1 },
-  notifHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  notifTitle: { fontSize: fontSize.md, fontWeight: "600", color: colors.text.primary },
+  notifHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" },
+  notifTitle: { fontSize: fontSize.md, fontWeight: "600", color: colors.text.primary, flex: 1 },
+  notifTitleUnread: { fontWeight: "700" },
+  timeRow: { flexDirection: "row", alignItems: "center", gap: 3, marginLeft: spacing.sm },
   notifTime: { fontSize: fontSize.xs, color: colors.text.muted },
-  notifMessage: { fontSize: fontSize.sm, color: colors.text.secondary, marginTop: 4, lineHeight: 18 },
-  emptyState: { alignItems: "center", justifyContent: "center", paddingVertical: 60 },
-  emptyText: { fontSize: fontSize.md, color: colors.text.muted },
+  notifMessage: { fontSize: fontSize.sm, color: colors.text.secondary, marginTop: 4, lineHeight: 20 },
+  typeBadge: { alignSelf: "flex-start", borderRadius: borderRadius.xs, paddingHorizontal: spacing.sm, paddingVertical: 2, marginTop: spacing.sm },
+  typeBadgeText: { fontSize: 9, fontWeight: "800", letterSpacing: 0.5 },
+  separator: { height: 1, backgroundColor: colors.border, marginHorizontal: spacing.xl },
+  emptyState: { alignItems: "center", justifyContent: "center", paddingVertical: 80 },
+  emptyIconBg: { width: 64, height: 64, borderRadius: 32, backgroundColor: colors.bg.card, alignItems: "center", justifyContent: "center", marginBottom: spacing.lg },
+  emptyTitle: { fontSize: fontSize.lg, fontWeight: "700", color: colors.text.primary },
+  emptyText: { fontSize: fontSize.sm, color: colors.text.muted, marginTop: 4 },
 });

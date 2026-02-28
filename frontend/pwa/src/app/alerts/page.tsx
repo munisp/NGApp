@@ -5,10 +5,17 @@ import AppShell from "@/components/layout/AppShell";
 import { useMarketStore } from "@/lib/store";
 import { useMarkets, useAlerts } from "@/lib/api-hooks";
 import { formatPrice, cn } from "@/lib/utils";
+import {
+  Bell,
+  Plus,
+  TrendingUp,
+  TrendingDown,
+  Trash2,
+  BellOff,
+} from "lucide-react";
 
 export default function AlertsPage() {
   const { commodities } = useMarkets();
-
   const { alerts, createAlert, updateAlert, deleteAlert } = useAlerts();
   const [showForm, setShowForm] = useState(false);
   const [newSymbol, setNewSymbol] = useState("MAIZE");
@@ -34,27 +41,35 @@ export default function AlertsPage() {
   return (
     <AppShell>
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex items-end justify-between">
           <div>
-            <h1 className="text-2xl font-bold">Price Alerts</h1>
-            <p className="text-sm text-gray-400">{alerts.filter((a) => a.active).length} active alerts</p>
+            <h1 className="text-2xl font-bold tracking-tight">Price Alerts</h1>
+            <p className="mt-1 text-sm text-gray-500">{alerts.filter((a) => a.active).length} active alerts</p>
           </div>
-          <button onClick={() => setShowForm(!showForm)} className="btn-primary">
-            + New Alert
+          <button
+            onClick={() => setShowForm(!showForm)}
+            className="btn-primary flex items-center gap-2"
+          >
+            <Plus className="h-4 w-4" /> New Alert
           </button>
         </div>
 
         {/* Create Alert Form */}
         {showForm && (
-          <div className="card space-y-4">
-            <h3 className="text-sm font-semibold">Create Price Alert</h3>
+          <div className="card !p-5 space-y-4">
+            <div className="flex items-center gap-2.5">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-500/10">
+                <Bell className="h-4 w-4 text-brand-400" />
+              </div>
+              <h3 className="text-[15px] font-semibold">Create Price Alert</h3>
+            </div>
             <div className="grid gap-4 sm:grid-cols-4">
               <div>
-                <label className="text-[10px] text-gray-500 uppercase">Commodity</label>
+                <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Commodity</label>
                 <select
                   value={newSymbol}
                   onChange={(e) => setNewSymbol(e.target.value)}
-                  className="input-field mt-1"
+                  className="input-field mt-1.5"
                 >
                   {commodities.map((c) => (
                     <option key={c.symbol} value={c.symbol}>{c.symbol} - {c.name}</option>
@@ -62,30 +77,30 @@ export default function AlertsPage() {
                 </select>
               </div>
               <div>
-                <label className="text-[10px] text-gray-500 uppercase">Condition</label>
+                <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Condition</label>
                 <select
                   value={newCondition}
                   onChange={(e) => setNewCondition(e.target.value as "above" | "below")}
-                  className="input-field mt-1"
+                  className="input-field mt-1.5"
                 >
                   <option value="above">Price goes above</option>
                   <option value="below">Price goes below</option>
                 </select>
               </div>
               <div>
-                <label className="text-[10px] text-gray-500 uppercase">Target Price</label>
+                <label className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Target Price</label>
                 <input
                   type="number"
                   value={newPrice}
                   onChange={(e) => setNewPrice(e.target.value)}
-                  className="input-field mt-1 font-mono"
+                  className="input-field mt-1.5 font-mono"
                   placeholder="0.00"
                   step="0.01"
                 />
               </div>
               <div className="flex items-end gap-2">
                 <button onClick={handleCreate} className="btn-primary flex-1">Create</button>
-                <button onClick={() => setShowForm(false)} className="btn-secondary">Cancel</button>
+                <button onClick={() => setShowForm(false)} className="btn-ghost">Cancel</button>
               </div>
             </div>
           </div>
@@ -99,35 +114,44 @@ export default function AlertsPage() {
             const isTriggered = alert.condition === "above"
               ? currentPrice >= alert.targetPrice
               : currentPrice <= alert.targetPrice;
+            const distancePct = Math.abs(((alert.targetPrice - currentPrice) / currentPrice) * 100);
 
             return (
-              <div key={alert.id} className={cn(
-                "card flex items-center justify-between",
-                !alert.active && "opacity-50"
-              )}>
+              <div
+                key={alert.id}
+                className={cn(
+                  "group flex items-center justify-between rounded-2xl p-4 transition-all",
+                  !alert.active && "opacity-40"
+                )}
+                style={{
+                  background: "linear-gradient(135deg, rgba(30, 41, 59, 0.5), rgba(15, 23, 42, 0.7))",
+                  border: "1px solid rgba(255, 255, 255, 0.04)",
+                }}
+              >
                 <div className="flex items-center gap-4">
                   <div className={cn(
-                    "flex h-10 w-10 items-center justify-center rounded-lg text-lg",
-                    alert.condition === "above" ? "bg-up/20" : "bg-down/20"
+                    "flex h-10 w-10 items-center justify-center rounded-xl",
+                    alert.condition === "above" ? "bg-emerald-500/10" : "bg-red-500/10"
                   )}>
-                    {alert.condition === "above" ? "↑" : "↓"}
+                    {alert.condition === "above"
+                      ? <TrendingUp className="h-5 w-5 text-emerald-400" />
+                      : <TrendingDown className="h-5 w-5 text-red-400" />}
                   </div>
                   <div>
-                    <p className="font-bold">{alert.symbol}</p>
+                    <p className="text-[15px] font-bold">{alert.symbol}</p>
                     <p className="text-xs text-gray-400">
                       Alert when price {alert.condition === "above" ? "rises above" : "drops below"}{" "}
-                      <span className="font-mono font-medium text-white">{formatPrice(alert.targetPrice)}</span>
+                      <span className="font-mono font-semibold text-white">{formatPrice(alert.targetPrice)}</span>
                     </p>
-                    <p className="text-[10px] text-gray-600">
-                      Current: {formatPrice(currentPrice)} &middot;{" "}
+                    <div className="mt-0.5 flex items-center gap-2 text-[10px] text-gray-600">
+                      <span>Current: <span className="font-mono text-gray-400">{formatPrice(currentPrice)}</span></span>
+                      <span className="opacity-40">|</span>
                       {isTriggered ? (
-                        <span className="text-yellow-400">Condition met!</span>
+                        <span className="font-semibold text-amber-400">Condition met!</span>
                       ) : (
-                        <span>
-                          {Math.abs(((alert.targetPrice - currentPrice) / currentPrice) * 100).toFixed(2)}% away
-                        </span>
+                        <span>{distancePct.toFixed(2)}% away</span>
                       )}
-                    </p>
+                    </div>
                   </div>
                 </div>
 
@@ -135,22 +159,20 @@ export default function AlertsPage() {
                   <button
                     onClick={() => toggleAlert(alert.id)}
                     className={cn(
-                      "relative h-6 w-11 rounded-full transition-colors",
+                      "toggle-switch",
                       alert.active ? "bg-brand-600" : "bg-surface-700"
                     )}
                   >
                     <span className={cn(
-                      "absolute top-0.5 h-5 w-5 rounded-full bg-white transition-transform",
+                      "absolute top-0.5 h-5 w-5 rounded-full bg-white transition-transform shadow-sm",
                       alert.active ? "left-[22px]" : "left-0.5"
                     )} />
                   </button>
                   <button
                     onClick={() => deleteAlert(alert.id)}
-                    className="text-gray-500 hover:text-red-400 transition-colors"
+                    className="rounded-lg p-1.5 text-gray-600 hover:text-red-400 hover:bg-red-500/10 transition-all opacity-0 group-hover:opacity-100"
                   >
-                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
-                    </svg>
+                    <Trash2 className="h-4 w-4" />
                   </button>
                 </div>
               </div>
@@ -159,9 +181,10 @@ export default function AlertsPage() {
         </div>
 
         {alerts.length === 0 && (
-          <div className="text-center py-12 text-gray-500">
-            <p className="text-lg">No alerts set</p>
-            <p className="text-sm mt-1">Create a price alert to get notified when a commodity reaches your target price</p>
+          <div className="flex flex-col items-center justify-center py-16 text-gray-600">
+            <BellOff className="h-10 w-10 mb-3 opacity-30" />
+            <p className="text-sm font-medium">No alerts set</p>
+            <p className="text-xs mt-1">Create a price alert to get notified when a commodity reaches your target</p>
           </div>
         )}
       </div>

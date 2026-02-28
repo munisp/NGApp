@@ -7,7 +7,16 @@ import {
   TouchableOpacity,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { colors, spacing, fontSize, borderRadius } from "../styles/theme";
+import { colors, spacing, fontSize, borderRadius, shadows } from "../styles/theme";
+import Icon from "../components/Icon";
+import type { IconName } from "../components/Icon";
+
+const SYMBOL_ICONS: Record<string, IconName> = {
+  MAIZE: "wheat", GOLD: "gem", COFFEE: "coffee", CRUDE_OIL: "droplet",
+};
+const SYMBOL_COLORS: Record<string, string> = {
+  MAIZE: "#F59E0B", GOLD: "#EAB308", COFFEE: "#92400E", CRUDE_OIL: "#3B82F6",
+};
 
 const positions = [
   { symbol: "MAIZE", side: "LONG" as const, qty: 100, entry: 282.0, current: 285.5, pnl: 350.0, pnlPct: 1.24, margin: 2820 },
@@ -16,97 +25,126 @@ const positions = [
   { symbol: "CRUDE_OIL", side: "LONG" as const, qty: 200, entry: 76.5, current: 78.42, pnl: 384.0, pnlPct: 2.51, margin: 1224 },
 ];
 
+const SUMMARY_CARDS: { label: string; icon: IconName; color: string; bg: string }[] = [
+  { label: "Total Value", icon: "wallet", color: colors.brand.primary, bg: "rgba(16, 185, 129, 0.12)" },
+  { label: "Total P&L", icon: "trending-up", color: colors.up, bg: "rgba(16, 185, 129, 0.12)" },
+  { label: "Margin Used", icon: "shield", color: colors.warning, bg: "rgba(245, 158, 11, 0.12)" },
+  { label: "Positions", icon: "layers", color: colors.info, bg: "rgba(59, 130, 246, 0.12)" },
+];
+
 export default function PortfolioScreen() {
   const totalPnl = positions.reduce((s, p) => s + p.pnl, 0);
   const totalMargin = positions.reduce((s, p) => s + p.margin, 0);
+  const summaryValues = ["$156,420", `+$${totalPnl.toFixed(0)}`, `$${totalMargin.toLocaleString()}`, `${positions.length}`];
 
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
           <Text style={styles.title}>Portfolio</Text>
+          <TouchableOpacity style={styles.headerButton}>
+            <Icon name="pie-chart" size={20} color={colors.text.secondary} />
+          </TouchableOpacity>
         </View>
 
         {/* Summary Cards */}
-        <View style={styles.summaryRow}>
-          <View style={styles.summaryCard}>
-            <Text style={styles.summaryLabel}>Total Value</Text>
-            <Text style={styles.summaryValue}>$156,420</Text>
-          </View>
-          <View style={styles.summaryCard}>
-            <Text style={styles.summaryLabel}>Total P&L</Text>
-            <Text style={[styles.summaryValue, { color: colors.up }]}>
-              +${totalPnl.toFixed(0)}
-            </Text>
-          </View>
-        </View>
-
-        <View style={styles.summaryRow}>
-          <View style={styles.summaryCard}>
-            <Text style={styles.summaryLabel}>Margin Used</Text>
-            <Text style={styles.summaryValue}>${totalMargin.toLocaleString()}</Text>
-          </View>
-          <View style={styles.summaryCard}>
-            <Text style={styles.summaryLabel}>Positions</Text>
-            <Text style={styles.summaryValue}>{positions.length}</Text>
-          </View>
+        <View style={styles.summaryGrid}>
+          {SUMMARY_CARDS.map((card, i) => (
+            <View key={card.label} style={styles.summaryCard}>
+              <View style={[styles.summaryIconBg, { backgroundColor: card.bg }]}>
+                <Icon name={card.icon} size={16} color={card.color} />
+              </View>
+              <Text style={styles.summaryLabel}>{card.label}</Text>
+              <Text style={[styles.summaryValue, i === 1 && { color: colors.up }]}>
+                {summaryValues[i]}
+              </Text>
+            </View>
+          ))}
         </View>
 
         {/* Margin Bar */}
         <View style={styles.marginBar}>
           <View style={styles.marginBarHeader}>
-            <Text style={styles.marginBarLabel}>Margin Utilization</Text>
+            <View style={styles.marginLabelRow}>
+              <Icon name="bar-chart" size={14} color={colors.text.muted} />
+              <Text style={styles.marginBarLabel}>Margin Utilization</Text>
+            </View>
             <Text style={styles.marginBarPct}>13.8%</Text>
           </View>
           <View style={styles.marginBarTrack}>
             <View style={[styles.marginBarFill, { width: "13.8%" }]} />
           </View>
+          <View style={styles.marginLegend}>
+            <View style={styles.legendItem}>
+              <View style={[styles.legendDot, { backgroundColor: colors.brand.primary }]} />
+              <Text style={styles.legendText}>Used</Text>
+            </View>
+            <View style={styles.legendItem}>
+              <View style={[styles.legendDot, { backgroundColor: colors.bg.tertiary }]} />
+              <Text style={styles.legendText}>Available</Text>
+            </View>
+          </View>
         </View>
 
         {/* Positions */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Open Positions</Text>
-          {positions.map((pos) => (
-            <View key={pos.symbol} style={styles.positionCard}>
-              <View style={styles.positionHeader}>
-                <View style={styles.positionLeft}>
-                  <Text style={styles.positionSymbol}>{pos.symbol}</Text>
-                  <View style={[styles.sideBadge, pos.side === "LONG" ? styles.longBadge : styles.shortBadge]}>
-                    <Text style={[styles.sideText, pos.side === "LONG" ? styles.longText : styles.shortText]}>
-                      {pos.side}
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Open Positions</Text>
+            <Text style={styles.sectionCount}>{positions.length}</Text>
+          </View>
+          {positions.map((pos) => {
+            const iconName = SYMBOL_ICONS[pos.symbol] || "circle-dot";
+            const iconColor = SYMBOL_COLORS[pos.symbol] || colors.text.muted;
+            return (
+              <View key={pos.symbol} style={styles.positionCard}>
+                <View style={styles.positionHeader}>
+                  <View style={styles.positionLeft}>
+                    <View style={[styles.positionIconBg, { backgroundColor: iconColor + "18" }]}>
+                      <Icon name={iconName} size={16} color={iconColor} />
+                    </View>
+                    <View>
+                      <Text style={styles.positionSymbol}>{pos.symbol}</Text>
+                      <View style={[styles.sideBadge, pos.side === "LONG" ? styles.longBadge : styles.shortBadge]}>
+                        <Text style={[styles.sideText, pos.side === "LONG" ? styles.longText : styles.shortText]}>
+                          {pos.side}
+                        </Text>
+                      </View>
+                    </View>
+                  </View>
+                  <TouchableOpacity style={styles.closeButton} activeOpacity={0.7}>
+                    <Icon name="x" size={14} color={colors.down} />
+                    <Text style={styles.closeText}>Close</Text>
+                  </TouchableOpacity>
+                </View>
+
+                <View style={styles.positionDivider} />
+
+                <View style={styles.positionDetails}>
+                  <View style={styles.detailCol}>
+                    <Text style={styles.detailLabel}>Qty</Text>
+                    <Text style={styles.detailValue}>{pos.qty}</Text>
+                  </View>
+                  <View style={styles.detailCol}>
+                    <Text style={styles.detailLabel}>Entry</Text>
+                    <Text style={styles.detailValue}>${pos.entry.toLocaleString()}</Text>
+                  </View>
+                  <View style={styles.detailCol}>
+                    <Text style={styles.detailLabel}>Current</Text>
+                    <Text style={styles.detailValue}>${pos.current.toLocaleString()}</Text>
+                  </View>
+                  <View style={styles.detailCol}>
+                    <Text style={styles.detailLabel}>P&L</Text>
+                    <Text style={[styles.detailValue, { color: pos.pnl >= 0 ? colors.up : colors.down }]}>
+                      {pos.pnl >= 0 ? "+" : ""}${pos.pnl.toFixed(2)}
+                    </Text>
+                    <Text style={[styles.detailPct, { color: pos.pnl >= 0 ? colors.up : colors.down }]}>
+                      {pos.pnlPct >= 0 ? "+" : ""}{pos.pnlPct.toFixed(2)}%
                     </Text>
                   </View>
                 </View>
-                <TouchableOpacity style={styles.closeButton}>
-                  <Text style={styles.closeText}>Close</Text>
-                </TouchableOpacity>
               </View>
-
-              <View style={styles.positionDetails}>
-                <View style={styles.detailCol}>
-                  <Text style={styles.detailLabel}>Quantity</Text>
-                  <Text style={styles.detailValue}>{pos.qty}</Text>
-                </View>
-                <View style={styles.detailCol}>
-                  <Text style={styles.detailLabel}>Entry</Text>
-                  <Text style={styles.detailValue}>${pos.entry.toLocaleString()}</Text>
-                </View>
-                <View style={styles.detailCol}>
-                  <Text style={styles.detailLabel}>Current</Text>
-                  <Text style={styles.detailValue}>${pos.current.toLocaleString()}</Text>
-                </View>
-                <View style={styles.detailCol}>
-                  <Text style={styles.detailLabel}>P&L</Text>
-                  <Text style={[styles.detailValue, { color: pos.pnl >= 0 ? colors.up : colors.down }]}>
-                    {pos.pnl >= 0 ? "+" : ""}${pos.pnl.toFixed(2)}
-                  </Text>
-                  <Text style={[styles.detailPct, { color: pos.pnl >= 0 ? colors.up : colors.down }]}>
-                    {pos.pnlPct >= 0 ? "+" : ""}{pos.pnlPct.toFixed(2)}%
-                  </Text>
-                </View>
-              </View>
-            </View>
-          ))}
+            );
+          })}
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -115,35 +153,46 @@ export default function PortfolioScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg.primary },
-  header: { paddingHorizontal: spacing.xl, paddingTop: spacing.lg },
+  header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: spacing.xl, paddingTop: spacing.lg },
+  headerButton: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.bg.card, alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: colors.border },
   title: { fontSize: fontSize.xxl, fontWeight: "700", color: colors.text.primary },
-  summaryRow: { flexDirection: "row", paddingHorizontal: spacing.xl, marginTop: spacing.md, gap: spacing.sm },
-  summaryCard: { flex: 1, backgroundColor: colors.bg.card, borderRadius: borderRadius.md, padding: spacing.lg, borderWidth: 1, borderColor: colors.border },
+  summaryGrid: { flexDirection: "row", flexWrap: "wrap", paddingHorizontal: spacing.xl, marginTop: spacing.lg, gap: spacing.sm },
+  summaryCard: { width: "48%", flexGrow: 1, backgroundColor: colors.bg.card, borderRadius: borderRadius.lg, padding: spacing.lg, borderWidth: 1, borderColor: colors.border },
+  summaryIconBg: { width: 32, height: 32, borderRadius: borderRadius.sm, alignItems: "center", justifyContent: "center", marginBottom: spacing.sm },
   summaryLabel: { fontSize: fontSize.xs, color: colors.text.muted },
-  summaryValue: { fontSize: fontSize.xl, fontWeight: "700", color: colors.text.primary, marginTop: 4, fontVariant: ["tabular-nums"] },
-  marginBar: { marginHorizontal: spacing.xl, marginTop: spacing.lg, backgroundColor: colors.bg.card, borderRadius: borderRadius.md, padding: spacing.lg, borderWidth: 1, borderColor: colors.border },
-  marginBarHeader: { flexDirection: "row", justifyContent: "space-between", marginBottom: spacing.sm },
+  summaryValue: { fontSize: fontSize.xl, fontWeight: "700", color: colors.text.primary, marginTop: 3, fontVariant: ["tabular-nums"] },
+  marginBar: { marginHorizontal: spacing.xl, marginTop: spacing.lg, backgroundColor: colors.bg.card, borderRadius: borderRadius.lg, padding: spacing.lg, borderWidth: 1, borderColor: colors.border },
+  marginBarHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: spacing.md },
+  marginLabelRow: { flexDirection: "row", alignItems: "center", gap: spacing.xs },
   marginBarLabel: { fontSize: fontSize.sm, color: colors.text.muted },
-  marginBarPct: { fontSize: fontSize.sm, fontWeight: "600", color: colors.text.primary },
-  marginBarTrack: { height: 6, borderRadius: 3, backgroundColor: colors.bg.tertiary, overflow: "hidden" },
-  marginBarFill: { height: "100%", borderRadius: 3, backgroundColor: colors.brand.primary },
+  marginBarPct: { fontSize: fontSize.sm, fontWeight: "700", color: colors.text.primary },
+  marginBarTrack: { height: 8, borderRadius: 4, backgroundColor: colors.bg.tertiary, overflow: "hidden" },
+  marginBarFill: { height: "100%", borderRadius: 4, backgroundColor: colors.brand.primary },
+  marginLegend: { flexDirection: "row", gap: spacing.lg, marginTop: spacing.sm },
+  legendItem: { flexDirection: "row", alignItems: "center", gap: spacing.xs },
+  legendDot: { width: 8, height: 8, borderRadius: 4 },
+  legendText: { fontSize: fontSize.xs, color: colors.text.muted },
   section: { paddingHorizontal: spacing.xl, marginTop: spacing.xxl, paddingBottom: 100 },
-  sectionTitle: { fontSize: fontSize.lg, fontWeight: "700", color: colors.text.primary, marginBottom: spacing.md },
-  positionCard: { backgroundColor: colors.bg.card, borderRadius: borderRadius.md, padding: spacing.lg, marginBottom: spacing.sm, borderWidth: 1, borderColor: colors.border },
-  positionHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: spacing.md },
-  positionLeft: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
+  sectionHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: spacing.md },
+  sectionTitle: { fontSize: fontSize.lg, fontWeight: "700", color: colors.text.primary },
+  sectionCount: { fontSize: fontSize.sm, fontWeight: "700", color: colors.text.muted, backgroundColor: colors.bg.tertiary, paddingHorizontal: spacing.sm, paddingVertical: 2, borderRadius: borderRadius.xs, overflow: "hidden" },
+  positionCard: { backgroundColor: colors.bg.card, borderRadius: borderRadius.lg, padding: spacing.lg, marginBottom: spacing.sm, borderWidth: 1, borderColor: colors.border },
+  positionHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  positionLeft: { flexDirection: "row", alignItems: "center", gap: spacing.md },
+  positionIconBg: { width: 40, height: 40, borderRadius: borderRadius.md, alignItems: "center", justifyContent: "center" },
   positionSymbol: { fontSize: fontSize.lg, fontWeight: "700", color: colors.text.primary },
-  sideBadge: { borderRadius: borderRadius.sm, paddingHorizontal: spacing.sm, paddingVertical: 2 },
-  longBadge: { backgroundColor: "rgba(34, 197, 94, 0.15)" },
-  shortBadge: { backgroundColor: "rgba(239, 68, 68, 0.15)" },
-  sideText: { fontSize: fontSize.xs, fontWeight: "700" },
+  sideBadge: { borderRadius: borderRadius.xs, paddingHorizontal: spacing.xs, paddingVertical: 1, marginTop: 2, alignSelf: "flex-start" },
+  longBadge: { backgroundColor: "rgba(16, 185, 129, 0.12)" },
+  shortBadge: { backgroundColor: "rgba(239, 68, 68, 0.12)" },
+  sideText: { fontSize: 9, fontWeight: "800", letterSpacing: 0.5 },
   longText: { color: colors.up },
   shortText: { color: colors.down },
-  closeButton: { backgroundColor: "rgba(239, 68, 68, 0.15)", borderRadius: borderRadius.sm, paddingHorizontal: spacing.md, paddingVertical: spacing.xs },
-  closeText: { fontSize: fontSize.sm, fontWeight: "600", color: colors.down },
+  closeButton: { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "rgba(239, 68, 68, 0.12)", borderRadius: borderRadius.sm, paddingHorizontal: spacing.md, paddingVertical: spacing.xs },
+  closeText: { fontSize: fontSize.sm, fontWeight: "700", color: colors.down },
+  positionDivider: { height: 1, backgroundColor: colors.border, marginVertical: spacing.md },
   positionDetails: { flexDirection: "row", justifyContent: "space-between" },
   detailCol: { alignItems: "center" },
   detailLabel: { fontSize: fontSize.xs, color: colors.text.muted },
-  detailValue: { fontSize: fontSize.sm, fontWeight: "600", color: colors.text.primary, marginTop: 2, fontVariant: ["tabular-nums"] },
-  detailPct: { fontSize: fontSize.xs, fontWeight: "500", marginTop: 1 },
+  detailValue: { fontSize: fontSize.sm, fontWeight: "700", color: colors.text.primary, marginTop: 2, fontVariant: ["tabular-nums"] },
+  detailPct: { fontSize: fontSize.xs, fontWeight: "600", marginTop: 1 },
 });

@@ -4,7 +4,7 @@ import { NavigationContainer, DefaultTheme } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { SafeAreaProvider } from "react-native-safe-area-context";
-import { View, Text, StyleSheet } from "react-native";
+import { View, StyleSheet, Platform } from "react-native";
 
 import DashboardScreen from "./screens/DashboardScreen";
 import MarketsScreen from "./screens/MarketsScreen";
@@ -13,8 +13,10 @@ import PortfolioScreen from "./screens/PortfolioScreen";
 import AccountScreen from "./screens/AccountScreen";
 import TradeDetailScreen from "./screens/TradeDetailScreen";
 import NotificationsScreen from "./screens/NotificationsScreen";
+import Icon from "./components/Icon";
+import type { IconName } from "./components/Icon";
 
-import { colors } from "./styles/theme";
+import { colors, shadows } from "./styles/theme";
 import { getLinkingConfig } from "./services/deeplink";
 import type { RootStackParamList, MainTabParamList } from "./types";
 
@@ -33,19 +35,25 @@ const navTheme = {
   },
 };
 
+const TAB_ICONS: Record<string, IconName> = {
+  Dashboard: "home",
+  Markets: "activity",
+  Trade: "candlestick",
+  Portfolio: "briefcase",
+  Account: "user",
+};
+
 function TabIcon({ name, focused }: { name: string; focused: boolean }) {
-  const iconMap: Record<string, string> = {
-    Dashboard: "◻",
-    Markets: "◈",
-    Trade: "⇅",
-    Portfolio: "◰",
-    Account: "◉",
-  };
+  const iconName = TAB_ICONS[name] || "circle-dot";
   return (
-    <View style={styles.tabIcon}>
-      <Text style={[styles.tabIconText, focused && styles.tabIconActive]}>
-        {iconMap[name] || "○"}
-      </Text>
+    <View style={styles.tabIconContainer}>
+      {focused && <View style={styles.tabActiveIndicator} />}
+      <Icon
+        name={iconName}
+        size={22}
+        color={focused ? colors.brand.primary : colors.text.muted}
+        strokeWidth={focused ? 2.2 : 1.8}
+      />
     </View>
   );
 }
@@ -67,10 +75,7 @@ function MainTabs() {
       <Tab.Screen
         name="Trade"
         component={TradeScreen}
-        options={{
-          tabBarLabel: "Trade",
-          tabBarStyle: { ...styles.tabBar },
-        }}
+        options={{ tabBarLabel: "Trade" }}
       />
       <Tab.Screen name="Portfolio" component={PortfolioScreen} />
       <Tab.Screen name="Account" component={AccountScreen} />
@@ -85,9 +90,12 @@ export default function App() {
         <StatusBar style="light" />
         <Stack.Navigator
           screenOptions={{
-            headerStyle: { backgroundColor: colors.bg.secondary },
+            headerStyle: {
+              backgroundColor: colors.bg.secondary,
+            },
             headerTintColor: colors.text.primary,
-            headerTitleStyle: { fontWeight: "700" },
+            headerTitleStyle: { fontWeight: "700", fontSize: 17 },
+            headerShadowVisible: false,
           }}
         >
           <Stack.Screen
@@ -116,23 +124,29 @@ const styles = StyleSheet.create({
     backgroundColor: colors.bg.secondary,
     borderTopColor: colors.border,
     borderTopWidth: 1,
-    height: 80,
-    paddingBottom: 20,
+    height: Platform.OS === "ios" ? 88 : 72,
+    paddingBottom: Platform.OS === "ios" ? 28 : 12,
     paddingTop: 8,
+    ...shadows.md,
   },
   tabLabel: {
     fontSize: 10,
     fontWeight: "600",
+    marginTop: 2,
   },
-  tabIcon: {
+  tabIconContainer: {
     alignItems: "center",
     justifyContent: "center",
+    position: "relative",
+    width: 44,
+    height: 28,
   },
-  tabIconText: {
-    fontSize: 20,
-    color: colors.text.muted,
-  },
-  tabIconActive: {
-    color: colors.brand.primary,
+  tabActiveIndicator: {
+    position: "absolute",
+    top: -8,
+    width: 20,
+    height: 3,
+    borderRadius: 2,
+    backgroundColor: colors.brand.primary,
   },
 });
