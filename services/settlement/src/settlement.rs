@@ -132,8 +132,7 @@ impl SettlementEngine {
         &self,
         user_id: &str,
     ) -> Result<Vec<LedgerAccount>, Box<dyn std::error::Error>> {
-        // In production: query TigerBeetle for accounts with user_data matching user_id
-        Ok(vec![])
+        self.tigerbeetle.get_user_accounts(user_id).await
     }
 
     /// Create a new ledger account
