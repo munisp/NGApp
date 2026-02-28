@@ -200,6 +200,61 @@ impl ExchangeEngine {
         Ok(order)
     }
 
+    /// Amend (Cancel/Replace) an order.
+    pub fn amend_order(
+        &self,
+        symbol: &str,
+        order_id: uuid::Uuid,
+        new_price: Option<Price>,
+        new_quantity: Option<Qty>,
+    ) -> Result<(Vec<Trade>, Order, Order), String> {
+        if !self.cluster.is_accepting_orders() {
+            return Err("Node is not primary. Orders not accepted.".to_string());
+        }
+
+        let (trades, new_order, old_order) =
+            self.orderbooks.amend_order(symbol, order_id, new_price, new_quantity)?;
+
+        self.audit.record(
+            "ORDER_AMEND",
+            &order_id.to_string(),
+            &old_order.account_id,
+            symbol,
+            serde_json::json!({
+                "old_price": from_price(old_order.price),
+                "new_price": from_price(new_order.price),
+                "old_quantity": old_order.quantity,
+                "new_quantity": new_order.quantity,
+            }),
+        );
+
+        self.cluster.replicate(
+            "ORDER_AMEND",
+            serde_json::json!({
+                "order_id": order_id.to_string(),
+                "symbol": symbol,
+                "new_order_id": new_order.id.to_string(),
+            }),
+        );
+
+        // Post-trade processing for any fills from the amendment
+        for trade in &trades {
+            if let Ok((_buy_leg, _sell_leg)) = self.clearing.novate_trade(trade) {
+                self.cluster.replicate(
+                    "TRADE",
+                    serde_json::json!({
+                        "trade_id": trade.id.to_string(),
+                        "symbol": trade.symbol,
+                        "price": from_price(trade.price),
+                        "quantity": trade.quantity,
+                    }),
+                );
+            }
+        }
+
+        Ok((trades, new_order, old_order))
+    }
+
     /// Get exchange status summary.
     pub fn status(&self) -> serde_json::Value {
         let symbols = self.orderbooks.symbols();
