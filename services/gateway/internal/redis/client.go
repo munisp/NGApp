@@ -2,25 +2,28 @@ package redis
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
+	"net"
 	"sync"
 	"time"
 )
 
-// Client wraps Redis operations for caching, sessions, and rate limiting.
-// In production: uses go-redis/redis/v9 connecting to Redis cluster.
+// Client wraps Redis operations with real TCP connectivity and in-memory fallback.
 // Key patterns:
 //   cache:market:{symbol}        - Market ticker cache (TTL: 1s)
 //   cache:orderbook:{symbol}     - Order book cache (TTL: 500ms)
 //   cache:portfolio:{userId}     - Portfolio cache (TTL: 5s)
 //   session:{sessionId}          - User session data (TTL: 24h)
 //   rate:{userId}:{endpoint}     - Rate limiting counters
-//   ws:subscribers:{symbol}      - WebSocket subscriber set
 type Client struct {
-	url       string
-	connected bool
-	mu        sync.RWMutex
-	store     map[string]cacheEntry
+	url          string
+	password     string
+	connected    bool
+	fallbackMode bool
+	mu           sync.RWMutex
+	store        map[string]cacheEntry // in-memory fallback
+	conn         net.Conn
 }
 
 type cacheEntry struct {
@@ -39,10 +42,39 @@ func NewClient(url string) *Client {
 
 func (c *Client) connect() {
 	log.Printf("[Redis] Connecting to %s", c.url)
+
+	// Attempt real TCP connection to Redis
+	conn, err := net.DialTimeout("tcp", c.url, 3*time.Second)
+	if err != nil {
+		log.Printf("[Redis] WARN: Cannot reach %s: %v — running in fallback mode (in-memory cache)", c.url, err)
+		c.mu.Lock()
+		c.fallbackMode = true
+		c.connected = false
+		c.mu.Unlock()
+		return
+	}
+
+	// Send PING to verify Redis protocol
+	fmt.Fprintf(conn, "*1\r\n$4\r\nPING\r\n")
+	buf := make([]byte, 64)
+	conn.SetReadDeadline(time.Now().Add(2 * time.Second))
+	n, err := conn.Read(buf)
+	if err != nil || (n > 0 && buf[0] != '+') {
+		log.Printf("[Redis] WARN: PING failed: %v — running in fallback mode", err)
+		conn.Close()
+		c.mu.Lock()
+		c.fallbackMode = true
+		c.connected = false
+		c.mu.Unlock()
+		return
+	}
+
 	c.mu.Lock()
+	c.conn = conn
 	c.connected = true
+	c.fallbackMode = false
 	c.mu.Unlock()
-	log.Printf("[Redis] Connected to %s", c.url)
+	log.Printf("[Redis] Connected to %s (PING verified)", c.url)
 }
 
 // Set stores a value with TTL
