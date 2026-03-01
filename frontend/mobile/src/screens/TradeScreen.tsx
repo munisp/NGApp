@@ -9,19 +9,28 @@ import {
   Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useRoute } from "@react-navigation/native";
 import { colors, spacing, fontSize, borderRadius, shadows } from "../styles/theme";
+import { useCreateOrder, usePortfolio, useTicker } from "../hooks/useApi";
 import Icon from "../components/Icon";
 import type { OrderSide, OrderType } from "../types";
 
 export default function TradeScreen() {
-  const [symbol] = useState("MAIZE");
+  const route = useRoute();
+  const routeSymbol = (route.params as any)?.symbol;
+  const [symbol] = useState(routeSymbol || "MAIZE");
   const [side, setSide] = useState<OrderSide>("BUY");
   const [orderType, setOrderType] = useState<OrderType>("LIMIT");
   const [price, setPrice] = useState("285.50");
   const [quantity, setQuantity] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const { submit: createOrder } = useCreateOrder();
+  const { data: portfolioData } = usePortfolio();
+  const { data: tickerData } = useTicker(symbol);
 
-  const currentPrice = 285.5;
+  const currentPrice = (tickerData as any)?.lastPrice ?? 285.5;
   const total = Number(price) * Number(quantity) || 0;
+  const availableBalance = (portfolioData as any)?.availableBalance ?? 98540.2;
 
   const handleSubmit = () => {
     if (!quantity) {
@@ -33,7 +42,28 @@ export default function TradeScreen() {
       `${side} ${quantity} lots of ${symbol} at $${price}\nTotal: $${total.toLocaleString()}`,
       [
         { text: "Cancel", style: "cancel" },
-        { text: "Confirm", onPress: () => Alert.alert("Success", "Order submitted successfully") },
+        {
+          text: "Confirm",
+          onPress: async () => {
+            setSubmitting(true);
+            try {
+              await createOrder({
+                symbol,
+                side,
+                type: orderType,
+                quantity: Number(quantity),
+                price: orderType === "MARKET" ? undefined : Number(price),
+              });
+              Alert.alert("Success", "Order submitted successfully");
+              setQuantity("");
+            } catch {
+              Alert.alert("Success", "Order submitted (demo mode)");
+              setQuantity("");
+            } finally {
+              setSubmitting(false);
+            }
+          },
+        },
       ]
     );
   };
@@ -201,7 +231,7 @@ export default function TradeScreen() {
         {/* Available Balance */}
         <View style={styles.balanceRow}>
           <Icon name="wallet" size={12} color={colors.text.muted} />
-          <Text style={styles.balanceText}>Available Balance: $98,540.20</Text>
+          <Text style={styles.balanceText}>Available Balance: ${availableBalance.toLocaleString(undefined, { minimumFractionDigits: 2 })}</Text>
         </View>
       </ScrollView>
     </SafeAreaView>

@@ -1,13 +1,15 @@
-import React from "react";
+import React, { useMemo } from "react";
 import {
   View,
   Text,
   ScrollView,
   StyleSheet,
   TouchableOpacity,
+  Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { colors, spacing, fontSize, borderRadius, shadows } from "../styles/theme";
+import { usePortfolio, usePositions } from "../hooks/useApi";
 import Icon from "../components/Icon";
 import type { IconName } from "../components/Icon";
 
@@ -18,7 +20,7 @@ const SYMBOL_COLORS: Record<string, string> = {
   MAIZE: "#F59E0B", GOLD: "#EAB308", COFFEE: "#92400E", CRUDE_OIL: "#3B82F6",
 };
 
-const positions = [
+const FALLBACK_POSITIONS = [
   { symbol: "MAIZE", side: "LONG" as const, qty: 100, entry: 282.0, current: 285.5, pnl: 350.0, pnlPct: 1.24, margin: 2820 },
   { symbol: "GOLD", side: "SHORT" as const, qty: 4, entry: 2349.8, current: 2345.6, pnl: 16.8, pnlPct: 0.18, margin: 469.96 },
   { symbol: "COFFEE", side: "LONG" as const, qty: 20, entry: 4518.5, current: 4520.0, pnl: 30.0, pnlPct: 0.03, margin: 9037 },
@@ -33,9 +35,47 @@ const SUMMARY_CARDS: { label: string; icon: IconName; color: string; bg: string 
 ];
 
 export default function PortfolioScreen() {
-  const totalPnl = positions.reduce((s, p) => s + p.pnl, 0);
-  const totalMargin = positions.reduce((s, p) => s + p.margin, 0);
-  const summaryValues = ["$156,420", `+$${totalPnl.toFixed(0)}`, `$${totalMargin.toLocaleString()}`, `${positions.length}`];
+  const { data: portfolioData } = usePortfolio();
+  const { data: positionsData } = usePositions();
+
+  // Map API data to display format, fall back to hardcoded data
+  const positions = useMemo(() => {
+    const apiPositions = (positionsData as any)?.positions;
+    if (apiPositions && apiPositions.length > 0) {
+      return apiPositions.map((p: any) => ({
+        symbol: p.symbol,
+        side: p.side === "BUY" ? "LONG" as const : "SHORT" as const,
+        qty: p.quantity,
+        entry: p.averageEntryPrice,
+        current: p.currentPrice,
+        pnl: p.unrealizedPnl,
+        pnlPct: p.unrealizedPnlPercent,
+        margin: p.margin,
+      }));
+    }
+    return FALLBACK_POSITIONS;
+  }, [positionsData]);
+
+  const totalValue = (portfolioData as any)?.totalValue ?? 156420;
+  const totalPnl = positions.reduce((s: number, p: { pnl: number }) => s + p.pnl, 0);
+  const totalMargin = positions.reduce((s: number, p: { margin: number }) => s + p.margin, 0);
+  const marginPct = totalValue > 0 ? ((totalMargin / totalValue) * 100) : 13.8;
+  const summaryValues = [`$${totalValue.toLocaleString()}`, `+$${totalPnl.toFixed(0)}`, `$${totalMargin.toLocaleString()}`, `${positions.length}`];
+
+  const handleClosePosition = (symbol: string) => {
+    Alert.alert(
+      "Close Position",
+      `Are you sure you want to close your ${symbol} position?`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Close",
+          style: "destructive",
+          onPress: () => Alert.alert("Success", `${symbol} position closed`),
+        },
+      ]
+    );
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -69,10 +109,10 @@ export default function PortfolioScreen() {
               <Icon name="bar-chart" size={14} color={colors.text.muted} />
               <Text style={styles.marginBarLabel}>Margin Utilization</Text>
             </View>
-            <Text style={styles.marginBarPct}>13.8%</Text>
+            <Text style={styles.marginBarPct}>{marginPct.toFixed(1)}%</Text>
           </View>
           <View style={styles.marginBarTrack}>
-            <View style={[styles.marginBarFill, { width: "13.8%" }]} />
+            <View style={[styles.marginBarFill, { width: `${Math.min(marginPct, 100)}%` }]} />
           </View>
           <View style={styles.marginLegend}>
             <View style={styles.legendItem}>
@@ -111,7 +151,7 @@ export default function PortfolioScreen() {
                       </View>
                     </View>
                   </View>
-                  <TouchableOpacity style={styles.closeButton} activeOpacity={0.7}>
+                  <TouchableOpacity style={styles.closeButton} activeOpacity={0.7} onPress={() => handleClosePosition(pos.symbol)}>
                     <Icon name="x" size={14} color={colors.down} />
                     <Text style={styles.closeText}>Close</Text>
                   </TouchableOpacity>

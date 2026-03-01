@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useUserStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
 import { ThemeToggle } from "@/components/common/ThemeToggle";
@@ -25,10 +26,20 @@ const NOTIF_ICONS: Record<string, typeof TrendingUp> = {
 };
 
 export default function TopBar() {
+  const router = useRouter();
   const { user, notifications, unreadCount } = useUserStore();
   const [showNotifications, setShowNotifications] = useState(false);
   const [showLangMenu, setShowLangMenu] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const { locale, setLocale, t } = useI18nStore();
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      router.push(`/markets?q=${encodeURIComponent(searchQuery.trim())}`);
+      setSearchQuery("");
+    }
+  };
 
   return (
     <header
@@ -42,11 +53,13 @@ export default function TopBar() {
     >
       {/* Search */}
       <div className="flex items-center gap-3">
-        <div className="relative group">
+        <form onSubmit={handleSearch} className="relative group">
           <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-600 group-focus-within:text-brand-400 transition-colors" />
           <input
             type="text"
             placeholder="Search commodities, orders..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
             className="h-10 w-72 rounded-xl pl-10 pr-12 text-sm text-white placeholder-gray-600 transition-all duration-200 focus:w-80"
             style={{
               background: "rgba(255, 255, 255, 0.03)",
@@ -67,7 +80,7 @@ export default function TopBar() {
           >
             /
           </kbd>
-        </div>
+        </form>
       </div>
 
       {/* Right section */}
@@ -186,7 +199,10 @@ export default function TopBar() {
                 })}
               </div>
               <div className="px-5 py-3" style={{ borderTop: "1px solid rgba(255, 255, 255, 0.04)" }}>
-                <button className="w-full text-center text-xs font-medium text-brand-400 hover:text-brand-300 transition-colors">
+                <button
+                  onClick={() => { setShowNotifications(false); router.push("/alerts"); }}
+                  className="w-full text-center text-xs font-medium text-brand-400 hover:text-brand-300 transition-colors"
+                >
                   View all notifications
                 </button>
               </div>
@@ -198,7 +214,10 @@ export default function TopBar() {
         <div className="mx-1.5 h-6 w-px bg-white/[0.06]" />
 
         {/* User */}
-        <button className="flex items-center gap-2.5 rounded-xl px-2 py-1.5 hover:bg-white/[0.04] transition-all duration-200">
+        <button
+          onClick={() => router.push("/account")}
+          className="flex items-center gap-2.5 rounded-xl px-2 py-1.5 hover:bg-white/[0.04] transition-all duration-200"
+        >
           <div className="relative flex h-8 w-8 items-center justify-center rounded-lg text-xs font-bold text-white"
             style={{ background: "linear-gradient(135deg, #059669, #10b981)" }}
           >

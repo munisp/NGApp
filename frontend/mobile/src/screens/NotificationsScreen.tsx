@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
 } from "react-native";
 import { colors, spacing, fontSize, borderRadius } from "../styles/theme";
+import { useNotifications } from "../hooks/useApi";
 import Icon from "../components/Icon";
 import type { IconName } from "../components/Icon";
 
@@ -46,7 +47,24 @@ const typeColors: Record<string, string> = {
 };
 
 export default function NotificationsScreen() {
+  const { data: apiNotifications } = useNotifications();
   const [notifications, setNotifications] = useState(initialNotifications);
+
+  // Merge API notifications with fallback
+  useEffect(() => {
+    const apiData = (apiNotifications as any)?.notifications;
+    if (apiData && apiData.length > 0) {
+      setNotifications(apiData.map((n: any) => ({
+        id: n.id,
+        type: n.type ?? "system",
+        title: n.title,
+        message: n.message,
+        read: n.read ?? false,
+        timestamp: n.timestamp ? new Date(n.timestamp).toLocaleString() : "now",
+      })));
+    }
+  }, [apiNotifications]);
+
   const unread = notifications.filter((n) => !n.read).length;
 
   const markAllRead = () => {

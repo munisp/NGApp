@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import {
   View,
   Text,
@@ -8,7 +8,9 @@ import {
   Dimensions,
 } from "react-native";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
+import { useNavigation } from "@react-navigation/native";
 import { colors, spacing, fontSize, borderRadius, shadows } from "../styles/theme";
+import { useTicker, useOrderBook } from "../hooks/useApi";
 import Icon from "../components/Icon";
 import type { IconName } from "../components/Icon";
 import type { RootStackParamList } from "../types";
@@ -42,24 +44,54 @@ const commodityData: Record<string, {
 
 export default function TradeDetailScreen({ route }: Props) {
   const { symbol } = route.params;
-  const data = commodityData[symbol] ?? commodityData.MAIZE;
+  const navigation = useNavigation();
+  const fallbackData = commodityData[symbol] ?? commodityData.MAIZE;
   const [timeframe, setTimeframe] = useState("1H");
   const iconName = SYMBOL_ICONS[symbol] || "circle-dot";
   const iconColor = SYMBOL_COLORS[symbol] || colors.text.muted;
 
+  // Use API data with fallback
+  const { data: tickerData } = useTicker(symbol);
+  const { data: orderBookData } = useOrderBook(symbol);
+
+  const data = useMemo(() => {
+    const ticker = tickerData as any;
+    if (ticker?.lastPrice) {
+      return {
+        name: ticker.name ?? fallbackData.name,
+        price: ticker.lastPrice,
+        change: ticker.changePercent24h ?? fallbackData.change,
+        high: ticker.high24h ?? fallbackData.high,
+        low: ticker.low24h ?? fallbackData.low,
+        volume: ticker.volume24h > 1000 ? `${(ticker.volume24h / 1000).toFixed(1)}K` : String(ticker.volume24h),
+        unit: fallbackData.unit,
+      };
+    }
+    return fallbackData;
+  }, [tickerData, fallbackData]);
+
   const timeframes = ["1m", "5m", "15m", "1H", "4H", "1D", "1W"];
 
-  // Mock orderbook data
-  const asks = Array.from({ length: 8 }, (_, i) => ({
-    price: (data.price + (i + 1) * data.price * 0.001).toFixed(2),
-    qty: Math.floor(Math.random() * 500 + 50),
-  }));
-  const bids = Array.from({ length: 8 }, (_, i) => ({
-    price: (data.price - (i + 1) * data.price * 0.001).toFixed(2),
-    qty: Math.floor(Math.random() * 500 + 50),
-  }));
-
-  const maxQty = Math.max(...asks.map((a) => a.qty), ...bids.map((b) => b.qty));
+  // Use API orderbook data with fallback to generated data
+  const { asks, bids, maxQty } = useMemo(() => {
+    const ob = orderBookData as any;
+    if (ob?.asks?.length > 0) {
+      const a = ob.asks.slice(0, 8).map((l: any) => ({ price: l.price.toFixed(2), qty: l.quantity }));
+      const b = ob.bids.slice(0, 8).map((l: any) => ({ price: l.price.toFixed(2), qty: l.quantity }));
+      const max = Math.max(...a.map((x: any) => x.qty), ...b.map((x: any) => x.qty));
+      return { asks: a, bids: b, maxQty: max };
+    }
+    const a = Array.from({ length: 8 }, (_, i) => ({
+      price: (data.price + (i + 1) * data.price * 0.001).toFixed(2),
+      qty: Math.floor(Math.random() * 500 + 50),
+    }));
+    const b = Array.from({ length: 8 }, (_, i) => ({
+      price: (data.price - (i + 1) * data.price * 0.001).toFixed(2),
+      qty: Math.floor(Math.random() * 500 + 50),
+    }));
+    const max = Math.max(...a.map((x) => x.qty), ...b.map((x) => x.qty));
+    return { asks: a, bids: b, maxQty: max };
+  }, [orderBookData, data.price]);
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
@@ -169,11 +201,19 @@ export default function TradeDetailScreen({ route }: Props) {
 
       {/* Trade Buttons */}
       <View style={styles.tradeButtons}>
-        <TouchableOpacity style={[styles.tradeButton, styles.buyButton]} activeOpacity={0.8}>
+        <TouchableOpacity
+          style={[styles.tradeButton, styles.buyButton]}
+          activeOpacity={0.8}
+          onPress={() => (navigation as any).navigate("Trade", { symbol })}
+        >
           <Icon name="trending-up" size={18} color={colors.white} />
           <Text style={styles.tradeButtonText}>Buy / Long</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={[styles.tradeButton, styles.sellButton]} activeOpacity={0.8}>
+        <TouchableOpacity
+          style={[styles.tradeButton, styles.sellButton]}
+          activeOpacity={0.8}
+          onPress={() => (navigation as any).navigate("Trade", { symbol })}
+        >
           <Icon name="trending-down" size={18} color={colors.white} />
           <Text style={styles.tradeButtonText}>Sell / Short</Text>
         </TouchableOpacity>

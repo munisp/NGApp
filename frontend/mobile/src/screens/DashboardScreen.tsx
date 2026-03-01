@@ -57,12 +57,18 @@ export default function DashboardScreen() {
     );
   };
 
-  const quickActions: { label: string; icon: IconName; color: string; bg: string }[] = [
-    { label: "Buy", icon: "trending-up", color: colors.up, bg: "rgba(16, 185, 129, 0.12)" },
-    { label: "Sell", icon: "trending-down", color: colors.down, bg: "rgba(239, 68, 68, 0.12)" },
-    { label: "Deposit", icon: "download", color: colors.info, bg: "rgba(59, 130, 246, 0.12)" },
-    { label: "Withdraw", icon: "upload", color: colors.purple, bg: "rgba(139, 92, 246, 0.12)" },
+  const quickActions: { label: string; icon: IconName; color: string; bg: string; screen: string }[] = [
+    { label: "Buy", icon: "trending-up", color: colors.up, bg: "rgba(16, 185, 129, 0.12)", screen: "Trade" },
+    { label: "Sell", icon: "trending-down", color: colors.down, bg: "rgba(239, 68, 68, 0.12)", screen: "Trade" },
+    { label: "Deposit", icon: "download", color: colors.info, bg: "rgba(59, 130, 246, 0.12)", screen: "Account" },
+    { label: "Withdraw", icon: "upload", color: colors.purple, bg: "rgba(139, 92, 246, 0.12)", screen: "Account" },
   ];
+
+  const totalValue = portfolioData?.totalValue ?? 156420.5;
+  const unrealizedPnl = portfolioData?.unrealizedPnl ?? 2845.3;
+  const availableBalance = portfolioData?.availableBalance ?? 98540;
+  const marginUsed = portfolioData?.marginUsed ?? 13551;
+  const pnlPct = totalValue > 0 ? ((unrealizedPnl / totalValue) * 100) : 1.85;
 
   return (
     <SafeAreaView style={styles.container}>
@@ -94,11 +100,11 @@ export default function DashboardScreen() {
               <Icon name="wallet" size={14} color={colors.text.muted} />
               <Text style={styles.portfolioLabel}>Portfolio Value</Text>
             </View>
-            <Text style={styles.portfolioValue}>$156,420.50</Text>
+            <Text style={styles.portfolioValue}>${totalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Text>
             <View style={styles.portfolioRow}>
               <View style={styles.pnlBadge}>
-                <Icon name="trending-up" size={12} color={colors.up} />
-                <Text style={styles.pnlText}>+$2,845.30 (+1.85%)</Text>
+                <Icon name={unrealizedPnl >= 0 ? "trending-up" : "trending-down"} size={12} color={unrealizedPnl >= 0 ? colors.up : colors.down} />
+                <Text style={[styles.pnlText, { color: unrealizedPnl >= 0 ? colors.up : colors.down }]}>{unrealizedPnl >= 0 ? "+" : ""}${unrealizedPnl.toLocaleString(undefined, { minimumFractionDigits: 2 })} ({pnlPct >= 0 ? "+" : ""}{pnlPct.toFixed(2)}%)</Text>
               </View>
               <Text style={styles.portfolioSubtext}>24h</Text>
             </View>
@@ -108,17 +114,17 @@ export default function DashboardScreen() {
             <View style={styles.portfolioStats}>
               <View style={styles.stat}>
                 <Text style={styles.statLabel}>Available</Text>
-                <Text style={styles.statValue}>$98,540</Text>
+                <Text style={styles.statValue}>${availableBalance.toLocaleString(undefined, { maximumFractionDigits: 0 })}</Text>
               </View>
               <View style={styles.statDivider} />
               <View style={styles.stat}>
                 <Text style={styles.statLabel}>Margin</Text>
-                <Text style={styles.statValue}>$13,551</Text>
+                <Text style={styles.statValue}>${marginUsed.toLocaleString(undefined, { maximumFractionDigits: 0 })}</Text>
               </View>
               <View style={styles.statDivider} />
               <View style={styles.stat}>
                 <Text style={styles.statLabel}>Positions</Text>
-                <Text style={styles.statValue}>4</Text>
+                <Text style={styles.statValue}>{positions.length}</Text>
               </View>
             </View>
           </View>
@@ -127,11 +133,12 @@ export default function DashboardScreen() {
         {/* Quick Actions */}
         <View style={styles.quickActions}>
           {quickActions.map((action) => (
-            <TouchableOpacity
-              key={action.label}
-              style={[styles.quickAction, { backgroundColor: action.bg }]}
-              activeOpacity={0.7}
-            >
+              <TouchableOpacity
+                key={action.label}
+                style={[styles.quickAction, { backgroundColor: action.bg }]}
+                activeOpacity={0.7}
+                onPress={() => (navigation as any).navigate(action.screen)}
+              >
               <View style={styles.quickActionIcon}>
                 <Icon name={action.icon} size={18} color={action.color} />
               </View>
@@ -144,7 +151,7 @@ export default function DashboardScreen() {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Watchlist</Text>
-            <TouchableOpacity style={styles.seeAllButton}>
+            <TouchableOpacity style={styles.seeAllButton} onPress={() => (navigation as any).navigate("Markets")}>
               <Text style={styles.seeAll}>See all</Text>
               <Icon name="chevron-right" size={14} color={colors.brand.primary} />
             </TouchableOpacity>
@@ -180,7 +187,7 @@ export default function DashboardScreen() {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Open Positions</Text>
-            <TouchableOpacity style={styles.seeAllButton}>
+            <TouchableOpacity style={styles.seeAllButton} onPress={() => (navigation as any).navigate("Portfolio")}>
               <Text style={styles.seeAll}>See all</Text>
               <Icon name="chevron-right" size={14} color={colors.brand.primary} />
             </TouchableOpacity>

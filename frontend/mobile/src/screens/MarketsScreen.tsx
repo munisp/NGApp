@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import {
   View,
   Text,
@@ -11,6 +11,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
 import { colors, spacing, fontSize, borderRadius } from "../styles/theme";
+import { useMarkets } from "../hooks/useApi";
 import Icon from "../components/Icon";
 import type { IconName } from "../components/Icon";
 
@@ -28,7 +29,7 @@ const SYMBOL_COLORS: Record<string, string> = {
   CRUDE_OIL: "#3B82F6", NAT_GAS: "#EF4444", CARBON: "#10B981",
 };
 
-const commodities = [
+const FALLBACK_COMMODITIES = [
   { symbol: "MAIZE", name: "Maize (Corn)", category: "agricultural" as const, price: 285.5, change: 1.15, vol: "45.2K" },
   { symbol: "WHEAT", name: "Wheat", category: "agricultural" as const, price: 342.75, change: -0.72, vol: "32.1K" },
   { symbol: "COFFEE", name: "Coffee Arabica", category: "agricultural" as const, price: 4520.0, change: 1.01, vol: "18.9K" },
@@ -40,6 +41,13 @@ const commodities = [
   { symbol: "NAT_GAS", name: "Natural Gas", category: "energy" as const, price: 2.845, change: -2.23, vol: "67.4K" },
   { symbol: "CARBON", name: "Carbon Credits", category: "carbon_credits" as const, price: 65.2, change: 1.32, vol: "15.6K" },
 ];
+
+const CATEGORY_MAP: Record<string, Category> = {
+  Agricultural: "agricultural",
+  Metals: "precious_metals",
+  Energy: "energy",
+  Carbon: "carbon_credits",
+};
 
 const CATEGORY_ICONS: Record<Category, IconName> = {
   all: "layers",
@@ -61,10 +69,27 @@ export default function MarketsScreen() {
   const navigation = useNavigation();
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState<Category>("all");
+  const { data: marketsData } = useMarkets();
+
+  // Map API data to display format, fall back to hardcoded data
+  const commodities = useMemo(() => {
+    const apiCommodities = (marketsData as any)?.commodities;
+    if (apiCommodities && apiCommodities.length > 0) {
+      return apiCommodities.map((c: any) => ({
+        symbol: c.symbol,
+        name: c.name,
+        category: CATEGORY_MAP[c.category] || "agricultural",
+        price: c.lastPrice,
+        change: c.changePercent24h,
+        vol: c.volume24h > 1000 ? `${(c.volume24h / 1000).toFixed(1)}K` : String(c.volume24h),
+      }));
+    }
+    return FALLBACK_COMMODITIES;
+  }, [marketsData]);
 
   const filtered = commodities
-    .filter((c) => category === "all" || c.category === category)
-    .filter((c) =>
+    .filter((c: any) => category === "all" || c.category === category)
+    .filter((c: any) =>
       c.symbol.toLowerCase().includes(search.toLowerCase()) ||
       c.name.toLowerCase().includes(search.toLowerCase())
     );

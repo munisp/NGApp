@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { useMarketStore } from "@/lib/store";
+import { useAnalyticsDashboard, usePnLReport, useGeospatial, useAIInsights, usePriceForecast } from "@/lib/api-hooks";
 import { formatPrice, formatPercent, cn } from "@/lib/utils";
 import {
   BarChart3,
@@ -53,6 +54,18 @@ const MOCK_GEOSPATIAL = [
 export default function AnalyticsPage() {
   const [activeTab, setActiveTab] = useState<AnalyticsTab>("overview");
   const { commodities } = useMarketStore();
+  const { data: dashboardData } = useAnalyticsDashboard();
+  const { data: insightsData } = useAIInsights();
+  const { data: geospatialRaw } = useGeospatial("MAIZE");
+
+  // Use API data with fallback to mock
+  const dashboard = dashboardData as Record<string, unknown> | null;
+  const insights = insightsData as Record<string, unknown> | null;
+  const geospatial = geospatialRaw as Record<string, unknown> | null;
+  const forecasts = (insights?.forecasts as typeof MOCK_FORECAST) ?? MOCK_FORECAST;
+  const anomalies = (insights?.anomalies as typeof MOCK_ANOMALIES) ?? MOCK_ANOMALIES;
+  const geospatialData = (geospatial?.regions as typeof MOCK_GEOSPATIAL) ?? MOCK_GEOSPATIAL;
+  const sentiment = (insights?.sentiment as { bullish: number; neutral: number; bearish: number }) ?? { bullish: 62, neutral: 24, bearish: 14 };
 
   const tabs: { key: AnalyticsTab; label: string; icon: typeof BarChart3 }[] = [
     { key: "overview", label: "Overview", icon: BarChart3 },
@@ -115,9 +128,9 @@ export default function AnalyticsPage() {
           {/* Market Summary Cards */}
           <motion.div variants={item} className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {[
-              { label: "Total Market Cap", value: "$2.47B", change: "+1.24% (24h)", icon: BarChart3, color: "brand" },
-              { label: "24h Volume", value: "$847M", change: "+15.3%", icon: Activity, color: "blue" },
-              { label: "Active Traders", value: "12,847", sub: "Across 42 countries", icon: Users, color: "purple" },
+              { label: "Total Market Cap", value: dashboard?.marketCap ? `$${(Number(dashboard.marketCap) / 1e9).toFixed(2)}B` : "$2.47B", change: "+1.24% (24h)", icon: BarChart3, color: "brand" },
+              { label: "24h Volume", value: dashboard?.volume24h ? `$${(Number(dashboard.volume24h) / 1e6).toFixed(0)}M` : "$847M", change: "+15.3%", icon: Activity, color: "blue" },
+              { label: "Active Traders", value: (dashboard?.activeTraders as number)?.toLocaleString() ?? "12,847", sub: `Across ${dashboard?.activePairs ?? 42} pairs`, icon: Users, color: "purple" },
               { label: "Settlement Rate", value: "99.7%", sub: "T+0 via TigerBeetle", icon: Zap, color: "amber" },
             ].map((stat) => {
               const Icon = stat.icon;
@@ -225,7 +238,7 @@ export default function AnalyticsPage() {
               </svg>
 
               {/* Data points */}
-              {MOCK_GEOSPATIAL.map((point, i) => {
+              {geospatialData.map((point: typeof MOCK_GEOSPATIAL[number], i: number) => {
                 // Simplified coordinate mapping for Africa
                 const x = 50 + ((point.lng + 20) / 60) * 300;
                 const y = 50 + ((point.lat * -1 + 10) / 40) * 350;
@@ -269,7 +282,7 @@ export default function AnalyticsPage() {
                 </tr>
               </thead>
               <tbody>
-                {MOCK_GEOSPATIAL.map((point, i) => (
+                {geospatialData.map((point: typeof MOCK_GEOSPATIAL[number], i: number) => (
                   <tr key={i} className="table-row">
                     <td className="py-2.5 pr-4">
                       <div className="flex items-center gap-2">
@@ -300,7 +313,7 @@ export default function AnalyticsPage() {
             <p className="text-xs text-gray-600 mb-4">Powered by Ray + LSTM/Transformer models</p>
 
             <div className="space-y-3">
-              {MOCK_FORECAST.map((f) => (
+              {forecasts.map((f: typeof MOCK_FORECAST[number]) => (
                 <div key={f.symbol} className="flex items-center gap-4 rounded-xl p-3.5"
                   style={{ background: "rgba(15, 23, 42, 0.5)", border: "1px solid rgba(255, 255, 255, 0.03)" }}
                 >
@@ -356,7 +369,7 @@ export default function AnalyticsPage() {
             <p className="text-xs text-gray-600 mb-4">Real-time market anomaly detection via Apache Flink</p>
 
             <div className="space-y-2">
-              {MOCK_ANOMALIES.map((a, i) => (
+              {anomalies.map((a: typeof MOCK_ANOMALIES[number], i: number) => (
                 <div key={i} className={cn(
                   "rounded-xl p-3",
                   a.severity === "high" ? "bg-red-500/[0.04]" :
@@ -395,17 +408,17 @@ export default function AnalyticsPage() {
             <div className="grid grid-cols-3 gap-3 text-center">
               <div className="rounded-xl p-4" style={{ background: "rgba(16, 185, 129, 0.04)", border: "1px solid rgba(16, 185, 129, 0.08)" }}>
                 <TrendingUp className="h-5 w-5 text-emerald-400 mx-auto mb-1.5" />
-                <p className="text-3xl font-bold text-emerald-400 font-mono">62%</p>
+                <p className="text-3xl font-bold text-emerald-400 font-mono">{sentiment.bullish}%</p>
                 <p className="text-[11px] text-gray-500 mt-1">Bullish</p>
               </div>
               <div className="rounded-xl p-4" style={{ background: "rgba(255, 255, 255, 0.02)", border: "1px solid rgba(255, 255, 255, 0.04)" }}>
                 <Activity className="h-5 w-5 text-gray-500 mx-auto mb-1.5" />
-                <p className="text-3xl font-bold text-gray-400 font-mono">24%</p>
+                <p className="text-3xl font-bold text-gray-400 font-mono">{sentiment.neutral}%</p>
                 <p className="text-[11px] text-gray-500 mt-1">Neutral</p>
               </div>
               <div className="rounded-xl p-4" style={{ background: "rgba(239, 68, 68, 0.04)", border: "1px solid rgba(239, 68, 68, 0.08)" }}>
                 <TrendingDown className="h-5 w-5 text-red-400 mx-auto mb-1.5" />
-                <p className="text-3xl font-bold text-red-400 font-mono">14%</p>
+                <p className="text-3xl font-bold text-red-400 font-mono">{sentiment.bearish}%</p>
                 <p className="text-[11px] text-gray-500 mt-1">Bearish</p>
               </div>
             </div>

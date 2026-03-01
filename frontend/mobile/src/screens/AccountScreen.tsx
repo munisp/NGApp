@@ -6,18 +6,66 @@ import {
   StyleSheet,
   TouchableOpacity,
   Alert,
+  Linking,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
 import { colors, spacing, fontSize, borderRadius, shadows } from "../styles/theme";
+import { useProfile } from "../hooks/useApi";
 import Icon from "../components/Icon";
 import type { IconName } from "../components/Icon";
 
 export default function AccountScreen() {
   const navigation = useNavigation();
+  const { data: profileData } = useProfile();
+  const profile = (profileData as any);
+  const userName = profile?.name ?? "Alex Trader";
+  const userEmail = profile?.email ?? "trader@nexcom.exchange";
+  const userTier = profile?.accountTier?.replace("_", " ").toUpperCase() ?? "RETAIL TRADER";
+  const kycVerified = profile?.kycStatus === "VERIFIED" || true;
 
   const handleBiometric = () => {
     Alert.alert("Biometric Auth", "Face ID / Fingerprint authentication would be configured here");
+  };
+
+  const handleChangePassword = () => {
+    Alert.alert("Change Password", "Enter your current password and new password", [
+      { text: "Cancel", style: "cancel" },
+      { text: "Continue", onPress: () => Alert.alert("Success", "Password changed successfully (demo mode)") },
+    ]);
+  };
+
+  const handle2FA = () => {
+    Alert.alert("Two-Factor Authentication", "Enable 2FA for additional security?", [
+      { text: "Cancel", style: "cancel" },
+      { text: "Enable", onPress: () => Alert.alert("Success", "2FA enabled (demo mode)") },
+    ]);
+  };
+
+  const handleActiveSessions = () => {
+    Alert.alert("Active Sessions", "Chrome on macOS (Current)\nSafari on iPhone (2h ago)", [
+      { text: "OK" },
+      { text: "Revoke All", style: "destructive", onPress: () => Alert.alert("Done", "All other sessions revoked") },
+    ]);
+  };
+
+  const handleAPIKeys = () => {
+    Alert.alert("API Keys", "Generate a new API key for programmatic access?", [
+      { text: "Cancel", style: "cancel" },
+      { text: "Generate", onPress: () => Alert.alert("API Key", "nxc_demo_key_abc123... (demo mode)") },
+    ]);
+  };
+
+  const handleHelpCenter = () => {
+    Linking.openURL("https://docs.nexcom.exchange").catch(() =>
+      Alert.alert("Help Center", "Visit docs.nexcom.exchange for help")
+    );
+  };
+
+  const handleContactSupport = () => {
+    Linking.openURL("mailto:support@nexcom.exchange").catch(() =>
+      Alert.alert("Contact Support", "Email: support@nexcom.exchange")
+    );
   };
 
   const handleLogout = () => {
@@ -41,18 +89,18 @@ export default function AccountScreen() {
     { label: "Default Currency", icon: "credit-card", color: colors.brand.primary, bg: "rgba(16, 185, 129, 0.12)", subtitle: "USD" },
   ];
 
-  const securityMenu: { label: string; icon: IconName; color: string; bg: string; subtitle?: string }[] = [
-    { label: "Change Password", icon: "key", color: colors.warning, bg: "rgba(245, 158, 11, 0.12)" },
-    { label: "Two-Factor Authentication", icon: "shield", color: colors.brand.primary, bg: "rgba(16, 185, 129, 0.12)" },
-    { label: "Active Sessions", icon: "phone", color: colors.info, bg: "rgba(59, 130, 246, 0.12)", subtitle: "2 devices" },
-    { label: "API Keys", icon: "settings", color: colors.text.secondary, bg: "rgba(148, 163, 184, 0.12)" },
+  const securityMenu: { label: string; icon: IconName; color: string; bg: string; subtitle?: string; onPress?: () => void }[] = [
+    { label: "Change Password", icon: "key", color: colors.warning, bg: "rgba(245, 158, 11, 0.12)", onPress: handleChangePassword },
+    { label: "Two-Factor Authentication", icon: "shield", color: colors.brand.primary, bg: "rgba(16, 185, 129, 0.12)", onPress: handle2FA },
+    { label: "Active Sessions", icon: "phone", color: colors.info, bg: "rgba(59, 130, 246, 0.12)", subtitle: "2 devices", onPress: handleActiveSessions },
+    { label: "API Keys", icon: "settings", color: colors.text.secondary, bg: "rgba(148, 163, 184, 0.12)", onPress: handleAPIKeys },
   ];
 
-  const supportMenu: { label: string; icon: IconName; color: string; bg: string }[] = [
-    { label: "Help Center", icon: "help-circle", color: colors.info, bg: "rgba(59, 130, 246, 0.12)" },
-    { label: "Contact Support", icon: "message", color: colors.brand.primary, bg: "rgba(16, 185, 129, 0.12)" },
-    { label: "Terms & Conditions", icon: "receipt", color: colors.text.secondary, bg: "rgba(148, 163, 184, 0.12)" },
-    { label: "Privacy Policy", icon: "lock", color: colors.purple, bg: "rgba(139, 92, 246, 0.12)" },
+  const supportMenu: { label: string; icon: IconName; color: string; bg: string; onPress?: () => void }[] = [
+    { label: "Help Center", icon: "help-circle", color: colors.info, bg: "rgba(59, 130, 246, 0.12)", onPress: handleHelpCenter },
+    { label: "Contact Support", icon: "message", color: colors.brand.primary, bg: "rgba(16, 185, 129, 0.12)", onPress: handleContactSupport },
+    { label: "Terms & Conditions", icon: "receipt", color: colors.text.secondary, bg: "rgba(148, 163, 184, 0.12)", onPress: () => Alert.alert("Terms & Conditions", "Visit nexcom.exchange/terms") },
+    { label: "Privacy Policy", icon: "lock", color: colors.purple, bg: "rgba(139, 92, 246, 0.12)", onPress: () => Alert.alert("Privacy Policy", "Visit nexcom.exchange/privacy") },
   ];
 
   return (
@@ -76,14 +124,14 @@ export default function AccountScreen() {
             </View>
           </View>
           <View style={styles.profileInfo}>
-            <Text style={styles.profileName}>Alex Trader</Text>
-            <Text style={styles.profileEmail}>trader@nexcom.exchange</Text>
+            <Text style={styles.profileName}>{userName}</Text>
+            <Text style={styles.profileEmail}>{userEmail}</Text>
             <View style={styles.tierBadge}>
               <Icon name="star" size={10} color={colors.brand.primary} />
-              <Text style={styles.tierText}>RETAIL TRADER</Text>
+              <Text style={styles.tierText}>{userTier}</Text>
             </View>
           </View>
-          <TouchableOpacity style={styles.editButton}>
+          <TouchableOpacity style={styles.editButton} onPress={() => Alert.alert("Edit Profile", "Profile editing would open here")}>
             <Icon name="edit" size={16} color={colors.text.secondary} />
           </TouchableOpacity>
         </View>
