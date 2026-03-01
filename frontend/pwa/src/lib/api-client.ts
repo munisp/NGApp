@@ -312,6 +312,46 @@ export const api = {
       apiClient.get(`/analytics/forecast/${symbol}`),
   },
 
+  // Matching Engine - Market Makers
+  marketMakers: {
+    list: () => fetch(`${process.env.NEXT_PUBLIC_MATCHING_ENGINE_URL || "http://localhost:8080"}/api/v1/market-makers`).then(r => r.json()),
+    get: (id: string) => fetch(`${process.env.NEXT_PUBLIC_MATCHING_ENGINE_URL || "http://localhost:8080"}/api/v1/market-makers/${id}`).then(r => r.json()),
+    performance: (id: string) => fetch(`${process.env.NEXT_PUBLIC_MATCHING_ENGINE_URL || "http://localhost:8080"}/api/v1/market-makers/${id}/performance`).then(r => r.json()),
+    quotes: (symbol: string) => fetch(`${process.env.NEXT_PUBLIC_MATCHING_ENGINE_URL || "http://localhost:8080"}/api/v1/market-makers/quotes/${symbol}`).then(r => r.json()),
+    submitQuote: (quote: { market_maker_id: string; symbol: string; bid_price: number; bid_quantity: number; ask_price: number; ask_quantity: number }) =>
+      fetch(`${process.env.NEXT_PUBLIC_MATCHING_ENGINE_URL || "http://localhost:8080"}/api/v1/market-makers/quotes`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(quote) }).then(r => r.json()),
+  },
+
+  // Matching Engine - Indices
+  indices: {
+    list: () => fetch(`${process.env.NEXT_PUBLIC_MATCHING_ENGINE_URL || "http://localhost:8080"}/api/v1/indices`).then(r => r.json()),
+    get: (id: string) => fetch(`${process.env.NEXT_PUBLIC_MATCHING_ENGINE_URL || "http://localhost:8080"}/api/v1/indices/${id}`).then(r => r.json()),
+    values: () => fetch(`${process.env.NEXT_PUBLIC_MATCHING_ENGINE_URL || "http://localhost:8080"}/api/v1/indices/values`).then(r => r.json()),
+    value: (id: string) => fetch(`${process.env.NEXT_PUBLIC_MATCHING_ENGINE_URL || "http://localhost:8080"}/api/v1/indices/${id}/value`).then(r => r.json()),
+  },
+
+  // Matching Engine - Corporate Actions
+  corporateActions: {
+    list: () => fetch(`${process.env.NEXT_PUBLIC_MATCHING_ENGINE_URL || "http://localhost:8080"}/api/v1/corporate-actions`).then(r => r.json()),
+    pending: () => fetch(`${process.env.NEXT_PUBLIC_MATCHING_ENGINE_URL || "http://localhost:8080"}/api/v1/corporate-actions/pending`).then(r => r.json()),
+    forSymbol: (symbol: string) => fetch(`${process.env.NEXT_PUBLIC_MATCHING_ENGINE_URL || "http://localhost:8080"}/api/v1/corporate-actions/${symbol}`).then(r => r.json()),
+    process: (id: string) => fetch(`${process.env.NEXT_PUBLIC_MATCHING_ENGINE_URL || "http://localhost:8080"}/api/v1/corporate-actions/${id}/process`, { method: "POST" }).then(r => r.json()),
+  },
+
+  // Matching Engine - Brokers
+  brokers: {
+    list: () => fetch(`${process.env.NEXT_PUBLIC_MATCHING_ENGINE_URL || "http://localhost:8080"}/api/v1/brokers`).then(r => r.json()),
+    get: (id: string) => fetch(`${process.env.NEXT_PUBLIC_MATCHING_ENGINE_URL || "http://localhost:8080"}/api/v1/brokers/${id}`).then(r => r.json()),
+    connected: () => fetch(`${process.env.NEXT_PUBLIC_MATCHING_ENGINE_URL || "http://localhost:8080"}/api/v1/brokers/connected`).then(r => r.json()),
+    routeOrder: (route: { broker_id: string; client_account: string; symbol: string; side: string; quantity: number }) =>
+      fetch(`${process.env.NEXT_PUBLIC_MATCHING_ENGINE_URL || "http://localhost:8080"}/api/v1/brokers/route`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(route) }).then(r => r.json()),
+  },
+
+  // Matching Engine - Exchange Status
+  exchangeStatus: {
+    get: () => fetch(`${process.env.NEXT_PUBLIC_MATCHING_ENGINE_URL || "http://localhost:8080"}/api/v1/status`).then(r => r.json()),
+  },
+
   // Auth
   auth: {
     login: (credentials: { email: string; password: string }) =>

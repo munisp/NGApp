@@ -690,6 +690,225 @@ export function usePriceForecast(symbol: string) {
 }
 
 // ============================================================
+// Matching Engine Hooks - Market Makers, Indices, Corporate Actions, Brokers
+// ============================================================
+
+export function useMarketMakers() {
+  const [makers, setMakers] = useState<Record<string, unknown>[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchMakers = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await api.marketMakers.list();
+      setMakers(res?.data ?? []);
+    } catch {
+      setMakers([
+        { id: "MM-001", name: "NEXCOM Primary Market Maker", status: "ACTIVE", clearing_member_id: "CM-001", assigned_symbols: ["GOLD","SILVER","CRUDE_OIL","COFFEE","COCOA","MAIZE","WHEAT","SOYBEAN"], obligations: { max_spread_bps: 50, min_quote_size: 10000000, min_presence_pct: 85 }, performance: { avg_spread_bps: 12.5, presence_pct: 98.2, violations: 0, compliant: true } },
+        { id: "MM-002", name: "Pan-African Liquidity Provider", status: "ACTIVE", clearing_member_id: "CM-002", assigned_symbols: ["MAIZE","WHEAT","COFFEE","COCOA"], obligations: { max_spread_bps: 50, min_quote_size: 5000000, min_presence_pct: 85 }, performance: { avg_spread_bps: 18.3, presence_pct: 94.7, violations: 1, compliant: true } },
+      ]);
+    } finally { setLoading(false); }
+  }, []);
+
+  useEffect(() => { fetchMakers(); }, [fetchMakers]);
+  return { makers, loading, refetch: fetchMakers };
+}
+
+export function useMarketMakerPerformance(id: string) {
+  const [perf, setPerf] = useState<Record<string, unknown> | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!id) return;
+    (async () => {
+      setLoading(true);
+      try {
+        const res = await api.marketMakers.performance(id);
+        setPerf(res?.data ?? null);
+      } catch {
+        setPerf({ compliant: true, avg_spread_bps: 12.5, presence_pct: 98.2, violations: 0 });
+      } finally { setLoading(false); }
+    })();
+  }, [id]);
+
+  return { perf, loading };
+}
+
+export function useSubmitQuote() {
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState<Record<string, unknown> | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const submitQuote = useCallback(async (quote: { market_maker_id: string; symbol: string; bid_price: number; bid_quantity: number; ask_price: number; ask_quantity: number }) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await api.marketMakers.submitQuote(quote);
+      if (res?.success) { setResult(res.data); }
+      else { setError(res?.error ?? "Quote rejected"); }
+      return res;
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Failed to submit quote";
+      setError(msg);
+      return null;
+    } finally { setLoading(false); }
+  }, []);
+
+  return { submitQuote, loading, result, error };
+}
+
+export function useIndices() {
+  const [indices, setIndices] = useState<Record<string, unknown>[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchIndices = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await api.indices.list();
+      setIndices(res?.data ?? []);
+    } catch {
+      setIndices([
+        { id: "NXCI", name: "NEXCOM All-Commodities Index", index_type: "COMPOSITE", base_value: 1000, constituents: Array(10).fill(null), methodology: "MARKETCAPWEIGHTED", status: "ACTIVE" },
+        { id: "NXCI-AGRI", name: "NEXCOM Agricultural Index", index_type: "SECTOR", base_value: 1000, constituents: Array(5).fill(null), methodology: "MARKETCAPWEIGHTED", status: "ACTIVE" },
+        { id: "NXCI-METAL", name: "NEXCOM Metals Index", index_type: "SECTOR", base_value: 1000, constituents: Array(2).fill(null), methodology: "MARKETCAPWEIGHTED", status: "ACTIVE" },
+        { id: "NXCI-ENERGY", name: "NEXCOM Energy Index", index_type: "SECTOR", base_value: 1000, constituents: Array(2).fill(null), methodology: "MARKETCAPWEIGHTED", status: "ACTIVE" },
+        { id: "NXCI-CARBON", name: "NEXCOM Carbon Index", index_type: "SINGLECOMMODITY", base_value: 1000, constituents: Array(1).fill(null), methodology: "EQUALWEIGHTED", status: "ACTIVE" },
+      ]);
+    } finally { setLoading(false); }
+  }, []);
+
+  useEffect(() => { fetchIndices(); }, [fetchIndices]);
+  return { indices, loading, refetch: fetchIndices };
+}
+
+export function useIndexValues() {
+  const [values, setValues] = useState<Record<string, unknown>[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchValues = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await api.indices.values();
+      setValues(res?.data ?? []);
+    } catch {
+      setValues([
+        { index_id: "NXCI", value: 1000, change: 0, change_pct: 0, high: 1000, low: 1000, open: 1000, volume: 0, turnover: 0 },
+        { index_id: "NXCI-AGRI", value: 1000, change: 0, change_pct: 0, high: 1000, low: 1000, open: 1000, volume: 0, turnover: 0 },
+        { index_id: "NXCI-METAL", value: 1000, change: 0, change_pct: 0, high: 1000, low: 1000, open: 1000, volume: 0, turnover: 0 },
+        { index_id: "NXCI-ENERGY", value: 1000, change: 0, change_pct: 0, high: 1000, low: 1000, open: 1000, volume: 0, turnover: 0 },
+        { index_id: "NXCI-CARBON", value: 1000, change: 0, change_pct: 0, high: 1000, low: 1000, open: 1000, volume: 0, turnover: 0 },
+      ]);
+    } finally { setLoading(false); }
+  }, []);
+
+  useEffect(() => { fetchValues(); }, [fetchValues]);
+  return { values, loading, refetch: fetchValues };
+}
+
+export function useCorporateActions() {
+  const [actions, setActions] = useState<Record<string, unknown>[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchActions = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await api.corporateActions.list();
+      setActions(res?.data ?? []);
+    } catch {
+      setActions([
+        { id: "ca-001", action_type: "ROLLOVER", symbol: "MAIZE-FUT-2026M03", description: "March 2026 Maize futures rollover to June 2026", status: "ANNOUNCED", parameters: { type: "Rollover", from_contract: "MAIZE-FUT-2026M03", to_contract: "MAIZE-FUT-2026M06", price_adjustment: 0 }, affected_positions: [], effective_date: "2026-03-15T00:00:00Z" },
+        { id: "ca-002", action_type: "MARGINADJUSTMENT", symbol: "CRUDE_OIL", description: "Crude Oil initial margin increase due to elevated volatility", status: "ANNOUNCED", parameters: { type: "MarginAdjustment", old_initial_margin_pct: 8, new_initial_margin_pct: 10, old_maintenance_margin_pct: 6, new_maintenance_margin_pct: 7.5 }, affected_positions: [], effective_date: "2026-03-10T00:00:00Z" },
+        { id: "ca-003", action_type: "CASHDIVIDEND", symbol: "CARBON", description: "Carbon credit retirement dividend — $0.50 per contract", status: "ANNOUNCED", parameters: { type: "CashDividend", amount_per_contract: 0.50, currency: "USD", total_payout: 40000 }, affected_positions: [], effective_date: "2026-03-20T00:00:00Z" },
+      ]);
+    } finally { setLoading(false); }
+  }, []);
+
+  useEffect(() => { fetchActions(); }, [fetchActions]);
+  return { actions, loading, refetch: fetchActions };
+}
+
+export function useProcessCorporateAction() {
+  const [loading, setLoading] = useState(false);
+
+  const processAction = useCallback(async (id: string) => {
+    setLoading(true);
+    try {
+      const res = await api.corporateActions.process(id);
+      return res;
+    } catch {
+      return null;
+    } finally { setLoading(false); }
+  }, []);
+
+  return { processAction, loading };
+}
+
+export function useBrokers() {
+  const [brokers, setBrokers] = useState<Record<string, unknown>[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchBrokers = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await api.brokers.list();
+      setBrokers(res?.data ?? []);
+    } catch {
+      setBrokers([
+        { id: "BRK-001", name: "NEXCOM Securities Ltd", license_number: "CMA-NGX-2026-001", broker_type: "FULLSERVICE", status: "ACTIVE", connectivity: { protocol: "FIX50", connected: true, latency_us: 120, messages_sent: 45892 }, clients: [{ client_id: "CLI-001", name: "Nairobi Grain Traders" }, { client_id: "CLI-002", name: "East Africa Coffee Co" }] },
+        { id: "BRK-002", name: "Pan-African Capital Markets", license_number: "CMA-NGX-2026-002", broker_type: "FULLSERVICE", status: "ACTIVE", connectivity: { protocol: "FIX50", connected: true, latency_us: 245, messages_sent: 23456 }, clients: [{ client_id: "CLI-004", name: "Accra Gold Dealers" }] },
+        { id: "BRK-003", name: "AlgoTrade Africa", license_number: "CMA-NGX-2026-003", broker_type: "ALGOTRADER", status: "ACTIVE", connectivity: { protocol: "BINARY", connected: true, latency_us: 45, messages_sent: 1234567 }, clients: [{ client_id: "CLI-006", name: "AlgoTrade Prop Desk" }] },
+        { id: "BRK-004", name: "Mobile Money Trading", license_number: "CMA-NGX-2026-004", broker_type: "INTRODUCING", status: "ACTIVE", connectivity: { protocol: "RESTAPI", connected: true, latency_us: 850, messages_sent: 8765 }, clients: [{ client_id: "CLI-007", name: "Smallholder Coop" }] },
+        { id: "BRK-005", name: "Global Futures Corp", license_number: "CMA-NGX-2026-005", broker_type: "EXECUTIONONLY", status: "PENDINGAPPROVAL", connectivity: { protocol: "FIX50", connected: false, latency_us: null, messages_sent: 0 }, clients: [] },
+      ]);
+    } finally { setLoading(false); }
+  }, []);
+
+  useEffect(() => { fetchBrokers(); }, [fetchBrokers]);
+  return { brokers, loading, refetch: fetchBrokers };
+}
+
+export function useRouteOrder() {
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState<Record<string, unknown> | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const routeOrder = useCallback(async (route: { broker_id: string; client_account: string; symbol: string; side: string; quantity: number }) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await api.brokers.routeOrder(route);
+      if (res?.success) { setResult(res.data); }
+      else { setError(res?.error ?? "Route failed"); }
+      return res;
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Failed to route order";
+      setError(msg);
+      return null;
+    } finally { setLoading(false); }
+  }, []);
+
+  return { routeOrder, loading, result, error };
+}
+
+export function useExchangeStatus() {
+  const [status, setStatus] = useState<Record<string, unknown> | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await api.exchangeStatus.get();
+        setStatus(res?.data ?? null);
+      } catch {
+        setStatus({ market_makers: 2, indices: 5, brokers: 5, connected_brokers: 4, corporate_actions: 3, fix_protocol: "FIXT.1.1 / FIX.5.0SP2" });
+      } finally { setLoading(false); }
+    })();
+  }, []);
+
+  return { status, loading };
+}
+
+// ============================================================
 // Middleware Status Hook
 // ============================================================
 

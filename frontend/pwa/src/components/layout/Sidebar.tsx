@@ -13,6 +13,10 @@ import {
   BarChart3,
   User,
   Zap,
+  Users,
+  LineChart,
+  FileText,
+  Building2,
   type LucideIcon,
 } from "lucide-react";
 
@@ -28,6 +32,10 @@ const navItems: NavItem[] = [
   { href: "/markets", label: "Markets", icon: TrendingUp },
   { href: "/portfolio", label: "Portfolio", icon: Wallet },
   { href: "/orders", label: "Orders", icon: ClipboardList },
+  { href: "/market-makers", label: "Market Makers", icon: Users },
+  { href: "/indices", label: "Indices", icon: LineChart },
+  { href: "/corporate-actions", label: "Corp Actions", icon: FileText },
+  { href: "/brokers", label: "Brokers", icon: Building2 },
   { href: "/alerts", label: "Alerts", icon: Bell },
   { href: "/analytics", label: "Analytics", icon: BarChart3 },
   { href: "/account", label: "Account", icon: User },
