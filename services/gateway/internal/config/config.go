@@ -22,6 +22,7 @@ type Config struct {
 	CORSOrigins          string
 	MatchingEngineURL    string
 	IngestionEngineURL   string
+	BlockchainServiceURL string
 }
 
 func Load() *Config {
@@ -45,6 +46,7 @@ func Load() *Config {
 		CORSOrigins:          getEnv("CORS_ORIGINS", "http://localhost:3000,http://localhost:3001"),
 		MatchingEngineURL:    getEnv("MATCHING_ENGINE_URL", "http://localhost:8080"),
 		IngestionEngineURL:   getEnv("INGESTION_ENGINE_URL", "http://localhost:8005"),
+		BlockchainServiceURL: getEnv("BLOCKCHAIN_SERVICE_URL", "http://localhost:8009"),
 	}
 }
 

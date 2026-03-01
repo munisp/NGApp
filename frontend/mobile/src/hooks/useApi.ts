@@ -234,3 +234,33 @@ export function useAiInsights() {
     recommendations: [],
   });
 }
+
+// ─── Blockchain / Digital Assets hooks ──────────────────────────────────────
+
+const MOCK_FRACTIONAL_ASSETS = [
+  { asset_id: "FA-GOLD-001", token_id: "TKN-GOLD-001", symbol: "GOLD", name: "Gold Bar 1kg - LBMA Certified", total_fractions: 10000, available_fractions: 6500, fraction_price: 7.85, total_value: 78500, holders: 2, chain: "polygon", contract_address: "0xNEXCOM_GOLD", metadata_cid: "QmGoldBar001", status: "Active" },
+  { asset_id: "FA-COFFEE-001", token_id: "TKN-COFFEE-001", symbol: "COFFEE", name: "Arabica Coffee 10MT - Kenya AA", total_fractions: 5000, available_fractions: 3200, fraction_price: 9.04, total_value: 45200, holders: 2, chain: "polygon", contract_address: "0xNEXCOM_COFFEE", metadata_cid: "QmCoffee001", status: "Active" },
+  { asset_id: "FA-MAIZE-001", token_id: "TKN-MAIZE-001", symbol: "MAIZE", name: "White Maize 50MT - Grade 1", total_fractions: 20000, available_fractions: 15000, fraction_price: 0.71, total_value: 14200, holders: 1, chain: "polygon", contract_address: "0xNEXCOM_MAIZE", metadata_cid: "QmMaize001", status: "Active" },
+  { asset_id: "FA-CRUDE-001", token_id: "TKN-CRUDE-001", symbol: "CRUDE_OIL", name: "Brent Crude 1000bbl - Bonny Light", total_fractions: 50000, available_fractions: 42000, fraction_price: 1.57, total_value: 78500, holders: 2, chain: "ethereum", contract_address: "0xNEXCOM_CRUDE", metadata_cid: "QmCrude001", status: "Active" },
+  { asset_id: "FA-CARBON-001", token_id: "TKN-CARBON-001", symbol: "CARBON", name: "EU ETS Carbon Credits 100t", total_fractions: 10000, available_fractions: 8500, fraction_price: 0.65, total_value: 6500, holders: 1, chain: "polygon", contract_address: "0xNEXCOM_CARBON", metadata_cid: "QmCarbon001", status: "Active" },
+];
+
+export function useFractionalAssets() {
+  return useApiQuery(() => apiClient.getFractionalAssets(), { assets: MOCK_FRACTIONAL_ASSETS });
+}
+
+export function useFractionalOrderbook(assetId: string) {
+  return useApiQuery(() => apiClient.getFractionalOrderbook(assetId), { bids: [], asks: [], spread: 0 });
+}
+
+export function useFractionalPortfolio(holderId: string) {
+  return useApiQuery(() => apiClient.getFractionalPortfolio(holderId), { holdings: [], total_value: 0 });
+}
+
+export function useChainStatus() {
+  return useApiQuery(() => apiClient.getChainStatus(), { chains: [] });
+}
+
+export function useIpfsStatus() {
+  return useApiQuery(() => apiClient.getIpfsStatus(), { connected: false, api_url: "", gateway_url: "", pinned_objects: 0 });
+}

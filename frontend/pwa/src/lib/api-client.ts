@@ -359,6 +359,39 @@ export const api = {
     get: () => apiClient.get<APIResponse>("/matching-engine/status"),
   },
 
+  // Blockchain - Digital Assets + IPFS + Fractional Trading (proxied through gateway)
+  blockchain: {
+    // Tokenization
+    tokenize: (data: { commodity_symbol: string; quantity: string; owner_id: string; warehouse_receipt_id: string; chain: string; unit?: string; warehouse_location?: string; quality_grade?: string }) =>
+      apiClient.post<APIResponse>("/blockchain/tokenize", data),
+    listTokens: () => apiClient.get<APIResponse>("/blockchain/tokens"),
+    getToken: (tokenId: string) => apiClient.get<APIResponse>(`/blockchain/tokens/${tokenId}`),
+    transferToken: (tokenId: string, data: { from_address: string; to_address: string; quantity: string }) =>
+      apiClient.post<APIResponse>(`/blockchain/tokens/${tokenId}/transfer`, data),
+    fractionalizeToken: (tokenId: string, data: { total_fractions: number; price_per_fraction: number }) =>
+      apiClient.post<APIResponse>(`/blockchain/tokens/${tokenId}/fractionalize`, data),
+    // Settlement (DvP)
+    settle: (data: { trade_id: string; buyer_address: string; seller_address: string; token_id: string; quantity: string; price: string; chain: string }) =>
+      apiClient.post<APIResponse>("/blockchain/settle", data),
+    getTransaction: (txHash: string) => apiClient.get<APIResponse>(`/blockchain/tx/${txHash}`),
+    // Bridge
+    bridgeInitiate: (data: { token_id: string; from_chain: string; to_chain: string; quantity: string }) =>
+      apiClient.post<APIResponse>("/blockchain/bridge/initiate", data),
+    chainStatus: () => apiClient.get<APIResponse>("/blockchain/chains/status"),
+    // Fractional trading
+    fractionalAssets: () => apiClient.get<APIResponse>("/blockchain/fractions/assets"),
+    fractionalAsset: (assetId: string) => apiClient.get<APIResponse>(`/blockchain/fractions/assets/${assetId}`),
+    fractionalOrder: (data: { asset_id: string; trader_id: string; side: string; quantity: number; price: number }) =>
+      apiClient.post<APIResponse>("/blockchain/fractions/orders", data),
+    fractionalOrderbook: (assetId: string) => apiClient.get<APIResponse>(`/blockchain/fractions/orderbook/${assetId}`),
+    fractionalTrades: () => apiClient.get<APIResponse>("/blockchain/fractions/trades"),
+    fractionalPortfolio: (holderId: string) => apiClient.get<APIResponse>(`/blockchain/fractions/portfolio/${holderId}`),
+    // IPFS
+    ipfsPin: (data: { data: unknown; name?: string }) => apiClient.post<APIResponse>("/blockchain/ipfs/pin", data),
+    ipfsGet: (cid: string) => apiClient.get<APIResponse>(`/blockchain/ipfs/get/${cid}`),
+    ipfsStatus: () => apiClient.get<APIResponse>("/blockchain/ipfs/status"),
+  },
+
   // Auth
   auth: {
     login: (credentials: { email: string; password: string }) =>

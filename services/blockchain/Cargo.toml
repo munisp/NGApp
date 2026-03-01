@@ -2,7 +2,7 @@
 name = "nexcom-blockchain"
 version = "0.1.0"
 edition = "2021"
-description = "NEXCOM Exchange - Blockchain Integration Service for commodity tokenization and settlement"
+description = "NEXCOM Exchange - Blockchain Integration Service for commodity tokenization, fractional ownership, IPFS, and settlement"
 
 [dependencies]
 actix-web = "4"
@@ -14,7 +14,8 @@ uuid = { version = "1", features = ["v4"] }
 chrono = { version = "0.4", features = ["serde"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
-reqwest = { version = "0.12", features = ["json"] }
+reqwest = { version = "0.12", features = ["json", "multipart"] }
 ethers = { version = "2", features = ["legacy"] }
 hex = "0.4"
 thiserror = "1"
+sha2 = "0.10"

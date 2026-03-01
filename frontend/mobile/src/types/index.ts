@@ -64,6 +64,7 @@ export type RootStackParamList = {
   Indices: undefined;
   CorporateActions: undefined;
   Brokers: undefined;
+  DigitalAssets: undefined;
 };
 
 export type MainTabParamList = {

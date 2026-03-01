@@ -17,6 +17,7 @@ import MarketMakersScreen from "./screens/MarketMakersScreen";
 import IndicesScreen from "./screens/IndicesScreen";
 import CorporateActionsScreen from "./screens/CorporateActionsScreen";
 import BrokersScreen from "./screens/BrokersScreen";
+import DigitalAssetsScreen from "./screens/DigitalAssetsScreen";
 import Icon from "./components/Icon";
 import type { IconName } from "./components/Icon";
 
@@ -136,6 +137,11 @@ export default function App() {
             name="Brokers"
             component={BrokersScreen}
             options={{ title: "Brokers" }}
+          />
+          <Stack.Screen
+            name="DigitalAssets"
+            component={DigitalAssetsScreen}
+            options={{ title: "Digital Assets" }}
           />
         </Stack.Navigator>
       </NavigationContainer>

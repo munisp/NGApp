@@ -616,3 +616,71 @@ func (s *Server) wsMarketData(c *gin.Context) {
 	mdMu.Unlock()
 	conn.Close()
 }
+
+// ============================================================
+// Blockchain Service Proxy Handlers (Digital Assets + IPFS + Fractional Trading)
+// ============================================================
+
+// Tokenization
+func (s *Server) bcTokenize(c *gin.Context) {
+	s.proxyPost(c, s.cfg.BlockchainServiceURL, "/api/v1/blockchain/tokenize")
+}
+func (s *Server) bcListTokens(c *gin.Context) {
+	s.proxyGet(c, s.cfg.BlockchainServiceURL, "/api/v1/blockchain/tokens")
+}
+func (s *Server) bcGetToken(c *gin.Context) {
+	s.proxyGet(c, s.cfg.BlockchainServiceURL, "/api/v1/blockchain/tokens/"+c.Param("token_id"))
+}
+func (s *Server) bcTransferToken(c *gin.Context) {
+	s.proxyPost(c, s.cfg.BlockchainServiceURL, "/api/v1/blockchain/tokens/"+c.Param("token_id")+"/transfer")
+}
+func (s *Server) bcFractionalizeToken(c *gin.Context) {
+	s.proxyPost(c, s.cfg.BlockchainServiceURL, "/api/v1/blockchain/tokens/"+c.Param("token_id")+"/fractionalize")
+}
+
+// Settlement (DvP)
+func (s *Server) bcSettle(c *gin.Context) {
+	s.proxyPost(c, s.cfg.BlockchainServiceURL, "/api/v1/blockchain/settle")
+}
+func (s *Server) bcGetTransaction(c *gin.Context) {
+	s.proxyGet(c, s.cfg.BlockchainServiceURL, "/api/v1/blockchain/tx/"+c.Param("tx_hash"))
+}
+
+// Bridge
+func (s *Server) bcBridgeInitiate(c *gin.Context) {
+	s.proxyPost(c, s.cfg.BlockchainServiceURL, "/api/v1/blockchain/bridge/initiate")
+}
+func (s *Server) bcChainStatus(c *gin.Context) {
+	s.proxyGet(c, s.cfg.BlockchainServiceURL, "/api/v1/blockchain/chains/status")
+}
+
+// Fractional Trading
+func (s *Server) bcFractionalAssets(c *gin.Context) {
+	s.proxyGet(c, s.cfg.BlockchainServiceURL, "/api/v1/blockchain/fractions/assets")
+}
+func (s *Server) bcFractionalAsset(c *gin.Context) {
+	s.proxyGet(c, s.cfg.BlockchainServiceURL, "/api/v1/blockchain/fractions/assets/"+c.Param("asset_id"))
+}
+func (s *Server) bcFractionalOrder(c *gin.Context) {
+	s.proxyPost(c, s.cfg.BlockchainServiceURL, "/api/v1/blockchain/fractions/orders")
+}
+func (s *Server) bcFractionalOrderbook(c *gin.Context) {
+	s.proxyGet(c, s.cfg.BlockchainServiceURL, "/api/v1/blockchain/fractions/orderbook/"+c.Param("asset_id"))
+}
+func (s *Server) bcFractionalTrades(c *gin.Context) {
+	s.proxyGet(c, s.cfg.BlockchainServiceURL, "/api/v1/blockchain/fractions/trades")
+}
+func (s *Server) bcFractionalPortfolio(c *gin.Context) {
+	s.proxyGet(c, s.cfg.BlockchainServiceURL, "/api/v1/blockchain/fractions/portfolio/"+c.Param("holder_id"))
+}
+
+// IPFS
+func (s *Server) bcIpfsPin(c *gin.Context) {
+	s.proxyPost(c, s.cfg.BlockchainServiceURL, "/api/v1/blockchain/ipfs/pin")
+}
+func (s *Server) bcIpfsGet(c *gin.Context) {
+	s.proxyGet(c, s.cfg.BlockchainServiceURL, "/api/v1/blockchain/ipfs/get/"+c.Param("cid"))
+}
+func (s *Server) bcIpfsStatus(c *gin.Context) {
+	s.proxyGet(c, s.cfg.BlockchainServiceURL, "/api/v1/blockchain/ipfs/status")
+}

@@ -239,6 +239,34 @@ func (s *Server) SetupRoutes() *gin.Engine {
 				auditLog.GET("/:id", s.getAuditEntry)
 			}
 
+			// Blockchain service proxy routes (Digital Assets + IPFS + Fractional Trading)
+			bc := protected.Group("/blockchain")
+			{
+				// Tokenization
+				bc.POST("/tokenize", s.bcTokenize)
+				bc.GET("/tokens", s.bcListTokens)
+				bc.GET("/tokens/:token_id", s.bcGetToken)
+				bc.POST("/tokens/:token_id/transfer", s.bcTransferToken)
+				bc.POST("/tokens/:token_id/fractionalize", s.bcFractionalizeToken)
+				// Settlement (DvP)
+				bc.POST("/settle", s.bcSettle)
+				bc.GET("/tx/:tx_hash", s.bcGetTransaction)
+				// Bridge
+				bc.POST("/bridge/initiate", s.bcBridgeInitiate)
+				bc.GET("/chains/status", s.bcChainStatus)
+				// Fractional trading
+				bc.GET("/fractions/assets", s.bcFractionalAssets)
+				bc.GET("/fractions/assets/:asset_id", s.bcFractionalAsset)
+				bc.POST("/fractions/orders", s.bcFractionalOrder)
+				bc.GET("/fractions/orderbook/:asset_id", s.bcFractionalOrderbook)
+				bc.GET("/fractions/trades", s.bcFractionalTrades)
+				bc.GET("/fractions/portfolio/:holder_id", s.bcFractionalPortfolio)
+				// IPFS
+				bc.POST("/ipfs/pin", s.bcIpfsPin)
+				bc.GET("/ipfs/get/:cid", s.bcIpfsGet)
+				bc.GET("/ipfs/status", s.bcIpfsStatus)
+			}
+
 			// WebSocket endpoint for real-time notifications
 			protected.GET("/ws/notifications", s.wsNotifications)
 			protected.GET("/ws/market-data", s.wsMarketData)

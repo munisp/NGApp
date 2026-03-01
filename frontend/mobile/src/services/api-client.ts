@@ -274,6 +274,52 @@ class ApiClient {
     return this.request("/matching-engine/brokers/connected");
   }
 
+  // Blockchain - Digital Assets + IPFS + Fractional Trading (proxied through gateway)
+  async getFractionalAssets() {
+    return this.request("/blockchain/fractions/assets");
+  }
+
+  async getFractionalAsset(assetId: string) {
+    return this.request(`/blockchain/fractions/assets/${assetId}`);
+  }
+
+  async getFractionalOrderbook(assetId: string) {
+    return this.request(`/blockchain/fractions/orderbook/${assetId}`);
+  }
+
+  async submitFractionalOrder(order: {
+    asset_id: string;
+    trader_id: string;
+    side: string;
+    quantity: number;
+    price: number;
+  }) {
+    return this.request("/blockchain/fractions/orders", {
+      method: "POST",
+      body: JSON.stringify(order),
+    });
+  }
+
+  async getFractionalTrades() {
+    return this.request("/blockchain/fractions/trades");
+  }
+
+  async getFractionalPortfolio(holderId: string) {
+    return this.request(`/blockchain/fractions/portfolio/${holderId}`);
+  }
+
+  async getChainStatus() {
+    return this.request("/blockchain/chains/status");
+  }
+
+  async getIpfsStatus() {
+    return this.request("/blockchain/ipfs/status");
+  }
+
+  async getTokens() {
+    return this.request("/blockchain/tokens");
+  }
+
   // Health
   async getHealth() {
     return this.request("/health");
