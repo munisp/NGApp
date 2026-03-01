@@ -17,10 +17,38 @@ use fractional::{
 };
 use ipfs::IpfsClient;
 
+/// Blockchain RPC configuration (configurable via env vars)
+#[derive(Clone)]
+struct RpcConfig {
+    ethereum_rpc_url: String,
+    polygon_rpc_url: String,
+    polygon_amoy_rpc_url: String,
+    commodity_token_address: String,
+    settlement_escrow_address: String,
+}
+
+impl RpcConfig {
+    fn from_env() -> Self {
+        Self {
+            ethereum_rpc_url: std::env::var("ETHEREUM_RPC_URL")
+                .unwrap_or_else(|_| "https://eth.llamarpc.com".to_string()),
+            polygon_rpc_url: std::env::var("POLYGON_RPC_URL")
+                .unwrap_or_else(|_| "https://polygon-rpc.com".to_string()),
+            polygon_amoy_rpc_url: std::env::var("POLYGON_AMOY_RPC_URL")
+                .unwrap_or_else(|_| "https://rpc-amoy.polygon.technology".to_string()),
+            commodity_token_address: std::env::var("COMMODITY_TOKEN_ADDRESS")
+                .unwrap_or_else(|_| "0x0000000000000000000000000000000000000000".to_string()),
+            settlement_escrow_address: std::env::var("SETTLEMENT_ESCROW_ADDRESS")
+                .unwrap_or_else(|_| "0x0000000000000000000000000000000000000000".to_string()),
+        }
+    }
+}
+
 /// Shared application state
 struct AppState {
     ipfs: IpfsClient,
     exchange: Mutex<FractionalExchange>,
+    rpc: RpcConfig,
 }
 
 #[actix_web::main]
@@ -37,9 +65,20 @@ async fn main() -> std::io::Result<()> {
         .parse::<u16>()
         .expect("PORT must be a valid u16");
 
+    let rpc_config = RpcConfig::from_env();
+    tracing::info!(
+        ethereum_rpc = %rpc_config.ethereum_rpc_url,
+        polygon_rpc = %rpc_config.polygon_rpc_url,
+        polygon_amoy_rpc = %rpc_config.polygon_amoy_rpc_url,
+        commodity_token = %rpc_config.commodity_token_address,
+        settlement_escrow = %rpc_config.settlement_escrow_address,
+        "RPC endpoints configured"
+    );
+
     let state = web::Data::new(AppState {
         ipfs: IpfsClient::new(),
         exchange: Mutex::new(FractionalExchange::new()),
+        rpc: rpc_config,
     });
 
     tracing::info!("Blockchain Service listening on port {}", port);
@@ -74,6 +113,9 @@ async fn main() -> std::io::Result<()> {
                     .route("/ipfs/pin", web::post().to(ipfs_pin))
                     .route("/ipfs/get/{cid}", web::get().to(ipfs_get))
                     .route("/ipfs/status", web::get().to(ipfs_status))
+                    // RPC configuration
+                    .route("/rpc/config", web::get().to(rpc_config_endpoint))
+                    .route("/rpc/block-number", web::get().to(rpc_block_number))
             )
     })
     .bind(("0.0.0.0", port))?
@@ -89,18 +131,29 @@ async fn health(state: web::Data<AppState>) -> HttpResponse {
     HttpResponse::Ok().json(serde_json::json!({
         "status": "healthy",
         "service": "blockchain",
-        "version": "1.0.0",
+        "version": "1.1.0",
         "features": {
             "ipfs": true,
             "fractional_trading": true,
             "multi_chain": true,
             "erc1155": true,
-            "dvp_settlement": true
+            "dvp_settlement": true,
+            "wallet_connect": true,
+            "hardhat_deploy": true
         },
         "ipfs_connected": ipfs_status.connected,
+        "rpc": {
+            "ethereum": state.rpc.ethereum_rpc_url,
+            "polygon": state.rpc.polygon_rpc_url,
+            "polygon_amoy": state.rpc.polygon_amoy_rpc_url,
+        },
+        "contracts": {
+            "commodity_token": state.rpc.commodity_token_address,
+            "settlement_escrow": state.rpc.settlement_escrow_address,
+        },
         "fractional_assets": exchange.assets.len(),
         "total_trades": exchange.trades.len(),
-        "chains": ["ethereum", "polygon", "hyperledger"]
+        "chains": ["ethereum", "polygon", "polygon_amoy", "hyperledger"]
     }))
 }
 
@@ -433,26 +486,44 @@ async fn initiate_bridge(req: web::Json<BridgeRequest>) -> HttpResponse {
     }))
 }
 
-async fn chain_status() -> HttpResponse {
+async fn chain_status(state: web::Data<AppState>) -> HttpResponse {
+    // Try to fetch real block numbers from configured RPC endpoints
+    let http = reqwest::Client::new();
+    let eth_block = fetch_block_number(&http, &state.rpc.ethereum_rpc_url).await;
+    let poly_block = fetch_block_number(&http, &state.rpc.polygon_rpc_url).await;
+    let amoy_block = fetch_block_number(&http, &state.rpc.polygon_amoy_rpc_url).await;
+
     HttpResponse::Ok().json(serde_json::json!({
         "chains": [
             {
                 "name": "ethereum",
-                "status": "connected",
-                "block_height": 18_534_221,
+                "status": if eth_block.is_some() { "connected" } else { "fallback" },
+                "block_height": eth_block.unwrap_or(18_534_221),
                 "gas_price": "25.3 gwei",
                 "chain_id": 1,
-                "contract": "CommodityToken (ERC-1155)",
+                "rpc_url": state.rpc.ethereum_rpc_url,
+                "contract": state.rpc.commodity_token_address,
                 "confirmations_required": 12
             },
             {
                 "name": "polygon",
-                "status": "connected",
-                "block_height": 52_891_045,
+                "status": if poly_block.is_some() { "connected" } else { "fallback" },
+                "block_height": poly_block.unwrap_or(52_891_045),
                 "gas_price": "0.003 gwei",
                 "chain_id": 137,
-                "contract": "CommodityToken (ERC-1155)",
+                "rpc_url": state.rpc.polygon_rpc_url,
+                "contract": state.rpc.commodity_token_address,
                 "confirmations_required": 32
+            },
+            {
+                "name": "polygon_amoy",
+                "status": if amoy_block.is_some() { "connected" } else { "fallback" },
+                "block_height": amoy_block.unwrap_or(0),
+                "gas_price": "0.001 gwei",
+                "chain_id": 80002,
+                "rpc_url": state.rpc.polygon_amoy_rpc_url,
+                "contract": state.rpc.commodity_token_address,
+                "confirmations_required": 5
             },
             {
                 "name": "hyperledger",
@@ -469,6 +540,33 @@ async fn chain_status() -> HttpResponse {
             "method": "Lock-and-Mint"
         }
     }))
+}
+
+/// Fetch latest block number from an Ethereum JSON-RPC endpoint
+async fn fetch_block_number(http: &reqwest::Client, rpc_url: &str) -> Option<u64> {
+    let body = serde_json::json!({
+        "jsonrpc": "2.0",
+        "method": "eth_blockNumber",
+        "params": [],
+        "id": 1
+    });
+    match http.post(rpc_url)
+        .json(&body)
+        .timeout(std::time::Duration::from_secs(5))
+        .send()
+        .await
+    {
+        Ok(resp) => {
+            if let Ok(json) = resp.json::<serde_json::Value>().await {
+                if let Some(hex_str) = json["result"].as_str() {
+                    let hex_str = hex_str.trim_start_matches("0x");
+                    return u64::from_str_radix(hex_str, 16).ok();
+                }
+            }
+            None
+        }
+        Err(_) => None,
+    }
 }
 
 // ── Fractional Trading ─────────────────────────────────────────────────────
@@ -677,5 +775,41 @@ async fn ipfs_status(state: web::Data<AppState>) -> HttpResponse {
         "gateway_url": status.gateway_url,
         "pinned_objects": status.pinned_objects,
         "repo_size_bytes": status.repo_size_bytes,
+    }))
+}
+
+// ── RPC Configuration Endpoints ──────────────────────────────────────────
+
+async fn rpc_config_endpoint(state: web::Data<AppState>) -> HttpResponse {
+    HttpResponse::Ok().json(serde_json::json!({
+        "ethereum": {
+            "rpc_url": state.rpc.ethereum_rpc_url,
+            "chain_id": 1,
+        },
+        "polygon": {
+            "rpc_url": state.rpc.polygon_rpc_url,
+            "chain_id": 137,
+        },
+        "polygon_amoy": {
+            "rpc_url": state.rpc.polygon_amoy_rpc_url,
+            "chain_id": 80002,
+        },
+        "contracts": {
+            "commodity_token": state.rpc.commodity_token_address,
+            "settlement_escrow": state.rpc.settlement_escrow_address,
+        },
+    }))
+}
+
+async fn rpc_block_number(state: web::Data<AppState>) -> HttpResponse {
+    let http = reqwest::Client::new();
+    let amoy_block = fetch_block_number(&http, &state.rpc.polygon_amoy_rpc_url).await;
+    let eth_block = fetch_block_number(&http, &state.rpc.ethereum_rpc_url).await;
+    let poly_block = fetch_block_number(&http, &state.rpc.polygon_rpc_url).await;
+
+    HttpResponse::Ok().json(serde_json::json!({
+        "ethereum": eth_block,
+        "polygon": poly_block,
+        "polygon_amoy": amoy_block,
     }))
 }

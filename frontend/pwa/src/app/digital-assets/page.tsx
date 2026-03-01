@@ -24,6 +24,7 @@ import {
   Database,
 } from "lucide-react";
 import { api } from "@/lib/api-client";
+import WalletConnect from "@/components/blockchain/WalletConnect";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -342,13 +343,16 @@ export default function DigitalAssetsPage() {
             Tokenized commodities with fractional ownership on ERC-1155 + IPFS metadata
           </p>
         </div>
-        <button
-          onClick={fetchData}
-          className="flex items-center gap-2 rounded-lg border border-white/10 px-4 py-2 text-sm text-gray-300 hover:bg-white/5 transition-colors"
-        >
-          <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
-          Refresh
-        </button>
+        <div className="flex items-center gap-3">
+          <WalletConnect />
+          <button
+            onClick={fetchData}
+            className="flex items-center gap-2 rounded-lg border border-white/10 px-4 py-2 text-sm text-gray-300 hover:bg-white/5 transition-colors"
+          >
+            <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+            Refresh
+          </button>
+        </div>
       </div>
 
       {/* Summary Cards */}

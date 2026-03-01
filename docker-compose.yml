@@ -562,6 +562,24 @@ services:
       - nexcom-network
 
   # ==========================================================================
+  # IPFS Node (Kubo)
+  # ==========================================================================
+  ipfs:
+    image: ipfs/kubo:v0.27.0
+    container_name: nexcom-ipfs
+    restart: unless-stopped
+    environment:
+      IPFS_PROFILE: server
+    volumes:
+      - ipfs-data:/data/ipfs
+    ports:
+      - "4001:4001"     # Swarm
+      - "5001:5001"     # API
+      - "8081:8080"     # Gateway
+    networks:
+      - nexcom-network
+
+  # ==========================================================================
   # NEXCOM Blockchain (Rust)
   # ==========================================================================
   blockchain:
@@ -574,8 +592,16 @@ services:
       - "8019:8009"
     environment:
       KAFKA_BROKERS: kafka:9092
+      ETHEREUM_RPC_URL: ${ETHEREUM_RPC_URL:-https://eth.llamarpc.com}
+      POLYGON_RPC_URL: ${POLYGON_RPC_URL:-https://polygon-rpc.com}
+      POLYGON_AMOY_RPC_URL: ${POLYGON_AMOY_RPC_URL:-https://rpc-amoy.polygon.technology}
+      COMMODITY_TOKEN_ADDRESS: ${COMMODITY_TOKEN_ADDRESS:-0x0000000000000000000000000000000000000000}
+      SETTLEMENT_ESCROW_ADDRESS: ${SETTLEMENT_ESCROW_ADDRESS:-0x0000000000000000000000000000000000000000}
+      IPFS_API_URL: http://ipfs:5001
+      IPFS_GATEWAY_URL: http://ipfs:8080
     depends_on:
       - kafka
+      - ipfs
     networks:
       - nexcom-network
 
@@ -708,3 +734,4 @@ volumes:
   wazuh-data:
   minio-data:
   lakehouse-data:
+  ipfs-data:
