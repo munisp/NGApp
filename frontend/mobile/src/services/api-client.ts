@@ -226,6 +226,54 @@ class ApiClient {
     return this.request("/ingestion/lakehouse/status");
   }
 
+  // Market Makers (proxied through gateway)
+  async getMarketMakers() {
+    return this.request("/matching-engine/market-makers");
+  }
+
+  async getMarketMaker(id: string) {
+    return this.request(`/matching-engine/market-makers/${id}`);
+  }
+
+  async getMarketMakerPerformance(id: string) {
+    return this.request(`/matching-engine/market-makers/${id}/performance`);
+  }
+
+  // Indices (proxied through gateway)
+  async getIndices() {
+    return this.request("/matching-engine/indices");
+  }
+
+  async getIndex(id: string) {
+    return this.request(`/matching-engine/indices/${id}`);
+  }
+
+  async getIndexValues() {
+    return this.request("/matching-engine/indices/values");
+  }
+
+  // Corporate Actions (proxied through gateway)
+  async getCorporateActions() {
+    return this.request("/matching-engine/corporate-actions");
+  }
+
+  async getPendingCorporateActions() {
+    return this.request("/matching-engine/corporate-actions/pending");
+  }
+
+  // Brokers (proxied through gateway)
+  async getBrokers() {
+    return this.request("/matching-engine/brokers");
+  }
+
+  async getBroker(id: string) {
+    return this.request(`/matching-engine/brokers/${id}`);
+  }
+
+  async getConnectedBrokers() {
+    return this.request("/matching-engine/brokers/connected");
+  }
+
   // Health
   async getHealth() {
     return this.request("/health");

@@ -172,6 +172,13 @@ class APIClient {
 // Singleton API Client Instance
 // ============================================================
 
+// Generic API response type for gateway endpoints
+interface APIResponse {
+  success?: boolean;
+  data?: Record<string, unknown> | Record<string, unknown>[];
+  error?: string;
+}
+
 export const apiClient = new APIClient(API_BASE_URL);
 
 // Add auth token interceptor
@@ -312,44 +319,44 @@ export const api = {
       apiClient.get(`/analytics/forecast/${symbol}`),
   },
 
-  // Matching Engine - Market Makers
+  // Matching Engine - Market Makers (proxied through gateway)
   marketMakers: {
-    list: () => fetch(`${process.env.NEXT_PUBLIC_MATCHING_ENGINE_URL || "http://localhost:8080"}/api/v1/market-makers`).then(r => r.json()),
-    get: (id: string) => fetch(`${process.env.NEXT_PUBLIC_MATCHING_ENGINE_URL || "http://localhost:8080"}/api/v1/market-makers/${id}`).then(r => r.json()),
-    performance: (id: string) => fetch(`${process.env.NEXT_PUBLIC_MATCHING_ENGINE_URL || "http://localhost:8080"}/api/v1/market-makers/${id}/performance`).then(r => r.json()),
-    quotes: (symbol: string) => fetch(`${process.env.NEXT_PUBLIC_MATCHING_ENGINE_URL || "http://localhost:8080"}/api/v1/market-makers/quotes/${symbol}`).then(r => r.json()),
+    list: () => apiClient.get<APIResponse>("/matching-engine/market-makers"),
+    get: (id: string) => apiClient.get<APIResponse>(`/matching-engine/market-makers/${id}`),
+    performance: (id: string) => apiClient.get<APIResponse>(`/matching-engine/market-makers/${id}/performance`),
+    quotes: (symbol: string) => apiClient.get<APIResponse>(`/matching-engine/market-makers/quotes/${symbol}`),
     submitQuote: (quote: { market_maker_id: string; symbol: string; bid_price: number; bid_quantity: number; ask_price: number; ask_quantity: number }) =>
-      fetch(`${process.env.NEXT_PUBLIC_MATCHING_ENGINE_URL || "http://localhost:8080"}/api/v1/market-makers/quotes`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(quote) }).then(r => r.json()),
+      apiClient.post<APIResponse>("/matching-engine/market-makers/quotes", quote),
   },
 
-  // Matching Engine - Indices
+  // Matching Engine - Indices (proxied through gateway)
   indices: {
-    list: () => fetch(`${process.env.NEXT_PUBLIC_MATCHING_ENGINE_URL || "http://localhost:8080"}/api/v1/indices`).then(r => r.json()),
-    get: (id: string) => fetch(`${process.env.NEXT_PUBLIC_MATCHING_ENGINE_URL || "http://localhost:8080"}/api/v1/indices/${id}`).then(r => r.json()),
-    values: () => fetch(`${process.env.NEXT_PUBLIC_MATCHING_ENGINE_URL || "http://localhost:8080"}/api/v1/indices/values`).then(r => r.json()),
-    value: (id: string) => fetch(`${process.env.NEXT_PUBLIC_MATCHING_ENGINE_URL || "http://localhost:8080"}/api/v1/indices/${id}/value`).then(r => r.json()),
+    list: () => apiClient.get<APIResponse>("/matching-engine/indices"),
+    get: (id: string) => apiClient.get<APIResponse>(`/matching-engine/indices/${id}`),
+    values: () => apiClient.get<APIResponse>("/matching-engine/indices/values"),
+    value: (id: string) => apiClient.get<APIResponse>(`/matching-engine/indices/${id}/value`),
   },
 
-  // Matching Engine - Corporate Actions
+  // Matching Engine - Corporate Actions (proxied through gateway)
   corporateActions: {
-    list: () => fetch(`${process.env.NEXT_PUBLIC_MATCHING_ENGINE_URL || "http://localhost:8080"}/api/v1/corporate-actions`).then(r => r.json()),
-    pending: () => fetch(`${process.env.NEXT_PUBLIC_MATCHING_ENGINE_URL || "http://localhost:8080"}/api/v1/corporate-actions/pending`).then(r => r.json()),
-    forSymbol: (symbol: string) => fetch(`${process.env.NEXT_PUBLIC_MATCHING_ENGINE_URL || "http://localhost:8080"}/api/v1/corporate-actions/${symbol}`).then(r => r.json()),
-    process: (id: string) => fetch(`${process.env.NEXT_PUBLIC_MATCHING_ENGINE_URL || "http://localhost:8080"}/api/v1/corporate-actions/${id}/process`, { method: "POST" }).then(r => r.json()),
+    list: () => apiClient.get<APIResponse>("/matching-engine/corporate-actions"),
+    pending: () => apiClient.get<APIResponse>("/matching-engine/corporate-actions/pending"),
+    forSymbol: (symbol: string) => apiClient.get<APIResponse>(`/matching-engine/corporate-actions/${symbol}`),
+    process: (id: string) => apiClient.post<APIResponse>(`/matching-engine/corporate-actions/${id}/process`),
   },
 
-  // Matching Engine - Brokers
+  // Matching Engine - Brokers (proxied through gateway)
   brokers: {
-    list: () => fetch(`${process.env.NEXT_PUBLIC_MATCHING_ENGINE_URL || "http://localhost:8080"}/api/v1/brokers`).then(r => r.json()),
-    get: (id: string) => fetch(`${process.env.NEXT_PUBLIC_MATCHING_ENGINE_URL || "http://localhost:8080"}/api/v1/brokers/${id}`).then(r => r.json()),
-    connected: () => fetch(`${process.env.NEXT_PUBLIC_MATCHING_ENGINE_URL || "http://localhost:8080"}/api/v1/brokers/connected`).then(r => r.json()),
+    list: () => apiClient.get<APIResponse>("/matching-engine/brokers"),
+    get: (id: string) => apiClient.get<APIResponse>(`/matching-engine/brokers/${id}`),
+    connected: () => apiClient.get<APIResponse>("/matching-engine/brokers/connected"),
     routeOrder: (route: { broker_id: string; client_account: string; symbol: string; side: string; quantity: number }) =>
-      fetch(`${process.env.NEXT_PUBLIC_MATCHING_ENGINE_URL || "http://localhost:8080"}/api/v1/brokers/route`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(route) }).then(r => r.json()),
+      apiClient.post<APIResponse>("/matching-engine/brokers/route", route),
   },
 
-  // Matching Engine - Exchange Status
+  // Matching Engine - Exchange Status (proxied through gateway)
   exchangeStatus: {
-    get: () => fetch(`${process.env.NEXT_PUBLIC_MATCHING_ENGINE_URL || "http://localhost:8080"}/api/v1/status`).then(r => r.json()),
+    get: () => apiClient.get<APIResponse>("/matching-engine/status"),
   },
 
   // Auth

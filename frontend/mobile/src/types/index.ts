@@ -60,6 +60,10 @@ export type RootStackParamList = {
   Notifications: undefined;
   Settings: undefined;
   KYC: undefined;
+  MarketMakers: undefined;
+  Indices: undefined;
+  CorporateActions: undefined;
+  Brokers: undefined;
 };
 
 export type MainTabParamList = {

@@ -701,7 +701,8 @@ export function useMarketMakers() {
     setLoading(true);
     try {
       const res = await api.marketMakers.list();
-      setMakers(res?.data ?? []);
+      const items = Array.isArray(res?.data) ? res.data : (res?.data as Record<string, unknown>)?.market_makers as Record<string, unknown>[] ?? [];
+      setMakers(items);
     } catch {
       setMakers([
         { id: "MM-001", name: "NEXCOM Primary Market Maker", status: "ACTIVE", clearing_member_id: "CM-001", assigned_symbols: ["GOLD","SILVER","CRUDE_OIL","COFFEE","COCOA","MAIZE","WHEAT","SOYBEAN"], obligations: { max_spread_bps: 50, min_quote_size: 10000000, min_presence_pct: 85 }, performance: { avg_spread_bps: 12.5, presence_pct: 98.2, violations: 0, compliant: true } },
@@ -724,7 +725,7 @@ export function useMarketMakerPerformance(id: string) {
       setLoading(true);
       try {
         const res = await api.marketMakers.performance(id);
-        setPerf(res?.data ?? null);
+        setPerf((Array.isArray(res?.data) ? res.data[0] : res?.data) as Record<string, unknown> ?? null);
       } catch {
         setPerf({ compliant: true, avg_spread_bps: 12.5, presence_pct: 98.2, violations: 0 });
       } finally { setLoading(false); }
@@ -744,7 +745,7 @@ export function useSubmitQuote() {
     setError(null);
     try {
       const res = await api.marketMakers.submitQuote(quote);
-      if (res?.success) { setResult(res.data); }
+      if (res?.success) { setResult((Array.isArray(res.data) ? res.data[0] : res.data) as Record<string, unknown> ?? null); }
       else { setError(res?.error ?? "Quote rejected"); }
       return res;
     } catch (err) {
@@ -765,7 +766,8 @@ export function useIndices() {
     setLoading(true);
     try {
       const res = await api.indices.list();
-      setIndices(res?.data ?? []);
+      const items = Array.isArray(res?.data) ? res.data : (res?.data as Record<string, unknown>)?.indices as Record<string, unknown>[] ?? [];
+      setIndices(items);
     } catch {
       setIndices([
         { id: "NXCI", name: "NEXCOM All-Commodities Index", index_type: "COMPOSITE", base_value: 1000, constituents: Array(10).fill(null), methodology: "MARKETCAPWEIGHTED", status: "ACTIVE" },
@@ -789,7 +791,8 @@ export function useIndexValues() {
     setLoading(true);
     try {
       const res = await api.indices.values();
-      setValues(res?.data ?? []);
+      const items = Array.isArray(res?.data) ? res.data : (res?.data as Record<string, unknown>)?.values as Record<string, unknown>[] ?? [];
+      setValues(items);
     } catch {
       setValues([
         { index_id: "NXCI", value: 1000, change: 0, change_pct: 0, high: 1000, low: 1000, open: 1000, volume: 0, turnover: 0 },
@@ -813,7 +816,8 @@ export function useCorporateActions() {
     setLoading(true);
     try {
       const res = await api.corporateActions.list();
-      setActions(res?.data ?? []);
+      const items = Array.isArray(res?.data) ? res.data : (res?.data as Record<string, unknown>)?.corporate_actions as Record<string, unknown>[] ?? [];
+      setActions(items);
     } catch {
       setActions([
         { id: "ca-001", action_type: "ROLLOVER", symbol: "MAIZE-FUT-2026M03", description: "March 2026 Maize futures rollover to June 2026", status: "ANNOUNCED", parameters: { type: "Rollover", from_contract: "MAIZE-FUT-2026M03", to_contract: "MAIZE-FUT-2026M06", price_adjustment: 0 }, affected_positions: [], effective_date: "2026-03-15T00:00:00Z" },
@@ -851,7 +855,8 @@ export function useBrokers() {
     setLoading(true);
     try {
       const res = await api.brokers.list();
-      setBrokers(res?.data ?? []);
+      const items = Array.isArray(res?.data) ? res.data : (res?.data as Record<string, unknown>)?.brokers as Record<string, unknown>[] ?? [];
+      setBrokers(items);
     } catch {
       setBrokers([
         { id: "BRK-001", name: "NEXCOM Securities Ltd", license_number: "CMA-NGX-2026-001", broker_type: "FULLSERVICE", status: "ACTIVE", connectivity: { protocol: "FIX50", connected: true, latency_us: 120, messages_sent: 45892 }, clients: [{ client_id: "CLI-001", name: "Nairobi Grain Traders" }, { client_id: "CLI-002", name: "East Africa Coffee Co" }] },
@@ -877,7 +882,7 @@ export function useRouteOrder() {
     setError(null);
     try {
       const res = await api.brokers.routeOrder(route);
-      if (res?.success) { setResult(res.data); }
+      if (res?.success) { setResult((Array.isArray(res.data) ? res.data[0] : res.data) as Record<string, unknown> ?? null); }
       else { setError(res?.error ?? "Route failed"); }
       return res;
     } catch (err) {
@@ -898,7 +903,7 @@ export function useExchangeStatus() {
     (async () => {
       try {
         const res = await api.exchangeStatus.get();
-        setStatus(res?.data ?? null);
+        setStatus((Array.isArray(res?.data) ? res.data[0] : res?.data) as Record<string, unknown> ?? null);
       } catch {
         setStatus({ market_makers: 2, indices: 5, brokers: 5, connected_brokers: 4, corporate_actions: 3, fix_protocol: "FIXT.1.1 / FIX.5.0SP2" });
       } finally { setLoading(false); }

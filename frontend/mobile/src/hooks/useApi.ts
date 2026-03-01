@@ -171,6 +171,51 @@ export function useNotifications() {
   return useApiQuery(() => apiClient.getNotifications(), { notifications: MOCK_NOTIFICATIONS });
 }
 
+// ─── NGX Module hooks (Gap 5) ───────────────────────────────────────────
+
+const MOCK_MARKET_MAKERS = [
+  { id: "MM-001", name: "NEXCOM Primary Market Maker", status: "ACTIVE", clearing_member_id: "CM-001", assigned_symbols: ["MAIZE", "GOLD", "COFFEE", "CRUDE_OIL", "WHEAT", "COCOA", "SILVER", "CARBON"] },
+  { id: "MM-002", name: "Pan-African Liquidity Provider", status: "ACTIVE", clearing_member_id: "CM-002", assigned_symbols: ["MAIZE", "COFFEE", "COCOA", "TEA"] },
+];
+
+export function useMarketMakers() {
+  return useApiQuery(() => apiClient.getMarketMakers(), { market_makers: MOCK_MARKET_MAKERS });
+}
+
+const MOCK_INDICES = [
+  { id: "NGX-ASI", name: "NGX All-Share Index", value: 98432.5, change_pct: 1.24, components: 8 },
+  { id: "NGX-AGR", name: "NGX Agricultural Index", value: 4521.8, change_pct: 0.87, components: 4 },
+  { id: "NGX-MET", name: "NGX Metals Index", value: 2345.6, change_pct: -0.32, components: 2 },
+  { id: "NGX-ENE", name: "NGX Energy Index", value: 1890.3, change_pct: 1.56, components: 2 },
+  { id: "NGX-ESG", name: "NGX ESG/Carbon Index", value: 765.2, change_pct: 2.1, components: 1 },
+];
+
+export function useIndices() {
+  return useApiQuery(() => apiClient.getIndices(), { indices: MOCK_INDICES });
+}
+
+const MOCK_CORPORATE_ACTIONS = [
+  { id: "CA-001", symbol: "MAIZE", action_type: "STOCK_SPLIT", status: "PENDING", effective_date: "2026-04-01", description: "2:1 contract split" },
+  { id: "CA-002", symbol: "GOLD", action_type: "DIVIDEND", status: "PROCESSED", effective_date: "2026-03-15", description: "Quarterly storage fee adjustment" },
+  { id: "CA-003", symbol: "COFFEE", action_type: "SYMBOL_CHANGE", status: "PENDING", effective_date: "2026-05-01", description: "Symbol change to ARABICA" },
+];
+
+export function useCorporateActions() {
+  return useApiQuery(() => apiClient.getCorporateActions(), { corporate_actions: MOCK_CORPORATE_ACTIONS });
+}
+
+const MOCK_BROKERS = [
+  { id: "BRK-001", name: "NEXCOM Direct Access", status: "CONNECTED", connected_clients: 245, order_routing: "DMA" },
+  { id: "BRK-002", name: "Pan-African Securities", status: "CONNECTED", connected_clients: 189, order_routing: "SOR" },
+  { id: "BRK-003", name: "East Africa Brokerage", status: "CONNECTED", connected_clients: 156, order_routing: "DMA" },
+  { id: "BRK-004", name: "Lagos Securities Ltd", status: "CONNECTED", connected_clients: 98, order_routing: "ALGO" },
+  { id: "BRK-005", name: "Nairobi Trading Corp", status: "DISCONNECTED", connected_clients: 0, order_routing: "DMA" },
+];
+
+export function useBrokers() {
+  return useApiQuery(() => apiClient.getBrokers(), { brokers: MOCK_BROKERS });
+}
+
 // ─── Analytics hooks ─────────────────────────────────────────────────────────
 
 export function useAnalyticsDashboard() {

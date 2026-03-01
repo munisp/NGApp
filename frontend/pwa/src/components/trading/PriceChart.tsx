@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { generateMockCandles, cn } from "@/lib/utils";
+import { api } from "@/lib/api-client";
 
 interface PriceChartProps {
   symbol: string;
@@ -10,15 +11,46 @@ interface PriceChartProps {
 
 type TimeFrame = "1m" | "5m" | "15m" | "1H" | "4H" | "1D" | "1W";
 
+interface CandleData {
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  volume: number;
+}
+
 export default function PriceChart({ symbol, basePrice }: PriceChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [timeFrame, setTimeFrame] = useState<TimeFrame>("1H");
   const [chartType, setChartType] = useState<"candles" | "line">("candles");
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [candles, setCandles] = useState<CandleData[]>(() => generateMockCandles(80, basePrice));
+
+  // Fetch candle data from API, fall back to mock
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const res = await api.markets.candles(symbol, timeFrame.toLowerCase(), 80);
+        const data = res as Record<string, unknown>;
+        const apiCandles = (data?.data as Record<string, unknown>)?.candles ?? data?.candles;
+        if (mounted && Array.isArray(apiCandles) && apiCandles.length > 0) {
+          setCandles(apiCandles as CandleData[]);
+          return;
+        }
+      } catch {
+        // Fall back to mock data
+      }
+      if (mounted) {
+        setCandles(generateMockCandles(80, basePrice));
+      }
+    })();
+    return () => { mounted = false; };
+  }, [symbol, basePrice, timeFrame]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    if (!canvas || candles.length === 0) return;
 
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
@@ -30,8 +62,6 @@ export default function PriceChart({ symbol, basePrice }: PriceChartProps) {
     ctx.scale(dpr, dpr);
     const w = rect.width;
     const h = rect.height;
-
-    const candles = generateMockCandles(80, basePrice);
     const allPrices = candles.flatMap((c) => [c.high, c.low]);
     const minPrice = Math.min(...allPrices);
     const maxPrice = Math.max(...allPrices);
@@ -114,7 +144,7 @@ export default function PriceChart({ symbol, basePrice }: PriceChartProps) {
       ctx.fillStyle = isUp ? "rgba(34, 197, 94, 0.3)" : "rgba(239, 68, 68, 0.3)";
       ctx.fillRect(x, h - volHeight, candleWidth, volHeight);
     });
-  }, [symbol, basePrice, timeFrame, chartType]);
+  }, [candles, chartType]);
 
   const timeFrames: TimeFrame[] = ["1m", "5m", "15m", "1H", "4H", "1D", "1W"];
 

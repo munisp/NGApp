@@ -3,6 +3,15 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { createChart, type IChartApi, type ISeriesApi, type CandlestickData, type LineData, type HistogramData, ColorType, CrosshairMode } from "lightweight-charts";
 import { generateMockCandles, cn } from "@/lib/utils";
+import { api } from "@/lib/api-client";
+
+interface CandleRaw {
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  volume: number;
+}
 
 // ============================================================
 // Advanced Chart with lightweight-charts (TradingView)
@@ -95,97 +104,102 @@ export default function AdvancedChart({ symbol, basePrice }: AdvancedChartProps)
 
     chartRef.current = chart;
 
-    // Generate data
-    const candles = generateMockCandles(200, basePrice);
-    const now = new Date();
+    // Load data from API with mock fallback, then render
+    let cancelled = false;
+    const loadAndRender = async () => {
+      let chartData: { time: string; open: number; high: number; low: number; close: number; volume: number }[];
+      try {
+        const res = await api.markets.candles(symbol, timeFrame.toLowerCase(), 200);
+        const data = res as Record<string, unknown>;
+        const apiCandles = ((data?.data as Record<string, unknown>)?.candles ?? data?.candles) as CandleRaw[] | undefined;
+        if (apiCandles && apiCandles.length > 0) {
+          const now = new Date();
+          chartData = apiCandles.map((c: CandleRaw, i: number) => ({
+            time: new Date(now.getTime() - (apiCandles.length - i) * 3600000).toISOString().split("T")[0],
+            open: c.open, high: c.high, low: c.low, close: c.close, volume: c.volume,
+          }));
+        } else {
+          throw new Error("empty");
+        }
+      } catch {
+        const candles = generateMockCandles(200, basePrice);
+        const now = new Date();
+        chartData = candles.map((c, i) => ({
+          time: new Date(now.getTime() - (candles.length - i) * 3600000).toISOString().split("T")[0],
+          open: c.open, high: c.high, low: c.low, close: c.close, volume: c.volume,
+        }));
+      }
 
-    const chartData = candles.map((c, i) => ({
-      time: new Date(now.getTime() - (candles.length - i) * 3600000).toISOString().split("T")[0],
-      open: c.open,
-      high: c.high,
-      low: c.low,
-      close: c.close,
-      volume: c.volume,
-    }));
+      if (cancelled || !chartRef.current) return;
 
-    // Main series
-    if (chartType === "candles") {
-      const candleSeries = chart.addCandlestickSeries({
-        upColor: "#22c55e",
-        downColor: "#ef4444",
-        borderUpColor: "#22c55e",
-        borderDownColor: "#ef4444",
-        wickUpColor: "#22c55e",
-        wickDownColor: "#ef4444",
+      // Main series
+      if (chartType === "candles") {
+        const candleSeries = chart.addCandlestickSeries({
+          upColor: "#22c55e",
+          downColor: "#ef4444",
+          borderUpColor: "#22c55e",
+          borderDownColor: "#ef4444",
+          wickUpColor: "#22c55e",
+          wickDownColor: "#ef4444",
+        });
+        candleSeries.setData(
+          chartData.map((d) => ({
+            time: d.time as unknown as CandlestickData["time"],
+            open: d.open, high: d.high, low: d.low, close: d.close,
+          }))
+        );
+        candleSeriesRef.current = candleSeries;
+      } else {
+        const lineSeries = chart.addLineSeries({ color: "#22c55e", lineWidth: 2 });
+        lineSeries.setData(
+          chartData.map((d) => ({ time: d.time as unknown as LineData["time"], value: d.close }))
+        );
+        lineSeriesRef.current = lineSeries;
+      }
+
+      // Volume
+      const volumeSeries = chart.addHistogramSeries({
+        color: "#334155",
+        priceFormat: { type: "volume" },
+        priceScaleId: "",
       });
-      candleSeries.setData(
+      volumeSeries.priceScale().applyOptions({ scaleMargins: { top: 0.8, bottom: 0 } });
+      volumeSeries.setData(
         chartData.map((d) => ({
-          time: d.time as unknown as CandlestickData["time"],
-          open: d.open,
-          high: d.high,
-          low: d.low,
-          close: d.close,
+          time: d.time as unknown as HistogramData["time"],
+          value: d.volume,
+          color: d.close >= d.open ? "rgba(34, 197, 94, 0.3)" : "rgba(239, 68, 68, 0.3)",
         }))
       );
-      candleSeriesRef.current = candleSeries;
-    } else {
-      const lineSeries = chart.addLineSeries({
-        color: "#22c55e",
-        lineWidth: 2,
-      });
-      lineSeries.setData(
-        chartData.map((d) => ({
-          time: d.time as unknown as LineData["time"],
-          value: d.close,
-        }))
-      );
-      lineSeriesRef.current = lineSeries;
-    }
+      volumeSeriesRef.current = volumeSeries;
 
-    // Volume
-    const volumeSeries = chart.addHistogramSeries({
-      color: "#334155",
-      priceFormat: { type: "volume" },
-      priceScaleId: "",
-    });
-    volumeSeries.priceScale().applyOptions({
-      scaleMargins: { top: 0.8, bottom: 0 },
-    });
-    volumeSeries.setData(
-      chartData.map((d) => ({
-        time: d.time as unknown as HistogramData["time"],
-        value: d.volume,
-        color: d.close >= d.open ? "rgba(34, 197, 94, 0.3)" : "rgba(239, 68, 68, 0.3)",
-      }))
-    );
-    volumeSeriesRef.current = volumeSeries;
+      // Indicators
+      const closeData = chartData.map((d) => ({ close: d.close, time: d.time }));
 
-    // Indicators
-    const closeData = chartData.map((d) => ({ close: d.close, time: d.time }));
+      if (activeIndicators.has("MA20")) {
+        const ma20Series = chart.addLineSeries({ color: "#f59e0b", lineWidth: 1 });
+        ma20Series.setData(calcMA(closeData, 20));
+        indicatorSeriesRefs.current.set("MA20", ma20Series);
+      }
+      if (activeIndicators.has("MA50")) {
+        const ma50Series = chart.addLineSeries({ color: "#8b5cf6", lineWidth: 1 });
+        ma50Series.setData(calcMA(closeData, 50));
+        indicatorSeriesRefs.current.set("MA50", ma50Series);
+      }
+      if (activeIndicators.has("BB")) {
+        const { upper, lower } = calcBollingerBands(closeData);
+        const bbUpper = chart.addLineSeries({ color: "#06b6d4", lineWidth: 1, lineStyle: 2 });
+        const bbLower = chart.addLineSeries({ color: "#06b6d4", lineWidth: 1, lineStyle: 2 });
+        bbUpper.setData(upper);
+        bbLower.setData(lower);
+        indicatorSeriesRefs.current.set("BB_upper", bbUpper);
+        indicatorSeriesRefs.current.set("BB_lower", bbLower);
+      }
 
-    if (activeIndicators.has("MA20")) {
-      const ma20Series = chart.addLineSeries({ color: "#f59e0b", lineWidth: 1 });
-      ma20Series.setData(calcMA(closeData, 20));
-      indicatorSeriesRefs.current.set("MA20", ma20Series);
-    }
+      chart.timeScale().fitContent();
+    };
 
-    if (activeIndicators.has("MA50")) {
-      const ma50Series = chart.addLineSeries({ color: "#8b5cf6", lineWidth: 1 });
-      ma50Series.setData(calcMA(closeData, 50));
-      indicatorSeriesRefs.current.set("MA50", ma50Series);
-    }
-
-    if (activeIndicators.has("BB")) {
-      const { upper, lower } = calcBollingerBands(closeData);
-      const bbUpper = chart.addLineSeries({ color: "#06b6d4", lineWidth: 1, lineStyle: 2 });
-      const bbLower = chart.addLineSeries({ color: "#06b6d4", lineWidth: 1, lineStyle: 2 });
-      bbUpper.setData(upper);
-      bbLower.setData(lower);
-      indicatorSeriesRefs.current.set("BB_upper", bbUpper);
-      indicatorSeriesRefs.current.set("BB_lower", bbLower);
-    }
-
-    chart.timeScale().fitContent();
+    loadAndRender();
 
     // Resize observer
     const resizeObserver = new ResizeObserver((entries) => {
@@ -200,6 +214,7 @@ export default function AdvancedChart({ symbol, basePrice }: AdvancedChartProps)
     resizeObserver.observe(container);
 
     return () => {
+      cancelled = true;
       resizeObserver.disconnect();
       indicatorSeriesRefs.current.clear();
       chart.remove();

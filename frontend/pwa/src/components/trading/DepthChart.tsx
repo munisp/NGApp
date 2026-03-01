@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { getMockOrderBook } from "@/lib/store";
+import { api } from "@/lib/api-client";
 
 // ============================================================
 // Order Book Depth Chart Visualization
@@ -11,12 +12,47 @@ interface DepthChartProps {
   symbol: string;
 }
 
+interface BookLevel {
+  price: number;
+  quantity: number;
+  total: number;
+}
+
+interface BookData {
+  bids: BookLevel[];
+  asks: BookLevel[];
+}
+
 export default function DepthChart({ symbol }: DepthChartProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [book, setBook] = useState<BookData | null>(null);
+
+  // Fetch orderbook from API, fall back to mock
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const res = await api.markets.orderbook(symbol);
+        const data = res as Record<string, unknown>;
+        const apiBook = (data?.data ?? data) as Record<string, unknown>;
+        if (mounted && apiBook?.bids && apiBook?.asks) {
+          setBook({ bids: apiBook.bids as BookLevel[], asks: apiBook.asks as BookLevel[] });
+          return;
+        }
+      } catch {
+        // Fall back to mock
+      }
+      if (mounted) {
+        const mock = getMockOrderBook(symbol);
+        setBook({ bids: mock.bids, asks: mock.asks });
+      }
+    })();
+    return () => { mounted = false; };
+  }, [symbol]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    if (!canvas || !book) return;
 
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
@@ -28,8 +64,6 @@ export default function DepthChart({ symbol }: DepthChartProps) {
     ctx.scale(dpr, dpr);
     const w = rect.width;
     const h = rect.height;
-
-    const book = getMockOrderBook(symbol);
 
     // Clear
     ctx.fillStyle = "#020617";
@@ -159,7 +193,7 @@ export default function DepthChart({ symbol }: DepthChartProps) {
     ctx.fillStyle = "#ef4444";
     ctx.textAlign = "right";
     ctx.fillText("Asks", w - padding.right - 5, padding.top + 15);
-  }, [symbol]);
+  }, [book]);
 
   return (
     <div className="rounded-lg bg-surface-900 overflow-hidden">

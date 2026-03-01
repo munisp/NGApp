@@ -1,15 +1,150 @@
 package api
 
 import (
+	"bufio"
+	"crypto/sha1"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/munisp/NGApp/services/gateway/internal/models"
 )
+
+// ============================================================
+// WebSocket Infrastructure (Gap 2 - Real WS upgrade)
+// ============================================================
+
+// wsUpgrade performs a raw WebSocket handshake via HTTP hijacker (no external deps)
+func wsUpgrade(w http.ResponseWriter, r *http.Request) (net.Conn, error) {
+	hj, ok := w.(http.Hijacker)
+	if !ok {
+		return nil, fmt.Errorf("server doesn't support hijacking")
+	}
+	wsKey := r.Header.Get("Sec-WebSocket-Key")
+	if wsKey == "" {
+		return nil, fmt.Errorf("missing Sec-WebSocket-Key")
+	}
+	h := sha1.New()
+	h.Write([]byte(wsKey + "258EAFA5-E914-47DA-95CA-5AB5B86F11D5"))
+	acceptKey := base64.StdEncoding.EncodeToString(h.Sum(nil))
+
+	conn, bufrw, err := hj.Hijack()
+	if err != nil {
+		return nil, err
+	}
+	resp := "HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: " + acceptKey + "\r\n\r\n"
+	if _, err := bufrw.WriteString(resp); err != nil {
+		conn.Close()
+		return nil, err
+	}
+	bufrw.Flush()
+	return conn, nil
+}
+
+// wsWriteText writes a WebSocket text frame
+func wsWriteText(conn net.Conn, data []byte) error {
+	frame := make([]byte, 0, 10+len(data))
+	frame = append(frame, 0x81) // FIN + text opcode
+	if len(data) < 126 {
+		frame = append(frame, byte(len(data)))
+	} else if len(data) < 65536 {
+		frame = append(frame, 126, byte(len(data)>>8), byte(len(data)&0xff))
+	} else {
+		frame = append(frame, 127)
+		for i := 7; i >= 0; i-- {
+			frame = append(frame, byte(len(data)>>(i*8)&0xff))
+		}
+	}
+	frame = append(frame, data...)
+	_, err := conn.Write(frame)
+	return err
+}
+
+// wsReadFrame reads one WebSocket frame (handles client masking)
+func wsReadFrame(conn net.Conn) ([]byte, byte, error) {
+	r := bufio.NewReader(conn)
+	header := make([]byte, 2)
+	if _, err := io.ReadFull(r, header); err != nil {
+		return nil, 0, err
+	}
+	opcode := header[0] & 0x0f
+	masked := header[1]&0x80 != 0
+	length := int(header[1] & 0x7f)
+	if length == 126 {
+		ext := make([]byte, 2)
+		if _, err := io.ReadFull(r, ext); err != nil {
+			return nil, 0, err
+		}
+		length = int(ext[0])<<8 | int(ext[1])
+	} else if length == 127 {
+		ext := make([]byte, 8)
+		if _, err := io.ReadFull(r, ext); err != nil {
+			return nil, 0, err
+		}
+		length = 0
+		for i := 0; i < 8; i++ {
+			length = length<<8 | int(ext[i])
+		}
+	}
+	var mask []byte
+	if masked {
+		mask = make([]byte, 4)
+		if _, err := io.ReadFull(r, mask); err != nil {
+			return nil, 0, err
+		}
+	}
+	payload := make([]byte, length)
+	if length > 0 {
+		if _, err := io.ReadFull(r, payload); err != nil {
+			return nil, 0, err
+		}
+	}
+	if masked {
+		for i := range payload {
+			payload[i] ^= mask[i%4]
+		}
+	}
+	return payload, opcode, nil
+}
+
+// Market data hub singleton for broadcasting to all WS clients
+var (
+	mdClients   = make(map[net.Conn]bool)
+	mdMu        sync.RWMutex
+	mdTickerOnce sync.Once
+)
+
+func startMarketDataTicker() {
+	mdTickerOnce.Do(func() {
+		go func() {
+			ticker := time.NewTicker(2 * time.Second)
+			defer ticker.Stop()
+			symbols := []string{"GOLD", "CRUDE", "COCOA", "COFFEE", "COTTON"}
+			for range ticker.C {
+				for _, sym := range symbols {
+					msg, _ := json.Marshal(map[string]interface{}{
+						"type":      "ticker",
+						"symbol":    sym,
+						"timestamp": time.Now().UTC().Format(time.RFC3339),
+						"price":     1800.0 + float64(time.Now().UnixNano()%10000)/100,
+						"volume":    1000 + time.Now().UnixNano()%5000,
+					})
+					mdMu.RLock()
+					for conn := range mdClients {
+						_ = wsWriteText(conn, msg)
+					}
+					mdMu.RUnlock()
+				}
+			}
+		}()
+	})
+}
 
 // proxyGet forwards a GET request to an upstream service and returns the response.
 func (s *Server) proxyGet(c *gin.Context, baseURL, path string) {
@@ -95,6 +230,98 @@ func (s *Server) matchingEngineWarehouses(c *gin.Context) {
 
 func (s *Server) matchingEngineAudit(c *gin.Context) {
 	s.proxyGet(c, s.cfg.MatchingEngineURL, "/api/v1/audit/entries")
+}
+
+// ============================================================
+// Market Makers Proxy Handlers
+// ============================================================
+
+func (s *Server) meMarketMakersList(c *gin.Context) {
+	s.proxyGet(c, s.cfg.MatchingEngineURL, "/api/v1/market-makers")
+}
+
+func (s *Server) meMarketMakersGet(c *gin.Context) {
+	id := c.Param("id")
+	s.proxyGet(c, s.cfg.MatchingEngineURL, "/api/v1/market-makers/"+id)
+}
+
+func (s *Server) meMarketMakersPerformance(c *gin.Context) {
+	id := c.Param("id")
+	s.proxyGet(c, s.cfg.MatchingEngineURL, "/api/v1/market-makers/"+id+"/performance")
+}
+
+func (s *Server) meMarketMakersQuotes(c *gin.Context) {
+	symbol := c.Param("symbol")
+	s.proxyGet(c, s.cfg.MatchingEngineURL, "/api/v1/market-makers/quotes/"+symbol)
+}
+
+func (s *Server) meMarketMakersSubmitQuote(c *gin.Context) {
+	s.proxyPost(c, s.cfg.MatchingEngineURL, "/api/v1/market-makers/quotes")
+}
+
+// ============================================================
+// Indices Proxy Handlers
+// ============================================================
+
+func (s *Server) meIndicesList(c *gin.Context) {
+	s.proxyGet(c, s.cfg.MatchingEngineURL, "/api/v1/indices")
+}
+
+func (s *Server) meIndicesValues(c *gin.Context) {
+	s.proxyGet(c, s.cfg.MatchingEngineURL, "/api/v1/indices/values")
+}
+
+func (s *Server) meIndicesGet(c *gin.Context) {
+	id := c.Param("id")
+	s.proxyGet(c, s.cfg.MatchingEngineURL, "/api/v1/indices/"+id)
+}
+
+func (s *Server) meIndicesValue(c *gin.Context) {
+	id := c.Param("id")
+	s.proxyGet(c, s.cfg.MatchingEngineURL, "/api/v1/indices/"+id+"/value")
+}
+
+// ============================================================
+// Corporate Actions Proxy Handlers
+// ============================================================
+
+func (s *Server) meCorporateActionsList(c *gin.Context) {
+	s.proxyGet(c, s.cfg.MatchingEngineURL, "/api/v1/corporate-actions")
+}
+
+func (s *Server) meCorporateActionsPending(c *gin.Context) {
+	s.proxyGet(c, s.cfg.MatchingEngineURL, "/api/v1/corporate-actions/pending")
+}
+
+func (s *Server) meCorporateActionsForSymbol(c *gin.Context) {
+	symbol := c.Param("symbol")
+	s.proxyGet(c, s.cfg.MatchingEngineURL, "/api/v1/corporate-actions/"+symbol)
+}
+
+func (s *Server) meCorporateActionsProcess(c *gin.Context) {
+	id := c.Param("id")
+	s.proxyPost(c, s.cfg.MatchingEngineURL, "/api/v1/corporate-actions/"+id+"/process")
+}
+
+// ============================================================
+// Brokers Proxy Handlers
+// ============================================================
+
+func (s *Server) meBrokersList(c *gin.Context) {
+	s.proxyGet(c, s.cfg.MatchingEngineURL, "/api/v1/brokers")
+}
+
+func (s *Server) meBrokersGet(c *gin.Context) {
+	id := c.Param("id")
+	s.proxyGet(c, s.cfg.MatchingEngineURL, "/api/v1/brokers/"+id)
+}
+
+func (s *Server) meBrokersConnected(c *gin.Context) {
+	s.proxyGet(c, s.cfg.MatchingEngineURL, "/api/v1/brokers/connected")
+}
+
+func (s *Server) meBrokersRoute(c *gin.Context) {
+	s.proxyPost(c, s.cfg.MatchingEngineURL, "/api/v1/brokers/route")
 }
 
 // ============================================================
@@ -292,26 +519,100 @@ func (s *Server) getAuditEntry(c *gin.Context) {
 // ============================================================
 
 func (s *Server) wsNotifications(c *gin.Context) {
-	// WebSocket upgrade for real-time notifications
-	// In production: upgrade to WS, subscribe to user-specific notification channel
-	c.JSON(http.StatusOK, models.APIResponse{
-		Success: true,
-		Data: gin.H{
-			"message": "WebSocket endpoint for notifications",
-			"usage":   "Connect via ws://host:8000/api/v1/ws/notifications with Authorization header",
-			"events":  []string{"order_filled", "price_alert", "margin_warning", "trade_executed", "settlement_complete"},
-		},
+	// Check if this is a WebSocket upgrade request
+	if c.GetHeader("Upgrade") != "websocket" {
+		// Non-WS request: return usage info
+		c.JSON(http.StatusOK, models.APIResponse{
+			Success: true,
+			Data: gin.H{
+				"message": "WebSocket endpoint for notifications",
+				"usage":   "Connect via ws://host:8000/api/v1/ws/notifications with Upgrade: websocket header",
+				"events":  []string{"order_filled", "price_alert", "margin_warning", "trade_executed", "settlement_complete"},
+			},
+		})
+		return
+	}
+
+	conn, err := wsUpgrade(c.Writer, c.Request)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, models.APIResponse{Success: false, Error: err.Error()})
+		return
+	}
+	defer conn.Close()
+
+	// Send welcome message
+	welcome, _ := json.Marshal(map[string]interface{}{
+		"type":    "connected",
+		"channel": "notifications",
+		"events":  []string{"order_filled", "price_alert", "margin_warning", "trade_executed", "settlement_complete"},
 	})
+	_ = wsWriteText(conn, welcome)
+
+	// Read loop (keeps connection alive, handles pings/close)
+	for {
+		conn.SetReadDeadline(time.Now().Add(60 * time.Second))
+		_, opcode, err := wsReadFrame(conn)
+		if err != nil || opcode == 0x08 { // close frame
+			break
+		}
+		// opcode 0x09 = ping -> respond with pong
+		if opcode == 0x09 {
+			pong := []byte{0x8A, 0x00} // pong frame with no payload
+			conn.Write(pong)
+		}
+	}
 }
 
 func (s *Server) wsMarketData(c *gin.Context) {
-	// WebSocket upgrade for real-time market data streaming
-	c.JSON(http.StatusOK, models.APIResponse{
-		Success: true,
-		Data: gin.H{
-			"message":  "WebSocket endpoint for market data",
-			"usage":    "Connect via ws://host:8000/api/v1/ws/market-data with Authorization header",
-			"channels": []string{"ticker", "orderbook", "trades", "candles", "depth"},
-		},
+	// Check if this is a WebSocket upgrade request
+	if c.GetHeader("Upgrade") != "websocket" {
+		c.JSON(http.StatusOK, models.APIResponse{
+			Success: true,
+			Data: gin.H{
+				"message":  "WebSocket endpoint for market data",
+				"usage":    "Connect via ws://host:8000/api/v1/ws/market-data with Upgrade: websocket header",
+				"channels": []string{"ticker", "orderbook", "trades", "candles", "depth"},
+			},
+		})
+		return
+	}
+
+	conn, err := wsUpgrade(c.Writer, c.Request)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, models.APIResponse{Success: false, Error: err.Error()})
+		return
+	}
+
+	// Register client for market data broadcasts
+	startMarketDataTicker()
+	mdMu.Lock()
+	mdClients[conn] = true
+	mdMu.Unlock()
+
+	// Send welcome
+	welcome, _ := json.Marshal(map[string]interface{}{
+		"type":     "connected",
+		"channel":  "market-data",
+		"channels": []string{"ticker", "orderbook", "trades", "candles", "depth"},
 	})
+	_ = wsWriteText(conn, welcome)
+
+	// Read loop
+	for {
+		conn.SetReadDeadline(time.Now().Add(60 * time.Second))
+		_, opcode, err := wsReadFrame(conn)
+		if err != nil || opcode == 0x08 {
+			break
+		}
+		if opcode == 0x09 {
+			pong := []byte{0x8A, 0x00}
+			conn.Write(pong)
+		}
+	}
+
+	// Cleanup
+	mdMu.Lock()
+	delete(mdClients, conn)
+	mdMu.Unlock()
+	conn.Close()
 }

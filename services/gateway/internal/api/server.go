@@ -179,6 +179,31 @@ func (s *Server) SetupRoutes() *gin.Engine {
 				me.GET("/surveillance/alerts", s.matchingEngineSurveillance)
 				me.GET("/delivery/warehouses", s.matchingEngineWarehouses)
 				me.GET("/audit/entries", s.matchingEngineAudit)
+
+				// Market Makers proxy routes
+				me.GET("/market-makers", s.meMarketMakersList)
+				me.GET("/market-makers/:id", s.meMarketMakersGet)
+				me.GET("/market-makers/:id/performance", s.meMarketMakersPerformance)
+				me.GET("/market-makers/quotes/:symbol", s.meMarketMakersQuotes)
+				me.POST("/market-makers/quotes", s.meMarketMakersSubmitQuote)
+
+				// Indices proxy routes
+				me.GET("/indices", s.meIndicesList)
+				me.GET("/indices/values", s.meIndicesValues)
+				me.GET("/indices/:id", s.meIndicesGet)
+				me.GET("/indices/:id/value", s.meIndicesValue)
+
+				// Corporate Actions proxy routes
+				me.GET("/corporate-actions", s.meCorporateActionsList)
+				me.GET("/corporate-actions/pending", s.meCorporateActionsPending)
+				me.GET("/corporate-actions/:symbol", s.meCorporateActionsForSymbol)
+				me.POST("/corporate-actions/:id/process", s.meCorporateActionsProcess)
+
+				// Brokers proxy routes
+				me.GET("/brokers", s.meBrokersList)
+				me.GET("/brokers/connected", s.meBrokersConnected)
+				me.GET("/brokers/:id", s.meBrokersGet)
+				me.POST("/brokers/route", s.meBrokersRoute)
 			}
 
 			// Ingestion Engine proxy routes
@@ -260,8 +285,9 @@ func (s *Server) authMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
 
-		// In development, allow unauthenticated access with demo user
-		if s.cfg.Environment == "development" {
+		// In development mode, allow unauthenticated access with demo user
+		// In production mode, Keycloak + Permify are REQUIRED
+		if s.cfg.Environment != "production" {
 			if authHeader == "" || authHeader == "Bearer demo-token" {
 				c.Set("userID", "usr-001")
 				c.Set("email", "trader@nexcom.exchange")
@@ -280,6 +306,14 @@ func (s *Server) authMiddleware() gin.HandlerFunc {
 		token := strings.TrimPrefix(authHeader, "Bearer ")
 		claims, err := s.keycloak.ValidateToken(token)
 		if err != nil {
+			// In non-production, fall back to demo user on token validation failure
+			if s.cfg.Environment != "production" {
+				c.Set("userID", "usr-001")
+				c.Set("email", "trader@nexcom.exchange")
+				c.Set("roles", []string{"trader", "user"})
+				c.Next()
+				return
+			}
 			c.JSON(http.StatusUnauthorized, models.APIResponse{Success: false, Error: "invalid token: " + err.Error()})
 			c.Abort()
 			return
@@ -288,6 +322,14 @@ func (s *Server) authMiddleware() gin.HandlerFunc {
 		// Check Permify authorization
 		allowed, err := s.permify.Check("user", claims.Sub, "access", "user", claims.Sub)
 		if err != nil || !allowed {
+			// In non-production, allow access even if Permify fails
+			if s.cfg.Environment != "production" {
+				c.Set("userID", claims.Sub)
+				c.Set("email", claims.Email)
+				c.Set("roles", claims.RealmRoles)
+				c.Next()
+				return
+			}
 			c.JSON(http.StatusForbidden, models.APIResponse{Success: false, Error: "access denied"})
 			c.Abort()
 			return

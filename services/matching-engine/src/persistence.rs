@@ -331,6 +331,67 @@ impl PersistenceManager {
             }
         }
     }
+
+    // ─── NGX Module Persistence (Gap 4) ──────────────────────────────────────
+
+    /// Generic save for any serializable NGX module data to a named JSON file.
+    pub fn save_module_data<T: Serialize + ?Sized>(&self, module_name: &str, data: &T) -> Result<(), String> {
+        let path = self.data_dir.join(format!("{}.json", module_name));
+        let json = serde_json::to_string_pretty(data)
+            .map_err(|e| format!("Failed to serialize {} data: {}", module_name, e))?;
+        fs::write(&path, &json)
+            .map_err(|e| format!("Failed to write {} data: {}", module_name, e))?;
+
+        // WAL entry for crash recovery
+        let _ = self.wal_write(
+            &format!("SAVE_{}", module_name.to_uppercase()),
+            serde_json::json!({"module": module_name, "timestamp": chrono::Utc::now().to_rfc3339()}),
+        );
+
+        info!("Persisted {} module data to {:?}", module_name, path);
+        Ok(())
+    }
+
+    /// Generic load for any deserializable NGX module data from a named JSON file.
+    pub fn load_module_data<T: for<'de> Deserialize<'de> + Sized>(&self, module_name: &str) -> Option<T> {
+        let path = self.data_dir.join(format!("{}.json", module_name));
+        if !path.exists() {
+            info!("No persisted data found for module {}", module_name);
+            return None;
+        }
+        match fs::read_to_string(&path) {
+            Ok(json) => match serde_json::from_str::<T>(&json) {
+                Ok(data) => {
+                    info!("Loaded {} module data from {:?}", module_name, path);
+                    Some(data)
+                }
+                Err(e) => {
+                    error!("Failed to parse {} module data: {}", module_name, e);
+                    None
+                }
+            },
+            Err(e) => {
+                error!("Failed to read {} module data: {}", module_name, e);
+                None
+            }
+        }
+    }
+
+    /// Persist all NGX module data (market makers, indices, corporate actions, brokers).
+    pub fn save_all_modules(
+        &self,
+        market_makers: &[serde_json::Value],
+        indices: &[serde_json::Value],
+        corporate_actions: &[serde_json::Value],
+        brokers: &[serde_json::Value],
+    ) -> Result<(), String> {
+        self.save_module_data("market-makers", market_makers)?;
+        self.save_module_data("indices", indices)?;
+        self.save_module_data("corporate-actions", corporate_actions)?;
+        self.save_module_data("brokers", brokers)?;
+        info!("All NGX modules persisted successfully");
+        Ok(())
+    }
 }
 
 #[cfg(test)]

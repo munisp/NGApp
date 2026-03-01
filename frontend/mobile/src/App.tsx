@@ -13,6 +13,10 @@ import PortfolioScreen from "./screens/PortfolioScreen";
 import AccountScreen from "./screens/AccountScreen";
 import TradeDetailScreen from "./screens/TradeDetailScreen";
 import NotificationsScreen from "./screens/NotificationsScreen";
+import MarketMakersScreen from "./screens/MarketMakersScreen";
+import IndicesScreen from "./screens/IndicesScreen";
+import CorporateActionsScreen from "./screens/CorporateActionsScreen";
+import BrokersScreen from "./screens/BrokersScreen";
 import Icon from "./components/Icon";
 import type { IconName } from "./components/Icon";
 
@@ -112,6 +116,26 @@ export default function App() {
             name="Notifications"
             component={NotificationsScreen}
             options={{ title: "Notifications" }}
+          />
+          <Stack.Screen
+            name="MarketMakers"
+            component={MarketMakersScreen}
+            options={{ title: "Market Makers" }}
+          />
+          <Stack.Screen
+            name="Indices"
+            component={IndicesScreen}
+            options={{ title: "Indices" }}
+          />
+          <Stack.Screen
+            name="CorporateActions"
+            component={CorporateActionsScreen}
+            options={{ title: "Corporate Actions" }}
+          />
+          <Stack.Screen
+            name="Brokers"
+            component={BrokersScreen}
+            options={{ title: "Brokers" }}
           />
         </Stack.Navigator>
       </NavigationContainer>

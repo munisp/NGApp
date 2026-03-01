@@ -1,16 +1,85 @@
 "use client";
 
-import { useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { getMockOrderBook } from "@/lib/store";
 import { formatPrice, formatVolume } from "@/lib/utils";
+import { api } from "@/lib/api-client";
 
 interface OrderBookProps {
   symbol: string;
   onPriceClick?: (price: number) => void;
 }
 
+interface BookLevel {
+  price: number;
+  quantity: number;
+  total: number;
+}
+
+interface BookData {
+  bids: BookLevel[];
+  asks: BookLevel[];
+  spread: string;
+  spreadPercent: string;
+}
+
 export default function OrderBookView({ symbol, onPriceClick }: OrderBookProps) {
-  const book = useMemo(() => getMockOrderBook(symbol), [symbol]);
+  const mockBook = useMemo(() => {
+    const raw = getMockOrderBook(symbol);
+    return {
+      bids: raw.bids,
+      asks: raw.asks,
+      spread: String(raw.spread),
+      spreadPercent: String(raw.spreadPercent),
+    };
+  }, [symbol]);
+  const [book, setBook] = useState<BookData>(mockBook);
+
+  // Fetch orderbook from API, fall back to mock
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const res = await api.markets.orderbook(symbol);
+        const data = res as Record<string, unknown>;
+        const apiBook = (data?.data ?? data) as Record<string, unknown>;
+        if (mounted && apiBook?.bids && apiBook?.asks) {
+          const bids = apiBook.bids as BookLevel[];
+          const asks = apiBook.asks as BookLevel[];
+          // Calculate running totals if not present
+          let bidRunning = 0;
+          const bidsWithTotal = bids.map(b => {
+            bidRunning += b.quantity;
+            return { ...b, total: b.total || bidRunning };
+          });
+          let askRunning = 0;
+          const asksWithTotal = asks.map(a => {
+            askRunning += a.quantity;
+            return { ...a, total: a.total || askRunning };
+          });
+          const spread = bidsWithTotal[0] && asksWithTotal[0]
+            ? (asksWithTotal[0].price - bidsWithTotal[0].price).toFixed(2)
+            : "0.00";
+          const spreadPct = bidsWithTotal[0] && asksWithTotal[0]
+            ? ((asksWithTotal[0].price - bidsWithTotal[0].price) / asksWithTotal[0].price * 100).toFixed(2)
+            : "0.00";
+          setBook({ bids: bidsWithTotal, asks: asksWithTotal, spread, spreadPercent: spreadPct });
+          return;
+        }
+      } catch {
+        // Fall back to mock data
+      }
+      if (mounted) {
+        setBook({
+          bids: mockBook.bids,
+          asks: mockBook.asks,
+          spread: String(mockBook.spread),
+          spreadPercent: String(mockBook.spreadPercent),
+        });
+      }
+    })();
+    return () => { mounted = false; };
+  }, [symbol, mockBook]);
   const maxTotal = Math.max(
     book.bids[book.bids.length - 1]?.total ?? 0,
     book.asks[book.asks.length - 1]?.total ?? 0
