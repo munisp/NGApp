@@ -6,6 +6,7 @@ import { useUserStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
 import { ThemeToggle } from "@/components/common/ThemeToggle";
 import { useI18nStore, LOCALE_NAMES, type Locale } from "@/lib/i18n";
+import { useCurrencyStore, CURRENCIES, type CurrencyCode } from "@/lib/currency";
 import {
   Search,
   Bell,
@@ -16,6 +17,7 @@ import {
   AlertTriangle,
   TrendingUp,
   ShieldCheck,
+  Banknote,
 } from "lucide-react";
 
 const NOTIF_ICONS: Record<string, typeof TrendingUp> = {
@@ -30,8 +32,10 @@ export default function TopBar() {
   const { user, notifications, unreadCount } = useUserStore();
   const [showNotifications, setShowNotifications] = useState(false);
   const [showLangMenu, setShowLangMenu] = useState(false);
+  const [showCurrencyMenu, setShowCurrencyMenu] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const { locale, setLocale, t } = useI18nStore();
+  const { currency, setCurrency } = useCurrencyStore();
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -96,10 +100,48 @@ export default function TopBar() {
           <span className="text-[11px] font-medium text-brand-400">{t("common.marketsOpen")}</span>
         </div>
 
+        {/* Currency Selector */}
+        <div className="relative">
+          <button
+            onClick={() => { setShowCurrencyMenu(!showCurrencyMenu); setShowLangMenu(false); setShowNotifications(false); }}
+            className="flex items-center gap-1 rounded-xl px-2.5 py-2 text-gray-500 hover:text-gray-300 hover:bg-white/[0.04] transition-all duration-200"
+            aria-label="Change currency"
+            aria-expanded={showCurrencyMenu}
+          >
+            <Banknote className="h-4 w-4" />
+            <span className="text-[11px] font-medium hidden sm:inline">{CURRENCIES[currency].symbol}</span>
+            <ChevronDown className="h-3 w-3" />
+          </button>
+          {showCurrencyMenu && (
+            <div className="absolute right-0 top-full mt-2 z-50 rounded-xl py-1.5 min-w-[200px] shadow-dropdown animate-fade-in"
+              style={{ background: "rgba(15, 23, 42, 0.95)", border: "1px solid rgba(255, 255, 255, 0.08)", backdropFilter: "blur(20px)" }}
+            >
+              {(Object.keys(CURRENCIES) as CurrencyCode[]).map((code) => {
+                const info = CURRENCIES[code];
+                return (
+                  <button
+                    key={code}
+                    onClick={() => { setCurrency(code); setShowCurrencyMenu(false); }}
+                    className={cn(
+                      "w-full flex items-center gap-2 text-left px-3.5 py-2 text-xs transition-colors rounded-lg mx-0",
+                      currency === code
+                        ? "text-brand-400 font-medium bg-brand-500/10"
+                        : "text-gray-400 hover:text-white hover:bg-white/[0.04]"
+                    )}
+                  >
+                    {currency === code && <CheckCircle2 className="h-3.5 w-3.5" />}
+                    <span className={currency !== code ? "ml-5" : ""}>{info.flag} {info.symbol} {info.code}</span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
         {/* Language Selector */}
         <div className="relative">
           <button
-            onClick={() => { setShowLangMenu(!showLangMenu); setShowNotifications(false); }}
+            onClick={() => { setShowLangMenu(!showLangMenu); setShowCurrencyMenu(false); setShowNotifications(false); }}
             className="flex items-center gap-1 rounded-xl px-2.5 py-2 text-gray-500 hover:text-gray-300 hover:bg-white/[0.04] transition-all duration-200"
             aria-label="Change language"
             aria-expanded={showLangMenu}

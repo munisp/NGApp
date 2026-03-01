@@ -33,6 +33,28 @@
     @apply bg-brand-500/30 text-white;
   }
 
+  /* ── Light Mode Overrides ───────────────── */
+  html.light {
+    --color-up: #059669;
+    --color-down: #dc2626;
+    --color-brand: #047857;
+    --glass-bg: rgba(255, 255, 255, 0.85);
+    --glass-border: rgba(0, 0, 0, 0.08);
+    --glass-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+  }
+
+  html.light body {
+    @apply bg-gray-50 text-gray-900 antialiased;
+  }
+
+  html.light * {
+    @apply border-gray-200;
+  }
+
+  html.light ::selection {
+    @apply bg-brand-500/20 text-brand-900;
+  }
+
   input[type="number"]::-webkit-inner-spin-button,
   input[type="number"]::-webkit-outer-spin-button {
     -webkit-appearance: none;
@@ -241,6 +263,70 @@
 
   .toggle-thumb {
     @apply absolute top-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform duration-200;
+  }
+
+  /* ── Light Mode Component Overrides ──────── */
+  html.light .card {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(248, 250, 252, 0.95));
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+  }
+
+  html.light .card:hover {
+    border-color: rgba(0, 0, 0, 0.12);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  }
+
+  html.light .btn-secondary {
+    background: rgba(255, 255, 255, 0.9);
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    color: #374151;
+  }
+
+  html.light .btn-secondary:hover {
+    background: white;
+    border-color: rgba(0, 0, 0, 0.2);
+    color: #111827;
+  }
+
+  html.light .btn-ghost {
+    @apply text-gray-600 hover:text-gray-900 hover:bg-gray-100;
+  }
+
+  html.light .input-field {
+    @apply text-gray-900 placeholder-gray-400;
+    background: white;
+    border: 1px solid rgba(0, 0, 0, 0.12);
+  }
+
+  html.light .input-field:focus {
+    border-color: rgba(5, 150, 105, 0.5);
+    box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.1);
+  }
+
+  html.light .table-row {
+    @apply border-b border-gray-100;
+  }
+
+  html.light .table-row:hover {
+    background: rgba(0, 0, 0, 0.02);
+  }
+
+  html.light .table-header {
+    @apply text-gray-500;
+  }
+
+  html.light .stat-card::before {
+    background: linear-gradient(90deg, transparent, rgba(5, 150, 105, 0.2), transparent);
+  }
+
+  html.light .toggle-track {
+    background: rgba(229, 231, 235, 1);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+  }
+
+  html.light .divider {
+    @apply border-t border-gray-200;
   }
 }
 

@@ -2,36 +2,72 @@
 
 import { useEffect, useState } from "react";
 import { create } from "zustand";
+import { Sun, Moon, Monitor } from "lucide-react";
 
 // ============================================================
-// Theme Store
+// Theme Store — supports dark, light, and system (auto) modes
 // ============================================================
+
+export type ThemeMode = "dark" | "light" | "system";
 
 interface ThemeState {
-  theme: "dark" | "light";
-  setTheme: (theme: "dark" | "light") => void;
+  theme: ThemeMode;
+  resolvedTheme: "dark" | "light";
+  setTheme: (theme: ThemeMode) => void;
   toggleTheme: () => void;
+}
+
+function getSystemTheme(): "dark" | "light" {
+  if (typeof window === "undefined") return "dark";
+  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+}
+
+function applyTheme(resolved: "dark" | "light") {
+  if (typeof window === "undefined") return;
+  document.documentElement.classList.toggle("dark", resolved === "dark");
+  document.documentElement.classList.toggle("light", resolved === "light");
 }
 
 export const useThemeStore = create<ThemeState>((set, get) => ({
   theme: "dark",
+  resolvedTheme: "dark",
   setTheme: (theme) => {
     if (typeof window !== "undefined") {
       localStorage.setItem("nexcom_theme", theme);
-      document.documentElement.classList.toggle("dark", theme === "dark");
-      document.documentElement.classList.toggle("light", theme === "light");
     }
-    set({ theme });
+    const resolved = theme === "system" ? getSystemTheme() : theme;
+    applyTheme(resolved);
+    set({ theme, resolvedTheme: resolved });
   },
   toggleTheme: () => {
-    const next = get().theme === "dark" ? "light" : "dark";
+    const order: ThemeMode[] = ["dark", "light", "system"];
+    const idx = order.indexOf(get().theme);
+    const next = order[(idx + 1) % order.length];
     get().setTheme(next);
   },
 }));
 
+// Listen for OS preference changes when in system mode
+if (typeof window !== "undefined") {
+  window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {
+    const { theme } = useThemeStore.getState();
+    if (theme === "system") {
+      const resolved = getSystemTheme();
+      applyTheme(resolved);
+      useThemeStore.setState({ resolvedTheme: resolved });
+    }
+  });
+}
+
 // ============================================================
 // Theme Toggle Button
 // ============================================================
+
+const THEME_LABELS: Record<ThemeMode, string> = {
+  dark: "Dark",
+  light: "Light",
+  system: "System",
+};
 
 export function ThemeToggle() {
   const { theme, toggleTheme } = useThemeStore();
@@ -39,30 +75,21 @@ export function ThemeToggle() {
 
   useEffect(() => {
     setMounted(true);
-    const saved = localStorage.getItem("nexcom_theme") as "dark" | "light" | null;
-    if (saved) {
-      useThemeStore.getState().setTheme(saved);
-    }
   }, []);
 
   if (!mounted) return null;
 
+  const Icon = theme === "dark" ? Moon : theme === "light" ? Sun : Monitor;
+
   return (
     <button
       onClick={toggleTheme}
-      className="rounded-lg p-2 text-gray-400 hover:bg-surface-700 hover:text-white transition-colors"
-      aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} theme`}
-      title={`Switch to ${theme === "dark" ? "light" : "dark"} theme`}
+      className="flex items-center gap-1 rounded-xl px-2.5 py-2 text-gray-500 hover:text-gray-300 hover:bg-white/[0.04] transition-all duration-200"
+      aria-label={`Theme: ${THEME_LABELS[theme]}. Click to switch.`}
+      title={`Theme: ${THEME_LABELS[theme]}`}
     >
-      {theme === "dark" ? (
-        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" />
-        </svg>
-      ) : (
-        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z" />
-        </svg>
-      )}
+      <Icon className="h-4 w-4" />
+      <span className="text-[11px] font-medium hidden sm:inline">{THEME_LABELS[theme]}</span>
     </button>
   );
 }

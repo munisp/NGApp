@@ -33,6 +33,20 @@ export function formatCurrency(value: number, currency = "USD"): string {
   }).format(value);
 }
 
+/** Format a value in a specific currency with proper locale */
+export function formatLocalCurrency(
+  value: number,
+  currencyCode: string,
+  locale = "en-US"
+): string {
+  return new Intl.NumberFormat(locale, {
+    style: "currency",
+    currency: currencyCode,
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(value);
+}
+
 export function formatDateTime(iso: string): string {
   return new Intl.DateTimeFormat("en-US", {
     month: "short",
