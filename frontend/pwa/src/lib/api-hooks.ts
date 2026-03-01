@@ -701,7 +701,8 @@ export function useMarketMakers() {
     setLoading(true);
     try {
       const res = await api.marketMakers.list();
-      const items = Array.isArray(res?.data) ? res.data : (res?.data as Record<string, unknown>)?.market_makers as Record<string, unknown>[] ?? [];
+      const outer = res?.data as Record<string, unknown> | undefined;
+      const items = (Array.isArray(outer) ? outer : Array.isArray(outer?.data) ? outer.data : []) as Record<string, unknown>[];
       setMakers(items);
     } catch {
       setMakers([
@@ -725,7 +726,9 @@ export function useMarketMakerPerformance(id: string) {
       setLoading(true);
       try {
         const res = await api.marketMakers.performance(id);
-        setPerf((Array.isArray(res?.data) ? res.data[0] : res?.data) as Record<string, unknown> ?? null);
+        const outer = res?.data as Record<string, unknown> | undefined;
+        const inner = (outer?.data ?? outer) as Record<string, unknown> | null;
+        setPerf(inner ?? null);
       } catch {
         setPerf({ compliant: true, avg_spread_bps: 12.5, presence_pct: 98.2, violations: 0 });
       } finally { setLoading(false); }
@@ -766,7 +769,8 @@ export function useIndices() {
     setLoading(true);
     try {
       const res = await api.indices.list();
-      const items = Array.isArray(res?.data) ? res.data : (res?.data as Record<string, unknown>)?.indices as Record<string, unknown>[] ?? [];
+      const outer = res?.data as Record<string, unknown> | undefined;
+      const items = (Array.isArray(outer) ? outer : Array.isArray(outer?.data) ? outer.data : []) as Record<string, unknown>[];
       setIndices(items);
     } catch {
       setIndices([
@@ -791,7 +795,8 @@ export function useIndexValues() {
     setLoading(true);
     try {
       const res = await api.indices.values();
-      const items = Array.isArray(res?.data) ? res.data : (res?.data as Record<string, unknown>)?.values as Record<string, unknown>[] ?? [];
+      const outer = res?.data as Record<string, unknown> | undefined;
+      const items = (Array.isArray(outer) ? outer : Array.isArray(outer?.data) ? outer.data : []) as Record<string, unknown>[];
       setValues(items);
     } catch {
       setValues([
@@ -816,7 +821,8 @@ export function useCorporateActions() {
     setLoading(true);
     try {
       const res = await api.corporateActions.list();
-      const items = Array.isArray(res?.data) ? res.data : (res?.data as Record<string, unknown>)?.corporate_actions as Record<string, unknown>[] ?? [];
+      const outer = res?.data as Record<string, unknown> | undefined;
+      const items = (Array.isArray(outer) ? outer : Array.isArray(outer?.data) ? outer.data : []) as Record<string, unknown>[];
       setActions(items);
     } catch {
       setActions([
@@ -855,7 +861,8 @@ export function useBrokers() {
     setLoading(true);
     try {
       const res = await api.brokers.list();
-      const items = Array.isArray(res?.data) ? res.data : (res?.data as Record<string, unknown>)?.brokers as Record<string, unknown>[] ?? [];
+      const outer = res?.data as Record<string, unknown> | undefined;
+      const items = (Array.isArray(outer) ? outer : Array.isArray(outer?.data) ? outer.data : []) as Record<string, unknown>[];
       setBrokers(items);
     } catch {
       setBrokers([
@@ -903,7 +910,8 @@ export function useExchangeStatus() {
     (async () => {
       try {
         const res = await api.exchangeStatus.get();
-        setStatus((Array.isArray(res?.data) ? res.data[0] : res?.data) as Record<string, unknown> ?? null);
+        const outer = res?.data as Record<string, unknown> | undefined;
+        setStatus((outer?.data ?? outer) as Record<string, unknown> ?? null);
       } catch {
         setStatus({ market_makers: 2, indices: 5, brokers: 5, connected_brokers: 4, corporate_actions: 3, fix_protocol: "FIXT.1.1 / FIX.5.0SP2" });
       } finally { setLoading(false); }

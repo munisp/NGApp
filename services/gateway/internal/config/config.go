@@ -43,7 +43,7 @@ func Load() *Config {
 		APISIXAdminURL:       getEnv("APISIX_ADMIN_URL", "http://localhost:9180"),
 		APISIXAdminKey:       getEnv("APISIX_ADMIN_KEY", "nexcom-apisix-key"),
 		CORSOrigins:          getEnv("CORS_ORIGINS", "http://localhost:3000,http://localhost:3001"),
-		MatchingEngineURL:    getEnv("MATCHING_ENGINE_URL", "http://localhost:8010"),
+		MatchingEngineURL:    getEnv("MATCHING_ENGINE_URL", "http://localhost:8080"),
 		IngestionEngineURL:   getEnv("INGESTION_ENGINE_URL", "http://localhost:8005"),
 	}
 }
