@@ -1,6 +1,7 @@
-//! FIX Protocol Gateway (FIX 4.4).
+//! FIX Protocol Gateway (FIXT 1.1 / FIX 5.0 SP2).
 //! Implements FIX session layer (logon, heartbeat, sequence numbers)
 //! and application layer (NewOrderSingle, ExecutionReport, MarketData).
+//! Upgraded from FIX 4.4 to FIX 5.0 SP2 with FIXT 1.1 transport.
 #![allow(dead_code)]
 
 use crate::types::*;
@@ -11,8 +12,10 @@ use tracing::{info, warn};
 /// FIX message delimiter.
 const SOH: char = '\x01';
 
-/// FIX 4.4 protocol version.
-const FIX_VERSION: &str = "FIX.4.4";
+/// FIXT 1.1 transport protocol version (for FIX 5.0 SP2).
+const FIXT_VERSION: &str = "FIXT.1.1";
+/// FIX 5.0 SP2 application version.
+const FIX_APP_VERSION: &str = "FIX.5.0SP2";
 
 /// A parsed FIX message as tag-value pairs.
 #[derive(Debug, Clone)]
@@ -76,7 +79,7 @@ impl FixMessage {
         }
 
         let body_len = body.len();
-        let mut msg = format!("8={}{}", FIX_VERSION, SOH);
+        let mut msg = format!("8={}{}", FIXT_VERSION, SOH);
         msg.push_str(&format!("9={}{}", body_len, SOH));
         msg.push_str(&body);
 
@@ -137,7 +140,7 @@ impl FixSession {
         self.outgoing_seq
     }
 
-    /// Build a Logon message (MsgType=A).
+    /// Build a Logon message (MsgType=A) with FIX 5.0 SP2 fields.
     pub fn build_logon(&mut self) -> String {
         let seq = self.next_seq();
         FixMessage::build(
@@ -148,6 +151,9 @@ impl FixSession {
             &[
                 (98, "0".to_string()),  // EncryptMethod=None
                 (108, self.heartbeat_interval.to_string()), // HeartBtInt
+                (1137, FIX_APP_VERSION.to_string()), // DefaultApplVerID=FIX.5.0SP2
+                (1407, "0".to_string()), // DefaultApplExtID
+                (553, self.sender_comp_id.clone()), // Username (optional)
             ],
         )
     }

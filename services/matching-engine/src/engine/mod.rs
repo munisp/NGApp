@@ -1,11 +1,15 @@
 //! Core exchange engine that orchestrates all components:
 //! orderbook, futures, options, clearing, FIX, surveillance, delivery, HA.
 
+use crate::broker::BrokerManager;
 use crate::clearing::ClearingHouse;
+use crate::corporate_actions::CorporateActionsManager;
 use crate::delivery::DeliveryManager;
 use crate::fix::FixGateway;
 use crate::futures::FuturesManager;
 use crate::ha::ClusterManager;
+use crate::indices::IndexEngine;
+use crate::market_maker::MarketMakerManager;
 use crate::options::OptionsManager;
 use crate::orderbook::OrderBookManager;
 use crate::surveillance::{AuditTrail, SurveillanceEngine};
@@ -24,6 +28,10 @@ pub struct ExchangeEngine {
     pub delivery: Arc<DeliveryManager>,
     pub cluster: Arc<ClusterManager>,
     pub audit: Arc<AuditTrail>,
+    pub market_makers: Arc<MarketMakerManager>,
+    pub indices: Arc<IndexEngine>,
+    pub corporate_actions: Arc<CorporateActionsManager>,
+    pub brokers: Arc<BrokerManager>,
 }
 
 impl ExchangeEngine {
@@ -40,6 +48,10 @@ impl ExchangeEngine {
             delivery: Arc::new(DeliveryManager::new()),
             cluster: Arc::new(ClusterManager::new(node_id, role)),
             audit: Arc::new(AuditTrail::new()),
+            market_makers: Arc::new(MarketMakerManager::new()),
+            indices: Arc::new(IndexEngine::new()),
+            corporate_actions: Arc::new(CorporateActionsManager::new()),
+            brokers: Arc::new(BrokerManager::new()),
         };
 
         // Auto-list forward futures contracts
@@ -273,9 +285,16 @@ impl ExchangeEngine {
             "guarantee_fund": from_price(self.clearing.guarantee_fund_total()),
             "warehouses": self.delivery.get_warehouses().len(),
             "fix_sessions": self.fix_gateway.session_count(),
+            "fix_protocol": "FIXT.1.1 / FIX.5.0SP2",
             "surveillance_alerts": alerts.len(),
             "audit_entries": self.audit.entry_count(),
             "audit_integrity": self.audit.verify_integrity(),
+            "market_makers": self.market_makers.maker_count(),
+            "active_quotes": self.market_makers.active_quote_count(),
+            "indices": self.indices.index_count(),
+            "corporate_actions": self.corporate_actions.action_count(),
+            "brokers": self.brokers.broker_count(),
+            "connected_brokers": self.brokers.connected_count(),
             "health": health,
         })
     }

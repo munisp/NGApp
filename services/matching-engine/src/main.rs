@@ -3,12 +3,16 @@
 //! futures/options lifecycle, CCP clearing, FIX 4.4 gateway, market surveillance,
 //! physical delivery infrastructure, and HA/DR failover.
 
+mod broker;
 mod clearing;
+mod corporate_actions;
 mod delivery;
 mod engine;
 mod fix;
 mod futures;
 mod ha;
+mod indices;
+mod market_maker;
 mod options;
 mod orderbook;
 pub mod persistence;
@@ -126,6 +130,27 @@ async fn main() {
         // FIX
         .route("/api/v1/fix/sessions", get(fix_sessions))
         .route("/api/v1/fix/message", post(fix_message))
+        // Market Makers
+        .route("/api/v1/market-makers", get(list_market_makers))
+        .route("/api/v1/market-makers/:id", get(get_market_maker))
+        .route("/api/v1/market-makers/:id/performance", get(market_maker_performance))
+        .route("/api/v1/market-makers/quotes/:symbol", get(market_maker_quotes))
+        .route("/api/v1/market-makers/quotes", post(submit_quote))
+        // Indices
+        .route("/api/v1/indices", get(list_indices))
+        .route("/api/v1/indices/values", get(index_values))
+        .route("/api/v1/indices/:id", get(get_index))
+        .route("/api/v1/indices/:id/value", get(get_index_value))
+        // Corporate Actions
+        .route("/api/v1/corporate-actions", get(list_corporate_actions))
+        .route("/api/v1/corporate-actions/pending", get(pending_corporate_actions))
+        .route("/api/v1/corporate-actions/:symbol", get(corporate_actions_for_symbol))
+        .route("/api/v1/corporate-actions/:id/process", post(process_corporate_action))
+        // Brokers
+        .route("/api/v1/brokers", get(list_brokers))
+        .route("/api/v1/brokers/:id", get(get_broker))
+        .route("/api/v1/brokers/connected", get(connected_brokers))
+        .route("/api/v1/brokers/route", post(route_order))
         .layer(RequestBodyLimitLayer::new(1024 * 1024)) // 1MB request body limit
         .layer(cors)
         .with_state(engine);
@@ -549,6 +574,192 @@ async fn fix_message(
                 "response": response,
             })))
         }
+        Err(e) => Json(ApiResponse::err(e)),
+    }
+}
+
+// ─── Market Makers ──────────────────────────────────────────────────────────
+
+async fn list_market_makers(
+    State(engine): State<AppState>,
+) -> Json<ApiResponse<Vec<market_maker::MarketMaker>>> {
+    Json(ApiResponse::ok(engine.market_makers.list_makers()))
+}
+
+async fn get_market_maker(
+    State(engine): State<AppState>,
+    Path(id): Path<String>,
+) -> Json<ApiResponse<market_maker::MarketMaker>> {
+    match engine.market_makers.get_maker(&id) {
+        Some(mm) => Json(ApiResponse::ok(mm)),
+        None => Json(ApiResponse::err(format!("Market maker {} not found", id))),
+    }
+}
+
+async fn market_maker_performance(
+    State(engine): State<AppState>,
+    Path(id): Path<String>,
+) -> Json<ApiResponse<serde_json::Value>> {
+    match engine.market_makers.evaluate_performance(&id) {
+        Some(perf) => Json(ApiResponse::ok(perf)),
+        None => Json(ApiResponse::err(format!("Market maker {} not found", id))),
+    }
+}
+
+async fn market_maker_quotes(
+    State(engine): State<AppState>,
+    Path(symbol): Path<String>,
+) -> Json<ApiResponse<Vec<market_maker::TwoSidedQuote>>> {
+    Json(ApiResponse::ok(engine.market_makers.quotes_for_symbol(&symbol)))
+}
+
+#[derive(serde::Deserialize)]
+struct SubmitQuoteRequest {
+    market_maker_id: String,
+    symbol: String,
+    bid_price: f64,
+    bid_quantity: f64,
+    ask_price: f64,
+    ask_quantity: f64,
+}
+
+async fn submit_quote(
+    State(engine): State<AppState>,
+    Json(req): Json<SubmitQuoteRequest>,
+) -> Json<ApiResponse<market_maker::TwoSidedQuote>> {
+    let quote = market_maker::TwoSidedQuote {
+        id: uuid::Uuid::new_v4(),
+        market_maker_id: req.market_maker_id,
+        symbol: req.symbol,
+        bid_price: to_price(req.bid_price),
+        bid_quantity: (req.bid_quantity * 1_000_000.0) as Qty,
+        ask_price: to_price(req.ask_price),
+        ask_quantity: (req.ask_quantity * 1_000_000.0) as Qty,
+        bid_levels: vec![],
+        ask_levels: vec![],
+        submitted_at: chrono::Utc::now(),
+        valid_until: None,
+    };
+    match engine.market_makers.submit_quote(quote) {
+        Ok(q) => Json(ApiResponse::ok(q)),
+        Err(e) => Json(ApiResponse::err(e)),
+    }
+}
+
+// ─── Indices ────────────────────────────────────────────────────────────────
+
+async fn list_indices(
+    State(engine): State<AppState>,
+) -> Json<ApiResponse<Vec<indices::IndexDefinition>>> {
+    Json(ApiResponse::ok(engine.indices.list_indices()))
+}
+
+async fn index_values(
+    State(engine): State<AppState>,
+) -> Json<ApiResponse<Vec<indices::IndexValue>>> {
+    Json(ApiResponse::ok(engine.indices.all_values()))
+}
+
+async fn get_index(
+    State(engine): State<AppState>,
+    Path(id): Path<String>,
+) -> Json<ApiResponse<indices::IndexDefinition>> {
+    match engine.indices.get_index(&id) {
+        Some(idx) => Json(ApiResponse::ok(idx)),
+        None => Json(ApiResponse::err(format!("Index {} not found", id))),
+    }
+}
+
+async fn get_index_value(
+    State(engine): State<AppState>,
+    Path(id): Path<String>,
+) -> Json<ApiResponse<indices::IndexValue>> {
+    match engine.indices.get_value(&id) {
+        Some(val) => Json(ApiResponse::ok(val)),
+        None => Json(ApiResponse::err(format!("Index {} not found", id))),
+    }
+}
+
+// ─── Corporate Actions ──────────────────────────────────────────────────────
+
+async fn list_corporate_actions(
+    State(engine): State<AppState>,
+) -> Json<ApiResponse<Vec<corporate_actions::CorporateAction>>> {
+    Json(ApiResponse::ok(engine.corporate_actions.all_actions()))
+}
+
+async fn pending_corporate_actions(
+    State(engine): State<AppState>,
+) -> Json<ApiResponse<Vec<corporate_actions::CorporateAction>>> {
+    Json(ApiResponse::ok(engine.corporate_actions.pending_actions()))
+}
+
+async fn corporate_actions_for_symbol(
+    State(engine): State<AppState>,
+    Path(symbol): Path<String>,
+) -> Json<ApiResponse<Vec<corporate_actions::CorporateAction>>> {
+    Json(ApiResponse::ok(engine.corporate_actions.actions_for_symbol(&symbol)))
+}
+
+async fn process_corporate_action(
+    State(engine): State<AppState>,
+    Path(id): Path<String>,
+) -> Json<ApiResponse<corporate_actions::CorporateAction>> {
+    let uuid = match uuid::Uuid::parse_str(&id) {
+        Ok(u) => u,
+        Err(_) => return Json(ApiResponse::err("Invalid action ID")),
+    };
+    match engine.corporate_actions.process_action(uuid) {
+        Ok(action) => Json(ApiResponse::ok(action)),
+        Err(e) => Json(ApiResponse::err(e)),
+    }
+}
+
+// ─── Brokers ────────────────────────────────────────────────────────────────
+
+async fn list_brokers(
+    State(engine): State<AppState>,
+) -> Json<ApiResponse<Vec<broker::Broker>>> {
+    Json(ApiResponse::ok(engine.brokers.list_brokers()))
+}
+
+async fn get_broker(
+    State(engine): State<AppState>,
+    Path(id): Path<String>,
+) -> Json<ApiResponse<broker::Broker>> {
+    match engine.brokers.get_broker(&id) {
+        Some(b) => Json(ApiResponse::ok(b)),
+        None => Json(ApiResponse::err(format!("Broker {} not found", id))),
+    }
+}
+
+async fn connected_brokers(
+    State(engine): State<AppState>,
+) -> Json<ApiResponse<Vec<broker::Broker>>> {
+    Json(ApiResponse::ok(engine.brokers.connected_brokers()))
+}
+
+#[derive(serde::Deserialize)]
+struct RouteOrderRequest {
+    broker_id: String,
+    client_account: String,
+    symbol: String,
+    side: String,
+    quantity: f64,
+}
+
+async fn route_order(
+    State(engine): State<AppState>,
+    Json(req): Json<RouteOrderRequest>,
+) -> Json<ApiResponse<broker::OrderRoute>> {
+    match engine.brokers.route_order(
+        &req.broker_id,
+        &req.client_account,
+        &req.symbol,
+        &req.side,
+        (req.quantity * 1_000_000.0) as i64,
+    ) {
+        Ok(route) => Json(ApiResponse::ok(route)),
         Err(e) => Json(ApiResponse::err(e)),
     }
 }
