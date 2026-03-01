@@ -129,7 +129,7 @@ export function useWallet() {
 
   const connect = useCallback(async () => {
     if (!window.ethereum) {
-      setError("MetaMask not detected. Please install MetaMask to connect your wallet.");
+      setError("Digital wallet not detected. Please install a wallet app to connect.");
       return;
     }
 
@@ -195,7 +195,7 @@ export function useWallet() {
             params: [config],
           });
         } catch {
-          setError("Failed to add network to wallet");
+          setError("Failed to add network to your wallet");
         }
       }
     }
@@ -323,7 +323,7 @@ export default function WalletConnect({ onConnect, onDisconnect }: WalletConnect
           ) : (
             <Wallet className="h-4 w-4" />
           )}
-          {connecting ? "Connecting..." : hasEthereum ? "Connect Wallet" : "Install MetaMask"}
+          {connecting ? "Connecting..." : hasEthereum ? "Connect Wallet" : "Set Up Wallet"}
         </button>
 
         {error && (
@@ -341,7 +341,7 @@ export default function WalletConnect({ onConnect, onDisconnect }: WalletConnect
             className="flex items-center gap-1 text-xs text-purple-400 hover:text-purple-300"
           >
             <ExternalLink className="h-3 w-3" />
-            Get MetaMask
+            Get Digital Wallet
           </a>
         )}
       </div>

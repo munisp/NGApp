@@ -323,8 +323,8 @@ export default function DigitalAssetsPage() {
     { id: "marketplace", label: "Marketplace", icon: Coins },
     { id: "portfolio", label: "My Portfolio", icon: Wallet },
     { id: "orderbook", label: "Trade", icon: ArrowUpDown },
-    { id: "chains", label: "Chains", icon: Globe },
-    { id: "ipfs", label: "IPFS", icon: Database },
+    { id: "chains", label: "Networks", icon: Globe },
+    { id: "ipfs", label: "Documents", icon: Database },
   ];
 
   return (
@@ -340,7 +340,7 @@ export default function DigitalAssetsPage() {
             Digital Assets
           </h1>
           <p className="mt-1 text-sm text-gray-400">
-            Tokenized commodities with fractional ownership on ERC-1155 + IPFS metadata
+            Invest in commodity-backed digital assets with shared ownership
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -360,7 +360,7 @@ export default function DigitalAssetsPage() {
         <SummaryCard label="Total Assets" value={String(assets.length)} icon={Layers} color="#8B5CF6" />
         <SummaryCard label="Portfolio Value" value={formatUSD(totalPortfolioValue)} icon={Wallet} color="#10B981" />
         <SummaryCard label="Total P&L" value={formatUSD(totalPnl)} icon={totalPnl >= 0 ? TrendingUp : TrendingDown} color={totalPnl >= 0 ? "#10B981" : "#EF4444"} />
-        <SummaryCard label="Active Chains" value={String(chains.filter(c => c.status === "connected").length)} icon={Globe} color="#3B82F6" />
+        <SummaryCard label="Active Networks" value={String(chains.filter(c => c.status === "connected").length)} icon={Globe} color="#3B82F6" />
       </div>
 
       {/* Tabs */}
@@ -468,7 +468,7 @@ function MarketplaceTab({
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search tokenized commodities..."
+            placeholder="Search digital assets..."
             className="w-full rounded-lg border border-white/10 bg-white/[0.04] pl-10 pr-4 py-2.5 text-sm text-white placeholder-gray-500 focus:border-violet-500/50 focus:outline-none"
           />
         </div>
@@ -528,7 +528,7 @@ function AssetCard({
       {/* Price & Stats */}
       <div className="mt-4 grid grid-cols-2 gap-3">
         <div>
-          <span className="text-[10px] font-medium text-gray-500">Price / Fraction</span>
+          <span className="text-[10px] font-medium text-gray-500">Price / Share</span>
           <p className="text-lg font-bold text-white">{formatUSD(asset.fraction_price)}</p>
         </div>
         <div>
@@ -540,13 +540,13 @@ function AssetCard({
       {/* Fractions Progress */}
       <div className="mt-3">
         <div className="flex justify-between text-[10px] text-gray-500 mb-1">
-          <span>{formatNumber(asset.available_fractions)} available</span>
+          <span>{formatNumber(asset.available_fractions)} shares available</span>
           <span>{pctAvailable}%</span>
         </div>
         <div className="h-1.5 rounded-full bg-white/5">
           <div className="h-full rounded-full" style={{ width: `${pctAvailable}%`, background: chainColor }} />
         </div>
-        <p className="mt-1 text-[10px] text-gray-600">{formatNumber(asset.total_fractions)} total fractions | {asset.holders} holders</p>
+        <p className="mt-1 text-[10px] text-gray-600">{formatNumber(asset.total_fractions)} total shares | {asset.holders} investors</p>
       </div>
 
       {/* IPFS CID */}
@@ -565,7 +565,7 @@ function AssetCard({
           className="flex-1 flex items-center justify-center gap-1.5 rounded-lg py-2 text-xs font-medium text-white transition-all"
           style={{ background: `linear-gradient(135deg, ${chainColor}80, ${chainColor}60)` }}
         >
-          <ArrowUpDown className="h-3 w-3" /> Trade Fractions
+          <ArrowUpDown className="h-3 w-3" /> Buy & Sell
         </button>
         <button className="flex items-center justify-center rounded-lg border border-white/10 px-3 py-2 text-gray-400 hover:bg-white/5">
           <ExternalLink className="h-3.5 w-3.5" />
@@ -614,12 +614,12 @@ function PortfolioTab({
           <thead>
             <tr className="border-b border-white/[0.06] bg-white/[0.02]">
               <th className="px-4 py-3 text-left text-[11px] font-medium text-gray-500">Asset</th>
-              <th className="px-4 py-3 text-right text-[11px] font-medium text-gray-500">Fractions</th>
-              <th className="px-4 py-3 text-right text-[11px] font-medium text-gray-500">Avg Cost</th>
+              <th className="px-4 py-3 text-right text-[11px] font-medium text-gray-500">Shares</th>
+              <th className="px-4 py-3 text-right text-[11px] font-medium text-gray-500">Cost Basis</th>
               <th className="px-4 py-3 text-right text-[11px] font-medium text-gray-500">Current</th>
               <th className="px-4 py-3 text-right text-[11px] font-medium text-gray-500">Value</th>
               <th className="px-4 py-3 text-right text-[11px] font-medium text-gray-500">P&L</th>
-              <th className="px-4 py-3 text-right text-[11px] font-medium text-gray-500">IPFS</th>
+              <th className="px-4 py-3 text-right text-[11px] font-medium text-gray-500">Docs</th>
             </tr>
           </thead>
           <tbody>
@@ -713,12 +713,12 @@ function OrderbookTab({
         <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4">
           <h3 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
             <BarChart3 className="h-4 w-4 text-violet-400" />
-            Fractional Orderbook
+            Order Book
             {selectedAsset && <span className="text-gray-500">| {selectedAsset.symbol}</span>}
           </h3>
 
           {!selectedAsset ? (
-            <p className="text-center text-sm text-gray-500 py-8">Select an asset to view orderbook</p>
+            <p className="text-center text-sm text-gray-500 py-8">Select an asset to view orders</p>
           ) : (
             <div className="grid grid-cols-2 gap-4">
               {/* Bids */}
@@ -834,7 +834,7 @@ function OrderbookTab({
 
           {/* Quantity */}
           <div className="mb-3">
-            <label className="text-[10px] font-medium text-gray-500 mb-1 block">Quantity (fractions)</label>
+            <label className="text-[10px] font-medium text-gray-500 mb-1 block">Number of Shares</label>
             <input
               type="number"
               value={orderQty}
@@ -846,7 +846,7 @@ function OrderbookTab({
 
           {/* Price */}
           <div className="mb-4">
-            <label className="text-[10px] font-medium text-gray-500 mb-1 block">Price per fraction (USD)</label>
+            <label className="text-[10px] font-medium text-gray-500 mb-1 block">Price per Share (USD)</label>
             <input
               type="number"
               step="0.01"
@@ -877,7 +877,7 @@ function OrderbookTab({
                 : "bg-red-500/80 text-white hover:bg-red-500"
             }`}
           >
-            {orderSubmitting ? "Submitting..." : `${orderSide === "buy" ? "Buy" : "Sell"} Fractions`}
+            {orderSubmitting ? "Submitting..." : `${orderSide === "buy" ? "Buy" : "Sell"} Shares`}
           </button>
         </div>
 
@@ -887,10 +887,10 @@ function OrderbookTab({
             <Shield className="h-3.5 w-3.5 text-violet-400" /> Settlement
           </h3>
           <div className="space-y-2 text-[10px]">
-            <div className="flex justify-between"><span className="text-gray-500">Type</span><span className="text-white">T+0 Atomic DvP</span></div>
-            <div className="flex justify-between"><span className="text-gray-500">Contract</span><span className="text-white">SettlementEscrow</span></div>
-            <div className="flex justify-between"><span className="text-gray-500">Standard</span><span className="text-white">ERC-1155</span></div>
-            <div className="flex justify-between"><span className="text-gray-500">KYC Required</span><span className="text-green-400">Yes</span></div>
+            <div className="flex justify-between"><span className="text-gray-500">Settlement</span><span className="text-white">Instant (Same-Day)</span></div>
+            <div className="flex justify-between"><span className="text-gray-500">Security</span><span className="text-white">Secure Escrow</span></div>
+            <div className="flex justify-between"><span className="text-gray-500">Asset Type</span><span className="text-white">Digital Token</span></div>
+            <div className="flex justify-between"><span className="text-gray-500">Identity Verified</span><span className="text-green-400">Yes</span></div>
           </div>
         </div>
       </div>
@@ -915,7 +915,7 @@ function ChainsTab({ chains }: { chains: ChainInfo[] }) {
                 </div>
                 <div>
                   <h3 className="text-sm font-semibold text-white capitalize">{chain.name}</h3>
-                  <p className="text-[10px] text-gray-500">Chain ID: {chain.chain_id}</p>
+                  <p className="text-[10px] text-gray-500">Network ID: {chain.chain_id}</p>
                 </div>
               </div>
               <span className={`flex h-2 w-2 rounded-full ${chain.status === "connected" ? "bg-green-400" : "bg-red-400"}`}>
@@ -923,10 +923,10 @@ function ChainsTab({ chains }: { chains: ChainInfo[] }) {
               </span>
             </div>
             <div className="space-y-2.5 text-xs">
-              <div className="flex justify-between"><span className="text-gray-500">Block Height</span><span className="text-white font-mono">{formatNumber(chain.block_height)}</span></div>
-              <div className="flex justify-between"><span className="text-gray-500">Gas Price</span><span className="text-white">{chain.gas_price}</span></div>
-              <div className="flex justify-between"><span className="text-gray-500">Contract</span><span className="text-white text-[10px]">{chain.contract}</span></div>
-              <div className="flex justify-between"><span className="text-gray-500">Confirmations</span><span className="text-white">{chain.confirmations_required}</span></div>
+              <div className="flex justify-between"><span className="text-gray-500">Latest Block</span><span className="text-white font-mono">{formatNumber(chain.block_height)}</span></div>
+              <div className="flex justify-between"><span className="text-gray-500">Network Fee</span><span className="text-white">{chain.gas_price}</span></div>
+              <div className="flex justify-between"><span className="text-gray-500">Smart Contract</span><span className="text-white text-[10px]">{chain.contract}</span></div>
+              <div className="flex justify-between"><span className="text-gray-500">Verifications</span><span className="text-white">{chain.confirmations_required}</span></div>
             </div>
           </div>
         );
@@ -935,23 +935,23 @@ function ChainsTab({ chains }: { chains: ChainInfo[] }) {
       {/* Bridge Info */}
       <div className="md:col-span-3 rounded-xl border border-white/[0.06] bg-white/[0.02] p-5">
         <h3 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
-          <Link2 className="h-4 w-4 text-violet-400" /> Cross-Chain Bridge
+          <Link2 className="h-4 w-4 text-violet-400" /> Network Bridge
         </h3>
         <div className="grid grid-cols-3 gap-4 text-xs">
           <div className="rounded-lg bg-white/[0.04] p-3">
             <span className="text-gray-500">Ethereum &rarr; Polygon</span>
             <p className="mt-1 text-sm font-medium text-green-400">Active</p>
-            <p className="text-[10px] text-gray-500">Lock-and-Mint</p>
+            <p className="text-[10px] text-gray-500">Secure Transfer</p>
           </div>
           <div className="rounded-lg bg-white/[0.04] p-3">
             <span className="text-gray-500">Polygon &rarr; Ethereum</span>
             <p className="mt-1 text-sm font-medium text-green-400">Active</p>
-            <p className="text-[10px] text-gray-500">Burn-and-Release</p>
+            <p className="text-[10px] text-gray-500">Secure Redemption</p>
           </div>
           <div className="rounded-lg bg-white/[0.04] p-3">
             <span className="text-gray-500">Hyperledger &rarr; Polygon</span>
             <p className="mt-1 text-sm font-medium text-yellow-400">Bridge Only</p>
-            <p className="text-[10px] text-gray-500">Relay Proof</p>
+            <p className="text-[10px] text-gray-500">Verified Relay</p>
           </div>
         </div>
       </div>
@@ -974,7 +974,7 @@ function IpfsTab({
       {/* IPFS Status */}
       <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-5">
         <h3 className="text-sm font-semibold text-white mb-4 flex items-center gap-2">
-          <Database className="h-4 w-4 text-violet-400" /> IPFS Node Status
+          <Database className="h-4 w-4 text-violet-400" /> Document Storage Status
         </h3>
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
           <div>
@@ -1001,10 +1001,10 @@ function IpfsTab({
       {/* IPFS Content Registry */}
       <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-5">
         <h3 className="text-sm font-semibold text-white mb-4 flex items-center gap-2">
-          <HardDrive className="h-4 w-4 text-violet-400" /> Content Registry
+          <HardDrive className="h-4 w-4 text-violet-400" /> Asset Documents
         </h3>
         <p className="text-xs text-gray-500 mb-3">
-          All commodity metadata, warehouse receipts, and quality certificates stored on IPFS for immutable, decentralized access.
+          All asset documentation, warehouse receipts, and quality certificates are securely stored for tamper-proof verification.
         </p>
         <div className="space-y-2">
           {assets.map(a => (
@@ -1015,7 +1015,7 @@ function IpfsTab({
               </div>
               <div className="flex items-center gap-3">
                 <div className="flex items-center gap-1.5">
-                  <span className="text-[10px] text-gray-500">Metadata:</span>
+                  <span className="text-[10px] text-gray-500">Details:</span>
                   <code className="text-[10px] text-violet-300 font-mono">{a.metadata_cid.slice(0, 16)}...</code>
                   <button onClick={() => copyCid(a.metadata_cid)} className="text-gray-500 hover:text-white">
                     {copiedCid === a.metadata_cid ? <Check className="h-3 w-3 text-green-400" /> : <Copy className="h-3 w-3" />}
@@ -1036,28 +1036,28 @@ function IpfsTab({
 
       {/* How IPFS Works */}
       <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-5">
-        <h3 className="text-sm font-semibold text-white mb-3">How IPFS Integration Works</h3>
+        <h3 className="text-sm font-semibold text-white mb-3">How Document Verification Works</h3>
         <div className="grid gap-3 md:grid-cols-3 text-xs">
           <div className="rounded-lg bg-white/[0.04] p-3">
             <div className="flex items-center gap-2 mb-2">
               <div className="h-6 w-6 rounded-full bg-violet-500/20 flex items-center justify-center text-[10px] font-bold text-violet-400">1</div>
-              <span className="font-medium text-white">Tokenize</span>
+              <span className="font-medium text-white">Create Asset</span>
             </div>
-            <p className="text-gray-500">When a commodity is tokenized, metadata (warehouse receipt, quality grade, origin) is pinned to IPFS.</p>
+            <p className="text-gray-500">When a commodity is listed, its documentation (warehouse receipt, quality grade, origin) is securely stored.</p>
           </div>
           <div className="rounded-lg bg-white/[0.04] p-3">
             <div className="flex items-center gap-2 mb-2">
               <div className="h-6 w-6 rounded-full bg-violet-500/20 flex items-center justify-center text-[10px] font-bold text-violet-400">2</div>
-              <span className="font-medium text-white">CID Reference</span>
+              <span className="font-medium text-white">Link Reference</span>
             </div>
-            <p className="text-gray-500">The IPFS Content Identifier (CID) is stored on-chain as the token URI, linking the token to its metadata.</p>
+            <p className="text-gray-500">A unique document reference is recorded on the blockchain, permanently linking the asset to its verified documentation.</p>
           </div>
           <div className="rounded-lg bg-white/[0.04] p-3">
             <div className="flex items-center gap-2 mb-2">
               <div className="h-6 w-6 rounded-full bg-violet-500/20 flex items-center justify-center text-[10px] font-bold text-violet-400">3</div>
-              <span className="font-medium text-white">Immutable Audit</span>
+              <span className="font-medium text-white">Audit Trail</span>
             </div>
-            <p className="text-gray-500">Settlement records, transfers, and fractionalization events are also pinned to IPFS for immutable audit trails.</p>
+            <p className="text-gray-500">All trade settlements, ownership transfers, and share distributions are permanently recorded for full audit traceability.</p>
           </div>
         </div>
       </div>
