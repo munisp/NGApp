@@ -10,15 +10,16 @@ import (
 	"time"
 
 	"github.com/munisp/NGApp/services/gateway/internal/api"
+	"github.com/munisp/NGApp/services/gateway/internal/apisix"
 	"github.com/munisp/NGApp/services/gateway/internal/config"
 	"github.com/munisp/NGApp/services/gateway/internal/dapr"
+	"github.com/munisp/NGApp/services/gateway/internal/fluvio"
 	kafkaclient "github.com/munisp/NGApp/services/gateway/internal/kafka"
 	"github.com/munisp/NGApp/services/gateway/internal/keycloak"
 	"github.com/munisp/NGApp/services/gateway/internal/permify"
 	redisclient "github.com/munisp/NGApp/services/gateway/internal/redis"
 	"github.com/munisp/NGApp/services/gateway/internal/temporal"
 	"github.com/munisp/NGApp/services/gateway/internal/tigerbeetle"
-	"github.com/munisp/NGApp/services/gateway/internal/fluvio"
 )
 
 func main() {
@@ -33,6 +34,10 @@ func main() {
 	fluvioClient := fluvio.NewClient(cfg.FluvioEndpoint)
 	keycloakClient := keycloak.NewClient(cfg.KeycloakURL, cfg.KeycloakRealm, cfg.KeycloakClientID)
 	permifyClient := permify.NewClient(cfg.PermifyEndpoint)
+	apisixClient := apisix.NewClient(cfg.APISIXAdminURL, cfg.APISIXAdminKey)
+
+	// Wire OpenAppSec WAF as APISIX ext-plugin on primary route
+	apisixClient.ConfigureOpenAppSecPlugin("gateway-primary", cfg.OpenAppSecURL)
 
 	// Create API server with all dependencies
 	server := api.NewServer(
@@ -45,6 +50,7 @@ func main() {
 		fluvioClient,
 		keycloakClient,
 		permifyClient,
+		apisixClient,
 	)
 
 	// Setup routes
@@ -85,6 +91,7 @@ func main() {
 	tigerBeetleClient.Close()
 	daprClient.Close()
 	fluvioClient.Close()
+	apisixClient.Close()
 
 	log.Println("Server exited cleanly")
 }

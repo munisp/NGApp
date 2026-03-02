@@ -17,8 +17,8 @@ conf:
       file_path: /dev/stdout
 
 authentication:
-  secret: nexcom-dashboard-secret
+  secret: "${APISIX_DASHBOARD_SECRET:-nexcom-dashboard-secret-changeme}"
   expire_time: 3600
   users:
-    - username: admin
-      password: admin
+    - username: "${APISIX_DASHBOARD_USER:-nexcom-admin}"
+      password: "${APISIX_DASHBOARD_PASSWORD:-changeme-on-first-login}"

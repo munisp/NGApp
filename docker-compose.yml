@@ -33,6 +33,11 @@ services:
       - ./infrastructure/apisix/dashboard.yaml:/usr/local/apisix-dashboard/conf/conf.yaml:ro
     ports:
       - "9090:9000"
+    environment:
+      APISIX_DASHBOARD_USER: "${APISIX_DASHBOARD_USER:-nexcom-admin}"
+      APISIX_DASHBOARD_PASSWORD: "${APISIX_DASHBOARD_PASSWORD:-}"
+    depends_on:
+      - etcd
     networks:
       - nexcom-network
 
@@ -352,14 +357,31 @@ services:
       - nexcom-network
 
   # ==========================================================================
-  # WAF - OpenAppSec
+  # WAF - OpenAppSec (ML-based Web Application Firewall)
+  # Wired as APISIX ext-plugin-pre-req for inline traffic inspection.
   # ==========================================================================
   openappsec:
     image: ghcr.io/openappsec/smartsync:latest
     container_name: nexcom-openappsec
     restart: unless-stopped
+    ports:
+      - "8090:8080"   # WAF inspection endpoint
+      - "8091:8081"   # Health / metrics endpoint
+    environment:
+      LEARNING_MODE: "prevent-learn"
+      LOG_LEVEL: "info"
+      UPSTREAM_URL: "http://gateway:8000"
+      OPENAPPSEC_ADMIN_TOKEN: "${OPENAPPSEC_ADMIN_TOKEN:-nexcom-waf-token-changeme}"
     volumes:
       - ./security/openappsec/local-policy.yaml:/etc/cp/conf/local-policy.yaml:ro
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8081/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    depends_on:
+      - apisix
     networks:
       - nexcom-network
 

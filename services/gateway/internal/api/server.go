@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/munisp/NGApp/services/gateway/internal/apisix"
 	"github.com/munisp/NGApp/services/gateway/internal/config"
 	"github.com/munisp/NGApp/services/gateway/internal/dapr"
 	"github.com/munisp/NGApp/services/gateway/internal/fluvio"
@@ -31,6 +32,7 @@ type Server struct {
 	fluvio      *fluvio.Client
 	keycloak    *keycloak.Client
 	permify     *permify.Client
+	apisix      *apisix.Client
 }
 
 func NewServer(
@@ -43,6 +45,7 @@ func NewServer(
 	fluvio *fluvio.Client,
 	keycloak *keycloak.Client,
 	permify *permify.Client,
+	apisixClient *apisix.Client,
 ) *Server {
 	return &Server{
 		cfg:         cfg,
@@ -55,6 +58,7 @@ func NewServer(
 		fluvio:      fluvio,
 		keycloak:    keycloak,
 		permify:     permify,
+		apisix:      apisixClient,
 	}
 }
 
@@ -1278,6 +1282,9 @@ func (s *Server) priceForecast(c *gin.Context) {
 // ============================================================
 
 func (s *Server) middlewareStatus(c *gin.Context) {
+	// Check OpenAppSec WAF status via APISIX client
+	wafStatus := s.apisix.CheckWAFStatus(s.cfg.OpenAppSecURL)
+
 	c.JSON(http.StatusOK, models.APIResponse{
 		Success: true,
 		Data: gin.H{
@@ -1288,8 +1295,22 @@ func (s *Server) middlewareStatus(c *gin.Context) {
 			"dapr":        gin.H{"connected": s.dapr.IsConnected(), "httpPort": s.cfg.DaprHTTPPort},
 			"fluvio":      gin.H{"connected": s.fluvio.IsConnected(), "endpoint": s.cfg.FluvioEndpoint},
 			"keycloak":    gin.H{"url": s.cfg.KeycloakURL, "realm": s.cfg.KeycloakRealm},
-			"permify":     gin.H{"connected": s.permify.IsConnected(), "endpoint": s.cfg.PermifyEndpoint},
-			"apisix":      gin.H{"adminUrl": s.cfg.APISIXAdminURL},
+			"permify":     gin.H{"connected": s.permify.IsConnected(), "endpoint": s.cfg.PermifyEndpoint, "fallback": s.permify.IsFallback()},
+			"apisix": gin.H{
+				"connected":  s.apisix.IsConnected(),
+				"adminUrl":   s.cfg.APISIXAdminURL,
+				"fallback":   s.apisix.IsFallback(),
+				"routes":     s.apisix.RouteCount(),
+				"consumers":  s.apisix.ConsumerCount(),
+			},
+			"openappsec": gin.H{
+				"enabled":     wafStatus.Enabled,
+				"connected":   wafStatus.Connected,
+				"mode":        wafStatus.Mode,
+				"policyName":  wafStatus.PolicyName,
+				"lastChecked": wafStatus.LastChecked,
+				"url":         s.cfg.OpenAppSecURL,
+			},
 		},
 	})
 }

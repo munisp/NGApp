@@ -19,6 +19,7 @@ type Config struct {
 	PostgresURL          string
 	APISIXAdminURL       string
 	APISIXAdminKey       string
+	OpenAppSecURL        string
 	CORSOrigins          string
 	MatchingEngineURL    string
 	IngestionEngineURL   string
@@ -43,7 +44,8 @@ func Load() *Config {
 		PermifyEndpoint:      getEnv("PERMIFY_ENDPOINT", "localhost:3476"),
 		PostgresURL:          getEnv("POSTGRES_URL", "postgres://nexcom:nexcom@localhost:5432/nexcom?sslmode=disable"),
 		APISIXAdminURL:       getEnv("APISIX_ADMIN_URL", "http://localhost:9180"),
-		APISIXAdminKey:       getEnv("APISIX_ADMIN_KEY", "nexcom-apisix-key"),
+		APISIXAdminKey:       getEnv("APISIX_ADMIN_KEY", "nexcom-admin-key-changeme"),
+		OpenAppSecURL:        getEnv("OPENAPPSEC_URL", "http://localhost:8090"),
 		CORSOrigins:          getEnv("CORS_ORIGINS", "http://localhost:3000,http://localhost:3001"),
 		MatchingEngineURL:    getEnv("MATCHING_ENGINE_URL", "http://localhost:8080"),
 		IngestionEngineURL:   getEnv("INGESTION_ENGINE_URL", "http://localhost:8005"),
