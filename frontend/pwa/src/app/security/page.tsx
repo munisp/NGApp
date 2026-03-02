@@ -1,7 +1,7 @@
 "use client";
 
 import AppShell from "@/components/layout/AppShell";
-import { useApiClient } from "@/lib/api-client";
+import { apiClient } from "@/lib/api-client";
 import { cn } from "@/lib/utils";
 import { useState, useEffect, useCallback } from "react";
 import {
@@ -94,7 +94,6 @@ function StatusBadge({ status, label }: { status: boolean | string; label: strin
 }
 
 export default function SecurityPage() {
-  const api = useApiClient();
   const [data, setData] = useState<SecurityDashboardData>({});
   const [loading, setLoading] = useState(true);
   const [blockIp, setBlockIp] = useState("");
@@ -104,21 +103,21 @@ export default function SecurityPage() {
   const fetchDashboard = useCallback(async () => {
     setLoading(true);
     try {
-      const resp = await api.get("/security/dashboard");
-      if (resp?.data) setData(resp.data as SecurityDashboardData);
+      const resp = await apiClient.get<{ success: boolean; data: SecurityDashboardData }>("/security/dashboard");
+      if (resp?.data) setData(resp.data);
     } catch {
       // fallback — show defaults
     } finally {
       setLoading(false);
     }
-  }, [api]);
+  }, []);
 
   useEffect(() => { fetchDashboard(); }, [fetchDashboard]);
 
   const handleBlockIP = async () => {
     if (!blockIp) return;
     try {
-      await api.post("/security/block-ip", { ip: blockIp, duration: "15m", reason: blockReason });
+      await apiClient.post("/security/block-ip", { ip: blockIp, duration: "15m", reason: blockReason });
       setActionMsg(`Blocked ${blockIp} for 15 minutes`);
       setBlockIp("");
       setBlockReason("");
@@ -129,7 +128,7 @@ export default function SecurityPage() {
 
   const handleRotateKeys = async () => {
     try {
-      await api.post("/security/rotate-keys", {});
+      await apiClient.post("/security/rotate-keys", {});
       setActionMsg("Encryption keys rotated successfully");
     } catch {
       setActionMsg("Failed to rotate keys");
