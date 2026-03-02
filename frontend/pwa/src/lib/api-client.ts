@@ -425,6 +425,44 @@ export const api = {
       apiClient.post<APIResponse>("/forex/pip-calculator", data),
   },
 
+  // External Market Data Sources
+  marketData: {
+    status: () => apiClient.get<APIResponse>("/market-data/status"),
+    // OANDA FX
+    fxPrices: (instruments?: string) =>
+      apiClient.get<APIResponse>("/market-data/fx/prices", instruments ? { params: { instruments } } : undefined),
+    fxCandles: (instrument: string, granularity?: string, count?: number) =>
+      apiClient.get<APIResponse>(`/market-data/fx/candles/${instrument}`, {
+        params: { granularity: granularity || "H1", count: String(count || 100) },
+      }),
+    fxInstruments: () => apiClient.get<APIResponse>("/market-data/fx/instruments"),
+    // Polygon.io Equities
+    equitySnapshot: (ticker: string) => apiClient.get<APIResponse>(`/market-data/equities/snapshot/${ticker}`),
+    equityAggregates: (ticker: string, params: { multiplier?: number; timespan?: string; from: string; to: string }) =>
+      apiClient.get<APIResponse>(`/market-data/equities/aggregates/${ticker}`, {
+        params: { multiplier: String(params.multiplier || 1), timespan: params.timespan || "day", from: params.from, to: params.to },
+      }),
+    equityDetails: (ticker: string) => apiClient.get<APIResponse>(`/market-data/equities/details/${ticker}`),
+    equitySearch: (query: string, market?: string) =>
+      apiClient.get<APIResponse>("/market-data/equities/search", { params: { q: query, market: market || "stocks" } }),
+    equityExchanges: () => apiClient.get<APIResponse>("/market-data/equities/exchanges"),
+    equityMarketStatus: () => apiClient.get<APIResponse>("/market-data/equities/market-status"),
+    // IEX Cloud Reference
+    refQuote: (symbol: string) => apiClient.get<APIResponse>(`/market-data/reference/quote/${symbol}`),
+    refCompany: (symbol: string) => apiClient.get<APIResponse>(`/market-data/reference/company/${symbol}`),
+    refDividends: (symbol: string, range?: string) =>
+      apiClient.get<APIResponse>(`/market-data/reference/dividends/${symbol}`, range ? { params: { range } } : undefined),
+    refEarnings: (symbol: string, last?: number) =>
+      apiClient.get<APIResponse>(`/market-data/reference/earnings/${symbol}`, last ? { params: { last: String(last) } } : undefined),
+    refStats: (symbol: string) => apiClient.get<APIResponse>(`/market-data/reference/stats/${symbol}`),
+    // Economic Calendar
+    centralBankRates: () => apiClient.get<APIResponse>("/market-data/calendar/central-bank-rates"),
+    economicEvents: (currency?: string) =>
+      apiClient.get<APIResponse>("/market-data/calendar/events", currency ? { params: { currency } } : undefined),
+    swapRates: () => apiClient.get<APIResponse>("/market-data/calendar/swap-rates"),
+    exchangeRates: () => apiClient.get<APIResponse>("/market-data/calendar/exchange-rates"),
+  },
+
   // Auth
   auth: {
     login: (credentials: { email: string; password: string }) =>

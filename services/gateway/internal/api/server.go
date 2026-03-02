@@ -13,6 +13,7 @@ import (
 	"github.com/munisp/NGApp/services/gateway/internal/fluvio"
 	kafkaclient "github.com/munisp/NGApp/services/gateway/internal/kafka"
 	"github.com/munisp/NGApp/services/gateway/internal/keycloak"
+	"github.com/munisp/NGApp/services/gateway/internal/marketdata"
 	"github.com/munisp/NGApp/services/gateway/internal/models"
 	"github.com/munisp/NGApp/services/gateway/internal/permify"
 	redisclient "github.com/munisp/NGApp/services/gateway/internal/redis"
@@ -33,6 +34,7 @@ type Server struct {
 	keycloak    *keycloak.Client
 	permify     *permify.Client
 	apisix      *apisix.Client
+	marketData  *marketdata.Client
 }
 
 func NewServer(
@@ -46,6 +48,7 @@ func NewServer(
 	keycloak *keycloak.Client,
 	permify *permify.Client,
 	apisixClient *apisix.Client,
+	marketDataClient *marketdata.Client,
 ) *Server {
 	return &Server{
 		cfg:         cfg,
@@ -59,6 +62,7 @@ func NewServer(
 		keycloak:    keycloak,
 		permify:     permify,
 		apisix:      apisixClient,
+		marketData:  marketDataClient,
 	}
 }
 
@@ -349,6 +353,40 @@ func (s *Server) SetupRoutes() *gin.Engine {
 
 				// FX Tools
 				fx.POST("/pip-calculator", s.fxPipCalculator)
+			}
+
+			// External Market Data Sources — Permify: commodity view permission
+			md := protected.Group("/market-data")
+			md.Use(s.permifyMiddleware("commodity", "view"))
+			{
+				// Data Sources Status
+				md.GET("/status", s.marketDataStatus)
+
+				// OANDA FX Price Feed
+				md.GET("/fx/prices", s.oandaPrices)
+				md.GET("/fx/candles/:instrument", s.oandaCandles)
+				md.GET("/fx/instruments", s.oandaInstruments)
+
+				// Polygon.io US Equities / NYSE
+				md.GET("/equities/snapshot/:ticker", s.polygonSnapshot)
+				md.GET("/equities/aggregates/:ticker", s.polygonAggregates)
+				md.GET("/equities/details/:ticker", s.polygonTickerDetails)
+				md.GET("/equities/search", s.polygonSearch)
+				md.GET("/equities/exchanges", s.polygonExchanges)
+				md.GET("/equities/market-status", s.polygonMarketStatus)
+
+				// IEX Cloud Reference Data / Fundamentals
+				md.GET("/reference/quote/:symbol", s.iexQuote)
+				md.GET("/reference/company/:symbol", s.iexCompany)
+				md.GET("/reference/dividends/:symbol", s.iexDividends)
+				md.GET("/reference/earnings/:symbol", s.iexEarnings)
+				md.GET("/reference/stats/:symbol", s.iexKeyStats)
+
+				// Economic Calendar & Central Bank Rates
+				md.GET("/calendar/central-bank-rates", s.calendarCentralBankRates)
+				md.GET("/calendar/events", s.calendarEconomicEvents)
+				md.GET("/calendar/swap-rates", s.calendarSwapRates)
+				md.GET("/calendar/exchange-rates", s.calendarExchangeRates)
 			}
 
 			// WebSocket endpoint for real-time notifications — Permify: user access

@@ -16,6 +16,7 @@ import (
 	"github.com/munisp/NGApp/services/gateway/internal/fluvio"
 	kafkaclient "github.com/munisp/NGApp/services/gateway/internal/kafka"
 	"github.com/munisp/NGApp/services/gateway/internal/keycloak"
+	"github.com/munisp/NGApp/services/gateway/internal/marketdata"
 	"github.com/munisp/NGApp/services/gateway/internal/permify"
 	redisclient "github.com/munisp/NGApp/services/gateway/internal/redis"
 	"github.com/munisp/NGApp/services/gateway/internal/temporal"
@@ -39,6 +40,16 @@ func main() {
 	// Wire OpenAppSec WAF as APISIX ext-plugin on primary route
 	apisixClient.ConfigureOpenAppSecPlugin("gateway-primary", cfg.OpenAppSecURL)
 
+	// Initialize external market data clients (OANDA, Polygon, IEX, Calendar)
+	marketDataClient := marketdata.NewClient(marketdata.Config{
+		OandaBaseURL:   cfg.OandaBaseURL,
+		OandaAPIKey:    cfg.OandaAPIKey,
+		OandaAccountID: cfg.OandaAccountID,
+		PolygonAPIKey:  cfg.PolygonAPIKey,
+		IEXAPIKey:      cfg.IEXAPIKey,
+		FREDAPIKey:     cfg.FREDAPIKey,
+	})
+
 	// Create API server with all dependencies
 	server := api.NewServer(
 		cfg,
@@ -51,6 +62,7 @@ func main() {
 		keycloakClient,
 		permifyClient,
 		apisixClient,
+		marketDataClient,
 	)
 
 	// Setup routes
@@ -92,6 +104,7 @@ func main() {
 	daprClient.Close()
 	fluvioClient.Close()
 	apisixClient.Close()
+	marketDataClient.Close()
 
 	log.Println("Server exited cleanly")
 }

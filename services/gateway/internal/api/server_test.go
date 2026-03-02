@@ -14,6 +14,7 @@ import (
 	"github.com/munisp/NGApp/services/gateway/internal/fluvio"
 	kafkaclient "github.com/munisp/NGApp/services/gateway/internal/kafka"
 	"github.com/munisp/NGApp/services/gateway/internal/keycloak"
+	"github.com/munisp/NGApp/services/gateway/internal/marketdata"
 	"github.com/munisp/NGApp/services/gateway/internal/models"
 	"github.com/munisp/NGApp/services/gateway/internal/permify"
 	redisclient "github.com/munisp/NGApp/services/gateway/internal/redis"
@@ -49,8 +50,9 @@ func setupTestServer() (*Server, *gin.Engine) {
 	kc := keycloak.NewClient(cfg.KeycloakURL, cfg.KeycloakRealm, cfg.KeycloakClientID)
 	p := permify.NewClient(cfg.PermifyEndpoint)
 	a := apisix.NewClient(cfg.APISIXAdminURL, cfg.APISIXAdminKey)
+	md := marketdata.NewClient(marketdata.Config{})
 
-	srv := NewServer(cfg, k, r, t, tb, d, f, kc, p, a)
+	srv := NewServer(cfg, k, r, t, tb, d, f, kc, p, a, md)
 	router := srv.SetupRoutes()
 	return srv, router
 }

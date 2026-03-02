@@ -25,6 +25,14 @@ type Config struct {
 	IngestionEngineURL   string
 	BlockchainServiceURL string
 	KYCServiceURL        string
+
+	// External Market Data Sources
+	OandaBaseURL   string
+	OandaAPIKey    string
+	OandaAccountID string
+	PolygonAPIKey  string
+	IEXAPIKey      string
+	FREDAPIKey     string
 }
 
 func Load() *Config {
@@ -51,6 +59,14 @@ func Load() *Config {
 		IngestionEngineURL:   getEnv("INGESTION_ENGINE_URL", "http://localhost:8005"),
 		BlockchainServiceURL: getEnv("BLOCKCHAIN_SERVICE_URL", "http://localhost:8009"),
 		KYCServiceURL:        getEnv("KYC_SERVICE_URL", "http://localhost:3002"),
+
+		// External Market Data Sources
+		OandaBaseURL:   getEnv("OANDA_BASE_URL", "https://api-fxpractice.oanda.com"),
+		OandaAPIKey:    getEnv("OANDA_API_KEY", "demo"),
+		OandaAccountID: getEnv("OANDA_ACCOUNT_ID", ""),
+		PolygonAPIKey:  getEnv("POLYGON_API_KEY", "demo"),
+		IEXAPIKey:      getEnv("IEX_API_KEY", "demo"),
+		FREDAPIKey:     getEnv("FRED_API_KEY", "demo"),
 	}
 }
 

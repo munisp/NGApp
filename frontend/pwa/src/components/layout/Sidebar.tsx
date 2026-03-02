@@ -25,6 +25,7 @@ import {
   Warehouse,
   Sprout,
   BadgeDollarSign,
+  Database,
   type LucideIcon,
 } from "lucide-react";
 
@@ -45,6 +46,7 @@ const navItems: NavItem[] = [
   { href: "/corporate-actions", label: "Corp Actions", icon: FileText },
   { href: "/brokers", label: "Brokers", icon: Building2 },
   { href: "/forex", label: "Forex Trading", icon: BadgeDollarSign },
+  { href: "/market-data", label: "Market Data", icon: Database },
   { href: "/digital-assets", label: "Digital Assets", icon: Coins },
   { href: "/onboarding", label: "KYC / KYB", icon: UserCheck },
   { href: "/warehouse-receipts", label: "Warehouse Receipts", icon: Warehouse },
