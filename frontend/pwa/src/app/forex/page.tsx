@@ -264,9 +264,9 @@ export default function ForexTradingPage() {
         api.forex.regulatory(),
       ]);
 
-      const extract = (res: PromiseSettledResult<Record<string, unknown>>, key: string) => {
+      const extract = (res: PromiseSettledResult<unknown>, key: string) => {
         if (res.status !== "fulfilled") return null;
-        const d = res.value;
+        const d = res.value as Record<string, unknown> | null;
         const inner = d && typeof d === "object" && "data" in d ? d.data as Record<string, unknown> : d;
         return inner && typeof inner === "object" && key in inner ? (inner as Record<string, unknown>)[key] : null;
       };
