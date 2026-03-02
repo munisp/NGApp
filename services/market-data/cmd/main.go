@@ -1,4 +1,12 @@
-// NEXCOM Exchange - Market Data Service
+// DEPRECATED: This Go market data service has been superseded by:
+//   - services/ingestion-engine/ (Python) — Universal ingestion with 38 data feeds,
+//     Kafka/Fluvio integration, Lakehouse connectivity, schema registry
+//   - services/gateway/ (Go) — WebSocket market data distribution via /ws/market-data
+//
+// This service is kept for reference only. Do NOT deploy in production.
+// See services/ingestion-engine/ for the production data pipeline.
+//
+// NEXCOM Exchange - Market Data Service (LEGACY)
 // High-frequency data ingestion, OHLCV aggregation, and WebSocket distribution.
 // Integrates with Kafka for event streaming and Fluvio for low-latency feeds.
 package main

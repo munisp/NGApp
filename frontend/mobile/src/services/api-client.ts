@@ -320,6 +320,77 @@ class ApiClient {
     return this.request("/blockchain/tokens");
   }
 
+  // Warehouse Receipts (proxied through gateway → KYC service)
+  async getWarehouseReceipts(status?: string) {
+    const qs = status ? `?status=${status}` : "";
+    return this.request(`/warehouse-receipts${qs}`);
+  }
+
+  async createWarehouseReceipt(data: Record<string, unknown>) {
+    return this.request("/warehouse-receipts", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  // Produce Inventory (proxied through gateway → KYC service)
+  async getProduceInventory(producerId?: string) {
+    const qs = producerId ? `?producer_id=${producerId}` : "";
+    return this.request(`/produce/inventory${qs}`);
+  }
+
+  async registerProduce(data: Record<string, unknown>) {
+    return this.request("/produce/register", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  // Onboarding / Stakeholder Types
+  async getStakeholderTypes() {
+    return this.request("/kyc/stakeholder-types");
+  }
+
+  // KYC Applications (proxied through gateway → KYC service)
+  async getKYCApplications(status?: string) {
+    const qs = status ? `?status=${status}` : "";
+    return this.request(`/kyc/applications${qs}`);
+  }
+
+  async createKYCApplication(data: Record<string, unknown>) {
+    return this.request("/kyc/applications", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async getKYCStats() {
+    return this.request("/kyc/stats");
+  }
+
+  // KYB Applications (proxied through gateway → KYC service)
+  async getKYBApplications(status?: string) {
+    const qs = status ? `?status=${status}` : "";
+    return this.request(`/kyb/applications${qs}`);
+  }
+
+  async createKYBApplication(data: Record<string, unknown>) {
+    return this.request("/kyb/applications", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  // Fee / Revenue Status (proxied through gateway → matching engine)
+  async getFeeStatus() {
+    return this.request("/matching-engine/fees/status");
+  }
+
+  // Surveillance Alerts (proxied through gateway → matching engine)
+  async getSurveillanceAlerts() {
+    return this.request("/matching-engine/surveillance/alerts");
+  }
+
   // Health
   async getHealth() {
     return this.request("/health");

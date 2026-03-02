@@ -65,6 +65,14 @@ export type RootStackParamList = {
   CorporateActions: undefined;
   Brokers: undefined;
   DigitalAssets: undefined;
+  WarehouseReceipts: undefined;
+  ProduceRegistration: undefined;
+  Onboarding: undefined;
+  Compliance: undefined;
+  Revenue: undefined;
+  Surveillance: undefined;
+  Alerts: undefined;
+  Analytics: undefined;
 };
 
 export type MainTabParamList = {

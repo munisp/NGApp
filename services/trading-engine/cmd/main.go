@@ -1,4 +1,15 @@
-// NEXCOM Exchange - Trading Engine Service
+// DEPRECATED: This Go trading engine has been superseded by the Rust matching engine
+// at services/matching-engine/. The Rust implementation provides:
+//   - 10x lower latency (~50μs vs ~500μs)
+//   - Production-grade features: circuit breakers, auction mechanism, surveillance
+//   - Market makers, indices, corporate actions, brokers modules
+//   - Fee engine with 10 monetization streams
+//   - Futures, options, and fractional trading support
+//
+// This service is kept for reference only. Do NOT deploy in production.
+// See services/matching-engine/ for the production matching engine.
+//
+// NEXCOM Exchange - Trading Engine Service (LEGACY)
 // Ultra-low latency order matching engine with FIFO and Pro-Rata algorithms.
 // Handles order placement, matching, and order book management.
 package main

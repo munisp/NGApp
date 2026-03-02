@@ -23,6 +23,7 @@ type Config struct {
 	MatchingEngineURL    string
 	IngestionEngineURL   string
 	BlockchainServiceURL string
+	KYCServiceURL        string
 }
 
 func Load() *Config {
@@ -47,6 +48,7 @@ func Load() *Config {
 		MatchingEngineURL:    getEnv("MATCHING_ENGINE_URL", "http://localhost:8080"),
 		IngestionEngineURL:   getEnv("INGESTION_ENGINE_URL", "http://localhost:8005"),
 		BlockchainServiceURL: getEnv("BLOCKCHAIN_SERVICE_URL", "http://localhost:8009"),
+		KYCServiceURL:        getEnv("KYC_SERVICE_URL", "http://localhost:3002"),
 	}
 }
 

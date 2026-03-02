@@ -684,3 +684,50 @@ func (s *Server) bcIpfsGet(c *gin.Context) {
 func (s *Server) bcIpfsStatus(c *gin.Context) {
 	s.proxyGet(c, s.cfg.BlockchainServiceURL, "/api/v1/blockchain/ipfs/status")
 }
+
+// ============================================================
+// KYC Service Proxy Handlers
+// ============================================================
+
+func (s *Server) kycListApplications(c *gin.Context) {
+	s.proxyGet(c, s.cfg.KYCServiceURL, "/api/v1/kyc/applications")
+}
+func (s *Server) kycCreateApplication(c *gin.Context) {
+	s.proxyPost(c, s.cfg.KYCServiceURL, "/api/v1/kyc/applications")
+}
+func (s *Server) kycGetApplication(c *gin.Context) {
+	s.proxyGet(c, s.cfg.KYCServiceURL, "/api/v1/kyc/applications/"+c.Param("id"))
+}
+func (s *Server) kycStakeholderTypes(c *gin.Context) {
+	s.proxyGet(c, s.cfg.KYCServiceURL, "/api/v1/kyc/stakeholder-types")
+}
+func (s *Server) kycStats(c *gin.Context) {
+	s.proxyGet(c, s.cfg.KYCServiceURL, "/api/v1/kyc/stats")
+}
+
+// KYB proxy handlers
+func (s *Server) kybListApplications(c *gin.Context) {
+	s.proxyGet(c, s.cfg.KYCServiceURL, "/api/v1/kyb/applications")
+}
+func (s *Server) kybCreateApplication(c *gin.Context) {
+	s.proxyPost(c, s.cfg.KYCServiceURL, "/api/v1/kyb/applications")
+}
+func (s *Server) kybGetApplication(c *gin.Context) {
+	s.proxyGet(c, s.cfg.KYCServiceURL, "/api/v1/kyb/applications/"+c.Param("id"))
+}
+
+// Warehouse Receipts proxy handlers (through KYC service)
+func (s *Server) kycWarehouseReceipts(c *gin.Context) {
+	s.proxyGet(c, s.cfg.KYCServiceURL, "/api/v1/warehouse-receipts")
+}
+func (s *Server) kycCreateWarehouseReceipt(c *gin.Context) {
+	s.proxyPost(c, s.cfg.KYCServiceURL, "/api/v1/warehouse-receipts")
+}
+
+// Produce Registration proxy handlers (through KYC service)
+func (s *Server) kycProduceInventory(c *gin.Context) {
+	s.proxyGet(c, s.cfg.KYCServiceURL, "/api/v1/produce/inventory")
+}
+func (s *Server) kycRegisterProduce(c *gin.Context) {
+	s.proxyPost(c, s.cfg.KYCServiceURL, "/api/v1/produce/register")
+}

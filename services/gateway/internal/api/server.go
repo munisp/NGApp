@@ -267,6 +267,32 @@ func (s *Server) SetupRoutes() *gin.Engine {
 				bc.GET("/ipfs/status", s.bcIpfsStatus)
 			}
 
+				// KYC Service proxy routes
+			kyc := protected.Group("/kyc")
+			{
+				kyc.GET("/applications", s.kycListApplications)
+				kyc.POST("/applications", s.kycCreateApplication)
+				kyc.GET("/applications/:id", s.kycGetApplication)
+				kyc.GET("/stakeholder-types", s.kycStakeholderTypes)
+				kyc.GET("/stats", s.kycStats)
+			}
+
+			// KYB proxy routes
+			kyb := protected.Group("/kyb")
+			{
+				kyb.GET("/applications", s.kybListApplications)
+				kyb.POST("/applications", s.kybCreateApplication)
+				kyb.GET("/applications/:id", s.kybGetApplication)
+			}
+
+			// Warehouse Receipts proxy routes (through KYC service)
+			protected.GET("/warehouse-receipts", s.kycWarehouseReceipts)
+			protected.POST("/warehouse-receipts", s.kycCreateWarehouseReceipt)
+
+			// Produce Registration proxy routes (through KYC service)
+			protected.GET("/produce/inventory", s.kycProduceInventory)
+			protected.POST("/produce/register", s.kycRegisterProduce)
+
 			// WebSocket endpoint for real-time notifications
 			protected.GET("/ws/notifications", s.wsNotifications)
 			protected.GET("/ws/market-data", s.wsMarketData)

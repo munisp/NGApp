@@ -1,4 +1,14 @@
-// NEXCOM Exchange - Risk Management Service
+// DEPRECATED: This Go risk management service has been superseded by the Rust
+// matching engine at services/matching-engine/ which includes built-in:
+//   - Real-time position tracking and margin calculations
+//   - Circuit breakers (price limits, volume limits, volatility halts)
+//   - Surveillance module (spoofing, wash trading, insider detection)
+//   - Clearing and settlement integration
+//
+// This service is kept for reference only. Do NOT deploy in production.
+// See services/matching-engine/ for integrated risk management.
+//
+// NEXCOM Exchange - Risk Management Service (LEGACY)
 // Real-time position monitoring, margin calculations, and circuit breakers.
 // Consumes trade events from Kafka and maintains risk state in Redis/PostgreSQL.
 package main

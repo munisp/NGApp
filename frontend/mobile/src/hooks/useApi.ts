@@ -264,3 +264,102 @@ export function useChainStatus() {
 export function useIpfsStatus() {
   return useApiQuery(() => apiClient.getIpfsStatus(), { connected: false, api_url: "", gateway_url: "", pinned_objects: 0 });
 }
+
+// ─── Warehouse Receipts hooks ────────────────────────────────────────────────
+
+const MOCK_WAREHOUSE_RECEIPTS = [
+  { id: "WR-00001", depositor_name: "Adamu Bello", warehouse_name: "Kano Commodity Warehouse", warehouse_location: "Bompai Industrial Area, Kano", commodity: "Maize", commodity_category: "grains", quantity_tonnes: 12.5, quality_grade: "grade_a", total_value: 3500000, currency: "NGN", status: "active", tradeable: true, collateralized: false, deposit_date: "2025-09-15", expiry_date: "2026-03-15" },
+  { id: "WR-00002", depositor_name: "Oluwaseun Adebayo", warehouse_name: "Iseyin Cocoa Store", warehouse_location: "Iseyin, Oyo State", commodity: "Cocoa Beans", commodity_category: "cash_crops", quantity_tonnes: 5.0, quality_grade: "premium", total_value: 22500000, currency: "NGN", status: "active", tradeable: true, collateralized: true, deposit_date: "2025-10-01", expiry_date: "2026-04-01" },
+];
+
+export function useWarehouseReceipts() {
+  return useApiQuery(() => apiClient.getWarehouseReceipts(), { receipts: MOCK_WAREHOUSE_RECEIPTS });
+}
+
+// ─── Produce Inventory hooks ─────────────────────────────────────────────────
+
+const MOCK_PRODUCE = [
+  { id: "PRD-00001", producer_name: "Adamu Bello", commodity: "Maize", commodity_category: "grains", variety: "SAMMAZ-15", estimated_quantity_tonnes: 8.0, quality_grade: "grade_a", farm_location: "Kura LGA, Kano State", farm_size_hectares: 3.5, planting_date: "2025-06-15", expected_harvest_date: "2025-10-15", asking_price_per_tonne: 280000, status: "harvested", listed_on_exchange: true },
+  { id: "PRD-00002", producer_name: "Oluwaseun Adebayo", commodity: "Cocoa Beans", commodity_category: "cash_crops", variety: "Amelonado", estimated_quantity_tonnes: 5.0, quality_grade: "premium", farm_location: "Iseyin, Oyo State", farm_size_hectares: 120.0, planting_date: "2025-03-01", expected_harvest_date: "2025-09-30", asking_price_per_tonne: 4500000, status: "harvested", listed_on_exchange: true },
+  { id: "PRD-00003", producer_name: "Hauwa Yakubu", commodity: "Sorghum", commodity_category: "grains", variety: "SAMSORG-17", estimated_quantity_tonnes: 2.0, quality_grade: "grade_b", farm_location: "Giwa LGA, Kaduna State", farm_size_hectares: 1.2, planting_date: "2025-06-20", expected_harvest_date: "2025-11-01", asking_price_per_tonne: 220000, status: "growing", listed_on_exchange: false },
+];
+
+export function useProduceInventory() {
+  return useApiQuery(() => apiClient.getProduceInventory(), { inventory: MOCK_PRODUCE });
+}
+
+// ─── Onboarding / Stakeholder Types hooks ────────────────────────────────────
+
+const MOCK_STAKEHOLDER_TYPES = [
+  { id: "retail_trader", name: "Individual Trader", category: "trading_finance", description: "Personal trading account for commodity futures, options, and digital assets", kyb_required: false, estimated_time: "15-30 minutes" },
+  { id: "broker_dealer", name: "Broker/Dealer", category: "trading_finance", description: "Licensed broker providing market access to clients", kyb_required: true, estimated_time: "5-10 business days" },
+  { id: "smallholder_farmer", name: "Smallholder Farmer", category: "agriculture", description: "Small-scale farmer — simplified onboarding", kyb_required: false, estimated_time: "5-10 minutes", simplified_kyc: true },
+  { id: "farmer_cooperative", name: "Farmer Cooperative", category: "agriculture", description: "Registered cooperative society aggregating produce", kyb_required: true, estimated_time: "3-5 business days" },
+  { id: "mining_company", name: "Mining Company", category: "mining_metals", description: "Licensed mining company with mineral extraction operations", kyb_required: true, estimated_time: "10-15 business days" },
+  { id: "oil_producer", name: "Oil Producer", category: "energy", description: "Upstream oil production company", kyb_required: true, estimated_time: "10-15 business days" },
+  { id: "warehouse_operator", name: "Warehouse Operator", category: "infrastructure", description: "Licensed commodity storage facility", kyb_required: true, estimated_time: "5-10 business days" },
+  { id: "trade_finance_bank", name: "Trade Finance Bank", category: "commodity_finance", description: "Bank providing trade finance and letters of credit", kyb_required: true, estimated_time: "10-15 business days" },
+];
+
+export function useStakeholderTypes() {
+  return useApiQuery(() => apiClient.getStakeholderTypes(), { types: MOCK_STAKEHOLDER_TYPES });
+}
+
+// ─── KYC/KYB Compliance hooks ────────────────────────────────────────────────
+
+const MOCK_KYC_APPS = [
+  { id: "kyc-001", full_name: "Aisha Mohammed", email: "aisha@nexcom.ng", stakeholder_type: "institutional_investor", status: "approved", risk_level: "low" },
+  { id: "kyc-002", full_name: "Chukwuemeka Obi", email: "emeka@trading.ng", stakeholder_type: "retail_trader", status: "under_review", risk_level: "medium" },
+  { id: "kyc-003", full_name: "Fatima Abubakar", email: "fatima@gmail.com", stakeholder_type: "retail_trader", status: "liveness_complete", risk_level: "low" },
+];
+
+const MOCK_KYB_APPS = [
+  { id: "kyb-001", business_name: "Stanbic Securities Ltd", registration_number: "RC-1234567", stakeholder_type: "broker_dealer", status: "approved", industry: "Securities Trading", risk_level: "low" },
+  { id: "kyb-002", business_name: "Optiver Africa Trading", registration_number: "RC-2345678", stakeholder_type: "market_maker", status: "under_review", industry: "Market Making", risk_level: "medium" },
+];
+
+const MOCK_KYC_STATS = {
+  total_kyc: 5, total_kyb: 3, pending_review: 2, rejection_rate: 20.0, avg_processing_time: "2.5 hours",
+  kyc_by_status: { approved: 1, under_review: 1, liveness_complete: 1, document_uploaded: 1, rejected: 1 },
+};
+
+export function useKYCApplications() {
+  return useApiQuery(() => apiClient.getKYCApplications(), { applications: MOCK_KYC_APPS });
+}
+
+export function useKYBApplications() {
+  return useApiQuery(() => apiClient.getKYBApplications(), { applications: MOCK_KYB_APPS });
+}
+
+export function useKYCStats() {
+  return useApiQuery(() => apiClient.getKYCStats(), { stats: MOCK_KYC_STATS });
+}
+
+// ─── Fee / Revenue hooks ─────────────────────────────────────────────────────
+
+const MOCK_FEE_STATUS = {
+  revenue_streams: [
+    { stream: "trading_commissions", label: "Trading Commissions", daily_revenue: 2450000, monthly_revenue: 73500000, transactions: 12500, avg_fee_bps: 5 },
+    { stream: "clearing_fees", label: "Clearing & Settlement", daily_revenue: 850000, monthly_revenue: 25500000, transactions: 8200, avg_fee_bps: 3 },
+    { stream: "market_data_fees", label: "Market Data", daily_revenue: 420000, monthly_revenue: 12600000, transactions: 340, avg_fee_bps: 0 },
+    { stream: "listing_fees", label: "Listing Fees", daily_revenue: 180000, monthly_revenue: 5400000, transactions: 12, avg_fee_bps: 0 },
+    { stream: "membership_fees", label: "Membership", daily_revenue: 95000, monthly_revenue: 2850000, transactions: 45, avg_fee_bps: 0 },
+    { stream: "technology_fees", label: "Technology & API", daily_revenue: 310000, monthly_revenue: 9300000, transactions: 890, avg_fee_bps: 2 },
+  ],
+};
+
+export function useFeeStatus() {
+  return useApiQuery(() => apiClient.getFeeStatus(), MOCK_FEE_STATUS);
+}
+
+// ─── Surveillance hooks ──────────────────────────────────────────────────────
+
+const MOCK_SURVEILLANCE = [
+  { id: "SRV-001", alert_type: "unusual_volume", severity: "high", symbol: "MAIZE", description: "Trading volume 3x above 30-day average", timestamp: "2026-03-01T14:30:00Z", status: "open" },
+  { id: "SRV-002", alert_type: "spoofing", severity: "critical", symbol: "GOLD", description: "Large orders placed and cancelled within 500ms", timestamp: "2026-03-01T13:15:00Z", status: "open" },
+  { id: "SRV-003", alert_type: "wash_trading", severity: "medium", symbol: "COFFEE", description: "Possible wash trading between related accounts", timestamp: "2026-03-01T11:45:00Z", status: "investigating" },
+];
+
+export function useSurveillanceAlerts() {
+  return useApiQuery(() => apiClient.getSurveillanceAlerts(), { alerts: MOCK_SURVEILLANCE });
+}

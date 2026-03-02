@@ -18,6 +18,14 @@ import IndicesScreen from "./screens/IndicesScreen";
 import CorporateActionsScreen from "./screens/CorporateActionsScreen";
 import BrokersScreen from "./screens/BrokersScreen";
 import DigitalAssetsScreen from "./screens/DigitalAssetsScreen";
+import WarehouseReceiptsScreen from "./screens/WarehouseReceiptsScreen";
+import ProduceRegistrationScreen from "./screens/ProduceRegistrationScreen";
+import OnboardingScreen from "./screens/OnboardingScreen";
+import ComplianceScreen from "./screens/ComplianceScreen";
+import RevenueScreen from "./screens/RevenueScreen";
+import SurveillanceScreen from "./screens/SurveillanceScreen";
+import AlertsScreen from "./screens/AlertsScreen";
+import AnalyticsScreen from "./screens/AnalyticsScreen";
 import Icon from "./components/Icon";
 import type { IconName } from "./components/Icon";
 
@@ -142,6 +150,46 @@ export default function App() {
             name="DigitalAssets"
             component={DigitalAssetsScreen}
             options={{ title: "Digital Assets" }}
+          />
+          <Stack.Screen
+            name="WarehouseReceipts"
+            component={WarehouseReceiptsScreen}
+            options={{ title: "Warehouse Receipts" }}
+          />
+          <Stack.Screen
+            name="ProduceRegistration"
+            component={ProduceRegistrationScreen}
+            options={{ title: "Produce & Crops" }}
+          />
+          <Stack.Screen
+            name="Onboarding"
+            component={OnboardingScreen}
+            options={{ title: "Onboarding" }}
+          />
+          <Stack.Screen
+            name="Compliance"
+            component={ComplianceScreen}
+            options={{ title: "Compliance" }}
+          />
+          <Stack.Screen
+            name="Revenue"
+            component={RevenueScreen}
+            options={{ title: "Revenue" }}
+          />
+          <Stack.Screen
+            name="Surveillance"
+            component={SurveillanceScreen}
+            options={{ title: "Surveillance" }}
+          />
+          <Stack.Screen
+            name="Alerts"
+            component={AlertsScreen}
+            options={{ title: "Price Alerts" }}
+          />
+          <Stack.Screen
+            name="Analytics"
+            component={AnalyticsScreen}
+            options={{ title: "Analytics" }}
           />
         </Stack.Navigator>
       </NavigationContainer>
