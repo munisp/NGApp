@@ -17,24 +17,33 @@ import (
 	"github.com/munisp/NGApp/services/gateway/internal/models"
 	"github.com/munisp/NGApp/services/gateway/internal/permify"
 	redisclient "github.com/munisp/NGApp/services/gateway/internal/redis"
+	"github.com/munisp/NGApp/services/gateway/internal/security"
 	"github.com/munisp/NGApp/services/gateway/internal/store"
 	"github.com/munisp/NGApp/services/gateway/internal/temporal"
 	"github.com/munisp/NGApp/services/gateway/internal/tigerbeetle"
+	"github.com/munisp/NGApp/services/gateway/internal/vault"
 )
 
 type Server struct {
-	cfg         *config.Config
-	store       *store.Store
-	kafka       *kafkaclient.Client
-	redis       *redisclient.Client
-	temporal    *temporal.Client
-	tigerbeetle *tigerbeetle.Client
-	dapr        *dapr.Client
-	fluvio      *fluvio.Client
-	keycloak    *keycloak.Client
-	permify     *permify.Client
-	apisix      *apisix.Client
-	marketData  *marketdata.Client
+	cfg             *config.Config
+	store           *store.Store
+	kafka           *kafkaclient.Client
+	redis           *redisclient.Client
+	temporal        *temporal.Client
+	tigerbeetle     *tigerbeetle.Client
+	dapr            *dapr.Client
+	fluvio          *fluvio.Client
+	keycloak        *keycloak.Client
+	permify         *permify.Client
+	apisix          *apisix.Client
+	marketData      *marketdata.Client
+	vault           *vault.Client
+	auditLog        *security.AuditLog
+	inputValidator  *security.InputValidator
+	hmacSigner      *security.HMACSigner
+	sessionMgr      *security.SessionManager
+	insiderMonitor  *security.InsiderThreatMonitor
+	ddosProtection  *security.DDoSProtection
 }
 
 func NewServer(
@@ -49,20 +58,34 @@ func NewServer(
 	permify *permify.Client,
 	apisixClient *apisix.Client,
 	marketDataClient *marketdata.Client,
+	vaultClient *vault.Client,
+	auditLog *security.AuditLog,
+	inputValidator *security.InputValidator,
+	hmacSigner *security.HMACSigner,
+	sessionMgr *security.SessionManager,
+	insiderMonitor *security.InsiderThreatMonitor,
+	ddosProtection *security.DDoSProtection,
 ) *Server {
 	return &Server{
-		cfg:         cfg,
-		store:       store.New(),
-		kafka:       kafka,
-		redis:       redis,
-		temporal:    temporal,
-		tigerbeetle: tigerbeetle,
-		dapr:        dapr,
-		fluvio:      fluvio,
-		keycloak:    keycloak,
-		permify:     permify,
-		apisix:      apisixClient,
-		marketData:  marketDataClient,
+		cfg:            cfg,
+		store:          store.New(),
+		kafka:          kafka,
+		redis:          redis,
+		temporal:       temporal,
+		tigerbeetle:    tigerbeetle,
+		dapr:           dapr,
+		fluvio:         fluvio,
+		keycloak:       keycloak,
+		permify:        permify,
+		apisix:         apisixClient,
+		marketData:     marketDataClient,
+		vault:          vaultClient,
+		auditLog:       auditLog,
+		inputValidator: inputValidator,
+		hmacSigner:     hmacSigner,
+		sessionMgr:     sessionMgr,
+		insiderMonitor: insiderMonitor,
+		ddosProtection: ddosProtection,
 	}
 }
 
@@ -75,6 +98,21 @@ func (s *Server) SetupRoutes() *gin.Engine {
 	r.Use(gin.Logger())
 	r.Use(gin.Recovery())
 	r.Use(s.corsMiddleware())
+
+	// Security middleware stack
+	r.Use(security.SecurityHeaders())
+	if s.ddosProtection != nil {
+		r.Use(s.ddosProtection.Middleware())
+	}
+	if s.inputValidator != nil {
+		r.Use(s.inputValidator.Middleware())
+	}
+	if s.hmacSigner != nil {
+		r.Use(s.hmacSigner.VerifyMiddleware())
+	}
+	if s.sessionMgr != nil {
+		r.Use(s.sessionMgr.Middleware())
+	}
 
 	// Health check
 	r.GET("/health", s.healthCheck)
@@ -390,9 +428,23 @@ func (s *Server) SetupRoutes() *gin.Engine {
 			}
 
 			// WebSocket endpoint for real-time notifications — Permify: user access
-			protected.GET("/ws/notifications", s.permifyGuard("user", "access"), s.wsNotifications)
-			protected.GET("/ws/market-data", s.permifyGuard("commodity", "view"), s.wsMarketData)
+		protected.GET("/ws/notifications", s.permifyGuard("user", "access"), s.wsNotifications)
+		protected.GET("/ws/market-data", s.permifyGuard("commodity", "view"), s.wsMarketData)
+
+		// Security Dashboard — Permify: organization admin only
+		sec := protected.Group("/security")
+		sec.Use(s.permifyMiddleware("organization", "manage"))
+		{
+			sec.GET("/dashboard", s.securityDashboard)
+			sec.GET("/audit-log", s.securityAuditLog)
+			sec.GET("/insider-alerts", s.securityInsiderAlerts)
+			sec.GET("/ddos-stats", s.securityDDoSStats)
+			sec.GET("/sessions", s.securityActiveSessions)
+			sec.GET("/vault-status", s.securityVaultStatus)
+			sec.POST("/block-ip", s.securityBlockIP)
+			sec.POST("/rotate-keys", s.securityRotateKeys)
 		}
+	}
 	}
 
 	return r

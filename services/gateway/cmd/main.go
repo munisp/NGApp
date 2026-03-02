@@ -19,8 +19,10 @@ import (
 	"github.com/munisp/NGApp/services/gateway/internal/marketdata"
 	"github.com/munisp/NGApp/services/gateway/internal/permify"
 	redisclient "github.com/munisp/NGApp/services/gateway/internal/redis"
+	"github.com/munisp/NGApp/services/gateway/internal/security"
 	"github.com/munisp/NGApp/services/gateway/internal/temporal"
 	"github.com/munisp/NGApp/services/gateway/internal/tigerbeetle"
+	"github.com/munisp/NGApp/services/gateway/internal/vault"
 )
 
 func main() {
@@ -39,6 +41,20 @@ func main() {
 
 	// Wire OpenAppSec WAF as APISIX ext-plugin on primary route
 	apisixClient.ConfigureOpenAppSecPlugin("gateway-primary", cfg.OpenAppSecURL)
+
+	// Initialize security components
+	vaultClient := vault.NewClient(
+		config.GetEnvOrDefault("VAULT_ADDR", "http://localhost:8200"),
+		config.GetEnvOrDefault("VAULT_TOKEN", "nexcom-dev-token"),
+	)
+	auditLog := security.NewAuditLog("/tmp/nexcom-audit.log")
+	inputValidator := security.NewInputValidator()
+	hmacSigner := security.NewHMACSigner()
+	sessionMgr := security.NewSessionManager()
+	insiderMonitor := security.NewInsiderThreatMonitor()
+	ddosProtection := security.NewDDoSProtection(security.DefaultDDoSConfig())
+
+	log.Println("Security components initialized: Vault, AuditLog, InputValidator, HMAC, Sessions, InsiderMonitor, DDoS")
 
 	// Initialize external market data clients (OANDA, Polygon, IEX, Calendar)
 	marketDataClient := marketdata.NewClient(marketdata.Config{
@@ -63,6 +79,13 @@ func main() {
 		permifyClient,
 		apisixClient,
 		marketDataClient,
+		vaultClient,
+		auditLog,
+		inputValidator,
+		hmacSigner,
+		sessionMgr,
+		insiderMonitor,
+		ddosProtection,
 	)
 
 	// Setup routes
@@ -105,6 +128,8 @@ func main() {
 	fluvioClient.Close()
 	apisixClient.Close()
 	marketDataClient.Close()
+	vaultClient.Close()
+	auditLog.Close()
 
 	log.Println("Server exited cleanly")
 }

@@ -1,0 +1,304 @@
+##############################################################################
+# NEXCOM Exchange - Kubernetes NetworkPolicies
+# Microsegmentation: restricts pod-to-pod communication to only what's needed.
+# Implements zero-trust networking within the cluster.
+##############################################################################
+
+# Default deny all ingress in trading namespace
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-ingress
+  namespace: nexcom-trading
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+---
+# Default deny all ingress in security namespace
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-ingress
+  namespace: nexcom-security
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+---
+# Default deny all ingress in data namespace
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-ingress
+  namespace: nexcom-data
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+---
+# Gateway: Allow ingress from APISIX, allow egress to all services
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: gateway-policy
+  namespace: nexcom-trading
+spec:
+  podSelector:
+    matchLabels:
+      app: gateway
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: nexcom-ingress
+          podSelector:
+            matchLabels:
+              app: apisix
+      ports:
+        - protocol: TCP
+          port: 8000
+  egress:
+    # Allow egress to all internal services
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: nexcom-trading
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: nexcom-data
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: nexcom-security
+    # Allow DNS resolution
+    - to:
+        - namespaceSelector: {}
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - protocol: UDP
+          port: 53
+    # Allow external market data APIs
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+            except:
+              - 10.0.0.0/8
+              - 172.16.0.0/12
+              - 192.168.0.0/16
+      ports:
+        - protocol: TCP
+          port: 443
+---
+# Matching Engine: Only accept from gateway and risk engine
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: matching-engine-policy
+  namespace: nexcom-trading
+spec:
+  podSelector:
+    matchLabels:
+      app: matching-engine
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: gateway
+        - podSelector:
+            matchLabels:
+              app: risk-engine
+      ports:
+        - protocol: TCP
+          port: 50051
+        - protocol: TCP
+          port: 8080
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app: settlement-engine
+        - podSelector:
+            matchLabels:
+              app: gateway
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: nexcom-data
+          podSelector:
+            matchLabels:
+              app: kafka
+      ports:
+        - protocol: TCP
+          port: 9092
+    - to:
+        - namespaceSelector: {}
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - protocol: UDP
+          port: 53
+---
+# PostgreSQL: Only accept from gateway, analytics, and settlement
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: postgres-policy
+  namespace: nexcom-data
+spec:
+  podSelector:
+    matchLabels:
+      app: postgres
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: nexcom-trading
+          podSelector:
+            matchLabels:
+              app: gateway
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: nexcom-trading
+          podSelector:
+            matchLabels:
+              app: settlement-engine
+        - podSelector:
+            matchLabels:
+              app: analytics
+      ports:
+        - protocol: TCP
+          port: 5432
+---
+# Redis: Only accept from gateway and matching engine
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: redis-policy
+  namespace: nexcom-data
+spec:
+  podSelector:
+    matchLabels:
+      app: redis
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: nexcom-trading
+          podSelector:
+            matchLabels:
+              app: gateway
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: nexcom-trading
+          podSelector:
+            matchLabels:
+              app: matching-engine
+      ports:
+        - protocol: TCP
+          port: 6379
+---
+# Kafka: Accept from gateway, matching engine, ingestion engine
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: kafka-policy
+  namespace: nexcom-data
+spec:
+  podSelector:
+    matchLabels:
+      app: kafka
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: nexcom-trading
+        - podSelector:
+            matchLabels:
+              app: ingestion-engine
+        - podSelector:
+            matchLabels:
+              app: analytics
+      ports:
+        - protocol: TCP
+          port: 9092
+---
+# KYC Service: Only accept from gateway
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: kyc-service-policy
+  namespace: nexcom-trading
+spec:
+  podSelector:
+    matchLabels:
+      app: kyc-service
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: gateway
+      ports:
+        - protocol: TCP
+          port: 3002
+---
+# Wazuh SIEM: Accept from all namespaces (log collection)
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: wazuh-policy
+  namespace: nexcom-security
+spec:
+  podSelector:
+    matchLabels:
+      app: wazuh
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector: {}
+      ports:
+        - protocol: TCP
+          port: 1514
+        - protocol: TCP
+          port: 1515
+---
+# Vault: Only accept from gateway and CI/CD
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: vault-policy
+  namespace: nexcom-security
+spec:
+  podSelector:
+    matchLabels:
+      app: vault
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: nexcom-trading
+          podSelector:
+            matchLabels:
+              app: gateway
+      ports:
+        - protocol: TCP
+          port: 8200

@@ -53,6 +53,7 @@ const navItems: NavItem[] = [
   { href: "/produce-registration", label: "Produce & Crops", icon: Sprout },
   { href: "/compliance", label: "Compliance", icon: Fingerprint },
   { href: "/revenue", label: "Revenue", icon: DollarSign },
+  { href: "/security", label: "Security", icon: Shield },
   { href: "/surveillance", label: "Surveillance", icon: Shield },
   { href: "/alerts", label: "Alerts", icon: Bell },
   { href: "/analytics", label: "Analytics", icon: BarChart3 },

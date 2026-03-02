@@ -76,3 +76,8 @@ func getEnv(key, fallback string) string {
 	}
 	return fallback
 }
+
+// GetEnvOrDefault is the exported version of getEnv for use by other packages
+func GetEnvOrDefault(key, fallback string) string {
+	return getEnv(key, fallback)
+}

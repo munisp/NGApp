@@ -1,0 +1,185 @@
+##############################################################################
+# NEXCOM Exchange - Security Scanning CI Pipeline
+# Runs on every PR and weekly schedule
+##############################################################################
+name: Security Scan
+
+on:
+  pull_request:
+    branches: [main, develop]
+  push:
+    branches: [main]
+  schedule:
+    # Weekly full scan every Monday at 2 AM UTC
+    - cron: '0 2 * * 1'
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  # 1. Dependency vulnerability scanning
+  dependency-scan:
+    name: Dependency Vulnerabilities
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Go dependency audit
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+
+      - name: Go vulnerability check (govulncheck)
+        working-directory: services/gateway
+        run: |
+          go install golang.org/x/vuln/cmd/govulncheck@latest
+          govulncheck ./... || true
+
+      # Node.js dependency audit
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: NPM audit (PWA)
+        working-directory: frontend/pwa
+        run: |
+          npm ci
+          npm audit --audit-level=high || true
+
+      # Python dependency audit
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: pip-audit (Ingestion Engine)
+        working-directory: services/ingestion-engine
+        run: |
+          pip install pip-audit
+          pip install -r requirements.txt || true
+          pip-audit || true
+
+      # Rust dependency audit
+      - name: Install cargo-audit
+        run: cargo install cargo-audit
+
+      - name: Cargo audit (Matching Engine)
+        working-directory: services/matching-engine
+        run: cargo audit || true
+
+  # 2. Container image scanning
+  container-scan:
+    name: Container Image Scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Trivy
+        run: |
+          sudo apt-get install wget apt-transport-https gnupg lsb-release -y
+          wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | gpg --dearmor | sudo tee /usr/share/keyrings/trivy.gpg > /dev/null
+          echo "deb [signed-by=/usr/share/keyrings/trivy.gpg] https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main" | sudo tee /etc/apt/sources.list.d/trivy.list
+          sudo apt-get update
+          sudo apt-get install trivy -y
+
+      # Scan filesystem for vulnerabilities and secrets
+      - name: Trivy filesystem scan
+        run: |
+          trivy fs --severity HIGH,CRITICAL --exit-code 0 --format table .
+
+      # Scan for hardcoded secrets
+      - name: Trivy secret scan
+        run: |
+          trivy fs --scanners secret --exit-code 0 --format table .
+
+      # Scan IaC (Kubernetes, Terraform, etc.)
+      - name: Trivy IaC scan
+        run: |
+          trivy config --severity HIGH,CRITICAL --exit-code 0 infrastructure/ security/ || true
+
+  # 3. Static Application Security Testing (SAST)
+  sast:
+    name: SAST Analysis
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Go static analysis
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+
+      - name: Go security lint (gosec)
+        working-directory: services/gateway
+        run: |
+          go install github.com/securego/gosec/v2/cmd/gosec@latest
+          gosec -fmt=json -out=gosec-results.json ./... || true
+
+      # Semgrep for multi-language SAST
+      - name: Semgrep scan
+        uses: semgrep/semgrep-action@v1
+        with:
+          config: >-
+            p/security-audit
+            p/owasp-top-ten
+            p/secrets
+          generateSarif: true
+        continue-on-error: true
+
+  # 4. License compliance
+  license-check:
+    name: License Compliance
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+
+      - name: Check Go licenses
+        working-directory: services/gateway
+        run: |
+          go install github.com/google/go-licenses@latest
+          go-licenses check ./... --disallowed_types=forbidden || true
+
+  # 5. Kubernetes security
+  k8s-security:
+    name: Kubernetes Security
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install kubesec
+        run: |
+          wget https://github.com/controlplaneio/kubesec/releases/download/v2.14.0/kubesec_linux_amd64.tar.gz
+          tar xzf kubesec_linux_amd64.tar.gz
+          sudo mv kubesec /usr/local/bin/
+
+      - name: Scan Kubernetes manifests
+        run: |
+          for f in $(find infrastructure/ security/ -name "*.yaml" -o -name "*.yml"); do
+            echo "Scanning: $f"
+            kubesec scan "$f" || true
+          done
+
+  # 6. OWASP Dependency Check
+  owasp-check:
+    name: OWASP Dependency Check
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule' || github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: OWASP Dependency Check
+        uses: dependency-check/Dependency-Check_Action@main
+        with:
+          project: 'NEXCOM Exchange'
+          path: '.'
+          format: 'HTML'
+        continue-on-error: true

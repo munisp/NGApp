@@ -1,0 +1,251 @@
+##############################################################################
+# NEXCOM Exchange - SOC 2 Type II Compliance Control Mapping
+# Maps Trust Service Criteria to NEXCOM technical controls
+##############################################################################
+
+metadata:
+  framework: "SOC 2 Type II"
+  scope: "NEXCOM Exchange Platform"
+  period: "2026-01-01 to 2026-12-31"
+  auditor: "TBD"
+  version: "1.0.0"
+
+trust_service_criteria:
+
+  # CC1: Control Environment
+  CC1:
+    CC1.1:
+      title: "COSO Principle 1 — Integrity and Ethical Values"
+      nexcom_controls:
+        - control: "Code of conduct and acceptable use policy"
+          evidence: "HR policy documents"
+        - control: "Insider threat monitoring for all privileged users"
+          evidence: "InsiderThreatMonitor alerts (services/gateway/internal/security/insider_monitor.go)"
+        - control: "Separation of duties enforcement"
+          evidence: "Permify RBAC (services/gateway/internal/permify/client.go)"
+
+  # CC2: Communication and Information
+  CC2:
+    CC2.1:
+      title: "COSO Principle 13 — Quality Information"
+      nexcom_controls:
+        - control: "Immutable audit log with hash-chain integrity"
+          evidence: "AuditLog (services/gateway/internal/security/audit_log.go)"
+        - control: "Centralized logging via OpenSearch + Kibana"
+          evidence: "security/openappsec/local-policy.yaml log sinks"
+        - control: "Real-time alerting via Wazuh SIEM"
+          evidence: "security/wazuh/ossec.conf"
+
+  # CC3: Risk Assessment
+  CC3:
+    CC3.1:
+      title: "COSO Principle 6 — Risk Assessment"
+      nexcom_controls:
+        - control: "Continuous vulnerability scanning (Wazuh + NVD)"
+          evidence: "security/wazuh/ossec.conf vulnerability-detector"
+        - control: "Dependency vulnerability scanning in CI (Trivy + Snyk)"
+          evidence: ".github/workflows/security-scan.yml"
+        - control: "OpenCTI threat intelligence platform"
+          evidence: "security/opencti/deployment.yaml"
+        - control: "Market surveillance for fraud detection"
+          evidence: "services/matching-engine/src/surveillance/"
+
+  # CC4: Monitoring Activities
+  CC4:
+    CC4.1:
+      title: "COSO Principle 16 — Monitoring"
+      nexcom_controls:
+        - control: "Wazuh SIEM with real-time log analysis"
+          evidence: "security/wazuh/ossec.conf"
+        - control: "OpenAppSec WAF with ML-based anomaly detection"
+          evidence: "security/openappsec/local-policy.yaml"
+        - control: "Insider threat behavioral analysis"
+          evidence: "InsiderThreatMonitor rules"
+        - control: "File integrity monitoring"
+          evidence: "Wazuh syscheck configuration"
+
+  # CC5: Control Activities
+  CC5:
+    CC5.1:
+      title: "COSO Principle 10 — Select and Develop Controls"
+      nexcom_controls:
+        - control: "Multi-layer authentication (Keycloak + MFA)"
+          evidence: "security/keycloak/realm/nexcom-realm.json"
+        - control: "API request signing (HMAC-SHA256)"
+          evidence: "services/gateway/internal/security/hmac_signer.go"
+        - control: "Rate limiting (DDoS + per-IP + per-endpoint)"
+          evidence: "services/gateway/internal/security/ddos_protection.go"
+        - control: "Input validation and sanitization"
+          evidence: "services/gateway/internal/security/input_validator.go"
+
+  # CC6: Logical and Physical Access
+  CC6:
+    CC6.1:
+      title: "Logical Access Security"
+      nexcom_controls:
+        - control: "Keycloak OIDC with brute force protection"
+          evidence: "5 failures = 900s lockout"
+        - control: "Fine-grained RBAC via Permify"
+          evidence: "13 entity types with relationship-based permissions"
+        - control: "Session binding to device fingerprint"
+          evidence: "services/gateway/internal/security/session_manager.go"
+        - control: "API key management with HMAC signing"
+          evidence: "services/gateway/internal/security/hmac_signer.go"
+
+    CC6.2:
+      title: "Access Provisioning and Deprovisioning"
+      nexcom_controls:
+        - control: "Role-based provisioning (7 realm roles, 10 client roles)"
+          evidence: "security/keycloak/realm/nexcom-realm.json"
+        - control: "KYC/KYB verification before trading access"
+          evidence: "services/kyc-service/"
+
+    CC6.3:
+      title: "Access Removal"
+      nexcom_controls:
+        - control: "Session revocation (immediate, per-user)"
+          evidence: "SessionManager.RevokeUserSessions()"
+        - control: "API key revocation"
+          evidence: "APISIX consumer management"
+
+    CC6.6:
+      title: "Encryption"
+      nexcom_controls:
+        - control: "Vault Transit engine for encryption-as-a-service (AES-256-GCM)"
+          evidence: "services/gateway/internal/vault/client.go"
+        - control: "mTLS between all services (Istio STRICT mode)"
+          evidence: "infrastructure/istio/mesh-config.yaml"
+        - control: "TLS 1.3 for all external connections"
+          evidence: "security/vault/encryption-at-rest.yaml"
+        - control: "Database SSL (PostgreSQL, Redis, Kafka)"
+          evidence: "security/vault/encryption-at-rest.yaml"
+
+    CC6.7:
+      title: "Transmission Security"
+      nexcom_controls:
+        - control: "HSTS with preload (max-age=31536000)"
+          evidence: "SecurityHeaders middleware"
+        - control: "CSP headers restricting resource loading"
+          evidence: "services/gateway/internal/security/security_headers.go"
+
+    CC6.8:
+      title: "Prevent Unauthorized Software"
+      nexcom_controls:
+        - control: "Container image scanning (Trivy)"
+          evidence: ".github/workflows/security-scan.yml"
+        - control: "Kubernetes NetworkPolicies"
+          evidence: "infrastructure/kubernetes/network-policies/"
+
+  # CC7: System Operations
+  CC7:
+    CC7.1:
+      title: "Detection of Unauthorized Changes"
+      nexcom_controls:
+        - control: "Wazuh file integrity monitoring (real-time)"
+          evidence: "security/wazuh/ossec.conf syscheck"
+        - control: "CIS-CAT compliance benchmarks"
+          evidence: "security/wazuh/ossec.conf cis-cat"
+
+    CC7.2:
+      title: "Monitoring for Anomalies"
+      nexcom_controls:
+        - control: "OpenAppSec ML-based threat detection"
+          evidence: "prevent-learn mode"
+        - control: "Market surveillance (wash trading, spoofing)"
+          evidence: "Surveillance engine"
+        - control: "Behavioral analysis for insider threats"
+          evidence: "InsiderThreatMonitor"
+
+    CC7.3:
+      title: "Incident Response"
+      nexcom_controls:
+        - control: "Incident response playbook (NIST SP 800-61)"
+          evidence: "security/incident-response/playbook.yaml"
+        - control: "Wazuh active response (auto-block)"
+          evidence: "firewall-drop rule 100100"
+        - control: "Regulatory notification templates"
+          evidence: "IR playbook communication section"
+
+  # CC8: Change Management
+  CC8:
+    CC8.1:
+      title: "Changes to Infrastructure and Software"
+      nexcom_controls:
+        - control: "CI/CD pipeline with automated testing"
+          evidence: ".github/workflows/"
+        - control: "Pull request reviews required"
+          evidence: "Branch protection rules"
+        - control: "Security scanning in CI pipeline"
+          evidence: ".github/workflows/security-scan.yml"
+
+  # CC9: Risk Mitigation
+  CC9:
+    CC9.1:
+      title: "Risk Mitigation"
+      nexcom_controls:
+        - control: "Circuit breakers on all middleware clients"
+          evidence: "gobreaker patterns across all clients"
+        - control: "Graceful degradation with fallback modes"
+          evidence: "Vault, Permify, APISIX fallback patterns"
+        - control: "DDoS protection with IP reputation"
+          evidence: "services/gateway/internal/security/ddos_protection.go"
+
+  # A1: Availability
+  A1:
+    A1.1:
+      title: "Availability Commitments"
+      nexcom_controls:
+        - control: "Active health checks (5s interval)"
+          evidence: "APISIX health check configuration"
+        - control: "Circuit breaker pattern (5 consecutive failures = open)"
+          evidence: "All middleware clients"
+        - control: "Multi-replica deployment"
+          evidence: "Vault 3 replicas, service scaling"
+
+    A1.2:
+      title: "Environmental Protections"
+      nexcom_controls:
+        - control: "Kubernetes resource limits"
+          evidence: "Vault: 500m-2 CPU, 1-4Gi memory"
+        - control: "Pod disruption budgets"
+          evidence: "K8s PDB configurations"
+
+  # PI1: Processing Integrity
+  PI1:
+    PI1.1:
+      title: "Processing Integrity"
+      nexcom_controls:
+        - control: "Matching engine with deterministic order matching"
+          evidence: "services/matching-engine/src/"
+        - control: "TigerBeetle double-entry ledger"
+          evidence: "services/gateway/internal/tigerbeetle/"
+        - control: "Trade settlement with DvP (Delivery vs Payment)"
+          evidence: "Settlement engine"
+        - control: "Audit log hash chain for tamper detection"
+          evidence: "services/gateway/internal/security/audit_log.go"
+
+  # C1: Confidentiality
+  C1:
+    C1.1:
+      title: "Confidential Information Protection"
+      nexcom_controls:
+        - control: "Vault secrets management"
+          evidence: "services/gateway/internal/vault/client.go"
+        - control: "Transit encryption for PII"
+          evidence: "Vault Transit engine AES-256-GCM"
+        - control: "PII masking in logs (DLP)"
+          evidence: "Data access logging via AuditLog.LogDataAccess()"
+        - control: "K8s secrets encryption at rest"
+          evidence: "security/vault/encryption-at-rest.yaml"
+
+  # P1: Privacy
+  P1:
+    P1.1:
+      title: "Privacy Notice"
+      nexcom_controls:
+        - control: "NDPR (Nigeria Data Protection Regulation) compliance"
+          evidence: "Privacy policy, data processing agreements"
+        - control: "GDPR compliance for international users"
+          evidence: "Consent management, right to erasure"
+        - control: "Data access audit trail"
+          evidence: "AuditLog.LogDataAccess()"

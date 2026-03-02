@@ -1,0 +1,226 @@
+##############################################################################
+# NEXCOM Exchange - HashiCorp Vault Deployment
+# Secrets management, encryption-as-a-service (Transit), PKI for mTLS certs
+##############################################################################
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: nexcom-security
+  labels:
+    istio-injection: enabled
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: vault
+  namespace: nexcom-security
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: vault-config
+  namespace: nexcom-security
+data:
+  vault.hcl: |
+    ui = true
+    disable_mlock = true
+
+    storage "raft" {
+      path = "/vault/data"
+      node_id = "vault-0"
+    }
+
+    listener "tcp" {
+      address     = "0.0.0.0:8200"
+      tls_disable = false
+      tls_cert_file = "/vault/tls/tls.crt"
+      tls_key_file  = "/vault/tls/tls.key"
+    }
+
+    api_addr = "https://vault.nexcom-security.svc.cluster.local:8200"
+    cluster_addr = "https://vault.nexcom-security.svc.cluster.local:8201"
+
+    # Audit logging — all access is recorded
+    audit {
+      type = "file"
+      path = "file"
+      options {
+        file_path = "/vault/logs/audit.log"
+        log_raw   = false
+      }
+    }
+
+    # Seal configuration — use AWS KMS or GCP KMS in production
+    # For dev: use Shamir (default)
+    seal "transit" {
+      address      = "https://vault.nexcom-security.svc.cluster.local:8200"
+      disable_renewal = false
+      key_name     = "autounseal"
+      mount_path   = "transit/"
+    }
+
+    telemetry {
+      prometheus_retention_time = "24h"
+      disable_hostname = true
+    }
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: vault
+  namespace: nexcom-security
+  labels:
+    app: vault
+spec:
+  serviceName: vault
+  replicas: 3
+  selector:
+    matchLabels:
+      app: vault
+  template:
+    metadata:
+      labels:
+        app: vault
+    spec:
+      serviceAccountName: vault
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 100
+        runAsGroup: 1000
+        fsGroup: 1000
+      containers:
+        - name: vault
+          image: hashicorp/vault:1.15
+          ports:
+            - containerPort: 8200
+              name: http
+            - containerPort: 8201
+              name: cluster
+          env:
+            - name: VAULT_ADDR
+              value: "https://127.0.0.1:8200"
+            - name: VAULT_API_ADDR
+              value: "https://$(POD_IP):8200"
+            - name: VAULT_CLUSTER_ADDR
+              value: "https://$(POD_IP):8201"
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+          volumeMounts:
+            - name: vault-config
+              mountPath: /vault/config
+            - name: vault-data
+              mountPath: /vault/data
+            - name: vault-tls
+              mountPath: /vault/tls
+            - name: vault-logs
+              mountPath: /vault/logs
+          resources:
+            requests:
+              cpu: 500m
+              memory: 1Gi
+            limits:
+              cpu: 2
+              memory: 4Gi
+          readinessProbe:
+            httpGet:
+              path: /v1/sys/health
+              port: 8200
+              scheme: HTTPS
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /v1/sys/health?standbyok=true
+              port: 8200
+              scheme: HTTPS
+            initialDelaySeconds: 30
+            periodSeconds: 30
+      volumes:
+        - name: vault-config
+          configMap:
+            name: vault-config
+        - name: vault-tls
+          secret:
+            secretName: vault-tls
+        - name: vault-logs
+          emptyDir: {}
+  volumeClaimTemplates:
+    - metadata:
+        name: vault-data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: fast-ssd
+        resources:
+          requests:
+            storage: 10Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: vault
+  namespace: nexcom-security
+spec:
+  type: ClusterIP
+  selector:
+    app: vault
+  ports:
+    - name: http
+      port: 8200
+      targetPort: 8200
+    - name: cluster
+      port: 8201
+      targetPort: 8201
+---
+# Vault policies for NEXCOM Exchange services
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: vault-policies
+  namespace: nexcom-security
+data:
+  gateway-policy.hcl: |
+    # Gateway can read all secrets and use transit engine
+    path "secret/data/*" {
+      capabilities = ["read", "list"]
+    }
+    path "transit/encrypt/nexcom-exchange" {
+      capabilities = ["update"]
+    }
+    path "transit/decrypt/nexcom-exchange" {
+      capabilities = ["update"]
+    }
+    path "pki/issue/nexcom-service" {
+      capabilities = ["create", "update"]
+    }
+
+  matching-engine-policy.hcl: |
+    # Matching engine: limited secret access
+    path "secret/data/database/*" {
+      capabilities = ["read"]
+    }
+    path "secret/data/kafka/*" {
+      capabilities = ["read"]
+    }
+    path "transit/encrypt/nexcom-exchange" {
+      capabilities = ["update"]
+    }
+
+  admin-policy.hcl: |
+    # Admin: full access with audit
+    path "*" {
+      capabilities = ["create", "read", "update", "delete", "list", "sudo"]
+    }
+
+  kyc-service-policy.hcl: |
+    # KYC service: encrypt/decrypt PII
+    path "transit/encrypt/nexcom-exchange" {
+      capabilities = ["update"]
+    }
+    path "transit/decrypt/nexcom-exchange" {
+      capabilities = ["update"]
+    }
+    path "secret/data/kyc/*" {
+      capabilities = ["read"]
+    }

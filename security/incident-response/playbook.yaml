@@ -1,0 +1,249 @@
+##############################################################################
+# NEXCOM Exchange - Incident Response Playbook
+# Defines procedures for security incidents following NIST SP 800-61 Rev. 2
+##############################################################################
+
+metadata:
+  version: "1.0.0"
+  last_updated: "2026-03-02"
+  owner: "NEXCOM Security Team"
+  review_cadence: "quarterly"
+  compliance_frameworks:
+    - "NIST SP 800-61 Rev. 2"
+    - "ISO 27035"
+    - "CBN IT Standards"
+    - "SEC Regulation SCI"
+
+# Severity classification
+severity_levels:
+  critical:
+    description: "Active data breach, system compromise, or trading halt"
+    response_time: "15 minutes"
+    notification: "CISO, CEO, Legal, CBN, SEC"
+    examples:
+      - "Active data exfiltration detected"
+      - "Matching engine compromised"
+      - "Unauthorized fund transfers"
+      - "Ransomware detected"
+      - "Complete service outage"
+
+  high:
+    description: "Attempted breach, privilege escalation, or significant anomaly"
+    response_time: "1 hour"
+    notification: "CISO, Security Team Lead"
+    examples:
+      - "Successful unauthorized access to admin panel"
+      - "Insider threat indicators"
+      - "DDoS attack impacting availability"
+      - "Wash trading / market manipulation detected"
+      - "KYC/AML compliance violation"
+
+  medium:
+    description: "Suspicious activity, policy violation, or minor vulnerability"
+    response_time: "4 hours"
+    notification: "Security Team"
+    examples:
+      - "Multiple failed login attempts from unusual locations"
+      - "Unusual data access patterns"
+      - "Unpatched vulnerability discovered"
+      - "Certificate expiration within 7 days"
+
+  low:
+    description: "Informational alerts, minor policy deviations"
+    response_time: "24 hours"
+    notification: "Security Team (email)"
+    examples:
+      - "New IP accessing admin endpoints"
+      - "Minor configuration drift"
+      - "Dependency vulnerability (low severity)"
+
+# Incident response phases
+phases:
+  1_preparation:
+    description: "Maintain readiness to respond to incidents"
+    tasks:
+      - "Ensure Wazuh SIEM is operational and alerts are routing correctly"
+      - "Verify OpenCTI threat intelligence feeds are current"
+      - "Confirm incident response team contact information is up to date"
+      - "Validate backup and recovery procedures monthly"
+      - "Conduct tabletop exercises quarterly"
+      - "Maintain forensic toolkit (network capture, disk imaging, log analysis)"
+      - "Ensure Vault audit logs are append-only and tamper-evident"
+
+  2_detection_analysis:
+    description: "Detect and analyze potential security incidents"
+    automated_detection:
+      - source: "Wazuh SIEM"
+        monitors:
+          - "File integrity changes in /etc/nexcom, /opt/nexcom/config"
+          - "Vulnerability detection (NVD feeds)"
+          - "Brute force attacks (rule 100100)"
+          - "Rootkit detection"
+      - source: "OpenAppSec WAF"
+        monitors:
+          - "SQL injection attempts"
+          - "Cross-site scripting attempts"
+          - "Rate limit violations"
+          - "ML anomaly detection"
+      - source: "Insider Threat Monitor"
+        monitors:
+          - "After-hours admin access"
+          - "Bulk data access / exfiltration"
+          - "Privilege escalation attempts"
+          - "Separation of duties violations"
+      - source: "Surveillance Engine"
+        monitors:
+          - "Wash trading detection"
+          - "Spoofing / layering detection"
+          - "Front-running detection"
+          - "Unusual order patterns"
+    manual_analysis:
+      - "Correlate alerts across multiple sources (SIEM + WAF + audit logs)"
+      - "Determine scope and impact of the incident"
+      - "Classify severity using the levels above"
+      - "Document initial findings in incident tracker"
+
+  3_containment:
+    description: "Limit the damage and prevent further compromise"
+    short_term:
+      - "Block offending IP addresses via OpenAppSec WAF and DDoS protection"
+      - "Revoke compromised API keys and rotate Vault secrets"
+      - "Disable compromised user accounts in Keycloak"
+      - "Enable circuit breakers to isolate affected services"
+      - "Activate trading halt if matching engine is compromised"
+    long_term:
+      - "Apply network segmentation via K8s NetworkPolicies"
+      - "Rotate all TLS certificates via Vault PKI"
+      - "Update firewall rules to block attack vectors"
+      - "Deploy patched versions of affected services"
+
+  4_eradication:
+    description: "Remove the threat from the environment"
+    tasks:
+      - "Identify root cause through forensic analysis"
+      - "Remove malware, backdoors, or unauthorized accounts"
+      - "Patch vulnerabilities that were exploited"
+      - "Update WAF rules to block the specific attack pattern"
+      - "Update OpenCTI with IOCs (Indicators of Compromise)"
+      - "Scan all systems for similar compromise indicators"
+
+  5_recovery:
+    description: "Restore systems to normal operation"
+    tasks:
+      - "Restore services from verified clean backups if needed"
+      - "Verify all secrets have been rotated (Vault Transit key rotation)"
+      - "Re-enable disabled accounts after verification"
+      - "Resume trading after matching engine integrity check"
+      - "Monitor recovered systems closely for 72 hours"
+      - "Verify audit log chain integrity (hash chain validation)"
+
+  6_post_incident:
+    description: "Learn from the incident and improve defenses"
+    tasks:
+      - "Conduct post-incident review within 72 hours"
+      - "Document lessons learned and timeline"
+      - "Update detection rules in Wazuh and OpenAppSec"
+      - "Update this playbook with new procedures"
+      - "File regulatory notifications (CBN: 24 hours, SEC: as required)"
+      - "Notify affected users per NDPR/GDPR requirements"
+      - "Update risk register and threat model"
+
+# Specific playbooks for common incidents
+specific_playbooks:
+  data_breach:
+    severity: critical
+    steps:
+      - "Immediately isolate affected systems (K8s NetworkPolicy deny-all)"
+      - "Preserve forensic evidence (snapshot affected pods and volumes)"
+      - "Assess what data was accessed (check audit log hash chain)"
+      - "Notify Legal team within 1 hour"
+      - "Notify CBN within 24 hours (CBN Guidelines on ICT)"
+      - "Notify affected users within 72 hours (NDPR requirement)"
+      - "Engage external forensics firm if needed"
+
+  ddos_attack:
+    severity: high
+    steps:
+      - "Verify DDoS protection layer is active and blocking"
+      - "Enable enhanced rate limiting (reduce thresholds by 50%)"
+      - "Activate Cloudflare/AWS Shield if available"
+      - "Monitor service availability dashboard"
+      - "Communicate status to stakeholders"
+      - "Post-attack: update IP reputation database"
+
+  insider_threat:
+    severity: critical
+    steps:
+      - "Do NOT alert the suspected insider"
+      - "Preserve all audit logs and access records"
+      - "Restrict suspect's access (minimize, don't revoke immediately)"
+      - "Engage Legal and HR teams"
+      - "Monitor suspect's activity with enhanced logging"
+      - "Prepare evidence package for potential legal proceedings"
+
+  market_manipulation:
+    severity: high
+    steps:
+      - "Surveillance engine generates alert automatically"
+      - "Compliance officer reviews within 1 hour"
+      - "Freeze suspicious accounts if confirmed"
+      - "Report to SEC/CBN as required"
+      - "Preserve all order and trade data for evidence"
+      - "Generate SAR (Suspicious Activity Report)"
+
+  ransomware:
+    severity: critical
+    steps:
+      - "Immediately isolate ALL affected systems"
+      - "Do NOT pay ransom"
+      - "Activate backup recovery procedures"
+      - "Engage external incident response firm"
+      - "Report to law enforcement (EFCC, Interpol)"
+      - "Notify CBN and SEC"
+
+# Communication templates
+communication:
+  internal_stakeholders:
+    template: |
+      NEXCOM Exchange Security Incident - ${SEVERITY}
+      
+      Incident ID: ${INCIDENT_ID}
+      Detected: ${DETECTION_TIME}
+      Classification: ${CLASSIFICATION}
+      
+      Summary: ${SUMMARY}
+      
+      Current Status: ${STATUS}
+      Impact: ${IMPACT}
+      
+      Actions Taken: ${ACTIONS}
+      
+      Next Update: ${NEXT_UPDATE_TIME}
+
+  regulatory_notification:
+    cbn_template: |
+      To: Central Bank of Nigeria - Banking Supervision Department
+      Subject: Cybersecurity Incident Notification - NEXCOM Exchange
+      
+      In accordance with the CBN Guidelines on Information and
+      Communication Technology for Banks and Financial Institutions,
+      we hereby notify you of a cybersecurity incident:
+      
+      Incident Date: ${DATE}
+      Nature: ${NATURE}
+      Impact: ${IMPACT}
+      Actions Taken: ${ACTIONS}
+      Remediation Timeline: ${TIMELINE}
+
+  user_notification:
+    template: |
+      Dear ${USER_NAME},
+      
+      We are writing to inform you about a security incident that
+      may have affected your NEXCOM Exchange account.
+      
+      What happened: ${DESCRIPTION}
+      What we're doing: ${REMEDIATION}
+      What you should do: ${USER_ACTIONS}
+      
+      If you have questions, contact us at security@nexcom.exchange

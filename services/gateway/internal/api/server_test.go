@@ -52,7 +52,7 @@ func setupTestServer() (*Server, *gin.Engine) {
 	a := apisix.NewClient(cfg.APISIXAdminURL, cfg.APISIXAdminKey)
 	md := marketdata.NewClient(marketdata.Config{})
 
-	srv := NewServer(cfg, k, r, t, tb, d, f, kc, p, a, md)
+	srv := NewServer(cfg, k, r, t, tb, d, f, kc, p, a, md, nil, nil, nil, nil, nil, nil, nil)
 	router := srv.SetupRoutes()
 	return srv, router
 }
