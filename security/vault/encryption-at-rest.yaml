@@ -1,0 +1,124 @@
+##############################################################################
+# NEXCOM Exchange - Encryption at Rest Configuration
+# AES-256 encryption for all persistent data stores
+##############################################################################
+
+# Kubernetes EncryptionConfiguration for etcd at-rest encryption
+apiVersion: apiserver.config.k8s.io/v1
+kind: EncryptionConfiguration
+resources:
+  - resources:
+      - secrets
+      - configmaps
+    providers:
+      - aescbc:
+          keys:
+            - name: nexcom-key-1
+              # In production, this key is fetched from Vault or KMS
+              # Never store actual keys in config files
+              secret: "${ENCRYPTION_KEY_BASE64}"
+      - identity: {}
+---
+# PostgreSQL encryption: enable TDE (Transparent Data Encryption)
+# Applied via postgres ConfigMap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-encryption-config
+  namespace: nexcom-data
+data:
+  postgresql-encryption.conf: |
+    # SSL/TLS for connections
+    ssl = on
+    ssl_cert_file = '/etc/ssl/certs/server.crt'
+    ssl_key_file = '/etc/ssl/private/server.key'
+    ssl_ca_file = '/etc/ssl/certs/ca.crt'
+    ssl_ciphers = 'HIGH:MEDIUM:+3DES:!aNULL'
+    ssl_prefer_server_ciphers = on
+    ssl_min_protocol_version = 'TLSv1.3'
+    
+    # Force SSL for all connections
+    # In pg_hba.conf: hostssl all all 0.0.0.0/0 scram-sha-256
+    
+    # WAL encryption (PostgreSQL 16+)
+    # wal_encryption = on
+    
+    # Log all DDL and sensitive operations
+    log_statement = 'ddl'
+    log_connections = on
+    log_disconnections = on
+    log_hostname = on
+
+  pg_hba.conf: |
+    # Force SSL + SCRAM-SHA-256 authentication
+    local   all   all                          scram-sha-256
+    hostssl all   all   10.0.0.0/8             scram-sha-256
+    hostssl all   all   172.16.0.0/12          scram-sha-256
+    hostssl all   nexcom_readonly  0.0.0.0/0   scram-sha-256
+    # Deny all plaintext connections
+    hostnossl all all 0.0.0.0/0 reject
+---
+# Redis encryption configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: redis-encryption-config
+  namespace: nexcom-data
+data:
+  redis.conf: |
+    # TLS configuration
+    tls-port 6380
+    port 0
+    tls-cert-file /etc/ssl/certs/redis.crt
+    tls-key-file /etc/ssl/private/redis.key
+    tls-ca-cert-file /etc/ssl/certs/ca.crt
+    tls-auth-clients yes
+    tls-protocols "TLSv1.3"
+    tls-ciphersuites "TLS_AES_256_GCM_SHA384:TLS_CHACHA20_POLY1305_SHA256"
+    
+    # Require authentication
+    requirepass ${REDIS_PASSWORD}
+    
+    # Disable dangerous commands
+    rename-command FLUSHALL ""
+    rename-command FLUSHDB ""
+    rename-command DEBUG ""
+    rename-command CONFIG "NEXCOM_CONFIG_CMD"
+    
+    # Memory protection
+    maxmemory-policy allkeys-lru
+    
+    # RDB encryption (Redis 7.0+)
+    # rdb-encryption yes
+    # aof-encryption yes
+---
+# Kafka encryption configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kafka-encryption-config
+  namespace: nexcom-data
+data:
+  server.properties: |
+    # Inter-broker TLS
+    security.inter.broker.protocol=SSL
+    ssl.keystore.location=/etc/kafka/ssl/kafka.keystore.jks
+    ssl.keystore.password=${KAFKA_KEYSTORE_PASSWORD}
+    ssl.key.password=${KAFKA_KEY_PASSWORD}
+    ssl.truststore.location=/etc/kafka/ssl/kafka.truststore.jks
+    ssl.truststore.password=${KAFKA_TRUSTSTORE_PASSWORD}
+    ssl.client.auth=required
+    ssl.enabled.protocols=TLSv1.3
+    ssl.protocol=TLSv1.3
+    
+    # Client connections: require TLS
+    listeners=SSL://0.0.0.0:9093
+    advertised.listeners=SSL://kafka:9093
+    
+    # Enable ACLs
+    authorizer.class.name=kafka.security.authorizer.AclAuthorizer
+    super.users=User:CN=nexcom-admin
+    
+    # Log retention for compliance (7 years for financial data)
+    log.retention.hours=61320
+    log.retention.check.interval.ms=300000

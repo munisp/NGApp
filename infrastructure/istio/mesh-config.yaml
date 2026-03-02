@@ -1,0 +1,160 @@
+##############################################################################
+# NEXCOM Exchange - Istio Service Mesh Configuration
+# mTLS between all services, traffic policies, and observability
+##############################################################################
+apiVersion: install.istio.io/v1alpha1
+kind: IstioOperator
+metadata:
+  name: nexcom-istio
+  namespace: istio-system
+spec:
+  profile: production
+  meshConfig:
+    # Enforce mTLS across all services
+    defaultConfig:
+      holdApplicationUntilProxyStarts: true
+      proxyMetadata:
+        ISTIO_META_DNS_CAPTURE: "true"
+    # Strict mTLS — no plaintext allowed
+    enableAutoMtls: true
+    # Access logging for audit trail
+    accessLogFile: /dev/stdout
+    accessLogEncoding: JSON
+    accessLogFormat: |
+      {
+        "timestamp": "%START_TIME%",
+        "method": "%REQ(:METHOD)%",
+        "path": "%REQ(X-ENVOY-ORIGINAL-PATH?:PATH)%",
+        "protocol": "%PROTOCOL%",
+        "response_code": "%RESPONSE_CODE%",
+        "response_flags": "%RESPONSE_FLAGS%",
+        "upstream_host": "%UPSTREAM_HOST%",
+        "upstream_cluster": "%UPSTREAM_CLUSTER%",
+        "duration": "%DURATION%",
+        "request_id": "%REQ(X-REQUEST-ID)%",
+        "source_principal": "%DOWNSTREAM_PEER_SUBJECT%",
+        "destination_principal": "%UPSTREAM_PEER_SUBJECT%",
+        "tls_version": "%DOWNSTREAM_TLS_VERSION%",
+        "cipher": "%DOWNSTREAM_TLS_CIPHER%"
+      }
+  components:
+    pilot:
+      k8s:
+        resources:
+          requests:
+            cpu: 500m
+            memory: 1Gi
+          limits:
+            cpu: 2
+            memory: 4Gi
+---
+# PeerAuthentication: Enforce STRICT mTLS for entire nexcom namespace
+apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
+metadata:
+  name: nexcom-strict-mtls
+  namespace: nexcom-trading
+spec:
+  mtls:
+    mode: STRICT
+---
+# PeerAuthentication: STRICT mTLS for security namespace
+apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
+metadata:
+  name: security-strict-mtls
+  namespace: nexcom-security
+spec:
+  mtls:
+    mode: STRICT
+---
+# PeerAuthentication: STRICT mTLS for data namespace
+apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
+metadata:
+  name: data-strict-mtls
+  namespace: nexcom-data
+spec:
+  mtls:
+    mode: STRICT
+---
+# AuthorizationPolicy: Only gateway can reach trading engine
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: trading-engine-access
+  namespace: nexcom-trading
+spec:
+  selector:
+    matchLabels:
+      app: matching-engine
+  action: ALLOW
+  rules:
+    - from:
+        - source:
+            principals:
+              - "cluster.local/ns/nexcom-trading/sa/gateway"
+              - "cluster.local/ns/nexcom-trading/sa/risk-engine"
+      to:
+        - operation:
+            methods: ["POST", "GET"]
+---
+# AuthorizationPolicy: Only gateway can reach settlement
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: settlement-access
+  namespace: nexcom-trading
+spec:
+  selector:
+    matchLabels:
+      app: settlement-engine
+  action: ALLOW
+  rules:
+    - from:
+        - source:
+            principals:
+              - "cluster.local/ns/nexcom-trading/sa/gateway"
+              - "cluster.local/ns/nexcom-trading/sa/matching-engine"
+---
+# AuthorizationPolicy: Restrict database access
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: postgres-access
+  namespace: nexcom-data
+spec:
+  selector:
+    matchLabels:
+      app: postgres
+  action: ALLOW
+  rules:
+    - from:
+        - source:
+            principals:
+              - "cluster.local/ns/nexcom-trading/sa/gateway"
+              - "cluster.local/ns/nexcom-data/sa/analytics"
+---
+# DestinationRule: TLS settings for internal services
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: nexcom-internal-tls
+  namespace: nexcom-trading
+spec:
+  host: "*.nexcom-trading.svc.cluster.local"
+  trafficPolicy:
+    tls:
+      mode: ISTIO_MUTUAL
+    connectionPool:
+      tcp:
+        maxConnections: 1000
+        connectTimeout: 5s
+      http:
+        h2UpgradePolicy: DEFAULT
+        maxRequestsPerConnection: 100
+    outlierDetection:
+      consecutive5xxErrors: 5
+      interval: 30s
+      baseEjectionTime: 30s
+      maxEjectionPercent: 50

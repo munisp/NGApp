@@ -1,0 +1,164 @@
+##############################################################################
+# NEXCOM Exchange - OpenAppSec WAF Policy
+# ML-based web application firewall for API protection
+# Wired as APISIX ext-plugin-pre-req for inline traffic inspection.
+##############################################################################
+
+policies:
+  - name: nexcom-exchange-policy
+    mode: prevent-learn
+    practices:
+      - name: web-application-best-practice
+        type: WebApplication
+        parameters:
+          - name: MinimumConfidence
+            value: "high"
+          - name: MaxBodySize
+            value: "10485760"  # 10MB for KYC document uploads
+          - name: MaxUrlLength
+            value: "4096"
+          - name: MaxHeaderSize
+            value: "8192"
+
+    # ---------------------------------------------------------------
+    # Alerting pipeline — WAF events → OpenSearch → notifications
+    # ---------------------------------------------------------------
+    triggers:
+      # Primary log sink: OpenSearch for full audit trail + Kibana dashboards
+      - name: opensearch-log-sink
+        type: Log
+        parameters:
+          - name: LogServerAddress
+            value: "http://opensearch:9200"
+          - name: Format
+            value: "json"
+          - name: IndexName
+            value: "nexcom-waf-events"
+
+      # Syslog forwarding for external SIEM integration
+      - name: syslog-forward
+        type: Log
+        parameters:
+          - name: LogServerAddress
+            value: "syslog://fluentd:5140"
+          - name: Format
+            value: "cef"
+
+      # Webhook alerting — push critical WAF events to notification service
+      - name: webhook-alert
+        type: Webhook
+        parameters:
+          - name: URL
+            value: "http://gateway:8000/api/v1/notifications/waf-alert"
+          - name: Method
+            value: "POST"
+          - name: Headers
+            value: "Content-Type:application/json"
+          - name: MinSeverity
+            value: "high"
+
+    # ---------------------------------------------------------------
+    # Custom rules for exchange-specific threats
+    # ---------------------------------------------------------------
+    custom-rules:
+      # Protect against order manipulation / flooding
+      - name: rate-limit-order-placement
+        condition:
+          uri: "/api/v1/orders"
+          method: "POST"
+        action: "detect"
+        rate-limit:
+          requests: 100
+          period: 60
+
+      # Protect against credential stuffing on auth
+      - name: rate-limit-auth
+        condition:
+          uri: "/api/v1/auth/login"
+          method: "POST"
+        action: "prevent"
+        rate-limit:
+          requests: 10
+          period: 300
+
+      # Block common exploit patterns (SQLi)
+      - name: block-sql-injection
+        condition:
+          parameter: "*"
+          pattern: "(?i)(union|select|insert|update|delete|drop|exec|execute|xp_|sp_)"
+        action: "prevent"
+
+      # Protect WebSocket connections
+      - name: websocket-protection
+        condition:
+          uri: "/ws/*"
+          method: "GET"
+        action: "detect"
+        rate-limit:
+          requests: 50
+          period: 60
+
+      # Protect KYC document upload endpoint
+      - name: rate-limit-kyc-upload
+        condition:
+          uri: "/api/v1/account/kyc"
+          method: "POST"
+        action: "detect"
+        rate-limit:
+          requests: 5
+          period: 300
+
+      # Protect digital-asset minting endpoint
+      - name: rate-limit-asset-mint
+        condition:
+          uri: "/api/v1/digital-assets"
+          method: "POST"
+        action: "detect"
+        rate-limit:
+          requests: 10
+          period: 60
+
+    # ---------------------------------------------------------------
+    # Trusted sources (internal services, monitoring, health)
+    # ---------------------------------------------------------------
+    exceptions:
+      - name: internal-services
+        condition:
+          sourceIP:
+            - "10.0.0.0/8"
+            - "172.16.0.0/12"
+        action: "accept"
+
+      - name: health-checks
+        condition:
+          uri: "/health"
+        action: "accept"
+
+      - name: metrics
+        condition:
+          uri: "/metrics"
+          sourceIP:
+            - "10.0.0.0/8"
+        action: "accept"
+
+      - name: apisix-health-probe
+        condition:
+          sourceIP:
+            - "172.16.0.0/12"
+          uri: "/health"
+        action: "accept"
+
+# ===================================================================
+# Health monitoring — probes for liveness / readiness
+# ===================================================================
+health:
+  liveness:
+    path: /health
+    interval: 10s
+    timeout: 3s
+    failure_threshold: 3
+  readiness:
+    path: /health
+    interval: 5s
+    timeout: 2s
+    success_threshold: 1

@@ -1,0 +1,392 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --color-up: #10b981;
+    --color-down: #ef4444;
+    --color-brand: #059669;
+    --glass-bg: rgba(15, 23, 42, 0.7);
+    --glass-border: rgba(255, 255, 255, 0.06);
+    --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-surface-950 text-white antialiased;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  * {
+    @apply border-white/[0.06];
+  }
+
+  ::selection {
+    @apply bg-brand-500/30 text-white;
+  }
+
+  /* ── Light Mode Overrides ───────────────── */
+  html.light {
+    --color-up: #059669;
+    --color-down: #dc2626;
+    --color-brand: #047857;
+    --glass-bg: rgba(255, 255, 255, 0.85);
+    --glass-border: rgba(0, 0, 0, 0.08);
+    --glass-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+  }
+
+  html.light body {
+    @apply bg-gray-50 text-gray-900 antialiased;
+  }
+
+  html.light * {
+    @apply border-gray-200;
+  }
+
+  html.light ::selection {
+    @apply bg-brand-500/20 text-brand-900;
+  }
+
+  input[type="number"]::-webkit-inner-spin-button,
+  input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+}
+
+@layer components {
+  /* ── Glass Card ────────────────────────────── */
+  .card {
+    @apply relative rounded-2xl p-5;
+    background: linear-gradient(135deg, rgba(30, 41, 59, 0.6), rgba(15, 23, 42, 0.8));
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(12px);
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .card:hover {
+    border-color: rgba(255, 255, 255, 0.1);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  }
+
+  .card-interactive {
+    @apply card cursor-pointer;
+  }
+
+  .card-interactive:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  }
+
+  /* ── Buttons ───────────────────────────────── */
+  .btn-primary {
+    @apply relative rounded-xl px-5 py-2.5 text-sm font-semibold text-white overflow-hidden
+           transition-all duration-200 ease-spring
+           disabled:opacity-40 disabled:cursor-not-allowed disabled:transform-none;
+    background: linear-gradient(135deg, #059669, #10b981);
+    box-shadow: 0 1px 3px rgba(5, 150, 105, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  }
+
+  .btn-primary:hover:not(:disabled) {
+    box-shadow: 0 4px 16px rgba(5, 150, 105, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+    transform: translateY(-1px);
+  }
+
+  .btn-primary:active:not(:disabled) {
+    transform: translateY(0);
+    box-shadow: 0 1px 2px rgba(5, 150, 105, 0.3);
+  }
+
+  .btn-secondary {
+    @apply rounded-xl px-5 py-2.5 text-sm font-semibold text-gray-300
+           transition-all duration-200 ease-spring;
+    background: rgba(30, 41, 59, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .btn-secondary:hover {
+    background: rgba(30, 41, 59, 1);
+    border-color: rgba(255, 255, 255, 0.15);
+    color: white;
+  }
+
+  .btn-danger {
+    @apply relative rounded-xl px-5 py-2.5 text-sm font-semibold text-white overflow-hidden
+           transition-all duration-200 ease-spring;
+    background: linear-gradient(135deg, #dc2626, #ef4444);
+    box-shadow: 0 1px 3px rgba(220, 38, 38, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  }
+
+  .btn-danger:hover {
+    box-shadow: 0 4px 16px rgba(220, 38, 38, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+    transform: translateY(-1px);
+  }
+
+  .btn-ghost {
+    @apply rounded-xl px-4 py-2 text-sm font-medium text-gray-400
+           hover:text-white hover:bg-white/[0.06] transition-all duration-200;
+  }
+
+  .btn-icon {
+    @apply flex items-center justify-center rounded-xl w-10 h-10
+           text-gray-400 hover:text-white hover:bg-white/[0.06]
+           transition-all duration-200;
+  }
+
+  /* ── Inputs ────────────────────────────────── */
+  .input-field {
+    @apply w-full rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-500
+           transition-all duration-200;
+    background: rgba(2, 6, 23, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .input-field:focus {
+    @apply outline-none;
+    border-color: rgba(16, 185, 129, 0.5);
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  }
+
+  /* ── Price Colors ──────────────────────────── */
+  .price-up {
+    @apply text-up;
+  }
+
+  .price-down {
+    @apply text-down;
+  }
+
+  /* ── Badges ────────────────────────────────── */
+  .badge {
+    @apply inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-semibold tracking-wide;
+  }
+
+  .badge-success {
+    @apply badge;
+    background: rgba(16, 185, 129, 0.12);
+    color: #34d399;
+    border: 1px solid rgba(16, 185, 129, 0.15);
+  }
+
+  .badge-warning {
+    @apply badge;
+    background: rgba(245, 158, 11, 0.12);
+    color: #fbbf24;
+    border: 1px solid rgba(245, 158, 11, 0.15);
+  }
+
+  .badge-danger {
+    @apply badge;
+    background: rgba(239, 68, 68, 0.12);
+    color: #f87171;
+    border: 1px solid rgba(239, 68, 68, 0.15);
+  }
+
+  .badge-info {
+    @apply badge;
+    background: rgba(59, 130, 246, 0.12);
+    color: #60a5fa;
+    border: 1px solid rgba(59, 130, 246, 0.15);
+  }
+
+  .badge-neutral {
+    @apply badge;
+    background: rgba(100, 116, 139, 0.12);
+    color: #94a3b8;
+    border: 1px solid rgba(100, 116, 139, 0.15);
+  }
+
+  /* ── Table ─────────────────────────────────── */
+  .table-row {
+    @apply border-b border-white/[0.04] transition-colors duration-150;
+  }
+
+  .table-row:hover {
+    background: rgba(255, 255, 255, 0.02);
+  }
+
+  .table-header {
+    @apply text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500 pb-3;
+  }
+
+  /* ── Tabs ──────────────────────────────────── */
+  .tab-active {
+    @apply text-white font-semibold;
+    border-bottom: 2px solid #10b981;
+  }
+
+  .tab-inactive {
+    @apply text-gray-500 font-medium border-b-2 border-transparent
+           hover:text-gray-300 transition-colors duration-200;
+  }
+
+  /* ── Stat Card ─────────────────────────────── */
+  .stat-card {
+    @apply card relative overflow-hidden;
+  }
+
+  .stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(16, 185, 129, 0.3), transparent);
+  }
+
+  /* ── Divider ───────────────────────────────── */
+  .divider {
+    @apply border-t border-white/[0.06];
+  }
+
+  /* ── Toggle Switch ─────────────────────────── */
+  .toggle-track {
+    @apply relative h-6 w-11 rounded-full transition-colors duration-200 cursor-pointer;
+    background: rgba(30, 41, 59, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .toggle-track-active {
+    background: linear-gradient(135deg, #059669, #10b981);
+    border-color: rgba(16, 185, 129, 0.3);
+  }
+
+  .toggle-thumb {
+    @apply absolute top-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform duration-200;
+  }
+
+  /* ── Light Mode Component Overrides ──────── */
+  html.light .card {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(248, 250, 252, 0.95));
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+  }
+
+  html.light .card:hover {
+    border-color: rgba(0, 0, 0, 0.12);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  }
+
+  html.light .btn-secondary {
+    background: rgba(255, 255, 255, 0.9);
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    color: #374151;
+  }
+
+  html.light .btn-secondary:hover {
+    background: white;
+    border-color: rgba(0, 0, 0, 0.2);
+    color: #111827;
+  }
+
+  html.light .btn-ghost {
+    @apply text-gray-600 hover:text-gray-900 hover:bg-gray-100;
+  }
+
+  html.light .input-field {
+    @apply text-gray-900 placeholder-gray-400;
+    background: white;
+    border: 1px solid rgba(0, 0, 0, 0.12);
+  }
+
+  html.light .input-field:focus {
+    border-color: rgba(5, 150, 105, 0.5);
+    box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.1);
+  }
+
+  html.light .table-row {
+    @apply border-b border-gray-100;
+  }
+
+  html.light .table-row:hover {
+    background: rgba(0, 0, 0, 0.02);
+  }
+
+  html.light .table-header {
+    @apply text-gray-500;
+  }
+
+  html.light .stat-card::before {
+    background: linear-gradient(90deg, transparent, rgba(5, 150, 105, 0.2), transparent);
+  }
+
+  html.light .toggle-track {
+    background: rgba(229, 231, 235, 1);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+  }
+
+  html.light .divider {
+    @apply border-t border-gray-200;
+  }
+}
+
+@layer utilities {
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(51, 65, 85, 0.5) transparent;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 5px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: rgba(51, 65, 85, 0.5);
+    border-radius: 10px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(51, 65, 85, 0.8);
+  }
+
+  .scrollbar-none {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+
+  .text-gradient {
+    @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(135deg, #34d399, #10b981, #059669);
+  }
+
+  .glass {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--glass-shadow);
+    backdrop-filter: blur(16px);
+  }
+
+  .shine {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .shine::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 50%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.05), transparent);
+    animation: shimmer 3s ease-in-out infinite;
+  }
+}

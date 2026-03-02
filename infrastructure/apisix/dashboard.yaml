@@ -1,0 +1,24 @@
+##############################################################################
+# NEXCOM Exchange - APISIX Dashboard Configuration
+##############################################################################
+
+conf:
+  listen:
+    host: 0.0.0.0
+    port: 9000
+  etcd:
+    endpoints:
+      - "http://etcd:2379"
+  log:
+    error_log:
+      level: warn
+      file_path: /dev/stderr
+    access_log:
+      file_path: /dev/stdout
+
+authentication:
+  secret: "${APISIX_DASHBOARD_SECRET:-nexcom-dashboard-secret-changeme}"
+  expire_time: 3600
+  users:
+    - username: "${APISIX_DASHBOARD_USER:-nexcom-admin}"
+      password: "${APISIX_DASHBOARD_PASSWORD:-changeme-on-first-login}"

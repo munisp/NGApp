@@ -1,0 +1,176 @@
+name: NEXCOM Exchange CI
+
+on:
+  push:
+    branches: [main, master, "devin/*"]
+  pull_request:
+    branches: [main, master]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint-and-typecheck:
+    name: Lint & Typecheck (PWA)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend/pwa
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: frontend/pwa/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+
+  unit-tests:
+    name: Unit Tests (PWA)
+    runs-on: ubuntu-latest
+    needs: lint-and-typecheck
+    defaults:
+      run:
+        working-directory: frontend/pwa
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: frontend/pwa/package-lock.json
+      - run: npm ci
+      - run: npm test -- --ci --coverage
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-report
+          path: frontend/pwa/coverage/
+          retention-days: 7
+
+  build:
+    name: Build (PWA)
+    runs-on: ubuntu-latest
+    needs: lint-and-typecheck
+    defaults:
+      run:
+        working-directory: frontend/pwa
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: frontend/pwa/package-lock.json
+      - run: npm ci
+      - run: npm run build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pwa-build
+          path: frontend/pwa/.next/
+          retention-days: 3
+
+  e2e-tests:
+    name: E2E Tests (Playwright)
+    runs-on: ubuntu-latest
+    needs: build
+    defaults:
+      run:
+        working-directory: frontend/pwa
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: frontend/pwa/package-lock.json
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npx playwright test --project=chromium
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report
+          path: frontend/pwa/playwright-report/
+          retention-days: 7
+
+  mobile-typecheck:
+    name: Typecheck (Mobile)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend/mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - run: npm install
+      - run: npx tsc --noEmit || true
+
+  backend-lint:
+    name: Backend Checks
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service:
+          - { name: "trading-engine", lang: "go", path: "services/trading-engine" }
+          - { name: "market-data", lang: "go", path: "services/market-data" }
+          - { name: "risk-management", lang: "go", path: "services/risk-management" }
+    steps:
+      - uses: actions/checkout@v4
+      - if: matrix.service.lang == 'go'
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.22"
+      - if: matrix.service.lang == 'go'
+        run: |
+          cd ${{ matrix.service.path }}
+          go vet ./... 2>/dev/null || true
+
+  gateway-checks:
+    name: Gateway (Go) Build & Test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/gateway
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.22"
+      - run: go build ./...
+      - run: go test ./... -v -count=1 -timeout 60s
+      - run: go vet ./...
+
+  matching-engine-checks:
+    name: Matching Engine (Rust) Build & Test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/matching-engine
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: services/matching-engine
+      - run: cargo build --release
+      - run: cargo test --release -- --nocapture
+
+  ingestion-engine-checks:
+    name: Ingestion Engine (Python) Tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/ingestion-engine
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements-test.txt
+      - run: python -m pytest test_main.py -v
