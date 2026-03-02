@@ -417,11 +417,83 @@ impl FixGateway {
                 // Cancel would be processed by the engine
                 Ok((String::new(), None))
             }
+            "G" => {
+                // OrderCancelReplaceRequest (Amend)
+                if !session.logged_in {
+                    return Err("Not logged in".to_string());
+                }
+                info!("FIX OrderCancelReplace from {}", sender);
+                Ok((String::new(), None))
+            }
+            "AE" => {
+                // TradeCaptureReport
+                if !session.logged_in {
+                    return Err("Not logged in".to_string());
+                }
+                info!("FIX TradeCaptureReport from {}", sender);
+                Ok((String::new(), None))
+            }
+            "f" => {
+                // SecurityStatusRequest
+                if !session.logged_in {
+                    return Err("Not logged in".to_string());
+                }
+                let symbol = msg.get(55).unwrap_or("*").to_string();
+                let response = Self::build_security_status(&mut session, &symbol, "2"); // Trading
+                Ok((response, None))
+            }
+            "i" => {
+                // MassQuote
+                if !session.logged_in {
+                    return Err("Not logged in".to_string());
+                }
+                info!("FIX MassQuote from {}", sender);
+                // Acknowledge the mass quote
+                let seq = session.next_seq();
+                let response = FixMessage::build(
+                    "b", // MassQuoteAck
+                    &session.sender_comp_id,
+                    &session.target_comp_id,
+                    seq,
+                    &[(297, "0".to_string())], // QuoteStatus=Accepted
+                );
+                Ok((response, None))
+            }
+            "R" => {
+                // QuoteRequest
+                if !session.logged_in {
+                    return Err("Not logged in".to_string());
+                }
+                info!("FIX QuoteRequest from {}", sender);
+                Ok((String::new(), None))
+            }
+            "j" => {
+                // BusinessMessageReject
+                warn!("FIX BusinessMessageReject from {}: {}", sender, msg.get(58).unwrap_or("no reason"));
+                Ok((String::new(), None))
+            }
             _ => {
                 warn!("Unsupported FIX message type: {}", msg.msg_type);
                 Err(format!("Unsupported message type: {}", msg.msg_type))
             }
         }
+    }
+
+    /// Build a SecurityStatus message (MsgType=f).
+    fn build_security_status(session: &mut FixSession, symbol: &str, trading_status: &str) -> String {
+        let seq = session.next_seq();
+        FixMessage::build(
+            "f",
+            &session.sender_comp_id,
+            &session.target_comp_id,
+            seq,
+            &[
+                (55, symbol.to_string()),           // Symbol
+                (326, trading_status.to_string()),   // SecurityTradingStatus (2=Trading)
+                (291, "1".to_string()),              // FinancialStatus=Active
+                (292, "0".to_string()),              // CorporateAction=None
+            ],
+        )
     }
 
     /// Get active session count.

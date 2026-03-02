@@ -60,6 +60,34 @@ pub enum OrderType {
     GoodTilCancel,
     #[serde(rename = "GTD")]
     GoodTilDate,
+    // ─── NYSE-equivalent order types ─────────────────────────
+    /// Pegged order: price follows best bid/ask dynamically.
+    Pegged,
+    /// Iceberg order: only display_quantity visible, rest hidden.
+    Iceberg,
+    /// Reserve order: similar to iceberg with reserve quantity.
+    Reserve,
+    /// Trailing stop: stop price trails market by offset.
+    TrailingStop,
+    /// D-Quote: designated market maker quote.
+    #[serde(rename = "DQUOTE")]
+    DQuote,
+    /// Market-on-Open: executes at opening auction price.
+    #[serde(rename = "MOO")]
+    MarketOnOpen,
+    /// Market-on-Close: executes at closing auction price.
+    #[serde(rename = "MOC")]
+    MarketOnClose,
+    /// Limit-on-Open: limit order valid only during opening auction.
+    #[serde(rename = "LOO")]
+    LimitOnOpen,
+    /// Limit-on-Close: limit order valid only during closing auction.
+    #[serde(rename = "LOC")]
+    LimitOnClose,
+    /// Auction-only order: participates only in auctions.
+    Auction,
+    /// Midpoint peg: pegged to midpoint of NBBO.
+    MidpointPeg,
 }
 
 // ─── Order Status ────────────────────────────────────────────────────────────
@@ -432,6 +460,17 @@ pub enum AlertType {
     PriceManipulation,
     InsiderTrading,
     UnusualVolume,
+    // ─── NYSE-equivalent alert types ─────────────────────────
+    /// Circuit breaker triggered (LULD or market-wide).
+    CircuitBreaker,
+    /// Volatility interruption detected.
+    VolatilityInterruption,
+    /// Concentrated position risk.
+    ConcentrationRisk,
+    /// Excessive order-to-trade ratio.
+    ExcessiveOrderRatio,
+    /// Cross-market manipulation detected.
+    CrossMarketManipulation,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -489,6 +528,20 @@ pub enum FixMsgType {
     SecurityList,
     SecurityListRequest,
     PositionReport,
+    // ─── FIX 5.0 SP2 additions ──────────────────────────────
+    TradeCaptureReport,
+    TradeCaptureReportRequest,
+    SecurityStatus,
+    SecurityStatusRequest,
+    TradingSessionStatus,
+    TradingSessionStatusRequest,
+    MassQuote,
+    MassQuoteAck,
+    QuoteRequest,
+    Quote,
+    BusinessMessageReject,
+    CollateralReport,
+    CollateralInquiry,
 }
 
 impl FixMsgType {
@@ -508,6 +561,19 @@ impl FixMsgType {
             Self::SecurityList => "y",
             Self::SecurityListRequest => "x",
             Self::PositionReport => "AP",
+            Self::TradeCaptureReport => "AE",
+            Self::TradeCaptureReportRequest => "AD",
+            Self::SecurityStatus => "f",
+            Self::SecurityStatusRequest => "e",
+            Self::TradingSessionStatus => "h",
+            Self::TradingSessionStatusRequest => "g",
+            Self::MassQuote => "i",
+            Self::MassQuoteAck => "b",
+            Self::QuoteRequest => "R",
+            Self::Quote => "S",
+            Self::BusinessMessageReject => "j",
+            Self::CollateralReport => "BA",
+            Self::CollateralInquiry => "BB",
         }
     }
 }

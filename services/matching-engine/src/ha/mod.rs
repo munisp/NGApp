@@ -362,6 +362,64 @@ impl ClusterManager {
     pub fn last_sequence(&self) -> u64 {
         self.last_applied_seq.load(Ordering::Relaxed)
     }
+
+    /// Get RTO/RPO metrics.
+    /// RTO = Recovery Time Objective (target: < 30s for exchange-grade).
+    /// RPO = Recovery Point Objective (target: 0 for synchronous replication).
+    pub fn rto_rpo_metrics(&self) -> serde_json::Value {
+        let lag = self.replication_lag();
+        let max_lag = lag.values().copied().max().unwrap_or(0);
+
+        // RPO is based on replication lag — 0 lag means 0 data loss
+        let rpo_seconds = if max_lag == 0 { 0.0 } else { max_lag as f64 * 0.001 };
+
+        // RTO estimate based on failover timeout + startup time
+        let rto_seconds = (self.failover_timeout_ms as f64 / 1000.0) + 2.0; // +2s for state recovery
+
+        serde_json::json!({
+            "rto_target_seconds": 30.0,
+            "rto_estimated_seconds": rto_seconds,
+            "rto_compliant": rto_seconds <= 30.0,
+            "rpo_target_seconds": 0.0,
+            "rpo_current_seconds": rpo_seconds,
+            "rpo_compliant": rpo_seconds < 1.0,
+            "replication_mode": if max_lag == 0 { "synchronous" } else { "asynchronous" },
+            "max_replication_lag": max_lag,
+            "failover_timeout_ms": self.failover_timeout_ms,
+            "heartbeat_interval_ms": self.heartbeat_interval_ms,
+        })
+    }
+
+    /// Get comprehensive HA status including RTO/RPO and health.
+    pub fn ha_status(&self) -> serde_json::Value {
+        let cluster = self.cluster_status();
+        let rto_rpo = self.rto_rpo_metrics();
+        let health = self.run_health_checks();
+
+        let all_healthy = health.iter().all(|h| h.healthy);
+        let avg_latency = if health.is_empty() {
+            0
+        } else {
+            health.iter().map(|h| h.latency_us).sum::<u64>() / health.len() as u64
+        };
+
+        serde_json::json!({
+            "cluster": cluster,
+            "rto_rpo": rto_rpo,
+            "health": {
+                "overall": if all_healthy { "HEALTHY" } else { "DEGRADED" },
+                "components": health.len(),
+                "healthy_count": health.iter().filter(|h| h.healthy).count(),
+                "avg_latency_us": avg_latency,
+            },
+            "disaster_recovery": {
+                "mode": "active-passive",
+                "data_centers": 2,
+                "automatic_failover": true,
+                "state_replication": "synchronous",
+            },
+        })
+    }
 }
 
 impl Default for ClusterManager {

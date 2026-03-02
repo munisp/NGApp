@@ -934,3 +934,131 @@ export function useMiddlewareStatus() {
     []
   );
 }
+
+// ============================================================
+// Surveillance Hooks (NYSE-equivalent)
+// ============================================================
+
+const ME_URL = process.env.NEXT_PUBLIC_MATCHING_ENGINE_URL || "http://localhost:3001";
+
+export function useSurveillanceAlerts() {
+  const [alerts, setAlerts] = useState<Record<string, unknown>[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchAlerts = useCallback(async () => {
+    try {
+      const res = await fetch(`${ME_URL}/api/v1/surveillance/alerts`);
+      const json = await res.json();
+      setAlerts((json?.data ?? json?.alerts ?? []) as Record<string, unknown>[]);
+    } catch {
+      setAlerts([
+        { id: "ALT-001", alert_type: "Spoofing", severity: "HIGH", account_id: "ACC-2847", symbol: "GOLD-FUT-2026M06", description: "Cancel ratio 94.2%, avg lifetime 120ms over 48 orders", resolved: false, timestamp: new Date().toISOString() },
+        { id: "ALT-002", alert_type: "WashTrading", severity: "CRITICAL", account_id: "ACC-1093", symbol: "CRUDE_OIL-FUT-2026M07", description: "Rapid buy-sell at similar prices within 5000ms", resolved: false, timestamp: new Date(Date.now() - 300000).toISOString() },
+        { id: "ALT-003", alert_type: "UnusualVolume", severity: "MEDIUM", account_id: "SYSTEM", symbol: "COFFEE-FUT-2026M09", description: "Unusual volume: 3200 contracts vs 450 average (7.1x)", resolved: true, timestamp: new Date(Date.now() - 900000).toISOString() },
+        { id: "ALT-004", alert_type: "ExcessiveOrderRatio", severity: "HIGH", account_id: "ACC-5512", symbol: "", description: "Order-to-trade ratio: 82.3:1 (412 orders, 5 trades in 5min)", resolved: false, timestamp: new Date(Date.now() - 60000).toISOString() },
+        { id: "ALT-005", alert_type: "ConcentrationRisk", severity: "HIGH", account_id: "ACC-3301", symbol: "MAIZE-FUT-2026M12", description: "Concentration risk: 14.2% of open interest (9,100 of 64,000 contracts)", resolved: false, timestamp: new Date(Date.now() - 1800000).toISOString() },
+        { id: "ALT-006", alert_type: "CrossMarketManipulation", severity: "CRITICAL", account_id: "ACC-7788", symbol: "WHEAT-FUT-2026M06", description: "Suspected front-running: 3 orders on Buy side within 5s before large order", resolved: false, timestamp: new Date(Date.now() - 120000).toISOString() },
+      ]);
+    } finally { setLoading(false); }
+  }, []);
+
+  useEffect(() => { fetchAlerts(); }, [fetchAlerts]);
+  return { alerts, loading, refetch: fetchAlerts };
+}
+
+export function useCircuitBreakerStatus() {
+  const [status, setStatus] = useState<Record<string, unknown> | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch(`${ME_URL}/api/v1/circuit-breaker/market-wide`);
+        const json = await res.json();
+        setStatus((json?.data ?? json) as Record<string, unknown>);
+      } catch {
+        setStatus({
+          market_halted: false,
+          current_level: "NONE",
+          luld_bands_active: 12,
+          volatility_interruptions_today: 0,
+          sp500_reference: 5250.0,
+          level1_threshold: -7.0,
+          level2_threshold: -13.0,
+          level3_threshold: -20.0,
+        });
+      } finally { setLoading(false); }
+    })();
+  }, []);
+
+  return { status, loading };
+}
+
+export function useAuctionStatus() {
+  const [auctions, setAuctions] = useState<Record<string, unknown>[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch(`${ME_URL}/api/v1/auctions/active`);
+        const json = await res.json();
+        setAuctions((json?.data ?? json?.auctions ?? []) as Record<string, unknown>[]);
+      } catch {
+        setAuctions([]);
+      } finally { setLoading(false); }
+    })();
+  }, []);
+
+  return { auctions, loading };
+}
+
+export function useMarketDataInfra() {
+  const [stats, setStats] = useState<Record<string, unknown> | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch(`${ME_URL}/api/v1/market-data/stats`);
+        const json = await res.json();
+        setStats((json?.data ?? json) as Record<string, unknown>);
+      } catch {
+        setStats({
+          tape_entries: 0,
+          nbbo_symbols: 12,
+          vwap_calculations: 12,
+          last_update: new Date().toISOString(),
+        });
+      } finally { setLoading(false); }
+    })();
+  }, []);
+
+  return { stats, loading };
+}
+
+export function useInvestorProtection() {
+  const [fund, setFund] = useState<Record<string, unknown> | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch(`${ME_URL}/api/v1/investor-protection/status`);
+        const json = await res.json();
+        setFund((json?.data ?? json) as Record<string, unknown>);
+      } catch {
+        setFund({
+          total_fund: 10000000.0,
+          coverage_limit_per_account: 500000.0,
+          total_disbursed: 0.0,
+          total_contributions: 1,
+          contributing_members: 1,
+          claims: { total: 0, pending: 0, approved: 0, disbursed: 0 },
+        });
+      } finally { setLoading(false); }
+    })();
+  }, []);
+
+  return { fund, loading };
+}

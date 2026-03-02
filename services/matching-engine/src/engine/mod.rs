@@ -1,7 +1,9 @@
 //! Core exchange engine that orchestrates all components:
 //! orderbook, futures, options, clearing, FIX, surveillance, delivery, HA.
 
+use crate::auction::AuctionEngine;
 use crate::broker::BrokerManager;
+use crate::circuit_breaker::CircuitBreakerEngine;
 use crate::clearing::ClearingHouse;
 use crate::corporate_actions::CorporateActionsManager;
 use crate::delivery::DeliveryManager;
@@ -9,6 +11,8 @@ use crate::fix::FixGateway;
 use crate::futures::FuturesManager;
 use crate::ha::ClusterManager;
 use crate::indices::IndexEngine;
+use crate::investor_protection::InvestorProtectionFund;
+use crate::market_data::MarketDataEngine;
 use crate::market_maker::MarketMakerManager;
 use crate::options::OptionsManager;
 use crate::orderbook::OrderBookManager;
@@ -32,6 +36,11 @@ pub struct ExchangeEngine {
     pub indices: Arc<IndexEngine>,
     pub corporate_actions: Arc<CorporateActionsManager>,
     pub brokers: Arc<BrokerManager>,
+    // NYSE-equivalent modules
+    pub circuit_breaker: Arc<CircuitBreakerEngine>,
+    pub auction: Arc<AuctionEngine>,
+    pub market_data: Arc<MarketDataEngine>,
+    pub investor_protection: Arc<InvestorProtectionFund>,
 }
 
 impl ExchangeEngine {
@@ -52,6 +61,10 @@ impl ExchangeEngine {
             indices: Arc::new(IndexEngine::new()),
             corporate_actions: Arc::new(CorporateActionsManager::new()),
             brokers: Arc::new(BrokerManager::new()),
+            circuit_breaker: Arc::new(CircuitBreakerEngine::new()),
+            auction: Arc::new(AuctionEngine::new()),
+            market_data: Arc::new(MarketDataEngine::new()),
+            investor_protection: Arc::new(InvestorProtectionFund::new()),
         };
 
         // Auto-list forward futures contracts
@@ -296,6 +309,19 @@ impl ExchangeEngine {
             "brokers": self.brokers.broker_count(),
             "connected_brokers": self.brokers.connected_count(),
             "health": health,
+            // NYSE-equivalent modules
+            "circuit_breaker": {
+                "luld_bands": self.circuit_breaker.band_count(),
+                "market_halted": self.circuit_breaker.is_market_halted(),
+                "market_wide": self.circuit_breaker.market_wide_status(),
+                "volatility_interruptions": self.circuit_breaker.interruption_count(),
+            },
+            "auction": {
+                "active_auctions": self.auction.active_auctions().len(),
+                "completed_auctions": self.auction.result_count(),
+            },
+            "market_data_infrastructure": self.market_data.summary(),
+            "investor_protection": self.investor_protection.fund_status(),
         })
     }
 }

@@ -18,6 +18,7 @@ import {
   FileText,
   Building2,
   Coins,
+  Shield,
   type LucideIcon,
 } from "lucide-react";
 
@@ -38,6 +39,7 @@ const navItems: NavItem[] = [
   { href: "/corporate-actions", label: "Corp Actions", icon: FileText },
   { href: "/brokers", label: "Brokers", icon: Building2 },
   { href: "/digital-assets", label: "Digital Assets", icon: Coins },
+  { href: "/surveillance", label: "Surveillance", icon: Shield },
   { href: "/alerts", label: "Alerts", icon: Bell },
   { href: "/analytics", label: "Analytics", icon: BarChart3 },
   { href: "/account", label: "Account", icon: User },

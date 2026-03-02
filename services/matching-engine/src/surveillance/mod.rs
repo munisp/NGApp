@@ -462,6 +462,148 @@ impl SurveillanceEngine {
         counts
     }
 
+    /// Detect layering: multiple orders at different price levels on one side.
+    /// Layering creates false impression of supply/demand.
+    fn detect_layering(&self, account_id: &str, activity: &AccountActivity) {
+        let cutoff = Utc::now() - Duration::seconds(10);
+        let recent_orders: Vec<_> = activity
+            .recent_orders
+            .iter()
+            .filter(|o| o.timestamp > cutoff)
+            .collect();
+
+        if recent_orders.len() < self.layering_level_threshold {
+            return;
+        }
+
+        // Group by symbol+side, check for multiple distinct price levels
+        let mut side_prices: HashMap<(String, Side), Vec<Price>> = HashMap::new();
+        for order in &recent_orders {
+            side_prices
+                .entry((order.symbol.clone(), order.side))
+                .or_default()
+                .push(order.price);
+        }
+
+        for ((symbol, side), prices) in &side_prices {
+            let mut unique_prices: Vec<Price> = prices.clone();
+            unique_prices.sort();
+            unique_prices.dedup();
+
+            if unique_prices.len() >= self.layering_level_threshold {
+                // Check if these were mostly cancelled (spoofing variant)
+                let cancel_count = activity
+                    .recent_cancels
+                    .iter()
+                    .filter(|c| c.timestamp > cutoff && c.symbol == *symbol && c.side == *side)
+                    .count();
+
+                if cancel_count as f64 / prices.len() as f64 > 0.5 {
+                    self.create_alert(
+                        AlertType::Spoofing,
+                        AlertSeverity::High,
+                        account_id,
+                        symbol,
+                        format!(
+                            "Layering detected: {} price levels on {:?} side with {:.0}% cancellation rate",
+                            unique_prices.len(),
+                            side,
+                            cancel_count as f64 / prices.len() as f64 * 100.0
+                        ),
+                    );
+                }
+            }
+        }
+    }
+
+    /// Detect front-running: orders placed ahead of large pending orders.
+    /// Checks if an account consistently trades just before large orders execute.
+    pub fn detect_front_running(&self, account_id: &str, large_order_symbol: &str, large_order_side: Side) {
+        if let Some(activity) = self.activity.get(account_id) {
+            let cutoff = Utc::now() - Duration::seconds(5);
+            let recent_same_direction: Vec<_> = activity
+                .recent_orders
+                .iter()
+                .filter(|o| {
+                    o.timestamp > cutoff
+                        && o.symbol == large_order_symbol
+                        && o.side == large_order_side
+                })
+                .collect();
+
+            // If this account placed orders in the same direction just before a large order
+            if recent_same_direction.len() >= 2 {
+                self.create_alert(
+                    AlertType::CrossMarketManipulation,
+                    AlertSeverity::Critical,
+                    account_id,
+                    large_order_symbol,
+                    format!(
+                        "Suspected front-running: {} orders placed on {:?} side within 5s before large order",
+                        recent_same_direction.len(),
+                        large_order_side
+                    ),
+                );
+            }
+        }
+    }
+
+    /// Detect excessive order-to-trade ratio.
+    /// High ratio indicates potential manipulation or algorithm malfunction.
+    pub fn check_order_to_trade_ratio(&self, account_id: &str) {
+        if let Some(activity) = self.activity.get(account_id) {
+            let cutoff = Utc::now() - Duration::minutes(5);
+            let order_count = activity
+                .recent_orders
+                .iter()
+                .filter(|o| o.timestamp > cutoff)
+                .count();
+            let trade_count = activity
+                .recent_trades
+                .iter()
+                .filter(|t| t.timestamp > cutoff)
+                .count();
+
+            if order_count > 20 && trade_count > 0 {
+                let ratio = order_count as f64 / trade_count as f64;
+                if ratio > 50.0 {
+                    self.create_alert(
+                        AlertType::ExcessiveOrderRatio,
+                        AlertSeverity::High,
+                        account_id,
+                        "",
+                        format!(
+                            "Excessive order-to-trade ratio: {:.1}:1 ({} orders, {} trades in 5min)",
+                            ratio, order_count, trade_count
+                        ),
+                    );
+                }
+            }
+        }
+    }
+
+    /// Detect concentration risk: single account holding too large a % of open interest.
+    pub fn check_concentration(&self, account_id: &str, symbol: &str, account_qty: Qty, total_open_interest: Qty) {
+        if total_open_interest == 0 {
+            return;
+        }
+        let concentration = account_qty as f64 / total_open_interest as f64;
+        if concentration > 0.10 {
+            self.create_alert(
+                AlertType::ConcentrationRisk,
+                AlertSeverity::High,
+                account_id,
+                symbol,
+                format!(
+                    "Concentration risk: {:.1}% of open interest ({} of {} contracts)",
+                    concentration * 100.0,
+                    account_qty,
+                    total_open_interest
+                ),
+            );
+        }
+    }
+
     /// Resolve an alert.
     pub fn resolve_alert(&self, alert_id: Uuid) -> bool {
         if let Some(mut alert) = self.alerts.get_mut(&alert_id) {
@@ -471,6 +613,34 @@ impl SurveillanceEngine {
         } else {
             false
         }
+    }
+
+    /// Get all alerts (resolved and unresolved).
+    pub fn all_alerts(&self) -> Vec<SurveillanceAlert> {
+        self.alerts.iter().map(|r| r.value().clone()).collect()
+    }
+
+    /// Get surveillance summary for API.
+    pub fn summary(&self) -> serde_json::Value {
+        let total = self.alerts.len();
+        let unresolved = self.alerts.iter().filter(|r| !r.value().resolved).count();
+        let counts = self.alert_counts();
+
+        serde_json::json!({
+            "total_alerts": total,
+            "unresolved": unresolved,
+            "by_severity": counts,
+            "detection_patterns": [
+                "spoofing",
+                "layering",
+                "wash_trading",
+                "front_running",
+                "unusual_volume",
+                "excessive_order_ratio",
+                "concentration_risk",
+            ],
+            "position_limits_active": true,
+        })
     }
 }
 

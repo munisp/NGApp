@@ -3,7 +3,9 @@
 //! futures/options lifecycle, CCP clearing, FIX 4.4 gateway, market surveillance,
 //! physical delivery infrastructure, and HA/DR failover.
 
+mod auction;
 mod broker;
+mod circuit_breaker;
 mod clearing;
 mod corporate_actions;
 mod delivery;
@@ -12,6 +14,8 @@ mod fix;
 mod futures;
 mod ha;
 mod indices;
+mod investor_protection;
+mod market_data;
 mod market_maker;
 mod options;
 mod orderbook;
@@ -151,6 +155,27 @@ async fn main() {
         .route("/api/v1/brokers/:id", get(get_broker))
         .route("/api/v1/brokers/connected", get(connected_brokers))
         .route("/api/v1/brokers/route", post(route_order))
+        // Circuit Breakers (NYSE-equivalent)
+        .route("/api/v1/circuit-breaker/bands", get(circuit_breaker_bands))
+        .route("/api/v1/circuit-breaker/bands/:symbol", get(circuit_breaker_band))
+        .route("/api/v1/circuit-breaker/market-wide", get(market_wide_status))
+        .route("/api/v1/circuit-breaker/interruptions", get(volatility_interruptions))
+        // Auctions (NYSE-equivalent)
+        .route("/api/v1/auctions/active", get(active_auctions))
+        .route("/api/v1/auctions/history", get(auction_history))
+        .route("/api/v1/auctions/:symbol/indicative", get(auction_indicative))
+        .route("/api/v1/auctions/:symbol/start", post(start_auction))
+        .route("/api/v1/auctions/:symbol/run", post(run_auction))
+        // Market Data Infrastructure (NYSE-equivalent)
+        .route("/api/v1/market-data/tape", get(consolidated_tape))
+        .route("/api/v1/market-data/tape/:symbol", get(symbol_tape))
+        .route("/api/v1/market-data/nbbo/:symbol", get(nbbo_quote))
+        .route("/api/v1/market-data/snapshot/:symbol", get(market_snapshot))
+        .route("/api/v1/market-data/stats", get(all_stats))
+        // Investor Protection Fund (NYSE SIPC-equivalent)
+        .route("/api/v1/investor-protection/status", get(ipf_status))
+        .route("/api/v1/investor-protection/claims", get(ipf_claims))
+        .route("/api/v1/investor-protection/claims", post(ipf_submit_claim))
         .layer(RequestBodyLimitLayer::new(1024 * 1024)) // 1MB request body limit
         .layer(cors)
         .with_state(engine);
@@ -762,4 +787,179 @@ async fn route_order(
         Ok(route) => Json(ApiResponse::ok(route)),
         Err(e) => Json(ApiResponse::err(e)),
     }
+}
+
+// ─── Circuit Breakers (NYSE-equivalent) ─────────────────────────────────────
+
+async fn circuit_breaker_bands(
+    State(engine): State<AppState>,
+) -> Json<ApiResponse<Vec<circuit_breaker::LuldBand>>> {
+    Json(ApiResponse::ok(engine.circuit_breaker.all_bands()))
+}
+
+async fn circuit_breaker_band(
+    State(engine): State<AppState>,
+    Path(symbol): Path<String>,
+) -> Json<ApiResponse<circuit_breaker::LuldBand>> {
+    match engine.circuit_breaker.get_band(&symbol) {
+        Some(band) => Json(ApiResponse::ok(band)),
+        None => Json(ApiResponse::err(format!("No LULD band for {}", symbol))),
+    }
+}
+
+async fn market_wide_status(
+    State(engine): State<AppState>,
+) -> Json<ApiResponse<serde_json::Value>> {
+    Json(ApiResponse::ok(engine.circuit_breaker.market_wide_status()))
+}
+
+async fn volatility_interruptions(
+    State(engine): State<AppState>,
+) -> Json<ApiResponse<Vec<circuit_breaker::VolatilityInterruption>>> {
+    Json(ApiResponse::ok(engine.circuit_breaker.recent_interruptions()))
+}
+
+// ─── Auctions (NYSE-equivalent) ─────────────────────────────────────────────
+
+async fn active_auctions(
+    State(engine): State<AppState>,
+) -> Json<ApiResponse<Vec<serde_json::Value>>> {
+    Json(ApiResponse::ok(engine.auction.active_auctions()))
+}
+
+async fn auction_history(
+    State(engine): State<AppState>,
+) -> Json<ApiResponse<Vec<auction::AuctionResult>>> {
+    Json(ApiResponse::ok(engine.auction.auction_history()))
+}
+
+async fn auction_indicative(
+    State(engine): State<AppState>,
+    Path(symbol): Path<String>,
+) -> Json<ApiResponse<auction::IndicativeData>> {
+    match engine.auction.indicative_data(&symbol) {
+        Some(data) => Json(ApiResponse::ok(data)),
+        None => Json(ApiResponse::err(format!("No active auction for {}", symbol))),
+    }
+}
+
+#[derive(serde::Deserialize)]
+struct StartAuctionRequest {
+    phase: String,
+}
+
+async fn start_auction(
+    State(engine): State<AppState>,
+    Path(symbol): Path<String>,
+    Json(req): Json<StartAuctionRequest>,
+) -> Json<ApiResponse<serde_json::Value>> {
+    let phase = match req.phase.to_uppercase().as_str() {
+        "PRE_OPEN" | "PREOPEN" => auction::AuctionPhase::PreOpen,
+        "OPENING" | "OPENING_AUCTION" => auction::AuctionPhase::OpeningAuction,
+        "PRE_CLOSE" | "PRECLOSE" => auction::AuctionPhase::PreClose,
+        "CLOSING" | "CLOSING_AUCTION" => auction::AuctionPhase::ClosingAuction,
+        "REOPENING" => auction::AuctionPhase::ReopeningAuction,
+        _ => return Json(ApiResponse::err(format!("Unknown auction phase: {}", req.phase))),
+    };
+    engine.auction.start_auction(&symbol, phase);
+    Json(ApiResponse::ok(serde_json::json!({
+        "symbol": symbol,
+        "phase": phase,
+        "status": "started",
+    })))
+}
+
+async fn run_auction(
+    State(engine): State<AppState>,
+    Path(symbol): Path<String>,
+) -> Json<ApiResponse<auction::AuctionResult>> {
+    match engine.auction.run_auction(&symbol) {
+        Some(result) => Json(ApiResponse::ok(result)),
+        None => Json(ApiResponse::err(format!("No auction to run for {}", symbol))),
+    }
+}
+
+// ─── Market Data Infrastructure (NYSE-equivalent) ───────────────────────────
+
+#[derive(serde::Deserialize)]
+struct TapeQuery {
+    count: Option<usize>,
+}
+
+async fn consolidated_tape(
+    State(engine): State<AppState>,
+    Query(params): Query<TapeQuery>,
+) -> Json<ApiResponse<Vec<market_data::TapeEntry>>> {
+    let count = params.count.unwrap_or(100);
+    Json(ApiResponse::ok(engine.market_data.tape.recent(count)))
+}
+
+async fn symbol_tape(
+    State(engine): State<AppState>,
+    Path(symbol): Path<String>,
+    Query(params): Query<TapeQuery>,
+) -> Json<ApiResponse<Vec<market_data::TapeEntry>>> {
+    let count = params.count.unwrap_or(50);
+    Json(ApiResponse::ok(engine.market_data.tape.for_symbol(&symbol, count)))
+}
+
+async fn nbbo_quote(
+    State(engine): State<AppState>,
+    Path(symbol): Path<String>,
+) -> Json<ApiResponse<market_data::NbboQuote>> {
+    match engine.market_data.ticker.get_nbbo(&symbol) {
+        Some(nbbo) => Json(ApiResponse::ok(nbbo)),
+        None => Json(ApiResponse::err(format!("No NBBO for {}", symbol))),
+    }
+}
+
+async fn market_snapshot(
+    State(engine): State<AppState>,
+    Path(symbol): Path<String>,
+) -> Json<ApiResponse<market_data::MarketSnapshot>> {
+    match engine.market_data.snapshot(&symbol) {
+        Some(snap) => Json(ApiResponse::ok(snap)),
+        None => Json(ApiResponse::err(format!("No data for {}", symbol))),
+    }
+}
+
+async fn all_stats(
+    State(engine): State<AppState>,
+) -> Json<ApiResponse<serde_json::Value>> {
+    Json(ApiResponse::ok(engine.market_data.summary()))
+}
+
+// ─── Investor Protection Fund (NYSE SIPC-equivalent) ────────────────────────
+
+async fn ipf_status(
+    State(engine): State<AppState>,
+) -> Json<ApiResponse<serde_json::Value>> {
+    Json(ApiResponse::ok(engine.investor_protection.fund_status()))
+}
+
+async fn ipf_claims(
+    State(engine): State<AppState>,
+) -> Json<ApiResponse<Vec<investor_protection::ProtectionClaim>>> {
+    Json(ApiResponse::ok(engine.investor_protection.all_claims()))
+}
+
+#[derive(serde::Deserialize)]
+struct SubmitClaimRequest {
+    account_id: String,
+    claimant_name: String,
+    amount: f64,
+    reason: String,
+}
+
+async fn ipf_submit_claim(
+    State(engine): State<AppState>,
+    Json(req): Json<SubmitClaimRequest>,
+) -> Json<ApiResponse<investor_protection::ProtectionClaim>> {
+    let claim = engine.investor_protection.submit_claim(
+        &req.account_id,
+        &req.claimant_name,
+        to_price(req.amount),
+        &req.reason,
+    );
+    Json(ApiResponse::ok(claim))
 }

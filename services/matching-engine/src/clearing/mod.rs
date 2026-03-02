@@ -587,6 +587,111 @@ impl ClearingHouse {
             vec![]
         }
     }
+
+    /// Run stress test scenarios on the clearing house.
+    /// Applies hypothetical price shocks and calculates potential losses.
+    pub fn run_stress_test(&self, scenarios: &[StressScenario]) -> StressTestResult {
+        let mut results = Vec::new();
+        let mut max_loss: i64 = 0;
+
+        for scenario in scenarios {
+            let mut scenario_loss: i64 = 0;
+            let mut member_losses: HashMap<String, i64> = HashMap::new();
+
+            for entry in self.positions.iter() {
+                let account_id = entry.key().clone();
+                for pos in entry.value() {
+                    let shock = scenario.price_shocks.get(&pos.symbol)
+                        .or_else(|| scenario.price_shocks.get("*"))
+                        .copied()
+                        .unwrap_or(0.0);
+
+                    let current = from_price(pos.average_price);
+                    let shocked_price = current * (1.0 + shock);
+                    let pnl = match pos.side {
+                        Side::Buy => (shocked_price - current) * pos.quantity as f64,
+                        Side::Sell => (current - shocked_price) * pos.quantity as f64,
+                    };
+
+                    if pnl < 0.0 {
+                        scenario_loss += (-pnl) as i64;
+                        *member_losses.entry(account_id.clone()).or_insert(0) += (-pnl) as i64;
+                    }
+                }
+            }
+
+            if scenario_loss > max_loss {
+                max_loss = scenario_loss;
+            }
+
+            results.push(ScenarioResult {
+                scenario_name: scenario.name.clone(),
+                total_loss: to_price(scenario_loss as f64),
+                member_losses,
+                guarantee_fund_sufficient: to_price(scenario_loss as f64) <= *self.total_guarantee_fund.read(),
+            });
+        }
+
+        let gf = *self.total_guarantee_fund.read();
+        StressTestResult {
+            timestamp: Utc::now(),
+            scenarios_run: scenarios.len(),
+            results,
+            worst_case_loss: to_price(max_loss as f64),
+            guarantee_fund_coverage: if max_loss > 0 {
+                from_price(gf) / max_loss as f64
+            } else {
+                f64::INFINITY
+            },
+        }
+    }
+
+    /// Get clearing house status summary.
+    pub fn status_summary(&self) -> serde_json::Value {
+        let active_members = self.members.iter().filter(|r| r.value().status == MemberStatus::Active).count();
+        let total_positions: usize = self.positions.iter().map(|r| r.value().len()).sum();
+
+        serde_json::json!({
+            "members": {
+                "total": self.members.len(),
+                "active": active_members,
+            },
+            "positions": {
+                "total": total_positions,
+                "accounts": self.positions.len(),
+            },
+            "guarantee_fund": from_price(*self.total_guarantee_fund.read()),
+            "exchange_contribution": from_price(self.waterfall.exchange_contribution),
+            "mtm_cycles": *self.mtm_cycle.read(),
+        })
+    }
+}
+
+/// A stress test scenario with hypothetical price shocks.
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct StressScenario {
+    pub name: String,
+    /// Symbol -> price shock percentage (e.g., -0.20 = 20% drop).
+    pub price_shocks: HashMap<String, f64>,
+}
+
+/// Result of a single stress scenario.
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct ScenarioResult {
+    pub scenario_name: String,
+    pub total_loss: Price,
+    pub member_losses: HashMap<String, i64>,
+    pub guarantee_fund_sufficient: bool,
+}
+
+/// Combined stress test results.
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct StressTestResult {
+    pub timestamp: chrono::DateTime<Utc>,
+    pub scenarios_run: usize,
+    pub results: Vec<ScenarioResult>,
+    pub worst_case_loss: Price,
+    pub guarantee_fund_coverage: f64,
 }
 
 impl Default for ClearingHouse {
