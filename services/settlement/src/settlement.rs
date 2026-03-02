@@ -172,4 +172,34 @@ impl SettlementEngine {
     ) -> Result<Balance, Box<dyn std::error::Error>> {
         self.tigerbeetle.get_balance(account_id).await
     }
+
+    /// Initiate a Mojaloop transfer through the hub
+    pub async fn initiate_mojaloop_transfer(
+        &self,
+        transfer: &crate::mojaloop::MojaloopTransfer,
+    ) -> Result<String, Box<dyn std::error::Error>> {
+        self.mojaloop.initiate_transfer(transfer).await
+    }
+
+    /// Request a quote from Mojaloop hub
+    pub async fn request_mojaloop_quote(
+        &self,
+        quote: &crate::mojaloop::QuoteRequest,
+    ) -> Result<String, Box<dyn std::error::Error>> {
+        self.mojaloop.request_quote(quote).await
+    }
+
+    /// Lookup a participant in Mojaloop ALS
+    pub async fn lookup_mojaloop_participant(
+        &self,
+        id_type: &str,
+        id_value: &str,
+    ) -> Result<String, Box<dyn std::error::Error>> {
+        self.mojaloop.lookup_participant(id_type, id_value).await
+    }
+
+    /// Get Mojaloop connection status
+    pub fn mojaloop_connection_status(&self) -> (bool, bool) {
+        (self.mojaloop.is_connected(), self.mojaloop.is_fallback())
+    }
 }

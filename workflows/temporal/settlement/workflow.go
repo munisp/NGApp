@@ -124,8 +124,31 @@ func SettlementWorkflow(ctx workflow.Context, input SettlementInput) (*Settlemen
 }
 
 func needsMojaloopSettlement(input SettlementInput) bool {
-	// In production: check if buyer and seller are in different DFSPs
+	// Cross-DFSP settlement is needed when buyer and seller are in different
+	// Digital Financial Service Providers. We detect this by checking if the
+	// user IDs have different DFSP prefixes or if explicitly flagged.
+	buyerDFSP := extractDFSP(input.BuyerID)
+	sellerDFSP := extractDFSP(input.SellerID)
+	if buyerDFSP != "" && sellerDFSP != "" && buyerDFSP != sellerDFSP {
+		return true
+	}
+	// Also trigger for cross-border settlements (different currency pairs)
+	if input.SettlementType == "cross_dfsp" {
+		return true
+	}
 	return false
+}
+
+// extractDFSP extracts the DFSP identifier from a user ID.
+// User IDs follow the pattern "dfsp-id:user-id" for cross-DFSP users,
+// or plain "user-id" for local NEXCOM users.
+func extractDFSP(userID string) string {
+	for i, ch := range userID {
+		if ch == ':' && i > 0 {
+			return userID[:i]
+		}
+	}
+	return "nexcom-exchange" // Default DFSP for local users
 }
 
 // --- Activity Input/Output Types ---

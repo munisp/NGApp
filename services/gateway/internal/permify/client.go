@@ -8,6 +8,7 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"os"
 	"sync"
 	"time"
 )
@@ -53,6 +54,122 @@ type RelationshipTuple struct {
 	SubjectID   string `json:"subjectId"`
 }
 
+// TenantID is the Permify tenant for NEXCOM Exchange.
+// Supports multi-tenancy: each exchange instance gets its own tenant.
+var TenantID = getEnvOrDefault("PERMIFY_TENANT_ID", "nexcom")
+
+func getEnvOrDefault(key, fallback string) string {
+	val, ok := os.LookupEnv(key)
+	if ok && val != "" {
+		return val
+	}
+	return fallback
+}
+
+// NexcomPermifySchema defines the full authorization model for NEXCOM Exchange.
+// This is written to Permify on startup to bootstrap the permission system.
+const NexcomPermifySchema = `
+entity user {}
+
+entity organization {
+    relation member @user
+    relation admin @user
+    relation compliance_officer @user
+
+    permission manage = admin
+    permission view = admin or member or compliance_officer
+}
+
+entity commodity {
+    relation exchange @organization
+    relation listed_by @user
+
+    permission trade = exchange.member
+    permission view = exchange.member
+    permission delist = exchange.admin
+}
+
+entity order {
+    relation owner @user
+    relation commodity @commodity
+
+    permission view = owner
+    permission cancel = owner
+    permission list = owner
+}
+
+entity portfolio {
+    relation owner @user
+    relation delegate @user
+
+    permission view = owner or delegate
+    permission trade = owner
+    permission manage = owner
+}
+
+entity alert {
+    relation owner @user
+
+    permission view = owner
+    permission edit = owner
+    permission delete = owner
+}
+
+entity report {
+    relation viewer @user
+    relation organization @organization
+
+    permission view = viewer or organization.admin or organization.compliance_officer
+    permission export = organization.admin
+}
+
+entity kyc_application {
+    relation applicant @user
+    relation reviewer @user
+    relation organization @organization
+
+    permission view = applicant or reviewer or organization.compliance_officer
+    permission approve = reviewer or organization.compliance_officer
+    permission reject = reviewer or organization.compliance_officer
+}
+
+entity warehouse_receipt {
+    relation owner @user
+    relation warehouse @organization
+
+    permission view = owner or warehouse.member
+    permission transfer = owner
+    permission verify = warehouse.admin
+}
+
+entity digital_asset {
+    relation issuer @user
+    relation holder @user
+    relation exchange @organization
+
+    permission trade = holder or exchange.member
+    permission view = holder or exchange.member
+    permission transfer = holder
+    permission fractionalize = issuer or exchange.admin
+}
+
+entity surveillance_alert {
+    relation organization @organization
+
+    permission view = organization.compliance_officer or organization.admin
+    permission resolve = organization.compliance_officer
+}
+
+entity settlement {
+    relation buyer @user
+    relation seller @user
+    relation exchange @organization
+
+    permission view = buyer or seller or exchange.admin
+    permission finalize = exchange.admin
+}
+`
+
 func NewClient(endpoint string) *Client {
 	c := &Client{
 		endpoint:      endpoint,
@@ -62,16 +179,20 @@ func NewClient(endpoint string) *Client {
 		},
 	}
 	c.connect()
+	if c.connected {
+		c.bootstrapSchema()
+		c.seedDefaultRelationships()
+	}
 	return c
 }
 
 func (c *Client) connect() {
-	log.Printf("[Permify] Connecting to %s", c.endpoint)
+	log.Printf("[Permify] Connecting to %s (tenant: %s)", c.endpoint, TenantID)
 
 	// Attempt TCP connection to Permify
 	conn, err := net.DialTimeout("tcp", c.endpoint, 3*time.Second)
 	if err != nil {
-		log.Printf("[Permify] WARN: Cannot reach %s: %v — running in fallback mode (allow-all)", c.endpoint, err)
+		log.Printf("[Permify] WARN: Cannot reach %s: %v — running in fallback mode", c.endpoint, err)
 		c.mu.Lock()
 		c.fallbackMode = true
 		c.connected = false
@@ -87,7 +208,69 @@ func (c *Client) connect() {
 	log.Printf("[Permify] Connected to %s (TCP verified)", c.endpoint)
 }
 
-// Check verifies if a subject has a permission on an entity
+// bootstrapSchema writes the NEXCOM authorization schema to Permify on startup.
+func (c *Client) bootstrapSchema() {
+	log.Printf("[Permify] Bootstrapping authorization schema for tenant %s", TenantID)
+
+	reqBody := map[string]interface{}{
+		"schema": NexcomPermifySchema,
+	}
+	body, _ := json.Marshal(reqBody)
+	url := fmt.Sprintf("http://%s/v1/tenants/%s/schemas/write", c.endpoint, TenantID)
+	resp, err := c.httpClient.Post(url, "application/json", bytes.NewReader(body))
+	if err != nil {
+		log.Printf("[Permify] WARN: Schema bootstrap failed: %v", err)
+		return
+	}
+	defer resp.Body.Close()
+
+	respBody, _ := io.ReadAll(resp.Body)
+	var result map[string]interface{}
+	if json.Unmarshal(respBody, &result) == nil {
+		if version, ok := result["schema_version"].(string); ok {
+			log.Printf("[Permify] Schema bootstrapped successfully (version: %s)", version)
+			return
+		}
+	}
+	log.Printf("[Permify] Schema write response: %s", string(respBody))
+}
+
+// seedDefaultRelationships creates the initial NEXCOM organization and admin relationships.
+func (c *Client) seedDefaultRelationships() {
+	log.Printf("[Permify] Seeding default relationships")
+
+	// Create NEXCOM organization with default admin
+	defaultRelationships := []RelationshipTuple{
+		{EntityType: "organization", EntityID: "nexcom", Relation: "admin", SubjectType: "user", SubjectID: "admin-001"},
+		{EntityType: "organization", EntityID: "nexcom", Relation: "member", SubjectType: "user", SubjectID: "admin-001"},
+		{EntityType: "organization", EntityID: "nexcom", Relation: "compliance_officer", SubjectType: "user", SubjectID: "admin-001"},
+		// Demo trader
+		{EntityType: "organization", EntityID: "nexcom", Relation: "member", SubjectType: "user", SubjectID: "usr-001"},
+		{EntityType: "portfolio", EntityID: "portfolio-usr-001", Relation: "owner", SubjectType: "user", SubjectID: "usr-001"},
+		// List default commodities on the exchange
+		{EntityType: "commodity", EntityID: "CORN", Relation: "exchange", SubjectType: "organization", SubjectID: "nexcom"},
+		{EntityType: "commodity", EntityID: "WHEAT", Relation: "exchange", SubjectType: "organization", SubjectID: "nexcom"},
+		{EntityType: "commodity", EntityID: "SOYBEAN", Relation: "exchange", SubjectType: "organization", SubjectID: "nexcom"},
+		{EntityType: "commodity", EntityID: "GOLD", Relation: "exchange", SubjectType: "organization", SubjectID: "nexcom"},
+		{EntityType: "commodity", EntityID: "CRUDE_OIL", Relation: "exchange", SubjectType: "organization", SubjectID: "nexcom"},
+		{EntityType: "commodity", EntityID: "COCOA", Relation: "exchange", SubjectType: "organization", SubjectID: "nexcom"},
+		{EntityType: "commodity", EntityID: "COFFEE", Relation: "exchange", SubjectType: "organization", SubjectID: "nexcom"},
+		{EntityType: "commodity", EntityID: "COTTON", Relation: "exchange", SubjectType: "organization", SubjectID: "nexcom"},
+		{EntityType: "commodity", EntityID: "COPPER", Relation: "exchange", SubjectType: "organization", SubjectID: "nexcom"},
+	}
+
+	for _, rel := range defaultRelationships {
+		if err := c.WriteRelationship(rel.EntityType, rel.EntityID, rel.Relation, rel.SubjectType, rel.SubjectID); err != nil {
+			log.Printf("[Permify] WARN: Failed to seed relationship: %v", err)
+		}
+	}
+
+	log.Printf("[Permify] Seeded %d default relationships", len(defaultRelationships))
+}
+
+// Check verifies if a subject has a permission on an entity.
+// In production mode (ENVIRONMENT=production), denies by default when Permify is unreachable.
+// In development mode, allows access when Permify is unreachable to enable local development.
 func (c *Client) Check(entityType, entityID, permission, subjectType, subjectID string) (bool, error) {
 	c.mu.RLock()
 	isFallback := c.fallbackMode
@@ -112,7 +295,7 @@ func (c *Client) Check(entityType, entityID, permission, subjectType, subjectID 
 			},
 		}
 		body, _ := json.Marshal(reqBody)
-		url := fmt.Sprintf("http://%s/v1/tenants/nexcom/permissions/check", c.endpoint)
+		url := fmt.Sprintf("http://%s/v1/tenants/%s/permissions/check", c.endpoint, TenantID)
 		resp, err := c.httpClient.Post(url, "application/json", bytes.NewReader(body))
 		if err == nil {
 			defer resp.Body.Close()
@@ -127,7 +310,7 @@ func (c *Client) Check(entityType, entityID, permission, subjectType, subjectID 
 		log.Printf("[Permify] WARN: Permission check via API failed, using fallback")
 	}
 
-	// Fallback: check in-memory relationships or allow all
+	// Fallback: check in-memory relationships
 	c.mu.RLock()
 	for _, rel := range c.relationships {
 		if rel.EntityType == entityType && rel.EntityID == entityID &&
@@ -139,7 +322,14 @@ func (c *Client) Check(entityType, entityID, permission, subjectType, subjectID 
 	}
 	c.mu.RUnlock()
 
-	// Default: allow in development
+	// Production: deny by default when no relationship found
+	env := getEnvOrDefault("ENVIRONMENT", "development")
+	if env == "production" {
+		log.Printf("[Permify] DENIED: %s:%s#%s@%s:%s (production mode)", entityType, entityID, permission, subjectType, subjectID)
+		return false, nil
+	}
+
+	// Development: allow to enable local development without Permify running
 	return true, nil
 }
 
@@ -163,7 +353,7 @@ func (c *Client) WriteRelationship(entityType, entityID, relation, subjectType, 
 			},
 		}
 		body, _ := json.Marshal(reqBody)
-		url := fmt.Sprintf("http://%s/v1/tenants/nexcom/relationships/write", c.endpoint)
+		url := fmt.Sprintf("http://%s/v1/tenants/%s/relationships/write", c.endpoint, TenantID)
 		resp, err := c.httpClient.Post(url, "application/json", bytes.NewReader(body))
 		if err == nil {
 			resp.Body.Close()

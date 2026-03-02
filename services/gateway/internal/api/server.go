@@ -1,6 +1,7 @@
 package api
 
 import (
+	"log"
 	"net/http"
 	"strings"
 	"time"
@@ -86,8 +87,9 @@ func (s *Server) SetupRoutes() *gin.Engine {
 		protected := api.Group("")
 		protected.Use(s.authMiddleware())
 		{
-			// Markets
+			// Markets — Permify: commodity view permission
 			markets := protected.Group("/markets")
+			markets.Use(s.permifyMiddleware("commodity", "view"))
 			{
 				markets.GET("", s.listMarkets)
 				markets.GET("/search", s.searchMarkets)
@@ -96,8 +98,9 @@ func (s *Server) SetupRoutes() *gin.Engine {
 				markets.GET("/:symbol/candles", s.getCandles)
 			}
 
-			// Orders
+			// Orders — Permify: order list/cancel permissions
 			orders := protected.Group("/orders")
+			orders.Use(s.permifyMiddleware("commodity", "trade"))
 			{
 				orders.GET("", s.listOrders)
 				orders.POST("", s.createOrder)
@@ -105,15 +108,17 @@ func (s *Server) SetupRoutes() *gin.Engine {
 				orders.DELETE("/:id", s.cancelOrder)
 			}
 
-			// Trades
+			// Trades — Permify: commodity trade permission
 			trades := protected.Group("/trades")
+			trades.Use(s.permifyMiddleware("commodity", "trade"))
 			{
 				trades.GET("", s.listTrades)
 				trades.GET("/:id", s.getTrade)
 			}
 
-			// Portfolio
+			// Portfolio — Permify: portfolio view/trade permissions
 			portfolio := protected.Group("/portfolio")
+			portfolio.Use(s.permifyMiddleware("portfolio", "view"))
 			{
 				portfolio.GET("", s.getPortfolio)
 				portfolio.GET("/positions", s.listPositions)
@@ -121,8 +126,9 @@ func (s *Server) SetupRoutes() *gin.Engine {
 				portfolio.GET("/history", s.getPortfolioHistory)
 			}
 
-			// Alerts
+			// Alerts — Permify: alert view/edit/delete permissions
 			alerts := protected.Group("/alerts")
+			alerts.Use(s.permifyMiddleware("alert", "view"))
 			{
 				alerts.GET("", s.listAlerts)
 				alerts.POST("", s.createAlert)
@@ -130,8 +136,9 @@ func (s *Server) SetupRoutes() *gin.Engine {
 				alerts.DELETE("/:id", s.deleteAlert)
 			}
 
-			// Account
+			// Account — Permify: user self-access (always allowed for own account)
 			account := protected.Group("/account")
+			account.Use(s.permifyMiddleware("user", "access"))
 			{
 				account.GET("/profile", s.getProfile)
 				account.PATCH("/profile", s.updateProfile)
@@ -146,16 +153,18 @@ func (s *Server) SetupRoutes() *gin.Engine {
 				account.POST("/api-keys", s.generateAPIKey)
 			}
 
-			// Notifications
+			// Notifications — Permify: user self-access
 			notifications := protected.Group("/notifications")
+			notifications.Use(s.permifyMiddleware("user", "access"))
 			{
 				notifications.GET("", s.listNotifications)
 				notifications.PATCH("/:id/read", s.markNotificationRead)
 				notifications.POST("/read-all", s.markAllRead)
 			}
 
-			// Analytics
+			// Analytics — Permify: report view permission
 			analytics := protected.Group("/analytics")
+			analytics.Use(s.permifyMiddleware("report", "view"))
 			{
 				analytics.GET("/dashboard", s.analyticsDashboard)
 				analytics.GET("/pnl", s.pnlReport)
@@ -164,11 +173,12 @@ func (s *Server) SetupRoutes() *gin.Engine {
 				analytics.GET("/forecast/:symbol", s.priceForecast)
 			}
 
-			// Middleware status
-			protected.GET("/middleware/status", s.middlewareStatus)
+			// Middleware status — Permify: organization admin view
+			protected.GET("/middleware/status", s.permifyGuard("organization", "view"), s.middlewareStatus)
 
-			// Matching Engine proxy routes
+			// Matching Engine proxy routes — Permify: commodity trade permission
 			me := protected.Group("/matching-engine")
+			me.Use(s.permifyMiddleware("commodity", "trade"))
 			{
 				me.GET("/status", s.matchingEngineStatus)
 				me.GET("/depth/:symbol", s.matchingEngineDepth)
@@ -206,8 +216,9 @@ func (s *Server) SetupRoutes() *gin.Engine {
 				me.POST("/brokers/route", s.meBrokersRoute)
 			}
 
-			// Ingestion Engine proxy routes
+			// Ingestion Engine proxy routes — Permify: organization admin
 			ing := protected.Group("/ingestion")
+			ing.Use(s.permifyMiddleware("organization", "manage"))
 			{
 				ing.GET("/feeds", s.ingestionFeeds)
 				ing.POST("/feeds/:id/start", s.ingestionStartFeed)
@@ -219,11 +230,12 @@ func (s *Server) SetupRoutes() *gin.Engine {
 				ing.GET("/pipeline/status", s.ingestionPipelineStatus)
 			}
 
-			// Platform health aggregator
-			protected.GET("/platform/health", s.platformHealth)
+			// Platform health aggregator — Permify: organization view
+			protected.GET("/platform/health", s.permifyGuard("organization", "view"), s.platformHealth)
 
-			// Accounts CRUD (for accounts table)
+			// Accounts CRUD — Permify: organization admin
 			accounts := protected.Group("/accounts")
+			accounts.Use(s.permifyMiddleware("organization", "manage"))
 			{
 				accounts.GET("", s.listAccounts)
 				accounts.POST("", s.createAccount)
@@ -232,15 +244,17 @@ func (s *Server) SetupRoutes() *gin.Engine {
 				accounts.DELETE("/:id", s.deleteAccount)
 			}
 
-			// Audit Log CRUD
+			// Audit Log CRUD — Permify: organization admin/compliance
 			auditLog := protected.Group("/audit-log")
+			auditLog.Use(s.permifyMiddleware("organization", "view"))
 			{
 				auditLog.GET("", s.listAuditLog)
 				auditLog.GET("/:id", s.getAuditEntry)
 			}
 
-			// Blockchain service proxy routes (Digital Assets + IPFS + Fractional Trading)
+			// Blockchain service proxy routes — Permify: digital_asset trade
 			bc := protected.Group("/blockchain")
+			bc.Use(s.permifyMiddleware("digital_asset", "trade"))
 			{
 				// Tokenization
 				bc.POST("/tokenize", s.bcTokenize)
@@ -267,8 +281,9 @@ func (s *Server) SetupRoutes() *gin.Engine {
 				bc.GET("/ipfs/status", s.bcIpfsStatus)
 			}
 
-				// KYC Service proxy routes
+			// KYC Service proxy routes — Permify: kyc_application view
 			kyc := protected.Group("/kyc")
+			kyc.Use(s.permifyMiddleware("kyc_application", "view"))
 			{
 				kyc.GET("/applications", s.kycListApplications)
 				kyc.POST("/applications", s.kycCreateApplication)
@@ -277,25 +292,26 @@ func (s *Server) SetupRoutes() *gin.Engine {
 				kyc.GET("/stats", s.kycStats)
 			}
 
-			// KYB proxy routes
+			// KYB proxy routes — Permify: kyc_application view
 			kyb := protected.Group("/kyb")
+			kyb.Use(s.permifyMiddleware("kyc_application", "view"))
 			{
 				kyb.GET("/applications", s.kybListApplications)
 				kyb.POST("/applications", s.kybCreateApplication)
 				kyb.GET("/applications/:id", s.kybGetApplication)
 			}
 
-			// Warehouse Receipts proxy routes (through KYC service)
-			protected.GET("/warehouse-receipts", s.kycWarehouseReceipts)
-			protected.POST("/warehouse-receipts", s.kycCreateWarehouseReceipt)
+			// Warehouse Receipts proxy routes — Permify: warehouse_receipt view
+			protected.GET("/warehouse-receipts", s.permifyGuard("warehouse_receipt", "view"), s.kycWarehouseReceipts)
+			protected.POST("/warehouse-receipts", s.permifyGuard("warehouse_receipt", "transfer"), s.kycCreateWarehouseReceipt)
 
-			// Produce Registration proxy routes (through KYC service)
-			protected.GET("/produce/inventory", s.kycProduceInventory)
-			protected.POST("/produce/register", s.kycRegisterProduce)
+			// Produce Registration proxy routes — Permify: commodity view
+			protected.GET("/produce/inventory", s.permifyGuard("commodity", "view"), s.kycProduceInventory)
+			protected.POST("/produce/register", s.permifyGuard("commodity", "trade"), s.kycRegisterProduce)
 
-			// WebSocket endpoint for real-time notifications
-			protected.GET("/ws/notifications", s.wsNotifications)
-			protected.GET("/ws/market-data", s.wsMarketData)
+			// WebSocket endpoint for real-time notifications — Permify: user access
+			protected.GET("/ws/notifications", s.permifyGuard("user", "access"), s.wsNotifications)
+			protected.GET("/ws/market-data", s.permifyGuard("commodity", "view"), s.wsMarketData)
 		}
 	}
 
@@ -402,6 +418,51 @@ func (s *Server) getUserID(c *gin.Context) string {
 		return s
 	}
 	return "usr-001"
+}
+
+// permifyMiddleware returns Gin middleware that enforces Permify authorization
+// on every request in a route group. It checks if the authenticated user has
+// the specified permission on the given entity type.
+func (s *Server) permifyMiddleware(entityType, permission string) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		userID := s.getUserID(c)
+
+		// Entity ID: use the resource identifier from the URL if available,
+		// otherwise default to the NEXCOM organization scope.
+		entityID := "nexcom"
+		if id := c.Param("id"); id != "" {
+			entityID = id
+		} else if symbol := c.Param("symbol"); symbol != "" {
+			entityID = symbol
+		}
+
+		allowed, err := s.permify.Check(entityType, entityID, permission, "user", userID)
+		if err != nil {
+			log.Printf("[Permify] Middleware error for %s#%s@user:%s: %v", entityType, permission, userID, err)
+			// In non-production, continue on error
+			if s.cfg.Environment == "production" {
+				c.JSON(http.StatusForbidden, models.APIResponse{Success: false, Error: "authorization service unavailable"})
+				c.Abort()
+				return
+			}
+			c.Next()
+			return
+		}
+
+		if !allowed {
+			log.Printf("[Permify] DENIED: %s:%s#%s@user:%s", entityType, entityID, permission, userID)
+			c.JSON(http.StatusForbidden, models.APIResponse{Success: false, Error: "insufficient permissions"})
+			c.Abort()
+			return
+		}
+
+		c.Next()
+	}
+}
+
+// permifyGuard returns a single-handler Permify check (for inline use on individual routes).
+func (s *Server) permifyGuard(entityType, permission string) gin.HandlerFunc {
+	return s.permifyMiddleware(entityType, permission)
 }
 
 // ============================================================

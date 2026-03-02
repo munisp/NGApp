@@ -479,6 +479,55 @@ services:
       - nexcom-network
 
   # ==========================================================================
+  # Mojaloop Hub (Central Ledger + ALS + Settlement)
+  # ==========================================================================
+  mojaloop-central-ledger:
+    image: mojaloop/central-ledger:v17.3.3
+    container_name: nexcom-mojaloop-central-ledger
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    environment:
+      CLEDG_DATABASE_URI: "mysql://central_ledger:${MYSQL_PASSWORD:-mojaloop_dev}@mysql:3306/central_ledger"
+      CLEDG_PORT: "3001"
+      CLEDG_KAFKA__PRODUCER__BROKER_LIST: "kafka:9092"
+      CLEDG_KAFKA__CONSUMER__BROKER_LIST: "kafka:9092"
+    depends_on:
+      - kafka
+    networks:
+      - nexcom-network
+
+  mojaloop-als:
+    image: mojaloop/account-lookup-service:v15.1.0
+    container_name: nexcom-mojaloop-als
+    restart: unless-stopped
+    ports:
+      - "4002:4002"
+    environment:
+      ALS_DATABASE_URI: "mysql://account_lookup:${MYSQL_PASSWORD:-mojaloop_dev}@mysql:3306/account_lookup"
+      ALS_PORT: "4002"
+    depends_on:
+      - kafka
+    networks:
+      - nexcom-network
+
+  mojaloop-ml-api-adapter:
+    image: mojaloop/ml-api-adapter:v14.1.2
+    container_name: nexcom-mojaloop-ml-api-adapter
+    restart: unless-stopped
+    ports:
+      - "4001:3000"
+    environment:
+      MLAPI_ENDPOINT_SOURCE_URL: "http://mojaloop-central-ledger:3001"
+      MLAPI_KAFKA__PRODUCER__BROKER_LIST: "kafka:9092"
+      MLAPI_KAFKA__CONSUMER__BROKER_LIST: "kafka:9092"
+    depends_on:
+      - mojaloop-central-ledger
+      - kafka
+    networks:
+      - nexcom-network
+
+  # ==========================================================================
   # NEXCOM Settlement (Rust)
   # ==========================================================================
   settlement:
@@ -492,9 +541,13 @@ services:
     environment:
       TIGERBEETLE_ADDRESSES: tigerbeetle:3001
       KAFKA_BROKERS: kafka:9092
+      MOJALOOP_HUB_URL: http://mojaloop-ml-api-adapter:3000
+      MOJALOOP_DFSP_ID: nexcom-exchange
+      MOJALOOP_CALLBACK_URL: http://settlement:8005/api/v1/mojaloop/callbacks
     depends_on:
       - tigerbeetle
       - kafka
+      - mojaloop-ml-api-adapter
     networks:
       - nexcom-network
 
