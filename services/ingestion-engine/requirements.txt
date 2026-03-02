@@ -46,6 +46,7 @@ aiohttp==3.11.11
 pyarrow==18.1.0
 pandas==2.2.3
 numpy==2.2.1
+polars==1.20.0
 
 # Temporal workflow client
 temporalio==1.8.0

@@ -2,6 +2,7 @@ package dapr
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -9,6 +10,8 @@ import (
 	"net/http"
 	"sync"
 	"time"
+
+	"github.com/sony/gobreaker/v2"
 )
 
 // Client wraps Dapr sidecar operations with real HTTP connectivity.
@@ -27,29 +30,40 @@ type Client struct {
 	mu           sync.RWMutex
 	state        map[string][]byte // In-memory state for fallback
 	httpClient   *http.Client
+	cb           *gobreaker.CircuitBreaker[[]byte]
+	ctx          context.Context
+	cancel       context.CancelFunc
 }
 
 func NewClient(httpPort, grpcPort string) *Client {
+	ctx, cancel := context.WithCancel(context.Background())
 	c := &Client{
 		httpPort: httpPort,
 		grpcPort: grpcPort,
 		baseURL:  fmt.Sprintf("http://localhost:%s/v1.0", httpPort),
 		state:    make(map[string][]byte),
-		httpClient: &http.Client{
-			Timeout: 5 * time.Second,
-		},
+		httpClient: &http.Client{Timeout: 5 * time.Second},
+		ctx:    ctx,
+		cancel: cancel,
 	}
+	c.cb = gobreaker.NewCircuitBreaker[[]byte](gobreaker.Settings{
+		Name: "dapr", MaxRequests: 3, Interval: 30 * time.Second, Timeout: 10 * time.Second,
+		ReadyToTrip: func(counts gobreaker.Counts) bool { return counts.ConsecutiveFailures >= 5 },
+		OnStateChange: func(name string, from gobreaker.State, to gobreaker.State) {
+			log.Printf("[Dapr] Circuit breaker %s: %s -> %s", name, from, to)
+		},
+	})
 	c.connect()
+	go c.reconnectLoop()
 	return c
 }
 
 func (c *Client) connect() {
 	log.Printf("[Dapr] Checking sidecar at HTTP=%s gRPC=%s", c.httpPort, c.grpcPort)
 
-	// Check if Dapr sidecar is available via health endpoint
 	resp, err := c.httpClient.Get(fmt.Sprintf("http://localhost:%s/v1.0/healthz", c.httpPort))
 	if err != nil {
-		log.Printf("[Dapr] WARN: Sidecar not available at port %s: %v — running in fallback mode", c.httpPort, err)
+		log.Printf("[Dapr] WARN: Sidecar not available at port %s: %v -- fallback mode", c.httpPort, err)
 		c.mu.Lock()
 		c.fallbackMode = true
 		c.connected = false
@@ -63,6 +77,25 @@ func (c *Client) connect() {
 	c.fallbackMode = false
 	c.mu.Unlock()
 	log.Printf("[Dapr] Sidecar connected (HTTP health check passed)")
+}
+
+func (c *Client) reconnectLoop() {
+	ticker := time.NewTicker(15 * time.Second)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-c.ctx.Done():
+			return
+		case <-ticker.C:
+			c.mu.RLock()
+			fb := c.fallbackMode
+			c.mu.RUnlock()
+			if fb {
+				log.Printf("[Dapr] Attempting reconnection...")
+				c.connect()
+			}
+		}
+	}
 }
 
 // SaveState saves state to the Dapr state store
@@ -231,6 +264,7 @@ func (c *Client) IsFallback() bool {
 }
 
 func (c *Client) Close() {
+	c.cancel()
 	c.mu.Lock()
 	c.connected = false
 	c.mu.Unlock()

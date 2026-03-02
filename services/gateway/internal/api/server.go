@@ -733,12 +733,13 @@ func (s *Server) createOrder(c *gin.Context) {
 	})
 
 	// Create TigerBeetle pending transfer for margin hold
-	marginAmount := int64(req.Price * req.Quantity * 0.1 * 100) // 10% margin in cents
+	marginAmount := uint64(req.Price * req.Quantity * 0.1 * 100) // 10% margin in cents
 	s.tigerbeetle.CreatePendingTransfer(
 		"user-margin-"+userID,
 		"exchange-clearing",
 		marginAmount,
-		tigerbeetle.TransferMarginDeposit,
+		1, // ledger 1 = exchange
+		tigerbeetle.TransferCodeMarginDeposit,
 	)
 
 	// Save order state via Dapr
@@ -851,11 +852,11 @@ func (s *Server) closePosition(c *gin.Context) {
 	}
 
 	// Settle via TigerBeetle
-	amount := int64(position.UnrealizedPnl * 100)
-	if amount > 0 {
-		s.tigerbeetle.CreateTransfer("exchange-clearing", "user-settlement-"+userID, amount, tigerbeetle.TransferTradeSettlement)
+	pnlCents := int64(position.UnrealizedPnl * 100)
+	if pnlCents > 0 {
+		s.tigerbeetle.CreateTransfer("exchange-clearing", "user-settlement-"+userID, uint64(pnlCents), 1, tigerbeetle.TransferCodeSettlement)
 	} else {
-		s.tigerbeetle.CreateTransfer("user-settlement-"+userID, "exchange-clearing", -amount, tigerbeetle.TransferTradeSettlement)
+		s.tigerbeetle.CreateTransfer("user-settlement-"+userID, "exchange-clearing", uint64(-pnlCents), 1, tigerbeetle.TransferCodeSettlement)
 	}
 
 	// Start settlement workflow

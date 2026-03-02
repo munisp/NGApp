@@ -2,6 +2,7 @@ package apisix
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -10,6 +11,8 @@ import (
 	"os"
 	"sync"
 	"time"
+
+	"github.com/sony/gobreaker/v2"
 )
 
 // Client wraps Apache APISIX Admin API operations with real HTTP connectivity.
@@ -21,6 +24,9 @@ type Client struct {
 	fallbackMode bool
 	mu           sync.RWMutex
 	httpClient   *http.Client
+	cb           *gobreaker.CircuitBreaker[[]byte]
+	ctx          context.Context
+	cancel       context.CancelFunc
 	// In-memory route/consumer tracking for fallback
 	routes    map[string]Route
 	consumers map[string]Consumer
@@ -129,16 +135,25 @@ func getEnvOrDefault(key, fallback string) string {
 
 // NewClient creates a new APISIX Admin API client
 func NewClient(adminURL, adminKey string) *Client {
+	ctx, cancel := context.WithCancel(context.Background())
 	c := &Client{
-		adminURL: adminURL,
-		adminKey: adminKey,
-		routes:    make(map[string]Route),
-		consumers: make(map[string]Consumer),
-		httpClient: &http.Client{
-			Timeout: 10 * time.Second,
-		},
+		adminURL:   adminURL,
+		adminKey:   adminKey,
+		routes:     make(map[string]Route),
+		consumers:  make(map[string]Consumer),
+		httpClient: &http.Client{Timeout: 10 * time.Second},
+		ctx:        ctx,
+		cancel:     cancel,
 	}
+	c.cb = gobreaker.NewCircuitBreaker[[]byte](gobreaker.Settings{
+		Name: "apisix", MaxRequests: 3, Interval: 30 * time.Second, Timeout: 10 * time.Second,
+		ReadyToTrip: func(counts gobreaker.Counts) bool { return counts.ConsecutiveFailures >= 5 },
+		OnStateChange: func(name string, from gobreaker.State, to gobreaker.State) {
+			log.Printf("[APISIX] Circuit breaker %s: %s -> %s", name, from, to)
+		},
+	})
 	c.connect()
+	go c.reconnectLoop()
 	return c
 }
 
@@ -147,7 +162,7 @@ func (c *Client) connect() {
 
 	req, err := http.NewRequest("GET", c.adminURL+"/apisix/admin/routes", nil)
 	if err != nil {
-		log.Printf("[APISIX] WARN: Failed to create request: %v — running in fallback mode", err)
+		log.Printf("[APISIX] WARN: Failed to create request: %v -- fallback mode", err)
 		c.mu.Lock()
 		c.fallbackMode = true
 		c.connected = false
@@ -158,7 +173,7 @@ func (c *Client) connect() {
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		log.Printf("[APISIX] WARN: Admin API not available at %s: %v — running in fallback mode", c.adminURL, err)
+		log.Printf("[APISIX] WARN: Admin API not available at %s: %v -- fallback mode", c.adminURL, err)
 		c.mu.Lock()
 		c.fallbackMode = true
 		c.connected = false
@@ -173,9 +188,27 @@ func (c *Client) connect() {
 	c.mu.Unlock()
 	log.Printf("[APISIX] Admin API connected (HTTP %d)", resp.StatusCode)
 
-	// Bootstrap routes and consumers on startup
 	c.bootstrapRoutes()
 	c.bootstrapConsumers()
+}
+
+func (c *Client) reconnectLoop() {
+	ticker := time.NewTicker(15 * time.Second)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-c.ctx.Done():
+			return
+		case <-ticker.C:
+			c.mu.RLock()
+			fb := c.fallbackMode
+			c.mu.RUnlock()
+			if fb {
+				log.Printf("[APISIX] Attempting reconnection to %s...", c.adminURL)
+				c.connect()
+			}
+		}
+	}
 }
 
 // bootstrapRoutes registers all NEXCOM routes with APISIX Admin API
@@ -647,6 +680,7 @@ func (c *Client) IsFallback() bool {
 }
 
 func (c *Client) Close() {
+	c.cancel()
 	c.mu.Lock()
 	c.connected = false
 	c.mu.Unlock()

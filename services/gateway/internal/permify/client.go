@@ -2,6 +2,7 @@ package permify
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -11,6 +12,8 @@ import (
 	"os"
 	"sync"
 	"time"
+
+	"github.com/sony/gobreaker/v2"
 )
 
 // Client wraps Permify fine-grained authorization with real HTTP/gRPC connectivity.
@@ -34,6 +37,9 @@ type Client struct {
 	fallbackMode bool
 	mu           sync.RWMutex
 	httpClient   *http.Client
+	cb           *gobreaker.CircuitBreaker[[]byte]
+	ctx          context.Context
+	cancel       context.CancelFunc
 	// In-memory relationship tuples for fallback
 	relationships []RelationshipTuple
 }
@@ -171,28 +177,36 @@ entity settlement {
 `
 
 func NewClient(endpoint string) *Client {
+	ctx, cancel := context.WithCancel(context.Background())
 	c := &Client{
 		endpoint:      endpoint,
 		relationships: make([]RelationshipTuple, 0),
-		httpClient: &http.Client{
-			Timeout: 5 * time.Second,
-		},
+		httpClient:    &http.Client{Timeout: 5 * time.Second},
+		ctx:           ctx,
+		cancel:        cancel,
 	}
+	c.cb = gobreaker.NewCircuitBreaker[[]byte](gobreaker.Settings{
+		Name: "permify", MaxRequests: 3, Interval: 30 * time.Second, Timeout: 10 * time.Second,
+		ReadyToTrip: func(counts gobreaker.Counts) bool { return counts.ConsecutiveFailures >= 5 },
+		OnStateChange: func(name string, from gobreaker.State, to gobreaker.State) {
+			log.Printf("[Permify] Circuit breaker %s: %s -> %s", name, from, to)
+		},
+	})
 	c.connect()
 	if c.connected {
 		c.bootstrapSchema()
 		c.seedDefaultRelationships()
 	}
+	go c.reconnectLoop()
 	return c
 }
 
 func (c *Client) connect() {
 	log.Printf("[Permify] Connecting to %s (tenant: %s)", c.endpoint, TenantID)
 
-	// Attempt TCP connection to Permify
 	conn, err := net.DialTimeout("tcp", c.endpoint, 3*time.Second)
 	if err != nil {
-		log.Printf("[Permify] WARN: Cannot reach %s: %v — running in fallback mode", c.endpoint, err)
+		log.Printf("[Permify] WARN: Cannot reach %s: %v -- fallback mode", c.endpoint, err)
 		c.mu.Lock()
 		c.fallbackMode = true
 		c.connected = false
@@ -206,6 +220,32 @@ func (c *Client) connect() {
 	c.fallbackMode = false
 	c.mu.Unlock()
 	log.Printf("[Permify] Connected to %s (TCP verified)", c.endpoint)
+}
+
+func (c *Client) reconnectLoop() {
+	ticker := time.NewTicker(15 * time.Second)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-c.ctx.Done():
+			return
+		case <-ticker.C:
+			c.mu.RLock()
+			fb := c.fallbackMode
+			c.mu.RUnlock()
+			if fb {
+				log.Printf("[Permify] Attempting reconnection to %s...", c.endpoint)
+				c.connect()
+				c.mu.RLock()
+				nowConnected := c.connected
+				c.mu.RUnlock()
+				if nowConnected {
+					c.bootstrapSchema()
+					c.seedDefaultRelationships()
+				}
+			}
+		}
+	}
 }
 
 // bootstrapSchema writes the NEXCOM authorization schema to Permify on startup.
@@ -442,6 +482,7 @@ func (c *Client) IsFallback() bool {
 }
 
 func (c *Client) Close() {
+	c.cancel()
 	c.mu.Lock()
 	c.connected = false
 	c.mu.Unlock()
