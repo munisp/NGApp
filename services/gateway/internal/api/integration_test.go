@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/gin-gonic/gin"
+	"github.com/munisp/NGApp/services/gateway/internal/apisix"
 	"github.com/munisp/NGApp/services/gateway/internal/config"
 	"github.com/munisp/NGApp/services/gateway/internal/dapr"
 	"github.com/munisp/NGApp/services/gateway/internal/fluvio"
@@ -55,8 +56,9 @@ func setupIntegrationServer() *gin.Engine {
 	f := fluvio.NewClient(cfg.FluvioEndpoint)
 	kc := keycloak.NewClient(cfg.KeycloakURL, cfg.KeycloakRealm, cfg.KeycloakClientID)
 	p := permify.NewClient(cfg.PermifyEndpoint)
+	a := apisix.NewClient(cfg.APISIXAdminURL, cfg.APISIXAdminKey)
 
-	srv := NewServer(cfg, k, r, t, tb, d, f, kc, p)
+	srv := NewServer(cfg, k, r, t, tb, d, f, kc, p, a)
 	return srv.SetupRoutes()
 }
 
