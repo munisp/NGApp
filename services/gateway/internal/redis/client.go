@@ -72,11 +72,12 @@ func (c *Client) connect() {
 		Addr:         c.url,
 		Password:     c.password,
 		DB:           0,
-		DialTimeout:  3 * time.Second,
+		DialTimeout:  2 * time.Second,
 		ReadTimeout:  2 * time.Second,
 		WriteTimeout: 2 * time.Second,
 		PoolSize:     20,
-		MinIdleConns: 5,
+		MinIdleConns: 2,
+		MaxRetries:   1, // Fail fast — don't retry 5 times on initial connect
 	}
 	rdb := goredis.NewClient(opts)
 

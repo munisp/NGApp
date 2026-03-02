@@ -81,7 +81,9 @@ func (c *Client) connect() {
 		Async:        false,
 	}
 
-	conn, err := kafka.DialContext(c.ctx, "tcp", c.brokers)
+	dialCtx, dialCancel := context.WithTimeout(c.ctx, 3*time.Second)
+	defer dialCancel()
+	conn, err := kafka.DialContext(dialCtx, "tcp", c.brokers)
 	if err != nil {
 		log.Printf("[Kafka] WARN: Cannot reach %s: %v — running in fallback mode (in-memory dispatch)", c.brokers, err)
 		c.mu.Lock()

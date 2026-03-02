@@ -57,13 +57,22 @@ func NewClient(host string) *Client {
 func (c *Client) connect() {
 	log.Printf("[Temporal] Connecting to %s", c.host)
 
-	// Create real Temporal SDK client
-	sdkClient, err := client.Dial(client.Options{
+	// Create real Temporal SDK client with short connection timeout
+	dialCtx, dialCancel := context.WithTimeout(c.ctx, 3*time.Second)
+	defer dialCancel()
+	sdkClient, err := client.NewLazyClient(client.Options{
 		HostPort:  c.host,
 		Namespace: "nexcom",
 	})
+	if err == nil {
+		// Verify connectivity with a quick health check
+		_, err = sdkClient.CheckHealth(dialCtx, &client.CheckHealthRequest{})
+	}
 	if err != nil {
 		log.Printf("[Temporal] WARN: Cannot reach %s: %v — running in fallback mode (in-memory workflows)", c.host, err)
+		if sdkClient != nil {
+			sdkClient.Close()
+		}
 		c.mu.Lock()
 		c.fallbackMode = true
 		c.connected = false
