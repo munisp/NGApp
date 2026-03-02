@@ -24,6 +24,7 @@ import {
   Fingerprint,
   Warehouse,
   Sprout,
+  BadgeDollarSign,
   type LucideIcon,
 } from "lucide-react";
 
@@ -43,6 +44,7 @@ const navItems: NavItem[] = [
   { href: "/indices", label: "Indices", icon: LineChart },
   { href: "/corporate-actions", label: "Corp Actions", icon: FileText },
   { href: "/brokers", label: "Brokers", icon: Building2 },
+  { href: "/forex", label: "Forex Trading", icon: BadgeDollarSign },
   { href: "/digital-assets", label: "Digital Assets", icon: Coins },
   { href: "/onboarding", label: "KYC / KYB", icon: UserCheck },
   { href: "/warehouse-receipts", label: "Warehouse Receipts", icon: Warehouse },

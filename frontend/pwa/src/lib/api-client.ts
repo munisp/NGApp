@@ -392,6 +392,39 @@ export const api = {
     ipfsStatus: () => apiClient.get<APIResponse>("/blockchain/ipfs/status"),
   },
 
+  // Forex Trading
+  forex: {
+    pairs: (category?: string) =>
+      apiClient.get<APIResponse>("/forex/pairs", category ? { params: { category } } : undefined),
+    pair: (symbol: string) => apiClient.get<APIResponse>(`/forex/pairs/${encodeURIComponent(symbol)}`),
+    searchPairs: (query: string) => apiClient.get<APIResponse>("/forex/pairs/search", { params: { q: query } }),
+    orders: (status?: string) =>
+      apiClient.get<APIResponse>("/forex/orders", status ? { params: { status } } : undefined),
+    order: (id: string) => apiClient.get<APIResponse>(`/forex/orders/${id}`),
+    createOrder: (order: {
+      pair: string; side: string; type: string; lotSize: number;
+      price?: number; stopLoss?: number; takeProfit?: number;
+      trailingStopPips?: number; ocoStopPrice?: number; ocoLimitPrice?: number;
+      leverage: number; comment?: string;
+    }) => apiClient.post<APIResponse>("/forex/orders", order),
+    cancelOrder: (id: string) => apiClient.delete<APIResponse>(`/forex/orders/${id}`),
+    positions: (status?: string) =>
+      apiClient.get<APIResponse>("/forex/positions", status ? { params: { status } } : undefined),
+    position: (id: string) => apiClient.get<APIResponse>(`/forex/positions/${id}`),
+    modifyPosition: (id: string, data: { stopLoss?: number; takeProfit?: number; trailingStopPips?: number }) =>
+      apiClient.patch<APIResponse>(`/forex/positions/${id}`, data),
+    closePosition: (id: string) => apiClient.delete<APIResponse>(`/forex/positions/${id}`),
+    account: () => apiClient.get<APIResponse>("/forex/account"),
+    swapRates: () => apiClient.get<APIResponse>("/forex/swap-rates"),
+    crossRates: () => apiClient.get<APIResponse>("/forex/cross-rates"),
+    marginRequirements: () => apiClient.get<APIResponse>("/forex/margin-requirements"),
+    tradingHours: () => apiClient.get<APIResponse>("/forex/trading-hours"),
+    liquidityProviders: () => apiClient.get<APIResponse>("/forex/liquidity-providers"),
+    regulatory: () => apiClient.get<APIResponse>("/forex/regulatory"),
+    pipCalculator: (data: { pair: string; lotSize: number; pips: number }) =>
+      apiClient.post<APIResponse>("/forex/pip-calculator", data),
+  },
+
   // Auth
   auth: {
     login: (credentials: { email: string; password: string }) =>

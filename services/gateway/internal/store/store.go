@@ -28,6 +28,10 @@ type Store struct {
 	tickers       map[string]models.MarketTicker    // symbol -> Ticker
 	accounts      map[string]models.Account         // accountID -> Account
 	auditLog      []models.AuditEntry               // append-only audit log
+	// Forex
+	fxPairs     []models.FXPair
+	fxOrders    map[string]models.FXOrder      // orderID -> FXOrder
+	fxPositions map[string]models.FXPosition   // positionID -> FXPosition
 }
 
 func New() *Store {
@@ -43,8 +47,11 @@ func New() *Store {
 		tickers:       make(map[string]models.MarketTicker),
 		accounts:      make(map[string]models.Account),
 		auditLog:      make([]models.AuditEntry, 0),
+		fxOrders:      make(map[string]models.FXOrder),
+		fxPositions:   make(map[string]models.FXPosition),
 	}
 	s.seedData()
+	s.seedForexData()
 	return s
 }
 

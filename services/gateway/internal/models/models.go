@@ -384,3 +384,226 @@ type AuditEntry struct {
 	IP        string    `json:"ip"`
 	Timestamp time.Time `json:"timestamp"`
 }
+
+// ============================================================
+// Forex Trading Models
+// ============================================================
+
+type FXOrderType string
+type FXPositionStatus string
+type LeverageTier string
+
+const (
+	FXOrderMarket       FXOrderType = "MARKET"
+	FXOrderLimit        FXOrderType = "LIMIT"
+	FXOrderStop         FXOrderType = "STOP"
+	FXOrderStopLimit    FXOrderType = "STOP_LIMIT"
+	FXOrderOCO          FXOrderType = "OCO"
+	FXOrderTrailingStop FXOrderType = "TRAILING_STOP"
+
+	FXPositionOpen       FXPositionStatus = "OPEN"
+	FXPositionClosed     FXPositionStatus = "CLOSED"
+	FXPositionLiquidated FXPositionStatus = "LIQUIDATED"
+
+	LeverageRetail        LeverageTier = "retail"
+	LeverageProfessional  LeverageTier = "professional"
+	LeverageInstitutional LeverageTier = "institutional"
+)
+
+// FXPair represents a forex currency pair with trading parameters
+type FXPair struct {
+	ID              string  `json:"id"`
+	Symbol          string  `json:"symbol"`          // e.g. "EUR/USD"
+	BaseCurrency    string  `json:"baseCurrency"`    // e.g. "EUR"
+	QuoteCurrency   string  `json:"quoteCurrency"`   // e.g. "USD"
+	DisplayName     string  `json:"displayName"`     // e.g. "Euro / US Dollar"
+	Category        string  `json:"category"`        // major, minor, exotic, african
+	PipSize         float64 `json:"pipSize"`         // e.g. 0.0001 for most, 0.01 for JPY pairs
+	PipValue        float64 `json:"pipValue"`        // value of 1 pip per standard lot
+	MinLotSize      float64 `json:"minLotSize"`      // e.g. 0.01 (micro lot)
+	MaxLotSize      float64 `json:"maxLotSize"`      // e.g. 100 (standard lots)
+	LotStep         float64 `json:"lotStep"`         // e.g. 0.01
+	MaxLeverage     int     `json:"maxLeverage"`     // e.g. 200 for majors
+	MarginRequired  float64 `json:"marginRequired"`  // percentage e.g. 0.5 = 0.5%
+	SwapLong        float64 `json:"swapLong"`        // overnight swap for long positions (pips)
+	SwapShort       float64 `json:"swapShort"`       // overnight swap for short positions (pips)
+	SwapTripleDay   string  `json:"swapTripleDay"`   // day triple swap is charged (e.g. "Wednesday")
+	SpreadTypical   float64 `json:"spreadTypical"`   // typical spread in pips
+	SpreadMin       float64 `json:"spreadMin"`       // minimum spread in pips
+	CommissionPerLot float64 `json:"commissionPerLot"` // commission per lot (one way)
+	TradingHours    string  `json:"tradingHours"`    // e.g. "24/5" or "Sun 22:00 - Fri 22:00 UTC"
+	Active          bool    `json:"active"`
+	Bid             float64 `json:"bid"`
+	Ask             float64 `json:"ask"`
+	High24h         float64 `json:"high24h"`
+	Low24h          float64 `json:"low24h"`
+	Change24h       float64 `json:"change24h"`
+	ChangePercent   float64 `json:"changePercent"`
+	Volume24h       float64 `json:"volume24h"`
+	LastUpdate      int64   `json:"lastUpdate"`
+}
+
+// FXOrder represents a forex trading order
+type FXOrder struct {
+	ID               string      `json:"id"`
+	UserID           string      `json:"userId"`
+	Pair             string      `json:"pair"`             // e.g. "EUR/USD"
+	Side             OrderSide   `json:"side"`
+	Type             FXOrderType `json:"type"`
+	Status           OrderStatus `json:"status"`
+	LotSize          float64     `json:"lotSize"`          // in standard lots
+	Price            float64     `json:"price,omitempty"`  // limit/stop price
+	StopLoss         float64     `json:"stopLoss,omitempty"`
+	TakeProfit       float64     `json:"takeProfit,omitempty"`
+	TrailingStopPips float64     `json:"trailingStopPips,omitempty"`
+	// OCO fields
+	OCOStopPrice     float64     `json:"ocoStopPrice,omitempty"`
+	OCOLimitPrice    float64     `json:"ocoLimitPrice,omitempty"`
+	OCOLinkedOrderID string      `json:"ocoLinkedOrderId,omitempty"`
+	Leverage         int         `json:"leverage"`
+	MarginUsed       float64     `json:"marginUsed"`
+	FilledPrice      float64     `json:"filledPrice,omitempty"`
+	FilledAt         *time.Time  `json:"filledAt,omitempty"`
+	Commission       float64     `json:"commission"`
+	SwapAccrued      float64     `json:"swapAccrued"`
+	Comment          string      `json:"comment,omitempty"`
+	CreatedAt        time.Time   `json:"createdAt"`
+	UpdatedAt        time.Time   `json:"updatedAt"`
+}
+
+// FXPosition represents an open forex position
+type FXPosition struct {
+	ID               string           `json:"id"`
+	UserID           string           `json:"userId"`
+	Pair             string           `json:"pair"`
+	Side             OrderSide        `json:"side"`
+	Status           FXPositionStatus `json:"status"`
+	LotSize          float64          `json:"lotSize"`
+	EntryPrice       float64          `json:"entryPrice"`
+	CurrentPrice     float64          `json:"currentPrice"`
+	StopLoss         float64          `json:"stopLoss,omitempty"`
+	TakeProfit       float64          `json:"takeProfit,omitempty"`
+	TrailingStopPips float64          `json:"trailingStopPips,omitempty"`
+	Leverage         int              `json:"leverage"`
+	MarginUsed       float64          `json:"marginUsed"`
+	UnrealizedPnl    float64          `json:"unrealizedPnl"`
+	UnrealizedPips   float64          `json:"unrealizedPips"`
+	SwapAccrued      float64          `json:"swapAccrued"`
+	Commission       float64          `json:"commission"`
+	LiquidationPrice float64          `json:"liquidationPrice"`
+	OpenedAt         time.Time        `json:"openedAt"`
+	ClosedAt         *time.Time       `json:"closedAt,omitempty"`
+	ClosePrice       float64          `json:"closePrice,omitempty"`
+	RealizedPnl      float64          `json:"realizedPnl,omitempty"`
+}
+
+// FXAccountSummary represents a trader's forex account summary
+type FXAccountSummary struct {
+	Balance          float64 `json:"balance"`
+	Equity           float64 `json:"equity"`
+	MarginUsed       float64 `json:"marginUsed"`
+	FreeMargin       float64 `json:"freeMargin"`
+	MarginLevel      float64 `json:"marginLevel"`      // equity / margin * 100
+	UnrealizedPnl    float64 `json:"unrealizedPnl"`
+	RealizedPnlToday float64 `json:"realizedPnlToday"`
+	OpenPositions    int     `json:"openPositions"`
+	PendingOrders    int     `json:"pendingOrders"`
+	LeverageTier     string  `json:"leverageTier"`
+	Currency         string  `json:"currency"`
+}
+
+// FXSwapRate represents overnight swap/rollover rates
+type FXSwapRate struct {
+	Pair          string  `json:"pair"`
+	SwapLong      float64 `json:"swapLong"`      // pips per lot
+	SwapShort     float64 `json:"swapShort"`     // pips per lot
+	SwapLongRate  float64 `json:"swapLongRate"`  // annual percentage
+	SwapShortRate float64 `json:"swapShortRate"` // annual percentage
+	TripleSwapDay string  `json:"tripleSwapDay"` // Wednesday for T+2
+	LastUpdated   int64   `json:"lastUpdated"`
+}
+
+// FXCrossRate represents a calculated cross rate
+type FXCrossRate struct {
+	Pair           string  `json:"pair"`
+	Bid            float64 `json:"bid"`
+	Ask            float64 `json:"ask"`
+	DerivedFrom    string  `json:"derivedFrom"`    // e.g. "EUR/USD x USD/GBP"
+	Spread         float64 `json:"spread"`
+	SpreadPips     float64 `json:"spreadPips"`
+	LastUpdate     int64   `json:"lastUpdate"`
+}
+
+// FXMarginRequirement represents margin requirements per leverage tier
+type FXMarginRequirement struct {
+	Pair               string  `json:"pair"`
+	RetailLeverage     int     `json:"retailLeverage"`
+	RetailMargin       float64 `json:"retailMargin"`       // percentage
+	ProLeverage        int     `json:"proLeverage"`
+	ProMargin          float64 `json:"proMargin"`          // percentage
+	InstitutionalLev   int     `json:"institutionalLeverage"`
+	InstitutionalMarg  float64 `json:"institutionalMargin"` // percentage
+}
+
+// FXLiquidityProvider represents a connected liquidity source
+type FXLiquidityProvider struct {
+	ID            string  `json:"id"`
+	Name          string  `json:"name"`
+	Type          string  `json:"type"` // bank, ecn, prime_broker
+	Status        string  `json:"status"`
+	Latency       int     `json:"latencyMs"`
+	PairsCount    int     `json:"pairsCount"`
+	SpreadMarkup  float64 `json:"spreadMarkup"`
+	LastHeartbeat int64   `json:"lastHeartbeat"`
+}
+
+// FXRegulatoryInfo represents regulatory compliance information
+type FXRegulatoryInfo struct {
+	Jurisdiction     string   `json:"jurisdiction"`
+	Regulator        string   `json:"regulator"`
+	LicenseType      string   `json:"licenseType"`
+	MaxRetailLeverage int     `json:"maxRetailLeverage"`
+	NegativeBalance  bool     `json:"negativeBalanceProtection"`
+	RequiredWarnings []string `json:"requiredWarnings"`
+	ReportingFreq    string   `json:"reportingFrequency"`
+}
+
+// FX Request types
+type CreateFXOrderRequest struct {
+	Pair             string      `json:"pair" binding:"required"`
+	Side             OrderSide   `json:"side" binding:"required"`
+	Type             FXOrderType `json:"type" binding:"required"`
+	LotSize          float64     `json:"lotSize" binding:"required,gt=0"`
+	Price            float64     `json:"price,omitempty"`
+	StopLoss         float64     `json:"stopLoss,omitempty"`
+	TakeProfit       float64     `json:"takeProfit,omitempty"`
+	TrailingStopPips float64     `json:"trailingStopPips,omitempty"`
+	OCOStopPrice     float64     `json:"ocoStopPrice,omitempty"`
+	OCOLimitPrice    float64     `json:"ocoLimitPrice,omitempty"`
+	Leverage         int         `json:"leverage,omitempty"`
+	Comment          string      `json:"comment,omitempty"`
+}
+
+type ModifyFXPositionRequest struct {
+	StopLoss         *float64 `json:"stopLoss,omitempty"`
+	TakeProfit       *float64 `json:"takeProfit,omitempty"`
+	TrailingStopPips *float64 `json:"trailingStopPips,omitempty"`
+}
+
+type FXPipCalculatorRequest struct {
+	Pair       string  `json:"pair" binding:"required"`
+	LotSize    float64 `json:"lotSize" binding:"required,gt=0"`
+	EntryPrice float64 `json:"entryPrice" binding:"required,gt=0"`
+	ExitPrice  float64 `json:"exitPrice" binding:"required,gt=0"`
+	AccountCurrency string `json:"accountCurrency,omitempty"`
+}
+
+type FXPipCalculatorResult struct {
+	Pair           string  `json:"pair"`
+	PipDifference  float64 `json:"pipDifference"`
+	PipValue       float64 `json:"pipValue"`
+	ProfitLoss     float64 `json:"profitLoss"`
+	ProfitLossPips float64 `json:"profitLossPips"`
+	MarginRequired float64 `json:"marginRequired"`
+	LotSize        float64 `json:"lotSize"`
+}

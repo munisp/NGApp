@@ -313,6 +313,44 @@ func (s *Server) SetupRoutes() *gin.Engine {
 			protected.GET("/produce/inventory", s.permifyGuard("commodity", "view"), s.kycProduceInventory)
 			protected.POST("/produce/register", s.permifyGuard("commodity", "trade"), s.kycRegisterProduce)
 
+			// Forex Trading routes — Permify: fx_pair trade permission
+			fx := protected.Group("/forex")
+			fx.Use(s.permifyMiddleware("fx_pair", "trade"))
+			{
+				// FX Pairs
+				fx.GET("/pairs", s.fxListPairs)
+				fx.GET("/pairs/search", s.fxSearchPairs)
+				fx.GET("/pairs/:pair", s.fxGetPair)
+
+				// FX Orders
+				fx.GET("/orders", s.fxListOrders)
+				fx.POST("/orders", s.fxCreateOrder)
+				fx.GET("/orders/:id", s.fxGetOrder)
+				fx.DELETE("/orders/:id", s.fxCancelOrder)
+
+				// FX Positions
+				fx.GET("/positions", s.fxListPositions)
+				fx.GET("/positions/:id", s.fxGetPosition)
+				fx.PATCH("/positions/:id", s.fxModifyPosition)
+				fx.DELETE("/positions/:id", s.fxClosePosition)
+
+				// FX Account
+				fx.GET("/account", s.fxAccountSummary)
+
+				// FX Market Data
+				fx.GET("/swap-rates", s.fxSwapRates)
+				fx.GET("/cross-rates", s.fxCrossRates)
+				fx.GET("/margin-requirements", s.fxMarginRequirements)
+				fx.GET("/trading-hours", s.fxTradingHours)
+
+				// FX Infrastructure
+				fx.GET("/liquidity-providers", s.fxLiquidityProviders)
+				fx.GET("/regulatory", s.fxRegulatoryInfo)
+
+				// FX Tools
+				fx.POST("/pip-calculator", s.fxPipCalculator)
+			}
+
 			// WebSocket endpoint for real-time notifications — Permify: user access
 			protected.GET("/ws/notifications", s.permifyGuard("user", "access"), s.wsNotifications)
 			protected.GET("/ws/market-data", s.permifyGuard("commodity", "view"), s.wsMarketData)
