@@ -12,11 +12,12 @@ import (
 
 // Client wraps Temporal workflow operations with real temporal-sdk-go.
 // Workflows:
-//   OrderLifecycleWorkflow    - Order validation → matching → execution → settlement
-//   SettlementWorkflow        - Trade → TigerBeetle ledger → Mojaloop transfer → confirmation
-//   KYCVerificationWorkflow   - Document upload → AI verification → sanctions screening → approval
-//   MarginCallWorkflow        - Position monitoring → margin warning → forced liquidation
-//   ReconciliationWorkflow    - Daily/hourly reconciliation of ledger balances
+//
+//	OrderLifecycleWorkflow    - Order validation → matching → execution → settlement
+//	SettlementWorkflow        - Trade → TigerBeetle ledger → Mojaloop transfer → confirmation
+//	KYCVerificationWorkflow   - Document upload → AI verification → sanctions screening → approval
+//	MarginCallWorkflow        - Position monitoring → margin warning → forced liquidation
+//	ReconciliationWorkflow    - Daily/hourly reconciliation of ledger balances
 type Client struct {
 	host         string
 	connected    bool

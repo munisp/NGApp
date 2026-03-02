@@ -1,10 +1,12 @@
 package security
 
 import (
+	"bytes"
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+	"io"
 	"net/http"
 	"sort"
 	"strconv"
@@ -24,10 +26,10 @@ import (
 // Header: X-NEXCOM-Signature, X-NEXCOM-Timestamp, X-NEXCOM-Nonce, X-NEXCOM-Key
 type HMACSigner struct {
 	// Map of API key -> HMAC secret
-	secrets       map[string]string
-	maxTimeDrift  time.Duration
-	nonceCache    map[string]time.Time
-	enabled       bool
+	secrets      map[string]string
+	maxTimeDrift time.Duration
+	nonceCache   map[string]time.Time
+	enabled      bool
 }
 
 // NewHMACSigner creates a new HMAC signer/verifier
@@ -146,11 +148,24 @@ func (hs *HMACSigner) VerifyMiddleware() gin.HandlerFunc {
 		}
 		hs.nonceCache[nonce] = time.Now()
 
-		// Compute body hash
+		// Compute body hash — read body, hash it, then restore for downstream handlers
 		bodyHash := ""
-		if c.Request.Body != nil {
-			// Body will be read by handler, so we hash the Content-Length as proxy
-			bodyHash = fmt.Sprintf("cl:%d", c.Request.ContentLength)
+		if c.Request.Body != nil && c.Request.ContentLength > 0 {
+			bodyBytes, err := io.ReadAll(c.Request.Body)
+			if err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{
+					"success": false,
+					"error":   "Failed to read request body",
+					"code":    "BODY_READ_ERROR",
+				})
+				c.Abort()
+				return
+			}
+			// Restore body for downstream handlers
+			c.Request.Body = io.NopCloser(bytes.NewReader(bodyBytes))
+			// SHA-256 hash of actual body content
+			h := sha256.Sum256(bodyBytes)
+			bodyHash = hex.EncodeToString(h[:])
 		}
 
 		// Verify signature

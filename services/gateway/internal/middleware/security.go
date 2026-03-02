@@ -60,7 +60,7 @@ func (rl *RateLimiter) allow(key string) bool {
 
 	// Refill tokens based on elapsed time
 	elapsed := now.Sub(bucket.lastRefil)
-	refillCount := int(elapsed / rl.window) * rl.rate
+	refillCount := int(elapsed/rl.window) * rl.rate
 	if refillCount > 0 {
 		bucket.tokens += refillCount
 		if bucket.tokens > rl.burst {
@@ -190,8 +190,8 @@ func InputSanitizationMiddleware() gin.HandlerFunc {
 		"document.cookie",
 		"window.location",
 		"../../../",
-		"%00",          // null byte
-		"0x",           // hex injection
+		"%00", // null byte
+		"0x",  // hex injection
 	}
 
 	return func(c *gin.Context) {

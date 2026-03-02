@@ -47,14 +47,28 @@ func main() {
 		config.GetEnvOrDefault("VAULT_ADDR", "http://localhost:8200"),
 		config.GetEnvOrDefault("VAULT_TOKEN", "nexcom-dev-token"),
 	)
+
+	// Create Redis-backed security store for session/DDoS/insider persistence.
+	// Falls back to in-memory if Redis is unreachable.
+	securityRedisURL := config.GetEnvOrDefault("SECURITY_REDIS_URL", "")
+	if securityRedisURL == "" {
+		// Try the general Redis URL with redis:// scheme
+		general := cfg.RedisURL
+		if general != "" && general != "localhost:6379" {
+			securityRedisURL = "redis://" + general
+		}
+	}
+	securityStore := security.NewStore(securityRedisURL)
+
 	auditLog := security.NewAuditLog("/tmp/nexcom-audit.log")
 	inputValidator := security.NewInputValidator()
 	hmacSigner := security.NewHMACSigner()
-	sessionMgr := security.NewSessionManager()
-	insiderMonitor := security.NewInsiderThreatMonitor()
-	ddosProtection := security.NewDDoSProtection(security.DefaultDDoSConfig())
+	sessionMgr := security.NewSessionManagerWithStore(securityStore)
+	webhookURL := config.GetEnvOrDefault("INSIDER_WEBHOOK_URL", "")
+	insiderMonitor := security.NewInsiderThreatMonitorWithStore(securityStore, webhookURL)
+	ddosProtection := security.NewDDoSProtectionWithStore(security.DefaultDDoSConfig(), securityStore)
 
-	log.Println("Security components initialized: Vault, AuditLog, InputValidator, HMAC, Sessions, InsiderMonitor, DDoS")
+	log.Println("Security components initialized: Vault, AuditLog, InputValidator, HMAC, Sessions (Redis-backed), InsiderMonitor (Redis+Webhook), DDoS (Redis-backed)")
 
 	// Initialize external market data clients (OANDA, Polygon, IEX, Calendar)
 	marketDataClient := marketdata.NewClient(marketdata.Config{

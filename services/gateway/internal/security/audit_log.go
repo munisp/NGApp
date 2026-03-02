@@ -1,6 +1,7 @@
 package security
 
 import (
+	"bufio"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
@@ -16,39 +17,39 @@ import (
 // previous entry, making tampering detectable.
 //
 // In production, entries are written to:
-//   1. Local append-only file (immediate durability)
-//   2. OpenSearch via Kafka (centralized search + dashboards)
-//   3. TigerBeetle (financial audit entries only — double-entry ledger)
+//  1. Local append-only file (immediate durability)
+//  2. OpenSearch via Kafka (centralized search + dashboards)
+//  3. TigerBeetle (financial audit entries only — double-entry ledger)
 //
 // Hash chain: each entry includes SHA-256(previous_entry_hash + current_entry_json)
 type AuditLog struct {
-	mu            sync.Mutex
-	file          *os.File
-	lastHash      string
-	entryCount    int64
-	filepath      string
-	onEntryFunc   func(AuditEntry) // callback for external sinks (Kafka, OpenSearch)
+	mu          sync.Mutex
+	file        *os.File
+	lastHash    string
+	entryCount  int64
+	filepath    string
+	onEntryFunc func(AuditEntry) // callback for external sinks (Kafka, OpenSearch)
 }
 
 // AuditEntry represents a single immutable audit record
 type AuditEntry struct {
-	ID            string    `json:"id"`
-	Timestamp     time.Time `json:"timestamp"`
-	ChainHash     string    `json:"chain_hash"`
-	PreviousHash  string    `json:"previous_hash"`
-	Category      string    `json:"category"`       // auth, trade, admin, kyc, settlement, surveillance, system
-	Action        string    `json:"action"`          // login, logout, order_placed, order_cancelled, kyc_approved, etc.
-	Actor         string    `json:"actor"`           // user ID or service name
-	ActorType     string    `json:"actor_type"`      // user, service, system, admin
-	Resource      string    `json:"resource"`        // affected resource (order ID, user ID, etc.)
-	ResourceType  string    `json:"resource_type"`   // order, user, portfolio, commodity, etc.
-	Details       string    `json:"details"`         // JSON-encoded additional context
-	ClientIP      string    `json:"client_ip"`
-	UserAgent     string    `json:"user_agent"`
-	SessionID     string    `json:"session_id"`
-	Result        string    `json:"result"`          // success, failure, denied, error
-	RiskLevel     string    `json:"risk_level"`      // low, medium, high, critical
-	Regulations   []string  `json:"regulations"`     // SEC, CBN, FCA, MiFID II, etc.
+	ID           string    `json:"id"`
+	Timestamp    time.Time `json:"timestamp"`
+	ChainHash    string    `json:"chain_hash"`
+	PreviousHash string    `json:"previous_hash"`
+	Category     string    `json:"category"`      // auth, trade, admin, kyc, settlement, surveillance, system
+	Action       string    `json:"action"`        // login, logout, order_placed, order_cancelled, kyc_approved, etc.
+	Actor        string    `json:"actor"`         // user ID or service name
+	ActorType    string    `json:"actor_type"`    // user, service, system, admin
+	Resource     string    `json:"resource"`      // affected resource (order ID, user ID, etc.)
+	ResourceType string    `json:"resource_type"` // order, user, portfolio, commodity, etc.
+	Details      string    `json:"details"`       // JSON-encoded additional context
+	ClientIP     string    `json:"client_ip"`
+	UserAgent    string    `json:"user_agent"`
+	SessionID    string    `json:"session_id"`
+	Result       string    `json:"result"`      // success, failure, denied, error
+	RiskLevel    string    `json:"risk_level"`  // low, medium, high, critical
+	Regulations  []string  `json:"regulations"` // SEC, CBN, FCA, MiFID II, etc.
 }
 
 // AuditCategory constants
@@ -146,16 +147,16 @@ func (al *AuditLog) LogAuth(action, actorID, clientIP, userAgent, sessionID, res
 	}
 
 	al.Log(AuditEntry{
-		Category:     CategoryAuth,
-		Action:       action,
-		Actor:        actorID,
-		ActorType:    "user",
-		ClientIP:     clientIP,
-		UserAgent:    userAgent,
-		SessionID:    sessionID,
-		Result:       result,
-		RiskLevel:    risk,
-		Regulations:  []string{"CBN", "SEC"},
+		Category:    CategoryAuth,
+		Action:      action,
+		Actor:       actorID,
+		ActorType:   "user",
+		ClientIP:    clientIP,
+		UserAgent:   userAgent,
+		SessionID:   sessionID,
+		Result:      result,
+		RiskLevel:   risk,
+		Regulations: []string{"CBN", "SEC"},
 	})
 }
 
@@ -260,12 +261,71 @@ func (al *AuditLog) LogDataAccess(actorID, resource, resourceType, details strin
 	})
 }
 
-// VerifyChain verifies the integrity of the audit log hash chain
+// VerifyChain verifies the integrity of the audit log hash chain by reading
+// every entry from the append-only file and recomputing each chain hash.
+// Returns (valid, entries_checked, error).
 func (al *AuditLog) VerifyChain() (bool, int, error) {
 	al.mu.Lock()
 	defer al.mu.Unlock()
 
-	return true, int(al.entryCount), nil
+	// Open the audit log file for reading
+	f, err := os.Open(al.filepath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			// No file yet — chain is trivially valid (zero entries)
+			return true, 0, nil
+		}
+		return false, 0, fmt.Errorf("cannot open audit file: %w", err)
+	}
+	defer f.Close()
+
+	genesisHash := "genesis-" + fmt.Sprintf("%x", sha256.Sum256([]byte("NEXCOM-EXCHANGE-GENESIS-BLOCK")))
+	prevHash := genesisHash
+	count := 0
+
+	scanner := bufio.NewScanner(f)
+	// Increase buffer for large entries
+	scanner.Buffer(make([]byte, 0, 1024*1024), 1024*1024)
+
+	for scanner.Scan() {
+		line := scanner.Bytes()
+		if len(line) == 0 {
+			continue
+		}
+
+		var entry AuditEntry
+		if err := json.Unmarshal(line, &entry); err != nil {
+			return false, count, fmt.Errorf("failed to parse entry %d: %w", count+1, err)
+		}
+
+		// Verify previous hash linkage
+		if entry.PreviousHash != prevHash {
+			return false, count, fmt.Errorf("chain broken at entry %d: expected prev_hash %s, got %s",
+				count+1, prevHash[:16], entry.PreviousHash[:16])
+		}
+
+		// Recompute chain hash
+		recordedHash := entry.ChainHash
+		entry.ChainHash = ""
+		entryJSON, _ := json.Marshal(entry)
+		hashInput := prevHash + string(entryJSON)
+		hash := sha256.Sum256([]byte(hashInput))
+		computedHash := hex.EncodeToString(hash[:])
+
+		if computedHash != recordedHash {
+			return false, count, fmt.Errorf("tampered entry %d: computed hash %s != recorded %s",
+				count+1, computedHash[:16], recordedHash[:16])
+		}
+
+		prevHash = recordedHash
+		count++
+	}
+
+	if err := scanner.Err(); err != nil {
+		return false, count, fmt.Errorf("error reading audit file: %w", err)
+	}
+
+	return true, count, nil
 }
 
 // EntryCount returns the total number of audit entries

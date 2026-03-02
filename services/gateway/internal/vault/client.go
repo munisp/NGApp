@@ -3,12 +3,17 @@ package vault
 import (
 	"bytes"
 	"context"
+	"crypto/aes"
+	"crypto/cipher"
+	"crypto/rand"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
 	"os"
+	"strings"
 	"sync"
 	"time"
 
@@ -191,9 +196,9 @@ func (c *Client) bootstrapTransit() {
 	})
 	// Create encryption key for the exchange
 	c.vaultRequest("POST", fmt.Sprintf("/v1/transit/keys/%s", c.transitKey), map[string]interface{}{
-		"type":                "aes256-gcm96",
-		"derived":             false,
-		"exportable":          false,
+		"type":                   "aes256-gcm96",
+		"derived":                false,
+		"exportable":             false,
 		"allow_plaintext_backup": false,
 		"min_decryption_version": 1,
 		"min_encryption_version": 1,
@@ -313,8 +318,8 @@ func (c *Client) Encrypt(plaintext string) (string, error) {
 		}
 	}
 
-	// Fallback: return plaintext with marker (NOT secure — dev only)
-	return fmt.Sprintf("vault:fallback:%s", plaintext), nil
+	// Fallback: use local AES-256-GCM encryption with master key from env
+	return c.localEncrypt(plaintext)
 }
 
 // Decrypt decrypts data using Vault Transit engine
@@ -337,8 +342,12 @@ func (c *Client) Decrypt(ciphertext string) (string, error) {
 		}
 	}
 
-	// Fallback: strip marker
-	if len(ciphertext) > 15 && ciphertext[:15] == "vault:fallback:" {
+	// Fallback: decrypt with local AES-256-GCM
+	if strings.HasPrefix(ciphertext, "vault:local:") {
+		return c.localDecrypt(ciphertext)
+	}
+	// Legacy plaintext fallback (migration path)
+	if strings.HasPrefix(ciphertext, "vault:fallback:") {
 		return ciphertext[15:], nil
 	}
 	return ciphertext, nil
@@ -403,6 +412,65 @@ func (c *Client) vaultRequest(method, path string, payload interface{}) ([]byte,
 	}
 	defer resp.Body.Close()
 	return io.ReadAll(resp.Body)
+}
+
+// localEncrypt encrypts plaintext using AES-256-GCM with the master key from env/cache.
+// Used as fallback when Vault Transit is unreachable.
+func (c *Client) localEncrypt(plaintext string) (string, error) {
+	key := c.getMasterKey()
+	block, err := aes.NewCipher(key)
+	if err != nil {
+		return "", fmt.Errorf("local encrypt: %w", err)
+	}
+	gcm, err := cipher.NewGCM(block)
+	if err != nil {
+		return "", fmt.Errorf("local encrypt GCM: %w", err)
+	}
+	nonce := make([]byte, gcm.NonceSize())
+	if _, err := io.ReadFull(rand.Reader, nonce); err != nil {
+		return "", fmt.Errorf("local encrypt nonce: %w", err)
+	}
+	ciphertext := gcm.Seal(nonce, nonce, []byte(plaintext), nil)
+	return "vault:local:" + base64.StdEncoding.EncodeToString(ciphertext), nil
+}
+
+// localDecrypt decrypts a "vault:local:" prefixed ciphertext using AES-256-GCM.
+func (c *Client) localDecrypt(ciphertext string) (string, error) {
+	encoded := ciphertext[len("vault:local:"):]
+	data, err := base64.StdEncoding.DecodeString(encoded)
+	if err != nil {
+		return "", fmt.Errorf("local decrypt base64: %w", err)
+	}
+	key := c.getMasterKey()
+	block, err := aes.NewCipher(key)
+	if err != nil {
+		return "", fmt.Errorf("local decrypt: %w", err)
+	}
+	gcm, err := cipher.NewGCM(block)
+	if err != nil {
+		return "", fmt.Errorf("local decrypt GCM: %w", err)
+	}
+	nonceSize := gcm.NonceSize()
+	if len(data) < nonceSize {
+		return "", fmt.Errorf("local decrypt: ciphertext too short")
+	}
+	nonce, ct := data[:nonceSize], data[nonceSize:]
+	plaintext, err := gcm.Open(nil, nonce, ct, nil)
+	if err != nil {
+		return "", fmt.Errorf("local decrypt: %w", err)
+	}
+	return string(plaintext), nil
+}
+
+// getMasterKey returns a 32-byte AES-256 key from the environment or cache.
+func (c *Client) getMasterKey() []byte {
+	c.mu.RLock()
+	mk := c.cache["encryption/master-key"]
+	c.mu.RUnlock()
+	// Ensure exactly 32 bytes for AES-256
+	key := make([]byte, 32)
+	copy(key, []byte(mk))
+	return key
 }
 
 // IsConnected returns whether Vault is connected

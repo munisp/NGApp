@@ -13,7 +13,7 @@ import (
 // In production: connects to PostgreSQL + TimescaleDB for time-series data.
 // When PostgreSQL is unavailable, gracefully falls back to the in-memory Store.
 type PostgresStore struct {
-	*Store // Embed in-memory store as fallback
+	*Store       // Embed in-memory store as fallback
 	db           *sql.DB
 	connected    bool
 	fallbackMode bool

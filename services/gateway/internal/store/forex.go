@@ -254,20 +254,20 @@ func (s *Store) CreateFXOrder(order models.FXOrder) models.FXOrder {
 			fillPrice = order.Price
 		}
 		s.fxPositions[posID] = models.FXPosition{
-			ID:            posID,
-			UserID:        order.UserID,
-			Pair:          order.Pair,
-			Side:          order.Side,
-			Status:        models.FXPositionOpen,
-			LotSize:       order.LotSize,
-			EntryPrice:    fillPrice,
-			CurrentPrice:  fillPrice,
-			StopLoss:      order.StopLoss,
-			TakeProfit:    order.TakeProfit,
-			Leverage:      order.Leverage,
-			MarginUsed:    order.MarginUsed,
-			Commission:    order.Commission,
-			OpenedAt:      now,
+			ID:           posID,
+			UserID:       order.UserID,
+			Pair:         order.Pair,
+			Side:         order.Side,
+			Status:       models.FXPositionOpen,
+			LotSize:      order.LotSize,
+			EntryPrice:   fillPrice,
+			CurrentPrice: fillPrice,
+			StopLoss:     order.StopLoss,
+			TakeProfit:   order.TakeProfit,
+			Leverage:     order.Leverage,
+			MarginUsed:   order.MarginUsed,
+			Commission:   order.Commission,
+			OpenedAt:     now,
 		}
 	}
 

@@ -65,16 +65,16 @@ type OandaCandle struct {
 
 // OandaInstrument represents an instrument from OANDA.
 type OandaInstrument struct {
-	Name                string  `json:"name"`
-	Type                string  `json:"type"`
-	DisplayName         string  `json:"displayName"`
-	PipLocation         int     `json:"pipLocation"`
-	DisplayPrecision    int     `json:"displayPrecision"`
-	TradeUnitsPrecision int     `json:"tradeUnitsPrecision"`
-	MinimumTradeSize    string  `json:"minimumTradeSize"`
-	MaximumTrailingStop string  `json:"maximumTrailingStopDistance"`
-	MinimumTrailingStop string  `json:"minimumTrailingStopDistance"`
-	MarginRate          string  `json:"marginRate"`
+	Name                string          `json:"name"`
+	Type                string          `json:"type"`
+	DisplayName         string          `json:"displayName"`
+	PipLocation         int             `json:"pipLocation"`
+	DisplayPrecision    int             `json:"displayPrecision"`
+	TradeUnitsPrecision int             `json:"tradeUnitsPrecision"`
+	MinimumTradeSize    string          `json:"minimumTradeSize"`
+	MaximumTrailingStop string          `json:"maximumTrailingStopDistance"`
+	MinimumTrailingStop string          `json:"minimumTrailingStopDistance"`
+	MarginRate          string          `json:"marginRate"`
 	Financing           *OandaFinancing `json:"financing,omitempty"`
 }
 

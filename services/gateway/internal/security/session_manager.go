@@ -15,34 +15,44 @@ import (
 // SessionManager provides session binding and token rotation.
 // Each session is bound to a device fingerprint (IP + User-Agent hash) to prevent
 // session hijacking. Tokens are rotated on each use with a grace period.
+//
+// Storage: Redis-backed with in-memory fallback. When Redis is available, sessions
+// persist across restarts and work across multiple gateway replicas.
 type SessionManager struct {
 	mu       sync.RWMutex
-	sessions map[string]*Session
+	sessions map[string]*Session // in-memory fallback + local cache
 	maxAge   time.Duration
+	store    *Store // Redis-backed persistent store (optional)
 }
 
 // Session represents an active user session
 type Session struct {
-	ID              string    `json:"id"`
-	UserID          string    `json:"user_id"`
-	DeviceHash      string    `json:"device_hash"`
-	CreatedAt       time.Time `json:"created_at"`
-	LastActivity    time.Time `json:"last_activity"`
-	ExpiresAt       time.Time `json:"expires_at"`
-	RotatedFrom     string    `json:"rotated_from,omitempty"`
-	RotationGrace   time.Time `json:"rotation_grace,omitempty"`
-	IP              string    `json:"ip"`
-	UserAgent       string    `json:"user_agent"`
-	MFAVerified     bool      `json:"mfa_verified"`
-	RiskScore       float64   `json:"risk_score"`
-	Revoked         bool      `json:"revoked"`
+	ID            string    `json:"id"`
+	UserID        string    `json:"user_id"`
+	DeviceHash    string    `json:"device_hash"`
+	CreatedAt     time.Time `json:"created_at"`
+	LastActivity  time.Time `json:"last_activity"`
+	ExpiresAt     time.Time `json:"expires_at"`
+	RotatedFrom   string    `json:"rotated_from,omitempty"`
+	RotationGrace time.Time `json:"rotation_grace,omitempty"`
+	IP            string    `json:"ip"`
+	UserAgent     string    `json:"user_agent"`
+	MFAVerified   bool      `json:"mfa_verified"`
+	RiskScore     float64   `json:"risk_score"`
+	Revoked       bool      `json:"revoked"`
 }
 
-// NewSessionManager creates a session manager
+// NewSessionManager creates a session manager (in-memory only)
 func NewSessionManager() *SessionManager {
+	return NewSessionManagerWithStore(nil)
+}
+
+// NewSessionManagerWithStore creates a session manager backed by Redis
+func NewSessionManagerWithStore(store *Store) *SessionManager {
 	sm := &SessionManager{
 		sessions: make(map[string]*Session),
 		maxAge:   30 * time.Minute, // 30-minute session idle timeout
+		store:    store,
 	}
 	go sm.cleanupLoop()
 	return sm
@@ -70,6 +80,11 @@ func (sm *SessionManager) CreateSession(userID, ip, userAgent string, mfaVerifie
 	sm.sessions[sessionID] = session
 	sm.mu.Unlock()
 
+	// Persist to Redis for cross-replica durability
+	if sm.store != nil {
+		sm.store.SetSession(session)
+	}
+
 	return session
 }
 
@@ -78,6 +93,18 @@ func (sm *SessionManager) ValidateSession(sessionID, ip, userAgent string) (*Ses
 	sm.mu.RLock()
 	session, ok := sm.sessions[sessionID]
 	sm.mu.RUnlock()
+
+	// Try Redis if not in local cache
+	if !ok && sm.store != nil {
+		var err error
+		session, err = sm.store.GetSession(sessionID)
+		if err == nil && session != nil {
+			ok = true
+			sm.mu.Lock()
+			sm.sessions[sessionID] = session
+			sm.mu.Unlock()
+		}
+	}
 
 	if !ok {
 		return nil, fmt.Errorf("session not found")
@@ -98,6 +125,9 @@ func (sm *SessionManager) ValidateSession(sessionID, ip, userAgent string) (*Ses
 		session.RiskScore += 50.0
 		if session.RiskScore >= 100.0 {
 			session.Revoked = true
+			if sm.store != nil {
+				sm.store.SetSession(session)
+			}
 			return nil, fmt.Errorf("session revoked: device mismatch (possible hijacking)")
 		}
 		// Allow with elevated risk (e.g., IP changed within same session)
@@ -108,6 +138,10 @@ func (sm *SessionManager) ValidateSession(sessionID, ip, userAgent string) (*Ses
 	session.LastActivity = time.Now()
 	session.ExpiresAt = time.Now().Add(sm.maxAge)
 	sm.mu.Unlock()
+
+	if sm.store != nil {
+		sm.store.SetSession(session)
+	}
 
 	return session, nil
 }
@@ -143,6 +177,13 @@ func (sm *SessionManager) RotateSession(oldSessionID string) (*Session, error) {
 	oldSession.RotationGrace = time.Now().Add(30 * time.Second)
 
 	sm.sessions[newID] = newSession
+
+	// Persist both to Redis
+	if sm.store != nil {
+		sm.store.SetSession(oldSession)
+		sm.store.SetSession(newSession)
+	}
+
 	return newSession, nil
 }
 
@@ -152,6 +193,9 @@ func (sm *SessionManager) RevokeSession(sessionID string) {
 	defer sm.mu.Unlock()
 	if session, ok := sm.sessions[sessionID]; ok {
 		session.Revoked = true
+		if sm.store != nil {
+			sm.store.DeleteSession(sessionID, session.UserID)
+		}
 	}
 }
 
@@ -163,6 +207,9 @@ func (sm *SessionManager) RevokeUserSessions(userID string) int {
 	for _, session := range sm.sessions {
 		if session.UserID == userID && !session.Revoked {
 			session.Revoked = true
+			if sm.store != nil {
+				sm.store.DeleteSession(session.ID, userID)
+			}
 			count++
 		}
 	}

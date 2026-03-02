@@ -115,8 +115,8 @@ func wsReadFrame(conn net.Conn) ([]byte, byte, error) {
 
 // Market data hub singleton for broadcasting to all WS clients
 var (
-	mdClients   = make(map[net.Conn]bool)
-	mdMu        sync.RWMutex
+	mdClients    = make(map[net.Conn]bool)
+	mdMu         sync.RWMutex
 	mdTickerOnce sync.Once
 )
 

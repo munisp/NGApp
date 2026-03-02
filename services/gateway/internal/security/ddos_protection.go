@@ -19,30 +19,31 @@ import (
 // Layer 4: Behavioral analysis (sudden traffic spikes, unusual patterns)
 // Layer 5: IP reputation (known bad actors, Tor exit nodes, cloud provider IPs)
 type DDoSProtection struct {
-	mu              sync.RWMutex
-	ipCounters      map[string]*rateBucket
+	mu               sync.RWMutex
+	ipCounters       map[string]*rateBucket
 	endpointCounters map[string]*rateBucket
-	globalCounter   *rateBucket
-	blockedIPs      map[string]time.Time
-	ipReputation    map[string]float64 // 0.0 = clean, 100.0 = malicious
-	config          DDoSConfig
+	globalCounter    *rateBucket
+	blockedIPs       map[string]time.Time
+	ipReputation     map[string]float64 // 0.0 = clean, 100.0 = malicious
+	config           DDoSConfig
+	store            *Store // Redis-backed persistent store (optional)
 }
 
 // DDoSConfig holds DDoS protection configuration
 type DDoSConfig struct {
-	GlobalRPS           int           `json:"global_rps"`            // Global requests per second limit
-	PerIPRPM            int           `json:"per_ip_rpm"`            // Per-IP requests per minute
-	PerEndpointRPM      int           `json:"per_endpoint_rpm"`      // Per-endpoint requests per minute
-	BlockDuration       time.Duration `json:"block_duration"`        // How long to block offending IPs
-	SpikeThreshold      float64       `json:"spike_threshold"`       // Traffic spike multiplier threshold
-	ReputationThreshold float64       `json:"reputation_threshold"`  // IP reputation score to auto-block
+	GlobalRPS           int           `json:"global_rps"`           // Global requests per second limit
+	PerIPRPM            int           `json:"per_ip_rpm"`           // Per-IP requests per minute
+	PerEndpointRPM      int           `json:"per_endpoint_rpm"`     // Per-endpoint requests per minute
+	BlockDuration       time.Duration `json:"block_duration"`       // How long to block offending IPs
+	SpikeThreshold      float64       `json:"spike_threshold"`      // Traffic spike multiplier threshold
+	ReputationThreshold float64       `json:"reputation_threshold"` // IP reputation score to auto-block
 	Enabled             bool          `json:"enabled"`
 }
 
 type rateBucket struct {
-	count     int
+	count       int
 	windowStart time.Time
-	window    time.Duration
+	window      time.Duration
 }
 
 func newRateBucket(window time.Duration) *rateBucket {
@@ -76,7 +77,13 @@ func DefaultDDoSConfig() DDoSConfig {
 }
 
 // NewDDoSProtection creates a new DDoS protection layer
+// NewDDoSProtection creates a new DDoS protection layer (in-memory only)
 func NewDDoSProtection(config DDoSConfig) *DDoSProtection {
+	return NewDDoSProtectionWithStore(config, nil)
+}
+
+// NewDDoSProtectionWithStore creates a DDoS protection layer backed by Redis
+func NewDDoSProtectionWithStore(config DDoSConfig, store *Store) *DDoSProtection {
 	ddos := &DDoSProtection{
 		ipCounters:       make(map[string]*rateBucket),
 		endpointCounters: make(map[string]*rateBucket),
@@ -84,6 +91,7 @@ func NewDDoSProtection(config DDoSConfig) *DDoSProtection {
 		blockedIPs:       make(map[string]time.Time),
 		ipReputation:     make(map[string]float64),
 		config:           config,
+		store:            store,
 	}
 
 	// Cleanup goroutine
@@ -101,16 +109,24 @@ func (d *DDoSProtection) Middleware() gin.HandlerFunc {
 
 		ip := c.ClientIP()
 
-		// Layer 0: Check if IP is blocked
+		// Layer 0: Check if IP is blocked (Redis first, then local)
 		d.mu.RLock()
 		blockExpiry, isBlocked := d.blockedIPs[ip]
 		d.mu.RUnlock()
 
+		if !isBlocked && d.store != nil {
+			var ttl time.Duration
+			isBlocked, ttl = d.store.IsIPBlocked(ip)
+			if isBlocked {
+				blockExpiry = time.Now().Add(ttl)
+			}
+		}
+
 		if isBlocked && time.Now().Before(blockExpiry) {
 			c.JSON(http.StatusTooManyRequests, gin.H{
-				"success": false,
-				"error":   "Your IP has been temporarily blocked due to excessive requests",
-				"code":    "IP_BLOCKED",
+				"success":     false,
+				"error":       "Your IP has been temporarily blocked due to excessive requests",
+				"code":        "IP_BLOCKED",
 				"retry_after": int(time.Until(blockExpiry).Seconds()),
 			})
 			c.Abort()
@@ -148,9 +164,9 @@ func (d *DDoSProtection) Middleware() gin.HandlerFunc {
 			d.mu.Unlock()
 
 			c.JSON(http.StatusTooManyRequests, gin.H{
-				"success": false,
-				"error":   "Rate limit exceeded for your IP",
-				"code":    "IP_RATE_LIMIT",
+				"success":     false,
+				"error":       "Rate limit exceeded for your IP",
+				"code":        "IP_RATE_LIMIT",
 				"retry_after": int(d.config.BlockDuration.Seconds()),
 			})
 			c.Abort()
@@ -207,8 +223,13 @@ func (d *DDoSProtection) Middleware() gin.HandlerFunc {
 // BlockIP manually blocks an IP address
 func (d *DDoSProtection) BlockIP(ip string, duration time.Duration) {
 	d.mu.Lock()
-	defer d.mu.Unlock()
 	d.blockedIPs[ip] = time.Now().Add(duration)
+	d.mu.Unlock()
+
+	// Persist to Redis for cross-replica blocking
+	if d.store != nil {
+		d.store.BlockIPRedis(ip, duration)
+	}
 }
 
 // UnblockIP removes an IP from the blocklist
@@ -221,8 +242,12 @@ func (d *DDoSProtection) UnblockIP(ip string) {
 // SetReputation sets the reputation score for an IP
 func (d *DDoSProtection) SetReputation(ip string, score float64) {
 	d.mu.Lock()
-	defer d.mu.Unlock()
 	d.ipReputation[ip] = score
+	d.mu.Unlock()
+
+	if d.store != nil {
+		d.store.SetReputation(ip, score)
+	}
 }
 
 // Stats returns current DDoS protection statistics
@@ -230,11 +255,11 @@ func (d *DDoSProtection) Stats() map[string]interface{} {
 	d.mu.RLock()
 	defer d.mu.RUnlock()
 	return map[string]interface{}{
-		"blocked_ips":      len(d.blockedIPs),
-		"tracked_ips":      len(d.ipCounters),
+		"blocked_ips":       len(d.blockedIPs),
+		"tracked_ips":       len(d.ipCounters),
 		"tracked_endpoints": len(d.endpointCounters),
-		"global_rps":       d.globalCounter.count,
-		"enabled":          d.config.Enabled,
+		"global_rps":        d.globalCounter.count,
+		"enabled":           d.config.Enabled,
 	}
 }
 

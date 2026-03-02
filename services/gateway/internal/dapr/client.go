@@ -16,11 +16,12 @@ import (
 
 // Client wraps Dapr sidecar operations with real HTTP connectivity.
 // Components:
-//   State store:  Redis-backed state management
-//   Pub/Sub:      Kafka-backed event publishing
-//   Service invocation: HTTP service-to-service calls via sidecar
-//   Bindings:     Input/output bindings for external systems
-//   Secrets:      HashiCorp Vault / Kubernetes secrets
+//
+//	State store:  Redis-backed state management
+//	Pub/Sub:      Kafka-backed event publishing
+//	Service invocation: HTTP service-to-service calls via sidecar
+//	Bindings:     Input/output bindings for external systems
+//	Secrets:      HashiCorp Vault / Kubernetes secrets
 type Client struct {
 	httpPort     string
 	grpcPort     string
@@ -38,13 +39,13 @@ type Client struct {
 func NewClient(httpPort, grpcPort string) *Client {
 	ctx, cancel := context.WithCancel(context.Background())
 	c := &Client{
-		httpPort: httpPort,
-		grpcPort: grpcPort,
-		baseURL:  fmt.Sprintf("http://localhost:%s/v1.0", httpPort),
-		state:    make(map[string][]byte),
+		httpPort:   httpPort,
+		grpcPort:   grpcPort,
+		baseURL:    fmt.Sprintf("http://localhost:%s/v1.0", httpPort),
+		state:      make(map[string][]byte),
 		httpClient: &http.Client{Timeout: 5 * time.Second},
-		ctx:    ctx,
-		cancel: cancel,
+		ctx:        ctx,
+		cancel:     cancel,
 	}
 	c.cb = gobreaker.NewCircuitBreaker[[]byte](gobreaker.Settings{
 		Name: "dapr", MaxRequests: 3, Interval: 30 * time.Second, Timeout: 10 * time.Second,

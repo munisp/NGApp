@@ -153,20 +153,20 @@ type Session struct {
 }
 
 type UserPreferences struct {
-	UserID              string `json:"userId"`
-	OrderFilled         bool   `json:"orderFilled"`
-	PriceAlerts         bool   `json:"priceAlerts"`
-	MarginWarnings      bool   `json:"marginWarnings"`
-	MarketNews          bool   `json:"marketNews"`
-	SettlementUpdates   bool   `json:"settlementUpdates"`
-	SystemMaintenance   bool   `json:"systemMaintenance"`
-	EmailNotifications  bool   `json:"emailNotifications"`
-	SMSNotifications    bool   `json:"smsNotifications"`
-	PushNotifications   bool   `json:"pushNotifications"`
-	USSDNotifications   bool   `json:"ussdNotifications"`
-	DefaultCurrency     string `json:"defaultCurrency"`
-	TimeZone            string `json:"timeZone"`
-	DefaultChartPeriod  string `json:"defaultChartPeriod"`
+	UserID             string `json:"userId"`
+	OrderFilled        bool   `json:"orderFilled"`
+	PriceAlerts        bool   `json:"priceAlerts"`
+	MarginWarnings     bool   `json:"marginWarnings"`
+	MarketNews         bool   `json:"marketNews"`
+	SettlementUpdates  bool   `json:"settlementUpdates"`
+	SystemMaintenance  bool   `json:"systemMaintenance"`
+	EmailNotifications bool   `json:"emailNotifications"`
+	SMSNotifications   bool   `json:"smsNotifications"`
+	PushNotifications  bool   `json:"pushNotifications"`
+	USSDNotifications  bool   `json:"ussdNotifications"`
+	DefaultCurrency    string `json:"defaultCurrency"`
+	TimeZone           string `json:"timeZone"`
+	DefaultChartPeriod string `json:"defaultChartPeriod"`
 }
 
 type Notification struct {
@@ -246,19 +246,19 @@ type UpdateProfileRequest struct {
 }
 
 type UpdatePreferencesRequest struct {
-	OrderFilled         *bool   `json:"orderFilled,omitempty"`
-	PriceAlerts         *bool   `json:"priceAlerts,omitempty"`
-	MarginWarnings      *bool   `json:"marginWarnings,omitempty"`
-	MarketNews          *bool   `json:"marketNews,omitempty"`
-	SettlementUpdates   *bool   `json:"settlementUpdates,omitempty"`
-	SystemMaintenance   *bool   `json:"systemMaintenance,omitempty"`
-	EmailNotifications  *bool   `json:"emailNotifications,omitempty"`
-	SMSNotifications    *bool   `json:"smsNotifications,omitempty"`
-	PushNotifications   *bool   `json:"pushNotifications,omitempty"`
-	USSDNotifications   *bool   `json:"ussdNotifications,omitempty"`
-	DefaultCurrency     *string `json:"defaultCurrency,omitempty"`
-	TimeZone            *string `json:"timeZone,omitempty"`
-	DefaultChartPeriod  *string `json:"defaultChartPeriod,omitempty"`
+	OrderFilled        *bool   `json:"orderFilled,omitempty"`
+	PriceAlerts        *bool   `json:"priceAlerts,omitempty"`
+	MarginWarnings     *bool   `json:"marginWarnings,omitempty"`
+	MarketNews         *bool   `json:"marketNews,omitempty"`
+	SettlementUpdates  *bool   `json:"settlementUpdates,omitempty"`
+	SystemMaintenance  *bool   `json:"systemMaintenance,omitempty"`
+	EmailNotifications *bool   `json:"emailNotifications,omitempty"`
+	SMSNotifications   *bool   `json:"smsNotifications,omitempty"`
+	PushNotifications  *bool   `json:"pushNotifications,omitempty"`
+	USSDNotifications  *bool   `json:"ussdNotifications,omitempty"`
+	DefaultCurrency    *string `json:"defaultCurrency,omitempty"`
+	TimeZone           *string `json:"timeZone,omitempty"`
+	DefaultChartPeriod *string `json:"defaultChartPeriod,omitempty"`
 }
 
 type ChangePasswordRequest struct {
@@ -291,10 +291,10 @@ type APIResponse struct {
 }
 
 type PaginationMeta struct {
-	Total  int `json:"total"`
-	Page   int `json:"page"`
-	Limit  int `json:"limit"`
-	Pages  int `json:"pages"`
+	Total int `json:"total"`
+	Page  int `json:"page"`
+	Limit int `json:"limit"`
+	Pages int `json:"pages"`
 }
 
 // Kafka event types
@@ -329,11 +329,11 @@ type LedgerTransfer struct {
 
 // Temporal workflow
 type OrderWorkflowInput struct {
-	OrderID string `json:"orderId"`
-	UserID  string `json:"userId"`
-	Symbol  string `json:"symbol"`
-	Side    string `json:"side"`
-	Type    string `json:"type"`
+	OrderID string  `json:"orderId"`
+	UserID  string  `json:"userId"`
+	Symbol  string  `json:"symbol"`
+	Side    string  `json:"side"`
+	Type    string  `json:"type"`
 	Price   float64 `json:"price"`
 	Qty     float64 `json:"quantity"`
 }
@@ -371,8 +371,8 @@ type CreateAccountRequest struct {
 }
 
 type UpdateAccountRequest struct {
-	Status *string  `json:"status,omitempty"`
-	Tier   *string  `json:"tier,omitempty"`
+	Status *string `json:"status,omitempty"`
+	Tier   *string `json:"tier,omitempty"`
 }
 
 type AuditEntry struct {
@@ -412,63 +412,63 @@ const (
 
 // FXPair represents a forex currency pair with trading parameters
 type FXPair struct {
-	ID              string  `json:"id"`
-	Symbol          string  `json:"symbol"`          // e.g. "EUR/USD"
-	BaseCurrency    string  `json:"baseCurrency"`    // e.g. "EUR"
-	QuoteCurrency   string  `json:"quoteCurrency"`   // e.g. "USD"
-	DisplayName     string  `json:"displayName"`     // e.g. "Euro / US Dollar"
-	Category        string  `json:"category"`        // major, minor, exotic, african
-	PipSize         float64 `json:"pipSize"`         // e.g. 0.0001 for most, 0.01 for JPY pairs
-	PipValue        float64 `json:"pipValue"`        // value of 1 pip per standard lot
-	MinLotSize      float64 `json:"minLotSize"`      // e.g. 0.01 (micro lot)
-	MaxLotSize      float64 `json:"maxLotSize"`      // e.g. 100 (standard lots)
-	LotStep         float64 `json:"lotStep"`         // e.g. 0.01
-	MaxLeverage     int     `json:"maxLeverage"`     // e.g. 200 for majors
-	MarginRequired  float64 `json:"marginRequired"`  // percentage e.g. 0.5 = 0.5%
-	SwapLong        float64 `json:"swapLong"`        // overnight swap for long positions (pips)
-	SwapShort       float64 `json:"swapShort"`       // overnight swap for short positions (pips)
-	SwapTripleDay   string  `json:"swapTripleDay"`   // day triple swap is charged (e.g. "Wednesday")
-	SpreadTypical   float64 `json:"spreadTypical"`   // typical spread in pips
-	SpreadMin       float64 `json:"spreadMin"`       // minimum spread in pips
+	ID               string  `json:"id"`
+	Symbol           string  `json:"symbol"`           // e.g. "EUR/USD"
+	BaseCurrency     string  `json:"baseCurrency"`     // e.g. "EUR"
+	QuoteCurrency    string  `json:"quoteCurrency"`    // e.g. "USD"
+	DisplayName      string  `json:"displayName"`      // e.g. "Euro / US Dollar"
+	Category         string  `json:"category"`         // major, minor, exotic, african
+	PipSize          float64 `json:"pipSize"`          // e.g. 0.0001 for most, 0.01 for JPY pairs
+	PipValue         float64 `json:"pipValue"`         // value of 1 pip per standard lot
+	MinLotSize       float64 `json:"minLotSize"`       // e.g. 0.01 (micro lot)
+	MaxLotSize       float64 `json:"maxLotSize"`       // e.g. 100 (standard lots)
+	LotStep          float64 `json:"lotStep"`          // e.g. 0.01
+	MaxLeverage      int     `json:"maxLeverage"`      // e.g. 200 for majors
+	MarginRequired   float64 `json:"marginRequired"`   // percentage e.g. 0.5 = 0.5%
+	SwapLong         float64 `json:"swapLong"`         // overnight swap for long positions (pips)
+	SwapShort        float64 `json:"swapShort"`        // overnight swap for short positions (pips)
+	SwapTripleDay    string  `json:"swapTripleDay"`    // day triple swap is charged (e.g. "Wednesday")
+	SpreadTypical    float64 `json:"spreadTypical"`    // typical spread in pips
+	SpreadMin        float64 `json:"spreadMin"`        // minimum spread in pips
 	CommissionPerLot float64 `json:"commissionPerLot"` // commission per lot (one way)
-	TradingHours    string  `json:"tradingHours"`    // e.g. "24/5" or "Sun 22:00 - Fri 22:00 UTC"
-	Active          bool    `json:"active"`
-	Bid             float64 `json:"bid"`
-	Ask             float64 `json:"ask"`
-	High24h         float64 `json:"high24h"`
-	Low24h          float64 `json:"low24h"`
-	Change24h       float64 `json:"change24h"`
-	ChangePercent   float64 `json:"changePercent"`
-	Volume24h       float64 `json:"volume24h"`
-	LastUpdate      int64   `json:"lastUpdate"`
+	TradingHours     string  `json:"tradingHours"`     // e.g. "24/5" or "Sun 22:00 - Fri 22:00 UTC"
+	Active           bool    `json:"active"`
+	Bid              float64 `json:"bid"`
+	Ask              float64 `json:"ask"`
+	High24h          float64 `json:"high24h"`
+	Low24h           float64 `json:"low24h"`
+	Change24h        float64 `json:"change24h"`
+	ChangePercent    float64 `json:"changePercent"`
+	Volume24h        float64 `json:"volume24h"`
+	LastUpdate       int64   `json:"lastUpdate"`
 }
 
 // FXOrder represents a forex trading order
 type FXOrder struct {
 	ID               string      `json:"id"`
 	UserID           string      `json:"userId"`
-	Pair             string      `json:"pair"`             // e.g. "EUR/USD"
+	Pair             string      `json:"pair"` // e.g. "EUR/USD"
 	Side             OrderSide   `json:"side"`
 	Type             FXOrderType `json:"type"`
 	Status           OrderStatus `json:"status"`
-	LotSize          float64     `json:"lotSize"`          // in standard lots
-	Price            float64     `json:"price,omitempty"`  // limit/stop price
+	LotSize          float64     `json:"lotSize"`         // in standard lots
+	Price            float64     `json:"price,omitempty"` // limit/stop price
 	StopLoss         float64     `json:"stopLoss,omitempty"`
 	TakeProfit       float64     `json:"takeProfit,omitempty"`
 	TrailingStopPips float64     `json:"trailingStopPips,omitempty"`
 	// OCO fields
-	OCOStopPrice     float64     `json:"ocoStopPrice,omitempty"`
-	OCOLimitPrice    float64     `json:"ocoLimitPrice,omitempty"`
-	OCOLinkedOrderID string      `json:"ocoLinkedOrderId,omitempty"`
-	Leverage         int         `json:"leverage"`
-	MarginUsed       float64     `json:"marginUsed"`
-	FilledPrice      float64     `json:"filledPrice,omitempty"`
-	FilledAt         *time.Time  `json:"filledAt,omitempty"`
-	Commission       float64     `json:"commission"`
-	SwapAccrued      float64     `json:"swapAccrued"`
-	Comment          string      `json:"comment,omitempty"`
-	CreatedAt        time.Time   `json:"createdAt"`
-	UpdatedAt        time.Time   `json:"updatedAt"`
+	OCOStopPrice     float64    `json:"ocoStopPrice,omitempty"`
+	OCOLimitPrice    float64    `json:"ocoLimitPrice,omitempty"`
+	OCOLinkedOrderID string     `json:"ocoLinkedOrderId,omitempty"`
+	Leverage         int        `json:"leverage"`
+	MarginUsed       float64    `json:"marginUsed"`
+	FilledPrice      float64    `json:"filledPrice,omitempty"`
+	FilledAt         *time.Time `json:"filledAt,omitempty"`
+	Commission       float64    `json:"commission"`
+	SwapAccrued      float64    `json:"swapAccrued"`
+	Comment          string     `json:"comment,omitempty"`
+	CreatedAt        time.Time  `json:"createdAt"`
+	UpdatedAt        time.Time  `json:"updatedAt"`
 }
 
 // FXPosition represents an open forex position
@@ -503,7 +503,7 @@ type FXAccountSummary struct {
 	Equity           float64 `json:"equity"`
 	MarginUsed       float64 `json:"marginUsed"`
 	FreeMargin       float64 `json:"freeMargin"`
-	MarginLevel      float64 `json:"marginLevel"`      // equity / margin * 100
+	MarginLevel      float64 `json:"marginLevel"` // equity / margin * 100
 	UnrealizedPnl    float64 `json:"unrealizedPnl"`
 	RealizedPnlToday float64 `json:"realizedPnlToday"`
 	OpenPositions    int     `json:"openPositions"`
@@ -525,24 +525,24 @@ type FXSwapRate struct {
 
 // FXCrossRate represents a calculated cross rate
 type FXCrossRate struct {
-	Pair           string  `json:"pair"`
-	Bid            float64 `json:"bid"`
-	Ask            float64 `json:"ask"`
-	DerivedFrom    string  `json:"derivedFrom"`    // e.g. "EUR/USD x USD/GBP"
-	Spread         float64 `json:"spread"`
-	SpreadPips     float64 `json:"spreadPips"`
-	LastUpdate     int64   `json:"lastUpdate"`
+	Pair        string  `json:"pair"`
+	Bid         float64 `json:"bid"`
+	Ask         float64 `json:"ask"`
+	DerivedFrom string  `json:"derivedFrom"` // e.g. "EUR/USD x USD/GBP"
+	Spread      float64 `json:"spread"`
+	SpreadPips  float64 `json:"spreadPips"`
+	LastUpdate  int64   `json:"lastUpdate"`
 }
 
 // FXMarginRequirement represents margin requirements per leverage tier
 type FXMarginRequirement struct {
-	Pair               string  `json:"pair"`
-	RetailLeverage     int     `json:"retailLeverage"`
-	RetailMargin       float64 `json:"retailMargin"`       // percentage
-	ProLeverage        int     `json:"proLeverage"`
-	ProMargin          float64 `json:"proMargin"`          // percentage
-	InstitutionalLev   int     `json:"institutionalLeverage"`
-	InstitutionalMarg  float64 `json:"institutionalMargin"` // percentage
+	Pair              string  `json:"pair"`
+	RetailLeverage    int     `json:"retailLeverage"`
+	RetailMargin      float64 `json:"retailMargin"` // percentage
+	ProLeverage       int     `json:"proLeverage"`
+	ProMargin         float64 `json:"proMargin"` // percentage
+	InstitutionalLev  int     `json:"institutionalLeverage"`
+	InstitutionalMarg float64 `json:"institutionalMargin"` // percentage
 }
 
 // FXLiquidityProvider represents a connected liquidity source
@@ -559,13 +559,13 @@ type FXLiquidityProvider struct {
 
 // FXRegulatoryInfo represents regulatory compliance information
 type FXRegulatoryInfo struct {
-	Jurisdiction     string   `json:"jurisdiction"`
-	Regulator        string   `json:"regulator"`
-	LicenseType      string   `json:"licenseType"`
-	MaxRetailLeverage int     `json:"maxRetailLeverage"`
-	NegativeBalance  bool     `json:"negativeBalanceProtection"`
-	RequiredWarnings []string `json:"requiredWarnings"`
-	ReportingFreq    string   `json:"reportingFrequency"`
+	Jurisdiction      string   `json:"jurisdiction"`
+	Regulator         string   `json:"regulator"`
+	LicenseType       string   `json:"licenseType"`
+	MaxRetailLeverage int      `json:"maxRetailLeverage"`
+	NegativeBalance   bool     `json:"negativeBalanceProtection"`
+	RequiredWarnings  []string `json:"requiredWarnings"`
+	ReportingFreq     string   `json:"reportingFrequency"`
 }
 
 // FX Request types
@@ -591,11 +591,11 @@ type ModifyFXPositionRequest struct {
 }
 
 type FXPipCalculatorRequest struct {
-	Pair       string  `json:"pair" binding:"required"`
-	LotSize    float64 `json:"lotSize" binding:"required,gt=0"`
-	EntryPrice float64 `json:"entryPrice" binding:"required,gt=0"`
-	ExitPrice  float64 `json:"exitPrice" binding:"required,gt=0"`
-	AccountCurrency string `json:"accountCurrency,omitempty"`
+	Pair            string  `json:"pair" binding:"required"`
+	LotSize         float64 `json:"lotSize" binding:"required,gt=0"`
+	EntryPrice      float64 `json:"entryPrice" binding:"required,gt=0"`
+	ExitPrice       float64 `json:"exitPrice" binding:"required,gt=0"`
+	AccountCurrency string  `json:"accountCurrency,omitempty"`
 }
 
 type FXPipCalculatorResult struct {

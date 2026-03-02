@@ -35,7 +35,7 @@ jobs:
         working-directory: services/gateway
         run: |
           go install golang.org/x/vuln/cmd/govulncheck@latest
-          govulncheck ./... || true
+          govulncheck ./...
 
       # Node.js dependency audit
       - name: Setup Node.js
@@ -47,7 +47,7 @@ jobs:
         working-directory: frontend/pwa
         run: |
           npm ci
-          npm audit --audit-level=high || true
+          npm audit --audit-level=high
 
       # Python dependency audit
       - name: Setup Python
@@ -59,8 +59,8 @@ jobs:
         working-directory: services/ingestion-engine
         run: |
           pip install pip-audit
-          pip install -r requirements.txt || true
-          pip-audit || true
+          pip install -r requirements.txt
+          pip-audit
 
       # Rust dependency audit
       - name: Install cargo-audit
@@ -68,7 +68,7 @@ jobs:
 
       - name: Cargo audit (Matching Engine)
         working-directory: services/matching-engine
-        run: cargo audit || true
+        run: cargo audit
 
   # 2. Container image scanning
   container-scan:
@@ -88,17 +88,17 @@ jobs:
       # Scan filesystem for vulnerabilities and secrets
       - name: Trivy filesystem scan
         run: |
-          trivy fs --severity HIGH,CRITICAL --exit-code 0 --format table .
+          trivy fs --severity HIGH,CRITICAL --exit-code 1 --format table .
 
       # Scan for hardcoded secrets
       - name: Trivy secret scan
         run: |
-          trivy fs --scanners secret --exit-code 0 --format table .
+          trivy fs --scanners secret --exit-code 1 --format table .
 
       # Scan IaC (Kubernetes, Terraform, etc.)
       - name: Trivy IaC scan
         run: |
-          trivy config --severity HIGH,CRITICAL --exit-code 0 infrastructure/ security/ || true
+          trivy config --severity HIGH,CRITICAL --exit-code 1 infrastructure/ security/
 
   # 3. Static Application Security Testing (SAST)
   sast:
@@ -117,7 +117,7 @@ jobs:
         working-directory: services/gateway
         run: |
           go install github.com/securego/gosec/v2/cmd/gosec@latest
-          gosec -fmt=json -out=gosec-results.json ./... || true
+          gosec -severity high -fmt=json -out=gosec-results.json ./...
 
       # Semgrep for multi-language SAST
       - name: Semgrep scan
@@ -146,7 +146,7 @@ jobs:
         working-directory: services/gateway
         run: |
           go install github.com/google/go-licenses@latest
-          go-licenses check ./... --disallowed_types=forbidden || true
+          go-licenses check ./... --disallowed_types=forbidden
 
   # 5. Kubernetes security
   k8s-security:
@@ -163,10 +163,15 @@ jobs:
 
       - name: Scan Kubernetes manifests
         run: |
+          FAILED=0
           for f in $(find infrastructure/ security/ -name "*.yaml" -o -name "*.yml"); do
             echo "Scanning: $f"
-            kubesec scan "$f" || true
+            kubesec scan "$f" || FAILED=1
           done
+          if [ $FAILED -ne 0 ]; then
+            echo "::error::Kubernetes security scan found issues"
+            exit 1
+          fi
 
   # 6. OWASP Dependency Check
   owasp-check:

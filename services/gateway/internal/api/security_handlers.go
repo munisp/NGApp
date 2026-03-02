@@ -52,35 +52,112 @@ func (s *Server) securityDashboard(c *gin.Context) {
 		activeSessions = s.sessionMgr.ActiveCount()
 	}
 
+	// Verify audit chain integrity
+	chainValid := true
+	if s.auditLog != nil {
+		valid, _, _ := s.auditLog.VerifyChain()
+		chainValid = valid
+	}
+
+	// Compute security scores dynamically from actual component state
+	authScore := 60
+	if s.sessionMgr != nil {
+		authScore += 15 // session management active
+	}
+	if s.hmacSigner != nil {
+		authScore += 15 // HMAC signing active
+	}
+	if s.inputValidator != nil {
+		authScore += 10 // input validation active
+	}
+
+	encryptionScore := 40
+	if vaultConnected && !vaultFallback {
+		encryptionScore = 95 // Vault Transit active with real encryption
+	} else if vaultFallback {
+		encryptionScore = 60 // fallback AES-256 encryption active
+	}
+
+	monitoringScore := 40
+	if s.auditLog != nil && auditEntries > 0 {
+		monitoringScore += 20 // audit logging active
+	}
+	if s.insiderMonitor != nil {
+		monitoringScore += 20 // insider threat monitoring active
+	}
+	if chainValid {
+		monitoringScore += 10 // chain integrity verified
+	}
+
+	authzScore := 50
+	if wafStatus.Enabled {
+		authzScore += 25 // WAF active
+	}
+	if s.ddosProtection != nil {
+		authzScore += 15 // DDoS protection active
+	}
+
+	incidentScore := 50
+	if openAlerts == 0 {
+		incidentScore += 20 // no open alerts
+	}
+	if s.ddosProtection != nil {
+		incidentScore += 15 // automated blocking
+	}
+
+	complianceScore := 50
+	if s.auditLog != nil && chainValid {
+		complianceScore += 20 // tamper-proof audit trail
+	}
+	if vaultConnected {
+		complianceScore += 15 // centralized secrets management
+	}
+
+	// Cap all scores at 100
+	capScore := func(s int) int {
+		if s > 100 {
+			return 100
+		}
+		return s
+	}
+	authScore = capScore(authScore)
+	encryptionScore = capScore(encryptionScore)
+	monitoringScore = capScore(monitoringScore)
+	authzScore = capScore(authzScore)
+	incidentScore = capScore(incidentScore)
+	complianceScore = capScore(complianceScore)
+
+	overallScore := (authScore + encryptionScore + monitoringScore + authzScore + incidentScore + complianceScore) / 6
+
 	c.JSON(http.StatusOK, models.APIResponse{
 		Success: true,
 		Data: gin.H{
 			"timestamp": time.Now().UTC().Format(time.RFC3339),
 			"security_score": gin.H{
-				"overall":          82,
-				"authentication":   95,
-				"authorization":    90,
-				"encryption":       75,
-				"monitoring":       85,
-				"incident_response": 70,
-				"compliance":       65,
+				"overall":           overallScore,
+				"authentication":    authScore,
+				"authorization":     authzScore,
+				"encryption":        encryptionScore,
+				"monitoring":        monitoringScore,
+				"incident_response": incidentScore,
+				"compliance":        complianceScore,
 			},
 			"vault": gin.H{
-				"connected":    vaultConnected,
-				"fallback":     vaultFallback,
-				"transit_key":  "nexcom-exchange",
-				"pki_enabled":  true,
+				"connected":   vaultConnected,
+				"fallback":    vaultFallback,
+				"transit_key": "nexcom-exchange",
+				"pki_enabled": true,
 			},
 			"waf": gin.H{
-				"enabled":     wafStatus.Enabled,
-				"connected":   wafStatus.Connected,
-				"mode":        wafStatus.Mode,
-				"policy":      wafStatus.PolicyName,
+				"enabled":   wafStatus.Enabled,
+				"connected": wafStatus.Connected,
+				"mode":      wafStatus.Mode,
+				"policy":    wafStatus.PolicyName,
 			},
 			"audit_log": gin.H{
-				"entries":    auditEntries,
-				"last_hash":  auditLastHash,
-				"chain_valid": true,
+				"entries":     auditEntries,
+				"last_hash":   auditLastHash,
+				"chain_valid": chainValid,
 			},
 			"insider_threats": gin.H{
 				"total_alerts":   totalAlerts,
@@ -97,9 +174,9 @@ func (s *Server) securityDashboard(c *gin.Context) {
 				"opencti": "active",
 			},
 			"mtls": gin.H{
-				"enabled":    true,
-				"mode":       "STRICT",
-				"mesh":       "istio",
+				"enabled": true,
+				"mode":    "STRICT",
+				"mesh":    "istio",
 			},
 			"encryption": gin.H{
 				"transit":     "AES-256-GCM96",
@@ -215,11 +292,11 @@ func (s *Server) securityDDoSStats(c *gin.Context) {
 		Data: gin.H{
 			"stats": stats,
 			"config": gin.H{
-				"global_rps":            10000,
-				"per_ip_rpm":            300,
-				"per_endpoint_rpm":      100,
-				"block_duration":        "15m",
-				"reputation_threshold":  80.0,
+				"global_rps":           10000,
+				"per_ip_rpm":           300,
+				"per_endpoint_rpm":     100,
+				"block_duration":       "15m",
+				"reputation_threshold": 80.0,
 			},
 			"layers": []gin.H{
 				{"name": "Global Rate Limit", "description": "Requests per second across all clients", "limit": 10000},
@@ -244,12 +321,12 @@ func (s *Server) securityActiveSessions(c *gin.Context) {
 		Data: gin.H{
 			"active_sessions": activeSessions,
 			"features": gin.H{
-				"device_binding":   true,
-				"token_rotation":   true,
-				"idle_timeout":     "30m",
-				"grace_period":     "30s",
-				"risk_scoring":     true,
-				"auto_revocation":  true,
+				"device_binding":  true,
+				"token_rotation":  true,
+				"idle_timeout":    "30m",
+				"grace_period":    "30s",
+				"risk_scoring":    true,
+				"auto_revocation": true,
 			},
 		},
 	})
@@ -267,8 +344,8 @@ func (s *Server) securityVaultStatus(c *gin.Context) {
 	c.JSON(http.StatusOK, models.APIResponse{
 		Success: true,
 		Data: gin.H{
-			"connected":  connected,
-			"fallback":   fallback,
+			"connected": connected,
+			"fallback":  fallback,
 			"engines": gin.H{
 				"kv_v2":   gin.H{"enabled": true, "description": "Key-Value secrets storage"},
 				"transit": gin.H{"enabled": true, "description": "Encryption-as-a-service (AES-256-GCM96)", "key": "nexcom-exchange"},

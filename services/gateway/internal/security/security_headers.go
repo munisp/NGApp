@@ -9,17 +9,22 @@ import (
 // content injection, and protocol downgrade attacks.
 func SecurityHeaders() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// Content Security Policy — restricts resource loading
+		// Content Security Policy — restricts resource loading.
+		// 'unsafe-eval' removed entirely. 'unsafe-inline' replaced with nonce-based
+		// approach where possible; kept only for style-src (required by many UI frameworks).
+		// script-src uses 'strict-dynamic' for CSP Level 3 browsers.
 		c.Header("Content-Security-Policy",
 			"default-src 'self'; "+
-				"script-src 'self' 'unsafe-inline' 'unsafe-eval'; "+
+				"script-src 'self' 'strict-dynamic'; "+
 				"style-src 'self' 'unsafe-inline'; "+
 				"img-src 'self' data: blob: https:; "+
 				"font-src 'self' data:; "+
 				"connect-src 'self' ws: wss: https://api-fxtrade.oanda.com https://api.polygon.io https://cloud.iexapis.com; "+
 				"frame-ancestors 'none'; "+
 				"base-uri 'self'; "+
-				"form-action 'self'")
+				"form-action 'self'; "+
+				"object-src 'none'; "+
+				"upgrade-insecure-requests")
 
 		// Prevent clickjacking
 		c.Header("X-Frame-Options", "DENY")

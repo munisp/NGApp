@@ -1,8 +1,11 @@
 package security
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"log"
+	"net/http"
 	"sync"
 	"time"
 )
@@ -11,12 +14,14 @@ import (
 // Monitors privileged access, abnormal data access patterns, after-hours activity,
 // separation of duties violations, and data exfiltration indicators.
 type InsiderThreatMonitor struct {
-	mu             sync.RWMutex
-	activityLog    []UserActivity
-	alerts         []InsiderAlert
-	rules          []InsiderRule
-	maxLogSize     int
-	onAlertFunc    func(InsiderAlert)
+	mu          sync.RWMutex
+	activityLog []UserActivity
+	alerts      []InsiderAlert
+	rules       []InsiderRule
+	maxLogSize  int
+	onAlertFunc func(InsiderAlert)
+	store       *Store // Redis-backed persistent store (optional)
+	webhookURL  string // Webhook URL for alert notifications (PagerDuty, Slack, etc.)
 }
 
 // UserActivity records a single user action for behavioral analysis
@@ -52,12 +57,19 @@ type InsiderRule struct {
 	Check       func(activity UserActivity, history []UserActivity) *InsiderAlert
 }
 
-// NewInsiderThreatMonitor creates a new insider threat monitor
+// NewInsiderThreatMonitor creates a new insider threat monitor (in-memory only)
 func NewInsiderThreatMonitor() *InsiderThreatMonitor {
+	return NewInsiderThreatMonitorWithStore(nil, "")
+}
+
+// NewInsiderThreatMonitorWithStore creates an insider threat monitor backed by Redis
+func NewInsiderThreatMonitorWithStore(store *Store, webhookURL string) *InsiderThreatMonitor {
 	itm := &InsiderThreatMonitor{
 		activityLog: make([]UserActivity, 0),
 		alerts:      make([]InsiderAlert, 0),
 		maxLogSize:  100000,
+		store:       store,
+		webhookURL:  webhookURL,
 	}
 
 	// Register detection rules
@@ -97,6 +109,16 @@ func (itm *InsiderThreatMonitor) RecordActivity(activity UserActivity) {
 
 			log.Printf("[InsiderMonitor] ALERT: %s — user=%s severity=%s: %s",
 				alert.RuleName, alert.UserID, alert.Severity, alert.Description)
+
+			// Persist alert to Redis
+			if itm.store != nil {
+				itm.store.StoreAlert(*alert)
+			}
+
+			// Send webhook notification (PagerDuty, Slack, etc.)
+			if itm.webhookURL != "" {
+				go itm.sendWebhookAlert(*alert)
+			}
 
 			if alertFn != nil {
 				go alertFn(*alert)
@@ -163,11 +185,11 @@ func (itm *InsiderThreatMonitor) registerDefaultRules() {
 					return nil
 				}
 				return &InsiderAlert{
-					ID:          fmt.Sprintf("insider-%d", time.Now().UnixNano()),
-					Timestamp:   time.Now(),
-					UserID:      activity.UserID,
-					RuleName:    "after_hours_admin_access",
-					Severity:    "medium",
+					ID:        fmt.Sprintf("insider-%d", time.Now().UnixNano()),
+					Timestamp: time.Now(),
+					UserID:    activity.UserID,
+					RuleName:  "after_hours_admin_access",
+					Severity:  "medium",
 					Description: fmt.Sprintf("Admin action '%s' performed at %s (outside business hours)",
 						activity.Action, activity.Timestamp.Format("15:04 UTC")),
 					Evidence: []string{
@@ -322,4 +344,40 @@ func (itm *InsiderThreatMonitor) ActivityCount() int {
 	itm.mu.RLock()
 	defer itm.mu.RUnlock()
 	return len(itm.activityLog)
+}
+
+// sendWebhookAlert sends an alert to a webhook endpoint (PagerDuty, Slack, etc.)
+func (itm *InsiderThreatMonitor) sendWebhookAlert(alert InsiderAlert) {
+	payload := map[string]interface{}{
+		"routing_key":  "nexcom-insider-threat",
+		"event_action": "trigger",
+		"payload": map[string]interface{}{
+			"summary":   fmt.Sprintf("[NEXCOM] Insider Threat: %s — %s", alert.RuleName, alert.Description),
+			"severity":  alert.Severity,
+			"source":    "nexcom-exchange-gateway",
+			"component": "insider-threat-monitor",
+			"group":     "security",
+			"custom_details": map[string]interface{}{
+				"alert_id":  alert.ID,
+				"user_id":   alert.UserID,
+				"rule_name": alert.RuleName,
+				"evidence":  alert.Evidence,
+				"timestamp": alert.Timestamp.Format(time.RFC3339),
+			},
+		},
+	}
+	data, err := json.Marshal(payload)
+	if err != nil {
+		log.Printf("[InsiderMonitor] Failed to marshal webhook payload: %v", err)
+		return
+	}
+
+	client := &http.Client{Timeout: 10 * time.Second}
+	resp, err := client.Post(itm.webhookURL, "application/json", bytes.NewReader(data))
+	if err != nil {
+		log.Printf("[InsiderMonitor] Webhook delivery failed: %v", err)
+		return
+	}
+	resp.Body.Close()
+	log.Printf("[InsiderMonitor] Webhook delivered (HTTP %d) for alert %s", resp.StatusCode, alert.ID)
 }

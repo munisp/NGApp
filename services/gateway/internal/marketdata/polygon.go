@@ -43,32 +43,32 @@ type PolygonClient struct {
 
 // PolygonTicker represents a stock ticker snapshot from Polygon.
 type PolygonTicker struct {
-	Ticker     string  `json:"ticker"`
-	Name       string  `json:"name"`
-	Market     string  `json:"market"`
-	Locale     string  `json:"locale"`
-	Type       string  `json:"type"`
-	Currency   string  `json:"currency_name"`
-	LastPrice  float64 `json:"lastPrice"`
-	Open       float64 `json:"open"`
-	High       float64 `json:"high"`
-	Low        float64 `json:"low"`
-	Close      float64 `json:"close"`
-	Volume     float64 `json:"volume"`
-	VWAP       float64 `json:"vwap"`
-	Change     float64 `json:"change"`
-	ChangePct  float64 `json:"changePercent"`
-	Updated    int64   `json:"updated"`
+	Ticker    string  `json:"ticker"`
+	Name      string  `json:"name"`
+	Market    string  `json:"market"`
+	Locale    string  `json:"locale"`
+	Type      string  `json:"type"`
+	Currency  string  `json:"currency_name"`
+	LastPrice float64 `json:"lastPrice"`
+	Open      float64 `json:"open"`
+	High      float64 `json:"high"`
+	Low       float64 `json:"low"`
+	Close     float64 `json:"close"`
+	Volume    float64 `json:"volume"`
+	VWAP      float64 `json:"vwap"`
+	Change    float64 `json:"change"`
+	ChangePct float64 `json:"changePercent"`
+	Updated   int64   `json:"updated"`
 }
 
 // PolygonTrade represents a trade from Polygon.
 type PolygonTrade struct {
-	Ticker    string  `json:"ticker"`
-	Price     float64 `json:"price"`
-	Size      int     `json:"size"`
-	Exchange  int     `json:"exchange"`
-	Timestamp int64   `json:"timestamp"`
-	Conditions []int  `json:"conditions"`
+	Ticker     string  `json:"ticker"`
+	Price      float64 `json:"price"`
+	Size       int     `json:"size"`
+	Exchange   int     `json:"exchange"`
+	Timestamp  int64   `json:"timestamp"`
+	Conditions []int   `json:"conditions"`
 }
 
 // PolygonAggregate represents an OHLCV bar from Polygon.
@@ -86,40 +86,40 @@ type PolygonAggregate struct {
 
 // PolygonExchange represents an exchange from Polygon reference data.
 type PolygonExchange struct {
-	ID        int    `json:"id"`
-	Type      string `json:"type"`
-	Market    string `json:"market"`
-	MIC       string `json:"mic"`
-	Name      string `json:"name"`
-	Tape      string `json:"tape"`
-	Acronym   string `json:"acronym"`
-	Locale    string `json:"locale"`
-	URL       string `json:"url"`
+	ID           int    `json:"id"`
+	Type         string `json:"type"`
+	Market       string `json:"market"`
+	MIC          string `json:"mic"`
+	Name         string `json:"name"`
+	Tape         string `json:"tape"`
+	Acronym      string `json:"acronym"`
+	Locale       string `json:"locale"`
+	URL          string `json:"url"`
 	OperatingMIC string `json:"operating_mic"`
 }
 
 // PolygonTickerDetails has detailed info about a ticker.
 type PolygonTickerDetails struct {
-	Ticker          string `json:"ticker"`
-	Name            string `json:"name"`
-	Market          string `json:"market"`
-	Locale          string `json:"locale"`
-	Type            string `json:"type"`
-	CurrencyName    string `json:"currency_name"`
-	CIK             string `json:"cik"`
-	CompositeFIGI   string `json:"composite_figi"`
-	ShareClassFIGI  string `json:"share_class_figi"`
-	PrimaryExchange string `json:"primary_exchange"`
-	Description     string `json:"description"`
-	SICCode         string `json:"sic_code"`
-	SICDescription  string `json:"sic_description"`
-	TotalEmployees  int    `json:"total_employees"`
-	ListDate        string `json:"list_date"`
-	MarketCap       float64 `json:"market_cap"`
+	Ticker            string  `json:"ticker"`
+	Name              string  `json:"name"`
+	Market            string  `json:"market"`
+	Locale            string  `json:"locale"`
+	Type              string  `json:"type"`
+	CurrencyName      string  `json:"currency_name"`
+	CIK               string  `json:"cik"`
+	CompositeFIGI     string  `json:"composite_figi"`
+	ShareClassFIGI    string  `json:"share_class_figi"`
+	PrimaryExchange   string  `json:"primary_exchange"`
+	Description       string  `json:"description"`
+	SICCode           string  `json:"sic_code"`
+	SICDescription    string  `json:"sic_description"`
+	TotalEmployees    int     `json:"total_employees"`
+	ListDate          string  `json:"list_date"`
+	MarketCap         float64 `json:"market_cap"`
 	SharesOutstanding float64 `json:"share_class_shares_outstanding"`
-	WeightedShares  float64 `json:"weighted_shares_outstanding"`
-	HomepageURL     string `json:"homepage_url"`
-	LogoURL         string `json:"branding_logo_url"`
+	WeightedShares    float64 `json:"weighted_shares_outstanding"`
+	HomepageURL       string  `json:"homepage_url"`
+	LogoURL           string  `json:"branding_logo_url"`
 }
 
 // NewPolygonClient creates a new Polygon.io API client.
@@ -127,11 +127,11 @@ type PolygonTickerDetails struct {
 func NewPolygonClient(apiKey string) *PolygonClient {
 	ctx, cancel := context.WithCancel(context.Background())
 	c := &PolygonClient{
-		baseURL:  "https://api.polygon.io",
-		apiKey:   apiKey,
-		tickers:  make(map[string]PolygonTicker),
-		ctx:      ctx,
-		cancel:   cancel,
+		baseURL: "https://api.polygon.io",
+		apiKey:  apiKey,
+		tickers: make(map[string]PolygonTicker),
+		ctx:     ctx,
+		cancel:  cancel,
 		httpClient: &http.Client{
 			Timeout: 10 * time.Second,
 		},
@@ -294,9 +294,9 @@ func (c *PolygonClient) GetSnapshot(ticker string) (*PolygonTicker, error) {
 			PrevDay struct {
 				C float64 `json:"c"`
 			} `json:"prevDay"`
-			TodaysChange    float64 `json:"todaysChange"`
+			TodaysChange     float64 `json:"todaysChange"`
 			TodaysChangePerc float64 `json:"todaysChangePerc"`
-			Updated         int64   `json:"updated"`
+			Updated          int64   `json:"updated"`
 		} `json:"ticker"`
 	}
 	if err := json.Unmarshal(data, &resp); err != nil {

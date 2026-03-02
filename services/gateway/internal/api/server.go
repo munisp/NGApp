@@ -25,25 +25,25 @@ import (
 )
 
 type Server struct {
-	cfg             *config.Config
-	store           *store.Store
-	kafka           *kafkaclient.Client
-	redis           *redisclient.Client
-	temporal        *temporal.Client
-	tigerbeetle     *tigerbeetle.Client
-	dapr            *dapr.Client
-	fluvio          *fluvio.Client
-	keycloak        *keycloak.Client
-	permify         *permify.Client
-	apisix          *apisix.Client
-	marketData      *marketdata.Client
-	vault           *vault.Client
-	auditLog        *security.AuditLog
-	inputValidator  *security.InputValidator
-	hmacSigner      *security.HMACSigner
-	sessionMgr      *security.SessionManager
-	insiderMonitor  *security.InsiderThreatMonitor
-	ddosProtection  *security.DDoSProtection
+	cfg            *config.Config
+	store          *store.Store
+	kafka          *kafkaclient.Client
+	redis          *redisclient.Client
+	temporal       *temporal.Client
+	tigerbeetle    *tigerbeetle.Client
+	dapr           *dapr.Client
+	fluvio         *fluvio.Client
+	keycloak       *keycloak.Client
+	permify        *permify.Client
+	apisix         *apisix.Client
+	marketData     *marketdata.Client
+	vault          *vault.Client
+	auditLog       *security.AuditLog
+	inputValidator *security.InputValidator
+	hmacSigner     *security.HMACSigner
+	sessionMgr     *security.SessionManager
+	insiderMonitor *security.InsiderThreatMonitor
+	ddosProtection *security.DDoSProtection
 }
 
 func NewServer(
@@ -428,23 +428,23 @@ func (s *Server) SetupRoutes() *gin.Engine {
 			}
 
 			// WebSocket endpoint for real-time notifications — Permify: user access
-		protected.GET("/ws/notifications", s.permifyGuard("user", "access"), s.wsNotifications)
-		protected.GET("/ws/market-data", s.permifyGuard("commodity", "view"), s.wsMarketData)
+			protected.GET("/ws/notifications", s.permifyGuard("user", "access"), s.wsNotifications)
+			protected.GET("/ws/market-data", s.permifyGuard("commodity", "view"), s.wsMarketData)
 
-		// Security Dashboard — Permify: organization admin only
-		sec := protected.Group("/security")
-		sec.Use(s.permifyMiddleware("organization", "manage"))
-		{
-			sec.GET("/dashboard", s.securityDashboard)
-			sec.GET("/audit-log", s.securityAuditLog)
-			sec.GET("/insider-alerts", s.securityInsiderAlerts)
-			sec.GET("/ddos-stats", s.securityDDoSStats)
-			sec.GET("/sessions", s.securityActiveSessions)
-			sec.GET("/vault-status", s.securityVaultStatus)
-			sec.POST("/block-ip", s.securityBlockIP)
-			sec.POST("/rotate-keys", s.securityRotateKeys)
+			// Security Dashboard — Permify: organization admin only
+			sec := protected.Group("/security")
+			sec.Use(s.permifyMiddleware("organization", "manage"))
+			{
+				sec.GET("/dashboard", s.securityDashboard)
+				sec.GET("/audit-log", s.securityAuditLog)
+				sec.GET("/insider-alerts", s.securityInsiderAlerts)
+				sec.GET("/ddos-stats", s.securityDDoSStats)
+				sec.GET("/sessions", s.securityActiveSessions)
+				sec.GET("/vault-status", s.securityVaultStatus)
+				sec.POST("/block-ip", s.securityBlockIP)
+				sec.POST("/rotate-keys", s.securityRotateKeys)
+			}
 		}
-	}
 	}
 
 	return r
@@ -831,12 +831,12 @@ func (s *Server) createOrder(c *gin.Context) {
 	}
 
 	order := models.Order{
-		UserID:   userID,
-		Symbol:   req.Symbol,
-		Side:     req.Side,
-		Type:     req.Type,
-		Quantity: req.Quantity,
-		Price:    req.Price,
+		UserID:    userID,
+		Symbol:    req.Symbol,
+		Side:      req.Side,
+		Type:      req.Type,
+		Quantity:  req.Quantity,
+		Price:     req.Price,
 		StopPrice: req.StopPrice,
 	}
 
@@ -1313,12 +1313,12 @@ func (s *Server) analyticsDashboard(c *gin.Context) {
 	c.JSON(http.StatusOK, models.APIResponse{
 		Success: true,
 		Data: gin.H{
-			"marketCap":     2470000000,
-			"volume24h":     456000000,
-			"activePairs":   42,
-			"activeTraders":  12500,
-			"topGainers":    []gin.H{{"symbol": "VCU", "change": 3.05}, {"symbol": "NAT_GAS", "change": 2.89}, {"symbol": "COFFEE", "change": 2.80}},
-			"topLosers":     []gin.H{{"symbol": "CRUDE_OIL", "change": -1.51}, {"symbol": "COCOA", "change": -1.37}, {"symbol": "WHEAT", "change": -0.72}},
+			"marketCap":        2470000000,
+			"volume24h":        456000000,
+			"activePairs":      42,
+			"activeTraders":    12500,
+			"topGainers":       []gin.H{{"symbol": "VCU", "change": 3.05}, {"symbol": "NAT_GAS", "change": 2.89}, {"symbol": "COFFEE", "change": 2.80}},
+			"topLosers":        []gin.H{{"symbol": "CRUDE_OIL", "change": -1.51}, {"symbol": "COCOA", "change": -1.37}, {"symbol": "WHEAT", "change": -0.72}},
 			"volumeByCategory": gin.H{"agricultural": 45, "metals": 25, "energy": 20, "carbon": 10},
 		},
 	})
@@ -1329,11 +1329,11 @@ func (s *Server) pnlReport(c *gin.Context) {
 	c.JSON(http.StatusOK, models.APIResponse{
 		Success: true,
 		Data: gin.H{
-			"period":     period,
-			"totalPnl":   8450.25,
-			"winRate":    68.5,
+			"period":      period,
+			"totalPnl":    8450.25,
+			"winRate":     68.5,
 			"totalTrades": 156,
-			"avgReturn":  2.3,
+			"avgReturn":   2.3,
 			"sharpeRatio": 1.85,
 			"maxDrawdown": -4.2,
 		},
@@ -1426,11 +1426,11 @@ func (s *Server) middlewareStatus(c *gin.Context) {
 			"keycloak":    gin.H{"url": s.cfg.KeycloakURL, "realm": s.cfg.KeycloakRealm},
 			"permify":     gin.H{"connected": s.permify.IsConnected(), "endpoint": s.cfg.PermifyEndpoint, "fallback": s.permify.IsFallback()},
 			"apisix": gin.H{
-				"connected":  s.apisix.IsConnected(),
-				"adminUrl":   s.cfg.APISIXAdminURL,
-				"fallback":   s.apisix.IsFallback(),
-				"routes":     s.apisix.RouteCount(),
-				"consumers":  s.apisix.ConsumerCount(),
+				"connected": s.apisix.IsConnected(),
+				"adminUrl":  s.cfg.APISIXAdminURL,
+				"fallback":  s.apisix.IsFallback(),
+				"routes":    s.apisix.RouteCount(),
+				"consumers": s.apisix.ConsumerCount(),
 			},
 			"openappsec": gin.H{
 				"enabled":     wafStatus.Enabled,

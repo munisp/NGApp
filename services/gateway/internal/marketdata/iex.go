@@ -40,49 +40,49 @@ type IEXClient struct {
 
 // IEXCompany represents company info from IEX.
 type IEXCompany struct {
-	Symbol      string   `json:"symbol"`
-	CompanyName string   `json:"companyName"`
-	Exchange    string   `json:"exchange"`
-	Industry    string   `json:"industry"`
-	Sector      string   `json:"sector"`
-	Website     string   `json:"website"`
-	Description string   `json:"description"`
-	CEO         string   `json:"CEO"`
-	Employees   int      `json:"employees"`
-	Country     string   `json:"country"`
-	State       string   `json:"state"`
-	City        string   `json:"city"`
-	Tags        []string `json:"tags"`
-	IssueType   string   `json:"issueType"`
-	SecurityName string  `json:"securityName"`
-	PrimarySIC  int      `json:"primarySicCode"`
+	Symbol       string   `json:"symbol"`
+	CompanyName  string   `json:"companyName"`
+	Exchange     string   `json:"exchange"`
+	Industry     string   `json:"industry"`
+	Sector       string   `json:"sector"`
+	Website      string   `json:"website"`
+	Description  string   `json:"description"`
+	CEO          string   `json:"CEO"`
+	Employees    int      `json:"employees"`
+	Country      string   `json:"country"`
+	State        string   `json:"state"`
+	City         string   `json:"city"`
+	Tags         []string `json:"tags"`
+	IssueType    string   `json:"issueType"`
+	SecurityName string   `json:"securityName"`
+	PrimarySIC   int      `json:"primarySicCode"`
 }
 
 // IEXQuote represents a real-time stock quote from IEX.
 type IEXQuote struct {
-	Symbol           string  `json:"symbol"`
-	CompanyName      string  `json:"companyName"`
-	LatestPrice      float64 `json:"latestPrice"`
-	LatestSource     string  `json:"latestSource"`
-	LatestTime       string  `json:"latestTime"`
-	LatestUpdate     int64   `json:"latestUpdate"`
-	LatestVolume     int64   `json:"latestVolume"`
-	Change           float64 `json:"change"`
-	ChangePercent    float64 `json:"changePercent"`
-	Open             float64 `json:"open"`
-	High             float64 `json:"high"`
-	Low              float64 `json:"low"`
-	Close            float64 `json:"close"`
-	PreviousClose    float64 `json:"previousClose"`
-	Volume           int64   `json:"volume"`
-	AvgTotalVolume   int64   `json:"avgTotalVolume"`
-	MarketCap        int64   `json:"marketCap"`
-	PERatio          float64 `json:"peRatio"`
-	Week52High       float64 `json:"week52High"`
-	Week52Low        float64 `json:"week52Low"`
-	YTDChange        float64 `json:"ytdChange"`
-	PrimaryExchange  string  `json:"primaryExchange"`
-	IsUSMarketOpen   bool    `json:"isUSMarketOpen"`
+	Symbol          string  `json:"symbol"`
+	CompanyName     string  `json:"companyName"`
+	LatestPrice     float64 `json:"latestPrice"`
+	LatestSource    string  `json:"latestSource"`
+	LatestTime      string  `json:"latestTime"`
+	LatestUpdate    int64   `json:"latestUpdate"`
+	LatestVolume    int64   `json:"latestVolume"`
+	Change          float64 `json:"change"`
+	ChangePercent   float64 `json:"changePercent"`
+	Open            float64 `json:"open"`
+	High            float64 `json:"high"`
+	Low             float64 `json:"low"`
+	Close           float64 `json:"close"`
+	PreviousClose   float64 `json:"previousClose"`
+	Volume          int64   `json:"volume"`
+	AvgTotalVolume  int64   `json:"avgTotalVolume"`
+	MarketCap       int64   `json:"marketCap"`
+	PERatio         float64 `json:"peRatio"`
+	Week52High      float64 `json:"week52High"`
+	Week52Low       float64 `json:"week52Low"`
+	YTDChange       float64 `json:"ytdChange"`
+	PrimaryExchange string  `json:"primaryExchange"`
+	IsUSMarketOpen  bool    `json:"isUSMarketOpen"`
 }
 
 // IEXDividend represents a dividend record from IEX.
@@ -100,13 +100,13 @@ type IEXDividend struct {
 
 // IEXEarnings represents earnings data from IEX.
 type IEXEarnings struct {
-	ActualEPS      float64 `json:"actualEPS"`
-	ConsensusEPS   float64 `json:"consensusEPS"`
-	EPSSurprisePct float64 `json:"EPSSurpriseDollar"`
-	FiscalPeriod   string  `json:"fiscalPeriod"`
-	FiscalEndDate  string  `json:"fiscalEndDate"`
-	ReportDate     string  `json:"reportDate"`
-	Revenue        float64 `json:"revenue"`
+	ActualEPS       float64 `json:"actualEPS"`
+	ConsensusEPS    float64 `json:"consensusEPS"`
+	EPSSurprisePct  float64 `json:"EPSSurpriseDollar"`
+	FiscalPeriod    string  `json:"fiscalPeriod"`
+	FiscalEndDate   string  `json:"fiscalEndDate"`
+	ReportDate      string  `json:"reportDate"`
+	Revenue         float64 `json:"revenue"`
 	RevenueEstimate float64 `json:"revenueEstimate"`
 }
 
@@ -138,10 +138,10 @@ type IEXKeyStats struct {
 func NewIEXClient(apiKey string) *IEXClient {
 	ctx, cancel := context.WithCancel(context.Background())
 	c := &IEXClient{
-		baseURL:  "https://cloud.iexapis.com",
-		apiKey:   apiKey,
-		ctx:      ctx,
-		cancel:   cancel,
+		baseURL: "https://cloud.iexapis.com",
+		apiKey:  apiKey,
+		ctx:     ctx,
+		cancel:  cancel,
 		httpClient: &http.Client{
 			Timeout: 10 * time.Second,
 		},

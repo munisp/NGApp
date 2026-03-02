@@ -14,10 +14,11 @@ import (
 // Client wraps Fluvio real-time streaming with TCP connectivity,
 // circuit breaker resilience, and background reconnection.
 // Topics (Fluvio topics, separate from Kafka):
-//   market-ticks       - Raw tick data from exchanges (sub-millisecond latency)
-//   price-aggregates   - Aggregated OHLCV candles
-//   trade-signals      - AI/ML generated trading signals
-//   risk-alerts        - Real-time risk threshold breaches
+//
+//	market-ticks       - Raw tick data from exchanges (sub-millisecond latency)
+//	price-aggregates   - Aggregated OHLCV candles
+//	trade-signals      - AI/ML generated trading signals
+//	risk-alerts        - Real-time risk threshold breaches
 type Client struct {
 	endpoint     string
 	connected    bool

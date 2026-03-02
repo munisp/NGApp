@@ -18,19 +18,21 @@ import (
 
 // Client wraps Permify fine-grained authorization with real HTTP/gRPC connectivity.
 // Schema defines:
-//   entity user {}
-//   entity organization { relation member @user; relation admin @user }
-//   entity commodity { relation exchange @organization }
-//   entity order { relation owner @user; relation commodity @commodity }
-//   entity portfolio { relation owner @user }
-//   entity alert { relation owner @user }
-//   entity report { relation viewer @user; relation organization @organization }
+//
+//	entity user {}
+//	entity organization { relation member @user; relation admin @user }
+//	entity commodity { relation exchange @organization }
+//	entity order { relation owner @user; relation commodity @commodity }
+//	entity portfolio { relation owner @user }
+//	entity alert { relation owner @user }
+//	entity report { relation viewer @user; relation organization @organization }
 //
 // Permission model:
-//   Farmers: can trade agricultural commodities, view own portfolio
-//   Retail traders: can trade all commodities, full portfolio access
-//   Institutional: all permissions + bulk orders + API access + advanced analytics
-//   Cooperative: shared portfolio management, delegated trading
+//
+//	Farmers: can trade agricultural commodities, view own portfolio
+//	Retail traders: can trade all commodities, full portfolio access
+//	Institutional: all permissions + bulk orders + API access + advanced analytics
+//	Cooperative: shared portfolio management, delegated trading
 type Client struct {
 	endpoint     string
 	connected    bool

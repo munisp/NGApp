@@ -35,15 +35,15 @@ type Client struct {
 }
 
 type TokenClaims struct {
-	Sub            string   `json:"sub"`
-	Email          string   `json:"email"`
-	Name           string   `json:"name"`
-	PreferredUser  string   `json:"preferred_username"`
-	EmailVerified  bool     `json:"email_verified"`
-	RealmRoles     []string `json:"realm_roles"`
-	AccountTier    string   `json:"account_tier"`
-	Exp            int64    `json:"exp"`
-	Iat            int64    `json:"iat"`
+	Sub           string   `json:"sub"`
+	Email         string   `json:"email"`
+	Name          string   `json:"name"`
+	PreferredUser string   `json:"preferred_username"`
+	EmailVerified bool     `json:"email_verified"`
+	RealmRoles    []string `json:"realm_roles"`
+	AccountTier   string   `json:"account_tier"`
+	Exp           int64    `json:"exp"`
+	Iat           int64    `json:"iat"`
 }
 
 type TokenResponse struct {
@@ -58,12 +58,12 @@ type TokenResponse struct {
 func NewClient(urlStr, realm, clientID string) *Client {
 	ctx, cancel := context.WithCancel(context.Background())
 	c := &Client{
-		url:      urlStr,
-		realm:    realm,
-		clientID: clientID,
+		url:        urlStr,
+		realm:      realm,
+		clientID:   clientID,
 		httpClient: &http.Client{Timeout: 5 * time.Second},
-		ctx:    ctx,
-		cancel: cancel,
+		ctx:        ctx,
+		cancel:     cancel,
 	}
 	c.cb = gobreaker.NewCircuitBreaker[[]byte](gobreaker.Settings{
 		Name: "keycloak", MaxRequests: 3, Interval: 30 * time.Second, Timeout: 10 * time.Second,

@@ -23,44 +23,44 @@ import (
 
 // EconomicEvent represents a scheduled economic event.
 type EconomicEvent struct {
-	ID          string    `json:"id"`
-	Title       string    `json:"title"`
-	Country     string    `json:"country"`
-	Currency    string    `json:"currency"`
-	Impact      string    `json:"impact"` // "high", "medium", "low"
-	DateTime    time.Time `json:"dateTime"`
-	Actual      string    `json:"actual"`
-	Forecast    string    `json:"forecast"`
-	Previous    string    `json:"previous"`
-	Category    string    `json:"category"` // "interest_rate", "employment", "gdp", "inflation", "trade_balance"
-	Source      string    `json:"source"`
+	ID       string    `json:"id"`
+	Title    string    `json:"title"`
+	Country  string    `json:"country"`
+	Currency string    `json:"currency"`
+	Impact   string    `json:"impact"` // "high", "medium", "low"
+	DateTime time.Time `json:"dateTime"`
+	Actual   string    `json:"actual"`
+	Forecast string    `json:"forecast"`
+	Previous string    `json:"previous"`
+	Category string    `json:"category"` // "interest_rate", "employment", "gdp", "inflation", "trade_balance"
+	Source   string    `json:"source"`
 }
 
 // CentralBankRate represents a central bank interest rate.
 type CentralBankRate struct {
-	Bank        string    `json:"bank"`
-	Country     string    `json:"country"`
-	Currency    string    `json:"currency"`
-	Rate        float64   `json:"rate"`
-	PreviousRate float64  `json:"previousRate"`
-	LastChanged time.Time `json:"lastChanged"`
-	NextMeeting time.Time `json:"nextMeeting"`
-	Source      string    `json:"source"`
-	Trend       string    `json:"trend"` // "rising", "falling", "stable"
+	Bank         string    `json:"bank"`
+	Country      string    `json:"country"`
+	Currency     string    `json:"currency"`
+	Rate         float64   `json:"rate"`
+	PreviousRate float64   `json:"previousRate"`
+	LastChanged  time.Time `json:"lastChanged"`
+	NextMeeting  time.Time `json:"nextMeeting"`
+	Source       string    `json:"source"`
+	Trend        string    `json:"trend"` // "rising", "falling", "stable"
 }
 
 // SwapRateData represents overnight/term swap rate data.
 type SwapRateData struct {
-	Currency     string  `json:"currency"`
-	OvernightRate float64 `json:"overnightRate"`
-	TomNextRate  float64 `json:"tomNextRate"`
-	OneWeekRate  float64 `json:"oneWeekRate"`
-	OneMonthRate float64 `json:"oneMonthRate"`
-	ThreeMonthRate float64 `json:"threeMonthRate"`
-	SixMonthRate float64 `json:"sixMonthRate"`
-	OneYearRate  float64 `json:"oneYearRate"`
-	Source       string  `json:"source"`
-	LastUpdated  time.Time `json:"lastUpdated"`
+	Currency       string    `json:"currency"`
+	OvernightRate  float64   `json:"overnightRate"`
+	TomNextRate    float64   `json:"tomNextRate"`
+	OneWeekRate    float64   `json:"oneWeekRate"`
+	OneMonthRate   float64   `json:"oneMonthRate"`
+	ThreeMonthRate float64   `json:"threeMonthRate"`
+	SixMonthRate   float64   `json:"sixMonthRate"`
+	OneYearRate    float64   `json:"oneYearRate"`
+	Source         string    `json:"source"`
+	LastUpdated    time.Time `json:"lastUpdated"`
 }
 
 // ExchangeRate represents a reference exchange rate from a central bank.
@@ -74,13 +74,13 @@ type ExchangeRate struct {
 
 // CalendarClient provides economic calendar and central bank rate data.
 type CalendarClient struct {
-	fredAPIKey  string
-	connected   bool
+	fredAPIKey   string
+	connected    bool
 	fallbackMode bool
-	mu          sync.RWMutex
-	httpClient  *http.Client
-	ctx         context.Context
-	cancel      context.CancelFunc
+	mu           sync.RWMutex
+	httpClient   *http.Client
+	ctx          context.Context
+	cancel       context.CancelFunc
 
 	// Cached data
 	centralBankRates []CentralBankRate

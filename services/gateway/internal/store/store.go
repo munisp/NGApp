@@ -17,12 +17,12 @@ import (
 type Store struct {
 	mu            sync.RWMutex
 	commodities   []models.Commodity
-	orders        map[string]models.Order        // orderID -> Order
-	trades        map[string]models.Trade        // tradeID -> Trade
-	positions     map[string]models.Position     // positionID -> Position
-	alerts        map[string]models.PriceAlert   // alertID -> Alert
-	users         map[string]models.User         // userID -> User
-	sessions      map[string]models.Session      // sessionID -> Session
+	orders        map[string]models.Order           // orderID -> Order
+	trades        map[string]models.Trade           // tradeID -> Trade
+	positions     map[string]models.Position        // positionID -> Position
+	alerts        map[string]models.PriceAlert      // alertID -> Alert
+	users         map[string]models.User            // userID -> User
+	sessions      map[string]models.Session         // sessionID -> Session
 	preferences   map[string]models.UserPreferences // userID -> Preferences
 	notifications map[string][]models.Notification  // userID -> []Notification
 	tickers       map[string]models.MarketTicker    // symbol -> Ticker
@@ -30,8 +30,8 @@ type Store struct {
 	auditLog      []models.AuditEntry               // append-only audit log
 	// Forex
 	fxPairs     []models.FXPair
-	fxOrders    map[string]models.FXOrder      // orderID -> FXOrder
-	fxPositions map[string]models.FXPosition   // positionID -> FXPosition
+	fxOrders    map[string]models.FXOrder    // orderID -> FXOrder
+	fxPositions map[string]models.FXPosition // positionID -> FXPosition
 }
 
 func New() *Store {
@@ -142,12 +142,12 @@ func (s *Store) seedData() {
 			Side:           side,
 			Type:           otype,
 			Status:         status,
-			Quantity:        qty,
-			Price:           math.Round(price*100) / 100,
-			FilledQuantity:  math.Round(filled*100) / 100,
-			AveragePrice:    math.Round(price*1.001*100) / 100,
-			CreatedAt:       time.Now().Add(-time.Duration(i) * time.Hour),
-			UpdatedAt:       time.Now().Add(-time.Duration(i) * 30 * time.Minute),
+			Quantity:       qty,
+			Price:          math.Round(price*100) / 100,
+			FilledQuantity: math.Round(filled*100) / 100,
+			AveragePrice:   math.Round(price*1.001*100) / 100,
+			CreatedAt:      time.Now().Add(-time.Duration(i) * time.Hour),
+			UpdatedAt:      time.Now().Add(-time.Duration(i) * 30 * time.Minute),
 		}
 	}
 
@@ -637,19 +637,45 @@ func (s *Store) UpdatePreferences(userID string, req models.UpdatePreferencesReq
 	if !ok {
 		prefs = models.UserPreferences{UserID: userID}
 	}
-	if req.OrderFilled != nil { prefs.OrderFilled = *req.OrderFilled }
-	if req.PriceAlerts != nil { prefs.PriceAlerts = *req.PriceAlerts }
-	if req.MarginWarnings != nil { prefs.MarginWarnings = *req.MarginWarnings }
-	if req.MarketNews != nil { prefs.MarketNews = *req.MarketNews }
-	if req.SettlementUpdates != nil { prefs.SettlementUpdates = *req.SettlementUpdates }
-	if req.SystemMaintenance != nil { prefs.SystemMaintenance = *req.SystemMaintenance }
-	if req.EmailNotifications != nil { prefs.EmailNotifications = *req.EmailNotifications }
-	if req.SMSNotifications != nil { prefs.SMSNotifications = *req.SMSNotifications }
-	if req.PushNotifications != nil { prefs.PushNotifications = *req.PushNotifications }
-	if req.USSDNotifications != nil { prefs.USSDNotifications = *req.USSDNotifications }
-	if req.DefaultCurrency != nil { prefs.DefaultCurrency = *req.DefaultCurrency }
-	if req.TimeZone != nil { prefs.TimeZone = *req.TimeZone }
-	if req.DefaultChartPeriod != nil { prefs.DefaultChartPeriod = *req.DefaultChartPeriod }
+	if req.OrderFilled != nil {
+		prefs.OrderFilled = *req.OrderFilled
+	}
+	if req.PriceAlerts != nil {
+		prefs.PriceAlerts = *req.PriceAlerts
+	}
+	if req.MarginWarnings != nil {
+		prefs.MarginWarnings = *req.MarginWarnings
+	}
+	if req.MarketNews != nil {
+		prefs.MarketNews = *req.MarketNews
+	}
+	if req.SettlementUpdates != nil {
+		prefs.SettlementUpdates = *req.SettlementUpdates
+	}
+	if req.SystemMaintenance != nil {
+		prefs.SystemMaintenance = *req.SystemMaintenance
+	}
+	if req.EmailNotifications != nil {
+		prefs.EmailNotifications = *req.EmailNotifications
+	}
+	if req.SMSNotifications != nil {
+		prefs.SMSNotifications = *req.SMSNotifications
+	}
+	if req.PushNotifications != nil {
+		prefs.PushNotifications = *req.PushNotifications
+	}
+	if req.USSDNotifications != nil {
+		prefs.USSDNotifications = *req.USSDNotifications
+	}
+	if req.DefaultCurrency != nil {
+		prefs.DefaultCurrency = *req.DefaultCurrency
+	}
+	if req.TimeZone != nil {
+		prefs.TimeZone = *req.TimeZone
+	}
+	if req.DefaultChartPeriod != nil {
+		prefs.DefaultChartPeriod = *req.DefaultChartPeriod
+	}
 	s.preferences[userID] = prefs
 	return prefs, nil
 }

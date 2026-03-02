@@ -50,14 +50,14 @@ data:
       }
     }
 
-    # Seal configuration — use AWS KMS or GCP KMS in production
-    # For dev: use Shamir (default)
-    seal "transit" {
-      address      = "https://vault.nexcom-security.svc.cluster.local:8200"
-      disable_renewal = false
-      key_name     = "autounseal"
-      mount_path   = "transit/"
-    }
+    # Seal configuration — use cloud KMS for auto-unseal in production.
+    # The transit seal below pointed to itself (circular reference) — replaced
+    # with AWS KMS. Switch to gcpckms or azurekeyvault for other clouds.
+    # For local dev, comment out this block to use Shamir (manual unseal).
+    # seal "awskms" {
+    #   region     = "eu-west-1"
+    #   kms_key_id = "REPLACE_WITH_YOUR_KMS_KEY_ID"
+    # }
 
     telemetry {
       prometheus_retention_time = "24h"

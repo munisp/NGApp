@@ -48,11 +48,11 @@ type Route struct {
 
 // Upstream represents an APISIX upstream (backend service pool)
 type Upstream struct {
-	ID     string            `json:"id,omitempty"`
-	Type   string            `json:"type"`
-	Nodes  map[string]int    `json:"nodes"`
-	Checks *HealthCheck      `json:"checks,omitempty"`
-	TLS    *UpstreamTLS      `json:"tls,omitempty"`
+	ID     string         `json:"id,omitempty"`
+	Type   string         `json:"type"`
+	Nodes  map[string]int `json:"nodes"`
+	Checks *HealthCheck   `json:"checks,omitempty"`
+	TLS    *UpstreamTLS   `json:"tls,omitempty"`
 }
 
 // UpstreamTLS configures mTLS between APISIX and upstream
@@ -70,9 +70,9 @@ type HealthCheck struct {
 
 // ActiveHealthCheck is an active upstream health check
 type ActiveHealthCheck struct {
-	Type     string          `json:"type"`
-	HTTPPath string          `json:"http_path"`
-	Healthy  *HealthyConfig  `json:"healthy,omitempty"`
+	Type      string           `json:"type"`
+	HTTPPath  string           `json:"http_path"`
+	Healthy   *HealthyConfig   `json:"healthy,omitempty"`
 	Unhealthy *UnhealthyConfig `json:"unhealthy,omitempty"`
 }
 
@@ -106,8 +106,8 @@ type Consumer struct {
 
 // TrafficSplitRule defines a canary/blue-green deployment rule
 type TrafficSplitRule struct {
-	Match   []map[string]interface{} `json:"match,omitempty"`
-	WeightedUpstreams []WeightedUpstream `json:"weighted_upstreams"`
+	Match             []map[string]interface{} `json:"match,omitempty"`
+	WeightedUpstreams []WeightedUpstream       `json:"weighted_upstreams"`
 }
 
 // WeightedUpstream defines a weighted upstream for traffic splitting
@@ -217,18 +217,18 @@ func (c *Client) bootstrapRoutes() {
 
 	// Primary gateway route — all /api/v1/* traffic
 	c.CreateRoute(Route{
-		ID:   "gateway-primary",
-		URI:  "/api/v1/*",
-		Name: "gateway-primary",
+		ID:      "gateway-primary",
+		URI:     "/api/v1/*",
+		Name:    "gateway-primary",
 		Methods: []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
 		Upstream: &Upstream{
 			Type:  "roundrobin",
 			Nodes: map[string]int{"gateway:8000": 1},
 			Checks: &HealthCheck{
 				Active: &ActiveHealthCheck{
-					Type:     "http",
-					HTTPPath: "/health",
-					Healthy:  &HealthyConfig{Interval: 5, Successes: 2},
+					Type:      "http",
+					HTTPPath:  "/health",
+					Healthy:   &HealthyConfig{Interval: 5, Successes: 2},
 					Unhealthy: &UnhealthyConfig{Interval: 5, HTTPFailures: 3},
 				},
 			},
@@ -254,7 +254,7 @@ func (c *Client) bootstrapRoutes() {
 						"port": 9092,
 					},
 				},
-				"kafka_topic":   "nexcom-api-logs",
+				"kafka_topic":    "nexcom-api-logs",
 				"batch_max_size": 100,
 			},
 		},

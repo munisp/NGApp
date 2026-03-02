@@ -15,8 +15,10 @@ import (
 // Client wraps TigerBeetle double-entry accounting with real TCP connectivity
 // and circuit breaker resilience. Background reconnection auto-heals.
 // Account structure:
-//   Each user has: margin account, settlement account, fee account
-//   Exchange has: clearing account, fee collection account
+//
+//	Each user has: margin account, settlement account, fee account
+//	Exchange has: clearing account, fee collection account
+//
 // All trades create double-entry transfers: buyer margin → clearing → seller settlement
 type Client struct {
 	addresses    string
@@ -35,15 +37,15 @@ type Client struct {
 }
 
 type Account struct {
-	ID              string `json:"id"`
-	UserID          string `json:"userId"`
-	AccountType     string `json:"accountType"` // margin, settlement, fee, clearing
-	Ledger          uint32 `json:"ledger"`
-	Code            uint16 `json:"code"`
-	DebitsPosted    uint64 `json:"debitsPosted"`
-	CreditsPosted   uint64 `json:"creditsPosted"`
-	DebitsPending   uint64 `json:"debitsPending"`
-	CreditsPending  uint64 `json:"creditsPending"`
+	ID             string `json:"id"`
+	UserID         string `json:"userId"`
+	AccountType    string `json:"accountType"` // margin, settlement, fee, clearing
+	Ledger         uint32 `json:"ledger"`
+	Code           uint16 `json:"code"`
+	DebitsPosted   uint64 `json:"debitsPosted"`
+	CreditsPosted  uint64 `json:"creditsPosted"`
+	DebitsPending  uint64 `json:"debitsPending"`
+	CreditsPending uint64 `json:"creditsPending"`
 }
 
 type Transfer struct {
