@@ -1088,8 +1088,27 @@ async fn fee_calculate_trade(
 
 async fn fee_subscriptions(
     State(engine): State<AppState>,
-) -> Json<ApiResponse<Vec<fees::Subscription>>> {
-    Json(ApiResponse::ok(engine.fees.active_subscriptions()))
+) -> Json<ApiResponse<serde_json::Value>> {
+    let subs: Vec<serde_json::Value> = engine
+        .fees
+        .active_subscriptions()
+        .iter()
+        .map(|s| {
+            serde_json::json!({
+                "id": s.id,
+                "account_id": s.account_id,
+                "service_name": s.service_name,
+                "fee_type": s.fee_type,
+                "amount_per_cycle": from_price(s.amount_per_cycle),
+                "billing_cycle": s.billing_cycle,
+                "status": s.status,
+                "started_at": s.started_at,
+                "next_billing": s.next_billing,
+                "expires_at": s.expires_at,
+            })
+        })
+        .collect();
+    Json(ApiResponse::ok(serde_json::json!(subs)))
 }
 
 #[derive(serde::Deserialize)]
@@ -1117,8 +1136,25 @@ async fn fee_create_subscription(
 
 async fn fee_memberships(
     State(engine): State<AppState>,
-) -> Json<ApiResponse<Vec<fees::Membership>>> {
-    Json(ApiResponse::ok(engine.fees.active_memberships()))
+) -> Json<ApiResponse<serde_json::Value>> {
+    let mems: Vec<serde_json::Value> = engine
+        .fees
+        .active_memberships()
+        .iter()
+        .map(|m| {
+            serde_json::json!({
+                "id": m.id,
+                "account_id": m.account_id,
+                "membership_type": m.membership_type,
+                "tier": m.tier,
+                "annual_fee": from_price(m.annual_fee),
+                "status": m.status,
+                "joined_at": m.joined_at,
+                "valid_until": m.valid_until,
+            })
+        })
+        .collect();
+    Json(ApiResponse::ok(serde_json::json!(mems)))
 }
 
 #[derive(serde::Deserialize)]
