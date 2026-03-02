@@ -699,7 +699,7 @@ func (s *Server) kycGetApplication(c *gin.Context) {
 	s.proxyGet(c, s.cfg.KYCServiceURL, "/api/v1/kyc/applications/"+c.Param("id"))
 }
 func (s *Server) kycStakeholderTypes(c *gin.Context) {
-	s.proxyGet(c, s.cfg.KYCServiceURL, "/api/v1/kyc/stakeholder-types")
+	s.proxyGet(c, s.cfg.KYCServiceURL, "/api/v1/onboarding/stakeholder-types")
 }
 func (s *Server) kycStats(c *gin.Context) {
 	s.proxyGet(c, s.cfg.KYCServiceURL, "/api/v1/kyc/stats")
