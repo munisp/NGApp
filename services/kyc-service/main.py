@@ -23,8 +23,15 @@ from fastapi.responses import JSONResponse
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from models.schemas import (
+    AgentOnboardFarmerRequest,
+    AgentProfile,
+    CommodityCategory,
+    CommodityGrade,
+    CreateAgentRequest,
     CreateKYBRequest,
     CreateKYCRequest,
+    CreateProduceRequest,
+    CreateWarehouseReceiptRequest,
     DocumentType,
     KYBApplication,
     KYBStatus,
@@ -33,9 +40,12 @@ from models.schemas import (
     LivenessChallenge,
     LivenessResult,
     OnboardingStatus,
+    ProduceRegistration,
     ReviewDecision,
     RiskLevel,
     StakeholderType,
+    WarehouseReceipt,
+    WarehouseReceiptStatus,
 )
 from ocr.paddle_ocr import PaddleOCREngine
 from document.docling_parser import DoclingParser, VLMDocumentVerifier
@@ -68,6 +78,9 @@ onboarding = StakeholderOnboarding()
 kyc_applications: dict[str, KYCApplication] = {}
 kyb_applications: dict[str, KYBApplication] = {}
 liveness_sessions: dict[str, dict] = {}  # session_id -> LivenessSession dict
+warehouse_receipts: dict[str, WarehouseReceipt] = {}
+produce_registrations: dict[str, ProduceRegistration] = {}
+agent_profiles: dict[str, AgentProfile] = {}
 
 UPLOAD_DIR = os.environ.get("UPLOAD_DIR", "/tmp/kyc-uploads")
 os.makedirs(UPLOAD_DIR, exist_ok=True)
@@ -236,6 +249,196 @@ def _seed_data() -> None:
         })
         kyb_applications[seed["id"]] = app_obj
 
+    # Seed farmer KYC applications
+    farmer_seeds = [
+        {
+            "id": "kyc-f01",
+            "account_id": "ACC-FARM-001",
+            "stakeholder_type": StakeholderType.SMALLHOLDER_FARMER,
+            "status": KYCStatus.APPROVED,
+            "full_name": "Adamu Bello",
+            "email": "",
+            "phone_number": "+234-806-111-2222",
+            "nationality": "Nigerian",
+            "address": "Kura LGA, Kano State",
+            "farm_location_gps": "11.7704,8.4361",
+            "farm_size_hectares": 3.5,
+            "primary_crop": "Maize",
+            "cooperative_id": "kyb-coop-01",
+            "cooperative_vouched": True,
+            "risk_level": RiskLevel.LOW,
+            "risk_score": 0.05,
+            "approved_at": datetime(2025, 7, 1),
+        },
+        {
+            "id": "kyc-f02",
+            "account_id": "ACC-FARM-002",
+            "stakeholder_type": StakeholderType.SMALLHOLDER_FARMER,
+            "status": KYCStatus.UNDER_REVIEW,
+            "full_name": "Hauwa Yakubu",
+            "email": "",
+            "phone_number": "+234-807-333-4444",
+            "nationality": "Nigerian",
+            "address": "Giwa LGA, Kaduna State",
+            "farm_location_gps": "11.2167,7.3333",
+            "farm_size_hectares": 1.2,
+            "primary_crop": "Sorghum",
+            "risk_level": RiskLevel.LOW,
+            "risk_score": 0.08,
+        },
+        {
+            "id": "kyc-f03",
+            "account_id": "ACC-FARM-003",
+            "stakeholder_type": StakeholderType.COMMERCIAL_FARMER,
+            "status": KYCStatus.APPROVED,
+            "full_name": "Oluwaseun Adebayo",
+            "email": "seun@adebayofarms.ng",
+            "phone_number": "+234-808-555-6666",
+            "nationality": "Nigerian",
+            "address": "Iseyin, Oyo State",
+            "bvn": "44567890123",
+            "nin": "55678901234",
+            "farm_location_gps": "7.9667,3.5833",
+            "farm_size_hectares": 120.0,
+            "primary_crop": "Cocoa",
+            "risk_level": RiskLevel.LOW,
+            "risk_score": 0.03,
+            "approved_at": datetime(2025, 6, 20),
+        },
+    ]
+    for seed in farmer_seeds:
+        app_obj = KYCApplication(**{**seed, "created_at": datetime(2025, 5, 1), "updated_at": datetime(2025, 7, 1)})
+        kyc_applications[seed["id"]] = app_obj
+
+    # Seed cooperative KYB applications
+    coop_seeds = [
+        {
+            "id": "kyb-coop-01",
+            "account_id": "ACC-COOP-001",
+            "stakeholder_type": StakeholderType.FARMER_COOPERATIVE,
+            "status": KYBStatus.APPROVED,
+            "business_name": "Kura Farmers Cooperative Society",
+            "registration_number": "COOP-KN-00123",
+            "tax_id": "TIN-COOP-001",
+            "business_type": "Cooperative Society",
+            "incorporation_date": "2018-06-15",
+            "registered_address": "Kura LGA, Kano State",
+            "business_address": "Kura LGA, Kano State",
+            "industry": "Agriculture",
+            "member_count": 245,
+            "aggregation_capacity_tonnes": 500.0,
+            "commodity_types": ["Maize", "Sorghum", "Millet"],
+            "coverage_lgas": ["Kura", "Garun Mallam", "Bunkure"],
+            "risk_level": RiskLevel.LOW,
+            "risk_score": 0.08,
+            "approved_at": datetime(2025, 5, 1),
+        },
+        {
+            "id": "kyb-coop-02",
+            "account_id": "ACC-COOP-002",
+            "stakeholder_type": StakeholderType.FARMER_COOPERATIVE,
+            "status": KYBStatus.UNDER_REVIEW,
+            "business_name": "Iseyin Cocoa Producers Association",
+            "registration_number": "COOP-OY-00456",
+            "tax_id": "TIN-COOP-002",
+            "business_type": "Cooperative Society",
+            "incorporation_date": "2020-01-10",
+            "registered_address": "Iseyin, Oyo State",
+            "business_address": "Iseyin, Oyo State",
+            "industry": "Agriculture - Cash Crops",
+            "member_count": 89,
+            "aggregation_capacity_tonnes": 200.0,
+            "commodity_types": ["Cocoa", "Cashew"],
+            "coverage_lgas": ["Iseyin", "Itesiwaju"],
+            "risk_level": RiskLevel.LOW,
+            "risk_score": 0.1,
+        },
+    ]
+    for seed in coop_seeds:
+        app_obj = KYBApplication(**{**seed, "created_at": datetime(2025, 3, 1), "updated_at": datetime(2025, 5, 1)})
+        kyb_applications[seed["id"]] = app_obj
+
+    # Seed warehouse receipts
+    wr_seeds = [
+        WarehouseReceipt(
+            id="WR-00001", depositor_id="kyc-f01", depositor_name="Adamu Bello",
+            warehouse_id="WH-KN-001", warehouse_name="Kano Commodity Warehouse",
+            warehouse_location="Bompai Industrial Area, Kano",
+            commodity="Maize", commodity_category=CommodityCategory.GRAINS,
+            quantity_tonnes=12.5, quality_grade=CommodityGrade.GRADE_A,
+            unit_price=280000, total_value=3500000, currency="NGN",
+            status=WarehouseReceiptStatus.ACTIVE, tradeable=True,
+            deposit_date="2025-09-15", expiry_date="2026-03-15",
+        ),
+        WarehouseReceipt(
+            id="WR-00002", depositor_id="kyc-f03", depositor_name="Oluwaseun Adebayo",
+            warehouse_id="WH-OY-001", warehouse_name="Iseyin Cocoa Store",
+            warehouse_location="Iseyin, Oyo State",
+            commodity="Cocoa Beans", commodity_category=CommodityCategory.CASH_CROPS,
+            quantity_tonnes=5.0, quality_grade=CommodityGrade.PREMIUM,
+            unit_price=4500000, total_value=22500000, currency="NGN",
+            status=WarehouseReceiptStatus.ACTIVE, tradeable=True, collateralized=True,
+            collateral_bank_id="kyb-tfb-01",
+            deposit_date="2025-10-01", expiry_date="2026-04-01",
+        ),
+    ]
+    for wr in wr_seeds:
+        warehouse_receipts[wr.id] = wr
+
+    # Seed produce registrations
+    produce_seeds = [
+        ProduceRegistration(
+            id="PRD-00001", producer_id="kyc-f01", producer_name="Adamu Bello",
+            cooperative_id="kyb-coop-01", commodity="Maize",
+            commodity_category=CommodityCategory.GRAINS, variety="SAMMAZ-15",
+            estimated_quantity_tonnes=8.0, quality_grade=CommodityGrade.GRADE_A,
+            farm_location="Kura LGA, Kano State", farm_gps="11.7704,8.4361",
+            farm_size_hectares=3.5, planting_date="2025-06-15",
+            expected_harvest_date="2025-10-15", asking_price_per_tonne=280000,
+            status="harvested", listed_on_exchange=True,
+            warehouse_receipt_id="WR-00001",
+        ),
+        ProduceRegistration(
+            id="PRD-00002", producer_id="kyc-f03", producer_name="Oluwaseun Adebayo",
+            commodity="Cocoa Beans", commodity_category=CommodityCategory.CASH_CROPS,
+            variety="Amelonado", estimated_quantity_tonnes=5.0,
+            quality_grade=CommodityGrade.PREMIUM,
+            farm_location="Iseyin, Oyo State", farm_gps="7.9667,3.5833",
+            farm_size_hectares=120.0, planting_date="2025-03-01",
+            expected_harvest_date="2025-09-30", asking_price_per_tonne=4500000,
+            status="harvested", listed_on_exchange=True,
+            warehouse_receipt_id="WR-00002",
+        ),
+        ProduceRegistration(
+            id="PRD-00003", producer_id="kyc-f02", producer_name="Hauwa Yakubu",
+            commodity="Sorghum", commodity_category=CommodityCategory.GRAINS,
+            variety="SAMSORG-17", estimated_quantity_tonnes=2.0,
+            quality_grade=CommodityGrade.GRADE_B,
+            farm_location="Giwa LGA, Kaduna State", farm_gps="11.2167,7.3333",
+            farm_size_hectares=1.2, planting_date="2025-06-20",
+            expected_harvest_date="2025-11-01", asking_price_per_tonne=220000,
+            status="growing",
+        ),
+    ]
+    for p in produce_seeds:
+        produce_registrations[p.id] = p
+
+    # Seed agent profiles
+    agent_seeds = [
+        AgentProfile(
+            id="AGT-001", full_name="Musa Ibrahim", phone_number="+234-809-111-0001",
+            email="musa.agent@nexcom.ng", region="North West", lga="Kura",
+            state="Kano", farmers_onboarded=45, active=True, verified=True,
+        ),
+        AgentProfile(
+            id="AGT-002", full_name="Blessing Okonkwo", phone_number="+234-809-222-0002",
+            email="blessing.agent@nexcom.ng", region="South West", lga="Iseyin",
+            state="Oyo", farmers_onboarded=28, active=True, verified=True,
+        ),
+    ]
+    for a in agent_seeds:
+        agent_profiles[a.id] = a
+
 
 _seed_data()
 
@@ -321,55 +524,41 @@ async def get_onboarding_requirements(stakeholder_type: str):
 async def list_stakeholder_types():
     """List all available stakeholder types and their descriptions."""
     types = [
-        {
-            "id": "retail_trader",
-            "name": "Individual Trader",
-            "description": "Personal trading account for commodity futures, options, and digital assets",
-            "kyb_required": False,
-            "estimated_time": "15-30 minutes",
-        },
-        {
-            "id": "institutional_investor",
-            "name": "Institutional Investor",
-            "description": "Fund, pension, or investment company seeking market access",
-            "kyb_required": False,
-            "estimated_time": "1-2 business days",
-        },
-        {
-            "id": "broker_dealer",
-            "name": "Broker/Dealer",
-            "description": "Licensed broker providing market access to clients",
-            "kyb_required": True,
-            "estimated_time": "5-10 business days",
-        },
-        {
-            "id": "market_maker",
-            "name": "Market Maker",
-            "description": "Liquidity provider with continuous two-sided quotes",
-            "kyb_required": True,
-            "estimated_time": "5-10 business days",
-        },
-        {
-            "id": "digital_asset_issuer",
-            "name": "Asset Issuer",
-            "description": "Commodity owner tokenizing assets for fractional trading",
-            "kyb_required": True,
-            "estimated_time": "3-5 business days",
-        },
-        {
-            "id": "api_consumer",
-            "name": "API/Fintech Partner",
-            "description": "Developer or fintech integrating via NEXCOM API",
-            "kyb_required": False,
-            "estimated_time": "1-2 business days",
-        },
-        {
-            "id": "exchange_member",
-            "name": "Exchange Member",
-            "description": "Full trading seat holder with direct market access",
-            "kyb_required": True,
-            "estimated_time": "10-15 business days",
-        },
+        # Trading & Finance
+        {"id": "retail_trader", "name": "Individual Trader", "category": "trading_finance", "description": "Personal trading account for commodity futures, options, and digital assets", "kyb_required": False, "estimated_time": "15-30 minutes"},
+        {"id": "institutional_investor", "name": "Institutional Investor", "category": "trading_finance", "description": "Fund, pension, or investment company seeking market access", "kyb_required": False, "estimated_time": "1-2 business days"},
+        {"id": "broker_dealer", "name": "Broker/Dealer", "category": "trading_finance", "description": "Licensed broker providing market access to clients", "kyb_required": True, "estimated_time": "5-10 business days"},
+        {"id": "market_maker", "name": "Market Maker", "category": "trading_finance", "description": "Liquidity provider with continuous two-sided quotes", "kyb_required": True, "estimated_time": "5-10 business days"},
+        {"id": "digital_asset_issuer", "name": "Asset Issuer", "category": "trading_finance", "description": "Commodity owner tokenizing assets for fractional trading", "kyb_required": True, "estimated_time": "3-5 business days"},
+        {"id": "api_consumer", "name": "API/Fintech Partner", "category": "trading_finance", "description": "Developer or fintech integrating via NEXCOM API", "kyb_required": False, "estimated_time": "1-2 business days"},
+        {"id": "exchange_member", "name": "Exchange Member", "category": "trading_finance", "description": "Full trading seat holder with direct market access", "kyb_required": True, "estimated_time": "10-15 business days"},
+        # Agriculture
+        {"id": "smallholder_farmer", "name": "Smallholder Farmer", "category": "agriculture", "description": "Small-scale farmer (under 5 hectares) — simplified onboarding, no BVN/NIN required", "kyb_required": False, "estimated_time": "5-10 minutes", "simplified_kyc": True},
+        {"id": "commercial_farmer", "name": "Commercial Farmer", "category": "agriculture", "description": "Large-scale farming operation with established production", "kyb_required": False, "estimated_time": "15-30 minutes"},
+        {"id": "farmer_cooperative", "name": "Farmer Cooperative", "category": "agriculture", "description": "Registered cooperative society aggregating produce from member farmers", "kyb_required": True, "estimated_time": "3-5 business days"},
+        {"id": "aggregator", "name": "Aggregator / Off-taker", "category": "agriculture", "description": "Bulk buyer purchasing directly from farmers and cooperatives", "kyb_required": True, "estimated_time": "3-5 business days"},
+        {"id": "processor", "name": "Processor", "category": "agriculture", "description": "Facility that processes raw agricultural commodities into finished goods", "kyb_required": True, "estimated_time": "5-10 business days"},
+        {"id": "exporter", "name": "Exporter", "category": "agriculture", "description": "Licensed commodity exporter with international trade capability", "kyb_required": True, "estimated_time": "5-10 business days"},
+        {"id": "importer", "name": "Importer", "category": "agriculture", "description": "Licensed importer bringing commodities into Nigerian market", "kyb_required": True, "estimated_time": "5-10 business days"},
+        # Mining & Metals
+        {"id": "artisanal_miner", "name": "Artisanal Miner", "category": "mining_metals", "description": "Small-scale miner — simplified onboarding with community attestation", "kyb_required": False, "estimated_time": "5-10 minutes", "simplified_kyc": True},
+        {"id": "mining_company", "name": "Mining Company", "category": "mining_metals", "description": "Licensed mining company with mineral extraction operations", "kyb_required": True, "estimated_time": "10-15 business days"},
+        {"id": "smelter_refiner", "name": "Smelter / Refiner", "category": "mining_metals", "description": "Facility that processes raw ores into refined metals", "kyb_required": True, "estimated_time": "5-10 business days"},
+        # Energy
+        {"id": "oil_producer", "name": "Oil Producer", "category": "energy", "description": "Upstream oil production company with extraction licenses", "kyb_required": True, "estimated_time": "10-15 business days"},
+        {"id": "gas_producer", "name": "Gas Producer", "category": "energy", "description": "Natural gas producer or LNG operator", "kyb_required": True, "estimated_time": "10-15 business days"},
+        {"id": "renewable_energy", "name": "Renewable Energy Producer", "category": "energy", "description": "Solar, wind, hydro, or biomass energy producer trading carbon credits", "kyb_required": True, "estimated_time": "5-10 business days"},
+        {"id": "fuel_distributor", "name": "Fuel Distributor", "category": "energy", "description": "Downstream fuel distribution and retail company", "kyb_required": True, "estimated_time": "5-10 business days"},
+        # Infrastructure & Services
+        {"id": "warehouse_operator", "name": "Warehouse Operator", "category": "infrastructure", "description": "Licensed commodity storage facility issuing warehouse receipts", "kyb_required": True, "estimated_time": "5-10 business days"},
+        {"id": "quality_inspector", "name": "Quality Inspector / Grader", "category": "infrastructure", "description": "Certified commodity quality inspection and grading service", "kyb_required": True, "estimated_time": "3-5 business days"},
+        {"id": "logistics_provider", "name": "Logistics Provider", "category": "infrastructure", "description": "Transportation and last-mile delivery for commodity movement", "kyb_required": True, "estimated_time": "3-5 business days"},
+        {"id": "insurance_provider", "name": "Insurance Provider", "category": "infrastructure", "description": "Crop, transit, and warehouse insurance underwriter", "kyb_required": True, "estimated_time": "5-10 business days"},
+        {"id": "collateral_manager", "name": "Collateral Manager", "category": "infrastructure", "description": "Third-party collateral management for commodity-backed financing", "kyb_required": True, "estimated_time": "5-10 business days"},
+        # Commodity Finance
+        {"id": "trade_finance_bank", "name": "Trade Finance Bank", "category": "commodity_finance", "description": "Bank providing trade finance, letters of credit, and warehouse receipt financing", "kyb_required": True, "estimated_time": "10-15 business days"},
+        {"id": "commodity_fund", "name": "Commodity Fund", "category": "commodity_finance", "description": "Investment fund focused on commodity asset allocation", "kyb_required": True, "estimated_time": "10-15 business days"},
+        {"id": "microfinance", "name": "Microfinance Institution", "category": "commodity_finance", "description": "Microfinance bank providing smallholder farmer loans", "kyb_required": True, "estimated_time": "5-10 business days"},
     ]
     return {"success": True, "data": types}
 
@@ -421,6 +610,10 @@ async def create_kyc_application(req: CreateKYCRequest):
         address=req.address,
         bvn=req.bvn,
         nin=req.nin,
+        farm_location_gps=req.farm_location_gps,
+        farm_size_hectares=req.farm_size_hectares,
+        primary_crop=req.primary_crop,
+        cooperative_id=req.cooperative_id,
     )
     kyc_applications[app_id] = app_obj
     return {"success": True, "data": _serialize_kyc(app_obj)}
@@ -623,6 +816,10 @@ async def create_kyb_application(req: CreateKYBRequest):
         website=req.website,
         directors=req.directors,
         shareholders=req.shareholders,
+        member_count=req.member_count,
+        aggregation_capacity_tonnes=req.aggregation_capacity_tonnes,
+        commodity_types=req.commodity_types,
+        coverage_lgas=req.coverage_lgas,
     )
     kyb_applications[app_id] = app_obj
     return {"success": True, "data": _serialize_kyb(app_obj)}
@@ -830,6 +1027,199 @@ async def parse_document_endpoint(
 
 
 # ══════════════════════════════════════════════════════════════════════════════
+# WAREHOUSE RECEIPTS
+# ══════════════════════════════════════════════════════════════════════════════
+
+@app.get("/api/v1/warehouse-receipts")
+async def list_warehouse_receipts(
+    status: Optional[str] = None,
+    depositor_id: Optional[str] = None,
+):
+    """List all warehouse receipts with optional filters."""
+    receipts = list(warehouse_receipts.values())
+    if status:
+        receipts = [r for r in receipts if r.status.value == status]
+    if depositor_id:
+        receipts = [r for r in receipts if r.depositor_id == depositor_id]
+    return {
+        "success": True,
+        "data": [r.model_dump(mode="json") for r in receipts],
+        "total": len(receipts),
+    }
+
+
+@app.get("/api/v1/warehouse-receipts/{receipt_id}")
+async def get_warehouse_receipt(receipt_id: str):
+    receipt = warehouse_receipts.get(receipt_id)
+    if not receipt:
+        raise HTTPException(status_code=404, detail="Warehouse receipt not found")
+    return {"success": True, "data": receipt.model_dump(mode="json")}
+
+
+@app.post("/api/v1/warehouse-receipts")
+async def create_warehouse_receipt(req: CreateWarehouseReceiptRequest):
+    """Create a new warehouse receipt for deposited commodity."""
+    receipt = WarehouseReceipt(
+        depositor_id=req.depositor_id,
+        warehouse_id=req.warehouse_id,
+        commodity=req.commodity,
+        commodity_category=req.commodity_category,
+        quantity_tonnes=req.quantity_tonnes,
+        quality_grade=req.quality_grade,
+        unit_price=req.unit_price,
+        total_value=req.unit_price * req.quantity_tonnes,
+        deposit_date=req.deposit_date,
+        expiry_date=req.expiry_date,
+        status=WarehouseReceiptStatus.ISSUED,
+        tradeable=True,
+    )
+    warehouse_receipts[receipt.id] = receipt
+    return {"success": True, "data": receipt.model_dump(mode="json")}
+
+
+@app.post("/api/v1/warehouse-receipts/{receipt_id}/trade")
+async def trade_warehouse_receipt(receipt_id: str):
+    """Mark a warehouse receipt as traded."""
+    receipt = warehouse_receipts.get(receipt_id)
+    if not receipt:
+        raise HTTPException(status_code=404, detail="Warehouse receipt not found")
+    if not receipt.tradeable:
+        raise HTTPException(status_code=400, detail="Receipt is not tradeable")
+    receipt.status = WarehouseReceiptStatus.TRADED
+    receipt.updated_at = datetime.utcnow()
+    return {"success": True, "data": receipt.model_dump(mode="json")}
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# PRODUCE REGISTRATION & QUALITY GRADING
+# ══════════════════════════════════════════════════════════════════════════════
+
+@app.get("/api/v1/produce/inventory")
+async def list_produce_inventory(
+    producer_id: Optional[str] = None,
+    cooperative_id: Optional[str] = None,
+    commodity_category: Optional[str] = None,
+):
+    """List produce registrations / inventory."""
+    items = list(produce_registrations.values())
+    if producer_id:
+        items = [p for p in items if p.producer_id == producer_id]
+    if cooperative_id:
+        items = [p for p in items if p.cooperative_id == cooperative_id]
+    if commodity_category:
+        items = [p for p in items if p.commodity_category.value == commodity_category]
+    return {
+        "success": True,
+        "data": [p.model_dump(mode="json") for p in items],
+        "total": len(items),
+    }
+
+
+@app.get("/api/v1/produce/{produce_id}")
+async def get_produce(produce_id: str):
+    produce = produce_registrations.get(produce_id)
+    if not produce:
+        raise HTTPException(status_code=404, detail="Produce registration not found")
+    return {"success": True, "data": produce.model_dump(mode="json")}
+
+
+@app.post("/api/v1/produce/register")
+async def register_produce(req: CreateProduceRequest):
+    """Register new produce / crop for listing on the exchange."""
+    produce = ProduceRegistration(
+        producer_id=req.producer_id,
+        cooperative_id=req.cooperative_id,
+        commodity=req.commodity,
+        commodity_category=req.commodity_category,
+        variety=req.variety,
+        estimated_quantity_tonnes=req.estimated_quantity_tonnes,
+        quality_grade=req.quality_grade,
+        farm_location=req.farm_location,
+        farm_gps=req.farm_gps,
+        farm_size_hectares=req.farm_size_hectares,
+        planting_date=req.planting_date,
+        expected_harvest_date=req.expected_harvest_date,
+        asking_price_per_tonne=req.asking_price_per_tonne,
+    )
+    produce_registrations[produce.id] = produce
+    return {"success": True, "data": produce.model_dump(mode="json")}
+
+
+@app.post("/api/v1/produce/{produce_id}/grade")
+async def grade_produce(produce_id: str, grade: str = "grade_a", inspector_notes: str = ""):
+    """Assign or update a quality grade for registered produce."""
+    produce = produce_registrations.get(produce_id)
+    if not produce:
+        raise HTTPException(status_code=404, detail="Produce not found")
+    produce.quality_grade = CommodityGrade(grade)
+    produce.updated_at = datetime.utcnow()
+    return {"success": True, "data": produce.model_dump(mode="json")}
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# AGENT PORTAL
+# ══════════════════════════════════════════════════════════════════════════════
+
+@app.get("/api/v1/agents")
+async def list_agents():
+    agents = list(agent_profiles.values())
+    return {
+        "success": True,
+        "data": [a.model_dump(mode="json") for a in agents],
+        "total": len(agents),
+    }
+
+
+@app.post("/api/v1/agents")
+async def create_agent(req: CreateAgentRequest):
+    """Register a new field agent for farmer onboarding."""
+    agent = AgentProfile(
+        full_name=req.full_name,
+        phone_number=req.phone_number,
+        email=req.email,
+        region=req.region,
+        lga=req.lga,
+        state=req.state,
+    )
+    agent_profiles[agent.id] = agent
+    return {"success": True, "data": agent.model_dump(mode="json")}
+
+
+@app.post("/api/v1/agents/{agent_id}/onboard-farmer")
+async def agent_onboard_farmer(agent_id: str, req: AgentOnboardFarmerRequest):
+    """Agent-assisted farmer onboarding — creates a simplified KYC application."""
+    agent = agent_profiles.get(agent_id)
+    if not agent:
+        raise HTTPException(status_code=404, detail="Agent not found")
+
+    app_id = f"kyc-{str(uuid.uuid4())[:8]}"
+    app_obj = KYCApplication(
+        id=app_id,
+        account_id=f"ACC-FARM-{str(uuid.uuid4())[:6].upper()}",
+        stakeholder_type=StakeholderType.SMALLHOLDER_FARMER,
+        full_name=req.full_name,
+        phone_number=req.phone_number,
+        farm_location_gps=req.farm_location_gps,
+        farm_size_hectares=req.farm_size_hectares,
+        primary_crop=req.primary_crop,
+        cooperative_id=req.cooperative_id,
+        cooperative_vouched=bool(req.cooperative_id),
+    )
+    kyc_applications[app_id] = app_obj
+
+    agent.farmers_onboarded += 1
+    agent.updated_at = datetime.utcnow()
+
+    return {
+        "success": True,
+        "data": {
+            "application": _serialize_kyc(app_obj),
+            "agent": agent.model_dump(mode="json"),
+        },
+    }
+
+
+# ══════════════════════════════════════════════════════════════════════════════
 # HELPERS
 # ══════════════════════════════════════════════════════════════════════════════
 
@@ -847,6 +1237,11 @@ def _serialize_kyc(app_obj: KYCApplication) -> dict:
         "address": app_obj.address,
         "bvn": app_obj.bvn,
         "nin": app_obj.nin,
+        "farm_location_gps": app_obj.farm_location_gps,
+        "farm_size_hectares": app_obj.farm_size_hectares,
+        "primary_crop": app_obj.primary_crop,
+        "cooperative_id": app_obj.cooperative_id,
+        "cooperative_vouched": app_obj.cooperative_vouched,
         "risk_level": app_obj.risk_level.value,
         "risk_score": app_obj.risk_score,
         "risk_factors": app_obj.risk_factors,
@@ -879,6 +1274,10 @@ def _serialize_kyb(app_obj: KYBApplication) -> dict:
         "annual_revenue": app_obj.annual_revenue,
         "employee_count": app_obj.employee_count,
         "website": app_obj.website,
+        "member_count": app_obj.member_count,
+        "aggregation_capacity_tonnes": app_obj.aggregation_capacity_tonnes,
+        "commodity_types": app_obj.commodity_types,
+        "coverage_lgas": app_obj.coverage_lgas,
         "directors_count": len(app_obj.directors),
         "shareholders_count": len(app_obj.shareholders),
         "ubos_count": len(app_obj.ultimate_beneficial_owners),

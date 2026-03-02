@@ -12,6 +12,7 @@ from pydantic import BaseModel, Field
 # ── Enums ──────────────────────────────────────────────────────────────────────
 
 class StakeholderType(str, Enum):
+    # Trading & Finance
     RETAIL_TRADER = "retail_trader"
     INSTITUTIONAL_INVESTOR = "institutional_investor"
     BROKER_DEALER = "broker_dealer"
@@ -19,6 +20,72 @@ class StakeholderType(str, Enum):
     DIGITAL_ASSET_ISSUER = "digital_asset_issuer"
     API_CONSUMER = "api_consumer"
     EXCHANGE_MEMBER = "exchange_member"
+    # Agriculture
+    SMALLHOLDER_FARMER = "smallholder_farmer"
+    COMMERCIAL_FARMER = "commercial_farmer"
+    FARMER_COOPERATIVE = "farmer_cooperative"
+    AGGREGATOR = "aggregator"
+    PROCESSOR = "processor"
+    EXPORTER = "exporter"
+    IMPORTER = "importer"
+    # Mining & Metals
+    ARTISANAL_MINER = "artisanal_miner"
+    MINING_COMPANY = "mining_company"
+    SMELTER_REFINER = "smelter_refiner"
+    # Energy
+    OIL_PRODUCER = "oil_producer"
+    GAS_PRODUCER = "gas_producer"
+    RENEWABLE_ENERGY = "renewable_energy"
+    FUEL_DISTRIBUTOR = "fuel_distributor"
+    # Infrastructure & Services
+    WAREHOUSE_OPERATOR = "warehouse_operator"
+    QUALITY_INSPECTOR = "quality_inspector"
+    LOGISTICS_PROVIDER = "logistics_provider"
+    INSURANCE_PROVIDER = "insurance_provider"
+    COLLATERAL_MANAGER = "collateral_manager"
+    # Finance
+    TRADE_FINANCE_BANK = "trade_finance_bank"
+    COMMODITY_FUND = "commodity_fund"
+    MICROFINANCE = "microfinance"
+
+
+class StakeholderCategory(str, Enum):
+    TRADING_FINANCE = "trading_finance"
+    AGRICULTURE = "agriculture"
+    MINING_METALS = "mining_metals"
+    ENERGY = "energy"
+    INFRASTRUCTURE = "infrastructure"
+    COMMODITY_FINANCE = "commodity_finance"
+
+
+class CommodityCategory(str, Enum):
+    GRAINS = "grains"
+    OILSEEDS = "oilseeds"
+    CASH_CROPS = "cash_crops"
+    TUBERS = "tubers"
+    FRUITS_VEGETABLES = "fruits_vegetables"
+    LIVESTOCK = "livestock"
+    PRECIOUS_METALS = "precious_metals"
+    BASE_METALS = "base_metals"
+    ENERGY = "energy"
+    CARBON = "carbon"
+
+
+class CommodityGrade(str, Enum):
+    PREMIUM = "premium"
+    GRADE_A = "grade_a"
+    GRADE_B = "grade_b"
+    GRADE_C = "grade_c"
+    UNGRADED = "ungraded"
+
+
+class WarehouseReceiptStatus(str, Enum):
+    ISSUED = "issued"
+    ACTIVE = "active"
+    TRADED = "traded"
+    SETTLED = "settled"
+    EXPIRED = "expired"
+    RELEASED = "released"
 
 
 class KYCStatus(str, Enum):
@@ -63,6 +130,17 @@ class DocumentType(str, Enum):
     AUDITED_FINANCIALS = "audited_financials"
     SHAREHOLDER_REGISTER = "shareholder_register"
     DIRECTOR_ID = "director_id"
+    # Farmer / Cooperative Documents
+    COOPERATIVE_MEMBERSHIP = "cooperative_membership"
+    FARM_REGISTRATION = "farm_registration"
+    LAND_TITLE = "land_title"
+    COMMUNITY_ATTESTATION = "community_attestation"
+    # Mining Documents
+    MINING_LICENSE = "mining_license"
+    ENVIRONMENTAL_PERMIT = "environmental_permit"
+    # Warehouse Documents
+    WAREHOUSE_LICENSE = "warehouse_license"
+    COMMODITY_BOARD_CERT = "commodity_board_cert"
 
 
 class LivenessChallenge(str, Enum):
@@ -160,6 +238,12 @@ class KYCApplication(BaseModel):
     address: str = ""
     bvn: Optional[str] = None  # Bank Verification Number
     nin: Optional[str] = None  # National Identification Number
+    # Farmer-specific fields
+    farm_location_gps: Optional[str] = None
+    farm_size_hectares: Optional[float] = None
+    primary_crop: Optional[str] = None
+    cooperative_id: Optional[str] = None
+    cooperative_vouched: bool = False
     # Documents
     documents: list[DocumentUpload] = Field(default_factory=list)
     ocr_results: list[OCRResult] = Field(default_factory=list)
@@ -216,6 +300,11 @@ class KYBApplication(BaseModel):
     annual_revenue: Optional[str] = None
     employee_count: Optional[int] = None
     website: Optional[str] = None
+    # Cooperative-specific fields
+    member_count: Optional[int] = None
+    aggregation_capacity_tonnes: Optional[float] = None
+    commodity_types: list[str] = Field(default_factory=list)
+    coverage_lgas: list[str] = Field(default_factory=list)
     # Directors & Shareholders
     directors: list[DirectorInfo] = Field(default_factory=list)
     shareholders: list[ShareholderInfo] = Field(default_factory=list)
@@ -276,19 +365,90 @@ class UBOInfo(BaseModel):
 KYBApplication.model_rebuild()
 
 
+# ── Warehouse Receipt Models ─────────────────────────────────────────────────
+
+class WarehouseReceipt(BaseModel):
+    id: str = Field(default_factory=lambda: f"WR-{str(uuid.uuid4())[:8].upper()}")
+    depositor_id: str
+    depositor_name: str = ""
+    warehouse_id: str
+    warehouse_name: str = ""
+    warehouse_location: str = ""
+    commodity: str = ""
+    commodity_category: CommodityCategory = CommodityCategory.GRAINS
+    quantity_tonnes: float = 0.0
+    quality_grade: CommodityGrade = CommodityGrade.UNGRADED
+    quality_inspector_id: Optional[str] = None
+    quality_report: Optional[str] = None
+    unit_price: float = 0.0
+    total_value: float = 0.0
+    currency: str = "NGN"
+    status: WarehouseReceiptStatus = WarehouseReceiptStatus.ISSUED
+    tradeable: bool = False
+    collateralized: bool = False
+    collateral_bank_id: Optional[str] = None
+    deposit_date: str = ""
+    expiry_date: Optional[str] = None
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+class ProduceRegistration(BaseModel):
+    id: str = Field(default_factory=lambda: f"PRD-{str(uuid.uuid4())[:8].upper()}")
+    producer_id: str
+    producer_name: str = ""
+    cooperative_id: Optional[str] = None
+    commodity: str = ""
+    commodity_category: CommodityCategory = CommodityCategory.GRAINS
+    variety: str = ""
+    estimated_quantity_tonnes: float = 0.0
+    quality_grade: CommodityGrade = CommodityGrade.UNGRADED
+    farm_location: str = ""
+    farm_gps: Optional[str] = None
+    farm_size_hectares: float = 0.0
+    planting_date: Optional[str] = None
+    expected_harvest_date: Optional[str] = None
+    asking_price_per_tonne: float = 0.0
+    currency: str = "NGN"
+    status: str = "registered"
+    listed_on_exchange: bool = False
+    warehouse_receipt_id: Optional[str] = None
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+class AgentProfile(BaseModel):
+    id: str = Field(default_factory=lambda: f"AGT-{str(uuid.uuid4())[:8].upper()}")
+    full_name: str = ""
+    phone_number: str = ""
+    email: str = ""
+    region: str = ""
+    lga: str = ""
+    state: str = ""
+    farmers_onboarded: int = 0
+    active: bool = True
+    verified: bool = False
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+
 # ── API Request/Response Models ────────────────────────────────────────────────
 
 class CreateKYCRequest(BaseModel):
     account_id: str
     stakeholder_type: StakeholderType
     full_name: str
-    email: str
+    email: str = ""
     phone_number: str
     date_of_birth: Optional[str] = None
     nationality: str = "Nigerian"
     address: str = ""
     bvn: Optional[str] = None
     nin: Optional[str] = None
+    farm_location_gps: Optional[str] = None
+    farm_size_hectares: Optional[float] = None
+    primary_crop: Optional[str] = None
+    cooperative_id: Optional[str] = None
 
 
 class CreateKYBRequest(BaseModel):
@@ -305,8 +465,59 @@ class CreateKYBRequest(BaseModel):
     annual_revenue: Optional[str] = None
     employee_count: Optional[int] = None
     website: Optional[str] = None
+    member_count: Optional[int] = None
+    aggregation_capacity_tonnes: Optional[float] = None
+    commodity_types: list[str] = Field(default_factory=list)
+    coverage_lgas: list[str] = Field(default_factory=list)
     directors: list[DirectorInfo] = Field(default_factory=list)
     shareholders: list[ShareholderInfo] = Field(default_factory=list)
+
+
+class CreateWarehouseReceiptRequest(BaseModel):
+    depositor_id: str
+    warehouse_id: str
+    commodity: str
+    commodity_category: CommodityCategory = CommodityCategory.GRAINS
+    quantity_tonnes: float
+    quality_grade: CommodityGrade = CommodityGrade.UNGRADED
+    unit_price: float = 0.0
+    deposit_date: str = ""
+    expiry_date: Optional[str] = None
+
+
+class CreateProduceRequest(BaseModel):
+    producer_id: str
+    cooperative_id: Optional[str] = None
+    commodity: str
+    commodity_category: CommodityCategory = CommodityCategory.GRAINS
+    variety: str = ""
+    estimated_quantity_tonnes: float = 0.0
+    quality_grade: CommodityGrade = CommodityGrade.UNGRADED
+    farm_location: str = ""
+    farm_gps: Optional[str] = None
+    farm_size_hectares: float = 0.0
+    planting_date: Optional[str] = None
+    expected_harvest_date: Optional[str] = None
+    asking_price_per_tonne: float = 0.0
+
+
+class CreateAgentRequest(BaseModel):
+    full_name: str
+    phone_number: str
+    email: str = ""
+    region: str = ""
+    lga: str = ""
+    state: str = ""
+
+
+class AgentOnboardFarmerRequest(BaseModel):
+    full_name: str
+    phone_number: str
+    farm_location_gps: Optional[str] = None
+    farm_size_hectares: Optional[float] = None
+    primary_crop: Optional[str] = None
+    cooperative_id: Optional[str] = None
+    photo_captured: bool = False
 
 
 class ReviewDecision(BaseModel):

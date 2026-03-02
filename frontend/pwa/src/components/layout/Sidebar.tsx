@@ -22,6 +22,8 @@ import {
   DollarSign,
   UserCheck,
   Fingerprint,
+  Warehouse,
+  Sprout,
   type LucideIcon,
 } from "lucide-react";
 
@@ -43,6 +45,8 @@ const navItems: NavItem[] = [
   { href: "/brokers", label: "Brokers", icon: Building2 },
   { href: "/digital-assets", label: "Digital Assets", icon: Coins },
   { href: "/onboarding", label: "KYC / KYB", icon: UserCheck },
+  { href: "/warehouse-receipts", label: "Warehouse Receipts", icon: Warehouse },
+  { href: "/produce-registration", label: "Produce & Crops", icon: Sprout },
   { href: "/compliance", label: "Compliance", icon: Fingerprint },
   { href: "/revenue", label: "Revenue", icon: DollarSign },
   { href: "/surveillance", label: "Surveillance", icon: Shield },

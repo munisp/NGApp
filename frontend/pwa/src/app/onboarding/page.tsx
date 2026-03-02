@@ -19,8 +19,26 @@ import {
   ArrowUpDown,
   RotateCcw,
   Loader2,
+  Sprout,
+  Pickaxe,
+  Fuel,
+  Warehouse,
+  Banknote,
+  Filter,
+  MapPin,
 } from "lucide-react";
 import { useKYCApplications, useKYBApplications, useStakeholderTypes, useOnboardingRequirements, useCreateKYC, useCreateKYB } from "@/lib/api-hooks";
+
+const CATEGORY_META: Record<string, { label: string; icon: typeof UserCheck; color: string }> = {
+  trading_finance: { label: "Trading & Finance", icon: UserCheck, color: "text-brand-400" },
+  agriculture: { label: "Agriculture", icon: Sprout, color: "text-green-400" },
+  mining_metals: { label: "Mining & Metals", icon: Pickaxe, color: "text-amber-400" },
+  energy: { label: "Energy", icon: Fuel, color: "text-orange-400" },
+  infrastructure: { label: "Infrastructure", icon: Warehouse, color: "text-cyan-400" },
+  commodity_finance: { label: "Commodity Finance", icon: Banknote, color: "text-purple-400" },
+};
+
+const FARMER_TYPES = ["smallholder_farmer", "commercial_farmer", "artisanal_miner"];
 
 /* ─── Status badge ────────────────────────────────────────────────────── */
 function StatusBadge({ status }: { status: string }) {
@@ -96,6 +114,8 @@ export default function OnboardingPage() {
   const [kybStep, setKybStep] = useState<KYBStep>("type");
   const [selectedType, setSelectedType] = useState<string>("");
   const [showNewForm, setShowNewForm] = useState(false);
+  const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const isFarmerFlow = FARMER_TYPES.includes(selectedType);
 
   const { applications: kycApps, loading: kycLoading } = useKYCApplications();
   const { applications: kybApps, loading: kybLoading } = useKYBApplications();
@@ -114,6 +134,10 @@ export default function OnboardingPage() {
     address: "",
     bvn: "",
     nin: "",
+    farm_location_gps: "",
+    farm_size_hectares: "",
+    primary_crop: "",
+    cooperative_id: "",
   });
 
   /* KYB form state */
@@ -255,32 +279,57 @@ export default function OnboardingPage() {
           {((activeTab === "kyc" && kycStep === "type") || (activeTab === "kyb" && kybStep === "type")) && (
             <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-6">
               <h2 className="text-lg font-semibold text-white mb-1">Choose Your Account Type</h2>
-              <p className="text-sm text-gray-400 mb-6">Select the account type that best describes your role on the exchange</p>
+              <p className="text-sm text-gray-400 mb-4">Select the account type that best describes your role on the exchange</p>
+
+              {/* Category filter tabs */}
+              <div className="flex flex-wrap gap-2 mb-6">
+                <button onClick={() => setCategoryFilter("all")} className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-all ${categoryFilter === "all" ? "bg-brand-500/20 text-brand-400 border border-brand-500/30" : "text-gray-400 hover:text-white border border-white/[0.06]"}`}>
+                  <Filter className="h-3 w-3" /> All ({(types ?? []).length})
+                </button>
+                {Object.entries(CATEGORY_META).map(([cat, meta]) => {
+                  const count = (types ?? []).filter((t: Record<string, unknown>) => t.category === cat).length;
+                  if (count === 0) return null;
+                  const CatIcon = meta.icon;
+                  return (
+                    <button key={cat} onClick={() => setCategoryFilter(cat)} className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-all ${categoryFilter === cat ? "bg-brand-500/20 text-brand-400 border border-brand-500/30" : "text-gray-400 hover:text-white border border-white/[0.06]"}`}>
+                      <CatIcon className={`h-3 w-3 ${meta.color}`} /> {meta.label} ({count})
+                    </button>
+                  );
+                })}
+              </div>
+
               {typesLoading ? (
                 <div className="flex items-center gap-2 text-gray-400"><Loader2 className="h-4 w-4 animate-spin" /> Loading...</div>
               ) : (
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                  {(types ?? []).map((t: Record<string, unknown>) => (
-                    <button
-                      key={t.id as string}
-                      onClick={() => handleSelectType(t.id as string)}
-                      className={`group flex flex-col items-start gap-3 rounded-xl border p-5 text-left transition-all hover:border-brand-500/40 hover:bg-brand-500/5 ${
-                        selectedType === t.id ? "border-brand-500/50 bg-brand-500/10" : "border-white/[0.06] bg-white/[0.01]"
-                      }`}
-                    >
-                      <div className="flex items-center gap-2">
-                        {t.kyb_required ? <Building2 className="h-5 w-5 text-purple-400" /> : <UserCheck className="h-5 w-5 text-brand-400" />}
-                        <span className="text-sm font-semibold text-white">{t.name as string}</span>
-                      </div>
-                      <p className="text-xs text-gray-400 leading-relaxed">{t.description as string}</p>
-                      <div className="flex items-center gap-2 mt-auto">
-                        <span className="text-[10px] font-medium text-gray-500">{t.estimated_time as string}</span>
-                        {Boolean(t.kyb_required) && (
-                          <span className="text-[10px] font-medium text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded-full">KYB Required</span>
-                        )}
-                      </div>
-                    </button>
-                  ))}
+                  {(types ?? []).filter((t: Record<string, unknown>) => categoryFilter === "all" || t.category === categoryFilter).map((t: Record<string, unknown>) => {
+                    const catMeta = CATEGORY_META[(t.category as string) ?? ""];
+                    const CatIcon = catMeta?.icon ?? UserCheck;
+                    return (
+                      <button
+                        key={t.id as string}
+                        onClick={() => handleSelectType(t.id as string)}
+                        className={`group flex flex-col items-start gap-3 rounded-xl border p-5 text-left transition-all hover:border-brand-500/40 hover:bg-brand-500/5 ${
+                          selectedType === t.id ? "border-brand-500/50 bg-brand-500/10" : "border-white/[0.06] bg-white/[0.01]"
+                        }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <CatIcon className={`h-5 w-5 ${catMeta?.color ?? "text-brand-400"}`} />
+                          <span className="text-sm font-semibold text-white">{t.name as string}</span>
+                        </div>
+                        <p className="text-xs text-gray-400 leading-relaxed">{t.description as string}</p>
+                        <div className="flex items-center gap-2 mt-auto flex-wrap">
+                          <span className="text-[10px] font-medium text-gray-500">{t.estimated_time as string}</span>
+                          {Boolean(t.kyb_required) && (
+                            <span className="text-[10px] font-medium text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded-full">KYB Required</span>
+                          )}
+                          {Boolean(t.simplified_kyc) && (
+                            <span className="text-[10px] font-medium text-green-400 bg-green-500/10 px-2 py-0.5 rounded-full">Simplified KYC</span>
+                          )}
+                        </div>
+                      </button>
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -289,8 +338,20 @@ export default function OnboardingPage() {
           {/* Step: Personal info (KYC) */}
           {activeTab === "kyc" && kycStep === "personal" && (
             <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-6">
-              <h2 className="text-lg font-semibold text-white mb-1">Personal Information</h2>
-              <p className="text-sm text-gray-400 mb-6">Please provide your personal details as they appear on your government-issued ID</p>
+              <h2 className="text-lg font-semibold text-white mb-1">{isFarmerFlow ? "Farmer Registration" : "Personal Information"}</h2>
+              <p className="text-sm text-gray-400 mb-6">{isFarmerFlow ? "Simplified registration — no BVN or NIN required. Just your name, phone, and farm details." : "Please provide your personal details as they appear on your government-issued ID"}</p>
+
+              {isFarmerFlow && (
+                <div className="mb-6 rounded-xl border border-green-500/20 bg-green-500/5 p-4">
+                  <div className="flex items-start gap-3">
+                    <Sprout className="h-5 w-5 text-green-400 mt-0.5" />
+                    <div>
+                      <p className="text-sm font-medium text-green-400">Simplified Farmer Onboarding</p>
+                      <p className="text-xs text-green-400/70 mt-1">BVN and NIN are not required. You can be vouched by your cooperative. Agent-assisted registration is also available at local collection centres.</p>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {requirements && (
                 <div className="mb-6 rounded-xl border border-blue-500/20 bg-blue-500/5 p-4">
@@ -362,28 +423,75 @@ export default function OnboardingPage() {
                     className="w-full rounded-lg border border-white/[0.08] bg-white/[0.03] px-3 py-2.5 text-sm text-white placeholder:text-gray-600 focus:border-brand-500/50 focus:outline-none"
                   />
                 </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-400 mb-1.5">BVN (Bank Verification Number)</label>
-                  <input
-                    type="text"
-                    value={kycForm.bvn}
-                    onChange={(e) => setKycForm({ ...kycForm, bvn: e.target.value })}
-                    placeholder="11-digit BVN"
-                    maxLength={11}
-                    className="w-full rounded-lg border border-white/[0.08] bg-white/[0.03] px-3 py-2.5 text-sm text-white placeholder:text-gray-600 focus:border-brand-500/50 focus:outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-400 mb-1.5">NIN (National Identification Number)</label>
-                  <input
-                    type="text"
-                    value={kycForm.nin}
-                    onChange={(e) => setKycForm({ ...kycForm, nin: e.target.value })}
-                    placeholder="11-digit NIN"
-                    maxLength={11}
-                    className="w-full rounded-lg border border-white/[0.08] bg-white/[0.03] px-3 py-2.5 text-sm text-white placeholder:text-gray-600 focus:border-brand-500/50 focus:outline-none"
-                  />
-                </div>
+                {!isFarmerFlow && (
+                  <>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-400 mb-1.5">BVN (Bank Verification Number)</label>
+                      <input
+                        type="text"
+                        value={kycForm.bvn}
+                        onChange={(e) => setKycForm({ ...kycForm, bvn: e.target.value })}
+                        placeholder="11-digit BVN"
+                        maxLength={11}
+                        className="w-full rounded-lg border border-white/[0.08] bg-white/[0.03] px-3 py-2.5 text-sm text-white placeholder:text-gray-600 focus:border-brand-500/50 focus:outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-400 mb-1.5">NIN (National Identification Number)</label>
+                      <input
+                        type="text"
+                        value={kycForm.nin}
+                        onChange={(e) => setKycForm({ ...kycForm, nin: e.target.value })}
+                        placeholder="11-digit NIN"
+                        maxLength={11}
+                        className="w-full rounded-lg border border-white/[0.08] bg-white/[0.03] px-3 py-2.5 text-sm text-white placeholder:text-gray-600 focus:border-brand-500/50 focus:outline-none"
+                      />
+                    </div>
+                  </>
+                )}
+                {isFarmerFlow && (
+                  <>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-400 mb-1.5">Farm Location (GPS)</label>
+                      <div className="flex gap-2">
+                        <input type="text" value={kycForm.farm_location_gps} onChange={(e) => setKycForm({ ...kycForm, farm_location_gps: e.target.value })}
+                          placeholder="e.g., 11.7704,8.4361" className="flex-1 rounded-lg border border-white/[0.08] bg-white/[0.03] px-3 py-2.5 text-sm text-white placeholder:text-gray-600 focus:border-brand-500/50 focus:outline-none" />
+                        <button type="button" className="flex items-center gap-1 rounded-lg border border-white/[0.08] bg-white/[0.03] px-3 py-2.5 text-xs text-gray-400 hover:text-white"><MapPin className="h-3 w-3" /> Locate</button>
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-400 mb-1.5">Farm Size (Hectares)</label>
+                      <input type="number" step="0.1" value={kycForm.farm_size_hectares} onChange={(e) => setKycForm({ ...kycForm, farm_size_hectares: e.target.value })}
+                        placeholder="e.g., 3.5" className="w-full rounded-lg border border-white/[0.08] bg-white/[0.03] px-3 py-2.5 text-sm text-white placeholder:text-gray-600 focus:border-brand-500/50 focus:outline-none" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-400 mb-1.5">Primary Crop / Commodity</label>
+                      <select value={kycForm.primary_crop} onChange={(e) => setKycForm({ ...kycForm, primary_crop: e.target.value })}
+                        className="w-full rounded-lg border border-white/[0.08] bg-white/[0.03] px-3 py-2.5 text-sm text-white focus:border-brand-500/50 focus:outline-none">
+                        <option value="">Select crop...</option>
+                        <option value="Maize">Maize</option>
+                        <option value="Sorghum">Sorghum</option>
+                        <option value="Rice">Rice</option>
+                        <option value="Millet">Millet</option>
+                        <option value="Cocoa">Cocoa</option>
+                        <option value="Cashew">Cashew</option>
+                        <option value="Sesame">Sesame</option>
+                        <option value="Soybean">Soybean</option>
+                        <option value="Groundnut">Groundnut</option>
+                        <option value="Palm Oil">Palm Oil</option>
+                        <option value="Cotton">Cotton</option>
+                        <option value="Cassava">Cassava</option>
+                        <option value="Yam">Yam</option>
+                        <option value="Other">Other</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-400 mb-1.5">Cooperative ID (optional)</label>
+                      <input type="text" value={kycForm.cooperative_id} onChange={(e) => setKycForm({ ...kycForm, cooperative_id: e.target.value })}
+                        placeholder="If you belong to a cooperative" className="w-full rounded-lg border border-white/[0.08] bg-white/[0.03] px-3 py-2.5 text-sm text-white placeholder:text-gray-600 focus:border-brand-500/50 focus:outline-none" />
+                    </div>
+                  </>
+                )}
               </div>
 
               <div className="mt-6 flex justify-between">
@@ -392,7 +500,7 @@ export default function OnboardingPage() {
                 </button>
                 <button
                   onClick={handleSubmitKYC}
-                  disabled={creatingKYC || !kycForm.full_name || !kycForm.email}
+                  disabled={creatingKYC || !kycForm.full_name || (!isFarmerFlow && !kycForm.email)}
                   className="flex items-center gap-2 rounded-xl bg-brand-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-brand-500 disabled:opacity-50 transition-colors"
                 >
                   {creatingKYC ? <Loader2 className="h-4 w-4 animate-spin" /> : <ChevronRight className="h-4 w-4" />}

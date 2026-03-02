@@ -1314,13 +1314,41 @@ export function useStakeholderTypes() {
         setTypes((json?.data ?? []) as Record<string, unknown>[]);
       } catch {
         setTypes([
-          { id: "retail_trader", name: "Individual Trader", description: "Personal trading account for commodity futures, options, and digital assets", kyb_required: false, estimated_time: "15-30 minutes" },
-          { id: "institutional_investor", name: "Institutional Investor", description: "Fund, pension, or investment company seeking market access", kyb_required: false, estimated_time: "1-2 business days" },
-          { id: "broker_dealer", name: "Broker/Dealer", description: "Licensed broker providing market access to clients", kyb_required: true, estimated_time: "5-10 business days" },
-          { id: "market_maker", name: "Market Maker", description: "Liquidity provider with continuous two-sided quotes", kyb_required: true, estimated_time: "5-10 business days" },
-          { id: "digital_asset_issuer", name: "Asset Issuer", description: "Commodity owner tokenizing assets for fractional trading", kyb_required: true, estimated_time: "3-5 business days" },
-          { id: "api_consumer", name: "API/Fintech Partner", description: "Developer or fintech integrating via NEXCOM API", kyb_required: false, estimated_time: "1-2 business days" },
-          { id: "exchange_member", name: "Exchange Member", description: "Full trading seat holder with direct market access", kyb_required: true, estimated_time: "10-15 business days" },
+          // Trading & Finance
+          { id: "retail_trader", name: "Individual Trader", category: "trading_finance", description: "Personal trading account for commodity futures, options, and digital assets", kyb_required: false, estimated_time: "15-30 minutes" },
+          { id: "institutional_investor", name: "Institutional Investor", category: "trading_finance", description: "Fund, pension, or investment company seeking market access", kyb_required: false, estimated_time: "1-2 business days" },
+          { id: "broker_dealer", name: "Broker/Dealer", category: "trading_finance", description: "Licensed broker providing market access to clients", kyb_required: true, estimated_time: "5-10 business days" },
+          { id: "market_maker", name: "Market Maker", category: "trading_finance", description: "Liquidity provider with continuous two-sided quotes", kyb_required: true, estimated_time: "5-10 business days" },
+          { id: "digital_asset_issuer", name: "Asset Issuer", category: "trading_finance", description: "Commodity owner tokenizing assets for fractional trading", kyb_required: true, estimated_time: "3-5 business days" },
+          { id: "api_consumer", name: "API/Fintech Partner", category: "trading_finance", description: "Developer or fintech integrating via NEXCOM API", kyb_required: false, estimated_time: "1-2 business days" },
+          { id: "exchange_member", name: "Exchange Member", category: "trading_finance", description: "Full trading seat holder with direct market access", kyb_required: true, estimated_time: "10-15 business days" },
+          // Agriculture
+          { id: "smallholder_farmer", name: "Smallholder Farmer", category: "agriculture", description: "Small-scale farmer (under 5 hectares) — simplified onboarding, no BVN/NIN required", kyb_required: false, estimated_time: "5-10 minutes", simplified_kyc: true },
+          { id: "commercial_farmer", name: "Commercial Farmer", category: "agriculture", description: "Large-scale farming operation with established production", kyb_required: false, estimated_time: "15-30 minutes" },
+          { id: "farmer_cooperative", name: "Farmer Cooperative", category: "agriculture", description: "Registered cooperative society aggregating produce from member farmers", kyb_required: true, estimated_time: "3-5 business days" },
+          { id: "aggregator", name: "Aggregator / Off-taker", category: "agriculture", description: "Bulk buyer purchasing directly from farmers and cooperatives", kyb_required: true, estimated_time: "3-5 business days" },
+          { id: "processor", name: "Processor", category: "agriculture", description: "Facility that processes raw agricultural commodities into finished goods", kyb_required: true, estimated_time: "5-10 business days" },
+          { id: "exporter", name: "Exporter", category: "agriculture", description: "Licensed commodity exporter with international trade capability", kyb_required: true, estimated_time: "5-10 business days" },
+          { id: "importer", name: "Importer", category: "agriculture", description: "Licensed importer bringing commodities into Nigerian market", kyb_required: true, estimated_time: "5-10 business days" },
+          // Mining & Metals
+          { id: "artisanal_miner", name: "Artisanal Miner", category: "mining_metals", description: "Small-scale miner — simplified onboarding with community attestation", kyb_required: false, estimated_time: "5-10 minutes", simplified_kyc: true },
+          { id: "mining_company", name: "Mining Company", category: "mining_metals", description: "Licensed mining company with mineral extraction operations", kyb_required: true, estimated_time: "10-15 business days" },
+          { id: "smelter_refiner", name: "Smelter / Refiner", category: "mining_metals", description: "Facility that processes raw ores into refined metals", kyb_required: true, estimated_time: "5-10 business days" },
+          // Energy
+          { id: "oil_producer", name: "Oil Producer", category: "energy", description: "Upstream oil production company with extraction licenses", kyb_required: true, estimated_time: "10-15 business days" },
+          { id: "gas_producer", name: "Gas Producer", category: "energy", description: "Natural gas producer or LNG operator", kyb_required: true, estimated_time: "10-15 business days" },
+          { id: "renewable_energy", name: "Renewable Energy Producer", category: "energy", description: "Solar, wind, hydro, or biomass energy producer trading carbon credits", kyb_required: true, estimated_time: "5-10 business days" },
+          { id: "fuel_distributor", name: "Fuel Distributor", category: "energy", description: "Downstream fuel distribution and retail company", kyb_required: true, estimated_time: "5-10 business days" },
+          // Infrastructure
+          { id: "warehouse_operator", name: "Warehouse Operator", category: "infrastructure", description: "Licensed commodity storage facility issuing warehouse receipts", kyb_required: true, estimated_time: "5-10 business days" },
+          { id: "quality_inspector", name: "Quality Inspector / Grader", category: "infrastructure", description: "Certified commodity quality inspection and grading service", kyb_required: true, estimated_time: "3-5 business days" },
+          { id: "logistics_provider", name: "Logistics Provider", category: "infrastructure", description: "Transportation and last-mile delivery for commodity movement", kyb_required: true, estimated_time: "3-5 business days" },
+          { id: "insurance_provider", name: "Insurance Provider", category: "infrastructure", description: "Crop, transit, and warehouse insurance underwriter", kyb_required: true, estimated_time: "5-10 business days" },
+          { id: "collateral_manager", name: "Collateral Manager", category: "infrastructure", description: "Third-party collateral management for commodity-backed financing", kyb_required: true, estimated_time: "5-10 business days" },
+          // Commodity Finance
+          { id: "trade_finance_bank", name: "Trade Finance Bank", category: "commodity_finance", description: "Bank providing trade finance, letters of credit, and warehouse receipt financing", kyb_required: true, estimated_time: "10-15 business days" },
+          { id: "commodity_fund", name: "Commodity Fund", category: "commodity_finance", description: "Investment fund focused on commodity asset allocation", kyb_required: true, estimated_time: "10-15 business days" },
+          { id: "microfinance", name: "Microfinance Institution", category: "commodity_finance", description: "Microfinance bank providing smallholder farmer loans", kyb_required: true, estimated_time: "5-10 business days" },
         ]);
       } finally { setLoading(false); }
     })();
@@ -1425,4 +1453,127 @@ export function useCreateKYB() {
   }, []);
 
   return { createKYB, loading };
+}
+
+// ============================================================
+// Warehouse Receipts Hooks
+// ============================================================
+
+export function useWarehouseReceipts(status?: string) {
+  const [receipts, setReceipts] = useState<Record<string, unknown>[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const qs = status ? `?status=${status}` : "";
+        const res = await fetch(`${KYC_URL}/api/v1/warehouse-receipts${qs}`);
+        const json = await res.json();
+        setReceipts((json?.data ?? []) as Record<string, unknown>[]);
+      } catch {
+        setReceipts([
+          { id: "WR-00001", depositor_id: "kyc-f01", depositor_name: "Adamu Bello", warehouse_id: "WH-KN-001", warehouse_name: "Kano Commodity Warehouse", warehouse_location: "Bompai Industrial Area, Kano", commodity: "Maize", commodity_category: "grains", quantity_tonnes: 12.5, quality_grade: "grade_a", unit_price: 280000, total_value: 3500000, currency: "NGN", status: "active", tradeable: true, collateralized: false, deposit_date: "2025-09-15", expiry_date: "2026-03-15" },
+          { id: "WR-00002", depositor_id: "kyc-f03", depositor_name: "Oluwaseun Adebayo", warehouse_id: "WH-OY-001", warehouse_name: "Iseyin Cocoa Store", warehouse_location: "Iseyin, Oyo State", commodity: "Cocoa Beans", commodity_category: "cash_crops", quantity_tonnes: 5.0, quality_grade: "premium", unit_price: 4500000, total_value: 22500000, currency: "NGN", status: "active", tradeable: true, collateralized: true, deposit_date: "2025-10-01", expiry_date: "2026-04-01" },
+        ]);
+      } finally { setLoading(false); }
+    })();
+  }, [status]);
+
+  return { receipts, loading };
+}
+
+export function useCreateWarehouseReceipt() {
+  const [loading, setLoading] = useState(false);
+
+  const createReceipt = useCallback(async (data: Record<string, unknown>) => {
+    setLoading(true);
+    try {
+      const res = await fetch(`${KYC_URL}/api/v1/warehouse-receipts`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      const json = await res.json();
+      return json?.data;
+    } catch {
+      return { id: `WR-LOCAL-${Date.now()}`, status: "issued", ...data };
+    } finally { setLoading(false); }
+  }, []);
+
+  return { createReceipt, loading };
+}
+
+// ============================================================
+// Produce / Inventory Hooks
+// ============================================================
+
+export function useProduceInventory(producerId?: string) {
+  const [inventory, setInventory] = useState<Record<string, unknown>[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const qs = producerId ? `?producer_id=${producerId}` : "";
+        const res = await fetch(`${KYC_URL}/api/v1/produce/inventory${qs}`);
+        const json = await res.json();
+        setInventory((json?.data ?? []) as Record<string, unknown>[]);
+      } catch {
+        setInventory([
+          { id: "PRD-00001", producer_id: "kyc-f01", producer_name: "Adamu Bello", cooperative_id: "kyb-coop-01", commodity: "Maize", commodity_category: "grains", variety: "SAMMAZ-15", estimated_quantity_tonnes: 8.0, quality_grade: "grade_a", farm_location: "Kura LGA, Kano State", farm_gps: "11.7704,8.4361", farm_size_hectares: 3.5, planting_date: "2025-06-15", expected_harvest_date: "2025-10-15", asking_price_per_tonne: 280000, status: "harvested", listed_on_exchange: true, warehouse_receipt_id: "WR-00001" },
+          { id: "PRD-00002", producer_id: "kyc-f03", producer_name: "Oluwaseun Adebayo", commodity: "Cocoa Beans", commodity_category: "cash_crops", variety: "Amelonado", estimated_quantity_tonnes: 5.0, quality_grade: "premium", farm_location: "Iseyin, Oyo State", farm_gps: "7.9667,3.5833", farm_size_hectares: 120.0, planting_date: "2025-03-01", expected_harvest_date: "2025-09-30", asking_price_per_tonne: 4500000, status: "harvested", listed_on_exchange: true, warehouse_receipt_id: "WR-00002" },
+          { id: "PRD-00003", producer_id: "kyc-f02", producer_name: "Hauwa Yakubu", commodity: "Sorghum", commodity_category: "grains", variety: "SAMSORG-17", estimated_quantity_tonnes: 2.0, quality_grade: "grade_b", farm_location: "Giwa LGA, Kaduna State", farm_gps: "11.2167,7.3333", farm_size_hectares: 1.2, planting_date: "2025-06-20", expected_harvest_date: "2025-11-01", asking_price_per_tonne: 220000, status: "growing", listed_on_exchange: false },
+        ]);
+      } finally { setLoading(false); }
+    })();
+  }, [producerId]);
+
+  return { inventory, loading };
+}
+
+export function useRegisterProduce() {
+  const [loading, setLoading] = useState(false);
+
+  const registerProduce = useCallback(async (data: Record<string, unknown>) => {
+    setLoading(true);
+    try {
+      const res = await fetch(`${KYC_URL}/api/v1/produce/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      const json = await res.json();
+      return json?.data;
+    } catch {
+      return { id: `PRD-LOCAL-${Date.now()}`, status: "registered", ...data };
+    } finally { setLoading(false); }
+  }, []);
+
+  return { registerProduce, loading };
+}
+
+// ============================================================
+// Agent Portal Hooks
+// ============================================================
+
+export function useAgents() {
+  const [agents, setAgents] = useState<Record<string, unknown>[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch(`${KYC_URL}/api/v1/agents`);
+        const json = await res.json();
+        setAgents((json?.data ?? []) as Record<string, unknown>[]);
+      } catch {
+        setAgents([
+          { id: "AGT-001", full_name: "Musa Ibrahim", phone_number: "+234-809-111-0001", email: "musa.agent@nexcom.ng", region: "North West", lga: "Kura", state: "Kano", farmers_onboarded: 45, active: true, verified: true },
+          { id: "AGT-002", full_name: "Blessing Okonkwo", phone_number: "+234-809-222-0002", email: "blessing.agent@nexcom.ng", region: "South West", lga: "Iseyin", state: "Oyo", farmers_onboarded: 28, active: true, verified: true },
+        ]);
+      } finally { setLoading(false); }
+    })();
+  }, []);
+
+  return { agents, loading };
 }
