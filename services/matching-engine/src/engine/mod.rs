@@ -7,6 +7,7 @@ use crate::circuit_breaker::CircuitBreakerEngine;
 use crate::clearing::ClearingHouse;
 use crate::corporate_actions::CorporateActionsManager;
 use crate::delivery::DeliveryManager;
+use crate::fees::FeeEngine;
 use crate::fix::FixGateway;
 use crate::futures::FuturesManager;
 use crate::ha::ClusterManager;
@@ -41,6 +42,8 @@ pub struct ExchangeEngine {
     pub auction: Arc<AuctionEngine>,
     pub market_data: Arc<MarketDataEngine>,
     pub investor_protection: Arc<InvestorProtectionFund>,
+    // Revenue & Fee Management
+    pub fees: Arc<FeeEngine>,
 }
 
 impl ExchangeEngine {
@@ -65,6 +68,7 @@ impl ExchangeEngine {
             auction: Arc::new(AuctionEngine::new()),
             market_data: Arc::new(MarketDataEngine::new()),
             investor_protection: Arc::new(InvestorProtectionFund::new()),
+            fees: Arc::new(FeeEngine::new()),
         };
 
         // Auto-list forward futures contracts
@@ -322,6 +326,7 @@ impl ExchangeEngine {
             },
             "market_data_infrastructure": self.market_data.summary(),
             "investor_protection": self.investor_protection.fund_status(),
+            "fees": self.fees.status(),
         })
     }
 }

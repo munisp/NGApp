@@ -1062,3 +1062,186 @@ export function useInvestorProtection() {
 
   return { fund, loading };
 }
+
+// ============================================================
+// Fee Engine & Revenue Hooks
+// ============================================================
+
+export function useFeeStatus() {
+  const [status, setStatus] = useState<Record<string, unknown> | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const refetch = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await fetch(`${ME_URL}/api/v1/fees/status`);
+      const json = await res.json();
+      setStatus((json?.data ?? json) as Record<string, unknown>);
+    } catch {
+      setStatus({
+        fee_schedules: 3,
+        active_subscriptions: 6,
+        active_memberships: 3,
+        total_charges: 0,
+        total_revenue: 0.0,
+        total_rebates: 0.0,
+        net_revenue: 0.0,
+        api_tiers: 4,
+        invoices_issued: 0,
+      });
+    } finally { setLoading(false); }
+  }, []);
+
+  useEffect(() => { refetch(); }, [refetch]);
+  return { status, loading, refetch };
+}
+
+export function useFeeSchedules() {
+  const [schedules, setSchedules] = useState<Record<string, unknown>[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch(`${ME_URL}/api/v1/fees/schedules`);
+        const json = await res.json();
+        setSchedules((json?.data ?? []) as Record<string, unknown>[]);
+      } catch {
+        setSchedules([
+          {
+            id: "FS-001", name: "Commodity Futures", description: "Fee schedule for commodity futures contracts",
+            tiers: [
+              { tier_name: "Retail", min_monthly_volume: 0, taker_fee_bps: 3.5, maker_fee_bps: -1.5, clearing_fee_bps: 1.0 },
+              { tier_name: "Active Trader", min_monthly_volume: 1000, taker_fee_bps: 2.5, maker_fee_bps: -2.0, clearing_fee_bps: 0.8 },
+              { tier_name: "Professional", min_monthly_volume: 10000, taker_fee_bps: 1.8, maker_fee_bps: -2.5, clearing_fee_bps: 0.6 },
+              { tier_name: "Institutional", min_monthly_volume: 100000, taker_fee_bps: 1.2, maker_fee_bps: -3.0, clearing_fee_bps: 0.4 },
+              { tier_name: "Market Maker", min_monthly_volume: 500000, taker_fee_bps: 0.8, maker_fee_bps: -3.5, clearing_fee_bps: 0.2 },
+            ],
+          },
+          {
+            id: "FS-002", name: "Commodity Options", description: "Fee schedule for commodity options contracts",
+            tiers: [
+              { tier_name: "Retail", min_monthly_volume: 0, taker_fee_bps: 5.0, maker_fee_bps: -1.0, clearing_fee_bps: 1.5 },
+              { tier_name: "Professional", min_monthly_volume: 5000, taker_fee_bps: 3.0, maker_fee_bps: -2.0, clearing_fee_bps: 1.0 },
+              { tier_name: "Market Maker", min_monthly_volume: 50000, taker_fee_bps: 1.5, maker_fee_bps: -3.0, clearing_fee_bps: 0.5 },
+            ],
+          },
+          {
+            id: "FS-003", name: "Digital Assets & Tokenized Commodities", description: "Fee schedule for tokenized commodity trading",
+            tiers: [
+              { tier_name: "Standard", min_monthly_volume: 0, taker_fee_bps: 10.0, maker_fee_bps: 5.0, clearing_fee_bps: 2.0 },
+              { tier_name: "Premium", min_monthly_volume: 1000, taker_fee_bps: 7.0, maker_fee_bps: 3.0, clearing_fee_bps: 1.5 },
+              { tier_name: "VIP", min_monthly_volume: 10000, taker_fee_bps: 5.0, maker_fee_bps: 1.0, clearing_fee_bps: 1.0 },
+            ],
+          },
+        ]);
+      } finally { setLoading(false); }
+    })();
+  }, []);
+
+  return { schedules, loading };
+}
+
+export function useFeeApiTiers() {
+  const [tiers, setTiers] = useState<Record<string, unknown>[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch(`${ME_URL}/api/v1/fees/api-tiers`);
+        const json = await res.json();
+        setTiers((json?.data ?? []) as Record<string, unknown>[]);
+      } catch {
+        setTiers([
+          { name: "Free", requests_per_second: 5, monthly_fee: 0, features: ["Market data snapshots", "Basic order submission", "Account balance queries"] },
+          { name: "Basic", requests_per_second: 50, monthly_fee: 100, features: ["All Free features", "WebSocket streaming", "Order history", "Position tracking"] },
+          { name: "Professional", requests_per_second: 500, monthly_fee: 1000, features: ["All Basic features", "Level 2 market data", "Algorithmic trading support", "Priority order routing", "FIX protocol access"] },
+          { name: "Enterprise", requests_per_second: 5000, monthly_fee: 10000, features: ["All Professional features", "Co-location access", "Dedicated support", "Custom integrations", "SLA guarantees", "Direct market access"] },
+        ]);
+      } finally { setLoading(false); }
+    })();
+  }, []);
+
+  return { tiers, loading };
+}
+
+export function useFeeRevenue() {
+  const [revenue, setRevenue] = useState<Record<string, unknown> | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const refetch = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await fetch(`${ME_URL}/api/v1/fees/revenue`);
+      const json = await res.json();
+      setRevenue((json?.data ?? json) as Record<string, unknown>);
+    } catch {
+      setRevenue({
+        total_charges: 0,
+        total_revenue: 0.0,
+        total_rebates: 0.0,
+        net_revenue: 0.0,
+        monthly_recurring_revenue: 57833.33,
+        annual_recurring_revenue: 175000.0,
+        active_subscriptions: 6,
+        active_memberships: 3,
+        outstanding_invoices: 0,
+        revenue_by_category: [],
+        currency: "NGN",
+      });
+    } finally { setLoading(false); }
+  }, []);
+
+  useEffect(() => { refetch(); }, [refetch]);
+  return { revenue, loading, refetch };
+}
+
+export function useFeeMemberships() {
+  const [memberships, setMemberships] = useState<Record<string, unknown>[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch(`${ME_URL}/api/v1/fees/memberships`);
+        const json = await res.json();
+        setMemberships((json?.data ?? []) as Record<string, unknown>[]);
+      } catch {
+        setMemberships([
+          { account_id: "NEXCOM-BROKER-001", membership_type: "BrokerDealerMembership", tier: "Full Service", annual_fee: 50000, status: "ACTIVE" },
+          { account_id: "NEXCOM-MM-001", membership_type: "MarketMakerRegistration", tier: "Primary", annual_fee: 100000, status: "ACTIVE" },
+          { account_id: "NEXCOM-SEAT-001", membership_type: "TradingSeatLicense", tier: "Standard", annual_fee: 25000, status: "ACTIVE" },
+        ]);
+      } finally { setLoading(false); }
+    })();
+  }, []);
+
+  return { memberships, loading };
+}
+
+export function useFeeSubscriptions() {
+  const [subscriptions, setSubscriptions] = useState<Record<string, unknown>[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch(`${ME_URL}/api/v1/fees/subscriptions`);
+        const json = await res.json();
+        setSubscriptions((json?.data ?? []) as Record<string, unknown>[]);
+      } catch {
+        setSubscriptions([
+          { service_name: "Market Data Level 1 (Top of Book)", amount_per_cycle: 500, billing_cycle: "MONTHLY", status: "ACTIVE" },
+          { service_name: "Market Data Level 2 (Full Depth)", amount_per_cycle: 2000, billing_cycle: "MONTHLY", status: "ACTIVE" },
+          { service_name: "Co-Location (Rack Space near Matching Engine)", amount_per_cycle: 10000, billing_cycle: "MONTHLY", status: "ACTIVE" },
+          { service_name: "Premium Analytics Dashboard", amount_per_cycle: 5000, billing_cycle: "MONTHLY", status: "ACTIVE" },
+          { service_name: "Surveillance-as-a-Service", amount_per_cycle: 15000, billing_cycle: "MONTHLY", status: "ACTIVE" },
+          { service_name: "NXCI Index Licensing", amount_per_cycle: 25000, billing_cycle: "QUARTERLY", status: "ACTIVE" },
+        ]);
+      } finally { setLoading(false); }
+    })();
+  }, []);
+
+  return { subscriptions, loading };
+}

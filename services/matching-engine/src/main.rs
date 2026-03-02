@@ -10,6 +10,7 @@ mod clearing;
 mod corporate_actions;
 mod delivery;
 mod engine;
+mod fees;
 mod fix;
 mod futures;
 mod ha;
@@ -176,6 +177,23 @@ async fn main() {
         .route("/api/v1/investor-protection/status", get(ipf_status))
         .route("/api/v1/investor-protection/claims", get(ipf_claims))
         .route("/api/v1/investor-protection/claims", post(ipf_submit_claim))
+        // Fee Engine & Revenue Management
+        .route("/api/v1/fees/status", get(fee_status))
+        .route("/api/v1/fees/schedules", get(fee_schedules))
+        .route("/api/v1/fees/schedules/:key", get(fee_schedule_by_key))
+        .route("/api/v1/fees/api-tiers", get(fee_api_tiers))
+        .route("/api/v1/fees/charges/recent", get(fee_recent_charges))
+        .route("/api/v1/fees/charges/:account_id", get(fee_account_charges))
+        .route("/api/v1/fees/calculate", post(fee_calculate_trade))
+        .route("/api/v1/fees/subscriptions", get(fee_subscriptions))
+        .route("/api/v1/fees/subscriptions", post(fee_create_subscription))
+        .route("/api/v1/fees/memberships", get(fee_memberships))
+        .route("/api/v1/fees/memberships", post(fee_register_membership))
+        .route("/api/v1/fees/revenue", get(fee_revenue_summary))
+        .route("/api/v1/fees/invoices", get(fee_invoices))
+        .route("/api/v1/fees/invoices/generate", post(fee_generate_invoice))
+        .route("/api/v1/fees/listing", post(fee_charge_listing))
+        .route("/api/v1/fees/tokenization", post(fee_charge_tokenization))
         .layer(RequestBodyLimitLayer::new(1024 * 1024)) // 1MB request body limit
         .layer(cors)
         .with_state(engine);
@@ -962,4 +980,228 @@ async fn ipf_submit_claim(
         &req.reason,
     );
     Json(ApiResponse::ok(claim))
+}
+
+// ─── Fee Engine & Revenue Management ─────────────────────────────────────────
+
+async fn fee_status(
+    State(engine): State<AppState>,
+) -> Json<ApiResponse<serde_json::Value>> {
+    Json(ApiResponse::ok(engine.fees.status()))
+}
+
+async fn fee_schedules(
+    State(engine): State<AppState>,
+) -> Json<ApiResponse<Vec<fees::FeeSchedule>>> {
+    Json(ApiResponse::ok(engine.fees.all_schedules()))
+}
+
+async fn fee_schedule_by_key(
+    State(engine): State<AppState>,
+    Path(key): Path<String>,
+) -> Json<ApiResponse<fees::FeeSchedule>> {
+    match engine.fees.get_schedule(&key.to_uppercase()) {
+        Some(schedule) => Json(ApiResponse::ok(schedule)),
+        None => Json(ApiResponse::err(format!("Fee schedule '{}' not found", key))),
+    }
+}
+
+async fn fee_api_tiers(
+    State(engine): State<AppState>,
+) -> Json<ApiResponse<serde_json::Value>> {
+    let tiers: Vec<serde_json::Value> = engine
+        .fees
+        .api_tiers()
+        .iter()
+        .map(|t| {
+            serde_json::json!({
+                "name": t.name,
+                "requests_per_second": t.requests_per_second,
+                "monthly_fee": from_price(t.monthly_fee),
+                "features": t.features,
+            })
+        })
+        .collect();
+    Json(ApiResponse::ok(serde_json::json!(tiers)))
+}
+
+#[derive(serde::Deserialize)]
+struct RecentChargesQuery {
+    count: Option<usize>,
+}
+
+async fn fee_recent_charges(
+    State(engine): State<AppState>,
+    Query(params): Query<RecentChargesQuery>,
+) -> Json<ApiResponse<Vec<fees::FeeCharge>>> {
+    let count = params.count.unwrap_or(50);
+    Json(ApiResponse::ok(engine.fees.recent_charges(count)))
+}
+
+async fn fee_account_charges(
+    State(engine): State<AppState>,
+    Path(account_id): Path<String>,
+) -> Json<ApiResponse<Vec<fees::FeeCharge>>> {
+    Json(ApiResponse::ok(engine.fees.account_charges(&account_id)))
+}
+
+#[derive(serde::Deserialize)]
+struct CalculateTradeFeesRequest {
+    trade_value: f64,
+    taker_account: String,
+    maker_account: String,
+    symbol: String,
+    side: Side,
+}
+
+async fn fee_calculate_trade(
+    State(engine): State<AppState>,
+    Json(req): Json<CalculateTradeFeesRequest>,
+) -> Json<ApiResponse<serde_json::Value>> {
+    let trade_value = to_price(req.trade_value);
+    let (taker, maker, clearing) = engine.fees.calculate_trade_fees(
+        trade_value,
+        &req.taker_account,
+        &req.maker_account,
+        &req.symbol,
+        req.side,
+    );
+    Json(ApiResponse::ok(serde_json::json!({
+        "taker_fee": {
+            "id": taker.id,
+            "amount": from_price(taker.amount),
+            "description": taker.description,
+        },
+        "maker_rebate": {
+            "id": maker.id,
+            "amount": from_price(maker.amount),
+            "description": maker.description,
+        },
+        "clearing_fee": {
+            "id": clearing.id,
+            "amount": from_price(clearing.amount),
+            "description": clearing.description,
+        },
+        "net_exchange_revenue": from_price(taker.amount + maker.amount + clearing.amount),
+    })))
+}
+
+async fn fee_subscriptions(
+    State(engine): State<AppState>,
+) -> Json<ApiResponse<Vec<fees::Subscription>>> {
+    Json(ApiResponse::ok(engine.fees.active_subscriptions()))
+}
+
+#[derive(serde::Deserialize)]
+struct CreateSubscriptionRequest {
+    account_id: String,
+    service_name: String,
+    fee_type: fees::FeeType,
+    amount: f64,
+    billing_cycle: fees::BillingCycle,
+}
+
+async fn fee_create_subscription(
+    State(engine): State<AppState>,
+    Json(req): Json<CreateSubscriptionRequest>,
+) -> Json<ApiResponse<fees::Subscription>> {
+    let sub = engine.fees.create_subscription(
+        &req.account_id,
+        &req.service_name,
+        req.fee_type,
+        to_price(req.amount),
+        req.billing_cycle,
+    );
+    Json(ApiResponse::ok(sub))
+}
+
+async fn fee_memberships(
+    State(engine): State<AppState>,
+) -> Json<ApiResponse<Vec<fees::Membership>>> {
+    Json(ApiResponse::ok(engine.fees.active_memberships()))
+}
+
+#[derive(serde::Deserialize)]
+struct RegisterMembershipRequest {
+    account_id: String,
+    membership_type: fees::FeeType,
+    tier: String,
+    annual_fee: f64,
+}
+
+async fn fee_register_membership(
+    State(engine): State<AppState>,
+    Json(req): Json<RegisterMembershipRequest>,
+) -> Json<ApiResponse<fees::Membership>> {
+    let mem = engine.fees.register_membership(
+        &req.account_id,
+        req.membership_type,
+        &req.tier,
+        to_price(req.annual_fee),
+    );
+    Json(ApiResponse::ok(mem))
+}
+
+async fn fee_revenue_summary(
+    State(engine): State<AppState>,
+) -> Json<ApiResponse<serde_json::Value>> {
+    Json(ApiResponse::ok(engine.fees.revenue_summary()))
+}
+
+async fn fee_invoices(
+    State(engine): State<AppState>,
+) -> Json<ApiResponse<Vec<fees::Invoice>>> {
+    Json(ApiResponse::ok(engine.fees.all_invoices()))
+}
+
+#[derive(serde::Deserialize)]
+struct GenerateInvoiceRequest {
+    account_id: String,
+    period: String,
+}
+
+async fn fee_generate_invoice(
+    State(engine): State<AppState>,
+    Json(req): Json<GenerateInvoiceRequest>,
+) -> Json<ApiResponse<fees::Invoice>> {
+    let invoice = engine.fees.generate_invoice(&req.account_id, &req.period);
+    Json(ApiResponse::ok(invoice))
+}
+
+#[derive(serde::Deserialize)]
+struct ChargingListingRequest {
+    account_id: String,
+    instrument_symbol: String,
+    fee_type: fees::FeeType,
+}
+
+async fn fee_charge_listing(
+    State(engine): State<AppState>,
+    Json(req): Json<ChargingListingRequest>,
+) -> Json<ApiResponse<fees::FeeCharge>> {
+    let charge = engine.fees.charge_listing_fee(
+        &req.account_id,
+        &req.instrument_symbol,
+        req.fee_type,
+    );
+    Json(ApiResponse::ok(charge))
+}
+
+#[derive(serde::Deserialize)]
+struct ChargeTokenizationRequest {
+    account_id: String,
+    fee_type: fees::FeeType,
+    asset_description: String,
+}
+
+async fn fee_charge_tokenization(
+    State(engine): State<AppState>,
+    Json(req): Json<ChargeTokenizationRequest>,
+) -> Json<ApiResponse<fees::FeeCharge>> {
+    let charge = engine.fees.charge_tokenization_fee(
+        &req.account_id,
+        req.fee_type,
+        &req.asset_description,
+    );
+    Json(ApiResponse::ok(charge))
 }
