@@ -5,8 +5,8 @@
 
 | Metric | v1 (Feb 27) | v2 (Feb 28) | v3 (Mar 1) | v5 (Mar 2) | Delta v3-v5 |
 |--------|------------|------------|------------|------------|-------------|
-| Total Source Files | 231 | 242 | 212 | 312 | **+100** |
-| Lines of Code | 50,023 | 51,526 | 39,258 | 77,547 | **+38,289** |
+| Total Source Files | 231 | 242 | 212 | 314 | **+102** |
+| Lines of Code | 50,023 | 51,526 | 39,258 | 92,289 | **+53,031** |
 | PWA Pages | 8 | 9 | 13 | 20 | **+7** |
 | Mobile Screens | 7 | 7 | 7 | 20 | **+13** |
 | Gateway Routes | 74 | 78 | 82 | 119 | **+37** |
@@ -31,14 +31,21 @@
 | Python | 10,350 | 32 |
 | Go | 9,219 | 23 |
 | YAML/YML | 4,490 | 20 |
-| JSON | 14,885 | 15 |
+| JSON (config) | 608 | 15 |
 | Solidity | 888 | 4 |
 | SQL | 415 | 3 |
 | CSS | 392 | 1 |
 | Shell | 558 | 3 |
-| Markdown | 1,248 | 6 |
+| JavaScript | 358 | 5 |
 | Dockerfile | 247 | 12 |
-| **Total** | **77,547** | **312** |
+| TOML | 100 | 4 |
+| Makefile | 184 | 1 |
+| Docker Compose | 737 | 1 |
+| Markdown/Docs | 1,813 | 7 |
+| Config (.env, .gitignore) | 126 | 2 |
+| **Source Subtotal** | **65,729** | **314** |
+| Lockfiles (package-lock, Cargo.lock, go.sum) | 24,747 | 5 |
+| **Grand Total** | **92,289** | **319** |
 
 ### 1.2 Service Inventory (14 Services)
 
