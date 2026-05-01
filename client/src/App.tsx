@@ -205,6 +205,8 @@ import Phase13Article40 from "@/pages/Phase13Article40";
 import Phase13ComplianceCalendar from "@/pages/Phase13ComplianceCalendar";
 import HealthDashboard from "@/pages/HealthDashboard";
 import AccreditationWorkflow from "@/pages/AccreditationWorkflow";
+import SecurityDashboard from "@/pages/SecurityDashboard";
+import MiddlewareHealth from "@/pages/MiddlewareHealth";
 
 function Router() {
   return (
@@ -306,7 +308,6 @@ function Router() {
         <Route path="/dpco/ai-tools" component={DpcoAiTools} />
         <Route path="/dpco/scorecard" component={DpcoPerformanceScorecard} />
         <Route path="/dpco-brochure" component={DpcoBrochure} />
-        <Route path="/dpco" component={DpcoLanding} />
         <Route path="/admin/revenue" component={AdminRevenue} />
         <Route path="/admin/registrations" component={AdminRegistrations} />
         <Route path="/admin/settings" component={AdminPlatformSettings} />
@@ -390,7 +391,6 @@ function Router() {
               <Route path="/fine-payments" component={FinePaymentGateway} />
               <Route path="/compliance-calendar" component={ComplianceCalendarPage} />
               <Route path="/sbom" component={SBOMViewer} />
-              <Route component={NotFound} />
         <Route path="/data-pipeline" component={DataPipeline} />
         <Route path="/data-lineage" component={DataLineage} />
         <Route path="/regulatory-intelligence" component={RegulatoryIntelligence} />
@@ -429,7 +429,12 @@ function Router() {
         <Route path="/sector-compliance/:sector" component={SectorComplianceDetail} />
         {/* Phase 25 — Health Dashboard, Accreditation Workflow */}
         <Route path="/health-dashboard" component={HealthDashboard} />
+        <Route path="/middleware-health" component={MiddlewareHealth} />
         <Route path="/accreditation-workflow" component={AccreditationWorkflow} />
+        {/* Security — wired from PR#19 */}
+        <Route path="/security-dashboard" component={SecurityDashboard} />
+        {/* Catch-all — must be last */}
+        <Route component={NotFound} />
       </Switch>
     </DashboardLayout>
       </Route>

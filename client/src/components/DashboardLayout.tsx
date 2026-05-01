@@ -237,8 +237,10 @@ const menuItems = [
   { icon: ArrowRightLeft,     label: "Cross-Border Monitor",    path: "/cross-border-monitor", layer: "P13" },
   { icon: FileBarChart,       label: "Regulatory Reporting",    path: "/regulatory-reporting", layer: "P13" },
   // ── Phase 25 — Middleware Health & Accreditation Workflow ───────────────────────────────────────
-  { icon: HeartPulse,          label: "Middleware Health",        path: "/health-dashboard",     layer: "P25" },
+  { icon: HeartPulse,          label: "Middleware Health",        path: "/middleware-health",     layer: "P25" },
   { icon: Workflow,            label: "Accreditation Workflow",   path: "/accreditation-workflow", layer: "P25" },
+  // ── Security & Infrastructure ─────────────────────────────────────────────────────────────────
+  { icon: ShieldAlert,         label: "Security Dashboard",      path: "/security-dashboard",    layer: "OPS" },
 ];
 
 const SIDEBAR_WIDTH_KEY = "sidebar-width";
