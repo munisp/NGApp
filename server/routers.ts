@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { generateRopaPdf } from "./ropaPdf";
 import { storagePut } from "./storage";
+import { workflowRouter } from "./routers/workflows";
 import { publishPenaltyIssued, publishEnforcementCaseOpened, publishCitizenRightsRequest, kafkaSmokeTest, getKafkaProducerStatus, kafkaProduce } from "./kafka";
 import { startWorkflow, describeWorkflow, listWorkflows as temporalListWorkflows, getTemporalConfig, temporalSmokeTest } from "./temporal";
 import { COOKIE_NAME } from "@shared/const";
@@ -277,6 +278,7 @@ export const appRouter = router({
   energy: energyRouter,
   insurance: insuranceRouter,
   fintech: fintechRouter,
+  workflows: workflowRouter,
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),
     logout: publicProcedure.mutation(async ({ ctx }) => {
