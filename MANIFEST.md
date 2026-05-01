@@ -3,10 +3,9 @@
 ## Archive Summary
 - **Date**: 2026-05-01
 - **Branch**: `devin/1777666970-production-ready`
-- **Total Files**: 77,453 (including node_modules)
-- **Source Code Lines**: 199,928 (TS/Go/Py/Rust/Dart/SQL/YAML)
-- **Archive Size**: ~2.3MB (compressed, excl. node_modules + .git)
-- **New Code Added**: 4,915 lines across 38 files
+- **Total Source Files**: 884 (excl. node_modules, .git, lockfiles)
+- **Archive Size**: 2.1MB compressed (excl. node_modules + .git + lockfiles)
+- **New Code Added**: 5,045 lines across 40 files (net: +4,672 lines)
 
 ## Changes vs Previous Archive
 
@@ -102,6 +101,21 @@
 - Kubernetes: Network policies, deployment manifests
 - Dockerfile: Multi-stage, non-root, optimized
 - .env.production.example: Complete with all 50+ env vars
+
+## Auth Fix (Post-Initial Commit)
+- `server/authMiddleware.ts`: Fixed cookie parsing (reads from raw `Cookie` header instead of requiring `cookie-parser` middleware) and now performs full DB user lookup (resolving role for admin checks)
+
+## End-to-End Test Results
+| Test | Result |
+|------|--------|
+| Security headers (CSP, HSTS, X-Frame-Options, X-Request-ID) | PASS |
+| `/api/middleware/health` (admin auth + JSON response) | PASS |
+| `/api/security/status` (ransomware, DDoS, PBAC status) | PASS |
+| `/api/events/poll` (session auth + event polling) | PASS |
+| `workflows.calculatePenalty` (tRPC, high severity = 5M NGN) | PASS |
+| `workflows.calculateComplianceScore` (72/100, grade C) | PASS |
+| `workflows.calculateRiskScore` (banking, high volume = 64/high) | PASS |
+| `workflows.checkCrossBorderAdequacy` (Ghana = adequate) | PASS |
 
 ## CI Status
 - TypeScript check: PASS (0 errors)
