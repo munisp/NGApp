@@ -3,9 +3,19 @@
  * Used to protect PDF download endpoints and other non-tRPC routes.
  */
 import type { Request, Response, NextFunction } from "express";
+import { parse as parseCookieHeader } from "cookie";
 import { sdk } from "./_core/sdk";
 import { COOKIE_NAME } from "@shared/const";
 import { logger } from "./logger";
+import { getUserByOpenId } from "./db";
+
+function extractToken(req: Request): string | undefined {
+  if (req.cookies?.[COOKIE_NAME]) return req.cookies[COOKIE_NAME] as string;
+  const header = req.headers.cookie;
+  if (!header) return undefined;
+  const parsed = parseCookieHeader(header);
+  return parsed[COOKIE_NAME] || undefined;
+}
 
 /**
  * requireSession: validates the session cookie and attaches user to req.
@@ -13,14 +23,19 @@ import { logger } from "./logger";
  */
 export async function requireSession(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const token = req.cookies?.[COOKIE_NAME] as string | undefined;
+    const token = extractToken(req);
     if (!token) {
       res.status(401).json({ error: "Authentication required" });
       return;
     }
-    const user = await sdk.verifySession(token);
-    if (!user) {
+    const session = await sdk.verifySession(token);
+    if (!session) {
       res.status(401).json({ error: "Invalid or expired session" });
+      return;
+    }
+    const user = await getUserByOpenId(session.openId);
+    if (!user) {
+      res.status(401).json({ error: "User not found" });
       return;
     }
     (req as any).sessionUser = user;
