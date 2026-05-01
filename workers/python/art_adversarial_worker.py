@@ -32,7 +32,7 @@ import numpy as np
 DB_URL = os.environ.get("WORKER_DATABASE_URL", os.environ.get("DATABASE_URL", "postgresql://ndsep_user:ndsep_secure_2026@localhost:5432/ndsep_db"))
 RELAY_URL = os.environ.get("WORKER_RELAY_URL", "http://localhost:3000/api/workers/event")
 PORT = int(os.environ.get("ART_PORT", "8204"))
-MODEL_PATH = os.environ.get("ML_MODEL_PATH", "/home/ubuntu/ndsep/workers/python/models/")
+MODEL_PATH = os.environ.get("ML_MODEL_PATH", "./workers/python/models/")
 
 logging.basicConfig(level=logging.INFO,
     format="%(asctime)s [NDSEP-ART] %(levelname)s %(message)s",

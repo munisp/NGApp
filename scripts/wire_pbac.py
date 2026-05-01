@@ -5,8 +5,8 @@ on all export, delete, and approve operations across router files.
 """
 import re, os
 
-ROUTER_DIR = "/home/ubuntu/ndsep/server/routers"
-TRPC_CORE = "/home/ubuntu/ndsep/server/_core/trpc.ts"
+ROUTER_DIR = "./server/routers"
+TRPC_CORE = "./server/_core/trpc.ts"
 
 # Files to process
 TARGET_FILES = [

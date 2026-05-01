@@ -292,18 +292,18 @@ describe("Phase 43 — Rate Limiting", () => {
 
 describe("Phase 43 — DPO Dashboard Route", () => {
   it("DpoDashboard page file exists", () => {
-    const exists = fs.existsSync("/home/ubuntu/ndsep/client/src/pages/DpoDashboard.tsx");
+    const exists = fs.existsSync("./client/src/pages/DpoDashboard.tsx");
     expect(exists).toBe(true);
   });
 
   it("DpoDashboard is imported in App.tsx", () => {
-    const appContent = fs.readFileSync("/home/ubuntu/ndsep/client/src/App.tsx", "utf-8");
+    const appContent = fs.readFileSync("./client/src/App.tsx", "utf-8");
     expect(appContent).toContain("DpoDashboard");
     expect(appContent).toContain("/dpo-dashboard");
   });
 
   it("DPO Workbench is in sidebar navigation", () => {
-    const layoutContent = fs.readFileSync("/home/ubuntu/ndsep/client/src/components/DashboardLayout.tsx", "utf-8");
+    const layoutContent = fs.readFileSync("./client/src/components/DashboardLayout.tsx", "utf-8");
     expect(layoutContent).toContain("DPO Workbench");
     expect(layoutContent).toContain("/dpo-dashboard");
   });
@@ -313,7 +313,7 @@ describe("Phase 43 — DPO Dashboard Route", () => {
 
 describe("Phase 43 — FeatureStorePage", () => {
   it("FeatureStorePage has createFeatureGroup mutation call", () => {
-    const content = fs.readFileSync("/home/ubuntu/ndsep/client/src/pages/FeatureStorePage.tsx", "utf-8");
+    const content = fs.readFileSync("./client/src/pages/FeatureStorePage.tsx", "utf-8");
     expect(content).toContain("createFeatureGroup");
     expect(content).toContain("useMutation");
   });
@@ -323,7 +323,7 @@ describe("Phase 43 — FeatureStorePage", () => {
 
 describe("Phase 43 — SectorComplianceDashboard Events Feed", () => {
   it("SectorComplianceDashboard includes sectorEvents trpc call", () => {
-    const content = fs.readFileSync("/home/ubuntu/ndsep/client/src/pages/SectorComplianceDashboard.tsx", "utf-8");
+    const content = fs.readFileSync("./client/src/pages/SectorComplianceDashboard.tsx", "utf-8");
     expect(content).toContain("sectorEvents");
   });
 });
@@ -332,27 +332,27 @@ describe("Phase 43 — SectorComplianceDashboard Events Feed", () => {
 
 describe("Phase 43 — PBAC Sub-Router Coverage", () => {
   it("dpco.ts deleteEvidence uses deleteProcedure", () => {
-    const content = fs.readFileSync("/home/ubuntu/ndsep/server/routers/dpco.ts", "utf-8");
+    const content = fs.readFileSync("./server/routers/dpco.ts", "utf-8");
     expect(content).toContain("deleteEvidence: deleteProcedure");
   });
 
   it("dpco.ts deleteOrganisation uses deleteProcedure", () => {
-    const content = fs.readFileSync("/home/ubuntu/ndsep/server/routers/dpco.ts", "utf-8");
+    const content = fs.readFileSync("./server/routers/dpco.ts", "utf-8");
     expect(content).toContain("deleteOrganisation: deleteProcedure");
   });
 
   it("newFeatures.ts deleteEvent uses deleteProcedure", () => {
-    const content = fs.readFileSync("/home/ubuntu/ndsep/server/routers/newFeatures.ts", "utf-8");
+    const content = fs.readFileSync("./server/routers/newFeatures.ts", "utf-8");
     expect(content).toContain("deleteEvent: deleteProcedure");
   });
 
   it("phase11Features.ts deleteWebhook uses deleteProcedure", () => {
-    const content = fs.readFileSync("/home/ubuntu/ndsep/server/routers/phase11Features.ts", "utf-8");
+    const content = fs.readFileSync("./server/routers/phase11Features.ts", "utf-8");
     expect(content).toContain("deleteWebhook: deleteProcedure");
   });
 
   it("enhancements.ts deleteSubscription uses deleteProcedure", () => {
-    const content = fs.readFileSync("/home/ubuntu/ndsep/server/routers/enhancements.ts", "utf-8");
+    const content = fs.readFileSync("./server/routers/enhancements.ts", "utf-8");
     expect(content).toContain("deleteSubscription: deleteProcedure");
   });
 });
@@ -361,7 +361,7 @@ describe("Phase 43 — PBAC Sub-Router Coverage", () => {
 
 describe("Phase 43 — Zod Bounds on productionFeatures.ts", () => {
   it("productionFeatures.ts uses int().min(1).max() on limit inputs", () => {
-    const content = fs.readFileSync("/home/ubuntu/ndsep/server/routers/productionFeatures.ts", "utf-8");
+    const content = fs.readFileSync("./server/routers/productionFeatures.ts", "utf-8");
     expect(content).toMatch(/z\.number\(\)\.int\(\)\.min\(1\)\.max\(/);
   });
 });
@@ -370,7 +370,7 @@ describe("Phase 43 — Zod Bounds on productionFeatures.ts", () => {
 
 describe("Phase 43 — ModelRegistry Page", () => {
   it("ModelRegistry.tsx has register/deploy/retire mutations", () => {
-    const content = fs.readFileSync("/home/ubuntu/ndsep/client/src/pages/ModelRegistry.tsx", "utf-8");
+    const content = fs.readFileSync("./client/src/pages/ModelRegistry.tsx", "utf-8");
     expect(content).toContain("useMutation");
     // Should have at least one of register/deploy/retire
     const hasMutation = content.includes("register") || content.includes("deploy") || content.includes("retire");

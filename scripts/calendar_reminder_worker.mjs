@@ -10,7 +10,7 @@
  */
 
 // Use pnpm-managed pg module (absolute path from project root)
-import pg from '/home/ubuntu/ndsep/node_modules/.pnpm/pg@8.20.0/node_modules/pg/lib/index.js';
+import pg from './node_modules/.pnpm/pg@8.20.0/node_modules/pg/lib/index.js';
 
 const DATABASE_URL = process.env.DATABASE_URL || 'postgresql://ndsep_user:ndsep_secure_2026@localhost:5432/ndsep_db';
 const NOTIFY_URL = process.env.BUILT_IN_FORGE_API_URL || 'https://api.manus.im';

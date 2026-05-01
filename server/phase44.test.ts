@@ -235,7 +235,7 @@ describe("Phase 44 — privacyNotices.update PBAC", () => {
 
   it("privacyNotices.delete uses deleteProcedure", () => {
     const content = fs.readFileSync(
-      "/home/ubuntu/ndsep/server/routers.ts",
+      "./server/routers.ts",
       "utf-8"
     );
     // privacyNotices.delete should use deleteProcedure
@@ -253,7 +253,7 @@ describe("Phase 44 — accreditation.submitRenewal PBAC", () => {
 
   it("submitRenewal is defined in accreditation router", () => {
     const content = fs.readFileSync(
-      "/home/ubuntu/ndsep/server/routers/accreditation.ts",
+      "./server/routers/accreditation.ts",
       "utf-8"
     );
     expect(content).toContain("submitRenewal");
@@ -282,13 +282,13 @@ describe("Phase 44 — publicRegistry.sectorStats", () => {
 // ── 8. ropaPdf.ts module ─────────────────────────────────────────────────────
 describe("Phase 44 — ropaPdf.ts Module", () => {
   it("ropaPdf.ts file exists", () => {
-    const exists = fs.existsSync("/home/ubuntu/ndsep/server/ropaPdf.ts");
+    const exists = fs.existsSync("./server/ropaPdf.ts");
     expect(exists).toBe(true);
   });
 
   it("ropaPdf.ts exports generateRopaPdf function", () => {
     const content = fs.readFileSync(
-      "/home/ubuntu/ndsep/server/ropaPdf.ts",
+      "./server/ropaPdf.ts",
       "utf-8"
     );
     expect(content).toContain("export function generateRopaPdf");
@@ -296,7 +296,7 @@ describe("Phase 44 — ropaPdf.ts Module", () => {
 
   it("ropaPdf.ts uses PDFDocument from pdfkit", () => {
     const content = fs.readFileSync(
-      "/home/ubuntu/ndsep/server/ropaPdf.ts",
+      "./server/ropaPdf.ts",
       "utf-8"
     );
     expect(content).toContain("PDFDocument");
@@ -304,7 +304,7 @@ describe("Phase 44 — ropaPdf.ts Module", () => {
 
   it("routers.ts imports generateRopaPdf from ropaPdf", () => {
     const content = fs.readFileSync(
-      "/home/ubuntu/ndsep/server/routers.ts",
+      "./server/routers.ts",
       "utf-8"
     );
     expect(content).toContain("generateRopaPdf");
@@ -316,7 +316,7 @@ describe("Phase 44 — ropaPdf.ts Module", () => {
 describe("Phase 44 — ropa_generator.py Column Fixes", () => {
   it("ropa_generator.py uses 'purpose' not 'processing_purpose'", () => {
     const content = fs.readFileSync(
-      "/home/ubuntu/ndsep/workers/python/ropa_generator.py",
+      "./workers/python/ropa_generator.py",
       "utf-8"
     );
     expect(content).toContain('"purpose"');
@@ -325,7 +325,7 @@ describe("Phase 44 — ropa_generator.py Column Fixes", () => {
 
   it("ropa_generator.py uses 'ropa_lawful_basis' not 'lawful_basis'", () => {
     const content = fs.readFileSync(
-      "/home/ubuntu/ndsep/workers/python/ropa_generator.py",
+      "./workers/python/ropa_generator.py",
       "utf-8"
     );
     expect(content).toContain("ropa_lawful_basis");
@@ -334,7 +334,7 @@ describe("Phase 44 — ropa_generator.py Column Fixes", () => {
 
   it("ropa_generator.py uses 'cross_border_transfers' not 'cross_border_transfer'", () => {
     const content = fs.readFileSync(
-      "/home/ubuntu/ndsep/workers/python/ropa_generator.py",
+      "./workers/python/ropa_generator.py",
       "utf-8"
     );
     expect(content).toContain("cross_border_transfers");
@@ -343,7 +343,7 @@ describe("Phase 44 — ropa_generator.py Column Fixes", () => {
 
   it("ropa_generator.py uses 'is_active' not 'ropa_status'", () => {
     const content = fs.readFileSync(
-      "/home/ubuntu/ndsep/workers/python/ropa_generator.py",
+      "./workers/python/ropa_generator.py",
       "utf-8"
     );
     expect(content).toContain("is_active");
@@ -355,7 +355,7 @@ describe("Phase 44 — ropa_generator.py Column Fixes", () => {
 describe("Phase 44 — RopaRecords.tsx Frontend Wiring", () => {
   it("RopaRecords.tsx has export mutation wired to ropa.export", () => {
     const content = fs.readFileSync(
-      "/home/ubuntu/ndsep/client/src/pages/RopaRecords.tsx",
+      "./client/src/pages/RopaRecords.tsx",
       "utf-8"
     );
     expect(content).toContain("ropa.export");
@@ -365,7 +365,7 @@ describe("Phase 44 — RopaRecords.tsx Frontend Wiring", () => {
 
   it("RopaRecords.tsx has create, update, delete mutations", () => {
     const content = fs.readFileSync(
-      "/home/ubuntu/ndsep/client/src/pages/RopaRecords.tsx",
+      "./client/src/pages/RopaRecords.tsx",
       "utf-8"
     );
     expect(content).toContain("ropa.create");
@@ -375,7 +375,7 @@ describe("Phase 44 — RopaRecords.tsx Frontend Wiring", () => {
 
   it("RopaRecords.tsx has Export PDF button", () => {
     const content = fs.readFileSync(
-      "/home/ubuntu/ndsep/client/src/pages/RopaRecords.tsx",
+      "./client/src/pages/RopaRecords.tsx",
       "utf-8"
     );
     expect(content).toContain("Export PDF");
@@ -386,7 +386,7 @@ describe("Phase 44 — RopaRecords.tsx Frontend Wiring", () => {
 describe("Phase 44 — AutomatedDecisions.tsx Frontend Wiring", () => {
   it("AutomatedDecisions.tsx has requestReview mutation", () => {
     const content = fs.readFileSync(
-      "/home/ubuntu/ndsep/client/src/pages/AutomatedDecisions.tsx",
+      "./client/src/pages/AutomatedDecisions.tsx",
       "utf-8"
     );
     expect(content).toContain("automatedDecisions.requestReview");
@@ -395,7 +395,7 @@ describe("Phase 44 — AutomatedDecisions.tsx Frontend Wiring", () => {
 
   it("AutomatedDecisions.tsx has completeReview mutation", () => {
     const content = fs.readFileSync(
-      "/home/ubuntu/ndsep/client/src/pages/AutomatedDecisions.tsx",
+      "./client/src/pages/AutomatedDecisions.tsx",
       "utf-8"
     );
     expect(content).toContain("automatedDecisions.completeReview");
@@ -404,7 +404,7 @@ describe("Phase 44 — AutomatedDecisions.tsx Frontend Wiring", () => {
 
   it("AutomatedDecisions.tsx has Request Review button", () => {
     const content = fs.readFileSync(
-      "/home/ubuntu/ndsep/client/src/pages/AutomatedDecisions.tsx",
+      "./client/src/pages/AutomatedDecisions.tsx",
       "utf-8"
     );
     expect(content).toContain("Request Review");
@@ -412,7 +412,7 @@ describe("Phase 44 — AutomatedDecisions.tsx Frontend Wiring", () => {
 
   it("AutomatedDecisions.tsx has Complete Review button", () => {
     const content = fs.readFileSync(
-      "/home/ubuntu/ndsep/client/src/pages/AutomatedDecisions.tsx",
+      "./client/src/pages/AutomatedDecisions.tsx",
       "utf-8"
     );
     expect(content).toContain("Complete Review");
@@ -423,7 +423,7 @@ describe("Phase 44 — AutomatedDecisions.tsx Frontend Wiring", () => {
 describe("Phase 44 — PrivacyNotices.tsx Frontend Wiring", () => {
   it("PrivacyNotices.tsx has update mutation for publish workflow", () => {
     const content = fs.readFileSync(
-      "/home/ubuntu/ndsep/client/src/pages/PrivacyNotices.tsx",
+      "./client/src/pages/PrivacyNotices.tsx",
       "utf-8"
     );
     expect(content).toContain("privacyNotices.update");
@@ -432,7 +432,7 @@ describe("Phase 44 — PrivacyNotices.tsx Frontend Wiring", () => {
 
   it("PrivacyNotices.tsx has Publish button", () => {
     const content = fs.readFileSync(
-      "/home/ubuntu/ndsep/client/src/pages/PrivacyNotices.tsx",
+      "./client/src/pages/PrivacyNotices.tsx",
       "utf-8"
     );
     expect(content).toContain("Publish");
@@ -440,7 +440,7 @@ describe("Phase 44 — PrivacyNotices.tsx Frontend Wiring", () => {
 
   it("PrivacyNotices.tsx has Submit for Review button", () => {
     const content = fs.readFileSync(
-      "/home/ubuntu/ndsep/client/src/pages/PrivacyNotices.tsx",
+      "./client/src/pages/PrivacyNotices.tsx",
       "utf-8"
     );
     expect(content).toContain("Submit for Review");
@@ -451,7 +451,7 @@ describe("Phase 44 — PrivacyNotices.tsx Frontend Wiring", () => {
 describe("Phase 44 — AccreditationStatus.tsx Frontend Wiring", () => {
   it("AccreditationStatus.tsx has submitRenewal mutation", () => {
     const content = fs.readFileSync(
-      "/home/ubuntu/ndsep/client/src/pages/AccreditationStatus.tsx",
+      "./client/src/pages/AccreditationStatus.tsx",
       "utf-8"
     );
     expect(content).toContain("accreditation.submitRenewal");
@@ -463,7 +463,7 @@ describe("Phase 44 — AccreditationStatus.tsx Frontend Wiring", () => {
 describe("Phase 44 — DpoDashboard.tsx Frontend Wiring", () => {
   it("DpoDashboard.tsx has inline requestReview mutation", () => {
     const content = fs.readFileSync(
-      "/home/ubuntu/ndsep/client/src/pages/DpoDashboard.tsx",
+      "./client/src/pages/DpoDashboard.tsx",
       "utf-8"
     );
     expect(content).toContain("automatedDecisions.requestReview");
@@ -475,7 +475,7 @@ describe("Phase 44 — DpoDashboard.tsx Frontend Wiring", () => {
 describe("Phase 44 — Home.tsx Live sectorStats", () => {
   it("Home.tsx uses publicRegistry.sectorStats live query", () => {
     const content = fs.readFileSync(
-      "/home/ubuntu/ndsep/client/src/pages/Home.tsx",
+      "./client/src/pages/Home.tsx",
       "utf-8"
     );
     expect(content).toContain("publicRegistry.sectorStats");
@@ -484,7 +484,7 @@ describe("Phase 44 — Home.tsx Live sectorStats", () => {
 
   it("Home.tsx computes totalOrgs from sectorStats", () => {
     const content = fs.readFileSync(
-      "/home/ubuntu/ndsep/client/src/pages/Home.tsx",
+      "./client/src/pages/Home.tsx",
       "utf-8"
     );
     expect(content).toContain("totalOrgs");
@@ -495,7 +495,7 @@ describe("Phase 44 — Home.tsx Live sectorStats", () => {
 describe("Phase 44 — ropa.export Uses exportProcedure", () => {
   it("routers.ts uses exportProcedure for ropa.export", () => {
     const content = fs.readFileSync(
-      "/home/ubuntu/ndsep/server/routers.ts",
+      "./server/routers.ts",
       "utf-8"
     );
     // Find the export: exportProcedure line within the ropa router
@@ -507,7 +507,7 @@ describe("Phase 44 — ropa.export Uses exportProcedure", () => {
 describe("Phase 44 — DB Schema Human Review Columns", () => {
   it("drizzle schema has humanReviewRequested column", () => {
     const content = fs.readFileSync(
-      "/home/ubuntu/ndsep/drizzle/schema.ts",
+      "./drizzle/schema.ts",
       "utf-8"
     );
     expect(content).toContain("humanReviewRequested");
@@ -516,7 +516,7 @@ describe("Phase 44 — DB Schema Human Review Columns", () => {
 
   it("drizzle schema has humanReviewOutcome column", () => {
     const content = fs.readFileSync(
-      "/home/ubuntu/ndsep/drizzle/schema.ts",
+      "./drizzle/schema.ts",
       "utf-8"
     );
     expect(content).toContain("humanReviewOutcome");

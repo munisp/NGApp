@@ -63,8 +63,8 @@ var (
 	permifyURL      = getenv("PERMIFY_URL", "http://localhost:3476")
 	permifyTenant   = getenv("PERMIFY_TENANT_ID", "t1")
 	permifyEnabled  = getenv("PERMIFY_ENABLED", "true") == "true"
-	certPath        = getenv("NDSEP_CERT_PATH", "/home/ubuntu/ndsep/certs/ndsep-signing.crt")
-	keyPath         = getenv("NDSEP_KEY_PATH", "/home/ubuntu/ndsep/certs/ndsep-signing.key")
+	certPath        = getenv("NDSEP_CERT_PATH", "./certs/ndsep-signing.crt")
+	keyPath         = getenv("NDSEP_KEY_PATH", "./certs/ndsep-signing.key")
 )
 
 // ─── State ────────────────────────────────────────────────────────────────────

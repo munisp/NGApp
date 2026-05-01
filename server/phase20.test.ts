@@ -329,7 +329,7 @@ describe("Sector Compliance Dashboard", () => {
     const { existsSync } = await import("fs");
     expect(
       existsSync(
-        "/home/ubuntu/ndsep/client/src/pages/SectorComplianceDashboard.tsx"
+        "./client/src/pages/SectorComplianceDashboard.tsx"
       )
     ).toBe(true);
   });
@@ -337,7 +337,7 @@ describe("Sector Compliance Dashboard", () => {
   it("SectorComplianceDashboard should import trpc hooks", async () => {
     const { readFileSync } = await import("fs");
     const content = readFileSync(
-      "/home/ubuntu/ndsep/client/src/pages/SectorComplianceDashboard.tsx",
+      "./client/src/pages/SectorComplianceDashboard.tsx",
       "utf8"
     );
     expect(content).toContain("trpc");
@@ -347,7 +347,7 @@ describe("Sector Compliance Dashboard", () => {
   it("SectorComplianceDashboard should have sector cards", async () => {
     const { readFileSync } = await import("fs");
     const content = readFileSync(
-      "/home/ubuntu/ndsep/client/src/pages/SectorComplianceDashboard.tsx",
+      "./client/src/pages/SectorComplianceDashboard.tsx",
       "utf8"
     );
     expect(content).toContain("Fintech");
@@ -361,14 +361,14 @@ describe("Smoke Test Script", () => {
   it("smoke-test.mjs should exist", async () => {
     const { existsSync } = await import("fs");
     expect(
-      existsSync("/home/ubuntu/ndsep/scripts/smoke-test.mjs")
+      existsSync("./scripts/smoke-test.mjs")
     ).toBe(true);
   });
 
   it("smoke-test.mjs should test health endpoints", async () => {
     const { readFileSync } = await import("fs");
     const content = readFileSync(
-      "/home/ubuntu/ndsep/scripts/smoke-test.mjs",
+      "./scripts/smoke-test.mjs",
       "utf8"
     );
     expect(content).toContain("/api/health");
@@ -379,7 +379,7 @@ describe("Smoke Test Script", () => {
   it("smoke-test.mjs should test all 5 sector monitors", async () => {
     const { readFileSync } = await import("fs");
     const content = readFileSync(
-      "/home/ubuntu/ndsep/scripts/smoke-test.mjs",
+      "./scripts/smoke-test.mjs",
       "utf8"
     );
     expect(content).toContain("8122"); // Fintech
@@ -394,12 +394,12 @@ describe("Smoke Test Script", () => {
 describe("Makefile", () => {
   it("Makefile should exist", async () => {
     const { existsSync } = await import("fs");
-    expect(existsSync("/home/ubuntu/ndsep/Makefile")).toBe(true);
+    expect(existsSync("./Makefile")).toBe(true);
   });
 
   it("Makefile should have all critical targets", async () => {
     const { readFileSync } = await import("fs");
-    const content = readFileSync("/home/ubuntu/ndsep/Makefile", "utf8");
+    const content = readFileSync("./Makefile", "utf8");
     const requiredTargets = [
       "install",
       "build",
@@ -420,7 +420,7 @@ describe("Makefile", () => {
 
   it("Makefile should have help target", async () => {
     const { readFileSync } = await import("fs");
-    const content = readFileSync("/home/ubuntu/ndsep/Makefile", "utf8");
+    const content = readFileSync("./Makefile", "utf8");
     expect(content).toContain("help:");
     expect(content).toContain("## ");
   });
@@ -440,14 +440,14 @@ describe("Sector Monitor Worker Files", () => {
     it(`${monitor} should exist`, async () => {
       const { existsSync } = await import("fs");
       expect(
-        existsSync(`/home/ubuntu/ndsep/workers/python/${monitor}`)
+        existsSync(`./workers/python/${monitor}`)
       ).toBe(true);
     });
 
     it(`${monitor} should have status/health logic`, async () => {
       const { readFileSync } = await import("fs");
       const content = readFileSync(
-        `/home/ubuntu/ndsep/workers/python/${monitor}`,
+        `./workers/python/${monitor}`,
         "utf8"
       );
       // Workers expose status via publish_event or overall_status field
@@ -457,7 +457,7 @@ describe("Sector Monitor Worker Files", () => {
     it(`${monitor} should have compliance scan logic`, async () => {
       const { readFileSync } = await import("fs");
       const content = readFileSync(
-        `/home/ubuntu/ndsep/workers/python/${monitor}`,
+        `./workers/python/${monitor}`,
         "utf8"
       );
       expect(content).toContain("scan");
@@ -469,24 +469,24 @@ describe("Sector Monitor Worker Files", () => {
 describe("Security Hardening", () => {
   it("security.ts should exist with calculateSecurityScore", async () => {
     const { existsSync } = await import("fs");
-    expect(existsSync("/home/ubuntu/ndsep/server/security.ts")).toBe(true);
+    expect(existsSync("./server/security.ts")).toBe(true);
   });
 
   it("security.ts should have security headers configuration", async () => {
     const { readFileSync } = await import("fs");
-    const content = readFileSync("/home/ubuntu/ndsep/server/security.ts", "utf8");
+    const content = readFileSync("./server/security.ts", "utf8");
     // security.ts uses X-Request-ID and other headers; helmet is in _core/index.ts
     expect(content).toContain("X-Request-ID");
   });
 
   it("rateLimiter.ts should exist", async () => {
     const { existsSync } = await import("fs");
-    expect(existsSync("/home/ubuntu/ndsep/server/rateLimiter.ts")).toBe(true);
+    expect(existsSync("./server/rateLimiter.ts")).toBe(true);
   });
 
   it("rateLimiter.ts should have auth rate limiting", async () => {
     const { readFileSync } = await import("fs");
-    const content = readFileSync("/home/ubuntu/ndsep/server/rateLimiter.ts", "utf8");
+    const content = readFileSync("./server/rateLimiter.ts", "utf8");
     expect(content).toContain("rateLimit");
     expect(content).toContain("windowMs");
   });
@@ -504,7 +504,7 @@ describe("Worker Registration in workerManager", () => {
   it("workerManager.ts should register fintech_monitor", async () => {
     const { readFileSync } = await import("fs");
     const content = readFileSync(
-      "/home/ubuntu/ndsep/server/workerManager.ts",
+      "./server/workerManager.ts",
       "utf8"
     );
     expect(content).toContain("fintech_monitor");
@@ -513,7 +513,7 @@ describe("Worker Registration in workerManager", () => {
   it("workerManager.ts should register healthcare_monitor", async () => {
     const { readFileSync } = await import("fs");
     const content = readFileSync(
-      "/home/ubuntu/ndsep/server/workerManager.ts",
+      "./server/workerManager.ts",
       "utf8"
     );
     expect(content).toContain("healthcare_monitor");
@@ -522,7 +522,7 @@ describe("Worker Registration in workerManager", () => {
   it("workerManager.ts should register energy_monitor", async () => {
     const { readFileSync } = await import("fs");
     const content = readFileSync(
-      "/home/ubuntu/ndsep/server/workerManager.ts",
+      "./server/workerManager.ts",
       "utf8"
     );
     expect(content).toContain("energy_monitor");
@@ -531,7 +531,7 @@ describe("Worker Registration in workerManager", () => {
   it("workerManager.ts should register insurance_monitor", async () => {
     const { readFileSync } = await import("fs");
     const content = readFileSync(
-      "/home/ubuntu/ndsep/server/workerManager.ts",
+      "./server/workerManager.ts",
       "utf8"
     );
     expect(content).toContain("insurance_monitor");
@@ -540,7 +540,7 @@ describe("Worker Registration in workerManager", () => {
   it("workerManager.ts should register telecom_monitor", async () => {
     const { readFileSync } = await import("fs");
     const content = readFileSync(
-      "/home/ubuntu/ndsep/server/workerManager.ts",
+      "./server/workerManager.ts",
       "utf8"
     );
     expect(content).toContain("telecom_monitor");
@@ -549,7 +549,7 @@ describe("Worker Registration in workerManager", () => {
   it("workerManager.ts should register at least 50 workers total", async () => {
     const { readFileSync } = await import("fs");
     const content = readFileSync(
-      "/home/ubuntu/ndsep/server/workerManager.ts",
+      "./server/workerManager.ts",
       "utf8"
     );
     // Count worker registrations by counting 'id:' occurrences in worker config
@@ -562,24 +562,24 @@ describe("Worker Registration in workerManager", () => {
 describe("Docker & Infrastructure Files", () => {
   it("Dockerfile should exist", async () => {
     const { existsSync } = await import("fs");
-    expect(existsSync("/home/ubuntu/ndsep/Dockerfile")).toBe(true);
+    expect(existsSync("./Dockerfile")).toBe(true);
   });
 
   it("docker-compose.yml should exist", async () => {
     const { existsSync } = await import("fs");
-    expect(existsSync("/home/ubuntu/ndsep/docker-compose.yml")).toBe(true);
+    expect(existsSync("./docker-compose.yml")).toBe(true);
   });
 
   it("Dockerfile should use multi-stage build", async () => {
     const { readFileSync } = await import("fs");
-    const content = readFileSync("/home/ubuntu/ndsep/Dockerfile", "utf8");
+    const content = readFileSync("./Dockerfile", "utf8");
     expect(content).toContain("FROM");
     expect(content).toContain("AS");
   });
 
   it("docker-compose.yml should have postgres service", async () => {
     const { readFileSync } = await import("fs");
-    const content = readFileSync("/home/ubuntu/ndsep/docker-compose.yml", "utf8");
+    const content = readFileSync("./docker-compose.yml", "utf8");
     expect(content).toContain("postgres");
   });
 });
