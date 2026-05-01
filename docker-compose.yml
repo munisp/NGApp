@@ -1,0 +1,171 @@
+###############################################################################
+# NDSEP — Local Development Docker Compose
+# Spins up all infrastructure services needed for local development.
+# The Node.js app itself runs via `pnpm dev` (not in Docker) for HMR.
+#
+# Usage:
+#   docker compose up -d           # Start all infra services
+#   docker compose down -v         # Stop and remove volumes
+#   docker compose logs -f         # Follow logs
+###############################################################################
+version: "3.9"
+
+x-logging: &default-logging
+  driver: "json-file"
+  options:
+    max-size: "20m"
+    max-file: "3"
+
+services:
+  # ─── PostgreSQL 16 ─────────────────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: ndsep-postgres-dev
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: ndsep_db
+      POSTGRES_USER: ndsep_user
+      POSTGRES_PASSWORD: ndsep_secure_2026
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ndsep_user -d ndsep_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    logging: *default-logging
+
+  # ─── Redis 7 (session cache, rate-limit store, pub/sub) ────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: ndsep-redis-dev
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_dev_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    logging: *default-logging
+
+  # ─── Kafka + Zookeeper (streaming events, NIP event bus) ───────────────────
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.6.0
+    container_name: ndsep-zookeeper-dev
+    restart: unless-stopped
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    volumes:
+      - zookeeper_dev_data:/var/lib/zookeeper/data
+    logging: *default-logging
+
+  kafka:
+    image: confluentinc/cp-kafka:7.6.0
+    container_name: ndsep-kafka-dev
+    restart: unless-stopped
+    ports:
+      - "9092:9092"
+    depends_on:
+      - zookeeper
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092,PLAINTEXT_INTERNAL://kafka:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT_INTERNAL
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    volumes:
+      - kafka_dev_data:/var/lib/kafka/data
+    logging: *default-logging
+
+  # ─── Prometheus (metrics scraping) ─────────────────────────────────────────
+  prometheus:
+    image: prom/prometheus:v2.51.0
+    container_name: ndsep-prometheus-dev
+    restart: unless-stopped
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./infra/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./infra/prometheus/alerts.yml:/etc/prometheus/alerts.yml:ro
+      - prometheus_dev_data:/prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--storage.tsdb.retention.time=15d"
+      - "--web.enable-lifecycle"
+    logging: *default-logging
+
+  # ─── Grafana (dashboards) ──────────────────────────────────────────────────
+  grafana:
+    image: grafana/grafana:10.4.0
+    container_name: ndsep-grafana-dev
+    restart: unless-stopped
+    ports:
+      - "3001:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: ndsep_grafana_2026
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - grafana_dev_data:/var/lib/grafana
+      - ./infra/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./infra/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    depends_on:
+      - prometheus
+    logging: *default-logging
+
+  # ─── Mailhog (local SMTP for email testing) ─────────────────────────────────
+  mailhog:
+    image: mailhog/mailhog:v1.0.1
+    container_name: ndsep-mailhog-dev
+    restart: unless-stopped
+    ports:
+      - "1025:1025"   # SMTP
+      - "8025:8025"   # Web UI
+    logging: *default-logging
+
+  # ─── MinIO (local S3-compatible object storage) ────────────────────────────
+  minio:
+    image: minio/minio:RELEASE.2024-03-21T23-13-43Z
+    container_name: ndsep-minio-dev
+    restart: unless-stopped
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: ndsep_minio
+      MINIO_ROOT_PASSWORD: ndsep_minio_2026
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio_dev_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+    logging: *default-logging
+
+volumes:
+  postgres_dev_data:
+  redis_dev_data:
+  zookeeper_dev_data:
+  kafka_dev_data:
+  prometheus_dev_data:
+  grafana_dev_data:
+  minio_dev_data:
+
+networks:
+  default:
+    name: ndsep-dev-network

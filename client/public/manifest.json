@@ -1,0 +1,55 @@
+{
+  "name": "NDSEP — National Data Sovereignty Enforcement Platform",
+  "short_name": "NDSEP",
+  "description": "National Data Sovereignty Enforcement Platform — real-time compliance monitoring, enforcement, and audit management.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0e1a",
+  "theme_color": "#00d4ff",
+  "orientation": "any",
+  "categories": ["government", "security", "productivity"],
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshot-dashboard.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "label": "Government Executive Dashboard"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Dashboard",
+      "url": "/",
+      "description": "National Risk Score and KPI overview"
+    },
+    {
+      "name": "Compliance Engine",
+      "url": "/compliance",
+      "description": "Policy enforcement and compliance scoring"
+    },
+    {
+      "name": "SIEM & Audit",
+      "url": "/siem",
+      "description": "Security alerts and immutable audit trail"
+    },
+    {
+      "name": "Organization Portal",
+      "url": "/portal",
+      "description": "Organization self-service compliance portal"
+    }
+  ]
+}

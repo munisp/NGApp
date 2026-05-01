@@ -1,0 +1,453 @@
+import { Toaster } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import NotFound from "@/pages/NotFound";
+import { Route, Switch } from "wouter";
+import ErrorBoundary from "./components/ErrorBoundary";
+import { ThemeProvider } from "./contexts/ThemeContext";
+import DashboardLayout from "./components/DashboardLayout";
+import Dashboard from "./pages/Dashboard";
+import DiscoveryEngine from "./pages/DiscoveryEngine";
+import DataCatalog from "./pages/DataCatalog";
+import ComplianceEngine from "./pages/ComplianceEngine";
+import SiemAudit from "./pages/SiemAudit";
+import NetworkDPI from "./pages/NetworkDPI";
+import FinancialEnforcement from "./pages/FinancialEnforcement";
+import StreamingEvents from "./pages/StreamingEvents";
+import EventBusMonitor from "./pages/EventBusMonitor";
+import LedgerExplorer from "./pages/LedgerExplorer";
+import AIAssistant from "./pages/AIAssistant";
+import Organizations from "./pages/Organizations";
+import RoleManagement from "./pages/RoleManagement";
+import WorkerProcesses from "./pages/WorkerProcesses";
+import BgpRoutes from "./pages/BgpRoutes";
+import TemporalWorkflows from "./pages/TemporalWorkflows";
+import PrometheusMetrics from "./pages/PrometheusMetrics";
+import ArkimePcap from "./pages/ArkimePcap";
+import OrgPortal from "./pages/OrgPortal";
+import PortalReview from "./pages/PortalReview";
+import TransferApprovals from "./pages/TransferApprovals";
+import ContinuousMonitoring from "./pages/ContinuousMonitoring";
+import OrchestrationDashboard from "./pages/OrchestrationDashboard";
+import ComplianceLeaderboard from "./pages/ComplianceLeaderboard";
+import CertificateVerify from "@/pages/CertificateVerify";
+import ApiDocs from "@/pages/ApiDocs";
+import PenaltyReceipt from "@/pages/PenaltyReceipt";
+import RegulatoryReports from "@/pages/RegulatoryReports";
+import OrgStatusTracker from "@/pages/OrgStatusTracker";
+import AuditLogViewer from "@/pages/AuditLogViewer";
+import PolicyTemplates from "@/pages/PolicyTemplates";
+import AiGovernance from "@/pages/AiGovernance";
+import EvidencePackages from "@/pages/EvidencePackages";
+import SectorManagement from "@/pages/SectorManagement";
+import CitizenRightsPortal from "@/pages/CitizenRightsPortal";
+import GitopsConfig from "@/pages/GitopsConfig";
+import DataFlowVisualization from "@/pages/DataFlowVisualization";
+import TiaAssessments from "@/pages/TiaAssessments";
+import RemediationWorkflows from "@/pages/RemediationWorkflows";
+import AssetGraph from "@/pages/AssetGraph";
+import FrameworkDashboard from "@/pages/FrameworkDashboard";
+import MyOrg from "@/pages/MyOrg";
+import EnforcementCases from "@/pages/EnforcementCases";
+import NotificationSettings from "@/pages/NotificationSettings";
+import AlertingSettings from "@/pages/AlertingSettings";
+import CertificateRotation from "@/pages/CertificateRotation";
+import SectorBenchmark from "@/pages/SectorBenchmark";
+import ConsentManagement from "@/pages/ConsentManagement";
+import BreachNotification from "@/pages/BreachNotification";
+import DpoRegistry from "@/pages/DpoRegistry";
+import DpoDashboard from "@/pages/DpoDashboard";
+import DpiaAssessments from "@/pages/DpiaAssessments";
+import RopaRecords from "@/pages/RopaRecords";
+import RetentionPolicies from "@/pages/RetentionPolicies";
+import DpoReports from "@/pages/DpoReports";
+import ComplianceAuditReturns from "@/pages/ComplianceAuditReturns";
+import AdequacyRegistry from "@/pages/AdequacyRegistry";
+import DataProcessingAgreements from "@/pages/DataProcessingAgreements";
+import PrivacyNotices from "@/pages/PrivacyNotices";
+import CookieConsent from "@/pages/CookieConsent";
+import AutomatedDecisions from "@/pages/AutomatedDecisions";
+import ParentalConsent from "@/pages/ParentalConsent";
+import StaffTraining from "@/pages/StaffTraining";
+import TransferInstruments from "@/pages/TransferInstruments";
+import DataExportJobs from "@/pages/DataExportJobs";
+import DcpmiThresholds from "@/pages/DcpmiThresholds";
+import DpcoRegistry from "@/pages/DpcoRegistry";
+import DpcoPortal from "@/pages/DpcoPortal";
+import DpcoClients from "@/pages/DpcoClients";
+import DpcoVerification from "@/pages/DpcoVerification";
+import DpcoAuditWorkspace from "@/pages/DpcoAuditWorkspace";
+import DpcoPolicyHub from "@/pages/DpcoPolicyHub";
+import DpcoScorecard from "@/pages/DpcoScorecard";
+import DpcoOnboard from "@/pages/DpcoOnboard";
+import DpcoEvidenceVault from "@/pages/DpcoEvidenceVault";
+import DpcoClientDashboard from "@/pages/DpcoClientDashboard";
+import DpcoBilling from "@/pages/dpco/DpcoBilling";
+import DpcoSubscription from "@/pages/dpco/DpcoSubscription";
+import AdminRevenue from "@/pages/admin/AdminRevenue";
+import AdminRegistrations from "@/pages/admin/AdminRegistrations";
+import AdminPlatformSettings from "@/pages/admin/AdminPlatformSettings";
+import AdminAccreditation from "@/pages/admin/AdminAccreditation";
+import DpcoApply from "@/pages/DpcoApply";
+import AccreditationStatus from "@/pages/AccreditationStatus";
+import DpcoRenewal from "@/pages/dpco/DpcoRenewal";
+import DpcoAiTools from "@/pages/dpco/DpcoAiTools";
+import DpcoPerformanceScorecard from "@/pages/dpco/DpcoPerformanceScorecard";
+import DpcoBrochure from "@/pages/DpcoBrochure";
+import DpcoLanding from "@/pages/DpcoLanding";
+import DpcoRegister from "@/pages/DpcoRegister";
+import DpcoApp from "@/pages/DpcoApp";
+import EngageDpco from "@/pages/EngageDpco";
+import DpcoPwaDashboard from "@/pages/DpcoPwaDashboard";
+import PwaDashboard from "@/pages/PwaDashboard";
+import DpcoPwaUI from "@/pages/DpcoPwaUI";
+import DsarPublicPortal from "@/pages/DsarPublicPortal";
+import DpiaWizard from "@/pages/DpiaWizard";
+import AiGovernanceScoring from "@/pages/AiGovernanceScoring";
+import SectorBenchmarking from "@/pages/SectorBenchmarking";
+import WebhookManagement from "@/pages/WebhookManagement";
+import GlobalSearch from "@/pages/GlobalSearch";
+import CarAutomation from "@/pages/CarAutomation";
+import OpenApiPortal from "@/pages/OpenApiPortal";
+import BankingDashboard from "@/pages/banking/BankingDashboard";
+import KycManagement from "@/pages/banking/KycManagement";
+import AmlCases from "@/pages/banking/AmlCases";
+import WatchlistScreening from "@/pages/banking/WatchlistScreening";
+import PaymentsMonitor from "@/pages/banking/PaymentsMonitor";
+import SwiftTransactions from "@/pages/banking/SwiftTransactions";
+import FraudAlerts from "@/pages/banking/FraudAlerts";
+import CbnReports from "@/pages/banking/CbnReports";
+import CorrespondentBanks from "@/pages/banking/CorrespondentBanks";
+import TelecomDashboard from "@/pages/telecom/TelecomDashboard";
+import HealthcareDashboard from "@/pages/healthcare/HealthcareDashboard";
+import EnergyDashboard from "@/pages/energy/EnergyDashboard";
+import InsuranceDashboard from "@/pages/insurance/InsuranceDashboard";
+import FintechDashboard from "@/pages/fintech/FintechDashboard";
+import CrossSectorAlerts from "@/pages/CrossSectorAlerts";
+import SlaTimers from "@/pages/SlaTimers";
+import AdminUserManagement from "@/pages/admin/AdminUserManagement";
+import SystemHealthDashboard from "@/pages/admin/SystemHealthDashboard";
+import BreachIncidentCenter from "@/pages/BreachIncidentCenter";
+import ConsentRecordManager from "@/pages/ConsentRecordManager";
+import DpoAppointmentRegistry from "@/pages/DpoAppointmentRegistry";
+import PublicComplianceRegistry from "@/pages/PublicComplianceRegistry";
+import PenaltyCalculator from "@/pages/PenaltyCalculator";
+import RiskScorecard from "@/pages/RiskScorecard";
+import Article40Tracker from "@/pages/Article40Tracker";
+import AdvancedAnalytics from "@/pages/AdvancedAnalytics";
+import NotificationCenter from "@/pages/NotificationCenter";
+import ComplianceCalendar from "@/pages/ComplianceCalendar";
+import DocumentVault from "@/pages/DocumentVault";
+import ApiKeyManagement from "@/pages/ApiKeyManagement";
+import WebhookDelivery from "@/pages/WebhookDelivery";
+import CrossSectorDataSharing from "@/pages/CrossSectorDataSharing";
+import RetentionEnforcement from "@/pages/RetentionEnforcement";
+import CertificateVerification from "@/pages/CertificateVerification";
+import EnforcementTimeline from "@/pages/EnforcementTimeline";
+import AiRiskEngine from "@/pages/AiRiskEngine";
+import ComplianceRescoring from "@/pages/ComplianceRescoring";
+import SmsAlerts from "@/pages/SmsAlerts";
+import PdfExportCenter from "@/pages/PdfExportCenter";
+import CustomizableDashboard from "@/pages/CustomizableDashboard";
+import ChatSupport from "@/pages/ChatSupport";
+import UserGuide from "@/pages/UserGuide";
+import OnboardingChecklist from "@/pages/OnboardingChecklist";
+import EmailDigestSettings from "@/pages/EmailDigestSettings";
+import ChangelogAdmin from "@/pages/ChangelogAdmin";
+import ComplianceTrend from "@/pages/ComplianceTrend";
+import SecurityAuditDashboard from "@/pages/SecurityAuditDashboard";
+import MultiOrgTrendCompare from "@/pages/MultiOrgTrendCompare";
+import DSARLifecycle from "@/pages/DSARLifecycle";
+import UserManagement from "@/pages/UserManagement";
+import AuditExport from "@/pages/AuditExport";
+import NIPReconciliation from "@/pages/NIPReconciliation";
+import PlatformStats from "@/pages/PlatformStats";
+import AIMLHub from "@/pages/AIMLHub";
+import ModelRegistry from "@/pages/ModelRegistry";
+import ARTDashboard from "@/pages/ARTDashboard";
+import FeatureStorePage from "@/pages/FeatureStorePage";
+import CertificateLifecycle from "@/pages/CertificateLifecycle";
+import SectorBenchmarkDashboard from "@/pages/SectorBenchmarkDashboard";
+import SectorComplianceDashboard from "@/pages/SectorComplianceDashboard";
+import SectorComplianceDetail from "@/pages/SectorComplianceDetail";
+import FinePaymentGateway from "@/pages/FinePaymentGateway";
+import ComplianceCalendarPage from "@/pages/ComplianceCalendarPage";
+import SBOMViewer from "@/pages/SBOMViewer";
+import KnowledgeGraphVisualiser from "@/pages/KnowledgeGraphVisualiser";
+import RAGAdvisor from "@/pages/RAGAdvisor";
+import DataPipeline from "@/pages/DataPipeline";
+import DataLineage from "@/pages/DataLineage";
+import RegulatoryIntelligence from "@/pages/RegulatoryIntelligence";
+import IncidentResponse from "@/pages/IncidentResponse";
+import ComplianceGapAnalyzer from "@/pages/ComplianceGapAnalyzer";
+import VendorRisk from "@/pages/VendorRisk";
+import WhistleblowerPortal from "@/pages/WhistleblowerPortal";
+import RegulatorySandbox from "@/pages/RegulatorySandbox";
+import AIEthicsBoard from "@/pages/AIEthicsBoard";
+import NationalIDVerification from "@/pages/NationalIDVerification";
+import CrossAgencySharing from "@/pages/CrossAgencySharing";
+import PrivacyImpactAssessment from "@/pages/PrivacyImpactAssessment";
+import FinePayments from "@/pages/FinePayments";
+import Phase13ConsentRecords from "@/pages/Phase13ConsentRecords";
+import Phase13DpoRegistry from "@/pages/Phase13DpoRegistry";
+import Phase13NotificationCenter from "@/pages/Phase13NotificationCenter";
+import Phase13PenaltyCalculator from "@/pages/Phase13PenaltyCalculator";
+import PenaltyDashboard from "@/pages/PenaltyDashboard";
+import Phase13PublicRegistry from "@/pages/Phase13PublicRegistry";
+import Phase13RiskScorecard from "@/pages/Phase13RiskScorecard";
+import Phase13DataResidency from "@/pages/Phase13DataResidency";
+import Phase13RateLimitDashboard from "@/pages/Phase13RateLimitDashboard";
+import Phase13BulkDsar from "@/pages/Phase13BulkDsar";
+import Phase13WhistleblowerCases from "@/pages/Phase13WhistleblowerCases";
+import Phase13CrossBorderMonitor from "@/pages/Phase13CrossBorderMonitor";
+import Phase13RegulatoryReporting from "@/pages/Phase13RegulatoryReporting";
+import Phase13AdvancedAnalytics from "@/pages/Phase13AdvancedAnalytics";
+import Phase13Article40 from "@/pages/Phase13Article40";
+import Phase13ComplianceCalendar from "@/pages/Phase13ComplianceCalendar";
+import HealthDashboard from "@/pages/HealthDashboard";
+import AccreditationWorkflow from "@/pages/AccreditationWorkflow";
+
+function Router() {
+  return (
+    <Switch>
+      {/* Public pages — no DashboardLayout wrapper */}
+      <Route path="/dpco-app" component={DpcoApp} />
+      <Route path="/dpco-app/dashboard" component={DpcoPwaDashboard} />
+      <Route path="/pwa-dashboard" component={PwaDashboard} />
+      <Route path="/dpco-ui" component={DpcoPwaUI} />
+      <Route path="/register" component={DpcoRegister} />
+      <Route path="/status/:token" component={OrgStatusTracker} />
+      <Route path="/status" component={OrgStatusTracker} />
+      <Route>
+    <DashboardLayout>
+      <Switch>
+        <Route path="/" component={Dashboard} />
+        <Route path="/discovery" component={DiscoveryEngine} />
+        <Route path="/catalog" component={DataCatalog} />
+        <Route path="/compliance" component={ComplianceEngine} />
+        <Route path="/siem" component={SiemAudit} />
+        <Route path="/network" component={NetworkDPI} />
+        <Route path="/financial" component={FinancialEnforcement} />
+        <Route path="/streaming" component={StreamingEvents} />
+        <Route path="/event-bus" component={EventBusMonitor} />
+        <Route path="/ledger" component={LedgerExplorer} />
+        <Route path="/ai-assistant" component={AIAssistant} />
+        <Route path="/organizations" component={Organizations} />
+        <Route path="/roles" component={RoleManagement} />
+        <Route path="/workers" component={WorkerProcesses} />
+        <Route path="/bgp" component={BgpRoutes} />
+        <Route path="/temporal" component={TemporalWorkflows} />
+        <Route path="/metrics" component={PrometheusMetrics} />
+        <Route path="/pcap" component={ArkimePcap} />
+        <Route path="/portal" component={OrgPortal} />
+        <Route path="/engage-dpco" component={EngageDpco} />
+        <Route path="/dpco/apply" component={DpcoApply} />
+        <Route path="/accreditation/status" component={AccreditationStatus} />
+        <Route path="/portal-review" component={PortalReview} />
+        <Route path="/transfers" component={TransferApprovals} />
+        <Route path="/monitoring" component={ContinuousMonitoring} />
+        <Route path="/orchestration" component={OrchestrationDashboard} />
+        <Route path="/leaderboard" component={ComplianceLeaderboard} />
+        <Route path="/verify/:token" component={CertificateVerify} />
+        <Route path="/receipt/:penaltyId" component={PenaltyReceipt} />
+        <Route path="/reports" component={RegulatoryReports} />
+        <Route path="/verify" component={CertificateVerify} />
+        <Route path="/api-docs" component={ApiDocs} />
+        <Route path="/audit-log" component={AuditLogViewer} />
+        <Route path="/policy-templates" component={PolicyTemplates} />
+        <Route path="/ai-governance" component={AiGovernance} />
+        <Route path="/evidence" component={EvidencePackages} />
+        <Route path="/sectors" component={SectorManagement} />
+        <Route path="/citizen-rights" component={CitizenRightsPortal} />
+        <Route path="/gitops" component={GitopsConfig} />
+        <Route path="/data-flows" component={DataFlowVisualization} />
+        <Route path="/tia" component={TiaAssessments} />
+        <Route path="/remediation" component={RemediationWorkflows} />
+        <Route path="/asset-graph" component={AssetGraph} />
+        <Route path="/frameworks" component={FrameworkDashboard} />
+        <Route path="/my-org" component={MyOrg} />
+        <Route path="/enforcement-cases" component={EnforcementCases} />
+        <Route path="/settings/notifications" component={NotificationSettings} />
+        <Route path="/settings/alerting" component={AlertingSettings} />
+        <Route path="/settings/cert-rotation" component={CertificateRotation} />
+        <Route path="/sector-benchmark" component={SectorBenchmark} />
+        <Route path="/consent" component={ConsentManagement} />
+        <Route path="/breach-notification" component={BreachNotification} />
+        <Route path="/dpo-registry" component={DpoRegistry} />
+        <Route path="/dpo-dashboard" component={DpoDashboard} />
+        <Route path="/dpia" component={DpiaAssessments} />
+        <Route path="/ropa" component={RopaRecords} />
+        <Route path="/retention" component={RetentionPolicies} />
+        <Route path="/dpo-reports" component={DpoReports} />
+        <Route path="/car" component={ComplianceAuditReturns} />
+        <Route path="/adequacy" component={AdequacyRegistry} />
+        <Route path="/dpa" component={DataProcessingAgreements} />
+        <Route path="/privacy-notices" component={PrivacyNotices} />
+        <Route path="/cookie-consent" component={CookieConsent} />
+        <Route path="/automated-decisions" component={AutomatedDecisions} />
+        <Route path="/parental-consent" component={ParentalConsent} />
+        <Route path="/staff-training" component={StaffTraining} />
+        <Route path="/transfer-instruments" component={TransferInstruments} />
+        <Route path="/data-export" component={DataExportJobs} />
+        <Route path="/dcpmi" component={DcpmiThresholds} />
+        {/* DPCO Stakeholder Portal */}
+        <Route path="/dpco" component={DpcoPortal} />
+        <Route path="/dpco/registry" component={DpcoRegistry} />
+        <Route path="/dpco/clients" component={DpcoClients} />
+        <Route path="/dpco/verification" component={DpcoVerification} />
+        <Route path="/dpco/audit" component={DpcoAuditWorkspace} />
+        <Route path="/dpco/scorecard" component={DpcoScorecard} />
+        <Route path="/dpco/onboard" component={DpcoOnboard} />
+        <Route path="/dpco/evidence" component={DpcoEvidenceVault} />
+        <Route path="/dpco/clients/:clientId" component={DpcoClientDashboard} />
+        <Route path="/dpco/billing" component={DpcoBilling} />
+        <Route path="/dpco/subscription" component={DpcoSubscription} />
+        <Route path="/dpco/policy" component={DpcoPolicyHub} />
+        <Route path="/dpco/renewal" component={DpcoRenewal} />
+        <Route path="/dpco/ai-tools" component={DpcoAiTools} />
+        <Route path="/dpco/scorecard" component={DpcoPerformanceScorecard} />
+        <Route path="/dpco-brochure" component={DpcoBrochure} />
+        <Route path="/dpco" component={DpcoLanding} />
+        <Route path="/admin/revenue" component={AdminRevenue} />
+        <Route path="/admin/registrations" component={AdminRegistrations} />
+        <Route path="/admin/settings" component={AdminPlatformSettings} />
+        <Route path="/admin/accreditation" component={AdminAccreditation} />
+        <Route path="/dsar" component={DsarPublicPortal} />
+        <Route path="/dpia-wizard" component={DpiaWizard} />
+        <Route path="/ai-governance-scoring" component={AiGovernanceScoring} />
+        <Route path="/sector-benchmarking" component={SectorBenchmarking} />
+        <Route path="/webhooks" component={WebhookManagement} />
+        <Route path="/search" component={GlobalSearch} />
+        <Route path="/car-automation" component={CarAutomation} />
+        <Route path="/developer" component={OpenApiPortal} />
+        {/* Banking Services */}
+        <Route path="/banking" component={BankingDashboard} />
+        <Route path="/banking/kyc" component={KycManagement} />
+        <Route path="/banking/aml" component={AmlCases} />
+        <Route path="/banking/watchlist" component={WatchlistScreening} />
+        <Route path="/banking/payments" component={PaymentsMonitor} />
+        <Route path="/banking/swift" component={SwiftTransactions} />
+        <Route path="/banking/fraud" component={FraudAlerts} />
+        <Route path="/banking/cbn-reports" component={CbnReports} />
+        <Route path="/banking/correspondents" component={CorrespondentBanks} />
+        {/* Sector Modules */}
+        <Route path="/telecom" component={TelecomDashboard} />
+        <Route path="/healthcare" component={HealthcareDashboard} />
+        <Route path="/energy" component={EnergyDashboard} />
+        <Route path="/insurance" component={InsuranceDashboard} />
+        <Route path="/fintech" component={FintechDashboard} />
+        {/* Operations & Admin */}
+        <Route path="/cross-sector-alerts" component={CrossSectorAlerts} />
+        <Route path="/sla-timers" component={SlaTimers} />
+        <Route path="/admin/users" component={AdminUserManagement} />
+        <Route path="/admin/system-health" component={SystemHealthDashboard} />
+        <Route path="/breach-incidents" component={BreachIncidentCenter} />
+        <Route path="/consent-records" component={ConsentRecordManager} />
+        <Route path="/dpo-appointment-registry" component={DpoAppointmentRegistry} />
+        <Route path="/public-registry" component={PublicComplianceRegistry} />
+        <Route path="/penalty-calculator" component={PenaltyCalculator} />
+        <Route path="/risk-scorecard-legacy" component={RiskScorecard} />
+        <Route path="/article-40-tracker" component={Article40Tracker} />
+        <Route path="/advanced-analytics" component={AdvancedAnalytics} />
+        <Route path="/notifications" component={NotificationCenter} />
+        <Route path="/compliance-calendar" component={ComplianceCalendar} />
+        {/* Production Feature Sprint — Phase 3 */}
+        <Route path="/document-vault" component={DocumentVault} />
+        <Route path="/api-keys" component={ApiKeyManagement} />
+        <Route path="/webhook-delivery" component={WebhookDelivery} />
+        <Route path="/cross-sector-sharing" component={CrossSectorDataSharing} />
+        <Route path="/retention-enforcement" component={RetentionEnforcement} />
+        <Route path="/cert-verification" component={CertificateVerification} />
+        <Route path="/enforcement-timeline" component={EnforcementTimeline} />
+        <Route path="/ai-risk-engine" component={AiRiskEngine} />
+        <Route path="/compliance-rescoring" component={ComplianceRescoring} />
+        <Route path="/sms-alerts" component={SmsAlerts} />
+        <Route path="/pdf-export" component={PdfExportCenter} />
+        {/* Phase 5 — Customisable Dashboard, Chat Support, User Guide */}
+        <Route path="/my-dashboard" component={CustomizableDashboard} />
+        <Route path="/support-chat" component={ChatSupport} />
+        <Route path="/user-guide" component={UserGuide} />
+        {/* Phase 6 — Onboarding Checklist, Email Digest */}
+        <Route path="/onboarding-checklist" component={OnboardingChecklist} />
+        <Route path="/email-digest" component={EmailDigestSettings} />
+        <Route path="/admin/changelog" component={ChangelogAdmin} />
+        <Route path="/trends/:orgId" component={ComplianceTrend} />
+        <Route path="/trends" component={ComplianceTrend} />
+        {/* Phase 9 — Security Audit, Multi-Org Trends, DSAR Lifecycle, User Mgmt, Audit Export, NIP, Platform Stats */}
+        <Route path="/security-audit" component={SecurityAuditDashboard} />
+        <Route path="/trend-compare" component={MultiOrgTrendCompare} />
+        <Route path="/dsar-lifecycle" component={DSARLifecycle} />
+        <Route path="/admin/users" component={UserManagement} />
+        <Route path="/audit-export" component={AuditExport} />
+        <Route path="/nip-reconciliation" component={NIPReconciliation} />
+        <Route path="/platform-stats" component={PlatformStats} />
+        <Route path="/ai/hub" component={AIMLHub} />
+        <Route path="/ai/model-registry" component={ModelRegistry} />
+        <Route path="/ai/art-dashboard" component={ARTDashboard} />
+        <Route path="/ai/feature-store" component={FeatureStorePage} />
+        <Route path="/404" component={NotFound} />
+        <Route path="/certificates" component={CertificateLifecycle} />
+              <Route path="/sector-benchmarks" component={SectorBenchmarkDashboard} />
+              <Route path="/fine-payments" component={FinePaymentGateway} />
+              <Route path="/compliance-calendar" component={ComplianceCalendarPage} />
+              <Route path="/sbom" component={SBOMViewer} />
+              <Route component={NotFound} />
+        <Route path="/data-pipeline" component={DataPipeline} />
+        <Route path="/data-lineage" component={DataLineage} />
+        <Route path="/regulatory-intelligence" component={RegulatoryIntelligence} />
+        <Route path="/incident-response" component={IncidentResponse} />
+        <Route path="/compliance-gap" component={ComplianceGapAnalyzer} />
+        <Route path="/vendor-risk" component={VendorRisk} />
+        <Route path="/whistleblower" component={WhistleblowerPortal} />
+        <Route path="/regulatory-sandbox" component={RegulatorySandbox} />
+        <Route path="/ai-ethics" component={AIEthicsBoard} />
+        <Route path="/national-id" component={NationalIDVerification} />
+        <Route path="/cross-agency" component={CrossAgencySharing} />
+        <Route path="/pia" component={PrivacyImpactAssessment} />
+        <Route path="/ndpa-fines" component={FinePayments} />
+        {/* Phase 13 — Consent, DPO, Notifications, Penalty, Public Registry, Risk, Residency, Rate Limit, Bulk DSAR, Whistleblower, Cross-Border, Reporting */}
+        <Route path="/consent-records" component={Phase13ConsentRecords} />
+        <Route path="/dpo-registry" component={Phase13DpoRegistry} />
+        <Route path="/notification-center" component={Phase13NotificationCenter} />
+        <Route path="/penalty-calculator" component={Phase13PenaltyCalculator} />
+        <Route path="/penalty-dashboard" component={PenaltyDashboard} />
+        <Route path="/public-registry" component={Phase13PublicRegistry} />
+        <Route path="/risk-scorecard" component={Phase13RiskScorecard} />
+        <Route path="/data-residency" component={Phase13DataResidency} />
+        <Route path="/rate-limit-dashboard" component={Phase13RateLimitDashboard} />
+        <Route path="/bulk-dsar" component={Phase13BulkDsar} />
+        <Route path="/whistleblower-cases" component={Phase13WhistleblowerCases} />
+        <Route path="/cross-border-monitor" component={Phase13CrossBorderMonitor} />
+        <Route path="/regulatory-reporting" component={Phase13RegulatoryReporting} />
+        <Route path="/p13-advanced-analytics" component={Phase13AdvancedAnalytics} />
+        <Route path="/p13-article40" component={Phase13Article40} />
+        <Route path="/p13-compliance-calendar" component={Phase13ComplianceCalendar} />
+        <Route path="/knowledge-graph" component={KnowledgeGraphVisualiser} />
+        <Route path="/ai/knowledge-graph" component={KnowledgeGraphVisualiser} />
+        <Route path="/rag-advisor" component={RAGAdvisor} />
+        <Route path="/ai/rag-advisor" component={RAGAdvisor} />
+        <Route path="/sector-compliance" component={SectorComplianceDashboard} />
+        <Route path="/sector-compliance/:sector" component={SectorComplianceDetail} />
+        {/* Phase 25 — Health Dashboard, Accreditation Workflow */}
+        <Route path="/health-dashboard" component={HealthDashboard} />
+        <Route path="/accreditation-workflow" component={AccreditationWorkflow} />
+      </Switch>
+    </DashboardLayout>
+      </Route>
+    </Switch>
+  );
+}
+
+function App() {
+  return (
+    <ErrorBoundary>
+      <ThemeProvider defaultTheme="light" switchable>
+        <TooltipProvider>
+          <Toaster />
+          <Router />
+        </TooltipProvider>
+      </ThemeProvider>
+    </ErrorBoundary>
+  );
+}
+
+export default App;
