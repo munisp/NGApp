@@ -9,6 +9,13 @@ members = [
     "watchlist_screener",
     "vector_cache",
     "lakehouse_writer",
+    "keycloak_validator",
+    "lakehouse_ingest",
+    "middleware_cache",
+    "opensearch_indexer",
+    "portability_exporter",
+    "tigerbeetle_ledger",
+    "offline_resilience",
 ]
 resolver = "2"
 

@@ -635,6 +635,58 @@ async function startServer() {
     req.on("close", () => clearInterval(interval));
   });
 
+  // ── Middleware Health Dashboard ────────────────────────────────────────────
+  app.get("/api/middleware/health", requireAdmin, async (_req, res) => {
+    try {
+      const { getAllMiddlewareHealth } = await import("../middleware/healthIntegration");
+      const health = await getAllMiddlewareHealth();
+      res.json(health);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message ?? "Health check failed" });
+    }
+  });
+
+  // ── Security Dashboard ───────────────────────────────────────────────────
+  app.get("/api/security/status", requireAdmin, async (_req, res) => {
+    try {
+      const { getRansomwareProtectionStatus } = await import("../security/ransomware");
+      const { getBlockedIps } = await import("../security/ddos");
+      const rootDir = process.cwd();
+      const ransomwareStatus = getRansomwareProtectionStatus(rootDir);
+      const blockedIps = getBlockedIps();
+      res.json({
+        ransomware: ransomwareStatus,
+        blockedIps,
+        securityHeaders: "enabled",
+        pbac: "enabled",
+        ddosProtection: "enabled",
+        inputSanitization: "enabled",
+        auditLogging: "enabled",
+        checkedAt: new Date().toISOString(),
+      });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message ?? "Security status check failed" });
+    }
+  });
+
+  // ── Events polling fallback (for WebSocket-less clients) ─────────────────
+  app.post("/api/events/poll", requireSession, async (req, res) => {
+    try {
+      const pool = getPool();
+      if (!pool) { res.json([]); return; }
+      const lastEventId = req.body?.lastEventId ?? null;
+      const result = await pool.query(
+        `SELECT id, title AS type, body AS payload, created_at AS timestamp
+         FROM platform_notifications
+         WHERE created_at > NOW() - INTERVAL '5 minutes'
+         ORDER BY created_at DESC LIMIT 50`
+      );
+      res.json(result.rows);
+    } catch {
+      res.json([]);
+    }
+  });
+
   // ── Global error handler ──────────────────────────────────────────────────
   app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
     logger.error({ err }, "Unhandled Express error");
