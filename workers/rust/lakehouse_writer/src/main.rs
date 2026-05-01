@@ -147,7 +147,10 @@ async fn write_features(
     Json(req): Json<FeatureWriteRequest>,
 ) -> Json<WriteResponse> {
     let record_id = Uuid::new_v4().to_string();
-    let ts = req.timestamp.clone().unwrap_or_else(|| Utc::now().to_rfc3339());
+    let ts = req
+        .timestamp
+        .clone()
+        .unwrap_or_else(|| Utc::now().to_rfc3339());
     state.writes_total.fetch_add(1, Ordering::Relaxed);
 
     // Write to PostgreSQL feature store
@@ -165,7 +168,11 @@ async fn write_features(
             match result {
                 Ok(_) => {
                     state.feature_writes.fetch_add(1, Ordering::Relaxed);
-                    log::debug!("[Lakehouse] Feature write: {} / {}", req.feature_group, req.entity_id);
+                    log::debug!(
+                        "[Lakehouse] Feature write: {} / {}",
+                        req.feature_group,
+                        req.entity_id
+                    );
                 }
                 Err(e) => {
                     state.writes_failed.fetch_add(1, Ordering::Relaxed);
@@ -275,18 +282,23 @@ async fn get_features(
     State(state): State<AppState>,
     Json(req): Json<serde_json::Value>,
 ) -> Json<serde_json::Value> {
-    let feature_group = req.get("feature_group").and_then(|v| v.as_str()).unwrap_or("");
+    let feature_group = req
+        .get("feature_group")
+        .and_then(|v| v.as_str())
+        .unwrap_or("");
     let entity_id = req.get("entity_id").and_then(|v| v.as_str()).unwrap_or("");
 
     match get_db_client(&state.db_url).await {
         Ok(client) => {
-            let rows = client.query(
-                "SELECT id::text, feature_group, entity_id, entity_type, features, recorded_at
+            let rows = client
+                .query(
+                    "SELECT id::text, feature_group, entity_id, entity_type, features, recorded_at
                  FROM ml_feature_store
                  WHERE feature_group = $1 AND entity_id = $2
                  ORDER BY recorded_at DESC LIMIT 1",
-                &[&feature_group, &entity_id],
-            ).await;
+                    &[&feature_group, &entity_id],
+                )
+                .await;
 
             match rows {
                 Ok(rows) if !rows.is_empty() => {
@@ -317,10 +329,16 @@ async fn get_features(
 #[tokio::main]
 async fn main() {
     env_logger::init();
-    let db_url = get_env("DATABASE_URL", "postgresql://ndsep_user:ndsep_secure_2026@localhost:5432/ndsep_db");
+    let db_url = get_env(
+        "DATABASE_URL",
+        "postgresql://ndsep_user:ndsep_secure_2026@localhost:5432/ndsep_db",
+    );
     let port = get_env("LAKEHOUSE_PORT", "8215");
 
-    log::info!("[Lakehouse] Starting NDSEP Lakehouse Feature Store Writer on port {}", port);
+    log::info!(
+        "[Lakehouse] Starting NDSEP Lakehouse Feature Store Writer on port {}",
+        port
+    );
 
     // Ensure tables exist
     if let Ok(client) = get_db_client(&db_url).await {

@@ -4,27 +4,41 @@ Enforces data sovereignty rules: detects data leaving national borders,
 validates storage locations, triggers enforcement actions.
 Technology: Rust, Axum, tokio-postgres, NDPR
 */
+use axum::{extract::State, response::Json, routing::get, Router};
+use log::info;
+use serde_json::{json, Value};
 use std::env;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
-use axum::{extract::State, response::Json, routing::get, Router};
-use log::info;
-use serde_json::{json, Value};
 
 const DATA_TYPES: &[&str] = &[
-    "PII", "Financial Records", "Health Records", "Government Data",
-    "Biometric Data", "Tax Records", "Criminal Records", "Electoral Data",
+    "PII",
+    "Financial Records",
+    "Health Records",
+    "Government Data",
+    "Biometric Data",
+    "Tax Records",
+    "Criminal Records",
+    "Electoral Data",
 ];
 const STORAGE_PROVIDERS: &[&str] = &[
-    "AWS S3 Lagos", "Azure West Africa", "GCP Johannesburg",
-    "Local DC Nairobi", "AWS US-East-1", "Azure Europe-West",
-    "GCP Asia-Pacific", "Alibaba Cloud",
+    "AWS S3 Lagos",
+    "Azure West Africa",
+    "GCP Johannesburg",
+    "Local DC Nairobi",
+    "AWS US-East-1",
+    "Azure Europe-West",
+    "GCP Asia-Pacific",
+    "Alibaba Cloud",
 ];
 const VIOLATION_TYPES: &[&str] = &[
-    "cross_border_transfer", "unauthorized_replication",
-    "foreign_storage_detected", "encryption_missing",
-    "retention_policy_breach", "consent_violation",
+    "cross_border_transfer",
+    "unauthorized_replication",
+    "foreign_storage_detected",
+    "encryption_missing",
+    "retention_policy_breach",
+    "consent_violation",
 ];
 const COUNTRIES: &[&str] = &["NG", "KE", "ZA", "GH", "ET", "EG", "TZ", "UG"];
 const FOREIGN_COUNTRIES: &[&str] = &["US", "GB", "DE", "FR", "CN", "SG", "JP", "AU"];
@@ -91,14 +105,24 @@ fn generate_check() -> CheckData {
         || storage_provider.contains("Alibaba");
     let is_violation = is_foreign && rng.gen_bool(0.35);
     let bytes_size = ndsep_shared::random_between(1024, 10_000_000_000);
-    let severity = if data_type == "PII" || data_type == "Biometric Data" || data_type == "Electoral Data" {
-        "critical"
-    } else if data_type == "Health Records" || data_type == "Financial Records" {
-        "high"
-    } else {
-        "medium"
-    };
-    CheckData { data_type, storage_provider, source_country, dest_country, violation_type, is_violation, bytes_size, severity }
+    let severity =
+        if data_type == "PII" || data_type == "Biometric Data" || data_type == "Electoral Data" {
+            "critical"
+        } else if data_type == "Health Records" || data_type == "Financial Records" {
+            "high"
+        } else {
+            "medium"
+        };
+    CheckData {
+        data_type,
+        storage_provider,
+        source_country,
+        dest_country,
+        violation_type,
+        is_violation,
+        bytes_size,
+        severity,
+    }
 }
 
 async fn run_residency_checker(
@@ -110,7 +134,10 @@ async fn run_residency_checker(
     let mut interval = tokio::time::interval(Duration::from_secs(5));
     loop {
         interval.tick().await;
-        let batch = { use rand::Rng; rand::thread_rng().gen_range(3..=10usize) };
+        let batch = {
+            use rand::Rng;
+            rand::thread_rng().gen_range(3..=10usize)
+        };
 
         for _ in 0..batch {
             let c = generate_check();
@@ -119,12 +146,16 @@ async fn run_residency_checker(
             if c.is_violation {
                 state.violations_detected.fetch_add(1, Ordering::Relaxed);
                 state.data_blocked.fetch_add(1, Ordering::Relaxed);
-                state.bytes_flagged.fetch_add(c.bytes_size as u64, Ordering::Relaxed);
+                state
+                    .bytes_flagged
+                    .fetch_add(c.bytes_size as u64, Ordering::Relaxed);
 
-                let org_result = db.query_opt(
-                    "SELECT id, name FROM organizations ORDER BY RANDOM() LIMIT 1",
-                    &[],
-                ).await;
+                let org_result = db
+                    .query_opt(
+                        "SELECT id, name FROM organizations ORDER BY RANDOM() LIMIT 1",
+                        &[],
+                    )
+                    .await;
                 let (org_id, org_name) = if let Ok(Some(row)) = org_result {
                     (row.get::<_, i32>(0), row.get::<_, String>(1))
                 } else {
@@ -152,25 +183,33 @@ async fn run_residency_checker(
                     &[&org_id, &c.data_type],
                 ).await;
 
-                ndsep_shared::broadcast(&http, "residency_violation", json!({
-                    "type": "residency_violation",
-                    "violationType": c.violation_type,
-                    "dataType": c.data_type,
-                    "organizationId": org_id,
-                    "organizationName": org_name,
-                    "sourceCountry": c.source_country,
-                    "destinationCountry": c.dest_country,
-                    "storageProvider": c.storage_provider,
-                    "bytesSize": c.bytes_size,
-                    "severity": c.severity,
-                    "timestamp": ndsep_shared::now_utc(),
-                })).await;
+                ndsep_shared::broadcast(
+                    &http,
+                    "residency_violation",
+                    json!({
+                        "type": "residency_violation",
+                        "violationType": c.violation_type,
+                        "dataType": c.data_type,
+                        "organizationId": org_id,
+                        "organizationName": org_name,
+                        "sourceCountry": c.source_country,
+                        "destinationCountry": c.dest_country,
+                        "storageProvider": c.storage_provider,
+                        "bytesSize": c.bytes_size,
+                        "severity": c.severity,
+                        "timestamp": ndsep_shared::now_utc(),
+                    }),
+                )
+                .await;
 
-                info!("[Residency] VIOLATION: {} | {} | {} -> {} | {} bytes",
-                    c.violation_type, c.data_type, c.source_country, c.dest_country, c.bytes_size);
+                info!(
+                    "[Residency] VIOLATION: {} | {} | {} -> {} | {} bytes",
+                    c.violation_type, c.data_type, c.source_country, c.dest_country, c.bytes_size
+                );
             }
         }
-        info!("[Residency] Checks: {} | Violations: {} | Blocked: {}",
+        info!(
+            "[Residency] Checks: {} | Violations: {} | Blocked: {}",
             state.checks_performed.load(Ordering::Relaxed),
             state.violations_detected.load(Ordering::Relaxed),
             state.data_blocked.load(Ordering::Relaxed)
@@ -191,20 +230,30 @@ async fn run_storage_auditor(http: Arc<reqwest::Client>) {
             ("Azure Europe-West", "NL", false),
             ("Alibaba Cloud", "CN", false),
         ];
-        let results: Vec<Value> = providers.iter().map(|(p, c, s)| json!({
-            "provider": p,
-            "country": c,
-            "isSovereign": s,
-            "dataVolumeTB": ndsep_shared::random_float(0.1, 500.0),
-            "encryptionEnabled": true,
-            "complianceScore": ndsep_shared::random_between(60, 100),
-            "lastAudit": ndsep_shared::now_utc(),
-        })).collect();
-        ndsep_shared::broadcast(&http, "storage_audit_complete", json!({
-            "type": "storage_audit_complete",
-            "providers": results,
-            "timestamp": ndsep_shared::now_utc(),
-        })).await;
+        let results: Vec<Value> = providers
+            .iter()
+            .map(|(p, c, s)| {
+                json!({
+                    "provider": p,
+                    "country": c,
+                    "isSovereign": s,
+                    "dataVolumeTB": ndsep_shared::random_float(0.1, 500.0),
+                    "encryptionEnabled": true,
+                    "complianceScore": ndsep_shared::random_between(60, 100),
+                    "lastAudit": ndsep_shared::now_utc(),
+                })
+            })
+            .collect();
+        ndsep_shared::broadcast(
+            &http,
+            "storage_audit_complete",
+            json!({
+                "type": "storage_audit_complete",
+                "providers": results,
+                "timestamp": ndsep_shared::now_utc(),
+            }),
+        )
+        .await;
     }
 }
 
@@ -216,7 +265,11 @@ async fn main() {
     let port = env::var("RESIDENCY_PORT").unwrap_or_else(|_| "8089".to_string());
     info!("=== NDSEP Layer 2 Data Residency Enforcer (Rust) ===");
     info!("Version: 1.0.0 | Port: {}", port);
-    let db = Arc::new(ndsep_shared::connect_db().await.expect("DB connection failed"));
+    let db = Arc::new(
+        ndsep_shared::connect_db()
+            .await
+            .expect("DB connection failed"),
+    );
     let http = Arc::new(reqwest::Client::new());
     let state = AppState {
         checks_performed: Arc::new(AtomicU64::new(0)),
@@ -225,12 +278,17 @@ async fn main() {
         bytes_flagged: Arc::new(AtomicU64::new(0)),
         start_time: Arc::new(Instant::now()),
     };
-    ndsep_shared::broadcast(&http, "worker_started", json!({
-        "worker": "residency_enforcer",
-        "layer": "L2",
-        "language": "Rust",
-        "timestamp": ndsep_shared::now_utc(),
-    })).await;
+    ndsep_shared::broadcast(
+        &http,
+        "worker_started",
+        json!({
+            "worker": "residency_enforcer",
+            "layer": "L2",
+            "language": "Rust",
+            "timestamp": ndsep_shared::now_utc(),
+        }),
+    )
+    .await;
     let db2 = db.clone();
     let http2 = http.clone();
     let state2 = state.clone();
@@ -243,6 +301,8 @@ async fn main() {
         .route("/status", get(status_handler))
         .with_state(state);
     info!("[Residency] Status server listening on :{}", port);
-    let listener = tokio::net::TcpListener::bind(format!("0.0.0.0:{}", port)).await.unwrap();
+    let listener = tokio::net::TcpListener::bind(format!("0.0.0.0:{}", port))
+        .await
+        .unwrap();
     axum::serve(listener, app).await.unwrap();
 }

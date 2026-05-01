@@ -4,22 +4,32 @@ TigerBeetle double-entry ledger for penalty tracking.
 Processes Mojaloop payments, manages penalty lifecycle.
 Technology: Rust, TigerBeetle HTTP API, Mojaloop, NIBSS, Axum
 */
+use axum::{extract::State, response::Json, routing::get, Router};
+use log::info;
+use serde_json::{json, Value};
 use std::env;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
-use axum::{extract::State, response::Json, routing::get, Router};
-use log::info;
-use serde_json::{json, Value};
 
 const PENALTY_TYPES: &[&str] = &[
-    "data_breach_fine", "cross_border_violation", "non_compliance_penalty",
-    "audit_failure_fee", "encryption_violation", "retention_breach",
-    "consent_violation", "unauthorized_transfer",
+    "data_breach_fine",
+    "cross_border_violation",
+    "non_compliance_penalty",
+    "audit_failure_fee",
+    "encryption_violation",
+    "retention_breach",
+    "consent_violation",
+    "unauthorized_transfer",
 ];
 const CURRENCIES: &[&str] = &["NGN", "KES", "ZAR", "GHS", "USD", "EUR"];
 const MOJALOOP_SCHEMES: &[&str] = &[
-    "NIBSS-Instant", "M-Pesa", "RTGS-ZA", "GhIPSS", "SWIFT", "SEPA",
+    "NIBSS-Instant",
+    "M-Pesa",
+    "RTGS-ZA",
+    "GhIPSS",
+    "SWIFT",
+    "SEPA",
 ];
 
 /// TigerBeetle HTTP API default URL (tigerbeetle-http-proxy sidecar)
@@ -41,8 +51,8 @@ struct TigerBeetleClient {
 
 impl TigerBeetleClient {
     fn new(http: Arc<reqwest::Client>) -> Self {
-        let base_url = env::var("TIGERBEETLE_URL")
-            .unwrap_or_else(|_| TIGERBEETLE_DEFAULT_URL.to_string());
+        let base_url =
+            env::var("TIGERBEETLE_URL").unwrap_or_else(|_| TIGERBEETLE_DEFAULT_URL.to_string());
         Self {
             http,
             base_url,
@@ -54,10 +64,18 @@ impl TigerBeetleClient {
 
     async fn health_check(&self) -> bool {
         let url = format!("{}/health", self.base_url);
-        match self.http.get(&url).timeout(Duration::from_secs(3)).send().await {
+        match self
+            .http
+            .get(&url)
+            .timeout(Duration::from_secs(3))
+            .send()
+            .await
+        {
             Ok(r) if r.status().is_success() => {
                 let was = self.connected.swap(true, Ordering::Relaxed);
-                if !was { info!("[TigerBeetle] Connected at {}", self.base_url); }
+                if !was {
+                    info!("[TigerBeetle] Connected at {}", self.base_url);
+                }
                 true
             }
             _ => {
@@ -69,7 +87,9 @@ impl TigerBeetleClient {
 
     /// Ensure a TigerBeetle account exists (idempotent via linked flag)
     async fn ensure_account(&self, account_id: u128, code: u16) -> bool {
-        if !self.connected.load(Ordering::Relaxed) { return false; }
+        if !self.connected.load(Ordering::Relaxed) {
+            return false;
+        }
         let url = format!("{}/accounts", self.base_url);
         let body = json!([{
             "id": account_id.to_string(),
@@ -81,7 +101,14 @@ impl TigerBeetleClient {
             "user_data_32": 0,
             "timestamp": 0,
         }]);
-        match self.http.post(&url).json(&body).timeout(Duration::from_secs(5)).send().await {
+        match self
+            .http
+            .post(&url)
+            .json(&body)
+            .timeout(Duration::from_secs(5))
+            .send()
+            .await
+        {
             Ok(r) => r.status().is_success(),
             Err(_) => false,
         }
@@ -96,7 +123,9 @@ impl TigerBeetleClient {
         code: u16,
         user_data: u128,
     ) -> bool {
-        if !self.connected.load(Ordering::Relaxed) { return false; }
+        if !self.connected.load(Ordering::Relaxed) {
+            return false;
+        }
         let url = format!("{}/transfers", self.base_url);
         let transfer_id = uuid::Uuid::new_v4().as_u128();
         let body = json!([{
@@ -110,7 +139,14 @@ impl TigerBeetleClient {
             "flags": 0,
             "timestamp": 0,
         }]);
-        match self.http.post(&url).json(&body).timeout(Duration::from_secs(5)).send().await {
+        match self
+            .http
+            .post(&url)
+            .json(&body)
+            .timeout(Duration::from_secs(5))
+            .send()
+            .await
+        {
             Ok(r) if r.status().is_success() => {
                 self.transfers_posted.fetch_add(1, Ordering::Relaxed);
                 true
@@ -181,10 +217,24 @@ struct PenaltyUpdate {
 fn pick_penalty_update(penalty_id: i32) -> PenaltyUpdate {
     use rand::Rng;
     let mut rng = rand::thread_rng();
-    let new_status = if rng.gen_bool(0.3) { "paid" } else if rng.gen_bool(0.1) { "overdue" } else { "processing" };
+    let new_status = if rng.gen_bool(0.3) {
+        "paid"
+    } else if rng.gen_bool(0.1) {
+        "overdue"
+    } else {
+        "processing"
+    };
     let scheme = MOJALOOP_SCHEMES[rng.gen_range(0..MOJALOOP_SCHEMES.len())];
-    let tx_ref = format!("TXN-{}-{}", penalty_id, ndsep_shared::random_between(100000, 999999));
-    PenaltyUpdate { new_status, scheme, tx_ref }
+    let tx_ref = format!(
+        "TXN-{}-{}",
+        penalty_id,
+        ndsep_shared::random_between(100000, 999999)
+    );
+    PenaltyUpdate {
+        new_status,
+        scheme,
+        tx_ref,
+    }
 }
 
 struct NewPenaltyData {
@@ -202,8 +252,21 @@ fn maybe_new_penalty() -> NewPenaltyData {
     let penalty_type = PENALTY_TYPES[rng.gen_range(0..PENALTY_TYPES.len())];
     let currency = CURRENCIES[rng.gen_range(0..CURRENCIES.len())];
     let amount = ndsep_shared::random_float(50000.0, 50_000_000.0) as f32;
-    let ngn_equiv = (amount * if currency == "USD" { 1600.0 } else if currency == "EUR" { 1750.0 } else { 1.0 }) as u64;
-    NewPenaltyData { penalty_type, currency, amount, ngn_equiv, should_create }
+    let ngn_equiv = (amount
+        * if currency == "USD" {
+            1600.0
+        } else if currency == "EUR" {
+            1750.0
+        } else {
+            1.0
+        }) as u64;
+    NewPenaltyData {
+        penalty_type,
+        currency,
+        amount,
+        ngn_equiv,
+        should_create,
+    }
 }
 
 // ─── TigerBeetle Health Loop ─────────────────────────────────────────────────
@@ -249,10 +312,12 @@ async fn run_ledger_processor(
 
                 let upd = pick_penalty_update(penalty_id);
 
-                let _ = db.execute(
-                    "UPDATE financial_penalties SET status = $1::penalty_status WHERE id = $2",
-                    &[&upd.new_status, &penalty_id],
-                ).await;
+                let _ = db
+                    .execute(
+                        "UPDATE financial_penalties SET status = $1::penalty_status WHERE id = $2",
+                        &[&upd.new_status, &penalty_id],
+                    )
+                    .await;
 
                 state.transactions_processed.fetch_add(1, Ordering::Relaxed);
                 if upd.new_status == "paid" {
@@ -261,37 +326,52 @@ async fn run_ledger_processor(
                     // Debit org account (org_id + 1000 offset), Credit NDSEP Treasury (account 1)
                     let debit_acct = (org_id as u128) + 1000;
                     let amount_ngn = (amount * if currency == "NGN" { 1.0 } else { 1600.0 }) as u64;
-                    let posted = state.tb.post_transfer(debit_acct, 1, amount_ngn, 1, penalty_id as u128).await;
+                    let posted = state
+                        .tb
+                        .post_transfer(debit_acct, 1, amount_ngn, 1, penalty_id as u128)
+                        .await;
                     if posted {
-                        info!("[TigerBeetle] Transfer posted: penalty #{} {} NGN", penalty_id, amount_ngn);
+                        info!(
+                            "[TigerBeetle] Transfer posted: penalty #{} {} NGN",
+                            penalty_id, amount_ngn
+                        );
                     }
                 }
 
-                ndsep_shared::broadcast(&http, "ledger_transaction", json!({
-                    "type": "ledger_transaction",
-                    "penaltyId": penalty_id,
-                    "organizationId": org_id,
-                    "amount": amount,
-                    "currency": currency,
-                    "newStatus": upd.new_status,
-                    "paymentScheme": upd.scheme,
-                    "transactionRef": upd.tx_ref,
-                    "tigerbeetleConnected": state.tb.connected.load(Ordering::Relaxed),
-                    "timestamp": ndsep_shared::now_utc(),
-                })).await;
+                ndsep_shared::broadcast(
+                    &http,
+                    "ledger_transaction",
+                    json!({
+                        "type": "ledger_transaction",
+                        "penaltyId": penalty_id,
+                        "organizationId": org_id,
+                        "amount": amount,
+                        "currency": currency,
+                        "newStatus": upd.new_status,
+                        "paymentScheme": upd.scheme,
+                        "transactionRef": upd.tx_ref,
+                        "tigerbeetleConnected": state.tb.connected.load(Ordering::Relaxed),
+                        "timestamp": ndsep_shared::now_utc(),
+                    }),
+                )
+                .await;
 
-                info!("[Ledger] Penalty #{} -> {} via {} | {} {}",
-                    penalty_id, upd.new_status, upd.scheme, amount, currency);
+                info!(
+                    "[Ledger] Penalty #{} -> {} via {} | {} {}",
+                    penalty_id, upd.new_status, upd.scheme, amount, currency
+                );
             }
         }
 
         // Maybe issue new penalty
         let np = maybe_new_penalty();
         if np.should_create {
-            let org_result = db.query_opt(
-                "SELECT id, name FROM organizations ORDER BY RANDOM() LIMIT 1",
-                &[],
-            ).await;
+            let org_result = db
+                .query_opt(
+                    "SELECT id, name FROM organizations ORDER BY RANDOM() LIMIT 1",
+                    &[],
+                )
+                .await;
             if let Ok(Some(row)) = org_result {
                 let org_id: i32 = row.get(0);
                 let org_name: String = row.get(1);
@@ -309,34 +389,48 @@ async fn run_ledger_processor(
                 if let Ok(Some(row)) = insert_result {
                     let penalty_id: i32 = row.get(0);
                     state.penalties_issued.fetch_add(1, Ordering::Relaxed);
-                    state.total_amount_ngn.fetch_add(np.ngn_equiv, Ordering::Relaxed);
+                    state
+                        .total_amount_ngn
+                        .fetch_add(np.ngn_equiv, Ordering::Relaxed);
 
                     // Ensure org's TigerBeetle account exists
                     let org_acct = (org_id as u128) + 1000;
                     state.tb.ensure_account(org_acct, 10).await;
 
-                    ndsep_shared::broadcast(&http, "new_penalty_issued", json!({
-                        "type": "new_penalty_issued",
-                        "penaltyId": penalty_id,
-                        "organizationId": org_id,
-                        "organizationName": org_name,
-                        "penaltyType": np.penalty_type,
-                        "amount": np.amount,
-                        "currency": np.currency,
-                        "description": desc,
-                        "timestamp": ndsep_shared::now_utc(),
-                    })).await;
-                    info!("[Ledger] New penalty #{}: {} {} for {} ({})",
-                        penalty_id, np.amount, np.currency, org_name, np.penalty_type);
+                    ndsep_shared::broadcast(
+                        &http,
+                        "new_penalty_issued",
+                        json!({
+                            "type": "new_penalty_issued",
+                            "penaltyId": penalty_id,
+                            "organizationId": org_id,
+                            "organizationName": org_name,
+                            "penaltyType": np.penalty_type,
+                            "amount": np.amount,
+                            "currency": np.currency,
+                            "description": desc,
+                            "timestamp": ndsep_shared::now_utc(),
+                        }),
+                    )
+                    .await;
+                    info!(
+                        "[Ledger] New penalty #{}: {} {} for {} ({})",
+                        penalty_id, np.amount, np.currency, org_name, np.penalty_type
+                    );
                 }
             }
         }
 
-        info!("[Ledger] Transactions: {} | Penalties issued: {} | Settled: {} | TB: {}",
+        info!(
+            "[Ledger] Transactions: {} | Penalties issued: {} | Settled: {} | TB: {}",
             state.transactions_processed.load(Ordering::Relaxed),
             state.penalties_issued.load(Ordering::Relaxed),
             state.payments_settled.load(Ordering::Relaxed),
-            if state.tb.connected.load(Ordering::Relaxed) { "connected" } else { "disconnected" },
+            if state.tb.connected.load(Ordering::Relaxed) {
+                "connected"
+            } else {
+                "disconnected"
+            },
         );
     }
 }
@@ -346,19 +440,29 @@ async fn run_mojaloop_monitor(http: Arc<reqwest::Client>) {
     let mut interval = tokio::time::interval(Duration::from_secs(12));
     loop {
         interval.tick().await;
-        let schemes: Vec<Value> = MOJALOOP_SCHEMES.iter().map(|s| json!({
-            "scheme": s,
-            "transactionsPerSec": ndsep_shared::random_between(100, 50000),
-            "avgLatencyMs": ndsep_shared::random_between(50, 500),
-            "successRate": ndsep_shared::random_float(97.0, 99.99),
-            "status": "healthy",
-            "totalVolumeToday": ndsep_shared::random_between(1_000_000, 1_000_000_000),
-        })).collect();
-        ndsep_shared::broadcast(&http, "mojaloop_metrics", json!({
-            "type": "mojaloop_metrics",
-            "schemes": schemes,
-            "timestamp": ndsep_shared::now_utc(),
-        })).await;
+        let schemes: Vec<Value> = MOJALOOP_SCHEMES
+            .iter()
+            .map(|s| {
+                json!({
+                    "scheme": s,
+                    "transactionsPerSec": ndsep_shared::random_between(100, 50000),
+                    "avgLatencyMs": ndsep_shared::random_between(50, 500),
+                    "successRate": ndsep_shared::random_float(97.0, 99.99),
+                    "status": "healthy",
+                    "totalVolumeToday": ndsep_shared::random_between(1_000_000, 1_000_000_000),
+                })
+            })
+            .collect();
+        ndsep_shared::broadcast(
+            &http,
+            "mojaloop_metrics",
+            json!({
+                "type": "mojaloop_metrics",
+                "schemes": schemes,
+                "timestamp": ndsep_shared::now_utc(),
+            }),
+        )
+        .await;
     }
 }
 
@@ -370,11 +474,16 @@ async fn main() {
         .format_timestamp_secs()
         .init();
     let port = env::var("LEDGER_PORT").unwrap_or_else(|_| "8090".to_string());
-    let tb_url = env::var("TIGERBEETLE_URL").unwrap_or_else(|_| TIGERBEETLE_DEFAULT_URL.to_string());
+    let tb_url =
+        env::var("TIGERBEETLE_URL").unwrap_or_else(|_| TIGERBEETLE_DEFAULT_URL.to_string());
     info!("=== NDSEP Financial Ledger Engine (Rust) ===");
     info!("Version: 2.0.0 | Port: {} | TigerBeetle: {}", port, tb_url);
 
-    let db = Arc::new(ndsep_shared::connect_db().await.expect("DB connection failed"));
+    let db = Arc::new(
+        ndsep_shared::connect_db()
+            .await
+            .expect("DB connection failed"),
+    );
     let http = Arc::new(reqwest::Client::new());
     let tb = TigerBeetleClient::new(http.clone());
 
@@ -387,13 +496,18 @@ async fn main() {
         tb: tb.clone(),
     };
 
-    ndsep_shared::broadcast(&http, "worker_started", json!({
-        "worker": "financial_ledger",
-        "layer": "FIN",
-        "language": "Rust",
-        "tigerbeetle_url": tb_url,
-        "timestamp": ndsep_shared::now_utc(),
-    })).await;
+    ndsep_shared::broadcast(
+        &http,
+        "worker_started",
+        json!({
+            "worker": "financial_ledger",
+            "layer": "FIN",
+            "language": "Rust",
+            "tigerbeetle_url": tb_url,
+            "timestamp": ndsep_shared::now_utc(),
+        }),
+    )
+    .await;
 
     // TigerBeetle health loop
     let tb2 = tb.clone();
@@ -414,6 +528,8 @@ async fn main() {
         .with_state(state);
 
     info!("[Ledger] Status server listening on :{}", port);
-    let listener = tokio::net::TcpListener::bind(format!("0.0.0.0:{}", port)).await.unwrap();
+    let listener = tokio::net::TcpListener::bind(format!("0.0.0.0:{}", port))
+        .await
+        .unwrap();
     axum::serve(listener, app).await.unwrap();
 }

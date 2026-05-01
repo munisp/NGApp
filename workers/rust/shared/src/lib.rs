@@ -1,11 +1,11 @@
 // NDSEP Rust Shared Library
-use std::env;
-use std::time::Duration;
 use chrono::Utc;
 use log::{error, info};
 use rand::Rng;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
+use std::env;
+use std::time::Duration;
 use tokio_postgres::{Client, NoTls};
 
 pub fn get_db_url() -> String {
@@ -39,8 +39,16 @@ pub struct RelayPayload {
 
 pub async fn broadcast(client: &reqwest::Client, event: &str, data: Value) {
     let relay_url = get_relay_url();
-    let payload = RelayPayload { event: event.to_string(), data };
-    let _ = client.post(&relay_url).json(&payload).timeout(Duration::from_secs(3)).send().await;
+    let payload = RelayPayload {
+        event: event.to_string(),
+        data,
+    };
+    let _ = client
+        .post(&relay_url)
+        .json(&payload)
+        .timeout(Duration::from_secs(3))
+        .send()
+        .await;
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -66,7 +74,13 @@ pub fn random_float(min: f64, max: f64) -> f64 {
 
 pub fn random_ip() -> String {
     let mut rng = rand::thread_rng();
-    format!("{}.{}.{}.{}", rng.gen_range(1u8..254), rng.gen_range(0u8..255), rng.gen_range(0u8..255), rng.gen_range(1u8..254))
+    format!(
+        "{}.{}.{}.{}",
+        rng.gen_range(1u8..254),
+        rng.gen_range(0u8..255),
+        rng.gen_range(0u8..255),
+        rng.gen_range(1u8..254)
+    )
 }
 
 pub fn random_choice<'a>(items: &'a [&str]) -> &'a str {
@@ -83,7 +97,12 @@ pub fn random_asn() -> u32 {
 
 pub fn random_prefix() -> String {
     let mut rng = rand::thread_rng();
-    format!("{}.{}.0.0/{}", rng.gen_range(10u8..200), rng.gen_range(0u8..255), rng.gen_range(16u8..28))
+    format!(
+        "{}.{}.0.0/{}",
+        rng.gen_range(10u8..200),
+        rng.gen_range(0u8..255),
+        rng.gen_range(16u8..28)
+    )
 }
 
 pub fn health_response(worker: &str) -> Value {
@@ -100,7 +119,7 @@ pub async fn wait_for_shutdown(worker_id: &str) {
     {
         use tokio::signal::unix::{signal, SignalKind};
         let mut sigterm = signal(SignalKind::terminate()).expect("SIGTERM handler");
-        let mut sigint  = signal(SignalKind::interrupt()).expect("SIGINT handler");
+        let mut sigint = signal(SignalKind::interrupt()).expect("SIGINT handler");
         tokio::select! {
             _ = sigterm.recv() => info!("[{}] Received SIGTERM — shutting down", worker_id),
             _ = sigint.recv()  => info!("[{}] Received SIGINT — shutting down", worker_id),
@@ -185,7 +204,9 @@ impl RateLimiter {
     /// Returns true if the request is allowed, false if rate-limited.
     pub fn check(&self, ip: &str) -> bool {
         let mut buckets = self.buckets.lock().unwrap();
-        let entry = buckets.entry(ip.to_string()).or_insert((self.burst, Instant::now()));
+        let entry = buckets
+            .entry(ip.to_string())
+            .or_insert((self.burst, Instant::now()));
         let elapsed_mins = entry.1.elapsed().as_secs_f64() / 60.0;
         entry.0 = (entry.0 + elapsed_mins * self.rate_per_min).min(self.burst);
         entry.1 = Instant::now();

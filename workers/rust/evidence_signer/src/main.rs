@@ -2,7 +2,11 @@
 // =====================================
 // Generates tamper-evident, HMAC-SHA256 signed evidence packages
 // for compliance audits, penalty appeals, and transfer approvals.
-use axum::{extract::Query, routing::{get, post}, Json, Router};
+use axum::{
+    extract::Query,
+    routing::{get, post},
+    Json, Router,
+};
 use chrono::Utc;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
@@ -66,11 +70,12 @@ async fn metrics() -> Json<serde_json::Value> {
 }
 
 async fn generate_package(Json(req): Json<EvidenceRequest>) -> Json<EvidenceResponse> {
-    let secret_key = env::var("EVIDENCE_SIGNING_KEY").unwrap_or_else(|_| "ndsep-evidence-key-2026".to_string());
-    
+    let secret_key =
+        env::var("EVIDENCE_SIGNING_KEY").unwrap_or_else(|_| "ndsep-evidence-key-2026".to_string());
+
     let now = Utc::now();
     let expires = now + chrono::Duration::days(365);
-    
+
     let content = serde_json::json!({
         "org_id": req.org_id,
         "package_type": req.package_type,
@@ -80,15 +85,19 @@ async fn generate_package(Json(req): Json<EvidenceRequest>) -> Json<EvidenceResp
         "generator": "ndsep-evidence-signer-v1",
         "platform": "NDSEP National Data Sovereignty Enforcement Platform"
     });
-    
+
     let content_str = content.to_string();
     let content_hash = compute_hash(&content_str);
     let hmac_sig = compute_hmac(&content_hash, &secret_key);
-    
-    let package_id = format!("EVP-{}-{}", now.format("%Y%m%d"), &content_hash[..8].to_uppercase());
-    
+
+    let package_id = format!(
+        "EVP-{}-{}",
+        now.format("%Y%m%d"),
+        &content_hash[..8].to_uppercase()
+    );
+
     PACKAGES_GENERATED.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-    
+
     Json(EvidenceResponse {
         id: package_id,
         package_type: req.package_type,
@@ -101,14 +110,15 @@ async fn generate_package(Json(req): Json<EvidenceRequest>) -> Json<EvidenceResp
 }
 
 async fn verify_package(Query(params): Query<HashMap<String, String>>) -> Json<serde_json::Value> {
-    let secret_key = env::var("EVIDENCE_SIGNING_KEY").unwrap_or_else(|_| "ndsep-evidence-key-2026".to_string());
-    
+    let secret_key =
+        env::var("EVIDENCE_SIGNING_KEY").unwrap_or_else(|_| "ndsep-evidence-key-2026".to_string());
+
     let content_hash = params.get("content_hash").cloned().unwrap_or_default();
     let provided_sig = params.get("hmac_signature").cloned().unwrap_or_default();
-    
+
     let expected_sig = compute_hmac(&content_hash, &secret_key);
     let valid = expected_sig == provided_sig;
-    
+
     Json(serde_json::json!({
         "valid": valid,
         "content_hash": content_hash,
@@ -121,15 +131,15 @@ async fn main() {
     env_logger::init();
     let port = env::var("EVIDENCE_SIGNER_PORT").unwrap_or_else(|_| "8113".to_string());
     let addr = format!("0.0.0.0:{}", port);
-    
+
     println!("[evidence-signer] Starting on {}", addr);
-    
+
     let app = Router::new()
         .route("/health", get(health))
         .route("/metrics", get(metrics))
         .route("/api/evidence/generate", post(generate_package))
         .route("/api/evidence/verify", get(verify_package));
-    
+
     let listener = tokio::net::TcpListener::bind(&addr).await.unwrap();
     println!("[evidence-signer] Listening on {}", addr);
     axum::serve(listener, app).await.unwrap();

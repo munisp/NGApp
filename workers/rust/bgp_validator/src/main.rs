@@ -3,14 +3,14 @@ NDSEP Layer 1 - BGP Route Validator (Rust)
 Validates BGP routing tables, detects hijacks, route leaks, RPKI invalids.
 Technology: Rust, RPKI, BGP, RIPE NCC, Axum
 */
-use std::env;
-use std::sync::atomic::{AtomicU64, Ordering};
-use std::sync::Arc;
-use std::time::{Duration, Instant};
 use axum::{extract::State, response::Json, routing::get, Router};
 use log::info;
 use rand::Rng;
 use serde_json::{json, Value};
+use std::env;
+use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::Arc;
+use std::time::{Duration, Instant};
 
 const IXP_SITES: &[(&str, &str)] = &[
     ("IXPNG-Lagos", "NG"),
@@ -84,7 +84,19 @@ fn generate_route() -> RouteData {
     let source_ip = ndsep_shared::random_ip();
     let dest_ip = ndsep_shared::random_ip();
     let bytes = ndsep_shared::random_between(1024, 65536) as i32;
-    RouteData { ixp, country, origin_asn, prefix, rpki_status, is_hijack, is_route_leak, is_bogon, source_ip, dest_ip, bytes }
+    RouteData {
+        ixp,
+        country,
+        origin_asn,
+        prefix,
+        rpki_status,
+        is_hijack,
+        is_route_leak,
+        is_bogon,
+        source_ip,
+        dest_ip,
+        bytes,
+    }
 }
 
 async fn run_bgp_validator(
@@ -104,9 +116,15 @@ async fn run_bgp_validator(
             let now = ndsep_shared::now_utc();
 
             state.routes_validated.fetch_add(1, Ordering::Relaxed);
-            if r.is_hijack { state.hijacks_detected.fetch_add(1, Ordering::Relaxed); }
-            if r.is_route_leak { state.route_leaks.fetch_add(1, Ordering::Relaxed); }
-            if r.rpki_status == "invalid" { state.rpki_invalids.fetch_add(1, Ordering::Relaxed); }
+            if r.is_hijack {
+                state.hijacks_detected.fetch_add(1, Ordering::Relaxed);
+            }
+            if r.is_route_leak {
+                state.route_leaks.fetch_add(1, Ordering::Relaxed);
+            }
+            if r.rpki_status == "invalid" {
+                state.rpki_invalids.fetch_add(1, Ordering::Relaxed);
+            }
 
             let broadcast_data = json!({
                 "type": "bgp_route_update",
@@ -145,11 +163,21 @@ async fn run_bgp_validator(
 
                 let sev = if r.is_hijack { "critical" } else { "high" };
                 let desc = if r.is_hijack {
-                    format!("BGP prefix {} hijacked by AS{}. RPKI status: {}", r.prefix, r.origin_asn, r.rpki_status)
+                    format!(
+                        "BGP prefix {} hijacked by AS{}. RPKI status: {}",
+                        r.prefix, r.origin_asn, r.rpki_status
+                    )
                 } else {
-                    format!("Route leak: AS{} propagating {} to transit", r.origin_asn, r.prefix)
+                    format!(
+                        "Route leak: AS{} propagating {} to transit",
+                        r.origin_asn, r.prefix
+                    )
                 };
-                let alert_type = if r.is_hijack { "prefix_hijack" } else { "route_leak" };
+                let alert_type = if r.is_hijack {
+                    "prefix_hijack"
+                } else {
+                    "route_leak"
+                };
                 let title = format!("[BGP] {} - {}", alert_type.to_uppercase(), r.prefix);
                 let _ = db.execute(
                     "INSERT INTO security_alerts (title, description, severity, source, alert_type, detected_at) VALUES ($1, $2, $3::severity, 'BGP-Validator-Rust', $4, NOW())",
@@ -158,7 +186,10 @@ async fn run_bgp_validator(
 
                 // Escalate BGP hijacks to compliance violations (NDPR Art. 2.6)
                 if r.is_hijack {
-                    let viol_title = format!("[BGP Hijack] Prefix {} seized by AS{}", r.prefix, r.origin_asn);
+                    let viol_title = format!(
+                        "[BGP Hijack] Prefix {} seized by AS{}",
+                        r.prefix, r.origin_asn
+                    );
                     let viol_desc = format!("Automatic escalation: BGP prefix {} was hijacked by AS{}. RPKI status: {}. Detected at IXP: {}.", r.prefix, r.origin_asn, r.rpki_status, r.ixp);
                     let _ = db.execute(
                         "INSERT INTO compliance_violations (title, description, severity, status, framework, article, detected_at) VALUES ($1, $2, 'critical'::severity, 'open'::compliance_status, 'NDPR', 'Art. 2.6 - Network Security', NOW())",
@@ -166,18 +197,24 @@ async fn run_bgp_validator(
                     ).await;
                 }
 
-                ndsep_shared::broadcast(&http, "bgp_alert", json!({
-                    "type": "bgp_alert",
-                    "alertType": alert_type,
-                    "severity": sev,
-                    "prefix": r.prefix,
-                    "originAsn": r.origin_asn,
-                    "description": desc,
-                    "timestamp": ndsep_shared::now_utc(),
-                })).await;
+                ndsep_shared::broadcast(
+                    &http,
+                    "bgp_alert",
+                    json!({
+                        "type": "bgp_alert",
+                        "alertType": alert_type,
+                        "severity": sev,
+                        "prefix": r.prefix,
+                        "originAsn": r.origin_asn,
+                        "description": desc,
+                        "timestamp": ndsep_shared::now_utc(),
+                    }),
+                )
+                .await;
             }
         }
-        info!("[BGP] Validated {} routes | Hijacks: {} | Leaks: {} | RPKI invalids: {}",
+        info!(
+            "[BGP] Validated {} routes | Hijacks: {} | Leaks: {} | RPKI invalids: {}",
             state.routes_validated.load(Ordering::Relaxed),
             state.hijacks_detected.load(Ordering::Relaxed),
             state.route_leaks.load(Ordering::Relaxed),
@@ -200,18 +237,23 @@ async fn run_peering_monitor(http: Arc<reqwest::Client>) {
                 let up = ndsep_shared::random_float(99.0, 99.99);
                 (pc, su, prx, ptx, up)
             };
-            ndsep_shared::broadcast(&http, "bgp_peering_update", json!({
-                "type": "bgp_peering_update",
-                "ixpSite": ixp,
-                "country": country,
-                "peerCount": peer_count,
-                "sessionsUp": sessions_up,
-                "sessionsDown": peer_count - sessions_up,
-                "prefixesReceived": prefixes_rx,
-                "prefixesAdvertised": prefixes_tx,
-                "uptimePercent": uptime,
-                "timestamp": ndsep_shared::now_utc(),
-            })).await;
+            ndsep_shared::broadcast(
+                &http,
+                "bgp_peering_update",
+                json!({
+                    "type": "bgp_peering_update",
+                    "ixpSite": ixp,
+                    "country": country,
+                    "peerCount": peer_count,
+                    "sessionsUp": sessions_up,
+                    "sessionsDown": peer_count - sessions_up,
+                    "prefixesReceived": prefixes_rx,
+                    "prefixesAdvertised": prefixes_tx,
+                    "uptimePercent": uptime,
+                    "timestamp": ndsep_shared::now_utc(),
+                }),
+            )
+            .await;
         }
     }
 }
@@ -224,7 +266,11 @@ async fn main() {
     let port = env::var("BGP_PORT").unwrap_or_else(|_| "8088".to_string());
     info!("=== NDSEP Layer 1 BGP Route Validator (Rust) ===");
     info!("Version: 1.0.0 | Port: {}", port);
-    let db = Arc::new(ndsep_shared::connect_db().await.expect("DB connection failed"));
+    let db = Arc::new(
+        ndsep_shared::connect_db()
+            .await
+            .expect("DB connection failed"),
+    );
     let http = Arc::new(reqwest::Client::new());
     let state = AppState {
         routes_validated: Arc::new(AtomicU64::new(0)),
@@ -233,12 +279,17 @@ async fn main() {
         rpki_invalids: Arc::new(AtomicU64::new(0)),
         start_time: Arc::new(Instant::now()),
     };
-    ndsep_shared::broadcast(&http, "worker_started", json!({
-        "worker": "bgp_validator",
-        "layer": "L1",
-        "language": "Rust",
-        "timestamp": ndsep_shared::now_utc(),
-    })).await;
+    ndsep_shared::broadcast(
+        &http,
+        "worker_started",
+        json!({
+            "worker": "bgp_validator",
+            "layer": "L1",
+            "language": "Rust",
+            "timestamp": ndsep_shared::now_utc(),
+        }),
+    )
+    .await;
     let db2 = db.clone();
     let http2 = http.clone();
     let state2 = state.clone();
@@ -251,6 +302,8 @@ async fn main() {
         .route("/status", get(status_handler))
         .with_state(state);
     info!("[BGP] Status server listening on :{}", port);
-    let listener = tokio::net::TcpListener::bind(format!("0.0.0.0:{}", port)).await.unwrap();
+    let listener = tokio::net::TcpListener::bind(format!("0.0.0.0:{}", port))
+        .await
+        .unwrap();
     axum::serve(listener, app).await.unwrap();
 }

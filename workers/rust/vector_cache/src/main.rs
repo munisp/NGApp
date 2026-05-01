@@ -297,7 +297,10 @@ async fn eviction_loop(state: AppState) {
 async fn main() {
     env_logger::init();
     let port = get_env("VECTOR_CACHE_PORT", "8214");
-    log::info!("[VectorCache] Starting NDSEP Vector Similarity Cache on port {}", port);
+    log::info!(
+        "[VectorCache] Starting NDSEP Vector Similarity Cache on port {}",
+        port
+    );
 
     let state = AppState::new();
     let eviction_state = state.clone();

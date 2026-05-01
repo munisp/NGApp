@@ -82,7 +82,8 @@ struct WorkerState {
     last_cycle_at: String,
 }
 
-async fn get_db_client() -> Result<tokio_postgres::Client, Box<dyn std::error::Error + Send + Sync>> {
+async fn get_db_client() -> Result<tokio_postgres::Client, Box<dyn std::error::Error + Send + Sync>>
+{
     let dsn = env::var("WORKER_DATABASE_URL")
         .or_else(|_| env::var("DATABASE_URL"))
         .map_err(|_| "No DATABASE_URL set")?;
@@ -109,7 +110,13 @@ fn now_iso() -> String {
     let hours = (ts / 3600) % 24;
     let days = ts / 86400;
     // Simple ISO-like format for display
-    format!("2026-01-{:02}T{:02}:{:02}:{:02}Z", (days % 28) + 1, hours, mins, secs)
+    format!(
+        "2026-01-{:02}T{:02}:{:02}:{:02}Z",
+        (days % 28) + 1,
+        hours,
+        mins,
+        secs
+    )
 }
 
 async fn evaluate_org_slas(
@@ -125,12 +132,14 @@ async fn evaluate_org_slas(
         let actual_value: f64 = match sla.sla_type.as_str() {
             "compliance_score_minimum" => {
                 // Get latest compliance score from monitoring_snapshots
-                let row = client.query_opt(
-                    "SELECT compliance_score FROM monitoring_snapshots \
+                let row = client
+                    .query_opt(
+                        "SELECT compliance_score FROM monitoring_snapshots \
                      WHERE organization_id = $1 AND snapshot_type = 'compliance_score' \
                      ORDER BY captured_at DESC LIMIT 1",
-                    &[&org_id],
-                ).await;
+                        &[&org_id],
+                    )
+                    .await;
                 match row {
                     Ok(Some(r)) => {
                         let v: Option<f64> = r.get(0);
@@ -144,12 +153,14 @@ async fn evaluate_org_slas(
                 }
             }
             "data_residency_violation_rate" => {
-                let row = client.query_opt(
-                    "SELECT COUNT(*) FROM residency_checks \
+                let row = client
+                    .query_opt(
+                        "SELECT COUNT(*) FROM residency_checks \
                      WHERE organization_id = $1 AND status = 'violation' \
                      AND created_at > NOW() - INTERVAL '7 days'",
-                    &[&org_id],
-                ).await;
+                        &[&org_id],
+                    )
+                    .await;
                 match row {
                     Ok(Some(r)) => {
                         let count: i64 = r.get(0);
@@ -160,16 +171,22 @@ async fn evaluate_org_slas(
             }
             "incident_response_time" => {
                 // Check unacknowledged critical alerts older than 24h
-                let row = client.query_opt(
-                    "SELECT COUNT(*) FROM security_alerts \
+                let row = client
+                    .query_opt(
+                        "SELECT COUNT(*) FROM security_alerts \
                      WHERE organization_id = $1 AND severity = 'critical' \
                      AND status = 'open' AND created_at < NOW() - INTERVAL '24 hours'",
-                    &[&org_id],
-                ).await;
+                        &[&org_id],
+                    )
+                    .await;
                 match row {
                     Ok(Some(r)) => {
                         let count: i64 = r.get(0);
-                        if count > 0 { 48.0 } else { 12.0 }
+                        if count > 0 {
+                            48.0
+                        } else {
+                            12.0
+                        }
                     }
                     _ => {
                         let rng = (org_id as f64 * 3.1 + now_ts() as f64 * 0.0002) % 36.0;
@@ -179,11 +196,13 @@ async fn evaluate_org_slas(
             }
             "audit_log_completeness" => {
                 // Estimate based on audit log count vs expected
-                let row = client.query_opt(
-                    "SELECT COUNT(*) FROM audit_logs \
+                let row = client
+                    .query_opt(
+                        "SELECT COUNT(*) FROM audit_logs \
                      WHERE organization_id = $1 AND created_at > NOW() - INTERVAL '24 hours'",
-                    &[&org_id],
-                ).await;
+                        &[&org_id],
+                    )
+                    .await;
                 match row {
                     Ok(Some(r)) => {
                         let count: i64 = r.get(0);
@@ -198,12 +217,14 @@ async fn evaluate_org_slas(
                 }
             }
             "open_critical_violations" => {
-                let row = client.query_opt(
-                    "SELECT COUNT(*) FROM compliance_violations \
+                let row = client
+                    .query_opt(
+                        "SELECT COUNT(*) FROM compliance_violations \
                      WHERE organization_id = $1 AND severity = 'critical' \
                      AND status IN ('open', 'non_compliant')",
-                    &[&org_id],
-                ).await;
+                        &[&org_id],
+                    )
+                    .await;
                 match row {
                     Ok(Some(r)) => {
                         let count: i64 = r.get(0);
@@ -226,11 +247,13 @@ async fn evaluate_org_slas(
 
         if is_breached {
             // Check if breach already exists
-            let existing = client.query_opt(
-                "SELECT id FROM sla_breaches \
+            let existing = client
+                .query_opt(
+                    "SELECT id FROM sla_breaches \
                  WHERE organization_id = $1 AND sla_type = $2 AND status = 'breached'",
-                &[&org_id, &sla.sla_type],
-            ).await;
+                    &[&org_id, &sla.sla_type],
+                )
+                .await;
 
             if matches!(existing, Ok(None)) {
                 let _ = client.execute(
@@ -242,16 +265,23 @@ async fn evaluate_org_slas(
                 breaches += 1;
                 eprintln!(
                     "[{}] SLA breach: {} / {} — actual={:.1} threshold={:.1} ({})",
-                    WORKER_NAME, org_name, sla.sla_type, actual_value, sla.threshold, sla.severity_on_breach
+                    WORKER_NAME,
+                    org_name,
+                    sla.sla_type,
+                    actual_value,
+                    sla.threshold,
+                    sla.severity_on_breach
                 );
             }
         } else {
             // Resolve existing breaches
-            let result = client.execute(
-                "UPDATE sla_breaches SET status = 'resolved', resolved_at = NOW() \
+            let result = client
+                .execute(
+                    "UPDATE sla_breaches SET status = 'resolved', resolved_at = NOW() \
                  WHERE organization_id = $1 AND sla_type = $2 AND status = 'breached'",
-                &[&org_id, &sla.sla_type],
-            ).await;
+                    &[&org_id, &sla.sla_type],
+                )
+                .await;
             if let Ok(n) = result {
                 if n > 0 {
                     resolved += n as u64;
@@ -269,20 +299,26 @@ async fn evaluate_org_slas(
             "severity": sla.severity_on_breach,
         });
 
-        let _ = client.execute(
-            "INSERT INTO monitoring_snapshots \
+        let _ = client
+            .execute(
+                "INSERT INTO monitoring_snapshots \
              (organization_id, snapshot_type, compliance_score, snapshot_data, \
               issues_found, critical_issues, worker_name, captured_at) \
              VALUES ($1, 'sla_evaluation', $2, $3, $4, $5, $6, NOW())",
-            &[
-                &org_id,
-                &(if is_breached { 0.0f64 } else { 100.0f64 }),
-                &snapshot_data.to_string(),
-                &(if is_breached { 1i32 } else { 0i32 }),
-                &(if is_breached && sla.severity_on_breach == "critical" { 1i32 } else { 0i32 }),
-                &WORKER_NAME,
-            ],
-        ).await;
+                &[
+                    &org_id,
+                    &(if is_breached { 0.0f64 } else { 100.0f64 }),
+                    &snapshot_data.to_string(),
+                    &(if is_breached { 1i32 } else { 0i32 }),
+                    &(if is_breached && sla.severity_on_breach == "critical" {
+                        1i32
+                    } else {
+                        0i32
+                    }),
+                    &WORKER_NAME,
+                ],
+            )
+            .await;
     }
 
     (breaches, resolved)
@@ -346,7 +382,10 @@ async fn run_sla_cycle(state: Arc<Mutex<WorkerState>>) {
 
 #[tokio::main]
 async fn main() {
-    eprintln!("[{}] Starting on port {} (cycle: {}h)", WORKER_NAME, PORT, CYCLE_HOURS);
+    eprintln!(
+        "[{}] Starting on port {} (cycle: {}h)",
+        WORKER_NAME, PORT, CYCLE_HOURS
+    );
 
     let start_ts = now_ts();
     let state = Arc::new(Mutex::new(WorkerState {
