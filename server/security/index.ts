@@ -7,4 +7,4 @@ export { ddosProtection, connectionFloodGuard, circuitBreaker, getBlockedIps, bl
 export { initFileIntegrityBaselines, checkFileIntegrity, appendImmutableAudit, verifyAuditChain, trackBulkOperation, initCanaryFiles, checkCanaryFiles, getRansomwareProtectionStatus } from "./ransomware";
 export { securityHeaders, noCacheForSensitive, strictCors } from "./csp";
 export { csrfProtection, sessionIdleCheck, enforceCookieSecurity, generateCsrfToken, trackSession, removeSession } from "./sessionHardening";
-export { enforcePolicy, matchesPattern, POLICIES } from "./pbac";
+export { enforcePolicy, pbacMiddleware } from "./pbac";

@@ -150,10 +150,10 @@ export function enforceCookieSecurity(_req: Request, res: Response, next: NextFu
 
 setInterval(() => {
   const now = Date.now();
-  for (const [id, data] of csrfTokens.entries()) {
+  Array.from(csrfTokens.entries()).forEach(([id, data]) => {
     if (now - data.createdAt > CSRF_TOKEN_TTL * 2) csrfTokens.delete(id);
-  }
-  for (const [id, lastActivity] of sessionActivity.entries()) {
+  });
+  Array.from(sessionActivity.entries()).forEach(([id, lastActivity]) => {
     if (now - lastActivity > SESSION_IDLE_TIMEOUT_MS * 2) sessionActivity.delete(id);
-  }
+  });
 }, 300_000); // Every 5 minutes

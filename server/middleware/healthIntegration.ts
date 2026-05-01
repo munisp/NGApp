@@ -79,7 +79,7 @@ async function checkKafka(): Promise<MiddlewareHealth> {
       name: "Kafka",
       status: status.connected ? "healthy" : "degraded",
       latencyMs: Date.now() - start,
-      details: { brokers: kafkaUrl, ...status },
+      details: { ...status },
       checkedAt: new Date().toISOString(),
     };
   } catch {

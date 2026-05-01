@@ -192,22 +192,22 @@ export function circuitBreaker(serviceName: string) {
 
 setInterval(() => {
   const now = Date.now();
-  for (const [key, bucket] of ipBuckets.entries()) {
+  Array.from(ipBuckets.entries()).forEach(([key, bucket]) => {
     if (now - bucket.windowStart > 120_000) ipBuckets.delete(key);
-  }
-  for (const [ip, expiry] of blockExpiry.entries()) {
+  });
+  Array.from(blockExpiry.entries()).forEach(([ip, expiry]) => {
     if (now > expiry) { blocklist.delete(ip); blockExpiry.delete(ip); }
-  }
+  });
 }, 60_000);
 
 // ── Admin API: view/manage blocked IPs ─────────────────────────────────────
 
 export function getBlockedIps(): Array<{ ip: string; expiresAt: string }> {
   const result: Array<{ ip: string; expiresAt: string }> = [];
-  for (const ip of blocklist) {
+  blocklist.forEach((ip) => {
     const exp = blockExpiry.get(ip);
     result.push({ ip, expiresAt: exp ? new Date(exp).toISOString() : "permanent" });
-  }
+  });
   return result;
 }
 

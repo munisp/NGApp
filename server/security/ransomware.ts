@@ -66,7 +66,7 @@ export function initFileIntegrityBaselines(rootDir: string): void {
 export function checkFileIntegrity(rootDir: string): Array<{ file: string; status: string; detail: string }> {
   const results: Array<{ file: string; status: string; detail: string }> = [];
 
-  for (const [relPath, baseline] of baselines.entries()) {
+  for (const [relPath, baseline] of Array.from(baselines.entries())) {
     const fullPath = path.join(rootDir, relPath);
     const currentHash = computeFileHash(fullPath);
 
