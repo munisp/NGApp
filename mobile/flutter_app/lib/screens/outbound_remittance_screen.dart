@@ -715,22 +715,52 @@ class _OnboardingTab extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Lifecycle Pipeline
+          Card(
+            color: Colors.grey.shade50,
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('ONBOARDING LIFECYCLE', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: Colors.grey.shade600, letterSpacing: 0.5)),
+                  const SizedBox(height: 12),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      _lifecycleStep(Icons.public, 'Apply', 'Public portal', Colors.blue),
+                      Icon(Icons.chevron_right, size: 16, color: Colors.grey.shade400),
+                      _lifecycleStep(Icons.fact_check, 'Review', 'Admin team', Colors.orange),
+                      Icon(Icons.chevron_right, size: 16, color: Colors.grey.shade400),
+                      _lifecycleStep(Icons.vpn_key, 'Credentials', 'Keycloak', Colors.purple),
+                      Icon(Icons.chevron_right, size: 16, color: Colors.grey.shade400),
+                      _lifecycleStep(Icons.science, 'Sandbox', 'API test', Colors.deepOrange),
+                      Icon(Icons.chevron_right, size: 16, color: Colors.grey.shade400),
+                      _lifecycleStep(Icons.check_circle, 'Go-Live', 'Production', Colors.green),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+
           // Metrics
           Row(
             children: [
               Expanded(child: _MetricCard(
-                title: 'Participants',
-                value: '25',
-                subtitle: 'Licensed operators',
-                icon: Icons.business,
+                title: 'Applications',
+                value: '5',
+                subtitle: 'Awaiting review',
+                icon: Icons.pending_actions,
                 color: Colors.blue,
               )),
               const SizedBox(width: 12),
               Expanded(child: _MetricCard(
-                title: 'Pending',
-                value: '7',
-                subtitle: 'Awaiting review',
-                icon: Icons.pending_actions,
+                title: 'In Progress',
+                value: '3',
+                subtitle: 'Credentials issued',
+                icon: Icons.sync,
                 color: Colors.orange,
               )),
             ],
@@ -739,22 +769,93 @@ class _OnboardingTab extends StatelessWidget {
           Row(
             children: [
               Expanded(child: _MetricCard(
+                title: 'Live',
+                value: '25',
+                subtitle: 'Production active',
+                icon: Icons.check_circle,
+                color: Colors.green,
+              )),
+              const SizedBox(width: 12),
+              Expanded(child: _MetricCard(
                 title: 'Providers',
                 value: '7',
                 subtitle: 'Payout rails',
                 icon: Icons.dns,
                 color: Colors.purple,
               )),
-              const SizedBox(width: 12),
-              Expanded(child: _MetricCard(
-                title: 'Ops Staff',
-                value: '12',
-                subtitle: 'Active operators',
-                icon: Icons.people,
-                color: Colors.teal,
-              )),
             ],
           ),
+          const SizedBox(height: 24),
+
+          // In-progress onboarding
+          Text('In Progress (Credentials Issued)',
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+          const SizedBox(height: 4),
+          Text('Approved participants completing sandbox testing', style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+          const SizedBox(height: 12),
+          ..._inProgress.map((p) => Card(
+            margin: const EdgeInsets.only(bottom: 8),
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(p['name'] as String, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(color: Colors.blue.shade50, borderRadius: BorderRadius.circular(4)),
+                        child: Text(p['currentStep'] as String, style: TextStyle(fontSize: 10, color: Colors.blue.shade700)),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text('${p['type']} • ${p['credentials']}', style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
+                  const SizedBox(height: 8),
+                  Row(children: [
+                    Expanded(
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(4),
+                        child: LinearProgressIndicator(
+                          value: (p['step'] as int) / (p['totalSteps'] as int),
+                          backgroundColor: Colors.grey.shade200,
+                          color: Colors.blue.shade600,
+                          minHeight: 6,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text('${p['step']}/${p['totalSteps']}', style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
+                  ]),
+                ],
+              ),
+            ),
+          )),
+          const SizedBox(height: 24),
+
+          // Pending applications
+          Text('Pending Applications',
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+          const SizedBox(height: 4),
+          Text('Received from public application portal', style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+          const SizedBox(height: 12),
+          ..._pendingApplications.map((a) => Card(
+            margin: const EdgeInsets.only(bottom: 8),
+            child: ListTile(
+              title: Text(a['name'] as String, style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14)),
+              subtitle: Text('${a['type']} • ${a['stage']}', style: const TextStyle(fontSize: 12)),
+              trailing: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: a['status'] == 'pending' ? Colors.orange.shade50 : Colors.blue.shade50,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(a['status'] as String, style: TextStyle(fontSize: 11, color: a['status'] == 'pending' ? Colors.orange.shade700 : Colors.blue.shade700)),
+              ),
+            ),
+          )),
           const SizedBox(height: 24),
 
           // Stakeholder types
@@ -806,31 +907,31 @@ class _OnboardingTab extends StatelessWidget {
               ],
             ),
           )),
-          const SizedBox(height: 24),
-
-          // Pending applications
-          Text('Pending Applications',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
-          const SizedBox(height: 12),
-          ..._pendingApplications.map((a) => Card(
-            margin: const EdgeInsets.only(bottom: 8),
-            child: ListTile(
-              title: Text(a['name'] as String, style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14)),
-              subtitle: Text('${a['type']} • ${a['stage']}', style: const TextStyle(fontSize: 12)),
-              trailing: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: a['status'] == 'pending' ? Colors.orange.shade50 : Colors.blue.shade50,
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Text(a['status'] as String, style: TextStyle(fontSize: 11, color: a['status'] == 'pending' ? Colors.orange.shade700 : Colors.blue.shade700)),
-              ),
-            ),
-          )),
         ],
       ),
     );
   }
+
+  static Widget _lifecycleStep(IconData icon, String label, String sub, Color color) {
+    return Column(
+      children: [
+        Container(
+          width: 28, height: 28,
+          decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(14)),
+          child: Icon(icon, size: 14, color: color),
+        ),
+        const SizedBox(height: 4),
+        Text(label, style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w600)),
+        Text(sub, style: TextStyle(fontSize: 8, color: Colors.grey.shade500)),
+      ],
+    );
+  }
+
+  static final _inProgress = [
+    {'name': 'Moniepoint Inc', 'type': 'Fintech (IMTO)', 'currentStep': 'Certification Testing', 'step': 5, 'totalSteps': 6, 'credentials': 'Issued 2024-02-28'},
+    {'name': 'Carbon (Paylater)', 'type': 'Fintech (PSP)', 'currentStep': 'Prefund Setup', 'step': 4, 'totalSteps': 6, 'credentials': 'Issued 2024-03-05'},
+    {'name': 'Cellulant Ltd', 'type': 'Provider (Rail)', 'currentStep': 'Sandbox Testing', 'step': 4, 'totalSteps': 5, 'credentials': 'Issued 2024-03-12'},
+  ];
 
   static final _stakeholders = [
     {
@@ -839,7 +940,7 @@ class _OnboardingTab extends StatelessWidget {
       'icon': Icons.business,
       'timeline': '4-6 weeks',
       'requirements': ['CBN License (IMTO/PSP/MFB)', 'Minimum capital ₦2B', 'AML/CFT compliance program', 'Technical readiness (API)', 'KYC/CDD documentation'],
-      'steps': ['Submit application with CBN license', 'Technical assessment & sandbox access', 'Compliance review (AML/CFT)', 'Prefund account setup (TigerBeetle)', 'Certification testing', 'Production go-live'],
+      'steps': ['Application received (public portal)', 'Document verification & compliance', 'Technical assessment & sandbox issued', 'Prefund account setup (TigerBeetle)', 'Certification testing', 'Production go-live'],
     },
     {
       'title': 'External Provider',
@@ -847,7 +948,7 @@ class _OnboardingTab extends StatelessWidget {
       'icon': Icons.dns,
       'timeline': '6-8 weeks',
       'requirements': ['License in destination country', 'API documentation', 'Settlement agreement', 'SLA commitment', 'Compliance certification'],
-      'steps': ['Provider application', 'API review & adapter development', 'Settlement agreement', 'Sandbox testing', 'Corridor assignment & go-live'],
+      'steps': ['Application received (public portal)', 'API review & adapter development', 'Settlement agreement', 'Sandbox testing', 'Corridor assignment & go-live'],
     },
     {
       'title': 'Regulator (CBN/NFIU)',
@@ -855,7 +956,7 @@ class _OnboardingTab extends StatelessWidget {
       'icon': Icons.account_balance,
       'timeline': '2-3 weeks',
       'requirements': ['Official regulatory mandate', 'Designated oversight officers', 'Secure VPN access', 'Data classification agreement'],
-      'steps': ['Formal request', 'Access scope definition', 'Security clearance & VPN', 'Training on dashboards', 'Periodic review setup'],
+      'steps': ['Formal request received', 'Access scope definition', 'Security clearance & VPN', 'Training on dashboards', 'Periodic review setup'],
     },
     {
       'title': 'Operations Staff',
@@ -870,7 +971,7 @@ class _OnboardingTab extends StatelessWidget {
   static final _pendingApplications = [
     {'name': 'OPay Financial', 'type': 'Fintech (IMTO)', 'stage': 'Technical Assessment', 'status': 'pending'},
     {'name': 'PalmPay Ltd', 'type': 'Fintech (PSP)', 'stage': 'Compliance Review', 'status': 'pending'},
-    {'name': 'Kuda MFB', 'type': 'Microfinance Bank', 'stage': 'Application Review', 'status': 'pending'},
+    {'name': 'Kuda MFB', 'type': 'Microfinance Bank', 'stage': 'Document Verification', 'status': 'pending'},
     {'name': 'TerraPay Global', 'type': 'Provider (Rail)', 'stage': 'API Integration', 'status': 'processing'},
     {'name': 'Thunes Network', 'type': 'Provider (Rail)', 'stage': 'Settlement Agreement', 'status': 'processing'},
   ];

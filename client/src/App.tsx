@@ -32,6 +32,7 @@ import NotificationSettings from "@/pages/NotificationSettings";
 import AccountActivity from "@/pages/AccountActivity";
 import IntegrationsDashboard from "@/pages/IntegrationsDashboard";
 import OutboundRemittance from "@/pages/OutboundRemittance";
+import OutboundApply from "@/pages/OutboundApply";
 
 function Router() {
   return (
@@ -62,6 +63,7 @@ function Router() {
       <Route path="/verify-2fa" component={VerifyTwoFactor} />
       <Route path="/account-recovery" component={AccountRecovery} />
       <Route path="/outbound-remittance" component={OutboundRemittance} />
+      <Route path="/outbound/apply" component={OutboundApply} />
       <Route path={"/404"} component={NotFound} />
       {/* Final fallback route */}
       <Route component={NotFound} />
