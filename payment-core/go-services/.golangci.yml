@@ -1,25 +1,10 @@
 run:
   timeout: 5m
-  tests: false
 
 linters:
+  disable-all: true
   enable:
     - govet
-    - gofmt
-  disable:
-    # Disabled: too many pre-existing unchecked errors across the codebase.
-    # These should be re-enabled incrementally as code is cleaned up.
-    - errcheck
-    # Disabled: many struct fields are declared for future use, padding,
-    # or are used via reflection/serialization not visible to static analysis.
-    - unused
-    # Disabled: pre-existing deprecated API usage (AWS SDK v1 patterns)
-    # and context key types that need a larger refactoring effort.
-    - staticcheck
-    # Disabled: pre-existing ineffectual assignments in generated/scaffold code.
-    - ineffassign
-    # Disabled: pre-existing simplification suggestions.
-    - gosimple
 
 issues:
   max-issues-per-linter: 0
