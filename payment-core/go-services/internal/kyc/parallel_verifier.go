@@ -176,7 +176,7 @@ func (v *ParallelVerifier) Verify(ctx context.Context, req *VerificationRequest,
 		go func() {
 			defer wg.Done()
 			switch req.IDType {
-			case IDBVN:
+			case IDTypeBVN:
 				if v.bvn != nil {
 					cr, err := v.bvn.Verify(ctx, req.IDNumber, req.FirstName, req.LastName, req.DateOfBirth)
 					if err != nil {
@@ -185,7 +185,7 @@ func (v *ParallelVerifier) Verify(ctx context.Context, req *VerificationRequest,
 						addResult(cr)
 					}
 				}
-			case IDNIN:
+			case IDTypeNIN:
 				if v.nin != nil {
 					cr, err := v.nin.Verify(ctx, req.IDNumber, req.FirstName, req.LastName)
 					if err != nil {
