@@ -24,7 +24,7 @@ class _OutboundRemittanceScreenState extends State<OutboundRemittanceScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 5, vsync: this);
+    _tabController = TabController(length: 6, vsync: this);
   }
 
   @override
@@ -48,6 +48,7 @@ class _OutboundRemittanceScreenState extends State<OutboundRemittanceScreen>
             Tab(text: 'Prefund'),
             Tab(text: 'Corridors'),
             Tab(text: 'Compliance'),
+            Tab(text: 'Onboarding'),
           ],
         ),
       ),
@@ -59,6 +60,7 @@ class _OutboundRemittanceScreenState extends State<OutboundRemittanceScreen>
           _PrefundTab(),
           _CorridorsTab(),
           _ComplianceTab(),
+          _OnboardingTab(),
         ],
       ),
     );
@@ -700,4 +702,176 @@ class _DetailRow extends StatelessWidget {
       ),
     );
   }
+}
+
+// --- Onboarding Tab ---
+class _OnboardingTab extends StatelessWidget {
+  const _OnboardingTab();
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Metrics
+          Row(
+            children: [
+              Expanded(child: _MetricCard(
+                title: 'Participants',
+                value: '25',
+                subtitle: 'Licensed operators',
+                icon: Icons.business,
+                color: Colors.blue,
+              )),
+              const SizedBox(width: 12),
+              Expanded(child: _MetricCard(
+                title: 'Pending',
+                value: '7',
+                subtitle: 'Awaiting review',
+                icon: Icons.pending_actions,
+                color: Colors.orange,
+              )),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(child: _MetricCard(
+                title: 'Providers',
+                value: '7',
+                subtitle: 'Payout rails',
+                icon: Icons.dns,
+                color: Colors.purple,
+              )),
+              const SizedBox(width: 12),
+              Expanded(child: _MetricCard(
+                title: 'Ops Staff',
+                value: '12',
+                subtitle: 'Active operators',
+                icon: Icons.people,
+                color: Colors.teal,
+              )),
+            ],
+          ),
+          const SizedBox(height: 24),
+
+          // Stakeholder types
+          Text('Stakeholder Types',
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+          const SizedBox(height: 12),
+          ..._stakeholders.map((s) => Card(
+            margin: const EdgeInsets.only(bottom: 8),
+            child: ExpansionTile(
+              leading: Icon(s['icon'] as IconData, color: Colors.blue.shade700),
+              title: Text(s['title'] as String, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+              subtitle: Text(s['subtitle'] as String, style: const TextStyle(fontSize: 12)),
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('Requirements:', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+                      const SizedBox(height: 8),
+                      ...(s['requirements'] as List<String>).map((r) => Padding(
+                        padding: const EdgeInsets.only(bottom: 4),
+                        child: Row(children: [
+                          Icon(Icons.check_circle, size: 14, color: Colors.green.shade600),
+                          const SizedBox(width: 8),
+                          Expanded(child: Text(r, style: const TextStyle(fontSize: 12))),
+                        ]),
+                      )),
+                      const SizedBox(height: 12),
+                      const Text('Steps:', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+                      const SizedBox(height: 8),
+                      ...(s['steps'] as List<String>).asMap().entries.map((e) => Padding(
+                        padding: const EdgeInsets.only(bottom: 4),
+                        child: Row(children: [
+                          Container(
+                            width: 20, height: 20,
+                            decoration: BoxDecoration(color: Colors.blue.shade100, borderRadius: BorderRadius.circular(10)),
+                            child: Center(child: Text('${e.key + 1}', style: TextStyle(fontSize: 11, color: Colors.blue.shade700, fontWeight: FontWeight.bold))),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(child: Text(e.value, style: const TextStyle(fontSize: 12))),
+                        ]),
+                      )),
+                      const SizedBox(height: 8),
+                      Text('Timeline: ${s['timeline']}', style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          )),
+          const SizedBox(height: 24),
+
+          // Pending applications
+          Text('Pending Applications',
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+          const SizedBox(height: 12),
+          ..._pendingApplications.map((a) => Card(
+            margin: const EdgeInsets.only(bottom: 8),
+            child: ListTile(
+              title: Text(a['name'] as String, style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14)),
+              subtitle: Text('${a['type']} • ${a['stage']}', style: const TextStyle(fontSize: 12)),
+              trailing: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: a['status'] == 'pending' ? Colors.orange.shade50 : Colors.blue.shade50,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(a['status'] as String, style: TextStyle(fontSize: 11, color: a['status'] == 'pending' ? Colors.orange.shade700 : Colors.blue.shade700)),
+              ),
+            ),
+          )),
+        ],
+      ),
+    );
+  }
+
+  static final _stakeholders = [
+    {
+      'title': 'Regulated Participant',
+      'subtitle': 'Fintech/IMTO applying for switch access',
+      'icon': Icons.business,
+      'timeline': '4-6 weeks',
+      'requirements': ['CBN License (IMTO/PSP/MFB)', 'Minimum capital ₦2B', 'AML/CFT compliance program', 'Technical readiness (API)', 'KYC/CDD documentation'],
+      'steps': ['Submit application with CBN license', 'Technical assessment & sandbox access', 'Compliance review (AML/CFT)', 'Prefund account setup (TigerBeetle)', 'Certification testing', 'Production go-live'],
+    },
+    {
+      'title': 'External Provider',
+      'subtitle': 'Payout rail seeking listing on switch',
+      'icon': Icons.dns,
+      'timeline': '6-8 weeks',
+      'requirements': ['License in destination country', 'API documentation', 'Settlement agreement', 'SLA commitment', 'Compliance certification'],
+      'steps': ['Provider application', 'API review & adapter development', 'Settlement agreement', 'Sandbox testing', 'Corridor assignment & go-live'],
+    },
+    {
+      'title': 'Regulator (CBN/NFIU)',
+      'subtitle': 'Regulatory oversight access',
+      'icon': Icons.account_balance,
+      'timeline': '2-3 weeks',
+      'requirements': ['Official regulatory mandate', 'Designated oversight officers', 'Secure VPN access', 'Data classification agreement'],
+      'steps': ['Formal request', 'Access scope definition', 'Security clearance & VPN', 'Training on dashboards', 'Periodic review setup'],
+    },
+    {
+      'title': 'Operations Staff',
+      'subtitle': 'Internal switch operators',
+      'icon': Icons.people,
+      'timeline': '1-2 weeks',
+      'requirements': ['Employment verification', 'Background check', 'Role assignment (L1/L2/L3)', 'Security training'],
+      'steps': ['HR onboarding', 'Role provisioning (Permify)', 'Keycloak account creation', 'Platform training', 'Supervised probation'],
+    },
+  ];
+
+  static final _pendingApplications = [
+    {'name': 'OPay Financial', 'type': 'Fintech (IMTO)', 'stage': 'Technical Assessment', 'status': 'pending'},
+    {'name': 'PalmPay Ltd', 'type': 'Fintech (PSP)', 'stage': 'Compliance Review', 'status': 'pending'},
+    {'name': 'Kuda MFB', 'type': 'Microfinance Bank', 'stage': 'Application Review', 'status': 'pending'},
+    {'name': 'TerraPay Global', 'type': 'Provider (Rail)', 'stage': 'API Integration', 'status': 'processing'},
+    {'name': 'Thunes Network', 'type': 'Provider (Rail)', 'stage': 'Settlement Agreement', 'status': 'processing'},
+  ];
 }
