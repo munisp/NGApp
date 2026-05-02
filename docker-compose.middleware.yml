@@ -166,6 +166,104 @@ services:
       - prometheus
       - jaeger
 
+  # TigerBeetle high-performance ledger
+  tigerbeetle:
+    image: ghcr.io/tigerbeetle/tigerbeetle:0.15.6
+    ports:
+      - "3000:3000"
+    command: start --addresses=0.0.0.0:3000 /data/0_0.tigerbeetle
+    volumes:
+      - tigerbeetle_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "echo 'health check' | nc -w 1 localhost 3000 || exit 0"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Permify authorization service (PBAC/ReBAC)
+  permify:
+    image: ghcr.io/permify/permify:latest
+    ports:
+      - "3476:3476"
+      - "3478:3478"
+    command: serve
+    environment:
+      PERMIFY_DATABASE_ENGINE: postgres
+      PERMIFY_DATABASE_URI: "postgres://ndsep_user:ndsep_secure_2026@postgres:5432/ndsep_db"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # Fluvio real-time streaming
+  fluvio:
+    image: infinyon/fluvio:latest
+    ports:
+      - "9003:9003"
+    environment:
+      FLUVIO_NODE_BIND_ADDR: 0.0.0.0:9003
+
+  # OpenAppSec WAF
+  openappsec:
+    image: ghcr.io/openappsec/smartsync:latest
+    ports:
+      - "4000:4000"
+    environment:
+      LEARNING_MODE: "true"
+      LOG_LEVEL: info
+
+  # Mojaloop Hub (Central Ledger + ALS)
+  mojaloop-hub:
+    image: mojaloop/central-ledger:latest
+    ports:
+      - "4001:3001"
+    environment:
+      CLED_DATABASE_URI: "postgres://ndsep_user:ndsep_secure_2026@postgres:5432/ndsep_db"
+      CLED_KAFKA__PRODUCER__BROKER_LIST: kafka:29092
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+
+  # MinIO object storage (Lakehouse backing)
+  minio:
+    image: minio/minio:latest
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Lakehouse API (Python FastAPI)
+  lakehouse-api:
+    build:
+      context: ./payment-core/data-integration/lakehouse-api
+      dockerfile: Dockerfile
+    ports:
+      - "8090:8000"
+    environment:
+      REDIS_URL: redis://redis:6379/0
+      DELTA_BASE_PATH: s3a://lakehouse/delta
+      S3_ENDPOINT: http://minio:9000
+      S3_ACCESS_KEY: minioadmin
+      S3_SECRET_KEY: minioadmin
+    depends_on:
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+
 volumes:
   postgres_data:
   prometheus_data:
+  tigerbeetle_data:
+  minio_data:
