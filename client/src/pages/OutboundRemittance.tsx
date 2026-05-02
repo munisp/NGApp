@@ -12,11 +12,12 @@ import {
   LayoutDashboard, ArrowRightLeft, Wallet, Receipt, Globe, Shield, UserPlus,
   Settings, TrendingUp, CheckCircle2, Clock, AlertTriangle, XCircle, Building2,
   Search, Plus, Send, AlertOctagon, ArrowUpCircle, Gavel, RefreshCw,
+  DollarSign, BarChart3, Layers,
 } from 'lucide-react';
 
 // --- Types ---
 type UserRole = 'participant' | 'admin' | 'cbn';
-type NavSection = 'dashboard' | 'transfers' | 'prefund' | 'billing' | 'corridors' | 'compliance' | 'disputes' | 'approvals' | 'participants' | 'settings';
+type NavSection = 'dashboard' | 'transfers' | 'prefund' | 'billing' | 'corridors' | 'compliance' | 'disputes' | 'approvals' | 'participants' | 'fx_management' | 'tier_management' | 'analytics' | 'settings';
 
 // 13 CBN-regulated corridors (static reference data)
 const corridors = [
@@ -57,6 +58,9 @@ function getNavItems(role: UserRole) {
     { id: 'disputes' as NavSection, label: 'All Disputes', icon: AlertOctagon },
     { id: 'compliance' as NavSection, label: 'Compliance', icon: Shield },
     { id: 'corridors' as NavSection, label: 'Corridors', icon: Globe },
+    { id: 'fx_management' as NavSection, label: 'FX & Rates', icon: DollarSign },
+    { id: 'tier_management' as NavSection, label: 'Tier Mgmt', icon: Layers },
+    { id: 'analytics' as NavSection, label: 'Analytics', icon: BarChart3 },
     { id: 'billing' as NavSection, label: 'Billing', icon: Receipt },
     { id: 'settings' as NavSection, label: 'Settings', icon: Settings },
   ];
@@ -163,6 +167,9 @@ export default function OutboundRemittance() {
         {activeSection === 'disputes' && <DisputesSection role={userRole} />}
         {activeSection === 'approvals' && <ApprovalsSection role={userRole} />}
         {activeSection === 'participants' && <ParticipantsSection role={userRole} />}
+        {activeSection === 'fx_management' && <FXManagementSection />}
+        {activeSection === 'tier_management' && <TierManagementSection />}
+        {activeSection === 'analytics' && <AnalyticsSection />}
         {activeSection === 'settings' && <SettingsSection role={userRole} />}
       </main>
     </div>
@@ -782,6 +789,463 @@ function SettingsSection({ role }: { role: UserRole }) {
             </Card>
           )}
         </>
+      )}
+    </div>
+  );
+}
+
+// =============================================================================
+// FX MANAGEMENT (Admin Only)
+// =============================================================================
+
+function FXManagementSection() {
+  const [spreadOverride, setSpreadOverride] = useState({ corridor: '', spreadBps: '', reason: '' });
+
+  const fxRates = [
+    { pair: 'NGN/GHS', bid: 0.00190, ask: 0.00210, mid: 0.00200, source: 'Bloomberg', stale: false, updated: '2s ago' },
+    { pair: 'NGN/GBP', bid: 0.000780, ask: 0.000804, mid: 0.000792, source: 'Bloomberg', stale: false, updated: '5s ago' },
+    { pair: 'NGN/USD', bid: 0.000620, ask: 0.000640, mid: 0.000630, source: 'Bloomberg', stale: false, updated: '3s ago' },
+    { pair: 'NGN/EUR', bid: 0.000570, ask: 0.000590, mid: 0.000580, source: 'Reuters', stale: false, updated: '8s ago' },
+    { pair: 'NGN/CAD', bid: 0.000830, ask: 0.000860, mid: 0.000845, source: 'Bloomberg', stale: false, updated: '4s ago' },
+    { pair: 'NGN/INR', bid: 0.0520, ask: 0.0540, mid: 0.0530, source: 'Bloomberg', stale: false, updated: '6s ago' },
+    { pair: 'NGN/CNY', bid: 0.00450, ask: 0.00470, mid: 0.00460, source: 'Reuters', stale: true, updated: '45s ago' },
+    { pair: 'NGN/AED', bid: 0.00228, ask: 0.00238, mid: 0.00233, source: 'Bloomberg', stale: false, updated: '2s ago' },
+    { pair: 'NGN/KES', bid: 0.0800, ask: 0.0830, mid: 0.0815, source: 'CBN Official', stale: false, updated: '1h ago' },
+    { pair: 'NGN/ZAR', bid: 0.01120, ask: 0.01160, mid: 0.01140, source: 'Bloomberg', stale: false, updated: '7s ago' },
+    { pair: 'NGN/XOF', bid: 0.3650, ask: 0.3750, mid: 0.3700, source: 'CBN Official', stale: false, updated: '30m ago' },
+    { pair: 'NGN/TRY', bid: 0.0210, ask: 0.0220, mid: 0.0215, source: 'Reuters', stale: false, updated: '12s ago' },
+  ];
+
+  const spreadConfigs = corridors.map(c => ({
+    corridor: c.id,
+    cbnCap: c.spreadCap,
+    platformSpread: Math.round(c.spreadCap * 0.7),
+    effectiveSpread: Math.round(c.spreadCap * 0.7),
+    overrideActive: false,
+  }));
+
+  const auditEntries = [
+    { time: '14:32:05', action: 'rate_update', corridor: 'NGN/GHS', detail: 'Mid: 0.001998 → 0.002000', source: 'Bloomberg' },
+    { time: '14:31:52', action: 'rate_update', corridor: 'NGN/USD', detail: 'Mid: 0.000628 → 0.000630', source: 'Bloomberg' },
+    { time: '14:28:00', action: 'spread_change', corridor: 'NG-GH', detail: 'Spread: 60 → 50 bps (promotional)', source: 'admin@cbn.gov.ng' },
+    { time: '13:15:00', action: 'cbn_rate_update', corridor: 'NGN/KES', detail: 'Official rate published', source: 'CBN Feed' },
+  ];
+
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-2xl font-bold">FX Rate Management</h1>
+          <p className="text-muted-foreground">Bloomberg/Reuters integration, CBN spread caps, rate overrides</p>
+        </div>
+        <div className="flex gap-2">
+          <Badge className="bg-green-600">Live Feed Active</Badge>
+          <Button variant="destructive" size="sm">Freeze All Rates</Button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-4 gap-4">
+        <Card><CardContent className="pt-4">
+          <p className="text-sm text-muted-foreground">Active Rate Sources</p>
+          <p className="text-2xl font-bold">3</p>
+          <p className="text-xs text-muted-foreground">Bloomberg, Reuters, CBN</p>
+        </CardContent></Card>
+        <Card><CardContent className="pt-4">
+          <p className="text-sm text-muted-foreground">Stale Rates</p>
+          <p className="text-2xl font-bold text-yellow-500">1</p>
+          <p className="text-xs text-muted-foreground">NGN/CNY ({'>'}30s old)</p>
+        </CardContent></Card>
+        <Card><CardContent className="pt-4">
+          <p className="text-sm text-muted-foreground">Active Overrides</p>
+          <p className="text-2xl font-bold">0</p>
+          <p className="text-xs text-muted-foreground">No manual adjustments</p>
+        </CardContent></Card>
+        <Card><CardContent className="pt-4">
+          <p className="text-sm text-muted-foreground">Rate Freeze Status</p>
+          <p className="text-2xl font-bold text-green-500">Normal</p>
+          <p className="text-xs text-muted-foreground">All rates updating</p>
+        </CardContent></Card>
+      </div>
+
+      <Card>
+        <CardHeader><CardTitle>Live FX Rates</CardTitle><CardDescription>Real-time feeds from Bloomberg B-PIPE, Reuters, CBN</CardDescription></CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader><TableRow>
+              <TableHead>Pair</TableHead><TableHead>Bid</TableHead><TableHead>Ask</TableHead><TableHead>Mid</TableHead>
+              <TableHead>Source</TableHead><TableHead>Status</TableHead><TableHead>Updated</TableHead>
+            </TableRow></TableHeader>
+            <TableBody>
+              {fxRates.map(r => (
+                <TableRow key={r.pair}>
+                  <TableCell className="font-mono font-medium">{r.pair}</TableCell>
+                  <TableCell className="font-mono">{r.bid.toFixed(6)}</TableCell>
+                  <TableCell className="font-mono">{r.ask.toFixed(6)}</TableCell>
+                  <TableCell className="font-mono font-medium">{r.mid.toFixed(6)}</TableCell>
+                  <TableCell><Badge variant="outline">{r.source}</Badge></TableCell>
+                  <TableCell>{r.stale ? <Badge variant="destructive">Stale</Badge> : <Badge className="bg-green-600">Live</Badge>}</TableCell>
+                  <TableCell className="text-xs text-muted-foreground">{r.updated}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader><CardTitle>Corridor Spread Configuration</CardTitle><CardDescription>CBN-mandated spread caps and platform pricing</CardDescription></CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader><TableRow>
+              <TableHead>Corridor</TableHead><TableHead>CBN Cap (bps)</TableHead><TableHead>Platform Spread (bps)</TableHead>
+              <TableHead>Effective (bps)</TableHead><TableHead>Override</TableHead><TableHead>Actions</TableHead>
+            </TableRow></TableHeader>
+            <TableBody>
+              {spreadConfigs.map(s => (
+                <TableRow key={s.corridor}>
+                  <TableCell className="font-medium">{s.corridor}</TableCell>
+                  <TableCell>{s.cbnCap}</TableCell>
+                  <TableCell>{s.platformSpread}</TableCell>
+                  <TableCell className="font-medium">{s.effectiveSpread}</TableCell>
+                  <TableCell>{s.overrideActive ? <Badge variant="destructive">Active</Badge> : <Badge variant="outline">None</Badge>}</TableCell>
+                  <TableCell><Button size="sm" variant="outline">Adjust</Button></TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader><CardTitle>Apply Spread Override</CardTitle></CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-4 gap-3">
+            <div>
+              <Label>Corridor</Label>
+              <Select value={spreadOverride.corridor} onValueChange={v => setSpreadOverride(p => ({...p, corridor: v}))}>
+                <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                <SelectContent>{corridors.map(c => <SelectItem key={c.id} value={c.id}>{c.id}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            <div><Label>Spread (bps)</Label><Input type="number" value={spreadOverride.spreadBps} onChange={e => setSpreadOverride(p => ({...p, spreadBps: e.target.value}))} placeholder="e.g. 50" /></div>
+            <div><Label>Reason</Label><Input value={spreadOverride.reason} onChange={e => setSpreadOverride(p => ({...p, reason: e.target.value}))} placeholder="e.g. Q2 promotion" /></div>
+            <div className="flex items-end"><Button>Apply Override</Button></div>
+          </div>
+          <p className="text-xs text-muted-foreground mt-2">Override cannot exceed CBN spread cap. All changes audited.</p>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader><CardTitle>FX Audit Log</CardTitle><CardDescription>All rate changes, overrides, and freeze events</CardDescription></CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader><TableRow><TableHead>Time</TableHead><TableHead>Action</TableHead><TableHead>Corridor</TableHead><TableHead>Detail</TableHead><TableHead>Source</TableHead></TableRow></TableHeader>
+            <TableBody>
+              {auditEntries.map((e, i) => (
+                <TableRow key={i}>
+                  <TableCell className="font-mono text-xs">{e.time}</TableCell>
+                  <TableCell><Badge variant="outline">{e.action}</Badge></TableCell>
+                  <TableCell>{e.corridor}</TableCell>
+                  <TableCell className="text-sm">{e.detail}</TableCell>
+                  <TableCell className="text-xs text-muted-foreground">{e.source}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+// =============================================================================
+// TIER MANAGEMENT (Admin Only)
+// =============================================================================
+
+function TierManagementSection() {
+  const tiers = [
+    { name: 'Starter', fee: '$200/mo', txnFee: '₦1,500', fxDiscount: '0%', corridors: 3, volume: '< ₦1B/mo', participants: 3 },
+    { name: 'Growth', fee: '$500/mo', txnFee: '₦1,000', fxDiscount: '10%', corridors: 7, volume: '₦1B–₦5B/mo', participants: 3 },
+    { name: 'Enterprise', fee: '$2,000/mo', txnFee: '₦500', fxDiscount: '25%', corridors: 13, volume: '₦5B–₦10B/mo', participants: 1 },
+    { name: 'Premium', fee: '$5,000/mo', txnFee: '₦250', fxDiscount: '40%', corridors: 13, volume: '> ₦10B/mo', participants: 1 },
+  ];
+
+  const promotionCriteria = [
+    { from: 'Starter', to: 'Growth', minVolume: '₦1B avg 3-month', minMonths: 3, maxSanctionsBlocks: 2, minSuccess: '95%', minPrefund: '80%' },
+    { from: 'Growth', to: 'Enterprise', minVolume: '₦5B avg 3-month', minMonths: 6, maxSanctionsBlocks: 1, minSuccess: '97%', minPrefund: '90%' },
+    { from: 'Enterprise', to: 'Premium', minVolume: '₦10B avg 3-month', minMonths: 12, maxSanctionsBlocks: 0, minSuccess: '99%', minPrefund: '95%' },
+  ];
+
+  const pendingEvaluations = [
+    { participant: 'OPay Nigeria', current: 'Growth', proposed: 'Enterprise', volume: '₦6.2B', success: '97.8%', months: 8, reason: 'Auto-evaluated: volume exceeds threshold' },
+    { participant: 'Moniepoint', current: 'Starter', proposed: 'Growth', volume: '₦1.8B', success: '96.1%', months: 5, reason: 'Auto-evaluated: 3-month criteria met' },
+  ];
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold">Tier Management</h1>
+        <p className="text-muted-foreground">Automated tier determination based on volume, compliance, and platform tenure</p>
+      </div>
+
+      <Card>
+        <CardHeader><CardTitle>Tier Definitions</CardTitle><CardDescription>Subscription tiers with pricing and corridor access</CardDescription></CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader><TableRow>
+              <TableHead>Tier</TableHead><TableHead>Monthly Fee</TableHead><TableHead>Txn Fee</TableHead>
+              <TableHead>FX Discount</TableHead><TableHead>Max Corridors</TableHead><TableHead>Volume Band</TableHead><TableHead>Participants</TableHead>
+            </TableRow></TableHeader>
+            <TableBody>
+              {tiers.map(t => (
+                <TableRow key={t.name}>
+                  <TableCell><Badge variant={t.name === 'Premium' ? 'default' : 'outline'}>{t.name}</Badge></TableCell>
+                  <TableCell>{t.fee}</TableCell>
+                  <TableCell>{t.txnFee}</TableCell>
+                  <TableCell>{t.fxDiscount}</TableCell>
+                  <TableCell>{t.corridors}</TableCell>
+                  <TableCell>{t.volume}</TableCell>
+                  <TableCell className="font-bold">{t.participants}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader><CardTitle>Auto-Promotion Criteria</CardTitle><CardDescription>System evaluates participants monthly against these thresholds</CardDescription></CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader><TableRow>
+              <TableHead>Transition</TableHead><TableHead>Min Volume (3mo avg)</TableHead><TableHead>Min Months</TableHead>
+              <TableHead>Max Sanctions Blocks (90d)</TableHead><TableHead>Min Success Rate</TableHead><TableHead>Min Prefund Consistency</TableHead>
+            </TableRow></TableHeader>
+            <TableBody>
+              {promotionCriteria.map(c => (
+                <TableRow key={c.to}>
+                  <TableCell><span>{c.from}</span> → <Badge>{c.to}</Badge></TableCell>
+                  <TableCell>{c.minVolume}</TableCell>
+                  <TableCell>{c.minMonths}</TableCell>
+                  <TableCell>{c.maxSanctionsBlocks}</TableCell>
+                  <TableCell>{c.minSuccess}</TableCell>
+                  <TableCell>{c.minPrefund}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Pending Tier Evaluations</CardTitle>
+          <CardDescription>Auto-generated upgrade/downgrade proposals requiring admin approval</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader><TableRow>
+              <TableHead>Participant</TableHead><TableHead>Current</TableHead><TableHead>Proposed</TableHead>
+              <TableHead>Volume</TableHead><TableHead>Success</TableHead><TableHead>Months</TableHead><TableHead>Reason</TableHead><TableHead>Actions</TableHead>
+            </TableRow></TableHeader>
+            <TableBody>
+              {pendingEvaluations.map((e, i) => (
+                <TableRow key={i}>
+                  <TableCell className="font-medium">{e.participant}</TableCell>
+                  <TableCell><Badge variant="outline">{e.current}</Badge></TableCell>
+                  <TableCell><Badge>{e.proposed}</Badge></TableCell>
+                  <TableCell>{e.volume}</TableCell>
+                  <TableCell>{e.success}</TableCell>
+                  <TableCell>{e.months}</TableCell>
+                  <TableCell className="text-xs max-w-[200px] truncate">{e.reason}</TableCell>
+                  <TableCell>
+                    <div className="flex gap-1">
+                      <Button size="sm">Approve</Button>
+                      <Button size="sm" variant="destructive">Reject</Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+// =============================================================================
+// ANALYTICS (Admin Only) — Anomaly Detection, Capacity Planning, SLA, Sanctions
+// =============================================================================
+
+function AnalyticsSection() {
+  const [analyticsTab, setAnalyticsTab] = useState<'anomalies' | 'capacity' | 'sla' | 'sanctions'>('anomalies');
+
+  const anomalies = [
+    { id: 'ANM-001', participant: 'PayApp Nigeria Ltd', type: 'volume_spike', severity: 'high', score: 78, description: '340% volume increase in NG-CN corridor over 1hr window', detected: '14:22 UTC', acknowledged: false },
+    { id: 'ANM-002', participant: 'Chipper Cash', type: 'rapid_fire', severity: 'medium', score: 55, description: '18 transfers in 5-minute window (threshold: 20)', detected: '13:45 UTC', acknowledged: false },
+    { id: 'ANM-003', participant: 'OPay Nigeria', type: 'amount_deviation', severity: 'critical', score: 92, description: '₦450M single transfer — 85x participant average', detected: '12:10 UTC', acknowledged: true },
+  ];
+
+  const capacityForecasts = [
+    { corridor: 'NG-GH', date: 'Tomorrow', predicted: '₦680M', confidence: '₦544M–₦816M', patterns: 'salary_day', liquidity: '₦300M', gap: '₦516M', risk: 'critical' },
+    { corridor: 'NG-GB', date: 'Tomorrow', predicted: '₦920M', confidence: '₦736M–₦1.1B', patterns: 'school_fees', liquidity: '₦500M', gap: '₦604M', risk: 'high' },
+    { corridor: 'NG-US', date: 'Tomorrow', predicted: '₦1.1B', confidence: '₦880M–₦1.3B', patterns: 'month_end', liquidity: '₦700M', gap: '₦620M', risk: 'high' },
+    { corridor: 'NG-SN', date: 'Tomorrow', predicted: '₦250M', confidence: '₦200M–₦300M', patterns: 'none', liquidity: '₦400M', gap: '₦0', risk: 'low' },
+    { corridor: 'NG-CN', date: '+3 days', predicted: '₦380M', confidence: '₦285M–₦475M', patterns: 'weekend', liquidity: '₦350M', gap: '₦106M', risk: 'medium' },
+  ];
+
+  const slaBreaches = [
+    { corridor: 'NG-IN', target: '45s / 96%', actual: '62s / 94.2%', breachType: 'latency+success', consecutive: 3, action: 'Auto-escalated to backup provider (Wise)' },
+    { corridor: 'NG-TR', target: '60s / 95%', actual: '58s / 93.8%', breachType: 'success_rate', consecutive: 2, action: 'Warning issued, monitoring' },
+  ];
+
+  const sanctionsUpdates = [
+    { list: 'OFAC SDN', lastUpdate: '2h ago', entries: 12847, added: 3, removed: 1, rescreeningStatus: 'completed', newMatches: 0 },
+    { list: 'UN Consolidated', lastUpdate: '1d ago', entries: 8234, added: 0, removed: 0, rescreeningStatus: 'n/a', newMatches: 0 },
+    { list: 'EU Sanctions', lastUpdate: '3h ago', entries: 5621, added: 1, removed: 0, rescreeningStatus: 'completed', newMatches: 1 },
+    { list: 'CBN Designated', lastUpdate: '5d ago', entries: 342, added: 0, removed: 0, rescreeningStatus: 'n/a', newMatches: 0 },
+    { list: 'INTERPOL Red', lastUpdate: '12h ago', entries: 7891, added: 2, removed: 0, rescreeningStatus: 'in_progress', newMatches: 0 },
+    { list: 'CBN PEP List', lastUpdate: '2d ago', entries: 1256, added: 0, removed: 0, rescreeningStatus: 'n/a', newMatches: 0 },
+    { list: 'OFAC Non-SDN', lastUpdate: '4h ago', entries: 3412, added: 1, removed: 0, rescreeningStatus: 'completed', newMatches: 0 },
+  ];
+
+  const tabs = [
+    { id: 'anomalies' as const, label: 'Anomaly Detection' },
+    { id: 'capacity' as const, label: 'Capacity Planning' },
+    { id: 'sla' as const, label: 'SLA Monitoring' },
+    { id: 'sanctions' as const, label: 'Sanctions Updates' },
+  ];
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold">Platform Analytics</h1>
+        <p className="text-muted-foreground">Anomaly detection, capacity forecasts, SLA health, sanctions monitoring</p>
+      </div>
+
+      <div className="flex gap-2 border-b pb-2">
+        {tabs.map(tab => (
+          <Button key={tab.id} variant={analyticsTab === tab.id ? 'default' : 'outline'} size="sm" onClick={() => setAnalyticsTab(tab.id)}>
+            {tab.label}
+          </Button>
+        ))}
+      </div>
+
+      {analyticsTab === 'anomalies' && (
+        <Card>
+          <CardHeader><CardTitle>Detected Anomalies</CardTitle><CardDescription>Statistical pattern analysis flagging unusual transfer behavior</CardDescription></CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader><TableRow>
+                <TableHead>ID</TableHead><TableHead>Participant</TableHead><TableHead>Type</TableHead>
+                <TableHead>Severity</TableHead><TableHead>Score</TableHead><TableHead>Description</TableHead><TableHead>Detected</TableHead><TableHead>Actions</TableHead>
+              </TableRow></TableHeader>
+              <TableBody>
+                {anomalies.map(a => (
+                  <TableRow key={a.id}>
+                    <TableCell className="font-mono text-xs">{a.id}</TableCell>
+                    <TableCell>{a.participant}</TableCell>
+                    <TableCell><Badge variant="outline">{a.type.replace(/_/g, ' ')}</Badge></TableCell>
+                    <TableCell><Badge variant={a.severity === 'critical' ? 'destructive' : a.severity === 'high' ? 'destructive' : 'secondary'}>{a.severity}</Badge></TableCell>
+                    <TableCell className="font-bold">{a.score}</TableCell>
+                    <TableCell className="text-xs max-w-[300px]">{a.description}</TableCell>
+                    <TableCell className="text-xs">{a.detected}</TableCell>
+                    <TableCell>
+                      {!a.acknowledged && <Button size="sm" variant="outline">Acknowledge</Button>}
+                      {a.acknowledged && <Badge variant="outline">Ack'd</Badge>}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
+
+      {analyticsTab === 'capacity' && (
+        <Card>
+          <CardHeader><CardTitle>30-Day Capacity Forecast</CardTitle><CardDescription>Volume predictions with Nigerian seasonal calendar (salary days, Eid, Christmas, school fees)</CardDescription></CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader><TableRow>
+                <TableHead>Corridor</TableHead><TableHead>Date</TableHead><TableHead>Predicted Volume</TableHead>
+                <TableHead>Confidence</TableHead><TableHead>Patterns</TableHead><TableHead>Current Liquidity</TableHead><TableHead>Gap</TableHead><TableHead>Risk</TableHead>
+              </TableRow></TableHeader>
+              <TableBody>
+                {capacityForecasts.map((f, i) => (
+                  <TableRow key={i}>
+                    <TableCell className="font-medium">{f.corridor}</TableCell>
+                    <TableCell>{f.date}</TableCell>
+                    <TableCell className="font-bold">{f.predicted}</TableCell>
+                    <TableCell className="text-xs">{f.confidence}</TableCell>
+                    <TableCell><Badge variant="outline">{f.patterns}</Badge></TableCell>
+                    <TableCell>{f.liquidity}</TableCell>
+                    <TableCell className={f.gap !== '₦0' ? 'text-red-500 font-medium' : ''}>{f.gap}</TableCell>
+                    <TableCell><Badge variant={f.risk === 'critical' ? 'destructive' : f.risk === 'high' ? 'destructive' : f.risk === 'medium' ? 'secondary' : 'outline'}>{f.risk}</Badge></TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
+
+      {analyticsTab === 'sla' && (
+        <Card>
+          <CardHeader><CardTitle>SLA Breach Monitor</CardTitle><CardDescription>Corridor health tracking with auto-escalation on consecutive breaches</CardDescription></CardHeader>
+          <CardContent>
+            {slaBreaches.length === 0 ? (
+              <p className="text-center text-muted-foreground py-8">All corridors within SLA targets</p>
+            ) : (
+              <Table>
+                <TableHeader><TableRow>
+                  <TableHead>Corridor</TableHead><TableHead>Target</TableHead><TableHead>Actual</TableHead>
+                  <TableHead>Breach Type</TableHead><TableHead>Consecutive</TableHead><TableHead>Action Taken</TableHead>
+                </TableRow></TableHeader>
+                <TableBody>
+                  {slaBreaches.map((b, i) => (
+                    <TableRow key={i}>
+                      <TableCell className="font-medium">{b.corridor}</TableCell>
+                      <TableCell className="text-xs">{b.target}</TableCell>
+                      <TableCell className="text-xs text-red-500">{b.actual}</TableCell>
+                      <TableCell><Badge variant="destructive">{b.breachType}</Badge></TableCell>
+                      <TableCell className="font-bold">{b.consecutive}</TableCell>
+                      <TableCell className="text-xs">{b.action}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {analyticsTab === 'sanctions' && (
+        <Card>
+          <CardHeader><CardTitle>Sanctions List Monitoring</CardTitle><CardDescription>Continuous re-screening when lists update — 7 lists monitored</CardDescription></CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader><TableRow>
+                <TableHead>List</TableHead><TableHead>Last Update</TableHead><TableHead>Total Entries</TableHead>
+                <TableHead>Added</TableHead><TableHead>Removed</TableHead><TableHead>Re-screening</TableHead><TableHead>New Matches</TableHead>
+              </TableRow></TableHeader>
+              <TableBody>
+                {sanctionsUpdates.map((s, i) => (
+                  <TableRow key={i}>
+                    <TableCell className="font-medium">{s.list}</TableCell>
+                    <TableCell className="text-xs">{s.lastUpdate}</TableCell>
+                    <TableCell>{s.entries.toLocaleString()}</TableCell>
+                    <TableCell className={s.added > 0 ? 'text-yellow-500 font-medium' : ''}>{s.added}</TableCell>
+                    <TableCell>{s.removed}</TableCell>
+                    <TableCell><Badge variant={s.rescreeningStatus === 'in_progress' ? 'secondary' : s.rescreeningStatus === 'completed' ? 'outline' : 'outline'}>{s.rescreeningStatus}</Badge></TableCell>
+                    <TableCell className={s.newMatches > 0 ? 'text-red-500 font-bold' : ''}>{s.newMatches}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
       )}
     </div>
   );
