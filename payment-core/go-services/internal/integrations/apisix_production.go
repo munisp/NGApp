@@ -53,45 +53,45 @@ func NewProductionAPISIXClient(config *APISIXConfig) *ProductionAPISIXClient {
 
 // APISIXRoute represents an APISIX route
 type APISIXRoute struct {
-	ID          string                 `json:"id,omitempty"`
-	Name        string                 `json:"name,omitempty"`
-	Desc        string                 `json:"desc,omitempty"`
-	URI         string                 `json:"uri,omitempty"`
-	URIs        []string               `json:"uris,omitempty"`
-	Host        string                 `json:"host,omitempty"`
-	Hosts       []string               `json:"hosts,omitempty"`
-	Methods     []string               `json:"methods,omitempty"`
-	Priority    int                    `json:"priority,omitempty"`
-	Plugins     map[string]interface{} `json:"plugins,omitempty"`
-	Upstream    *APISIXUpstream        `json:"upstream,omitempty"`
-	UpstreamID  string                 `json:"upstream_id,omitempty"`
-	ServiceID   string                 `json:"service_id,omitempty"`
-	Labels      map[string]string      `json:"labels,omitempty"`
-	Timeout     *APISIXTimeout         `json:"timeout,omitempty"`
-	EnableWebsocket bool               `json:"enable_websocket,omitempty"`
-	Status      int                    `json:"status,omitempty"`
+	ID              string                 `json:"id,omitempty"`
+	Name            string                 `json:"name,omitempty"`
+	Desc            string                 `json:"desc,omitempty"`
+	URI             string                 `json:"uri,omitempty"`
+	URIs            []string               `json:"uris,omitempty"`
+	Host            string                 `json:"host,omitempty"`
+	Hosts           []string               `json:"hosts,omitempty"`
+	Methods         []string               `json:"methods,omitempty"`
+	Priority        int                    `json:"priority,omitempty"`
+	Plugins         map[string]interface{} `json:"plugins,omitempty"`
+	Upstream        *APISIXUpstream        `json:"upstream,omitempty"`
+	UpstreamID      string                 `json:"upstream_id,omitempty"`
+	ServiceID       string                 `json:"service_id,omitempty"`
+	Labels          map[string]string      `json:"labels,omitempty"`
+	Timeout         *APISIXTimeout         `json:"timeout,omitempty"`
+	EnableWebsocket bool                   `json:"enable_websocket,omitempty"`
+	Status          int                    `json:"status,omitempty"`
 }
 
 // APISIXUpstream represents an APISIX upstream
 type APISIXUpstream struct {
-	ID            string                 `json:"id,omitempty"`
-	Name          string                 `json:"name,omitempty"`
-	Desc          string                 `json:"desc,omitempty"`
-	Type          string                 `json:"type,omitempty"` // roundrobin, chash, ewma, least_conn
-	Nodes         map[string]int         `json:"nodes,omitempty"`
-	NodesList     []APISIXNode           `json:"nodes_list,omitempty"`
-	Retries       int                    `json:"retries,omitempty"`
-	RetryTimeout  int                    `json:"retry_timeout,omitempty"`
-	Timeout       *APISIXTimeout         `json:"timeout,omitempty"`
-	Scheme        string                 `json:"scheme,omitempty"` // http, https, grpc, grpcs
-	PassHost      string                 `json:"pass_host,omitempty"`
-	UpstreamHost  string                 `json:"upstream_host,omitempty"`
-	Labels        map[string]string      `json:"labels,omitempty"`
-	Checks        *APISIXHealthCheck     `json:"checks,omitempty"`
-	HashOn        string                 `json:"hash_on,omitempty"`
-	Key           string                 `json:"key,omitempty"`
-	KeepalivePool *APISIXKeepalivePool   `json:"keepalive_pool,omitempty"`
-	TLS           *APISIXUpstreamTLS     `json:"tls,omitempty"`
+	ID            string               `json:"id,omitempty"`
+	Name          string               `json:"name,omitempty"`
+	Desc          string               `json:"desc,omitempty"`
+	Type          string               `json:"type,omitempty"` // roundrobin, chash, ewma, least_conn
+	Nodes         map[string]int       `json:"nodes,omitempty"`
+	NodesList     []APISIXNode         `json:"nodes_list,omitempty"`
+	Retries       int                  `json:"retries,omitempty"`
+	RetryTimeout  int                  `json:"retry_timeout,omitempty"`
+	Timeout       *APISIXTimeout       `json:"timeout,omitempty"`
+	Scheme        string               `json:"scheme,omitempty"` // http, https, grpc, grpcs
+	PassHost      string               `json:"pass_host,omitempty"`
+	UpstreamHost  string               `json:"upstream_host,omitempty"`
+	Labels        map[string]string    `json:"labels,omitempty"`
+	Checks        *APISIXHealthCheck   `json:"checks,omitempty"`
+	HashOn        string               `json:"hash_on,omitempty"`
+	Key           string               `json:"key,omitempty"`
+	KeepalivePool *APISIXKeepalivePool `json:"keepalive_pool,omitempty"`
+	TLS           *APISIXUpstreamTLS   `json:"tls,omitempty"`
 }
 
 // APISIXNode represents an upstream node
@@ -145,11 +145,11 @@ type APISIXHealthyCondition struct {
 
 // APISIXUnhealthyCondition represents unhealthy condition
 type APISIXUnhealthyCondition struct {
-	Interval      int   `json:"interval,omitempty"`
-	HTTPStatuses  []int `json:"http_statuses,omitempty"`
-	HTTPFailures  int   `json:"http_failures,omitempty"`
-	TCPFailures   int   `json:"tcp_failures,omitempty"`
-	Timeouts      int   `json:"timeouts,omitempty"`
+	Interval     int   `json:"interval,omitempty"`
+	HTTPStatuses []int `json:"http_statuses,omitempty"`
+	HTTPFailures int   `json:"http_failures,omitempty"`
+	TCPFailures  int   `json:"tcp_failures,omitempty"`
+	Timeouts     int   `json:"timeouts,omitempty"`
 }
 
 // APISIXKeepalivePool represents keepalive pool configuration
@@ -167,15 +167,15 @@ type APISIXUpstreamTLS struct {
 
 // APISIXService represents an APISIX service
 type APISIXService struct {
-	ID          string                 `json:"id,omitempty"`
-	Name        string                 `json:"name,omitempty"`
-	Desc        string                 `json:"desc,omitempty"`
-	Plugins     map[string]interface{} `json:"plugins,omitempty"`
-	Upstream    *APISIXUpstream        `json:"upstream,omitempty"`
-	UpstreamID  string                 `json:"upstream_id,omitempty"`
-	Labels      map[string]string      `json:"labels,omitempty"`
-	EnableWebsocket bool               `json:"enable_websocket,omitempty"`
-	Hosts       []string               `json:"hosts,omitempty"`
+	ID              string                 `json:"id,omitempty"`
+	Name            string                 `json:"name,omitempty"`
+	Desc            string                 `json:"desc,omitempty"`
+	Plugins         map[string]interface{} `json:"plugins,omitempty"`
+	Upstream        *APISIXUpstream        `json:"upstream,omitempty"`
+	UpstreamID      string                 `json:"upstream_id,omitempty"`
+	Labels          map[string]string      `json:"labels,omitempty"`
+	EnableWebsocket bool                   `json:"enable_websocket,omitempty"`
+	Hosts           []string               `json:"hosts,omitempty"`
 }
 
 // APISIXConsumer represents an APISIX consumer
@@ -564,11 +564,11 @@ func (c *ProductionAPISIXClient) EnableCORS(ctx context.Context, routeID string,
 	}
 
 	route.Plugins["cors"] = map[string]interface{}{
-		"allow_origins": origins,
-		"allow_methods": "*",
-		"allow_headers": "*",
-		"expose_headers": "*",
-		"max_age":        3600,
+		"allow_origins":    origins,
+		"allow_methods":    "*",
+		"allow_headers":    "*",
+		"expose_headers":   "*",
+		"max_age":          3600,
 		"allow_credential": true,
 	}
 

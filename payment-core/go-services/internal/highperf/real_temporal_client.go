@@ -31,18 +31,18 @@ type RealTemporalClient struct {
 
 // RealTemporalConfig configures the real Temporal client
 type RealTemporalConfig struct {
-	HostPort        string
-	Namespace       string
-	TaskQueue       string
-	Identity        string
-	MetricsScope    string
+	HostPort     string
+	Namespace    string
+	TaskQueue    string
+	Identity     string
+	MetricsScope string
 
 	// Worker options
-	MaxConcurrentWorkflows        int
-	MaxConcurrentActivities       int
-	MaxConcurrentLocalActivities  int
-	WorkerActivitiesPerSecond     float64
-	TaskQueueActivitiesPerSecond  float64
+	MaxConcurrentWorkflows       int
+	MaxConcurrentActivities      int
+	MaxConcurrentLocalActivities int
+	WorkerActivitiesPerSecond    float64
+	TaskQueueActivitiesPerSecond float64
 
 	// Workflow options
 	WorkflowExecutionTimeout time.Duration
@@ -59,22 +59,22 @@ type RealTemporalConfig struct {
 // DefaultRealTemporalConfig returns production-optimized defaults
 func DefaultRealTemporalConfig() RealTemporalConfig {
 	return RealTemporalConfig{
-		HostPort:                      "temporal:7233",
-		Namespace:                     "payment-switch",
-		TaskQueue:                     "payment-transfers",
-		Identity:                      "payment-switch-worker",
-		MaxConcurrentWorkflows:        1000,
-		MaxConcurrentActivities:       1000,
-		MaxConcurrentLocalActivities:  1000,
-		WorkerActivitiesPerSecond:     100000,
-		TaskQueueActivitiesPerSecond:  100000,
-		WorkflowExecutionTimeout:      24 * time.Hour,
-		WorkflowRunTimeout:            1 * time.Hour,
-		WorkflowTaskTimeout:           10 * time.Second,
-		InitialInterval:               time.Second,
-		BackoffCoefficient:            2.0,
-		MaximumInterval:               time.Minute,
-		MaximumAttempts:               5,
+		HostPort:                     "temporal:7233",
+		Namespace:                    "payment-switch",
+		TaskQueue:                    "payment-transfers",
+		Identity:                     "payment-switch-worker",
+		MaxConcurrentWorkflows:       1000,
+		MaxConcurrentActivities:      1000,
+		MaxConcurrentLocalActivities: 1000,
+		WorkerActivitiesPerSecond:    100000,
+		TaskQueueActivitiesPerSecond: 100000,
+		WorkflowExecutionTimeout:     24 * time.Hour,
+		WorkflowRunTimeout:           1 * time.Hour,
+		WorkflowTaskTimeout:          10 * time.Second,
+		InitialInterval:              time.Second,
+		BackoffCoefficient:           2.0,
+		MaximumInterval:              time.Minute,
+		MaximumAttempts:              5,
 	}
 }
 
@@ -185,12 +185,12 @@ func (c *RealTemporalClient) StartWorker(taskQueue string, workflows []interface
 	defer c.workersMu.Unlock()
 
 	w := worker.New(c.client, taskQueue, worker.Options{
-		MaxConcurrentWorkflowTaskExecutionSize:         c.config.MaxConcurrentWorkflows,
-		MaxConcurrentActivityExecutionSize:            c.config.MaxConcurrentActivities,
-		MaxConcurrentLocalActivityExecutionSize:       c.config.MaxConcurrentLocalActivities,
-		WorkerActivitiesPerSecond:                     c.config.WorkerActivitiesPerSecond,
-		TaskQueueActivitiesPerSecond:                  c.config.TaskQueueActivitiesPerSecond,
-		EnableSessionWorker:                           true,
+		MaxConcurrentWorkflowTaskExecutionSize:  c.config.MaxConcurrentWorkflows,
+		MaxConcurrentActivityExecutionSize:      c.config.MaxConcurrentActivities,
+		MaxConcurrentLocalActivityExecutionSize: c.config.MaxConcurrentLocalActivities,
+		WorkerActivitiesPerSecond:               c.config.WorkerActivitiesPerSecond,
+		TaskQueueActivitiesPerSecond:            c.config.TaskQueueActivitiesPerSecond,
+		EnableSessionWorker:                     true,
 	})
 
 	// Register workflows
@@ -251,11 +251,11 @@ type TransferSagaInput struct {
 
 // TransferSagaResult represents the result of a transfer saga
 type TransferSagaResult struct {
-	TransferID     string
-	Status         string
-	CompletedAt    time.Time
-	SettlementID   string
-	Error          string
+	TransferID   string
+	Status       string
+	CompletedAt  time.Time
+	SettlementID string
+	Error        string
 }
 
 // TransferSagaWorkflow is a sample transfer saga workflow

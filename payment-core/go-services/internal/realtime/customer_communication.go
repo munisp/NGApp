@@ -55,53 +55,53 @@ const (
 )
 
 type Notification struct {
-	ID               string                 `json:"id"`
-	CustomerID       string                 `json:"customer_id"`
-	Type             NotificationType       `json:"type"`
-	Title            string                 `json:"title"`
-	Body             string                 `json:"body"`
-	Data             map[string]interface{} `json:"data,omitempty"`
-	Priority         Priority               `json:"priority"`
-	Channels         []DeliveryChannel      `json:"channels"`
-	CreatedAt        time.Time              `json:"created_at"`
-	ExpiresAt        *time.Time             `json:"expires_at,omitempty"`
-	Metadata         map[string]string      `json:"metadata,omitempty"`
+	ID         string                 `json:"id"`
+	CustomerID string                 `json:"customer_id"`
+	Type       NotificationType       `json:"type"`
+	Title      string                 `json:"title"`
+	Body       string                 `json:"body"`
+	Data       map[string]interface{} `json:"data,omitempty"`
+	Priority   Priority               `json:"priority"`
+	Channels   []DeliveryChannel      `json:"channels"`
+	CreatedAt  time.Time              `json:"created_at"`
+	ExpiresAt  *time.Time             `json:"expires_at,omitempty"`
+	Metadata   map[string]string      `json:"metadata,omitempty"`
 }
 
 type DeliveryAttempt struct {
-	ID             string          `json:"id"`
-	NotificationID string          `json:"notification_id"`
-	Channel        DeliveryChannel `json:"channel"`
-	Status         DeliveryStatus  `json:"status"`
-	AttemptNumber  int             `json:"attempt_number"`
-	SentAt         *time.Time      `json:"sent_at,omitempty"`
-	DeliveredAt    *time.Time      `json:"delivered_at,omitempty"`
-	ReadAt         *time.Time      `json:"read_at,omitempty"`
-	Error          string          `json:"error,omitempty"`
-	ProviderID     string          `json:"provider_id,omitempty"`
+	ID             string            `json:"id"`
+	NotificationID string            `json:"notification_id"`
+	Channel        DeliveryChannel   `json:"channel"`
+	Status         DeliveryStatus    `json:"status"`
+	AttemptNumber  int               `json:"attempt_number"`
+	SentAt         *time.Time        `json:"sent_at,omitempty"`
+	DeliveredAt    *time.Time        `json:"delivered_at,omitempty"`
+	ReadAt         *time.Time        `json:"read_at,omitempty"`
+	Error          string            `json:"error,omitempty"`
+	ProviderID     string            `json:"provider_id,omitempty"`
 	Metadata       map[string]string `json:"metadata,omitempty"`
 }
 
 type CustomerPreferences struct {
-	CustomerID       string                       `json:"customer_id"`
-	EnabledChannels  []DeliveryChannel            `json:"enabled_channels"`
-	QuietHoursStart  int                          `json:"quiet_hours_start"`
-	QuietHoursEnd    int                          `json:"quiet_hours_end"`
-	Timezone         string                       `json:"timezone"`
-	TypePreferences  map[NotificationType][]DeliveryChannel `json:"type_preferences"`
-	PushToken        string                       `json:"push_token,omitempty"`
-	DeviceID         string                       `json:"device_id,omitempty"`
-	UpdatedAt        time.Time                    `json:"updated_at"`
+	CustomerID      string                                 `json:"customer_id"`
+	EnabledChannels []DeliveryChannel                      `json:"enabled_channels"`
+	QuietHoursStart int                                    `json:"quiet_hours_start"`
+	QuietHoursEnd   int                                    `json:"quiet_hours_end"`
+	Timezone        string                                 `json:"timezone"`
+	TypePreferences map[NotificationType][]DeliveryChannel `json:"type_preferences"`
+	PushToken       string                                 `json:"push_token,omitempty"`
+	DeviceID        string                                 `json:"device_id,omitempty"`
+	UpdatedAt       time.Time                              `json:"updated_at"`
 }
 
 type WebSocketConnection struct {
-	ID           string    `json:"id"`
-	CustomerID   string    `json:"customer_id"`
-	DeviceID     string    `json:"device_id"`
-	ConnectedAt  time.Time `json:"connected_at"`
-	LastPingAt   time.Time `json:"last_ping_at"`
-	IsActive     bool      `json:"is_active"`
-	MessageChan  chan []byte `json:"-"`
+	ID          string      `json:"id"`
+	CustomerID  string      `json:"customer_id"`
+	DeviceID    string      `json:"device_id"`
+	ConnectedAt time.Time   `json:"connected_at"`
+	LastPingAt  time.Time   `json:"last_ping_at"`
+	IsActive    bool        `json:"is_active"`
+	MessageChan chan []byte `json:"-"`
 }
 
 type WebSocketMessage struct {
@@ -111,20 +111,20 @@ type WebSocketMessage struct {
 }
 
 type CustomerCommunicationService struct {
-	mu                sync.RWMutex
-	notifications     map[string]*Notification
-	deliveryAttempts  map[string][]*DeliveryAttempt
-	preferences       map[string]*CustomerPreferences
-	wsConnections     map[string]*WebSocketConnection
-	customerConns     map[string][]string
-	eventHandlers     map[string][]func(interface{})
-	retryConfig       RetryConfig
+	mu               sync.RWMutex
+	notifications    map[string]*Notification
+	deliveryAttempts map[string][]*DeliveryAttempt
+	preferences      map[string]*CustomerPreferences
+	wsConnections    map[string]*WebSocketConnection
+	customerConns    map[string][]string
+	eventHandlers    map[string][]func(interface{})
+	retryConfig      RetryConfig
 }
 
 type RetryConfig struct {
-	MaxAttempts     int
-	InitialDelayMs  int
-	MaxDelayMs      int
+	MaxAttempts       int
+	InitialDelayMs    int
+	MaxDelayMs        int
 	BackoffMultiplier float64
 }
 
@@ -595,13 +595,13 @@ func (ccs *CustomerCommunicationService) MarkAsRead(notificationID string) error
 }
 
 type CommunicationStats struct {
-	TotalNotifications    int                `json:"total_notifications"`
-	ByType                map[string]int     `json:"by_type"`
-	ByChannel             map[string]int     `json:"by_channel"`
-	ByStatus              map[string]int     `json:"by_status"`
-	ActiveConnections     int                `json:"active_connections"`
-	UniqueCustomers       int                `json:"unique_customers"`
-	DeliverySuccessRate   float64            `json:"delivery_success_rate"`
+	TotalNotifications  int            `json:"total_notifications"`
+	ByType              map[string]int `json:"by_type"`
+	ByChannel           map[string]int `json:"by_channel"`
+	ByStatus            map[string]int `json:"by_status"`
+	ActiveConnections   int            `json:"active_connections"`
+	UniqueCustomers     int            `json:"unique_customers"`
+	DeliverySuccessRate float64        `json:"delivery_success_rate"`
 }
 
 func (ccs *CustomerCommunicationService) GetStats() *CommunicationStats {

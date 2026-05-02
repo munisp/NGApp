@@ -12,22 +12,22 @@ import (
 
 // LoadTestHarness provides load testing capabilities for 1M TPS validation
 type LoadTestHarness struct {
-	config      LoadTestConfig
-	hotPath     *UnifiedHotPath
-	tbClient    *UnifiedTigerBeetleClient
+	config   LoadTestConfig
+	hotPath  *UnifiedHotPath
+	tbClient *UnifiedTigerBeetleClient
 
 	// Test state
-	running     int32
-	startTime   time.Time
-	endTime     time.Time
+	running   int32
+	startTime time.Time
+	endTime   time.Time
 
 	// Stats
-	totalRequests    uint64
-	totalSuccess     uint64
-	totalFailed      uint64
-	totalLatencyNs   uint64
-	minLatencyNs     uint64
-	maxLatencyNs     uint64
+	totalRequests  uint64
+	totalSuccess   uint64
+	totalFailed    uint64
+	totalLatencyNs uint64
+	minLatencyNs   uint64
+	maxLatencyNs   uint64
 
 	// Latency histogram (microseconds)
 	latencyBuckets [100]uint64 // 0-99ms in 1ms buckets
@@ -41,20 +41,20 @@ type LoadTestHarness struct {
 // LoadTestConfig configures the load test
 type LoadTestConfig struct {
 	// Target throughput
-	TargetTPS       int
-	Duration        time.Duration
-	RampUpDuration  time.Duration
+	TargetTPS        int
+	Duration         time.Duration
+	RampUpDuration   time.Duration
 	RampDownDuration time.Duration
 
 	// Workers
-	NumWorkers      int
+	NumWorkers        int
 	RequestsPerWorker int
 
 	// Test data
-	NumAccounts     int
-	TransferAmount  uint64
-	Ledger          uint32
-	Code            uint16
+	NumAccounts    int
+	TransferAmount uint64
+	Ledger         uint32
+	Code           uint16
 
 	// Reporting
 	ReportInterval  time.Duration
@@ -64,18 +64,18 @@ type LoadTestConfig struct {
 // DefaultLoadTestConfig returns production load test defaults
 func DefaultLoadTestConfig() LoadTestConfig {
 	return LoadTestConfig{
-		TargetTPS:        1000000, // 1M TPS target
-		Duration:         60 * time.Second,
-		RampUpDuration:   10 * time.Second,
-		RampDownDuration: 5 * time.Second,
-		NumWorkers:       100,
+		TargetTPS:         1000000, // 1M TPS target
+		Duration:          60 * time.Second,
+		RampUpDuration:    10 * time.Second,
+		RampDownDuration:  5 * time.Second,
+		NumWorkers:        100,
 		RequestsPerWorker: 10000,
-		NumAccounts:      10000,
-		TransferAmount:   100,
-		Ledger:           1,
-		Code:             1,
-		ReportInterval:   time.Second,
-		DetailedMetrics:  true,
+		NumAccounts:       10000,
+		TransferAmount:    100,
+		Ledger:            1,
+		Code:              1,
+		ReportInterval:    time.Second,
+		DetailedMetrics:   true,
 	}
 }
 
@@ -431,13 +431,13 @@ func (h *LoadTestHarness) PrintResults(result *LoadTestResult) {
 
 // BenchmarkResult contains benchmark comparison results
 type BenchmarkResult struct {
-	Name           string
-	TPS            float64
-	AvgLatencyMs   float64
-	P99LatencyMs   float64
-	ErrorRate      float64
-	MemoryMB       float64
-	CPUPercent     float64
+	Name         string
+	TPS          float64
+	AvgLatencyMs float64
+	P99LatencyMs float64
+	ErrorRate    float64
+	MemoryMB     float64
+	CPUPercent   float64
 }
 
 // RunBenchmarkSuite runs a suite of benchmarks

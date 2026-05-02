@@ -34,9 +34,9 @@ const (
 )
 
 type ExtractedField struct {
-	FieldName   string  `json:"fieldName"`
-	Value       string  `json:"value"`
-	Confidence  float64 `json:"confidence"`
+	FieldName   string       `json:"fieldName"`
+	Value       string       `json:"value"`
+	Confidence  float64      `json:"confidence"`
 	BoundingBox *BoundingBox `json:"boundingBox,omitempty"`
 }
 
@@ -48,36 +48,36 @@ type BoundingBox struct {
 }
 
 type DocumentOCRResult struct {
-	DocumentID      string            `json:"documentId"`
-	DocumentType    DocumentType      `json:"documentType"`
-	RawText         string            `json:"rawText"`
-	ExtractedFields []ExtractedField  `json:"extractedFields"`
-	StructuredData  *DocumentData     `json:"structuredData,omitempty"`
-	Confidence      float64           `json:"confidence"`
-	ProcessingTime  int64             `json:"processingTimeMs"`
-	Provider        OCRProvider       `json:"provider"`
-	Warnings        []string          `json:"warnings,omitempty"`
-	CreatedAt       time.Time         `json:"createdAt"`
+	DocumentID      string           `json:"documentId"`
+	DocumentType    DocumentType     `json:"documentType"`
+	RawText         string           `json:"rawText"`
+	ExtractedFields []ExtractedField `json:"extractedFields"`
+	StructuredData  *DocumentData    `json:"structuredData,omitempty"`
+	Confidence      float64          `json:"confidence"`
+	ProcessingTime  int64            `json:"processingTimeMs"`
+	Provider        OCRProvider      `json:"provider"`
+	Warnings        []string         `json:"warnings,omitempty"`
+	CreatedAt       time.Time        `json:"createdAt"`
 }
 
 type DocumentData struct {
-	FirstName       string `json:"firstName,omitempty"`
-	LastName        string `json:"lastName,omitempty"`
-	FullName        string `json:"fullName,omitempty"`
-	DateOfBirth     string `json:"dateOfBirth,omitempty"`
-	Gender          string `json:"gender,omitempty"`
-	Nationality     string `json:"nationality,omitempty"`
-	DocumentNumber  string `json:"documentNumber,omitempty"`
-	ExpiryDate      string `json:"expiryDate,omitempty"`
-	IssueDate       string `json:"issueDate,omitempty"`
-	IssuingCountry  string `json:"issuingCountry,omitempty"`
+	FirstName        string `json:"firstName,omitempty"`
+	LastName         string `json:"lastName,omitempty"`
+	FullName         string `json:"fullName,omitempty"`
+	DateOfBirth      string `json:"dateOfBirth,omitempty"`
+	Gender           string `json:"gender,omitempty"`
+	Nationality      string `json:"nationality,omitempty"`
+	DocumentNumber   string `json:"documentNumber,omitempty"`
+	ExpiryDate       string `json:"expiryDate,omitempty"`
+	IssueDate        string `json:"issueDate,omitempty"`
+	IssuingCountry   string `json:"issuingCountry,omitempty"`
 	IssuingAuthority string `json:"issuingAuthority,omitempty"`
-	Address         string `json:"address,omitempty"`
-	MRZLine1        string `json:"mrzLine1,omitempty"`
-	MRZLine2        string `json:"mrzLine2,omitempty"`
-	BVN             string `json:"bvn,omitempty"`
-	NIN             string `json:"nin,omitempty"`
-	PhoneNumber     string `json:"phoneNumber,omitempty"`
+	Address          string `json:"address,omitempty"`
+	MRZLine1         string `json:"mrzLine1,omitempty"`
+	MRZLine2         string `json:"mrzLine2,omitempty"`
+	BVN              string `json:"bvn,omitempty"`
+	NIN              string `json:"nin,omitempty"`
+	PhoneNumber      string `json:"phoneNumber,omitempty"`
 }
 
 type DeepSeekOCRResponse struct {
@@ -87,14 +87,14 @@ type DeepSeekOCRResponse struct {
 }
 
 type OCRConfig struct {
-	Provider        OCRProvider `json:"provider"`
-	APIKey          string      `json:"-"`
-	APIURL          string      `json:"apiUrl"`
-	Timeout         int         `json:"timeout"`
-	MaxRetries      int         `json:"maxRetries"`
-	Language        string      `json:"language"`
-	EnableMRZ       bool        `json:"enableMrz"`
-	EnableBarcode   bool        `json:"enableBarcode"`
+	Provider      OCRProvider `json:"provider"`
+	APIKey        string      `json:"-"`
+	APIURL        string      `json:"apiUrl"`
+	Timeout       int         `json:"timeout"`
+	MaxRetries    int         `json:"maxRetries"`
+	Language      string      `json:"language"`
+	EnableMRZ     bool        `json:"enableMrz"`
+	EnableBarcode bool        `json:"enableBarcode"`
 }
 
 type OCRService struct {
@@ -582,10 +582,10 @@ func (s *OCRService) CompareWithKYCData(ocrResult *DocumentOCRResult, kycRequest
 	if data.FirstName != "" {
 		match := s.fuzzyMatch(data.FirstName, kycRequest.FirstName)
 		result.FieldMatches["firstName"] = FieldMatchResult{
-			OCRValue:    data.FirstName,
-			KYCValue:    kycRequest.FirstName,
-			MatchScore:  match,
-			IsMatch:     match >= 0.8,
+			OCRValue:   data.FirstName,
+			KYCValue:   kycRequest.FirstName,
+			MatchScore: match,
+			IsMatch:    match >= 0.8,
 		}
 		if match < 0.8 {
 			result.OverallMatch = false
@@ -595,10 +595,10 @@ func (s *OCRService) CompareWithKYCData(ocrResult *DocumentOCRResult, kycRequest
 	if data.LastName != "" {
 		match := s.fuzzyMatch(data.LastName, kycRequest.LastName)
 		result.FieldMatches["lastName"] = FieldMatchResult{
-			OCRValue:    data.LastName,
-			KYCValue:    kycRequest.LastName,
-			MatchScore:  match,
-			IsMatch:     match >= 0.8,
+			OCRValue:   data.LastName,
+			KYCValue:   kycRequest.LastName,
+			MatchScore: match,
+			IsMatch:    match >= 0.8,
 		}
 		if match < 0.8 {
 			result.OverallMatch = false
@@ -611,10 +611,10 @@ func (s *OCRService) CompareWithKYCData(ocrResult *DocumentOCRResult, kycRequest
 			match = 1.0
 		}
 		result.FieldMatches["dateOfBirth"] = FieldMatchResult{
-			OCRValue:    data.DateOfBirth,
-			KYCValue:    kycRequest.DateOfBirth,
-			MatchScore:  match,
-			IsMatch:     match == 1.0,
+			OCRValue:   data.DateOfBirth,
+			KYCValue:   kycRequest.DateOfBirth,
+			MatchScore: match,
+			IsMatch:    match == 1.0,
 		}
 		if match < 1.0 {
 			result.OverallMatch = false
@@ -627,10 +627,10 @@ func (s *OCRService) CompareWithKYCData(ocrResult *DocumentOCRResult, kycRequest
 			match = 1.0
 		}
 		result.FieldMatches["documentNumber"] = FieldMatchResult{
-			OCRValue:    data.DocumentNumber,
-			KYCValue:    kycRequest.IDNumber,
-			MatchScore:  match,
-			IsMatch:     match == 1.0,
+			OCRValue:   data.DocumentNumber,
+			KYCValue:   kycRequest.IDNumber,
+			MatchScore: match,
+			IsMatch:    match == 1.0,
 		}
 		if match < 1.0 {
 			result.OverallMatch = false
@@ -641,7 +641,7 @@ func (s *OCRService) CompareWithKYCData(ocrResult *DocumentOCRResult, kycRequest
 }
 
 type DocumentMatchResult struct {
-	OverallMatch bool                       `json:"overallMatch"`
+	OverallMatch bool                        `json:"overallMatch"`
 	FieldMatches map[string]FieldMatchResult `json:"fieldMatches"`
 }
 

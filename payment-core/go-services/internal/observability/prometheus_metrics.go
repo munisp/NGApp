@@ -24,23 +24,23 @@ type PaymentMetrics struct {
 	CurrentTPS *prometheus.GaugeVec
 
 	// Participant metrics
-	ParticipantHealth     *prometheus.GaugeVec
-	ParticipantLatency    *prometheus.HistogramVec
-	ParticipantTPS        *prometheus.GaugeVec
+	ParticipantHealth      *prometheus.GaugeVec
+	ParticipantLatency     *prometheus.HistogramVec
+	ParticipantTPS         *prometheus.GaugeVec
 	ParticipantSuccessRate *prometheus.GaugeVec
 
 	// Settlement metrics
-	SettlementPending     prometheus.Gauge
-	SettlementCompleted   *prometheus.CounterVec
-	SettlementAmount      *prometheus.HistogramVec
-	SettlementDuration    *prometheus.HistogramVec
+	SettlementPending   prometheus.Gauge
+	SettlementCompleted *prometheus.CounterVec
+	SettlementAmount    *prometheus.HistogramVec
+	SettlementDuration  *prometheus.HistogramVec
 
 	// Fraud metrics
-	FraudAlertsOpen       prometheus.Gauge
-	FraudAlertsCritical   prometheus.Gauge
-	FraudAlertsResolved   *prometheus.CounterVec
+	FraudAlertsOpen        prometheus.Gauge
+	FraudAlertsCritical    prometheus.Gauge
+	FraudAlertsResolved    *prometheus.CounterVec
 	FraudScoreDistribution *prometheus.HistogramVec
-	FraudBlockRate        prometheus.Gauge
+	FraudBlockRate         prometheus.Gauge
 
 	// System metrics
 	KafkaLag              *prometheus.GaugeVec
@@ -49,7 +49,7 @@ type PaymentMetrics struct {
 	APILatency            *prometheus.HistogramVec
 
 	// Kill switch metrics
-	KillSwitchActive      *prometheus.GaugeVec
+	KillSwitchActive *prometheus.GaugeVec
 }
 
 var (

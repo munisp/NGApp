@@ -17,43 +17,43 @@ import (
 
 // LatencyBudgetManager manages latency budgets for different operations
 type LatencyBudgetManager struct {
-	budgets     map[string]*LatencyBudget
-	metrics     map[string]*LatencyMetrics
-	mu          sync.RWMutex
-	alerter     LatencyAlerter
+	budgets map[string]*LatencyBudget
+	metrics map[string]*LatencyMetrics
+	mu      sync.RWMutex
+	alerter LatencyAlerter
 }
 
 // LatencyBudget defines latency budget for an operation
 type LatencyBudget struct {
-	OperationID   string        `json:"operation_id"`
-	Name          string        `json:"name"`
-	MaxLatency    time.Duration `json:"max_latency"`
-	WarningAt     time.Duration `json:"warning_at"`
-	Timeout       time.Duration `json:"timeout"`
-	FallbackMode  string        `json:"fallback_mode"` // CACHE, DEFAULT, SKIP, ERROR
-	Priority      string        `json:"priority"`      // CRITICAL, HIGH, MEDIUM, LOW
-	Enabled       bool          `json:"enabled"`
+	OperationID  string        `json:"operation_id"`
+	Name         string        `json:"name"`
+	MaxLatency   time.Duration `json:"max_latency"`
+	WarningAt    time.Duration `json:"warning_at"`
+	Timeout      time.Duration `json:"timeout"`
+	FallbackMode string        `json:"fallback_mode"` // CACHE, DEFAULT, SKIP, ERROR
+	Priority     string        `json:"priority"`      // CRITICAL, HIGH, MEDIUM, LOW
+	Enabled      bool          `json:"enabled"`
 }
 
 // LatencyMetrics tracks latency metrics for an operation
 type LatencyMetrics struct {
-	OperationID     string        `json:"operation_id"`
-	TotalRequests   int64         `json:"total_requests"`
-	SuccessCount    int64         `json:"success_count"`
-	TimeoutCount    int64         `json:"timeout_count"`
-	FallbackCount   int64         `json:"fallback_count"`
-	TotalLatency    int64         `json:"total_latency_ns"`
-	MinLatency      int64         `json:"min_latency_ns"`
-	MaxLatency      int64         `json:"max_latency_ns"`
-	P50Latency      int64         `json:"p50_latency_ns"`
-	P95Latency      int64         `json:"p95_latency_ns"`
-	P99Latency      int64         `json:"p99_latency_ns"`
-	BudgetBreaches  int64         `json:"budget_breaches"`
-	LastUpdated     time.Time     `json:"last_updated"`
-	
+	OperationID    string    `json:"operation_id"`
+	TotalRequests  int64     `json:"total_requests"`
+	SuccessCount   int64     `json:"success_count"`
+	TimeoutCount   int64     `json:"timeout_count"`
+	FallbackCount  int64     `json:"fallback_count"`
+	TotalLatency   int64     `json:"total_latency_ns"`
+	MinLatency     int64     `json:"min_latency_ns"`
+	MaxLatency     int64     `json:"max_latency_ns"`
+	P50Latency     int64     `json:"p50_latency_ns"`
+	P95Latency     int64     `json:"p95_latency_ns"`
+	P99Latency     int64     `json:"p99_latency_ns"`
+	BudgetBreaches int64     `json:"budget_breaches"`
+	LastUpdated    time.Time `json:"last_updated"`
+
 	// Histogram for percentile calculation
-	histogram       []int64
-	histogramMu     sync.Mutex
+	histogram   []int64
+	histogramMu sync.Mutex
 }
 
 // LatencyAlerter interface for latency alerts
@@ -95,7 +95,7 @@ func (m *LatencyBudgetManager) initializeDefaultBudgets() {
 		Priority:     "CRITICAL",
 		Enabled:      true,
 	}
-	
+
 	// Full fraud scoring
 	m.budgets["fraud_full_scoring"] = &LatencyBudget{
 		OperationID:  "fraud_full_scoring",
@@ -107,7 +107,7 @@ func (m *LatencyBudgetManager) initializeDefaultBudgets() {
 		Priority:     "HIGH",
 		Enabled:      true,
 	}
-	
+
 	// AML screening
 	m.budgets["aml_screening"] = &LatencyBudget{
 		OperationID:  "aml_screening",
@@ -119,7 +119,7 @@ func (m *LatencyBudgetManager) initializeDefaultBudgets() {
 		Priority:     "HIGH",
 		Enabled:      true,
 	}
-	
+
 	// KYC verification
 	m.budgets["kyc_verification"] = &LatencyBudget{
 		OperationID:  "kyc_verification",
@@ -131,7 +131,7 @@ func (m *LatencyBudgetManager) initializeDefaultBudgets() {
 		Priority:     "MEDIUM",
 		Enabled:      true,
 	}
-	
+
 	// Async enrichment - best effort
 	m.budgets["async_enrichment"] = &LatencyBudget{
 		OperationID:  "async_enrichment",
@@ -143,7 +143,7 @@ func (m *LatencyBudgetManager) initializeDefaultBudgets() {
 		Priority:     "LOW",
 		Enabled:      true,
 	}
-	
+
 	// Initialize metrics for each budget
 	for id := range m.budgets {
 		m.metrics[id] = &LatencyMetrics{
@@ -160,24 +160,24 @@ func (m *LatencyBudgetManager) ExecuteWithBudget(ctx context.Context, operationI
 	budget, ok := m.budgets[operationID]
 	metrics := m.metrics[operationID]
 	m.mu.RUnlock()
-	
+
 	if !ok || !budget.Enabled {
 		// No budget defined, execute without control
 		result, err := operation(ctx)
 		return result, &ExecutionResult{Success: err == nil, Error: err}
 	}
-	
+
 	// Create timeout context
 	timeoutCtx, cancel := context.WithTimeout(ctx, budget.Timeout)
 	defer cancel()
-	
+
 	// Execute with timing
 	start := time.Now()
 	resultChan := make(chan struct {
 		result interface{}
 		err    error
 	}, 1)
-	
+
 	go func() {
 		result, err := operation(timeoutCtx)
 		resultChan <- struct {
@@ -185,13 +185,13 @@ func (m *LatencyBudgetManager) ExecuteWithBudget(ctx context.Context, operationI
 			err    error
 		}{result, err}
 	}()
-	
+
 	// Wait for result or timeout
 	select {
 	case res := <-resultChan:
 		latency := time.Since(start)
 		m.recordLatency(operationID, latency, false, false)
-		
+
 		execResult := &ExecutionResult{
 			Success:      res.err == nil,
 			Latency:      latency,
@@ -199,7 +199,7 @@ func (m *LatencyBudgetManager) ExecuteWithBudget(ctx context.Context, operationI
 			TimedOut:     false,
 			Error:        res.err,
 		}
-		
+
 		// Check budget breach
 		if latency > budget.MaxLatency {
 			atomic.AddInt64(&metrics.BudgetBreaches, 1)
@@ -207,18 +207,18 @@ func (m *LatencyBudgetManager) ExecuteWithBudget(ctx context.Context, operationI
 				m.alerter.AlertBudgetBreach(ctx, operationID, latency, budget.MaxLatency)
 			}
 		}
-		
+
 		return res.result, execResult
-		
+
 	case <-timeoutCtx.Done():
 		latency := time.Since(start)
 		m.recordLatency(operationID, latency, true, false)
-		
+
 		// Execute fallback based on mode
 		var fallbackResult interface{}
 		var fallbackErr error
 		usedFallback := false
-		
+
 		switch budget.FallbackMode {
 		case "CACHE":
 			if fallback != nil {
@@ -234,11 +234,11 @@ func (m *LatencyBudgetManager) ExecuteWithBudget(ctx context.Context, operationI
 		case "ERROR":
 			fallbackErr = fmt.Errorf("operation %s timed out after %v", operationID, budget.Timeout)
 		}
-		
+
 		if usedFallback {
 			m.recordLatency(operationID, latency, true, true)
 		}
-		
+
 		return fallbackResult, &ExecutionResult{
 			Success:      fallbackErr == nil,
 			Latency:      latency,
@@ -254,26 +254,26 @@ func (m *LatencyBudgetManager) recordLatency(operationID string, latency time.Du
 	m.mu.Lock()
 	metrics, ok := m.metrics[operationID]
 	m.mu.Unlock()
-	
+
 	if !ok {
 		return
 	}
-	
+
 	latencyNs := latency.Nanoseconds()
-	
+
 	atomic.AddInt64(&metrics.TotalRequests, 1)
 	atomic.AddInt64(&metrics.TotalLatency, latencyNs)
-	
+
 	if timedOut {
 		atomic.AddInt64(&metrics.TimeoutCount, 1)
 	} else {
 		atomic.AddInt64(&metrics.SuccessCount, 1)
 	}
-	
+
 	if usedFallback {
 		atomic.AddInt64(&metrics.FallbackCount, 1)
 	}
-	
+
 	// Update min/max
 	for {
 		old := atomic.LoadInt64(&metrics.MinLatency)
@@ -287,7 +287,7 @@ func (m *LatencyBudgetManager) recordLatency(operationID string, latency time.Du
 			break
 		}
 	}
-	
+
 	// Update histogram for percentiles
 	metrics.histogramMu.Lock()
 	bucket := int(latencyNs / 1000000) // 1ms buckets
@@ -296,7 +296,7 @@ func (m *LatencyBudgetManager) recordLatency(operationID string, latency time.Du
 	}
 	metrics.histogram[bucket]++
 	metrics.histogramMu.Unlock()
-	
+
 	metrics.LastUpdated = time.Now()
 }
 
@@ -304,25 +304,25 @@ func (m *LatencyBudgetManager) recordLatency(operationID string, latency time.Du
 func (m *LatencyBudgetManager) GetMetrics(operationID string) *LatencyMetrics {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
-	
+
 	metrics, ok := m.metrics[operationID]
 	if !ok {
 		return nil
 	}
-	
+
 	// Calculate percentiles
 	metrics.histogramMu.Lock()
 	defer metrics.histogramMu.Unlock()
-	
+
 	total := atomic.LoadInt64(&metrics.TotalRequests)
 	if total == 0 {
 		return metrics
 	}
-	
+
 	p50Target := total / 2
 	p95Target := total * 95 / 100
 	p99Target := total * 99 / 100
-	
+
 	var cumulative int64
 	for i, count := range metrics.histogram {
 		cumulative += count
@@ -336,7 +336,7 @@ func (m *LatencyBudgetManager) GetMetrics(operationID string) *LatencyMetrics {
 			metrics.P99Latency = int64(i) * 1000000
 		}
 	}
-	
+
 	return metrics
 }
 
@@ -346,12 +346,12 @@ func (m *LatencyBudgetManager) GetMetrics(operationID string) *LatencyMetrics {
 
 // IncrementalDriftMonitor provides incremental drift computation
 type IncrementalDriftMonitor struct {
-	features       map[string]*RollingHistogram
-	predictions    *RollingHistogram
-	labels         *RollingHistogram
-	windowSize     int
-	psiThreshold   float64
-	mu             sync.RWMutex
+	features     map[string]*RollingHistogram
+	predictions  *RollingHistogram
+	labels       *RollingHistogram
+	windowSize   int
+	psiThreshold float64
+	mu           sync.RWMutex
 }
 
 // RollingHistogram maintains a rolling histogram for incremental computation
@@ -366,7 +366,7 @@ type RollingHistogram struct {
 	Max         float64   `json:"max"`
 	WindowSize  int       `json:"window_size"`
 	WindowStart time.Time `json:"window_start"`
-	
+
 	// Rolling window data
 	recentValues []float64
 	recentIdx    int
@@ -391,16 +391,16 @@ func NewIncrementalDriftMonitor(features []string, windowSize int) *IncrementalD
 		windowSize:   windowSize,
 		psiThreshold: 0.1,
 	}
-	
+
 	// Initialize feature histograms
 	for _, feature := range features {
 		monitor.features[feature] = NewRollingHistogram(feature, 10, windowSize)
 	}
-	
+
 	// Initialize prediction and label histograms
 	monitor.predictions = NewRollingHistogram("predictions", 10, windowSize)
 	monitor.labels = NewRollingHistogram("labels", 2, windowSize)
-	
+
 	return monitor
 }
 
@@ -422,17 +422,17 @@ func NewRollingHistogram(name string, numBuckets, windowSize int) *RollingHistog
 func (m *IncrementalDriftMonitor) RecordPrediction(features map[string]float64, prediction float64, label *float64) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	
+
 	// Record feature values
 	for name, value := range features {
 		if hist, ok := m.features[name]; ok {
 			hist.Add(value)
 		}
 	}
-	
+
 	// Record prediction
 	m.predictions.Add(prediction)
-	
+
 	// Record label if available
 	if label != nil {
 		m.labels.Add(*label)
@@ -443,23 +443,23 @@ func (m *IncrementalDriftMonitor) RecordPrediction(features map[string]float64, 
 func (h *RollingHistogram) Add(value float64) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
-	
+
 	// Update statistics
 	h.Total++
 	h.Sum += value
 	h.SumSquares += value * value
-	
+
 	if value < h.Min {
 		h.Min = value
 	}
 	if value > h.Max {
 		h.Max = value
 	}
-	
+
 	// Add to rolling window
 	h.recentValues[h.recentIdx] = value
 	h.recentIdx = (h.recentIdx + 1) % h.WindowSize
-	
+
 	// Update histogram bucket
 	bucket := h.getBucket(value)
 	if bucket >= 0 && bucket < len(h.Counts) {
@@ -472,17 +472,17 @@ func (h *RollingHistogram) getBucket(value float64) int {
 	if h.Max == h.Min {
 		return 0
 	}
-	
+
 	normalized := (value - h.Min) / (h.Max - h.Min)
 	bucket := int(normalized * float64(len(h.Counts)-1))
-	
+
 	if bucket < 0 {
 		bucket = 0
 	}
 	if bucket >= len(h.Counts) {
 		bucket = len(h.Counts) - 1
 	}
-	
+
 	return bucket
 }
 
@@ -490,12 +490,12 @@ func (h *RollingHistogram) getBucket(value float64) int {
 func (m *IncrementalDriftMonitor) ComputeDrift(baseline *IncrementalDriftMonitor) *DriftResult {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
-	
+
 	result := &DriftResult{
 		FeatureDrift: make(map[string]float64),
 		ComputedAt:   time.Now(),
 	}
-	
+
 	// Compute feature drift
 	var totalPSI float64
 	for name, hist := range m.features {
@@ -505,20 +505,20 @@ func (m *IncrementalDriftMonitor) ComputeDrift(baseline *IncrementalDriftMonitor
 			totalPSI += psi
 		}
 	}
-	
+
 	if len(m.features) > 0 {
 		result.OverallPSI = totalPSI / float64(len(m.features))
 	}
-	
+
 	// Compute prediction drift
 	result.PredictionDrift = computePSI(m.predictions, baseline.predictions)
-	
+
 	// Compute label drift
 	result.LabelDrift = computePSI(m.labels, baseline.labels)
-	
+
 	// Determine severity
 	result.DriftDetected = result.OverallPSI > m.psiThreshold
-	
+
 	if result.OverallPSI > 0.25 {
 		result.Severity = "CRITICAL"
 	} else if result.OverallPSI > 0.1 {
@@ -528,7 +528,7 @@ func (m *IncrementalDriftMonitor) ComputeDrift(baseline *IncrementalDriftMonitor
 	} else {
 		result.Severity = "LOW"
 	}
-	
+
 	return result
 }
 
@@ -538,22 +538,22 @@ func computePSI(actual, expected *RollingHistogram) float64 {
 	expected.mu.Lock()
 	defer actual.mu.Unlock()
 	defer expected.mu.Unlock()
-	
+
 	if actual.Total == 0 || expected.Total == 0 {
 		return 0
 	}
-	
+
 	var psi float64
 	for i := 0; i < len(actual.Counts) && i < len(expected.Counts); i++ {
 		// Add smoothing to avoid division by zero
 		actualPct := (float64(actual.Counts[i]) + 0.5) / (float64(actual.Total) + 0.5*float64(len(actual.Counts)))
 		expectedPct := (float64(expected.Counts[i]) + 0.5) / (float64(expected.Total) + 0.5*float64(len(expected.Counts)))
-		
+
 		if expectedPct > 0 {
 			psi += (actualPct - expectedPct) * math.Log(actualPct/expectedPct)
 		}
 	}
-	
+
 	return math.Abs(psi)
 }
 
@@ -563,31 +563,31 @@ func computePSI(actual, expected *RollingHistogram) float64 {
 
 // BackpressureController provides backpressure control
 type BackpressureController struct {
-	limiters    map[string]*AdaptiveLimiter
-	queues      map[string]*BoundedQueue
-	mu          sync.RWMutex
+	limiters map[string]*AdaptiveLimiter
+	queues   map[string]*BoundedQueue
+	mu       sync.RWMutex
 }
 
 // AdaptiveLimiter provides adaptive rate limiting
 type AdaptiveLimiter struct {
-	Name            string  `json:"name"`
-	CurrentLimit    int64   `json:"current_limit"`
-	MinLimit        int64   `json:"min_limit"`
-	MaxLimit        int64   `json:"max_limit"`
-	CurrentRate     int64   `json:"current_rate"`
-	TargetLatency   int64   `json:"target_latency_ms"`
-	CurrentLatency  int64   `json:"current_latency_ms"`
-	ErrorRate       float64 `json:"error_rate"`
-	MaxErrorRate    float64 `json:"max_error_rate"`
-	
+	Name           string  `json:"name"`
+	CurrentLimit   int64   `json:"current_limit"`
+	MinLimit       int64   `json:"min_limit"`
+	MaxLimit       int64   `json:"max_limit"`
+	CurrentRate    int64   `json:"current_rate"`
+	TargetLatency  int64   `json:"target_latency_ms"`
+	CurrentLatency int64   `json:"current_latency_ms"`
+	ErrorRate      float64 `json:"error_rate"`
+	MaxErrorRate   float64 `json:"max_error_rate"`
+
 	// AIMD parameters
-	AdditiveIncrease int64   `json:"additive_increase"`
+	AdditiveIncrease       int64   `json:"additive_increase"`
 	MultiplicativeDecrease float64 `json:"multiplicative_decrease"`
-	
+
 	// State
-	tokens          int64
-	lastRefill      time.Time
-	mu              sync.Mutex
+	tokens     int64
+	lastRefill time.Time
+	mu         sync.Mutex
 }
 
 // BoundedQueue provides a bounded queue with backpressure
@@ -597,9 +597,9 @@ type BoundedQueue struct {
 	CurrentSize int64  `json:"current_size"`
 	Dropped     int64  `json:"dropped"`
 	Processed   int64  `json:"processed"`
-	
-	items       chan interface{}
-	mu          sync.RWMutex
+
+	items chan interface{}
+	mu    sync.RWMutex
 }
 
 // NewBackpressureController creates a new backpressure controller
@@ -626,7 +626,7 @@ func (c *BackpressureController) initializeDefaults() {
 		MultiplicativeDecrease: 0.5,
 		lastRefill:             time.Now(),
 	}
-	
+
 	// AML screening limiter
 	c.limiters["aml_screening"] = &AdaptiveLimiter{
 		Name:                   "aml_screening",
@@ -639,14 +639,14 @@ func (c *BackpressureController) initializeDefaults() {
 		MultiplicativeDecrease: 0.5,
 		lastRefill:             time.Now(),
 	}
-	
+
 	// Feedback queue
 	c.queues["feedback"] = &BoundedQueue{
 		Name:    "feedback",
 		MaxSize: 10000,
 		items:   make(chan interface{}, 10000),
 	}
-	
+
 	// Enrichment queue
 	c.queues["enrichment"] = &BoundedQueue{
 		Name:    "enrichment",
@@ -660,11 +660,11 @@ func (c *BackpressureController) TryAcquire(limiterName string) bool {
 	c.mu.RLock()
 	limiter, ok := c.limiters[limiterName]
 	c.mu.RUnlock()
-	
+
 	if !ok {
 		return true // No limiter, allow
 	}
-	
+
 	return limiter.TryAcquire()
 }
 
@@ -672,25 +672,25 @@ func (c *BackpressureController) TryAcquire(limiterName string) bool {
 func (l *AdaptiveLimiter) TryAcquire() bool {
 	l.mu.Lock()
 	defer l.mu.Unlock()
-	
+
 	// Refill tokens based on time elapsed
 	now := time.Now()
 	elapsed := now.Sub(l.lastRefill)
 	tokensToAdd := int64(elapsed.Seconds() * float64(l.CurrentLimit))
-	
+
 	l.tokens += tokensToAdd
 	if l.tokens > l.CurrentLimit {
 		l.tokens = l.CurrentLimit
 	}
 	l.lastRefill = now
-	
+
 	// Try to acquire
 	if l.tokens > 0 {
 		l.tokens--
 		atomic.AddInt64(&l.CurrentRate, 1)
 		return true
 	}
-	
+
 	return false
 }
 
@@ -698,15 +698,15 @@ func (l *AdaptiveLimiter) TryAcquire() bool {
 func (l *AdaptiveLimiter) UpdateMetrics(latencyMs int64, isError bool) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
-	
+
 	l.CurrentLatency = latencyMs
-	
+
 	if isError {
 		l.ErrorRate = l.ErrorRate*0.9 + 0.1 // Exponential moving average
 	} else {
 		l.ErrorRate = l.ErrorRate * 0.9
 	}
-	
+
 	// AIMD adjustment
 	if l.CurrentLatency > l.TargetLatency || l.ErrorRate > l.MaxErrorRate {
 		// Multiplicative decrease
@@ -728,11 +728,11 @@ func (c *BackpressureController) Enqueue(queueName string, item interface{}) boo
 	c.mu.RLock()
 	queue, ok := c.queues[queueName]
 	c.mu.RUnlock()
-	
+
 	if !ok {
 		return false
 	}
-	
+
 	return queue.Enqueue(item)
 }
 
@@ -765,11 +765,11 @@ func (c *BackpressureController) GetQueueStats(queueName string) map[string]int6
 	c.mu.RLock()
 	queue, ok := c.queues[queueName]
 	c.mu.RUnlock()
-	
+
 	if !ok {
 		return nil
 	}
-	
+
 	return map[string]int64{
 		"current_size": atomic.LoadInt64(&queue.CurrentSize),
 		"max_size":     int64(queue.MaxSize),
@@ -783,14 +783,14 @@ func (c *BackpressureController) GetLimiterStats(limiterName string) map[string]
 	c.mu.RLock()
 	limiter, ok := c.limiters[limiterName]
 	c.mu.RUnlock()
-	
+
 	if !ok {
 		return nil
 	}
-	
+
 	limiter.mu.Lock()
 	defer limiter.mu.Unlock()
-	
+
 	return map[string]interface{}{
 		"current_limit":   limiter.CurrentLimit,
 		"current_rate":    atomic.LoadInt64(&limiter.CurrentRate),

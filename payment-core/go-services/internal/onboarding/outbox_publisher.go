@@ -48,10 +48,10 @@ type OutboxStore interface {
 
 // OutboxPublisherConfig holds configuration for the outbox publisher
 type OutboxPublisherConfig struct {
-	KafkaBrokers  string
-	Topic         string
-	PollInterval  time.Duration
-	BatchSize     int
+	KafkaBrokers string
+	Topic        string
+	PollInterval time.Duration
+	BatchSize    int
 }
 
 // DefaultOutboxPublisherConfig returns default configuration
@@ -155,7 +155,7 @@ func (p *OutboxPublisher) publishBatch() {
 // publishEvent publishes a single event to Kafka
 func (p *OutboxPublisher) publishEvent(event OutboxEvent) error {
 	ctx := context.Background()
-	
+
 	// Create Kafka message
 	msg := kafka.Message{
 		Key:   []byte(event.AggregateID),
@@ -195,32 +195,32 @@ type OnboardingEvent struct {
 
 // EventMetadata contains metadata about the event
 type EventMetadata struct {
-	UserID      string `json:"user_id"`
-	Username    string `json:"username"`
-	IPAddress   string `json:"ip_address"`
-	UserAgent   string `json:"user_agent"`
+	UserID        string `json:"user_id"`
+	Username      string `json:"username"`
+	IPAddress     string `json:"ip_address"`
+	UserAgent     string `json:"user_agent"`
 	CorrelationID string `json:"correlation_id"`
 }
 
 // Event types
 const (
-	EventCaseCreated              = "onboarding.case.created"
-	EventCaseSubmitted            = "onboarding.case.submitted"
-	EventCaseStatusChanged        = "onboarding.case.status_changed"
-	EventRequirementApproved      = "onboarding.requirement.approved"
-	EventRequirementRejected      = "onboarding.requirement.rejected"
-	EventDocumentUploaded         = "onboarding.document.uploaded"
-	EventDocumentVerified         = "onboarding.document.verified"
-	EventReviewerAssigned         = "onboarding.reviewer.assigned"
-	EventSLABreached              = "onboarding.sla.breached"
-	EventProvisioningStarted      = "onboarding.provisioning.started"
-	EventProvisioningCompleted    = "onboarding.provisioning.completed"
-	EventProvisioningFailed       = "onboarding.provisioning.failed"
-	EventProvisioningRolledBack   = "onboarding.provisioning.rolled_back"
-	EventParticipantActivated     = "onboarding.participant.activated"
-	EventParticipantSuspended     = "onboarding.participant.suspended"
-	EventReworkRequested          = "onboarding.rework.requested"
-	EventApplicationRejected      = "onboarding.application.rejected"
+	EventCaseCreated            = "onboarding.case.created"
+	EventCaseSubmitted          = "onboarding.case.submitted"
+	EventCaseStatusChanged      = "onboarding.case.status_changed"
+	EventRequirementApproved    = "onboarding.requirement.approved"
+	EventRequirementRejected    = "onboarding.requirement.rejected"
+	EventDocumentUploaded       = "onboarding.document.uploaded"
+	EventDocumentVerified       = "onboarding.document.verified"
+	EventReviewerAssigned       = "onboarding.reviewer.assigned"
+	EventSLABreached            = "onboarding.sla.breached"
+	EventProvisioningStarted    = "onboarding.provisioning.started"
+	EventProvisioningCompleted  = "onboarding.provisioning.completed"
+	EventProvisioningFailed     = "onboarding.provisioning.failed"
+	EventProvisioningRolledBack = "onboarding.provisioning.rolled_back"
+	EventParticipantActivated   = "onboarding.participant.activated"
+	EventParticipantSuspended   = "onboarding.participant.suspended"
+	EventReworkRequested        = "onboarding.rework.requested"
+	EventApplicationRejected    = "onboarding.application.rejected"
 )
 
 // TransactionalEventEmitter emits events within a database transaction
@@ -309,10 +309,10 @@ func (e *TransactionalEventEmitter) EmitProvisioningCompleted(ctx context.Contex
 		Timestamp:     time.Now(),
 		Version:       1,
 		Data: map[string]interface{}{
-			"case_id":               caseID,
-			"environment":           environment,
-			"keycloak_client_id":    result.KeycloakClientID,
-			"apisix_route_id":       result.APISIXRouteID,
+			"case_id":                caseID,
+			"environment":            environment,
+			"keycloak_client_id":     result.KeycloakClientID,
+			"apisix_route_id":        result.APISIXRouteID,
 			"tigerbeetle_account_id": result.TigerBeetleAccountID,
 		},
 		Metadata: metadata,

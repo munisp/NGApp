@@ -12,22 +12,22 @@ import (
 // PluginManager manages plugins and extensions
 type PluginManager struct {
 	// Registered plugins by type
-	feePlugins      map[string]FeePlugin
-	fxPlugins       map[string]FXPlugin
-	limitPlugins    map[string]LimitPlugin
-	policyPlugins   map[string]PolicyPlugin
+	feePlugins       map[string]FeePlugin
+	fxPlugins        map[string]FXPlugin
+	limitPlugins     map[string]LimitPlugin
+	policyPlugins    map[string]PolicyPlugin
 	validatorPlugins map[string]ValidatorPlugin
-	
+
 	// Plugin registry
 	registry map[string]*PluginInfo
-	
+
 	// Plugin execution order
 	executionOrder map[string][]string
-	
+
 	// Stats
-	totalExecutions uint64
+	totalExecutions  uint64
 	failedExecutions uint64
-	
+
 	mu sync.RWMutex
 }
 
@@ -48,14 +48,14 @@ type PluginInfo struct {
 
 // PluginContext provides context for plugin execution
 type PluginContext struct {
-	TransferID    string
-	PayerFSPID    string
-	PayeeFSPID    string
-	Amount        Amount
-	Currency      string
-	TransferType  string
-	Metadata      map[string]interface{}
-	Timestamp     time.Time
+	TransferID   string
+	PayerFSPID   string
+	PayeeFSPID   string
+	Amount       Amount
+	Currency     string
+	TransferType string
+	Metadata     map[string]interface{}
+	Timestamp    time.Time
 }
 
 // Amount represents a monetary amount
@@ -67,11 +67,11 @@ type Amount struct {
 
 // PluginResult contains the result of plugin execution
 type PluginResult struct {
-	PluginID  string                 `json:"plugin_id"`
-	Success   bool                   `json:"success"`
-	Data      map[string]interface{} `json:"data,omitempty"`
-	Error     string                 `json:"error,omitempty"`
-	Duration  time.Duration          `json:"duration"`
+	PluginID string                 `json:"plugin_id"`
+	Success  bool                   `json:"success"`
+	Data     map[string]interface{} `json:"data,omitempty"`
+	Error    string                 `json:"error,omitempty"`
+	Duration time.Duration          `json:"duration"`
 }
 
 // FeePlugin interface for fee calculation plugins
@@ -82,11 +82,11 @@ type FeePlugin interface {
 
 // FeeResult contains fee calculation result
 type FeeResult struct {
-	FeeAmount     Amount   `json:"fee_amount"`
-	FeeType       string   `json:"fee_type"` // FLAT, PERCENTAGE, TIERED
-	FeeBreakdown  []FeeItem `json:"fee_breakdown"`
-	WaivedAmount  Amount   `json:"waived_amount,omitempty"`
-	WaiverReason  string   `json:"waiver_reason,omitempty"`
+	FeeAmount    Amount    `json:"fee_amount"`
+	FeeType      string    `json:"fee_type"` // FLAT, PERCENTAGE, TIERED
+	FeeBreakdown []FeeItem `json:"fee_breakdown"`
+	WaivedAmount Amount    `json:"waived_amount,omitempty"`
+	WaiverReason string    `json:"waiver_reason,omitempty"`
 }
 
 // FeeItem represents a fee breakdown item
@@ -105,13 +105,13 @@ type FXPlugin interface {
 
 // FXResult contains FX conversion result
 type FXResult struct {
-	SourceAmount   Amount    `json:"source_amount"`
-	TargetAmount   Amount    `json:"target_amount"`
-	ExchangeRate   float64   `json:"exchange_rate"`
-	RateTimestamp  time.Time `json:"rate_timestamp"`
-	RateSource     string    `json:"rate_source"`
-	Spread         float64   `json:"spread"`
-	ValidUntil     time.Time `json:"valid_until"`
+	SourceAmount  Amount    `json:"source_amount"`
+	TargetAmount  Amount    `json:"target_amount"`
+	ExchangeRate  float64   `json:"exchange_rate"`
+	RateTimestamp time.Time `json:"rate_timestamp"`
+	RateSource    string    `json:"rate_source"`
+	Spread        float64   `json:"spread"`
+	ValidUntil    time.Time `json:"valid_until"`
 }
 
 // LimitPlugin interface for limit checking plugins
@@ -123,23 +123,23 @@ type LimitPlugin interface {
 
 // LimitResult contains limit check result
 type LimitResult struct {
-	Allowed       bool     `json:"allowed"`
-	LimitType     string   `json:"limit_type"` // DAILY, WEEKLY, MONTHLY, TRANSACTION
-	CurrentUsage  Amount   `json:"current_usage"`
-	MaxLimit      Amount   `json:"max_limit"`
-	RemainingLimit Amount  `json:"remaining_limit"`
-	ResetAt       time.Time `json:"reset_at"`
-	ViolatedLimits []string `json:"violated_limits,omitempty"`
+	Allowed        bool      `json:"allowed"`
+	LimitType      string    `json:"limit_type"` // DAILY, WEEKLY, MONTHLY, TRANSACTION
+	CurrentUsage   Amount    `json:"current_usage"`
+	MaxLimit       Amount    `json:"max_limit"`
+	RemainingLimit Amount    `json:"remaining_limit"`
+	ResetAt        time.Time `json:"reset_at"`
+	ViolatedLimits []string  `json:"violated_limits,omitempty"`
 }
 
 // Limit represents a limit configuration
 type Limit struct {
-	ID          string    `json:"id"`
-	Type        string    `json:"type"`
-	MaxAmount   Amount    `json:"max_amount"`
-	Period      string    `json:"period"`
-	CurrentUsage Amount   `json:"current_usage"`
-	ResetAt     time.Time `json:"reset_at"`
+	ID           string    `json:"id"`
+	Type         string    `json:"type"`
+	MaxAmount    Amount    `json:"max_amount"`
+	Period       string    `json:"period"`
+	CurrentUsage Amount    `json:"current_usage"`
+	ResetAt      time.Time `json:"reset_at"`
 }
 
 // PolicyPlugin interface for policy enforcement plugins
@@ -150,12 +150,12 @@ type PolicyPlugin interface {
 
 // PolicyResult contains policy evaluation result
 type PolicyResult struct {
-	Allowed       bool     `json:"allowed"`
-	PolicyID      string   `json:"policy_id"`
-	PolicyName    string   `json:"policy_name"`
-	Reason        string   `json:"reason,omitempty"`
-	RequiredActions []string `json:"required_actions,omitempty"`
-	Metadata      map[string]interface{} `json:"metadata,omitempty"`
+	Allowed         bool                   `json:"allowed"`
+	PolicyID        string                 `json:"policy_id"`
+	PolicyName      string                 `json:"policy_name"`
+	Reason          string                 `json:"reason,omitempty"`
+	RequiredActions []string               `json:"required_actions,omitempty"`
+	Metadata        map[string]interface{} `json:"metadata,omitempty"`
 }
 
 // ValidatorPlugin interface for validation plugins
@@ -166,9 +166,9 @@ type ValidatorPlugin interface {
 
 // ValidationResult contains validation result
 type ValidationResult struct {
-	Valid       bool              `json:"valid"`
-	Errors      []ValidationError `json:"errors,omitempty"`
-	Warnings    []string          `json:"warnings,omitempty"`
+	Valid    bool              `json:"valid"`
+	Errors   []ValidationError `json:"errors,omitempty"`
+	Warnings []string          `json:"warnings,omitempty"`
 }
 
 // ValidationError represents a validation error
@@ -189,10 +189,10 @@ func NewPluginManager() *PluginManager {
 		registry:         make(map[string]*PluginInfo),
 		executionOrder:   make(map[string][]string),
 	}
-	
+
 	// Register default plugins
 	pm.registerDefaultPlugins()
-	
+
 	return pm
 }
 
@@ -200,13 +200,13 @@ func NewPluginManager() *PluginManager {
 func (pm *PluginManager) registerDefaultPlugins() {
 	// Register default fee plugin
 	pm.RegisterFeePlugin(&DefaultFeePlugin{})
-	
+
 	// Register default FX plugin
 	pm.RegisterFXPlugin(&DefaultFXPlugin{})
-	
+
 	// Register default limit plugin
 	pm.RegisterLimitPlugin(&DefaultLimitPlugin{})
-	
+
 	// Register default policy plugin
 	pm.RegisterPolicyPlugin(&DefaultPolicyPlugin{})
 }
@@ -215,7 +215,7 @@ func (pm *PluginManager) registerDefaultPlugins() {
 func (pm *PluginManager) RegisterFeePlugin(plugin FeePlugin) {
 	pm.mu.Lock()
 	defer pm.mu.Unlock()
-	
+
 	pm.feePlugins[plugin.ID()] = plugin
 	pm.registry[plugin.ID()] = &PluginInfo{
 		ID:        plugin.ID(),
@@ -230,7 +230,7 @@ func (pm *PluginManager) RegisterFeePlugin(plugin FeePlugin) {
 func (pm *PluginManager) RegisterFXPlugin(plugin FXPlugin) {
 	pm.mu.Lock()
 	defer pm.mu.Unlock()
-	
+
 	pm.fxPlugins[plugin.ID()] = plugin
 	pm.registry[plugin.ID()] = &PluginInfo{
 		ID:        plugin.ID(),
@@ -245,7 +245,7 @@ func (pm *PluginManager) RegisterFXPlugin(plugin FXPlugin) {
 func (pm *PluginManager) RegisterLimitPlugin(plugin LimitPlugin) {
 	pm.mu.Lock()
 	defer pm.mu.Unlock()
-	
+
 	pm.limitPlugins[plugin.ID()] = plugin
 	pm.registry[plugin.ID()] = &PluginInfo{
 		ID:        plugin.ID(),
@@ -260,7 +260,7 @@ func (pm *PluginManager) RegisterLimitPlugin(plugin LimitPlugin) {
 func (pm *PluginManager) RegisterPolicyPlugin(plugin PolicyPlugin) {
 	pm.mu.Lock()
 	defer pm.mu.Unlock()
-	
+
 	pm.policyPlugins[plugin.ID()] = plugin
 	pm.registry[plugin.ID()] = &PluginInfo{
 		ID:        plugin.ID(),
@@ -275,7 +275,7 @@ func (pm *PluginManager) RegisterPolicyPlugin(plugin PolicyPlugin) {
 func (pm *PluginManager) RegisterValidatorPlugin(plugin ValidatorPlugin) {
 	pm.mu.Lock()
 	defer pm.mu.Unlock()
-	
+
 	pm.validatorPlugins[plugin.ID()] = plugin
 	pm.registry[plugin.ID()] = &PluginInfo{
 		ID:        plugin.ID(),
@@ -290,27 +290,27 @@ func (pm *PluginManager) RegisterValidatorPlugin(plugin ValidatorPlugin) {
 func (pm *PluginManager) CalculateFees(ctx context.Context, pctx *PluginContext) (*FeeResult, error) {
 	pm.mu.RLock()
 	defer pm.mu.RUnlock()
-	
+
 	totalFee := &FeeResult{
 		FeeAmount:    Amount{Value: 0, Currency: pctx.Currency, Scale: 2},
 		FeeBreakdown: make([]FeeItem, 0),
 	}
-	
+
 	for _, plugin := range pm.feePlugins {
 		info := pm.registry[plugin.ID()]
 		if info == nil || !info.Enabled {
 			continue
 		}
-		
+
 		result, err := plugin.CalculateFee(ctx, pctx)
 		if err != nil {
 			return nil, fmt.Errorf("fee plugin %s failed: %w", plugin.ID(), err)
 		}
-		
+
 		totalFee.FeeAmount.Value += result.FeeAmount.Value
 		totalFee.FeeBreakdown = append(totalFee.FeeBreakdown, result.FeeBreakdown...)
 	}
-	
+
 	return totalFee, nil
 }
 
@@ -318,21 +318,21 @@ func (pm *PluginManager) CalculateFees(ctx context.Context, pctx *PluginContext)
 func (pm *PluginManager) ConvertCurrency(ctx context.Context, amount Amount, targetCurrency string) (*FXResult, error) {
 	pm.mu.RLock()
 	defer pm.mu.RUnlock()
-	
+
 	for _, plugin := range pm.fxPlugins {
 		info := pm.registry[plugin.ID()]
 		if info == nil || !info.Enabled {
 			continue
 		}
-		
+
 		result, err := plugin.ConvertAmount(ctx, amount, targetCurrency)
 		if err != nil {
 			continue // Try next plugin
 		}
-		
+
 		return result, nil
 	}
-	
+
 	return nil, fmt.Errorf("no FX plugin available for conversion")
 }
 
@@ -340,23 +340,23 @@ func (pm *PluginManager) ConvertCurrency(ctx context.Context, amount Amount, tar
 func (pm *PluginManager) CheckLimits(ctx context.Context, pctx *PluginContext) (*LimitResult, error) {
 	pm.mu.RLock()
 	defer pm.mu.RUnlock()
-	
+
 	for _, plugin := range pm.limitPlugins {
 		info := pm.registry[plugin.ID()]
 		if info == nil || !info.Enabled {
 			continue
 		}
-		
+
 		result, err := plugin.CheckLimit(ctx, pctx)
 		if err != nil {
 			return nil, fmt.Errorf("limit plugin %s failed: %w", plugin.ID(), err)
 		}
-		
+
 		if !result.Allowed {
 			return result, nil
 		}
 	}
-	
+
 	return &LimitResult{Allowed: true}, nil
 }
 
@@ -364,23 +364,23 @@ func (pm *PluginManager) CheckLimits(ctx context.Context, pctx *PluginContext) (
 func (pm *PluginManager) EvaluatePolicies(ctx context.Context, pctx *PluginContext) (*PolicyResult, error) {
 	pm.mu.RLock()
 	defer pm.mu.RUnlock()
-	
+
 	for _, plugin := range pm.policyPlugins {
 		info := pm.registry[plugin.ID()]
 		if info == nil || !info.Enabled {
 			continue
 		}
-		
+
 		result, err := plugin.EvaluatePolicy(ctx, pctx)
 		if err != nil {
 			return nil, fmt.Errorf("policy plugin %s failed: %w", plugin.ID(), err)
 		}
-		
+
 		if !result.Allowed {
 			return result, nil
 		}
 	}
-	
+
 	return &PolicyResult{Allowed: true}, nil
 }
 
@@ -388,25 +388,25 @@ func (pm *PluginManager) EvaluatePolicies(ctx context.Context, pctx *PluginConte
 func (pm *PluginManager) Validate(ctx context.Context, pctx *PluginContext) (*ValidationResult, error) {
 	pm.mu.RLock()
 	defer pm.mu.RUnlock()
-	
+
 	allErrors := make([]ValidationError, 0)
 	allWarnings := make([]string, 0)
-	
+
 	for _, plugin := range pm.validatorPlugins {
 		info := pm.registry[plugin.ID()]
 		if info == nil || !info.Enabled {
 			continue
 		}
-		
+
 		result, err := plugin.Validate(ctx, pctx)
 		if err != nil {
 			return nil, fmt.Errorf("validator plugin %s failed: %w", plugin.ID(), err)
 		}
-		
+
 		allErrors = append(allErrors, result.Errors...)
 		allWarnings = append(allWarnings, result.Warnings...)
 	}
-	
+
 	return &ValidationResult{
 		Valid:    len(allErrors) == 0,
 		Errors:   allErrors,
@@ -418,7 +418,7 @@ func (pm *PluginManager) Validate(ctx context.Context, pctx *PluginContext) (*Va
 func (pm *PluginManager) GetPlugins() []*PluginInfo {
 	pm.mu.RLock()
 	defer pm.mu.RUnlock()
-	
+
 	plugins := make([]*PluginInfo, 0, len(pm.registry))
 	for _, info := range pm.registry {
 		plugins = append(plugins, info)
@@ -430,12 +430,12 @@ func (pm *PluginManager) GetPlugins() []*PluginInfo {
 func (pm *PluginManager) EnablePlugin(pluginID string) error {
 	pm.mu.Lock()
 	defer pm.mu.Unlock()
-	
+
 	info, ok := pm.registry[pluginID]
 	if !ok {
 		return fmt.Errorf("plugin not found: %s", pluginID)
 	}
-	
+
 	info.Enabled = true
 	info.UpdatedAt = time.Now()
 	return nil
@@ -445,12 +445,12 @@ func (pm *PluginManager) EnablePlugin(pluginID string) error {
 func (pm *PluginManager) DisablePlugin(pluginID string) error {
 	pm.mu.Lock()
 	defer pm.mu.Unlock()
-	
+
 	info, ok := pm.registry[pluginID]
 	if !ok {
 		return fmt.Errorf("plugin not found: %s", pluginID)
 	}
-	
+
 	info.Enabled = false
 	info.UpdatedAt = time.Now()
 	return nil
@@ -460,12 +460,12 @@ func (pm *PluginManager) DisablePlugin(pluginID string) error {
 func (pm *PluginManager) ConfigurePlugin(pluginID string, config map[string]interface{}) error {
 	pm.mu.Lock()
 	defer pm.mu.Unlock()
-	
+
 	info, ok := pm.registry[pluginID]
 	if !ok {
 		return fmt.Errorf("plugin not found: %s", pluginID)
 	}
-	
+
 	info.Config = config
 	info.UpdatedAt = time.Now()
 	return nil
@@ -484,7 +484,7 @@ func (p *DefaultFeePlugin) CalculateFee(ctx context.Context, pctx *PluginContext
 	if feeValue < 100 {
 		feeValue = 100
 	}
-	
+
 	return &FeeResult{
 		FeeAmount: Amount{Value: feeValue, Currency: pctx.Currency, Scale: 2},
 		FeeType:   "PERCENTAGE",
@@ -524,7 +524,7 @@ func (p *DefaultLimitPlugin) ID() string { return "default-limit" }
 func (p *DefaultLimitPlugin) CheckLimit(ctx context.Context, pctx *PluginContext) (*LimitResult, error) {
 	// Default: Allow all transactions up to 1,000,000 (in minor units)
 	maxLimit := int64(100000000) // 1,000,000.00
-	
+
 	if pctx.Amount.Value > maxLimit {
 		return &LimitResult{
 			Allowed:        false,
@@ -534,7 +534,7 @@ func (p *DefaultLimitPlugin) CheckLimit(ctx context.Context, pctx *PluginContext
 			ViolatedLimits: []string{"MAX_TRANSACTION_AMOUNT"},
 		}, nil
 	}
-	
+
 	return &LimitResult{
 		Allowed:        true,
 		LimitType:      "TRANSACTION",

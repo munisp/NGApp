@@ -24,14 +24,14 @@ import (
 
 // JWSManager handles JWS signing and verification for Mojaloop interoperability
 type JWSManager struct {
-	db            *sql.DB
-	privateKey    crypto.PrivateKey
-	publicKey     crypto.PublicKey
-	keyID         string
-	algorithm     string
-	keyCache      map[string]*CachedPublicKey
-	cacheTTL      time.Duration
-	mu            sync.RWMutex
+	db         *sql.DB
+	privateKey crypto.PrivateKey
+	publicKey  crypto.PublicKey
+	keyID      string
+	algorithm  string
+	keyCache   map[string]*CachedPublicKey
+	cacheTTL   time.Duration
+	mu         sync.RWMutex
 }
 
 // CachedPublicKey holds a cached public key

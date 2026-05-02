@@ -30,18 +30,18 @@ type CaseManagementService struct {
 // SLAConfiguration defines SLA thresholds
 type SLAConfiguration struct {
 	// Time-based SLAs (in minutes)
-	FirstResponseTime    map[string]int `json:"first_response_time"`    // By priority
-	ResolutionTime       map[string]int `json:"resolution_time"`        // By priority
-	EscalationTime       map[string]int `json:"escalation_time"`        // By priority
-	
+	FirstResponseTime map[string]int `json:"first_response_time"` // By priority
+	ResolutionTime    map[string]int `json:"resolution_time"`     // By priority
+	EscalationTime    map[string]int `json:"escalation_time"`     // By priority
+
 	// Queue-based SLAs
-	MaxQueueSize         int            `json:"max_queue_size"`
-	MaxBacklogDays       int            `json:"max_backlog_days"`
-	
+	MaxQueueSize   int `json:"max_queue_size"`
+	MaxBacklogDays int `json:"max_backlog_days"`
+
 	// Quality SLAs
-	QASampleRate         float64        `json:"qa_sample_rate"`         // Percentage to QA
-	MaxFalsePositiveRate float64        `json:"max_false_positive_rate"`
-	MinAccuracyRate      float64        `json:"min_accuracy_rate"`
+	QASampleRate         float64 `json:"qa_sample_rate"` // Percentage to QA
+	MaxFalsePositiveRate float64 `json:"max_false_positive_rate"`
+	MinAccuracyRate      float64 `json:"min_accuracy_rate"`
 }
 
 // Case represents a review case
@@ -112,26 +112,26 @@ type AssignmentManager struct {
 
 // Reviewer represents a case reviewer
 type Reviewer struct {
-	ReviewerID    string   `json:"reviewer_id"`
-	Name          string   `json:"name"`
-	Email         string   `json:"email"`
-	Queues        []string `json:"queues"`
-	Skills        []string `json:"skills"`
-	MaxCaseload   int      `json:"max_caseload"`
-	CurrentLoad   int      `json:"current_load"`
-	Available     bool     `json:"available"`
-	ShiftStart    string   `json:"shift_start"`
-	ShiftEnd      string   `json:"shift_end"`
+	ReviewerID  string   `json:"reviewer_id"`
+	Name        string   `json:"name"`
+	Email       string   `json:"email"`
+	Queues      []string `json:"queues"`
+	Skills      []string `json:"skills"`
+	MaxCaseload int      `json:"max_caseload"`
+	CurrentLoad int      `json:"current_load"`
+	Available   bool     `json:"available"`
+	ShiftStart  string   `json:"shift_start"`
+	ShiftEnd    string   `json:"shift_end"`
 }
 
 // Queue represents a case queue
 type Queue struct {
-	QueueID       string   `json:"queue_id"`
-	Name          string   `json:"name"`
-	CaseTypes     []string `json:"case_types"`
-	Priorities    []string `json:"priorities"`
-	AssignmentMode string  `json:"assignment_mode"` // ROUND_ROBIN, LEAST_LOADED, SKILL_BASED
-	Reviewers     []string `json:"reviewers"`
+	QueueID        string   `json:"queue_id"`
+	Name           string   `json:"name"`
+	CaseTypes      []string `json:"case_types"`
+	Priorities     []string `json:"priorities"`
+	AssignmentMode string   `json:"assignment_mode"` // ROUND_ROBIN, LEAST_LOADED, SKILL_BASED
+	Reviewers      []string `json:"reviewers"`
 }
 
 // EscalationManager manages case escalations
@@ -153,20 +153,20 @@ type EscalationRule struct {
 
 // CaseMetrics tracks case management KPIs
 type CaseMetrics struct {
-	TotalCases          int64   `json:"total_cases"`
-	OpenCases           int64   `json:"open_cases"`
-	ResolvedToday       int64   `json:"resolved_today"`
-	AvgResolutionTime   float64 `json:"avg_resolution_time_mins"`
-	AvgFirstResponseTime float64 `json:"avg_first_response_time_mins"`
-	SLAComplianceRate   float64 `json:"sla_compliance_rate"`
-	EscalationRate      float64 `json:"escalation_rate"`
-	FalsePositiveRate   float64 `json:"false_positive_rate"`
-	QAPassRate          float64 `json:"qa_pass_rate"`
-	BacklogSize         int64   `json:"backlog_size"`
-	ByPriority          map[string]int64 `json:"by_priority"`
-	ByStatus            map[string]int64 `json:"by_status"`
-	ByQueue             map[string]int64 `json:"by_queue"`
-	mu                  sync.RWMutex
+	TotalCases           int64            `json:"total_cases"`
+	OpenCases            int64            `json:"open_cases"`
+	ResolvedToday        int64            `json:"resolved_today"`
+	AvgResolutionTime    float64          `json:"avg_resolution_time_mins"`
+	AvgFirstResponseTime float64          `json:"avg_first_response_time_mins"`
+	SLAComplianceRate    float64          `json:"sla_compliance_rate"`
+	EscalationRate       float64          `json:"escalation_rate"`
+	FalsePositiveRate    float64          `json:"false_positive_rate"`
+	QAPassRate           float64          `json:"qa_pass_rate"`
+	BacklogSize          int64            `json:"backlog_size"`
+	ByPriority           map[string]int64 `json:"by_priority"`
+	ByStatus             map[string]int64 `json:"by_status"`
+	ByQueue              map[string]int64 `json:"by_queue"`
+	mu                   sync.RWMutex
 }
 
 // NewCaseManagementService creates a new case management service
@@ -222,19 +222,19 @@ func NewCaseManagementService(db *sql.DB, notifier CaseNotifier) *CaseManagement
 func (s *CaseManagementService) CreateCase(ctx context.Context, c *Case) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	
+
 	c.CaseID = fmt.Sprintf("CASE_%d", time.Now().UnixNano())
 	c.Status = CaseStatusNew
 	c.CreatedAt = time.Now().UTC()
 	c.UpdatedAt = c.CreatedAt
-	
+
 	// Calculate SLA deadline
 	resolutionMins := s.slaConfig.ResolutionTime[c.Priority]
 	if resolutionMins == 0 {
 		resolutionMins = 1440 // Default 24 hours
 	}
 	c.SLADeadline = c.CreatedAt.Add(time.Duration(resolutionMins) * time.Minute)
-	
+
 	// Add creation event
 	c.AuditTrail = append(c.AuditTrail, CaseEvent{
 		EventID:   fmt.Sprintf("evt_%d", time.Now().UnixNano()),
@@ -243,12 +243,12 @@ func (s *CaseManagementService) CreateCase(ctx context.Context, c *Case) error {
 		Details:   "Case created",
 		Timestamp: c.CreatedAt,
 	})
-	
+
 	// Auto-assign if possible
 	if err := s.autoAssign(ctx, c); err != nil {
 		// Log but don't fail - case can be manually assigned
 	}
-	
+
 	// Update metrics
 	atomic.AddInt64(&s.metrics.TotalCases, 1)
 	atomic.AddInt64(&s.metrics.OpenCases, 1)
@@ -257,7 +257,7 @@ func (s *CaseManagementService) CreateCase(ctx context.Context, c *Case) error {
 	s.metrics.ByStatus[string(c.Status)]++
 	s.metrics.ByQueue[c.Queue]++
 	s.metrics.mu.Unlock()
-	
+
 	return s.persistCase(ctx, c)
 }
 
@@ -265,18 +265,18 @@ func (s *CaseManagementService) CreateCase(ctx context.Context, c *Case) error {
 func (s *CaseManagementService) AssignCase(ctx context.Context, caseID, reviewerID, assignedBy string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	
+
 	c, err := s.loadCase(ctx, caseID)
 	if err != nil {
 		return err
 	}
-	
+
 	now := time.Now().UTC()
 	c.AssignedTo = reviewerID
 	c.AssignedAt = &now
 	c.Status = CaseStatusAssigned
 	c.UpdatedAt = now
-	
+
 	c.AuditTrail = append(c.AuditTrail, CaseEvent{
 		EventID:   fmt.Sprintf("evt_%d", time.Now().UnixNano()),
 		EventType: "ASSIGNED",
@@ -284,12 +284,12 @@ func (s *CaseManagementService) AssignCase(ctx context.Context, caseID, reviewer
 		Details:   fmt.Sprintf("Assigned to %s", reviewerID),
 		Timestamp: now,
 	})
-	
+
 	// Notify reviewer
 	if s.notifier != nil {
 		s.notifier.NotifyCaseAssigned(ctx, c)
 	}
-	
+
 	return s.updateCase(ctx, c)
 }
 
@@ -297,19 +297,19 @@ func (s *CaseManagementService) AssignCase(ctx context.Context, caseID, reviewer
 func (s *CaseManagementService) ResolveCase(ctx context.Context, caseID, resolution, notes, resolvedBy string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	
+
 	c, err := s.loadCase(ctx, caseID)
 	if err != nil {
 		return err
 	}
-	
+
 	now := time.Now().UTC()
 	c.Status = CaseStatusResolved
 	c.Resolution = resolution
 	c.ResolutionNotes = notes
 	c.ResolvedAt = &now
 	c.UpdatedAt = now
-	
+
 	c.AuditTrail = append(c.AuditTrail, CaseEvent{
 		EventID:   fmt.Sprintf("evt_%d", time.Now().UnixNano()),
 		EventType: "RESOLVED",
@@ -317,16 +317,16 @@ func (s *CaseManagementService) ResolveCase(ctx context.Context, caseID, resolut
 		Details:   fmt.Sprintf("Resolved: %s", resolution),
 		Timestamp: now,
 	})
-	
+
 	// Update metrics
 	atomic.AddInt64(&s.metrics.OpenCases, -1)
 	atomic.AddInt64(&s.metrics.ResolvedToday, 1)
-	
+
 	// Check if should be QA'd
 	if s.shouldQA() {
 		c.QAStatus = "PENDING_QA"
 	}
-	
+
 	return s.updateCase(ctx, c)
 }
 
@@ -334,13 +334,13 @@ func (s *CaseManagementService) ResolveCase(ctx context.Context, caseID, resolut
 func (s *CaseManagementService) CheckSLAs(ctx context.Context) ([]*Case, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	
+
 	// Find cases approaching or breaching SLA
 	cases, err := s.findSLABreachingCases(ctx)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	var escalated []*Case
 	for _, c := range cases {
 		// Check if should escalate
@@ -356,7 +356,7 @@ func (s *CaseManagementService) CheckSLAs(ctx context.Context) ([]*Case, error) 
 			}
 		}
 	}
-	
+
 	return escalated, nil
 }
 
@@ -364,19 +364,19 @@ func (s *CaseManagementService) CheckSLAs(ctx context.Context) ([]*Case, error) 
 func (s *CaseManagementService) GetMetrics() *CaseMetrics {
 	s.metrics.mu.RLock()
 	defer s.metrics.mu.RUnlock()
-	
+
 	// Calculate rates
 	if s.metrics.TotalCases > 0 {
 		// These would be calculated from actual data
 	}
-	
+
 	return s.metrics
 }
 
 // GetKPIDashboard returns KPI dashboard data
 func (s *CaseManagementService) GetKPIDashboard(ctx context.Context) (*KPIDashboard, error) {
 	metrics := s.GetMetrics()
-	
+
 	return &KPIDashboard{
 		GeneratedAt:          time.Now().UTC(),
 		TotalOpenCases:       metrics.OpenCases,
@@ -414,12 +414,12 @@ type KPIDashboard struct {
 func (s *CaseManagementService) autoAssign(ctx context.Context, c *Case) error {
 	s.assignmentMgr.mu.Lock()
 	defer s.assignmentMgr.mu.Unlock()
-	
+
 	queue, ok := s.assignmentMgr.queues[c.Queue]
 	if !ok {
 		return fmt.Errorf("queue not found: %s", c.Queue)
 	}
-	
+
 	// Find available reviewer
 	var selectedReviewer *Reviewer
 	switch queue.AssignmentMode {
@@ -430,7 +430,7 @@ func (s *CaseManagementService) autoAssign(ctx context.Context, c *Case) error {
 	default:
 		selectedReviewer = s.roundRobinAssign(queue)
 	}
-	
+
 	if selectedReviewer != nil {
 		now := time.Now().UTC()
 		c.AssignedTo = selectedReviewer.ReviewerID
@@ -438,7 +438,7 @@ func (s *CaseManagementService) autoAssign(ctx context.Context, c *Case) error {
 		c.Status = CaseStatusAssigned
 		selectedReviewer.CurrentLoad++
 	}
-	
+
 	return nil
 }
 
@@ -446,7 +446,7 @@ func (s *CaseManagementService) roundRobinAssign(queue *Queue) *Reviewer {
 	if len(queue.Reviewers) == 0 {
 		return nil
 	}
-	
+
 	idx := s.assignmentMgr.roundRobinIdx[queue.QueueID]
 	for i := 0; i < len(queue.Reviewers); i++ {
 		reviewerID := queue.Reviewers[(idx+i)%len(queue.Reviewers)]
@@ -462,7 +462,7 @@ func (s *CaseManagementService) roundRobinAssign(queue *Queue) *Reviewer {
 func (s *CaseManagementService) leastLoadedAssign(queue *Queue) *Reviewer {
 	var selected *Reviewer
 	minLoad := int(^uint(0) >> 1) // Max int
-	
+
 	for _, reviewerID := range queue.Reviewers {
 		reviewer, ok := s.assignmentMgr.reviewers[reviewerID]
 		if ok && reviewer.Available && reviewer.CurrentLoad < reviewer.MaxCaseload {
@@ -479,7 +479,7 @@ func (s *CaseManagementService) escalateCase(ctx context.Context, c *Case, reaso
 	c.EscalationLevel++
 	c.Status = CaseStatusEscalated
 	c.UpdatedAt = time.Now().UTC()
-	
+
 	c.AuditTrail = append(c.AuditTrail, CaseEvent{
 		EventID:   fmt.Sprintf("evt_%d", time.Now().UnixNano()),
 		EventType: "ESCALATED",
@@ -487,11 +487,11 @@ func (s *CaseManagementService) escalateCase(ctx context.Context, c *Case, reaso
 		Details:   fmt.Sprintf("Escalated due to %s, level %d", reason, c.EscalationLevel),
 		Timestamp: time.Now().UTC(),
 	})
-	
+
 	if s.notifier != nil {
 		s.notifier.NotifyCaseEscalated(ctx, c)
 	}
-	
+
 	return s.updateCase(ctx, c)
 }
 
@@ -504,11 +504,11 @@ func (s *CaseManagementService) persistCase(ctx context.Context, c *Case) error 
 	if s.db == nil {
 		return nil
 	}
-	
+
 	tagsJSON, _ := json.Marshal(c.Tags)
 	metadataJSON, _ := json.Marshal(c.Metadata)
 	auditTrailJSON, _ := json.Marshal(c.AuditTrail)
-	
+
 	query := `
 		INSERT INTO cases (
 			case_id, case_type, priority, status, customer_id, transaction_id,
@@ -518,7 +518,7 @@ func (s *CaseManagementService) persistCase(ctx context.Context, c *Case) error 
 			qa_status, qa_score, metadata, audit_trail
 		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25)
 	`
-	
+
 	_, err := s.db.ExecContext(ctx, query,
 		c.CaseID, c.CaseType, c.Priority, c.Status, c.CustomerID, c.TransactionID,
 		c.Subject, c.Description, c.RiskScore, c.AssignedTo, c.AssignedAt, c.Queue,
@@ -526,7 +526,7 @@ func (s *CaseManagementService) persistCase(ctx context.Context, c *Case) error 
 		c.FirstResponseAt, c.ResolvedAt, c.Resolution, c.ResolutionNotes,
 		c.QAStatus, c.QAScore, metadataJSON, auditTrailJSON,
 	)
-	
+
 	return err
 }
 
@@ -551,61 +551,61 @@ func (s *CaseManagementService) findSLABreachingCases(ctx context.Context) ([]*C
 
 // KillSwitchService provides kill switch and staged rollout controls
 type KillSwitchService struct {
-	db        *sql.DB
-	switches  map[string]*KillSwitch
-	rollouts  map[string]*StagedRollout
-	mu        sync.RWMutex
+	db       *sql.DB
+	switches map[string]*KillSwitch
+	rollouts map[string]*StagedRollout
+	mu       sync.RWMutex
 }
 
 // KillSwitch represents a kill switch
 type KillSwitch struct {
-	SwitchID    string    `json:"switch_id"`
-	Name        string    `json:"name"`
-	Description string    `json:"description"`
-	Component   string    `json:"component"` // MODEL, RULE, FEATURE, SERVICE
-	Enabled     bool      `json:"enabled"`
-	FallbackMode string   `json:"fallback_mode"` // RULES_ONLY, ALLOW_ALL, BLOCK_ALL, PREVIOUS_VERSION
-	ActivatedAt *time.Time `json:"activated_at,omitempty"`
-	ActivatedBy string    `json:"activated_by,omitempty"`
-	Reason      string    `json:"reason,omitempty"`
-	AutoRevert  bool      `json:"auto_revert"`
-	RevertAfter int       `json:"revert_after_mins"`
+	SwitchID     string     `json:"switch_id"`
+	Name         string     `json:"name"`
+	Description  string     `json:"description"`
+	Component    string     `json:"component"` // MODEL, RULE, FEATURE, SERVICE
+	Enabled      bool       `json:"enabled"`
+	FallbackMode string     `json:"fallback_mode"` // RULES_ONLY, ALLOW_ALL, BLOCK_ALL, PREVIOUS_VERSION
+	ActivatedAt  *time.Time `json:"activated_at,omitempty"`
+	ActivatedBy  string     `json:"activated_by,omitempty"`
+	Reason       string     `json:"reason,omitempty"`
+	AutoRevert   bool       `json:"auto_revert"`
+	RevertAfter  int        `json:"revert_after_mins"`
 }
 
 // StagedRollout represents a staged rollout configuration
 type StagedRollout struct {
-	RolloutID     string    `json:"rollout_id"`
-	Name          string    `json:"name"`
-	Component     string    `json:"component"`
-	Version       string    `json:"version"`
-	Status        string    `json:"status"` // PENDING, IN_PROGRESS, PAUSED, COMPLETED, ROLLED_BACK
-	CurrentStage  int       `json:"current_stage"`
-	Stages        []RolloutStage `json:"stages"`
-	StartedAt     *time.Time `json:"started_at,omitempty"`
-	CompletedAt   *time.Time `json:"completed_at,omitempty"`
-	CreatedBy     string    `json:"created_by"`
-	Metrics       *RolloutMetrics `json:"metrics"`
+	RolloutID    string          `json:"rollout_id"`
+	Name         string          `json:"name"`
+	Component    string          `json:"component"`
+	Version      string          `json:"version"`
+	Status       string          `json:"status"` // PENDING, IN_PROGRESS, PAUSED, COMPLETED, ROLLED_BACK
+	CurrentStage int             `json:"current_stage"`
+	Stages       []RolloutStage  `json:"stages"`
+	StartedAt    *time.Time      `json:"started_at,omitempty"`
+	CompletedAt  *time.Time      `json:"completed_at,omitempty"`
+	CreatedBy    string          `json:"created_by"`
+	Metrics      *RolloutMetrics `json:"metrics"`
 }
 
 // RolloutStage represents a rollout stage
 type RolloutStage struct {
-	StageNum      int     `json:"stage_num"`
-	TrafficPercent float64 `json:"traffic_percent"`
-	Duration      int     `json:"duration_mins"`
+	StageNum        int                `json:"stage_num"`
+	TrafficPercent  float64            `json:"traffic_percent"`
+	Duration        int                `json:"duration_mins"`
 	SuccessCriteria map[string]float64 `json:"success_criteria"`
-	Status        string  `json:"status"`
-	StartedAt     *time.Time `json:"started_at,omitempty"`
-	CompletedAt   *time.Time `json:"completed_at,omitempty"`
+	Status          string             `json:"status"`
+	StartedAt       *time.Time         `json:"started_at,omitempty"`
+	CompletedAt     *time.Time         `json:"completed_at,omitempty"`
 }
 
 // RolloutMetrics tracks rollout metrics
 type RolloutMetrics struct {
-	TotalRequests     int64   `json:"total_requests"`
-	NewVersionRequests int64  `json:"new_version_requests"`
-	ErrorRate         float64 `json:"error_rate"`
-	LatencyP50        float64 `json:"latency_p50_ms"`
-	LatencyP99        float64 `json:"latency_p99_ms"`
-	FalsePositiveRate float64 `json:"false_positive_rate"`
+	TotalRequests      int64   `json:"total_requests"`
+	NewVersionRequests int64   `json:"new_version_requests"`
+	ErrorRate          float64 `json:"error_rate"`
+	LatencyP50         float64 `json:"latency_p50_ms"`
+	LatencyP99         float64 `json:"latency_p99_ms"`
+	FalsePositiveRate  float64 `json:"false_positive_rate"`
 }
 
 // NewKillSwitchService creates a new kill switch service
@@ -651,18 +651,18 @@ func (s *KillSwitchService) initializeDefaultSwitches() {
 func (s *KillSwitchService) ActivateKillSwitch(ctx context.Context, switchID, activatedBy, reason string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	
+
 	sw, ok := s.switches[switchID]
 	if !ok {
 		return fmt.Errorf("kill switch not found: %s", switchID)
 	}
-	
+
 	now := time.Now().UTC()
 	sw.Enabled = true
 	sw.ActivatedAt = &now
 	sw.ActivatedBy = activatedBy
 	sw.Reason = reason
-	
+
 	return s.persistSwitch(ctx, sw)
 }
 
@@ -670,17 +670,17 @@ func (s *KillSwitchService) ActivateKillSwitch(ctx context.Context, switchID, ac
 func (s *KillSwitchService) DeactivateKillSwitch(ctx context.Context, switchID, deactivatedBy string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	
+
 	sw, ok := s.switches[switchID]
 	if !ok {
 		return fmt.Errorf("kill switch not found: %s", switchID)
 	}
-	
+
 	sw.Enabled = false
 	sw.ActivatedAt = nil
 	sw.ActivatedBy = ""
 	sw.Reason = ""
-	
+
 	return s.persistSwitch(ctx, sw)
 }
 
@@ -688,12 +688,12 @@ func (s *KillSwitchService) DeactivateKillSwitch(ctx context.Context, switchID, 
 func (s *KillSwitchService) IsKillSwitchActive(switchID string) (bool, string) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	
+
 	sw, ok := s.switches[switchID]
 	if !ok {
 		return false, ""
 	}
-	
+
 	return sw.Enabled, sw.FallbackMode
 }
 
@@ -701,11 +701,11 @@ func (s *KillSwitchService) IsKillSwitchActive(switchID string) (bool, string) {
 func (s *KillSwitchService) CreateRollout(ctx context.Context, rollout *StagedRollout) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	
+
 	rollout.RolloutID = fmt.Sprintf("rollout_%d", time.Now().UnixNano())
 	rollout.Status = "PENDING"
 	rollout.CurrentStage = 0
-	
+
 	// Default stages if not provided
 	if len(rollout.Stages) == 0 {
 		rollout.Stages = []RolloutStage{
@@ -716,7 +716,7 @@ func (s *KillSwitchService) CreateRollout(ctx context.Context, rollout *StagedRo
 			{StageNum: 5, TrafficPercent: 100, Duration: 0, Status: "PENDING"},
 		}
 	}
-	
+
 	s.rollouts[rollout.RolloutID] = rollout
 	return s.persistRollout(ctx, rollout)
 }
@@ -725,16 +725,16 @@ func (s *KillSwitchService) CreateRollout(ctx context.Context, rollout *StagedRo
 func (s *KillSwitchService) AdvanceRollout(ctx context.Context, rolloutID string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	
+
 	rollout, ok := s.rollouts[rolloutID]
 	if !ok {
 		return fmt.Errorf("rollout not found: %s", rolloutID)
 	}
-	
+
 	if rollout.CurrentStage >= len(rollout.Stages) {
 		return fmt.Errorf("rollout already completed")
 	}
-	
+
 	// Check success criteria for current stage
 	if rollout.CurrentStage > 0 {
 		if !s.checkSuccessCriteria(rollout) {
@@ -743,7 +743,7 @@ func (s *KillSwitchService) AdvanceRollout(ctx context.Context, rolloutID string
 		now := time.Now().UTC()
 		rollout.Stages[rollout.CurrentStage-1].CompletedAt = &now
 	}
-	
+
 	// Advance to next stage
 	rollout.CurrentStage++
 	if rollout.CurrentStage <= len(rollout.Stages) {
@@ -756,7 +756,7 @@ func (s *KillSwitchService) AdvanceRollout(ctx context.Context, rolloutID string
 		rollout.Status = "COMPLETED"
 		rollout.CompletedAt = &now
 	}
-	
+
 	return s.persistRollout(ctx, rollout)
 }
 
@@ -764,23 +764,23 @@ func (s *KillSwitchService) AdvanceRollout(ctx context.Context, rolloutID string
 func (s *KillSwitchService) RollbackRollout(ctx context.Context, rolloutID, reason string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	
+
 	rollout, ok := s.rollouts[rolloutID]
 	if !ok {
 		return fmt.Errorf("rollout not found: %s", rolloutID)
 	}
-	
+
 	rollout.Status = "ROLLED_BACK"
 	now := time.Now().UTC()
 	rollout.CompletedAt = &now
-	
+
 	// Activate kill switch for the component
 	if sw, ok := s.switches[rollout.Component+"_model"]; ok {
 		sw.Enabled = true
 		sw.ActivatedAt = &now
 		sw.Reason = fmt.Sprintf("Rollout %s rolled back: %s", rolloutID, reason)
 	}
-	
+
 	return s.persistRollout(ctx, rollout)
 }
 
@@ -788,16 +788,16 @@ func (s *KillSwitchService) RollbackRollout(ctx context.Context, rolloutID, reas
 func (s *KillSwitchService) GetTrafficPercent(rolloutID string) float64 {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	
+
 	rollout, ok := s.rollouts[rolloutID]
 	if !ok || rollout.Status != "IN_PROGRESS" {
 		return 0
 	}
-	
+
 	if rollout.CurrentStage > 0 && rollout.CurrentStage <= len(rollout.Stages) {
 		return rollout.Stages[rollout.CurrentStage-1].TrafficPercent
 	}
-	
+
 	return 0
 }
 
@@ -805,7 +805,7 @@ func (s *KillSwitchService) checkSuccessCriteria(rollout *StagedRollout) bool {
 	if rollout.Metrics == nil {
 		return true // No metrics to check
 	}
-	
+
 	stage := rollout.Stages[rollout.CurrentStage-1]
 	for metric, threshold := range stage.SuccessCriteria {
 		switch metric {

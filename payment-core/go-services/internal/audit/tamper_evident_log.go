@@ -21,23 +21,23 @@ import (
 type TamperEvidentLog struct {
 	// Storage backend
 	storage AuditStorage
-	
+
 	// Hash chain state
-	lastHash     string
-	lastHashMu   sync.Mutex
-	sequenceNum  uint64
-	
+	lastHash    string
+	lastHashMu  sync.Mutex
+	sequenceNum uint64
+
 	// Merkle tree for efficient verification
-	merkleTree   *MerkleTree
-	
+	merkleTree *MerkleTree
+
 	// Retention policy
 	retentionDays int
-	
+
 	// Stats
 	totalEntries   uint64
 	verifySuccess  uint64
 	verifyFailures uint64
-	
+
 	// Control
 	ctx    context.Context
 	cancel context.CancelFunc
@@ -79,25 +79,25 @@ func DefaultAuditLogConfig() AuditLogConfig {
 // NewTamperEvidentLog creates a new tamper-evident audit log
 func NewTamperEvidentLog(storage AuditStorage, config AuditLogConfig) (*TamperEvidentLog, error) {
 	ctx, cancel := context.WithCancel(context.Background())
-	
+
 	log := &TamperEvidentLog{
 		storage:       storage,
 		retentionDays: config.RetentionDays,
 		ctx:           ctx,
 		cancel:        cancel,
 	}
-	
+
 	if config.MerkleTreeEnabled {
 		log.merkleTree = NewMerkleTree()
 	}
-	
+
 	// Initialize from existing entries
 	count, err := storage.Count(ctx)
 	if err != nil {
 		cancel()
 		return nil, fmt.Errorf("failed to get entry count: %w", err)
 	}
-	
+
 	if count > 0 {
 		// Get last entry to continue hash chain
 		lastEntry, err := storage.Get(ctx, count-1)
@@ -111,7 +111,7 @@ func NewTamperEvidentLog(storage AuditStorage, config AuditLogConfig) (*TamperEv
 		log.lastHash = "genesis"
 		log.sequenceNum = 0
 	}
-	
+
 	return log, nil
 }
 
@@ -119,7 +119,7 @@ func NewTamperEvidentLog(storage AuditStorage, config AuditLogConfig) (*TamperEv
 func (l *TamperEvidentLog) Log(ctx context.Context, event AuditEvent) error {
 	l.lastHashMu.Lock()
 	defer l.lastHashMu.Unlock()
-	
+
 	// Create entry
 	entry := &TamperEvidentEntry{
 		SequenceNum:   atomic.AddUint64(&l.sequenceNum, 1) - 1,
@@ -139,25 +139,25 @@ func (l *TamperEvidentLog) Log(ctx context.Context, event AuditEvent) error {
 		PreviousHash:  l.lastHash,
 		RetentionDays: l.retentionDays,
 	}
-	
+
 	// Compute entry hash
 	entry.EntryHash = l.computeEntryHash(entry)
-	
+
 	// Update hash chain
 	l.lastHash = entry.EntryHash
-	
+
 	// Add to Merkle tree
 	if l.merkleTree != nil {
 		l.merkleTree.Add(entry.EntryHash)
 	}
-	
+
 	// Persist entry
 	if err := l.storage.Append(ctx, entry); err != nil {
 		return fmt.Errorf("failed to append audit entry: %w", err)
 	}
-	
+
 	atomic.AddUint64(&l.totalEntries, 1)
-	
+
 	return nil
 }
 
@@ -213,7 +213,7 @@ func (l *TamperEvidentLog) computeEntryHash(entry *TamperEvidentEntry) string {
 		entry.PreviousHash,
 		mustJSON(entry.Details),
 	)
-	
+
 	hash := sha256.Sum256([]byte(data))
 	return hex.EncodeToString(hash[:])
 }
@@ -226,12 +226,12 @@ func (l *TamperEvidentLog) VerifyChain(ctx context.Context, start, end uint64) (
 		Verified:      true,
 		Timestamp:     time.Now(),
 	}
-	
+
 	entries, err := l.storage.GetRange(ctx, start, end)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get entries: %w", err)
 	}
-	
+
 	var previousHash string
 	if start == 0 {
 		previousHash = "genesis"
@@ -243,7 +243,7 @@ func (l *TamperEvidentLog) VerifyChain(ctx context.Context, start, end uint64) (
 		}
 		previousHash = prevEntry.EntryHash
 	}
-	
+
 	for _, entry := range entries {
 		// Verify previous hash
 		if entry.PreviousHash != previousHash {
@@ -254,7 +254,7 @@ func (l *TamperEvidentLog) VerifyChain(ctx context.Context, start, end uint64) (
 				Message:     fmt.Sprintf("Previous hash mismatch: expected %s, got %s", previousHash, entry.PreviousHash),
 			})
 		}
-		
+
 		// Verify entry hash
 		computedHash := l.computeEntryHash(entry)
 		if entry.EntryHash != computedHash {
@@ -265,17 +265,17 @@ func (l *TamperEvidentLog) VerifyChain(ctx context.Context, start, end uint64) (
 				Message:     fmt.Sprintf("Entry hash mismatch: expected %s, got %s", computedHash, entry.EntryHash),
 			})
 		}
-		
+
 		previousHash = entry.EntryHash
 		result.EntriesVerified++
 	}
-	
+
 	if result.Verified {
 		atomic.AddUint64(&l.verifySuccess, 1)
 	} else {
 		atomic.AddUint64(&l.verifyFailures, 1)
 	}
-	
+
 	return result, nil
 }
 
@@ -349,11 +349,11 @@ func (t *MerkleTree) Add(hash string) {
 func (t *MerkleTree) Root() string {
 	t.mu.RLock()
 	defer t.mu.RUnlock()
-	
+
 	if len(t.leaves) == 0 {
 		return ""
 	}
-	
+
 	return t.computeRoot(t.leaves)
 }
 
@@ -365,7 +365,7 @@ func (t *MerkleTree) computeRoot(hashes []string) string {
 	if len(hashes) == 1 {
 		return hashes[0]
 	}
-	
+
 	// Pair and hash
 	var nextLevel []string
 	for i := 0; i < len(hashes); i += 2 {
@@ -377,7 +377,7 @@ func (t *MerkleTree) computeRoot(hashes []string) string {
 			nextLevel = append(nextLevel, hashes[i])
 		}
 	}
-	
+
 	return t.computeRoot(nextLevel)
 }
 
@@ -392,22 +392,22 @@ type MerkleProof struct {
 func (t *MerkleTree) GetProof(index int) (*MerkleProof, error) {
 	t.mu.RLock()
 	defer t.mu.RUnlock()
-	
+
 	if index < 0 || index >= len(t.leaves) {
 		return nil, fmt.Errorf("index out of range")
 	}
-	
+
 	proof := &MerkleProof{
 		LeafHash: t.leaves[index],
 		Index:    index,
 		Path:     make([]string, 0),
 	}
-	
+
 	// Build proof path
 	hashes := make([]string, len(t.leaves))
 	copy(hashes, t.leaves)
 	idx := index
-	
+
 	for len(hashes) > 1 {
 		var nextLevel []string
 		for i := 0; i < len(hashes); i += 2 {
@@ -429,7 +429,7 @@ func (t *MerkleTree) GetProof(index int) (*MerkleProof, error) {
 		hashes = nextLevel
 		idx = idx / 2
 	}
-	
+
 	return proof, nil
 }
 
@@ -441,20 +441,20 @@ func mustJSON(v interface{}) string {
 
 // Predefined audit event types
 const (
-	AuditEventTransferCreated    = "TRANSFER_CREATED"
-	AuditEventTransferCommitted  = "TRANSFER_COMMITTED"
-	AuditEventTransferFailed     = "TRANSFER_FAILED"
-	AuditEventTransferReversed   = "TRANSFER_REVERSED"
-	AuditEventUserLogin          = "USER_LOGIN"
-	AuditEventUserLogout         = "USER_LOGOUT"
-	AuditEventUserCreated        = "USER_CREATED"
-	AuditEventUserModified       = "USER_MODIFIED"
-	AuditEventUserDeleted        = "USER_DELETED"
-	AuditEventPermissionGranted  = "PERMISSION_GRANTED"
-	AuditEventPermissionRevoked  = "PERMISSION_REVOKED"
-	AuditEventConfigChanged      = "CONFIG_CHANGED"
-	AuditEventSecurityAlert      = "SECURITY_ALERT"
-	AuditEventComplianceCheck    = "COMPLIANCE_CHECK"
-	AuditEventDataExport         = "DATA_EXPORT"
-	AuditEventDataAccess         = "DATA_ACCESS"
+	AuditEventTransferCreated   = "TRANSFER_CREATED"
+	AuditEventTransferCommitted = "TRANSFER_COMMITTED"
+	AuditEventTransferFailed    = "TRANSFER_FAILED"
+	AuditEventTransferReversed  = "TRANSFER_REVERSED"
+	AuditEventUserLogin         = "USER_LOGIN"
+	AuditEventUserLogout        = "USER_LOGOUT"
+	AuditEventUserCreated       = "USER_CREATED"
+	AuditEventUserModified      = "USER_MODIFIED"
+	AuditEventUserDeleted       = "USER_DELETED"
+	AuditEventPermissionGranted = "PERMISSION_GRANTED"
+	AuditEventPermissionRevoked = "PERMISSION_REVOKED"
+	AuditEventConfigChanged     = "CONFIG_CHANGED"
+	AuditEventSecurityAlert     = "SECURITY_ALERT"
+	AuditEventComplianceCheck   = "COMPLIANCE_CHECK"
+	AuditEventDataExport        = "DATA_EXPORT"
+	AuditEventDataAccess        = "DATA_ACCESS"
 )

@@ -125,25 +125,25 @@ func (e *ProvisioningSagaExecutor) executeSaga(ctx context.Context, saga *Provis
 			step.Retries = retry
 
 			switch step.Name {
-				case "keycloak_client":
-					resourceID, err = e.provisionKeycloakClient(ctx, saga.CaseID, saga.Environment, profile)
-				case "keycloak_users":
-					resourceID, err = e.provisionKeycloakUsers(ctx, saga.CaseID, saga.Environment, profile)
-				case "apisix_upstream":
-					resourceID, err = e.provisionAPISIXUpstream(ctx, saga.CaseID, saga.Environment, profile)
-				case "apisix_route":
-					upstreamID := e.getStepResourceID(saga, "apisix_upstream")
-					resourceID, err = e.provisionAPISIXRoute(ctx, saga.CaseID, saga.Environment, upstreamID, profile)
-				case "tigerbeetle_account":
-					resourceID, err = e.provisionTigerBeetleAccount(ctx, saga.CaseID, saga.Environment)
-				case "trigger_kyb":
-					resourceID, err = e.triggerKYBVerification(ctx, saga.CaseID, saga.Environment, profile)
-				case "trigger_kyc":
-					resourceID, err = e.triggerKYCVerification(ctx, saga.CaseID, saga.Environment, profile)
-				case "smoke_test":
-					err = e.runSmokeTests(ctx, saga.CaseID, saga.Environment, profile)
-					resourceID = "smoke_test_passed"
-				}
+			case "keycloak_client":
+				resourceID, err = e.provisionKeycloakClient(ctx, saga.CaseID, saga.Environment, profile)
+			case "keycloak_users":
+				resourceID, err = e.provisionKeycloakUsers(ctx, saga.CaseID, saga.Environment, profile)
+			case "apisix_upstream":
+				resourceID, err = e.provisionAPISIXUpstream(ctx, saga.CaseID, saga.Environment, profile)
+			case "apisix_route":
+				upstreamID := e.getStepResourceID(saga, "apisix_upstream")
+				resourceID, err = e.provisionAPISIXRoute(ctx, saga.CaseID, saga.Environment, upstreamID, profile)
+			case "tigerbeetle_account":
+				resourceID, err = e.provisionTigerBeetleAccount(ctx, saga.CaseID, saga.Environment)
+			case "trigger_kyb":
+				resourceID, err = e.triggerKYBVerification(ctx, saga.CaseID, saga.Environment, profile)
+			case "trigger_kyc":
+				resourceID, err = e.triggerKYCVerification(ctx, saga.CaseID, saga.Environment, profile)
+			case "smoke_test":
+				err = e.runSmokeTests(ctx, saga.CaseID, saga.Environment, profile)
+				resourceID = "smoke_test_passed"
+			}
 
 			if err == nil {
 				break
@@ -247,14 +247,14 @@ func (e *ProvisioningSagaExecutor) getStepResourceID(saga *ProvisioningSaga, ste
 
 func (e *ProvisioningSagaExecutor) provisionKeycloakClient(ctx context.Context, caseID, environment string, profile *TechnicalProfile) (string, error) {
 	clientID := fmt.Sprintf("participant-%s-%s", caseID, environment)
-	
+
 	// Check if client already exists (idempotency)
 	// In production, this would call Keycloak Admin API
-	
+
 	result, err := e.integration.keycloak.CreateClient(ctx, KeycloakClientRequest{
-		ClientID:    clientID,
-		Name:        fmt.Sprintf("Participant %s (%s)", caseID, environment),
-		Description: fmt.Sprintf("Auto-provisioned client for case %s", caseID),
+		ClientID:     clientID,
+		Name:         fmt.Sprintf("Participant %s (%s)", caseID, environment),
+		Description:  fmt.Sprintf("Auto-provisioned client for case %s", caseID),
 		RedirectURIs: []string{profile.CallbackURL},
 	})
 	if err != nil {
@@ -266,10 +266,10 @@ func (e *ProvisioningSagaExecutor) provisionKeycloakClient(ctx context.Context, 
 
 func (e *ProvisioningSagaExecutor) provisionAPISIXUpstream(ctx context.Context, caseID, environment string, profile *TechnicalProfile) (string, error) {
 	upstreamID := fmt.Sprintf("upstream-%s-%s", caseID, environment)
-	
+
 	// In production, this would call APISIX Admin API
 	// For now, return the upstream ID
-	
+
 	return upstreamID, nil
 }
 
@@ -288,10 +288,10 @@ func (e *ProvisioningSagaExecutor) provisionAPISIXRoute(ctx context.Context, cas
 
 func (e *ProvisioningSagaExecutor) provisionTigerBeetleAccount(ctx context.Context, caseID, environment string) (string, error) {
 	accountID := fmt.Sprintf("account-%s-%s", caseID, environment)
-	
+
 	// In production, this would call TigerBeetle client
 	// For now, return the account ID
-	
+
 	return accountID, nil
 }
 
@@ -299,24 +299,24 @@ func (e *ProvisioningSagaExecutor) provisionTigerBeetleAccount(ctx context.Conte
 func (e *ProvisioningSagaExecutor) provisionKeycloakUsers(ctx context.Context, caseID, environment string, profile *TechnicalProfile) (string, error) {
 	// Get organization personnel from profile
 	userIDs := []string{}
-	
+
 	// Create admin user for the organization
 	adminUserID := fmt.Sprintf("user-admin-%s-%s", caseID, environment)
 	userIDs = append(userIDs, adminUserID)
-	
+
 	// In production, this would:
 	// 1. Get list of directors/UBOs from the onboarding case
 	// 2. Create Keycloak users for each person
 	// 3. Assign appropriate roles (participant_admin, etc.)
 	// 4. Send welcome emails with password reset links
-	
+
 	return fmt.Sprintf("users:%v", userIDs), nil
 }
 
 // triggerKYBVerification creates a KYB case for the organization
 func (e *ProvisioningSagaExecutor) triggerKYBVerification(ctx context.Context, caseID, environment string, profile *TechnicalProfile) (string, error) {
 	kybCaseID := fmt.Sprintf("KYB-%s", caseID)
-	
+
 	// Create KYB case with organization details
 	kybCase := &KYBCaseRecord{
 		ID:               kybCaseID,
@@ -327,26 +327,26 @@ func (e *ProvisioningSagaExecutor) triggerKYBVerification(ctx context.Context, c
 		Status:           "SUBMITTED",
 		CreatedAt:        time.Now(),
 	}
-	
+
 	// In production, this would:
 	// 1. Create KYB case in the KYB service
 	// 2. Trigger document collection workflow
 	// 3. Initiate Ballerine KYB orchestration
 	// 4. Send notification to compliance team
-	
+
 	_ = kybCase // Use the case
-	
+
 	return kybCaseID, nil
 }
 
 // triggerKYCVerification creates KYC cases for all key personnel (directors, UBOs, signatories)
 func (e *ProvisioningSagaExecutor) triggerKYCVerification(ctx context.Context, caseID, environment string, profile *TechnicalProfile) (string, error) {
 	kycCaseIDs := []string{}
-	
+
 	// Create KYC cases for each key person (uses KeyPersonInfo from TechnicalProfile)
 	for i, person := range profile.KeyPersonnel {
 		kycCaseID := fmt.Sprintf("KYC-%s-%d", caseID, i+1)
-		
+
 		kycCase := &KYCCaseRecord{
 			ID:               kycCaseID,
 			OnboardingCaseID: caseID,
@@ -357,23 +357,23 @@ func (e *ProvisioningSagaExecutor) triggerKYCVerification(ctx context.Context, c
 			Status:           "PENDING",
 			CreatedAt:        time.Now(),
 		}
-		
+
 		// In production, this would:
 		// 1. Create KYC case in the KYC service
 		// 2. Send KYC invitation email to the person
 		// 3. Link KYC case to the parent KYB case
 		// 4. Track KYC progress for KYB completion
-		
+
 		_ = kycCase // Use the case
 		kycCaseIDs = append(kycCaseIDs, kycCaseID)
 	}
-	
+
 	// If no key personnel defined, create at least one KYC case for the primary contact
 	if len(kycCaseIDs) == 0 {
 		kycCaseID := fmt.Sprintf("KYC-%s-1", caseID)
 		kycCaseIDs = append(kycCaseIDs, kycCaseID)
 	}
-	
+
 	return fmt.Sprintf("kyc_cases:%v", kycCaseIDs), nil
 }
 
@@ -466,17 +466,17 @@ type IdempotencyStore interface {
 
 // ProvisioningResult represents the result of a provisioning operation
 type ProvisioningResult struct {
-	SagaID              string    `json:"saga_id"`
-	CaseID              string    `json:"case_id"`
-	Environment         string    `json:"environment"`
-	Status              string    `json:"status"`
-	KeycloakClientID    string    `json:"keycloak_client_id"`
-	APISIXRouteID       string    `json:"apisix_route_id"`
-	APISIXUpstreamID    string    `json:"apisix_upstream_id"`
-	TigerBeetleAccountID string   `json:"tigerbeetle_account_id"`
-	SmokeTestsPassed    bool      `json:"smoke_tests_passed"`
-	CompletedAt         time.Time `json:"completed_at"`
-	Error               string    `json:"error,omitempty"`
+	SagaID               string    `json:"saga_id"`
+	CaseID               string    `json:"case_id"`
+	Environment          string    `json:"environment"`
+	Status               string    `json:"status"`
+	KeycloakClientID     string    `json:"keycloak_client_id"`
+	APISIXRouteID        string    `json:"apisix_route_id"`
+	APISIXUpstreamID     string    `json:"apisix_upstream_id"`
+	TigerBeetleAccountID string    `json:"tigerbeetle_account_id"`
+	SmokeTestsPassed     bool      `json:"smoke_tests_passed"`
+	CompletedAt          time.Time `json:"completed_at"`
+	Error                string    `json:"error,omitempty"`
 }
 
 // ToResult converts a saga to a provisioning result

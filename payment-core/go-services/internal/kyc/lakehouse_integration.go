@@ -19,9 +19,9 @@ import (
 
 // Resilience configuration constants
 const (
-	maxRetries          = 5
-	initialRetryDelay   = 100 * time.Millisecond
-	maxRetryDelay       = 30 * time.Second
+	maxRetries              = 5
+	initialRetryDelay       = 100 * time.Millisecond
+	maxRetryDelay           = 30 * time.Second
 	circuitBreakerThreshold = 5
 	circuitBreakerTimeout   = 30 * time.Second
 	deadLetterQueueSize     = 10000
@@ -115,7 +115,7 @@ func NewDeadLetterQueue(filePath string) *DeadLetterQueue {
 func (dlq *DeadLetterQueue) Add(event *LakehouseEvent) {
 	dlq.mu.Lock()
 	defer dlq.mu.Unlock()
-	
+
 	if len(dlq.events) >= dlq.maxSize {
 		dlq.events = dlq.events[1:]
 	}
@@ -136,7 +136,7 @@ func (dlq *DeadLetterQueue) GetAll() []*LakehouseEvent {
 func (dlq *DeadLetterQueue) Remove(eventID string) {
 	dlq.mu.Lock()
 	defer dlq.mu.Unlock()
-	
+
 	for i, e := range dlq.events {
 		if e.EventID == eventID {
 			dlq.events = append(dlq.events[:i], dlq.events[i+1:]...)
@@ -210,60 +210,60 @@ const (
 
 // LakehouseEvent represents an event to be sent to the lakehouse
 type LakehouseEvent struct {
-	EventID     string                 `json:"event_id"`
-	EventType   LakehouseEventType     `json:"event_type"`
-	EventTime   time.Time              `json:"event_time"`
-	Source      string                 `json:"source"`
-	Version     string                 `json:"version"`
-	CaseID      string                 `json:"case_id,omitempty"`
-	EntityID    string                 `json:"entity_id,omitempty"`
-	EntityType  string                 `json:"entity_type,omitempty"` // PERSON, ORGANIZATION
-	Data        map[string]interface{} `json:"data"`
-	Metadata    map[string]interface{} `json:"metadata,omitempty"`
-	CorrelationID string               `json:"correlation_id,omitempty"`
+	EventID       string                 `json:"event_id"`
+	EventType     LakehouseEventType     `json:"event_type"`
+	EventTime     time.Time              `json:"event_time"`
+	Source        string                 `json:"source"`
+	Version       string                 `json:"version"`
+	CaseID        string                 `json:"case_id,omitempty"`
+	EntityID      string                 `json:"entity_id,omitempty"`
+	EntityType    string                 `json:"entity_type,omitempty"` // PERSON, ORGANIZATION
+	Data          map[string]interface{} `json:"data"`
+	Metadata      map[string]interface{} `json:"metadata,omitempty"`
+	CorrelationID string                 `json:"correlation_id,omitempty"`
 }
 
 // KYCCaseEvent represents a KYC case event for lakehouse
 type KYCCaseEvent struct {
-	CaseID           string    `json:"case_id"`
-	PersonID         string    `json:"person_id"`
-	PersonName       string    `json:"person_name"`
-	OrganizationID   string    `json:"organization_id,omitempty"`
-	OrganizationName string    `json:"organization_name,omitempty"`
-	Status           string    `json:"status"`
-	RiskLevel        string    `json:"risk_level,omitempty"`
-	RiskScore        int       `json:"risk_score,omitempty"`
-	Country          string    `json:"country"`
-	IDType           string    `json:"id_type,omitempty"`
-	IDNumber         string    `json:"id_number,omitempty"`
-	CreatedAt        time.Time `json:"created_at"`
-	UpdatedAt        time.Time `json:"updated_at"`
+	CaseID           string     `json:"case_id"`
+	PersonID         string     `json:"person_id"`
+	PersonName       string     `json:"person_name"`
+	OrganizationID   string     `json:"organization_id,omitempty"`
+	OrganizationName string     `json:"organization_name,omitempty"`
+	Status           string     `json:"status"`
+	RiskLevel        string     `json:"risk_level,omitempty"`
+	RiskScore        int        `json:"risk_score,omitempty"`
+	Country          string     `json:"country"`
+	IDType           string     `json:"id_type,omitempty"`
+	IDNumber         string     `json:"id_number,omitempty"`
+	CreatedAt        time.Time  `json:"created_at"`
+	UpdatedAt        time.Time  `json:"updated_at"`
 	CompletedAt      *time.Time `json:"completed_at,omitempty"`
-	ReviewerID       string    `json:"reviewer_id,omitempty"`
-	Decision         string    `json:"decision,omitempty"`
-	DecisionReason   string    `json:"decision_reason,omitempty"`
+	ReviewerID       string     `json:"reviewer_id,omitempty"`
+	Decision         string     `json:"decision,omitempty"`
+	DecisionReason   string     `json:"decision_reason,omitempty"`
 }
 
 // KYBCaseEvent represents a KYB case event for lakehouse
 type KYBCaseEvent struct {
-	CaseID             string    `json:"case_id"`
-	OrganizationID     string    `json:"organization_id"`
-	OrganizationName   string    `json:"organization_name"`
-	RegistrationNumber string    `json:"registration_number"`
-	StakeholderType    string    `json:"stakeholder_type"`
-	Status             string    `json:"status"`
-	RiskLevel          string    `json:"risk_level,omitempty"`
-	RiskScore          int       `json:"risk_score,omitempty"`
-	Country            string    `json:"country"`
-	DirectorCount      int       `json:"director_count"`
-	ShareholderCount   int       `json:"shareholder_count"`
-	UBOCount           int       `json:"ubo_count"`
-	CreatedAt          time.Time `json:"created_at"`
-	UpdatedAt          time.Time `json:"updated_at"`
+	CaseID             string     `json:"case_id"`
+	OrganizationID     string     `json:"organization_id"`
+	OrganizationName   string     `json:"organization_name"`
+	RegistrationNumber string     `json:"registration_number"`
+	StakeholderType    string     `json:"stakeholder_type"`
+	Status             string     `json:"status"`
+	RiskLevel          string     `json:"risk_level,omitempty"`
+	RiskScore          int        `json:"risk_score,omitempty"`
+	Country            string     `json:"country"`
+	DirectorCount      int        `json:"director_count"`
+	ShareholderCount   int        `json:"shareholder_count"`
+	UBOCount           int        `json:"ubo_count"`
+	CreatedAt          time.Time  `json:"created_at"`
+	UpdatedAt          time.Time  `json:"updated_at"`
 	CompletedAt        *time.Time `json:"completed_at,omitempty"`
-	ReviewerID         string    `json:"reviewer_id,omitempty"`
-	Decision           string    `json:"decision,omitempty"`
-	DecisionReason     string    `json:"decision_reason,omitempty"`
+	ReviewerID         string     `json:"reviewer_id,omitempty"`
+	Decision           string     `json:"decision,omitempty"`
+	DecisionReason     string     `json:"decision_reason,omitempty"`
 }
 
 // DocumentEvent represents a document processing event for lakehouse
@@ -320,60 +320,60 @@ type ScreeningEvent struct {
 
 // RiskScoringEvent represents a risk scoring event for lakehouse
 type RiskScoringEvent struct {
-	ScoringID         string             `json:"scoring_id"`
-	CaseID            string             `json:"case_id"`
-	EntityID          string             `json:"entity_id"`
-	EntityType        string             `json:"entity_type"`
-	OverallScore      int                `json:"overall_score"`
-	RiskLevel         string             `json:"risk_level"`
-	JurisdictionRisk  int                `json:"jurisdiction_risk"`
-	EntityTypeRisk    int                `json:"entity_type_risk"`
-	PEPRisk           int                `json:"pep_risk"`
-	SanctionsRisk     int                `json:"sanctions_risk"`
-	AdverseMediaRisk  int                `json:"adverse_media_risk"`
-	DocumentRisk      int                `json:"document_risk"`
-	FactorCount       int                `json:"factor_count"`
-	ModelVersion      string             `json:"model_version"`
-	ScoredAt          time.Time          `json:"scored_at"`
-	Recommendations   []string           `json:"recommendations,omitempty"`
+	ScoringID        string    `json:"scoring_id"`
+	CaseID           string    `json:"case_id"`
+	EntityID         string    `json:"entity_id"`
+	EntityType       string    `json:"entity_type"`
+	OverallScore     int       `json:"overall_score"`
+	RiskLevel        string    `json:"risk_level"`
+	JurisdictionRisk int       `json:"jurisdiction_risk"`
+	EntityTypeRisk   int       `json:"entity_type_risk"`
+	PEPRisk          int       `json:"pep_risk"`
+	SanctionsRisk    int       `json:"sanctions_risk"`
+	AdverseMediaRisk int       `json:"adverse_media_risk"`
+	DocumentRisk     int       `json:"document_risk"`
+	FactorCount      int       `json:"factor_count"`
+	ModelVersion     string    `json:"model_version"`
+	ScoredAt         time.Time `json:"scored_at"`
+	Recommendations  []string  `json:"recommendations,omitempty"`
 }
 
 // OllamaAnalysisEvent represents an Ollama/LLaVA analysis event for lakehouse
 type OllamaAnalysisEvent struct {
-	AnalysisID      string                 `json:"analysis_id"`
-	CaseID          string                 `json:"case_id"`
-	DocumentID      string                 `json:"document_id"`
-	Model           string                 `json:"model"` // llava, llava:13b, etc.
-	AnalysisType    string                 `json:"analysis_type"` // DOCUMENT_EXTRACTION, FRAUD_DETECTION, FACE_MATCH
-	Prompt          string                 `json:"prompt,omitempty"`
-	ResponseTokens  int                    `json:"response_tokens"`
-	Confidence      float64                `json:"confidence"`
-	ExtractedData   map[string]interface{} `json:"extracted_data,omitempty"`
-	ProcessingTime  int64                  `json:"processing_time_ms"`
-	AnalyzedAt      time.Time              `json:"analyzed_at"`
-	ErrorMessage    string                 `json:"error_message,omitempty"`
+	AnalysisID     string                 `json:"analysis_id"`
+	CaseID         string                 `json:"case_id"`
+	DocumentID     string                 `json:"document_id"`
+	Model          string                 `json:"model"`         // llava, llava:13b, etc.
+	AnalysisType   string                 `json:"analysis_type"` // DOCUMENT_EXTRACTION, FRAUD_DETECTION, FACE_MATCH
+	Prompt         string                 `json:"prompt,omitempty"`
+	ResponseTokens int                    `json:"response_tokens"`
+	Confidence     float64                `json:"confidence"`
+	ExtractedData  map[string]interface{} `json:"extracted_data,omitempty"`
+	ProcessingTime int64                  `json:"processing_time_ms"`
+	AnalyzedAt     time.Time              `json:"analyzed_at"`
+	ErrorMessage   string                 `json:"error_message,omitempty"`
 }
 
 // KYCLakehousePublisher publishes KYC/KYB events to the lakehouse
 type KYCLakehousePublisher struct {
-	kafkaBootstrap    string
-	kafkaTopic        string
-	flinkEndpoint     string
-	deltaLakePath     string
-	httpClient        *http.Client
-	eventBuffer       []*LakehouseEvent
-	bufferMu          sync.Mutex
-	flushInterval     time.Duration
-	batchSize         int
-	circuitBreaker    *LakehouseCircuitBreaker
-	deadLetterQueue   *DeadLetterQueue
-	healthy           int32
-	metricsPublished  int64
-	metricsFailed     int64
-	dlqRetryInterval  time.Duration
-	stopCh            chan struct{}
-	fallbackEnabled   bool
-	localBufferPath   string
+	kafkaBootstrap   string
+	kafkaTopic       string
+	flinkEndpoint    string
+	deltaLakePath    string
+	httpClient       *http.Client
+	eventBuffer      []*LakehouseEvent
+	bufferMu         sync.Mutex
+	flushInterval    time.Duration
+	batchSize        int
+	circuitBreaker   *LakehouseCircuitBreaker
+	deadLetterQueue  *DeadLetterQueue
+	healthy          int32
+	metricsPublished int64
+	metricsFailed    int64
+	dlqRetryInterval time.Duration
+	stopCh           chan struct{}
+	fallbackEnabled  bool
+	localBufferPath  string
 }
 
 // NewKYCLakehousePublisher creates a new KYC lakehouse publisher with full resilience
@@ -382,17 +382,17 @@ func NewKYCLakehousePublisher(kafkaBootstrap, kafkaTopic, flinkEndpoint, deltaLa
 	if dlqPath == "" {
 		dlqPath = "/tmp/lakehouse_dlq.json"
 	}
-	
+
 	localBufferPath := os.Getenv("LAKEHOUSE_LOCAL_BUFFER_PATH")
 	if localBufferPath == "" {
 		localBufferPath = "/tmp/lakehouse_buffer.json"
 	}
 
 	publisher := &KYCLakehousePublisher{
-		kafkaBootstrap:   kafkaBootstrap,
-		kafkaTopic:       kafkaTopic,
-		flinkEndpoint:    flinkEndpoint,
-		deltaLakePath:    deltaLakePath,
+		kafkaBootstrap: kafkaBootstrap,
+		kafkaTopic:     kafkaTopic,
+		flinkEndpoint:  flinkEndpoint,
+		deltaLakePath:  deltaLakePath,
 		httpClient: &http.Client{
 			Timeout: 10 * time.Second,
 		},
@@ -410,10 +410,10 @@ func NewKYCLakehousePublisher(kafkaBootstrap, kafkaTopic, flinkEndpoint, deltaLa
 
 	// Start background flusher
 	go publisher.backgroundFlusher()
-	
+
 	// Start DLQ retry processor
 	go publisher.processDLQ()
-	
+
 	// Start health checker
 	go publisher.healthChecker()
 
@@ -434,12 +434,12 @@ func (p *KYCLakehousePublisher) IsHealthy() bool {
 // GetMetrics returns publisher metrics
 func (p *KYCLakehousePublisher) GetMetrics() map[string]interface{} {
 	return map[string]interface{}{
-		"published":        atomic.LoadInt64(&p.metricsPublished),
-		"failed":           atomic.LoadInt64(&p.metricsFailed),
-		"dlq_size":         p.deadLetterQueue.Size(),
-		"buffer_size":      len(p.eventBuffer),
-		"circuit_state":    p.circuitBreaker.State(),
-		"healthy":          p.IsHealthy(),
+		"published":     atomic.LoadInt64(&p.metricsPublished),
+		"failed":        atomic.LoadInt64(&p.metricsFailed),
+		"dlq_size":      p.deadLetterQueue.Size(),
+		"buffer_size":   len(p.eventBuffer),
+		"circuit_state": p.circuitBreaker.State(),
+		"healthy":       p.IsHealthy(),
 	}
 }
 
@@ -456,7 +456,7 @@ func (p *KYCLakehousePublisher) healthChecker() {
 			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 			err := p.checkKafkaHealth(ctx)
 			cancel()
-			
+
 			if err != nil {
 				atomic.StoreInt32(&p.healthy, 0)
 				log.Printf("Lakehouse health check failed: %v", err)
@@ -472,19 +472,19 @@ func (p *KYCLakehousePublisher) checkKafkaHealth(ctx context.Context) error {
 	if p.kafkaBootstrap == "" {
 		return nil
 	}
-	
+
 	healthURL := fmt.Sprintf("http://%s/", p.kafkaBootstrap)
 	req, err := http.NewRequestWithContext(ctx, "GET", healthURL, nil)
 	if err != nil {
 		return err
 	}
-	
+
 	resp, err := p.httpClient.Do(req)
 	if err != nil {
 		return err
 	}
 	defer resp.Body.Close()
-	
+
 	return nil
 }
 
@@ -501,13 +501,13 @@ func (p *KYCLakehousePublisher) processDLQ() {
 			if !p.circuitBreaker.CanExecute() {
 				continue
 			}
-			
+
 			events := p.deadLetterQueue.GetAll()
 			for _, event := range events {
 				ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 				err := p.sendToKafkaWithRetry(ctx, event)
 				cancel()
-				
+
 				if err == nil {
 					p.deadLetterQueue.Remove(event.EventID)
 					atomic.AddInt64(&p.metricsPublished, 1)
@@ -718,7 +718,7 @@ func (p *KYCLakehousePublisher) saveToLocalBuffer(event *LakehouseEvent) error {
 	}
 
 	events = append(events, event)
-	
+
 	newData, err := json.Marshal(events)
 	if err != nil {
 		return err

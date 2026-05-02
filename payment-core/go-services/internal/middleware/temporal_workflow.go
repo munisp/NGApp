@@ -15,44 +15,44 @@ type TemporalConfig struct {
 
 // PaymentWorkflowInput defines the input for payment processing workflows
 type PaymentWorkflowInput struct {
-	TransactionID   string                 `json:"transaction_id"`
-	SenderID        string                 `json:"sender_id"`
-	RecipientID     string                 `json:"recipient_id"`
-	Amount          float64                `json:"amount"`
-	Currency        string                 `json:"currency"`
-	PaymentMethod   string                 `json:"payment_method"`
-	Metadata        map[string]interface{} `json:"metadata"`
+	TransactionID string                 `json:"transaction_id"`
+	SenderID      string                 `json:"sender_id"`
+	RecipientID   string                 `json:"recipient_id"`
+	Amount        float64                `json:"amount"`
+	Currency      string                 `json:"currency"`
+	PaymentMethod string                 `json:"payment_method"`
+	Metadata      map[string]interface{} `json:"metadata"`
 }
 
 // PaymentWorkflowResult defines the result of a completed payment workflow
 type PaymentWorkflowResult struct {
-	TransactionID   string    `json:"transaction_id"`
-	Status          string    `json:"status"`
-	ProcessedAt     time.Time `json:"processed_at"`
-	SettlementRef   string    `json:"settlement_ref"`
-	FeeAmount       float64   `json:"fee_amount"`
-	ExchangeRate    float64   `json:"exchange_rate"`
-	FinalAmount     float64   `json:"final_amount"`
+	TransactionID string    `json:"transaction_id"`
+	Status        string    `json:"status"`
+	ProcessedAt   time.Time `json:"processed_at"`
+	SettlementRef string    `json:"settlement_ref"`
+	FeeAmount     float64   `json:"fee_amount"`
+	ExchangeRate  float64   `json:"exchange_rate"`
+	FinalAmount   float64   `json:"final_amount"`
 }
 
 // DisputeWorkflowInput defines the input for dispute resolution workflows
 type DisputeWorkflowInput struct {
-	DisputeID       string    `json:"dispute_id"`
-	TransactionID   string    `json:"transaction_id"`
-	Reason          string    `json:"reason"`
-	Amount          float64   `json:"amount"`
-	FiledBy         string    `json:"filed_by"`
-	EvidenceURLs    []string  `json:"evidence_urls"`
+	DisputeID     string   `json:"dispute_id"`
+	TransactionID string   `json:"transaction_id"`
+	Reason        string   `json:"reason"`
+	Amount        float64  `json:"amount"`
+	FiledBy       string   `json:"filed_by"`
+	EvidenceURLs  []string `json:"evidence_urls"`
 }
 
 // ComplianceWorkflowInput defines the input for compliance check workflows
 type ComplianceWorkflowInput struct {
-	TransactionID   string  `json:"transaction_id"`
-	SenderID        string  `json:"sender_id"`
-	RecipientID     string  `json:"recipient_id"`
-	Amount          float64 `json:"amount"`
-	Currency        string  `json:"currency"`
-	Country         string  `json:"country"`
+	TransactionID string  `json:"transaction_id"`
+	SenderID      string  `json:"sender_id"`
+	RecipientID   string  `json:"recipient_id"`
+	Amount        float64 `json:"amount"`
+	Currency      string  `json:"currency"`
+	Country       string  `json:"country"`
 }
 
 // WorkflowOrchestrator manages Temporal workflow executions

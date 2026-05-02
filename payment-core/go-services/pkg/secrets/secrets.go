@@ -26,12 +26,12 @@ type SecretProvider interface {
 
 // SecretMetadata holds metadata about a secret
 type SecretMetadata struct {
-	Key         string    `json:"key"`
-	Version     int       `json:"version"`
-	CreatedAt   time.Time `json:"created_at"`
-	UpdatedAt   time.Time `json:"updated_at"`
-	ExpiresAt   *time.Time `json:"expires_at,omitempty"`
-	Description string    `json:"description,omitempty"`
+	Key         string            `json:"key"`
+	Version     int               `json:"version"`
+	CreatedAt   time.Time         `json:"created_at"`
+	UpdatedAt   time.Time         `json:"updated_at"`
+	ExpiresAt   *time.Time        `json:"expires_at,omitempty"`
+	Description string            `json:"description,omitempty"`
 	Tags        map[string]string `json:"tags,omitempty"`
 }
 
@@ -198,14 +198,14 @@ func (p *EnvSecretProvider) DeleteSecret(ctx context.Context, key string) error 
 func (p *EnvSecretProvider) ListSecrets(ctx context.Context, prefix string) ([]string, error) {
 	var secrets []string
 	fullPrefix := p.prefix + strings.ToUpper(strings.ReplaceAll(prefix, ".", "_"))
-	
+
 	for _, env := range os.Environ() {
 		parts := strings.SplitN(env, "=", 2)
 		if len(parts) == 2 && strings.HasPrefix(parts[0], fullPrefix) {
 			secrets = append(secrets, parts[0])
 		}
 	}
-	
+
 	return secrets, nil
 }
 
@@ -603,20 +603,20 @@ func (p *AWSSecretsManagerProvider) ListSecrets(ctx context.Context, prefix stri
 
 // SecretRotator handles automatic secret rotation
 type SecretRotator struct {
-	manager     *SecretManager
-	rotations   map[string]*RotationConfig
-	mu          sync.RWMutex
-	stopCh      chan struct{}
+	manager   *SecretManager
+	rotations map[string]*RotationConfig
+	mu        sync.RWMutex
+	stopCh    chan struct{}
 }
 
 // RotationConfig defines how a secret should be rotated
 type RotationConfig struct {
-	Key           string
-	Interval      time.Duration
-	Generator     func() (string, error)
-	OnRotate      func(oldValue, newValue string) error
-	LastRotation  time.Time
-	NextRotation  time.Time
+	Key          string
+	Interval     time.Duration
+	Generator    func() (string, error)
+	OnRotate     func(oldValue, newValue string) error
+	LastRotation time.Time
+	NextRotation time.Time
 }
 
 // NewSecretRotator creates a new secret rotator
@@ -729,12 +729,12 @@ func ValidateSecretStrength(secret string) error {
 	if len(secret) < 16 {
 		return errors.New("secret must be at least 16 characters")
 	}
-	
+
 	hasUpper := false
 	hasLower := false
 	hasDigit := false
 	hasSpecial := false
-	
+
 	for _, c := range secret {
 		switch {
 		case c >= 'A' && c <= 'Z':
@@ -747,10 +747,10 @@ func ValidateSecretStrength(secret string) error {
 			hasSpecial = true
 		}
 	}
-	
+
 	if !hasUpper || !hasLower || !hasDigit || !hasSpecial {
 		return errors.New("secret must contain uppercase, lowercase, digit, and special characters")
 	}
-	
+
 	return nil
 }

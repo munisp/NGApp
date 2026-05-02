@@ -28,13 +28,13 @@ type KafkaProducer interface {
 
 // OutboxConfig configures the Kafka outbox
 type OutboxConfig struct {
-	BufferSize     int           // Ring buffer size (default: 100000)
-	BatchSize      int           // Max events per batch (default: 1000)
-	LingerMs       int           // Max time before flush in ms (default: 5)
-	MaxInflight    int           // Max concurrent batches (default: 10)
-	Compression    string        // Compression type: none, lz4, zstd (default: lz4)
-	RetryAttempts  int           // Retry attempts on failure (default: 3)
-	RetryBackoffMs int           // Backoff between retries (default: 100)
+	BufferSize     int    // Ring buffer size (default: 100000)
+	BatchSize      int    // Max events per batch (default: 1000)
+	LingerMs       int    // Max time before flush in ms (default: 5)
+	MaxInflight    int    // Max concurrent batches (default: 10)
+	Compression    string // Compression type: none, lz4, zstd (default: lz4)
+	RetryAttempts  int    // Retry attempts on failure (default: 3)
+	RetryBackoffMs int    // Backoff between retries (default: 100)
 }
 
 // DefaultOutboxConfig returns optimized defaults
@@ -61,10 +61,10 @@ type KafkaOutbox struct {
 	defaultSize int
 
 	// Stats
-	totalQueued   uint64
-	totalSent     uint64
-	totalFailed   uint64
-	totalDropped  uint64
+	totalQueued  uint64
+	totalSent    uint64
+	totalFailed  uint64
+	totalDropped uint64
 
 	// Control
 	ctx    context.Context
@@ -329,10 +329,10 @@ func int64ToBytes(n int64) []byte {
 
 // IdempotencyStore provides idempotency key storage
 type IdempotencyStore struct {
-	cache     map[string]int64 // key -> expiry timestamp
-	cacheMu   sync.RWMutex
-	maxSize   int
-	ttlNanos  int64
+	cache    map[string]int64 // key -> expiry timestamp
+	cacheMu  sync.RWMutex
+	maxSize  int
+	ttlNanos int64
 }
 
 // NewIdempotencyStore creates a new idempotency store

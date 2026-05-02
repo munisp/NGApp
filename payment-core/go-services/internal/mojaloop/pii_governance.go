@@ -27,12 +27,12 @@ type PIIGovernance struct {
 
 // PIIConfig holds configuration for PII governance
 type PIIConfig struct {
-	EncryptionKey     string        // Base64-encoded 32-byte key
-	MaskingSalt       string        // Salt for consistent masking
-	RetentionPeriod   time.Duration // How long to retain PII
-	EnableEncryption  bool
-	EnableMasking     bool
-	EnableAuditLog    bool
+	EncryptionKey    string        // Base64-encoded 32-byte key
+	MaskingSalt      string        // Salt for consistent masking
+	RetentionPeriod  time.Duration // How long to retain PII
+	EnableEncryption bool
+	EnableMasking    bool
+	EnableAuditLog   bool
 }
 
 // DefaultPIIConfig returns default configuration
@@ -74,8 +74,8 @@ func NewPIIGovernance(config *PIIConfig) (*PIIGovernance, error) {
 
 // PIIField represents a field that may contain PII
 type PIIField struct {
-	Name       string
-	Type       PIIType
+	Name        string
+	Type        PIIType
 	Sensitivity PIISensitivity
 }
 
@@ -83,15 +83,15 @@ type PIIField struct {
 type PIIType string
 
 const (
-	PIITypeName         PIIType = "name"
-	PIITypeEmail        PIIType = "email"
-	PIITypePhone        PIIType = "phone"
-	PIITypeAddress      PIIType = "address"
-	PIITypeIDNumber     PIIType = "id_number"
-	PIITypeBankAccount  PIIType = "bank_account"
-	PIITypeDateOfBirth  PIIType = "date_of_birth"
-	PIITypeFinancial    PIIType = "financial"
-	PIITypeBiometric    PIIType = "biometric"
+	PIITypeName        PIIType = "name"
+	PIITypeEmail       PIIType = "email"
+	PIITypePhone       PIIType = "phone"
+	PIITypeAddress     PIIType = "address"
+	PIITypeIDNumber    PIIType = "id_number"
+	PIITypeBankAccount PIIType = "bank_account"
+	PIITypeDateOfBirth PIIType = "date_of_birth"
+	PIITypeFinancial   PIIType = "financial"
+	PIITypeBiometric   PIIType = "biometric"
 )
 
 // PIISensitivity represents the sensitivity level
@@ -106,35 +106,35 @@ const (
 
 // KnownPIIFields defines known PII fields and their types
 var KnownPIIFields = map[string]PIIField{
-	"name":              {Name: "name", Type: PIITypeName, Sensitivity: PIISensitivityMedium},
-	"first_name":        {Name: "first_name", Type: PIITypeName, Sensitivity: PIISensitivityMedium},
-	"last_name":         {Name: "last_name", Type: PIITypeName, Sensitivity: PIISensitivityMedium},
-	"full_name":         {Name: "full_name", Type: PIITypeName, Sensitivity: PIISensitivityMedium},
-	"email":             {Name: "email", Type: PIITypeEmail, Sensitivity: PIISensitivityMedium},
-	"email_address":     {Name: "email_address", Type: PIITypeEmail, Sensitivity: PIISensitivityMedium},
-	"phone":             {Name: "phone", Type: PIITypePhone, Sensitivity: PIISensitivityMedium},
-	"phone_number":      {Name: "phone_number", Type: PIITypePhone, Sensitivity: PIISensitivityMedium},
-	"mobile":            {Name: "mobile", Type: PIITypePhone, Sensitivity: PIISensitivityMedium},
-	"address":           {Name: "address", Type: PIITypeAddress, Sensitivity: PIISensitivityMedium},
-	"street_address":    {Name: "street_address", Type: PIITypeAddress, Sensitivity: PIISensitivityMedium},
-	"ssn":               {Name: "ssn", Type: PIITypeIDNumber, Sensitivity: PIISensitivityCritical},
-	"social_security":   {Name: "social_security", Type: PIITypeIDNumber, Sensitivity: PIISensitivityCritical},
-	"national_id":       {Name: "national_id", Type: PIITypeIDNumber, Sensitivity: PIISensitivityCritical},
-	"bvn":               {Name: "bvn", Type: PIITypeIDNumber, Sensitivity: PIISensitivityCritical},
-	"nin":               {Name: "nin", Type: PIITypeIDNumber, Sensitivity: PIISensitivityCritical},
-	"passport_number":   {Name: "passport_number", Type: PIITypeIDNumber, Sensitivity: PIISensitivityHigh},
-	"drivers_license":   {Name: "drivers_license", Type: PIITypeIDNumber, Sensitivity: PIISensitivityHigh},
-	"bank_account":      {Name: "bank_account", Type: PIITypeBankAccount, Sensitivity: PIISensitivityHigh},
-	"account_number":    {Name: "account_number", Type: PIITypeBankAccount, Sensitivity: PIISensitivityHigh},
-	"iban":              {Name: "iban", Type: PIITypeBankAccount, Sensitivity: PIISensitivityHigh},
-	"date_of_birth":     {Name: "date_of_birth", Type: PIITypeDateOfBirth, Sensitivity: PIISensitivityMedium},
-	"dob":               {Name: "dob", Type: PIITypeDateOfBirth, Sensitivity: PIISensitivityMedium},
-	"birth_date":        {Name: "birth_date", Type: PIITypeDateOfBirth, Sensitivity: PIISensitivityMedium},
-	"salary":            {Name: "salary", Type: PIITypeFinancial, Sensitivity: PIISensitivityHigh},
-	"income":            {Name: "income", Type: PIITypeFinancial, Sensitivity: PIISensitivityHigh},
-	"fingerprint":       {Name: "fingerprint", Type: PIITypeBiometric, Sensitivity: PIISensitivityCritical},
-	"face_data":         {Name: "face_data", Type: PIITypeBiometric, Sensitivity: PIISensitivityCritical},
-	"biometric":         {Name: "biometric", Type: PIITypeBiometric, Sensitivity: PIISensitivityCritical},
+	"name":            {Name: "name", Type: PIITypeName, Sensitivity: PIISensitivityMedium},
+	"first_name":      {Name: "first_name", Type: PIITypeName, Sensitivity: PIISensitivityMedium},
+	"last_name":       {Name: "last_name", Type: PIITypeName, Sensitivity: PIISensitivityMedium},
+	"full_name":       {Name: "full_name", Type: PIITypeName, Sensitivity: PIISensitivityMedium},
+	"email":           {Name: "email", Type: PIITypeEmail, Sensitivity: PIISensitivityMedium},
+	"email_address":   {Name: "email_address", Type: PIITypeEmail, Sensitivity: PIISensitivityMedium},
+	"phone":           {Name: "phone", Type: PIITypePhone, Sensitivity: PIISensitivityMedium},
+	"phone_number":    {Name: "phone_number", Type: PIITypePhone, Sensitivity: PIISensitivityMedium},
+	"mobile":          {Name: "mobile", Type: PIITypePhone, Sensitivity: PIISensitivityMedium},
+	"address":         {Name: "address", Type: PIITypeAddress, Sensitivity: PIISensitivityMedium},
+	"street_address":  {Name: "street_address", Type: PIITypeAddress, Sensitivity: PIISensitivityMedium},
+	"ssn":             {Name: "ssn", Type: PIITypeIDNumber, Sensitivity: PIISensitivityCritical},
+	"social_security": {Name: "social_security", Type: PIITypeIDNumber, Sensitivity: PIISensitivityCritical},
+	"national_id":     {Name: "national_id", Type: PIITypeIDNumber, Sensitivity: PIISensitivityCritical},
+	"bvn":             {Name: "bvn", Type: PIITypeIDNumber, Sensitivity: PIISensitivityCritical},
+	"nin":             {Name: "nin", Type: PIITypeIDNumber, Sensitivity: PIISensitivityCritical},
+	"passport_number": {Name: "passport_number", Type: PIITypeIDNumber, Sensitivity: PIISensitivityHigh},
+	"drivers_license": {Name: "drivers_license", Type: PIITypeIDNumber, Sensitivity: PIISensitivityHigh},
+	"bank_account":    {Name: "bank_account", Type: PIITypeBankAccount, Sensitivity: PIISensitivityHigh},
+	"account_number":  {Name: "account_number", Type: PIITypeBankAccount, Sensitivity: PIISensitivityHigh},
+	"iban":            {Name: "iban", Type: PIITypeBankAccount, Sensitivity: PIISensitivityHigh},
+	"date_of_birth":   {Name: "date_of_birth", Type: PIITypeDateOfBirth, Sensitivity: PIISensitivityMedium},
+	"dob":             {Name: "dob", Type: PIITypeDateOfBirth, Sensitivity: PIISensitivityMedium},
+	"birth_date":      {Name: "birth_date", Type: PIITypeDateOfBirth, Sensitivity: PIISensitivityMedium},
+	"salary":          {Name: "salary", Type: PIITypeFinancial, Sensitivity: PIISensitivityHigh},
+	"income":          {Name: "income", Type: PIITypeFinancial, Sensitivity: PIISensitivityHigh},
+	"fingerprint":     {Name: "fingerprint", Type: PIITypeBiometric, Sensitivity: PIISensitivityCritical},
+	"face_data":       {Name: "face_data", Type: PIITypeBiometric, Sensitivity: PIISensitivityCritical},
+	"biometric":       {Name: "biometric", Type: PIITypeBiometric, Sensitivity: PIISensitivityCritical},
 }
 
 // Encrypt encrypts a value using AES-GCM
@@ -354,11 +354,11 @@ type PIIAccessControl struct {
 func NewPIIAccessControl() *PIIAccessControl {
 	return &PIIAccessControl{
 		roles: map[string][]string{
-			"admin":           {"name", "email", "phone", "address", "id_number", "bank_account", "date_of_birth", "financial"},
-			"compliance":      {"name", "email", "phone", "address", "id_number", "bank_account", "date_of_birth"},
-			"support":         {"name", "email", "phone"},
-			"analyst":         {}, // No direct PII access, only tokenized/aggregated data
-			"developer":       {}, // No PII access in non-production
+			"admin":      {"name", "email", "phone", "address", "id_number", "bank_account", "date_of_birth", "financial"},
+			"compliance": {"name", "email", "phone", "address", "id_number", "bank_account", "date_of_birth"},
+			"support":    {"name", "email", "phone"},
+			"analyst":    {}, // No direct PII access, only tokenized/aggregated data
+			"developer":  {}, // No PII access in non-production
 		},
 	}
 }
@@ -453,11 +453,11 @@ func NewPIIDataSubjectRequest(store *TransferStore) *PIIDataSubjectRequest {
 type DataSubjectRequestType string
 
 const (
-	DSRTypeAccess    DataSubjectRequestType = "access"    // Right to access
-	DSRTypeRectify   DataSubjectRequestType = "rectify"   // Right to rectification
-	DSRTypeErase     DataSubjectRequestType = "erase"     // Right to erasure
-	DSRTypePortable  DataSubjectRequestType = "portable"  // Right to portability
-	DSRTypeRestrict  DataSubjectRequestType = "restrict"  // Right to restrict processing
+	DSRTypeAccess   DataSubjectRequestType = "access"   // Right to access
+	DSRTypeRectify  DataSubjectRequestType = "rectify"  // Right to rectification
+	DSRTypeErase    DataSubjectRequestType = "erase"    // Right to erasure
+	DSRTypePortable DataSubjectRequestType = "portable" // Right to portability
+	DSRTypeRestrict DataSubjectRequestType = "restrict" // Right to restrict processing
 )
 
 // DataSubjectRequest represents a data subject request
@@ -610,9 +610,9 @@ func GetPIIGovernance() *PIIGovernance {
 
 // LakehouseDataProcessor processes data for lakehouse ingestion
 type LakehouseDataProcessor struct {
-	pii          *PIIGovernance
+	pii           *PIIGovernance
 	accessControl *PIIAccessControl
-	retention    *PIIRetentionPolicy
+	retention     *PIIRetentionPolicy
 }
 
 // NewLakehouseDataProcessor creates a new lakehouse data processor

@@ -13,9 +13,9 @@ import (
 // Config holds all application configuration
 type Config struct {
 	// Server
-	ServerPort     int
-	ServerHost     string
-	Environment    string
+	ServerPort      int
+	ServerHost      string
+	Environment     string
 	IntegrationMode string // "real" or "simulated"
 
 	// Database
@@ -50,8 +50,8 @@ type Config struct {
 	MojaloopAccountLookupURL string
 
 	// Secrets
-	JWTSecret        string
-	EncryptionKey    string
+	JWTSecret         string
+	EncryptionKey     string
 	WebhookSigningKey string
 
 	// Feature Flags

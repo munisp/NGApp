@@ -12,12 +12,12 @@ import (
 
 // SettlementWindowManager handles settlement window lifecycle and netting
 type SettlementWindowManager struct {
-	ledger           LedgerEngine
-	workflowStore    WorkflowStore
-	db               *sql.DB
-	linkedMgr        *LinkedTransferManager
-	participantMgr   *ParticipantLifecycleManager
-	mu               sync.RWMutex
+	ledger         LedgerEngine
+	workflowStore  WorkflowStore
+	db             *sql.DB
+	linkedMgr      *LinkedTransferManager
+	participantMgr *ParticipantLifecycleManager
+	mu             sync.RWMutex
 }
 
 // NewSettlementWindowManager creates a new settlement window manager
@@ -41,11 +41,11 @@ func NewSettlementWindowManager(
 type SettlementWindowState string
 
 const (
-	SettlementWindowStateOpen       SettlementWindowState = "OPEN"
-	SettlementWindowStateClosed     SettlementWindowState = "CLOSED"
-	SettlementWindowStatePending    SettlementWindowState = "PENDING_SETTLEMENT"
-	SettlementWindowStateSettled    SettlementWindowState = "SETTLED"
-	SettlementWindowStateAborted    SettlementWindowState = "ABORTED"
+	SettlementWindowStateOpen    SettlementWindowState = "OPEN"
+	SettlementWindowStateClosed  SettlementWindowState = "CLOSED"
+	SettlementWindowStatePending SettlementWindowState = "PENDING_SETTLEMENT"
+	SettlementWindowStateSettled SettlementWindowState = "SETTLED"
+	SettlementWindowStateAborted SettlementWindowState = "ABORTED"
 )
 
 // SettlementWindow represents a settlement window
@@ -69,29 +69,29 @@ type SettlementWindowContent struct {
 
 // ParticipantSettlement represents a participant's settlement position
 type ParticipantSettlement struct {
-	ParticipantID   string           `json:"participantId"`
-	ParticipantName string           `json:"participantName"`
+	ParticipantID   string               `json:"participantId"`
+	ParticipantName string               `json:"participantName"`
 	Accounts        []*AccountSettlement `json:"accounts"`
 }
 
 // AccountSettlement represents settlement for a specific account
 type AccountSettlement struct {
-	AccountID       int64  `json:"accountId"`
-	Currency        string `json:"currency"`
-	NetSettlement   int64  `json:"netSettlement"` // Positive = receive, Negative = pay
-	TransferCount   int    `json:"transferCount"`
-	TotalDebits     int64  `json:"totalDebits"`
-	TotalCredits    int64  `json:"totalCredits"`
+	AccountID     int64  `json:"accountId"`
+	Currency      string `json:"currency"`
+	NetSettlement int64  `json:"netSettlement"` // Positive = receive, Negative = pay
+	TransferCount int    `json:"transferCount"`
+	TotalDebits   int64  `json:"totalDebits"`
+	TotalCredits  int64  `json:"totalCredits"`
 }
 
 // Settlement represents a settlement
 type Settlement struct {
-	SettlementID       int64                    `json:"settlementId"`
-	State              SettlementState          `json:"state"`
-	SettlementWindows  []*SettlementWindow      `json:"settlementWindows"`
-	Participants       []*ParticipantSettlement `json:"participants"`
-	CreatedDate        time.Time                `json:"createdDate"`
-	ChangedDate        time.Time                `json:"changedDate"`
+	SettlementID      int64                    `json:"settlementId"`
+	State             SettlementState          `json:"state"`
+	SettlementWindows []*SettlementWindow      `json:"settlementWindows"`
+	Participants      []*ParticipantSettlement `json:"participants"`
+	CreatedDate       time.Time                `json:"createdDate"`
+	ChangedDate       time.Time                `json:"changedDate"`
 }
 
 // SettlementState represents the state of a settlement
@@ -685,22 +685,22 @@ func (m *SettlementWindowManager) AssignTransferToWindow(ctx context.Context, tr
 
 // SettlementReport generates a settlement report
 type SettlementReport struct {
-	SettlementID       int64                    `json:"settlementId"`
-	State              SettlementState          `json:"state"`
-	WindowCount        int                      `json:"windowCount"`
-	TotalTransfers     int                      `json:"totalTransfers"`
-	TotalAmount        map[string]int64         `json:"totalAmount"`
-	ParticipantSummary []*ParticipantSummary    `json:"participantSummary"`
-	CreatedDate        time.Time                `json:"createdDate"`
-	SettledDate        *time.Time               `json:"settledDate,omitempty"`
+	SettlementID       int64                 `json:"settlementId"`
+	State              SettlementState       `json:"state"`
+	WindowCount        int                   `json:"windowCount"`
+	TotalTransfers     int                   `json:"totalTransfers"`
+	TotalAmount        map[string]int64      `json:"totalAmount"`
+	ParticipantSummary []*ParticipantSummary `json:"participantSummary"`
+	CreatedDate        time.Time             `json:"createdDate"`
+	SettledDate        *time.Time            `json:"settledDate,omitempty"`
 }
 
 // ParticipantSummary summarizes a participant's settlement
 type ParticipantSummary struct {
-	ParticipantID   string           `json:"participantId"`
-	NetPositions    map[string]int64 `json:"netPositions"` // currency -> net amount
-	TotalDebits     map[string]int64 `json:"totalDebits"`
-	TotalCredits    map[string]int64 `json:"totalCredits"`
+	ParticipantID string           `json:"participantId"`
+	NetPositions  map[string]int64 `json:"netPositions"` // currency -> net amount
+	TotalDebits   map[string]int64 `json:"totalDebits"`
+	TotalCredits  map[string]int64 `json:"totalCredits"`
 }
 
 // GenerateSettlementReport generates a detailed settlement report
@@ -711,11 +711,11 @@ func (m *SettlementWindowManager) GenerateSettlementReport(ctx context.Context, 
 	}
 
 	report := &SettlementReport{
-		SettlementID:   settlementID,
-		State:          settlement.State,
-		WindowCount:    len(settlement.SettlementWindows),
-		TotalAmount:    make(map[string]int64),
-		CreatedDate:    settlement.CreatedDate,
+		SettlementID: settlementID,
+		State:        settlement.State,
+		WindowCount:  len(settlement.SettlementWindows),
+		TotalAmount:  make(map[string]int64),
+		CreatedDate:  settlement.CreatedDate,
 	}
 
 	// Calculate totals

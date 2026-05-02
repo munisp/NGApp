@@ -71,30 +71,30 @@ type UsageAggregate struct {
 }
 
 type BillingLineItem struct {
-	Description   string  `json:"description"`
+	Description   string         `json:"description"`
 	EventType     UsageEventType `json:"eventType"`
-	Quantity      int64   `json:"quantity"`
-	UnitPrice     float64 `json:"unitPrice"`
-	Amount        float64 `json:"amount"`
-	IncludedUnits int64   `json:"includedUnits"`
-	BillableUnits int64   `json:"billableUnits"`
+	Quantity      int64          `json:"quantity"`
+	UnitPrice     float64        `json:"unitPrice"`
+	Amount        float64        `json:"amount"`
+	IncludedUnits int64          `json:"includedUnits"`
+	BillableUnits int64          `json:"billableUnits"`
 }
 
 type Invoice struct {
-	ID              string            `json:"id"`
-	OrganizationID  string            `json:"organizationId"`
-	PlanID          string            `json:"planId"`
-	PeriodStart     time.Time         `json:"periodStart"`
-	PeriodEnd       time.Time         `json:"periodEnd"`
-	PlatformFee     float64           `json:"platformFee"`
-	UsageCharges    float64           `json:"usageCharges"`
-	TotalAmount     float64           `json:"totalAmount"`
-	Currency        string            `json:"currency"`
-	Status          string            `json:"status"`
-	LineItems       []BillingLineItem `json:"lineItems"`
-	CreatedAt       time.Time         `json:"createdAt"`
-	DueDate         time.Time         `json:"dueDate"`
-	PaidAt          *time.Time        `json:"paidAt,omitempty"`
+	ID             string            `json:"id"`
+	OrganizationID string            `json:"organizationId"`
+	PlanID         string            `json:"planId"`
+	PeriodStart    time.Time         `json:"periodStart"`
+	PeriodEnd      time.Time         `json:"periodEnd"`
+	PlatformFee    float64           `json:"platformFee"`
+	UsageCharges   float64           `json:"usageCharges"`
+	TotalAmount    float64           `json:"totalAmount"`
+	Currency       string            `json:"currency"`
+	Status         string            `json:"status"`
+	LineItems      []BillingLineItem `json:"lineItems"`
+	CreatedAt      time.Time         `json:"createdAt"`
+	DueDate        time.Time         `json:"dueDate"`
+	PaidAt         *time.Time        `json:"paidAt,omitempty"`
 }
 
 type QuotaStatus struct {
@@ -127,34 +127,34 @@ type RateLimitStatus struct {
 }
 
 type EventPricing struct {
-	EventType       UsageEventType `json:"eventType"`
-	BaseFee         float64        `json:"baseFee"`
-	PercentageFee   float64        `json:"percentageFee"`
-	MinFee          float64        `json:"minFee"`
-	MaxFee          float64        `json:"maxFee"`
-	IncludedInPlan  bool           `json:"includedInPlan"`
+	EventType      UsageEventType `json:"eventType"`
+	BaseFee        float64        `json:"baseFee"`
+	PercentageFee  float64        `json:"percentageFee"`
+	MinFee         float64        `json:"minFee"`
+	MaxFee         float64        `json:"maxFee"`
+	IncludedInPlan bool           `json:"includedInPlan"`
 }
 
 type MeteringService struct {
-	mu              sync.RWMutex
-	events          []*UsageEvent
-	aggregates      map[string]*UsageAggregate
-	invoices        map[string]*Invoice
-	quotaTracking   map[string]*QuotaStatus
-	rateLimitState  map[string]*rateLimitWindow
-	eventPricing    map[UsageEventType]*EventPricing
-	tokenService    *APITokenService
+	mu             sync.RWMutex
+	events         []*UsageEvent
+	aggregates     map[string]*UsageAggregate
+	invoices       map[string]*Invoice
+	quotaTracking  map[string]*QuotaStatus
+	rateLimitState map[string]*rateLimitWindow
+	eventPricing   map[UsageEventType]*EventPricing
+	tokenService   *APITokenService
 }
 
 type rateLimitWindow struct {
-	secondCount  int
-	minuteCount  int
-	hourCount    int
-	dayCount     int
-	secondReset  time.Time
-	minuteReset  time.Time
-	hourReset    time.Time
-	dayReset     time.Time
+	secondCount int
+	minuteCount int
+	hourCount   int
+	dayCount    int
+	secondReset time.Time
+	minuteReset time.Time
+	hourReset   time.Time
+	dayReset    time.Time
 }
 
 func NewMeteringService(tokenService *APITokenService) *MeteringService {

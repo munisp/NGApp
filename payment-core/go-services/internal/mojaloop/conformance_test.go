@@ -34,13 +34,13 @@ func NewConformanceTestSuite(t *testing.T, baseURL string) *ConformanceTestSuite
 func (s *ConformanceTestSuite) TestTransferPrepare() {
 	s.t.Run("PrepareTransfer_Success", func(t *testing.T) {
 		req := map[string]interface{}{
-			"transferId":     "550e8400-e29b-41d4-a716-446655440000",
-			"payerFsp":       "dfsp1",
-			"payeeFsp":       "dfsp2",
-			"amount":         map[string]interface{}{"amount": "100.00", "currency": "USD"},
-			"ilpPacket":      "AQAAAAAAAABkEGcuZXhhbXBsZS5wYXllZQ",
-			"condition":      "f5sqb7tBTWPd5Y8BDFdMm9BJR_MNI4isf8p8n4D5pHA",
-			"expiration":     time.Now().Add(30 * time.Second).UTC().Format(time.RFC3339),
+			"transferId": "550e8400-e29b-41d4-a716-446655440000",
+			"payerFsp":   "dfsp1",
+			"payeeFsp":   "dfsp2",
+			"amount":     map[string]interface{}{"amount": "100.00", "currency": "USD"},
+			"ilpPacket":  "AQAAAAAAAABkEGcuZXhhbXBsZS5wYXllZQ",
+			"condition":  "f5sqb7tBTWPd5Y8BDFdMm9BJR_MNI4isf8p8n4D5pHA",
+			"expiration": time.Now().Add(30 * time.Second).UTC().Format(time.RFC3339),
 		}
 
 		resp, err := s.post("/api/v1/mojaloop/transfers/prepare", req)
@@ -64,13 +64,13 @@ func (s *ConformanceTestSuite) TestTransferPrepare() {
 	s.t.Run("PrepareTransfer_Idempotent", func(t *testing.T) {
 		transferID := "550e8400-e29b-41d4-a716-446655440001"
 		req := map[string]interface{}{
-			"transferId":     transferID,
-			"payerFsp":       "dfsp1",
-			"payeeFsp":       "dfsp2",
-			"amount":         map[string]interface{}{"amount": "50.00", "currency": "USD"},
-			"ilpPacket":      "AQAAAAAAAABkEGcuZXhhbXBsZS5wYXllZQ",
-			"condition":      "f5sqb7tBTWPd5Y8BDFdMm9BJR_MNI4isf8p8n4D5pHA",
-			"expiration":     time.Now().Add(30 * time.Second).UTC().Format(time.RFC3339),
+			"transferId": transferID,
+			"payerFsp":   "dfsp1",
+			"payeeFsp":   "dfsp2",
+			"amount":     map[string]interface{}{"amount": "50.00", "currency": "USD"},
+			"ilpPacket":  "AQAAAAAAAABkEGcuZXhhbXBsZS5wYXllZQ",
+			"condition":  "f5sqb7tBTWPd5Y8BDFdMm9BJR_MNI4isf8p8n4D5pHA",
+			"expiration": time.Now().Add(30 * time.Second).UTC().Format(time.RFC3339),
 		}
 
 		// First request
@@ -93,13 +93,13 @@ func (s *ConformanceTestSuite) TestTransferPrepare() {
 	s.t.Run("PrepareTransfer_DifferentParams_SameID", func(t *testing.T) {
 		transferID := "550e8400-e29b-41d4-a716-446655440002"
 		req1 := map[string]interface{}{
-			"transferId":     transferID,
-			"payerFsp":       "dfsp1",
-			"payeeFsp":       "dfsp2",
-			"amount":         map[string]interface{}{"amount": "100.00", "currency": "USD"},
-			"ilpPacket":      "AQAAAAAAAABkEGcuZXhhbXBsZS5wYXllZQ",
-			"condition":      "f5sqb7tBTWPd5Y8BDFdMm9BJR_MNI4isf8p8n4D5pHA",
-			"expiration":     time.Now().Add(30 * time.Second).UTC().Format(time.RFC3339),
+			"transferId": transferID,
+			"payerFsp":   "dfsp1",
+			"payeeFsp":   "dfsp2",
+			"amount":     map[string]interface{}{"amount": "100.00", "currency": "USD"},
+			"ilpPacket":  "AQAAAAAAAABkEGcuZXhhbXBsZS5wYXllZQ",
+			"condition":  "f5sqb7tBTWPd5Y8BDFdMm9BJR_MNI4isf8p8n4D5pHA",
+			"expiration": time.Now().Add(30 * time.Second).UTC().Format(time.RFC3339),
 		}
 
 		// First request
@@ -107,13 +107,13 @@ func (s *ConformanceTestSuite) TestTransferPrepare() {
 
 		// Second request with different amount (should fail)
 		req2 := map[string]interface{}{
-			"transferId":     transferID,
-			"payerFsp":       "dfsp1",
-			"payeeFsp":       "dfsp2",
-			"amount":         map[string]interface{}{"amount": "200.00", "currency": "USD"},
-			"ilpPacket":      "AQAAAAAAAABkEGcuZXhhbXBsZS5wYXllZQ",
-			"condition":      "f5sqb7tBTWPd5Y8BDFdMm9BJR_MNI4isf8p8n4D5pHA",
-			"expiration":     time.Now().Add(30 * time.Second).UTC().Format(time.RFC3339),
+			"transferId": transferID,
+			"payerFsp":   "dfsp1",
+			"payeeFsp":   "dfsp2",
+			"amount":     map[string]interface{}{"amount": "200.00", "currency": "USD"},
+			"ilpPacket":  "AQAAAAAAAABkEGcuZXhhbXBsZS5wYXllZQ",
+			"condition":  "f5sqb7tBTWPd5Y8BDFdMm9BJR_MNI4isf8p8n4D5pHA",
+			"expiration": time.Now().Add(30 * time.Second).UTC().Format(time.RFC3339),
 		}
 
 		resp2, _ := s.post("/api/v1/mojaloop/transfers/prepare", req2)
@@ -129,20 +129,20 @@ func (s *ConformanceTestSuite) TestTransferFulfill() {
 		// First prepare a transfer
 		transferID := "550e8400-e29b-41d4-a716-446655440010"
 		prepareReq := map[string]interface{}{
-			"transferId":     transferID,
-			"payerFsp":       "dfsp1",
-			"payeeFsp":       "dfsp2",
-			"amount":         map[string]interface{}{"amount": "100.00", "currency": "USD"},
-			"ilpPacket":      "AQAAAAAAAABkEGcuZXhhbXBsZS5wYXllZQ",
-			"condition":      "f5sqb7tBTWPd5Y8BDFdMm9BJR_MNI4isf8p8n4D5pHA",
-			"expiration":     time.Now().Add(30 * time.Second).UTC().Format(time.RFC3339),
+			"transferId": transferID,
+			"payerFsp":   "dfsp1",
+			"payeeFsp":   "dfsp2",
+			"amount":     map[string]interface{}{"amount": "100.00", "currency": "USD"},
+			"ilpPacket":  "AQAAAAAAAABkEGcuZXhhbXBsZS5wYXllZQ",
+			"condition":  "f5sqb7tBTWPd5Y8BDFdMm9BJR_MNI4isf8p8n4D5pHA",
+			"expiration": time.Now().Add(30 * time.Second).UTC().Format(time.RFC3339),
 		}
 		s.post("/api/v1/mojaloop/transfers/prepare", prepareReq)
 
 		// Now fulfill
 		fulfillReq := map[string]interface{}{
-			"transferId":  transferID,
-			"fulfillment": "UNlJ98hZTY_dsw0cAqw4i_UN3v4utt7CZFB4yfLbVFA",
+			"transferId":    transferID,
+			"fulfillment":   "UNlJ98hZTY_dsw0cAqw4i_UN3v4utt7CZFB4yfLbVFA",
 			"transferState": "COMMITTED",
 		}
 
@@ -168,20 +168,20 @@ func (s *ConformanceTestSuite) TestTransferFulfill() {
 		// First prepare a transfer
 		transferID := "550e8400-e29b-41d4-a716-446655440011"
 		prepareReq := map[string]interface{}{
-			"transferId":     transferID,
-			"payerFsp":       "dfsp1",
-			"payeeFsp":       "dfsp2",
-			"amount":         map[string]interface{}{"amount": "100.00", "currency": "USD"},
-			"ilpPacket":      "AQAAAAAAAABkEGcuZXhhbXBsZS5wYXllZQ",
-			"condition":      "f5sqb7tBTWPd5Y8BDFdMm9BJR_MNI4isf8p8n4D5pHA",
-			"expiration":     time.Now().Add(30 * time.Second).UTC().Format(time.RFC3339),
+			"transferId": transferID,
+			"payerFsp":   "dfsp1",
+			"payeeFsp":   "dfsp2",
+			"amount":     map[string]interface{}{"amount": "100.00", "currency": "USD"},
+			"ilpPacket":  "AQAAAAAAAABkEGcuZXhhbXBsZS5wYXllZQ",
+			"condition":  "f5sqb7tBTWPd5Y8BDFdMm9BJR_MNI4isf8p8n4D5pHA",
+			"expiration": time.Now().Add(30 * time.Second).UTC().Format(time.RFC3339),
 		}
 		s.post("/api/v1/mojaloop/transfers/prepare", prepareReq)
 
 		// Try to fulfill with wrong fulfillment
 		fulfillReq := map[string]interface{}{
-			"transferId":  transferID,
-			"fulfillment": "WRONG_FULFILLMENT_VALUE_HERE_AAAAAAAAAAAAAAAA",
+			"transferId":    transferID,
+			"fulfillment":   "WRONG_FULFILLMENT_VALUE_HERE_AAAAAAAAAAAAAAAA",
 			"transferState": "COMMITTED",
 		}
 
@@ -195,28 +195,28 @@ func (s *ConformanceTestSuite) TestTransferFulfill() {
 		// First prepare a transfer
 		transferID := "550e8400-e29b-41d4-a716-446655440012"
 		prepareReq := map[string]interface{}{
-			"transferId":     transferID,
-			"payerFsp":       "dfsp1",
-			"payeeFsp":       "dfsp2",
-			"amount":         map[string]interface{}{"amount": "100.00", "currency": "USD"},
-			"ilpPacket":      "AQAAAAAAAABkEGcuZXhhbXBsZS5wYXllZQ",
-			"condition":      "f5sqb7tBTWPd5Y8BDFdMm9BJR_MNI4isf8p8n4D5pHA",
-			"expiration":     time.Now().Add(30 * time.Second).UTC().Format(time.RFC3339),
+			"transferId": transferID,
+			"payerFsp":   "dfsp1",
+			"payeeFsp":   "dfsp2",
+			"amount":     map[string]interface{}{"amount": "100.00", "currency": "USD"},
+			"ilpPacket":  "AQAAAAAAAABkEGcuZXhhbXBsZS5wYXllZQ",
+			"condition":  "f5sqb7tBTWPd5Y8BDFdMm9BJR_MNI4isf8p8n4D5pHA",
+			"expiration": time.Now().Add(30 * time.Second).UTC().Format(time.RFC3339),
 		}
 		s.post("/api/v1/mojaloop/transfers/prepare", prepareReq)
 
 		// Abort the transfer
 		abortReq := map[string]interface{}{
-			"transferId": transferID,
-			"errorCode":  "5100",
+			"transferId":       transferID,
+			"errorCode":        "5100",
 			"errorDescription": "Payer rejected",
 		}
 		s.post("/api/v1/mojaloop/transfers/abort", abortReq)
 
 		// Try to fulfill after abort (should fail)
 		fulfillReq := map[string]interface{}{
-			"transferId":  transferID,
-			"fulfillment": "UNlJ98hZTY_dsw0cAqw4i_UN3v4utt7CZFB4yfLbVFA",
+			"transferId":    transferID,
+			"fulfillment":   "UNlJ98hZTY_dsw0cAqw4i_UN3v4utt7CZFB4yfLbVFA",
 			"transferState": "COMMITTED",
 		}
 
@@ -233,20 +233,20 @@ func (s *ConformanceTestSuite) TestTransferAbort() {
 		// First prepare a transfer
 		transferID := "550e8400-e29b-41d4-a716-446655440020"
 		prepareReq := map[string]interface{}{
-			"transferId":     transferID,
-			"payerFsp":       "dfsp1",
-			"payeeFsp":       "dfsp2",
-			"amount":         map[string]interface{}{"amount": "100.00", "currency": "USD"},
-			"ilpPacket":      "AQAAAAAAAABkEGcuZXhhbXBsZS5wYXllZQ",
-			"condition":      "f5sqb7tBTWPd5Y8BDFdMm9BJR_MNI4isf8p8n4D5pHA",
-			"expiration":     time.Now().Add(30 * time.Second).UTC().Format(time.RFC3339),
+			"transferId": transferID,
+			"payerFsp":   "dfsp1",
+			"payeeFsp":   "dfsp2",
+			"amount":     map[string]interface{}{"amount": "100.00", "currency": "USD"},
+			"ilpPacket":  "AQAAAAAAAABkEGcuZXhhbXBsZS5wYXllZQ",
+			"condition":  "f5sqb7tBTWPd5Y8BDFdMm9BJR_MNI4isf8p8n4D5pHA",
+			"expiration": time.Now().Add(30 * time.Second).UTC().Format(time.RFC3339),
 		}
 		s.post("/api/v1/mojaloop/transfers/prepare", prepareReq)
 
 		// Abort the transfer
 		abortReq := map[string]interface{}{
-			"transferId": transferID,
-			"errorCode":  "5100",
+			"transferId":       transferID,
+			"errorCode":        "5100",
 			"errorDescription": "Payer rejected",
 		}
 
@@ -272,27 +272,27 @@ func (s *ConformanceTestSuite) TestTransferAbort() {
 		// First prepare and fulfill a transfer
 		transferID := "550e8400-e29b-41d4-a716-446655440021"
 		prepareReq := map[string]interface{}{
-			"transferId":     transferID,
-			"payerFsp":       "dfsp1",
-			"payeeFsp":       "dfsp2",
-			"amount":         map[string]interface{}{"amount": "100.00", "currency": "USD"},
-			"ilpPacket":      "AQAAAAAAAABkEGcuZXhhbXBsZS5wYXllZQ",
-			"condition":      "f5sqb7tBTWPd5Y8BDFdMm9BJR_MNI4isf8p8n4D5pHA",
-			"expiration":     time.Now().Add(30 * time.Second).UTC().Format(time.RFC3339),
+			"transferId": transferID,
+			"payerFsp":   "dfsp1",
+			"payeeFsp":   "dfsp2",
+			"amount":     map[string]interface{}{"amount": "100.00", "currency": "USD"},
+			"ilpPacket":  "AQAAAAAAAABkEGcuZXhhbXBsZS5wYXllZQ",
+			"condition":  "f5sqb7tBTWPd5Y8BDFdMm9BJR_MNI4isf8p8n4D5pHA",
+			"expiration": time.Now().Add(30 * time.Second).UTC().Format(time.RFC3339),
 		}
 		s.post("/api/v1/mojaloop/transfers/prepare", prepareReq)
 
 		fulfillReq := map[string]interface{}{
-			"transferId":  transferID,
-			"fulfillment": "UNlJ98hZTY_dsw0cAqw4i_UN3v4utt7CZFB4yfLbVFA",
+			"transferId":    transferID,
+			"fulfillment":   "UNlJ98hZTY_dsw0cAqw4i_UN3v4utt7CZFB4yfLbVFA",
 			"transferState": "COMMITTED",
 		}
 		s.post("/api/v1/mojaloop/transfers/fulfill", fulfillReq)
 
 		// Try to abort after fulfill (should fail)
 		abortReq := map[string]interface{}{
-			"transferId": transferID,
-			"errorCode":  "5100",
+			"transferId":       transferID,
+			"errorCode":        "5100",
 			"errorDescription": "Payer rejected",
 		}
 
@@ -308,13 +308,13 @@ func (s *ConformanceTestSuite) TestConcurrentTransfers() {
 	s.t.Run("ConcurrentPrepare_SameID", func(t *testing.T) {
 		transferID := "550e8400-e29b-41d4-a716-446655440030"
 		req := map[string]interface{}{
-			"transferId":     transferID,
-			"payerFsp":       "dfsp1",
-			"payeeFsp":       "dfsp2",
-			"amount":         map[string]interface{}{"amount": "100.00", "currency": "USD"},
-			"ilpPacket":      "AQAAAAAAAABkEGcuZXhhbXBsZS5wYXllZQ",
-			"condition":      "f5sqb7tBTWPd5Y8BDFdMm9BJR_MNI4isf8p8n4D5pHA",
-			"expiration":     time.Now().Add(30 * time.Second).UTC().Format(time.RFC3339),
+			"transferId": transferID,
+			"payerFsp":   "dfsp1",
+			"payeeFsp":   "dfsp2",
+			"amount":     map[string]interface{}{"amount": "100.00", "currency": "USD"},
+			"ilpPacket":  "AQAAAAAAAABkEGcuZXhhbXBsZS5wYXllZQ",
+			"condition":  "f5sqb7tBTWPd5Y8BDFdMm9BJR_MNI4isf8p8n4D5pHA",
+			"expiration": time.Now().Add(30 * time.Second).UTC().Format(time.RFC3339),
 		}
 
 		// Send 10 concurrent requests with same ID
@@ -495,12 +495,12 @@ func (r *ConformanceTestRunner) Run(ctx context.Context) (*ConformanceTestResult
 
 // ConformanceTestResults holds the results of a conformance test run
 type ConformanceTestResults struct {
-	StartTime time.Time    `json:"start_time"`
-	EndTime   time.Time    `json:"end_time"`
+	StartTime time.Time     `json:"start_time"`
+	EndTime   time.Time     `json:"end_time"`
 	Duration  time.Duration `json:"duration"`
-	Passed    int          `json:"passed"`
-	Failed    int          `json:"failed"`
-	Tests     []TestResult `json:"tests"`
+	Passed    int           `json:"passed"`
+	Failed    int           `json:"failed"`
+	Tests     []TestResult  `json:"tests"`
 }
 
 // TestResult holds the result of a single test

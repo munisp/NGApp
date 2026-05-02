@@ -42,13 +42,13 @@ type VerificationRequest struct {
 
 // VerificationResult contains the outcome of all checks
 type VerificationResult struct {
-	CustomerID      string
-	Level           VerificationLevel
-	Status          string // passed, failed, pending_review
-	Checks          []CheckResult
-	RiskScore       int // 0-100
-	TotalDuration   time.Duration
-	CompletedAt     time.Time
+	CustomerID    string
+	Level         VerificationLevel
+	Status        string // passed, failed, pending_review
+	Checks        []CheckResult
+	RiskScore     int // 0-100
+	TotalDuration time.Duration
+	CompletedAt   time.Time
 }
 
 // CheckResult is the result of a single verification check
@@ -84,13 +84,13 @@ type LivenessProvider interface {
 
 // ParallelVerifier runs multiple KYC checks concurrently
 type ParallelVerifier struct {
-	bvn        BVNProvider
-	nin        NINProvider
-	sanctions  SanctionsProvider
-	pep        PEPProvider
-	address    AddressProvider
-	liveness   LivenessProvider
-	timeout    time.Duration
+	bvn       BVNProvider
+	nin       NINProvider
+	sanctions SanctionsProvider
+	pep       PEPProvider
+	address   AddressProvider
+	liveness  LivenessProvider
+	timeout   time.Duration
 }
 
 // NewParallelVerifier creates a verifier with injected providers

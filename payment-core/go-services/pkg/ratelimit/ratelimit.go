@@ -93,7 +93,7 @@ func (r *InMemoryRateLimiter) Allow(ctx context.Context, key string) (bool, *Rat
 	elapsed := now.Sub(bucket.lastRefill)
 
 	// Refill tokens based on elapsed time
-	tokensToAdd := int64(elapsed / r.config.Window) * r.config.Limit
+	tokensToAdd := int64(elapsed/r.config.Window) * r.config.Limit
 	if tokensToAdd > 0 {
 		bucket.tokens = min(bucket.tokens+tokensToAdd, r.config.Limit)
 		bucket.lastRefill = now
@@ -205,10 +205,10 @@ func (r *SlidingWindowRateLimiter) Reset(ctx context.Context, key string) error 
 
 // RateLimitMiddleware creates HTTP middleware for rate limiting
 type RateLimitMiddleware struct {
-	limiter     RateLimiter
-	keyFunc     func(*http.Request) string
-	onLimited   func(http.ResponseWriter, *http.Request, *RateLimitInfo)
-	skipFunc    func(*http.Request) bool
+	limiter   RateLimiter
+	keyFunc   func(*http.Request) string
+	onLimited func(http.ResponseWriter, *http.Request, *RateLimitInfo)
+	skipFunc  func(*http.Request) bool
 }
 
 // RateLimitMiddlewareConfig holds configuration for the rate limit middleware

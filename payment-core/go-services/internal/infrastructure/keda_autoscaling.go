@@ -15,16 +15,16 @@ type KEDAScalerConfig struct {
 
 // KEDAScaledObjectConfig represents a KEDA ScaledObject configuration
 type KEDAScaledObjectConfig struct {
-	Name                  string
-	Namespace             string
-	ScaleTargetRef        ScaleTargetRef
-	MinReplicaCount       int32
-	MaxReplicaCount       int32
-	PollingInterval       int32
-	CooldownPeriod        int32
-	IdleReplicaCount      *int32
-	Triggers              []KEDATrigger
-	Advanced              *KEDAAdvancedConfig
+	Name             string
+	Namespace        string
+	ScaleTargetRef   ScaleTargetRef
+	MinReplicaCount  int32
+	MaxReplicaCount  int32
+	PollingInterval  int32
+	CooldownPeriod   int32
+	IdleReplicaCount *int32
+	Triggers         []KEDATrigger
+	Advanced         *KEDAAdvancedConfig
 }
 
 // ScaleTargetRef references the target deployment
@@ -95,10 +95,10 @@ func OptimalKEDAConfigs() []KEDAScaledObjectConfig {
 				{
 					Type: "kafka",
 					Metadata: map[string]string{
-						"bootstrapServers":   "kafka-0:9092,kafka-1:9092,kafka-2:9092",
-						"consumerGroup":      "payment-gateway-group",
-						"topic":              "payment.transfers",
-						"lagThreshold":       "100",
+						"bootstrapServers":       "kafka-0:9092,kafka-1:9092,kafka-2:9092",
+						"consumerGroup":          "payment-gateway-group",
+						"topic":                  "payment.transfers",
+						"lagThreshold":           "100",
 						"activationLagThreshold": "10",
 					},
 					AuthenticationRef: &KEDAAuthRef{Name: "kafka-auth", Kind: "TriggerAuthentication"},
@@ -154,10 +154,10 @@ func OptimalKEDAConfigs() []KEDAScaledObjectConfig {
 				{
 					Type: "kafka",
 					Metadata: map[string]string{
-						"bootstrapServers":   "kafka-0:9092,kafka-1:9092,kafka-2:9092",
-						"consumerGroup":      "fraud-detection-group",
-						"topic":              "transaction-events",
-						"lagThreshold":       "50",
+						"bootstrapServers":       "kafka-0:9092,kafka-1:9092,kafka-2:9092",
+						"consumerGroup":          "fraud-detection-group",
+						"topic":                  "transaction-events",
+						"lagThreshold":           "50",
 						"activationLagThreshold": "5",
 					},
 					AuthenticationRef: &KEDAAuthRef{Name: "kafka-auth", Kind: "TriggerAuthentication"},
@@ -282,10 +282,10 @@ func OptimalKEDAConfigs() []KEDAScaledObjectConfig {
 				{
 					Type: "kafka",
 					Metadata: map[string]string{
-						"bootstrapServers":   "kafka-0:9092,kafka-1:9092,kafka-2:9092",
-						"consumerGroup":      "data-pipeline-group",
-						"topic":              "audit.events",
-						"lagThreshold":       "1000",
+						"bootstrapServers":       "kafka-0:9092,kafka-1:9092,kafka-2:9092",
+						"consumerGroup":          "data-pipeline-group",
+						"topic":                  "audit.events",
+						"lagThreshold":           "1000",
 						"activationLagThreshold": "100",
 					},
 					AuthenticationRef: &KEDAAuthRef{Name: "kafka-auth", Kind: "TriggerAuthentication"},
@@ -305,9 +305,9 @@ func OptimalKEDAConfigs() []KEDAScaledObjectConfig {
 				{
 					Type: "redis",
 					Metadata: map[string]string{
-						"address":        "redis-master:6379",
-						"listName":       "kyc:pending",
-						"listLength":     "10",
+						"address":              "redis-master:6379",
+						"listName":             "kyc:pending",
+						"listLength":           "10",
 						"activationListLength": "1",
 					},
 					AuthenticationRef: &KEDAAuthRef{Name: "redis-auth", Kind: "TriggerAuthentication"},
@@ -361,7 +361,7 @@ spec:
 		config.MinReplicaCount, config.MaxReplicaCount,
 		config.PollingInterval, config.CooldownPeriod,
 	)
-	
+
 	for _, trigger := range config.Triggers {
 		yaml += fmt.Sprintf(`  - type: %s
     metadata:
@@ -377,7 +377,7 @@ spec:
 `, trigger.AuthenticationRef.Name, trigger.AuthenticationRef.Kind)
 		}
 	}
-	
+
 	if config.Advanced != nil && config.Advanced.HorizontalPodAutoscalerConfig != nil {
 		yaml += `  advanced:
     horizontalPodAutoscalerConfig:
@@ -416,7 +416,7 @@ spec:
 			}
 		}
 	}
-	
+
 	return yaml
 }
 
@@ -430,37 +430,37 @@ metadata:
 spec:
   secretTargetRef:
 `, name, namespace)
-	
+
 	for param, secretInfo := range secretTargetRefs {
 		yaml += fmt.Sprintf(`  - parameter: %s
     name: %s
     key: %s
 `, param, secretInfo, param)
 	}
-	
+
 	return yaml
 }
 
 // GenerateAllKEDAResources generates all KEDA resources for the platform
 func GenerateAllKEDAResources() string {
 	var allYAML string
-	
+
 	// Generate TriggerAuthentications
 	allYAML += GenerateKEDATriggerAuthenticationYAML("kafka-auth", "payment-switch", map[string]string{
 		"sasl": "kafka-credentials",
 	})
 	allYAML += "---\n"
-	
+
 	allYAML += GenerateKEDATriggerAuthenticationYAML("redis-auth", "payment-switch", map[string]string{
 		"password": "redis-secret",
 	})
 	allYAML += "---\n"
-	
+
 	// Generate ScaledObjects
 	for _, config := range OptimalKEDAConfigs() {
 		allYAML += GenerateKEDAScaledObjectYAML(config)
 		allYAML += "---\n"
 	}
-	
+
 	return allYAML
 }

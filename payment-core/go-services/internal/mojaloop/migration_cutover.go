@@ -38,29 +38,29 @@ type CutoverConfig struct {
 
 // CutoverState tracks the current state of the cutover
 type CutoverState struct {
-	Phase             CutoverPhase      `json:"phase"`
-	StartedAt         time.Time         `json:"started_at"`
-	CompletedAt       *time.Time        `json:"completed_at,omitempty"`
-	MySQLRowCounts    map[string]int64  `json:"mysql_row_counts"`
-	PostgresRowCounts map[string]int64  `json:"postgres_row_counts"`
-	ValidationErrors  []string          `json:"validation_errors,omitempty"`
-	LastSyncTime      time.Time         `json:"last_sync_time"`
-	SyncLag           time.Duration     `json:"sync_lag"`
+	Phase             CutoverPhase     `json:"phase"`
+	StartedAt         time.Time        `json:"started_at"`
+	CompletedAt       *time.Time       `json:"completed_at,omitempty"`
+	MySQLRowCounts    map[string]int64 `json:"mysql_row_counts"`
+	PostgresRowCounts map[string]int64 `json:"postgres_row_counts"`
+	ValidationErrors  []string         `json:"validation_errors,omitempty"`
+	LastSyncTime      time.Time        `json:"last_sync_time"`
+	SyncLag           time.Duration    `json:"sync_lag"`
 }
 
 // CutoverPhase represents the current phase of the cutover
 type CutoverPhase string
 
 const (
-	PhaseNotStarted     CutoverPhase = "NOT_STARTED"
-	PhaseSchemaCreated  CutoverPhase = "SCHEMA_CREATED"
-	PhaseDataMigrating  CutoverPhase = "DATA_MIGRATING"
-	PhaseDualWrite      CutoverPhase = "DUAL_WRITE"
-	PhaseValidating     CutoverPhase = "VALIDATING"
-	PhaseCutoverReady   CutoverPhase = "CUTOVER_READY"
-	PhaseCutoverActive  CutoverPhase = "CUTOVER_ACTIVE"
-	PhaseCompleted      CutoverPhase = "COMPLETED"
-	PhaseRolledBack     CutoverPhase = "ROLLED_BACK"
+	PhaseNotStarted    CutoverPhase = "NOT_STARTED"
+	PhaseSchemaCreated CutoverPhase = "SCHEMA_CREATED"
+	PhaseDataMigrating CutoverPhase = "DATA_MIGRATING"
+	PhaseDualWrite     CutoverPhase = "DUAL_WRITE"
+	PhaseValidating    CutoverPhase = "VALIDATING"
+	PhaseCutoverReady  CutoverPhase = "CUTOVER_READY"
+	PhaseCutoverActive CutoverPhase = "CUTOVER_ACTIVE"
+	PhaseCompleted     CutoverPhase = "COMPLETED"
+	PhaseRolledBack    CutoverPhase = "ROLLED_BACK"
 )
 
 // NewMigrationCutover creates a new cutover manager

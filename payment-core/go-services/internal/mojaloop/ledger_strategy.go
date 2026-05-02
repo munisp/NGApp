@@ -179,10 +179,10 @@ type TigerBeetleResult struct {
 func (o *LedgerOrchestrator) executeInTigerBeetle(ctx context.Context, req *ExecuteTransferRequest) (*TigerBeetleResult, error) {
 	// Use the real TigerBeetle client for transfer execution
 	client := GetTigerBeetleClient()
-	
+
 	// Get currency ledger
 	ledger := GetCurrencyLedger(req.Currency)
-	
+
 	// Execute payment transfer with two-phase commit
 	result, err := ExecutePaymentTransfer(
 		ctx,
@@ -193,11 +193,11 @@ func (o *LedgerOrchestrator) executeInTigerBeetle(ctx context.Context, req *Exec
 		ledger,
 		true, // Use two-phase commit for Mojaloop transfers
 	)
-	
+
 	if err != nil {
 		return nil, fmt.Errorf("TigerBeetle transfer failed: %w", err)
 	}
-	
+
 	if !result.Success {
 		return nil, fmt.Errorf("TigerBeetle transfer rejected: %s", result.Error)
 	}
@@ -306,29 +306,29 @@ func (o *LedgerOrchestrator) getMojaLoopBalance(ctx context.Context, accountID u
 
 // ReconciliationResult contains the result of reconciling an account
 type ReconciliationResult struct {
-	Status               ReconciliationStatus   `json:"status"`
-	TigerBeetleBalance   int64                  `json:"tigerbeetle_balance"`
-	MojaLoopBalance      int64                  `json:"mojaloop_balance"`
-	Drift                int64                  `json:"drift"`
-	DriftWithinTolerance bool                   `json:"drift_within_tolerance"`
-	Error                string                 `json:"error,omitempty"`
+	Status               ReconciliationStatus `json:"status"`
+	TigerBeetleBalance   int64                `json:"tigerbeetle_balance"`
+	MojaLoopBalance      int64                `json:"mojaloop_balance"`
+	Drift                int64                `json:"drift"`
+	DriftWithinTolerance bool                 `json:"drift_within_tolerance"`
+	Error                string               `json:"error,omitempty"`
 	// Fields for reconciliation service
-	Timestamp            time.Time              `json:"timestamp"`
-	StuckTransfers       int                    `json:"stuck_transfers"`
-	StuckDetails         []StuckTransferDetail  `json:"stuck_details,omitempty"`
-	ParticipantsChecked  int                    `json:"participants_checked"`
-	TransfersChecked     int                    `json:"transfers_checked"`
-	DriftsDetected       int                    `json:"drifts_detected"`
-	DriftDetails         []ParticipantDrift     `json:"drift_details,omitempty"`
+	Timestamp           time.Time             `json:"timestamp"`
+	StuckTransfers      int                   `json:"stuck_transfers"`
+	StuckDetails        []StuckTransferDetail `json:"stuck_details,omitempty"`
+	ParticipantsChecked int                   `json:"participants_checked"`
+	TransfersChecked    int                   `json:"transfers_checked"`
+	DriftsDetected      int                   `json:"drifts_detected"`
+	DriftDetails        []ParticipantDrift    `json:"drift_details,omitempty"`
 }
 
 // StuckTransferDetail contains details about a stuck transfer
 type StuckTransferDetail struct {
-	TransferID     string    `json:"transfer_id"`
-	TBTransferID   string    `json:"tb_transfer_id"`
-	State          string    `json:"state"`
-	CreatedAt      time.Time `json:"created_at"`
-	StuckDuration  string    `json:"stuck_duration"`
+	TransferID    string    `json:"transfer_id"`
+	TBTransferID  string    `json:"tb_transfer_id"`
+	State         string    `json:"state"`
+	CreatedAt     time.Time `json:"created_at"`
+	StuckDuration string    `json:"stuck_duration"`
 }
 
 // ParticipantDrift contains drift information for a participant

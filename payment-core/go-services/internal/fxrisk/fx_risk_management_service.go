@@ -34,12 +34,12 @@ type RateLock struct {
 }
 
 type FXExposure struct {
-	Currency       string    `json:"currency"`
-	LongPosition   float64   `json:"longPosition"`
-	ShortPosition  float64   `json:"shortPosition"`
-	NetPosition    float64   `json:"netPosition"`
-	UnrealizedPnL  float64   `json:"unrealizedPnL"`
-	LastUpdated    time.Time `json:"lastUpdated"`
+	Currency      string    `json:"currency"`
+	LongPosition  float64   `json:"longPosition"`
+	ShortPosition float64   `json:"shortPosition"`
+	NetPosition   float64   `json:"netPosition"`
+	UnrealizedPnL float64   `json:"unrealizedPnL"`
+	LastUpdated   time.Time `json:"lastUpdated"`
 }
 
 type HedgeType string

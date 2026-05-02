@@ -21,19 +21,19 @@ type ChaosEngine struct {
 	// Experiments
 	experiments map[string]*Experiment
 	expMu       sync.RWMutex
-	
+
 	// Active faults
 	activeFaults map[string]*Fault
 	faultMu      sync.RWMutex
-	
+
 	// Targets
 	targets map[string]ChaosTarget
-	
+
 	// Stats
 	totalExperiments uint64
 	successfulExps   uint64
 	failedExps       uint64
-	
+
 	// Control
 	ctx    context.Context
 	cancel context.CancelFunc
@@ -85,11 +85,11 @@ type Fault struct {
 
 // ExperimentResults contains experiment results
 type ExperimentResults struct {
-	HypothesisValidated bool                   `json:"hypothesis_validated"`
-	Observations        []Observation          `json:"observations"`
-	Metrics             map[string]float64     `json:"metrics"`
-	Errors              []string               `json:"errors"`
-	Recovery            RecoveryMetrics        `json:"recovery"`
+	HypothesisValidated bool               `json:"hypothesis_validated"`
+	Observations        []Observation      `json:"observations"`
+	Metrics             map[string]float64 `json:"metrics"`
+	Errors              []string           `json:"errors"`
+	Recovery            RecoveryMetrics    `json:"recovery"`
 }
 
 // Observation represents an observation during the experiment
@@ -111,7 +111,7 @@ type RecoveryMetrics struct {
 // NewChaosEngine creates a new chaos engine
 func NewChaosEngine() *ChaosEngine {
 	ctx, cancel := context.WithCancel(context.Background())
-	
+
 	return &ChaosEngine{
 		experiments:  make(map[string]*Experiment),
 		activeFaults: make(map[string]*Fault),
@@ -130,11 +130,11 @@ func (e *ChaosEngine) RegisterTarget(target ChaosTarget) {
 func (e *ChaosEngine) CreateExperiment(exp *Experiment) error {
 	exp.ID = generateExperimentID()
 	exp.Status = "PENDING"
-	
+
 	e.expMu.Lock()
 	e.experiments[exp.ID] = exp
 	e.expMu.Unlock()
-	
+
 	return nil
 }
 
@@ -150,15 +150,15 @@ func (e *ChaosEngine) RunExperiment(ctx context.Context, experimentID string) (*
 	now := time.Now()
 	exp.StartTime = &now
 	e.expMu.Unlock()
-	
+
 	atomic.AddUint64(&e.totalExperiments, 1)
-	
+
 	results := &ExperimentResults{
 		Observations: make([]Observation, 0),
 		Metrics:      make(map[string]float64),
 		Errors:       make([]string, 0),
 	}
-	
+
 	// Pre-experiment health check
 	for name, target := range e.targets {
 		if err := target.HealthCheck(ctx); err != nil {
@@ -170,7 +170,7 @@ func (e *ChaosEngine) RunExperiment(ctx context.Context, experimentID string) (*
 			})
 		}
 	}
-	
+
 	// Inject faults
 	injectedFaults := make([]*Fault, 0)
 	for _, faultSpec := range exp.Faults {
@@ -180,7 +180,7 @@ func (e *ChaosEngine) RunExperiment(ctx context.Context, experimentID string) (*
 			continue
 		}
 		injectedFaults = append(injectedFaults, fault)
-		
+
 		results.Observations = append(results.Observations, Observation{
 			Timestamp:   time.Now(),
 			Component:   faultSpec.Target,
@@ -188,7 +188,7 @@ func (e *ChaosEngine) RunExperiment(ctx context.Context, experimentID string) (*
 			Description: fmt.Sprintf("Injected %s fault", faultSpec.Type),
 		})
 	}
-	
+
 	// Wait for experiment duration
 	select {
 	case <-ctx.Done():
@@ -196,16 +196,16 @@ func (e *ChaosEngine) RunExperiment(ctx context.Context, experimentID string) (*
 	case <-time.After(exp.Duration):
 		// Experiment completed
 	}
-	
+
 	// Record detection time
 	detectionStart := time.Now()
-	
+
 	// Remove faults
 	for _, fault := range injectedFaults {
 		if err := e.removeFault(ctx, fault); err != nil {
 			results.Errors = append(results.Errors, fmt.Sprintf("Failed to remove fault: %v", err))
 		}
-		
+
 		results.Observations = append(results.Observations, Observation{
 			Timestamp:   time.Now(),
 			Component:   fault.Target,
@@ -213,7 +213,7 @@ func (e *ChaosEngine) RunExperiment(ctx context.Context, experimentID string) (*
 			Description: fmt.Sprintf("Removed %s fault", fault.Type),
 		})
 	}
-	
+
 	// Wait for recovery
 	recoveryStart := time.Now()
 	recovered := false
@@ -231,24 +231,24 @@ func (e *ChaosEngine) RunExperiment(ctx context.Context, experimentID string) (*
 		}
 		time.Sleep(1 * time.Second)
 	}
-	
+
 	results.Recovery = RecoveryMetrics{
 		DetectionTime: recoveryStart.Sub(detectionStart),
 		RecoveryTime:  time.Since(recoveryStart),
 		DataLoss:      false, // Would need to verify data integrity
 	}
-	
+
 	if !recovered {
 		results.Errors = append(results.Errors, "System did not fully recover within timeout")
 	}
-	
+
 	// Update experiment
 	e.expMu.Lock()
 	exp.Status = "COMPLETED"
 	endTime := time.Now()
 	exp.EndTime = &endTime
 	exp.Results = results
-	
+
 	if len(results.Errors) == 0 && recovered {
 		results.HypothesisValidated = true
 		atomic.AddUint64(&e.successfulExps, 1)
@@ -256,7 +256,7 @@ func (e *ChaosEngine) RunExperiment(ctx context.Context, experimentID string) (*
 		atomic.AddUint64(&e.failedExps, 1)
 	}
 	e.expMu.Unlock()
-	
+
 	return results, nil
 }
 
@@ -266,7 +266,7 @@ func (e *ChaosEngine) injectFault(ctx context.Context, spec *FaultSpec) (*Fault,
 	if !ok {
 		return nil, fmt.Errorf("target not found: %s", spec.Target)
 	}
-	
+
 	fault := &Fault{
 		ID:         generateFaultID(),
 		Type:       spec.Type,
@@ -276,15 +276,15 @@ func (e *ChaosEngine) injectFault(ctx context.Context, spec *FaultSpec) (*Fault,
 		EndTime:    time.Now().Add(spec.Duration),
 		Active:     true,
 	}
-	
+
 	if err := target.InjectFault(ctx, fault); err != nil {
 		return nil, err
 	}
-	
+
 	e.faultMu.Lock()
 	e.activeFaults[fault.ID] = fault
 	e.faultMu.Unlock()
-	
+
 	return fault, nil
 }
 
@@ -294,16 +294,16 @@ func (e *ChaosEngine) removeFault(ctx context.Context, fault *Fault) error {
 	if !ok {
 		return fmt.Errorf("target not found: %s", fault.Target)
 	}
-	
+
 	if err := target.RemoveFault(ctx, fault.ID); err != nil {
 		return err
 	}
-	
+
 	e.faultMu.Lock()
 	fault.Active = false
 	delete(e.activeFaults, fault.ID)
 	e.faultMu.Unlock()
-	
+
 	return nil
 }
 
@@ -311,12 +311,12 @@ func (e *ChaosEngine) removeFault(ctx context.Context, fault *Fault) error {
 func (e *ChaosEngine) GetExperiment(experimentID string) (*Experiment, error) {
 	e.expMu.RLock()
 	defer e.expMu.RUnlock()
-	
+
 	exp, ok := e.experiments[experimentID]
 	if !ok {
 		return nil, fmt.Errorf("experiment not found: %s", experimentID)
 	}
-	
+
 	return exp, nil
 }
 
@@ -330,7 +330,7 @@ func (e *ChaosEngine) Stats() (total, successful, failed uint64) {
 // Close shuts down the chaos engine
 func (e *ChaosEngine) Close() error {
 	e.cancel()
-	
+
 	// Remove all active faults
 	e.faultMu.Lock()
 	for _, fault := range e.activeFaults {
@@ -339,7 +339,7 @@ func (e *ChaosEngine) Close() error {
 		}
 	}
 	e.faultMu.Unlock()
-	
+
 	e.wg.Wait()
 	return nil
 }

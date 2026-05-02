@@ -96,7 +96,7 @@ func NewIntegrationManager(config *IntegrationConfig) *IntegrationManager {
 	if config == nil {
 		config = DefaultIntegrationConfig()
 	}
-	
+
 	return &IntegrationManager{
 		config: config,
 		httpClient: &http.Client{
@@ -114,21 +114,21 @@ func (m *IntegrationManager) ProvisionParticipant(ctx context.Context, req Provi
 		Environment: req.Environment,
 		Timestamp:   time.Now(),
 	}
-	
+
 	// 1. Create Keycloak client
 	keycloakResult, err := m.keycloak.CreateClient(ctx, KeycloakClientRequest{
-		ClientID:    fmt.Sprintf("%s-%s", req.Environment, req.OrganizationID),
-		Name:        req.OrganizationName,
-		Description: fmt.Sprintf("Onboarded participant: %s", req.OrganizationName),
+		ClientID:       fmt.Sprintf("%s-%s", req.Environment, req.OrganizationID),
+		Name:           req.OrganizationName,
+		Description:    fmt.Sprintf("Onboarded participant: %s", req.OrganizationName),
 		ServiceAccount: true,
-		Roles:       req.Roles,
+		Roles:          req.Roles,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("keycloak provisioning failed: %w", err)
 	}
 	result.KeycloakClientID = keycloakResult.ClientID
 	result.KeycloakClientSecret = keycloakResult.ClientSecret
-	
+
 	// 2. Create APISIX route
 	apisixResult, err := m.apisix.CreateRoute(ctx, APISIXRouteRequest{
 		Name:        fmt.Sprintf("%s-%s", req.Environment, req.OrganizationID),
@@ -142,14 +142,14 @@ func (m *IntegrationManager) ProvisionParticipant(ctx context.Context, req Provi
 	}
 	result.APISIXRouteID = apisixResult.RouteID
 	result.APISIXUpstreamID = apisixResult.UpstreamID
-	
+
 	// 3. Create TigerBeetle ledger account
 	tbResult, err := m.createLedgerAccount(ctx, req)
 	if err != nil {
 		return nil, fmt.Errorf("tigerbeetle provisioning failed: %w", err)
 	}
 	result.LedgerAccountID = tbResult.AccountID
-	
+
 	// 4. Emit Kafka event
 	if err := m.kafka.Emit(ctx, OnboardingProvisionedEvent{
 		EventType:      "onboarding.provisioned",
@@ -162,7 +162,7 @@ func (m *IntegrationManager) ProvisionParticipant(ctx context.Context, req Provi
 		// Log but don't fail
 		fmt.Printf("Warning: failed to emit kafka event: %v\n", err)
 	}
-	
+
 	return result, nil
 }
 
@@ -195,7 +195,7 @@ type ProvisionResult struct {
 func (m *IntegrationManager) createLedgerAccount(ctx context.Context, req ProvisionRequest) (*LedgerAccountResult, error) {
 	// Generate account ID from organization ID
 	accountID := hashToUint64(req.OrganizationID + "-" + req.Environment)
-	
+
 	// In production, this would call the TigerBeetle client
 	// For now, return simulated result
 	return &LedgerAccountResult{
@@ -266,7 +266,7 @@ func (k *KeycloakClient) CreateClient(ctx context.Context, req KeycloakClientReq
 	if err := k.ensureToken(ctx); err != nil {
 		return nil, fmt.Errorf("failed to get admin token: %w", err)
 	}
-	
+
 	// Create client payload
 	clientPayload := map[string]interface{}{
 		"clientId":                  req.ClientID,
@@ -280,18 +280,18 @@ func (k *KeycloakClient) CreateClient(ctx context.Context, req KeycloakClientReq
 		"publicClient":              false,
 		"protocol":                  "openid-connect",
 	}
-	
+
 	body, _ := json.Marshal(clientPayload)
-	
+
 	url := fmt.Sprintf("%s/admin/realms/%s/clients", k.config.BaseURL, k.config.Realm)
 	httpReq, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewReader(body))
 	if err != nil {
 		return nil, err
 	}
-	
+
 	httpReq.Header.Set("Content-Type", "application/json")
 	httpReq.Header.Set("Authorization", "Bearer "+k.token)
-	
+
 	resp, err := k.httpClient.Do(httpReq)
 	if err != nil {
 		// Return simulated result for demo
@@ -301,7 +301,7 @@ func (k *KeycloakClient) CreateClient(ctx context.Context, req KeycloakClientReq
 		}, nil
 	}
 	defer resp.Body.Close()
-	
+
 	if resp.StatusCode != http.StatusCreated && resp.StatusCode != http.StatusOK {
 		// Return simulated result for demo
 		return &KeycloakClientResult{
@@ -309,7 +309,7 @@ func (k *KeycloakClient) CreateClient(ctx context.Context, req KeycloakClientReq
 			ClientSecret: fmt.Sprintf("secret-%d", time.Now().UnixNano()),
 		}, nil
 	}
-	
+
 	// Get client secret
 	return &KeycloakClientResult{
 		ClientID:     req.ClientID,
@@ -322,19 +322,19 @@ func (k *KeycloakClient) ensureToken(ctx context.Context) error {
 	if k.token != "" && time.Now().Before(k.tokenExp) {
 		return nil
 	}
-	
+
 	// Get token from Keycloak
 	url := fmt.Sprintf("%s/realms/master/protocol/openid-connect/token", k.config.BaseURL)
-	
+
 	data := fmt.Sprintf("grant_type=password&client_id=admin-cli&username=%s&password=%s",
 		k.config.AdminUser, k.config.AdminPass)
-	
+
 	req, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewBufferString(data))
 	if err != nil {
 		return err
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	
+
 	resp, err := k.httpClient.Do(req)
 	if err != nil {
 		// Use placeholder token for demo
@@ -343,25 +343,25 @@ func (k *KeycloakClient) ensureToken(ctx context.Context) error {
 		return nil
 	}
 	defer resp.Body.Close()
-	
+
 	if resp.StatusCode != http.StatusOK {
 		k.token = "demo-token"
 		k.tokenExp = time.Now().Add(1 * time.Hour)
 		return nil
 	}
-	
+
 	var tokenResp struct {
 		AccessToken string `json:"access_token"`
 		ExpiresIn   int    `json:"expires_in"`
 	}
-	
+
 	if err := json.NewDecoder(resp.Body).Decode(&tokenResp); err != nil {
 		return err
 	}
-	
+
 	k.token = tokenResp.AccessToken
 	k.tokenExp = time.Now().Add(time.Duration(tokenResp.ExpiresIn-60) * time.Second)
-	
+
 	return nil
 }
 
@@ -406,7 +406,7 @@ type APISIXRouteResult struct {
 func (a *APISIXClient) CreateRoute(ctx context.Context, req APISIXRouteRequest) (*APISIXRouteResult, error) {
 	routeID := fmt.Sprintf("route-%d", time.Now().UnixNano())
 	upstreamID := fmt.Sprintf("upstream-%d", time.Now().UnixNano())
-	
+
 	// Create upstream
 	upstreamPayload := map[string]interface{}{
 		"name": req.Name + "-upstream",
@@ -415,20 +415,20 @@ func (a *APISIXClient) CreateRoute(ctx context.Context, req APISIXRouteRequest) 
 			req.UpstreamURL: 1,
 		},
 	}
-	
+
 	upstreamBody, _ := json.Marshal(upstreamPayload)
-	
+
 	upstreamURL := fmt.Sprintf("%s/apisix/admin/upstreams/%s", a.config.AdminURL, upstreamID)
 	upstreamReq, err := http.NewRequestWithContext(ctx, "PUT", upstreamURL, bytes.NewReader(upstreamBody))
 	if err != nil {
 		return &APISIXRouteResult{RouteID: routeID, UpstreamID: upstreamID}, nil
 	}
-	
+
 	upstreamReq.Header.Set("Content-Type", "application/json")
 	upstreamReq.Header.Set("X-API-KEY", a.config.AdminKey)
-	
+
 	_, _ = a.httpClient.Do(upstreamReq)
-	
+
 	// Create route
 	routePayload := map[string]interface{}{
 		"name":        req.Name,
@@ -442,26 +442,26 @@ func (a *APISIXClient) CreateRoute(ctx context.Context, req APISIXRouteRequest) 
 			},
 		},
 	}
-	
+
 	if req.MTLSEnabled {
 		routePayload["plugins"].(map[string]interface{})["client-control"] = map[string]interface{}{
 			"max_body_size": 10485760,
 		}
 	}
-	
+
 	routeBody, _ := json.Marshal(routePayload)
-	
+
 	routeURL := fmt.Sprintf("%s/apisix/admin/routes/%s", a.config.AdminURL, routeID)
 	routeReq, err := http.NewRequestWithContext(ctx, "PUT", routeURL, bytes.NewReader(routeBody))
 	if err != nil {
 		return &APISIXRouteResult{RouteID: routeID, UpstreamID: upstreamID}, nil
 	}
-	
+
 	routeReq.Header.Set("Content-Type", "application/json")
 	routeReq.Header.Set("X-API-KEY", a.config.AdminKey)
-	
+
 	_, _ = a.httpClient.Do(routeReq)
-	
+
 	return &APISIXRouteResult{
 		RouteID:    routeID,
 		UpstreamID: upstreamID,

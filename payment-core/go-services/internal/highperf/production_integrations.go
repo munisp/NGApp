@@ -284,11 +284,11 @@ func (a *ProductionTigerBeetleAdapter) Close() error {
 // ProductionKafkaAdapter implements KafkaProducer interface
 // with real Kafka client (confluent-kafka-go compatible interface)
 type ProductionKafkaAdapter struct {
-	brokers       []string
-	config        KafkaAdapterConfig
-	producer      KafkaRealProducer
-	deliveryChan  chan KafkaDeliveryReport
-	mu            sync.Mutex
+	brokers      []string
+	config       KafkaAdapterConfig
+	producer     KafkaRealProducer
+	deliveryChan chan KafkaDeliveryReport
+	mu           sync.Mutex
 
 	// Stats
 	totalProduced uint64
@@ -395,10 +395,10 @@ func (a *ProductionKafkaAdapter) Stats() (produced, failed, bytes uint64) {
 
 // CircuitBreaker provides circuit breaker pattern for external dependencies
 type CircuitBreaker struct {
-	name          string
-	maxFailures   int
-	resetTimeout  time.Duration
-	halfOpenMax   int
+	name         string
+	maxFailures  int
+	resetTimeout time.Duration
+	halfOpenMax  int
 
 	failures      int32
 	state         int32 // 0=closed, 1=open, 2=half-open
@@ -535,13 +535,13 @@ func (cb *CircuitBreaker) Stats() (calls, failures, rejects uint64, state string
 
 // ProductionJWTValidator provides production JWT validation with proper crypto
 type ProductionJWTValidator struct {
-	jwksCache     map[string]*rsa.PublicKey
-	jwksCacheMu   sync.RWMutex
-	jwksURL       string
-	issuer        string
-	audience      string
-	tokenCache    *ShardedTokenCache
-	tokenTTL      time.Duration
+	jwksCache   map[string]*rsa.PublicKey
+	jwksCacheMu sync.RWMutex
+	jwksURL     string
+	issuer      string
+	audience    string
+	tokenCache  *ShardedTokenCache
+	tokenTTL    time.Duration
 
 	// Stats
 	totalValidations uint64
@@ -551,11 +551,11 @@ type ProductionJWTValidator struct {
 
 // ProductionJWTConfig configures the JWT validator
 type ProductionJWTConfig struct {
-	JWKSURL      string
-	Issuer       string
-	Audience     string
+	JWKSURL       string
+	Issuer        string
+	Audience      string
 	TokenCacheTTL time.Duration
-	CacheShards  int
+	CacheShards   int
 }
 
 // NewProductionJWTValidator creates a new production JWT validator
@@ -586,8 +586,8 @@ type BackpressureController struct {
 	adaptiveInterval time.Duration
 
 	// Stats
-	totalAccepted uint64
-	totalShed     uint64
+	totalAccepted  uint64
+	totalShed      uint64
 	totalThrottled uint64
 
 	mu sync.Mutex
@@ -682,13 +682,13 @@ func fastRand() uint32 {
 
 // ConnectionPool provides generic connection pooling
 type ConnectionPool struct {
-	factory    func() (interface{}, error)
-	closer     func(interface{}) error
-	validator  func(interface{}) bool
-	pool       chan interface{}
-	maxSize    int
-	minSize    int
-	maxIdle    time.Duration
+	factory   func() (interface{}, error)
+	closer    func(interface{}) error
+	validator func(interface{}) bool
+	pool      chan interface{}
+	maxSize   int
+	minSize   int
+	maxIdle   time.Duration
 
 	// Stats
 	totalCreated   uint64
@@ -699,12 +699,12 @@ type ConnectionPool struct {
 
 // ConnectionPoolConfig configures the connection pool
 type ConnectionPoolConfig struct {
-	MaxSize    int
-	MinSize    int
-	MaxIdle    time.Duration
-	Factory    func() (interface{}, error)
-	Closer     func(interface{}) error
-	Validator  func(interface{}) bool
+	MaxSize   int
+	MinSize   int
+	MaxIdle   time.Duration
+	Factory   func() (interface{}, error)
+	Closer    func(interface{}) error
+	Validator func(interface{}) bool
 }
 
 // NewConnectionPool creates a new connection pool
@@ -800,11 +800,11 @@ func (p *ConnectionPool) Stats() (created, destroyed, borrowed, returned uint64)
 
 // HealthChecker provides health checking for dependencies
 type HealthChecker struct {
-	checks   map[string]HealthCheckFunc
-	checksMu sync.RWMutex
-	results  map[string]*HealthCheckResult
+	checks    map[string]HealthCheckFunc
+	checksMu  sync.RWMutex
+	results   map[string]*HealthCheckResult
 	resultsMu sync.RWMutex
-	interval time.Duration
+	interval  time.Duration
 
 	ctx    context.Context
 	cancel context.CancelFunc
@@ -1050,10 +1050,10 @@ func (mc *MetricsCollector) GetSnapshot() map[string]interface{} {
 
 // IDGenerator provides high-performance ID generation
 type IDGenerator struct {
-	nodeID    uint16
-	sequence  uint64
-	lastTime  int64
-	mu        sync.Mutex
+	nodeID   uint16
+	sequence uint64
+	lastTime int64
+	mu       sync.Mutex
 }
 
 // NewIDGenerator creates a new ID generator

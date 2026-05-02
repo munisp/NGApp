@@ -59,15 +59,15 @@ type RoleAccess struct {
 
 // IntrospectResponse represents token introspection response
 type IntrospectResponse struct {
-	Active      bool     `json:"active"`
-	Sub         string   `json:"sub,omitempty"`
-	ClientID    string   `json:"client_id,omitempty"`
-	Username    string   `json:"username,omitempty"`
-	TokenType   string   `json:"token_type,omitempty"`
-	Exp         int64    `json:"exp,omitempty"`
-	Iat         int64    `json:"iat,omitempty"`
-	Aud         []string `json:"aud,omitempty"`
-	Iss         string   `json:"iss,omitempty"`
+	Active      bool         `json:"active"`
+	Sub         string       `json:"sub,omitempty"`
+	ClientID    string       `json:"client_id,omitempty"`
+	Username    string       `json:"username,omitempty"`
+	TokenType   string       `json:"token_type,omitempty"`
+	Exp         int64        `json:"exp,omitempty"`
+	Iat         int64        `json:"iat,omitempty"`
+	Aud         []string     `json:"aud,omitempty"`
+	Iss         string       `json:"iss,omitempty"`
 	RealmAccess *RealmAccess `json:"realm_access,omitempty"`
 }
 

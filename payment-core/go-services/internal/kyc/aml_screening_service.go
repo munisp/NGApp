@@ -58,70 +58,70 @@ const (
 )
 
 type ScreeningRequest struct {
-	ReferenceID   string        `json:"referenceId"`
-	FirstName     string        `json:"firstName"`
-	LastName      string        `json:"lastName"`
-	FullName      string        `json:"fullName,omitempty"`
-	DateOfBirth   string        `json:"dateOfBirth,omitempty"`
-	Nationality   string        `json:"nationality,omitempty"`
-	Country       string        `json:"country,omitempty"`
-	IDNumber      string        `json:"idNumber,omitempty"`
-	IDType        string        `json:"idType,omitempty"`
-	Address       string        `json:"address,omitempty"`
-	ScreeningType ScreeningType `json:"screeningType"`
+	ReferenceID   string          `json:"referenceId"`
+	FirstName     string          `json:"firstName"`
+	LastName      string          `json:"lastName"`
+	FullName      string          `json:"fullName,omitempty"`
+	DateOfBirth   string          `json:"dateOfBirth,omitempty"`
+	Nationality   string          `json:"nationality,omitempty"`
+	Country       string          `json:"country,omitempty"`
+	IDNumber      string          `json:"idNumber,omitempty"`
+	IDType        string          `json:"idType,omitempty"`
+	Address       string          `json:"address,omitempty"`
+	ScreeningType ScreeningType   `json:"screeningType"`
 	Watchlists    []WatchlistType `json:"watchlists,omitempty"`
 }
 
 type ScreeningMatch struct {
-	MatchID         string        `json:"matchId"`
-	MatchedName     string        `json:"matchedName"`
-	MatchScore      float64       `json:"matchScore"`
-	MatchType       string        `json:"matchType"`
-	WatchlistType   WatchlistType `json:"watchlistType"`
-	WatchlistName   string        `json:"watchlistName"`
-	ListingDate     string        `json:"listingDate,omitempty"`
-	Reason          string        `json:"reason,omitempty"`
-	Aliases         []string      `json:"aliases,omitempty"`
-	DateOfBirth     string        `json:"dateOfBirth,omitempty"`
-	Nationality     string        `json:"nationality,omitempty"`
-	Countries       []string      `json:"countries,omitempty"`
-	Positions       []string      `json:"positions,omitempty"`
-	SourceURL       string        `json:"sourceUrl,omitempty"`
-	Status          MatchStatus   `json:"status"`
-	ReviewedBy      string        `json:"reviewedBy,omitempty"`
-	ReviewedAt      *time.Time    `json:"reviewedAt,omitempty"`
-	ReviewNotes     string        `json:"reviewNotes,omitempty"`
+	MatchID       string        `json:"matchId"`
+	MatchedName   string        `json:"matchedName"`
+	MatchScore    float64       `json:"matchScore"`
+	MatchType     string        `json:"matchType"`
+	WatchlistType WatchlistType `json:"watchlistType"`
+	WatchlistName string        `json:"watchlistName"`
+	ListingDate   string        `json:"listingDate,omitempty"`
+	Reason        string        `json:"reason,omitempty"`
+	Aliases       []string      `json:"aliases,omitempty"`
+	DateOfBirth   string        `json:"dateOfBirth,omitempty"`
+	Nationality   string        `json:"nationality,omitempty"`
+	Countries     []string      `json:"countries,omitempty"`
+	Positions     []string      `json:"positions,omitempty"`
+	SourceURL     string        `json:"sourceUrl,omitempty"`
+	Status        MatchStatus   `json:"status"`
+	ReviewedBy    string        `json:"reviewedBy,omitempty"`
+	ReviewedAt    *time.Time    `json:"reviewedAt,omitempty"`
+	ReviewNotes   string        `json:"reviewNotes,omitempty"`
 }
 
 type ScreeningResult struct {
-	ScreeningID     string            `json:"screeningId"`
-	ReferenceID     string            `json:"referenceId"`
-	Status          string            `json:"status"`
-	RiskLevel       RiskLevel         `json:"riskLevel"`
-	RiskScore       float64           `json:"riskScore"`
-	TotalMatches    int               `json:"totalMatches"`
-	PotentialMatches int              `json:"potentialMatches"`
-	ConfirmedMatches int              `json:"confirmedMatches"`
-	Matches         []ScreeningMatch  `json:"matches"`
-	WatchlistsChecked []WatchlistType `json:"watchlistsChecked"`
-	Provider        AMLProvider       `json:"provider"`
-	ProcessingTime  int64             `json:"processingTimeMs"`
-	CreatedAt       time.Time         `json:"createdAt"`
-	ExpiresAt       time.Time         `json:"expiresAt"`
+	ScreeningID       string           `json:"screeningId"`
+	ReferenceID       string           `json:"referenceId"`
+	Status            string           `json:"status"`
+	RiskLevel         RiskLevel        `json:"riskLevel"`
+	RiskScore         float64          `json:"riskScore"`
+	TotalMatches      int              `json:"totalMatches"`
+	PotentialMatches  int              `json:"potentialMatches"`
+	ConfirmedMatches  int              `json:"confirmedMatches"`
+	Matches           []ScreeningMatch `json:"matches"`
+	WatchlistsChecked []WatchlistType  `json:"watchlistsChecked"`
+	Provider          AMLProvider      `json:"provider"`
+	ProcessingTime    int64            `json:"processingTimeMs"`
+	CreatedAt         time.Time        `json:"createdAt"`
+	ExpiresAt         time.Time        `json:"expiresAt"`
 }
 
 type PEPMatch struct {
-	MatchID       string   `json:"matchId"`
-	Name          string   `json:"name"`
-	MatchScore    float64  `json:"matchScore"`
-	Position      string   `json:"position"`
-	Country       string   `json:"country"`
-	Level         string   `json:"level"`
-	StartDate     string   `json:"startDate,omitempty"`
-	EndDate       string   `json:"endDate,omitempty"`
-	IsActive      bool     `json:"isActive"`
-	RelatedPEPs   []string `json:"relatedPeps,omitempty"`
-	SourceURL     string   `json:"sourceUrl,omitempty"`
+	MatchID     string   `json:"matchId"`
+	Name        string   `json:"name"`
+	MatchScore  float64  `json:"matchScore"`
+	Position    string   `json:"position"`
+	Country     string   `json:"country"`
+	Level       string   `json:"level"`
+	StartDate   string   `json:"startDate,omitempty"`
+	EndDate     string   `json:"endDate,omitempty"`
+	IsActive    bool     `json:"isActive"`
+	RelatedPEPs []string `json:"relatedPeps,omitempty"`
+	SourceURL   string   `json:"sourceUrl,omitempty"`
 }
 
 type PEPScreeningResult struct {
@@ -148,31 +148,31 @@ type AdverseMediaMatch struct {
 }
 
 type AdverseMediaResult struct {
-	ScreeningID    string              `json:"screeningId"`
-	ReferenceID    string              `json:"referenceId"`
-	HasAdverseMedia bool               `json:"hasAdverseMedia"`
-	RiskLevel      RiskLevel           `json:"riskLevel"`
-	TotalArticles  int                 `json:"totalArticles"`
-	Matches        []AdverseMediaMatch `json:"matches"`
-	ProcessingTime int64               `json:"processingTimeMs"`
-	CreatedAt      time.Time           `json:"createdAt"`
+	ScreeningID     string              `json:"screeningId"`
+	ReferenceID     string              `json:"referenceId"`
+	HasAdverseMedia bool                `json:"hasAdverseMedia"`
+	RiskLevel       RiskLevel           `json:"riskLevel"`
+	TotalArticles   int                 `json:"totalArticles"`
+	Matches         []AdverseMediaMatch `json:"matches"`
+	ProcessingTime  int64               `json:"processingTimeMs"`
+	CreatedAt       time.Time           `json:"createdAt"`
 }
 
 type CaseReview struct {
-	CaseID        string         `json:"caseId"`
-	ScreeningID   string         `json:"screeningId"`
-	ReferenceID   string         `json:"referenceId"`
-	Status        string         `json:"status"`
-	AssignedTo    string         `json:"assignedTo,omitempty"`
-	Priority      string         `json:"priority"`
-	Matches       []ScreeningMatch `json:"matches"`
-	Notes         []CaseNote     `json:"notes"`
-	Decision      string         `json:"decision,omitempty"`
-	DecisionBy    string         `json:"decisionBy,omitempty"`
-	DecisionAt    *time.Time     `json:"decisionAt,omitempty"`
-	CreatedAt     time.Time      `json:"createdAt"`
-	UpdatedAt     time.Time      `json:"updatedAt"`
-	DueDate       time.Time      `json:"dueDate"`
+	CaseID      string           `json:"caseId"`
+	ScreeningID string           `json:"screeningId"`
+	ReferenceID string           `json:"referenceId"`
+	Status      string           `json:"status"`
+	AssignedTo  string           `json:"assignedTo,omitempty"`
+	Priority    string           `json:"priority"`
+	Matches     []ScreeningMatch `json:"matches"`
+	Notes       []CaseNote       `json:"notes"`
+	Decision    string           `json:"decision,omitempty"`
+	DecisionBy  string           `json:"decisionBy,omitempty"`
+	DecisionAt  *time.Time       `json:"decisionAt,omitempty"`
+	CreatedAt   time.Time        `json:"createdAt"`
+	UpdatedAt   time.Time        `json:"updatedAt"`
+	DueDate     time.Time        `json:"dueDate"`
 }
 
 type CaseNote struct {
@@ -196,11 +196,11 @@ type AMLConfig struct {
 }
 
 type AMLScreeningService struct {
-	mu           sync.RWMutex
-	config       AMLConfig
-	httpClient   *http.Client
-	screenings   map[string]*ScreeningResult
-	cases        map[string]*CaseReview
+	mu            sync.RWMutex
+	config        AMLConfig
+	httpClient    *http.Client
+	screenings    map[string]*ScreeningResult
+	cases         map[string]*CaseReview
 	watchlistData map[WatchlistType][]WatchlistEntry
 }
 
@@ -389,13 +389,13 @@ func (s *AMLScreeningService) callComplyAdvantageAPI(req *ScreeningRequest, watc
 	var apiResponse struct {
 		Content struct {
 			Data struct {
-				ID      int `json:"id"`
-				Hits    []struct {
+				ID   int `json:"id"`
+				Hits []struct {
 					Doc struct {
-						Name     string   `json:"name"`
-						Types    []string `json:"types"`
-						Sources  []string `json:"sources"`
-						Fields   []struct {
+						Name    string   `json:"name"`
+						Types   []string `json:"types"`
+						Sources []string `json:"sources"`
+						Fields  []struct {
 							Name  string `json:"name"`
 							Value string `json:"value"`
 						} `json:"fields"`

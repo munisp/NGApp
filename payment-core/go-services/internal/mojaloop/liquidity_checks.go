@@ -14,11 +14,11 @@ import (
 // The main mutex (mu) protects reservation operations
 // The cache mutex (cacheMu) protects the position cache
 type LiquidityManager struct {
-	ledger        LedgerEngine
-	db            *sql.DB
+	ledger         LedgerEngine
+	db             *sql.DB
 	participantMgr *ParticipantLifecycleManager
-	mu            sync.Mutex // Changed from RWMutex - simpler and avoids re-entrancy issues
-	
+	mu             sync.Mutex // Changed from RWMutex - simpler and avoids re-entrancy issues
+
 	// Cache for performance - separate mutex to avoid deadlocks
 	positionCache map[string]*CachedPosition
 	cacheMu       sync.RWMutex // Separate mutex for cache operations
@@ -27,8 +27,8 @@ type LiquidityManager struct {
 
 // CachedPosition holds cached position data
 type CachedPosition struct {
-	Position  *ParticipantPosition
-	CachedAt  time.Time
+	Position *ParticipantPosition
+	CachedAt time.Time
 }
 
 // NewLiquidityManager creates a new liquidity manager
@@ -44,15 +44,15 @@ func NewLiquidityManager(ledger LedgerEngine, db *sql.DB, participantMgr *Partic
 
 // LiquidityCheckResult represents the result of a liquidity check
 type LiquidityCheckResult struct {
-	Allowed          bool   `json:"allowed"`
-	ParticipantName  string `json:"participant_name"`
-	Currency         string `json:"currency"`
-	RequestedAmount  int64  `json:"requested_amount"`
-	CurrentPosition  int64  `json:"current_position"`
-	ReservedAmount   int64  `json:"reserved_amount"`
-	NetDebitCap      int64  `json:"net_debit_cap"`
-	AvailableLimit   int64  `json:"available_limit"`
-	RejectionReason  string `json:"rejection_reason,omitempty"`
+	Allowed         bool   `json:"allowed"`
+	ParticipantName string `json:"participant_name"`
+	Currency        string `json:"currency"`
+	RequestedAmount int64  `json:"requested_amount"`
+	CurrentPosition int64  `json:"current_position"`
+	ReservedAmount  int64  `json:"reserved_amount"`
+	NetDebitCap     int64  `json:"net_debit_cap"`
+	AvailableLimit  int64  `json:"available_limit"`
+	RejectionReason string `json:"rejection_reason,omitempty"`
 }
 
 // CheckLiquidity checks if a participant has sufficient liquidity for a transfer
@@ -203,7 +203,7 @@ func (m *LiquidityManager) ReleaseLiquidity(ctx context.Context, transferID stri
 		SELECT participant_name, currency FROM liquidity_reservations
 		WHERE transfer_id = $1 AND status = 'RESERVED'
 	`, transferID).Scan(&participantName, &currency)
-	
+
 	if err != nil && err != sql.ErrNoRows {
 		return err
 	}
@@ -237,7 +237,7 @@ func (m *LiquidityManager) CommitLiquidity(ctx context.Context, transferID strin
 		SELECT participant_name, currency FROM liquidity_reservations
 		WHERE transfer_id = $1 AND status = 'RESERVED'
 	`, transferID).Scan(&participantName, &currency)
-	
+
 	if err != nil && err != sql.ErrNoRows {
 		return err
 	}

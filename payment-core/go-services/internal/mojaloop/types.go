@@ -34,14 +34,14 @@ type IndividualTransfer struct {
 
 // IndividualTransferResult represents the result of an individual transfer
 type IndividualTransferResult struct {
-	TransferID        string      `json:"transfer_id"`
-	TigerBeetleID     string      `json:"tigerbeetle_id,omitempty"`
-	Success           bool        `json:"success"`
-	Error             string      `json:"error,omitempty"`
-	Fulfilment        string      `json:"fulfilment,omitempty"`
-	ErrorCode         string      `json:"error_code,omitempty"`
-	ErrorDescription  string      `json:"error_description,omitempty"`
-	ExtensionList     []Extension `json:"extension_list,omitempty"`
+	TransferID       string      `json:"transfer_id"`
+	TigerBeetleID    string      `json:"tigerbeetle_id,omitempty"`
+	Success          bool        `json:"success"`
+	Error            string      `json:"error,omitempty"`
+	Fulfilment       string      `json:"fulfilment,omitempty"`
+	ErrorCode        string      `json:"error_code,omitempty"`
+	ErrorDescription string      `json:"error_description,omitempty"`
+	ExtensionList    []Extension `json:"extension_list,omitempty"`
 }
 
 // Extension represents a Mojaloop extension
@@ -55,36 +55,36 @@ type ReconciliationConfig struct {
 	// Fast loop: validate recent transfer state alignment
 	FastLoopInterval time.Duration
 	FastLoopLookback time.Duration // How far back to check transfers
-	
+
 	// Slow loop: balance-level reconciliation
 	SlowLoopInterval time.Duration
-	
+
 	// Simple interval for basic reconciliation
 	ReconcileInterval time.Duration
-	
+
 	// Thresholds
-	MaxDriftAllowed    int64         // Maximum balance drift before alerting
-	DriftThreshold     uint64        // Maximum allowed drift in currency units
-	StuckTransferAge   time.Duration // Age after which pending transfers are considered stuck
-	
+	MaxDriftAllowed  int64         // Maximum balance drift before alerting
+	DriftThreshold   uint64        // Maximum allowed drift in currency units
+	StuckTransferAge time.Duration // Age after which pending transfers are considered stuck
+
 	// Alerting
-	AlertWebhookURL    string
-	AlertOnDrift       bool
-	AlertOnStuck       bool
+	AlertWebhookURL string
+	AlertOnDrift    bool
+	AlertOnStuck    bool
 }
 
 // DefaultReconciliationConfig returns default configuration
 func DefaultReconciliationConfig() *ReconciliationConfig {
 	return &ReconciliationConfig{
-		FastLoopInterval:   30 * time.Second,
-		FastLoopLookback:   5 * time.Minute,
-		SlowLoopInterval:   15 * time.Minute,
-		ReconcileInterval:  5 * time.Minute,
-		MaxDriftAllowed:    0, // Zero tolerance by default
-		DriftThreshold:     100, // 100 currency units
-		StuckTransferAge:   5 * time.Minute,
-		AlertOnDrift:       true,
-		AlertOnStuck:       true,
+		FastLoopInterval:  30 * time.Second,
+		FastLoopLookback:  5 * time.Minute,
+		SlowLoopInterval:  15 * time.Minute,
+		ReconcileInterval: 5 * time.Minute,
+		MaxDriftAllowed:   0,   // Zero tolerance by default
+		DriftThreshold:    100, // 100 currency units
+		StuckTransferAge:  5 * time.Minute,
+		AlertOnDrift:      true,
+		AlertOnStuck:      true,
 	}
 }
 

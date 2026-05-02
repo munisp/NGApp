@@ -395,12 +395,12 @@ func tigerBeetleTransferHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var req struct {
-		TransferID      string `json:"transferId"`
-		PayerAccountID  uint64 `json:"payerAccountId"`
-		PayeeAccountID  uint64 `json:"payeeAccountId"`
-		Amount          uint64 `json:"amount"`
-		CurrencyLedger  uint32 `json:"currencyLedger"`
-		TwoPhase        bool   `json:"twoPhase"`
+		TransferID     string `json:"transferId"`
+		PayerAccountID uint64 `json:"payerAccountId"`
+		PayeeAccountID uint64 `json:"payeeAccountId"`
+		Amount         uint64 `json:"amount"`
+		CurrencyLedger uint32 `json:"currencyLedger"`
+		TwoPhase       bool   `json:"twoPhase"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {

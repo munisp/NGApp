@@ -61,33 +61,33 @@ type KYBWorkflow struct {
 
 // KYBWorkflowStep represents a step in the KYB workflow
 type KYBWorkflowStep struct {
-	ID          string                 `json:"id"`
-	Name        string                 `json:"name"`
-	Type        string                 `json:"type"` // document_collection, verification, screening, review
-	Required    bool                   `json:"required"`
-	Config      map[string]interface{} `json:"config"`
-	NextOnPass  string                 `json:"next_on_pass"`
-	NextOnFail  string                 `json:"next_on_fail"`
+	ID         string                 `json:"id"`
+	Name       string                 `json:"name"`
+	Type       string                 `json:"type"` // document_collection, verification, screening, review
+	Required   bool                   `json:"required"`
+	Config     map[string]interface{} `json:"config"`
+	NextOnPass string                 `json:"next_on_pass"`
+	NextOnFail string                 `json:"next_on_fail"`
 }
 
 // KYBCase represents a KYB verification case
 type KYBCase struct {
-	ID                string                 `json:"id"`
-	ExternalID        string                 `json:"external_id"` // Onboarding case ID
-	WorkflowID        string                 `json:"workflow_id"`
-	Status            KYBStatus              `json:"status"`
-	RiskScore         int                    `json:"risk_score"`
-	RiskLevel         string                 `json:"risk_level"` // LOW, MEDIUM, HIGH, CRITICAL
-	BusinessInfo      BusinessInfo           `json:"business_info"`
-	Documents         []KYBDocument          `json:"documents"`
-	Screenings        []ScreeningResult      `json:"screenings"`
-	Verifications     []VerificationResult   `json:"verifications"`
-	Decision          *KYBDecision           `json:"decision,omitempty"`
-	AssignedReviewer  string                 `json:"assigned_reviewer,omitempty"`
-	CreatedAt         time.Time              `json:"created_at"`
-	UpdatedAt         time.Time              `json:"updated_at"`
-	CompletedAt       *time.Time             `json:"completed_at,omitempty"`
-	Metadata          map[string]interface{} `json:"metadata"`
+	ID               string                 `json:"id"`
+	ExternalID       string                 `json:"external_id"` // Onboarding case ID
+	WorkflowID       string                 `json:"workflow_id"`
+	Status           KYBStatus              `json:"status"`
+	RiskScore        int                    `json:"risk_score"`
+	RiskLevel        string                 `json:"risk_level"` // LOW, MEDIUM, HIGH, CRITICAL
+	BusinessInfo     BusinessInfo           `json:"business_info"`
+	Documents        []KYBDocument          `json:"documents"`
+	Screenings       []ScreeningResult      `json:"screenings"`
+	Verifications    []VerificationResult   `json:"verifications"`
+	Decision         *KYBDecision           `json:"decision,omitempty"`
+	AssignedReviewer string                 `json:"assigned_reviewer,omitempty"`
+	CreatedAt        time.Time              `json:"created_at"`
+	UpdatedAt        time.Time              `json:"updated_at"`
+	CompletedAt      *time.Time             `json:"completed_at,omitempty"`
+	Metadata         map[string]interface{} `json:"metadata"`
 }
 
 // KYBStatus represents the status of a KYB case
@@ -106,21 +106,21 @@ const (
 
 // BusinessInfo contains business entity information
 type BusinessInfo struct {
-	LegalName           string   `json:"legal_name"`
-	TradingName         string   `json:"trading_name,omitempty"`
-	RegistrationNumber  string   `json:"registration_number"`
-	TaxID               string   `json:"tax_id,omitempty"`
-	IncorporationDate   string   `json:"incorporation_date,omitempty"`
-	IncorporationCountry string  `json:"incorporation_country"`
-	LegalForm           string   `json:"legal_form"` // LLC, Corporation, Partnership, etc.
-	Industry            string   `json:"industry"`
-	Website             string   `json:"website,omitempty"`
-	RegisteredAddress   Address  `json:"registered_address"`
-	OperatingAddress    *Address `json:"operating_address,omitempty"`
-	ContactEmail        string   `json:"contact_email"`
-	ContactPhone        string   `json:"contact_phone,omitempty"`
-	UBOs                []UBO    `json:"ubos"` // Ultimate Beneficial Owners
-	Directors           []Director `json:"directors"`
+	LegalName            string     `json:"legal_name"`
+	TradingName          string     `json:"trading_name,omitempty"`
+	RegistrationNumber   string     `json:"registration_number"`
+	TaxID                string     `json:"tax_id,omitempty"`
+	IncorporationDate    string     `json:"incorporation_date,omitempty"`
+	IncorporationCountry string     `json:"incorporation_country"`
+	LegalForm            string     `json:"legal_form"` // LLC, Corporation, Partnership, etc.
+	Industry             string     `json:"industry"`
+	Website              string     `json:"website,omitempty"`
+	RegisteredAddress    Address    `json:"registered_address"`
+	OperatingAddress     *Address   `json:"operating_address,omitempty"`
+	ContactEmail         string     `json:"contact_email"`
+	ContactPhone         string     `json:"contact_phone,omitempty"`
+	UBOs                 []UBO      `json:"ubos"` // Ultimate Beneficial Owners
+	Directors            []Director `json:"directors"`
 }
 
 // Address represents a physical address
@@ -134,47 +134,47 @@ type Address struct {
 
 // UBO represents an Ultimate Beneficial Owner
 type UBO struct {
-	ID              string  `json:"id"`
-	FullName        string  `json:"full_name"`
-	DateOfBirth     string  `json:"date_of_birth"`
-	Nationality     string  `json:"nationality"`
+	ID               string  `json:"id"`
+	FullName         string  `json:"full_name"`
+	DateOfBirth      string  `json:"date_of_birth"`
+	Nationality      string  `json:"nationality"`
 	OwnershipPercent float64 `json:"ownership_percent"`
-	ControlType     string  `json:"control_type"` // DIRECT, INDIRECT
-	IDDocumentType  string  `json:"id_document_type"`
-	IDDocumentNumber string `json:"id_document_number"`
-	Address         Address `json:"address"`
-	PEPStatus       bool    `json:"pep_status"`
-	SanctionsStatus bool    `json:"sanctions_status"`
+	ControlType      string  `json:"control_type"` // DIRECT, INDIRECT
+	IDDocumentType   string  `json:"id_document_type"`
+	IDDocumentNumber string  `json:"id_document_number"`
+	Address          Address `json:"address"`
+	PEPStatus        bool    `json:"pep_status"`
+	SanctionsStatus  bool    `json:"sanctions_status"`
 }
 
 // Director represents a company director
 type Director struct {
-	ID              string `json:"id"`
-	FullName        string `json:"full_name"`
-	Position        string `json:"position"`
-	DateOfBirth     string `json:"date_of_birth"`
-	Nationality     string `json:"nationality"`
-	IDDocumentType  string `json:"id_document_type"`
+	ID               string `json:"id"`
+	FullName         string `json:"full_name"`
+	Position         string `json:"position"`
+	DateOfBirth      string `json:"date_of_birth"`
+	Nationality      string `json:"nationality"`
+	IDDocumentType   string `json:"id_document_type"`
 	IDDocumentNumber string `json:"id_document_number"`
-	AppointmentDate string `json:"appointment_date"`
-	PEPStatus       bool   `json:"pep_status"`
-	SanctionsStatus bool   `json:"sanctions_status"`
+	AppointmentDate  string `json:"appointment_date"`
+	PEPStatus        bool   `json:"pep_status"`
+	SanctionsStatus  bool   `json:"sanctions_status"`
 }
 
 // KYBDocument represents a document in the KYB process
 type KYBDocument struct {
-	ID              string                 `json:"id"`
-	Type            DocumentType           `json:"type"`
-	FileName        string                 `json:"file_name"`
-	ContentType     string                 `json:"content_type"`
-	S3Key           string                 `json:"s3_key"`
-	ContentHash     string                 `json:"content_hash"`
-	Status          DocumentStatus         `json:"status"`
-	ExtractionResult *DocumentExtraction   `json:"extraction_result,omitempty"`
-	VerificationResult *DocumentVerification `json:"verification_result,omitempty"`
-	UploadedAt      time.Time              `json:"uploaded_at"`
-	ProcessedAt     *time.Time             `json:"processed_at,omitempty"`
-	Metadata        map[string]interface{} `json:"metadata"`
+	ID                 string                 `json:"id"`
+	Type               DocumentType           `json:"type"`
+	FileName           string                 `json:"file_name"`
+	ContentType        string                 `json:"content_type"`
+	S3Key              string                 `json:"s3_key"`
+	ContentHash        string                 `json:"content_hash"`
+	Status             DocumentStatus         `json:"status"`
+	ExtractionResult   *DocumentExtraction    `json:"extraction_result,omitempty"`
+	VerificationResult *DocumentVerification  `json:"verification_result,omitempty"`
+	UploadedAt         time.Time              `json:"uploaded_at"`
+	ProcessedAt        *time.Time             `json:"processed_at,omitempty"`
+	Metadata           map[string]interface{} `json:"metadata"`
 }
 
 // DocumentType represents types of KYB documents
@@ -219,10 +219,10 @@ type DocumentExtraction struct {
 
 // ExtractedField represents a single extracted field
 type ExtractedField struct {
-	Value      string  `json:"value"`
-	Confidence float64 `json:"confidence"`
+	Value       string       `json:"value"`
+	Confidence  float64      `json:"confidence"`
 	BoundingBox *BoundingBox `json:"bounding_box,omitempty"`
-	PageNumber int     `json:"page_number"`
+	PageNumber  int          `json:"page_number"`
 }
 
 // BoundingBox represents coordinates of extracted text
@@ -235,59 +235,59 @@ type BoundingBox struct {
 
 // DocumentVerification contains verification results
 type DocumentVerification struct {
-	IsAuthentic     bool      `json:"is_authentic"`
-	IsExpired       bool      `json:"is_expired"`
-	IsTampered      bool      `json:"is_tampered"`
-	ExpiryDate      string    `json:"expiry_date,omitempty"`
-	VerifiedAt      time.Time `json:"verified_at"`
-	VerificationMethod string `json:"verification_method"`
-	Notes           string    `json:"notes,omitempty"`
+	IsAuthentic        bool      `json:"is_authentic"`
+	IsExpired          bool      `json:"is_expired"`
+	IsTampered         bool      `json:"is_tampered"`
+	ExpiryDate         string    `json:"expiry_date,omitempty"`
+	VerifiedAt         time.Time `json:"verified_at"`
+	VerificationMethod string    `json:"verification_method"`
+	Notes              string    `json:"notes,omitempty"`
 }
 
 // ScreeningResult contains screening results
 type ScreeningResult struct {
-	ID           string    `json:"id"`
-	Type         string    `json:"type"` // SANCTIONS, PEP, ADVERSE_MEDIA
-	EntityName   string    `json:"entity_name"`
-	EntityType   string    `json:"entity_type"` // BUSINESS, INDIVIDUAL
-	MatchFound   bool      `json:"match_found"`
-	MatchScore   float64   `json:"match_score"`
-	Matches      []ScreeningMatch `json:"matches,omitempty"`
-	ScreenedAt   time.Time `json:"screened_at"`
-	Provider     string    `json:"provider"`
+	ID         string           `json:"id"`
+	Type       string           `json:"type"` // SANCTIONS, PEP, ADVERSE_MEDIA
+	EntityName string           `json:"entity_name"`
+	EntityType string           `json:"entity_type"` // BUSINESS, INDIVIDUAL
+	MatchFound bool             `json:"match_found"`
+	MatchScore float64          `json:"match_score"`
+	Matches    []ScreeningMatch `json:"matches,omitempty"`
+	ScreenedAt time.Time        `json:"screened_at"`
+	Provider   string           `json:"provider"`
 }
 
 // ScreeningMatch represents a potential match from screening
 type ScreeningMatch struct {
-	Name       string   `json:"name"`
-	Score      float64  `json:"score"`
-	ListName   string   `json:"list_name"`
-	ListType   string   `json:"list_type"`
-	Countries  []string `json:"countries,omitempty"`
-	Details    string   `json:"details,omitempty"`
+	Name      string   `json:"name"`
+	Score     float64  `json:"score"`
+	ListName  string   `json:"list_name"`
+	ListType  string   `json:"list_type"`
+	Countries []string `json:"countries,omitempty"`
+	Details   string   `json:"details,omitempty"`
 }
 
 // VerificationResult contains verification check results
 type VerificationResult struct {
-	ID           string    `json:"id"`
-	Type         string    `json:"type"` // REGISTRY, LICENSE, ADDRESS, BANK_ACCOUNT
-	Status       string    `json:"status"` // VERIFIED, FAILED, PENDING
-	Details      map[string]interface{} `json:"details"`
-	VerifiedAt   time.Time `json:"verified_at"`
-	Provider     string    `json:"provider"`
+	ID         string                 `json:"id"`
+	Type       string                 `json:"type"`   // REGISTRY, LICENSE, ADDRESS, BANK_ACCOUNT
+	Status     string                 `json:"status"` // VERIFIED, FAILED, PENDING
+	Details    map[string]interface{} `json:"details"`
+	VerifiedAt time.Time              `json:"verified_at"`
+	Provider   string                 `json:"provider"`
 }
 
 // KYBDecision represents the final KYB decision
 type KYBDecision struct {
-	Decision     string    `json:"decision"` // APPROVED, REJECTED, MANUAL_REVIEW
-	RiskLevel    string    `json:"risk_level"`
-	RiskScore    int       `json:"risk_score"`
-	ReasonCodes  []string  `json:"reason_codes"`
-	Notes        string    `json:"notes,omitempty"`
-	DecidedBy    string    `json:"decided_by"` // SYSTEM or reviewer ID
-	DecidedAt    time.Time `json:"decided_at"`
-	ValidUntil   time.Time `json:"valid_until"`
-	Conditions   []string  `json:"conditions,omitempty"`
+	Decision    string    `json:"decision"` // APPROVED, REJECTED, MANUAL_REVIEW
+	RiskLevel   string    `json:"risk_level"`
+	RiskScore   int       `json:"risk_score"`
+	ReasonCodes []string  `json:"reason_codes"`
+	Notes       string    `json:"notes,omitempty"`
+	DecidedBy   string    `json:"decided_by"` // SYSTEM or reviewer ID
+	DecidedAt   time.Time `json:"decided_at"`
+	ValidUntil  time.Time `json:"valid_until"`
+	Conditions  []string  `json:"conditions,omitempty"`
 }
 
 // CreateCase creates a new KYB case in Ballerine

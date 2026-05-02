@@ -16,38 +16,38 @@ import (
 
 // KeyPerson represents a director, UBO, or signatory for KYC
 type KeyPerson struct {
-	ID             string    `json:"id"`
-	Name           string    `json:"name"`
-	Role           string    `json:"role"` // DIRECTOR, UBO, SIGNATORY, AUTHORIZED_REPRESENTATIVE
-	Email          string    `json:"email"`
-	Phone          string    `json:"phone,omitempty"`
-	Nationality    string    `json:"nationality"`
-	DateOfBirth    string    `json:"date_of_birth,omitempty"`
-	IDType         string    `json:"id_type"` // PASSPORT, NATIONAL_ID, DRIVERS_LICENSE
-	IDNumber       string    `json:"id_number"`
-	IDExpiry       string    `json:"id_expiry,omitempty"`
-	OwnershipPct   float64   `json:"ownership_pct,omitempty"` // For UBOs
-	IsPEP          bool      `json:"is_pep"`                  // Politically Exposed Person
-	KYCStatus      string    `json:"kyc_status"`              // NOT_STARTED, PENDING, APPROVED, REJECTED
-	KYCCaseID      string    `json:"kyc_case_id,omitempty"`
-	CreatedAt      time.Time `json:"created_at"`
-	UpdatedAt      time.Time `json:"updated_at"`
+	ID           string    `json:"id"`
+	Name         string    `json:"name"`
+	Role         string    `json:"role"` // DIRECTOR, UBO, SIGNATORY, AUTHORIZED_REPRESENTATIVE
+	Email        string    `json:"email"`
+	Phone        string    `json:"phone,omitempty"`
+	Nationality  string    `json:"nationality"`
+	DateOfBirth  string    `json:"date_of_birth,omitempty"`
+	IDType       string    `json:"id_type"` // PASSPORT, NATIONAL_ID, DRIVERS_LICENSE
+	IDNumber     string    `json:"id_number"`
+	IDExpiry     string    `json:"id_expiry,omitempty"`
+	OwnershipPct float64   `json:"ownership_pct,omitempty"` // For UBOs
+	IsPEP        bool      `json:"is_pep"`                  // Politically Exposed Person
+	KYCStatus    string    `json:"kyc_status"`              // NOT_STARTED, PENDING, APPROVED, REJECTED
+	KYCCaseID    string    `json:"kyc_case_id,omitempty"`
+	CreatedAt    time.Time `json:"created_at"`
+	UpdatedAt    time.Time `json:"updated_at"`
 }
 
 // DocumentWithValidation represents an uploaded document with OCR validation
 type DocumentWithValidation struct {
-	ID               string                 `json:"id"`
-	CaseID           string                 `json:"case_id"`
-	RequirementID    string                 `json:"requirement_id"`
-	Name             string                 `json:"name"`
-	Type             string                 `json:"type"` // CERTIFICATE_OF_INCORPORATION, BANKING_LICENSE, etc.
-	FileURL          string                 `json:"file_url"`
-	FileHash         string                 `json:"file_hash"`
-	MimeType         string                 `json:"mime_type"`
-	Size             int64                  `json:"size"`
-	Status           string                 `json:"status"` // UPLOADED, PROCESSING, VALIDATED, INVALID, EXPIRED
-	UploadedBy       string                 `json:"uploaded_by"`
-	UploadedAt       time.Time              `json:"uploaded_at"`
+	ID            string    `json:"id"`
+	CaseID        string    `json:"case_id"`
+	RequirementID string    `json:"requirement_id"`
+	Name          string    `json:"name"`
+	Type          string    `json:"type"` // CERTIFICATE_OF_INCORPORATION, BANKING_LICENSE, etc.
+	FileURL       string    `json:"file_url"`
+	FileHash      string    `json:"file_hash"`
+	MimeType      string    `json:"mime_type"`
+	Size          int64     `json:"size"`
+	Status        string    `json:"status"` // UPLOADED, PROCESSING, VALIDATED, INVALID, EXPIRED
+	UploadedBy    string    `json:"uploaded_by"`
+	UploadedAt    time.Time `json:"uploaded_at"`
 	// OCR Validation Results
 	OCRProcessed     bool                   `json:"ocr_processed"`
 	OCRConfidence    float64                `json:"ocr_confidence"`
@@ -59,43 +59,43 @@ type DocumentWithValidation struct {
 
 // ApplicationDraft represents a saved draft application
 type ApplicationDraft struct {
-	ID               string                 `json:"id"`
-	SessionID        string                 `json:"session_id"`
-	Email            string                 `json:"email"`
-	CurrentStep      int                    `json:"current_step"`
-	FormData         map[string]interface{} `json:"form_data"`
-	KeyPersonnel     []KeyPerson            `json:"key_personnel"`
-	Documents        []DocumentWithValidation `json:"documents"`
-	CreatedAt        time.Time              `json:"created_at"`
-	UpdatedAt        time.Time              `json:"updated_at"`
-	ExpiresAt        time.Time              `json:"expires_at"` // Drafts expire after 30 days
+	ID           string                   `json:"id"`
+	SessionID    string                   `json:"session_id"`
+	Email        string                   `json:"email"`
+	CurrentStep  int                      `json:"current_step"`
+	FormData     map[string]interface{}   `json:"form_data"`
+	KeyPersonnel []KeyPerson              `json:"key_personnel"`
+	Documents    []DocumentWithValidation `json:"documents"`
+	CreatedAt    time.Time                `json:"created_at"`
+	UpdatedAt    time.Time                `json:"updated_at"`
+	ExpiresAt    time.Time                `json:"expires_at"` // Drafts expire after 30 days
 }
 
 // ApplicationStatus represents real-time status tracking
 type ApplicationStatus struct {
-	CaseID              string              `json:"case_id"`
-	OrganizationName    string              `json:"organization_name"`
-	Status              string              `json:"status"`
-	StatusDescription   string              `json:"status_description"`
-	CurrentPhase        string              `json:"current_phase"`
-	PhaseProgress       int                 `json:"phase_progress"` // 0-100
-	SubmittedAt         time.Time           `json:"submitted_at"`
-	EstimatedCompletion *time.Time          `json:"estimated_completion,omitempty"`
-	PendingActions      []PendingAction     `json:"pending_actions"`
-	CompletedSteps      []CompletedStep     `json:"completed_steps"`
-	Timeline            []TimelineEvent     `json:"timeline"`
+	CaseID              string               `json:"case_id"`
+	OrganizationName    string               `json:"organization_name"`
+	Status              string               `json:"status"`
+	StatusDescription   string               `json:"status_description"`
+	CurrentPhase        string               `json:"current_phase"`
+	PhaseProgress       int                  `json:"phase_progress"` // 0-100
+	SubmittedAt         time.Time            `json:"submitted_at"`
+	EstimatedCompletion *time.Time           `json:"estimated_completion,omitempty"`
+	PendingActions      []PendingAction      `json:"pending_actions"`
+	CompletedSteps      []CompletedStep      `json:"completed_steps"`
+	Timeline            []TimelineEvent      `json:"timeline"`
 	Notifications       []StatusNotification `json:"notifications"`
 }
 
 // PendingAction represents an action required from the applicant
 type PendingAction struct {
-	ID          string    `json:"id"`
-	Type        string    `json:"type"` // DOCUMENT_UPLOAD, DOCUMENT_RESUBMIT, KYC_VERIFICATION, INFORMATION_REQUEST
-	Title       string    `json:"title"`
-	Description string    `json:"description"`
+	ID          string     `json:"id"`
+	Type        string     `json:"type"` // DOCUMENT_UPLOAD, DOCUMENT_RESUBMIT, KYC_VERIFICATION, INFORMATION_REQUEST
+	Title       string     `json:"title"`
+	Description string     `json:"description"`
 	DueDate     *time.Time `json:"due_date,omitempty"`
-	Priority    string    `json:"priority"` // HIGH, MEDIUM, LOW
-	ActionURL   string    `json:"action_url,omitempty"`
+	Priority    string     `json:"priority"` // HIGH, MEDIUM, LOW
+	ActionURL   string     `json:"action_url,omitempty"`
 }
 
 // CompletedStep represents a completed step in the onboarding process
@@ -108,12 +108,12 @@ type CompletedStep struct {
 
 // TimelineEvent represents an event in the application timeline
 type TimelineEvent struct {
-	ID          string    `json:"id"`
-	Event       string    `json:"event"`
-	Description string    `json:"description"`
-	Timestamp   time.Time `json:"timestamp"`
-	Actor       string    `json:"actor"`
-	ActorType   string    `json:"actor_type"` // APPLICANT, REVIEWER, SYSTEM
+	ID          string                 `json:"id"`
+	Event       string                 `json:"event"`
+	Description string                 `json:"description"`
+	Timestamp   time.Time              `json:"timestamp"`
+	Actor       string                 `json:"actor"`
+	ActorType   string                 `json:"actor_type"` // APPLICANT, REVIEWER, SYSTEM
 	Metadata    map[string]interface{} `json:"metadata,omitempty"`
 }
 
@@ -130,97 +130,97 @@ type StatusNotification struct {
 
 // RiskScore represents the calculated risk score for an application
 type RiskScore struct {
-	CaseID              string             `json:"case_id"`
-	OverallScore        int                `json:"overall_score"` // 0-100, higher = more risk
-	RiskLevel           string             `json:"risk_level"`    // LOW, MEDIUM, HIGH, CRITICAL
-	CalculatedAt        time.Time          `json:"calculated_at"`
-	Factors             []RiskFactor       `json:"factors"`
-	JurisdictionRisk    int                `json:"jurisdiction_risk"`
-	StakeholderTypeRisk int                `json:"stakeholder_type_risk"`
-	DocumentRisk        int                `json:"document_risk"`
-	PEPRisk             int                `json:"pep_risk"`
-	SanctionsRisk       int                `json:"sanctions_risk"`
-	AdverseMediaRisk    int                `json:"adverse_media_risk"`
-	Recommendations     []string           `json:"recommendations"`
+	CaseID              string       `json:"case_id"`
+	OverallScore        int          `json:"overall_score"` // 0-100, higher = more risk
+	RiskLevel           string       `json:"risk_level"`    // LOW, MEDIUM, HIGH, CRITICAL
+	CalculatedAt        time.Time    `json:"calculated_at"`
+	Factors             []RiskFactor `json:"factors"`
+	JurisdictionRisk    int          `json:"jurisdiction_risk"`
+	StakeholderTypeRisk int          `json:"stakeholder_type_risk"`
+	DocumentRisk        int          `json:"document_risk"`
+	PEPRisk             int          `json:"pep_risk"`
+	SanctionsRisk       int          `json:"sanctions_risk"`
+	AdverseMediaRisk    int          `json:"adverse_media_risk"`
+	Recommendations     []string     `json:"recommendations"`
 }
 
 // RiskFactor represents a factor contributing to the risk score
 type RiskFactor struct {
-	Category    string `json:"category"`
-	Factor      string `json:"factor"`
-	Score       int    `json:"score"`
+	Category    string  `json:"category"`
+	Factor      string  `json:"factor"`
+	Score       int     `json:"score"`
 	Weight      float64 `json:"weight"`
-	Description string `json:"description"`
+	Description string  `json:"description"`
 }
 
 // ScreeningResult represents results from sanctions/PEP/adverse media screening
 type ScreeningResult struct {
-	ID              string           `json:"id"`
-	CaseID          string           `json:"case_id"`
-	EntityType      string           `json:"entity_type"` // ORGANIZATION, PERSON
-	EntityName      string           `json:"entity_name"`
-	ScreeningType   string           `json:"screening_type"` // SANCTIONS, PEP, ADVERSE_MEDIA
-	Status          string           `json:"status"`         // CLEAR, POTENTIAL_MATCH, CONFIRMED_MATCH
-	ScreenedAt      time.Time        `json:"screened_at"`
-	Matches         []ScreeningMatch `json:"matches,omitempty"`
-	ReviewedBy      string           `json:"reviewed_by,omitempty"`
-	ReviewedAt      *time.Time       `json:"reviewed_at,omitempty"`
-	ReviewDecision  string           `json:"review_decision,omitempty"` // FALSE_POSITIVE, TRUE_MATCH
-	ReviewNotes     string           `json:"review_notes,omitempty"`
+	ID             string           `json:"id"`
+	CaseID         string           `json:"case_id"`
+	EntityType     string           `json:"entity_type"` // ORGANIZATION, PERSON
+	EntityName     string           `json:"entity_name"`
+	ScreeningType  string           `json:"screening_type"` // SANCTIONS, PEP, ADVERSE_MEDIA
+	Status         string           `json:"status"`         // CLEAR, POTENTIAL_MATCH, CONFIRMED_MATCH
+	ScreenedAt     time.Time        `json:"screened_at"`
+	Matches        []ScreeningMatch `json:"matches,omitempty"`
+	ReviewedBy     string           `json:"reviewed_by,omitempty"`
+	ReviewedAt     *time.Time       `json:"reviewed_at,omitempty"`
+	ReviewDecision string           `json:"review_decision,omitempty"` // FALSE_POSITIVE, TRUE_MATCH
+	ReviewNotes    string           `json:"review_notes,omitempty"`
 }
 
 // ScreeningMatch represents a potential match from screening
 type ScreeningMatch struct {
-	Source          string  `json:"source"` // OFAC, UN, EU, WORLDCHECK, etc.
-	MatchScore      float64 `json:"match_score"`
-	MatchedName     string  `json:"matched_name"`
-	MatchedEntity   string  `json:"matched_entity,omitempty"`
-	ListType        string  `json:"list_type,omitempty"`
-	ListDate        string  `json:"list_date,omitempty"`
-	Reason          string  `json:"reason,omitempty"`
-	SourceURL       string  `json:"source_url,omitempty"`
+	Source        string  `json:"source"` // OFAC, UN, EU, WORLDCHECK, etc.
+	MatchScore    float64 `json:"match_score"`
+	MatchedName   string  `json:"matched_name"`
+	MatchedEntity string  `json:"matched_entity,omitempty"`
+	ListType      string  `json:"list_type,omitempty"`
+	ListDate      string  `json:"list_date,omitempty"`
+	Reason        string  `json:"reason,omitempty"`
+	SourceURL     string  `json:"source_url,omitempty"`
 }
 
 // SLATracking represents SLA tracking for an onboarding case
 type SLATracking struct {
-	CaseID              string     `json:"case_id"`
-	StakeholderType     string     `json:"stakeholder_type"`
-	TargetDays          int        `json:"target_days"`
-	ElapsedDays         int        `json:"elapsed_days"`
-	RemainingDays       int        `json:"remaining_days"`
-	IsOverdue           bool       `json:"is_overdue"`
-	OverdueDays         int        `json:"overdue_days"`
-	CurrentPhase        string     `json:"current_phase"`
-	PhaseStartedAt      time.Time  `json:"phase_started_at"`
-	PhaseTargetDays     int        `json:"phase_target_days"`
-	PhaseElapsedDays    int        `json:"phase_elapsed_days"`
-	PhaseIsOverdue      bool       `json:"phase_is_overdue"`
-	Alerts              []SLAAlert `json:"alerts"`
+	CaseID           string     `json:"case_id"`
+	StakeholderType  string     `json:"stakeholder_type"`
+	TargetDays       int        `json:"target_days"`
+	ElapsedDays      int        `json:"elapsed_days"`
+	RemainingDays    int        `json:"remaining_days"`
+	IsOverdue        bool       `json:"is_overdue"`
+	OverdueDays      int        `json:"overdue_days"`
+	CurrentPhase     string     `json:"current_phase"`
+	PhaseStartedAt   time.Time  `json:"phase_started_at"`
+	PhaseTargetDays  int        `json:"phase_target_days"`
+	PhaseElapsedDays int        `json:"phase_elapsed_days"`
+	PhaseIsOverdue   bool       `json:"phase_is_overdue"`
+	Alerts           []SLAAlert `json:"alerts"`
 }
 
 // SLAAlert represents an SLA alert
 type SLAAlert struct {
-	ID          string    `json:"id"`
-	Type        string    `json:"type"` // WARNING, BREACH, ESCALATION
-	Message     string    `json:"message"`
-	CreatedAt   time.Time `json:"created_at"`
-	AcknowledgedBy string `json:"acknowledged_by,omitempty"`
+	ID             string     `json:"id"`
+	Type           string     `json:"type"` // WARNING, BREACH, ESCALATION
+	Message        string     `json:"message"`
+	CreatedAt      time.Time  `json:"created_at"`
+	AcknowledgedBy string     `json:"acknowledged_by,omitempty"`
 	AcknowledgedAt *time.Time `json:"acknowledged_at,omitempty"`
 }
 
 // BulkOnboardingRequest represents a bulk onboarding request
 type BulkOnboardingRequest struct {
-	ID              string                  `json:"id"`
-	UploadedBy      string                  `json:"uploaded_by"`
-	FileName        string                  `json:"file_name"`
-	TotalRecords    int                     `json:"total_records"`
+	ID               string                 `json:"id"`
+	UploadedBy       string                 `json:"uploaded_by"`
+	FileName         string                 `json:"file_name"`
+	TotalRecords     int                    `json:"total_records"`
 	ProcessedRecords int                    `json:"processed_records"`
-	SuccessCount    int                     `json:"success_count"`
-	FailureCount    int                     `json:"failure_count"`
-	Status          string                  `json:"status"` // PENDING, PROCESSING, COMPLETED, FAILED
-	CreatedAt       time.Time               `json:"created_at"`
-	CompletedAt     *time.Time              `json:"completed_at,omitempty"`
-	Results         []BulkOnboardingResult  `json:"results,omitempty"`
+	SuccessCount     int                    `json:"success_count"`
+	FailureCount     int                    `json:"failure_count"`
+	Status           string                 `json:"status"` // PENDING, PROCESSING, COMPLETED, FAILED
+	CreatedAt        time.Time              `json:"created_at"`
+	CompletedAt      *time.Time             `json:"completed_at,omitempty"`
+	Results          []BulkOnboardingResult `json:"results,omitempty"`
 }
 
 // BulkOnboardingResult represents the result of a single bulk onboarding record
@@ -234,16 +234,16 @@ type BulkOnboardingResult struct {
 
 // AuditTrailExport represents an audit trail export request
 type AuditTrailExport struct {
-	ID           string    `json:"id"`
-	CaseID       string    `json:"case_id,omitempty"` // Empty for all cases
-	RequestedBy  string    `json:"requested_by"`
-	Format       string    `json:"format"` // PDF, CSV, JSON
-	DateFrom     time.Time `json:"date_from"`
-	DateTo       time.Time `json:"date_to"`
-	Status       string    `json:"status"` // PENDING, GENERATING, COMPLETED, FAILED
-	FileURL      string    `json:"file_url,omitempty"`
-	CreatedAt    time.Time `json:"created_at"`
-	CompletedAt  *time.Time `json:"completed_at,omitempty"`
+	ID          string     `json:"id"`
+	CaseID      string     `json:"case_id,omitempty"` // Empty for all cases
+	RequestedBy string     `json:"requested_by"`
+	Format      string     `json:"format"` // PDF, CSV, JSON
+	DateFrom    time.Time  `json:"date_from"`
+	DateTo      time.Time  `json:"date_to"`
+	Status      string     `json:"status"` // PENDING, GENERATING, COMPLETED, FAILED
+	FileURL     string     `json:"file_url,omitempty"`
+	CreatedAt   time.Time  `json:"created_at"`
+	CompletedAt *time.Time `json:"completed_at,omitempty"`
 }
 
 // BusinessRegistryData represents data from business registry APIs
@@ -264,21 +264,21 @@ type BusinessRegistryData struct {
 
 // DirectorInfo represents director information from registry
 type DirectorInfo struct {
-	Name           string `json:"name"`
-	Nationality    string `json:"nationality"`
-	DateOfBirth    string `json:"date_of_birth,omitempty"`
+	Name            string `json:"name"`
+	Nationality     string `json:"nationality"`
+	DateOfBirth     string `json:"date_of_birth,omitempty"`
 	AppointmentDate string `json:"appointment_date"`
 	ResignationDate string `json:"resignation_date,omitempty"`
-	Occupation     string `json:"occupation,omitempty"`
+	Occupation      string `json:"occupation,omitempty"`
 }
 
 // ShareholderInfo represents shareholder information from registry
 type ShareholderInfo struct {
-	Name           string  `json:"name"`
-	Type           string  `json:"type"` // INDIVIDUAL, CORPORATE
-	SharesHeld     int     `json:"shares_held"`
-	OwnershipPct   float64 `json:"ownership_pct"`
-	ShareClass     string  `json:"share_class"`
+	Name         string  `json:"name"`
+	Type         string  `json:"type"` // INDIVIDUAL, CORPORATE
+	SharesHeld   int     `json:"shares_held"`
+	OwnershipPct float64 `json:"ownership_pct"`
+	ShareClass   string  `json:"share_class"`
 }
 
 // FilingInfo represents filing history from registry
@@ -567,15 +567,15 @@ func (s *EnhancedApplicantService) calculateJurisdictionRisk(country string) int
 
 func (s *EnhancedApplicantService) calculateStakeholderTypeRisk(stakeholderType string) int {
 	riskMap := map[string]int{
-		"BANK":                    20,
-		"REGULATOR":               10,
-		"GOVERNMENT_AGENCY":       15,
-		"MOBILE_MONEY_OPERATOR":   30,
-		"FINTECH":                 40,
+		"BANK":                     20,
+		"REGULATOR":                10,
+		"GOVERNMENT_AGENCY":        15,
+		"MOBILE_MONEY_OPERATOR":    30,
+		"FINTECH":                  40,
 		"MICROFINANCE_INSTITUTION": 35,
-		"MERCHANT":                45,
-		"DEVELOPER":               25,
-		"NOC_OPERATOR":            20,
+		"MERCHANT":                 45,
+		"DEVELOPER":                25,
+		"NOC_OPERATOR":             20,
 	}
 	if risk, ok := riskMap[stakeholderType]; ok {
 		return risk
@@ -625,15 +625,15 @@ func (s *EnhancedApplicantService) UpdateSLATracking(ctx context.Context, caseID
 
 	// SLA targets by stakeholder type (in days)
 	slaTargets := map[string]int{
-		"BANK":                    30,
-		"MOBILE_MONEY_OPERATOR":   30,
-		"FINTECH":                 21,
+		"BANK":                     30,
+		"MOBILE_MONEY_OPERATOR":    30,
+		"FINTECH":                  21,
 		"MICROFINANCE_INSTITUTION": 21,
-		"GOVERNMENT_AGENCY":       14,
-		"MERCHANT":                14,
-		"REGULATOR":               7,
-		"NOC_OPERATOR":            14,
-		"DEVELOPER":               7,
+		"GOVERNMENT_AGENCY":        14,
+		"MERCHANT":                 14,
+		"REGULATOR":                7,
+		"NOC_OPERATOR":             14,
+		"DEVELOPER":                7,
 	}
 
 	targetDays := slaTargets[stakeholderType]

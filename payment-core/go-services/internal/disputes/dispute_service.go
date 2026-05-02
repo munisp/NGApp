@@ -48,14 +48,14 @@ const (
 type DisputeReason string
 
 const (
-	ReasonBankRejection      DisputeReason = "bank_rejection"
-	ReasonInvalidAccount     DisputeReason = "invalid_account"
-	ReasonInsufficientFunds  DisputeReason = "insufficient_funds"
-	ReasonCustomerRequest    DisputeReason = "customer_request"
-	ReasonFraudSuspected     DisputeReason = "fraud_suspected"
-	ReasonTechnicalError     DisputeReason = "technical_error"
-	ReasonComplianceIssue    DisputeReason = "compliance_issue"
-	ReasonOther              DisputeReason = "other"
+	ReasonBankRejection     DisputeReason = "bank_rejection"
+	ReasonInvalidAccount    DisputeReason = "invalid_account"
+	ReasonInsufficientFunds DisputeReason = "insufficient_funds"
+	ReasonCustomerRequest   DisputeReason = "customer_request"
+	ReasonFraudSuspected    DisputeReason = "fraud_suspected"
+	ReasonTechnicalError    DisputeReason = "technical_error"
+	ReasonComplianceIssue   DisputeReason = "compliance_issue"
+	ReasonOther             DisputeReason = "other"
 )
 
 type EvidenceType string
@@ -155,14 +155,14 @@ type DisputeFilter struct {
 }
 
 type DisputeStats struct {
-	Total             int                       `json:"total"`
-	Open              int                       `json:"open"`
-	UnderReview       int                       `json:"underReview"`
-	Escalated         int                       `json:"escalated"`
-	Resolved          int                       `json:"resolved"`
-	AvgResolutionTime float64                   `json:"avgResolutionTime"`
-	ByType            map[DisputeType]int       `json:"byType"`
-	ByPriority        map[DisputePriority]int   `json:"byPriority"`
+	Total             int                     `json:"total"`
+	Open              int                     `json:"open"`
+	UnderReview       int                     `json:"underReview"`
+	Escalated         int                     `json:"escalated"`
+	Resolved          int                     `json:"resolved"`
+	AvgResolutionTime float64                 `json:"avgResolutionTime"`
+	ByType            map[DisputeType]int     `json:"byType"`
+	ByPriority        map[DisputePriority]int `json:"byPriority"`
 }
 
 type SLAConfig struct {

@@ -123,7 +123,7 @@ type KYCPersonVerification struct {
 	ScreeningResults []KYCScreeningResult   `json:"screening_results"`
 	RiskScore        int                    `json:"risk_score"`
 	RiskLevel        string                 `json:"risk_level"`
-	Decision         *KYCDecisionResult           `json:"decision,omitempty"`
+	Decision         *KYCDecisionResult     `json:"decision,omitempty"`
 	Metadata         map[string]interface{} `json:"metadata"`
 	CreatedAt        time.Time              `json:"created_at"`
 	UpdatedAt        time.Time              `json:"updated_at"`
@@ -145,28 +145,28 @@ const (
 type KYCVerificationStatus string
 
 const (
-	KYCVerifStatusPending        KYCVerificationStatus = "PENDING"
-	KYCVerifStatusDocsPending    KYCVerificationStatus = "DOCUMENTS_PENDING"
-	KYCVerifStatusInProgress     KYCVerificationStatus = "IN_PROGRESS"
-	KYCVerifStatusScreening      KYCVerificationStatus = "SCREENING"
-	KYCVerifStatusManualReview   KYCVerificationStatus = "MANUAL_REVIEW"
-	KYCVerifStatusApproved       KYCVerificationStatus = "APPROVED"
-	KYCVerifStatusRejected       KYCVerificationStatus = "REJECTED"
-	KYCVerifStatusExpired        KYCVerificationStatus = "EXPIRED"
+	KYCVerifStatusPending      KYCVerificationStatus = "PENDING"
+	KYCVerifStatusDocsPending  KYCVerificationStatus = "DOCUMENTS_PENDING"
+	KYCVerifStatusInProgress   KYCVerificationStatus = "IN_PROGRESS"
+	KYCVerifStatusScreening    KYCVerificationStatus = "SCREENING"
+	KYCVerifStatusManualReview KYCVerificationStatus = "MANUAL_REVIEW"
+	KYCVerifStatusApproved     KYCVerificationStatus = "APPROVED"
+	KYCVerifStatusRejected     KYCVerificationStatus = "REJECTED"
+	KYCVerifStatusExpired      KYCVerificationStatus = "EXPIRED"
 )
 
 // KYCIDDocument represents an identity document for KYC
 type KYCIDDocument struct {
-	DocumentID       string                       `json:"document_id"`
-	DocumentType     KYCDocumentType              `json:"document_type"`
-	FileName         string                       `json:"file_name"`
-	S3Key            string                       `json:"s3_key"`
-	ContentHash      string                       `json:"content_hash"`
-	Status           DocumentVerificationStatus   `json:"status"`
-	ExtractedData    *IDDocumentExtraction        `json:"extracted_data,omitempty"`
+	DocumentID         string                     `json:"document_id"`
+	DocumentType       KYCDocumentType            `json:"document_type"`
+	FileName           string                     `json:"file_name"`
+	S3Key              string                     `json:"s3_key"`
+	ContentHash        string                     `json:"content_hash"`
+	Status             DocumentVerificationStatus `json:"status"`
+	ExtractedData      *IDDocumentExtraction      `json:"extracted_data,omitempty"`
 	VerificationResult *IDVerificationResult      `json:"verification_result,omitempty"`
-	UploadedAt       time.Time                    `json:"uploaded_at"`
-	ProcessedAt      *time.Time                   `json:"processed_at,omitempty"`
+	UploadedAt         time.Time                  `json:"uploaded_at"`
+	ProcessedAt        *time.Time                 `json:"processed_at,omitempty"`
 }
 
 // DocumentVerificationStatus represents document verification status
@@ -182,34 +182,34 @@ const (
 
 // IDDocumentExtraction represents extracted data from an ID document
 type IDDocumentExtraction struct {
-	FullName        string  `json:"full_name"`
-	FirstName       string  `json:"first_name"`
-	LastName        string  `json:"last_name"`
-	DocumentNumber  string  `json:"document_number"`
-	DateOfBirth     string  `json:"date_of_birth"`
-	Nationality     string  `json:"nationality"`
-	Gender          string  `json:"gender"`
-	IssueDate       string  `json:"issue_date"`
-	ExpiryDate      string  `json:"expiry_date"`
-	IssuingCountry  string  `json:"issuing_country"`
-	IssuingAuthority string `json:"issuing_authority"`
-	Address         string  `json:"address"`
-	MRZLine1        string  `json:"mrz_line_1,omitempty"`
-	MRZLine2        string  `json:"mrz_line_2,omitempty"`
-	Confidence      float64 `json:"confidence"`
-	ProcessingEngine string `json:"processing_engine"`
+	FullName         string  `json:"full_name"`
+	FirstName        string  `json:"first_name"`
+	LastName         string  `json:"last_name"`
+	DocumentNumber   string  `json:"document_number"`
+	DateOfBirth      string  `json:"date_of_birth"`
+	Nationality      string  `json:"nationality"`
+	Gender           string  `json:"gender"`
+	IssueDate        string  `json:"issue_date"`
+	ExpiryDate       string  `json:"expiry_date"`
+	IssuingCountry   string  `json:"issuing_country"`
+	IssuingAuthority string  `json:"issuing_authority"`
+	Address          string  `json:"address"`
+	MRZLine1         string  `json:"mrz_line_1,omitempty"`
+	MRZLine2         string  `json:"mrz_line_2,omitempty"`
+	Confidence       float64 `json:"confidence"`
+	ProcessingEngine string  `json:"processing_engine"`
 }
 
 // IDVerificationResult represents the result of ID verification
 type IDVerificationResult struct {
-	Verified         bool     `json:"verified"`
-	ConfidenceScore  float64  `json:"confidence_score"`
-	DocumentValid    bool     `json:"document_valid"`
-	DocumentExpired  bool     `json:"document_expired"`
-	DataConsistent   bool     `json:"data_consistent"`
-	TamperDetected   bool     `json:"tamper_detected"`
-	Warnings         []string `json:"warnings"`
-	VerifiedAt       time.Time `json:"verified_at"`
+	Verified        bool      `json:"verified"`
+	ConfidenceScore float64   `json:"confidence_score"`
+	DocumentValid   bool      `json:"document_valid"`
+	DocumentExpired bool      `json:"document_expired"`
+	DataConsistent  bool      `json:"data_consistent"`
+	TamperDetected  bool      `json:"tamper_detected"`
+	Warnings        []string  `json:"warnings"`
+	VerifiedAt      time.Time `json:"verified_at"`
 }
 
 // KYCAddressDocument represents a proof of address document
@@ -268,11 +268,11 @@ type KYCDecisionResult struct {
 
 // EnhancedKYCService provides KYC verification with document processing integration
 type EnhancedKYCService struct {
-	docProcessor    *DocumentProcessorClient
-	smileIDService  *KYCService
-	amlService      *AMLScreeningService
-	store           KYCStore
-	notifier        KYCNotifier
+	docProcessor   *DocumentProcessorClient
+	smileIDService *KYCService
+	amlService     *AMLScreeningService
+	store          KYCStore
+	notifier       KYCNotifier
 }
 
 // KYCStore interface for KYC data persistence
@@ -536,14 +536,14 @@ func (s *EnhancedKYCService) EvaluateKYC(ctx context.Context, personID string) (
 	}
 
 	evaluation := &KYCEvaluation{
-		PersonID:          personID,
-		IDDocumentsValid:  s.checkIDDocumentsValid(verification),
-		AddressVerified:   s.checkAddressVerified(verification),
-		LivenessPassed:    verification.LivenessResult != nil && verification.LivenessResult.Passed,
-		ScreeningsPassed:  s.checkScreeningsPassed(verification),
-		RiskScore:         s.calculateRiskScore(verification),
-		MissingDocuments:  s.getMissingDocuments(verification),
-		Flags:             s.getFlags(verification),
+		PersonID:         personID,
+		IDDocumentsValid: s.checkIDDocumentsValid(verification),
+		AddressVerified:  s.checkAddressVerified(verification),
+		LivenessPassed:   verification.LivenessResult != nil && verification.LivenessResult.Passed,
+		ScreeningsPassed: s.checkScreeningsPassed(verification),
+		RiskScore:        s.calculateRiskScore(verification),
+		MissingDocuments: s.getMissingDocuments(verification),
+		Flags:            s.getFlags(verification),
 	}
 
 	// Determine recommendation
@@ -772,7 +772,7 @@ type KYCStatusResponse struct {
 	LivenessPassed   bool                  `json:"liveness_passed"`
 	MissingDocuments []KYCDocumentType     `json:"missing_documents"`
 	Flags            []string              `json:"flags"`
-	Decision         *KYCDecisionResult          `json:"decision,omitempty"`
+	Decision         *KYCDecisionResult    `json:"decision,omitempty"`
 	CreatedAt        time.Time             `json:"created_at"`
 	UpdatedAt        time.Time             `json:"updated_at"`
 }

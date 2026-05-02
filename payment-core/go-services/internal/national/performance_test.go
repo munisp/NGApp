@@ -14,73 +14,73 @@ import (
 
 // PerformanceTestHarness provides load testing for national-scale operations
 type PerformanceTestHarness struct {
-	db              *sql.DB
-	config          *PerformanceTestConfig
-	metrics         *TestMetrics
-	running         atomic.Bool
-	stopChan        chan struct{}
-	resultsChan     chan *TransactionResult
-	mu              sync.RWMutex
+	db          *sql.DB
+	config      *PerformanceTestConfig
+	metrics     *TestMetrics
+	running     atomic.Bool
+	stopChan    chan struct{}
+	resultsChan chan *TransactionResult
+	mu          sync.RWMutex
 }
 
 // PerformanceTestConfig holds test configuration
 type PerformanceTestConfig struct {
-	TargetTPS           int           `json:"target_tps"`           // Target transactions per second
-	Duration            time.Duration `json:"duration"`             // Test duration
-	RampUpDuration      time.Duration `json:"ramp_up_duration"`     // Ramp-up period
-	RampDownDuration    time.Duration `json:"ramp_down_duration"`   // Ramp-down period
-	Concurrency         int           `json:"concurrency"`          // Number of concurrent workers
-	TransactionMix      TransactionMix `json:"transaction_mix"`     // Mix of transaction types
-	ParticipantCount    int           `json:"participant_count"`    // Number of simulated participants
-	AmountRange         AmountRange   `json:"amount_range"`         // Transaction amount range
-	EnableRetryStorm    bool          `json:"enable_retry_storm"`   // Simulate retry storms
-	RetryStormRate      float64       `json:"retry_storm_rate"`     // Percentage of retries
-	EnableLatencySpikes bool          `json:"enable_latency_spikes"` // Simulate latency spikes
-	LatencySpikeMs      int           `json:"latency_spike_ms"`     // Spike latency in ms
-	SLOLatencyP99Ms     int           `json:"slo_latency_p99_ms"`   // P99 latency SLO
-	SLOErrorRate        float64       `json:"slo_error_rate"`       // Error rate SLO
-	SLOAvailability     float64       `json:"slo_availability"`     // Availability SLO
+	TargetTPS           int            `json:"target_tps"`            // Target transactions per second
+	Duration            time.Duration  `json:"duration"`              // Test duration
+	RampUpDuration      time.Duration  `json:"ramp_up_duration"`      // Ramp-up period
+	RampDownDuration    time.Duration  `json:"ramp_down_duration"`    // Ramp-down period
+	Concurrency         int            `json:"concurrency"`           // Number of concurrent workers
+	TransactionMix      TransactionMix `json:"transaction_mix"`       // Mix of transaction types
+	ParticipantCount    int            `json:"participant_count"`     // Number of simulated participants
+	AmountRange         AmountRange    `json:"amount_range"`          // Transaction amount range
+	EnableRetryStorm    bool           `json:"enable_retry_storm"`    // Simulate retry storms
+	RetryStormRate      float64        `json:"retry_storm_rate"`      // Percentage of retries
+	EnableLatencySpikes bool           `json:"enable_latency_spikes"` // Simulate latency spikes
+	LatencySpikeMs      int            `json:"latency_spike_ms"`      // Spike latency in ms
+	SLOLatencyP99Ms     int            `json:"slo_latency_p99_ms"`    // P99 latency SLO
+	SLOErrorRate        float64        `json:"slo_error_rate"`        // Error rate SLO
+	SLOAvailability     float64        `json:"slo_availability"`      // Availability SLO
 }
 
 // TransactionMix defines the mix of transaction types
 type TransactionMix struct {
-	P2P           float64 `json:"p2p"`            // Person to Person
-	P2B           float64 `json:"p2b"`            // Person to Business
-	B2P           float64 `json:"b2p"`            // Business to Person
-	B2B           float64 `json:"b2b"`            // Business to Business
-	BulkPayment   float64 `json:"bulk_payment"`   // Bulk payments
-	Refund        float64 `json:"refund"`         // Refunds
-	Reversal      float64 `json:"reversal"`       // Reversals
+	P2P         float64 `json:"p2p"`          // Person to Person
+	P2B         float64 `json:"p2b"`          // Person to Business
+	B2P         float64 `json:"b2p"`          // Business to Person
+	B2B         float64 `json:"b2b"`          // Business to Business
+	BulkPayment float64 `json:"bulk_payment"` // Bulk payments
+	Refund      float64 `json:"refund"`       // Refunds
+	Reversal    float64 `json:"reversal"`     // Reversals
 }
 
 // AmountRange defines the transaction amount range
 type AmountRange struct {
-	MinAmount int64 `json:"min_amount"`
-	MaxAmount int64 `json:"max_amount"`
+	MinAmount int64  `json:"min_amount"`
+	MaxAmount int64  `json:"max_amount"`
 	Currency  string `json:"currency"`
 }
 
 // TestMetrics holds real-time test metrics
 type TestMetrics struct {
-	StartTime           time.Time     `json:"start_time"`
-	EndTime             time.Time     `json:"end_time"`
-	TotalTransactions   int64         `json:"total_transactions"`
-	SuccessfulTxns      int64         `json:"successful_txns"`
-	FailedTxns          int64         `json:"failed_txns"`
-	CurrentTPS          float64       `json:"current_tps"`
-	PeakTPS             float64       `json:"peak_tps"`
-	AvgLatencyMs        float64       `json:"avg_latency_ms"`
-	P50LatencyMs        float64       `json:"p50_latency_ms"`
-	P95LatencyMs        float64       `json:"p95_latency_ms"`
-	P99LatencyMs        float64       `json:"p99_latency_ms"`
-	MaxLatencyMs        float64       `json:"max_latency_ms"`
-	ErrorRate           float64       `json:"error_rate"`
-	TotalAmount         int64         `json:"total_amount"`
-	LatencyHistogram    map[int]int64 `json:"latency_histogram"` // Bucket -> count
-	ErrorsByType        map[string]int64 `json:"errors_by_type"`
-	TransactionsByType  map[string]int64 `json:"transactions_by_type"`
-	SLOViolations       []SLOViolation `json:"slo_violations"`
-	mu                  sync.RWMutex
+	StartTime          time.Time        `json:"start_time"`
+	EndTime            time.Time        `json:"end_time"`
+	TotalTransactions  int64            `json:"total_transactions"`
+	SuccessfulTxns     int64            `json:"successful_txns"`
+	FailedTxns         int64            `json:"failed_txns"`
+	CurrentTPS         float64          `json:"current_tps"`
+	PeakTPS            float64          `json:"peak_tps"`
+	AvgLatencyMs       float64          `json:"avg_latency_ms"`
+	P50LatencyMs       float64          `json:"p50_latency_ms"`
+	P95LatencyMs       float64          `json:"p95_latency_ms"`
+	P99LatencyMs       float64          `json:"p99_latency_ms"`
+	MaxLatencyMs       float64          `json:"max_latency_ms"`
+	ErrorRate          float64          `json:"error_rate"`
+	TotalAmount        int64            `json:"total_amount"`
+	LatencyHistogram   map[int]int64    `json:"latency_histogram"` // Bucket -> count
+	ErrorsByType       map[string]int64 `json:"errors_by_type"`
+	TransactionsByType map[string]int64 `json:"transactions_by_type"`
+	SLOViolations      []SLOViolation   `json:"slo_violations"`
+	mu                 sync.RWMutex
 }
 
 // SLOViolation represents an SLO violation
@@ -247,7 +247,7 @@ func (h *PerformanceTestHarness) runWorker(ctx context.Context, workerID int) {
 
 			// Execute transaction
 			result := h.executeTransaction(ctx, workerID)
-			
+
 			// Send result
 			select {
 			case h.resultsChan <- result:
@@ -261,15 +261,15 @@ func (h *PerformanceTestHarness) runWorker(ctx context.Context, workerID int) {
 // executeTransaction executes a single test transaction
 func (h *PerformanceTestHarness) executeTransaction(ctx context.Context, workerID int) *TransactionResult {
 	startTime := time.Now()
-	
+
 	// Determine transaction type
 	txType := h.selectTransactionType()
-	
+
 	// Generate transaction details
 	payerFSP := fmt.Sprintf("FSP%03d", rand.Intn(h.config.ParticipantCount))
 	payeeFSP := fmt.Sprintf("FSP%03d", rand.Intn(h.config.ParticipantCount))
 	amount := h.config.AmountRange.MinAmount + rand.Int63n(h.config.AmountRange.MaxAmount-h.config.AmountRange.MinAmount)
-	
+
 	result := &TransactionResult{
 		TransactionID:   fmt.Sprintf("TEST-%d-%d-%d", workerID, time.Now().UnixNano(), rand.Int63()),
 		TransactionType: txType,
@@ -286,7 +286,7 @@ func (h *PerformanceTestHarness) executeTransaction(ctx context.Context, workerI
 
 	// Execute the transaction (simulated or real)
 	success, errorCode, errorMsg := h.simulateTransaction(ctx, result)
-	
+
 	result.EndTime = time.Now()
 	result.Latency = result.EndTime.Sub(result.StartTime)
 	result.Success = success
@@ -390,7 +390,7 @@ func (h *PerformanceTestHarness) collectMetrics() {
 			return
 		case result := <-h.resultsChan:
 			h.metrics.mu.Lock()
-			
+
 			atomic.AddInt64(&h.metrics.TotalTransactions, 1)
 			h.metrics.TotalAmount += result.Amount
 			h.metrics.TransactionsByType[result.TransactionType]++
@@ -405,9 +405,9 @@ func (h *PerformanceTestHarness) collectMetrics() {
 			// Track latency
 			latencyMs := float64(result.Latency.Milliseconds())
 			latencies = append(latencies, latencyMs)
-			
+
 			// Update histogram (10ms buckets)
-			bucket := int(latencyMs / 10) * 10
+			bucket := int(latencyMs/10) * 10
 			h.metrics.LatencyHistogram[bucket]++
 
 			// Update max latency
@@ -528,10 +528,10 @@ func (h *PerformanceTestHarness) GetReport() *PerformanceTestReport {
 	duration := h.metrics.EndTime.Sub(h.metrics.StartTime)
 
 	report := &PerformanceTestReport{
-		ReportID:     generateEventID(),
-		GeneratedAt:  time.Now(),
-		TestConfig:   h.config,
-		Duration:     duration,
+		ReportID:    generateEventID(),
+		GeneratedAt: time.Now(),
+		TestConfig:  h.config,
+		Duration:    duration,
 		Summary: TestSummary{
 			TotalTransactions: h.metrics.TotalTransactions,
 			SuccessfulTxns:    h.metrics.SuccessfulTxns,
@@ -552,8 +552,8 @@ func (h *PerformanceTestHarness) GetReport() *PerformanceTestReport {
 			ErrorRate:    h.metrics.ErrorRate,
 			ErrorsByType: h.metrics.ErrorsByType,
 		},
-		TransactionMix:    h.metrics.TransactionsByType,
-		LatencyHistogram:  h.metrics.LatencyHistogram,
+		TransactionMix:   h.metrics.TransactionsByType,
+		LatencyHistogram: h.metrics.LatencyHistogram,
 		SLOCompliance: SLOCompliance{
 			LatencyP99Met:   h.metrics.P99LatencyMs <= float64(h.config.SLOLatencyP99Ms),
 			ErrorRateMet:    h.metrics.ErrorRate <= h.config.SLOErrorRate,
@@ -563,8 +563,8 @@ func (h *PerformanceTestHarness) GetReport() *PerformanceTestReport {
 	}
 
 	// Calculate overall pass/fail
-	report.Passed = report.SLOCompliance.LatencyP99Met && 
-		report.SLOCompliance.ErrorRateMet && 
+	report.Passed = report.SLOCompliance.LatencyP99Met &&
+		report.SLOCompliance.ErrorRateMet &&
 		report.SLOCompliance.AvailabilityMet
 
 	// Generate recommendations
@@ -629,7 +629,7 @@ func (h *PerformanceTestHarness) generateRecommendations(report *PerformanceTest
 
 	// Latency recommendations
 	if report.Latency.P99Ms > float64(h.config.SLOLatencyP99Ms) {
-		recommendations = append(recommendations, 
+		recommendations = append(recommendations,
 			fmt.Sprintf("P99 latency (%.2fms) exceeds SLO (%dms). Consider: database query optimization, connection pooling, caching, or horizontal scaling.",
 				report.Latency.P99Ms, h.config.SLOLatencyP99Ms))
 	}
@@ -639,7 +639,7 @@ func (h *PerformanceTestHarness) generateRecommendations(report *PerformanceTest
 		recommendations = append(recommendations,
 			fmt.Sprintf("Error rate (%.4f) exceeds SLO (%.4f). Review error distribution and address top error types.",
 				report.ErrorAnalysis.ErrorRate, h.config.SLOErrorRate))
-		
+
 		// Specific error recommendations
 		for errType, count := range report.ErrorAnalysis.ErrorsByType {
 			if float64(count)/float64(report.Summary.TotalTransactions) > 0.001 {
@@ -714,12 +714,12 @@ func calculatePercentile(values []float64, percentile int) float64 {
 	if len(values) == 0 {
 		return 0
 	}
-	
+
 	// Simple percentile calculation (not sorted, approximate)
 	// In production, use a proper streaming percentile algorithm
 	sorted := make([]float64, len(values))
 	copy(sorted, values)
-	
+
 	// Bubble sort for simplicity (use quickselect in production)
 	for i := 0; i < len(sorted); i++ {
 		for j := i + 1; j < len(sorted); j++ {
@@ -728,7 +728,7 @@ func calculatePercentile(values []float64, percentile int) float64 {
 			}
 		}
 	}
-	
+
 	index := int(float64(len(sorted)) * float64(percentile) / 100)
 	if index >= len(sorted) {
 		index = len(sorted) - 1
@@ -772,10 +772,10 @@ func NationalScaleTestPreset() *PerformanceTestConfig {
 // StressTestPreset returns a preset configuration for stress testing
 func StressTestPreset() *PerformanceTestConfig {
 	return &PerformanceTestConfig{
-		TargetTPS:        50000, // 50,000 TPS (stress)
-		Duration:         10 * time.Minute,
-		RampUpDuration:   2 * time.Minute,
-		Concurrency:      1000,
+		TargetTPS:      50000, // 50,000 TPS (stress)
+		Duration:       10 * time.Minute,
+		RampUpDuration: 2 * time.Minute,
+		Concurrency:    1000,
 		TransactionMix: TransactionMix{
 			P2P: 1.0, // All P2P for simplicity
 		},

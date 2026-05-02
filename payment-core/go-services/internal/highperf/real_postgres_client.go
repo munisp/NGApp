@@ -23,19 +23,19 @@ type RealPostgresClient struct {
 	stmtsMu sync.RWMutex
 
 	// Stats
-	totalQueries  uint64
-	totalErrors   uint64
+	totalQueries   uint64
+	totalErrors    uint64
 	totalLatencyNs uint64
 }
 
 // RealPostgresConfig configures the real Postgres client
 type RealPostgresConfig struct {
-	Host            string
-	Port            int
-	Database        string
-	User            string
-	Password        string
-	SSLMode         string
+	Host     string
+	Port     int
+	Database string
+	User     string
+	Password string
+	SSLMode  string
 
 	// Connection pool
 	MaxOpenConns    int
@@ -44,8 +44,8 @@ type RealPostgresConfig struct {
 	ConnMaxIdleTime time.Duration
 
 	// Timeouts
-	ConnectTimeout  time.Duration
-	QueryTimeout    time.Duration
+	ConnectTimeout time.Duration
+	QueryTimeout   time.Duration
 }
 
 // DefaultRealPostgresConfig returns production-optimized defaults
@@ -353,9 +353,9 @@ func joinStrings(strs []string, sep string) string {
 
 // AsyncPostgresWriter provides async writing to Postgres
 type AsyncPostgresWriter struct {
-	client      *RealPostgresClient
-	buffer      chan writeRequest
-	batchSize   int
+	client        *RealPostgresClient
+	buffer        chan writeRequest
+	batchSize     int
 	flushInterval time.Duration
 
 	// Stats
@@ -500,16 +500,16 @@ func (w *AsyncPostgresWriter) Stats() (written, failed uint64) {
 
 // TransferAuditLog represents a transfer audit log entry
 type TransferAuditLog struct {
-	TransferID      string
-	PayerAccountID  string
-	PayeeAccountID  string
-	Amount          int64
-	Currency        string
-	Status          string
-	CreatedAt       time.Time
-	CompletedAt     *time.Time
-	ErrorMessage    string
-	Metadata        map[string]string
+	TransferID     string
+	PayerAccountID string
+	PayeeAccountID string
+	Amount         int64
+	Currency       string
+	Status         string
+	CreatedAt      time.Time
+	CompletedAt    *time.Time
+	ErrorMessage   string
+	Metadata       map[string]string
 }
 
 // TransferAuditRepository provides transfer audit logging

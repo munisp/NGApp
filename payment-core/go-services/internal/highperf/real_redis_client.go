@@ -14,13 +14,13 @@ import (
 
 // RealRedisClient implements Redis operations with real go-redis client
 type RealRedisClient struct {
-	client      redis.UniversalClient
-	config      RealRedisConfig
-	isCluster   bool
+	client    redis.UniversalClient
+	config    RealRedisConfig
+	isCluster bool
 
 	// Stats
-	totalOps      uint64
-	totalErrors   uint64
+	totalOps       uint64
+	totalErrors    uint64
 	totalLatencyNs uint64
 
 	// Connection pool stats
@@ -31,17 +31,17 @@ type RealRedisClient struct {
 // RealRedisConfig configures the real Redis client
 type RealRedisConfig struct {
 	// Connection
-	Addresses    []string
-	Password     string
-	DB           int
-	Username     string
+	Addresses []string
+	Password  string
+	DB        int
+	Username  string
 
 	// Cluster mode
-	ClusterMode  bool
+	ClusterMode bool
 
 	// TLS
-	TLSEnabled   bool
-	TLSConfig    *tls.Config
+	TLSEnabled bool
+	TLSConfig  *tls.Config
 
 	// Pool
 	PoolSize     int

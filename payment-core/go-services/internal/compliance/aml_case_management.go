@@ -19,20 +19,20 @@ import (
 type AMLCaseManager struct {
 	// Storage
 	storage CaseStorage
-	
+
 	// Workflow engine
 	workflow *WorkflowEngine
-	
+
 	// Notification service
 	notifier Notifier
-	
+
 	// Stats
 	totalCases     uint64
 	openCases      uint64
 	escalatedCases uint64
 	closedCases    uint64
 	sarsGenerated  uint64
-	
+
 	// Control
 	ctx    context.Context
 	cancel context.CancelFunc
@@ -66,54 +66,54 @@ type Notification struct {
 
 // AMLCase represents an AML investigation case
 type AMLCase struct {
-	ID              string                 `json:"id"`
-	Status          string                 `json:"status"` // OPEN, INVESTIGATING, ESCALATED, PENDING_SAR, CLOSED
-	Priority        string                 `json:"priority"` // LOW, MEDIUM, HIGH, CRITICAL
-	Type            string                 `json:"type"` // SUSPICIOUS_ACTIVITY, SANCTIONS_HIT, THRESHOLD_BREACH, PATTERN_MATCH
-	
+	ID       string `json:"id"`
+	Status   string `json:"status"`   // OPEN, INVESTIGATING, ESCALATED, PENDING_SAR, CLOSED
+	Priority string `json:"priority"` // LOW, MEDIUM, HIGH, CRITICAL
+	Type     string `json:"type"`     // SUSPICIOUS_ACTIVITY, SANCTIONS_HIT, THRESHOLD_BREACH, PATTERN_MATCH
+
 	// Subject information
-	SubjectType     string                 `json:"subject_type"` // INDIVIDUAL, ENTITY
-	SubjectID       string                 `json:"subject_id"`
-	SubjectName     string                 `json:"subject_name"`
-	
+	SubjectType string `json:"subject_type"` // INDIVIDUAL, ENTITY
+	SubjectID   string `json:"subject_id"`
+	SubjectName string `json:"subject_name"`
+
 	// Alert information
-	AlertID         string                 `json:"alert_id"`
-	AlertType       string                 `json:"alert_type"`
-	AlertScore      float64                `json:"alert_score"`
-	RiskFactors     []string               `json:"risk_factors"`
-	
+	AlertID     string   `json:"alert_id"`
+	AlertType   string   `json:"alert_type"`
+	AlertScore  float64  `json:"alert_score"`
+	RiskFactors []string `json:"risk_factors"`
+
 	// Assignment
-	Assignee        string                 `json:"assignee"`
-	AssigneeTeam    string                 `json:"assignee_team"`
-	EscalatedTo     string                 `json:"escalated_to,omitempty"`
-	EscalationLevel int                    `json:"escalation_level"`
-	
+	Assignee        string `json:"assignee"`
+	AssigneeTeam    string `json:"assignee_team"`
+	EscalatedTo     string `json:"escalated_to,omitempty"`
+	EscalationLevel int    `json:"escalation_level"`
+
 	// Timeline
-	CreatedAt       time.Time              `json:"created_at"`
-	UpdatedAt       time.Time              `json:"updated_at"`
-	DueDate         time.Time              `json:"due_date"`
-	ClosedAt        *time.Time             `json:"closed_at,omitempty"`
-	SLABreached     bool                   `json:"sla_breached"`
-	
+	CreatedAt   time.Time  `json:"created_at"`
+	UpdatedAt   time.Time  `json:"updated_at"`
+	DueDate     time.Time  `json:"due_date"`
+	ClosedAt    *time.Time `json:"closed_at,omitempty"`
+	SLABreached bool       `json:"sla_breached"`
+
 	// Investigation
-	Findings        string                 `json:"findings"`
-	Decision        string                 `json:"decision"` // NO_ACTION, ENHANCED_DUE_DILIGENCE, FILE_SAR, CLOSE_ACCOUNT
-	DecisionReason  string                 `json:"decision_reason"`
-	
+	Findings       string `json:"findings"`
+	Decision       string `json:"decision"` // NO_ACTION, ENHANCED_DUE_DILIGENCE, FILE_SAR, CLOSE_ACCOUNT
+	DecisionReason string `json:"decision_reason"`
+
 	// Evidence and notes
-	Evidence        []Evidence             `json:"evidence"`
-	Notes           []CaseNote             `json:"notes"`
-	
+	Evidence []Evidence `json:"evidence"`
+	Notes    []CaseNote `json:"notes"`
+
 	// SAR information
-	SARRequired     bool                   `json:"sar_required"`
-	SARID           string                 `json:"sar_id,omitempty"`
-	SARFiledAt      *time.Time             `json:"sar_filed_at,omitempty"`
-	
+	SARRequired bool       `json:"sar_required"`
+	SARID       string     `json:"sar_id,omitempty"`
+	SARFiledAt  *time.Time `json:"sar_filed_at,omitempty"`
+
 	// Audit trail
-	AuditTrail      []AuditEvent           `json:"audit_trail"`
-	
+	AuditTrail []AuditEvent `json:"audit_trail"`
+
 	// Metadata
-	Metadata        map[string]interface{} `json:"metadata"`
+	Metadata map[string]interface{} `json:"metadata"`
 }
 
 // Evidence represents case evidence
@@ -149,22 +149,22 @@ type AuditEvent struct {
 
 // CaseSearchQuery for searching cases
 type CaseSearchQuery struct {
-	Status       []string
-	Priority     []string
-	Type         []string
-	Assignee     string
-	SubjectID    string
-	DateFrom     time.Time
-	DateTo       time.Time
-	SLABreached  *bool
-	Limit        int
-	Offset       int
+	Status      []string
+	Priority    []string
+	Type        []string
+	Assignee    string
+	SubjectID   string
+	DateFrom    time.Time
+	DateTo      time.Time
+	SLABreached *bool
+	Limit       int
+	Offset      int
 }
 
 // NewAMLCaseManager creates a new AML case manager
 func NewAMLCaseManager(storage CaseStorage, notifier Notifier) *AMLCaseManager {
 	ctx, cancel := context.WithCancel(context.Background())
-	
+
 	mgr := &AMLCaseManager{
 		storage:  storage,
 		workflow: NewWorkflowEngine(),
@@ -172,18 +172,18 @@ func NewAMLCaseManager(storage CaseStorage, notifier Notifier) *AMLCaseManager {
 		ctx:      ctx,
 		cancel:   cancel,
 	}
-	
+
 	// Start SLA monitoring
 	mgr.wg.Add(1)
 	go mgr.slaMonitorLoop()
-	
+
 	return mgr
 }
 
 // CreateCase creates a new AML case
 func (m *AMLCaseManager) CreateCase(ctx context.Context, req CreateCaseRequest) (*AMLCase, error) {
 	now := time.Now()
-	
+
 	c := &AMLCase{
 		ID:          generateCaseID(),
 		Status:      "OPEN",
@@ -204,7 +204,7 @@ func (m *AMLCaseManager) CreateCase(ctx context.Context, req CreateCaseRequest) 
 		AuditTrail:  make([]AuditEvent, 0),
 		Metadata:    req.Metadata,
 	}
-	
+
 	// Add creation audit event
 	c.AuditTrail = append(c.AuditTrail, AuditEvent{
 		Timestamp: now,
@@ -215,17 +215,17 @@ func (m *AMLCaseManager) CreateCase(ctx context.Context, req CreateCaseRequest) 
 			"alert_score": req.AlertScore,
 		},
 	})
-	
+
 	// Auto-assign based on priority and type
 	c.Assignee, c.AssigneeTeam = m.workflow.AutoAssign(c)
-	
+
 	if err := m.storage.Create(ctx, c); err != nil {
 		return nil, fmt.Errorf("failed to create case: %w", err)
 	}
-	
+
 	atomic.AddUint64(&m.totalCases, 1)
 	atomic.AddUint64(&m.openCases, 1)
-	
+
 	// Notify assignee
 	if m.notifier != nil && c.Assignee != "" {
 		_ = m.notifier.Notify(ctx, Notification{
@@ -236,7 +236,7 @@ func (m *AMLCaseManager) CreateCase(ctx context.Context, req CreateCaseRequest) 
 			Priority:  c.Priority,
 		})
 	}
-	
+
 	return c, nil
 }
 
@@ -260,11 +260,11 @@ func (m *AMLCaseManager) AssignCase(ctx context.Context, caseID, assignee, assig
 	if err != nil {
 		return err
 	}
-	
+
 	previousAssignee := c.Assignee
 	c.Assignee = assignee
 	c.UpdatedAt = time.Now()
-	
+
 	c.AuditTrail = append(c.AuditTrail, AuditEvent{
 		Timestamp: time.Now(),
 		Actor:     assignedBy,
@@ -274,11 +274,11 @@ func (m *AMLCaseManager) AssignCase(ctx context.Context, caseID, assignee, assig
 			"new_assignee":      assignee,
 		},
 	})
-	
+
 	if err := m.storage.Update(ctx, c); err != nil {
 		return err
 	}
-	
+
 	// Notify new assignee
 	if m.notifier != nil {
 		_ = m.notifier.Notify(ctx, Notification{
@@ -288,7 +288,7 @@ func (m *AMLCaseManager) AssignCase(ctx context.Context, caseID, assignee, assig
 			Priority:  c.Priority,
 		})
 	}
-	
+
 	return nil
 }
 
@@ -298,12 +298,12 @@ func (m *AMLCaseManager) EscalateCase(ctx context.Context, caseID, escalatedTo, 
 	if err != nil {
 		return err
 	}
-	
+
 	c.Status = "ESCALATED"
 	c.EscalatedTo = escalatedTo
 	c.EscalationLevel++
 	c.UpdatedAt = time.Now()
-	
+
 	c.AuditTrail = append(c.AuditTrail, AuditEvent{
 		Timestamp: time.Now(),
 		Actor:     escalatedBy,
@@ -314,7 +314,7 @@ func (m *AMLCaseManager) EscalateCase(ctx context.Context, caseID, escalatedTo, 
 			"reason":           reason,
 		},
 	})
-	
+
 	c.Notes = append(c.Notes, CaseNote{
 		ID:        generateNoteID(),
 		Author:    escalatedBy,
@@ -322,13 +322,13 @@ func (m *AMLCaseManager) EscalateCase(ctx context.Context, caseID, escalatedTo, 
 		Type:      "ESCALATION",
 		CreatedAt: time.Now(),
 	})
-	
+
 	if err := m.storage.Update(ctx, c); err != nil {
 		return err
 	}
-	
+
 	atomic.AddUint64(&m.escalatedCases, 1)
-	
+
 	// Notify escalation target
 	if m.notifier != nil {
 		_ = m.notifier.Notify(ctx, Notification{
@@ -339,7 +339,7 @@ func (m *AMLCaseManager) EscalateCase(ctx context.Context, caseID, escalatedTo, 
 			Priority:  "CRITICAL",
 		})
 	}
-	
+
 	return nil
 }
 
@@ -349,13 +349,13 @@ func (m *AMLCaseManager) AddEvidence(ctx context.Context, caseID string, evidenc
 	if err != nil {
 		return err
 	}
-	
+
 	evidence.ID = generateEvidenceID()
 	evidence.UploadedAt = time.Now()
-	
+
 	c.Evidence = append(c.Evidence, evidence)
 	c.UpdatedAt = time.Now()
-	
+
 	c.AuditTrail = append(c.AuditTrail, AuditEvent{
 		Timestamp: time.Now(),
 		Actor:     evidence.UploadedBy,
@@ -366,7 +366,7 @@ func (m *AMLCaseManager) AddEvidence(ctx context.Context, caseID string, evidenc
 			"evidence_name": evidence.Name,
 		},
 	})
-	
+
 	return m.storage.Update(ctx, c)
 }
 
@@ -376,13 +376,13 @@ func (m *AMLCaseManager) AddNote(ctx context.Context, caseID string, note CaseNo
 	if err != nil {
 		return err
 	}
-	
+
 	note.ID = generateNoteID()
 	note.CreatedAt = time.Now()
-	
+
 	c.Notes = append(c.Notes, note)
 	c.UpdatedAt = time.Now()
-	
+
 	c.AuditTrail = append(c.AuditTrail, AuditEvent{
 		Timestamp: time.Now(),
 		Actor:     note.Author,
@@ -392,7 +392,7 @@ func (m *AMLCaseManager) AddNote(ctx context.Context, caseID string, note CaseNo
 			"note_type": note.Type,
 		},
 	})
-	
+
 	return m.storage.Update(ctx, c)
 }
 
@@ -402,12 +402,12 @@ func (m *AMLCaseManager) MakeDecision(ctx context.Context, caseID string, decisi
 	if err != nil {
 		return err
 	}
-	
+
 	c.Decision = decision.Decision
 	c.DecisionReason = decision.Reason
 	c.Findings = decision.Findings
 	c.UpdatedAt = time.Now()
-	
+
 	if decision.Decision == "FILE_SAR" {
 		c.SARRequired = true
 		c.Status = "PENDING_SAR"
@@ -417,7 +417,7 @@ func (m *AMLCaseManager) MakeDecision(ctx context.Context, caseID string, decisi
 		c.ClosedAt = &now
 		atomic.AddUint64(&m.closedCases, 1)
 	}
-	
+
 	c.AuditTrail = append(c.AuditTrail, AuditEvent{
 		Timestamp: time.Now(),
 		Actor:     decision.DecidedBy,
@@ -427,7 +427,7 @@ func (m *AMLCaseManager) MakeDecision(ctx context.Context, caseID string, decisi
 			"reason":   decision.Reason,
 		},
 	})
-	
+
 	return m.storage.Update(ctx, c)
 }
 
@@ -445,31 +445,31 @@ func (m *AMLCaseManager) GenerateSAR(ctx context.Context, caseID string, generat
 	if err != nil {
 		return nil, err
 	}
-	
+
 	if !c.SARRequired {
 		return nil, fmt.Errorf("SAR not required for this case")
 	}
-	
+
 	sar := &SARReport{
-		ID:              generateSARID(),
-		CaseID:          caseID,
-		SubjectType:     c.SubjectType,
-		SubjectID:       c.SubjectID,
-		SubjectName:     c.SubjectName,
+		ID:                 generateSARID(),
+		CaseID:             caseID,
+		SubjectType:        c.SubjectType,
+		SubjectID:          c.SubjectID,
+		SubjectName:        c.SubjectName,
 		SuspiciousActivity: c.Findings,
-		RiskFactors:    c.RiskFactors,
-		AlertScore:     c.AlertScore,
-		GeneratedAt:    time.Now(),
-		GeneratedBy:    generatedBy,
-		Status:         "DRAFT",
+		RiskFactors:        c.RiskFactors,
+		AlertScore:         c.AlertScore,
+		GeneratedAt:        time.Now(),
+		GeneratedBy:        generatedBy,
+		Status:             "DRAFT",
 	}
-	
+
 	// Populate SAR fields from case
 	sar.NarrativeSummary = m.generateSARNarrative(c)
-	
+
 	c.SARID = sar.ID
 	c.UpdatedAt = time.Now()
-	
+
 	c.AuditTrail = append(c.AuditTrail, AuditEvent{
 		Timestamp: time.Now(),
 		Actor:     generatedBy,
@@ -478,33 +478,33 @@ func (m *AMLCaseManager) GenerateSAR(ctx context.Context, caseID string, generat
 			"sar_id": sar.ID,
 		},
 	})
-	
+
 	if err := m.storage.Update(ctx, c); err != nil {
 		return nil, err
 	}
-	
+
 	atomic.AddUint64(&m.sarsGenerated, 1)
-	
+
 	return sar, nil
 }
 
 // SARReport represents a Suspicious Activity Report
 type SARReport struct {
-	ID                 string    `json:"id"`
-	CaseID             string    `json:"case_id"`
-	SubjectType        string    `json:"subject_type"`
-	SubjectID          string    `json:"subject_id"`
-	SubjectName        string    `json:"subject_name"`
-	SuspiciousActivity string    `json:"suspicious_activity"`
-	RiskFactors        []string  `json:"risk_factors"`
-	AlertScore         float64   `json:"alert_score"`
-	NarrativeSummary   string    `json:"narrative_summary"`
-	GeneratedAt        time.Time `json:"generated_at"`
-	GeneratedBy        string    `json:"generated_by"`
+	ID                 string     `json:"id"`
+	CaseID             string     `json:"case_id"`
+	SubjectType        string     `json:"subject_type"`
+	SubjectID          string     `json:"subject_id"`
+	SubjectName        string     `json:"subject_name"`
+	SuspiciousActivity string     `json:"suspicious_activity"`
+	RiskFactors        []string   `json:"risk_factors"`
+	AlertScore         float64    `json:"alert_score"`
+	NarrativeSummary   string     `json:"narrative_summary"`
+	GeneratedAt        time.Time  `json:"generated_at"`
+	GeneratedBy        string     `json:"generated_by"`
 	FiledAt            *time.Time `json:"filed_at,omitempty"`
-	FiledBy            string    `json:"filed_by,omitempty"`
-	Status             string    `json:"status"` // DRAFT, SUBMITTED, FILED
-	RegulatoryRef      string    `json:"regulatory_ref,omitempty"`
+	FiledBy            string     `json:"filed_by,omitempty"`
+	Status             string     `json:"status"` // DRAFT, SUBMITTED, FILED
+	RegulatoryRef      string     `json:"regulatory_ref,omitempty"`
 }
 
 // generateSARNarrative generates the SAR narrative
@@ -536,10 +536,10 @@ func (m *AMLCaseManager) calculateDueDate(priority string) time.Time {
 // slaMonitorLoop monitors SLA breaches
 func (m *AMLCaseManager) slaMonitorLoop() {
 	defer m.wg.Done()
-	
+
 	ticker := time.NewTicker(15 * time.Minute)
 	defer ticker.Stop()
-	
+
 	for {
 		select {
 		case <-m.ctx.Done():
@@ -553,18 +553,18 @@ func (m *AMLCaseManager) slaMonitorLoop() {
 // checkSLABreaches checks for SLA breaches
 func (m *AMLCaseManager) checkSLABreaches() {
 	ctx := context.Background()
-	
+
 	openCases, err := m.storage.GetByStatus(ctx, "OPEN")
 	if err != nil {
 		return
 	}
-	
+
 	now := time.Now()
 	for _, c := range openCases {
 		if now.After(c.DueDate) && !c.SLABreached {
 			c.SLABreached = true
 			c.UpdatedAt = now
-			
+
 			c.AuditTrail = append(c.AuditTrail, AuditEvent{
 				Timestamp: now,
 				Actor:     "SYSTEM",
@@ -573,9 +573,9 @@ func (m *AMLCaseManager) checkSLABreaches() {
 					"due_date": c.DueDate,
 				},
 			})
-			
+
 			_ = m.storage.Update(ctx, c)
-			
+
 			// Notify
 			if m.notifier != nil && c.Assignee != "" {
 				_ = m.notifier.Notify(ctx, Notification{

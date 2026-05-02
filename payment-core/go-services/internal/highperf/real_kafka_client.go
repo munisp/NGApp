@@ -15,15 +15,15 @@ import (
 
 // RealKafkaProducer implements KafkaProducer interface with real Kafka client
 type RealKafkaProducer struct {
-	writers     map[string]*kafka.Writer
-	writersMu   sync.RWMutex
-	config      RealKafkaConfig
-	dialer      *kafka.Dialer
+	writers   map[string]*kafka.Writer
+	writersMu sync.RWMutex
+	config    RealKafkaConfig
+	dialer    *kafka.Dialer
 
 	// Stats
-	totalProduced uint64
-	totalFailed   uint64
-	totalBytes    uint64
+	totalProduced  uint64
+	totalFailed    uint64
+	totalBytes     uint64
 	totalLatencyNs uint64
 }
 

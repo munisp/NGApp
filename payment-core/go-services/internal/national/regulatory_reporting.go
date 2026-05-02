@@ -2,11 +2,11 @@
 package national
 
 import (
-	"crypto/sha256"
-	"encoding/hex"
 	"context"
+	"crypto/sha256"
 	"database/sql"
 	"encoding/csv"
+	"encoding/hex"
 	"encoding/json"
 	"encoding/xml"
 	"fmt"
@@ -20,27 +20,27 @@ import (
 type ReportType string
 
 const (
-	ReportTypeDailyLiquidity      ReportType = "DAILY_LIQUIDITY"
-	ReportTypeDailyPosition       ReportType = "DAILY_POSITION"
-	ReportTypeDailySettlement     ReportType = "DAILY_SETTLEMENT"
-	ReportTypeTransactionVolume   ReportType = "TRANSACTION_VOLUME"
-	ReportTypeSuspiciousActivity  ReportType = "SUSPICIOUS_ACTIVITY"
-	ReportTypeLargeTransaction    ReportType = "LARGE_TRANSACTION"
-	ReportTypeParticipantStatus   ReportType = "PARTICIPANT_STATUS"
-	ReportTypeSystemAvailability  ReportType = "SYSTEM_AVAILABILITY"
-	ReportTypeIncidentSummary     ReportType = "INCIDENT_SUMMARY"
-	ReportTypeAMLCompliance       ReportType = "AML_COMPLIANCE"
-	ReportTypeCTR                 ReportType = "CTR" // Currency Transaction Report
-	ReportTypeSAR                 ReportType = "SAR" // Suspicious Activity Report
+	ReportTypeDailyLiquidity     ReportType = "DAILY_LIQUIDITY"
+	ReportTypeDailyPosition      ReportType = "DAILY_POSITION"
+	ReportTypeDailySettlement    ReportType = "DAILY_SETTLEMENT"
+	ReportTypeTransactionVolume  ReportType = "TRANSACTION_VOLUME"
+	ReportTypeSuspiciousActivity ReportType = "SUSPICIOUS_ACTIVITY"
+	ReportTypeLargeTransaction   ReportType = "LARGE_TRANSACTION"
+	ReportTypeParticipantStatus  ReportType = "PARTICIPANT_STATUS"
+	ReportTypeSystemAvailability ReportType = "SYSTEM_AVAILABILITY"
+	ReportTypeIncidentSummary    ReportType = "INCIDENT_SUMMARY"
+	ReportTypeAMLCompliance      ReportType = "AML_COMPLIANCE"
+	ReportTypeCTR                ReportType = "CTR" // Currency Transaction Report
+	ReportTypeSAR                ReportType = "SAR" // Suspicious Activity Report
 )
 
 // ReportFormat defines the output format
 type ReportFormat string
 
 const (
-	ReportFormatJSON ReportFormat = "JSON"
-	ReportFormatXML  ReportFormat = "XML"
-	ReportFormatCSV  ReportFormat = "CSV"
+	ReportFormatJSON     ReportFormat = "JSON"
+	ReportFormatXML      ReportFormat = "XML"
+	ReportFormatCSV      ReportFormat = "CSV"
 	ReportFormatISO20022 ReportFormat = "ISO20022"
 )
 
@@ -48,46 +48,46 @@ const (
 type ReportFrequency string
 
 const (
-	ReportFrequencyRealtime ReportFrequency = "REALTIME"
-	ReportFrequencyHourly   ReportFrequency = "HOURLY"
-	ReportFrequencyDaily    ReportFrequency = "DAILY"
-	ReportFrequencyWeekly   ReportFrequency = "WEEKLY"
-	ReportFrequencyMonthly  ReportFrequency = "MONTHLY"
+	ReportFrequencyRealtime  ReportFrequency = "REALTIME"
+	ReportFrequencyHourly    ReportFrequency = "HOURLY"
+	ReportFrequencyDaily     ReportFrequency = "DAILY"
+	ReportFrequencyWeekly    ReportFrequency = "WEEKLY"
+	ReportFrequencyMonthly   ReportFrequency = "MONTHLY"
 	ReportFrequencyQuarterly ReportFrequency = "QUARTERLY"
-	ReportFrequencyAnnual   ReportFrequency = "ANNUAL"
+	ReportFrequencyAnnual    ReportFrequency = "ANNUAL"
 )
 
 // RegulatoryReportingService handles regulatory report generation and submission
 type RegulatoryReportingService struct {
-	db              *sql.DB
-	auditLogger     *ImmutableAuditLogger
-	hsmManager      *HSMKeyManager
-	config          *ReportingConfig
-	schedules       map[ReportType]*ReportSchedule
-	mu              sync.RWMutex
+	db          *sql.DB
+	auditLogger *ImmutableAuditLogger
+	hsmManager  *HSMKeyManager
+	config      *ReportingConfig
+	schedules   map[ReportType]*ReportSchedule
+	mu          sync.RWMutex
 }
 
 // ReportingConfig holds reporting configuration
 type ReportingConfig struct {
-	CentralBankCode     string
-	InstitutionCode     string
-	ReportingCurrency   string
+	CentralBankCode           string
+	InstitutionCode           string
+	ReportingCurrency         string
 	LargeTransactionThreshold int64
-	SuspiciousPatterns  []string
-	RetentionYears      int
-	SubmissionEndpoint  string
-	SubmissionAPIKey    string
+	SuspiciousPatterns        []string
+	RetentionYears            int
+	SubmissionEndpoint        string
+	SubmissionAPIKey          string
 }
 
 // ReportSchedule defines when a report should be generated
 type ReportSchedule struct {
-	ReportType  ReportType
-	Frequency   ReportFrequency
-	Format      ReportFormat
-	Recipients  []string
-	NextRun     time.Time
-	LastRun     *time.Time
-	Enabled     bool
+	ReportType ReportType
+	Frequency  ReportFrequency
+	Format     ReportFormat
+	Recipients []string
+	NextRun    time.Time
+	LastRun    *time.Time
+	Enabled    bool
 }
 
 // NewRegulatoryReportingService creates a new regulatory reporting service
@@ -103,16 +103,16 @@ func NewRegulatoryReportingService(db *sql.DB, audit *ImmutableAuditLogger, hsm 
 
 // Report represents a generated regulatory report
 type Report struct {
-	ReportID        string          `json:"report_id" xml:"ReportId"`
-	ReportType      ReportType      `json:"report_type" xml:"ReportType"`
+	ReportID        string           `json:"report_id" xml:"ReportId"`
+	ReportType      ReportType       `json:"report_type" xml:"ReportType"`
 	ReportingPeriod *ReportingPeriod `json:"reporting_period" xml:"ReportingPeriod"`
-	GeneratedAt     time.Time       `json:"generated_at" xml:"GeneratedAt"`
-	InstitutionCode string          `json:"institution_code" xml:"InstitutionCode"`
-	Format          ReportFormat    `json:"format" xml:"Format"`
-	Data            interface{}     `json:"data" xml:"Data"`
-	Hash            string          `json:"hash" xml:"Hash"`
-	Signature       string          `json:"signature,omitempty" xml:"Signature,omitempty"`
-	Status          ReportStatus    `json:"status" xml:"Status"`
+	GeneratedAt     time.Time        `json:"generated_at" xml:"GeneratedAt"`
+	InstitutionCode string           `json:"institution_code" xml:"InstitutionCode"`
+	Format          ReportFormat     `json:"format" xml:"Format"`
+	Data            interface{}      `json:"data" xml:"Data"`
+	Hash            string           `json:"hash" xml:"Hash"`
+	Signature       string           `json:"signature,omitempty" xml:"Signature,omitempty"`
+	Status          ReportStatus     `json:"status" xml:"Status"`
 }
 
 // ReportingPeriod defines the time period covered by a report
@@ -125,11 +125,11 @@ type ReportingPeriod struct {
 type ReportStatus string
 
 const (
-	ReportStatusGenerated  ReportStatus = "GENERATED"
-	ReportStatusSubmitted  ReportStatus = "SUBMITTED"
-	ReportStatusAccepted   ReportStatus = "ACCEPTED"
-	ReportStatusRejected   ReportStatus = "REJECTED"
-	ReportStatusPending    ReportStatus = "PENDING"
+	ReportStatusGenerated ReportStatus = "GENERATED"
+	ReportStatusSubmitted ReportStatus = "SUBMITTED"
+	ReportStatusAccepted  ReportStatus = "ACCEPTED"
+	ReportStatusRejected  ReportStatus = "REJECTED"
+	ReportStatusPending   ReportStatus = "PENDING"
 )
 
 // GenerateDailyLiquidityReport generates the daily liquidity report
@@ -192,8 +192,8 @@ type LiquidityPosition struct {
 
 // DailyLiquidityReportData holds the daily liquidity report data
 type DailyLiquidityReportData struct {
-	Positions  []*LiquidityPosition    `json:"positions" xml:"Positions>Position"`
-	Aggregates *LiquidityAggregates    `json:"aggregates" xml:"Aggregates"`
+	Positions  []*LiquidityPosition `json:"positions" xml:"Positions>Position"`
+	Aggregates *LiquidityAggregates `json:"aggregates" xml:"Aggregates"`
 }
 
 // LiquidityAggregates holds aggregate liquidity metrics
@@ -279,7 +279,7 @@ func (s *RegulatoryReportingService) GenerateDailySettlementReport(ctx context.C
 	}
 
 	reportData := &DailySettlementReportData{
-		Settlements:     settlements,
+		Settlements:      settlements,
 		TotalSettlements: len(settlements),
 	}
 
@@ -363,15 +363,15 @@ type TransactionVolume struct {
 
 // TransactionVolumeReportData holds transaction volume report data
 type TransactionVolumeReportData struct {
-	Volumes    []*TransactionVolume   `json:"volumes" xml:"Volumes>Volume"`
-	Aggregates *VolumeAggregates      `json:"aggregates" xml:"Aggregates"`
+	Volumes    []*TransactionVolume `json:"volumes" xml:"Volumes>Volume"`
+	Aggregates *VolumeAggregates    `json:"aggregates" xml:"Aggregates"`
 }
 
 // VolumeAggregates holds aggregate volume metrics
 type VolumeAggregates struct {
-	TotalTransactions map[string]int64 `json:"total_transactions" xml:"TotalTransactions"`
-	TotalAmount       map[string]int64 `json:"total_amount" xml:"TotalAmount"`
-	UniqueParticipants int             `json:"unique_participants" xml:"UniqueParticipants"`
+	TotalTransactions  map[string]int64 `json:"total_transactions" xml:"TotalTransactions"`
+	TotalAmount        map[string]int64 `json:"total_amount" xml:"TotalAmount"`
+	UniqueParticipants int              `json:"unique_participants" xml:"UniqueParticipants"`
 }
 
 func (s *RegulatoryReportingService) calculateVolumeAggregates(volumes []*TransactionVolume) *VolumeAggregates {

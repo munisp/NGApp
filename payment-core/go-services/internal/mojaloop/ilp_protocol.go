@@ -378,11 +378,11 @@ func NewILPPacketBuilder(crypto *ILPCryptoService) *ILPPacketBuilder {
 
 // TransactionData represents the data embedded in an ILP packet
 type TransactionData struct {
-	TransactionID   string      `json:"transactionId"`
-	TransactionType string      `json:"transactionType"`
-	Amount          AmountData  `json:"amount"`
-	Payer           PartyData   `json:"payer"`
-	Payee           PayeeData   `json:"payee"`
+	TransactionID   string     `json:"transactionId"`
+	TransactionType string     `json:"transactionType"`
+	Amount          AmountData `json:"amount"`
+	Payer           PartyData  `json:"payer"`
+	Payee           PayeeData  `json:"payee"`
 }
 
 // AmountData represents amount information

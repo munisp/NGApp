@@ -23,12 +23,12 @@ import (
 type HSMProvider string
 
 const (
-	HSMProviderAWS      HSMProvider = "AWS_CLOUDHSM"
-	HSMProviderAzure    HSMProvider = "AZURE_KEYVAULT"
-	HSMProviderGCP      HSMProvider = "GCP_CLOUDKMS"
-	HSMProviderThales   HSMProvider = "THALES_LUNA"
-	HSMProviderUtimaco  HSMProvider = "UTIMACO"
-	HSMProviderSoftHSM  HSMProvider = "SOFTHSM"      // For development/testing
+	HSMProviderAWS        HSMProvider = "AWS_CLOUDHSM"
+	HSMProviderAzure      HSMProvider = "AZURE_KEYVAULT"
+	HSMProviderGCP        HSMProvider = "GCP_CLOUDKMS"
+	HSMProviderThales     HSMProvider = "THALES_LUNA"
+	HSMProviderUtimaco    HSMProvider = "UTIMACO"
+	HSMProviderSoftHSM    HSMProvider = "SOFTHSM" // For development/testing
 	HSMProviderHashiVault HSMProvider = "HASHICORP_VAULT"
 )
 
@@ -36,13 +36,13 @@ const (
 type KeyPurpose string
 
 const (
-	KeyPurposeSchemeSignature   KeyPurpose = "SCHEME_SIGNATURE"    // Scheme-level JWS signing
-	KeyPurposeParticipantAuth   KeyPurpose = "PARTICIPANT_AUTH"    // Participant authentication
-	KeyPurposeSettlementSigning KeyPurpose = "SETTLEMENT_SIGNING"  // Settlement instruction signing
-	KeyPurposeDataEncryption    KeyPurpose = "DATA_ENCRYPTION"     // PII/sensitive data encryption
-	KeyPurposeTokenization      KeyPurpose = "TOKENIZATION"        // Card/account tokenization
-	KeyPurposeAuditSigning      KeyPurpose = "AUDIT_SIGNING"       // Audit log signing
-	KeyPurposeTLSCertificate    KeyPurpose = "TLS_CERTIFICATE"     // mTLS certificates
+	KeyPurposeSchemeSignature   KeyPurpose = "SCHEME_SIGNATURE"   // Scheme-level JWS signing
+	KeyPurposeParticipantAuth   KeyPurpose = "PARTICIPANT_AUTH"   // Participant authentication
+	KeyPurposeSettlementSigning KeyPurpose = "SETTLEMENT_SIGNING" // Settlement instruction signing
+	KeyPurposeDataEncryption    KeyPurpose = "DATA_ENCRYPTION"    // PII/sensitive data encryption
+	KeyPurposeTokenization      KeyPurpose = "TOKENIZATION"       // Card/account tokenization
+	KeyPurposeAuditSigning      KeyPurpose = "AUDIT_SIGNING"      // Audit log signing
+	KeyPurposeTLSCertificate    KeyPurpose = "TLS_CERTIFICATE"    // mTLS certificates
 )
 
 // KeyAlgorithm defines the cryptographic algorithm
@@ -58,63 +58,63 @@ const (
 
 // HSMKeyManager manages cryptographic keys via HSM/KMS
 type HSMKeyManager struct {
-	provider      HSMProvider
-	db            *sql.DB
-	config        *HSMConfig
-	keyCache      map[string]*CachedKey
-	cacheTTL      time.Duration
-	mu            sync.RWMutex
-	
+	provider HSMProvider
+	db       *sql.DB
+	config   *HSMConfig
+	keyCache map[string]*CachedKey
+	cacheTTL time.Duration
+	mu       sync.RWMutex
+
 	// Provider-specific clients (interfaces)
-	awsClient     AWSCloudHSMClient
-	azureClient   AzureKeyVaultClient
-	gcpClient     GCPCloudKMSClient
-	vaultClient   HashiCorpVaultClient
+	awsClient   AWSCloudHSMClient
+	azureClient AzureKeyVaultClient
+	gcpClient   GCPCloudKMSClient
+	vaultClient HashiCorpVaultClient
 }
 
 // HSMConfig holds HSM/KMS configuration
 type HSMConfig struct {
-	Provider        HSMProvider
-	Region          string
-	KeyRingID       string            // GCP key ring, AWS key store, etc.
-	Credentials     map[string]string // Provider-specific credentials
-	RotationPeriod  time.Duration     // Key rotation period
-	CacheTTL        time.Duration
-	EnableAudit     bool
+	Provider       HSMProvider
+	Region         string
+	KeyRingID      string            // GCP key ring, AWS key store, etc.
+	Credentials    map[string]string // Provider-specific credentials
+	RotationPeriod time.Duration     // Key rotation period
+	CacheTTL       time.Duration
+	EnableAudit    bool
 }
 
 // CachedKey holds a cached key reference
 type CachedKey struct {
-	KeyID       string
-	PublicKey   crypto.PublicKey
-	CachedAt    time.Time
-	ExpiresAt   time.Time
+	KeyID     string
+	PublicKey crypto.PublicKey
+	CachedAt  time.Time
+	ExpiresAt time.Time
 }
 
 // KeyMetadata holds metadata about a managed key
 type KeyMetadata struct {
-	KeyID           string       `json:"key_id"`
-	KeyAlias        string       `json:"key_alias"`
-	Purpose         KeyPurpose   `json:"purpose"`
-	Algorithm       KeyAlgorithm `json:"algorithm"`
-	Version         int          `json:"version"`
-	State           KeyState     `json:"state"`
-	CreatedAt       time.Time    `json:"created_at"`
-	RotatedAt       *time.Time   `json:"rotated_at,omitempty"`
-	ExpiresAt       *time.Time   `json:"expires_at,omitempty"`
-	HSMKeyHandle    string       `json:"hsm_key_handle"`
-	PublicKeyPEM    string       `json:"public_key_pem,omitempty"`
+	KeyID        string       `json:"key_id"`
+	KeyAlias     string       `json:"key_alias"`
+	Purpose      KeyPurpose   `json:"purpose"`
+	Algorithm    KeyAlgorithm `json:"algorithm"`
+	Version      int          `json:"version"`
+	State        KeyState     `json:"state"`
+	CreatedAt    time.Time    `json:"created_at"`
+	RotatedAt    *time.Time   `json:"rotated_at,omitempty"`
+	ExpiresAt    *time.Time   `json:"expires_at,omitempty"`
+	HSMKeyHandle string       `json:"hsm_key_handle"`
+	PublicKeyPEM string       `json:"public_key_pem,omitempty"`
 }
 
 // KeyState represents the state of a key
 type KeyState string
 
 const (
-	KeyStateActive      KeyState = "ACTIVE"
+	KeyStateActive          KeyState = "ACTIVE"
 	KeyStatePendingRotation KeyState = "PENDING_ROTATION"
-	KeyStateRotated     KeyState = "ROTATED"
-	KeyStateDisabled    KeyState = "DISABLED"
-	KeyStateDestroyed   KeyState = "DESTROYED"
+	KeyStateRotated         KeyState = "ROTATED"
+	KeyStateDisabled        KeyState = "DISABLED"
+	KeyStateDestroyed       KeyState = "DESTROYED"
 )
 
 // Provider client interfaces
@@ -694,7 +694,7 @@ func (m *HSMKeyManager) auditKeyOperation(ctx context.Context, operation string,
 	m.db.ExecContext(ctx, `
 		INSERT INTO hsm_key_audit (key_id, key_alias, operation, timestamp, details)
 		VALUES ($1, $2, $3, $4, $5)
-	`, metadata.KeyID, metadata.KeyAlias, operation, time.Now(), 
+	`, metadata.KeyID, metadata.KeyAlias, operation, time.Now(),
 		fmt.Sprintf("version=%d, state=%s", metadata.Version, metadata.State))
 }
 
@@ -836,7 +836,7 @@ func (m *HSMKeyManager) decryptSoft(handle string, ciphertext []byte) ([]byte, e
 		return rsa.DecryptPKCS1v15(rand.Reader, k, ciphertext)
 	default:
 		return nil, fmt.Errorf("decryption not supported for key type")
-}
+	}
 }
 
 func generateKeyID() string {

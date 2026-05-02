@@ -11,36 +11,36 @@ import (
 // TransferWorkflow represents the Temporal workflow for transfer lifecycle
 // This workflow orchestrates the complete transfer flow with TigerBeetle integration
 type TransferWorkflow struct {
-	TransferID      string                 `json:"transfer_id"`
-	PayerFSP        string                 `json:"payer_fsp"`
-	PayeeFSP        string                 `json:"payee_fsp"`
-	Amount          int64                  `json:"amount"`
-	Currency        string                 `json:"currency"`
-	Condition       string                 `json:"condition,omitempty"`
-	Expiration      time.Time              `json:"expiration"`
-	ExtensionList   map[string]string      `json:"extension_list,omitempty"`
-	State           TransferWorkflowState  `json:"state"`
-	TigerBeetleID   uint64                 `json:"tigerbeetle_id,omitempty"`
-	ErrorCode       string                 `json:"error_code,omitempty"`
-	ErrorMessage    string                 `json:"error_message,omitempty"`
-	CreatedAt       time.Time              `json:"created_at"`
-	CompletedAt     *time.Time             `json:"completed_at,omitempty"`
+	TransferID    string                `json:"transfer_id"`
+	PayerFSP      string                `json:"payer_fsp"`
+	PayeeFSP      string                `json:"payee_fsp"`
+	Amount        int64                 `json:"amount"`
+	Currency      string                `json:"currency"`
+	Condition     string                `json:"condition,omitempty"`
+	Expiration    time.Time             `json:"expiration"`
+	ExtensionList map[string]string     `json:"extension_list,omitempty"`
+	State         TransferWorkflowState `json:"state"`
+	TigerBeetleID uint64                `json:"tigerbeetle_id,omitempty"`
+	ErrorCode     string                `json:"error_code,omitempty"`
+	ErrorMessage  string                `json:"error_message,omitempty"`
+	CreatedAt     time.Time             `json:"created_at"`
+	CompletedAt   *time.Time            `json:"completed_at,omitempty"`
 }
 
 // TransferWorkflowState represents the state of a transfer workflow
 type TransferWorkflowState string
 
 const (
-	TransferStateInitiated   TransferWorkflowState = "INITIATED"
-	TransferStateValidating  TransferWorkflowState = "VALIDATING"
-	TransferStateReserving   TransferWorkflowState = "RESERVING"
-	TransferStateReserved    TransferWorkflowState = "RESERVED"
-	TransferStateCommitting  TransferWorkflowState = "COMMITTING"
-	TransferStateCommitted   TransferWorkflowState = "COMMITTED"
-	TransferStateAborting    TransferWorkflowState = "ABORTING"
-	TransferStateAborted     TransferWorkflowState = "ABORTED"
-	TransferStateExpired     TransferWorkflowState = "EXPIRED"
-	TransferStateFailed      TransferWorkflowState = "FAILED"
+	TransferStateInitiated  TransferWorkflowState = "INITIATED"
+	TransferStateValidating TransferWorkflowState = "VALIDATING"
+	TransferStateReserving  TransferWorkflowState = "RESERVING"
+	TransferStateReserved   TransferWorkflowState = "RESERVED"
+	TransferStateCommitting TransferWorkflowState = "COMMITTING"
+	TransferStateCommitted  TransferWorkflowState = "COMMITTED"
+	TransferStateAborting   TransferWorkflowState = "ABORTING"
+	TransferStateAborted    TransferWorkflowState = "ABORTED"
+	TransferStateExpired    TransferWorkflowState = "EXPIRED"
+	TransferStateFailed     TransferWorkflowState = "FAILED"
 )
 
 // TransferWorkflowInput is the input for starting a transfer workflow
@@ -58,13 +58,13 @@ type TransferWorkflowInput struct {
 
 // TransferWorkflowResult is the result of a transfer workflow
 type TransferWorkflowResult struct {
-	TransferID      string                `json:"transfer_id"`
-	State           TransferWorkflowState `json:"state"`
-	Fulfilment      string                `json:"fulfilment,omitempty"`
-	TigerBeetleID   uint64                `json:"tigerbeetle_id,omitempty"`
-	CompletedAt     time.Time             `json:"completed_at"`
-	ErrorCode       string                `json:"error_code,omitempty"`
-	ErrorMessage    string                `json:"error_message,omitempty"`
+	TransferID    string                `json:"transfer_id"`
+	State         TransferWorkflowState `json:"state"`
+	Fulfilment    string                `json:"fulfilment,omitempty"`
+	TigerBeetleID uint64                `json:"tigerbeetle_id,omitempty"`
+	CompletedAt   time.Time             `json:"completed_at"`
+	ErrorCode     string                `json:"error_code,omitempty"`
+	ErrorMessage  string                `json:"error_message,omitempty"`
 }
 
 // TemporalTransferWorkflowDefinition defines the Temporal workflow for transfers
@@ -117,12 +117,12 @@ func (w *TemporalTransferWorkflowDefinition) Execute(ctx context.Context, input 
 	// Step 2: Reserve funds in TigerBeetle (pending transfer)
 	workflow.State = TransferStateReserving
 	reserveResult, err := executeReserveFundsActivity(ctx, &ReserveFundsInput{
-		TransferID:      input.TransferID,
-		PayerAccountID:  validationResult.PayerAccountID,
-		PayeeAccountID:  validationResult.PayeeAccountID,
-		Amount:          input.Amount,
-		Currency:        input.Currency,
-		Timeout:         input.Expiration.Sub(time.Now()),
+		TransferID:     input.TransferID,
+		PayerAccountID: validationResult.PayerAccountID,
+		PayeeAccountID: validationResult.PayeeAccountID,
+		Amount:         input.Amount,
+		Currency:       input.Currency,
+		Timeout:        input.Expiration.Sub(time.Now()),
 	})
 	if err != nil {
 		workflow.State = TransferStateFailed
@@ -214,8 +214,8 @@ func (w *TemporalTransferWorkflowDefinition) Execute(ctx context.Context, input 
 
 // FulfillmentSignal represents a fulfillment signal to the workflow
 type FulfillmentSignal struct {
-	TransferID  string `json:"transfer_id"`
-	Fulfilment  string `json:"fulfilment"`
+	TransferID  string    `json:"transfer_id"`
+	Fulfilment  string    `json:"fulfilment"`
 	CompletedAt time.Time `json:"completed_at"`
 }
 
@@ -243,7 +243,7 @@ type ValidateTransferResult struct {
 // executeValidateTransferActivity validates the transfer
 func executeValidateTransferActivity(ctx context.Context, input *TransferWorkflowInput) (*ValidateTransferResult, error) {
 	// In Temporal: workflow.ExecuteActivity(ctx, ValidateTransferActivity, input)
-	
+
 	result := &ValidateTransferResult{Valid: true}
 
 	// Validate payer FSP exists and is active
@@ -312,7 +312,7 @@ type ReserveFundsResult struct {
 // executeReserveFundsActivity reserves funds in TigerBeetle
 func executeReserveFundsActivity(ctx context.Context, input *ReserveFundsInput) (*ReserveFundsResult, error) {
 	// In Temporal: workflow.ExecuteActivity(ctx, ReserveFundsActivity, input)
-	
+
 	// Generate TigerBeetle transfer ID from transfer ID
 	tbTransferID := generateTigerBeetleID(input.TransferID)
 
@@ -354,7 +354,7 @@ type CommitTransferResult struct {
 // executeCommitTransferActivity commits the transfer in TigerBeetle
 func executeCommitTransferActivity(ctx context.Context, input *CommitTransferInput) (*CommitTransferResult, error) {
 	// In Temporal: workflow.ExecuteActivity(ctx, CommitTransferActivity, input)
-	
+
 	// Post the pending transfer in TigerBeetle
 	err := postTigerBeetleTransfer(ctx, input.TigerBeetleTransferID)
 	if err != nil {
@@ -383,7 +383,7 @@ type AbortTransferResult struct {
 // executeAbortTransferActivity aborts the transfer in TigerBeetle
 func executeAbortTransferActivity(ctx context.Context, input *AbortTransferInput) (*AbortTransferResult, error) {
 	// In Temporal: workflow.ExecuteActivity(ctx, AbortTransferActivity, input)
-	
+
 	// Void the pending transfer in TigerBeetle
 	err := voidTigerBeetleTransfer(ctx, input.TigerBeetleTransferID)
 	if err != nil {
@@ -461,14 +461,14 @@ func voidTigerBeetleTransfer(ctx context.Context, transferID uint64) error {
 
 // SettlementWorkflow represents the Temporal workflow for settlement windows
 type SettlementWorkflow struct {
-	SettlementID    string                   `json:"settlement_id"`
-	WindowID        string                   `json:"window_id"`
-	State           SettlementWorkflowState  `json:"state"`
-	Participants    []string                 `json:"participants"`
-	NetPositions    map[string]int64         `json:"net_positions"`
-	SettlementDate  time.Time                `json:"settlement_date"`
-	CreatedAt       time.Time                `json:"created_at"`
-	CompletedAt     *time.Time               `json:"completed_at,omitempty"`
+	SettlementID   string                  `json:"settlement_id"`
+	WindowID       string                  `json:"window_id"`
+	State          SettlementWorkflowState `json:"state"`
+	Participants   []string                `json:"participants"`
+	NetPositions   map[string]int64        `json:"net_positions"`
+	SettlementDate time.Time               `json:"settlement_date"`
+	CreatedAt      time.Time               `json:"created_at"`
+	CompletedAt    *time.Time              `json:"completed_at,omitempty"`
 }
 
 // SettlementWorkflowState represents settlement workflow state
@@ -499,14 +499,14 @@ type SettlementWorkflowResult struct {
 
 // ParticipantOnboardingWorkflow represents workflow for participant onboarding
 type ParticipantOnboardingWorkflow struct {
-	ParticipantID   string                         `json:"participant_id"`
-	FSPID           string                         `json:"fsp_id"`
-	State           ParticipantOnboardingState     `json:"state"`
-	KYCStatus       string                         `json:"kyc_status"`
-	AccountsCreated bool                           `json:"accounts_created"`
-	LimitsSet       bool                           `json:"limits_set"`
-	CreatedAt       time.Time                      `json:"created_at"`
-	CompletedAt     *time.Time                     `json:"completed_at,omitempty"`
+	ParticipantID   string                     `json:"participant_id"`
+	FSPID           string                     `json:"fsp_id"`
+	State           ParticipantOnboardingState `json:"state"`
+	KYCStatus       string                     `json:"kyc_status"`
+	AccountsCreated bool                       `json:"accounts_created"`
+	LimitsSet       bool                       `json:"limits_set"`
+	CreatedAt       time.Time                  `json:"created_at"`
+	CompletedAt     *time.Time                 `json:"completed_at,omitempty"`
 }
 
 // ParticipantOnboardingState represents onboarding state
@@ -524,37 +524,37 @@ const (
 
 // DisputeWorkflow represents workflow for dispute resolution
 type DisputeWorkflow struct {
-	DisputeID       string              `json:"dispute_id"`
-	TransferID      string              `json:"transfer_id"`
-	State           DisputeWorkflowState `json:"state"`
-	InitiatorFSP    string              `json:"initiator_fsp"`
-	RespondentFSP   string              `json:"respondent_fsp"`
-	Amount          int64               `json:"amount"`
-	Reason          string              `json:"reason"`
-	Resolution      string              `json:"resolution,omitempty"`
-	CreatedAt       time.Time           `json:"created_at"`
-	ResolvedAt      *time.Time          `json:"resolved_at,omitempty"`
+	DisputeID     string               `json:"dispute_id"`
+	TransferID    string               `json:"transfer_id"`
+	State         DisputeWorkflowState `json:"state"`
+	InitiatorFSP  string               `json:"initiator_fsp"`
+	RespondentFSP string               `json:"respondent_fsp"`
+	Amount        int64                `json:"amount"`
+	Reason        string               `json:"reason"`
+	Resolution    string               `json:"resolution,omitempty"`
+	CreatedAt     time.Time            `json:"created_at"`
+	ResolvedAt    *time.Time           `json:"resolved_at,omitempty"`
 }
 
 // DisputeWorkflowState represents dispute state
 type DisputeWorkflowState string
 
 const (
-	DisputeStateOpened       DisputeWorkflowState = "OPENED"
+	DisputeStateOpened        DisputeWorkflowState = "OPENED"
 	DisputeStateInvestigating DisputeWorkflowState = "INVESTIGATING"
-	DisputeStateEscalated    DisputeWorkflowState = "ESCALATED"
-	DisputeStateResolved     DisputeWorkflowState = "RESOLVED"
-	DisputeStateRejected     DisputeWorkflowState = "REJECTED"
+	DisputeStateEscalated     DisputeWorkflowState = "ESCALATED"
+	DisputeStateResolved      DisputeWorkflowState = "RESOLVED"
+	DisputeStateRejected      DisputeWorkflowState = "REJECTED"
 )
 
 // TemporalWorkerConfig holds configuration for Temporal workers
 type TemporalWorkerConfig struct {
-	TemporalHost      string `json:"temporal_host"`
-	TemporalPort      int    `json:"temporal_port"`
-	Namespace         string `json:"namespace"`
-	TaskQueue         string `json:"task_queue"`
-	WorkerCount       int    `json:"worker_count"`
-	MaxConcurrentTasks int   `json:"max_concurrent_tasks"`
+	TemporalHost       string `json:"temporal_host"`
+	TemporalPort       int    `json:"temporal_port"`
+	Namespace          string `json:"namespace"`
+	TaskQueue          string `json:"task_queue"`
+	WorkerCount        int    `json:"worker_count"`
+	MaxConcurrentTasks int    `json:"max_concurrent_tasks"`
 }
 
 // DefaultTemporalWorkerConfig returns default worker configuration
@@ -653,14 +653,14 @@ ON temporal_dispute_workflows(initiator_fsp, respondent_fsp);
 
 // WorkflowMetrics tracks workflow execution metrics
 type WorkflowMetrics struct {
-	WorkflowsStarted    int64         `json:"workflows_started"`
-	WorkflowsCompleted  int64         `json:"workflows_completed"`
-	WorkflowsFailed     int64         `json:"workflows_failed"`
-	WorkflowsTimedOut   int64         `json:"workflows_timed_out"`
-	ActivitiesExecuted  int64         `json:"activities_executed"`
-	ActivitiesFailed    int64         `json:"activities_failed"`
-	AverageLatencyMs    float64       `json:"average_latency_ms"`
-	P99LatencyMs        float64       `json:"p99_latency_ms"`
+	WorkflowsStarted   int64   `json:"workflows_started"`
+	WorkflowsCompleted int64   `json:"workflows_completed"`
+	WorkflowsFailed    int64   `json:"workflows_failed"`
+	WorkflowsTimedOut  int64   `json:"workflows_timed_out"`
+	ActivitiesExecuted int64   `json:"activities_executed"`
+	ActivitiesFailed   int64   `json:"activities_failed"`
+	AverageLatencyMs   float64 `json:"average_latency_ms"`
+	P99LatencyMs       float64 `json:"p99_latency_ms"`
 }
 
 // WorkflowMetricsJSON returns metrics as JSON

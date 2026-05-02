@@ -68,29 +68,29 @@ type RecipientResult struct {
 
 // BatchTransfer represents a multi-recipient batch transfer
 type BatchTransfer struct {
-	ID              string             `json:"id"`
-	UserID          string             `json:"user_id"`
-	ParticipantID   string             `json:"participant_id"`
-	Name            string             `json:"name"`
-	Description     string             `json:"description,omitempty"`
-	SenderID        string             `json:"sender_id"`
-	SenderName      string             `json:"sender_name"`
-	TotalAmount     int64              `json:"total_amount"`
-	TotalFees       int64              `json:"total_fees"`
-	Currency        string             `json:"currency"`
-	RecipientCount  int                `json:"recipient_count"`
-	SuccessCount    int                `json:"success_count"`
-	FailedCount     int                `json:"failed_count"`
-	Recipients      []Recipient        `json:"recipients"`
-	Results         []RecipientResult  `json:"results,omitempty"`
-	Status          BatchStatus        `json:"status"`
-	PaymentMethod   string             `json:"payment_method"`
-	ScheduledAt     *time.Time         `json:"scheduled_at,omitempty"`
-	StartedAt       *time.Time         `json:"started_at,omitempty"`
-	CompletedAt     *time.Time         `json:"completed_at,omitempty"`
-	Metadata        map[string]string  `json:"metadata,omitempty"`
-	CreatedAt       time.Time          `json:"created_at"`
-	UpdatedAt       time.Time          `json:"updated_at"`
+	ID             string            `json:"id"`
+	UserID         string            `json:"user_id"`
+	ParticipantID  string            `json:"participant_id"`
+	Name           string            `json:"name"`
+	Description    string            `json:"description,omitempty"`
+	SenderID       string            `json:"sender_id"`
+	SenderName     string            `json:"sender_name"`
+	TotalAmount    int64             `json:"total_amount"`
+	TotalFees      int64             `json:"total_fees"`
+	Currency       string            `json:"currency"`
+	RecipientCount int               `json:"recipient_count"`
+	SuccessCount   int               `json:"success_count"`
+	FailedCount    int               `json:"failed_count"`
+	Recipients     []Recipient       `json:"recipients"`
+	Results        []RecipientResult `json:"results,omitempty"`
+	Status         BatchStatus       `json:"status"`
+	PaymentMethod  string            `json:"payment_method"`
+	ScheduledAt    *time.Time        `json:"scheduled_at,omitempty"`
+	StartedAt      *time.Time        `json:"started_at,omitempty"`
+	CompletedAt    *time.Time        `json:"completed_at,omitempty"`
+	Metadata       map[string]string `json:"metadata,omitempty"`
+	CreatedAt      time.Time         `json:"created_at"`
+	UpdatedAt      time.Time         `json:"updated_at"`
 }
 
 // BatchStore defines the interface for batch transfer storage
@@ -444,21 +444,21 @@ func (s *MultiRecipientService) GetBatchSummary(ctx context.Context, id string) 
 
 // BatchSummary represents a summary of a batch transfer
 type BatchSummary struct {
-	ID               string            `json:"id"`
-	Name             string            `json:"name"`
-	Status           BatchStatus       `json:"status"`
-	TotalAmount      int64             `json:"total_amount"`
-	TotalTransferred int64             `json:"total_transferred"`
-	TotalFees        int64             `json:"total_fees"`
-	Currency         string            `json:"currency"`
-	RecipientCount   int               `json:"recipient_count"`
-	SuccessCount     int               `json:"success_count"`
-	FailedCount      int               `json:"failed_count"`
-	PendingCount     int               `json:"pending_count"`
-	SuccessRate      float64           `json:"success_rate"`
-	StatusBreakdown  map[string]int    `json:"status_breakdown"`
-	CreatedAt        time.Time         `json:"created_at"`
-	CompletedAt      *time.Time        `json:"completed_at,omitempty"`
+	ID               string         `json:"id"`
+	Name             string         `json:"name"`
+	Status           BatchStatus    `json:"status"`
+	TotalAmount      int64          `json:"total_amount"`
+	TotalTransferred int64          `json:"total_transferred"`
+	TotalFees        int64          `json:"total_fees"`
+	Currency         string         `json:"currency"`
+	RecipientCount   int            `json:"recipient_count"`
+	SuccessCount     int            `json:"success_count"`
+	FailedCount      int            `json:"failed_count"`
+	PendingCount     int            `json:"pending_count"`
+	SuccessRate      float64        `json:"success_rate"`
+	StatusBreakdown  map[string]int `json:"status_breakdown"`
+	CreatedAt        time.Time      `json:"created_at"`
+	CompletedAt      *time.Time     `json:"completed_at,omitempty"`
 }
 
 // ValidateRecipients validates a list of recipients before creating a batch

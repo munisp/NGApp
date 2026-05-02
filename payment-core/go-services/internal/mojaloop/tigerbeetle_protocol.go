@@ -28,31 +28,31 @@ const (
 	TBHeaderSize = 256
 
 	// Result codes
-	TBResultOK                        uint32 = 0
-	TBResultLinkedEventFailed         uint32 = 1
-	TBResultLinkedEventChainOpen      uint32 = 2
-	TBResultTimestampMustBeZero       uint32 = 3
-	TBResultExistsWithDifferentFlags  uint32 = 17
+	TBResultOK                          uint32 = 0
+	TBResultLinkedEventFailed           uint32 = 1
+	TBResultLinkedEventChainOpen        uint32 = 2
+	TBResultTimestampMustBeZero         uint32 = 3
+	TBResultExistsWithDifferentFlags    uint32 = 17
 	TBResultExistsWithDifferentUserData uint32 = 18
-	TBResultExists                    uint32 = 25
-	TBResultExceedsCredits            uint32 = 30
-	TBResultExceedsDebits             uint32 = 31
+	TBResultExists                      uint32 = 25
+	TBResultExceedsCredits              uint32 = 30
+	TBResultExceedsDebits               uint32 = 31
 )
 
 // TBHeader represents a TigerBeetle message header
 type TBHeader struct {
-	Checksum       [16]byte // AEGIS-128L checksum
-	ChecksumBody   [16]byte // Body checksum
-	RequestNumber  uint32
-	ClusterID      uint32
-	ClientID       uint32
-	ViewNumber     uint32
-	OpNumber       uint32
-	CommitNumber   uint32
-	Timestamp      uint64
-	MessageType    uint8
-	Operation      uint8
-	DataSize       uint32
+	Checksum      [16]byte // AEGIS-128L checksum
+	ChecksumBody  [16]byte // Body checksum
+	RequestNumber uint32
+	ClusterID     uint32
+	ClientID      uint32
+	ViewNumber    uint32
+	OpNumber      uint32
+	CommitNumber  uint32
+	Timestamp     uint64
+	MessageType   uint8
+	Operation     uint8
+	DataSize      uint32
 }
 
 // TBProtocolClient implements the real TigerBeetle wire protocol
@@ -134,7 +134,7 @@ func (c *TBProtocolClient) sendRequest(ctx context.Context, operation uint8, dat
 	// Build header
 	header := make([]byte, TBHeaderSize)
 	reqNum := c.nextRequestNumber()
-	
+
 	// Fill header fields (simplified - real implementation needs proper checksum)
 	binary.LittleEndian.PutUint32(header[32:36], reqNum)
 	binary.LittleEndian.PutUint32(header[36:40], c.clusterID)
@@ -163,7 +163,7 @@ func (c *TBProtocolClient) sendRequest(ctx context.Context, operation uint8, dat
 	// Read response header
 	c.readMu.Lock()
 	defer c.readMu.Unlock()
-	
+
 	c.conn.SetReadDeadline(time.Now().Add(c.timeout))
 	respHeader := make([]byte, TBHeaderSize)
 	_, err = io.ReadFull(c.conn, respHeader)

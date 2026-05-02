@@ -49,11 +49,11 @@ func NewDisputeServiceWithEvents(service interface{}) *DisputeServiceWithEvents 
 
 func (s *DisputeServiceWithEvents) OpenDispute(ctx context.Context, transactionID, customerID, reason string, amount float64) (string, error) {
 	disputeID := generateDisputeID()
-	
+
 	if err := EmitDisputeOpened(ctx, disputeID, transactionID, customerID, reason, amount); err != nil {
 		log.Printf("Failed to emit dispute opened event: %v", err)
 	}
-	
+
 	return disputeID, nil
 }
 

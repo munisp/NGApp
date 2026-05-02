@@ -31,7 +31,7 @@ type LedgerEngine interface {
 	// Account operations
 	CreateAccount(ctx context.Context, account *TBAccount) error
 	GetAccountBalance(ctx context.Context, accountID uint128) (*AccountBalance, error)
-	
+
 	// Transfer operations with linked support
 	CreatePendingTransfer(ctx context.Context, transfer *TBTransfer) error
 	CreateLinkedPendingTransfers(ctx context.Context, transfers []*TBTransfer) error
@@ -39,10 +39,10 @@ type LedgerEngine interface {
 	PostLinkedPendingTransfers(ctx context.Context, transferIDs []uint128) error
 	VoidPendingTransfer(ctx context.Context, transferID uint128) error
 	VoidLinkedPendingTransfers(ctx context.Context, transferIDs []uint128) error
-	
+
 	// Batch operations
 	CreateTransferBatch(ctx context.Context, transfers []*TBTransfer) ([]TransferResult, error)
-	
+
 	// Lookup
 	LookupTransfer(ctx context.Context, transferID uint128) (*TBTransfer, error)
 	LookupTransfers(ctx context.Context, transferIDs []uint128) ([]*TBTransfer, error)
@@ -54,20 +54,20 @@ type WorkflowStore interface {
 	GetParticipant(ctx context.Context, fspID string) (*Participant, error)
 	CreateParticipant(ctx context.Context, participant *Participant) error
 	UpdateParticipant(ctx context.Context, participant *Participant) error
-	
+
 	// Transfer workflow state
 	SaveTransferState(ctx context.Context, state *TransferWorkflowState) error
 	GetTransferState(ctx context.Context, transferID string) (*TransferWorkflowState, error)
 	UpdateTransferState(ctx context.Context, transferID string, newState MojaloopTransferState) error
-	
+
 	// Quote management
 	SaveQuote(ctx context.Context, quote *Quote) error
 	GetQuote(ctx context.Context, quoteID string) (*Quote, error)
-	
+
 	// Idempotency
 	CheckIdempotency(ctx context.Context, key string) (*IdempotencyRecord, error)
 	SaveIdempotency(ctx context.Context, record *IdempotencyRecord) error
-	
+
 	// Outbox for reliable event publishing
 	SaveOutboxEvent(ctx context.Context, event *OutboxEvent) error
 	GetPendingOutboxEvents(ctx context.Context, limit int) ([]*OutboxEvent, error)
@@ -95,9 +95,9 @@ type TBAccount struct {
 	UserData64     uint64  // For metadata
 	UserData32     uint32  // For flags/type
 	Reserved       uint32
-	Ledger         uint32  // Currency ledger ID
-	Code           uint16  // Account type code
-	Flags          uint16  // Account flags
+	Ledger         uint32 // Currency ledger ID
+	Code           uint16 // Account type code
+	Flags          uint16 // Account flags
 	Timestamp      uint64
 }
 
@@ -171,47 +171,47 @@ type TransferResult struct {
 type TransferResultCode uint8
 
 const (
-	TransferResultOK                        TransferResultCode = 0
-	TransferResultLinkedEventFailed         TransferResultCode = 1
-	TransferResultLinkedEventChainOpen      TransferResultCode = 2
-	TransferResultTimestampMustBeZero       TransferResultCode = 3
-	TransferResultReservedFlag              TransferResultCode = 4
-	TransferResultReservedField             TransferResultCode = 5
-	TransferResultIDMustNotBeZero           TransferResultCode = 6
-	TransferResultIDMustNotBeIntMax         TransferResultCode = 7
-	TransferResultFlagsAreMutuallyExclusive TransferResultCode = 8
-	TransferResultDebitAccountIDMustNotBeZero TransferResultCode = 9
-	TransferResultCreditAccountIDMustNotBeZero TransferResultCode = 10
-	TransferResultAccountsMustBeDifferent   TransferResultCode = 11
-	TransferResultPendingIDMustBeZero       TransferResultCode = 12
-	TransferResultPendingIDMustNotBeZero    TransferResultCode = 13
-	TransferResultPendingTransferMustExist  TransferResultCode = 14
-	TransferResultPendingTransferNotPending TransferResultCode = 15
-	TransferResultPendingTransferHasDifferentDebitAccountID TransferResultCode = 16
+	TransferResultOK                                         TransferResultCode = 0
+	TransferResultLinkedEventFailed                          TransferResultCode = 1
+	TransferResultLinkedEventChainOpen                       TransferResultCode = 2
+	TransferResultTimestampMustBeZero                        TransferResultCode = 3
+	TransferResultReservedFlag                               TransferResultCode = 4
+	TransferResultReservedField                              TransferResultCode = 5
+	TransferResultIDMustNotBeZero                            TransferResultCode = 6
+	TransferResultIDMustNotBeIntMax                          TransferResultCode = 7
+	TransferResultFlagsAreMutuallyExclusive                  TransferResultCode = 8
+	TransferResultDebitAccountIDMustNotBeZero                TransferResultCode = 9
+	TransferResultCreditAccountIDMustNotBeZero               TransferResultCode = 10
+	TransferResultAccountsMustBeDifferent                    TransferResultCode = 11
+	TransferResultPendingIDMustBeZero                        TransferResultCode = 12
+	TransferResultPendingIDMustNotBeZero                     TransferResultCode = 13
+	TransferResultPendingTransferMustExist                   TransferResultCode = 14
+	TransferResultPendingTransferNotPending                  TransferResultCode = 15
+	TransferResultPendingTransferHasDifferentDebitAccountID  TransferResultCode = 16
 	TransferResultPendingTransferHasDifferentCreditAccountID TransferResultCode = 17
-	TransferResultPendingTransferHasDifferentLedger TransferResultCode = 18
-	TransferResultPendingTransferHasDifferentCode TransferResultCode = 19
-	TransferResultExceedsCredits            TransferResultCode = 20
-	TransferResultExceedsDebits             TransferResultCode = 21
-	TransferResultCannotPostAndVoidPendingTransfer TransferResultCode = 22
-	TransferResultPendingTransferAlreadyPosted TransferResultCode = 23
-	TransferResultPendingTransferAlreadyVoided TransferResultCode = 24
-	TransferResultPendingTransferExpired    TransferResultCode = 25
-	TransferResultExists                    TransferResultCode = 26
-	TransferResultOverflowsDebits           TransferResultCode = 27
-	TransferResultOverflowsCredits          TransferResultCode = 28
-	TransferResultOverflowsDebitsPending    TransferResultCode = 29
-	TransferResultOverflowsCreditsPending   TransferResultCode = 30
-	TransferResultOverflowsTimeout          TransferResultCode = 31
-	TransferResultAmountMustNotBeZero       TransferResultCode = 32
-	TransferResultLedgerMustNotBeZero       TransferResultCode = 33
-	TransferResultCodeMustNotBeZero         TransferResultCode = 34
-	TransferResultDebitAccountNotFound      TransferResultCode = 35
-	TransferResultCreditAccountNotFound     TransferResultCode = 36
-	TransferResultAccountsMustHaveSameLedger TransferResultCode = 37
-	TransferResultTransferMustHaveSameLedgerAsAccounts TransferResultCode = 38
-	TransferResultPendingTransferHasDifferentAmount TransferResultCode = 39
-	TransferResultPendingTransferHasDifferentTimeout TransferResultCode = 40
+	TransferResultPendingTransferHasDifferentLedger          TransferResultCode = 18
+	TransferResultPendingTransferHasDifferentCode            TransferResultCode = 19
+	TransferResultExceedsCredits                             TransferResultCode = 20
+	TransferResultExceedsDebits                              TransferResultCode = 21
+	TransferResultCannotPostAndVoidPendingTransfer           TransferResultCode = 22
+	TransferResultPendingTransferAlreadyPosted               TransferResultCode = 23
+	TransferResultPendingTransferAlreadyVoided               TransferResultCode = 24
+	TransferResultPendingTransferExpired                     TransferResultCode = 25
+	TransferResultExists                                     TransferResultCode = 26
+	TransferResultOverflowsDebits                            TransferResultCode = 27
+	TransferResultOverflowsCredits                           TransferResultCode = 28
+	TransferResultOverflowsDebitsPending                     TransferResultCode = 29
+	TransferResultOverflowsCreditsPending                    TransferResultCode = 30
+	TransferResultOverflowsTimeout                           TransferResultCode = 31
+	TransferResultAmountMustNotBeZero                        TransferResultCode = 32
+	TransferResultLedgerMustNotBeZero                        TransferResultCode = 33
+	TransferResultCodeMustNotBeZero                          TransferResultCode = 34
+	TransferResultDebitAccountNotFound                       TransferResultCode = 35
+	TransferResultCreditAccountNotFound                      TransferResultCode = 36
+	TransferResultAccountsMustHaveSameLedger                 TransferResultCode = 37
+	TransferResultTransferMustHaveSameLedgerAsAccounts       TransferResultCode = 38
+	TransferResultPendingTransferHasDifferentAmount          TransferResultCode = 39
+	TransferResultPendingTransferHasDifferentTimeout         TransferResultCode = 40
 )
 
 // AccountBalance represents the balance of an account
@@ -225,8 +225,7 @@ type AccountBalance struct {
 
 // MojaloopTransferState represents the state of a Mojaloop transfer
 
-const (
-)
+const ()
 
 // TigerBeetleTransferState represents the state of a TigerBeetle transfer
 type TigerBeetleTransferState string
@@ -248,71 +247,71 @@ var StateMachineMapping = map[MojaloopTransferState]TigerBeetleTransferState{
 
 // TransferWorkflowState represents the workflow state of a transfer
 type TransferWorkflowState struct {
-	TransferID        string                `json:"transfer_id"`
-	MojaloopState     MojaloopTransferState `json:"mojaloop_state"`
-	TigerBeetleState  TigerBeetleTransferState `json:"tigerbeetle_state"`
-	PayerFSP          string                `json:"payer_fsp"`
-	PayeeFSP          string                `json:"payee_fsp"`
-	Amount            string                `json:"amount"`
-	Currency          string                `json:"currency"`
-	ILPCondition      string                `json:"ilp_condition"`
-	ILPFulfilment     string                `json:"ilp_fulfilment,omitempty"`
-	ExpirationDate    time.Time             `json:"expiration_date"`
-	CreatedAt         time.Time             `json:"created_at"`
-	UpdatedAt         time.Time             `json:"updated_at"`
-	
+	TransferID       string                   `json:"transfer_id"`
+	MojaloopState    MojaloopTransferState    `json:"mojaloop_state"`
+	TigerBeetleState TigerBeetleTransferState `json:"tigerbeetle_state"`
+	PayerFSP         string                   `json:"payer_fsp"`
+	PayeeFSP         string                   `json:"payee_fsp"`
+	Amount           string                   `json:"amount"`
+	Currency         string                   `json:"currency"`
+	ILPCondition     string                   `json:"ilp_condition"`
+	ILPFulfilment    string                   `json:"ilp_fulfilment,omitempty"`
+	ExpirationDate   time.Time                `json:"expiration_date"`
+	CreatedAt        time.Time                `json:"created_at"`
+	UpdatedAt        time.Time                `json:"updated_at"`
+
 	// TigerBeetle correlation
-	TBTransferIDs     []uint128             `json:"tb_transfer_ids"` // Multiple for linked transfers
-	TBDebitAccountID  uint128               `json:"tb_debit_account_id"`
-	TBCreditAccountID uint128               `json:"tb_credit_account_id"`
-	
+	TBTransferIDs     []uint128 `json:"tb_transfer_ids"` // Multiple for linked transfers
+	TBDebitAccountID  uint128   `json:"tb_debit_account_id"`
+	TBCreditAccountID uint128   `json:"tb_credit_account_id"`
+
 	// Error information
-	ErrorCode         string                `json:"error_code,omitempty"`
-	ErrorDescription  string                `json:"error_description,omitempty"`
+	ErrorCode        string `json:"error_code,omitempty"`
+	ErrorDescription string `json:"error_description,omitempty"`
 }
 
 // Participant represents a Mojaloop participant (DFSP)
 type Participant struct {
-	ParticipantID   int       `json:"participant_id"`
-	Name            string    `json:"name"`
-	Description     string    `json:"description,omitempty"`
-	IsActive        bool      `json:"is_active"`
-	CreatedDate     time.Time `json:"created_date"`
-	
+	ParticipantID int       `json:"participant_id"`
+	Name          string    `json:"name"`
+	Description   string    `json:"description,omitempty"`
+	IsActive      bool      `json:"is_active"`
+	CreatedDate   time.Time `json:"created_date"`
+
 	// TigerBeetle account mapping
-	TBAccounts      map[string]uint128 `json:"tb_accounts"` // currency -> account ID
-	
+	TBAccounts map[string]uint128 `json:"tb_accounts"` // currency -> account ID
+
 	// Limits and configuration
-	NetDebitCap     map[string]float64 `json:"net_debit_cap"` // currency -> limit
-	LiquidityCheck  bool               `json:"liquidity_check"`
+	NetDebitCap    map[string]float64 `json:"net_debit_cap"` // currency -> limit
+	LiquidityCheck bool               `json:"liquidity_check"`
 }
 
 // Quote represents a Mojaloop quote
 type Quote struct {
-	QuoteID           string    `json:"quote_id"`
-	TransactionID     string    `json:"transaction_id"`
-	PayerFSP          string    `json:"payer_fsp"`
-	PayeeFSP          string    `json:"payee_fsp"`
-	AmountType        string    `json:"amount_type"` // SEND or RECEIVE
-	Amount            string    `json:"amount"`
-	Currency          string    `json:"currency"`
-	TransferAmount    string    `json:"transfer_amount,omitempty"`
-	PayeeFSPFee       string    `json:"payee_fsp_fee,omitempty"`
-	PayeeFSPCommission string   `json:"payee_fsp_commission,omitempty"`
-	ILPPacket         string    `json:"ilp_packet,omitempty"`
-	Condition         string    `json:"condition,omitempty"`
-	Expiration        time.Time `json:"expiration"`
-	CreatedAt         time.Time `json:"created_at"`
+	QuoteID            string    `json:"quote_id"`
+	TransactionID      string    `json:"transaction_id"`
+	PayerFSP           string    `json:"payer_fsp"`
+	PayeeFSP           string    `json:"payee_fsp"`
+	AmountType         string    `json:"amount_type"` // SEND or RECEIVE
+	Amount             string    `json:"amount"`
+	Currency           string    `json:"currency"`
+	TransferAmount     string    `json:"transfer_amount,omitempty"`
+	PayeeFSPFee        string    `json:"payee_fsp_fee,omitempty"`
+	PayeeFSPCommission string    `json:"payee_fsp_commission,omitempty"`
+	ILPPacket          string    `json:"ilp_packet,omitempty"`
+	Condition          string    `json:"condition,omitempty"`
+	Expiration         time.Time `json:"expiration"`
+	CreatedAt          time.Time `json:"created_at"`
 }
 
 // IdempotencyRecord tracks idempotent requests
 type IdempotencyRecord struct {
-	Key           string          `json:"key"`
-	RequestHash   string          `json:"request_hash"`
-	Response      json.RawMessage `json:"response"`
-	StatusCode    int             `json:"status_code"`
-	CreatedAt     time.Time       `json:"created_at"`
-	ExpiresAt     time.Time       `json:"expires_at"`
+	Key         string          `json:"key"`
+	RequestHash string          `json:"request_hash"`
+	Response    json.RawMessage `json:"response"`
+	StatusCode  int             `json:"status_code"`
+	CreatedAt   time.Time       `json:"created_at"`
+	ExpiresAt   time.Time       `json:"expires_at"`
 }
 
 // OutboxEvent represents an event in the transactional outbox
@@ -340,8 +339,8 @@ func NewSourceOfTruthContract(ledger LedgerEngine, workflow WorkflowStore, shado
 // ValidateStateTransition validates a state transition is allowed
 func (s *SourceOfTruthContract) ValidateStateTransition(currentState, newState MojaloopTransferState) error {
 	validTransitions := map[MojaloopTransferState][]MojaloopTransferState{
-		TransferStateReceived: {TransferStateReserved, TransferStateAborted, TransferStateInvalid},
-		TransferStateReserved: {TransferStateCommitted, TransferStateAborted, TransferStateExpired},
+		TransferStateReceived:  {TransferStateReserved, TransferStateAborted, TransferStateInvalid},
+		TransferStateReserved:  {TransferStateCommitted, TransferStateAborted, TransferStateExpired},
 		TransferStateCommitted: {}, // Terminal state
 		TransferStateAborted:   {}, // Terminal state
 		TransferStateExpired:   {}, // Terminal state
@@ -570,8 +569,8 @@ type TransferPrepareRequest struct {
 
 // TransferFulfilRequest represents a transfer fulfil request
 type TransferFulfilRequest struct {
-	TransferID  string `json:"transferId"`
-	Fulfilment  string `json:"fulfilment"`
+	TransferID string `json:"transferId"`
+	Fulfilment string `json:"fulfilment"`
 }
 
 // TransferAbortRequest represents a transfer abort request

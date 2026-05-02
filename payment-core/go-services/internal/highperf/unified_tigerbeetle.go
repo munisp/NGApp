@@ -21,9 +21,9 @@ type UnifiedTigerBeetleClient struct {
 	clusterID uint64
 
 	// Connection pool
-	pool       []*tbConn
-	poolSize   int
-	poolIndex  uint64
+	pool      []*tbConn
+	poolSize  int
+	poolIndex uint64
 
 	// Batch processing
 	batchSize     int
@@ -37,11 +37,11 @@ type UnifiedTigerBeetleClient struct {
 	bufferPool   sync.Pool
 
 	// Stats
-	totalTransfers   uint64
-	totalAccounts    uint64
-	totalBatches     uint64
-	totalErrors      uint64
-	totalLatencyNs   uint64
+	totalTransfers uint64
+	totalAccounts  uint64
+	totalBatches   uint64
+	totalErrors    uint64
+	totalLatencyNs uint64
 
 	// Control
 	ctx    context.Context
@@ -541,77 +541,77 @@ func (c *UnifiedTigerBeetleClient) Close() error {
 
 // TBTransferFlags defines transfer flags
 const (
-	TBTransferFlagLinked          uint16 = 1 << 0
-	TBTransferFlagPending         uint16 = 1 << 1
+	TBTransferFlagLinked              uint16 = 1 << 0
+	TBTransferFlagPending             uint16 = 1 << 1
 	TBTransferFlagPostPendingTransfer uint16 = 1 << 2
 	TBTransferFlagVoidPendingTransfer uint16 = 1 << 3
-	TBTransferFlagBalancingDebit  uint16 = 1 << 4
-	TBTransferFlagBalancingCredit uint16 = 1 << 5
+	TBTransferFlagBalancingDebit      uint16 = 1 << 4
+	TBTransferFlagBalancingCredit     uint16 = 1 << 5
 )
 
 // TBAccountFlags defines account flags
 const (
-	TBAccountFlagLinked           uint16 = 1 << 0
+	TBAccountFlagLinked              uint16 = 1 << 0
 	TBAccountFlagDebitsExceedCredits uint16 = 1 << 1
 	TBAccountFlagCreditsExceedDebits uint16 = 1 << 2
-	TBAccountFlagHistory          uint16 = 1 << 3
+	TBAccountFlagHistory             uint16 = 1 << 3
 )
 
 // TBCreateTransferResult defines transfer creation result codes
 const (
-	TBCreateTransferOK                     uint32 = 0
-	TBCreateTransferLinkedEventFailed      uint32 = 1
-	TBCreateTransferLinkedEventChainOpen   uint32 = 2
-	TBCreateTransferTimestampMustBeZero    uint32 = 3
-	TBCreateTransferReservedFlag           uint32 = 4
-	TBCreateTransferReservedField          uint32 = 5
-	TBCreateTransferIDMustNotBeZero        uint32 = 6
-	TBCreateTransferIDMustNotBeIntMax      uint32 = 7
-	TBCreateTransferFlagsAreMutuallyExclusive uint32 = 8
-	TBCreateTransferDebitAccountIDMustNotBeZero uint32 = 9
-	TBCreateTransferDebitAccountIDMustNotBeIntMax uint32 = 10
-	TBCreateTransferCreditAccountIDMustNotBeZero uint32 = 11
-	TBCreateTransferCreditAccountIDMustNotBeIntMax uint32 = 12
-	TBCreateTransferAccountsMustBeDifferent uint32 = 13
-	TBCreateTransferPendingIDMustBeZero    uint32 = 14
-	TBCreateTransferPendingIDMustNotBeZero uint32 = 15
-	TBCreateTransferPendingIDMustNotBeIntMax uint32 = 16
-	TBCreateTransferPendingIDMustBeDifferent uint32 = 17
-	TBCreateTransferTimeoutReservedForPendingTransfer uint32 = 18
-	TBCreateTransferAmountMustNotBeZero    uint32 = 19
-	TBCreateTransferLedgerMustNotBeZero    uint32 = 20
-	TBCreateTransferCodeMustNotBeZero      uint32 = 21
-	TBCreateTransferDebitAccountNotFound   uint32 = 22
-	TBCreateTransferCreditAccountNotFound  uint32 = 23
-	TBCreateTransferAccountsMustHaveTheSameLedger uint32 = 24
-	TBCreateTransferTransferMustHaveTheSameLedgerAsAccounts uint32 = 25
-	TBCreateTransferPendingTransferNotFound uint32 = 26
-	TBCreateTransferPendingTransferNotPending uint32 = 27
-	TBCreateTransferPendingTransferHasDifferentDebitAccountID uint32 = 28
+	TBCreateTransferOK                                         uint32 = 0
+	TBCreateTransferLinkedEventFailed                          uint32 = 1
+	TBCreateTransferLinkedEventChainOpen                       uint32 = 2
+	TBCreateTransferTimestampMustBeZero                        uint32 = 3
+	TBCreateTransferReservedFlag                               uint32 = 4
+	TBCreateTransferReservedField                              uint32 = 5
+	TBCreateTransferIDMustNotBeZero                            uint32 = 6
+	TBCreateTransferIDMustNotBeIntMax                          uint32 = 7
+	TBCreateTransferFlagsAreMutuallyExclusive                  uint32 = 8
+	TBCreateTransferDebitAccountIDMustNotBeZero                uint32 = 9
+	TBCreateTransferDebitAccountIDMustNotBeIntMax              uint32 = 10
+	TBCreateTransferCreditAccountIDMustNotBeZero               uint32 = 11
+	TBCreateTransferCreditAccountIDMustNotBeIntMax             uint32 = 12
+	TBCreateTransferAccountsMustBeDifferent                    uint32 = 13
+	TBCreateTransferPendingIDMustBeZero                        uint32 = 14
+	TBCreateTransferPendingIDMustNotBeZero                     uint32 = 15
+	TBCreateTransferPendingIDMustNotBeIntMax                   uint32 = 16
+	TBCreateTransferPendingIDMustBeDifferent                   uint32 = 17
+	TBCreateTransferTimeoutReservedForPendingTransfer          uint32 = 18
+	TBCreateTransferAmountMustNotBeZero                        uint32 = 19
+	TBCreateTransferLedgerMustNotBeZero                        uint32 = 20
+	TBCreateTransferCodeMustNotBeZero                          uint32 = 21
+	TBCreateTransferDebitAccountNotFound                       uint32 = 22
+	TBCreateTransferCreditAccountNotFound                      uint32 = 23
+	TBCreateTransferAccountsMustHaveTheSameLedger              uint32 = 24
+	TBCreateTransferTransferMustHaveTheSameLedgerAsAccounts    uint32 = 25
+	TBCreateTransferPendingTransferNotFound                    uint32 = 26
+	TBCreateTransferPendingTransferNotPending                  uint32 = 27
+	TBCreateTransferPendingTransferHasDifferentDebitAccountID  uint32 = 28
 	TBCreateTransferPendingTransferHasDifferentCreditAccountID uint32 = 29
-	TBCreateTransferPendingTransferHasDifferentLedger uint32 = 30
-	TBCreateTransferPendingTransferHasDifferentCode uint32 = 31
-	TBCreateTransferExceedsCredits         uint32 = 32
-	TBCreateTransferExceedsDebits          uint32 = 33
-	TBCreateTransferExistsDifferentDebitAccountID uint32 = 34
-	TBCreateTransferExistsDifferentCreditAccountID uint32 = 35
-	TBCreateTransferExistsDifferentAmount  uint32 = 36
-	TBCreateTransferExistsDifferentPendingID uint32 = 37
-	TBCreateTransferExistsDifferentUserData128 uint32 = 38
-	TBCreateTransferExistsDifferentUserData64 uint32 = 39
-	TBCreateTransferExistsDifferentUserData32 uint32 = 40
-	TBCreateTransferExistsDifferentTimeout uint32 = 41
-	TBCreateTransferExistsDifferentCode    uint32 = 42
-	TBCreateTransferExistsDifferentFlags   uint32 = 43
-	TBCreateTransferExists                 uint32 = 44
-	TBCreateTransferOverflowsDebits        uint32 = 45
-	TBCreateTransferOverflowsCredits       uint32 = 46
-	TBCreateTransferOverflowsDebitsPending uint32 = 47
-	TBCreateTransferOverflowsCreditsPending uint32 = 48
-	TBCreateTransferOverflowsTimeout       uint32 = 49
-	TBCreateTransferExceedsPendingTransferAmount uint32 = 50
-	TBCreateTransferPendingTransferHasDifferentAmount uint32 = 51
-	TBCreateTransferPendingTransferAlreadyPosted uint32 = 52
-	TBCreateTransferPendingTransferAlreadyVoided uint32 = 53
-	TBCreateTransferPendingTransferExpired uint32 = 54
+	TBCreateTransferPendingTransferHasDifferentLedger          uint32 = 30
+	TBCreateTransferPendingTransferHasDifferentCode            uint32 = 31
+	TBCreateTransferExceedsCredits                             uint32 = 32
+	TBCreateTransferExceedsDebits                              uint32 = 33
+	TBCreateTransferExistsDifferentDebitAccountID              uint32 = 34
+	TBCreateTransferExistsDifferentCreditAccountID             uint32 = 35
+	TBCreateTransferExistsDifferentAmount                      uint32 = 36
+	TBCreateTransferExistsDifferentPendingID                   uint32 = 37
+	TBCreateTransferExistsDifferentUserData128                 uint32 = 38
+	TBCreateTransferExistsDifferentUserData64                  uint32 = 39
+	TBCreateTransferExistsDifferentUserData32                  uint32 = 40
+	TBCreateTransferExistsDifferentTimeout                     uint32 = 41
+	TBCreateTransferExistsDifferentCode                        uint32 = 42
+	TBCreateTransferExistsDifferentFlags                       uint32 = 43
+	TBCreateTransferExists                                     uint32 = 44
+	TBCreateTransferOverflowsDebits                            uint32 = 45
+	TBCreateTransferOverflowsCredits                           uint32 = 46
+	TBCreateTransferOverflowsDebitsPending                     uint32 = 47
+	TBCreateTransferOverflowsCreditsPending                    uint32 = 48
+	TBCreateTransferOverflowsTimeout                           uint32 = 49
+	TBCreateTransferExceedsPendingTransferAmount               uint32 = 50
+	TBCreateTransferPendingTransferHasDifferentAmount          uint32 = 51
+	TBCreateTransferPendingTransferAlreadyPosted               uint32 = 52
+	TBCreateTransferPendingTransferAlreadyVoided               uint32 = 53
+	TBCreateTransferPendingTransferExpired                     uint32 = 54
 )

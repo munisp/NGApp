@@ -20,29 +20,29 @@ type SandboxEnvironment struct {
 }
 
 type SandboxConfig struct {
-	EnableMockResponses    bool                   `json:"enableMockResponses"`
-	SimulateLatency        bool                   `json:"simulateLatency"`
-	LatencyMinMs           int                    `json:"latencyMinMs"`
-	LatencyMaxMs           int                    `json:"latencyMaxMs"`
-	FailureRate            float64                `json:"failureRate"`
-	WebhookURL             string                 `json:"webhookUrl"`
-	AutoApproveKYC         bool                   `json:"autoApproveKyc"`
-	DefaultCurrency        string                 `json:"defaultCurrency"`
-	ProviderOverrides      map[string]interface{} `json:"providerOverrides,omitempty"`
+	EnableMockResponses bool                   `json:"enableMockResponses"`
+	SimulateLatency     bool                   `json:"simulateLatency"`
+	LatencyMinMs        int                    `json:"latencyMinMs"`
+	LatencyMaxMs        int                    `json:"latencyMaxMs"`
+	FailureRate         float64                `json:"failureRate"`
+	WebhookURL          string                 `json:"webhookUrl"`
+	AutoApproveKYC      bool                   `json:"autoApproveKyc"`
+	DefaultCurrency     string                 `json:"defaultCurrency"`
+	ProviderOverrides   map[string]interface{} `json:"providerOverrides,omitempty"`
 }
 
 type TestAccount struct {
-	ID             string    `json:"id"`
-	EnvironmentID  string    `json:"environmentId"`
-	AccountNumber  string    `json:"accountNumber"`
-	AccountName    string    `json:"accountName"`
-	BankCode       string    `json:"bankCode"`
-	BankName       string    `json:"bankName"`
-	Balance        float64   `json:"balance"`
-	Currency       string    `json:"currency"`
-	AccountType    string    `json:"accountType"`
-	Status         string    `json:"status"`
-	CreatedAt      time.Time `json:"createdAt"`
+	ID            string    `json:"id"`
+	EnvironmentID string    `json:"environmentId"`
+	AccountNumber string    `json:"accountNumber"`
+	AccountName   string    `json:"accountName"`
+	BankCode      string    `json:"bankCode"`
+	BankName      string    `json:"bankName"`
+	Balance       float64   `json:"balance"`
+	Currency      string    `json:"currency"`
+	AccountType   string    `json:"accountType"`
+	Status        string    `json:"status"`
+	CreatedAt     time.Time `json:"createdAt"`
 }
 
 type TestBeneficiary struct {
@@ -59,19 +59,19 @@ type TestBeneficiary struct {
 }
 
 type TestTransaction struct {
-	ID              string                 `json:"id"`
-	EnvironmentID   string                 `json:"environmentId"`
-	Type            string                 `json:"type"`
-	Amount          float64                `json:"amount"`
-	Currency        string                 `json:"currency"`
-	SourceAccount   string                 `json:"sourceAccount"`
-	DestAccount     string                 `json:"destAccount"`
-	Status          string                 `json:"status"`
-	Reference       string                 `json:"reference"`
-	ProviderRef     string                 `json:"providerRef,omitempty"`
-	CreatedAt       time.Time              `json:"createdAt"`
-	CompletedAt     *time.Time             `json:"completedAt,omitempty"`
-	Metadata        map[string]interface{} `json:"metadata,omitempty"`
+	ID            string                 `json:"id"`
+	EnvironmentID string                 `json:"environmentId"`
+	Type          string                 `json:"type"`
+	Amount        float64                `json:"amount"`
+	Currency      string                 `json:"currency"`
+	SourceAccount string                 `json:"sourceAccount"`
+	DestAccount   string                 `json:"destAccount"`
+	Status        string                 `json:"status"`
+	Reference     string                 `json:"reference"`
+	ProviderRef   string                 `json:"providerRef,omitempty"`
+	CreatedAt     time.Time              `json:"createdAt"`
+	CompletedAt   *time.Time             `json:"completedAt,omitempty"`
+	Metadata      map[string]interface{} `json:"metadata,omitempty"`
 }
 
 type TestWebhook struct {
@@ -97,26 +97,26 @@ type MockProviderResponse struct {
 }
 
 type SandboxStats struct {
-	EnvironmentID       string    `json:"environmentId"`
-	TotalTransactions   int       `json:"totalTransactions"`
-	SuccessfulTxns      int       `json:"successfulTransactions"`
-	FailedTxns          int       `json:"failedTransactions"`
-	TotalVolume         float64   `json:"totalVolume"`
-	WebhooksDelivered   int       `json:"webhooksDelivered"`
-	WebhooksFailed      int       `json:"webhooksFailed"`
-	APICallsCount       int       `json:"apiCallsCount"`
-	LastActivityAt      time.Time `json:"lastActivityAt"`
+	EnvironmentID     string    `json:"environmentId"`
+	TotalTransactions int       `json:"totalTransactions"`
+	SuccessfulTxns    int       `json:"successfulTransactions"`
+	FailedTxns        int       `json:"failedTransactions"`
+	TotalVolume       float64   `json:"totalVolume"`
+	WebhooksDelivered int       `json:"webhooksDelivered"`
+	WebhooksFailed    int       `json:"webhooksFailed"`
+	APICallsCount     int       `json:"apiCallsCount"`
+	LastActivityAt    time.Time `json:"lastActivityAt"`
 }
 
 type SandboxService struct {
-	mu              sync.RWMutex
-	environments    map[string]*SandboxEnvironment
-	testAccounts    map[string]*TestAccount
+	mu                sync.RWMutex
+	environments      map[string]*SandboxEnvironment
+	testAccounts      map[string]*TestAccount
 	testBeneficiaries map[string]*TestBeneficiary
-	testTransactions map[string]*TestTransaction
-	testWebhooks    map[string]*TestWebhook
-	mockResponses   map[string]*MockProviderResponse
-	stats           map[string]*SandboxStats
+	testTransactions  map[string]*TestTransaction
+	testWebhooks      map[string]*TestWebhook
+	mockResponses     map[string]*MockProviderResponse
+	stats             map[string]*SandboxStats
 }
 
 func NewSandboxService() *SandboxService {
@@ -214,9 +214,9 @@ func (s *SandboxService) initializeDefaultMockResponses() {
 		Endpoint:   "/transfer",
 		StatusCode: 200,
 		ResponseBody: map[string]interface{}{
-			"status":      "success",
-			"reference":   "MM_TEST_REF",
-			"message":     "Transfer completed",
+			"status":        "success",
+			"reference":     "MM_TEST_REF",
+			"message":       "Transfer completed",
 			"recipientName": "TEST RECIPIENT",
 		},
 		Delay: 600,

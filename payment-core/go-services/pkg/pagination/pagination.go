@@ -68,10 +68,10 @@ type FilterGroup struct {
 // QueryParams holds all query parameters for pagination and filtering
 type QueryParams struct {
 	PageRequest
-	Filters     []Filter     `json:"filters"`
-	FilterGroup *FilterGroup `json:"filter_group,omitempty"`
-	Search      string       `json:"search,omitempty"`
-	SearchFields []string    `json:"search_fields,omitempty"`
+	Filters      []Filter     `json:"filters"`
+	FilterGroup  *FilterGroup `json:"filter_group,omitempty"`
+	Search       string       `json:"search,omitempty"`
+	SearchFields []string     `json:"search_fields,omitempty"`
 }
 
 // DefaultPageSize is the default number of items per page
@@ -206,14 +206,14 @@ func NewPageResponse(data interface{}, page, pageSize int, totalItems int64) *Pa
 
 // SQLBuilder helps build SQL queries with pagination and filtering
 type SQLBuilder struct {
-	baseQuery    string
-	countQuery   string
-	whereClause  []string
-	args         []interface{}
-	orderBy      string
-	limit        int
-	offset       int
-	argIndex     int
+	baseQuery   string
+	countQuery  string
+	whereClause []string
+	args        []interface{}
+	orderBy     string
+	limit       int
+	offset      int
+	argIndex    int
 }
 
 // NewSQLBuilder creates a new SQL builder
@@ -403,11 +403,11 @@ func DecodeCursor(cursor string) (id string, timestamp int64, err error) {
 
 // IndexRecommendation represents a database index recommendation
 type IndexRecommendation struct {
-	Table       string   `json:"table"`
-	Columns     []string `json:"columns"`
-	IndexType   string   `json:"index_type"`
-	Reason      string   `json:"reason"`
-	CreateSQL   string   `json:"create_sql"`
+	Table     string   `json:"table"`
+	Columns   []string `json:"columns"`
+	IndexType string   `json:"index_type"`
+	Reason    string   `json:"reason"`
+	CreateSQL string   `json:"create_sql"`
 }
 
 // GetRecommendedIndexes returns recommended indexes for common queries

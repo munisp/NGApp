@@ -52,11 +52,11 @@ func NewReconciliationServiceWithEvents(service interface{}) *ReconciliationServ
 
 func (s *ReconciliationServiceWithEvents) StartReconciliation(ctx context.Context, source, target string, recordCount int) (string, error) {
 	reconciliationID := generateReconciliationID()
-	
+
 	if err := EmitReconciliationStarted(ctx, reconciliationID, source, target, recordCount); err != nil {
 		log.Printf("Failed to emit reconciliation started event: %v", err)
 	}
-	
+
 	return reconciliationID, nil
 }
 

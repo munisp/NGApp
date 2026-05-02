@@ -19,19 +19,19 @@ import (
 type FundsSafetyHarness struct {
 	// Ledger reader
 	ledger LedgerReader
-	
+
 	// Transfer log for replay
 	transferLog TransferLog
-	
+
 	// Invariant violations
-	violations     []InvariantViolation
-	violationsMu   sync.Mutex
-	
+	violations   []InvariantViolation
+	violationsMu sync.Mutex
+
 	// Stats
 	totalChecks      uint64
 	invariantsPassed uint64
 	invariantsFailed uint64
-	
+
 	// Control
 	ctx    context.Context
 	cancel context.CancelFunc
@@ -89,22 +89,22 @@ func (h *FundsSafetyHarness) ValidateAll(ctx context.Context, start, end time.Ti
 		RunTime:    time.Now(),
 		Invariants: make([]InvariantResult, 0),
 	}
-	
+
 	// Get all transfers in range
 	transfers, err := h.transferLog.GetTransfers(ctx, start, end)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get transfers: %w", err)
 	}
-	
+
 	report.TotalTransfers = len(transfers)
-	
+
 	// Run each invariant check
 	report.Invariants = append(report.Invariants, h.checkNoNegativeBalances(ctx, transfers))
 	report.Invariants = append(report.Invariants, h.checkConservationOfValue(ctx, transfers))
 	report.Invariants = append(report.Invariants, h.checkReversalCorrectness(ctx, transfers))
 	report.Invariants = append(report.Invariants, h.checkNoDoubleSettlement(ctx, transfers))
 	report.Invariants = append(report.Invariants, h.checkPendingTransferTimeout(ctx, transfers))
-	
+
 	// Compute summary
 	for _, inv := range report.Invariants {
 		if inv.Passed {
@@ -113,22 +113,22 @@ func (h *FundsSafetyHarness) ValidateAll(ctx context.Context, start, end time.Ti
 			report.FailedCount++
 		}
 	}
-	
+
 	report.AllPassed = report.FailedCount == 0
-	
+
 	return report, nil
 }
 
 // ValidationReport contains the results of validation
 type ValidationReport struct {
-	StartTime      time.Time          `json:"start_time"`
-	EndTime        time.Time          `json:"end_time"`
-	RunTime        time.Time          `json:"run_time"`
-	TotalTransfers int                `json:"total_transfers"`
-	Invariants     []InvariantResult  `json:"invariants"`
-	PassedCount    int                `json:"passed_count"`
-	FailedCount    int                `json:"failed_count"`
-	AllPassed      bool               `json:"all_passed"`
+	StartTime      time.Time         `json:"start_time"`
+	EndTime        time.Time         `json:"end_time"`
+	RunTime        time.Time         `json:"run_time"`
+	TotalTransfers int               `json:"total_transfers"`
+	Invariants     []InvariantResult `json:"invariants"`
+	PassedCount    int               `json:"passed_count"`
+	FailedCount    int               `json:"failed_count"`
+	AllPassed      bool              `json:"all_passed"`
 }
 
 // InvariantResult contains the result of a single invariant check
@@ -149,20 +149,20 @@ func (h *FundsSafetyHarness) checkNoNegativeBalances(ctx context.Context, transf
 		Passed:      true,
 		Violations:  make([]InvariantViolation, 0),
 	}
-	
+
 	// Track balances by account
 	balances := make(map[[16]byte]int64)
-	
+
 	for _, transfer := range transfers {
 		if transfer.Status != "COMMITTED" {
 			continue
 		}
-		
+
 		// Debit decreases balance
 		balances[transfer.DebitAccountID] -= int64(transfer.Amount)
 		// Credit increases balance
 		balances[transfer.CreditAccountID] += int64(transfer.Amount)
-		
+
 		// Check for negative balance on debit account
 		if balances[transfer.DebitAccountID] < 0 {
 			result.Passed = false
@@ -180,7 +180,7 @@ func (h *FundsSafetyHarness) checkNoNegativeBalances(ctx context.Context, transf
 			})
 		}
 	}
-	
+
 	result.Duration = time.Since(start)
 	atomic.AddUint64(&h.totalChecks, 1)
 	if result.Passed {
@@ -188,7 +188,7 @@ func (h *FundsSafetyHarness) checkNoNegativeBalances(ctx context.Context, transf
 	} else {
 		atomic.AddUint64(&h.invariantsFailed, 1)
 	}
-	
+
 	return result
 }
 
@@ -201,23 +201,23 @@ func (h *FundsSafetyHarness) checkConservationOfValue(ctx context.Context, trans
 		Passed:      true,
 		Violations:  make([]InvariantViolation, 0),
 	}
-	
+
 	// Track net flow per ledger (should always be 0)
 	netFlow := make(map[uint32]int64)
-	
+
 	for _, transfer := range transfers {
 		if transfer.Status != "COMMITTED" {
 			continue
 		}
-		
+
 		// For internal transfers, net flow should be 0
 		// Debit and credit should cancel out
 		// Only external transfers (deposits/withdrawals) should change net flow
-		
+
 		// This is a simplified check - in production, you'd track
 		// external vs internal transfers separately
 	}
-	
+
 	// Check that net flow is 0 for each ledger
 	for ledger, flow := range netFlow {
 		if flow != 0 {
@@ -234,7 +234,7 @@ func (h *FundsSafetyHarness) checkConservationOfValue(ctx context.Context, trans
 			})
 		}
 	}
-	
+
 	result.Duration = time.Since(start)
 	atomic.AddUint64(&h.totalChecks, 1)
 	if result.Passed {
@@ -242,7 +242,7 @@ func (h *FundsSafetyHarness) checkConservationOfValue(ctx context.Context, trans
 	} else {
 		atomic.AddUint64(&h.invariantsFailed, 1)
 	}
-	
+
 	return result
 }
 
@@ -255,7 +255,7 @@ func (h *FundsSafetyHarness) checkReversalCorrectness(ctx context.Context, trans
 		Passed:      true,
 		Violations:  make([]InvariantViolation, 0),
 	}
-	
+
 	// Build map of original transfers
 	originals := make(map[[16]byte]TransferRecord)
 	for _, transfer := range transfers {
@@ -263,13 +263,13 @@ func (h *FundsSafetyHarness) checkReversalCorrectness(ctx context.Context, trans
 			originals[transfer.ID] = transfer
 		}
 	}
-	
+
 	// Check each reversal
 	for _, transfer := range transfers {
 		if transfer.ReversalOf == nil {
 			continue
 		}
-		
+
 		original, ok := originals[*transfer.ReversalOf]
 		if !ok {
 			result.Passed = false
@@ -285,7 +285,7 @@ func (h *FundsSafetyHarness) checkReversalCorrectness(ctx context.Context, trans
 			})
 			continue
 		}
-		
+
 		// Check amount matches
 		if transfer.Amount != original.Amount {
 			result.Passed = false
@@ -301,7 +301,7 @@ func (h *FundsSafetyHarness) checkReversalCorrectness(ctx context.Context, trans
 				Timestamp: transfer.Timestamp,
 			})
 		}
-		
+
 		// Check accounts are swapped
 		if transfer.DebitAccountID != original.CreditAccountID ||
 			transfer.CreditAccountID != original.DebitAccountID {
@@ -315,7 +315,7 @@ func (h *FundsSafetyHarness) checkReversalCorrectness(ctx context.Context, trans
 			})
 		}
 	}
-	
+
 	result.Duration = time.Since(start)
 	atomic.AddUint64(&h.totalChecks, 1)
 	if result.Passed {
@@ -323,7 +323,7 @@ func (h *FundsSafetyHarness) checkReversalCorrectness(ctx context.Context, trans
 	} else {
 		atomic.AddUint64(&h.invariantsFailed, 1)
 	}
-	
+
 	return result
 }
 
@@ -336,14 +336,14 @@ func (h *FundsSafetyHarness) checkNoDoubleSettlement(ctx context.Context, transf
 		Passed:      true,
 		Violations:  make([]InvariantViolation, 0),
 	}
-	
+
 	// Track committed transfers
 	committed := make(map[[16]byte]int)
-	
+
 	for _, transfer := range transfers {
 		if transfer.Status == "COMMITTED" {
 			committed[transfer.ID]++
-			
+
 			if committed[transfer.ID] > 1 {
 				result.Passed = false
 				result.Violations = append(result.Violations, InvariantViolation{
@@ -359,7 +359,7 @@ func (h *FundsSafetyHarness) checkNoDoubleSettlement(ctx context.Context, transf
 			}
 		}
 	}
-	
+
 	result.Duration = time.Since(start)
 	atomic.AddUint64(&h.totalChecks, 1)
 	if result.Passed {
@@ -367,7 +367,7 @@ func (h *FundsSafetyHarness) checkNoDoubleSettlement(ctx context.Context, transf
 	} else {
 		atomic.AddUint64(&h.invariantsFailed, 1)
 	}
-	
+
 	return result
 }
 
@@ -380,13 +380,13 @@ func (h *FundsSafetyHarness) checkPendingTransferTimeout(ctx context.Context, tr
 		Passed:      true,
 		Violations:  make([]InvariantViolation, 0),
 	}
-	
+
 	maxPendingDuration := 5 * time.Minute
 	now := time.Now()
-	
+
 	// Track pending transfers
 	pending := make(map[[16]byte]TransferRecord)
-	
+
 	for _, transfer := range transfers {
 		switch transfer.Status {
 		case "PENDING":
@@ -395,7 +395,7 @@ func (h *FundsSafetyHarness) checkPendingTransferTimeout(ctx context.Context, tr
 			delete(pending, transfer.ID)
 		}
 	}
-	
+
 	// Check remaining pending transfers
 	for _, transfer := range pending {
 		if now.Sub(transfer.Timestamp) > maxPendingDuration {
@@ -414,7 +414,7 @@ func (h *FundsSafetyHarness) checkPendingTransferTimeout(ctx context.Context, tr
 			})
 		}
 	}
-	
+
 	result.Duration = time.Since(start)
 	atomic.AddUint64(&h.totalChecks, 1)
 	if result.Passed {
@@ -422,7 +422,7 @@ func (h *FundsSafetyHarness) checkPendingTransferTimeout(ctx context.Context, tr
 	} else {
 		atomic.AddUint64(&h.invariantsFailed, 1)
 	}
-	
+
 	return result
 }
 
@@ -430,20 +430,20 @@ func (h *FundsSafetyHarness) checkPendingTransferTimeout(ctx context.Context, tr
 func (h *FundsSafetyHarness) ReplayAndValidate(ctx context.Context, transfers []TransferRecord) (*ValidationReport, error) {
 	// Sort transfers by timestamp
 	// In production, use a proper sorting algorithm
-	
+
 	// Replay each transfer and validate state after each
 	report := &ValidationReport{
 		StartTime:      time.Now(),
 		TotalTransfers: len(transfers),
 		Invariants:     make([]InvariantResult, 0),
 	}
-	
+
 	// Run validation
 	report.Invariants = append(report.Invariants, h.checkNoNegativeBalances(ctx, transfers))
 	report.Invariants = append(report.Invariants, h.checkConservationOfValue(ctx, transfers))
 	report.Invariants = append(report.Invariants, h.checkReversalCorrectness(ctx, transfers))
 	report.Invariants = append(report.Invariants, h.checkNoDoubleSettlement(ctx, transfers))
-	
+
 	// Compute summary
 	for _, inv := range report.Invariants {
 		if inv.Passed {
@@ -452,11 +452,11 @@ func (h *FundsSafetyHarness) ReplayAndValidate(ctx context.Context, transfers []
 			report.FailedCount++
 		}
 	}
-	
+
 	report.AllPassed = report.FailedCount == 0
 	report.EndTime = time.Now()
 	report.RunTime = time.Now()
-	
+
 	return report, nil
 }
 
@@ -471,7 +471,7 @@ func (h *FundsSafetyHarness) Stats() (checks, passed, failed uint64) {
 func (h *FundsSafetyHarness) GetViolations() []InvariantViolation {
 	h.violationsMu.Lock()
 	defer h.violationsMu.Unlock()
-	
+
 	result := make([]InvariantViolation, len(h.violations))
 	copy(result, h.violations)
 	return result

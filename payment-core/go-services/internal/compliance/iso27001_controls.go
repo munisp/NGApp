@@ -14,36 +14,36 @@ import (
 type ISO27001ControlFramework struct {
 	// Risk Assessment
 	riskAssessment *RiskAssessmentFramework
-	
+
 	// Access Control (A.9)
 	accessControl *AccessControlPolicy
-	
+
 	// Audit Logging (A.12.4)
 	auditLogger *ComplianceAuditLogger
-	
+
 	// Incident Response (A.16)
 	incidentResponse *IncidentResponseManager
-	
+
 	// Asset Management (A.8)
 	assetInventory *AssetInventory
-	
+
 	// Cryptography (A.10)
 	cryptoPolicy *CryptographyPolicy
-	
+
 	// Configuration
 	config ISO27001Config
-	
+
 	mu sync.RWMutex
 }
 
 // ISO27001Config configures the compliance framework
 type ISO27001Config struct {
-	OrganizationName     string
-	ISMSScope            string
-	RiskAppetite         float64
-	AuditRetentionDays   int
-	IncidentSLAMinutes   int
-	ReviewIntervalDays   int
+	OrganizationName   string
+	ISMSScope          string
+	RiskAppetite       float64
+	AuditRetentionDays int
+	IncidentSLAMinutes int
+	ReviewIntervalDays int
 }
 
 // DefaultISO27001Config returns default configuration
@@ -85,48 +85,48 @@ type RiskAssessmentFramework struct {
 
 // Risk represents an identified risk
 type Risk struct {
-	ID              string                 `json:"id"`
-	Name            string                 `json:"name"`
-	Description     string                 `json:"description"`
-	Category        string                 `json:"category"` // operational, technical, compliance, strategic
-	Asset           string                 `json:"asset"`
-	Threat          string                 `json:"threat"`
-	Vulnerability   string                 `json:"vulnerability"`
-	
+	ID            string `json:"id"`
+	Name          string `json:"name"`
+	Description   string `json:"description"`
+	Category      string `json:"category"` // operational, technical, compliance, strategic
+	Asset         string `json:"asset"`
+	Threat        string `json:"threat"`
+	Vulnerability string `json:"vulnerability"`
+
 	// Risk scoring
-	Likelihood      float64                `json:"likelihood"`      // 0-1
-	Impact          float64                `json:"impact"`          // 0-1
-	InherentRisk    float64                `json:"inherent_risk"`   // likelihood * impact
-	
+	Likelihood   float64 `json:"likelihood"`    // 0-1
+	Impact       float64 `json:"impact"`        // 0-1
+	InherentRisk float64 `json:"inherent_risk"` // likelihood * impact
+
 	// Controls
-	Controls        []string               `json:"controls"`
-	ControlEffectiveness float64           `json:"control_effectiveness"` // 0-1
-	ResidualRisk    float64                `json:"residual_risk"`
-	
+	Controls             []string `json:"controls"`
+	ControlEffectiveness float64  `json:"control_effectiveness"` // 0-1
+	ResidualRisk         float64  `json:"residual_risk"`
+
 	// Treatment
-	TreatmentID     string                 `json:"treatment_id,omitempty"`
-	Status          string                 `json:"status"` // identified, assessed, treated, accepted, closed
-	
+	TreatmentID string `json:"treatment_id,omitempty"`
+	Status      string `json:"status"` // identified, assessed, treated, accepted, closed
+
 	// Metadata
-	Owner           string                 `json:"owner"`
-	ReviewDate      time.Time              `json:"review_date"`
-	CreatedAt       time.Time              `json:"created_at"`
-	UpdatedAt       time.Time              `json:"updated_at"`
-	Attributes      map[string]string      `json:"attributes"`
+	Owner      string            `json:"owner"`
+	ReviewDate time.Time         `json:"review_date"`
+	CreatedAt  time.Time         `json:"created_at"`
+	UpdatedAt  time.Time         `json:"updated_at"`
+	Attributes map[string]string `json:"attributes"`
 }
 
 // RiskTreatment represents a risk treatment plan
 type RiskTreatment struct {
-	ID              string    `json:"id"`
-	RiskID          string    `json:"risk_id"`
-	Type            string    `json:"type"` // mitigate, transfer, accept, avoid
-	Description     string    `json:"description"`
-	Actions         []TreatmentAction `json:"actions"`
-	TargetRisk      float64   `json:"target_risk"`
-	Status          string    `json:"status"` // planned, in_progress, completed
-	Owner           string    `json:"owner"`
-	DueDate         time.Time `json:"due_date"`
-	CompletedAt     *time.Time `json:"completed_at,omitempty"`
+	ID          string            `json:"id"`
+	RiskID      string            `json:"risk_id"`
+	Type        string            `json:"type"` // mitigate, transfer, accept, avoid
+	Description string            `json:"description"`
+	Actions     []TreatmentAction `json:"actions"`
+	TargetRisk  float64           `json:"target_risk"`
+	Status      string            `json:"status"` // planned, in_progress, completed
+	Owner       string            `json:"owner"`
+	DueDate     time.Time         `json:"due_date"`
+	CompletedAt *time.Time        `json:"completed_at,omitempty"`
 }
 
 // TreatmentAction represents an action in a treatment plan
@@ -152,12 +152,12 @@ func NewRiskAssessmentFramework(riskAppetite float64) *RiskAssessmentFramework {
 func (r *RiskAssessmentFramework) IdentifyRisk(risk *Risk) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	
+
 	risk.ID = generateRiskID()
 	risk.Status = "identified"
 	risk.CreatedAt = time.Now()
 	risk.UpdatedAt = time.Now()
-	
+
 	r.risks[risk.ID] = risk
 	return nil
 }
@@ -166,12 +166,12 @@ func (r *RiskAssessmentFramework) IdentifyRisk(risk *Risk) error {
 func (r *RiskAssessmentFramework) AssessRisk(riskID string, likelihood, impact float64, controls []string, controlEffectiveness float64) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	
+
 	risk, ok := r.risks[riskID]
 	if !ok {
 		return fmt.Errorf("risk not found: %s", riskID)
 	}
-	
+
 	risk.Likelihood = likelihood
 	risk.Impact = impact
 	risk.InherentRisk = likelihood * impact
@@ -180,7 +180,7 @@ func (r *RiskAssessmentFramework) AssessRisk(riskID string, likelihood, impact f
 	risk.ResidualRisk = risk.InherentRisk * (1 - controlEffectiveness)
 	risk.Status = "assessed"
 	risk.UpdatedAt = time.Now()
-	
+
 	return nil
 }
 
@@ -188,21 +188,21 @@ func (r *RiskAssessmentFramework) AssessRisk(riskID string, likelihood, impact f
 func (r *RiskAssessmentFramework) TreatRisk(riskID string, treatment *RiskTreatment) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	
+
 	risk, ok := r.risks[riskID]
 	if !ok {
 		return fmt.Errorf("risk not found: %s", riskID)
 	}
-	
+
 	treatment.ID = generateTreatmentID()
 	treatment.RiskID = riskID
 	treatment.Status = "planned"
-	
+
 	r.treatments[treatment.ID] = treatment
 	risk.TreatmentID = treatment.ID
 	risk.Status = "treated"
 	risk.UpdatedAt = time.Now()
-	
+
 	return nil
 }
 
@@ -210,7 +210,7 @@ func (r *RiskAssessmentFramework) TreatRisk(riskID string, treatment *RiskTreatm
 func (r *RiskAssessmentFramework) GetRiskRegister() []*Risk {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
-	
+
 	risks := make([]*Risk, 0, len(r.risks))
 	for _, risk := range r.risks {
 		risks = append(risks, risk)
@@ -222,7 +222,7 @@ func (r *RiskAssessmentFramework) GetRiskRegister() []*Risk {
 func (r *RiskAssessmentFramework) GetRisksAboveAppetite() []*Risk {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
-	
+
 	var risks []*Risk
 	for _, risk := range r.risks {
 		if risk.ResidualRisk > r.riskAppetite {
@@ -252,44 +252,44 @@ func generateTreatmentID() string {
 
 // AccessControlPolicy implements ISO 27001 A.9 access control
 type AccessControlPolicy struct {
-	policies     map[string]*AccessPolicy
-	roles        map[string]*Role
-	permissions  map[string]*Permission
-	assignments  map[string][]string // user -> roles
-	mu           sync.RWMutex
+	policies    map[string]*AccessPolicy
+	roles       map[string]*Role
+	permissions map[string]*Permission
+	assignments map[string][]string // user -> roles
+	mu          sync.RWMutex
 }
 
 // AccessPolicy represents an access control policy
 type AccessPolicy struct {
-	ID              string    `json:"id"`
-	Name            string    `json:"name"`
-	Description     string    `json:"description"`
-	Type            string    `json:"type"` // rbac, abac, mandatory
+	ID              string       `json:"id"`
+	Name            string       `json:"name"`
+	Description     string       `json:"description"`
+	Type            string       `json:"type"` // rbac, abac, mandatory
 	Rules           []AccessRule `json:"rules"`
-	EnforcementMode string    `json:"enforcement_mode"` // enforce, audit
-	CreatedAt       time.Time `json:"created_at"`
-	UpdatedAt       time.Time `json:"updated_at"`
-	ReviewDate      time.Time `json:"review_date"`
+	EnforcementMode string       `json:"enforcement_mode"` // enforce, audit
+	CreatedAt       time.Time    `json:"created_at"`
+	UpdatedAt       time.Time    `json:"updated_at"`
+	ReviewDate      time.Time    `json:"review_date"`
 }
 
 // AccessRule represents an access control rule
 type AccessRule struct {
-	ID          string            `json:"id"`
-	Subject     string            `json:"subject"`     // role, user, group pattern
-	Resource    string            `json:"resource"`    // resource pattern
-	Action      string            `json:"action"`      // action pattern
-	Effect      string            `json:"effect"`      // allow, deny
-	Conditions  map[string]string `json:"conditions"`
-	Priority    int               `json:"priority"`
+	ID         string            `json:"id"`
+	Subject    string            `json:"subject"`  // role, user, group pattern
+	Resource   string            `json:"resource"` // resource pattern
+	Action     string            `json:"action"`   // action pattern
+	Effect     string            `json:"effect"`   // allow, deny
+	Conditions map[string]string `json:"conditions"`
+	Priority   int               `json:"priority"`
 }
 
 // Role represents a security role
 type Role struct {
-	ID          string   `json:"id"`
-	Name        string   `json:"name"`
-	Description string   `json:"description"`
-	Permissions []string `json:"permissions"`
-	ParentRoles []string `json:"parent_roles"` // role inheritance
+	ID          string    `json:"id"`
+	Name        string    `json:"name"`
+	Description string    `json:"description"`
+	Permissions []string  `json:"permissions"`
+	ParentRoles []string  `json:"parent_roles"` // role inheritance
 	CreatedAt   time.Time `json:"created_at"`
 }
 
@@ -310,10 +310,10 @@ func NewAccessControlPolicy() *AccessControlPolicy {
 		permissions: make(map[string]*Permission),
 		assignments: make(map[string][]string),
 	}
-	
+
 	// Initialize default roles
 	acp.initializeDefaultRoles()
-	
+
 	return acp
 }
 
@@ -327,7 +327,7 @@ func (a *AccessControlPolicy) initializeDefaultRoles() {
 		Permissions: []string{"*"},
 		CreatedAt:   time.Now(),
 	}
-	
+
 	// Security Admin
 	a.roles["security_admin"] = &Role{
 		ID:          "security_admin",
@@ -341,7 +341,7 @@ func (a *AccessControlPolicy) initializeDefaultRoles() {
 		},
 		CreatedAt: time.Now(),
 	}
-	
+
 	// Compliance Officer
 	a.roles["compliance_officer"] = &Role{
 		ID:          "compliance_officer",
@@ -355,7 +355,7 @@ func (a *AccessControlPolicy) initializeDefaultRoles() {
 		},
 		CreatedAt: time.Now(),
 	}
-	
+
 	// Operations
 	a.roles["operations"] = &Role{
 		ID:          "operations",
@@ -369,7 +369,7 @@ func (a *AccessControlPolicy) initializeDefaultRoles() {
 		},
 		CreatedAt: time.Now(),
 	}
-	
+
 	// Read Only
 	a.roles["read_only"] = &Role{
 		ID:          "read_only",
@@ -387,18 +387,18 @@ func (a *AccessControlPolicy) initializeDefaultRoles() {
 func (a *AccessControlPolicy) AssignRole(userID, roleID string) error {
 	a.mu.Lock()
 	defer a.mu.Unlock()
-	
+
 	if _, ok := a.roles[roleID]; !ok {
 		return fmt.Errorf("role not found: %s", roleID)
 	}
-	
+
 	roles := a.assignments[userID]
 	for _, r := range roles {
 		if r == roleID {
 			return nil // Already assigned
 		}
 	}
-	
+
 	a.assignments[userID] = append(roles, roleID)
 	return nil
 }
@@ -407,7 +407,7 @@ func (a *AccessControlPolicy) AssignRole(userID, roleID string) error {
 func (a *AccessControlPolicy) RevokeRole(userID, roleID string) error {
 	a.mu.Lock()
 	defer a.mu.Unlock()
-	
+
 	roles := a.assignments[userID]
 	for i, r := range roles {
 		if r == roleID {
@@ -415,7 +415,7 @@ func (a *AccessControlPolicy) RevokeRole(userID, roleID string) error {
 			return nil
 		}
 	}
-	
+
 	return fmt.Errorf("role not assigned to user")
 }
 
@@ -423,26 +423,26 @@ func (a *AccessControlPolicy) RevokeRole(userID, roleID string) error {
 func (a *AccessControlPolicy) CheckAccess(userID, resource, action string) (bool, string) {
 	a.mu.RLock()
 	defer a.mu.RUnlock()
-	
+
 	roles := a.assignments[userID]
 	if len(roles) == 0 {
 		return false, "no roles assigned"
 	}
-	
+
 	// Check each role's permissions
 	for _, roleID := range roles {
 		role, ok := a.roles[roleID]
 		if !ok {
 			continue
 		}
-		
+
 		for _, perm := range role.Permissions {
 			if perm == "*" || matchPermission(perm, resource, action) {
 				return true, fmt.Sprintf("allowed by role: %s", roleID)
 			}
 		}
 	}
-	
+
 	return false, "no matching permission"
 }
 
@@ -471,35 +471,35 @@ type ComplianceAuditLogger struct {
 
 // ComplianceAuditEvent represents a compliance audit event
 type ComplianceAuditEvent struct {
-	ID            string                 `json:"id"`
-	Timestamp     time.Time              `json:"timestamp"`
-	EventType     string                 `json:"event_type"`
-	Category      string                 `json:"category"` // access, change, security, compliance
-	Severity      string                 `json:"severity"` // info, warning, critical
-	
+	ID        string    `json:"id"`
+	Timestamp time.Time `json:"timestamp"`
+	EventType string    `json:"event_type"`
+	Category  string    `json:"category"` // access, change, security, compliance
+	Severity  string    `json:"severity"` // info, warning, critical
+
 	// Actor
-	ActorID       string                 `json:"actor_id"`
-	ActorType     string                 `json:"actor_type"` // user, service, system
-	ActorIP       string                 `json:"actor_ip"`
-	
+	ActorID   string `json:"actor_id"`
+	ActorType string `json:"actor_type"` // user, service, system
+	ActorIP   string `json:"actor_ip"`
+
 	// Action
-	Action        string                 `json:"action"`
-	Resource      string                 `json:"resource"`
-	ResourceID    string                 `json:"resource_id"`
-	Outcome       string                 `json:"outcome"` // success, failure
-	
+	Action     string `json:"action"`
+	Resource   string `json:"resource"`
+	ResourceID string `json:"resource_id"`
+	Outcome    string `json:"outcome"` // success, failure
+
 	// Details
 	Details       map[string]interface{} `json:"details"`
 	PreviousState interface{}            `json:"previous_state,omitempty"`
 	NewState      interface{}            `json:"new_state,omitempty"`
-	
+
 	// Integrity
-	Hash          string                 `json:"hash"`
-	PreviousHash  string                 `json:"previous_hash"`
-	
+	Hash         string `json:"hash"`
+	PreviousHash string `json:"previous_hash"`
+
 	// Compliance
-	ControlRef    string                 `json:"control_ref,omitempty"` // ISO 27001 control reference
-	Justification string                 `json:"justification,omitempty"`
+	ControlRef    string `json:"control_ref,omitempty"` // ISO 27001 control reference
+	Justification string `json:"justification,omitempty"`
 }
 
 // NewComplianceAuditLogger creates a new compliance audit logger
@@ -514,23 +514,23 @@ func NewComplianceAuditLogger(retentionDays int) *ComplianceAuditLogger {
 func (l *ComplianceAuditLogger) LogEvent(ctx context.Context, event *ComplianceAuditEvent) error {
 	l.mu.Lock()
 	defer l.mu.Unlock()
-	
+
 	// Generate ID
 	event.ID = generateAuditID()
 	event.Timestamp = time.Now()
-	
+
 	// Get previous hash for chain integrity
 	if len(l.events) > 0 {
 		event.PreviousHash = l.events[len(l.events)-1].Hash
 	} else {
 		event.PreviousHash = "genesis"
 	}
-	
+
 	// Compute hash
 	event.Hash = computeEventHash(event)
-	
+
 	l.events = append(l.events, *event)
-	
+
 	return nil
 }
 
@@ -586,9 +586,9 @@ func (l *ComplianceAuditLogger) LogSecurityEvent(ctx context.Context, eventType,
 func (l *ComplianceAuditLogger) GetEvents(startTime, endTime time.Time, category, severity string, limit int) []ComplianceAuditEvent {
 	l.mu.RLock()
 	defer l.mu.RUnlock()
-	
+
 	var filtered []ComplianceAuditEvent
-	
+
 	for _, event := range l.events {
 		if event.Timestamp.Before(startTime) || event.Timestamp.After(endTime) {
 			continue
@@ -599,14 +599,14 @@ func (l *ComplianceAuditLogger) GetEvents(startTime, endTime time.Time, category
 		if severity != "" && event.Severity != severity {
 			continue
 		}
-		
+
 		filtered = append(filtered, event)
-		
+
 		if limit > 0 && len(filtered) >= limit {
 			break
 		}
 	}
-	
+
 	return filtered
 }
 
@@ -614,16 +614,16 @@ func (l *ComplianceAuditLogger) GetEvents(startTime, endTime time.Time, category
 func (l *ComplianceAuditLogger) VerifyIntegrity() (bool, []string) {
 	l.mu.RLock()
 	defer l.mu.RUnlock()
-	
+
 	var issues []string
-	
+
 	for i, event := range l.events {
 		// Verify hash
 		computedHash := computeEventHash(&event)
 		if computedHash != event.Hash {
 			issues = append(issues, fmt.Sprintf("hash mismatch at event %s", event.ID))
 		}
-		
+
 		// Verify chain
 		if i > 0 {
 			if event.PreviousHash != l.events[i-1].Hash {
@@ -631,7 +631,7 @@ func (l *ComplianceAuditLogger) VerifyIntegrity() (bool, []string) {
 			}
 		}
 	}
-	
+
 	return len(issues) == 0, issues
 }
 
@@ -671,51 +671,51 @@ func getSeverityForOutcome(outcome string) string {
 
 // IncidentResponseManager implements ISO 27001 A.16 incident management
 type IncidentResponseManager struct {
-	incidents    map[string]*SecurityIncident
-	slaMinutes   int
-	mu           sync.RWMutex
+	incidents  map[string]*SecurityIncident
+	slaMinutes int
+	mu         sync.RWMutex
 }
 
 // SecurityIncident represents a security incident
 type SecurityIncident struct {
-	ID              string                 `json:"id"`
-	Title           string                 `json:"title"`
-	Description     string                 `json:"description"`
-	Type            string                 `json:"type"` // breach, malware, unauthorized_access, data_loss, etc.
-	Severity        string                 `json:"severity"` // critical, high, medium, low
-	Status          string                 `json:"status"` // open, investigating, contained, resolved, closed
-	
+	ID          string `json:"id"`
+	Title       string `json:"title"`
+	Description string `json:"description"`
+	Type        string `json:"type"`     // breach, malware, unauthorized_access, data_loss, etc.
+	Severity    string `json:"severity"` // critical, high, medium, low
+	Status      string `json:"status"`   // open, investigating, contained, resolved, closed
+
 	// Timeline
-	DetectedAt      time.Time              `json:"detected_at"`
-	ReportedAt      time.Time              `json:"reported_at"`
-	AcknowledgedAt  *time.Time             `json:"acknowledged_at,omitempty"`
-	ContainedAt     *time.Time             `json:"contained_at,omitempty"`
-	ResolvedAt      *time.Time             `json:"resolved_at,omitempty"`
-	ClosedAt        *time.Time             `json:"closed_at,omitempty"`
-	
+	DetectedAt     time.Time  `json:"detected_at"`
+	ReportedAt     time.Time  `json:"reported_at"`
+	AcknowledgedAt *time.Time `json:"acknowledged_at,omitempty"`
+	ContainedAt    *time.Time `json:"contained_at,omitempty"`
+	ResolvedAt     *time.Time `json:"resolved_at,omitempty"`
+	ClosedAt       *time.Time `json:"closed_at,omitempty"`
+
 	// Assignment
-	Reporter        string                 `json:"reporter"`
-	Assignee        string                 `json:"assignee"`
-	Team            string                 `json:"team"`
-	
+	Reporter string `json:"reporter"`
+	Assignee string `json:"assignee"`
+	Team     string `json:"team"`
+
 	// Impact
-	AffectedSystems []string               `json:"affected_systems"`
-	AffectedUsers   int                    `json:"affected_users"`
-	DataCompromised bool                   `json:"data_compromised"`
-	FinancialImpact float64                `json:"financial_impact"`
-	
+	AffectedSystems []string `json:"affected_systems"`
+	AffectedUsers   int      `json:"affected_users"`
+	DataCompromised bool     `json:"data_compromised"`
+	FinancialImpact float64  `json:"financial_impact"`
+
 	// Response
-	Actions         []IncidentAction       `json:"actions"`
-	RootCause       string                 `json:"root_cause,omitempty"`
-	LessonsLearned  string                 `json:"lessons_learned,omitempty"`
-	
+	Actions        []IncidentAction `json:"actions"`
+	RootCause      string           `json:"root_cause,omitempty"`
+	LessonsLearned string           `json:"lessons_learned,omitempty"`
+
 	// Evidence
-	Evidence        []IncidentEvidence     `json:"evidence"`
-	
+	Evidence []IncidentEvidence `json:"evidence"`
+
 	// Compliance
-	NotificationRequired bool              `json:"notification_required"`
-	NotificationSent     bool              `json:"notification_sent"`
-	RegulatoryReport     string            `json:"regulatory_report,omitempty"`
+	NotificationRequired bool   `json:"notification_required"`
+	NotificationSent     bool   `json:"notification_sent"`
+	RegulatoryReport     string `json:"regulatory_report,omitempty"`
 }
 
 // IncidentAction represents an action taken during incident response
@@ -751,16 +751,16 @@ func NewIncidentResponseManager(slaMinutes int) *IncidentResponseManager {
 func (m *IncidentResponseManager) ReportIncident(incident *SecurityIncident) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	
+
 	incident.ID = generateIncidentID()
 	incident.Status = "open"
 	incident.ReportedAt = time.Now()
 	if incident.DetectedAt.IsZero() {
 		incident.DetectedAt = time.Now()
 	}
-	
+
 	m.incidents[incident.ID] = incident
-	
+
 	return nil
 }
 
@@ -768,17 +768,17 @@ func (m *IncidentResponseManager) ReportIncident(incident *SecurityIncident) err
 func (m *IncidentResponseManager) AcknowledgeIncident(incidentID, assignee string) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	
+
 	incident, ok := m.incidents[incidentID]
 	if !ok {
 		return fmt.Errorf("incident not found: %s", incidentID)
 	}
-	
+
 	now := time.Now()
 	incident.AcknowledgedAt = &now
 	incident.Assignee = assignee
 	incident.Status = "investigating"
-	
+
 	return nil
 }
 
@@ -786,16 +786,16 @@ func (m *IncidentResponseManager) AcknowledgeIncident(incidentID, assignee strin
 func (m *IncidentResponseManager) AddAction(incidentID string, action *IncidentAction) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	
+
 	incident, ok := m.incidents[incidentID]
 	if !ok {
 		return fmt.Errorf("incident not found: %s", incidentID)
 	}
-	
+
 	action.ID = generateActionID()
 	action.PerformedAt = time.Now()
 	incident.Actions = append(incident.Actions, *action)
-	
+
 	return nil
 }
 
@@ -803,16 +803,16 @@ func (m *IncidentResponseManager) AddAction(incidentID string, action *IncidentA
 func (m *IncidentResponseManager) ContainIncident(incidentID string) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	
+
 	incident, ok := m.incidents[incidentID]
 	if !ok {
 		return fmt.Errorf("incident not found: %s", incidentID)
 	}
-	
+
 	now := time.Now()
 	incident.ContainedAt = &now
 	incident.Status = "contained"
-	
+
 	return nil
 }
 
@@ -820,18 +820,18 @@ func (m *IncidentResponseManager) ContainIncident(incidentID string) error {
 func (m *IncidentResponseManager) ResolveIncident(incidentID, rootCause, lessonsLearned string) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	
+
 	incident, ok := m.incidents[incidentID]
 	if !ok {
 		return fmt.Errorf("incident not found: %s", incidentID)
 	}
-	
+
 	now := time.Now()
 	incident.ResolvedAt = &now
 	incident.Status = "resolved"
 	incident.RootCause = rootCause
 	incident.LessonsLearned = lessonsLearned
-	
+
 	return nil
 }
 
@@ -839,7 +839,7 @@ func (m *IncidentResponseManager) ResolveIncident(incidentID, rootCause, lessons
 func (m *IncidentResponseManager) GetOpenIncidents() []*SecurityIncident {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
-	
+
 	var open []*SecurityIncident
 	for _, incident := range m.incidents {
 		if incident.Status != "closed" && incident.Status != "resolved" {
@@ -853,10 +853,10 @@ func (m *IncidentResponseManager) GetOpenIncidents() []*SecurityIncident {
 func (m *IncidentResponseManager) GetSLABreaches() []*SecurityIncident {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
-	
+
 	var breaches []*SecurityIncident
 	sla := time.Duration(m.slaMinutes) * time.Minute
-	
+
 	for _, incident := range m.incidents {
 		if incident.AcknowledgedAt == nil {
 			if time.Since(incident.ReportedAt) > sla {
@@ -897,35 +897,35 @@ type AssetInventory struct {
 
 // Asset represents an information asset
 type Asset struct {
-	ID              string            `json:"id"`
-	Name            string            `json:"name"`
-	Description     string            `json:"description"`
-	Type            string            `json:"type"` // hardware, software, data, service, personnel
-	Classification  string            `json:"classification"` // public, internal, confidential, restricted
-	Owner           string            `json:"owner"`
-	Custodian       string            `json:"custodian"`
-	Location        string            `json:"location"`
-	
+	ID             string `json:"id"`
+	Name           string `json:"name"`
+	Description    string `json:"description"`
+	Type           string `json:"type"`           // hardware, software, data, service, personnel
+	Classification string `json:"classification"` // public, internal, confidential, restricted
+	Owner          string `json:"owner"`
+	Custodian      string `json:"custodian"`
+	Location       string `json:"location"`
+
 	// Value
-	BusinessValue   string            `json:"business_value"` // critical, high, medium, low
-	
+	BusinessValue string `json:"business_value"` // critical, high, medium, low
+
 	// Lifecycle
-	Status          string            `json:"status"` // active, retired, planned
-	AcquiredAt      time.Time         `json:"acquired_at"`
-	RetiredAt       *time.Time        `json:"retired_at,omitempty"`
-	ReviewDate      time.Time         `json:"review_date"`
-	
+	Status     string     `json:"status"` // active, retired, planned
+	AcquiredAt time.Time  `json:"acquired_at"`
+	RetiredAt  *time.Time `json:"retired_at,omitempty"`
+	ReviewDate time.Time  `json:"review_date"`
+
 	// Dependencies
-	Dependencies    []string          `json:"dependencies"`
-	DependentAssets []string          `json:"dependent_assets"`
-	
+	Dependencies    []string `json:"dependencies"`
+	DependentAssets []string `json:"dependent_assets"`
+
 	// Security
-	SecurityControls []string         `json:"security_controls"`
-	RiskAssessments  []string         `json:"risk_assessments"`
-	
+	SecurityControls []string `json:"security_controls"`
+	RiskAssessments  []string `json:"risk_assessments"`
+
 	// Metadata
-	Tags            []string          `json:"tags"`
-	Attributes      map[string]string `json:"attributes"`
+	Tags       []string          `json:"tags"`
+	Attributes map[string]string `json:"attributes"`
 }
 
 // NewAssetInventory creates a new asset inventory
@@ -939,12 +939,12 @@ func NewAssetInventory() *AssetInventory {
 func (i *AssetInventory) RegisterAsset(asset *Asset) error {
 	i.mu.Lock()
 	defer i.mu.Unlock()
-	
+
 	asset.ID = generateAssetID()
 	asset.Status = "active"
 	asset.AcquiredAt = time.Now()
 	asset.ReviewDate = time.Now().AddDate(0, 0, 90) // Review in 90 days
-	
+
 	i.assets[asset.ID] = asset
 	return nil
 }
@@ -953,7 +953,7 @@ func (i *AssetInventory) RegisterAsset(asset *Asset) error {
 func (i *AssetInventory) GetAsset(assetID string) (*Asset, error) {
 	i.mu.RLock()
 	defer i.mu.RUnlock()
-	
+
 	asset, ok := i.assets[assetID]
 	if !ok {
 		return nil, fmt.Errorf("asset not found: %s", assetID)
@@ -965,7 +965,7 @@ func (i *AssetInventory) GetAsset(assetID string) (*Asset, error) {
 func (i *AssetInventory) GetAssetsByClassification(classification string) []*Asset {
 	i.mu.RLock()
 	defer i.mu.RUnlock()
-	
+
 	var assets []*Asset
 	for _, asset := range i.assets {
 		if asset.Classification == classification {
@@ -979,7 +979,7 @@ func (i *AssetInventory) GetAssetsByClassification(classification string) []*Ass
 func (i *AssetInventory) GetAssetsNeedingReview() []*Asset {
 	i.mu.RLock()
 	defer i.mu.RUnlock()
-	
+
 	var assets []*Asset
 	now := time.Now()
 	for _, asset := range i.assets {
@@ -1003,36 +1003,36 @@ func generateAssetID() string {
 
 // CryptographyPolicy implements ISO 27001 A.10 cryptographic controls
 type CryptographyPolicy struct {
-	algorithms    map[string]*CryptoAlgorithm
-	keyInventory  map[string]*CryptoKey
-	mu            sync.RWMutex
+	algorithms   map[string]*CryptoAlgorithm
+	keyInventory map[string]*CryptoKey
+	mu           sync.RWMutex
 }
 
 // CryptoAlgorithm represents an approved cryptographic algorithm
 type CryptoAlgorithm struct {
-	ID          string   `json:"id"`
-	Name        string   `json:"name"`
-	Type        string   `json:"type"` // symmetric, asymmetric, hash, kdf
-	KeySizes    []int    `json:"key_sizes"`
-	Approved    bool     `json:"approved"`
-	Deprecated  bool     `json:"deprecated"`
-	UseCases    []string `json:"use_cases"`
+	ID         string   `json:"id"`
+	Name       string   `json:"name"`
+	Type       string   `json:"type"` // symmetric, asymmetric, hash, kdf
+	KeySizes   []int    `json:"key_sizes"`
+	Approved   bool     `json:"approved"`
+	Deprecated bool     `json:"deprecated"`
+	UseCases   []string `json:"use_cases"`
 }
 
 // CryptoKey represents a cryptographic key
 type CryptoKey struct {
-	ID            string    `json:"id"`
-	Name          string    `json:"name"`
-	Algorithm     string    `json:"algorithm"`
-	KeySize       int       `json:"key_size"`
-	Purpose       string    `json:"purpose"` // encryption, signing, key_exchange
-	Owner         string    `json:"owner"`
-	Status        string    `json:"status"` // active, rotated, revoked, expired
-	CreatedAt     time.Time `json:"created_at"`
-	ExpiresAt     time.Time `json:"expires_at"`
-	RotatedAt     *time.Time `json:"rotated_at,omitempty"`
-	LastUsedAt    *time.Time `json:"last_used_at,omitempty"`
-	StorageLocation string  `json:"storage_location"` // hsm, vault, kms
+	ID              string     `json:"id"`
+	Name            string     `json:"name"`
+	Algorithm       string     `json:"algorithm"`
+	KeySize         int        `json:"key_size"`
+	Purpose         string     `json:"purpose"` // encryption, signing, key_exchange
+	Owner           string     `json:"owner"`
+	Status          string     `json:"status"` // active, rotated, revoked, expired
+	CreatedAt       time.Time  `json:"created_at"`
+	ExpiresAt       time.Time  `json:"expires_at"`
+	RotatedAt       *time.Time `json:"rotated_at,omitempty"`
+	LastUsedAt      *time.Time `json:"last_used_at,omitempty"`
+	StorageLocation string     `json:"storage_location"` // hsm, vault, kms
 }
 
 // NewCryptographyPolicy creates a new cryptography policy
@@ -1041,10 +1041,10 @@ func NewCryptographyPolicy() *CryptographyPolicy {
 		algorithms:   make(map[string]*CryptoAlgorithm),
 		keyInventory: make(map[string]*CryptoKey),
 	}
-	
+
 	// Initialize approved algorithms
 	cp.initializeApprovedAlgorithms()
-	
+
 	return cp
 }
 
@@ -1059,7 +1059,7 @@ func (c *CryptographyPolicy) initializeApprovedAlgorithms() {
 		Approved: true,
 		UseCases: []string{"data_encryption", "file_encryption"},
 	}
-	
+
 	// Asymmetric encryption
 	c.algorithms["rsa-4096"] = &CryptoAlgorithm{
 		ID:       "rsa-4096",
@@ -1069,7 +1069,7 @@ func (c *CryptographyPolicy) initializeApprovedAlgorithms() {
 		Approved: true,
 		UseCases: []string{"key_exchange", "digital_signature"},
 	}
-	
+
 	c.algorithms["ecdsa-p384"] = &CryptoAlgorithm{
 		ID:       "ecdsa-p384",
 		Name:     "ECDSA P-384",
@@ -1078,7 +1078,7 @@ func (c *CryptographyPolicy) initializeApprovedAlgorithms() {
 		Approved: true,
 		UseCases: []string{"digital_signature", "authentication"},
 	}
-	
+
 	// Hash functions
 	c.algorithms["sha-256"] = &CryptoAlgorithm{
 		ID:       "sha-256",
@@ -1088,7 +1088,7 @@ func (c *CryptographyPolicy) initializeApprovedAlgorithms() {
 		Approved: true,
 		UseCases: []string{"integrity", "password_hashing"},
 	}
-	
+
 	c.algorithms["sha-384"] = &CryptoAlgorithm{
 		ID:       "sha-384",
 		Name:     "SHA-384",
@@ -1097,7 +1097,7 @@ func (c *CryptographyPolicy) initializeApprovedAlgorithms() {
 		Approved: true,
 		UseCases: []string{"integrity", "digital_signature"},
 	}
-	
+
 	// KDF
 	c.algorithms["argon2id"] = &CryptoAlgorithm{
 		ID:       "argon2id",
@@ -1107,7 +1107,7 @@ func (c *CryptographyPolicy) initializeApprovedAlgorithms() {
 		Approved: true,
 		UseCases: []string{"password_hashing", "key_derivation"},
 	}
-	
+
 	// Deprecated algorithms
 	c.algorithms["sha-1"] = &CryptoAlgorithm{
 		ID:         "sha-1",
@@ -1118,7 +1118,7 @@ func (c *CryptographyPolicy) initializeApprovedAlgorithms() {
 		Deprecated: true,
 		UseCases:   []string{},
 	}
-	
+
 	c.algorithms["md5"] = &CryptoAlgorithm{
 		ID:         "md5",
 		Name:       "MD5",
@@ -1134,7 +1134,7 @@ func (c *CryptographyPolicy) initializeApprovedAlgorithms() {
 func (c *CryptographyPolicy) IsAlgorithmApproved(algorithmID string) bool {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
-	
+
 	algo, ok := c.algorithms[algorithmID]
 	if !ok {
 		return false
@@ -1146,7 +1146,7 @@ func (c *CryptographyPolicy) IsAlgorithmApproved(algorithmID string) bool {
 func (c *CryptographyPolicy) RegisterKey(key *CryptoKey) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	
+
 	// Validate algorithm
 	algo, ok := c.algorithms[key.Algorithm]
 	if !ok {
@@ -1155,11 +1155,11 @@ func (c *CryptographyPolicy) RegisterKey(key *CryptoKey) error {
 	if !algo.Approved {
 		return fmt.Errorf("algorithm not approved: %s", key.Algorithm)
 	}
-	
+
 	key.ID = generateKeyID()
 	key.Status = "active"
 	key.CreatedAt = time.Now()
-	
+
 	c.keyInventory[key.ID] = key
 	return nil
 }
@@ -1168,10 +1168,10 @@ func (c *CryptographyPolicy) RegisterKey(key *CryptoKey) error {
 func (c *CryptographyPolicy) GetExpiringKeys(within time.Duration) []*CryptoKey {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
-	
+
 	var expiring []*CryptoKey
 	threshold := time.Now().Add(within)
-	
+
 	for _, key := range c.keyInventory {
 		if key.Status == "active" && key.ExpiresAt.Before(threshold) {
 			expiring = append(expiring, key)
@@ -1232,7 +1232,7 @@ func (f *ISO27001ControlFramework) GenerateSoA() *StatementOfApplicability {
 // GenerateComplianceReport generates a compliance report
 func (f *ISO27001ControlFramework) GenerateComplianceReport() map[string]interface{} {
 	soa := f.GenerateSoA()
-	
+
 	var implemented, notImplemented int
 	for _, control := range soa.Controls {
 		if control.Implemented {
@@ -1241,19 +1241,19 @@ func (f *ISO27001ControlFramework) GenerateComplianceReport() map[string]interfa
 			notImplemented++
 		}
 	}
-	
+
 	return map[string]interface{}{
-		"organization":        f.config.OrganizationName,
-		"scope":              f.config.ISMSScope,
-		"generated_at":       time.Now().Format(time.RFC3339),
-		"total_controls":     len(soa.Controls),
-		"implemented":        implemented,
-		"not_implemented":    notImplemented,
-		"compliance_rate":    float64(implemented) / float64(len(soa.Controls)) * 100,
-		"risks_above_appetite": len(f.riskAssessment.GetRisksAboveAppetite()),
-		"open_incidents":     len(f.incidentResponse.GetOpenIncidents()),
-		"sla_breaches":       len(f.incidentResponse.GetSLABreaches()),
+		"organization":          f.config.OrganizationName,
+		"scope":                 f.config.ISMSScope,
+		"generated_at":          time.Now().Format(time.RFC3339),
+		"total_controls":        len(soa.Controls),
+		"implemented":           implemented,
+		"not_implemented":       notImplemented,
+		"compliance_rate":       float64(implemented) / float64(len(soa.Controls)) * 100,
+		"risks_above_appetite":  len(f.riskAssessment.GetRisksAboveAppetite()),
+		"open_incidents":        len(f.incidentResponse.GetOpenIncidents()),
+		"sla_breaches":          len(f.incidentResponse.GetSLABreaches()),
 		"assets_needing_review": len(f.assetInventory.GetAssetsNeedingReview()),
-		"expiring_keys":      len(f.cryptoPolicy.GetExpiringKeys(30 * 24 * time.Hour)),
+		"expiring_keys":         len(f.cryptoPolicy.GetExpiringKeys(30 * 24 * time.Hour)),
 	}
 }

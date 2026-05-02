@@ -15,28 +15,28 @@ import (
 // RedisClusterConfig configures the high-performance Redis cluster client
 type RedisClusterConfig struct {
 	// Cluster nodes
-	Nodes           []string
-	Password        string
-	TLSConfig       *tls.Config
-	
+	Nodes     []string
+	Password  string
+	TLSConfig *tls.Config
+
 	// Connection pool
 	PoolSize        int
 	MinIdleConns    int
 	MaxRetries      int
 	MinRetryBackoff time.Duration
 	MaxRetryBackoff time.Duration
-	
+
 	// Timeouts
-	DialTimeout     time.Duration
-	ReadTimeout     time.Duration
-	WriteTimeout    time.Duration
-	PoolTimeout     time.Duration
-	
+	DialTimeout  time.Duration
+	ReadTimeout  time.Duration
+	WriteTimeout time.Duration
+	PoolTimeout  time.Duration
+
 	// Cluster settings
-	MaxRedirects    int
-	ReadOnly        bool
-	RouteByLatency  bool
-	RouteRandomly   bool
+	MaxRedirects   int
+	ReadOnly       bool
+	RouteByLatency bool
+	RouteRandomly  bool
 }
 
 // DefaultRedisClusterConfig returns optimized defaults for 1M TPS
@@ -64,36 +64,36 @@ func DefaultRedisClusterConfig() RedisClusterConfig {
 
 // RedisHighPerfClient is an optimized Redis cluster client
 type RedisHighPerfClient struct {
-	config       RedisClusterConfig
-	
+	config RedisClusterConfig
+
 	// Connection pools per node
-	pools        map[string]*RedisPool
-	poolsMu      sync.RWMutex
-	
+	pools   map[string]*RedisPool
+	poolsMu sync.RWMutex
+
 	// Slot mapping (16384 slots)
-	slots        [16384]string
-	slotsMu      sync.RWMutex
-	
+	slots   [16384]string
+	slotsMu sync.RWMutex
+
 	// Pipeline buffer
-	pipeline     *RedisPipeline
-	
+	pipeline *RedisPipeline
+
 	// Stats
-	commandsExec uint64
+	commandsExec  uint64
 	commandErrors uint64
-	cacheHits    uint64
-	cacheMisses  uint64
-	
+	cacheHits     uint64
+	cacheMisses   uint64
+
 	// Control
-	ctx          context.Context
-	cancel       context.CancelFunc
+	ctx    context.Context
+	cancel context.CancelFunc
 }
 
 // RedisPool represents a connection pool for a single Redis node
 type RedisPool struct {
-	addr         string
-	connections  chan *RedisConn
-	maxSize      int
-	activeConns  int32
+	addr        string
+	connections chan *RedisConn
+	maxSize     int
+	activeConns int32
 }
 
 // RedisConn represents a single Redis connection
@@ -105,10 +105,10 @@ type RedisConn struct {
 
 // RedisPipeline buffers commands for batch execution
 type RedisPipeline struct {
-	commands  []RedisCommand
-	mu        sync.Mutex
-	maxSize   int
-	flushCh   chan struct{}
+	commands []RedisCommand
+	mu       sync.Mutex
+	maxSize  int
+	flushCh  chan struct{}
 }
 
 // RedisCommand represents a Redis command
@@ -122,10 +122,10 @@ type RedisCommand struct {
 // NewRedisHighPerfClient creates a new high-performance Redis cluster client
 func NewRedisHighPerfClient(config RedisClusterConfig) (*RedisHighPerfClient, error) {
 	ctx, cancel := context.WithCancel(context.Background())
-	
+
 	client := &RedisHighPerfClient{
-		config:   config,
-		pools:    make(map[string]*RedisPool),
+		config: config,
+		pools:  make(map[string]*RedisPool),
 		pipeline: &RedisPipeline{
 			commands: make([]RedisCommand, 0, 1000),
 			maxSize:  1000,
@@ -134,7 +134,7 @@ func NewRedisHighPerfClient(config RedisClusterConfig) (*RedisHighPerfClient, er
 		ctx:    ctx,
 		cancel: cancel,
 	}
-	
+
 	// Initialize connection pools for each node
 	for _, node := range config.Nodes {
 		pool := &RedisPool{
@@ -142,7 +142,7 @@ func NewRedisHighPerfClient(config RedisClusterConfig) (*RedisHighPerfClient, er
 			connections: make(chan *RedisConn, config.PoolSize),
 			maxSize:     config.PoolSize,
 		}
-		
+
 		// Pre-create minimum idle connections
 		for i := 0; i < config.MinIdleConns; i++ {
 			conn := &RedisConn{
@@ -153,19 +153,19 @@ func NewRedisHighPerfClient(config RedisClusterConfig) (*RedisHighPerfClient, er
 			pool.connections <- conn
 			atomic.AddInt32(&pool.activeConns, 1)
 		}
-		
+
 		client.pools[node] = pool
 	}
-	
+
 	// Initialize slot mapping (simplified - in production use CLUSTER SLOTS)
 	client.initSlotMapping()
-	
+
 	// Start pipeline flusher
 	go client.pipelineFlusher()
-	
+
 	log.Printf("RedisHighPerfClient initialized: %d nodes, pool=%d, minIdle=%d",
 		len(config.Nodes), config.PoolSize, config.MinIdleConns)
-	
+
 	return client, nil
 }
 
@@ -173,11 +173,11 @@ func NewRedisHighPerfClient(config RedisClusterConfig) (*RedisHighPerfClient, er
 func (c *RedisHighPerfClient) initSlotMapping() {
 	c.slotsMu.Lock()
 	defer c.slotsMu.Unlock()
-	
+
 	// Distribute slots evenly across nodes
 	nodesCount := len(c.config.Nodes)
 	slotsPerNode := 16384 / nodesCount
-	
+
 	for i := 0; i < 16384; i++ {
 		nodeIdx := i / slotsPerNode
 		if nodeIdx >= nodesCount {
@@ -208,7 +208,7 @@ func crc16(key string) uint16 {
 			break
 		}
 	}
-	
+
 	// CRC16-CCITT
 	var crc uint16 = 0
 	for i := 0; i < len(key); i++ {
@@ -227,7 +227,7 @@ var crc16Table = [256]uint16{
 // Get retrieves a value from Redis
 func (c *RedisHighPerfClient) Get(ctx context.Context, key string) (string, error) {
 	atomic.AddUint64(&c.commandsExec, 1)
-	
+
 	// In production, this would use actual Redis connection
 	// For now, simulate the operation
 	return "", nil
@@ -365,7 +365,7 @@ func (p *RedisPipelineBuilder) Exec(ctx context.Context) ([]interface{}, error) 
 func (c *RedisHighPerfClient) pipelineFlusher() {
 	ticker := time.NewTicker(1 * time.Millisecond)
 	defer ticker.Stop()
-	
+
 	for {
 		select {
 		case <-c.ctx.Done():
@@ -385,11 +385,11 @@ func (c *RedisHighPerfClient) flushPipeline() {
 		c.pipeline.mu.Unlock()
 		return
 	}
-	
+
 	commands := c.pipeline.commands
 	c.pipeline.commands = make([]RedisCommand, 0, c.pipeline.maxSize)
 	c.pipeline.mu.Unlock()
-	
+
 	// Execute commands (in production, batch by node)
 	for _, cmd := range commands {
 		if cmd.Result != nil {
@@ -422,40 +422,40 @@ func (c *RedisHighPerfClient) HealthCheck(ctx context.Context) error {
 // Close shuts down the client
 func (c *RedisHighPerfClient) Close() error {
 	c.cancel()
-	
+
 	// Close all connection pools
 	c.poolsMu.Lock()
 	for _, pool := range c.pools {
 		close(pool.connections)
 	}
 	c.poolsMu.Unlock()
-	
+
 	return nil
 }
 
 // RedisClusterDeploymentConfig represents Redis cluster deployment configuration
 type RedisClusterDeploymentConfig struct {
-	Masters        int
-	ReplicasPerMaster int
-	NodeMemory     string
-	NodeCPU        string
+	Masters            int
+	ReplicasPerMaster  int
+	NodeMemory         string
+	NodeCPU            string
 	PersistenceEnabled bool
-	AOFEnabled     bool
-	RDBEnabled     bool
-	MaxMemoryPolicy string
+	AOFEnabled         bool
+	RDBEnabled         bool
+	MaxMemoryPolicy    string
 }
 
 // OptimalRedisClusterDeployment returns optimized Redis cluster deployment config
 func OptimalRedisClusterDeployment() RedisClusterDeploymentConfig {
 	return RedisClusterDeploymentConfig{
-		Masters:           3,
-		ReplicasPerMaster: 1,
-		NodeMemory:        "8Gi",
-		NodeCPU:           "2000m",
+		Masters:            3,
+		ReplicasPerMaster:  1,
+		NodeMemory:         "8Gi",
+		NodeCPU:            "2000m",
 		PersistenceEnabled: true,
-		AOFEnabled:        true,
-		RDBEnabled:        true,
-		MaxMemoryPolicy:   "volatile-lru",
+		AOFEnabled:         true,
+		RDBEnabled:         true,
+		MaxMemoryPolicy:    "volatile-lru",
 	}
 }
 
@@ -547,7 +547,7 @@ latency-monitor-threshold 100
 			return "no"
 		}(),
 	)
-	
+
 	return conf
 }
 
@@ -588,9 +588,9 @@ loglevel notice
 
 // CacheManager provides high-level caching operations
 type CacheManager struct {
-	client       *RedisHighPerfClient
-	defaultTTL   time.Duration
-	keyPrefix    string
+	client     *RedisHighPerfClient
+	defaultTTL time.Duration
+	keyPrefix  string
 }
 
 // NewCacheManager creates a new cache manager
@@ -605,30 +605,30 @@ func NewCacheManager(client *RedisHighPerfClient, keyPrefix string, defaultTTL t
 // GetOrSet gets a value or sets it if not present
 func (m *CacheManager) GetOrSet(ctx context.Context, key string, loader func() (interface{}, error), ttl time.Duration) (interface{}, error) {
 	fullKey := m.keyPrefix + key
-	
+
 	// Try to get from cache
 	val, err := m.client.Get(ctx, fullKey)
 	if err == nil && val != "" {
 		atomic.AddUint64(&m.client.cacheHits, 1)
 		return val, nil
 	}
-	
+
 	atomic.AddUint64(&m.client.cacheMisses, 1)
-	
+
 	// Load value
 	result, err := loader()
 	if err != nil {
 		return nil, err
 	}
-	
+
 	// Cache the result
 	if ttl == 0 {
 		ttl = m.defaultTTL
 	}
-	
+
 	data, _ := json.Marshal(result)
 	m.client.Set(ctx, fullKey, string(data), ttl)
-	
+
 	return result, nil
 }
 

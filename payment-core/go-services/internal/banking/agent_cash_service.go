@@ -303,7 +303,7 @@ func (s *AgentCashService) generateCode() string {
 	rand.Read(b)
 	code := 100000 + int(b[0])*1000 + int(b[1])*10 + int(b[2])%10
 	if code > 999999 {
-		code = code % 900000 + 100000
+		code = code%900000 + 100000
 	}
 	return fmt.Sprintf("%06d", code)
 }

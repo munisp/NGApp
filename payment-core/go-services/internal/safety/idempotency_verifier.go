@@ -16,30 +16,30 @@ import (
 // API → Mojaloop → TigerBeetle → Events
 type IdempotencyVerifier struct {
 	// Idempotency key storage (Redis-backed in production)
-	keyStore      IdempotencyKeyStore
-	
+	keyStore IdempotencyKeyStore
+
 	// Event log for reconciliation
-	eventLog      EventLog
-	
+	eventLog EventLog
+
 	// Ledger state reader
-	ledgerReader  LedgerReader
-	
+	ledgerReader LedgerReader
+
 	// Reconciliation state
 	lastReconcile time.Time
 	reconcileMu   sync.Mutex
-	
+
 	// Stats
 	totalRequests    uint64
 	duplicateBlocked uint64
 	reconcileErrors  uint64
-	
+
 	// Alerting
-	alertChan     chan ReconciliationAlert
-	
+	alertChan chan ReconciliationAlert
+
 	// Control
-	ctx           context.Context
-	cancel        context.CancelFunc
-	wg            sync.WaitGroup
+	ctx    context.Context
+	cancel context.CancelFunc
+	wg     sync.WaitGroup
 }
 
 // IdempotencyKeyStore interface for key storage
@@ -97,11 +97,11 @@ type LedgerTransfer struct {
 
 // ReconciliationAlert represents a reconciliation discrepancy
 type ReconciliationAlert struct {
-	Type        string    `json:"type"` // MISSING_EVENT, MISSING_LEDGER, AMOUNT_MISMATCH, BALANCE_MISMATCH
-	TransferID  string    `json:"transfer_id"`
-	Description string    `json:"description"`
-	Severity    string    `json:"severity"` // CRITICAL, WARNING, INFO
-	Timestamp   time.Time `json:"timestamp"`
+	Type        string                 `json:"type"` // MISSING_EVENT, MISSING_LEDGER, AMOUNT_MISMATCH, BALANCE_MISMATCH
+	TransferID  string                 `json:"transfer_id"`
+	Description string                 `json:"description"`
+	Severity    string                 `json:"severity"` // CRITICAL, WARNING, INFO
+	Timestamp   time.Time              `json:"timestamp"`
 	Details     map[string]interface{} `json:"details"`
 }
 
@@ -131,7 +131,7 @@ func NewIdempotencyVerifier(
 	config IdempotencyConfig,
 ) *IdempotencyVerifier {
 	ctx, cancel := context.WithCancel(context.Background())
-	
+
 	v := &IdempotencyVerifier{
 		keyStore:     keyStore,
 		eventLog:     eventLog,
@@ -140,11 +140,11 @@ func NewIdempotencyVerifier(
 		ctx:          ctx,
 		cancel:       cancel,
 	}
-	
+
 	// Start reconciliation loop
 	v.wg.Add(1)
 	go v.reconcileLoop(config.ReconcileInterval)
-	
+
 	return v
 }
 
@@ -152,32 +152,32 @@ func NewIdempotencyVerifier(
 // Returns (isDuplicate, previousResult, error)
 func (v *IdempotencyVerifier) CheckAndSet(ctx context.Context, key string, request interface{}) (bool, []byte, error) {
 	atomic.AddUint64(&v.totalRequests, 1)
-	
+
 	// Serialize request for storage
 	requestBytes, err := json.Marshal(request)
 	if err != nil {
 		return false, nil, fmt.Errorf("failed to serialize request: %w", err)
 	}
-	
+
 	// Try to set the key
 	set, err := v.keyStore.SetNX(ctx, key, requestBytes, 24*time.Hour)
 	if err != nil {
 		return false, nil, fmt.Errorf("failed to check idempotency key: %w", err)
 	}
-	
+
 	if !set {
 		// Key already exists - this is a duplicate
 		atomic.AddUint64(&v.duplicateBlocked, 1)
-		
+
 		// Get the previous result
 		prevResult, err := v.keyStore.Get(ctx, key+":result")
 		if err != nil {
 			return true, nil, nil // Duplicate but no result yet (in-flight)
 		}
-		
+
 		return true, prevResult, nil
 	}
-	
+
 	return false, nil, nil
 }
 
@@ -187,7 +187,7 @@ func (v *IdempotencyVerifier) SetResult(ctx context.Context, key string, result 
 	if err != nil {
 		return fmt.Errorf("failed to serialize result: %w", err)
 	}
-	
+
 	_, err = v.keyStore.SetNX(ctx, key+":result", resultBytes, 24*time.Hour)
 	return err
 }
@@ -197,7 +197,7 @@ func (v *IdempotencyVerifier) RecordEvent(ctx context.Context, event TransferEve
 	// Compute hash chain
 	event.Hash = v.computeEventHash(event)
 	event.Timestamp = time.Now()
-	
+
 	return v.eventLog.Append(ctx, event)
 }
 
@@ -218,10 +218,10 @@ func (v *IdempotencyVerifier) computeEventHash(event TransferEvent) string {
 // reconcileLoop runs continuous reconciliation
 func (v *IdempotencyVerifier) reconcileLoop(interval time.Duration) {
 	defer v.wg.Done()
-	
+
 	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
-	
+
 	for {
 		select {
 		case <-v.ctx.Done():
@@ -236,29 +236,29 @@ func (v *IdempotencyVerifier) reconcileLoop(interval time.Duration) {
 func (v *IdempotencyVerifier) runReconciliation() {
 	v.reconcileMu.Lock()
 	defer v.reconcileMu.Unlock()
-	
+
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
-	
+
 	// Get events since last reconciliation
 	start := v.lastReconcile
 	if start.IsZero() {
 		start = time.Now().Add(-1 * time.Hour)
 	}
 	end := time.Now()
-	
+
 	events, err := v.eventLog.GetRange(ctx, start, end)
 	if err != nil {
 		atomic.AddUint64(&v.reconcileErrors, 1)
 		return
 	}
-	
+
 	// Check each committed event against ledger
 	for _, event := range events {
 		if event.EventType != "COMMITTED" {
 			continue
 		}
-		
+
 		// Parse transfer ID
 		var transferID [16]byte
 		if decoded, err := hex.DecodeString(event.TransferID); err == nil && len(decoded) == 16 {
@@ -266,7 +266,7 @@ func (v *IdempotencyVerifier) runReconciliation() {
 		} else {
 			continue
 		}
-		
+
 		// Check ledger state
 		ledgerTransfer, err := v.ledgerReader.GetTransfer(ctx, transferID)
 		if err != nil {
@@ -283,7 +283,7 @@ func (v *IdempotencyVerifier) runReconciliation() {
 			})
 			continue
 		}
-		
+
 		// Verify amounts match
 		if ledgerTransfer.Amount != event.Amount {
 			v.raiseAlert(ReconciliationAlert{
@@ -299,7 +299,7 @@ func (v *IdempotencyVerifier) runReconciliation() {
 			})
 		}
 	}
-	
+
 	v.lastReconcile = end
 }
 

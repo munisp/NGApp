@@ -13,10 +13,10 @@ import (
 
 // KYBService orchestrates KYB verification for onboarding
 type KYBService struct {
-	ballerine       *BallerineClient
-	docProcessor    *DocumentProcessorClient
-	store           KYBStore
-	notifier        KYBNotifier
+	ballerine    *BallerineClient
+	docProcessor *DocumentProcessorClient
+	store        KYBStore
+	notifier     KYBNotifier
 }
 
 // KYBStore interface for KYB data persistence
@@ -74,13 +74,13 @@ type ProcessDocumentRequest struct {
 
 // ProcessDocumentResponse represents the response from document processing
 type ProcessDocumentResponse struct {
-	DocumentID       string                     `json:"document_id"`
-	DocumentType     string                     `json:"document_type"`
-	ExtractedFields  map[string]ExtractedField  `json:"extracted_fields"`
-	Confidence       float64                    `json:"confidence"`
-	ProcessingTimeMs int                        `json:"processing_time_ms"`
-	EnginesUsed      []string                   `json:"engines_used"`
-	Warnings         []string                   `json:"warnings"`
+	DocumentID       string                    `json:"document_id"`
+	DocumentType     string                    `json:"document_type"`
+	ExtractedFields  map[string]ExtractedField `json:"extracted_fields"`
+	Confidence       float64                   `json:"confidence"`
+	ProcessingTimeMs int                       `json:"processing_time_ms"`
+	EnginesUsed      []string                  `json:"engines_used"`
+	Warnings         []string                  `json:"warnings"`
 }
 
 // ExtractedField represents an extracted field from document processing
@@ -151,14 +151,14 @@ func (s *KYBService) InitiateKYB(ctx context.Context, onboardingCaseID string, s
 // getWorkflowID returns the appropriate workflow ID for a stakeholder type
 func (s *KYBService) getWorkflowID(stakeholderType string) string {
 	workflows := map[string]string{
-		"BANK":                   "kyb-financial-institution-full",
-		"MOBILE_MONEY_OPERATOR":  "kyb-financial-institution-full",
-		"FINTECH":                "kyb-financial-institution-full",
-		"MICROFINANCE":           "kyb-financial-institution-standard",
-		"MERCHANT":               "kyb-merchant-standard",
-		"DEVELOPER":              "kyb-developer-light",
-		"REGULATOR":              "kyb-government-entity",
-		"GOVERNMENT_AGENCY":      "kyb-government-entity",
+		"BANK":                  "kyb-financial-institution-full",
+		"MOBILE_MONEY_OPERATOR": "kyb-financial-institution-full",
+		"FINTECH":               "kyb-financial-institution-full",
+		"MICROFINANCE":          "kyb-financial-institution-standard",
+		"MERCHANT":              "kyb-merchant-standard",
+		"DEVELOPER":             "kyb-developer-light",
+		"REGULATOR":             "kyb-government-entity",
+		"GOVERNMENT_AGENCY":     "kyb-government-entity",
 	}
 
 	if workflow, ok := workflows[stakeholderType]; ok {
@@ -296,7 +296,7 @@ func (s *KYBService) EvaluateKYB(ctx context.Context, caseID string) (*KYBEvalua
 	}
 
 	evaluation := &KYBEvaluation{
-		CaseID:           caseID,
+		CaseID:            caseID,
 		DocumentsComplete: s.checkDocumentsComplete(kybCase, documents),
 		ScreeningsPassed:  s.checkScreeningsPassed(screenings),
 		RiskScore:         s.calculateRiskScore(kybCase, documents, screenings),
@@ -334,7 +334,7 @@ type KYBEvaluation struct {
 // checkDocumentsComplete checks if all required documents are submitted and verified
 func (s *KYBService) checkDocumentsComplete(kybCase *KYBCase, documents []*KYBDocument) bool {
 	required := s.getRequiredDocuments(kybCase.Metadata["stakeholder_type"].(string))
-	
+
 	submitted := make(map[DocumentType]bool)
 	for _, doc := range documents {
 		if doc.Status == DocStatusVerified || doc.Status == DocStatusExtracted {
@@ -442,9 +442,9 @@ func (s *KYBService) getMissingDocuments(kybCase *KYBCase, documents []*KYBDocum
 	if st, ok := kybCase.Metadata["stakeholder_type"].(string); ok {
 		stakeholderType = st
 	}
-	
+
 	required := s.getRequiredDocuments(stakeholderType)
-	
+
 	submitted := make(map[DocumentType]bool)
 	for _, doc := range documents {
 		submitted[doc.Type] = true
@@ -465,7 +465,7 @@ func (s *KYBService) getFlags(screenings []*ScreeningResult) []string {
 	var flags []string
 	for _, screening := range screenings {
 		if screening.MatchFound {
-			flags = append(flags, fmt.Sprintf("%s_MATCH: %s (%.0f%%)", 
+			flags = append(flags, fmt.Sprintf("%s_MATCH: %s (%.0f%%)",
 				screening.Type, screening.EntityName, screening.MatchScore*100))
 		}
 	}
@@ -475,12 +475,12 @@ func (s *KYBService) getFlags(screenings []*ScreeningResult) []string {
 // ApproveKYB approves a KYB case
 func (s *KYBService) ApproveKYB(ctx context.Context, caseID string, approverID string, notes string) error {
 	decision := KYBDecision{
-		Decision:    "APPROVED",
-		RiskLevel:   "LOW",
-		DecidedBy:   approverID,
-		DecidedAt:   time.Now(),
-		ValidUntil:  time.Now().AddDate(1, 0, 0), // Valid for 1 year
-		Notes:       notes,
+		Decision:   "APPROVED",
+		RiskLevel:  "LOW",
+		DecidedBy:  approverID,
+		DecidedAt:  time.Now(),
+		ValidUntil: time.Now().AddDate(1, 0, 0), // Valid for 1 year
+		Notes:      notes,
 	}
 
 	if err := s.ballerine.SubmitDecision(ctx, caseID, decision); err != nil {

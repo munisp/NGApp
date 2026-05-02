@@ -20,31 +20,31 @@ import (
 // EncryptionAtRestService provides comprehensive encryption at rest capabilities
 // for all data stores in the PayGate platform.
 type EncryptionAtRestService struct {
-	keyManager    KeyManager
-	config        *EncryptionConfig
-	mu            sync.RWMutex
-	dataKeyCache  map[string]*CachedDataKey
-	auditLogger   AuditLogger
+	keyManager   KeyManager
+	config       *EncryptionConfig
+	mu           sync.RWMutex
+	dataKeyCache map[string]*CachedDataKey
+	auditLogger  AuditLogger
 }
 
 // EncryptionConfig holds configuration for encryption at rest
 type EncryptionConfig struct {
 	// Master key configuration
-	MasterKeyID        string
-	MasterKeyProvider  string // vault, aws-kms, gcp-kms, azure-keyvault
-	
+	MasterKeyID       string
+	MasterKeyProvider string // vault, aws-kms, gcp-kms, azure-keyvault
+
 	// Data key configuration
 	DataKeyRotationDays int
 	DataKeyCacheTTL     time.Duration
-	
+
 	// Algorithm configuration
-	Algorithm           string // AES-256-GCM (default)
-	KeyDerivationFunc   string // PBKDF2, HKDF
-	PBKDF2Iterations    int
-	
+	Algorithm         string // AES-256-GCM (default)
+	KeyDerivationFunc string // PBKDF2, HKDF
+	PBKDF2Iterations  int
+
 	// Audit configuration
-	AuditKeyUsage       bool
-	AuditDecryption     bool
+	AuditKeyUsage   bool
+	AuditDecryption bool
 }
 
 // DefaultEncryptionConfig returns secure default configuration
@@ -65,29 +65,29 @@ func DefaultEncryptionConfig() *EncryptionConfig {
 type KeyManager interface {
 	// GetMasterKey retrieves the master key for envelope encryption
 	GetMasterKey(ctx context.Context, keyID string) ([]byte, error)
-	
+
 	// GenerateDataKey generates a new data encryption key
 	GenerateDataKey(ctx context.Context, keyID string) (*DataKey, error)
-	
+
 	// EncryptDataKey encrypts a data key with the master key
 	EncryptDataKey(ctx context.Context, masterKeyID string, dataKey []byte) ([]byte, error)
-	
+
 	// DecryptDataKey decrypts a data key with the master key
 	DecryptDataKey(ctx context.Context, masterKeyID string, encryptedKey []byte) ([]byte, error)
-	
+
 	// RotateKey rotates a key
 	RotateKey(ctx context.Context, keyID string) error
 }
 
 // DataKey represents a data encryption key
 type DataKey struct {
-	ID            string
-	Plaintext     []byte
-	Ciphertext    []byte // Encrypted with master key
-	Algorithm     string
-	CreatedAt     time.Time
-	ExpiresAt     time.Time
-	KeyVersion    int
+	ID         string
+	Plaintext  []byte
+	Ciphertext []byte // Encrypted with master key
+	Algorithm  string
+	CreatedAt  time.Time
+	ExpiresAt  time.Time
+	KeyVersion int
 }
 
 // CachedDataKey is a cached data key with expiration
@@ -104,14 +104,14 @@ type AuditLogger interface {
 
 // KeyUsageEvent represents a key usage audit event
 type KeyUsageEvent struct {
-	Timestamp     time.Time
-	KeyID         string
-	Operation     string // encrypt, decrypt, rotate
-	DataStore     string // postgres, tigerbeetle, kafka, redis, rustfs
-	ResourceID    string
-	UserID        string
-	Success       bool
-	ErrorMessage  string
+	Timestamp    time.Time
+	KeyID        string
+	Operation    string // encrypt, decrypt, rotate
+	DataStore    string // postgres, tigerbeetle, kafka, redis, rustfs
+	ResourceID   string
+	UserID       string
+	Success      bool
+	ErrorMessage string
 }
 
 // EncryptedData represents encrypted data with metadata
@@ -130,7 +130,7 @@ func NewEncryptionAtRestService(keyManager KeyManager, config *EncryptionConfig,
 	if config == nil {
 		config = DefaultEncryptionConfig()
 	}
-	
+
 	return &EncryptionAtRestService{
 		keyManager:   keyManager,
 		config:       config,
@@ -147,32 +147,32 @@ func (s *EncryptionAtRestService) Encrypt(ctx context.Context, plaintext []byte,
 		s.logKeyUsage(ctx, "encrypt", dataStore, resourceID, false, err.Error())
 		return nil, fmt.Errorf("failed to get data key: %w", err)
 	}
-	
+
 	// Create AES-GCM cipher
 	block, err := aes.NewCipher(dataKey.Plaintext)
 	if err != nil {
 		s.logKeyUsage(ctx, "encrypt", dataStore, resourceID, false, err.Error())
 		return nil, fmt.Errorf("failed to create cipher: %w", err)
 	}
-	
+
 	gcm, err := cipher.NewGCM(block)
 	if err != nil {
 		s.logKeyUsage(ctx, "encrypt", dataStore, resourceID, false, err.Error())
 		return nil, fmt.Errorf("failed to create GCM: %w", err)
 	}
-	
+
 	// Generate nonce
 	nonce := make([]byte, gcm.NonceSize())
 	if _, err := io.ReadFull(rand.Reader, nonce); err != nil {
 		s.logKeyUsage(ctx, "encrypt", dataStore, resourceID, false, err.Error())
 		return nil, fmt.Errorf("failed to generate nonce: %w", err)
 	}
-	
+
 	// Encrypt data
 	ciphertext := gcm.Seal(nil, nonce, plaintext, nil)
-	
+
 	s.logKeyUsage(ctx, "encrypt", dataStore, resourceID, true, "")
-	
+
 	return &EncryptedData{
 		Ciphertext:       ciphertext,
 		Nonce:            nonce,
@@ -192,29 +192,29 @@ func (s *EncryptionAtRestService) Decrypt(ctx context.Context, encrypted *Encryp
 		s.logKeyUsage(ctx, "decrypt", dataStore, resourceID, false, err.Error())
 		return nil, fmt.Errorf("failed to decrypt data key: %w", err)
 	}
-	
+
 	// Create AES-GCM cipher
 	block, err := aes.NewCipher(dataKeyPlaintext)
 	if err != nil {
 		s.logKeyUsage(ctx, "decrypt", dataStore, resourceID, false, err.Error())
 		return nil, fmt.Errorf("failed to create cipher: %w", err)
 	}
-	
+
 	gcm, err := cipher.NewGCM(block)
 	if err != nil {
 		s.logKeyUsage(ctx, "decrypt", dataStore, resourceID, false, err.Error())
 		return nil, fmt.Errorf("failed to create GCM: %w", err)
 	}
-	
+
 	// Decrypt data
 	plaintext, err := gcm.Open(nil, encrypted.Nonce, encrypted.Ciphertext, nil)
 	if err != nil {
 		s.logKeyUsage(ctx, "decrypt", dataStore, resourceID, false, err.Error())
 		return nil, fmt.Errorf("failed to decrypt data: %w", err)
 	}
-	
+
 	s.logKeyUsage(ctx, "decrypt", dataStore, resourceID, true, "")
-	
+
 	return plaintext, nil
 }
 
@@ -224,7 +224,7 @@ func (s *EncryptionAtRestService) EncryptString(ctx context.Context, plaintext s
 	if err != nil {
 		return "", err
 	}
-	
+
 	// Serialize encrypted data
 	return s.serializeEncryptedData(encrypted), nil
 }
@@ -235,12 +235,12 @@ func (s *EncryptionAtRestService) DecryptString(ctx context.Context, ciphertext 
 	if err != nil {
 		return "", fmt.Errorf("failed to deserialize encrypted data: %w", err)
 	}
-	
+
 	plaintext, err := s.Decrypt(ctx, encrypted, dataStore, resourceID)
 	if err != nil {
 		return "", err
 	}
-	
+
 	return string(plaintext), nil
 }
 
@@ -249,17 +249,17 @@ func (s *EncryptionAtRestService) getOrGenerateDataKey(ctx context.Context) (*Da
 	s.mu.RLock()
 	cached, exists := s.dataKeyCache[s.config.MasterKeyID]
 	s.mu.RUnlock()
-	
+
 	if exists && time.Now().Before(cached.ExpiresAt) {
 		return cached.Key, nil
 	}
-	
+
 	// Generate new data key
 	dataKey, err := s.keyManager.GenerateDataKey(ctx, s.config.MasterKeyID)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	// Cache the data key
 	s.mu.Lock()
 	s.dataKeyCache[s.config.MasterKeyID] = &CachedDataKey{
@@ -268,7 +268,7 @@ func (s *EncryptionAtRestService) getOrGenerateDataKey(ctx context.Context) (*Da
 		ExpiresAt: time.Now().Add(s.config.DataKeyCacheTTL),
 	}
 	s.mu.Unlock()
-	
+
 	return dataKey, nil
 }
 
@@ -289,28 +289,28 @@ func (s *EncryptionAtRestService) serializeEncryptedData(data *EncryptedData) st
 func (s *EncryptionAtRestService) deserializeEncryptedData(data string) (*EncryptedData, error) {
 	var version int
 	var algorithm, keyID, nonceB64, encKeyB64, ciphertextB64 string
-	
+
 	_, err := fmt.Sscanf(data, "%d:%s:%s:%s:%s:%s",
 		&version, &algorithm, &keyID, &nonceB64, &encKeyB64, &ciphertextB64)
 	if err != nil {
 		return nil, fmt.Errorf("invalid encrypted data format: %w", err)
 	}
-	
+
 	nonce, err := base64.StdEncoding.DecodeString(nonceB64)
 	if err != nil {
 		return nil, fmt.Errorf("invalid nonce: %w", err)
 	}
-	
+
 	encKey, err := base64.StdEncoding.DecodeString(encKeyB64)
 	if err != nil {
 		return nil, fmt.Errorf("invalid encrypted key: %w", err)
 	}
-	
+
 	ciphertext, err := base64.StdEncoding.DecodeString(ciphertextB64)
 	if err != nil {
 		return nil, fmt.Errorf("invalid ciphertext: %w", err)
 	}
-	
+
 	return &EncryptedData{
 		Version:          version,
 		Algorithm:        algorithm,
@@ -326,15 +326,15 @@ func (s *EncryptionAtRestService) logKeyUsage(ctx context.Context, operation, da
 	if s.auditLogger == nil {
 		return
 	}
-	
+
 	if !s.config.AuditKeyUsage {
 		return
 	}
-	
+
 	if operation == "decrypt" && !s.config.AuditDecryption {
 		return
 	}
-	
+
 	event := &KeyUsageEvent{
 		Timestamp:    time.Now().UTC(),
 		KeyID:        s.config.MasterKeyID,
@@ -344,12 +344,12 @@ func (s *EncryptionAtRestService) logKeyUsage(ctx context.Context, operation, da
 		Success:      success,
 		ErrorMessage: errorMsg,
 	}
-	
+
 	// Extract user ID from context if available
 	if userID, ok := ctx.Value("user_id").(string); ok {
 		event.UserID = userID
 	}
-	
+
 	_ = s.auditLogger.LogKeyUsage(ctx, event)
 }
 
@@ -357,18 +357,18 @@ func (s *EncryptionAtRestService) logKeyUsage(ctx context.Context, operation, da
 func (s *EncryptionAtRestService) RotateDataKey(ctx context.Context) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	
+
 	// Clear cache to force new key generation
 	delete(s.dataKeyCache, s.config.MasterKeyID)
-	
+
 	// Generate new data key
 	_, err := s.keyManager.GenerateDataKey(ctx, s.config.MasterKeyID)
 	if err != nil {
 		return fmt.Errorf("failed to rotate data key: %w", err)
 	}
-	
+
 	s.logKeyUsage(ctx, "rotate", "all", "", err == nil, "")
-	
+
 	return nil
 }
 
@@ -403,13 +403,13 @@ func (v *VaultKeyManager) GenerateDataKey(ctx context.Context, keyID string) (*D
 	if _, err := io.ReadFull(rand.Reader, plaintext); err != nil {
 		return nil, fmt.Errorf("failed to generate random key: %w", err)
 	}
-	
+
 	// Encrypt the data key with Vault Transit
 	ciphertext, err := v.EncryptDataKey(ctx, keyID, plaintext)
 	if err != nil {
 		return nil, fmt.Errorf("failed to encrypt data key: %w", err)
 	}
-	
+
 	return &DataKey{
 		ID:         generateKeyID(),
 		Plaintext:  plaintext,
@@ -426,25 +426,25 @@ func (v *VaultKeyManager) EncryptDataKey(ctx context.Context, masterKeyID string
 	// In production, this would call Vault Transit API
 	// POST /v1/transit/encrypt/{masterKeyID}
 	// For now, we'll use a local encryption as placeholder
-	
+
 	// Derive encryption key from master key ID (placeholder)
 	derivedKey := pbkdf2.Key([]byte(masterKeyID), []byte("paygate-salt"), 100000, 32, sha256.New)
-	
+
 	block, err := aes.NewCipher(derivedKey)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	gcm, err := cipher.NewGCM(block)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	nonce := make([]byte, gcm.NonceSize())
 	if _, err := io.ReadFull(rand.Reader, nonce); err != nil {
 		return nil, err
 	}
-	
+
 	ciphertext := gcm.Seal(nonce, nonce, dataKey, nil)
 	return ciphertext, nil
 }
@@ -453,27 +453,27 @@ func (v *VaultKeyManager) EncryptDataKey(ctx context.Context, masterKeyID string
 func (v *VaultKeyManager) DecryptDataKey(ctx context.Context, masterKeyID string, encryptedKey []byte) ([]byte, error) {
 	// In production, this would call Vault Transit API
 	// POST /v1/transit/decrypt/{masterKeyID}
-	
+
 	// Derive encryption key from master key ID (placeholder)
 	derivedKey := pbkdf2.Key([]byte(masterKeyID), []byte("paygate-salt"), 100000, 32, sha256.New)
-	
+
 	block, err := aes.NewCipher(derivedKey)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	gcm, err := cipher.NewGCM(block)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	if len(encryptedKey) < gcm.NonceSize() {
 		return nil, errors.New("ciphertext too short")
 	}
-	
+
 	nonce := encryptedKey[:gcm.NonceSize()]
 	ciphertext := encryptedKey[gcm.NonceSize():]
-	
+
 	return gcm.Open(nil, nonce, ciphertext, nil)
 }
 

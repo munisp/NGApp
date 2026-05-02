@@ -68,30 +68,30 @@ type PolicyVersion struct {
 
 // PolicyRule represents a rule within a policy
 type PolicyRule struct {
-	RuleID      string                 `json:"rule_id"`
-	Name        string                 `json:"name"`
-	Condition   string                 `json:"condition"`
-	Action      string                 `json:"action"`
-	Priority    int                    `json:"priority"`
-	Parameters  map[string]interface{} `json:"parameters"`
-	Enabled     bool                   `json:"enabled"`
+	RuleID     string                 `json:"rule_id"`
+	Name       string                 `json:"name"`
+	Condition  string                 `json:"condition"`
+	Action     string                 `json:"action"`
+	Priority   int                    `json:"priority"`
+	Parameters map[string]interface{} `json:"parameters"`
+	Enabled    bool                   `json:"enabled"`
 }
 
 // ModelVersion represents a versioned model
 type ModelVersion struct {
-	ModelID       string                 `json:"model_id"`
-	Version       int                    `json:"version"`
-	Name          string                 `json:"name"`
-	Type          string                 `json:"type"` // FRAUD, KYC_RISK, AML
-	ArtifactHash  string                 `json:"artifact_hash"`
-	ArtifactPath  string                 `json:"artifact_path"`
-	Features      []string               `json:"features"`
-	Hyperparams   map[string]interface{} `json:"hyperparams"`
-	Metrics       map[string]float64     `json:"metrics"`
-	TrainedAt     time.Time              `json:"trained_at"`
-	DeployedAt    *time.Time             `json:"deployed_at,omitempty"`
-	Status        string                 `json:"status"`
-	Signature     string                 `json:"signature"`
+	ModelID      string                 `json:"model_id"`
+	Version      int                    `json:"version"`
+	Name         string                 `json:"name"`
+	Type         string                 `json:"type"` // FRAUD, KYC_RISK, AML
+	ArtifactHash string                 `json:"artifact_hash"`
+	ArtifactPath string                 `json:"artifact_path"`
+	Features     []string               `json:"features"`
+	Hyperparams  map[string]interface{} `json:"hyperparams"`
+	Metrics      map[string]float64     `json:"metrics"`
+	TrainedAt    time.Time              `json:"trained_at"`
+	DeployedAt   *time.Time             `json:"deployed_at,omitempty"`
+	Status       string                 `json:"status"`
+	Signature    string                 `json:"signature"`
 }
 
 // EvidenceSnapshot represents a point-in-time evidence snapshot
@@ -109,23 +109,23 @@ type EvidenceSnapshot struct {
 
 // DecisionRecord represents a reproducible decision record
 type DecisionRecord struct {
-	DecisionID      string                 `json:"decision_id"`
-	DecisionType    string                 `json:"decision_type"`
-	CustomerID      string                 `json:"customer_id"`
-	TransactionID   string                 `json:"transaction_id,omitempty"`
-	Decision        string                 `json:"decision"`
-	Score           float64                `json:"score"`
-	Reasons         []string               `json:"reasons"`
-	PolicyID        string                 `json:"policy_id"`
-	PolicyVersion   int                    `json:"policy_version"`
-	ModelID         string                 `json:"model_id,omitempty"`
-	ModelVersion    int                    `json:"model_version,omitempty"`
-	EvidenceSnapshot string               `json:"evidence_snapshot_id"`
-	InputData       map[string]interface{} `json:"input_data"`
-	RulesTriggered  []string               `json:"rules_triggered"`
-	DecidedAt       time.Time              `json:"decided_at"`
-	DecidedBy       string                 `json:"decided_by"` // SYSTEM or reviewer ID
-	Hash            string                 `json:"hash"`
+	DecisionID       string                 `json:"decision_id"`
+	DecisionType     string                 `json:"decision_type"`
+	CustomerID       string                 `json:"customer_id"`
+	TransactionID    string                 `json:"transaction_id,omitempty"`
+	Decision         string                 `json:"decision"`
+	Score            float64                `json:"score"`
+	Reasons          []string               `json:"reasons"`
+	PolicyID         string                 `json:"policy_id"`
+	PolicyVersion    int                    `json:"policy_version"`
+	ModelID          string                 `json:"model_id,omitempty"`
+	ModelVersion     int                    `json:"model_version,omitempty"`
+	EvidenceSnapshot string                 `json:"evidence_snapshot_id"`
+	InputData        map[string]interface{} `json:"input_data"`
+	RulesTriggered   []string               `json:"rules_triggered"`
+	DecidedAt        time.Time              `json:"decided_at"`
+	DecidedBy        string                 `json:"decided_by"` // SYSTEM or reviewer ID
+	Hash             string                 `json:"hash"`
 }
 
 // NewDecisionReproducibilityService creates a new service
@@ -151,22 +151,22 @@ func (s *DecisionReproducibilityService) RecordDecision(ctx context.Context, rec
 		ModelVersion:  record.ModelVersion,
 		CreatedAt:     time.Now().UTC(),
 	}
-	
+
 	// Calculate snapshot hash
 	snapshotData, _ := json.Marshal(snapshot.Evidence)
 	snapshotHash := sha256.Sum256(snapshotData)
 	snapshot.Hash = hex.EncodeToString(snapshotHash[:])
-	
+
 	// Save snapshot
 	if err := s.evidenceStore.SaveEvidenceSnapshot(ctx, snapshot); err != nil {
 		return fmt.Errorf("failed to save evidence snapshot: %w", err)
 	}
-	
+
 	record.EvidenceSnapshot = snapshot.SnapshotID
-	
+
 	// Calculate decision hash
 	record.Hash = s.calculateDecisionHash(record)
-	
+
 	// Persist decision record
 	return s.persistDecision(ctx, record)
 }
@@ -178,19 +178,19 @@ func (s *DecisionReproducibilityService) ReplayDecision(ctx context.Context, dec
 	if err != nil {
 		return nil, fmt.Errorf("failed to load decision: %w", err)
 	}
-	
+
 	// Load evidence snapshot
 	snapshot, err := s.evidenceStore.GetEvidenceSnapshot(ctx, original.EvidenceSnapshot)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load evidence snapshot: %w", err)
 	}
-	
+
 	// Load policy version
 	policy, err := s.policyStore.GetPolicy(ctx, original.PolicyID, original.PolicyVersion)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load policy: %w", err)
 	}
-	
+
 	// Load model version if applicable
 	var model *ModelVersion
 	if original.ModelID != "" {
@@ -199,10 +199,10 @@ func (s *DecisionReproducibilityService) ReplayDecision(ctx context.Context, dec
 			return nil, fmt.Errorf("failed to load model: %w", err)
 		}
 	}
-	
+
 	// Re-evaluate decision
 	replayed := s.evaluateDecision(original.InputData, policy, model)
-	
+
 	return &DecisionReplayResult{
 		OriginalDecision: original,
 		ReplayedDecision: replayed,
@@ -216,14 +216,14 @@ func (s *DecisionReproducibilityService) ReplayDecision(ctx context.Context, dec
 
 // DecisionReplayResult represents the result of replaying a decision
 type DecisionReplayResult struct {
-	OriginalDecision *DecisionRecord    `json:"original_decision"`
-	ReplayedDecision *DecisionRecord    `json:"replayed_decision"`
-	PolicyUsed       *PolicyVersion     `json:"policy_used"`
-	ModelUsed        *ModelVersion      `json:"model_used,omitempty"`
-	EvidenceSnapshot *EvidenceSnapshot  `json:"evidence_snapshot"`
-	Match            bool               `json:"match"`
-	Differences      []string           `json:"differences,omitempty"`
-	ReplayedAt       time.Time          `json:"replayed_at"`
+	OriginalDecision *DecisionRecord   `json:"original_decision"`
+	ReplayedDecision *DecisionRecord   `json:"replayed_decision"`
+	PolicyUsed       *PolicyVersion    `json:"policy_used"`
+	ModelUsed        *ModelVersion     `json:"model_used,omitempty"`
+	EvidenceSnapshot *EvidenceSnapshot `json:"evidence_snapshot"`
+	Match            bool              `json:"match"`
+	Differences      []string          `json:"differences,omitempty"`
+	ReplayedAt       time.Time         `json:"replayed_at"`
 }
 
 func (s *DecisionReproducibilityService) calculateDecisionHash(record *DecisionRecord) string {
@@ -245,11 +245,11 @@ func (s *DecisionReproducibilityService) persistDecision(ctx context.Context, re
 	if s.db == nil {
 		return nil
 	}
-	
+
 	inputDataJSON, _ := json.Marshal(record.InputData)
 	rulesJSON, _ := json.Marshal(record.RulesTriggered)
 	reasonsJSON, _ := json.Marshal(record.Reasons)
-	
+
 	query := `
 		INSERT INTO decision_records (
 			decision_id, decision_type, customer_id, transaction_id,
@@ -258,14 +258,14 @@ func (s *DecisionReproducibilityService) persistDecision(ctx context.Context, re
 			rules_triggered, decided_at, decided_by, hash
 		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
 	`
-	
+
 	_, err := s.db.ExecContext(ctx, query,
 		record.DecisionID, record.DecisionType, record.CustomerID, record.TransactionID,
 		record.Decision, record.Score, reasonsJSON, record.PolicyID, record.PolicyVersion,
 		record.ModelID, record.ModelVersion, record.EvidenceSnapshot, inputDataJSON,
 		rulesJSON, record.DecidedAt, record.DecidedBy, record.Hash,
 	)
-	
+
 	return err
 }
 
@@ -273,7 +273,7 @@ func (s *DecisionReproducibilityService) loadDecision(ctx context.Context, decis
 	if s.db == nil {
 		return nil, fmt.Errorf("database not configured")
 	}
-	
+
 	query := `
 		SELECT decision_id, decision_type, customer_id, transaction_id,
 		       decision, score, reasons, policy_id, policy_version,
@@ -281,10 +281,10 @@ func (s *DecisionReproducibilityService) loadDecision(ctx context.Context, decis
 		       rules_triggered, decided_at, decided_by, hash
 		FROM decision_records WHERE decision_id = $1
 	`
-	
+
 	var record DecisionRecord
 	var inputDataJSON, rulesJSON, reasonsJSON []byte
-	
+
 	err := s.db.QueryRowContext(ctx, query, decisionID).Scan(
 		&record.DecisionID, &record.DecisionType, &record.CustomerID, &record.TransactionID,
 		&record.Decision, &record.Score, &reasonsJSON, &record.PolicyID, &record.PolicyVersion,
@@ -294,23 +294,23 @@ func (s *DecisionReproducibilityService) loadDecision(ctx context.Context, decis
 	if err != nil {
 		return nil, err
 	}
-	
+
 	json.Unmarshal(inputDataJSON, &record.InputData)
 	json.Unmarshal(rulesJSON, &record.RulesTriggered)
 	json.Unmarshal(reasonsJSON, &record.Reasons)
-	
+
 	return &record, nil
 }
 
 func (s *DecisionReproducibilityService) evaluateDecision(input map[string]interface{}, policy *PolicyVersion, model *ModelVersion) *DecisionRecord {
 	// Simplified decision evaluation - in production this would use the actual policy engine
 	return &DecisionRecord{
-		Decision:       "REPLAYED",
-		Score:          0.0,
-		PolicyVersion:  policy.Version,
-		ModelVersion:   model.Version,
-		DecidedAt:      time.Now().UTC(),
-		DecidedBy:      "REPLAY_ENGINE",
+		Decision:      "REPLAYED",
+		Score:         0.0,
+		PolicyVersion: policy.Version,
+		ModelVersion:  model.Version,
+		DecidedAt:     time.Now().UTC(),
+		DecidedBy:     "REPLAY_ENGINE",
 	}
 }
 
@@ -320,10 +320,10 @@ func (s *DecisionReproducibilityService) evaluateDecision(input map[string]inter
 
 // SARWorkflowService manages Suspicious Activity Report workflows
 type SARWorkflowService struct {
-	db            *sql.DB
-	notifier      SARNotifier
-	thresholds    *SARThresholds
-	mu            sync.RWMutex
+	db         *sql.DB
+	notifier   SARNotifier
+	thresholds *SARThresholds
+	mu         sync.RWMutex
 }
 
 // SARNotifier interface for SAR notifications
@@ -335,55 +335,55 @@ type SARNotifier interface {
 
 // SARThresholds defines thresholds for automatic SAR generation
 type SARThresholds struct {
-	TransactionAmount     float64 `json:"transaction_amount"`
-	CumulativeAmount24h   float64 `json:"cumulative_amount_24h"`
-	StructuringThreshold  float64 `json:"structuring_threshold"`
-	VelocityThreshold     int     `json:"velocity_threshold"`
-	RiskScoreThreshold    float64 `json:"risk_score_threshold"`
-	AMLMatchThreshold     float64 `json:"aml_match_threshold"`
+	TransactionAmount    float64 `json:"transaction_amount"`
+	CumulativeAmount24h  float64 `json:"cumulative_amount_24h"`
+	StructuringThreshold float64 `json:"structuring_threshold"`
+	VelocityThreshold    int     `json:"velocity_threshold"`
+	RiskScoreThreshold   float64 `json:"risk_score_threshold"`
+	AMLMatchThreshold    float64 `json:"aml_match_threshold"`
 }
 
 // SuspiciousActivityReport represents a SAR
 type SuspiciousActivityReport struct {
-	SARID             string                 `json:"sar_id"`
-	Status            SARStatus              `json:"status"`
-	Priority          string                 `json:"priority"` // HIGH, MEDIUM, LOW
-	CustomerID        string                 `json:"customer_id"`
-	CustomerName      string                 `json:"customer_name"`
-	AccountNumbers    []string               `json:"account_numbers"`
-	SuspiciousActivity string                `json:"suspicious_activity"`
-	ActivityType      string                 `json:"activity_type"` // STRUCTURING, MONEY_LAUNDERING, FRAUD, etc.
-	TotalAmount       float64                `json:"total_amount"`
-	Currency          string                 `json:"currency"`
-	DateRange         DateRange              `json:"date_range"`
-	Transactions      []SARTransaction       `json:"transactions"`
-	Narrative         string                 `json:"narrative"`
-	Indicators        []string               `json:"indicators"`
-	TriggerReason     string                 `json:"trigger_reason"`
-	TriggerDecisionID string                 `json:"trigger_decision_id,omitempty"`
-	AssignedTo        string                 `json:"assigned_to"`
-	CreatedAt         time.Time              `json:"created_at"`
-	CreatedBy         string                 `json:"created_by"`
-	ReviewedAt        *time.Time             `json:"reviewed_at,omitempty"`
-	ReviewedBy        string                 `json:"reviewed_by,omitempty"`
-	FiledAt           *time.Time             `json:"filed_at,omitempty"`
-	FilingReference   string                 `json:"filing_reference,omitempty"`
-	FilingDeadline    time.Time              `json:"filing_deadline"`
-	Attachments       []SARAttachment        `json:"attachments"`
-	AuditTrail        []SAREvent             `json:"audit_trail"`
-	Metadata          map[string]interface{} `json:"metadata"`
+	SARID              string                 `json:"sar_id"`
+	Status             SARStatus              `json:"status"`
+	Priority           string                 `json:"priority"` // HIGH, MEDIUM, LOW
+	CustomerID         string                 `json:"customer_id"`
+	CustomerName       string                 `json:"customer_name"`
+	AccountNumbers     []string               `json:"account_numbers"`
+	SuspiciousActivity string                 `json:"suspicious_activity"`
+	ActivityType       string                 `json:"activity_type"` // STRUCTURING, MONEY_LAUNDERING, FRAUD, etc.
+	TotalAmount        float64                `json:"total_amount"`
+	Currency           string                 `json:"currency"`
+	DateRange          DateRange              `json:"date_range"`
+	Transactions       []SARTransaction       `json:"transactions"`
+	Narrative          string                 `json:"narrative"`
+	Indicators         []string               `json:"indicators"`
+	TriggerReason      string                 `json:"trigger_reason"`
+	TriggerDecisionID  string                 `json:"trigger_decision_id,omitempty"`
+	AssignedTo         string                 `json:"assigned_to"`
+	CreatedAt          time.Time              `json:"created_at"`
+	CreatedBy          string                 `json:"created_by"`
+	ReviewedAt         *time.Time             `json:"reviewed_at,omitempty"`
+	ReviewedBy         string                 `json:"reviewed_by,omitempty"`
+	FiledAt            *time.Time             `json:"filed_at,omitempty"`
+	FilingReference    string                 `json:"filing_reference,omitempty"`
+	FilingDeadline     time.Time              `json:"filing_deadline"`
+	Attachments        []SARAttachment        `json:"attachments"`
+	AuditTrail         []SAREvent             `json:"audit_trail"`
+	Metadata           map[string]interface{} `json:"metadata"`
 }
 
 // SARStatus represents SAR status
 type SARStatus string
 
 const (
-	SARStatusDraft           SARStatus = "DRAFT"
-	SARStatusPendingReview   SARStatus = "PENDING_REVIEW"
-	SARStatusApproved        SARStatus = "APPROVED"
-	SARStatusRejected        SARStatus = "REJECTED"
-	SARStatusFiled           SARStatus = "FILED"
-	SARStatusAmended         SARStatus = "AMENDED"
+	SARStatusDraft         SARStatus = "DRAFT"
+	SARStatusPendingReview SARStatus = "PENDING_REVIEW"
+	SARStatusApproved      SARStatus = "APPROVED"
+	SARStatusRejected      SARStatus = "REJECTED"
+	SARStatusFiled         SARStatus = "FILED"
+	SARStatusAmended       SARStatus = "AMENDED"
 )
 
 // DateRange represents a date range
@@ -446,19 +446,19 @@ func (s *SARWorkflowService) CheckSARTriggers(ctx context.Context, activity *Act
 		Triggered:  false,
 		Indicators: make([]string, 0),
 	}
-	
+
 	// Check transaction amount threshold
 	if activity.Amount >= s.thresholds.TransactionAmount {
 		result.Triggered = true
 		result.Indicators = append(result.Indicators, fmt.Sprintf("Transaction amount $%.2f exceeds threshold $%.2f", activity.Amount, s.thresholds.TransactionAmount))
 	}
-	
+
 	// Check cumulative amount
 	if activity.CumulativeAmount24h >= s.thresholds.CumulativeAmount24h {
 		result.Triggered = true
 		result.Indicators = append(result.Indicators, fmt.Sprintf("24h cumulative amount $%.2f exceeds threshold $%.2f", activity.CumulativeAmount24h, s.thresholds.CumulativeAmount24h))
 	}
-	
+
 	// Check structuring pattern
 	if activity.Amount >= s.thresholds.StructuringThreshold && activity.Amount < s.thresholds.TransactionAmount {
 		if activity.TransactionCount24h >= 3 {
@@ -466,30 +466,30 @@ func (s *SARWorkflowService) CheckSARTriggers(ctx context.Context, activity *Act
 			result.Indicators = append(result.Indicators, "Potential structuring detected: multiple transactions just below reporting threshold")
 		}
 	}
-	
+
 	// Check velocity
 	if activity.TransactionCount24h >= s.thresholds.VelocityThreshold {
 		result.Triggered = true
 		result.Indicators = append(result.Indicators, fmt.Sprintf("High velocity: %d transactions in 24h exceeds threshold %d", activity.TransactionCount24h, s.thresholds.VelocityThreshold))
 	}
-	
+
 	// Check risk score
 	if activity.RiskScore >= s.thresholds.RiskScoreThreshold {
 		result.Triggered = true
 		result.Indicators = append(result.Indicators, fmt.Sprintf("High risk score %.2f exceeds threshold %.2f", activity.RiskScore, s.thresholds.RiskScoreThreshold))
 	}
-	
+
 	// Check AML match
 	if activity.AMLMatchScore >= s.thresholds.AMLMatchThreshold {
 		result.Triggered = true
 		result.Indicators = append(result.Indicators, fmt.Sprintf("AML match score %.2f exceeds threshold %.2f", activity.AMLMatchScore, s.thresholds.AMLMatchThreshold))
 	}
-	
+
 	if result.Triggered {
 		result.RecommendedActivityType = s.determineActivityType(result.Indicators)
 		result.RecommendedPriority = s.determinePriority(activity, result.Indicators)
 	}
-	
+
 	return result, nil
 }
 
@@ -558,12 +558,12 @@ func containsHelper(s, substr string) bool {
 func (s *SARWorkflowService) CreateSAR(ctx context.Context, sar *SuspiciousActivityReport) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	
+
 	sar.SARID = fmt.Sprintf("SAR_%d", time.Now().UnixNano())
 	sar.Status = SARStatusDraft
 	sar.CreatedAt = time.Now().UTC()
 	sar.FilingDeadline = time.Now().AddDate(0, 0, 30) // 30 days to file
-	
+
 	// Add creation event to audit trail
 	sar.AuditTrail = append(sar.AuditTrail, SAREvent{
 		EventID:   fmt.Sprintf("evt_%d", time.Now().UnixNano()),
@@ -572,17 +572,17 @@ func (s *SARWorkflowService) CreateSAR(ctx context.Context, sar *SuspiciousActiv
 		Details:   "SAR created",
 		Timestamp: time.Now().UTC(),
 	})
-	
+
 	// Persist SAR
 	if err := s.persistSAR(ctx, sar); err != nil {
 		return err
 	}
-	
+
 	// Notify
 	if s.notifier != nil {
 		s.notifier.NotifySARCreated(ctx, sar)
 	}
-	
+
 	return nil
 }
 
@@ -590,22 +590,22 @@ func (s *SARWorkflowService) CreateSAR(ctx context.Context, sar *SuspiciousActiv
 func (s *SARWorkflowService) FileSAR(ctx context.Context, sarID, filedBy, filingReference string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	
+
 	// Load SAR
 	sar, err := s.loadSAR(ctx, sarID)
 	if err != nil {
 		return err
 	}
-	
+
 	if sar.Status != SARStatusApproved {
 		return fmt.Errorf("SAR must be approved before filing, current status: %s", sar.Status)
 	}
-	
+
 	now := time.Now().UTC()
 	sar.Status = SARStatusFiled
 	sar.FiledAt = &now
 	sar.FilingReference = filingReference
-	
+
 	// Add filing event
 	sar.AuditTrail = append(sar.AuditTrail, SAREvent{
 		EventID:   fmt.Sprintf("evt_%d", time.Now().UnixNano()),
@@ -614,17 +614,17 @@ func (s *SARWorkflowService) FileSAR(ctx context.Context, sarID, filedBy, filing
 		Details:   fmt.Sprintf("SAR filed with reference: %s", filingReference),
 		Timestamp: now,
 	})
-	
+
 	// Update SAR
 	if err := s.updateSAR(ctx, sar); err != nil {
 		return err
 	}
-	
+
 	// Notify
 	if s.notifier != nil {
 		s.notifier.NotifySARFiled(ctx, sar)
 	}
-	
+
 	return nil
 }
 
@@ -632,14 +632,14 @@ func (s *SARWorkflowService) persistSAR(ctx context.Context, sar *SuspiciousActi
 	if s.db == nil {
 		return nil
 	}
-	
+
 	transactionsJSON, _ := json.Marshal(sar.Transactions)
 	indicatorsJSON, _ := json.Marshal(sar.Indicators)
 	attachmentsJSON, _ := json.Marshal(sar.Attachments)
 	auditTrailJSON, _ := json.Marshal(sar.AuditTrail)
 	metadataJSON, _ := json.Marshal(sar.Metadata)
 	accountsJSON, _ := json.Marshal(sar.AccountNumbers)
-	
+
 	query := `
 		INSERT INTO suspicious_activity_reports (
 			sar_id, status, priority, customer_id, customer_name,
@@ -649,7 +649,7 @@ func (s *SARWorkflowService) persistSAR(ctx context.Context, sar *SuspiciousActi
 			created_at, created_by, filing_deadline, attachments, audit_trail, metadata
 		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24)
 	`
-	
+
 	_, err := s.db.ExecContext(ctx, query,
 		sar.SARID, sar.Status, sar.Priority, sar.CustomerID, sar.CustomerName,
 		accountsJSON, sar.SuspiciousActivity, sar.ActivityType, sar.TotalAmount,
@@ -657,7 +657,7 @@ func (s *SARWorkflowService) persistSAR(ctx context.Context, sar *SuspiciousActi
 		indicatorsJSON, sar.TriggerReason, sar.TriggerDecisionID, sar.AssignedTo,
 		sar.CreatedAt, sar.CreatedBy, sar.FilingDeadline, attachmentsJSON, auditTrailJSON, metadataJSON,
 	)
-	
+
 	return err
 }
 
@@ -677,9 +677,9 @@ func (s *SARWorkflowService) updateSAR(ctx context.Context, sar *SuspiciousActiv
 
 // SanctionsListManager manages sanctions list provenance
 type SanctionsListManager struct {
-	db          *sql.DB
-	providers   map[string]SanctionsListProvider
-	mu          sync.RWMutex
+	db        *sql.DB
+	providers map[string]SanctionsListProvider
+	mu        sync.RWMutex
 }
 
 // SanctionsListProvider interface for sanctions list providers
@@ -690,35 +690,35 @@ type SanctionsListProvider interface {
 
 // SanctionsList represents a sanctions list with provenance
 type SanctionsList struct {
-	ListID        string    `json:"list_id"`
-	ListType      string    `json:"list_type"` // OFAC, UN, EU, UK_HMT, etc.
-	Provider      string    `json:"provider"`
-	SourceURL     string    `json:"source_url"`
-	FetchedAt     time.Time `json:"fetched_at"`
-	PublishedAt   time.Time `json:"published_at"`
-	EffectiveDate time.Time `json:"effective_date"`
-	EntryCount    int       `json:"entry_count"`
-	ContentHash   string    `json:"content_hash"`
-	Signature     string    `json:"signature,omitempty"`
-	PreviousHash  string    `json:"previous_hash"`
-	Version       int       `json:"version"`
-	Status        string    `json:"status"` // ACTIVE, SUPERSEDED, RETIRED
+	ListID        string            `json:"list_id"`
+	ListType      string            `json:"list_type"` // OFAC, UN, EU, UK_HMT, etc.
+	Provider      string            `json:"provider"`
+	SourceURL     string            `json:"source_url"`
+	FetchedAt     time.Time         `json:"fetched_at"`
+	PublishedAt   time.Time         `json:"published_at"`
+	EffectiveDate time.Time         `json:"effective_date"`
+	EntryCount    int               `json:"entry_count"`
+	ContentHash   string            `json:"content_hash"`
+	Signature     string            `json:"signature,omitempty"`
+	PreviousHash  string            `json:"previous_hash"`
+	Version       int               `json:"version"`
+	Status        string            `json:"status"` // ACTIVE, SUPERSEDED, RETIRED
 	Metadata      map[string]string `json:"metadata"`
 }
 
 // SanctionsListUpdate represents an update to a sanctions list
 type SanctionsListUpdate struct {
-	UpdateID      string    `json:"update_id"`
-	ListID        string    `json:"list_id"`
-	ListType      string    `json:"list_type"`
-	OldVersion    int       `json:"old_version"`
-	NewVersion    int       `json:"new_version"`
-	EntriesAdded  int       `json:"entries_added"`
-	EntriesRemoved int      `json:"entries_removed"`
-	EntriesModified int     `json:"entries_modified"`
-	DiffHash      string    `json:"diff_hash"`
-	AppliedAt     time.Time `json:"applied_at"`
-	AppliedBy     string    `json:"applied_by"`
+	UpdateID        string    `json:"update_id"`
+	ListID          string    `json:"list_id"`
+	ListType        string    `json:"list_type"`
+	OldVersion      int       `json:"old_version"`
+	NewVersion      int       `json:"new_version"`
+	EntriesAdded    int       `json:"entries_added"`
+	EntriesRemoved  int       `json:"entries_removed"`
+	EntriesModified int       `json:"entries_modified"`
+	DiffHash        string    `json:"diff_hash"`
+	AppliedAt       time.Time `json:"applied_at"`
+	AppliedBy       string    `json:"applied_by"`
 }
 
 // NewSanctionsListManager creates a new sanctions list manager
@@ -740,24 +740,24 @@ func (m *SanctionsListManager) RegisterProvider(provider SanctionsListProvider) 
 func (m *SanctionsListManager) UpdateList(ctx context.Context, listType string) (*SanctionsListUpdate, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	
+
 	provider, ok := m.providers[listType]
 	if !ok {
 		return nil, fmt.Errorf("no provider registered for list type: %s", listType)
 	}
-	
+
 	// Fetch new list
 	newList, err := provider.FetchList(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch list: %w", err)
 	}
-	
+
 	// Get current list
 	currentList, err := m.getCurrentList(ctx, listType)
 	if err != nil && err != sql.ErrNoRows {
 		return nil, fmt.Errorf("failed to get current list: %w", err)
 	}
-	
+
 	// Calculate diff
 	update := &SanctionsListUpdate{
 		UpdateID:  fmt.Sprintf("upd_%d", time.Now().UnixNano()),
@@ -766,31 +766,31 @@ func (m *SanctionsListManager) UpdateList(ctx context.Context, listType string) 
 		AppliedAt: time.Now().UTC(),
 		AppliedBy: "SYSTEM",
 	}
-	
+
 	if currentList != nil {
 		update.OldVersion = currentList.Version
 		newList.PreviousHash = currentList.ContentHash
 		newList.Version = currentList.Version + 1
-		
+
 		// Mark old list as superseded
 		currentList.Status = "SUPERSEDED"
 		m.updateListStatus(ctx, currentList)
 	} else {
 		newList.Version = 1
 	}
-	
+
 	update.NewVersion = newList.Version
-	
+
 	// Save new list
 	if err := m.saveList(ctx, newList); err != nil {
 		return nil, fmt.Errorf("failed to save list: %w", err)
 	}
-	
+
 	// Save update record
 	if err := m.saveUpdate(ctx, update); err != nil {
 		return nil, fmt.Errorf("failed to save update: %w", err)
 	}
-	
+
 	return update, nil
 }
 
@@ -799,7 +799,7 @@ func (m *SanctionsListManager) GetListProvenance(ctx context.Context, listType s
 	if m.db == nil {
 		return nil, nil
 	}
-	
+
 	query := `
 		SELECT list_id, list_type, provider, source_url, fetched_at,
 		       published_at, effective_date, entry_count, content_hash,
@@ -809,13 +809,13 @@ func (m *SanctionsListManager) GetListProvenance(ctx context.Context, listType s
 		ORDER BY version DESC
 		LIMIT $2
 	`
-	
+
 	rows, err := m.db.QueryContext(ctx, query, listType, limit)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	
+
 	var lists []*SanctionsList
 	for rows.Next() {
 		var list SanctionsList
@@ -829,7 +829,7 @@ func (m *SanctionsListManager) GetListProvenance(ctx context.Context, listType s
 		}
 		lists = append(lists, &list)
 	}
-	
+
 	return lists, nil
 }
 
@@ -839,24 +839,24 @@ func (m *SanctionsListManager) VerifyListIntegrity(ctx context.Context, listType
 	if err != nil {
 		return false, nil, err
 	}
-	
+
 	var errors []string
-	
+
 	for i := 0; i < len(lists)-1; i++ {
 		current := lists[i]
 		previous := lists[i+1]
-		
+
 		// Verify hash chain
 		if current.PreviousHash != previous.ContentHash {
 			errors = append(errors, fmt.Sprintf("hash chain broken at version %d", current.Version))
 		}
-		
+
 		// Verify version sequence
 		if current.Version != previous.Version+1 {
 			errors = append(errors, fmt.Sprintf("version gap at %d", current.Version))
 		}
 	}
-	
+
 	return len(errors) == 0, errors, nil
 }
 
@@ -864,7 +864,7 @@ func (m *SanctionsListManager) getCurrentList(ctx context.Context, listType stri
 	if m.db == nil {
 		return nil, sql.ErrNoRows
 	}
-	
+
 	query := `
 		SELECT list_id, list_type, provider, source_url, fetched_at,
 		       published_at, effective_date, entry_count, content_hash,
@@ -874,14 +874,14 @@ func (m *SanctionsListManager) getCurrentList(ctx context.Context, listType stri
 		ORDER BY version DESC
 		LIMIT 1
 	`
-	
+
 	var list SanctionsList
 	err := m.db.QueryRowContext(ctx, query, listType).Scan(
 		&list.ListID, &list.ListType, &list.Provider, &list.SourceURL, &list.FetchedAt,
 		&list.PublishedAt, &list.EffectiveDate, &list.EntryCount, &list.ContentHash,
 		&list.Signature, &list.PreviousHash, &list.Version, &list.Status,
 	)
-	
+
 	return &list, err
 }
 
@@ -889,9 +889,9 @@ func (m *SanctionsListManager) saveList(ctx context.Context, list *SanctionsList
 	if m.db == nil {
 		return nil
 	}
-	
+
 	metadataJSON, _ := json.Marshal(list.Metadata)
-	
+
 	query := `
 		INSERT INTO sanctions_lists (
 			list_id, list_type, provider, source_url, fetched_at,
@@ -899,13 +899,13 @@ func (m *SanctionsListManager) saveList(ctx context.Context, list *SanctionsList
 			signature, previous_hash, version, status, metadata
 		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
 	`
-	
+
 	_, err := m.db.ExecContext(ctx, query,
 		list.ListID, list.ListType, list.Provider, list.SourceURL, list.FetchedAt,
 		list.PublishedAt, list.EffectiveDate, list.EntryCount, list.ContentHash,
 		list.Signature, list.PreviousHash, list.Version, list.Status, metadataJSON,
 	)
-	
+
 	return err
 }
 
@@ -913,7 +913,7 @@ func (m *SanctionsListManager) updateListStatus(ctx context.Context, list *Sanct
 	if m.db == nil {
 		return nil
 	}
-	
+
 	query := `UPDATE sanctions_lists SET status = $1 WHERE list_id = $2`
 	_, err := m.db.ExecContext(ctx, query, list.Status, list.ListID)
 	return err
@@ -923,7 +923,7 @@ func (m *SanctionsListManager) saveUpdate(ctx context.Context, update *Sanctions
 	if m.db == nil {
 		return nil
 	}
-	
+
 	query := `
 		INSERT INTO sanctions_list_updates (
 			update_id, list_id, list_type, old_version, new_version,
@@ -931,13 +931,13 @@ func (m *SanctionsListManager) saveUpdate(ctx context.Context, update *Sanctions
 			applied_at, applied_by
 		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
 	`
-	
+
 	_, err := m.db.ExecContext(ctx, query,
 		update.UpdateID, update.ListID, update.ListType, update.OldVersion, update.NewVersion,
 		update.EntriesAdded, update.EntriesRemoved, update.EntriesModified, update.DiffHash,
 		update.AppliedAt, update.AppliedBy,
 	)
-	
+
 	return err
 }
 
@@ -970,31 +970,31 @@ type RetentionPolicy struct {
 
 // RetentionAction represents a retention action taken
 type RetentionAction struct {
-	ActionID      string    `json:"action_id"`
-	PolicyID      string    `json:"policy_id"`
-	DataType      string    `json:"data_type"`
-	ActionType    string    `json:"action_type"` // ARCHIVE, DELETE, ANONYMIZE
-	RecordsCount  int64     `json:"records_count"`
-	ExecutedAt    time.Time `json:"executed_at"`
-	ExecutedBy    string    `json:"executed_by"`
-	Status        string    `json:"status"`
-	ErrorMessage  string    `json:"error_message,omitempty"`
+	ActionID     string    `json:"action_id"`
+	PolicyID     string    `json:"policy_id"`
+	DataType     string    `json:"data_type"`
+	ActionType   string    `json:"action_type"` // ARCHIVE, DELETE, ANONYMIZE
+	RecordsCount int64     `json:"records_count"`
+	ExecutedAt   time.Time `json:"executed_at"`
+	ExecutedBy   string    `json:"executed_by"`
+	Status       string    `json:"status"`
+	ErrorMessage string    `json:"error_message,omitempty"`
 }
 
 // DeletionRequest represents a data deletion request (e.g., GDPR right to erasure)
 type DeletionRequest struct {
-	RequestID     string    `json:"request_id"`
-	CustomerID    string    `json:"customer_id"`
-	RequestType   string    `json:"request_type"` // GDPR_ERASURE, CCPA_DELETE, etc.
-	RequestedAt   time.Time `json:"requested_at"`
-	RequestedBy   string    `json:"requested_by"`
-	Deadline      time.Time `json:"deadline"`
-	Status        string    `json:"status"` // PENDING, IN_PROGRESS, COMPLETED, REJECTED
-	DataTypes     []string  `json:"data_types"`
-	Exclusions    []string  `json:"exclusions"` // Data that cannot be deleted (legal hold, etc.)
-	CompletedAt   *time.Time `json:"completed_at,omitempty"`
-	CompletedBy   string    `json:"completed_by,omitempty"`
-	AuditTrail    []string  `json:"audit_trail"`
+	RequestID   string     `json:"request_id"`
+	CustomerID  string     `json:"customer_id"`
+	RequestType string     `json:"request_type"` // GDPR_ERASURE, CCPA_DELETE, etc.
+	RequestedAt time.Time  `json:"requested_at"`
+	RequestedBy string     `json:"requested_by"`
+	Deadline    time.Time  `json:"deadline"`
+	Status      string     `json:"status"` // PENDING, IN_PROGRESS, COMPLETED, REJECTED
+	DataTypes   []string   `json:"data_types"`
+	Exclusions  []string   `json:"exclusions"` // Data that cannot be deleted (legal hold, etc.)
+	CompletedAt *time.Time `json:"completed_at,omitempty"`
+	CompletedBy string     `json:"completed_by,omitempty"`
+	AuditTrail  []string   `json:"audit_trail"`
 }
 
 // NewRetentionPolicyService creates a new retention policy service
@@ -1021,7 +1021,7 @@ func (s *RetentionPolicyService) initializeDefaultPolicies() {
 		Regulation:      "AML/KYC",
 		Status:          "ACTIVE",
 	}
-	
+
 	// Transaction data - typically 5-7 years
 	s.policies["transaction_data"] = &RetentionPolicy{
 		PolicyID:        "transaction_data",
@@ -1034,7 +1034,7 @@ func (s *RetentionPolicyService) initializeDefaultPolicies() {
 		Regulation:      "AML/KYC",
 		Status:          "ACTIVE",
 	}
-	
+
 	// Fraud alerts - typically 5 years
 	s.policies["fraud_data"] = &RetentionPolicy{
 		PolicyID:        "fraud_data",
@@ -1047,7 +1047,7 @@ func (s *RetentionPolicyService) initializeDefaultPolicies() {
 		Regulation:      "FRAUD_PREVENTION",
 		Status:          "ACTIVE",
 	}
-	
+
 	// SAR data - typically 5 years after filing
 	s.policies["sar_data"] = &RetentionPolicy{
 		PolicyID:        "sar_data",
@@ -1066,17 +1066,17 @@ func (s *RetentionPolicyService) initializeDefaultPolicies() {
 func (s *RetentionPolicyService) ProcessDeletionRequest(ctx context.Context, request *DeletionRequest) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	
+
 	request.Status = "IN_PROGRESS"
 	request.AuditTrail = append(request.AuditTrail, fmt.Sprintf("%s: Processing started", time.Now().Format(time.RFC3339)))
-	
+
 	// Check for legal holds
 	exclusions, err := s.checkLegalHolds(ctx, request.CustomerID)
 	if err != nil {
 		return fmt.Errorf("failed to check legal holds: %w", err)
 	}
 	request.Exclusions = exclusions
-	
+
 	// Process each data type
 	for _, dataType := range request.DataTypes {
 		// Skip if excluded
@@ -1084,7 +1084,7 @@ func (s *RetentionPolicyService) ProcessDeletionRequest(ctx context.Context, req
 			request.AuditTrail = append(request.AuditTrail, fmt.Sprintf("%s: Skipped %s (legal hold)", time.Now().Format(time.RFC3339), dataType))
 			continue
 		}
-		
+
 		// Anonymize or delete based on policy
 		policy := s.policies[dataType+"_data"]
 		if policy != nil && policy.LegalHold {
@@ -1103,12 +1103,12 @@ func (s *RetentionPolicyService) ProcessDeletionRequest(ctx context.Context, req
 			request.AuditTrail = append(request.AuditTrail, fmt.Sprintf("%s: Deleted %s", time.Now().Format(time.RFC3339), dataType))
 		}
 	}
-	
+
 	now := time.Now().UTC()
 	request.Status = "COMPLETED"
 	request.CompletedAt = &now
 	request.AuditTrail = append(request.AuditTrail, fmt.Sprintf("%s: Processing completed", time.Now().Format(time.RFC3339)))
-	
+
 	return s.saveDeletionRequest(ctx, request)
 }
 
@@ -1116,14 +1116,14 @@ func (s *RetentionPolicyService) ProcessDeletionRequest(ctx context.Context, req
 func (s *RetentionPolicyService) RunRetentionJob(ctx context.Context) ([]*RetentionAction, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	
+
 	var actions []*RetentionAction
-	
+
 	for _, policy := range s.policies {
 		if policy.Status != "ACTIVE" {
 			continue
 		}
-		
+
 		// Archive old data
 		archiveAction, err := s.archiveOldData(ctx, policy)
 		if err != nil {
@@ -1132,7 +1132,7 @@ func (s *RetentionPolicyService) RunRetentionJob(ctx context.Context) ([]*Retent
 		if archiveAction != nil {
 			actions = append(actions, archiveAction)
 		}
-		
+
 		// Delete expired data
 		deleteAction, err := s.deleteExpiredData(ctx, policy)
 		if err != nil {
@@ -1142,7 +1142,7 @@ func (s *RetentionPolicyService) RunRetentionJob(ctx context.Context) ([]*Retent
 			actions = append(actions, deleteAction)
 		}
 	}
-	
+
 	return actions, nil
 }
 
@@ -1178,11 +1178,11 @@ func (s *RetentionPolicyService) saveDeletionRequest(ctx context.Context, reques
 	if s.db == nil {
 		return nil
 	}
-	
+
 	dataTypesJSON, _ := json.Marshal(request.DataTypes)
 	exclusionsJSON, _ := json.Marshal(request.Exclusions)
 	auditTrailJSON, _ := json.Marshal(request.AuditTrail)
-	
+
 	query := `
 		INSERT INTO deletion_requests (
 			request_id, customer_id, request_type, requested_at, requested_by,
@@ -1191,12 +1191,12 @@ func (s *RetentionPolicyService) saveDeletionRequest(ctx context.Context, reques
 		ON CONFLICT (request_id) DO UPDATE SET
 			status = $7, completed_at = $10, completed_by = $11, audit_trail = $12
 	`
-	
+
 	_, err := s.db.ExecContext(ctx, query,
 		request.RequestID, request.CustomerID, request.RequestType, request.RequestedAt, request.RequestedBy,
 		request.Deadline, request.Status, dataTypesJSON, exclusionsJSON, request.CompletedAt, request.CompletedBy, auditTrailJSON,
 	)
-	
+
 	return err
 }
 

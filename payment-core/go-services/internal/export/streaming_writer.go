@@ -18,7 +18,7 @@ import (
 type ExportFormat int
 
 const (
-	FormatCSV   ExportFormat = iota
+	FormatCSV ExportFormat = iota
 	FormatExcel
 	FormatPDF
 	FormatJSON
@@ -26,23 +26,23 @@ const (
 
 // ExportConfig configures the export job
 type ExportConfig struct {
-	Format      ExportFormat
-	OutputPath  string
-	BatchSize   int
-	MaxRows     int64
-	Columns     []ColumnDef
-	Filters     map[string]string
-	DateRange   *DateRange
-	Timezone    string
+	Format     ExportFormat
+	OutputPath string
+	BatchSize  int
+	MaxRows    int64
+	Columns    []ColumnDef
+	Filters    map[string]string
+	DateRange  *DateRange
+	Timezone   string
 }
 
 // ColumnDef defines an export column
 type ColumnDef struct {
-	Name      string
-	Header    string
-	Type      string // string, number, date, currency
-	Format    string // date format, number format
-	Width     int    // column width for Excel
+	Name   string
+	Header string
+	Type   string // string, number, date, currency
+	Format string // date format, number format
+	Width  int    // column width for Excel
 }
 
 // DateRange for filtering
@@ -59,19 +59,19 @@ type DataSource interface {
 
 // ExportResult contains the outcome of an export job
 type ExportResult struct {
-	FilePath     string
-	FileSize     int64
-	TotalRows    int64
-	Duration     time.Duration
-	RowsPerSec   float64
-	Format       ExportFormat
-	Error        string
+	FilePath   string
+	FileSize   int64
+	TotalRows  int64
+	Duration   time.Duration
+	RowsPerSec float64
+	Format     ExportFormat
+	Error      string
 }
 
 // StreamingExporter generates exports with constant memory usage
 type StreamingExporter struct {
-	config     ExportConfig
-	source     DataSource
+	config      ExportConfig
+	source      DataSource
 	rowsWritten int64
 }
 

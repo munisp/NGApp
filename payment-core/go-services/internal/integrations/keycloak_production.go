@@ -152,23 +152,23 @@ type KeycloakClient struct {
 
 // KeycloakRole represents a Keycloak role
 type KeycloakRole struct {
-	ID          string            `json:"id,omitempty"`
-	Name        string            `json:"name"`
-	Description string            `json:"description,omitempty"`
-	Composite   bool              `json:"composite,omitempty"`
-	ClientRole  bool              `json:"clientRole,omitempty"`
-	ContainerID string            `json:"containerId,omitempty"`
+	ID          string              `json:"id,omitempty"`
+	Name        string              `json:"name"`
+	Description string              `json:"description,omitempty"`
+	Composite   bool                `json:"composite,omitempty"`
+	ClientRole  bool                `json:"clientRole,omitempty"`
+	ContainerID string              `json:"containerId,omitempty"`
 	Attributes  map[string][]string `json:"attributes,omitempty"`
 }
 
 // KeycloakGroup represents a Keycloak group
 type KeycloakGroup struct {
-	ID         string            `json:"id,omitempty"`
-	Name       string            `json:"name"`
-	Path       string            `json:"path,omitempty"`
-	SubGroups  []KeycloakGroup   `json:"subGroups,omitempty"`
-	Attributes map[string][]string `json:"attributes,omitempty"`
-	RealmRoles []string          `json:"realmRoles,omitempty"`
+	ID          string              `json:"id,omitempty"`
+	Name        string              `json:"name"`
+	Path        string              `json:"path,omitempty"`
+	SubGroups   []KeycloakGroup     `json:"subGroups,omitempty"`
+	Attributes  map[string][]string `json:"attributes,omitempty"`
+	RealmRoles  []string            `json:"realmRoles,omitempty"`
 	ClientRoles map[string][]string `json:"clientRoles,omitempty"`
 }
 

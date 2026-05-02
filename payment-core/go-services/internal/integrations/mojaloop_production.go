@@ -16,14 +16,14 @@ import (
 
 // Mojaloop API endpoints
 const (
-	MojaloopPathParticipants     = "/participants"
-	MojaloopPathParties          = "/parties"
-	MojaloopPathQuotes           = "/quotes"
-	MojaloopPathTransfers        = "/transfers"
-	MojaloopPathTransactionReqs  = "/transactionRequests"
-	MojaloopPathAuthorizations   = "/authorizations"
-	MojaloopPathBulkQuotes       = "/bulkQuotes"
-	MojaloopPathBulkTransfers    = "/bulkTransfers"
+	MojaloopPathParticipants    = "/participants"
+	MojaloopPathParties         = "/parties"
+	MojaloopPathQuotes          = "/quotes"
+	MojaloopPathTransfers       = "/transfers"
+	MojaloopPathTransactionReqs = "/transactionRequests"
+	MojaloopPathAuthorizations  = "/authorizations"
+	MojaloopPathBulkQuotes      = "/bulkQuotes"
+	MojaloopPathBulkTransfers   = "/bulkTransfers"
 )
 
 // Mojaloop transfer states
@@ -105,29 +105,29 @@ type FSPIOPHeaders struct {
 type PartyIDType string
 
 const (
-	PartyIDTypeMSISDN        PartyIDType = "MSISDN"
-	PartyIDTypeEmail         PartyIDType = "EMAIL"
-	PartyIDTypePersonalID    PartyIDType = "PERSONAL_ID"
-	PartyIDTypeBusinessID    PartyIDType = "BUSINESS"
-	PartyIDTypeDevice        PartyIDType = "DEVICE"
-	PartyIDTypeAccountID     PartyIDType = "ACCOUNT_ID"
-	PartyIDTypeIBAN          PartyIDType = "IBAN"
-	PartyIDTypeAlias         PartyIDType = "ALIAS"
+	PartyIDTypeMSISDN     PartyIDType = "MSISDN"
+	PartyIDTypeEmail      PartyIDType = "EMAIL"
+	PartyIDTypePersonalID PartyIDType = "PERSONAL_ID"
+	PartyIDTypeBusinessID PartyIDType = "BUSINESS"
+	PartyIDTypeDevice     PartyIDType = "DEVICE"
+	PartyIDTypeAccountID  PartyIDType = "ACCOUNT_ID"
+	PartyIDTypeIBAN       PartyIDType = "IBAN"
+	PartyIDTypeAlias      PartyIDType = "ALIAS"
 )
 
 // Party represents a Mojaloop party
 type Party struct {
-	PartyIDInfo PartyIDInfo `json:"partyIdInfo"`
-	Name        string      `json:"name,omitempty"`
+	PartyIDInfo  PartyIDInfo   `json:"partyIdInfo"`
+	Name         string        `json:"name,omitempty"`
 	PersonalInfo *PersonalInfo `json:"personalInfo,omitempty"`
 }
 
 // PartyIDInfo contains party identification information
 type PartyIDInfo struct {
-	PartyIDType     PartyIDType `json:"partyIdType"`
-	PartyIdentifier string      `json:"partyIdentifier"`
-	PartySubIDOrType string     `json:"partySubIdOrType,omitempty"`
-	FSPID           string      `json:"fspId,omitempty"`
+	PartyIDType      PartyIDType `json:"partyIdType"`
+	PartyIdentifier  string      `json:"partyIdentifier"`
+	PartySubIDOrType string      `json:"partySubIdOrType,omitempty"`
+	FSPID            string      `json:"fspId,omitempty"`
 }
 
 // PersonalInfo contains personal information about a party
@@ -151,51 +151,51 @@ type Money struct {
 
 // QuoteRequest represents a quote request
 type QuoteRequest struct {
-	QuoteID        string      `json:"quoteId"`
-	TransactionID  string      `json:"transactionId"`
-	Payer          Party       `json:"payer"`
-	Payee          Party       `json:"payee"`
-	AmountType     string      `json:"amountType"` // SEND or RECEIVE
-	Amount         Money       `json:"amount"`
+	QuoteID         string          `json:"quoteId"`
+	TransactionID   string          `json:"transactionId"`
+	Payer           Party           `json:"payer"`
+	Payee           Party           `json:"payee"`
+	AmountType      string          `json:"amountType"` // SEND or RECEIVE
+	Amount          Money           `json:"amount"`
 	TransactionType TransactionType `json:"transactionType"`
-	Note           string      `json:"note,omitempty"`
-	Expiration     string      `json:"expiration,omitempty"`
+	Note            string          `json:"note,omitempty"`
+	Expiration      string          `json:"expiration,omitempty"`
 }
 
 // TransactionType represents the type of transaction
 type TransactionType struct {
-	Scenario    string `json:"scenario"`    // DEPOSIT, WITHDRAWAL, TRANSFER, etc.
-	Initiator   string `json:"initiator"`   // PAYER or PAYEE
+	Scenario      string `json:"scenario"`      // DEPOSIT, WITHDRAWAL, TRANSFER, etc.
+	Initiator     string `json:"initiator"`     // PAYER or PAYEE
 	InitiatorType string `json:"initiatorType"` // CONSUMER, AGENT, BUSINESS, DEVICE
 }
 
 // QuoteResponse represents a quote response
 type QuoteResponse struct {
-	TransferAmount      Money       `json:"transferAmount"`
-	PayeeReceiveAmount  Money       `json:"payeeReceiveAmount,omitempty"`
-	PayeeFSPFee         Money       `json:"payeeFspFee,omitempty"`
-	PayeeFSPCommission  Money       `json:"payeeFspCommission,omitempty"`
-	Expiration          string      `json:"expiration"`
-	ILPPacket           string      `json:"ilpPacket"`
-	Condition           string      `json:"condition"`
+	TransferAmount     Money  `json:"transferAmount"`
+	PayeeReceiveAmount Money  `json:"payeeReceiveAmount,omitempty"`
+	PayeeFSPFee        Money  `json:"payeeFspFee,omitempty"`
+	PayeeFSPCommission Money  `json:"payeeFspCommission,omitempty"`
+	Expiration         string `json:"expiration"`
+	ILPPacket          string `json:"ilpPacket"`
+	Condition          string `json:"condition"`
 }
 
 // TransferRequest represents a transfer request
 type TransferRequest struct {
-	TransferID    string `json:"transferId"`
-	PayerFSP      string `json:"payerFsp"`
-	PayeeFSP      string `json:"payeeFsp"`
-	Amount        Money  `json:"amount"`
-	ILPPacket     string `json:"ilpPacket"`
-	Condition     string `json:"condition"`
-	Expiration    string `json:"expiration"`
+	TransferID string `json:"transferId"`
+	PayerFSP   string `json:"payerFsp"`
+	PayeeFSP   string `json:"payeeFsp"`
+	Amount     Money  `json:"amount"`
+	ILPPacket  string `json:"ilpPacket"`
+	Condition  string `json:"condition"`
+	Expiration string `json:"expiration"`
 }
 
 // TransferResponse represents a transfer response
 type TransferResponse struct {
-	TransferState       MojaloopState `json:"transferState"`
-	Fulfilment          string        `json:"fulfilment,omitempty"`
-	CompletedTimestamp  string        `json:"completedTimestamp,omitempty"`
+	TransferState      MojaloopState `json:"transferState"`
+	Fulfilment         string        `json:"fulfilment,omitempty"`
+	CompletedTimestamp string        `json:"completedTimestamp,omitempty"`
 }
 
 // TransferFulfilRequest represents a transfer fulfil request

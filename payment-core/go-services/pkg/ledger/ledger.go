@@ -28,8 +28,8 @@ const (
 type TransferFlags uint16
 
 const (
-	TransferFlagLinked          TransferFlags = 1 << 0
-	TransferFlagPending         TransferFlags = 1 << 1
+	TransferFlagLinked              TransferFlags = 1 << 0
+	TransferFlagPending             TransferFlags = 1 << 1
 	TransferFlagPostPendingTransfer TransferFlags = 1 << 2
 	TransferFlagVoidPendingTransfer TransferFlags = 1 << 3
 )

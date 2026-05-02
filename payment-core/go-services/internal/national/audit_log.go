@@ -2,13 +2,13 @@
 package national
 
 import (
-	"math/rand"
 	"context"
 	"crypto/sha256"
 	"database/sql"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"math/rand"
 	"sync"
 	"time"
 )
@@ -18,46 +18,46 @@ type AuditEventType string
 
 const (
 	// Control plane events
-	AuditEventParticipantOnboarded    AuditEventType = "PARTICIPANT_ONBOARDED"
-	AuditEventParticipantSuspended    AuditEventType = "PARTICIPANT_SUSPENDED"
-	AuditEventParticipantReactivated  AuditEventType = "PARTICIPANT_REACTIVATED"
-	AuditEventParticipantDisabled     AuditEventType = "PARTICIPANT_DISABLED"
-	AuditEventParticipantClosed       AuditEventType = "PARTICIPANT_CLOSED"
-	AuditEventLimitChanged            AuditEventType = "LIMIT_CHANGED"
-	AuditEventEndpointUpdated         AuditEventType = "ENDPOINT_UPDATED"
-	AuditEventCurrencyAdded           AuditEventType = "CURRENCY_ADDED"
-	
+	AuditEventParticipantOnboarded   AuditEventType = "PARTICIPANT_ONBOARDED"
+	AuditEventParticipantSuspended   AuditEventType = "PARTICIPANT_SUSPENDED"
+	AuditEventParticipantReactivated AuditEventType = "PARTICIPANT_REACTIVATED"
+	AuditEventParticipantDisabled    AuditEventType = "PARTICIPANT_DISABLED"
+	AuditEventParticipantClosed      AuditEventType = "PARTICIPANT_CLOSED"
+	AuditEventLimitChanged           AuditEventType = "LIMIT_CHANGED"
+	AuditEventEndpointUpdated        AuditEventType = "ENDPOINT_UPDATED"
+	AuditEventCurrencyAdded          AuditEventType = "CURRENCY_ADDED"
+
 	// Key management events
-	AuditEventKeyGenerated            AuditEventType = "KEY_GENERATED"
-	AuditEventKeyRotated              AuditEventType = "KEY_ROTATED"
-	AuditEventKeyDisabled             AuditEventType = "KEY_DISABLED"
-	AuditEventKeyRevoked              AuditEventType = "KEY_REVOKED"
-	
+	AuditEventKeyGenerated AuditEventType = "KEY_GENERATED"
+	AuditEventKeyRotated   AuditEventType = "KEY_ROTATED"
+	AuditEventKeyDisabled  AuditEventType = "KEY_DISABLED"
+	AuditEventKeyRevoked   AuditEventType = "KEY_REVOKED"
+
 	// Settlement events
-	AuditEventSettlementWindowOpened  AuditEventType = "SETTLEMENT_WINDOW_OPENED"
-	AuditEventSettlementWindowClosed  AuditEventType = "SETTLEMENT_WINDOW_CLOSED"
-	AuditEventSettlementCreated       AuditEventType = "SETTLEMENT_CREATED"
-	AuditEventSettlementExecuted      AuditEventType = "SETTLEMENT_EXECUTED"
-	AuditEventSettlementAborted       AuditEventType = "SETTLEMENT_ABORTED"
-	
+	AuditEventSettlementWindowOpened AuditEventType = "SETTLEMENT_WINDOW_OPENED"
+	AuditEventSettlementWindowClosed AuditEventType = "SETTLEMENT_WINDOW_CLOSED"
+	AuditEventSettlementCreated      AuditEventType = "SETTLEMENT_CREATED"
+	AuditEventSettlementExecuted     AuditEventType = "SETTLEMENT_EXECUTED"
+	AuditEventSettlementAborted      AuditEventType = "SETTLEMENT_ABORTED"
+
 	// Rule/configuration events
-	AuditEventRuleCreated             AuditEventType = "RULE_CREATED"
-	AuditEventRuleUpdated             AuditEventType = "RULE_UPDATED"
-	AuditEventRuleDeleted             AuditEventType = "RULE_DELETED"
-	AuditEventConfigChanged           AuditEventType = "CONFIG_CHANGED"
-	
+	AuditEventRuleCreated   AuditEventType = "RULE_CREATED"
+	AuditEventRuleUpdated   AuditEventType = "RULE_UPDATED"
+	AuditEventRuleDeleted   AuditEventType = "RULE_DELETED"
+	AuditEventConfigChanged AuditEventType = "CONFIG_CHANGED"
+
 	// Access control events
-	AuditEventUserLogin               AuditEventType = "USER_LOGIN"
-	AuditEventUserLogout              AuditEventType = "USER_LOGOUT"
-	AuditEventPermissionGranted       AuditEventType = "PERMISSION_GRANTED"
-	AuditEventPermissionRevoked       AuditEventType = "PERMISSION_REVOKED"
-	
+	AuditEventUserLogin         AuditEventType = "USER_LOGIN"
+	AuditEventUserLogout        AuditEventType = "USER_LOGOUT"
+	AuditEventPermissionGranted AuditEventType = "PERMISSION_GRANTED"
+	AuditEventPermissionRevoked AuditEventType = "PERMISSION_REVOKED"
+
 	// Emergency events
-	AuditEventKillSwitchActivated     AuditEventType = "KILL_SWITCH_ACTIVATED"
-	AuditEventKillSwitchDeactivated   AuditEventType = "KILL_SWITCH_DEACTIVATED"
-	AuditEventEmergencyHalt           AuditEventType = "EMERGENCY_HALT"
-	AuditEventEmergencyResume         AuditEventType = "EMERGENCY_RESUME"
-	
+	AuditEventKillSwitchActivated   AuditEventType = "KILL_SWITCH_ACTIVATED"
+	AuditEventKillSwitchDeactivated AuditEventType = "KILL_SWITCH_DEACTIVATED"
+	AuditEventEmergencyHalt         AuditEventType = "EMERGENCY_HALT"
+	AuditEventEmergencyResume       AuditEventType = "EMERGENCY_RESUME"
+
 	// Reconciliation events
 	AuditEventReconciliationStarted   AuditEventType = "RECONCILIATION_STARTED"
 	AuditEventReconciliationCompleted AuditEventType = "RECONCILIATION_COMPLETED"
@@ -69,38 +69,38 @@ const (
 type AuditSeverity string
 
 const (
-	AuditSeverityInfo     AuditSeverity = "INFO"
-	AuditSeverityWarning  AuditSeverity = "WARNING"
-	AuditSeverityCritical AuditSeverity = "CRITICAL"
+	AuditSeverityInfo      AuditSeverity = "INFO"
+	AuditSeverityWarning   AuditSeverity = "WARNING"
+	AuditSeverityCritical  AuditSeverity = "CRITICAL"
 	AuditSeverityEmergency AuditSeverity = "EMERGENCY"
 )
 
 // AuditEvent represents an immutable audit log entry
 type AuditEvent struct {
-	EventID         string            `json:"event_id"`
-	EventType       AuditEventType    `json:"event_type"`
-	Severity        AuditSeverity     `json:"severity"`
-	Timestamp       time.Time         `json:"timestamp"`
-	Actor           *AuditActor       `json:"actor"`
-	Subject         *AuditSubject     `json:"subject"`
-	Action          string            `json:"action"`
-	Details         map[string]interface{} `json:"details"`
-	PreviousState   map[string]interface{} `json:"previous_state,omitempty"`
-	NewState        map[string]interface{} `json:"new_state,omitempty"`
-	CorrelationID   string            `json:"correlation_id,omitempty"`
-	SourceIP        string            `json:"source_ip,omitempty"`
-	UserAgent       string            `json:"user_agent,omitempty"`
-	Hash            string            `json:"hash"`
-	PreviousHash    string            `json:"previous_hash"`
-	Signature       string            `json:"signature,omitempty"`
+	EventID       string                 `json:"event_id"`
+	EventType     AuditEventType         `json:"event_type"`
+	Severity      AuditSeverity          `json:"severity"`
+	Timestamp     time.Time              `json:"timestamp"`
+	Actor         *AuditActor            `json:"actor"`
+	Subject       *AuditSubject          `json:"subject"`
+	Action        string                 `json:"action"`
+	Details       map[string]interface{} `json:"details"`
+	PreviousState map[string]interface{} `json:"previous_state,omitempty"`
+	NewState      map[string]interface{} `json:"new_state,omitempty"`
+	CorrelationID string                 `json:"correlation_id,omitempty"`
+	SourceIP      string                 `json:"source_ip,omitempty"`
+	UserAgent     string                 `json:"user_agent,omitempty"`
+	Hash          string                 `json:"hash"`
+	PreviousHash  string                 `json:"previous_hash"`
+	Signature     string                 `json:"signature,omitempty"`
 }
 
 // AuditActor represents who performed the action
 type AuditActor struct {
-	ActorID     string `json:"actor_id"`
-	ActorType   string `json:"actor_type"` // USER, SYSTEM, API_CLIENT, SCHEDULER
-	ActorName   string `json:"actor_name"`
-	Roles       []string `json:"roles,omitempty"`
+	ActorID   string   `json:"actor_id"`
+	ActorType string   `json:"actor_type"` // USER, SYSTEM, API_CLIENT, SCHEDULER
+	ActorName string   `json:"actor_name"`
+	Roles     []string `json:"roles,omitempty"`
 }
 
 // AuditSubject represents what was acted upon
@@ -131,11 +131,11 @@ type WORMStorage interface {
 
 // AuditLogConfig holds audit logger configuration
 type AuditLogConfig struct {
-	SigningKeyAlias   string
-	EnableWORM        bool
-	WORMBucket        string
-	RetentionDays     int
-	EnableSignatures  bool
+	SigningKeyAlias  string
+	EnableWORM       bool
+	WORMBucket       string
+	RetentionDays    int
+	EnableSignatures bool
 }
 
 // NewImmutableAuditLogger creates a new immutable audit logger
@@ -235,15 +235,15 @@ func (l *ImmutableAuditLogger) Log(ctx context.Context, event *AuditEvent) error
 func (l *ImmutableAuditLogger) calculateHash(event *AuditEvent) string {
 	// Create canonical representation for hashing
 	canonical := struct {
-		EventID       string                 `json:"event_id"`
-		EventType     AuditEventType         `json:"event_type"`
-		Timestamp     string                 `json:"timestamp"`
-		Actor         *AuditActor            `json:"actor"`
-		Subject       *AuditSubject          `json:"subject"`
-		Action        string                 `json:"action"`
-		Details       map[string]interface{} `json:"details"`
-		PreviousHash  string                 `json:"previous_hash"`
-		Sequence      int64                  `json:"sequence"`
+		EventID      string                 `json:"event_id"`
+		EventType    AuditEventType         `json:"event_type"`
+		Timestamp    string                 `json:"timestamp"`
+		Actor        *AuditActor            `json:"actor"`
+		Subject      *AuditSubject          `json:"subject"`
+		Action       string                 `json:"action"`
+		Details      map[string]interface{} `json:"details"`
+		PreviousHash string                 `json:"previous_hash"`
+		Sequence     int64                  `json:"sequence"`
 	}{
 		EventID:      event.EventID,
 		EventType:    event.EventType,
@@ -508,12 +508,12 @@ func (l *ImmutableAuditLogger) ExportForRegulator(ctx context.Context, startTime
 	}
 
 	export := &RegulatoryExport{
-		ExportID:    generateEventID(),
-		ExportTime:  time.Now().UTC(),
-		StartTime:   startTime,
-		EndTime:     endTime,
-		EventCount:  len(events),
-		Events:      events,
+		ExportID:   generateEventID(),
+		ExportTime: time.Now().UTC(),
+		StartTime:  startTime,
+		EndTime:    endTime,
+		EventCount: len(events),
+		Events:     events,
 	}
 
 	// Calculate export hash
@@ -554,9 +554,9 @@ func generateEventID() string {
 
 // S3WORMStorage implements WORMStorage using S3 with Object Lock
 type S3WORMStorage struct {
-	bucket          string
-	region          string
-	retentionDays   int
+	bucket        string
+	region        string
+	retentionDays int
 	// In production, use aws-sdk-go-v2/service/s3
 }
 

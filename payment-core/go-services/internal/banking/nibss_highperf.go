@@ -19,16 +19,16 @@ import (
 
 // NIBSSConfig configures the NIBSS client
 type NIBSSConfig struct {
-	APIURL           string
-	APIKey           string
-	InstitutionCode  string
-	ConnectTimeout   time.Duration
-	RequestTimeout   time.Duration
-	MaxIdleConns     int
-	MaxConnsPerHost  int
-	IdleConnTimeout  time.Duration
-	RetryAttempts    int
-	RetryBackoff     time.Duration
+	APIURL          string
+	APIKey          string
+	InstitutionCode string
+	ConnectTimeout  time.Duration
+	RequestTimeout  time.Duration
+	MaxIdleConns    int
+	MaxConnsPerHost int
+	IdleConnTimeout time.Duration
+	RetryAttempts   int
+	RetryBackoff    time.Duration
 }
 
 // DefaultNIBSSConfig returns production defaults
@@ -47,12 +47,12 @@ func DefaultNIBSSConfig() NIBSSConfig {
 
 // TransferRequest represents a bank-to-bank transfer
 type TransferRequest struct {
-	Reference     string `json:"reference"`
-	FromAccount   string `json:"fromAccount"`
-	ToAccount     string `json:"toAccount"`
-	ToBankCode    string `json:"toBankCode"`
-	Amount        int64  `json:"amount"` // Kobo
-	Narration     string `json:"narration"`
+	Reference      string `json:"reference"`
+	FromAccount    string `json:"fromAccount"`
+	ToAccount      string `json:"toAccount"`
+	ToBankCode     string `json:"toBankCode"`
+	Amount         int64  `json:"amount"` // Kobo
+	Narration      string `json:"narration"`
 	NameEnquiryRef string `json:"nameEnquiryRef,omitempty"`
 }
 
@@ -86,11 +86,11 @@ type NameEnquiryResponse struct {
 
 // HighPerfTransferStatus for tracking in high-performance NIBSS operations
 type HighPerfTransferStatus struct {
-	Reference       string `json:"reference"`
-	Status          string `json:"status"` // pending, processing, completed, failed, reversed
-	ResponseCode    string `json:"responseCode"`
-	ResponseMessage string `json:"responseMessage"`
-	Amount          int64  `json:"amount,omitempty"`
+	Reference       string     `json:"reference"`
+	Status          string     `json:"status"` // pending, processing, completed, failed, reversed
+	ResponseCode    string     `json:"responseCode"`
+	ResponseMessage string     `json:"responseMessage"`
+	Amount          int64      `json:"amount,omitempty"`
 	CompletedAt     *time.Time `json:"completedAt,omitempty"`
 }
 
@@ -110,9 +110,9 @@ type NIBSSClient struct {
 	totalLatencyNs uint64
 
 	// Circuit breaker state
-	failures     uint32
-	lastFailure  int64
-	circuitOpen  uint32
+	failures    uint32
+	lastFailure int64
+	circuitOpen uint32
 
 	mu sync.RWMutex
 }
@@ -315,12 +315,12 @@ func (c *NIBSSClient) Stats() map[string]interface{} {
 	}
 
 	return map[string]interface{}{
-		"total_requests":   total,
-		"total_success":    success,
-		"total_failed":     atomic.LoadUint64(&c.totalFailed),
-		"total_retried":    atomic.LoadUint64(&c.totalRetried),
-		"avg_latency":      avgLatency.String(),
-		"circuit_open":     atomic.LoadUint32(&c.circuitOpen) == 1,
+		"total_requests": total,
+		"total_success":  success,
+		"total_failed":   atomic.LoadUint64(&c.totalFailed),
+		"total_retried":  atomic.LoadUint64(&c.totalRetried),
+		"avg_latency":    avgLatency.String(),
+		"circuit_open":   atomic.LoadUint32(&c.circuitOpen) == 1,
 	}
 }
 

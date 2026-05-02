@@ -282,8 +282,8 @@ func (s *PostgresStore) UpdateCase(ctx context.Context, c *OnboardingCase) error
 		SET status = $2, assigned_reviewer = $3, risk_score = $4, updated_at = NOW(), 
 		    submitted_at = $5, completed_at = $6, metadata = $7
 		WHERE id = $1
-	`, c.ID, c.Status, c.AssignedReviewer, c.RiskScore, 
-	   nullTime(c.SubmittedAt), nullTime(c.CompletedAt), metadata)
+	`, c.ID, c.Status, c.AssignedReviewer, c.RiskScore,
+		nullTime(c.SubmittedAt), nullTime(c.CompletedAt), metadata)
 
 	return err
 }
@@ -294,7 +294,7 @@ func (s *PostgresStore) ListCases(ctx context.Context, filters map[string]string
 	                 assigned_reviewer, risk_score, created_at, updated_at
 	          FROM onboarding_cases WHERE 1=1`
 	countQuery := `SELECT COUNT(*) FROM onboarding_cases WHERE 1=1`
-	
+
 	var args []interface{}
 	argNum := 1
 
@@ -622,7 +622,7 @@ func (s *PostgresStore) SaveProvisioningRecord(ctx context.Context, record *Prov
 			error_message = EXCLUDED.error_message,
 			completed_at = CASE WHEN EXCLUDED.status IN ('COMPLETED', 'FAILED', 'ROLLED_BACK') THEN NOW() ELSE NULL END
 	`, record.ID, record.CaseID, record.Environment, record.Status, record.KeycloakClientID,
-	   record.APISIXRouteID, record.APISIXUpstreamID, record.TigerBeetleAccountID, record.ErrorMessage)
+		record.APISIXRouteID, record.APISIXUpstreamID, record.TigerBeetleAccountID, record.ErrorMessage)
 
 	return err
 }

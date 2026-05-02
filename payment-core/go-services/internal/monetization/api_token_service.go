@@ -12,9 +12,9 @@ import (
 type CustomerSegment string
 
 const (
-	SegmentFintech      CustomerSegment = "fintech"
-	SegmentBank         CustomerSegment = "bank"
-	SegmentGovernment   CustomerSegment = "government"
+	SegmentFintech       CustomerSegment = "fintech"
+	SegmentBank          CustomerSegment = "bank"
+	SegmentGovernment    CustomerSegment = "government"
 	SegmentMultinational CustomerSegment = "multinational"
 )
 
@@ -37,20 +37,20 @@ const (
 type APIScope string
 
 const (
-	ScopePayoutsBank     APIScope = "payouts:bank"
-	ScopePayoutsMM       APIScope = "payouts:mobile_money"
-	ScopePayoutsAgent    APIScope = "payouts:agent"
-	ScopeBillPay         APIScope = "billpay:*"
-	ScopeKYCVerify       APIScope = "kyc:verify"
-	ScopeKYCFull         APIScope = "kyc:full"
-	ScopeRatesQuote      APIScope = "rates:quote"
-	ScopeRatesLock       APIScope = "rates:lock"
-	ScopeCryptoReceive   APIScope = "crypto:receive"
-	ScopeCryptoSend      APIScope = "crypto:send"
-	ScopeWebhooks        APIScope = "webhooks:*"
-	ScopeReports         APIScope = "reports:*"
-	ScopeAuditLogs       APIScope = "audit:logs"
-	ScopeAdminFull       APIScope = "admin:*"
+	ScopePayoutsBank   APIScope = "payouts:bank"
+	ScopePayoutsMM     APIScope = "payouts:mobile_money"
+	ScopePayoutsAgent  APIScope = "payouts:agent"
+	ScopeBillPay       APIScope = "billpay:*"
+	ScopeKYCVerify     APIScope = "kyc:verify"
+	ScopeKYCFull       APIScope = "kyc:full"
+	ScopeRatesQuote    APIScope = "rates:quote"
+	ScopeRatesLock     APIScope = "rates:lock"
+	ScopeCryptoReceive APIScope = "crypto:receive"
+	ScopeCryptoSend    APIScope = "crypto:send"
+	ScopeWebhooks      APIScope = "webhooks:*"
+	ScopeReports       APIScope = "reports:*"
+	ScopeAuditLogs     APIScope = "audit:logs"
+	ScopeAdminFull     APIScope = "admin:*"
 )
 
 type RateLimitConfig struct {
@@ -62,57 +62,57 @@ type RateLimitConfig struct {
 }
 
 type Plan struct {
-	ID                string            `json:"id"`
-	Name              string            `json:"name"`
-	Tier              PlanTier          `json:"tier"`
-	Segment           CustomerSegment   `json:"segment"`
-	MonthlyFee        float64           `json:"monthlyFee"`
-	TransactionFee    float64           `json:"transactionFee"`
-	TransactionFeeBps int               `json:"transactionFeeBps"`
-	IncludedTxns      int               `json:"includedTransactions"`
-	Scopes            []APIScope        `json:"scopes"`
-	RateLimits        RateLimitConfig   `json:"rateLimits"`
-	Features          map[string]bool   `json:"features"`
-	DailyLimit        float64           `json:"dailyLimit"`
-	MonthlyLimit      float64           `json:"monthlyLimit"`
+	ID                string          `json:"id"`
+	Name              string          `json:"name"`
+	Tier              PlanTier        `json:"tier"`
+	Segment           CustomerSegment `json:"segment"`
+	MonthlyFee        float64         `json:"monthlyFee"`
+	TransactionFee    float64         `json:"transactionFee"`
+	TransactionFeeBps int             `json:"transactionFeeBps"`
+	IncludedTxns      int             `json:"includedTransactions"`
+	Scopes            []APIScope      `json:"scopes"`
+	RateLimits        RateLimitConfig `json:"rateLimits"`
+	Features          map[string]bool `json:"features"`
+	DailyLimit        float64         `json:"dailyLimit"`
+	MonthlyLimit      float64         `json:"monthlyLimit"`
 }
 
 type Organization struct {
-	ID              string          `json:"id"`
-	Name            string          `json:"name"`
-	Segment         CustomerSegment `json:"segment"`
-	PlanID          string          `json:"planId"`
-	Status          string          `json:"status"`
-	ContactEmail    string          `json:"contactEmail"`
-	WebhookURL      string          `json:"webhookUrl"`
-	CreatedAt       time.Time       `json:"createdAt"`
-	Metadata        map[string]interface{} `json:"metadata,omitempty"`
+	ID           string                 `json:"id"`
+	Name         string                 `json:"name"`
+	Segment      CustomerSegment        `json:"segment"`
+	PlanID       string                 `json:"planId"`
+	Status       string                 `json:"status"`
+	ContactEmail string                 `json:"contactEmail"`
+	WebhookURL   string                 `json:"webhookUrl"`
+	CreatedAt    time.Time              `json:"createdAt"`
+	Metadata     map[string]interface{} `json:"metadata,omitempty"`
 }
 
 type APIKey struct {
-	ID             string      `json:"id"`
-	KeyPrefix      string      `json:"keyPrefix"`
-	KeyHash        string      `json:"-"`
-	OrganizationID string      `json:"organizationId"`
-	Environment    Environment `json:"environment"`
-	Name           string      `json:"name"`
-	Scopes         []APIScope  `json:"scopes"`
+	ID             string           `json:"id"`
+	KeyPrefix      string           `json:"keyPrefix"`
+	KeyHash        string           `json:"-"`
+	OrganizationID string           `json:"organizationId"`
+	Environment    Environment      `json:"environment"`
+	Name           string           `json:"name"`
+	Scopes         []APIScope       `json:"scopes"`
 	RateLimits     *RateLimitConfig `json:"rateLimits,omitempty"`
-	ExpiresAt      *time.Time  `json:"expiresAt,omitempty"`
-	LastUsedAt     *time.Time  `json:"lastUsedAt,omitempty"`
-	Status         string      `json:"status"`
-	CreatedAt      time.Time   `json:"createdAt"`
-	CreatedBy      string      `json:"createdBy"`
+	ExpiresAt      *time.Time       `json:"expiresAt,omitempty"`
+	LastUsedAt     *time.Time       `json:"lastUsedAt,omitempty"`
+	Status         string           `json:"status"`
+	CreatedAt      time.Time        `json:"createdAt"`
+	CreatedBy      string           `json:"createdBy"`
 }
 
 type TokenValidationResult struct {
-	Valid          bool            `json:"valid"`
-	OrganizationID string          `json:"organizationId,omitempty"`
-	Environment    Environment     `json:"environment,omitempty"`
-	Scopes         []APIScope      `json:"scopes,omitempty"`
-	PlanID         string          `json:"planId,omitempty"`
+	Valid          bool             `json:"valid"`
+	OrganizationID string           `json:"organizationId,omitempty"`
+	Environment    Environment      `json:"environment,omitempty"`
+	Scopes         []APIScope       `json:"scopes,omitempty"`
+	PlanID         string           `json:"planId,omitempty"`
 	RateLimits     *RateLimitConfig `json:"rateLimits,omitempty"`
-	Error          string          `json:"error,omitempty"`
+	Error          string           `json:"error,omitempty"`
 }
 
 type APITokenService struct {

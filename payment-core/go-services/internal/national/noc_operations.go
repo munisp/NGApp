@@ -75,15 +75,15 @@ const (
 
 // KillSwitch represents a kill switch
 type KillSwitch struct {
-	Type          KillSwitchType `json:"type"`
-	Target        string         `json:"target,omitempty"` // Participant ID, currency, etc.
-	Activated     bool           `json:"activated"`
-	ActivatedAt   *time.Time     `json:"activated_at,omitempty"`
-	ActivatedBy   string         `json:"activated_by,omitempty"`
-	Reason        string         `json:"reason,omitempty"`
-	AutoExpiry    *time.Time     `json:"auto_expiry,omitempty"`
-	RequiresAuth  bool           `json:"requires_auth"`
-	AuthorizedBy  []string       `json:"authorized_by,omitempty"`
+	Type         KillSwitchType `json:"type"`
+	Target       string         `json:"target,omitempty"` // Participant ID, currency, etc.
+	Activated    bool           `json:"activated"`
+	ActivatedAt  *time.Time     `json:"activated_at,omitempty"`
+	ActivatedBy  string         `json:"activated_by,omitempty"`
+	Reason       string         `json:"reason,omitempty"`
+	AutoExpiry   *time.Time     `json:"auto_expiry,omitempty"`
+	RequiresAuth bool           `json:"requires_auth"`
+	AuthorizedBy []string       `json:"authorized_by,omitempty"`
 }
 
 // ActivateKillSwitch activates a kill switch
@@ -220,18 +220,18 @@ func (n *NOCOperationsCenter) GetActiveKillSwitches() []*KillSwitch {
 
 // CircuitBreaker implements the circuit breaker pattern
 type CircuitBreaker struct {
-	Name           string              `json:"name"`
-	State          CircuitBreakerState `json:"state"`
-	FailureCount   int                 `json:"failure_count"`
-	SuccessCount   int                 `json:"success_count"`
-	LastFailure    *time.Time          `json:"last_failure,omitempty"`
-	LastSuccess    *time.Time          `json:"last_success,omitempty"`
-	OpenedAt       *time.Time          `json:"opened_at,omitempty"`
-	HalfOpenAt     *time.Time          `json:"half_open_at,omitempty"`
-	FailureThreshold int              `json:"failure_threshold"`
-	SuccessThreshold int              `json:"success_threshold"`
-	Timeout        time.Duration       `json:"timeout"`
-	mu             sync.Mutex
+	Name             string              `json:"name"`
+	State            CircuitBreakerState `json:"state"`
+	FailureCount     int                 `json:"failure_count"`
+	SuccessCount     int                 `json:"success_count"`
+	LastFailure      *time.Time          `json:"last_failure,omitempty"`
+	LastSuccess      *time.Time          `json:"last_success,omitempty"`
+	OpenedAt         *time.Time          `json:"opened_at,omitempty"`
+	HalfOpenAt       *time.Time          `json:"half_open_at,omitempty"`
+	FailureThreshold int                 `json:"failure_threshold"`
+	SuccessThreshold int                 `json:"success_threshold"`
+	Timeout          time.Duration       `json:"timeout"`
+	mu               sync.Mutex
 }
 
 // CircuitBreakerState defines the state of a circuit breaker
@@ -307,20 +307,20 @@ func (cb *CircuitBreaker) AllowRequest() bool {
 
 // Incident represents an operational incident
 type Incident struct {
-	IncidentID    string           `json:"incident_id"`
-	Title         string           `json:"title"`
-	Description   string           `json:"description"`
-	Severity      IncidentSeverity `json:"severity"`
-	Status        IncidentStatus   `json:"status"`
-	AffectedServices []string      `json:"affected_services"`
-	CreatedAt     time.Time        `json:"created_at"`
-	UpdatedAt     time.Time        `json:"updated_at"`
-	ResolvedAt    *time.Time       `json:"resolved_at,omitempty"`
-	AssignedTo    string           `json:"assigned_to,omitempty"`
-	Timeline      []*IncidentUpdate `json:"timeline"`
-	RootCause     string           `json:"root_cause,omitempty"`
-	Resolution    string           `json:"resolution,omitempty"`
-	PostMortemURL string           `json:"post_mortem_url,omitempty"`
+	IncidentID       string            `json:"incident_id"`
+	Title            string            `json:"title"`
+	Description      string            `json:"description"`
+	Severity         IncidentSeverity  `json:"severity"`
+	Status           IncidentStatus    `json:"status"`
+	AffectedServices []string          `json:"affected_services"`
+	CreatedAt        time.Time         `json:"created_at"`
+	UpdatedAt        time.Time         `json:"updated_at"`
+	ResolvedAt       *time.Time        `json:"resolved_at,omitempty"`
+	AssignedTo       string            `json:"assigned_to,omitempty"`
+	Timeline         []*IncidentUpdate `json:"timeline"`
+	RootCause        string            `json:"root_cause,omitempty"`
+	Resolution       string            `json:"resolution,omitempty"`
+	PostMortemURL    string            `json:"post_mortem_url,omitempty"`
 }
 
 // IncidentSeverity defines the severity of an incident
@@ -337,19 +337,19 @@ const (
 type IncidentStatus string
 
 const (
-	IncidentStatusOpen         IncidentStatus = "OPEN"
+	IncidentStatusOpen          IncidentStatus = "OPEN"
 	IncidentStatusInvestigating IncidentStatus = "INVESTIGATING"
-	IncidentStatusIdentified   IncidentStatus = "IDENTIFIED"
-	IncidentStatusMonitoring   IncidentStatus = "MONITORING"
-	IncidentStatusResolved     IncidentStatus = "RESOLVED"
+	IncidentStatusIdentified    IncidentStatus = "IDENTIFIED"
+	IncidentStatusMonitoring    IncidentStatus = "MONITORING"
+	IncidentStatusResolved      IncidentStatus = "RESOLVED"
 )
 
 // IncidentUpdate represents an update to an incident
 type IncidentUpdate struct {
-	Timestamp   time.Time      `json:"timestamp"`
-	Status      IncidentStatus `json:"status"`
-	Message     string         `json:"message"`
-	UpdatedBy   string         `json:"updated_by"`
+	Timestamp time.Time      `json:"timestamp"`
+	Status    IncidentStatus `json:"status"`
+	Message   string         `json:"message"`
+	UpdatedBy string         `json:"updated_by"`
 }
 
 // CreateIncident creates a new incident
@@ -488,19 +488,19 @@ func (n *NOCOperationsCenter) GetActiveIncidents() []*Incident {
 
 // AlertManager manages alerts and notifications
 type AlertManager struct {
-	config     *NOCConfig
-	alertChan  chan *Alert
+	config    *NOCConfig
+	alertChan chan *Alert
 }
 
 // Alert represents an operational alert
 type Alert struct {
-	AlertID    string        `json:"alert_id"`
-	Severity   AlertSeverity `json:"severity"`
-	Title      string        `json:"title"`
-	Message    string        `json:"message"`
-	Source     string        `json:"source"`
-	Timestamp  time.Time     `json:"timestamp"`
-	Labels     map[string]string `json:"labels,omitempty"`
+	AlertID     string            `json:"alert_id"`
+	Severity    AlertSeverity     `json:"severity"`
+	Title       string            `json:"title"`
+	Message     string            `json:"message"`
+	Source      string            `json:"source"`
+	Timestamp   time.Time         `json:"timestamp"`
+	Labels      map[string]string `json:"labels,omitempty"`
 	Annotations map[string]string `json:"annotations,omitempty"`
 }
 
@@ -715,7 +715,7 @@ func (n *NOCOperationsCenter) checkService(ctx context.Context, name, endpoint s
 	// In production, make actual HTTP request
 	client := &http.Client{Timeout: 5 * time.Second}
 	resp, err := client.Get(endpoint)
-	
+
 	result.ResponseTimeMs = time.Since(start).Milliseconds()
 
 	if err != nil {
@@ -739,16 +739,16 @@ func (n *NOCOperationsCenter) checkService(ctx context.Context, name, endpoint s
 
 // SystemMetrics represents system metrics
 type SystemMetrics struct {
-	Timestamp           time.Time `json:"timestamp"`
-	TransactionsPerSec  float64   `json:"transactions_per_sec"`
-	AvgLatencyMs        float64   `json:"avg_latency_ms"`
-	P99LatencyMs        float64   `json:"p99_latency_ms"`
-	ErrorRate           float64   `json:"error_rate"`
-	ActiveConnections   int       `json:"active_connections"`
-	QueueDepth          int       `json:"queue_depth"`
-	CPUUsagePercent     float64   `json:"cpu_usage_percent"`
-	MemoryUsagePercent  float64   `json:"memory_usage_percent"`
-	DiskUsagePercent    float64   `json:"disk_usage_percent"`
+	Timestamp          time.Time `json:"timestamp"`
+	TransactionsPerSec float64   `json:"transactions_per_sec"`
+	AvgLatencyMs       float64   `json:"avg_latency_ms"`
+	P99LatencyMs       float64   `json:"p99_latency_ms"`
+	ErrorRate          float64   `json:"error_rate"`
+	ActiveConnections  int       `json:"active_connections"`
+	QueueDepth         int       `json:"queue_depth"`
+	CPUUsagePercent    float64   `json:"cpu_usage_percent"`
+	MemoryUsagePercent float64   `json:"memory_usage_percent"`
+	DiskUsagePercent   float64   `json:"disk_usage_percent"`
 }
 
 // GetSystemMetrics retrieves current system metrics
@@ -791,14 +791,14 @@ func (n *NOCOperationsCenter) GetSystemMetrics(ctx context.Context) (*SystemMetr
 
 // Runbook represents an operational runbook
 type Runbook struct {
-	RunbookID   string          `json:"runbook_id"`
-	Title       string          `json:"title"`
-	Description string          `json:"description"`
-	Category    string          `json:"category"`
-	Steps       []*RunbookStep  `json:"steps"`
-	Triggers    []string        `json:"triggers"`
-	CreatedAt   time.Time       `json:"created_at"`
-	UpdatedAt   time.Time       `json:"updated_at"`
+	RunbookID   string         `json:"runbook_id"`
+	Title       string         `json:"title"`
+	Description string         `json:"description"`
+	Category    string         `json:"category"`
+	Steps       []*RunbookStep `json:"steps"`
+	Triggers    []string       `json:"triggers"`
+	CreatedAt   time.Time      `json:"created_at"`
+	UpdatedAt   time.Time      `json:"updated_at"`
 }
 
 // RunbookStep represents a step in a runbook

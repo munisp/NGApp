@@ -27,23 +27,23 @@ type KYCAuditLogger struct {
 
 // KYCAuditEvent represents an audit event for KYC decisions
 type KYCAuditEvent struct {
-	EventID         string                 `json:"event_id"`
-	EventType       KYCAuditEventType      `json:"event_type"`
-	VerificationID  string                 `json:"verification_id"`
-	CustomerID      string                 `json:"customer_id"`
-	Decision        KYCDecision            `json:"decision"`
-	DecisionReason  string                 `json:"decision_reason"`
-	RiskScore       float64                `json:"risk_score"`
-	RiskLevel       RiskLevel              `json:"risk_level"`
-	Evidence        *EvidenceBundle        `json:"evidence"`
-	ModelVersion    string                 `json:"model_version,omitempty"`
-	RuleVersion     string                 `json:"rule_version,omitempty"`
-	ReviewerID      string                 `json:"reviewer_id,omitempty"`
-	Timestamp       time.Time              `json:"timestamp"`
-	SequenceNum     int64                  `json:"sequence_num"`
-	PreviousHash    string                 `json:"previous_hash"`
-	EventHash       string                 `json:"event_hash"`
-	Metadata        map[string]interface{} `json:"metadata,omitempty"`
+	EventID        string                 `json:"event_id"`
+	EventType      KYCAuditEventType      `json:"event_type"`
+	VerificationID string                 `json:"verification_id"`
+	CustomerID     string                 `json:"customer_id"`
+	Decision       KYCDecision            `json:"decision"`
+	DecisionReason string                 `json:"decision_reason"`
+	RiskScore      float64                `json:"risk_score"`
+	RiskLevel      RiskLevel              `json:"risk_level"`
+	Evidence       *EvidenceBundle        `json:"evidence"`
+	ModelVersion   string                 `json:"model_version,omitempty"`
+	RuleVersion    string                 `json:"rule_version,omitempty"`
+	ReviewerID     string                 `json:"reviewer_id,omitempty"`
+	Timestamp      time.Time              `json:"timestamp"`
+	SequenceNum    int64                  `json:"sequence_num"`
+	PreviousHash   string                 `json:"previous_hash"`
+	EventHash      string                 `json:"event_hash"`
+	Metadata       map[string]interface{} `json:"metadata,omitempty"`
 }
 
 // KYCAuditEventType defines the type of audit event
@@ -77,56 +77,56 @@ const (
 
 // EvidenceBundle contains all evidence for a KYC decision
 type EvidenceBundle struct {
-	BundleID          string              `json:"bundle_id"`
-	VerificationID    string              `json:"verification_id"`
-	CustomerID        string              `json:"customer_id"`
-	CreatedAt         time.Time           `json:"created_at"`
-	
+	BundleID       string    `json:"bundle_id"`
+	VerificationID string    `json:"verification_id"`
+	CustomerID     string    `json:"customer_id"`
+	CreatedAt      time.Time `json:"created_at"`
+
 	// Identity Evidence
-	IdentityEvidence  *IdentityEvidence   `json:"identity_evidence,omitempty"`
-	
+	IdentityEvidence *IdentityEvidence `json:"identity_evidence,omitempty"`
+
 	// Document Evidence
-	DocumentEvidence  []*DocumentEvidence `json:"document_evidence,omitempty"`
-	
+	DocumentEvidence []*DocumentEvidence `json:"document_evidence,omitempty"`
+
 	// Screening Evidence
-	ScreeningEvidence *ScreeningEvidence  `json:"screening_evidence,omitempty"`
-	
+	ScreeningEvidence *ScreeningEvidence `json:"screening_evidence,omitempty"`
+
 	// Liveness Evidence
-	LivenessEvidence  *LivenessEvidence   `json:"liveness_evidence,omitempty"`
-	
+	LivenessEvidence *LivenessEvidence `json:"liveness_evidence,omitempty"`
+
 	// Risk Assessment Evidence
-	RiskEvidence      *RiskEvidence       `json:"risk_evidence,omitempty"`
-	
+	RiskEvidence *RiskEvidence `json:"risk_evidence,omitempty"`
+
 	// Bundle Hash for integrity verification
-	BundleHash        string              `json:"bundle_hash"`
+	BundleHash string `json:"bundle_hash"`
 }
 
 // IdentityEvidence contains identity verification evidence
 type IdentityEvidence struct {
-	Provider          string    `json:"provider"` // e.g., "smile_identity"
-	VerificationID    string    `json:"verification_id"`
-	IDType            string    `json:"id_type"`
-	IDNumber          string    `json:"id_number_masked"` // Masked for privacy
-	FullName          string    `json:"full_name"`
-	DateOfBirth       string    `json:"date_of_birth"`
-	Nationality       string    `json:"nationality"`
-	ConfidenceScore   float64   `json:"confidence_score"`
-	MatchResult       string    `json:"match_result"`
-	VerifiedAt        time.Time `json:"verified_at"`
-	RawResponseHash   string    `json:"raw_response_hash"` // Hash of raw API response
+	Provider        string    `json:"provider"` // e.g., "smile_identity"
+	VerificationID  string    `json:"verification_id"`
+	IDType          string    `json:"id_type"`
+	IDNumber        string    `json:"id_number_masked"` // Masked for privacy
+	FullName        string    `json:"full_name"`
+	DateOfBirth     string    `json:"date_of_birth"`
+	Nationality     string    `json:"nationality"`
+	ConfidenceScore float64   `json:"confidence_score"`
+	MatchResult     string    `json:"match_result"`
+	VerifiedAt      time.Time `json:"verified_at"`
+	RawResponseHash string    `json:"raw_response_hash"` // Hash of raw API response
 }
 
 // DocumentEvidence contains document verification evidence
 type DocumentEvidence struct {
-	DocumentID        string    `json:"document_id"`
-	DocumentType      string    `json:"document_type"`
-	FileName          string    `json:"file_name"`
-	FileHash          string    `json:"file_hash"`
-	ExtractionResult  string    `json:"extraction_result"`
-	ConfidenceScore   float64   `json:"confidence_score"`
-	TamperDetection   string    `json:"tamper_detection"`
-	VerifiedAt        time.Time `json:"verified_at"`
-	StorageLocation   string    `json:"storage_location"` // WORM storage reference
+	DocumentID       string    `json:"document_id"`
+	DocumentType     string    `json:"document_type"`
+	FileName         string    `json:"file_name"`
+	FileHash         string    `json:"file_hash"`
+	ExtractionResult string    `json:"extraction_result"`
+	ConfidenceScore  float64   `json:"confidence_score"`
+	TamperDetection  string    `json:"tamper_detection"`
+	VerifiedAt       time.Time `json:"verified_at"`
+	StorageLocation  string    `json:"storage_location"` // WORM storage reference
 }
 
 // ScreeningEvidence contains AML/sanctions screening evidence
@@ -159,25 +159,25 @@ type MatchEvidence struct {
 
 // LivenessEvidence contains liveness check evidence
 type LivenessEvidence struct {
-	CheckID         string    `json:"check_id"`
-	Provider        string    `json:"provider"`
-	LivenessScore   float64   `json:"liveness_score"`
-	Passed          bool      `json:"passed"`
-	SpoofDetection  string    `json:"spoof_detection"`
-	FaceMatchScore  float64   `json:"face_match_score"`
-	CheckedAt       time.Time `json:"checked_at"`
-	ImageHash       string    `json:"image_hash"` // Hash of selfie image
+	CheckID        string    `json:"check_id"`
+	Provider       string    `json:"provider"`
+	LivenessScore  float64   `json:"liveness_score"`
+	Passed         bool      `json:"passed"`
+	SpoofDetection string    `json:"spoof_detection"`
+	FaceMatchScore float64   `json:"face_match_score"`
+	CheckedAt      time.Time `json:"checked_at"`
+	ImageHash      string    `json:"image_hash"` // Hash of selfie image
 }
 
 // RiskEvidence contains risk assessment evidence
 type RiskEvidence struct {
-	AssessmentID    string       `json:"assessment_id"`
-	OverallScore    float64      `json:"overall_score"`
-	RiskLevel       string       `json:"risk_level"`
-	RiskFactors     []RiskFactor `json:"risk_factors"`
-	ModelVersion    string       `json:"model_version,omitempty"`
-	RuleVersion     string       `json:"rule_version,omitempty"`
-	AssessedAt      time.Time    `json:"assessed_at"`
+	AssessmentID string       `json:"assessment_id"`
+	OverallScore float64      `json:"overall_score"`
+	RiskLevel    string       `json:"risk_level"`
+	RiskFactors  []RiskFactor `json:"risk_factors"`
+	ModelVersion string       `json:"model_version,omitempty"`
+	RuleVersion  string       `json:"rule_version,omitempty"`
+	AssessedAt   time.Time    `json:"assessed_at"`
 }
 
 // NewKYCAuditLogger creates a new KYC audit logger
@@ -186,14 +186,14 @@ func NewKYCAuditLogger(db *sql.DB) (*KYCAuditLogger, error) {
 		db:        db,
 		chainHash: "genesis",
 	}
-	
+
 	// Initialize chain from database
 	if db != nil {
 		if err := logger.initializeChain(context.Background()); err != nil {
 			return nil, err
 		}
 	}
-	
+
 	return logger, nil
 }
 
@@ -202,23 +202,23 @@ func (l *KYCAuditLogger) initializeChain(ctx context.Context) error {
 	if l.db == nil {
 		return nil
 	}
-	
+
 	row := l.db.QueryRowContext(ctx, `
 		SELECT sequence_num, event_hash FROM kyc_audit_events 
 		ORDER BY sequence_num DESC LIMIT 1
 	`)
-	
+
 	var seqNum int64
 	var hash string
 	if err := row.Scan(&seqNum, &hash); err != nil && err != sql.ErrNoRows {
 		return err
 	}
-	
+
 	if seqNum > 0 {
 		l.sequenceNum = seqNum
 		l.chainHash = hash
 	}
-	
+
 	return nil
 }
 
@@ -226,29 +226,29 @@ func (l *KYCAuditLogger) initializeChain(ctx context.Context) error {
 func (l *KYCAuditLogger) LogEvent(ctx context.Context, event *KYCAuditEvent) error {
 	l.mu.Lock()
 	defer l.mu.Unlock()
-	
+
 	// Set sequence and chain
 	l.sequenceNum++
 	event.SequenceNum = l.sequenceNum
 	event.PreviousHash = l.chainHash
 	event.Timestamp = time.Now().UTC()
-	
+
 	// Generate event ID if not set
 	if event.EventID == "" {
 		event.EventID = fmt.Sprintf("kyc_audit_%d_%d", event.Timestamp.UnixNano(), event.SequenceNum)
 	}
-	
+
 	// Calculate event hash
 	event.EventHash = l.calculateEventHash(event)
 	l.chainHash = event.EventHash
-	
+
 	// Persist to database
 	if l.db != nil {
 		if err := l.persistEvent(ctx, event); err != nil {
 			return err
 		}
 	}
-	
+
 	return nil
 }
 
@@ -264,7 +264,7 @@ func (l *KYCAuditLogger) calculateEventHash(event *KYCAuditEvent) string {
 		event.RiskScore,
 		event.Timestamp.Format(time.RFC3339Nano),
 	)
-	
+
 	hash := sha256.Sum256([]byte(data))
 	return hex.EncodeToString(hash[:])
 }
@@ -273,7 +273,7 @@ func (l *KYCAuditLogger) calculateEventHash(event *KYCAuditEvent) string {
 func (l *KYCAuditLogger) persistEvent(ctx context.Context, event *KYCAuditEvent) error {
 	evidenceJSON, _ := json.Marshal(event.Evidence)
 	metadataJSON, _ := json.Marshal(event.Metadata)
-	
+
 	query := `
 		INSERT INTO kyc_audit_events (
 			event_id, event_type, verification_id, customer_id,
@@ -282,14 +282,14 @@ func (l *KYCAuditLogger) persistEvent(ctx context.Context, event *KYCAuditEvent)
 			timestamp, sequence_num, previous_hash, event_hash, metadata
 		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
 	`
-	
+
 	_, err := l.db.ExecContext(ctx, query,
 		event.EventID, event.EventType, event.VerificationID, event.CustomerID,
 		event.Decision, event.DecisionReason, event.RiskScore, event.RiskLevel,
 		evidenceJSON, event.ModelVersion, event.RuleVersion, event.ReviewerID,
 		event.Timestamp, event.SequenceNum, event.PreviousHash, event.EventHash, metadataJSON,
 	)
-	
+
 	return err
 }
 
@@ -313,10 +313,10 @@ func (l *KYCAuditLogger) CreateEvidenceBundle(
 		LivenessEvidence:  liveness,
 		RiskEvidence:      risk,
 	}
-	
+
 	// Calculate bundle hash
 	bundle.BundleHash = l.calculateBundleHash(bundle)
-	
+
 	return bundle
 }
 
@@ -332,7 +332,7 @@ func (l *KYCAuditLogger) VerifyChainIntegrity(ctx context.Context, startSeq, end
 	if l.db == nil {
 		return true, nil, nil
 	}
-	
+
 	rows, err := l.db.QueryContext(ctx, `
 		SELECT event_id, sequence_num, previous_hash, event_hash,
 		       event_type, verification_id, customer_id, decision,
@@ -345,11 +345,11 @@ func (l *KYCAuditLogger) VerifyChainIntegrity(ctx context.Context, startSeq, end
 		return false, nil, err
 	}
 	defer rows.Close()
-	
+
 	var errors []string
 	var prevHash string
 	var prevSeq int64
-	
+
 	for rows.Next() {
 		var event KYCAuditEvent
 		err := rows.Scan(
@@ -360,27 +360,27 @@ func (l *KYCAuditLogger) VerifyChainIntegrity(ctx context.Context, startSeq, end
 		if err != nil {
 			return false, nil, err
 		}
-		
+
 		// Verify sequence continuity
 		if prevSeq > 0 && event.SequenceNum != prevSeq+1 {
 			errors = append(errors, fmt.Sprintf("sequence gap at %d", event.SequenceNum))
 		}
-		
+
 		// Verify hash chain
 		if prevHash != "" && event.PreviousHash != prevHash {
 			errors = append(errors, fmt.Sprintf("hash chain broken at sequence %d", event.SequenceNum))
 		}
-		
+
 		// Verify event hash
 		calculatedHash := l.calculateEventHash(&event)
 		if calculatedHash != event.EventHash {
 			errors = append(errors, fmt.Sprintf("event hash mismatch at sequence %d", event.SequenceNum))
 		}
-		
+
 		prevHash = event.EventHash
 		prevSeq = event.SequenceNum
 	}
-	
+
 	return len(errors) == 0, errors, nil
 }
 
@@ -389,7 +389,7 @@ func (l *KYCAuditLogger) QueryEvents(ctx context.Context, filter *AuditQueryFilt
 	if l.db == nil {
 		return nil, nil
 	}
-	
+
 	query := `
 		SELECT event_id, event_type, verification_id, customer_id,
 		       decision, decision_reason, risk_score, risk_level,
@@ -400,55 +400,55 @@ func (l *KYCAuditLogger) QueryEvents(ctx context.Context, filter *AuditQueryFilt
 	`
 	args := []interface{}{}
 	argNum := 1
-	
+
 	if filter.VerificationID != "" {
 		query += fmt.Sprintf(" AND verification_id = $%d", argNum)
 		args = append(args, filter.VerificationID)
 		argNum++
 	}
-	
+
 	if filter.CustomerID != "" {
 		query += fmt.Sprintf(" AND customer_id = $%d", argNum)
 		args = append(args, filter.CustomerID)
 		argNum++
 	}
-	
+
 	if filter.EventType != "" {
 		query += fmt.Sprintf(" AND event_type = $%d", argNum)
 		args = append(args, filter.EventType)
 		argNum++
 	}
-	
+
 	if !filter.StartTime.IsZero() {
 		query += fmt.Sprintf(" AND timestamp >= $%d", argNum)
 		args = append(args, filter.StartTime)
 		argNum++
 	}
-	
+
 	if !filter.EndTime.IsZero() {
 		query += fmt.Sprintf(" AND timestamp <= $%d", argNum)
 		args = append(args, filter.EndTime)
 		argNum++
 	}
-	
+
 	query += " ORDER BY sequence_num DESC"
-	
+
 	if filter.Limit > 0 {
 		query += fmt.Sprintf(" LIMIT $%d", argNum)
 		args = append(args, filter.Limit)
 	}
-	
+
 	rows, err := l.db.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	
+
 	var events []*KYCAuditEvent
 	for rows.Next() {
 		var event KYCAuditEvent
 		var evidenceJSON, metadataJSON []byte
-		
+
 		err := rows.Scan(
 			&event.EventID, &event.EventType, &event.VerificationID, &event.CustomerID,
 			&event.Decision, &event.DecisionReason, &event.RiskScore, &event.RiskLevel,
@@ -458,17 +458,17 @@ func (l *KYCAuditLogger) QueryEvents(ctx context.Context, filter *AuditQueryFilt
 		if err != nil {
 			return nil, err
 		}
-		
+
 		if len(evidenceJSON) > 0 {
 			json.Unmarshal(evidenceJSON, &event.Evidence)
 		}
 		if len(metadataJSON) > 0 {
 			json.Unmarshal(metadataJSON, &event.Metadata)
 		}
-		
+
 		events = append(events, &event)
 	}
-	
+
 	return events, nil
 }
 
@@ -491,7 +491,7 @@ func (l *KYCAuditLogger) ExportForRegulator(ctx context.Context, startTime, endT
 	if err != nil {
 		return nil, err
 	}
-	
+
 	export := &RegulatoryExport{
 		ExportID:    fmt.Sprintf("reg_export_%d", time.Now().UnixNano()),
 		StartTime:   startTime,
@@ -500,7 +500,7 @@ func (l *KYCAuditLogger) ExportForRegulator(ctx context.Context, startTime, endT
 		TotalEvents: len(events),
 		Events:      events,
 	}
-	
+
 	// Calculate statistics
 	var approved, rejected, pending int
 	for _, e := range events {
@@ -513,31 +513,31 @@ func (l *KYCAuditLogger) ExportForRegulator(ctx context.Context, startTime, endT
 			pending++
 		}
 	}
-	
+
 	export.Statistics = map[string]int{
 		"approved": approved,
 		"rejected": rejected,
 		"pending":  pending,
 	}
-	
+
 	// Calculate export hash
 	data, _ := json.Marshal(export)
 	hash := sha256.Sum256(data)
 	export.ExportHash = hex.EncodeToString(hash[:])
-	
+
 	return export, nil
 }
 
 // RegulatoryExport represents an export for regulatory reporting
 type RegulatoryExport struct {
-	ExportID    string                 `json:"export_id"`
-	StartTime   time.Time              `json:"start_time"`
-	EndTime     time.Time              `json:"end_time"`
-	GeneratedAt time.Time              `json:"generated_at"`
-	TotalEvents int                    `json:"total_events"`
-	Statistics  map[string]int         `json:"statistics"`
-	Events      []*KYCAuditEvent       `json:"events"`
-	ExportHash  string                 `json:"export_hash"`
+	ExportID    string           `json:"export_id"`
+	StartTime   time.Time        `json:"start_time"`
+	EndTime     time.Time        `json:"end_time"`
+	GeneratedAt time.Time        `json:"generated_at"`
+	TotalEvents int              `json:"total_events"`
+	Statistics  map[string]int   `json:"statistics"`
+	Events      []*KYCAuditEvent `json:"events"`
+	ExportHash  string           `json:"export_hash"`
 }
 
 // =============================================================================

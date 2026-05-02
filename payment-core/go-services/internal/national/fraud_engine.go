@@ -13,25 +13,25 @@ import (
 
 // FraudRiskEngine provides real-time fraud detection and risk scoring
 type FraudRiskEngine struct {
-	db              *sql.DB
-	auditLogger     *ImmutableAuditLogger
-	rules           []*FraudRule
-	mlScorer        MLScorer
-	config          *FraudEngineConfig
-	alertChan       chan *FraudAlert
-	mu              sync.RWMutex
+	db          *sql.DB
+	auditLogger *ImmutableAuditLogger
+	rules       []*FraudRule
+	mlScorer    MLScorer
+	config      *FraudEngineConfig
+	alertChan   chan *FraudAlert
+	mu          sync.RWMutex
 }
 
 // FraudEngineConfig holds fraud engine configuration
 type FraudEngineConfig struct {
-	HighRiskThreshold    float64
-	MediumRiskThreshold  float64
-	AutoBlockThreshold   float64
-	VelocityWindowMinutes int
+	HighRiskThreshold        float64
+	MediumRiskThreshold      float64
+	AutoBlockThreshold       float64
+	VelocityWindowMinutes    int
 	MaxTransactionsPerWindow int
-	MaxAmountPerWindow   int64
-	EnableMLScoring      bool
-	AlertWebhookURL      string
+	MaxAmountPerWindow       int64
+	EnableMLScoring          bool
+	AlertWebhookURL          string
 }
 
 // MLScorer interface for ML-based fraud scoring
@@ -79,29 +79,29 @@ func NewFraudRiskEngine(db *sql.DB, audit *ImmutableAuditLogger, config *FraudEn
 
 // FraudRule represents a fraud detection rule
 type FraudRule struct {
-	RuleID      string          `json:"rule_id"`
-	Name        string          `json:"name"`
-	Description string          `json:"description"`
-	Category    FraudCategory   `json:"category"`
-	Severity    RuleSeverity    `json:"severity"`
-	Enabled     bool            `json:"enabled"`
-	Condition   RuleCondition   `json:"condition"`
-	Action      RuleAction      `json:"action"`
-	Score       float64         `json:"score"` // Score contribution if triggered
+	RuleID      string        `json:"rule_id"`
+	Name        string        `json:"name"`
+	Description string        `json:"description"`
+	Category    FraudCategory `json:"category"`
+	Severity    RuleSeverity  `json:"severity"`
+	Enabled     bool          `json:"enabled"`
+	Condition   RuleCondition `json:"condition"`
+	Action      RuleAction    `json:"action"`
+	Score       float64       `json:"score"` // Score contribution if triggered
 }
 
 // FraudCategory defines the category of fraud
 type FraudCategory string
 
 const (
-	FraudCategoryVelocity       FraudCategory = "VELOCITY"
-	FraudCategoryAmount         FraudCategory = "AMOUNT"
-	FraudCategoryPattern        FraudCategory = "PATTERN"
-	FraudCategoryGeolocation    FraudCategory = "GEOLOCATION"
-	FraudCategoryBehavior       FraudCategory = "BEHAVIOR"
-	FraudCategoryIdentity       FraudCategory = "IDENTITY"
-	FraudCategorySanctions      FraudCategory = "SANCTIONS"
-	FraudCategoryStructuring    FraudCategory = "STRUCTURING"
+	FraudCategoryVelocity    FraudCategory = "VELOCITY"
+	FraudCategoryAmount      FraudCategory = "AMOUNT"
+	FraudCategoryPattern     FraudCategory = "PATTERN"
+	FraudCategoryGeolocation FraudCategory = "GEOLOCATION"
+	FraudCategoryBehavior    FraudCategory = "BEHAVIOR"
+	FraudCategoryIdentity    FraudCategory = "IDENTITY"
+	FraudCategorySanctions   FraudCategory = "SANCTIONS"
+	FraudCategoryStructuring FraudCategory = "STRUCTURING"
 )
 
 // RuleSeverity defines the severity of a rule
@@ -124,60 +124,60 @@ type RuleCondition struct {
 type RuleAction string
 
 const (
-	RuleActionAllow     RuleAction = "ALLOW"
-	RuleActionFlag      RuleAction = "FLAG"
-	RuleActionHold      RuleAction = "HOLD"
-	RuleActionBlock     RuleAction = "BLOCK"
-	RuleActionStepUp    RuleAction = "STEP_UP"
-	RuleActionReview    RuleAction = "REVIEW"
+	RuleActionAllow  RuleAction = "ALLOW"
+	RuleActionFlag   RuleAction = "FLAG"
+	RuleActionHold   RuleAction = "HOLD"
+	RuleActionBlock  RuleAction = "BLOCK"
+	RuleActionStepUp RuleAction = "STEP_UP"
+	RuleActionReview RuleAction = "REVIEW"
 )
 
 // TransactionFeatures holds features for fraud scoring
 type TransactionFeatures struct {
-	TransferID        string    `json:"transfer_id"`
-	PayerFSP          string    `json:"payer_fsp"`
-	PayeeFSP          string    `json:"payee_fsp"`
-	PayerAccount      string    `json:"payer_account"`
-	PayeeAccount      string    `json:"payee_account"`
-	Amount            int64     `json:"amount"`
-	Currency          string    `json:"currency"`
-	Timestamp         time.Time `json:"timestamp"`
-	
+	TransferID   string    `json:"transfer_id"`
+	PayerFSP     string    `json:"payer_fsp"`
+	PayeeFSP     string    `json:"payee_fsp"`
+	PayerAccount string    `json:"payer_account"`
+	PayeeAccount string    `json:"payee_account"`
+	Amount       int64     `json:"amount"`
+	Currency     string    `json:"currency"`
+	Timestamp    time.Time `json:"timestamp"`
+
 	// Derived features
-	HourOfDay         int       `json:"hour_of_day"`
-	DayOfWeek         int       `json:"day_of_week"`
-	IsWeekend         bool      `json:"is_weekend"`
-	IsBusinessHours   bool      `json:"is_business_hours"`
-	
+	HourOfDay       int  `json:"hour_of_day"`
+	DayOfWeek       int  `json:"day_of_week"`
+	IsWeekend       bool `json:"is_weekend"`
+	IsBusinessHours bool `json:"is_business_hours"`
+
 	// Historical features
-	PayerTxCount24h   int       `json:"payer_tx_count_24h"`
-	PayerTxAmount24h  int64     `json:"payer_tx_amount_24h"`
-	PayerAvgAmount    float64   `json:"payer_avg_amount"`
-	PayerStdAmount    float64   `json:"payer_std_amount"`
-	PayeeTxCount24h   int       `json:"payee_tx_count_24h"`
-	PayeeNewAccount   bool      `json:"payee_new_account"`
-	
+	PayerTxCount24h  int     `json:"payer_tx_count_24h"`
+	PayerTxAmount24h int64   `json:"payer_tx_amount_24h"`
+	PayerAvgAmount   float64 `json:"payer_avg_amount"`
+	PayerStdAmount   float64 `json:"payer_std_amount"`
+	PayeeTxCount24h  int     `json:"payee_tx_count_24h"`
+	PayeeNewAccount  bool    `json:"payee_new_account"`
+
 	// Relationship features
-	FirstTimePair     bool      `json:"first_time_pair"`
-	PairTxCount       int       `json:"pair_tx_count"`
-	
+	FirstTimePair bool `json:"first_time_pair"`
+	PairTxCount   int  `json:"pair_tx_count"`
+
 	// Risk indicators
-	HighRiskCountry   bool      `json:"high_risk_country"`
-	SanctionsMatch    bool      `json:"sanctions_match"`
-	PEPMatch          bool      `json:"pep_match"`
+	HighRiskCountry bool `json:"high_risk_country"`
+	SanctionsMatch  bool `json:"sanctions_match"`
+	PEPMatch        bool `json:"pep_match"`
 }
 
 // FraudCheckResult holds the result of a fraud check
 type FraudCheckResult struct {
-	TransferID      string          `json:"transfer_id"`
-	RiskScore       float64         `json:"risk_score"`
-	RiskLevel       RiskLevel       `json:"risk_level"`
-	Decision        FraudDecision   `json:"decision"`
-	TriggeredRules  []*TriggeredRule `json:"triggered_rules"`
-	MLScore         *float64        `json:"ml_score,omitempty"`
-	Reasons         []string        `json:"reasons"`
-	RequiresReview  bool            `json:"requires_review"`
-	CheckedAt       time.Time       `json:"checked_at"`
+	TransferID     string           `json:"transfer_id"`
+	RiskScore      float64          `json:"risk_score"`
+	RiskLevel      RiskLevel        `json:"risk_level"`
+	Decision       FraudDecision    `json:"decision"`
+	TriggeredRules []*TriggeredRule `json:"triggered_rules"`
+	MLScore        *float64         `json:"ml_score,omitempty"`
+	Reasons        []string         `json:"reasons"`
+	RequiresReview bool             `json:"requires_review"`
+	CheckedAt      time.Time        `json:"checked_at"`
 }
 
 // RiskLevel defines the risk level
@@ -202,40 +202,40 @@ const (
 
 // TriggeredRule represents a rule that was triggered
 type TriggeredRule struct {
-	RuleID      string       `json:"rule_id"`
-	RuleName    string       `json:"rule_name"`
-	Category    FraudCategory `json:"category"`
-	Severity    RuleSeverity `json:"severity"`
-	Score       float64      `json:"score"`
-	Details     string       `json:"details"`
+	RuleID   string        `json:"rule_id"`
+	RuleName string        `json:"rule_name"`
+	Category FraudCategory `json:"category"`
+	Severity RuleSeverity  `json:"severity"`
+	Score    float64       `json:"score"`
+	Details  string        `json:"details"`
 }
 
 // FraudAlert represents a fraud alert
 type FraudAlert struct {
-	AlertID         string          `json:"alert_id"`
-	TransferID      string          `json:"transfer_id"`
-	ParticipantID   string          `json:"participant_id"`
-	AlertType       string          `json:"alert_type"`
-	RiskScore       float64         `json:"risk_score"`
-	RiskLevel       RiskLevel       `json:"risk_level"`
-	TriggeredRules  []*TriggeredRule `json:"triggered_rules"`
-	Status          AlertStatus     `json:"status"`
-	CreatedAt       time.Time       `json:"created_at"`
-	AssignedTo      string          `json:"assigned_to,omitempty"`
-	ResolvedAt      *time.Time      `json:"resolved_at,omitempty"`
-	Resolution      string          `json:"resolution,omitempty"`
+	AlertID        string           `json:"alert_id"`
+	TransferID     string           `json:"transfer_id"`
+	ParticipantID  string           `json:"participant_id"`
+	AlertType      string           `json:"alert_type"`
+	RiskScore      float64          `json:"risk_score"`
+	RiskLevel      RiskLevel        `json:"risk_level"`
+	TriggeredRules []*TriggeredRule `json:"triggered_rules"`
+	Status         AlertStatus      `json:"status"`
+	CreatedAt      time.Time        `json:"created_at"`
+	AssignedTo     string           `json:"assigned_to,omitempty"`
+	ResolvedAt     *time.Time       `json:"resolved_at,omitempty"`
+	Resolution     string           `json:"resolution,omitempty"`
 }
 
 // AlertStatus defines the status of an alert
 type AlertStatus string
 
 const (
-	AlertStatusOpen       AlertStatus = "OPEN"
-	AlertStatusAssigned   AlertStatus = "ASSIGNED"
-	AlertStatusInProgress AlertStatus = "IN_PROGRESS"
-	AlertStatusResolved   AlertStatus = "RESOLVED"
+	AlertStatusOpen          AlertStatus = "OPEN"
+	AlertStatusAssigned      AlertStatus = "ASSIGNED"
+	AlertStatusInProgress    AlertStatus = "IN_PROGRESS"
+	AlertStatusResolved      AlertStatus = "RESOLVED"
 	AlertStatusFalsePositive AlertStatus = "FALSE_POSITIVE"
-	AlertStatusEscalated  AlertStatus = "ESCALATED"
+	AlertStatusEscalated     AlertStatus = "ESCALATED"
 )
 
 // CheckTransaction performs fraud check on a transaction
@@ -457,14 +457,14 @@ func (e *FraudRiskEngine) evaluateRule(ctx context.Context, rule *FraudRule, fea
 		// Check for rapid succession of transactions
 		windowMinutes := int(rule.Condition.Parameters["window_minutes"].(float64))
 		maxCount := int(rule.Condition.Parameters["max_count"].(float64))
-		
+
 		var recentCount int
 		windowStart := features.Timestamp.Add(-time.Duration(windowMinutes) * time.Minute)
 		e.db.QueryRowContext(ctx, `
 			SELECT COUNT(*) FROM mojaloop_transfers
 			WHERE payer_fsp = $1 AND created_at >= $2 AND created_at < $3
 		`, features.PayerFSP, windowStart, features.Timestamp).Scan(&recentCount)
-		
+
 		if recentCount >= maxCount {
 			return true, fmt.Sprintf("%d transactions in last %d minutes", recentCount, windowMinutes)
 		}

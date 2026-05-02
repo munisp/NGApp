@@ -14,10 +14,10 @@ import (
 // IDGenerator provides collision-resistant ID generation for TigerBeetle
 // This replaces the sha256[:8] approach which has collision risk at scale
 type IDGenerator struct {
-	nodeID     uint16
-	sequence   uint64
-	lastTime   int64
-	mu         sync.Mutex
+	nodeID   uint16
+	sequence uint64
+	lastTime int64
+	mu       sync.Mutex
 }
 
 // IDGeneratorConfig holds configuration for the ID generator
@@ -232,8 +232,8 @@ type StateTransitionValidator struct{}
 
 // ValidTransitions defines valid state transitions
 var ValidTransitions = map[MojaloopTransferState][]MojaloopTransferState{
-	TransferStateReceived: {TransferStateReserved, TransferStateAborted},
-	TransferStateReserved: {TransferStateCommitted, TransferStateAborted, TransferStateExpired},
+	TransferStateReceived:  {TransferStateReserved, TransferStateAborted},
+	TransferStateReserved:  {TransferStateCommitted, TransferStateAborted, TransferStateExpired},
 	TransferStateCommitted: {}, // Terminal state
 	TransferStateAborted:   {}, // Terminal state
 	TransferStateExpired:   {}, // Terminal state

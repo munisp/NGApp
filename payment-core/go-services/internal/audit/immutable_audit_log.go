@@ -89,12 +89,12 @@ type ForensicExportOptions struct {
 }
 
 type ForensicExport struct {
-	ID               string                `json:"id"`
-	ExportedAt       time.Time             `json:"exported_at"`
-	Filters          ForensicExportOptions `json:"filters"`
-	Entries          []AuditEntry          `json:"entries"`
-	IntegrityVerified bool                 `json:"integrity_verified"`
-	ExportedBy       string                `json:"exported_by"`
+	ID                string                `json:"id"`
+	ExportedAt        time.Time             `json:"exported_at"`
+	Filters           ForensicExportOptions `json:"filters"`
+	Entries           []AuditEntry          `json:"entries"`
+	IntegrityVerified bool                  `json:"integrity_verified"`
+	ExportedBy        string                `json:"exported_by"`
 }
 
 type IntegrityResult struct {
@@ -364,12 +364,12 @@ func (ial *ImmutableAuditLog) ForensicExport(opts ForensicExportOptions, exporte
 	integrity := ial.VerifyIntegrity()
 
 	export := &ForensicExport{
-		ID:               uuid.New().String(),
-		ExportedAt:       time.Now(),
-		Filters:          opts,
-		Entries:          entries,
+		ID:                uuid.New().String(),
+		ExportedAt:        time.Now(),
+		Filters:           opts,
+		Entries:           entries,
 		IntegrityVerified: integrity.Valid,
-		ExportedBy:       exportedBy,
+		ExportedBy:        exportedBy,
 	}
 
 	ial.Log(LogParams{
@@ -433,11 +433,11 @@ func (ial *ImmutableAuditLog) redactObject(obj map[string]interface{}) map[strin
 }
 
 type AuditStats struct {
-	TotalEntries    int                `json:"total_entries"`
-	ByEventType     map[string]int     `json:"by_event_type"`
-	ByOutcome       map[string]int     `json:"by_outcome"`
-	ByActorType     map[string]int     `json:"by_actor_type"`
-	IntegrityStatus bool               `json:"integrity_status"`
+	TotalEntries    int            `json:"total_entries"`
+	ByEventType     map[string]int `json:"by_event_type"`
+	ByOutcome       map[string]int `json:"by_outcome"`
+	ByActorType     map[string]int `json:"by_actor_type"`
+	IntegrityStatus bool           `json:"integrity_status"`
 }
 
 func (ial *ImmutableAuditLog) GetStats() *AuditStats {

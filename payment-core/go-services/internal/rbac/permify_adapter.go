@@ -12,9 +12,9 @@ import (
 
 // PermifyConfig holds Permify connection configuration
 type PermifyConfig struct {
-	URL       string `json:"url" yaml:"url"`
-	TenantID  string `json:"tenant_id" yaml:"tenantId"`
-	APIKey    string `json:"api_key" yaml:"apiKey"`
+	URL      string `json:"url" yaml:"url"`
+	TenantID string `json:"tenant_id" yaml:"tenantId"`
+	APIKey   string `json:"api_key" yaml:"apiKey"`
 }
 
 // Entity represents a Permify entity
@@ -48,8 +48,8 @@ type CheckRequest struct {
 
 // CheckResponse represents a permission check response
 type CheckResponse struct {
-	Can            bool   `json:"can"`
-	RemainingDepth int    `json:"remaining_depth,omitempty"`
+	Can            bool `json:"can"`
+	RemainingDepth int  `json:"remaining_depth,omitempty"`
 }
 
 // WriteRequest represents a relationship write request

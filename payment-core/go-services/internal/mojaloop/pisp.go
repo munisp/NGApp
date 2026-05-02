@@ -14,13 +14,13 @@ import (
 
 // PISPManager handles Third-Party Payment Initiation (PISP) flows
 type PISPManager struct {
-	ledger           LedgerEngine
-	workflowStore    WorkflowStore
-	db               *sql.DB
-	linkedMgr        *LinkedTransferManager
-	liquidityMgr     *LiquidityManager
-	sourceOfTruth    *SourceOfTruthContract
-	mu               sync.RWMutex
+	ledger        LedgerEngine
+	workflowStore WorkflowStore
+	db            *sql.DB
+	linkedMgr     *LinkedTransferManager
+	liquidityMgr  *LiquidityManager
+	sourceOfTruth *SourceOfTruthContract
+	mu            sync.RWMutex
 }
 
 // NewPISPManager creates a new PISP manager
@@ -46,25 +46,25 @@ func NewPISPManager(
 type ConsentStatus string
 
 const (
-	ConsentStatusPending   ConsentStatus = "PENDING"
-	ConsentStatusActive    ConsentStatus = "ACTIVE"
-	ConsentStatusRevoked   ConsentStatus = "REVOKED"
-	ConsentStatusExpired   ConsentStatus = "EXPIRED"
+	ConsentStatusPending ConsentStatus = "PENDING"
+	ConsentStatusActive  ConsentStatus = "ACTIVE"
+	ConsentStatusRevoked ConsentStatus = "REVOKED"
+	ConsentStatusExpired ConsentStatus = "EXPIRED"
 )
 
 // Consent represents a third-party consent
 type Consent struct {
-	ConsentID         string                 `json:"consentId"`
-	PartyID           string                 `json:"partyId"`           // The payer's identifier
-	PartyIDType       string                 `json:"partyIdType"`       // MSISDN, EMAIL, etc.
-	DFSPID            string                 `json:"dfspId"`            // The DFSP holding the account
-	PISPID            string                 `json:"pispId"`            // The third-party initiator
-	Scopes            []*ConsentScope        `json:"scopes"`
-	Credential        *ConsentCredential     `json:"credential,omitempty"`
-	Status            ConsentStatus          `json:"status"`
-	CreatedAt         time.Time              `json:"createdAt"`
-	ExpiresAt         time.Time              `json:"expiresAt"`
-	RevokedAt         *time.Time             `json:"revokedAt,omitempty"`
+	ConsentID   string             `json:"consentId"`
+	PartyID     string             `json:"partyId"`     // The payer's identifier
+	PartyIDType string             `json:"partyIdType"` // MSISDN, EMAIL, etc.
+	DFSPID      string             `json:"dfspId"`      // The DFSP holding the account
+	PISPID      string             `json:"pispId"`      // The third-party initiator
+	Scopes      []*ConsentScope    `json:"scopes"`
+	Credential  *ConsentCredential `json:"credential,omitempty"`
+	Status      ConsentStatus      `json:"status"`
+	CreatedAt   time.Time          `json:"createdAt"`
+	ExpiresAt   time.Time          `json:"expiresAt"`
+	RevokedAt   *time.Time         `json:"revokedAt,omitempty"`
 }
 
 // ConsentScope defines what the consent allows
@@ -75,11 +75,11 @@ type ConsentScope struct {
 
 // ConsentCredential holds the credential for signing
 type ConsentCredential struct {
-	CredentialType    string `json:"credentialType"` // FIDO
-	Status            string `json:"status"`         // PENDING, VERIFIED
-	Challenge         string `json:"challenge"`
-	PublicKey         string `json:"publicKey,omitempty"`
-	Attestation       string `json:"attestation,omitempty"`
+	CredentialType string `json:"credentialType"` // FIDO
+	Status         string `json:"status"`         // PENDING, VERIFIED
+	Challenge      string `json:"challenge"`
+	PublicKey      string `json:"publicKey,omitempty"`
+	Attestation    string `json:"attestation,omitempty"`
 }
 
 // ConsentRequest represents a request to create a consent

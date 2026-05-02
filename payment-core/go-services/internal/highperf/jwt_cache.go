@@ -19,14 +19,14 @@ import (
 // JWTCache provides fast local JWT validation without external calls
 type JWTCache struct {
 	// JWKS cache
-	jwksCache     map[string]*CachedKey
-	jwksCacheMu   sync.RWMutex
-	jwksURL       string
+	jwksCache           map[string]*CachedKey
+	jwksCacheMu         sync.RWMutex
+	jwksURL             string
 	jwksRefreshInterval time.Duration
 
 	// Validated token cache (short TTL)
-	tokenCache    *ShardedTokenCache
-	tokenTTL      time.Duration
+	tokenCache *ShardedTokenCache
+	tokenTTL   time.Duration
 
 	// Stats
 	totalValidations uint64

@@ -48,12 +48,12 @@ type PreferencesResult struct {
 type NotificationType string
 
 const (
-	NotificationTypeNewDevice           NotificationType = "newDevice"
-	NotificationTypeSuspiciousActivity  NotificationType = "suspiciousActivity"
-	NotificationTypeLogin               NotificationType = "login"
-	NotificationTypePasswordChange      NotificationType = "passwordChange"
-	NotificationTypeTwoFactorChange     NotificationType = "twoFactorChange"
-	NotificationTypeTransaction         NotificationType = "transaction"
+	NotificationTypeNewDevice          NotificationType = "newDevice"
+	NotificationTypeSuspiciousActivity NotificationType = "suspiciousActivity"
+	NotificationTypeLogin              NotificationType = "login"
+	NotificationTypePasswordChange     NotificationType = "passwordChange"
+	NotificationTypeTwoFactorChange    NotificationType = "twoFactorChange"
+	NotificationTypeTransaction        NotificationType = "transaction"
 )
 
 type NotificationChannel string

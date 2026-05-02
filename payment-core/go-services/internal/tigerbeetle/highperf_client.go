@@ -42,10 +42,10 @@ type HighPerfClient struct {
 	responseBufPool sync.Pool
 
 	// Stats (atomic)
-	totalTransfers   uint64
-	totalBatches     uint64
-	totalLatencyNs   uint64
-	pipelineDepth    uint64
+	totalTransfers uint64
+	totalBatches   uint64
+	totalLatencyNs uint64
+	pipelineDepth  uint64
 
 	// Control
 	ctx    context.Context
@@ -60,22 +60,22 @@ type Connection struct {
 	requestID      uint64
 	pendingResults map[uint64]chan *BatchResult
 	pendingMu      sync.RWMutex
-	
+
 	// Pipelining
-	maxPipeline    int
-	pipelineSem    chan struct{}
-	
+	maxPipeline int
+	pipelineSem chan struct{}
+
 	// Write buffer for batching network writes
-	writeBuf       []byte
-	writeBufMu     sync.Mutex
+	writeBuf   []byte
+	writeBufMu sync.Mutex
 }
 
 // BatchQueue accumulates transfers for batch coalescing
 type BatchQueue struct {
-	transfers    []Transfer
-	callbacks    []chan *TransferResult
-	mu           sync.Mutex
-	lastFlush    time.Time
+	transfers []Transfer
+	callbacks []chan *TransferResult
+	mu        sync.Mutex
+	lastFlush time.Time
 }
 
 // BatchResult contains results for a batch of transfers
@@ -97,21 +97,21 @@ type IDPool struct {
 	poolIndex uint64
 	poolSize  int
 	mu        sync.Mutex
-	
+
 	// Background refill
 	refillChan chan int
 }
 
 // HighPerfConfig configures the high-performance client
 type HighPerfConfig struct {
-	Addresses       []string
-	ClusterID       uint32
-	NumConnections  int           // Number of persistent connections (default: 10)
-	BatchSize       int           // Transfers per batch (default: 1000)
-	FlushInterval   time.Duration // Max time before flush (default: 1ms)
-	MaxPipeline     int           // Max concurrent batches per connection (default: 10)
-	IDPoolSize      int           // Pre-allocated IDs per pool (default: 10000)
-	NumBatchQueues  int           // Number of batch queues for sharding (default: 16)
+	Addresses      []string
+	ClusterID      uint32
+	NumConnections int           // Number of persistent connections (default: 10)
+	BatchSize      int           // Transfers per batch (default: 1000)
+	FlushInterval  time.Duration // Max time before flush (default: 1ms)
+	MaxPipeline    int           // Max concurrent batches per connection (default: 10)
+	IDPoolSize     int           // Pre-allocated IDs per pool (default: 10000)
+	NumBatchQueues int           // Number of batch queues for sharding (default: 16)
 }
 
 // DefaultHighPerfConfig returns optimized defaults for 1M TPS

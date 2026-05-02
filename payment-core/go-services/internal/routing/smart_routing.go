@@ -23,62 +23,62 @@ const (
 type RoutingStrategy string
 
 const (
-	StrategyLowestCost    RoutingStrategy = "lowest_cost"
+	StrategyLowestCost     RoutingStrategy = "lowest_cost"
 	StrategyHighestSuccess RoutingStrategy = "highest_success"
-	StrategyLowestLatency RoutingStrategy = "lowest_latency"
-	StrategyRoundRobin    RoutingStrategy = "round_robin"
-	StrategyWeighted      RoutingStrategy = "weighted"
-	StrategyFailover      RoutingStrategy = "failover"
-	StrategySmart         RoutingStrategy = "smart"
+	StrategyLowestLatency  RoutingStrategy = "lowest_latency"
+	StrategyRoundRobin     RoutingStrategy = "round_robin"
+	StrategyWeighted       RoutingStrategy = "weighted"
+	StrategyFailover       RoutingStrategy = "failover"
+	StrategySmart          RoutingStrategy = "smart"
 )
 
 type Provider struct {
-	ID              string            `json:"id"`
-	Name            string            `json:"name"`
-	Type            string            `json:"type"`
-	Status          ProviderStatus    `json:"status"`
-	Priority        int               `json:"priority"`
-	Weight          int               `json:"weight"`
-	CostPercentage  float64           `json:"cost_percentage"`
-	CostFixed       float64           `json:"cost_fixed"`
-	SupportedMethods []string         `json:"supported_methods"`
-	SupportedCurrencies []string      `json:"supported_currencies"`
-	SupportedCorridors []string       `json:"supported_corridors"`
-	MinAmount       float64           `json:"min_amount"`
-	MaxAmount       float64           `json:"max_amount"`
-	DailyLimit      float64           `json:"daily_limit"`
-	DailyUsed       float64           `json:"daily_used"`
-	Enabled         bool              `json:"enabled"`
-	Metadata        map[string]string `json:"metadata,omitempty"`
-	CreatedAt       time.Time         `json:"created_at"`
-	UpdatedAt       time.Time         `json:"updated_at"`
+	ID                  string            `json:"id"`
+	Name                string            `json:"name"`
+	Type                string            `json:"type"`
+	Status              ProviderStatus    `json:"status"`
+	Priority            int               `json:"priority"`
+	Weight              int               `json:"weight"`
+	CostPercentage      float64           `json:"cost_percentage"`
+	CostFixed           float64           `json:"cost_fixed"`
+	SupportedMethods    []string          `json:"supported_methods"`
+	SupportedCurrencies []string          `json:"supported_currencies"`
+	SupportedCorridors  []string          `json:"supported_corridors"`
+	MinAmount           float64           `json:"min_amount"`
+	MaxAmount           float64           `json:"max_amount"`
+	DailyLimit          float64           `json:"daily_limit"`
+	DailyUsed           float64           `json:"daily_used"`
+	Enabled             bool              `json:"enabled"`
+	Metadata            map[string]string `json:"metadata,omitempty"`
+	CreatedAt           time.Time         `json:"created_at"`
+	UpdatedAt           time.Time         `json:"updated_at"`
 }
 
 type ProviderMetrics struct {
-	ProviderID       string    `json:"provider_id"`
-	SuccessRate      float64   `json:"success_rate"`
-	AvgLatencyMs     float64   `json:"avg_latency_ms"`
-	P95LatencyMs     float64   `json:"p95_latency_ms"`
-	P99LatencyMs     float64   `json:"p99_latency_ms"`
-	TotalRequests    int64     `json:"total_requests"`
-	SuccessfulRequests int64   `json:"successful_requests"`
-	FailedRequests   int64     `json:"failed_requests"`
-	LastSuccess      *time.Time `json:"last_success,omitempty"`
-	LastFailure      *time.Time `json:"last_failure,omitempty"`
-	ConsecutiveFailures int    `json:"consecutive_failures"`
-	UpdatedAt        time.Time `json:"updated_at"`
+	ProviderID          string     `json:"provider_id"`
+	SuccessRate         float64    `json:"success_rate"`
+	AvgLatencyMs        float64    `json:"avg_latency_ms"`
+	P95LatencyMs        float64    `json:"p95_latency_ms"`
+	P99LatencyMs        float64    `json:"p99_latency_ms"`
+	TotalRequests       int64      `json:"total_requests"`
+	SuccessfulRequests  int64      `json:"successful_requests"`
+	FailedRequests      int64      `json:"failed_requests"`
+	LastSuccess         *time.Time `json:"last_success,omitempty"`
+	LastFailure         *time.Time `json:"last_failure,omitempty"`
+	ConsecutiveFailures int        `json:"consecutive_failures"`
+	UpdatedAt           time.Time  `json:"updated_at"`
 }
 
 type RoutingDecision struct {
-	ID              string          `json:"id"`
-	TransactionID   string          `json:"transaction_id"`
-	SelectedProvider string         `json:"selected_provider"`
-	Strategy        RoutingStrategy `json:"strategy"`
-	Score           float64         `json:"score"`
-	Reason          string          `json:"reason"`
-	Alternatives    []ProviderScore `json:"alternatives"`
-	DecidedAt       time.Time       `json:"decided_at"`
-	ProcessingTimeMs int64          `json:"processing_time_ms"`
+	ID               string          `json:"id"`
+	TransactionID    string          `json:"transaction_id"`
+	SelectedProvider string          `json:"selected_provider"`
+	Strategy         RoutingStrategy `json:"strategy"`
+	Score            float64         `json:"score"`
+	Reason           string          `json:"reason"`
+	Alternatives     []ProviderScore `json:"alternatives"`
+	DecidedAt        time.Time       `json:"decided_at"`
+	ProcessingTimeMs int64           `json:"processing_time_ms"`
 }
 
 type ProviderScore struct {
@@ -113,13 +113,13 @@ type RoutingConfig struct {
 }
 
 type SmartRouter struct {
-	mu            sync.RWMutex
-	providers     map[string]*Provider
-	metrics       map[string]*ProviderMetrics
-	decisions     []RoutingDecision
-	config        RoutingConfig
-	roundRobinIdx int
-	eventHandlers map[string][]func(interface{})
+	mu             sync.RWMutex
+	providers      map[string]*Provider
+	metrics        map[string]*ProviderMetrics
+	decisions      []RoutingDecision
+	config         RoutingConfig
+	roundRobinIdx  int
+	eventHandlers  map[string][]func(interface{})
 	latencyHistory map[string][]float64
 }
 
@@ -168,84 +168,84 @@ func NewSmartRouter(config *RoutingConfig) *SmartRouter {
 func (sr *SmartRouter) initializeDefaultProviders() {
 	defaultProviders := []Provider{
 		{
-			Name:               "NIBSS NIP",
-			Type:               "bank_transfer",
-			Status:             ProviderStatusActive,
-			Priority:           1,
-			Weight:             40,
-			CostPercentage:     0,
-			CostFixed:          25,
-			SupportedMethods:   []string{"bank_transfer", "instant_transfer"},
+			Name:                "NIBSS NIP",
+			Type:                "bank_transfer",
+			Status:              ProviderStatusActive,
+			Priority:            1,
+			Weight:              40,
+			CostPercentage:      0,
+			CostFixed:           25,
+			SupportedMethods:    []string{"bank_transfer", "instant_transfer"},
 			SupportedCurrencies: []string{"NGN"},
-			SupportedCorridors: []string{"NG-NG"},
-			MinAmount:          100,
-			MaxAmount:          10000000,
-			DailyLimit:         100000000,
-			Enabled:            true,
+			SupportedCorridors:  []string{"NG-NG"},
+			MinAmount:           100,
+			MaxAmount:           10000000,
+			DailyLimit:          100000000,
+			Enabled:             true,
 		},
 		{
-			Name:               "Paystack",
-			Type:               "card",
-			Status:             ProviderStatusActive,
-			Priority:           2,
-			Weight:             30,
-			CostPercentage:     1.5,
-			CostFixed:          100,
-			SupportedMethods:   []string{"card", "bank_transfer", "ussd"},
+			Name:                "Paystack",
+			Type:                "card",
+			Status:              ProviderStatusActive,
+			Priority:            2,
+			Weight:              30,
+			CostPercentage:      1.5,
+			CostFixed:           100,
+			SupportedMethods:    []string{"card", "bank_transfer", "ussd"},
 			SupportedCurrencies: []string{"NGN", "USD", "GHS"},
-			SupportedCorridors: []string{"NG-NG", "GH-GH", "INT-NG"},
-			MinAmount:          100,
-			MaxAmount:          5000000,
-			DailyLimit:         50000000,
-			Enabled:            true,
+			SupportedCorridors:  []string{"NG-NG", "GH-GH", "INT-NG"},
+			MinAmount:           100,
+			MaxAmount:           5000000,
+			DailyLimit:          50000000,
+			Enabled:             true,
 		},
 		{
-			Name:               "Flutterwave",
-			Type:               "card",
-			Status:             ProviderStatusActive,
-			Priority:           3,
-			Weight:             20,
-			CostPercentage:     1.4,
-			CostFixed:          100,
-			SupportedMethods:   []string{"card", "bank_transfer", "mobile_money"},
+			Name:                "Flutterwave",
+			Type:                "card",
+			Status:              ProviderStatusActive,
+			Priority:            3,
+			Weight:              20,
+			CostPercentage:      1.4,
+			CostFixed:           100,
+			SupportedMethods:    []string{"card", "bank_transfer", "mobile_money"},
 			SupportedCurrencies: []string{"NGN", "USD", "GHS", "KES", "ZAR"},
-			SupportedCorridors: []string{"NG-NG", "GH-GH", "KE-KE", "ZA-ZA", "INT-NG"},
-			MinAmount:          100,
-			MaxAmount:          10000000,
-			DailyLimit:         100000000,
-			Enabled:            true,
+			SupportedCorridors:  []string{"NG-NG", "GH-GH", "KE-KE", "ZA-ZA", "INT-NG"},
+			MinAmount:           100,
+			MaxAmount:           10000000,
+			DailyLimit:          100000000,
+			Enabled:             true,
 		},
 		{
-			Name:               "Coinbase Commerce",
-			Type:               "crypto",
-			Status:             ProviderStatusActive,
-			Priority:           4,
-			Weight:             5,
-			CostPercentage:     1.0,
-			CostFixed:          0,
-			SupportedMethods:   []string{"crypto"},
+			Name:                "Coinbase Commerce",
+			Type:                "crypto",
+			Status:              ProviderStatusActive,
+			Priority:            4,
+			Weight:              5,
+			CostPercentage:      1.0,
+			CostFixed:           0,
+			SupportedMethods:    []string{"crypto"},
 			SupportedCurrencies: []string{"BTC", "ETH", "USDC", "USDT"},
-			SupportedCorridors: []string{"INT-INT"},
-			MinAmount:          10,
-			MaxAmount:          1000000,
-			DailyLimit:         10000000,
-			Enabled:            true,
+			SupportedCorridors:  []string{"INT-INT"},
+			MinAmount:           10,
+			MaxAmount:           1000000,
+			DailyLimit:          10000000,
+			Enabled:             true,
 		},
 		{
-			Name:               "Circle USDC",
-			Type:               "crypto",
-			Status:             ProviderStatusActive,
-			Priority:           5,
-			Weight:             5,
-			CostPercentage:     0.5,
-			CostFixed:          0,
-			SupportedMethods:   []string{"crypto"},
+			Name:                "Circle USDC",
+			Type:                "crypto",
+			Status:              ProviderStatusActive,
+			Priority:            5,
+			Weight:              5,
+			CostPercentage:      0.5,
+			CostFixed:           0,
+			SupportedMethods:    []string{"crypto"},
 			SupportedCurrencies: []string{"USDC"},
-			SupportedCorridors: []string{"INT-INT"},
-			MinAmount:          1,
-			MaxAmount:          10000000,
-			DailyLimit:         100000000,
-			Enabled:            true,
+			SupportedCorridors:  []string{"INT-INT"},
+			MinAmount:           1,
+			MaxAmount:           10000000,
+			DailyLimit:          100000000,
+			Enabled:             true,
 		},
 	}
 
@@ -257,12 +257,12 @@ func (sr *SmartRouter) initializeDefaultProviders() {
 		sr.providers[provider.ID] = &provider
 
 		sr.metrics[provider.ID] = &ProviderMetrics{
-			ProviderID:  provider.ID,
-			SuccessRate: 99.0,
+			ProviderID:   provider.ID,
+			SuccessRate:  99.0,
 			AvgLatencyMs: 200,
 			P95LatencyMs: 500,
 			P99LatencyMs: 1000,
-			UpdatedAt:   time.Now(),
+			UpdatedAt:    time.Now(),
 		}
 	}
 }

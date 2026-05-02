@@ -18,20 +18,20 @@ import (
 // 4. Async everything non-essential
 type HotPathProcessor struct {
 	// Core components
-	batchClient    *BatchTransferClient
-	kafkaOutbox    *KafkaOutbox
-	fraudGate      *FastFraudGate
-	jwtCache       *JWTCache
-	routingCache   *RoutingCache
+	batchClient  *BatchTransferClient
+	kafkaOutbox  *KafkaOutbox
+	fraudGate    *FastFraudGate
+	jwtCache     *JWTCache
+	routingCache *RoutingCache
 
 	// Object pools (zero allocation)
-	requestPool    sync.Pool
-	responsePool   sync.Pool
-	bufferPool     sync.Pool
+	requestPool  sync.Pool
+	responsePool sync.Pool
+	bufferPool   sync.Pool
 
 	// Per-core request queues
-	requestQueues  []*RequestQueue
-	numCores       int
+	requestQueues []*RequestQueue
+	numCores      int
 
 	// Stats (atomic, no locks)
 	totalProcessed uint64
@@ -57,11 +57,11 @@ type Request struct {
 	Flags           uint16
 
 	// Second cache line - metadata
-	PayerFSP        [8]byte  // Truncated FSP ID
-	PayeeFSP        [8]byte
-	Timestamp       int64
-	ResponseChan    chan Response
-	_padding        [32]byte // Align to 128 bytes
+	PayerFSP     [8]byte // Truncated FSP ID
+	PayeeFSP     [8]byte
+	Timestamp    int64
+	ResponseChan chan Response
+	_padding     [32]byte // Align to 128 bytes
 }
 
 // Response represents a hot path response
@@ -83,11 +83,11 @@ type RequestQueue struct {
 
 // HotPathConfig configures the hot path processor
 type HotPathConfig struct {
-	NumCores         int
-	QueueSize        int
-	BatchSize        int
-	FlushIntervalMs  int
-	MaxInflight      int
+	NumCores        int
+	QueueSize       int
+	BatchSize       int
+	FlushIntervalMs int
+	MaxInflight     int
 }
 
 // DefaultHotPathConfig returns optimized defaults
@@ -419,10 +419,10 @@ func (p *HotPathProcessor) Close() error {
 
 // RoutingCache provides fast participant routing lookup
 type RoutingCache struct {
-	cache    map[string]*RoutingEntry
-	cacheMu  sync.RWMutex
-	maxSize  int
-	ttl      time.Duration
+	cache   map[string]*RoutingEntry
+	cacheMu sync.RWMutex
+	maxSize int
+	ttl     time.Duration
 }
 
 // RoutingEntry is a cached routing entry

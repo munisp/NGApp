@@ -125,7 +125,7 @@ func BenchmarkKafkaOutboxEmit(b *testing.B) {
 type noopProducer struct{}
 
 func (p *noopProducer) ProduceBatch(_ context.Context, events []KafkaEvent) error { return nil }
-func (p *noopProducer) Close() error                                          { return nil }
+func (p *noopProducer) Close() error                                              { return nil }
 
 // BenchmarkObjectPoolAllocation measures sync.Pool vs new
 func BenchmarkObjectPoolAllocation(b *testing.B) {

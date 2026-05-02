@@ -24,36 +24,36 @@ const (
 
 // Account flags
 const (
-	AccountFlagNone                      = 0
-	AccountFlagLinked                    = 1 << 0
+	AccountFlagNone                       = 0
+	AccountFlagLinked                     = 1 << 0
 	AccountFlagDebitsMustNotExceedCredits = 1 << 1
 	AccountFlagCreditsMustNotExceedDebits = 1 << 2
 )
 
 // Transfer flags
 const (
-	TransferFlagNone               = 0
-	TransferFlagLinked             = 1 << 0
-	TransferFlagPending            = 1 << 1
+	TransferFlagNone                = 0
+	TransferFlagLinked              = 1 << 0
+	TransferFlagPending             = 1 << 1
 	TransferFlagPostPendingTransfer = 1 << 2
 	TransferFlagVoidPendingTransfer = 1 << 3
-	TransferFlagBalancingDebit     = 1 << 4
-	TransferFlagBalancingCredit    = 1 << 5
+	TransferFlagBalancingDebit      = 1 << 4
+	TransferFlagBalancingCredit     = 1 << 5
 )
 
 // Account represents a TigerBeetle account
 type Account struct {
-	ID              uint64
-	UserData        uint64
-	Reserved        uint64
-	Ledger          uint32
-	Code            uint16
-	Flags           uint16
-	DebitsPending   uint64
-	DebitsPosted    uint64
-	CreditsPending  uint64
-	CreditsPosted   uint64
-	Timestamp       uint64
+	ID             uint64
+	UserData       uint64
+	Reserved       uint64
+	Ledger         uint32
+	Code           uint16
+	Flags          uint16
+	DebitsPending  uint64
+	DebitsPosted   uint64
+	CreditsPending uint64
+	CreditsPosted  uint64
+	Timestamp      uint64
 }
 
 // Transfer represents a TigerBeetle transfer
@@ -74,24 +74,24 @@ type Transfer struct {
 
 // Balance represents account balance information
 type Balance struct {
-	AccountID       uint64
-	DebitsPending   uint64
-	DebitsPosted    uint64
-	CreditsPending  uint64
-	CreditsPosted   uint64
+	AccountID        uint64
+	DebitsPending    uint64
+	DebitsPosted     uint64
+	CreditsPending   uint64
+	CreditsPosted    uint64
 	AvailableBalance int64
-	PendingBalance  int64
+	PendingBalance   int64
 }
 
 // Client is a high-performance TigerBeetle client with connection pooling
 type Client struct {
-	clusterID   uint32
-	addresses   []string
-	maxConns    int
-	connPool    chan net.Conn
-	mu          sync.RWMutex
-	ctx         context.Context
-	cancel      context.CancelFunc
+	clusterID uint32
+	addresses []string
+	maxConns  int
+	connPool  chan net.Conn
+	mu        sync.RWMutex
+	ctx       context.Context
+	cancel    context.CancelFunc
 }
 
 // NewClient creates a new TigerBeetle client with connection pooling
@@ -142,17 +142,17 @@ func (c *Client) createConnection() (net.Conn, error) {
 			log.Printf("Failed to connect to %s: %v", addr, err)
 			continue
 		}
-		
+
 		// Set TCP options for performance
 		if tcpConn, ok := conn.(*net.TCPConn); ok {
 			tcpConn.SetNoDelay(true)
 			tcpConn.SetKeepAlive(true)
 			tcpConn.SetKeepAlivePeriod(30 * time.Second)
 		}
-		
+
 		return conn, nil
 	}
-	
+
 	return nil, fmt.Errorf("failed to connect to any address: %v", c.addresses)
 }
 
@@ -328,7 +328,7 @@ func (c *Client) GetAccountBalance(ctx context.Context, accountID uint64) (*Bala
 	}
 
 	account := accounts[0]
-	
+
 	return &Balance{
 		AccountID:        account.ID,
 		DebitsPending:    account.DebitsPending,
@@ -346,42 +346,42 @@ func (c *Client) sendRequest(ctx context.Context, conn net.Conn, operation uint8
 	header := make([]byte, 5)
 	header[0] = operation
 	binary.LittleEndian.PutUint32(header[1:], uint32(len(data)))
-	
+
 	// Set write deadline
 	if err := conn.SetWriteDeadline(time.Now().Add(5 * time.Second)); err != nil {
 		return nil, err
 	}
-	
+
 	// Send header
 	if _, err := conn.Write(header); err != nil {
 		return nil, fmt.Errorf("failed to write header: %w", err)
 	}
-	
+
 	// Send data
 	if len(data) > 0 {
 		if _, err := conn.Write(data); err != nil {
 			return nil, fmt.Errorf("failed to write data: %w", err)
 		}
 	}
-	
+
 	// Set read deadline
 	if err := conn.SetReadDeadline(time.Now().Add(10 * time.Second)); err != nil {
 		return nil, err
 	}
-	
+
 	// Read response header
 	respHeader := make([]byte, 5)
 	if _, err := conn.Read(respHeader); err != nil {
 		return nil, fmt.Errorf("failed to read response header: %w", err)
 	}
-	
+
 	responseLength := binary.LittleEndian.Uint32(respHeader[1:])
-	
+
 	// Read response data
 	if responseLength == 0 {
 		return nil, nil
 	}
-	
+
 	responseData := make([]byte, responseLength)
 	totalRead := 0
 	for totalRead < int(responseLength) {
@@ -391,7 +391,7 @@ func (c *Client) sendRequest(ctx context.Context, conn net.Conn, operation uint8
 		}
 		totalRead += n
 	}
-	
+
 	return responseData, nil
 }
 
@@ -460,11 +460,11 @@ func (c *Client) deserializeTransfer(transfer *Transfer, data []byte) {
 func (c *Client) Close() error {
 	c.cancel()
 	close(c.connPool)
-	
+
 	for conn := range c.connPool {
 		conn.Close()
 	}
-	
+
 	log.Println("TigerBeetle client closed")
 	return nil
 }

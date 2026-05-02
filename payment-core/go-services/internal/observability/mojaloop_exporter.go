@@ -14,54 +14,54 @@ import (
 
 // MojaLoopExporter exports Mojaloop metrics to Prometheus
 type MojaLoopExporter struct {
-	client     *http.Client
-	baseURL    string
-	mu         sync.RWMutex
+	client  *http.Client
+	baseURL string
+	mu      sync.RWMutex
 
 	// Transfer metrics
-	transfersTotal       *prometheus.CounterVec
-	transferLatency      *prometheus.HistogramVec
-	transferAmount       *prometheus.HistogramVec
-	transfersInProgress  prometheus.Gauge
-	transferSuccessRate  prometheus.Gauge
+	transfersTotal      *prometheus.CounterVec
+	transferLatency     *prometheus.HistogramVec
+	transferAmount      *prometheus.HistogramVec
+	transfersInProgress prometheus.Gauge
+	transferSuccessRate prometheus.Gauge
 
 	// Participant metrics
-	participantsTotal    prometheus.Gauge
-	participantHealth    *prometheus.GaugeVec
-	participantBalance   *prometheus.GaugeVec
-	participantNDC       *prometheus.GaugeVec
-	participantPosition  *prometheus.GaugeVec
+	participantsTotal   prometheus.Gauge
+	participantHealth   *prometheus.GaugeVec
+	participantBalance  *prometheus.GaugeVec
+	participantNDC      *prometheus.GaugeVec
+	participantPosition *prometheus.GaugeVec
 
 	// Settlement metrics
-	settlementsTotal     *prometheus.CounterVec
-	settlementAmount     *prometheus.HistogramVec
-	settlementDuration   *prometheus.HistogramVec
-	settlementsPending   prometheus.Gauge
-	settlementWindows    prometheus.Gauge
+	settlementsTotal   *prometheus.CounterVec
+	settlementAmount   *prometheus.HistogramVec
+	settlementDuration *prometheus.HistogramVec
+	settlementsPending prometheus.Gauge
+	settlementWindows  prometheus.Gauge
 
 	// Quote metrics
-	quotesTotal          *prometheus.CounterVec
-	quoteLatency         *prometheus.HistogramVec
-	quotesActive         prometheus.Gauge
+	quotesTotal  *prometheus.CounterVec
+	quoteLatency *prometheus.HistogramVec
+	quotesActive prometheus.Gauge
 
 	// Party lookup metrics
-	partyLookupsTotal    *prometheus.CounterVec
-	partyLookupLatency   *prometheus.HistogramVec
+	partyLookupsTotal  *prometheus.CounterVec
+	partyLookupLatency *prometheus.HistogramVec
 
 	// Bulk transfer metrics
-	bulkTransfersTotal   *prometheus.CounterVec
-	bulkTransferSize     *prometheus.HistogramVec
-	bulkTransferLatency  *prometheus.HistogramVec
+	bulkTransfersTotal  *prometheus.CounterVec
+	bulkTransferSize    *prometheus.HistogramVec
+	bulkTransferLatency *prometheus.HistogramVec
 
 	// Error metrics
-	errorsTotal          *prometheus.CounterVec
-	timeoutsTotal        *prometheus.CounterVec
-	rejectedTransfers    *prometheus.CounterVec
+	errorsTotal       *prometheus.CounterVec
+	timeoutsTotal     *prometheus.CounterVec
+	rejectedTransfers *prometheus.CounterVec
 
 	// System metrics
-	kafkaLag             *prometheus.GaugeVec
-	dbConnections        *prometheus.GaugeVec
-	cacheHitRate         prometheus.Gauge
+	kafkaLag      *prometheus.GaugeVec
+	dbConnections *prometheus.GaugeVec
+	cacheHitRate  prometheus.Gauge
 }
 
 // NewMojaLoopExporter creates a new Mojaloop exporter
@@ -252,10 +252,10 @@ func (e *MojaLoopExporter) collectCentralLedger() {
 	defer resp.Body.Close()
 
 	var health struct {
-		Status           string  `json:"status"`
-		ParticipantCount int     `json:"participant_count"`
-		TransfersInFlight int    `json:"transfers_in_flight"`
-		SuccessRate      float64 `json:"success_rate"`
+		Status            string  `json:"status"`
+		ParticipantCount  int     `json:"participant_count"`
+		TransfersInFlight int     `json:"transfers_in_flight"`
+		SuccessRate       float64 `json:"success_rate"`
 	}
 
 	if err := json.NewDecoder(resp.Body).Decode(&health); err != nil {

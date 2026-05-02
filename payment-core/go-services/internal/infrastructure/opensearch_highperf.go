@@ -17,29 +17,29 @@ import (
 // OpenSearchHighPerfConfig configures the high-performance OpenSearch client
 type OpenSearchHighPerfConfig struct {
 	// Cluster nodes
-	Nodes           []string
-	Username        string
-	Password        string
-	
+	Nodes    []string
+	Username string
+	Password string
+
 	// Index settings
-	IndexPrefix     string
-	NumberOfShards  int
+	IndexPrefix      string
+	NumberOfShards   int
 	NumberOfReplicas int
-	RefreshInterval string
-	
+	RefreshInterval  string
+
 	// Bulk settings
-	BulkSize        int
-	BulkActions     int
-	FlushInterval   time.Duration
-	
+	BulkSize      int
+	BulkActions   int
+	FlushInterval time.Duration
+
 	// Connection settings
-	MaxRetries      int
-	RetryBackoff    time.Duration
-	Timeout         time.Duration
-	
+	MaxRetries   int
+	RetryBackoff time.Duration
+	Timeout      time.Duration
+
 	// Performance settings
-	Compression     bool
-	EnableSniffing  bool
+	Compression    bool
+	EnableSniffing bool
 }
 
 // DefaultOpenSearchHighPerfConfig returns optimized defaults for 1M TPS
@@ -63,26 +63,26 @@ func DefaultOpenSearchHighPerfConfig() OpenSearchHighPerfConfig {
 
 // OpenSearchHighPerfClient is an optimized OpenSearch client
 type OpenSearchHighPerfClient struct {
-	config       OpenSearchHighPerfConfig
-	httpClient   *http.Client
-	
+	config     OpenSearchHighPerfConfig
+	httpClient *http.Client
+
 	// Bulk buffer
-	bulkBuffer   []BulkItem
-	bulkMu       sync.Mutex
-	bulkSize     int
-	
+	bulkBuffer []BulkItem
+	bulkMu     sync.Mutex
+	bulkSize   int
+
 	// Node selection (round-robin)
-	nodeIdx      uint64
-	
+	nodeIdx uint64
+
 	// Stats
-	docsIndexed  uint64
+	docsIndexed   uint64
 	searchQueries uint64
-	errors       uint64
-	
+	errors        uint64
+
 	// Control
-	ctx          context.Context
-	cancel       context.CancelFunc
-	wg           sync.WaitGroup
+	ctx    context.Context
+	cancel context.CancelFunc
+	wg     sync.WaitGroup
 }
 
 // BulkItem represents a bulk index item
@@ -96,7 +96,7 @@ type BulkItem struct {
 // NewOpenSearchHighPerfClient creates a new high-performance OpenSearch client
 func NewOpenSearchHighPerfClient(config OpenSearchHighPerfConfig) (*OpenSearchHighPerfClient, error) {
 	ctx, cancel := context.WithCancel(context.Background())
-	
+
 	client := &OpenSearchHighPerfClient{
 		config:     config,
 		httpClient: &http.Client{Timeout: config.Timeout},
@@ -104,14 +104,14 @@ func NewOpenSearchHighPerfClient(config OpenSearchHighPerfConfig) (*OpenSearchHi
 		ctx:        ctx,
 		cancel:     cancel,
 	}
-	
+
 	// Start background flusher
 	client.wg.Add(1)
 	go client.backgroundFlusher()
-	
+
 	log.Printf("OpenSearchHighPerfClient initialized: %d nodes, shards=%d, replicas=%d",
 		len(config.Nodes), config.NumberOfShards, config.NumberOfReplicas)
-	
+
 	return client, nil
 }
 
@@ -130,17 +130,17 @@ func (c *OpenSearchHighPerfClient) Index(index, id string, doc interface{}) erro
 		Doc:    doc,
 		Action: "index",
 	})
-	
+
 	docBytes, _ := json.Marshal(doc)
 	c.bulkSize += len(docBytes)
-	
+
 	shouldFlush := len(c.bulkBuffer) >= c.config.BulkActions || c.bulkSize >= c.config.BulkSize
 	c.bulkMu.Unlock()
-	
+
 	if shouldFlush {
 		go c.flush()
 	}
-	
+
 	return nil
 }
 
@@ -148,33 +148,33 @@ func (c *OpenSearchHighPerfClient) Index(index, id string, doc interface{}) erro
 func (c *OpenSearchHighPerfClient) IndexSync(ctx context.Context, index, id string, doc interface{}) error {
 	node := c.getNode()
 	url := fmt.Sprintf("http://%s/%s/_doc/%s", node, index, id)
-	
+
 	body, err := json.Marshal(doc)
 	if err != nil {
 		return err
 	}
-	
+
 	req, err := http.NewRequestWithContext(ctx, "PUT", url, bytes.NewReader(body))
 	if err != nil {
 		return err
 	}
-	
+
 	c.setAuth(req)
 	req.Header.Set("Content-Type", "application/json")
-	
+
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		atomic.AddUint64(&c.errors, 1)
 		return err
 	}
 	defer resp.Body.Close()
-	
+
 	if resp.StatusCode >= 400 {
 		atomic.AddUint64(&c.errors, 1)
 		respBody, _ := io.ReadAll(resp.Body)
 		return fmt.Errorf("index failed: %s - %s", resp.Status, string(respBody))
 	}
-	
+
 	atomic.AddUint64(&c.docsIndexed, 1)
 	return nil
 }
@@ -183,34 +183,34 @@ func (c *OpenSearchHighPerfClient) IndexSync(ctx context.Context, index, id stri
 func (c *OpenSearchHighPerfClient) Search(ctx context.Context, index string, query map[string]interface{}) (*SearchResponse, error) {
 	node := c.getNode()
 	url := fmt.Sprintf("http://%s/%s/_search", node, index)
-	
+
 	body, err := json.Marshal(query)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	req, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewReader(body))
 	if err != nil {
 		return nil, err
 	}
-	
+
 	c.setAuth(req)
 	req.Header.Set("Content-Type", "application/json")
-	
+
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		atomic.AddUint64(&c.errors, 1)
 		return nil, err
 	}
 	defer resp.Body.Close()
-	
+
 	atomic.AddUint64(&c.searchQueries, 1)
-	
+
 	var result SearchResponse
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
 		return nil, err
 	}
-	
+
 	return &result, nil
 }
 
@@ -237,10 +237,10 @@ type SearchResponse struct {
 // backgroundFlusher periodically flushes the bulk buffer
 func (c *OpenSearchHighPerfClient) backgroundFlusher() {
 	defer c.wg.Done()
-	
+
 	ticker := time.NewTicker(c.config.FlushInterval)
 	defer ticker.Stop()
-	
+
 	for {
 		select {
 		case <-c.ctx.Done():
@@ -259,12 +259,12 @@ func (c *OpenSearchHighPerfClient) flush() {
 		c.bulkMu.Unlock()
 		return
 	}
-	
+
 	items := c.bulkBuffer
 	c.bulkBuffer = make([]BulkItem, 0, c.config.BulkActions)
 	c.bulkSize = 0
 	c.bulkMu.Unlock()
-	
+
 	// Build bulk request body
 	var buf bytes.Buffer
 	for _, item := range items {
@@ -277,33 +277,33 @@ func (c *OpenSearchHighPerfClient) flush() {
 		metaBytes, _ := json.Marshal(meta)
 		buf.Write(metaBytes)
 		buf.WriteByte('\n')
-		
+
 		if item.Action != "delete" {
 			docBytes, _ := json.Marshal(item.Doc)
 			buf.Write(docBytes)
 			buf.WriteByte('\n')
 		}
 	}
-	
+
 	node := c.getNode()
 	url := fmt.Sprintf("http://%s/_bulk", node)
-	
+
 	req, err := http.NewRequestWithContext(c.ctx, "POST", url, &buf)
 	if err != nil {
 		atomic.AddUint64(&c.errors, 1)
 		return
 	}
-	
+
 	c.setAuth(req)
 	req.Header.Set("Content-Type", "application/x-ndjson")
-	
+
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		atomic.AddUint64(&c.errors, 1)
 		return
 	}
 	defer resp.Body.Close()
-	
+
 	if resp.StatusCode == http.StatusOK {
 		atomic.AddUint64(&c.docsIndexed, uint64(len(items)))
 	} else {
@@ -322,7 +322,7 @@ func (c *OpenSearchHighPerfClient) setAuth(req *http.Request) {
 func (c *OpenSearchHighPerfClient) CreateIndex(ctx context.Context, index string, mappings map[string]interface{}) error {
 	node := c.getNode()
 	url := fmt.Sprintf("http://%s/%s", node, index)
-	
+
 	settings := map[string]interface{}{
 		"settings": map[string]interface{}{
 			"number_of_shards":   c.config.NumberOfShards,
@@ -330,7 +330,7 @@ func (c *OpenSearchHighPerfClient) CreateIndex(ctx context.Context, index string
 			"refresh_interval":   c.config.RefreshInterval,
 			"index": map[string]interface{}{
 				"translog": map[string]interface{}{
-					"durability": "async",
+					"durability":    "async",
 					"sync_interval": "5s",
 				},
 				"merge": map[string]interface{}{
@@ -342,31 +342,31 @@ func (c *OpenSearchHighPerfClient) CreateIndex(ctx context.Context, index string
 		},
 		"mappings": mappings,
 	}
-	
+
 	body, err := json.Marshal(settings)
 	if err != nil {
 		return err
 	}
-	
+
 	req, err := http.NewRequestWithContext(ctx, "PUT", url, bytes.NewReader(body))
 	if err != nil {
 		return err
 	}
-	
+
 	c.setAuth(req)
 	req.Header.Set("Content-Type", "application/json")
-	
+
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		return err
 	}
 	defer resp.Body.Close()
-	
+
 	if resp.StatusCode >= 400 && resp.StatusCode != 400 { // 400 = index exists
 		respBody, _ := io.ReadAll(resp.Body)
 		return fmt.Errorf("create index failed: %s - %s", resp.Status, string(respBody))
 	}
-	
+
 	return nil
 }
 
@@ -386,16 +386,16 @@ func (c *OpenSearchHighPerfClient) Close() error {
 
 // OpenSearchClusterConfig represents OpenSearch cluster configuration
 type OpenSearchClusterConfig struct {
-	ClusterName     string
-	NodeCount       int
-	MasterNodes     int
-	DataNodes       int
-	IngestNodes     int
+	ClusterName      string
+	NodeCount        int
+	MasterNodes      int
+	DataNodes        int
+	IngestNodes      int
 	CoordinatorNodes int
-	NodeMemory      string
-	NodeCPU         string
-	StorageSize     string
-	StorageClass    string
+	NodeMemory       string
+	NodeCPU          string
+	StorageSize      string
+	StorageClass     string
 }
 
 // OptimalOpenSearchClusterConfig returns optimized cluster config

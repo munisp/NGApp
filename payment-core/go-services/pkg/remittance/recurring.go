@@ -15,12 +15,12 @@ import (
 type RecurrenceFrequency string
 
 const (
-	FrequencyDaily    RecurrenceFrequency = "daily"
-	FrequencyWeekly   RecurrenceFrequency = "weekly"
-	FrequencyBiWeekly RecurrenceFrequency = "biweekly"
-	FrequencyMonthly  RecurrenceFrequency = "monthly"
+	FrequencyDaily     RecurrenceFrequency = "daily"
+	FrequencyWeekly    RecurrenceFrequency = "weekly"
+	FrequencyBiWeekly  RecurrenceFrequency = "biweekly"
+	FrequencyMonthly   RecurrenceFrequency = "monthly"
 	FrequencyQuarterly RecurrenceFrequency = "quarterly"
-	FrequencyAnnually RecurrenceFrequency = "annually"
+	FrequencyAnnually  RecurrenceFrequency = "annually"
 )
 
 // RecurringStatus represents the status of a recurring remittance
@@ -38,65 +38,65 @@ const (
 type ExecutionStatus string
 
 const (
-	ExecutionStatusPending   ExecutionStatus = "pending"
+	ExecutionStatusPending    ExecutionStatus = "pending"
 	ExecutionStatusProcessing ExecutionStatus = "processing"
-	ExecutionStatusCompleted ExecutionStatus = "completed"
-	ExecutionStatusFailed    ExecutionStatus = "failed"
-	ExecutionStatusSkipped   ExecutionStatus = "skipped"
+	ExecutionStatusCompleted  ExecutionStatus = "completed"
+	ExecutionStatusFailed     ExecutionStatus = "failed"
+	ExecutionStatusSkipped    ExecutionStatus = "skipped"
 )
 
 // RecurringRemittance represents a recurring remittance schedule
 type RecurringRemittance struct {
-	ID              string              `json:"id"`
-	UserID          string              `json:"user_id"`
-	ParticipantID   string              `json:"participant_id"`
-	Name            string              `json:"name"`
-	Description     string              `json:"description,omitempty"`
-	SenderID        string              `json:"sender_id"`
-	SenderName      string              `json:"sender_name"`
-	RecipientID     string              `json:"recipient_id"`
-	RecipientName   string              `json:"recipient_name"`
-	RecipientCountry string             `json:"recipient_country"`
-	Amount          int64               `json:"amount"`
-	Currency        string              `json:"currency"`
-	TargetCurrency  string              `json:"target_currency,omitempty"`
-	Frequency       RecurrenceFrequency `json:"frequency"`
-	DayOfWeek       int                 `json:"day_of_week,omitempty"`   // 0-6 for weekly
-	DayOfMonth      int                 `json:"day_of_month,omitempty"` // 1-31 for monthly
-	StartDate       time.Time           `json:"start_date"`
-	EndDate         *time.Time          `json:"end_date,omitempty"`
-	NextExecution   time.Time           `json:"next_execution"`
-	LastExecution   *time.Time          `json:"last_execution,omitempty"`
-	ExecutionCount  int                 `json:"execution_count"`
-	MaxExecutions   int                 `json:"max_executions,omitempty"` // 0 = unlimited
-	Status          RecurringStatus     `json:"status"`
-	FailureCount    int                 `json:"failure_count"`
-	MaxFailures     int                 `json:"max_failures"`
-	NotifyOnSuccess bool                `json:"notify_on_success"`
-	NotifyOnFailure bool                `json:"notify_on_failure"`
-	PaymentMethod   string              `json:"payment_method"`
-	Metadata        map[string]string   `json:"metadata,omitempty"`
-	CreatedAt       time.Time           `json:"created_at"`
-	UpdatedAt       time.Time           `json:"updated_at"`
+	ID               string              `json:"id"`
+	UserID           string              `json:"user_id"`
+	ParticipantID    string              `json:"participant_id"`
+	Name             string              `json:"name"`
+	Description      string              `json:"description,omitempty"`
+	SenderID         string              `json:"sender_id"`
+	SenderName       string              `json:"sender_name"`
+	RecipientID      string              `json:"recipient_id"`
+	RecipientName    string              `json:"recipient_name"`
+	RecipientCountry string              `json:"recipient_country"`
+	Amount           int64               `json:"amount"`
+	Currency         string              `json:"currency"`
+	TargetCurrency   string              `json:"target_currency,omitempty"`
+	Frequency        RecurrenceFrequency `json:"frequency"`
+	DayOfWeek        int                 `json:"day_of_week,omitempty"`  // 0-6 for weekly
+	DayOfMonth       int                 `json:"day_of_month,omitempty"` // 1-31 for monthly
+	StartDate        time.Time           `json:"start_date"`
+	EndDate          *time.Time          `json:"end_date,omitempty"`
+	NextExecution    time.Time           `json:"next_execution"`
+	LastExecution    *time.Time          `json:"last_execution,omitempty"`
+	ExecutionCount   int                 `json:"execution_count"`
+	MaxExecutions    int                 `json:"max_executions,omitempty"` // 0 = unlimited
+	Status           RecurringStatus     `json:"status"`
+	FailureCount     int                 `json:"failure_count"`
+	MaxFailures      int                 `json:"max_failures"`
+	NotifyOnSuccess  bool                `json:"notify_on_success"`
+	NotifyOnFailure  bool                `json:"notify_on_failure"`
+	PaymentMethod    string              `json:"payment_method"`
+	Metadata         map[string]string   `json:"metadata,omitempty"`
+	CreatedAt        time.Time           `json:"created_at"`
+	UpdatedAt        time.Time           `json:"updated_at"`
 }
 
 // RecurringExecution represents a single execution of a recurring remittance
 type RecurringExecution struct {
-	ID                  string          `json:"id"`
-	RecurringID         string          `json:"recurring_id"`
-	TransactionID       string          `json:"transaction_id,omitempty"`
-	ScheduledAt         time.Time       `json:"scheduled_at"`
-	ExecutedAt          *time.Time      `json:"executed_at,omitempty"`
-	Amount              int64           `json:"amount"`
-	Currency            string          `json:"currency"`
-	ExchangeRate        float64         `json:"exchange_rate,omitempty"`
-	TargetAmount        int64           `json:"target_amount,omitempty"`
-	TargetCurrency      string          `json:"target_currency,omitempty"`
-	Status              ExecutionStatus `json:"status"`
-	ErrorMessage        string          `json:"error_message,omitempty"`
-	RetryCount          int             `json:"retry_count"`
-	CreatedAt           time.Time       `json:"created_at"`
-	UpdatedAt           time.Time       `json:"updated_at"`
+	ID             string          `json:"id"`
+	RecurringID    string          `json:"recurring_id"`
+	TransactionID  string          `json:"transaction_id,omitempty"`
+	ScheduledAt    time.Time       `json:"scheduled_at"`
+	ExecutedAt     *time.Time      `json:"executed_at,omitempty"`
+	Amount         int64           `json:"amount"`
+	Currency       string          `json:"currency"`
+	ExchangeRate   float64         `json:"exchange_rate,omitempty"`
+	TargetAmount   int64           `json:"target_amount,omitempty"`
+	TargetCurrency string          `json:"target_currency,omitempty"`
+	Status         ExecutionStatus `json:"status"`
+	ErrorMessage   string          `json:"error_message,omitempty"`
+	RetryCount     int             `json:"retry_count"`
+	CreatedAt      time.Time       `json:"created_at"`
+	UpdatedAt      time.Time       `json:"updated_at"`
 }
 
 // RecurringStore defines the interface for recurring remittance storage
@@ -107,7 +107,7 @@ type RecurringStore interface {
 	Delete(ctx context.Context, id string) error
 	ListByUser(ctx context.Context, userID string, status *RecurringStatus) ([]*RecurringRemittance, error)
 	GetDueExecutions(ctx context.Context, before time.Time) ([]*RecurringRemittance, error)
-	
+
 	CreateExecution(ctx context.Context, execution *RecurringExecution) error
 	GetExecution(ctx context.Context, id string) (*RecurringExecution, error)
 	UpdateExecution(ctx context.Context, execution *RecurringExecution) error
@@ -121,24 +121,24 @@ type TransferService interface {
 
 // TransferRequest represents a transfer request
 type TransferRequest struct {
-	SenderID        string
-	RecipientID     string
-	Amount          int64
-	Currency        string
-	TargetCurrency  string
-	PaymentMethod   string
-	Reference       string
-	Metadata        map[string]string
+	SenderID       string
+	RecipientID    string
+	Amount         int64
+	Currency       string
+	TargetCurrency string
+	PaymentMethod  string
+	Reference      string
+	Metadata       map[string]string
 }
 
 // TransferResult represents the result of a transfer
 type TransferResult struct {
-	TransactionID  string
-	Status         string
-	ExchangeRate   float64
-	TargetAmount   int64
-	Fee            int64
-	ErrorMessage   string
+	TransactionID string
+	Status        string
+	ExchangeRate  float64
+	TargetAmount  int64
+	Fee           int64
+	ErrorMessage  string
 }
 
 // NotificationService defines the interface for sending notifications

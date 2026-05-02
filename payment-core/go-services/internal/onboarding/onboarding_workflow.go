@@ -27,12 +27,12 @@ type WorkflowInput struct {
 
 // WorkflowOutput represents output from the onboarding workflow
 type WorkflowOutput struct {
-	CaseID          string           `json:"case_id"`
-	FinalStatus     OnboardingStatus `json:"final_status"`
-	CompletedAt     time.Time        `json:"completed_at"`
-	ParticipantID   string           `json:"participant_id,omitempty"`
-	CertificateID   string           `json:"certificate_id,omitempty"`
-	Error           string           `json:"error,omitempty"`
+	CaseID        string           `json:"case_id"`
+	FinalStatus   OnboardingStatus `json:"final_status"`
+	CompletedAt   time.Time        `json:"completed_at"`
+	ParticipantID string           `json:"participant_id,omitempty"`
+	CertificateID string           `json:"certificate_id,omitempty"`
+	Error         string           `json:"error,omitempty"`
 }
 
 // OnboardingWorkflowDefinition defines the workflow stages
@@ -43,11 +43,11 @@ type OnboardingWorkflowDefinition struct {
 
 // WorkflowStage represents a stage in the workflow
 type WorkflowStage struct {
-	Name           string        `json:"name"`
-	Description    string        `json:"description"`
-	ActivityName   string        `json:"activity_name"`
-	Timeout        time.Duration `json:"timeout"`
-	RetryPolicy    RetryPolicy   `json:"retry_policy"`
+	Name           string           `json:"name"`
+	Description    string           `json:"description"`
+	ActivityName   string           `json:"activity_name"`
+	Timeout        time.Duration    `json:"timeout"`
+	RetryPolicy    RetryPolicy      `json:"retry_policy"`
 	RequiredStatus OnboardingStatus `json:"required_status"`
 	NextStatus     OnboardingStatus `json:"next_status"`
 }

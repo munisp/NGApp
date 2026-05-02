@@ -18,28 +18,28 @@ import (
 type MTLSManager struct {
 	// Certificate store
 	certStore CertificateStore
-	
+
 	// Root CA pool
 	rootCAs *x509.CertPool
-	
+
 	// Client certificates per service
 	clientCerts map[string]*tls.Certificate
 	clientMu    sync.RWMutex
-	
+
 	// Server certificate
 	serverCert *tls.Certificate
 	serverMu   sync.RWMutex
-	
+
 	// Certificate rotation
 	rotationInterval time.Duration
 	lastRotation     time.Time
-	
+
 	// Stats
-	totalConnections   uint64
+	totalConnections     uint64
 	successfulHandshakes uint64
-	failedHandshakes   uint64
-	certificatesRotated uint64
-	
+	failedHandshakes     uint64
+	certificatesRotated  uint64
+
 	// Control
 	ctx    context.Context
 	cancel context.CancelFunc
@@ -92,7 +92,7 @@ func DefaultMTLSConfig() MTLSConfig {
 // NewMTLSManager creates a new mTLS manager
 func NewMTLSManager(certStore CertificateStore, config MTLSConfig) (*MTLSManager, error) {
 	ctx, cancel := context.WithCancel(context.Background())
-	
+
 	m := &MTLSManager{
 		certStore:        certStore,
 		clientCerts:      make(map[string]*tls.Certificate),
@@ -100,13 +100,13 @@ func NewMTLSManager(certStore CertificateStore, config MTLSConfig) (*MTLSManager
 		ctx:              ctx,
 		cancel:           cancel,
 	}
-	
+
 	// Load root CA
 	if err := m.loadRootCA(ctx); err != nil {
 		cancel()
 		return nil, fmt.Errorf("failed to load root CA: %w", err)
 	}
-	
+
 	// Load service certificate
 	if config.ServiceName != "" {
 		if err := m.loadServiceCert(ctx, config.ServiceName); err != nil {
@@ -114,11 +114,11 @@ func NewMTLSManager(certStore CertificateStore, config MTLSConfig) (*MTLSManager
 			return nil, fmt.Errorf("failed to load service certificate: %w", err)
 		}
 	}
-	
+
 	// Start certificate rotation loop
 	m.wg.Add(1)
 	go m.rotationLoop()
-	
+
 	return m, nil
 }
 
@@ -128,12 +128,12 @@ func (m *MTLSManager) loadRootCA(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	
+
 	m.rootCAs = x509.NewCertPool()
 	if !m.rootCAs.AppendCertsFromPEM(caBytes) {
 		return fmt.Errorf("failed to parse root CA certificate")
 	}
-	
+
 	return nil
 }
 
@@ -143,16 +143,16 @@ func (m *MTLSManager) loadServiceCert(ctx context.Context, serviceName string) e
 	if err != nil {
 		return err
 	}
-	
+
 	cert, err := tls.X509KeyPair(serviceCert.Certificate, serviceCert.PrivateKey)
 	if err != nil {
 		return fmt.Errorf("failed to parse certificate: %w", err)
 	}
-	
+
 	m.serverMu.Lock()
 	m.serverCert = &cert
 	m.serverMu.Unlock()
-	
+
 	return nil
 }
 
@@ -193,11 +193,11 @@ func (m *MTLSManager) GetClientTLSConfig(targetService string) *tls.Config {
 func (m *MTLSManager) getServerCertificate(hello *tls.ClientHelloInfo) (*tls.Certificate, error) {
 	m.serverMu.RLock()
 	defer m.serverMu.RUnlock()
-	
+
 	if m.serverCert == nil {
 		return nil, fmt.Errorf("no server certificate available")
 	}
-	
+
 	atomic.AddUint64(&m.totalConnections, 1)
 	return m.serverCert, nil
 }
@@ -207,29 +207,29 @@ func (m *MTLSManager) getClientCertificate(targetService string) (*tls.Certifica
 	m.clientMu.RLock()
 	cert, ok := m.clientCerts[targetService]
 	m.clientMu.RUnlock()
-	
+
 	if ok {
 		return cert, nil
 	}
-	
+
 	// Load certificate for target service
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	
+
 	serviceCert, err := m.certStore.GetServiceCert(ctx, targetService)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get certificate for %s: %w", targetService, err)
 	}
-	
+
 	tlsCert, err := tls.X509KeyPair(serviceCert.Certificate, serviceCert.PrivateKey)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse certificate: %w", err)
 	}
-	
+
 	m.clientMu.Lock()
 	m.clientCerts[targetService] = &tlsCert
 	m.clientMu.Unlock()
-	
+
 	return &tlsCert, nil
 }
 
@@ -239,32 +239,32 @@ func (m *MTLSManager) verifyConnection(state tls.ConnectionState) error {
 		atomic.AddUint64(&m.failedHandshakes, 1)
 		return fmt.Errorf("no peer certificate provided")
 	}
-	
+
 	peerCert := state.PeerCertificates[0]
-	
+
 	// Verify certificate is not expired
 	now := time.Now()
 	if now.Before(peerCert.NotBefore) || now.After(peerCert.NotAfter) {
 		atomic.AddUint64(&m.failedHandshakes, 1)
 		return fmt.Errorf("peer certificate is expired or not yet valid")
 	}
-	
+
 	// Verify certificate chain
 	opts := x509.VerifyOptions{
 		Roots:         m.rootCAs,
 		CurrentTime:   now,
 		Intermediates: x509.NewCertPool(),
 	}
-	
+
 	for _, cert := range state.PeerCertificates[1:] {
 		opts.Intermediates.AddCert(cert)
 	}
-	
+
 	if _, err := peerCert.Verify(opts); err != nil {
 		atomic.AddUint64(&m.failedHandshakes, 1)
 		return fmt.Errorf("certificate verification failed: %w", err)
 	}
-	
+
 	atomic.AddUint64(&m.successfulHandshakes, 1)
 	return nil
 }
@@ -272,10 +272,10 @@ func (m *MTLSManager) verifyConnection(state tls.ConnectionState) error {
 // rotationLoop handles certificate rotation
 func (m *MTLSManager) rotationLoop() {
 	defer m.wg.Done()
-	
+
 	ticker := time.NewTicker(1 * time.Hour)
 	defer ticker.Stop()
-	
+
 	for {
 		select {
 		case <-m.ctx.Done():
@@ -290,12 +290,12 @@ func (m *MTLSManager) rotationLoop() {
 func (m *MTLSManager) checkAndRotateCertificates() {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
-	
+
 	// Check server certificate
 	m.serverMu.RLock()
 	serverCert := m.serverCert
 	m.serverMu.RUnlock()
-	
+
 	if serverCert != nil && len(serverCert.Certificate) > 0 {
 		x509Cert, err := x509.ParseCertificate(serverCert.Certificate[0])
 		if err == nil {
@@ -307,7 +307,7 @@ func (m *MTLSManager) checkAndRotateCertificates() {
 			}
 		}
 	}
-	
+
 	// Check client certificates
 	m.clientMu.RLock()
 	clientCerts := make(map[string]*tls.Certificate)
@@ -315,7 +315,7 @@ func (m *MTLSManager) checkAndRotateCertificates() {
 		clientCerts[k] = v
 	}
 	m.clientMu.RUnlock()
-	
+
 	for serviceName, cert := range clientCerts {
 		if len(cert.Certificate) > 0 {
 			x509Cert, err := x509.ParseCertificate(cert.Certificate[0])
@@ -328,7 +328,7 @@ func (m *MTLSManager) checkAndRotateCertificates() {
 			}
 		}
 	}
-	
+
 	m.lastRotation = time.Now()
 }
 
@@ -385,28 +385,28 @@ func (s *FileCertificateStore) GetRootCA(ctx context.Context) ([]byte, error) {
 func (s *FileCertificateStore) GetServiceCert(ctx context.Context, serviceName string) (*ServiceCertificate, error) {
 	certPath := fmt.Sprintf("%s/%s.crt", s.basePath, serviceName)
 	keyPath := fmt.Sprintf("%s/%s.key", s.basePath, serviceName)
-	
+
 	certBytes, err := os.ReadFile(certPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read certificate: %w", err)
 	}
-	
+
 	keyBytes, err := os.ReadFile(keyPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read private key: %w", err)
 	}
-	
+
 	// Parse certificate to get metadata
 	block, _ := pem.Decode(certBytes)
 	if block == nil {
 		return nil, fmt.Errorf("failed to decode PEM block")
 	}
-	
+
 	x509Cert, err := x509.ParseCertificate(block.Bytes)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse certificate: %w", err)
 	}
-	
+
 	return &ServiceCertificate{
 		ServiceName:  serviceName,
 		Certificate:  certBytes,
@@ -431,9 +431,9 @@ func (s *FileCertificateStore) RevokeCert(ctx context.Context, serialNumber stri
 
 // VaultCertificateStore implements CertificateStore using HashiCorp Vault
 type VaultCertificateStore struct {
-	client    VaultClient
-	pkiPath   string
-	roleName  string
+	client   VaultClient
+	pkiPath  string
+	roleName string
 }
 
 // VaultClient interface for Vault operations
@@ -457,11 +457,11 @@ func (s *VaultCertificateStore) GetRootCA(ctx context.Context) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	
+
 	if ca, ok := resp["certificate"].(string); ok {
 		return []byte(ca), nil
 	}
-	
+
 	return nil, fmt.Errorf("CA certificate not found")
 }
 
@@ -474,11 +474,11 @@ func (s *VaultCertificateStore) GetServiceCert(ctx context.Context, serviceName 
 	if err != nil {
 		return nil, err
 	}
-	
+
 	cert, _ := resp["certificate"].(string)
 	key, _ := resp["private_key"].(string)
 	serial, _ := resp["serial_number"].(string)
-	
+
 	return &ServiceCertificate{
 		ServiceName:  serviceName,
 		Certificate:  []byte(cert),
@@ -498,10 +498,10 @@ func (s *VaultCertificateStore) IssueCert(ctx context.Context, serviceName strin
 	if err != nil {
 		return nil, err
 	}
-	
+
 	cert, _ := resp["certificate"].(string)
 	serial, _ := resp["serial_number"].(string)
-	
+
 	return &ServiceCertificate{
 		ServiceName:  serviceName,
 		Certificate:  []byte(cert),

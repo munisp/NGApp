@@ -38,43 +38,43 @@ const (
 )
 
 type FeeRule struct {
-	ID              string            `json:"id"`
-	Name            string            `json:"name"`
-	Description     string            `json:"description"`
-	MerchantID      string            `json:"merchant_id,omitempty"`
-	Tier            PricingTier       `json:"tier"`
-	PaymentMethod   PaymentMethod     `json:"payment_method"`
-	Currency        string            `json:"currency"`
-	Corridor        string            `json:"corridor,omitempty"`
-	FeeType         FeeType           `json:"fee_type"`
-	PercentageRate  float64           `json:"percentage_rate"`
-	FixedAmount     float64           `json:"fixed_amount"`
-	MinFee          float64           `json:"min_fee"`
-	MaxFee          float64           `json:"max_fee"`
-	MinAmount       float64           `json:"min_amount"`
-	MaxAmount       float64           `json:"max_amount"`
-	TimeOfDayStart  int               `json:"time_of_day_start"`
-	TimeOfDayEnd    int               `json:"time_of_day_end"`
-	DaysOfWeek      []int             `json:"days_of_week"`
-	Priority        int               `json:"priority"`
-	Enabled         bool              `json:"enabled"`
-	EffectiveFrom   time.Time         `json:"effective_from"`
-	EffectiveTo     *time.Time        `json:"effective_to,omitempty"`
-	Metadata        map[string]string `json:"metadata,omitempty"`
-	CreatedAt       time.Time         `json:"created_at"`
-	UpdatedAt       time.Time         `json:"updated_at"`
+	ID             string            `json:"id"`
+	Name           string            `json:"name"`
+	Description    string            `json:"description"`
+	MerchantID     string            `json:"merchant_id,omitempty"`
+	Tier           PricingTier       `json:"tier"`
+	PaymentMethod  PaymentMethod     `json:"payment_method"`
+	Currency       string            `json:"currency"`
+	Corridor       string            `json:"corridor,omitempty"`
+	FeeType        FeeType           `json:"fee_type"`
+	PercentageRate float64           `json:"percentage_rate"`
+	FixedAmount    float64           `json:"fixed_amount"`
+	MinFee         float64           `json:"min_fee"`
+	MaxFee         float64           `json:"max_fee"`
+	MinAmount      float64           `json:"min_amount"`
+	MaxAmount      float64           `json:"max_amount"`
+	TimeOfDayStart int               `json:"time_of_day_start"`
+	TimeOfDayEnd   int               `json:"time_of_day_end"`
+	DaysOfWeek     []int             `json:"days_of_week"`
+	Priority       int               `json:"priority"`
+	Enabled        bool              `json:"enabled"`
+	EffectiveFrom  time.Time         `json:"effective_from"`
+	EffectiveTo    *time.Time        `json:"effective_to,omitempty"`
+	Metadata       map[string]string `json:"metadata,omitempty"`
+	CreatedAt      time.Time         `json:"created_at"`
+	UpdatedAt      time.Time         `json:"updated_at"`
 }
 
 type FeeCalculation struct {
-	RuleID          string  `json:"rule_id"`
-	RuleName        string  `json:"rule_name"`
-	TransactionAmount float64 `json:"transaction_amount"`
-	Currency        string  `json:"currency"`
-	FeeAmount       float64 `json:"fee_amount"`
-	FeePercentage   float64 `json:"fee_percentage"`
-	FixedComponent  float64 `json:"fixed_component"`
-	NetAmount       float64 `json:"net_amount"`
-	CalculatedAt    time.Time `json:"calculated_at"`
+	RuleID            string    `json:"rule_id"`
+	RuleName          string    `json:"rule_name"`
+	TransactionAmount float64   `json:"transaction_amount"`
+	Currency          string    `json:"currency"`
+	FeeAmount         float64   `json:"fee_amount"`
+	FeePercentage     float64   `json:"fee_percentage"`
+	FixedComponent    float64   `json:"fixed_component"`
+	NetAmount         float64   `json:"net_amount"`
+	CalculatedAt      time.Time `json:"calculated_at"`
 }
 
 type MerchantPricing struct {
@@ -95,11 +95,11 @@ type VolumeDiscount struct {
 }
 
 type PricingEngine struct {
-	mu               sync.RWMutex
-	feeRules         map[string]*FeeRule
-	merchantPricing  map[string]*MerchantPricing
-	calculations     []FeeCalculation
-	eventHandlers    map[string][]func(interface{})
+	mu              sync.RWMutex
+	feeRules        map[string]*FeeRule
+	merchantPricing map[string]*MerchantPricing
+	calculations    []FeeCalculation
+	eventHandlers   map[string][]func(interface{})
 }
 
 func NewPricingEngine() *PricingEngine {
@@ -456,12 +456,12 @@ func (pe *PricingEngine) GetMerchantPricing(merchantID string) (*MerchantPricing
 }
 
 type PricingStats struct {
-	TotalCalculations   int                `json:"total_calculations"`
-	TotalFeeCollected   float64            `json:"total_fee_collected"`
-	AvgFeePercentage    float64            `json:"avg_fee_percentage"`
-	ByPaymentMethod     map[string]float64 `json:"by_payment_method"`
-	ByTier              map[string]float64 `json:"by_tier"`
-	TopRules            []RuleUsage        `json:"top_rules"`
+	TotalCalculations int                `json:"total_calculations"`
+	TotalFeeCollected float64            `json:"total_fee_collected"`
+	AvgFeePercentage  float64            `json:"avg_fee_percentage"`
+	ByPaymentMethod   map[string]float64 `json:"by_payment_method"`
+	ByTier            map[string]float64 `json:"by_tier"`
+	TopRules          []RuleUsage        `json:"top_rules"`
 }
 
 type RuleUsage struct {

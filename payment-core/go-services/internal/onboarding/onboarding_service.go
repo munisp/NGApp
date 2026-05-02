@@ -12,15 +12,15 @@ import (
 type StakeholderType string
 
 const (
-	StakeholderBank           StakeholderType = "BANK"
-	StakeholderMobileMoneyOp  StakeholderType = "MOBILE_MONEY_OPERATOR"
-	StakeholderFintech        StakeholderType = "FINTECH"
-	StakeholderMFI            StakeholderType = "MICROFINANCE_INSTITUTION"
-	StakeholderGovernment     StakeholderType = "GOVERNMENT_AGENCY"
-	StakeholderMerchant       StakeholderType = "MERCHANT"
-	StakeholderRegulator      StakeholderType = "REGULATOR"
-	StakeholderNOCOperator    StakeholderType = "NOC_OPERATOR"
-	StakeholderDeveloper      StakeholderType = "DEVELOPER"
+	StakeholderBank          StakeholderType = "BANK"
+	StakeholderMobileMoneyOp StakeholderType = "MOBILE_MONEY_OPERATOR"
+	StakeholderFintech       StakeholderType = "FINTECH"
+	StakeholderMFI           StakeholderType = "MICROFINANCE_INSTITUTION"
+	StakeholderGovernment    StakeholderType = "GOVERNMENT_AGENCY"
+	StakeholderMerchant      StakeholderType = "MERCHANT"
+	StakeholderRegulator     StakeholderType = "REGULATOR"
+	StakeholderNOCOperator   StakeholderType = "NOC_OPERATOR"
+	StakeholderDeveloper     StakeholderType = "DEVELOPER"
 )
 
 // OnboardingStatus represents the status of an onboarding case
@@ -54,226 +54,226 @@ type OnboardingService struct {
 
 // OnboardingCase represents an onboarding case for a stakeholder
 type OnboardingCase struct {
-	ID              string                 `json:"id"`
-	OrganizationID  string                 `json:"organization_id"`
-	OrganizationName string                `json:"organization_name"`
-	StakeholderType StakeholderType        `json:"stakeholder_type"`
-	Status          OnboardingStatus       `json:"status"`
-	Jurisdiction    string                 `json:"jurisdiction"`
-	Country         string                 `json:"country"`
-	ContactEmail    string                 `json:"contact_email"`
-	AssignedReviewer string                `json:"assigned_reviewer,omitempty"`
-	RiskScore       float64                `json:"risk_score"`
-	
+	ID               string           `json:"id"`
+	OrganizationID   string           `json:"organization_id"`
+	OrganizationName string           `json:"organization_name"`
+	StakeholderType  StakeholderType  `json:"stakeholder_type"`
+	Status           OnboardingStatus `json:"status"`
+	Jurisdiction     string           `json:"jurisdiction"`
+	Country          string           `json:"country"`
+	ContactEmail     string           `json:"contact_email"`
+	AssignedReviewer string           `json:"assigned_reviewer,omitempty"`
+	RiskScore        float64          `json:"risk_score"`
+
 	// Contact Information
-	PrimaryContact  ContactInfo            `json:"primary_contact"`
-	TechnicalContact ContactInfo           `json:"technical_contact"`
-	ComplianceContact ContactInfo          `json:"compliance_contact"`
-	
+	PrimaryContact    ContactInfo `json:"primary_contact"`
+	TechnicalContact  ContactInfo `json:"technical_contact"`
+	ComplianceContact ContactInfo `json:"compliance_contact"`
+
 	// Requirements & Evidence
-	Requirements    []Requirement          `json:"requirements"`
-	Evidence        []EvidenceItem         `json:"evidence"`
-	
+	Requirements []Requirement  `json:"requirements"`
+	Evidence     []EvidenceItem `json:"evidence"`
+
 	// Technical Profile
-	TechnicalProfile *TechnicalProfile     `json:"technical_profile,omitempty"`
-	
+	TechnicalProfile *TechnicalProfile `json:"technical_profile,omitempty"`
+
 	// Certification
-	CertificationRuns []CertificationRun   `json:"certification_runs"`
-	
+	CertificationRuns []CertificationRun `json:"certification_runs"`
+
 	// Approvals
-	Approvals       []Approval             `json:"approvals"`
-	
+	Approvals []Approval `json:"approvals"`
+
 	// Provisioning
-	SandboxResources *ProvisionedResources `json:"sandbox_resources,omitempty"`
+	SandboxResources    *ProvisionedResources `json:"sandbox_resources,omitempty"`
 	ProductionResources *ProvisionedResources `json:"production_resources,omitempty"`
-	
+
 	// Audit Trail
-	StatusHistory   []StatusChange         `json:"status_history"`
-	Notes           []CaseNote             `json:"notes"`
-	
+	StatusHistory []StatusChange `json:"status_history"`
+	Notes         []CaseNote     `json:"notes"`
+
 	// Timestamps
-	CreatedAt       time.Time              `json:"created_at"`
-	UpdatedAt       time.Time              `json:"updated_at"`
-	SubmittedAt     *time.Time             `json:"submitted_at,omitempty"`
-	CompletedAt     *time.Time             `json:"completed_at,omitempty"`
-	
+	CreatedAt   time.Time  `json:"created_at"`
+	UpdatedAt   time.Time  `json:"updated_at"`
+	SubmittedAt *time.Time `json:"submitted_at,omitempty"`
+	CompletedAt *time.Time `json:"completed_at,omitempty"`
+
 	// Metadata
-	Metadata        map[string]interface{} `json:"metadata"`
+	Metadata map[string]interface{} `json:"metadata"`
 }
 
 // ContactInfo represents contact information
 type ContactInfo struct {
-	Name        string `json:"name"`
-	Email       string `json:"email"`
-	Phone       string `json:"phone"`
-	Title       string `json:"title"`
-	Department  string `json:"department,omitempty"`
+	Name       string `json:"name"`
+	Email      string `json:"email"`
+	Phone      string `json:"phone"`
+	Title      string `json:"title"`
+	Department string `json:"department,omitempty"`
 }
 
 // Requirement represents an onboarding requirement
 type Requirement struct {
-	ID          string          `json:"id"`
-	CaseID      string          `json:"case_id"`
-	Category    string          `json:"category"` // DOCUMENT, ATTESTATION, TECHNICAL, OPERATIONAL
-	Name        string          `json:"name"`
-	Description string          `json:"description"`
-	Required    bool            `json:"required"`
-	Mandatory   bool            `json:"mandatory"`
-	Status      string          `json:"status"` // PENDING, SUBMITTED, APPROVED, REJECTED
-	DueDate     *time.Time      `json:"due_date,omitempty"`
-	EvidenceIDs []string        `json:"evidence_ids"`
-	ReviewedBy  string          `json:"reviewed_by,omitempty"`
-	ReviewedAt  *time.Time      `json:"reviewed_at,omitempty"`
-	ReviewNotes string          `json:"review_notes,omitempty"`
-	Notes       string          `json:"notes,omitempty"`
+	ID          string     `json:"id"`
+	CaseID      string     `json:"case_id"`
+	Category    string     `json:"category"` // DOCUMENT, ATTESTATION, TECHNICAL, OPERATIONAL
+	Name        string     `json:"name"`
+	Description string     `json:"description"`
+	Required    bool       `json:"required"`
+	Mandatory   bool       `json:"mandatory"`
+	Status      string     `json:"status"` // PENDING, SUBMITTED, APPROVED, REJECTED
+	DueDate     *time.Time `json:"due_date,omitempty"`
+	EvidenceIDs []string   `json:"evidence_ids"`
+	ReviewedBy  string     `json:"reviewed_by,omitempty"`
+	ReviewedAt  *time.Time `json:"reviewed_at,omitempty"`
+	ReviewNotes string     `json:"review_notes,omitempty"`
+	Notes       string     `json:"notes,omitempty"`
 }
 
 // EvidenceItem represents uploaded evidence/documents
 type EvidenceItem struct {
-	ID           string                 `json:"id"`
-	RequirementID string                `json:"requirement_id"`
-	Type         string                 `json:"type"` // DOCUMENT, LINK, ATTESTATION, QUESTIONNAIRE
-	Name         string                 `json:"name"`
-	Description  string                 `json:"description,omitempty"`
-	FileURL      string                 `json:"file_url,omitempty"`
-	FileHash     string                 `json:"file_hash,omitempty"`
-	MimeType     string                 `json:"mime_type,omitempty"`
-	Size         int64                  `json:"size,omitempty"`
-	UploadedBy   string                 `json:"uploaded_by"`
-	UploadedAt   time.Time              `json:"uploaded_at"`
-	Metadata     map[string]interface{} `json:"metadata,omitempty"`
+	ID            string                 `json:"id"`
+	RequirementID string                 `json:"requirement_id"`
+	Type          string                 `json:"type"` // DOCUMENT, LINK, ATTESTATION, QUESTIONNAIRE
+	Name          string                 `json:"name"`
+	Description   string                 `json:"description,omitempty"`
+	FileURL       string                 `json:"file_url,omitempty"`
+	FileHash      string                 `json:"file_hash,omitempty"`
+	MimeType      string                 `json:"mime_type,omitempty"`
+	Size          int64                  `json:"size,omitempty"`
+	UploadedBy    string                 `json:"uploaded_by"`
+	UploadedAt    time.Time              `json:"uploaded_at"`
+	Metadata      map[string]interface{} `json:"metadata,omitempty"`
 }
 
 // TechnicalProfile represents technical integration details
 type TechnicalProfile struct {
-	CaseID             string            `json:"case_id"`
-	
+	CaseID string `json:"case_id"`
+
 	// Organization Info (for KYB/KYC triggering)
-	OrganizationName   string            `json:"organization_name"`
-	RegistrationNumber string            `json:"registration_number"`
-	Country            string            `json:"country"`
-	KeyPersonnel       []KeyPersonInfo   `json:"key_personnel,omitempty"`
-	
+	OrganizationName   string          `json:"organization_name"`
+	RegistrationNumber string          `json:"registration_number"`
+	Country            string          `json:"country"`
+	KeyPersonnel       []KeyPersonInfo `json:"key_personnel,omitempty"`
+
 	// Endpoints
-	BaseURL         string            `json:"base_url"`
-	APIEndpoint     string            `json:"api_endpoint"`
-	CallbackURL     string            `json:"callback_url"`
-	WebhookURL      string            `json:"webhook_url,omitempty"`
-	HealthEndpoint  string            `json:"health_endpoint"`
-	
+	BaseURL        string `json:"base_url"`
+	APIEndpoint    string `json:"api_endpoint"`
+	CallbackURL    string `json:"callback_url"`
+	WebhookURL     string `json:"webhook_url,omitempty"`
+	HealthEndpoint string `json:"health_endpoint"`
+
 	// Security
-	MTLSEnabled     bool              `json:"mtls_enabled"`
-	MTLSCert        string            `json:"mtls_cert,omitempty"`
-	CertFingerprint string            `json:"cert_fingerprint,omitempty"`
-	JWKSURL         string            `json:"jwks_url,omitempty"`
-	AllowedIPs      []string          `json:"allowed_ips,omitempty"`
-	IPWhitelist     []string          `json:"ip_whitelist,omitempty"`
-	
+	MTLSEnabled     bool     `json:"mtls_enabled"`
+	MTLSCert        string   `json:"mtls_cert,omitempty"`
+	CertFingerprint string   `json:"cert_fingerprint,omitempty"`
+	JWKSURL         string   `json:"jwks_url,omitempty"`
+	AllowedIPs      []string `json:"allowed_ips,omitempty"`
+	IPWhitelist     []string `json:"ip_whitelist,omitempty"`
+
 	// API Configuration
-	APIKeyID            string        `json:"api_key_id,omitempty"`
-	SandboxClientID     string        `json:"sandbox_client_id,omitempty"`
-	ProductionClientID  string        `json:"production_client_id,omitempty"`
-	RateLimitTPS        int           `json:"rate_limit_tps"`
-	
+	APIKeyID           string `json:"api_key_id,omitempty"`
+	SandboxClientID    string `json:"sandbox_client_id,omitempty"`
+	ProductionClientID string `json:"production_client_id,omitempty"`
+	RateLimitTPS       int    `json:"rate_limit_tps"`
+
 	// Capabilities
-	SupportedCurrencies []string      `json:"supported_currencies"`
-	SupportedTransferTypes []string   `json:"supported_transfer_types"`
-	
+	SupportedCurrencies    []string `json:"supported_currencies"`
+	SupportedTransferTypes []string `json:"supported_transfer_types"`
+
 	// Validation Status
-	ConnectivityValidated bool        `json:"connectivity_validated"`
-	SecurityValidated     bool        `json:"security_validated"`
-	PerformanceValidated  bool        `json:"performance_validated"`
-	
-	ValidatedAt     *time.Time        `json:"validated_at,omitempty"`
+	ConnectivityValidated bool `json:"connectivity_validated"`
+	SecurityValidated     bool `json:"security_validated"`
+	PerformanceValidated  bool `json:"performance_validated"`
+
+	ValidatedAt *time.Time `json:"validated_at,omitempty"`
 }
 
 // KeyPersonInfo represents a key person in the organization for KYC
 type KeyPersonInfo struct {
 	Name  string `json:"name"`
-	Role  string `json:"role"`  // DIRECTOR, UBO, SIGNATORY
+	Role  string `json:"role"` // DIRECTOR, UBO, SIGNATORY
 	Email string `json:"email"`
 }
 
 // CertificationRun represents a certification test run
 type CertificationRun struct {
-	ID              string        `json:"id"`
-	Environment     string        `json:"environment"` // SANDBOX, PRODUCTION
-	Level           string        `json:"level"`       // BASIC, STANDARD, ADVANCED
-	Status          string        `json:"status"`      // PENDING, RUNNING, PASSED, FAILED
-	StartedAt       time.Time     `json:"started_at"`
-	CompletedAt     *time.Time    `json:"completed_at,omitempty"`
-	TotalTests      int           `json:"total_tests"`
-	PassedTests     int           `json:"passed_tests"`
-	FailedTests     int           `json:"failed_tests"`
-	PassRate        float64       `json:"pass_rate"`
-	CertificateID   string        `json:"certificate_id,omitempty"`
-	ReportURL       string        `json:"report_url,omitempty"`
+	ID            string     `json:"id"`
+	Environment   string     `json:"environment"` // SANDBOX, PRODUCTION
+	Level         string     `json:"level"`       // BASIC, STANDARD, ADVANCED
+	Status        string     `json:"status"`      // PENDING, RUNNING, PASSED, FAILED
+	StartedAt     time.Time  `json:"started_at"`
+	CompletedAt   *time.Time `json:"completed_at,omitempty"`
+	TotalTests    int        `json:"total_tests"`
+	PassedTests   int        `json:"passed_tests"`
+	FailedTests   int        `json:"failed_tests"`
+	PassRate      float64    `json:"pass_rate"`
+	CertificateID string     `json:"certificate_id,omitempty"`
+	ReportURL     string     `json:"report_url,omitempty"`
 }
 
 // Approval represents an approval decision
 type Approval struct {
-	ID           string     `json:"id"`
-	Step         string     `json:"step"`         // DUE_DILIGENCE, SECURITY, RISK, OPERATIONS, GOVERNANCE
-	ApproverRole string     `json:"approver_role"`
-	ApproverID   string     `json:"approver_id"`
-	ApproverName string     `json:"approver_name"`
-	Decision     string     `json:"decision"`     // APPROVED, REJECTED, REWORK_REQUESTED
-	Notes        string     `json:"notes,omitempty"`
-	DecidedAt    time.Time  `json:"decided_at"`
-	Conditions   []string   `json:"conditions,omitempty"`
+	ID           string    `json:"id"`
+	Step         string    `json:"step"` // DUE_DILIGENCE, SECURITY, RISK, OPERATIONS, GOVERNANCE
+	ApproverRole string    `json:"approver_role"`
+	ApproverID   string    `json:"approver_id"`
+	ApproverName string    `json:"approver_name"`
+	Decision     string    `json:"decision"` // APPROVED, REJECTED, REWORK_REQUESTED
+	Notes        string    `json:"notes,omitempty"`
+	DecidedAt    time.Time `json:"decided_at"`
+	Conditions   []string  `json:"conditions,omitempty"`
 }
 
 // ProvisionedResources represents provisioned resources
 type ProvisionedResources struct {
-	Environment     string            `json:"environment"`
-	ParticipantID   string            `json:"participant_id"`
-	FSPID           string            `json:"fsp_id"`
-	LedgerAccountID string            `json:"ledger_account_id"`
-	APIKeyID        string            `json:"api_key_id"`
-	APIKeySecret    string            `json:"api_key_secret,omitempty"` // Only shown once
-	CertificateID   string            `json:"certificate_id,omitempty"`
-	APISIXRouteID   string            `json:"apisix_route_id"`
-	KeycloakClientID string           `json:"keycloak_client_id"`
-	ProvisionedAt   time.Time         `json:"provisioned_at"`
-	Limits          ResourceLimits    `json:"limits"`
+	Environment      string         `json:"environment"`
+	ParticipantID    string         `json:"participant_id"`
+	FSPID            string         `json:"fsp_id"`
+	LedgerAccountID  string         `json:"ledger_account_id"`
+	APIKeyID         string         `json:"api_key_id"`
+	APIKeySecret     string         `json:"api_key_secret,omitempty"` // Only shown once
+	CertificateID    string         `json:"certificate_id,omitempty"`
+	APISIXRouteID    string         `json:"apisix_route_id"`
+	KeycloakClientID string         `json:"keycloak_client_id"`
+	ProvisionedAt    time.Time      `json:"provisioned_at"`
+	Limits           ResourceLimits `json:"limits"`
 }
 
 // ResourceLimits represents resource limits
 type ResourceLimits struct {
-	MaxTPS              int     `json:"max_tps"`
-	DailyTransactionLimit float64 `json:"daily_transaction_limit"`
+	MaxTPS                 int     `json:"max_tps"`
+	DailyTransactionLimit  float64 `json:"daily_transaction_limit"`
 	SingleTransactionLimit float64 `json:"single_transaction_limit"`
-	NetDebitCap         float64 `json:"net_debit_cap"`
+	NetDebitCap            float64 `json:"net_debit_cap"`
 }
 
 // StatusChange represents a status change in the audit trail
 type StatusChange struct {
-	FromStatus  OnboardingStatus `json:"from_status"`
-	ToStatus    OnboardingStatus `json:"to_status"`
-	ChangedBy   string           `json:"changed_by"`
-	ChangedAt   time.Time        `json:"changed_at"`
-	Reason      string           `json:"reason,omitempty"`
+	FromStatus OnboardingStatus `json:"from_status"`
+	ToStatus   OnboardingStatus `json:"to_status"`
+	ChangedBy  string           `json:"changed_by"`
+	ChangedAt  time.Time        `json:"changed_at"`
+	Reason     string           `json:"reason,omitempty"`
 }
 
 // CaseNote represents a note on the case
 type CaseNote struct {
-	ID        string    `json:"id"`
-	AuthorID  string    `json:"author_id"`
-	AuthorName string   `json:"author_name"`
-	Content   string    `json:"content"`
-	CreatedAt time.Time `json:"created_at"`
-	Internal  bool      `json:"internal"` // Internal notes not visible to applicant
+	ID         string    `json:"id"`
+	AuthorID   string    `json:"author_id"`
+	AuthorName string    `json:"author_name"`
+	Content    string    `json:"content"`
+	CreatedAt  time.Time `json:"created_at"`
+	Internal   bool      `json:"internal"` // Internal notes not visible to applicant
 }
 
 // OnboardingTemplate defines requirements for a stakeholder type
 type OnboardingTemplate struct {
-	StakeholderType StakeholderType       `json:"stakeholder_type"`
-	Name            string                `json:"name"`
-	Description     string                `json:"description"`
-	Requirements    []RequirementTemplate `json:"requirements"`
-	ApprovalSteps   []ApprovalStep        `json:"approval_steps"`
-	CertificationLevel string             `json:"certification_level"`
-	EstimatedDays   int                   `json:"estimated_days"`
+	StakeholderType    StakeholderType       `json:"stakeholder_type"`
+	Name               string                `json:"name"`
+	Description        string                `json:"description"`
+	Requirements       []RequirementTemplate `json:"requirements"`
+	ApprovalSteps      []ApprovalStep        `json:"approval_steps"`
+	CertificationLevel string                `json:"certification_level"`
+	EstimatedDays      int                   `json:"estimated_days"`
 }
 
 // RequirementTemplate defines a requirement template
@@ -288,12 +288,12 @@ type RequirementTemplate struct {
 
 // ApprovalStep defines an approval step
 type ApprovalStep struct {
-	Step         string   `json:"step"`
-	Name         string   `json:"name"`
-	Description  string   `json:"description"`
+	Step          string   `json:"step"`
+	Name          string   `json:"name"`
+	Description   string   `json:"description"`
 	ApproverRoles []string `json:"approver_roles"`
-	DualApproval bool     `json:"dual_approval"`
-	Order        int      `json:"order"`
+	DualApproval  bool     `json:"dual_approval"`
+	Order         int      `json:"order"`
 }
 
 // Approver represents an approver
@@ -317,10 +317,10 @@ func NewOnboardingService(emitter EventEmitter) *OnboardingService {
 		approvers:    make(map[string]*Approver),
 		eventEmitter: emitter,
 	}
-	
+
 	// Register default templates
 	svc.registerDefaultTemplates()
-	
+
 	return svc
 }
 
@@ -328,11 +328,11 @@ func NewOnboardingService(emitter EventEmitter) *OnboardingService {
 func (s *OnboardingService) registerDefaultTemplates() {
 	// Bank template
 	s.templates[StakeholderBank] = &OnboardingTemplate{
-		StakeholderType: StakeholderBank,
-		Name:            "Bank Onboarding",
-		Description:     "Full onboarding process for licensed banks",
+		StakeholderType:    StakeholderBank,
+		Name:               "Bank Onboarding",
+		Description:        "Full onboarding process for licensed banks",
 		CertificationLevel: "ADVANCED",
-		EstimatedDays:   30,
+		EstimatedDays:      30,
 		Requirements: []RequirementTemplate{
 			// Legal & Compliance Documents
 			{ID: "bank-doc-001", Category: "DOCUMENT", Name: "Certificate of Incorporation", Description: "Official certificate of incorporation", Required: true, DueDays: 7},
@@ -362,14 +362,14 @@ func (s *OnboardingService) registerDefaultTemplates() {
 			{Step: "GOVERNANCE", Name: "Final Governance Approval", Description: "Final approval for production access", ApproverRoles: []string{"COMPLIANCE_OFFICER", "OPERATIONS_MANAGER"}, DualApproval: true, Order: 5},
 		},
 	}
-	
+
 	// Mobile Money Operator template
 	s.templates[StakeholderMobileMoneyOp] = &OnboardingTemplate{
-		StakeholderType: StakeholderMobileMoneyOp,
-		Name:            "Mobile Money Operator Onboarding",
-		Description:     "Onboarding process for mobile money operators",
+		StakeholderType:    StakeholderMobileMoneyOp,
+		Name:               "Mobile Money Operator Onboarding",
+		Description:        "Onboarding process for mobile money operators",
 		CertificationLevel: "ADVANCED",
-		EstimatedDays:   30,
+		EstimatedDays:      30,
 		Requirements: []RequirementTemplate{
 			{ID: "mmo-doc-001", Category: "DOCUMENT", Name: "Certificate of Incorporation", Description: "Official certificate of incorporation", Required: true, DueDays: 7},
 			{ID: "mmo-doc-002", Category: "DOCUMENT", Name: "Mobile Money License", Description: "Valid mobile money operator license", Required: true, DueDays: 7},
@@ -391,14 +391,14 @@ func (s *OnboardingService) registerDefaultTemplates() {
 			{Step: "GOVERNANCE", Name: "Final Approval", ApproverRoles: []string{"COMPLIANCE_OFFICER", "OPERATIONS_MANAGER"}, DualApproval: true, Order: 5},
 		},
 	}
-	
+
 	// Fintech template
 	s.templates[StakeholderFintech] = &OnboardingTemplate{
-		StakeholderType: StakeholderFintech,
-		Name:            "Fintech Onboarding",
-		Description:     "Onboarding process for fintech companies and PSPs",
+		StakeholderType:    StakeholderFintech,
+		Name:               "Fintech Onboarding",
+		Description:        "Onboarding process for fintech companies and PSPs",
 		CertificationLevel: "STANDARD",
-		EstimatedDays:   21,
+		EstimatedDays:      21,
 		Requirements: []RequirementTemplate{
 			{ID: "fin-doc-001", Category: "DOCUMENT", Name: "Certificate of Incorporation", Description: "Certificate of incorporation", Required: true, DueDays: 7},
 			{ID: "fin-doc-002", Category: "DOCUMENT", Name: "PSP License", Description: "Payment service provider license (if applicable)", Required: false, DueDays: 7},
@@ -415,14 +415,14 @@ func (s *OnboardingService) registerDefaultTemplates() {
 			{Step: "OPERATIONS", Name: "Operational Review", ApproverRoles: []string{"OPERATIONS_MANAGER"}, Order: 3},
 		},
 	}
-	
+
 	// Microfinance Institution template
 	s.templates[StakeholderMFI] = &OnboardingTemplate{
-		StakeholderType: StakeholderMFI,
-		Name:            "Microfinance Institution Onboarding",
-		Description:     "Onboarding for microfinance institutions",
+		StakeholderType:    StakeholderMFI,
+		Name:               "Microfinance Institution Onboarding",
+		Description:        "Onboarding for microfinance institutions",
 		CertificationLevel: "STANDARD",
-		EstimatedDays:   21,
+		EstimatedDays:      21,
 		Requirements: []RequirementTemplate{
 			{ID: "mfi-doc-001", Category: "DOCUMENT", Name: "Registration Certificate", Description: "MFI registration certificate", Required: true, DueDays: 7},
 			{ID: "mfi-doc-002", Category: "DOCUMENT", Name: "MFI License", Description: "Microfinance license", Required: true, DueDays: 7},
@@ -438,14 +438,14 @@ func (s *OnboardingService) registerDefaultTemplates() {
 			{Step: "OPERATIONS", Name: "Operational Review", ApproverRoles: []string{"OPERATIONS_MANAGER"}, Order: 3},
 		},
 	}
-	
+
 	// Government Agency template
 	s.templates[StakeholderGovernment] = &OnboardingTemplate{
-		StakeholderType: StakeholderGovernment,
-		Name:            "Government Agency Onboarding",
-		Description:     "Onboarding for government agencies (G2P, tax collection)",
+		StakeholderType:    StakeholderGovernment,
+		Name:               "Government Agency Onboarding",
+		Description:        "Onboarding for government agencies (G2P, tax collection)",
 		CertificationLevel: "STANDARD",
-		EstimatedDays:   14,
+		EstimatedDays:      14,
 		Requirements: []RequirementTemplate{
 			{ID: "gov-doc-001", Category: "DOCUMENT", Name: "Mandate Letter", Description: "Official mandate/authorization letter", Required: true, DueDays: 7},
 			{ID: "gov-doc-002", Category: "DOCUMENT", Name: "Treasury Account Details", Description: "Treasury/funding account information", Required: true, DueDays: 7},
@@ -459,14 +459,14 @@ func (s *OnboardingService) registerDefaultTemplates() {
 			{Step: "OPERATIONS", Name: "Program Setup", ApproverRoles: []string{"OPERATIONS_MANAGER"}, Order: 2},
 		},
 	}
-	
+
 	// Merchant template
 	s.templates[StakeholderMerchant] = &OnboardingTemplate{
-		StakeholderType: StakeholderMerchant,
-		Name:            "Merchant Onboarding",
-		Description:     "Simplified onboarding for merchants",
+		StakeholderType:    StakeholderMerchant,
+		Name:               "Merchant Onboarding",
+		Description:        "Simplified onboarding for merchants",
 		CertificationLevel: "BASIC",
-		EstimatedDays:   7,
+		EstimatedDays:      7,
 		Requirements: []RequirementTemplate{
 			{ID: "mer-doc-001", Category: "DOCUMENT", Name: "Business Registration", Description: "Business registration certificate", Required: true, DueDays: 3},
 			{ID: "mer-doc-002", Category: "DOCUMENT", Name: "Tax ID", Description: "Tax identification number", Required: true, DueDays: 3},
@@ -479,14 +479,14 @@ func (s *OnboardingService) registerDefaultTemplates() {
 			{Step: "DUE_DILIGENCE", Name: "Merchant Verification", ApproverRoles: []string{"COMPLIANCE_OFFICER"}, Order: 1},
 		},
 	}
-	
+
 	// Regulator template
 	s.templates[StakeholderRegulator] = &OnboardingTemplate{
-		StakeholderType: StakeholderRegulator,
-		Name:            "Regulator Onboarding",
-		Description:     "Onboarding for central bank and regulatory bodies",
+		StakeholderType:    StakeholderRegulator,
+		Name:               "Regulator Onboarding",
+		Description:        "Onboarding for central bank and regulatory bodies",
 		CertificationLevel: "BASIC",
-		EstimatedDays:   7,
+		EstimatedDays:      7,
 		Requirements: []RequirementTemplate{
 			{ID: "reg-doc-001", Category: "DOCUMENT", Name: "Authorization Letter", Description: "Official authorization from regulatory body", Required: true, DueDays: 3},
 			{ID: "reg-doc-002", Category: "DOCUMENT", Name: "Access Scope", Description: "Defined scope of access and permissions", Required: true, DueDays: 3},
@@ -497,14 +497,14 @@ func (s *OnboardingService) registerDefaultTemplates() {
 			{Step: "GOVERNANCE", Name: "Executive Approval", ApproverRoles: []string{"EXECUTIVE"}, Order: 1},
 		},
 	}
-	
+
 	// NOC Operator template
 	s.templates[StakeholderNOCOperator] = &OnboardingTemplate{
-		StakeholderType: StakeholderNOCOperator,
-		Name:            "NOC Operator Onboarding",
-		Description:     "Onboarding for internal NOC operations staff",
+		StakeholderType:    StakeholderNOCOperator,
+		Name:               "NOC Operator Onboarding",
+		Description:        "Onboarding for internal NOC operations staff",
 		CertificationLevel: "BASIC",
-		EstimatedDays:   3,
+		EstimatedDays:      3,
 		Requirements: []RequirementTemplate{
 			{ID: "noc-doc-001", Category: "DOCUMENT", Name: "Employment Verification", Description: "Employment verification and background check", Required: true, DueDays: 1},
 			{ID: "noc-doc-002", Category: "ATTESTATION", Name: "Training Completion", Description: "NOC training certification", Required: true, DueDays: 2},
@@ -515,14 +515,14 @@ func (s *OnboardingService) registerDefaultTemplates() {
 			{Step: "OPERATIONS", Name: "Manager Approval", ApproverRoles: []string{"OPERATIONS_MANAGER"}, Order: 1},
 		},
 	}
-	
+
 	// Developer template
 	s.templates[StakeholderDeveloper] = &OnboardingTemplate{
-		StakeholderType: StakeholderDeveloper,
-		Name:            "Developer Onboarding",
-		Description:     "Quick onboarding for third-party developers",
+		StakeholderType:    StakeholderDeveloper,
+		Name:               "Developer Onboarding",
+		Description:        "Quick onboarding for third-party developers",
 		CertificationLevel: "BASIC",
-		EstimatedDays:   1,
+		EstimatedDays:      1,
 		Requirements: []RequirementTemplate{
 			{ID: "dev-doc-001", Category: "ATTESTATION", Name: "Terms Acceptance", Description: "Accept API terms of service", Required: true, DueDays: 1},
 			{ID: "dev-doc-002", Category: "DOCUMENT", Name: "Company Information", Description: "Basic company/individual information", Required: true, DueDays: 1},
@@ -540,10 +540,10 @@ func (s *OnboardingService) CreateCase(ctx context.Context, req CreateCaseReques
 	if !ok {
 		return nil, fmt.Errorf("unknown stakeholder type: %s", req.StakeholderType)
 	}
-	
+
 	now := time.Now()
 	caseID := generateCaseID()
-	
+
 	// Generate requirements from template
 	requirements := make([]Requirement, len(template.Requirements))
 	for i, tmpl := range template.Requirements {
@@ -559,33 +559,33 @@ func (s *OnboardingService) CreateCase(ctx context.Context, req CreateCaseReques
 			EvidenceIDs: make([]string, 0),
 		}
 	}
-	
+
 	onboardingCase := &OnboardingCase{
-		ID:               caseID,
-		OrganizationID:   req.OrganizationID,
-		OrganizationName: req.OrganizationName,
-		StakeholderType:  req.StakeholderType,
-		Status:           StatusDraft,
-		Jurisdiction:     req.Jurisdiction,
-		PrimaryContact:   req.PrimaryContact,
-		TechnicalContact: req.TechnicalContact,
+		ID:                caseID,
+		OrganizationID:    req.OrganizationID,
+		OrganizationName:  req.OrganizationName,
+		StakeholderType:   req.StakeholderType,
+		Status:            StatusDraft,
+		Jurisdiction:      req.Jurisdiction,
+		PrimaryContact:    req.PrimaryContact,
+		TechnicalContact:  req.TechnicalContact,
 		ComplianceContact: req.ComplianceContact,
-		Requirements:     requirements,
-		Evidence:         make([]EvidenceItem, 0),
+		Requirements:      requirements,
+		Evidence:          make([]EvidenceItem, 0),
 		CertificationRuns: make([]CertificationRun, 0),
-		Approvals:        make([]Approval, 0),
-		StatusHistory:    make([]StatusChange, 0),
-		Notes:            make([]CaseNote, 0),
-		CreatedAt:        now,
-		UpdatedAt:        now,
-		Metadata:         make(map[string]interface{}),
+		Approvals:         make([]Approval, 0),
+		StatusHistory:     make([]StatusChange, 0),
+		Notes:             make([]CaseNote, 0),
+		CreatedAt:         now,
+		UpdatedAt:         now,
+		Metadata:          make(map[string]interface{}),
 	}
-	
+
 	// Store case
 	s.casesMu.Lock()
 	s.cases[caseID] = onboardingCase
 	s.casesMu.Unlock()
-	
+
 	// Emit event
 	if s.eventEmitter != nil {
 		s.eventEmitter.Emit(ctx, OnboardingCaseCreatedEvent{
@@ -595,7 +595,7 @@ func (s *OnboardingService) CreateCase(ctx context.Context, req CreateCaseReques
 			Timestamp:       now,
 		})
 	}
-	
+
 	return onboardingCase, nil
 }
 
@@ -614,23 +614,23 @@ type CreateCaseRequest struct {
 func (s *OnboardingService) SubmitCase(ctx context.Context, caseID, submittedBy string) error {
 	s.casesMu.Lock()
 	defer s.casesMu.Unlock()
-	
+
 	c, ok := s.cases[caseID]
 	if !ok {
 		return fmt.Errorf("case not found: %s", caseID)
 	}
-	
+
 	if c.Status != StatusDraft && c.Status != StatusReworkRequested {
 		return fmt.Errorf("case cannot be submitted from status: %s", c.Status)
 	}
-	
+
 	// Validate required requirements have evidence
 	for _, req := range c.Requirements {
 		if req.Required && len(req.EvidenceIDs) == 0 {
 			return fmt.Errorf("required document missing: %s", req.Name)
 		}
 	}
-	
+
 	now := time.Now()
 	c.StatusHistory = append(c.StatusHistory, StatusChange{
 		FromStatus: c.Status,
@@ -641,7 +641,7 @@ func (s *OnboardingService) SubmitCase(ctx context.Context, caseID, submittedBy 
 	c.Status = StatusSubmitted
 	c.SubmittedAt = &now
 	c.UpdatedAt = now
-	
+
 	return nil
 }
 
@@ -649,17 +649,17 @@ func (s *OnboardingService) SubmitCase(ctx context.Context, caseID, submittedBy 
 func (s *OnboardingService) UploadEvidence(ctx context.Context, caseID string, evidence EvidenceItem) error {
 	s.casesMu.Lock()
 	defer s.casesMu.Unlock()
-	
+
 	c, ok := s.cases[caseID]
 	if !ok {
 		return fmt.Errorf("case not found: %s", caseID)
 	}
-	
+
 	evidence.ID = generateEvidenceID()
 	evidence.UploadedAt = time.Now()
-	
+
 	c.Evidence = append(c.Evidence, evidence)
-	
+
 	// Link to requirement
 	for i := range c.Requirements {
 		if c.Requirements[i].ID == evidence.RequirementID {
@@ -668,9 +668,9 @@ func (s *OnboardingService) UploadEvidence(ctx context.Context, caseID string, e
 			break
 		}
 	}
-	
+
 	c.UpdatedAt = time.Now()
-	
+
 	return nil
 }
 
@@ -678,12 +678,12 @@ func (s *OnboardingService) UploadEvidence(ctx context.Context, caseID string, e
 func (s *OnboardingService) ReviewRequirement(ctx context.Context, caseID, requirementID, reviewerID, decision, notes string) error {
 	s.casesMu.Lock()
 	defer s.casesMu.Unlock()
-	
+
 	c, ok := s.cases[caseID]
 	if !ok {
 		return fmt.Errorf("case not found: %s", caseID)
 	}
-	
+
 	now := time.Now()
 	for i := range c.Requirements {
 		if c.Requirements[i].ID == requirementID {
@@ -694,9 +694,9 @@ func (s *OnboardingService) ReviewRequirement(ctx context.Context, caseID, requi
 			break
 		}
 	}
-	
+
 	c.UpdatedAt = now
-	
+
 	return nil
 }
 
@@ -704,15 +704,15 @@ func (s *OnboardingService) ReviewRequirement(ctx context.Context, caseID, requi
 func (s *OnboardingService) SetTechnicalProfile(ctx context.Context, caseID string, profile TechnicalProfile) error {
 	s.casesMu.Lock()
 	defer s.casesMu.Unlock()
-	
+
 	c, ok := s.cases[caseID]
 	if !ok {
 		return fmt.Errorf("case not found: %s", caseID)
 	}
-	
+
 	c.TechnicalProfile = &profile
 	c.UpdatedAt = time.Now()
-	
+
 	return nil
 }
 
@@ -720,17 +720,17 @@ func (s *OnboardingService) SetTechnicalProfile(ctx context.Context, caseID stri
 func (s *OnboardingService) TransitionStatus(ctx context.Context, caseID string, newStatus OnboardingStatus, changedBy, reason string) error {
 	s.casesMu.Lock()
 	defer s.casesMu.Unlock()
-	
+
 	c, ok := s.cases[caseID]
 	if !ok {
 		return fmt.Errorf("case not found: %s", caseID)
 	}
-	
+
 	// Validate transition
 	if !s.isValidTransition(c.Status, newStatus) {
 		return fmt.Errorf("invalid transition from %s to %s", c.Status, newStatus)
 	}
-	
+
 	now := time.Now()
 	c.StatusHistory = append(c.StatusHistory, StatusChange{
 		FromStatus: c.Status,
@@ -741,11 +741,11 @@ func (s *OnboardingService) TransitionStatus(ctx context.Context, caseID string,
 	})
 	c.Status = newStatus
 	c.UpdatedAt = now
-	
+
 	if newStatus == StatusActive {
 		c.CompletedAt = &now
 	}
-	
+
 	// Emit event
 	if s.eventEmitter != nil {
 		s.eventEmitter.Emit(ctx, OnboardingStatusChangedEvent{
@@ -756,7 +756,7 @@ func (s *OnboardingService) TransitionStatus(ctx context.Context, caseID string,
 			Timestamp:  now,
 		})
 	}
-	
+
 	return nil
 }
 
@@ -776,18 +776,18 @@ func (s *OnboardingService) isValidTransition(from, to OnboardingStatus) bool {
 		StatusSuspended:          {StatusActive, StatusOffboarded},
 		StatusReworkRequested:    {StatusSubmitted},
 	}
-	
+
 	allowed, ok := validTransitions[from]
 	if !ok {
 		return false
 	}
-	
+
 	for _, status := range allowed {
 		if status == to {
 			return true
 		}
 	}
-	
+
 	return false
 }
 
@@ -795,18 +795,18 @@ func (s *OnboardingService) isValidTransition(from, to OnboardingStatus) bool {
 func (s *OnboardingService) AddApproval(ctx context.Context, caseID string, approval Approval) error {
 	s.casesMu.Lock()
 	defer s.casesMu.Unlock()
-	
+
 	c, ok := s.cases[caseID]
 	if !ok {
 		return fmt.Errorf("case not found: %s", caseID)
 	}
-	
+
 	approval.ID = generateApprovalID()
 	approval.DecidedAt = time.Now()
-	
+
 	c.Approvals = append(c.Approvals, approval)
 	c.UpdatedAt = time.Now()
-	
+
 	return nil
 }
 
@@ -814,22 +814,22 @@ func (s *OnboardingService) AddApproval(ctx context.Context, caseID string, appr
 func (s *OnboardingService) ProvisionSandbox(ctx context.Context, caseID string) (*ProvisionedResources, error) {
 	s.casesMu.Lock()
 	defer s.casesMu.Unlock()
-	
+
 	c, ok := s.cases[caseID]
 	if !ok {
 		return nil, fmt.Errorf("case not found: %s", caseID)
 	}
-	
+
 	resources := &ProvisionedResources{
-		Environment:     "SANDBOX",
-		ParticipantID:   generateParticipantID(),
-		FSPID:           fmt.Sprintf("sandbox-%s", c.OrganizationID),
-		LedgerAccountID: generateLedgerAccountID(),
-		APIKeyID:        generateAPIKeyID(),
-		APIKeySecret:    generateAPIKeySecret(),
-		APISIXRouteID:   generateRouteID(),
+		Environment:      "SANDBOX",
+		ParticipantID:    generateParticipantID(),
+		FSPID:            fmt.Sprintf("sandbox-%s", c.OrganizationID),
+		LedgerAccountID:  generateLedgerAccountID(),
+		APIKeyID:         generateAPIKeyID(),
+		APIKeySecret:     generateAPIKeySecret(),
+		APISIXRouteID:    generateRouteID(),
 		KeycloakClientID: fmt.Sprintf("sandbox-%s", c.OrganizationID),
-		ProvisionedAt:   time.Now(),
+		ProvisionedAt:    time.Now(),
 		Limits: ResourceLimits{
 			MaxTPS:                 100,
 			DailyTransactionLimit:  1000000,
@@ -837,10 +837,10 @@ func (s *OnboardingService) ProvisionSandbox(ctx context.Context, caseID string)
 			NetDebitCap:            100000,
 		},
 	}
-	
+
 	c.SandboxResources = resources
 	c.UpdatedAt = time.Now()
-	
+
 	return resources, nil
 }
 
@@ -848,28 +848,28 @@ func (s *OnboardingService) ProvisionSandbox(ctx context.Context, caseID string)
 func (s *OnboardingService) ProvisionProduction(ctx context.Context, caseID string, limits ResourceLimits) (*ProvisionedResources, error) {
 	s.casesMu.Lock()
 	defer s.casesMu.Unlock()
-	
+
 	c, ok := s.cases[caseID]
 	if !ok {
 		return nil, fmt.Errorf("case not found: %s", caseID)
 	}
-	
+
 	resources := &ProvisionedResources{
-		Environment:     "PRODUCTION",
-		ParticipantID:   generateParticipantID(),
-		FSPID:           c.OrganizationID,
-		LedgerAccountID: generateLedgerAccountID(),
-		APIKeyID:        generateAPIKeyID(),
-		APIKeySecret:    generateAPIKeySecret(),
-		APISIXRouteID:   generateRouteID(),
+		Environment:      "PRODUCTION",
+		ParticipantID:    generateParticipantID(),
+		FSPID:            c.OrganizationID,
+		LedgerAccountID:  generateLedgerAccountID(),
+		APIKeyID:         generateAPIKeyID(),
+		APIKeySecret:     generateAPIKeySecret(),
+		APISIXRouteID:    generateRouteID(),
 		KeycloakClientID: c.OrganizationID,
-		ProvisionedAt:   time.Now(),
-		Limits:          limits,
+		ProvisionedAt:    time.Now(),
+		Limits:           limits,
 	}
-	
+
 	c.ProductionResources = resources
 	c.UpdatedAt = time.Now()
-	
+
 	return resources, nil
 }
 
@@ -877,12 +877,12 @@ func (s *OnboardingService) ProvisionProduction(ctx context.Context, caseID stri
 func (s *OnboardingService) GetCase(ctx context.Context, caseID string) (*OnboardingCase, error) {
 	s.casesMu.RLock()
 	defer s.casesMu.RUnlock()
-	
+
 	c, ok := s.cases[caseID]
 	if !ok {
 		return nil, fmt.Errorf("case not found: %s", caseID)
 	}
-	
+
 	return c, nil
 }
 
@@ -890,9 +890,9 @@ func (s *OnboardingService) GetCase(ctx context.Context, caseID string) (*Onboar
 func (s *OnboardingService) ListCases(ctx context.Context, filters CaseFilters) ([]*OnboardingCase, error) {
 	s.casesMu.RLock()
 	defer s.casesMu.RUnlock()
-	
+
 	result := make([]*OnboardingCase, 0)
-	
+
 	for _, c := range s.cases {
 		if filters.StakeholderType != "" && c.StakeholderType != filters.StakeholderType {
 			continue
@@ -905,7 +905,7 @@ func (s *OnboardingService) ListCases(ctx context.Context, filters CaseFilters) 
 		}
 		result = append(result, c)
 	}
-	
+
 	return result, nil
 }
 
@@ -920,18 +920,18 @@ type CaseFilters struct {
 func (s *OnboardingService) AddNote(ctx context.Context, caseID string, note CaseNote) error {
 	s.casesMu.Lock()
 	defer s.casesMu.Unlock()
-	
+
 	c, ok := s.cases[caseID]
 	if !ok {
 		return fmt.Errorf("case not found: %s", caseID)
 	}
-	
+
 	note.ID = generateNoteID()
 	note.CreatedAt = time.Now()
-	
+
 	c.Notes = append(c.Notes, note)
 	c.UpdatedAt = time.Now()
-	
+
 	return nil
 }
 

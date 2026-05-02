@@ -25,13 +25,11 @@ const (
 
 // AccountFlags represents TigerBeetle account flags
 
-const (
-)
+const ()
 
 // TransferFlags represents TigerBeetle transfer flags
 
-const (
-)
+const ()
 
 // Account represents a TigerBeetle account
 type Account struct {

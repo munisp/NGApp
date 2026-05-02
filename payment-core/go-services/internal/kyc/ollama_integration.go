@@ -20,11 +20,11 @@ import (
 
 // Ollama resilience configuration
 const (
-	ollamaMaxRetries        = 3
-	ollamaInitialDelay      = 500 * time.Millisecond
-	ollamaMaxDelay          = 30 * time.Second
-	ollamaCircuitThreshold  = 3
-	ollamaCircuitTimeout    = 60 * time.Second
+	ollamaMaxRetries          = 3
+	ollamaInitialDelay        = 500 * time.Millisecond
+	ollamaMaxDelay            = 30 * time.Second
+	ollamaCircuitThreshold    = 3
+	ollamaCircuitTimeout      = 60 * time.Second
 	ollamaHealthCheckInterval = 30 * time.Second
 )
 
@@ -94,31 +94,31 @@ type OllamaFallbackResult struct {
 type OllamaModel string
 
 const (
-	ModelLLaVA       OllamaModel = "llava"
-	ModelLLaVA13B    OllamaModel = "llava:13b"
-	ModelLLaVA34B    OllamaModel = "llava:34b"
-	ModelLlama3      OllamaModel = "llama3"
-	ModelMistral     OllamaModel = "mistral"
-	ModelCodeLlama   OllamaModel = "codellama"
+	ModelLLaVA     OllamaModel = "llava"
+	ModelLLaVA13B  OllamaModel = "llava:13b"
+	ModelLLaVA34B  OllamaModel = "llava:34b"
+	ModelLlama3    OllamaModel = "llama3"
+	ModelMistral   OllamaModel = "mistral"
+	ModelCodeLlama OllamaModel = "codellama"
 )
 
 // OllamaRequest represents a request to Ollama API
 type OllamaRequest struct {
-	Model    string   `json:"model"`
-	Prompt   string   `json:"prompt"`
-	Images   []string `json:"images,omitempty"` // Base64 encoded images
-	Stream   bool     `json:"stream"`
-	Options  *OllamaOptions `json:"options,omitempty"`
+	Model   string         `json:"model"`
+	Prompt  string         `json:"prompt"`
+	Images  []string       `json:"images,omitempty"` // Base64 encoded images
+	Stream  bool           `json:"stream"`
+	Options *OllamaOptions `json:"options,omitempty"`
 }
 
 // OllamaOptions represents Ollama generation options
 type OllamaOptions struct {
-	Temperature   float64 `json:"temperature,omitempty"`
-	TopP          float64 `json:"top_p,omitempty"`
-	TopK          int     `json:"top_k,omitempty"`
-	NumPredict    int     `json:"num_predict,omitempty"`
-	Stop          []string `json:"stop,omitempty"`
-	Seed          int     `json:"seed,omitempty"`
+	Temperature float64  `json:"temperature,omitempty"`
+	TopP        float64  `json:"top_p,omitempty"`
+	TopK        int      `json:"top_k,omitempty"`
+	NumPredict  int      `json:"num_predict,omitempty"`
+	Stop        []string `json:"stop,omitempty"`
+	Seed        int      `json:"seed,omitempty"`
 }
 
 // OllamaResponse represents a response from Ollama API
@@ -138,32 +138,32 @@ type OllamaResponse struct {
 
 // DocumentAnalysisResult represents the result of document analysis
 type DocumentAnalysisResult struct {
-	AnalysisID      string                 `json:"analysis_id"`
-	DocumentID      string                 `json:"document_id"`
-	CaseID          string                 `json:"case_id"`
-	DocumentType    string                 `json:"document_type"`
-	Model           string                 `json:"model"`
-	Confidence      float64                `json:"confidence"`
-	ExtractedFields map[string]interface{} `json:"extracted_fields"`
-	ValidationResult *DocumentValidation   `json:"validation_result,omitempty"`
-	FraudIndicators []FraudIndicator       `json:"fraud_indicators,omitempty"`
-	ProcessingTime  int64                  `json:"processing_time_ms"`
-	AnalyzedAt      time.Time              `json:"analyzed_at"`
-	RawResponse     string                 `json:"raw_response,omitempty"`
-	ErrorMessage    string                 `json:"error_message,omitempty"`
+	AnalysisID       string                 `json:"analysis_id"`
+	DocumentID       string                 `json:"document_id"`
+	CaseID           string                 `json:"case_id"`
+	DocumentType     string                 `json:"document_type"`
+	Model            string                 `json:"model"`
+	Confidence       float64                `json:"confidence"`
+	ExtractedFields  map[string]interface{} `json:"extracted_fields"`
+	ValidationResult *DocumentValidation    `json:"validation_result,omitempty"`
+	FraudIndicators  []FraudIndicator       `json:"fraud_indicators,omitempty"`
+	ProcessingTime   int64                  `json:"processing_time_ms"`
+	AnalyzedAt       time.Time              `json:"analyzed_at"`
+	RawResponse      string                 `json:"raw_response,omitempty"`
+	ErrorMessage     string                 `json:"error_message,omitempty"`
 }
 
 // DocumentValidation represents document validation results
 type DocumentValidation struct {
-	IsValid           bool     `json:"is_valid"`
-	ValidationScore   float64  `json:"validation_score"`
-	Issues            []string `json:"issues,omitempty"`
-	Warnings          []string `json:"warnings,omitempty"`
-	DocumentQuality   string   `json:"document_quality"` // HIGH, MEDIUM, LOW
-	IsExpired         bool     `json:"is_expired"`
-	ExpiryDate        string   `json:"expiry_date,omitempty"`
-	IsTampered        bool     `json:"is_tampered"`
-	TamperingDetails  string   `json:"tampering_details,omitempty"`
+	IsValid          bool     `json:"is_valid"`
+	ValidationScore  float64  `json:"validation_score"`
+	Issues           []string `json:"issues,omitempty"`
+	Warnings         []string `json:"warnings,omitempty"`
+	DocumentQuality  string   `json:"document_quality"` // HIGH, MEDIUM, LOW
+	IsExpired        bool     `json:"is_expired"`
+	ExpiryDate       string   `json:"expiry_date,omitempty"`
+	IsTampered       bool     `json:"is_tampered"`
+	TamperingDetails string   `json:"tampering_details,omitempty"`
 }
 
 // FraudIndicator represents a potential fraud indicator
@@ -177,18 +177,18 @@ type FraudIndicator struct {
 
 // FaceMatchResult represents face matching results
 type FaceMatchResult struct {
-	MatchID         string  `json:"match_id"`
-	CaseID          string  `json:"case_id"`
-	Document1ID     string  `json:"document1_id"`
-	Document2ID     string  `json:"document2_id"`
-	IsMatch         bool    `json:"is_match"`
-	MatchScore      float64 `json:"match_score"`
-	Confidence      float64 `json:"confidence"`
-	FaceDetected1   bool    `json:"face_detected_1"`
-	FaceDetected2   bool    `json:"face_detected_2"`
-	ProcessingTime  int64   `json:"processing_time_ms"`
-	MatchedAt       time.Time `json:"matched_at"`
-	ErrorMessage    string  `json:"error_message,omitempty"`
+	MatchID        string    `json:"match_id"`
+	CaseID         string    `json:"case_id"`
+	Document1ID    string    `json:"document1_id"`
+	Document2ID    string    `json:"document2_id"`
+	IsMatch        bool      `json:"is_match"`
+	MatchScore     float64   `json:"match_score"`
+	Confidence     float64   `json:"confidence"`
+	FaceDetected1  bool      `json:"face_detected_1"`
+	FaceDetected2  bool      `json:"face_detected_2"`
+	ProcessingTime int64     `json:"processing_time_ms"`
+	MatchedAt      time.Time `json:"matched_at"`
+	ErrorMessage   string    `json:"error_message,omitempty"`
 }
 
 // OllamaService provides Ollama/LLaVA integration for KYC/KYB with full resilience
@@ -227,9 +227,9 @@ func NewOllamaService(baseURL string, publisher *KYCLakehousePublisher) *OllamaS
 		fallbackEnabled:    true,
 		stopCh:             make(chan struct{}),
 	}
-	
+
 	go service.healthChecker()
-	
+
 	return service
 }
 
@@ -272,7 +272,7 @@ func (s *OllamaService) healthChecker() {
 			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 			err := s.checkOllamaHealth(ctx)
 			cancel()
-			
+
 			if err != nil {
 				atomic.StoreInt32(&s.healthy, 0)
 				log.Printf("Ollama health check failed: %v", err)
@@ -290,17 +290,17 @@ func (s *OllamaService) checkOllamaHealth(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	
+
 	resp, err := s.httpClient.Do(req)
 	if err != nil {
 		return err
 	}
 	defer resp.Body.Close()
-	
+
 	if resp.StatusCode >= 400 {
 		return fmt.Errorf("ollama returned status %d", resp.StatusCode)
 	}
-	
+
 	return nil
 }
 
@@ -349,12 +349,12 @@ func (s *OllamaService) callOllamaWithRetry(ctx context.Context, req *OllamaRequ
 // fallbackAnalysis provides rule-based analysis when Ollama is unavailable
 func (s *OllamaService) fallbackAnalysis(caseID, documentID, documentType string) *DocumentAnalysisResult {
 	return &DocumentAnalysisResult{
-		AnalysisID:      uuid.New().String(),
-		DocumentID:      documentID,
-		CaseID:          caseID,
-		DocumentType:    documentType,
-		Model:           "fallback-rule-based",
-		Confidence:      0.5,
+		AnalysisID:   uuid.New().String(),
+		DocumentID:   documentID,
+		CaseID:       caseID,
+		DocumentType: documentType,
+		Model:        "fallback-rule-based",
+		Confidence:   0.5,
 		ExtractedFields: map[string]interface{}{
 			"fallback_mode": true,
 			"reason":        "Ollama service unavailable",
@@ -418,12 +418,12 @@ func (s *OllamaService) AnalyzeDocument(ctx context.Context, caseID, documentID,
 	if err != nil {
 		atomic.AddInt64(&s.metricsFailed, 1)
 		log.Printf("Ollama API failed after retries: %v", err)
-		
+
 		if s.fallbackEnabled {
 			log.Printf("Using fallback analysis for document %s", documentID)
 			return s.fallbackAnalysis(caseID, documentID, documentType), nil
 		}
-		
+
 		result.ErrorMessage = fmt.Sprintf("Ollama API error: %v", err)
 		result.ProcessingTime = time.Since(startTime).Milliseconds()
 		return result, err
@@ -670,9 +670,9 @@ Respond in JSON format:
 
 	// Parse response
 	var fraudResult struct {
-		FraudIndicators []FraudIndicator `json:"fraud_indicators"`
-		OverallAssessment string         `json:"overall_assessment"`
-		Confidence      float64          `json:"confidence"`
+		FraudIndicators   []FraudIndicator `json:"fraud_indicators"`
+		OverallAssessment string           `json:"overall_assessment"`
+		Confidence        float64          `json:"confidence"`
 	}
 
 	jsonStr := extractJSON(ollamaResp.Response)

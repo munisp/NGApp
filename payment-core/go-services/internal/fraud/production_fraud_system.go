@@ -23,12 +23,12 @@ import (
 type FraudEnforcementAction string
 
 const (
-	EnforcementActionAllow      FraudEnforcementAction = "ALLOW"
-	EnforcementActionHold       FraudEnforcementAction = "HOLD"
-	EnforcementActionBlock      FraudEnforcementAction = "BLOCK"
-	EnforcementActionStepUp     FraudEnforcementAction = "STEP_UP"
+	EnforcementActionAllow       FraudEnforcementAction = "ALLOW"
+	EnforcementActionHold        FraudEnforcementAction = "HOLD"
+	EnforcementActionBlock       FraudEnforcementAction = "BLOCK"
+	EnforcementActionStepUp      FraudEnforcementAction = "STEP_UP"
 	EnforcementActionLimitReduce FraudEnforcementAction = "LIMIT_REDUCE"
-	EnforcementActionFreeze     FraudEnforcementAction = "FREEZE"
+	EnforcementActionFreeze      FraudEnforcementAction = "FREEZE"
 )
 
 // EnforcementDecision represents a fraud enforcement decision
@@ -53,13 +53,13 @@ type EnforcementDecision struct {
 
 // FraudEnforcementEngine enforces fraud decisions with idempotency
 type FraudEnforcementEngine struct {
-	db              *sql.DB
-	decisions       map[string]*EnforcementDecision
-	mu              sync.RWMutex
-	auditLog        AuditLogger
-	alertManager    AlertManager
-	accountLimiter  AccountLimiter
-	stepUpAuth      StepUpAuthenticator
+	db             *sql.DB
+	decisions      map[string]*EnforcementDecision
+	mu             sync.RWMutex
+	auditLog       AuditLogger
+	alertManager   AlertManager
+	accountLimiter AccountLimiter
+	stepUpAuth     StepUpAuthenticator
 }
 
 // AuditLogger interface for audit logging
@@ -261,16 +261,16 @@ func (e *FraudEnforcementEngine) persistDecision(ctx context.Context, decision *
 
 // ModelVersion represents a fraud detection model version
 type ModelVersion struct {
-	VersionID       string            `json:"version_id"`
-	ModelName       string            `json:"model_name"`
-	Version         string            `json:"version"`
-	Status          ModelStatus       `json:"status"`
-	Metrics         *ModelMetrics     `json:"metrics"`
-	DriftMetrics    *DriftMetrics     `json:"drift_metrics,omitempty"`
-	TrainedAt       time.Time         `json:"trained_at"`
-	DeployedAt      *time.Time        `json:"deployed_at,omitempty"`
-	RetiredAt       *time.Time        `json:"retired_at,omitempty"`
-	Config          map[string]interface{} `json:"config"`
+	VersionID    string                 `json:"version_id"`
+	ModelName    string                 `json:"model_name"`
+	Version      string                 `json:"version"`
+	Status       ModelStatus            `json:"status"`
+	Metrics      *ModelMetrics          `json:"metrics"`
+	DriftMetrics *DriftMetrics          `json:"drift_metrics,omitempty"`
+	TrainedAt    time.Time              `json:"trained_at"`
+	DeployedAt   *time.Time             `json:"deployed_at,omitempty"`
+	RetiredAt    *time.Time             `json:"retired_at,omitempty"`
+	Config       map[string]interface{} `json:"config"`
 }
 
 // ModelStatus represents model deployment status
@@ -287,31 +287,31 @@ const (
 
 // ModelMetrics represents model performance metrics
 type ModelMetrics struct {
-	AUC             float64 `json:"auc"`
-	Precision       float64 `json:"precision"`
-	Recall          float64 `json:"recall"`
-	F1Score         float64 `json:"f1_score"`
-	FalsePositiveRate float64 `json:"false_positive_rate"`
-	FalseNegativeRate float64 `json:"false_negative_rate"`
-	Accuracy        float64 `json:"accuracy"`
-	LogLoss         float64 `json:"log_loss"`
-	KSStatistic     float64 `json:"ks_statistic"`
-	GiniCoefficient float64 `json:"gini_coefficient"`
-	SampleSize      int64   `json:"sample_size"`
-	EvaluatedAt     time.Time `json:"evaluated_at"`
+	AUC               float64   `json:"auc"`
+	Precision         float64   `json:"precision"`
+	Recall            float64   `json:"recall"`
+	F1Score           float64   `json:"f1_score"`
+	FalsePositiveRate float64   `json:"false_positive_rate"`
+	FalseNegativeRate float64   `json:"false_negative_rate"`
+	Accuracy          float64   `json:"accuracy"`
+	LogLoss           float64   `json:"log_loss"`
+	KSStatistic       float64   `json:"ks_statistic"`
+	GiniCoefficient   float64   `json:"gini_coefficient"`
+	SampleSize        int64     `json:"sample_size"`
+	EvaluatedAt       time.Time `json:"evaluated_at"`
 }
 
 // DriftMetrics represents model drift metrics
 type DriftMetrics struct {
-	FeatureDrift      map[string]float64 `json:"feature_drift"`
-	PredictionDrift   float64            `json:"prediction_drift"`
-	LabelDrift        float64            `json:"label_drift"`
-	PSI               float64            `json:"psi"` // Population Stability Index
-	KLDivergence      float64            `json:"kl_divergence"`
-	JSDivergence      float64            `json:"js_divergence"`
-	DriftDetected     bool               `json:"drift_detected"`
-	DriftSeverity     string             `json:"drift_severity"`
-	MeasuredAt        time.Time          `json:"measured_at"`
+	FeatureDrift    map[string]float64 `json:"feature_drift"`
+	PredictionDrift float64            `json:"prediction_drift"`
+	LabelDrift      float64            `json:"label_drift"`
+	PSI             float64            `json:"psi"` // Population Stability Index
+	KLDivergence    float64            `json:"kl_divergence"`
+	JSDivergence    float64            `json:"js_divergence"`
+	DriftDetected   bool               `json:"drift_detected"`
+	DriftSeverity   string             `json:"drift_severity"`
+	MeasuredAt      time.Time          `json:"measured_at"`
 }
 
 // ModelLifecycleManager manages model versions and drift monitoring
@@ -461,7 +461,7 @@ func (m *ModelLifecycleManager) MonitorDrift(ctx context.Context, predictions []
 	// Determine drift severity
 	avgPSI := totalPSI / float64(len(features))
 	driftDetected := avgPSI > m.driftThreshold || predictionDrift > m.driftThreshold
-	
+
 	var driftSeverity string
 	if avgPSI > 0.25 {
 		driftSeverity = "CRITICAL"
@@ -523,41 +523,41 @@ type PredictionRecord struct {
 
 // BacktestHarness provides backtesting capabilities
 type BacktestHarness struct {
-	db              *sql.DB
-	goldenDataset   []GoldenTransaction
-	mu              sync.RWMutex
+	db            *sql.DB
+	goldenDataset []GoldenTransaction
+	mu            sync.RWMutex
 }
 
 // GoldenTransaction represents a golden test transaction
 type GoldenTransaction struct {
-	TransactionID   string             `json:"transaction_id"`
-	Features        map[string]float64 `json:"features"`
-	ExpectedScore   float64            `json:"expected_score"`
-	ExpectedDecision string            `json:"expected_decision"`
-	ActualLabel     int                `json:"actual_label"` // 1=fraud, 0=legitimate
-	Category        string             `json:"category"` // e.g., "velocity", "amount", "geo"
+	TransactionID    string             `json:"transaction_id"`
+	Features         map[string]float64 `json:"features"`
+	ExpectedScore    float64            `json:"expected_score"`
+	ExpectedDecision string             `json:"expected_decision"`
+	ActualLabel      int                `json:"actual_label"` // 1=fraud, 0=legitimate
+	Category         string             `json:"category"`     // e.g., "velocity", "amount", "geo"
 }
 
 // BacktestResult represents backtest results
 type BacktestResult struct {
-	ModelVersion    string         `json:"model_version"`
-	TotalTests      int            `json:"total_tests"`
-	Passed          int            `json:"passed"`
-	Failed          int            `json:"failed"`
-	Metrics         *ModelMetrics  `json:"metrics"`
-	FailedCases     []FailedCase   `json:"failed_cases"`
-	ExecutedAt      time.Time      `json:"executed_at"`
-	Duration        time.Duration  `json:"duration"`
+	ModelVersion string        `json:"model_version"`
+	TotalTests   int           `json:"total_tests"`
+	Passed       int           `json:"passed"`
+	Failed       int           `json:"failed"`
+	Metrics      *ModelMetrics `json:"metrics"`
+	FailedCases  []FailedCase  `json:"failed_cases"`
+	ExecutedAt   time.Time     `json:"executed_at"`
+	Duration     time.Duration `json:"duration"`
 }
 
 // FailedCase represents a failed backtest case
 type FailedCase struct {
-	TransactionID   string  `json:"transaction_id"`
-	ExpectedScore   float64 `json:"expected_score"`
-	ActualScore     float64 `json:"actual_score"`
-	ExpectedDecision string `json:"expected_decision"`
-	ActualDecision  string  `json:"actual_decision"`
-	Reason          string  `json:"reason"`
+	TransactionID    string  `json:"transaction_id"`
+	ExpectedScore    float64 `json:"expected_score"`
+	ActualScore      float64 `json:"actual_score"`
+	ExpectedDecision string  `json:"expected_decision"`
+	ActualDecision   string  `json:"actual_decision"`
+	Reason           string  `json:"reason"`
 }
 
 // NewBacktestHarness creates a new backtest harness
@@ -687,7 +687,7 @@ func (h *BacktestHarness) RunBacktest(scorer ModelScorer, modelVersion string) (
 	if total > 0 {
 		precision := float64(truePositives) / math.Max(float64(truePositives+falsePositives), 1)
 		recall := float64(truePositives) / math.Max(float64(truePositives+falseNegatives), 1)
-		
+
 		result.Metrics = &ModelMetrics{
 			Precision:         precision,
 			Recall:            recall,
@@ -716,24 +716,24 @@ type ModelScorer interface {
 
 // FeedbackLoop manages feedback from confirmed fraud to training
 type FeedbackLoop struct {
-	db              *sql.DB
-	feedbackQueue   chan *FraudFeedback
-	labeledData     []*LabeledTransaction
-	mu              sync.RWMutex
-	batchSize       int
-	flushInterval   time.Duration
+	db            *sql.DB
+	feedbackQueue chan *FraudFeedback
+	labeledData   []*LabeledTransaction
+	mu            sync.RWMutex
+	batchSize     int
+	flushInterval time.Duration
 }
 
 // FraudFeedback represents feedback on a fraud decision
 type FraudFeedback struct {
-	TransactionID   string    `json:"transaction_id"`
-	OriginalScore   float64   `json:"original_score"`
-	OriginalDecision string   `json:"original_decision"`
-	ActualOutcome   string    `json:"actual_outcome"` // FRAUD, LEGITIMATE, CHARGEBACK
-	FeedbackSource  string    `json:"feedback_source"` // REVIEWER, CHARGEBACK, CUSTOMER
-	FeedbackAt      time.Time `json:"feedback_at"`
-	ReviewerID      string    `json:"reviewer_id,omitempty"`
-	Notes           string    `json:"notes,omitempty"`
+	TransactionID    string    `json:"transaction_id"`
+	OriginalScore    float64   `json:"original_score"`
+	OriginalDecision string    `json:"original_decision"`
+	ActualOutcome    string    `json:"actual_outcome"`  // FRAUD, LEGITIMATE, CHARGEBACK
+	FeedbackSource   string    `json:"feedback_source"` // REVIEWER, CHARGEBACK, CUSTOMER
+	FeedbackAt       time.Time `json:"feedback_at"`
+	ReviewerID       string    `json:"reviewer_id,omitempty"`
+	Notes            string    `json:"notes,omitempty"`
 }
 
 // LabeledTransaction represents a labeled transaction for training
@@ -857,10 +857,10 @@ func (fl *FeedbackLoop) GetTrainingData(since time.Time, limit int) []*LabeledTr
 
 // GraphAnalytics provides graph-based fraud detection
 type GraphAnalytics struct {
-	nodes     map[string]*GraphNode
-	edges     map[string][]*GraphEdge
-	mu        sync.RWMutex
-	db        *sql.DB
+	nodes map[string]*GraphNode
+	edges map[string][]*GraphEdge
+	mu    sync.RWMutex
+	db    *sql.DB
 }
 
 // GraphNode represents an entity in the fraud graph
@@ -888,14 +888,14 @@ type GraphEdge struct {
 
 // MuleDetectionResult represents mule detection analysis
 type MuleDetectionResult struct {
-	AccountID       string    `json:"account_id"`
-	IsMule          bool      `json:"is_mule"`
-	MuleScore       float64   `json:"mule_score"`
-	MuleType        string    `json:"mule_type"` // MONEY_MULE, FUNNEL, LAYERING
-	RiskFactors     []string  `json:"risk_factors"`
-	LinkedAccounts  []string  `json:"linked_accounts"`
-	NetworkSize     int       `json:"network_size"`
-	AnalyzedAt      time.Time `json:"analyzed_at"`
+	AccountID      string    `json:"account_id"`
+	IsMule         bool      `json:"is_mule"`
+	MuleScore      float64   `json:"mule_score"`
+	MuleType       string    `json:"mule_type"` // MONEY_MULE, FUNNEL, LAYERING
+	RiskFactors    []string  `json:"risk_factors"`
+	LinkedAccounts []string  `json:"linked_accounts"`
+	NetworkSize    int       `json:"network_size"`
+	AnalyzedAt     time.Time `json:"analyzed_at"`
 }
 
 // NewGraphAnalytics creates a new graph analytics engine
@@ -1098,21 +1098,21 @@ func (g *GraphAnalytics) DetectMule(accountID string) *MuleDetectionResult {
 
 // DynamicLimitManager manages dynamic transaction limits based on risk
 type DynamicLimitManager struct {
-	db          *sql.DB
-	limits      map[string]*AccountLimits
-	mu          sync.RWMutex
-	baseLimits  *BaseLimits
+	db         *sql.DB
+	limits     map[string]*AccountLimits
+	mu         sync.RWMutex
+	baseLimits *BaseLimits
 }
 
 // AccountLimits represents limits for an account
 type AccountLimits struct {
-	AccountID           string    `json:"account_id"`
-	DailyLimit          float64   `json:"daily_limit"`
-	TransactionLimit    float64   `json:"transaction_limit"`
-	VelocityLimit       int       `json:"velocity_limit"` // Max transactions per hour
-	RiskMultiplier      float64   `json:"risk_multiplier"`
-	LastAdjusted        time.Time `json:"last_adjusted"`
-	AdjustmentReason    string    `json:"adjustment_reason"`
+	AccountID        string    `json:"account_id"`
+	DailyLimit       float64   `json:"daily_limit"`
+	TransactionLimit float64   `json:"transaction_limit"`
+	VelocityLimit    int       `json:"velocity_limit"` // Max transactions per hour
+	RiskMultiplier   float64   `json:"risk_multiplier"`
+	LastAdjusted     time.Time `json:"last_adjusted"`
+	AdjustmentReason string    `json:"adjustment_reason"`
 }
 
 // BaseLimits represents default limits
@@ -1187,26 +1187,26 @@ func (m *DynamicLimitManager) AdjustLimits(accountID string, riskScore float64, 
 
 // StepUpAuthManager manages step-up authentication
 type StepUpAuthManager struct {
-	db              *sql.DB
-	pendingAuth     map[string]*StepUpRequest
-	mu              sync.RWMutex
-	otpGenerator    OTPGenerator
-	notifier        StepUpNotifier
+	db           *sql.DB
+	pendingAuth  map[string]*StepUpRequest
+	mu           sync.RWMutex
+	otpGenerator OTPGenerator
+	notifier     StepUpNotifier
 }
 
 // StepUpRequest represents a step-up authentication request
 type StepUpRequest struct {
-	RequestID       string    `json:"request_id"`
-	TransactionID   string    `json:"transaction_id"`
-	AccountID       string    `json:"account_id"`
-	Method          string    `json:"method"` // OTP, BIOMETRIC, SECURITY_QUESTION
-	Challenge       string    `json:"challenge"`
-	Status          string    `json:"status"` // PENDING, VERIFIED, FAILED, EXPIRED
-	CreatedAt       time.Time `json:"created_at"`
-	ExpiresAt       time.Time `json:"expires_at"`
-	VerifiedAt      *time.Time `json:"verified_at,omitempty"`
-	Attempts        int       `json:"attempts"`
-	MaxAttempts     int       `json:"max_attempts"`
+	RequestID     string     `json:"request_id"`
+	TransactionID string     `json:"transaction_id"`
+	AccountID     string     `json:"account_id"`
+	Method        string     `json:"method"` // OTP, BIOMETRIC, SECURITY_QUESTION
+	Challenge     string     `json:"challenge"`
+	Status        string     `json:"status"` // PENDING, VERIFIED, FAILED, EXPIRED
+	CreatedAt     time.Time  `json:"created_at"`
+	ExpiresAt     time.Time  `json:"expires_at"`
+	VerifiedAt    *time.Time `json:"verified_at,omitempty"`
+	Attempts      int        `json:"attempts"`
+	MaxAttempts   int        `json:"max_attempts"`
 }
 
 // OTPGenerator interface for OTP generation
@@ -1367,7 +1367,7 @@ func calculatePSI(actual, expected []float64) float64 {
 	numBins := 10
 	allValues := append(actual, expected...)
 	sort.Float64s(allValues)
-	
+
 	binEdges := make([]float64, numBins+1)
 	for i := 0; i <= numBins; i++ {
 		idx := int(float64(i) / float64(numBins) * float64(len(allValues)-1))

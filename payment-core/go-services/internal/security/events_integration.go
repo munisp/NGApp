@@ -65,11 +65,11 @@ func NewSecurityServiceWithEvents(service interface{}) *SecurityServiceWithEvent
 
 func (s *SecurityServiceWithEvents) RaiseAlert(ctx context.Context, alertType, severity, userID string, details map[string]interface{}) (string, error) {
 	alertID := generateAlertID()
-	
+
 	if err := EmitSecurityAlertRaised(ctx, alertID, alertType, severity, userID, details); err != nil {
 		log.Printf("Failed to emit security alert event: %v", err)
 	}
-	
+
 	return alertID, nil
 }
 

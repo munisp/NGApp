@@ -27,13 +27,13 @@ type KeycloakJWTValidator struct {
 
 // KeycloakConfig holds Keycloak configuration
 type KeycloakConfig struct {
-	BaseURL           string        `json:"base_url"`
-	Realm             string        `json:"realm"`
-	ClientID          string        `json:"client_id"`
+	BaseURL             string        `json:"base_url"`
+	Realm               string        `json:"realm"`
+	ClientID            string        `json:"client_id"`
 	JWKSRefreshInterval time.Duration `json:"jwks_refresh_interval"`
-	RequiredAudience  string        `json:"required_audience"`
-	RequiredIssuer    string        `json:"required_issuer"`
-	ClockSkew         time.Duration `json:"clock_skew"`
+	RequiredAudience    string        `json:"required_audience"`
+	RequiredIssuer      string        `json:"required_issuer"`
+	ClockSkew           time.Duration `json:"clock_skew"`
 }
 
 // DefaultKeycloakConfig returns default configuration
@@ -66,33 +66,33 @@ type JWK struct {
 
 // JWTClaims represents the claims in a JWT
 type JWTClaims struct {
-	Issuer          string                 `json:"iss"`
-	Subject         string                 `json:"sub"`
-	Audience        interface{}            `json:"aud"`
-	ExpiresAt       int64                  `json:"exp"`
-	IssuedAt        int64                  `json:"iat"`
-	NotBefore       int64                  `json:"nbf,omitempty"`
-	JTI             string                 `json:"jti,omitempty"`
-	
+	Issuer    string      `json:"iss"`
+	Subject   string      `json:"sub"`
+	Audience  interface{} `json:"aud"`
+	ExpiresAt int64       `json:"exp"`
+	IssuedAt  int64       `json:"iat"`
+	NotBefore int64       `json:"nbf,omitempty"`
+	JTI       string      `json:"jti,omitempty"`
+
 	// Keycloak-specific claims
-	PreferredUsername string                `json:"preferred_username,omitempty"`
-	Email             string                `json:"email,omitempty"`
-	EmailVerified     bool                  `json:"email_verified,omitempty"`
-	Name              string                `json:"name,omitempty"`
-	GivenName         string                `json:"given_name,omitempty"`
-	FamilyName        string                `json:"family_name,omitempty"`
-	
+	PreferredUsername string `json:"preferred_username,omitempty"`
+	Email             string `json:"email,omitempty"`
+	EmailVerified     bool   `json:"email_verified,omitempty"`
+	Name              string `json:"name,omitempty"`
+	GivenName         string `json:"given_name,omitempty"`
+	FamilyName        string `json:"family_name,omitempty"`
+
 	// Realm and resource access
-	RealmAccess       *AccessClaim          `json:"realm_access,omitempty"`
-	ResourceAccess    map[string]*AccessClaim `json:"resource_access,omitempty"`
-	
+	RealmAccess    *AccessClaim            `json:"realm_access,omitempty"`
+	ResourceAccess map[string]*AccessClaim `json:"resource_access,omitempty"`
+
 	// Custom claims
-	OrganizationID    string                `json:"organization_id,omitempty"`
-	ParticipantID     string                `json:"participant_id,omitempty"`
-	Permissions       []string              `json:"permissions,omitempty"`
-	
+	OrganizationID string   `json:"organization_id,omitempty"`
+	ParticipantID  string   `json:"participant_id,omitempty"`
+	Permissions    []string `json:"permissions,omitempty"`
+
 	// Raw claims for extension
-	Raw               map[string]interface{} `json:"-"`
+	Raw map[string]interface{} `json:"-"`
 }
 
 // AccessClaim represents realm or resource access claims
@@ -573,17 +573,17 @@ func GetClaimsFromContext(ctx context.Context) *JWTClaims {
 // APISIXJWTPluginConfig generates APISIX JWT plugin configuration
 func APISIXJWTPluginConfig(config *KeycloakConfig) map[string]interface{} {
 	return map[string]interface{}{
-		"key": config.ClientID,
-		"secret": "PLACEHOLDER_FROM_VAULT",
+		"key":       config.ClientID,
+		"secret":    "PLACEHOLDER_FROM_VAULT",
 		"algorithm": "RS256",
-		"public_key": fmt.Sprintf("%s/realms/%s/protocol/openid-connect/certs", 
+		"public_key": fmt.Sprintf("%s/realms/%s/protocol/openid-connect/certs",
 			config.BaseURL, config.Realm),
 		"claims_to_verify": map[string]interface{}{
 			"exp": true,
 			"nbf": true,
 		},
 		"header": "Authorization",
-		"query": "token",
+		"query":  "token",
 		"cookie": "jwt",
 	}
 }
@@ -593,18 +593,18 @@ func APISIXKeycloakAuthzConfig(config *KeycloakConfig) map[string]interface{} {
 	return map[string]interface{}{
 		"discovery": fmt.Sprintf("%s/realms/%s/.well-known/openid-configuration",
 			config.BaseURL, config.Realm),
-		"client_id": config.ClientID,
-		"client_secret": "PLACEHOLDER_FROM_VAULT",
-		"bearer_only": true,
-		"realm": config.Realm,
+		"client_id":                          config.ClientID,
+		"client_secret":                      "PLACEHOLDER_FROM_VAULT",
+		"bearer_only":                        true,
+		"realm":                              config.Realm,
 		"introspection_endpoint_auth_method": "client_secret_post",
-		"token_endpoint_auth_method": "client_secret_post",
-		"ssl_verify": false,
-		"timeout": 10000,
-		"cache_ttl_seconds": 300,
-		"keepalive": true,
-		"keepalive_timeout": 60000,
-		"keepalive_pool": 5,
+		"token_endpoint_auth_method":         "client_secret_post",
+		"ssl_verify":                         false,
+		"timeout":                            10000,
+		"cache_ttl_seconds":                  300,
+		"keepalive":                          true,
+		"keepalive_timeout":                  60000,
+		"keepalive_pool":                     5,
 	}
 }
 

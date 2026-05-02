@@ -80,15 +80,15 @@ type CreateRateAlertParams struct {
 }
 
 type RateAlertAnalytics struct {
-	TotalAlerts       int                    `json:"totalAlerts"`
-	ActiveAlerts      int                    `json:"activeAlerts"`
-	TriggeredAlerts   int                    `json:"triggeredAlerts"`
-	ExpiredAlerts     int                    `json:"expiredAlerts"`
-	CancelledAlerts   int                    `json:"cancelledAlerts"`
-	AvgTimeToTrigger  float64                `json:"avgTimeToTrigger"`
-	ConditionCounts   map[string]int         `json:"conditionCounts"`
-	TopCurrencyPairs  []CurrencyPairCount    `json:"topCurrencyPairs"`
-	TopTargetRates    []TargetRateCount      `json:"topTargetRates"`
+	TotalAlerts      int                 `json:"totalAlerts"`
+	ActiveAlerts     int                 `json:"activeAlerts"`
+	TriggeredAlerts  int                 `json:"triggeredAlerts"`
+	ExpiredAlerts    int                 `json:"expiredAlerts"`
+	CancelledAlerts  int                 `json:"cancelledAlerts"`
+	AvgTimeToTrigger float64             `json:"avgTimeToTrigger"`
+	ConditionCounts  map[string]int      `json:"conditionCounts"`
+	TopCurrencyPairs []CurrencyPairCount `json:"topCurrencyPairs"`
+	TopTargetRates   []TargetRateCount   `json:"topTargetRates"`
 }
 
 type CurrencyPairCount struct {

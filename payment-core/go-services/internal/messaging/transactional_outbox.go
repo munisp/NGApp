@@ -47,10 +47,10 @@ type InboxMessage struct {
 }
 
 type OutboxConfig struct {
-	PollIntervalMs        int
-	BatchSize             int
-	MaxRetries            int
-	RetryDelayMs          int
+	PollIntervalMs         int
+	BatchSize              int
+	MaxRetries             int
+	RetryDelayMs           int
 	DeadLetterAfterRetries int
 }
 
@@ -69,10 +69,10 @@ type TransactionalOutbox struct {
 
 func NewTransactionalOutbox(config *OutboxConfig) *TransactionalOutbox {
 	cfg := OutboxConfig{
-		PollIntervalMs:        1000,
-		BatchSize:             100,
-		MaxRetries:            5,
-		RetryDelayMs:          5000,
+		PollIntervalMs:         1000,
+		BatchSize:              100,
+		MaxRetries:             5,
+		RetryDelayMs:           5000,
 		DeadLetterAfterRetries: 10,
 	}
 
@@ -404,13 +404,13 @@ type KafkaMessage struct {
 func CreateKafkaPublisher(sendFunc func(ctx context.Context, msg *KafkaMessage) error) Publisher {
 	return func(ctx context.Context, message *OutboxMessage) error {
 		payload := map[string]interface{}{
-			"id":            message.ID,
-			"type":          message.EventType,
+			"id":             message.ID,
+			"type":           message.EventType,
 			"aggregate_type": message.AggregateType,
-			"aggregate_id":  message.AggregateID,
-			"payload":       message.Payload,
-			"timestamp":     message.CreatedAt.Format(time.RFC3339),
-			"metadata":      message.Metadata,
+			"aggregate_id":   message.AggregateID,
+			"payload":        message.Payload,
+			"timestamp":      message.CreatedAt.Format(time.RFC3339),
+			"metadata":       message.Metadata,
 		}
 
 		value, err := json.Marshal(payload)

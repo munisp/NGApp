@@ -39,7 +39,7 @@ func (p *PostgresEncryption) EncryptColumn(ctx context.Context, value interface{
 	if err != nil {
 		return "", fmt.Errorf("failed to serialize value: %w", err)
 	}
-	
+
 	return p.fieldEncryptor.EncryptPII(ctx, string(jsonBytes), tableName, columnName, recordID)
 }
 
@@ -49,16 +49,16 @@ func (p *PostgresEncryption) DecryptColumn(ctx context.Context, encryptedValue s
 	if err != nil {
 		return err
 	}
-	
+
 	return json.Unmarshal([]byte(decrypted), target)
 }
 
 // EncryptedColumnConfig defines which columns should be encrypted
 type EncryptedColumnConfig struct {
-	TableName   string
-	ColumnName  string
-	DataType    string // pii, sensitive, financial
-	Searchable  bool   // If true, use deterministic encryption
+	TableName  string
+	ColumnName string
+	DataType   string // pii, sensitive, financial
+	Searchable bool   // If true, use deterministic encryption
 }
 
 // DefaultEncryptedColumns returns the default columns to encrypt
@@ -70,25 +70,25 @@ func DefaultEncryptedColumns() []EncryptedColumnConfig {
 		{TableName: "customers", ColumnName: "national_id", DataType: "pii", Searchable: true},
 		{TableName: "customers", ColumnName: "date_of_birth", DataType: "pii", Searchable: false},
 		{TableName: "customers", ColumnName: "address", DataType: "pii", Searchable: false},
-		
+
 		// KYC Documents
 		{TableName: "kyc_documents", ColumnName: "document_number", DataType: "pii", Searchable: true},
 		{TableName: "kyc_documents", ColumnName: "document_data", DataType: "pii", Searchable: false},
-		
+
 		// Bank Accounts
 		{TableName: "bank_accounts", ColumnName: "account_number", DataType: "financial", Searchable: true},
 		{TableName: "bank_accounts", ColumnName: "routing_number", DataType: "financial", Searchable: true},
 		{TableName: "bank_accounts", ColumnName: "iban", DataType: "financial", Searchable: true},
-		
+
 		// Cards
 		{TableName: "cards", ColumnName: "card_number", DataType: "financial", Searchable: false},
 		{TableName: "cards", ColumnName: "cvv", DataType: "sensitive", Searchable: false},
 		{TableName: "cards", ColumnName: "expiry", DataType: "financial", Searchable: false},
-		
+
 		// API Tokens
 		{TableName: "api_tokens", ColumnName: "token_hash", DataType: "sensitive", Searchable: true},
 		{TableName: "api_tokens", ColumnName: "secret", DataType: "sensitive", Searchable: false},
-		
+
 		// Webhook Secrets
 		{TableName: "webhooks", ColumnName: "secret", DataType: "sensitive", Searchable: false},
 	}
@@ -112,7 +112,7 @@ func (t *TigerBeetleEncryption) EncryptUserData(ctx context.Context, userData []
 	if err != nil {
 		return nil, err
 	}
-	
+
 	// TigerBeetle user_data is 128 bits, so we need to store encrypted data separately
 	// and use a reference in the user_data field
 	return encrypted.Ciphertext, nil
@@ -125,7 +125,7 @@ func (t *TigerBeetleEncryption) DecryptUserData(ctx context.Context, encryptedDa
 		Ciphertext: encryptedData,
 		// Other fields would be retrieved from metadata store
 	}
-	
+
 	return t.service.Decrypt(ctx, encrypted, "tigerbeetle", transferID)
 }
 
@@ -148,7 +148,7 @@ func (k *KafkaEncryption) EncryptMessage(ctx context.Context, message []byte, to
 	if err != nil {
 		return nil, err
 	}
-	
+
 	// Serialize encrypted data for Kafka
 	return json.Marshal(encrypted)
 }
@@ -159,7 +159,7 @@ func (k *KafkaEncryption) DecryptMessage(ctx context.Context, encryptedMessage [
 	if err := json.Unmarshal(encryptedMessage, &encrypted); err != nil {
 		return nil, fmt.Errorf("failed to deserialize encrypted message: %w", err)
 	}
-	
+
 	resourceID := fmt.Sprintf("%s:%d:%d", topic, partition, offset)
 	return k.service.Decrypt(ctx, &encrypted, "kafka", resourceID)
 }
@@ -195,7 +195,7 @@ func (r *RedisEncryption) EncryptValue(ctx context.Context, value []byte, key st
 	if err != nil {
 		return nil, err
 	}
-	
+
 	return json.Marshal(encrypted)
 }
 
@@ -205,7 +205,7 @@ func (r *RedisEncryption) DecryptValue(ctx context.Context, encryptedValue []byt
 	if err := json.Unmarshal(encryptedValue, &encrypted); err != nil {
 		return nil, fmt.Errorf("failed to deserialize encrypted value: %w", err)
 	}
-	
+
 	return r.service.Decrypt(ctx, &encrypted, "redis", key)
 }
 
@@ -237,9 +237,9 @@ func NewRustFSEncryption(service *EncryptionAtRestService, sseKey []byte) *RustF
 
 // SSEConfig returns Server-Side Encryption configuration for RustFS
 type SSEConfig struct {
-	Algorithm    string // AES256, aws:kms
-	KeyID        string // KMS key ID if using KMS
-	CustomerKey  string // Base64-encoded customer key for SSE-C
+	Algorithm      string // AES256, aws:kms
+	KeyID          string // KMS key ID if using KMS
+	CustomerKey    string // Base64-encoded customer key for SSE-C
 	CustomerKeyMD5 string // MD5 of customer key for SSE-C
 }
 
@@ -251,11 +251,11 @@ func (r *RustFSEncryption) GetSSEConfig() *SSEConfig {
 			Algorithm: "AES256",
 		}
 	}
-	
+
 	// Use customer-provided key (SSE-C)
 	return &SSEConfig{
-		Algorithm:   "AES256",
-		CustomerKey: base64.StdEncoding.EncodeToString(r.sseKey),
+		Algorithm:      "AES256",
+		CustomerKey:    base64.StdEncoding.EncodeToString(r.sseKey),
 		CustomerKeyMD5: computeMD5(r.sseKey),
 	}
 }
@@ -267,7 +267,7 @@ func (r *RustFSEncryption) EncryptObject(ctx context.Context, data []byte, bucke
 	if err != nil {
 		return nil, nil, err
 	}
-	
+
 	// Store encryption metadata in object metadata
 	metadata := map[string]string{
 		"x-amz-meta-encryption-algorithm": encrypted.Algorithm,
@@ -276,7 +276,7 @@ func (r *RustFSEncryption) EncryptObject(ctx context.Context, data []byte, bucke
 		"x-amz-meta-encrypted-data-key":   base64.StdEncoding.EncodeToString(encrypted.EncryptedDataKey),
 		"x-amz-meta-encryption-version":   fmt.Sprintf("%d", encrypted.Version),
 	}
-	
+
 	return encrypted.Ciphertext, metadata, nil
 }
 
@@ -285,10 +285,10 @@ func (r *RustFSEncryption) DecryptObject(ctx context.Context, data []byte, metad
 	// Reconstruct encrypted data from metadata
 	nonce, _ := base64.StdEncoding.DecodeString(metadata["x-amz-meta-encryption-nonce"])
 	encryptedKey, _ := base64.StdEncoding.DecodeString(metadata["x-amz-meta-encrypted-data-key"])
-	
+
 	var version int
 	fmt.Sscanf(metadata["x-amz-meta-encryption-version"], "%d", &version)
-	
+
 	encrypted := &EncryptedData{
 		Ciphertext:       data,
 		Nonce:            nonce,
@@ -297,7 +297,7 @@ func (r *RustFSEncryption) DecryptObject(ctx context.Context, data []byte, metad
 		Algorithm:        metadata["x-amz-meta-encryption-algorithm"],
 		Version:          version,
 	}
-	
+
 	resourceID := fmt.Sprintf("%s/%s", bucket, key)
 	return r.service.Decrypt(ctx, encrypted, "rustfs", resourceID)
 }
@@ -339,7 +339,7 @@ func (b *BackupEncryption) EncryptBackup(ctx context.Context, data []byte, backu
 	if err != nil {
 		return nil, nil, err
 	}
-	
+
 	metadata := &BackupMetadata{
 		BackupID:         backupID,
 		SourceDataStore:  sourceDataStore,
@@ -350,7 +350,7 @@ func (b *BackupEncryption) EncryptBackup(ctx context.Context, data []byte, backu
 		Nonce:            base64.StdEncoding.EncodeToString(encrypted.Nonce),
 		Checksum:         computeChecksum(encrypted.Ciphertext),
 	}
-	
+
 	return encrypted.Ciphertext, metadata, nil
 }
 
@@ -360,10 +360,10 @@ func (b *BackupEncryption) DecryptBackup(ctx context.Context, data []byte, metad
 	if computeChecksum(data) != metadata.Checksum {
 		return nil, fmt.Errorf("backup checksum mismatch")
 	}
-	
+
 	nonce, _ := base64.StdEncoding.DecodeString(metadata.Nonce)
 	encryptedKey, _ := base64.StdEncoding.DecodeString(metadata.EncryptedDataKey)
-	
+
 	encrypted := &EncryptedData{
 		Ciphertext:       data,
 		Nonce:            nonce,
@@ -371,7 +371,7 @@ func (b *BackupEncryption) DecryptBackup(ctx context.Context, data []byte, metad
 		EncryptedDataKey: encryptedKey,
 		Algorithm:        metadata.Algorithm,
 	}
-	
+
 	resourceID := fmt.Sprintf("backup:%s:%s", metadata.SourceDataStore, metadata.BackupID)
 	return b.service.Decrypt(ctx, encrypted, "backup", resourceID)
 }
@@ -398,10 +398,10 @@ type KubernetesSecretsEncryption struct {
 
 // EncryptionProvider represents a Kubernetes encryption provider
 type EncryptionProvider struct {
-	Name      string
-	Type      string // aescbc, aesgcm, kms, secretbox
-	KeyID     string
-	Endpoint  string // For KMS provider
+	Name     string
+	Type     string // aescbc, aesgcm, kms, secretbox
+	KeyID    string
+	Endpoint string // For KMS provider
 }
 
 // NewKubernetesSecretsEncryption creates a new K8s secrets encryption config

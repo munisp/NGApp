@@ -26,19 +26,19 @@ type Action string
 
 const (
 	// Authentication actions
-	ActionLogin           Action = "LOGIN"
-	ActionLogout          Action = "LOGOUT"
-	ActionLoginFailed     Action = "LOGIN_FAILED"
-	Action2FAVerified     Action = "2FA_VERIFIED"
-	Action2FAFailed       Action = "2FA_FAILED"
+	ActionLogin       Action = "LOGIN"
+	ActionLogout      Action = "LOGOUT"
+	ActionLoginFailed Action = "LOGIN_FAILED"
+	Action2FAVerified Action = "2FA_VERIFIED"
+	Action2FAFailed   Action = "2FA_FAILED"
 
 	// KYC/KYB actions
-	ActionKYCInitiated    Action = "KYC_INITIATED"
-	ActionKYCApproved     Action = "KYC_APPROVED"
-	ActionKYCRejected     Action = "KYC_REJECTED"
-	ActionKYBInitiated    Action = "KYB_INITIATED"
-	ActionKYBApproved     Action = "KYB_APPROVED"
-	ActionKYBRejected     Action = "KYB_REJECTED"
+	ActionKYCInitiated Action = "KYC_INITIATED"
+	ActionKYCApproved  Action = "KYC_APPROVED"
+	ActionKYCRejected  Action = "KYC_REJECTED"
+	ActionKYBInitiated Action = "KYB_INITIATED"
+	ActionKYBApproved  Action = "KYB_APPROVED"
+	ActionKYBRejected  Action = "KYB_REJECTED"
 
 	// Provisioning actions
 	ActionProvisioningStarted   Action = "PROVISIONING_STARTED"
@@ -87,18 +87,18 @@ const (
 type Resource string
 
 const (
-	ResourceUser              Resource = "USER"
-	ResourceParticipant       Resource = "PARTICIPANT"
-	ResourceTransaction       Resource = "TRANSACTION"
-	ResourceKYCCase           Resource = "KYC_CASE"
-	ResourceKYBCase           Resource = "KYB_CASE"
-	ResourceProvisioningSaga  Resource = "PROVISIONING_SAGA"
-	ResourceComplianceReport  Resource = "COMPLIANCE_REPORT"
-	ResourceDispute           Resource = "DISPUTE"
-	ResourceRefund            Resource = "REFUND"
-	ResourceAPIKey            Resource = "API_KEY"
-	ResourceWebhook           Resource = "WEBHOOK"
-	ResourceSettings          Resource = "SETTINGS"
+	ResourceUser             Resource = "USER"
+	ResourceParticipant      Resource = "PARTICIPANT"
+	ResourceTransaction      Resource = "TRANSACTION"
+	ResourceKYCCase          Resource = "KYC_CASE"
+	ResourceKYBCase          Resource = "KYB_CASE"
+	ResourceProvisioningSaga Resource = "PROVISIONING_SAGA"
+	ResourceComplianceReport Resource = "COMPLIANCE_REPORT"
+	ResourceDispute          Resource = "DISPUTE"
+	ResourceRefund           Resource = "REFUND"
+	ResourceAPIKey           Resource = "API_KEY"
+	ResourceWebhook          Resource = "WEBHOOK"
+	ResourceSettings         Resource = "SETTINGS"
 )
 
 // AuditEntry represents a single audit log entry
@@ -319,21 +319,21 @@ func sanitizeDetails(details map[string]interface{}) map[string]interface{} {
 
 	sanitized := make(map[string]interface{})
 	sensitiveKeys := map[string]bool{
-		"password":      true,
-		"secret":        true,
-		"token":         true,
-		"api_key":       true,
-		"apiKey":        true,
-		"api_secret":    true,
-		"apiSecret":     true,
-		"private_key":   true,
-		"privateKey":    true,
-		"credit_card":   true,
-		"creditCard":    true,
-		"card_number":   true,
-		"cardNumber":    true,
-		"cvv":           true,
-		"ssn":           true,
+		"password":        true,
+		"secret":          true,
+		"token":           true,
+		"api_key":         true,
+		"apiKey":          true,
+		"api_secret":      true,
+		"apiSecret":       true,
+		"private_key":     true,
+		"privateKey":      true,
+		"credit_card":     true,
+		"creditCard":      true,
+		"card_number":     true,
+		"cardNumber":      true,
+		"cvv":             true,
+		"ssn":             true,
 		"social_security": true,
 	}
 

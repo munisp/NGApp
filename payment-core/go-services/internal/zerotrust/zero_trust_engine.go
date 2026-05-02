@@ -17,113 +17,113 @@ import (
 type ZeroTrustEngine struct {
 	// Policy Decision Point
 	pdp *PolicyDecisionPoint
-	
+
 	// Device Trust Scorer
 	deviceTrust *DeviceTrustScorer
-	
+
 	// Session Manager
 	sessions *SessionManager
-	
+
 	// Identity Verifier
 	identity *IdentityVerifier
-	
+
 	// Micro-segmentation rules
 	segmentation *MicroSegmentation
-	
+
 	// Continuous validation
 	validator *ContinuousValidator
-	
+
 	// Audit logger
 	auditLog AuditLogger
-	
+
 	// Configuration
 	config ZeroTrustConfig
-	
+
 	mu sync.RWMutex
 }
 
 // ZeroTrustConfig configures the Zero Trust engine
 type ZeroTrustConfig struct {
 	// Identity verification
-	RequireMFA                bool
-	MFAGracePeriod           time.Duration
-	TokenMaxAge              time.Duration
-	SessionTimeout           time.Duration
-	
+	RequireMFA     bool
+	MFAGracePeriod time.Duration
+	TokenMaxAge    time.Duration
+	SessionTimeout time.Duration
+
 	// Device trust
 	MinDeviceTrustScore      float64
 	RequireDeviceAttestation bool
-	
+
 	// Access control
-	DefaultDeny              bool
-	RequireJustification     bool
-	
+	DefaultDeny          bool
+	RequireJustification bool
+
 	// Continuous validation
-	RevalidationInterval     time.Duration
-	AnomalyThreshold         float64
+	RevalidationInterval time.Duration
+	AnomalyThreshold     float64
 }
 
 // DefaultZeroTrustConfig returns secure defaults
 func DefaultZeroTrustConfig() ZeroTrustConfig {
 	return ZeroTrustConfig{
 		RequireMFA:               true,
-		MFAGracePeriod:          5 * time.Minute,
-		TokenMaxAge:             15 * time.Minute,
-		SessionTimeout:          30 * time.Minute,
-		MinDeviceTrustScore:     0.7,
+		MFAGracePeriod:           5 * time.Minute,
+		TokenMaxAge:              15 * time.Minute,
+		SessionTimeout:           30 * time.Minute,
+		MinDeviceTrustScore:      0.7,
 		RequireDeviceAttestation: false,
-		DefaultDeny:             true,
-		RequireJustification:    false,
-		RevalidationInterval:    5 * time.Minute,
-		AnomalyThreshold:        0.8,
+		DefaultDeny:              true,
+		RequireJustification:     false,
+		RevalidationInterval:     5 * time.Minute,
+		AnomalyThreshold:         0.8,
 	}
 }
 
 // AccessRequest represents a request for resource access
 type AccessRequest struct {
-	RequestID     string                 `json:"request_id"`
-	Subject       Subject                `json:"subject"`
-	Resource      Resource               `json:"resource"`
-	Action        string                 `json:"action"`
-	Context       AccessContext          `json:"context"`
-	Timestamp     time.Time              `json:"timestamp"`
-	Justification string                 `json:"justification,omitempty"`
+	RequestID     string        `json:"request_id"`
+	Subject       Subject       `json:"subject"`
+	Resource      Resource      `json:"resource"`
+	Action        string        `json:"action"`
+	Context       AccessContext `json:"context"`
+	Timestamp     time.Time     `json:"timestamp"`
+	Justification string        `json:"justification,omitempty"`
 }
 
 // Subject represents the entity requesting access
 type Subject struct {
-	ID            string            `json:"id"`
-	Type          string            `json:"type"` // user, service, device
-	Email         string            `json:"email,omitempty"`
-	Roles         []string          `json:"roles"`
-	Groups        []string          `json:"groups"`
-	Attributes    map[string]string `json:"attributes"`
-	AuthMethod    string            `json:"auth_method"`
-	AuthTime      time.Time         `json:"auth_time"`
-	MFAVerified   bool              `json:"mfa_verified"`
-	SessionID     string            `json:"session_id"`
+	ID          string            `json:"id"`
+	Type        string            `json:"type"` // user, service, device
+	Email       string            `json:"email,omitempty"`
+	Roles       []string          `json:"roles"`
+	Groups      []string          `json:"groups"`
+	Attributes  map[string]string `json:"attributes"`
+	AuthMethod  string            `json:"auth_method"`
+	AuthTime    time.Time         `json:"auth_time"`
+	MFAVerified bool              `json:"mfa_verified"`
+	SessionID   string            `json:"session_id"`
 }
 
 // Resource represents the resource being accessed
 type Resource struct {
-	Type       string            `json:"type"`
-	ID         string            `json:"id"`
-	Owner      string            `json:"owner"`
-	Namespace  string            `json:"namespace"`
-	Attributes map[string]string `json:"attributes"`
-	Sensitivity string           `json:"sensitivity"` // public, internal, confidential, restricted
+	Type        string            `json:"type"`
+	ID          string            `json:"id"`
+	Owner       string            `json:"owner"`
+	Namespace   string            `json:"namespace"`
+	Attributes  map[string]string `json:"attributes"`
+	Sensitivity string            `json:"sensitivity"` // public, internal, confidential, restricted
 }
 
 // AccessContext provides contextual information for access decisions
 type AccessContext struct {
-	IPAddress      string            `json:"ip_address"`
-	UserAgent      string            `json:"user_agent"`
-	DeviceID       string            `json:"device_id"`
-	DeviceType     string            `json:"device_type"`
-	GeoLocation    GeoLocation       `json:"geo_location"`
-	NetworkZone    string            `json:"network_zone"`
-	RiskSignals    []RiskSignal      `json:"risk_signals"`
-	Headers        map[string]string `json:"headers"`
+	IPAddress   string            `json:"ip_address"`
+	UserAgent   string            `json:"user_agent"`
+	DeviceID    string            `json:"device_id"`
+	DeviceType  string            `json:"device_type"`
+	GeoLocation GeoLocation       `json:"geo_location"`
+	NetworkZone string            `json:"network_zone"`
+	RiskSignals []RiskSignal      `json:"risk_signals"`
+	Headers     map[string]string `json:"headers"`
 }
 
 // GeoLocation represents geographic location
@@ -137,33 +137,33 @@ type GeoLocation struct {
 
 // RiskSignal represents a risk indicator
 type RiskSignal struct {
-	Type       string  `json:"type"`
-	Severity   string  `json:"severity"`
-	Score      float64 `json:"score"`
-	Details    string  `json:"details"`
+	Type       string    `json:"type"`
+	Severity   string    `json:"severity"`
+	Score      float64   `json:"score"`
+	Details    string    `json:"details"`
 	DetectedAt time.Time `json:"detected_at"`
 }
 
 // AccessDecision represents the result of an access request evaluation
 type AccessDecision struct {
-	RequestID      string            `json:"request_id"`
-	Decision       string            `json:"decision"` // allow, deny, step_up
-	Reason         string            `json:"reason"`
-	Conditions     []string          `json:"conditions,omitempty"`
+	RequestID      string             `json:"request_id"`
+	Decision       string             `json:"decision"` // allow, deny, step_up
+	Reason         string             `json:"reason"`
+	Conditions     []string           `json:"conditions,omitempty"`
 	StepUpRequired *StepUpRequirement `json:"step_up_required,omitempty"`
-	ValidUntil     time.Time         `json:"valid_until"`
-	AuditID        string            `json:"audit_id"`
-	PolicyMatched  string            `json:"policy_matched"`
-	TrustScore     float64           `json:"trust_score"`
-	RiskScore      float64           `json:"risk_score"`
+	ValidUntil     time.Time          `json:"valid_until"`
+	AuditID        string             `json:"audit_id"`
+	PolicyMatched  string             `json:"policy_matched"`
+	TrustScore     float64            `json:"trust_score"`
+	RiskScore      float64            `json:"risk_score"`
 }
 
 // StepUpRequirement specifies additional authentication needed
 type StepUpRequirement struct {
-	Type        string   `json:"type"` // mfa, reauthenticate, approval
-	Methods     []string `json:"methods"`
-	Reason      string   `json:"reason"`
-	ExpiresIn   time.Duration `json:"expires_in"`
+	Type      string        `json:"type"` // mfa, reauthenticate, approval
+	Methods   []string      `json:"methods"`
+	Reason    string        `json:"reason"`
+	ExpiresIn time.Duration `json:"expires_in"`
 }
 
 // AuditLogger interface for audit logging
@@ -189,7 +189,7 @@ func NewZeroTrustEngine(config ZeroTrustConfig, auditLog AuditLogger) *ZeroTrust
 func (e *ZeroTrustEngine) Evaluate(ctx context.Context, request *AccessRequest) (*AccessDecision, error) {
 	e.mu.RLock()
 	defer e.mu.RUnlock()
-	
+
 	// Step 1: Verify identity
 	identityResult, err := e.identity.Verify(ctx, &request.Subject)
 	if err != nil {
@@ -198,45 +198,45 @@ func (e *ZeroTrustEngine) Evaluate(ctx context.Context, request *AccessRequest) 
 	if !identityResult.Valid {
 		return e.denyAccess(request, "identity_invalid", identityResult.Reason)
 	}
-	
+
 	// Step 2: Check MFA if required
 	if e.config.RequireMFA && !request.Subject.MFAVerified {
 		if time.Since(request.Subject.AuthTime) > e.config.MFAGracePeriod {
 			return e.stepUpRequired(request, "mfa_required", []string{"totp", "webauthn", "sms"})
 		}
 	}
-	
+
 	// Step 3: Evaluate device trust
 	deviceScore := e.deviceTrust.Score(ctx, &request.Context)
 	if deviceScore < e.config.MinDeviceTrustScore {
-		return e.denyAccess(request, "device_trust_insufficient", 
+		return e.denyAccess(request, "device_trust_insufficient",
 			fmt.Sprintf("device trust score %.2f below threshold %.2f", deviceScore, e.config.MinDeviceTrustScore))
 	}
-	
+
 	// Step 4: Check micro-segmentation rules
 	segmentAllowed := e.segmentation.IsAllowed(request.Context.NetworkZone, request.Resource.Namespace)
 	if !segmentAllowed {
-		return e.denyAccess(request, "network_segment_denied", 
+		return e.denyAccess(request, "network_segment_denied",
 			fmt.Sprintf("access from %s to %s not allowed", request.Context.NetworkZone, request.Resource.Namespace))
 	}
-	
+
 	// Step 5: Evaluate access policy
 	policyDecision := e.pdp.Evaluate(ctx, request)
 	if policyDecision.Decision == "deny" {
 		return e.denyAccess(request, policyDecision.PolicyID, policyDecision.Reason)
 	}
-	
+
 	// Step 6: Calculate risk score
 	riskScore := e.calculateRiskScore(request, deviceScore)
 	if riskScore > e.config.AnomalyThreshold {
 		return e.stepUpRequired(request, "high_risk_detected", []string{"reauthenticate", "approval"})
 	}
-	
+
 	// Step 7: Check continuous validation
 	if !e.validator.IsValid(request.Subject.SessionID) {
 		return e.stepUpRequired(request, "session_revalidation_required", []string{"reauthenticate"})
 	}
-	
+
 	// Access granted
 	decision := &AccessDecision{
 		RequestID:     request.RequestID,
@@ -247,32 +247,32 @@ func (e *ZeroTrustEngine) Evaluate(ctx context.Context, request *AccessRequest) 
 		TrustScore:    deviceScore,
 		RiskScore:     riskScore,
 	}
-	
+
 	// Log the decision
 	if e.auditLog != nil {
 		decision.AuditID = e.generateAuditID(request)
 		_ = e.auditLog.LogAccessDecision(ctx, request, decision)
 	}
-	
+
 	return decision, nil
 }
 
 // denyAccess creates a deny decision
 func (e *ZeroTrustEngine) denyAccess(request *AccessRequest, reason, details string) (*AccessDecision, error) {
 	decision := &AccessDecision{
-		RequestID:     request.RequestID,
-		Decision:      "deny",
-		Reason:        fmt.Sprintf("%s: %s", reason, details),
-		ValidUntil:    time.Now(),
-		TrustScore:    0,
-		RiskScore:     1.0,
+		RequestID:  request.RequestID,
+		Decision:   "deny",
+		Reason:     fmt.Sprintf("%s: %s", reason, details),
+		ValidUntil: time.Now(),
+		TrustScore: 0,
+		RiskScore:  1.0,
 	}
-	
+
 	if e.auditLog != nil {
 		decision.AuditID = e.generateAuditID(request)
 		_ = e.auditLog.LogAccessDecision(context.Background(), request, decision)
 	}
-	
+
 	return decision, nil
 }
 
@@ -290,22 +290,22 @@ func (e *ZeroTrustEngine) stepUpRequired(request *AccessRequest, reason string, 
 		},
 		ValidUntil: time.Now(),
 	}
-	
+
 	if e.auditLog != nil {
 		decision.AuditID = e.generateAuditID(request)
 		_ = e.auditLog.LogAccessDecision(context.Background(), request, decision)
 	}
-	
+
 	return decision, nil
 }
 
 // calculateRiskScore calculates overall risk score
 func (e *ZeroTrustEngine) calculateRiskScore(request *AccessRequest, deviceScore float64) float64 {
 	var riskScore float64
-	
+
 	// Base risk from device trust (inverse)
 	riskScore += (1 - deviceScore) * 0.3
-	
+
 	// Risk from authentication age
 	authAge := time.Since(request.Subject.AuthTime)
 	if authAge > time.Hour {
@@ -313,7 +313,7 @@ func (e *ZeroTrustEngine) calculateRiskScore(request *AccessRequest, deviceScore
 	} else if authAge > 30*time.Minute {
 		riskScore += 0.1
 	}
-	
+
 	// Risk from resource sensitivity
 	switch request.Resource.Sensitivity {
 	case "restricted":
@@ -321,17 +321,17 @@ func (e *ZeroTrustEngine) calculateRiskScore(request *AccessRequest, deviceScore
 	case "confidential":
 		riskScore += 0.1
 	}
-	
+
 	// Risk from context signals
 	for _, signal := range request.Context.RiskSignals {
 		riskScore += signal.Score * 0.1
 	}
-	
+
 	// Cap at 1.0
 	if riskScore > 1.0 {
 		riskScore = 1.0
 	}
-	
+
 	return riskScore
 }
 
@@ -347,14 +347,14 @@ func (e *ZeroTrustEngine) Middleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Extract access request from HTTP request
 		request := e.extractAccessRequest(r)
-		
+
 		// Evaluate access
 		decision, err := e.Evaluate(r.Context(), request)
 		if err != nil {
 			http.Error(w, "Access evaluation failed", http.StatusInternalServerError)
 			return
 		}
-		
+
 		// Handle decision
 		switch decision.Decision {
 		case "allow":
@@ -376,13 +376,13 @@ func (e *ZeroTrustEngine) Middleware(next http.Handler) http.Handler {
 func (e *ZeroTrustEngine) extractAccessRequest(r *http.Request) *AccessRequest {
 	// Extract subject from JWT/session
 	subject := e.extractSubject(r)
-	
+
 	// Extract resource from path
 	resource := e.extractResource(r)
-	
+
 	// Extract context
 	ctx := e.extractContext(r)
-	
+
 	return &AccessRequest{
 		RequestID: r.Header.Get("X-Request-ID"),
 		Subject:   subject,
@@ -397,14 +397,14 @@ func (e *ZeroTrustEngine) extractAccessRequest(r *http.Request) *AccessRequest {
 func (e *ZeroTrustEngine) extractSubject(r *http.Request) Subject {
 	// In production, this would parse JWT claims
 	return Subject{
-		ID:         r.Header.Get("X-User-ID"),
-		Type:       "user",
-		Email:      r.Header.Get("X-User-Email"),
-		Roles:      strings.Split(r.Header.Get("X-User-Roles"), ","),
-		Groups:     strings.Split(r.Header.Get("X-User-Groups"), ","),
-		AuthMethod: r.Header.Get("X-Auth-Method"),
+		ID:          r.Header.Get("X-User-ID"),
+		Type:        "user",
+		Email:       r.Header.Get("X-User-Email"),
+		Roles:       strings.Split(r.Header.Get("X-User-Roles"), ","),
+		Groups:      strings.Split(r.Header.Get("X-User-Groups"), ","),
+		AuthMethod:  r.Header.Get("X-Auth-Method"),
 		MFAVerified: r.Header.Get("X-MFA-Verified") == "true",
-		SessionID:  r.Header.Get("X-Session-ID"),
+		SessionID:   r.Header.Get("X-Session-ID"),
 	}
 }
 
@@ -413,12 +413,12 @@ func (e *ZeroTrustEngine) extractResource(r *http.Request) Resource {
 	parts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
 	resourceType := "unknown"
 	resourceID := ""
-	
+
 	if len(parts) >= 2 {
 		resourceType = parts[0]
 		resourceID = parts[1]
 	}
-	
+
 	return Resource{
 		Type:        resourceType,
 		ID:          resourceID,
@@ -430,7 +430,7 @@ func (e *ZeroTrustEngine) extractResource(r *http.Request) Resource {
 // extractContext extracts context from request
 func (e *ZeroTrustEngine) extractContext(r *http.Request) AccessContext {
 	ip, _, _ := net.SplitHostPort(r.RemoteAddr)
-	
+
 	return AccessContext{
 		IPAddress:   ip,
 		UserAgent:   r.UserAgent(),
@@ -460,14 +460,14 @@ type PolicyDecisionPoint struct {
 
 // AccessPolicy represents an access control policy
 type AccessPolicy struct {
-	ID          string
-	Name        string
-	Priority    int
-	Subjects    []string // subject patterns
-	Resources   []string // resource patterns
-	Actions     []string
-	Effect      string // allow, deny
-	Conditions  []PolicyCondition
+	ID         string
+	Name       string
+	Priority   int
+	Subjects   []string // subject patterns
+	Resources  []string // resource patterns
+	Actions    []string
+	Effect     string // allow, deny
+	Conditions []PolicyCondition
 }
 
 // PolicyCondition represents a policy condition
@@ -503,7 +503,7 @@ func NewPolicyDecisionPoint() *PolicyDecisionPoint {
 func (p *PolicyDecisionPoint) Evaluate(ctx context.Context, request *AccessRequest) PolicyResult {
 	p.mu.RLock()
 	defer p.mu.RUnlock()
-	
+
 	// Evaluate policies in priority order
 	for _, policy := range p.policies {
 		if p.matchesPolicy(&policy, request) {
@@ -514,7 +514,7 @@ func (p *PolicyDecisionPoint) Evaluate(ctx context.Context, request *AccessReque
 			}
 		}
 	}
-	
+
 	return PolicyResult{
 		Decision: "deny",
 		PolicyID: "default-deny",
@@ -528,8 +528,8 @@ func (p *PolicyDecisionPoint) matchesPolicy(policy *AccessPolicy, request *Acces
 	if len(policy.Subjects) > 0 {
 		matched := false
 		for _, pattern := range policy.Subjects {
-			if matchPattern(pattern, request.Subject.ID) || 
-			   containsRole(request.Subject.Roles, pattern) {
+			if matchPattern(pattern, request.Subject.ID) ||
+				containsRole(request.Subject.Roles, pattern) {
 				matched = true
 				break
 			}
@@ -538,7 +538,7 @@ func (p *PolicyDecisionPoint) matchesPolicy(policy *AccessPolicy, request *Acces
 			return false
 		}
 	}
-	
+
 	// Check resources
 	if len(policy.Resources) > 0 {
 		matched := false
@@ -552,7 +552,7 @@ func (p *PolicyDecisionPoint) matchesPolicy(policy *AccessPolicy, request *Acces
 			return false
 		}
 	}
-	
+
 	// Check actions
 	if len(policy.Actions) > 0 {
 		matched := false
@@ -566,7 +566,7 @@ func (p *PolicyDecisionPoint) matchesPolicy(policy *AccessPolicy, request *Acces
 			return false
 		}
 	}
-	
+
 	return true
 }
 
@@ -614,14 +614,14 @@ func NewDeviceTrustScorer() *DeviceTrustScorer {
 // Score calculates device trust score
 func (d *DeviceTrustScorer) Score(ctx context.Context, accessCtx *AccessContext) float64 {
 	var score float64 = 0.5 // Base score
-	
+
 	// Check if device is known
 	d.mu.RLock()
 	if knownScore, ok := d.knownDevices[accessCtx.DeviceID]; ok {
 		score = knownScore
 	}
 	d.mu.RUnlock()
-	
+
 	// Adjust based on device type
 	switch accessCtx.DeviceType {
 	case "managed":
@@ -631,7 +631,7 @@ func (d *DeviceTrustScorer) Score(ctx context.Context, accessCtx *AccessContext)
 	case "unknown":
 		score -= 0.2
 	}
-	
+
 	// Adjust based on network zone
 	switch accessCtx.NetworkZone {
 	case "corporate":
@@ -641,7 +641,7 @@ func (d *DeviceTrustScorer) Score(ctx context.Context, accessCtx *AccessContext)
 	case "public":
 		score -= 0.1
 	}
-	
+
 	// Cap score
 	if score > 1.0 {
 		score = 1.0
@@ -649,7 +649,7 @@ func (d *DeviceTrustScorer) Score(ctx context.Context, accessCtx *AccessContext)
 	if score < 0 {
 		score = 0
 	}
-	
+
 	return score
 }
 
@@ -690,7 +690,7 @@ func NewSessionManager(timeout time.Duration) *SessionManager {
 func (s *SessionManager) CreateSession(subjectID, deviceID, ipAddress string) *Session {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	
+
 	session := &Session{
 		ID:           generateSessionID(),
 		SubjectID:    subjectID,
@@ -699,7 +699,7 @@ func (s *SessionManager) CreateSession(subjectID, deviceID, ipAddress string) *S
 		DeviceID:     deviceID,
 		IPAddress:    ipAddress,
 	}
-	
+
 	s.sessions[session.ID] = session
 	return session
 }
@@ -715,7 +715,7 @@ func (s *SessionManager) GetSession(sessionID string) *Session {
 func (s *SessionManager) UpdateActivity(sessionID string) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	
+
 	if session, ok := s.sessions[sessionID]; ok {
 		session.LastActivity = time.Now()
 	}
@@ -725,12 +725,12 @@ func (s *SessionManager) UpdateActivity(sessionID string) {
 func (s *SessionManager) IsValid(sessionID string) bool {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	
+
 	session, ok := s.sessions[sessionID]
 	if !ok {
 		return false
 	}
-	
+
 	return time.Since(session.LastActivity) < s.timeout
 }
 
@@ -763,17 +763,17 @@ func (v *IdentityVerifier) Verify(ctx context.Context, subject *Subject) (*Ident
 	if subject.ID == "" {
 		return &IdentityResult{Valid: false, Reason: "missing subject ID"}, nil
 	}
-	
+
 	// Check authentication time
 	if time.Since(subject.AuthTime) > v.config.TokenMaxAge {
 		return &IdentityResult{Valid: false, Reason: "authentication expired"}, nil
 	}
-	
+
 	// Check session
 	if subject.SessionID == "" {
 		return &IdentityResult{Valid: false, Reason: "missing session"}, nil
 	}
-	
+
 	return &IdentityResult{Valid: true}, nil
 }
 
@@ -800,18 +800,18 @@ func NewMicroSegmentation() *MicroSegmentation {
 func (m *MicroSegmentation) IsAllowed(sourceZone, destNamespace string) bool {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
-	
+
 	allowedZones, ok := m.rules[sourceZone]
 	if !ok {
 		return false
 	}
-	
+
 	for _, zone := range allowedZones {
 		if zone == "*" || zone == destNamespace {
 			return true
 		}
 	}
-	
+
 	return false
 }
 
@@ -848,11 +848,11 @@ func (v *ContinuousValidator) Validate(sessionID string) {
 func (v *ContinuousValidator) IsValid(sessionID string) bool {
 	v.mu.RLock()
 	defer v.mu.RUnlock()
-	
+
 	lastValidation, ok := v.validations[sessionID]
 	if !ok {
 		return true // First access, allow
 	}
-	
+
 	return time.Since(lastValidation) < v.interval
 }

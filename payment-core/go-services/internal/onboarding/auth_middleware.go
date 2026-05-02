@@ -18,11 +18,11 @@ import (
 
 // AuthConfig holds authentication configuration
 type AuthConfig struct {
-	KeycloakURL   string
-	Realm         string
-	ClientID      string
-	RequireAuth   bool
-	CacheTTL      time.Duration
+	KeycloakURL string
+	Realm       string
+	ClientID    string
+	RequireAuth bool
+	CacheTTL    time.Duration
 }
 
 // DefaultAuthConfig returns default auth configuration
@@ -40,21 +40,21 @@ func DefaultAuthConfig() *AuthConfig {
 type OnboardingRole string
 
 const (
-	RoleApplicant         OnboardingRole = "onboarding-applicant"
-	RoleReviewer          OnboardingRole = "onboarding-reviewer"
-	RoleTechReviewer      OnboardingRole = "onboarding-tech-reviewer"
-	RoleGovernance        OnboardingRole = "onboarding-governance"
-	RoleAdmin             OnboardingRole = "onboarding-admin"
+	RoleApplicant    OnboardingRole = "onboarding-applicant"
+	RoleReviewer     OnboardingRole = "onboarding-reviewer"
+	RoleTechReviewer OnboardingRole = "onboarding-tech-reviewer"
+	RoleGovernance   OnboardingRole = "onboarding-governance"
+	RoleAdmin        OnboardingRole = "onboarding-admin"
 )
 
 // UserContext holds authenticated user information
 type UserContext struct {
-	UserID    string
-	Username  string
-	Email     string
-	Roles     []OnboardingRole
-	Claims    map[string]interface{}
-	TokenExp  time.Time
+	UserID   string
+	Username string
+	Email    string
+	Roles    []OnboardingRole
+	Claims   map[string]interface{}
+	TokenExp time.Time
 }
 
 // HasRole checks if user has a specific role

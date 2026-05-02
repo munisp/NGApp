@@ -13,20 +13,20 @@ import (
 type UpgradeCompatibilityLayer struct {
 	// Version adapters
 	adapters map[string]VersionAdapter
-	
+
 	// Current active version
 	activeVersion string
-	
+
 	// Schema registry for API versioning
 	schemaRegistry *SchemaRegistry
-	
+
 	// Migration manager
 	migrationMgr *MigrationManager
-	
+
 	// Stats
-	requestsHandled uint64
+	requestsHandled   uint64
 	versionMismatches uint64
-	
+
 	mu sync.RWMutex
 }
 
@@ -34,16 +34,16 @@ type UpgradeCompatibilityLayer struct {
 type VersionAdapter interface {
 	// Version returns the adapter version
 	Version() string
-	
+
 	// TransformRequest transforms a request to internal format
 	TransformRequest(ctx context.Context, req interface{}) (interface{}, error)
-	
+
 	// TransformResponse transforms a response to external format
 	TransformResponse(ctx context.Context, resp interface{}) (interface{}, error)
-	
+
 	// ValidateRequest validates a request against the version schema
 	ValidateRequest(ctx context.Context, req interface{}) error
-	
+
 	// SupportedOperations returns supported operations for this version
 	SupportedOperations() []string
 }
@@ -79,14 +79,14 @@ func NewUpgradeCompatibilityLayer() *UpgradeCompatibilityLayer {
 		schemaRegistry: NewSchemaRegistry(),
 		migrationMgr:   NewMigrationManager(),
 	}
-	
+
 	// Register default adapters
 	layer.RegisterAdapter(NewV1Adapter())
 	layer.RegisterAdapter(NewV2Adapter())
-	
+
 	// Set active version
 	layer.activeVersion = "v2"
-	
+
 	return layer
 }
 
@@ -106,30 +106,30 @@ func (l *UpgradeCompatibilityLayer) HandleRequest(ctx context.Context, version s
 		return nil, fmt.Errorf("unsupported version: %s", version)
 	}
 	l.mu.RUnlock()
-	
+
 	// Validate request
 	if err := adapter.ValidateRequest(ctx, req); err != nil {
 		return nil, fmt.Errorf("validation failed: %w", err)
 	}
-	
+
 	// Transform to internal format
 	internalReq, err := adapter.TransformRequest(ctx, req)
 	if err != nil {
 		return nil, fmt.Errorf("request transformation failed: %w", err)
 	}
-	
+
 	// Process request (would call actual Mojaloop service)
 	internalResp, err := l.processRequest(ctx, operation, internalReq)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	// Transform response to external format
 	resp, err := adapter.TransformResponse(ctx, internalResp)
 	if err != nil {
 		return nil, fmt.Errorf("response transformation failed: %w", err)
 	}
-	
+
 	return resp, nil
 }
 
@@ -138,7 +138,7 @@ func (l *UpgradeCompatibilityLayer) processRequest(ctx context.Context, operatio
 	// This would call the actual Mojaloop service
 	// For now, return a placeholder
 	return map[string]interface{}{
-		"status": "success",
+		"status":    "success",
 		"operation": operation,
 	}, nil
 }
@@ -154,11 +154,11 @@ func (l *UpgradeCompatibilityLayer) GetActiveVersion() string {
 func (l *UpgradeCompatibilityLayer) SetActiveVersion(version string) error {
 	l.mu.Lock()
 	defer l.mu.Unlock()
-	
+
 	if _, ok := l.adapters[version]; !ok {
 		return fmt.Errorf("version not registered: %s", version)
 	}
-	
+
 	l.activeVersion = version
 	return nil
 }
@@ -174,7 +174,7 @@ func NewSchemaRegistry() *SchemaRegistry {
 func (r *SchemaRegistry) RegisterSchema(version, operation string, schema interface{}) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	
+
 	if r.schemas[version] == nil {
 		r.schemas[version] = make(map[string]interface{})
 	}
@@ -185,7 +185,7 @@ func (r *SchemaRegistry) RegisterSchema(version, operation string, schema interf
 func (r *SchemaRegistry) GetSchema(version, operation string) (interface{}, bool) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
-	
+
 	if ops, ok := r.schemas[version]; ok {
 		schema, ok := ops[operation]
 		return schema, ok
@@ -212,23 +212,23 @@ func (m *MigrationManager) RegisterMigration(migration Migration) {
 func (m *MigrationManager) ApplyMigrations(ctx context.Context, targetVersion string) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	
+
 	for _, migration := range m.migrations {
 		if m.applied[migration.ID] {
 			continue
 		}
-		
+
 		if migration.ToVersion == targetVersion || migration.ToVersion < targetVersion {
 			if err := migration.Up(ctx); err != nil {
 				return fmt.Errorf("migration %s failed: %w", migration.ID, err)
 			}
-			
+
 			now := time.Now()
 			migration.AppliedAt = &now
 			m.applied[migration.ID] = true
 		}
 	}
-	
+
 	return nil
 }
 
@@ -250,10 +250,10 @@ func (a *V1Adapter) TransformRequest(ctx context.Context, req interface{}) (inte
 	if !ok {
 		return nil, fmt.Errorf("invalid request format")
 	}
-	
+
 	// V1 uses different field names
 	internal := make(map[string]interface{})
-	
+
 	// Map v1 fields to internal fields
 	if transferId, ok := reqMap["transferId"]; ok {
 		internal["transfer_id"] = transferId
@@ -267,7 +267,7 @@ func (a *V1Adapter) TransformRequest(ctx context.Context, req interface{}) (inte
 	if amount, ok := reqMap["amount"]; ok {
 		internal["amount"] = amount
 	}
-	
+
 	return internal, nil
 }
 
@@ -277,9 +277,9 @@ func (a *V1Adapter) TransformResponse(ctx context.Context, resp interface{}) (in
 	if !ok {
 		return nil, fmt.Errorf("invalid response format")
 	}
-	
+
 	external := make(map[string]interface{})
-	
+
 	// Map internal fields to v1 fields
 	if transferId, ok := respMap["transfer_id"]; ok {
 		external["transferId"] = transferId
@@ -287,7 +287,7 @@ func (a *V1Adapter) TransformResponse(ctx context.Context, resp interface{}) (in
 	if status, ok := respMap["status"]; ok {
 		external["transferState"] = status
 	}
-	
+
 	return external, nil
 }
 
@@ -296,7 +296,7 @@ func (a *V1Adapter) ValidateRequest(ctx context.Context, req interface{}) error 
 	if !ok {
 		return fmt.Errorf("invalid request format")
 	}
-	
+
 	// V1 required fields
 	required := []string{"transferId", "payerFsp", "payeeFsp", "amount"}
 	for _, field := range required {
@@ -304,7 +304,7 @@ func (a *V1Adapter) ValidateRequest(ctx context.Context, req interface{}) error 
 			return fmt.Errorf("missing required field: %s", field)
 		}
 	}
-	
+
 	return nil
 }
 
@@ -347,7 +347,7 @@ func (a *V2Adapter) ValidateRequest(ctx context.Context, req interface{}) error 
 	if !ok {
 		return fmt.Errorf("invalid request format")
 	}
-	
+
 	// V2 required fields (snake_case)
 	required := []string{"transfer_id", "payer_fsp_id", "payee_fsp_id", "amount"}
 	for _, field := range required {
@@ -355,7 +355,7 @@ func (a *V2Adapter) ValidateRequest(ctx context.Context, req interface{}) error 
 			return fmt.Errorf("missing required field: %s", field)
 		}
 	}
-	
+
 	return nil
 }
 
@@ -376,12 +376,12 @@ func (a *V2Adapter) SupportedOperations() []string {
 
 // UpgradeReport generates an upgrade compatibility report
 type UpgradeReport struct {
-	CurrentVersion    string                 `json:"current_version"`
-	TargetVersion     string                 `json:"target_version"`
-	CompatibilityScore float64               `json:"compatibility_score"`
-	BreakingChanges   []BreakingChange       `json:"breaking_changes"`
-	Migrations        []MigrationInfo        `json:"migrations"`
-	Recommendations   []string               `json:"recommendations"`
+	CurrentVersion     string           `json:"current_version"`
+	TargetVersion      string           `json:"target_version"`
+	CompatibilityScore float64          `json:"compatibility_score"`
+	BreakingChanges    []BreakingChange `json:"breaking_changes"`
+	Migrations         []MigrationInfo  `json:"migrations"`
+	Recommendations    []string         `json:"recommendations"`
 }
 
 // BreakingChange represents a breaking change
@@ -402,14 +402,14 @@ type MigrationInfo struct {
 // GenerateUpgradeReport generates an upgrade compatibility report
 func (l *UpgradeCompatibilityLayer) GenerateUpgradeReport(currentVersion, targetVersion string) (*UpgradeReport, error) {
 	report := &UpgradeReport{
-		CurrentVersion:    currentVersion,
-		TargetVersion:     targetVersion,
+		CurrentVersion:     currentVersion,
+		TargetVersion:      targetVersion,
 		CompatibilityScore: 0.95, // Would be calculated based on actual analysis
-		BreakingChanges:   make([]BreakingChange, 0),
-		Migrations:        make([]MigrationInfo, 0),
-		Recommendations:   make([]string, 0),
+		BreakingChanges:    make([]BreakingChange, 0),
+		Migrations:         make([]MigrationInfo, 0),
+		Recommendations:    make([]string, 0),
 	}
-	
+
 	// Analyze breaking changes
 	if currentVersion == "v1" && targetVersion == "v2" {
 		report.BreakingChanges = append(report.BreakingChanges, BreakingChange{
@@ -418,7 +418,7 @@ func (l *UpgradeCompatibilityLayer) GenerateUpgradeReport(currentVersion, target
 			Impact:      "All API clients need to update field names",
 			Mitigation:  "Use version adapter to transform requests/responses",
 		})
-		
+
 		report.BreakingChanges = append(report.BreakingChanges, BreakingChange{
 			Type:        "NEW_REQUIRED_FIELD",
 			Description: "correlation_id is now required on all requests",
@@ -426,7 +426,7 @@ func (l *UpgradeCompatibilityLayer) GenerateUpgradeReport(currentVersion, target
 			Mitigation:  "Generate correlation_id if not provided",
 		})
 	}
-	
+
 	// List required migrations
 	l.migrationMgr.mu.RLock()
 	for _, m := range l.migrationMgr.migrations {
@@ -439,7 +439,7 @@ func (l *UpgradeCompatibilityLayer) GenerateUpgradeReport(currentVersion, target
 		}
 	}
 	l.migrationMgr.mu.RUnlock()
-	
+
 	// Add recommendations
 	report.Recommendations = []string{
 		"Run migrations in a maintenance window",
@@ -447,6 +447,6 @@ func (l *UpgradeCompatibilityLayer) GenerateUpgradeReport(currentVersion, target
 		"Keep v1 adapter active for 30 days after upgrade",
 		"Monitor error rates closely during transition",
 	}
-	
+
 	return report, nil
 }

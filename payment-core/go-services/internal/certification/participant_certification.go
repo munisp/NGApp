@@ -13,11 +13,11 @@ import (
 type ParticipantCertificationManager struct {
 	// Test suites
 	testSuites map[string]*TestSuite
-	
+
 	// Certification records
 	certifications map[string]*Certification
 	certMu         sync.RWMutex
-	
+
 	// Test runner
 	runner *TestRunner
 }
@@ -61,38 +61,38 @@ type TestStep struct {
 
 // Assertion represents a test assertion
 type Assertion struct {
-	Type     string `json:"type"` // STATUS_CODE, JSON_PATH, HEADER, RESPONSE_TIME
-	Path     string `json:"path,omitempty"`
+	Type     string      `json:"type"` // STATUS_CODE, JSON_PATH, HEADER, RESPONSE_TIME
+	Path     string      `json:"path,omitempty"`
 	Expected interface{} `json:"expected"`
-	Operator string `json:"operator"` // EQUALS, CONTAINS, GREATER_THAN, LESS_THAN
+	Operator string      `json:"operator"` // EQUALS, CONTAINS, GREATER_THAN, LESS_THAN
 }
 
 // Certification represents a participant's certification
 type Certification struct {
-	ID              string                  `json:"id"`
-	ParticipantID   string                  `json:"participant_id"`
-	ParticipantName string                  `json:"participant_name"`
-	Status          string                  `json:"status"` // PENDING, IN_PROGRESS, PASSED, FAILED, EXPIRED
-	Level           string                  `json:"level"`  // BASIC, STANDARD, ADVANCED
-	TestResults     []TestResult            `json:"test_results"`
-	StartedAt       time.Time               `json:"started_at"`
-	CompletedAt     *time.Time              `json:"completed_at,omitempty"`
-	ExpiresAt       *time.Time              `json:"expires_at,omitempty"`
-	Certificate     *Certificate            `json:"certificate,omitempty"`
-	Metadata        map[string]interface{}  `json:"metadata"`
+	ID              string                 `json:"id"`
+	ParticipantID   string                 `json:"participant_id"`
+	ParticipantName string                 `json:"participant_name"`
+	Status          string                 `json:"status"` // PENDING, IN_PROGRESS, PASSED, FAILED, EXPIRED
+	Level           string                 `json:"level"`  // BASIC, STANDARD, ADVANCED
+	TestResults     []TestResult           `json:"test_results"`
+	StartedAt       time.Time              `json:"started_at"`
+	CompletedAt     *time.Time             `json:"completed_at,omitempty"`
+	ExpiresAt       *time.Time             `json:"expires_at,omitempty"`
+	Certificate     *Certificate           `json:"certificate,omitempty"`
+	Metadata        map[string]interface{} `json:"metadata"`
 }
 
 // TestResult represents the result of a test case
 type TestResult struct {
-	TestID      string        `json:"test_id"`
-	TestName    string        `json:"test_name"`
-	Status      string        `json:"status"` // PASSED, FAILED, SKIPPED, ERROR
-	Duration    time.Duration `json:"duration"`
-	Attempts    int           `json:"attempts"`
-	Error       string        `json:"error,omitempty"`
-	Assertions  []AssertionResult `json:"assertions"`
-	Logs        []string      `json:"logs"`
-	ExecutedAt  time.Time     `json:"executed_at"`
+	TestID     string            `json:"test_id"`
+	TestName   string            `json:"test_name"`
+	Status     string            `json:"status"` // PASSED, FAILED, SKIPPED, ERROR
+	Duration   time.Duration     `json:"duration"`
+	Attempts   int               `json:"attempts"`
+	Error      string            `json:"error,omitempty"`
+	Assertions []AssertionResult `json:"assertions"`
+	Logs       []string          `json:"logs"`
+	ExecutedAt time.Time         `json:"executed_at"`
 }
 
 // AssertionResult represents the result of an assertion
@@ -123,10 +123,10 @@ func NewParticipantCertificationManager() *ParticipantCertificationManager {
 		certifications: make(map[string]*Certification),
 		runner:         NewTestRunner(),
 	}
-	
+
 	// Register default test suites
 	mgr.registerDefaultTestSuites()
-	
+
 	return mgr
 }
 
@@ -172,7 +172,7 @@ func (m *ParticipantCertificationManager) registerDefaultTestSuites() {
 			},
 		},
 	}
-	
+
 	// Transfer test suite
 	m.testSuites["transfers"] = &TestSuite{
 		ID:          "transfers",
@@ -196,10 +196,10 @@ func (m *ParticipantCertificationManager) registerDefaultTestSuites() {
 						Method: "POST",
 						Path:   "/transfers",
 						Body: map[string]interface{}{
-							"transfer_id":    "{{uuid}}",
-							"payer_fsp_id":   "{{payer_fsp}}",
-							"payee_fsp_id":   "{{payee_fsp}}",
-							"amount":         map[string]interface{}{"currency": "USD", "amount": "100.00"},
+							"transfer_id":  "{{uuid}}",
+							"payer_fsp_id": "{{payer_fsp}}",
+							"payee_fsp_id": "{{payee_fsp}}",
+							"amount":       map[string]interface{}{"currency": "USD", "amount": "100.00"},
 						},
 						SaveAs: "transfer_response",
 					},
@@ -251,7 +251,7 @@ func (m *ParticipantCertificationManager) registerDefaultTestSuites() {
 			},
 		},
 	}
-	
+
 	// Quote test suite
 	m.testSuites["quotes"] = &TestSuite{
 		ID:          "quotes",
@@ -288,7 +288,7 @@ func (m *ParticipantCertificationManager) registerDefaultTestSuites() {
 			},
 		},
 	}
-	
+
 	// Settlement test suite
 	m.testSuites["settlements"] = &TestSuite{
 		ID:          "settlements",
@@ -328,14 +328,14 @@ func (m *ParticipantCertificationManager) StartCertification(ctx context.Context
 		StartedAt:       time.Now(),
 		Metadata:        make(map[string]interface{}),
 	}
-	
+
 	m.certMu.Lock()
 	m.certifications[cert.ID] = cert
 	m.certMu.Unlock()
-	
+
 	// Run tests asynchronously
 	go m.runCertificationTests(ctx, cert)
-	
+
 	return cert, nil
 }
 
@@ -343,24 +343,24 @@ func (m *ParticipantCertificationManager) StartCertification(ctx context.Context
 func (m *ParticipantCertificationManager) runCertificationTests(ctx context.Context, cert *Certification) {
 	// Determine which test suites to run based on level
 	suitesToRun := m.getSuitesForLevel(cert.Level)
-	
+
 	allPassed := true
 	for _, suite := range suitesToRun {
 		for _, test := range suite.Tests {
 			result := m.runner.RunTest(ctx, test, cert.ParticipantID)
 			cert.TestResults = append(cert.TestResults, result)
-			
+
 			if result.Status != "PASSED" && test.Severity == "CRITICAL" {
 				allPassed = false
 			}
 		}
 	}
-	
+
 	// Update certification status
 	m.certMu.Lock()
 	now := time.Now()
 	cert.CompletedAt = &now
-	
+
 	if allPassed {
 		cert.Status = "PASSED"
 		expiresAt := now.AddDate(1, 0, 0) // 1 year validity
@@ -375,7 +375,7 @@ func (m *ParticipantCertificationManager) runCertificationTests(ctx context.Cont
 // getSuitesForLevel returns test suites for a certification level
 func (m *ParticipantCertificationManager) getSuitesForLevel(level string) []*TestSuite {
 	suites := make([]*TestSuite, 0)
-	
+
 	switch level {
 	case "BASIC":
 		suites = append(suites, m.testSuites["connectivity"])
@@ -388,7 +388,7 @@ func (m *ParticipantCertificationManager) getSuitesForLevel(level string) []*Tes
 			suites = append(suites, suite)
 		}
 	}
-	
+
 	return suites
 }
 
@@ -410,12 +410,12 @@ func (m *ParticipantCertificationManager) issueCertificate(cert *Certification) 
 func (m *ParticipantCertificationManager) GetCertification(certID string) (*Certification, error) {
 	m.certMu.RLock()
 	defer m.certMu.RUnlock()
-	
+
 	cert, ok := m.certifications[certID]
 	if !ok {
 		return nil, fmt.Errorf("certification not found: %s", certID)
 	}
-	
+
 	return cert, nil
 }
 
@@ -425,13 +425,13 @@ func (m *ParticipantCertificationManager) GetCertificationReport(certID string) 
 	if err != nil {
 		return nil, err
 	}
-	
+
 	report := &CertificationReport{
-		Certification: cert,
-		Summary:       m.generateSummary(cert),
+		Certification:   cert,
+		Summary:         m.generateSummary(cert),
 		Recommendations: m.generateRecommendations(cert),
 	}
-	
+
 	return report, nil
 }
 
@@ -444,17 +444,17 @@ type CertificationReport struct {
 
 // Summary contains test summary
 type Summary struct {
-	TotalTests   int `json:"total_tests"`
-	Passed       int `json:"passed"`
-	Failed       int `json:"failed"`
-	Skipped      int `json:"skipped"`
-	PassRate     float64 `json:"pass_rate"`
+	TotalTests int     `json:"total_tests"`
+	Passed     int     `json:"passed"`
+	Failed     int     `json:"failed"`
+	Skipped    int     `json:"skipped"`
+	PassRate   float64 `json:"pass_rate"`
 }
 
 // generateSummary generates a test summary
 func (m *ParticipantCertificationManager) generateSummary(cert *Certification) *Summary {
 	summary := &Summary{}
-	
+
 	for _, result := range cert.TestResults {
 		summary.TotalTests++
 		switch result.Status {
@@ -466,29 +466,29 @@ func (m *ParticipantCertificationManager) generateSummary(cert *Certification) *
 			summary.Skipped++
 		}
 	}
-	
+
 	if summary.TotalTests > 0 {
 		summary.PassRate = float64(summary.Passed) / float64(summary.TotalTests) * 100
 	}
-	
+
 	return summary
 }
 
 // generateRecommendations generates recommendations based on test results
 func (m *ParticipantCertificationManager) generateRecommendations(cert *Certification) []string {
 	recommendations := make([]string, 0)
-	
+
 	for _, result := range cert.TestResults {
 		if result.Status == "FAILED" {
-			recommendations = append(recommendations, 
+			recommendations = append(recommendations,
 				fmt.Sprintf("Fix failing test: %s - %s", result.TestName, result.Error))
 		}
 	}
-	
+
 	if len(recommendations) == 0 {
 		recommendations = append(recommendations, "All tests passed. Consider upgrading to a higher certification level.")
 	}
-	
+
 	return recommendations
 }
 
@@ -516,9 +516,9 @@ func (r *TestRunner) RunTest(ctx context.Context, test TestCase, participantID s
 		Logs:       make([]string, 0),
 		ExecutedAt: time.Now(),
 	}
-	
+
 	start := time.Now()
-	
+
 	// Execute test steps
 	for _, step := range test.Steps {
 		r.executeStep(ctx, step, &result)
@@ -526,16 +526,16 @@ func (r *TestRunner) RunTest(ctx context.Context, test TestCase, participantID s
 			break
 		}
 	}
-	
+
 	result.Duration = time.Since(start)
-	
+
 	return result
 }
 
 // executeStep executes a test step
 func (r *TestRunner) executeStep(ctx context.Context, step TestStep, result *TestResult) {
 	result.Logs = append(result.Logs, fmt.Sprintf("Executing step: %s", step.Name))
-	
+
 	switch step.Action {
 	case "HTTP_REQUEST":
 		// Would make actual HTTP request

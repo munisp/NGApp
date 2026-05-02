@@ -116,8 +116,8 @@ type BankAccount struct {
 }
 
 type CircleWebhookResult struct {
-	RemittanceID         string `json:"remittanceId,omitempty"`
-	Status               string `json:"status"`
+	RemittanceID           string `json:"remittanceId,omitempty"`
+	Status                 string `json:"status"`
 	ShouldUpdateRemittance bool   `json:"shouldUpdateRemittance"`
 }
 
@@ -595,8 +595,8 @@ func (s *CircleService) HandleWebhook(eventType string, data interface{}) (*Circ
 	}
 
 	return &CircleWebhookResult{
-		RemittanceID:         remittanceID,
-		Status:               status,
+		RemittanceID:           remittanceID,
+		Status:                 status,
 		ShouldUpdateRemittance: status != "unknown" && remittanceID != "",
 	}, nil
 }

@@ -333,10 +333,10 @@ type AssignmentResult struct {
 }
 
 type CertificationResult struct {
-	Passed    bool
-	TestsRun  int
+	Passed      bool
+	TestsRun    int
 	TestsPassed int
-	Failures  []string
+	Failures    []string
 }
 
 // OnboardingActivities contains all activity implementations

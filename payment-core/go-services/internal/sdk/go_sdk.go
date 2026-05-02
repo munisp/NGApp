@@ -15,28 +15,28 @@ import (
 // PaymentSwitchClient is the Go SDK for the payment switch platform
 type PaymentSwitchClient struct {
 	// Configuration
-	baseURL    string
-	apiKey     string
-	apiSecret  string
-	
+	baseURL   string
+	apiKey    string
+	apiSecret string
+
 	// HTTP client
 	httpClient *http.Client
-	
+
 	// Services
-	Transfers     *TransferService
-	Quotes        *QuoteService
-	Parties       *PartyService
-	Accounts      *AccountService
-	Settlements   *SettlementService
-	Participants  *ParticipantService
-	
+	Transfers    *TransferService
+	Quotes       *QuoteService
+	Parties      *PartyService
+	Accounts     *AccountService
+	Settlements  *SettlementService
+	Participants *ParticipantService
+
 	// Rate limiting
 	rateLimiter *RateLimiter
-	
+
 	// Retry configuration
-	maxRetries    int
-	retryBackoff  time.Duration
-	
+	maxRetries   int
+	retryBackoff time.Duration
+
 	// Request signing
 	signer RequestSigner
 }
@@ -78,11 +78,11 @@ func NewPaymentSwitchClient(config ClientConfig) *PaymentSwitchClient {
 		},
 		rateLimiter: NewRateLimiter(config.RateLimit),
 	}
-	
+
 	if config.EnableSigning {
 		client.signer = NewHMACSigner(config.APISecret)
 	}
-	
+
 	// Initialize services
 	client.Transfers = &TransferService{client: client}
 	client.Quotes = &QuoteService{client: client}
@@ -90,7 +90,7 @@ func NewPaymentSwitchClient(config ClientConfig) *PaymentSwitchClient {
 	client.Accounts = &AccountService{client: client}
 	client.Settlements = &SettlementService{client: client}
 	client.Participants = &ParticipantService{client: client}
-	
+
 	return client
 }
 
@@ -100,7 +100,7 @@ func (c *PaymentSwitchClient) doRequest(ctx context.Context, method, path string
 	if err := c.rateLimiter.Wait(ctx); err != nil {
 		return nil, fmt.Errorf("rate limit exceeded: %w", err)
 	}
-	
+
 	var bodyReader io.Reader
 	if body != nil {
 		bodyBytes, err := json.Marshal(body)
@@ -109,33 +109,33 @@ func (c *PaymentSwitchClient) doRequest(ctx context.Context, method, path string
 		}
 		bodyReader = bytes.NewReader(bodyBytes)
 	}
-	
+
 	var lastErr error
 	for attempt := 0; attempt <= c.maxRetries; attempt++ {
 		req, err := http.NewRequestWithContext(ctx, method, c.baseURL+path, bodyReader)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create request: %w", err)
 		}
-		
+
 		// Set headers
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("X-API-Key", c.apiKey)
 		req.Header.Set("X-Request-ID", generateRequestID())
-		
+
 		// Sign request
 		if c.signer != nil {
 			if err := c.signer.Sign(req); err != nil {
 				return nil, fmt.Errorf("failed to sign request: %w", err)
 			}
 		}
-		
+
 		resp, err := c.httpClient.Do(req)
 		if err != nil {
 			lastErr = err
 			time.Sleep(c.retryBackoff * time.Duration(attempt+1))
 			continue
 		}
-		
+
 		// Retry on 5xx errors
 		if resp.StatusCode >= 500 {
 			resp.Body.Close()
@@ -143,10 +143,10 @@ func (c *PaymentSwitchClient) doRequest(ctx context.Context, method, path string
 			time.Sleep(c.retryBackoff * time.Duration(attempt+1))
 			continue
 		}
-		
+
 		return resp, nil
 	}
-	
+
 	return nil, fmt.Errorf("max retries exceeded: %w", lastErr)
 }
 
@@ -157,16 +157,16 @@ type TransferService struct {
 
 // Transfer represents a transfer
 type Transfer struct {
-	ID              string                 `json:"id"`
-	PayerFSPID      string                 `json:"payer_fsp_id"`
-	PayeeFSPID      string                 `json:"payee_fsp_id"`
-	PayerPartyID    string                 `json:"payer_party_id"`
-	PayeePartyID    string                 `json:"payee_party_id"`
-	Amount          Amount                 `json:"amount"`
-	TransferState   string                 `json:"transfer_state"`
-	CompletedAt     *time.Time             `json:"completed_at,omitempty"`
-	CreatedAt       time.Time              `json:"created_at"`
-	Metadata        map[string]interface{} `json:"metadata,omitempty"`
+	ID            string                 `json:"id"`
+	PayerFSPID    string                 `json:"payer_fsp_id"`
+	PayeeFSPID    string                 `json:"payee_fsp_id"`
+	PayerPartyID  string                 `json:"payer_party_id"`
+	PayeePartyID  string                 `json:"payee_party_id"`
+	Amount        Amount                 `json:"amount"`
+	TransferState string                 `json:"transfer_state"`
+	CompletedAt   *time.Time             `json:"completed_at,omitempty"`
+	CreatedAt     time.Time              `json:"created_at"`
+	Metadata      map[string]interface{} `json:"metadata,omitempty"`
 }
 
 // Amount represents a monetary amount
@@ -193,16 +193,16 @@ func (s *TransferService) Create(ctx context.Context, req *CreateTransferRequest
 		return nil, err
 	}
 	defer resp.Body.Close()
-	
+
 	if resp.StatusCode != http.StatusCreated && resp.StatusCode != http.StatusOK {
 		return nil, parseError(resp)
 	}
-	
+
 	var transfer Transfer
 	if err := json.NewDecoder(resp.Body).Decode(&transfer); err != nil {
 		return nil, fmt.Errorf("failed to decode response: %w", err)
 	}
-	
+
 	return &transfer, nil
 }
 
@@ -213,16 +213,16 @@ func (s *TransferService) Get(ctx context.Context, transferID string) (*Transfer
 		return nil, err
 	}
 	defer resp.Body.Close()
-	
+
 	if resp.StatusCode != http.StatusOK {
 		return nil, parseError(resp)
 	}
-	
+
 	var transfer Transfer
 	if err := json.NewDecoder(resp.Body).Decode(&transfer); err != nil {
 		return nil, fmt.Errorf("failed to decode response: %w", err)
 	}
-	
+
 	return &transfer, nil
 }
 
@@ -232,22 +232,22 @@ func (s *TransferService) List(ctx context.Context, opts *ListOptions) ([]*Trans
 	if opts != nil {
 		path += opts.ToQueryString()
 	}
-	
+
 	resp, err := s.client.doRequest(ctx, "GET", path, nil)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
-	
+
 	if resp.StatusCode != http.StatusOK {
 		return nil, parseError(resp)
 	}
-	
+
 	var transfers []*Transfer
 	if err := json.NewDecoder(resp.Body).Decode(&transfers); err != nil {
 		return nil, fmt.Errorf("failed to decode response: %w", err)
 	}
-	
+
 	return transfers, nil
 }
 
@@ -258,14 +258,14 @@ type QuoteService struct {
 
 // Quote represents a quote
 type Quote struct {
-	ID              string    `json:"id"`
-	PayerFSPID      string    `json:"payer_fsp_id"`
-	PayeeFSPID      string    `json:"payee_fsp_id"`
-	TransferAmount  Amount    `json:"transfer_amount"`
-	PayeeReceive    Amount    `json:"payee_receive_amount"`
-	PayerFee        Amount    `json:"payer_fee"`
-	ExpiresAt       time.Time `json:"expires_at"`
-	CreatedAt       time.Time `json:"created_at"`
+	ID             string    `json:"id"`
+	PayerFSPID     string    `json:"payer_fsp_id"`
+	PayeeFSPID     string    `json:"payee_fsp_id"`
+	TransferAmount Amount    `json:"transfer_amount"`
+	PayeeReceive   Amount    `json:"payee_receive_amount"`
+	PayerFee       Amount    `json:"payer_fee"`
+	ExpiresAt      time.Time `json:"expires_at"`
+	CreatedAt      time.Time `json:"created_at"`
 }
 
 // CreateQuoteRequest for creating a quote
@@ -285,16 +285,16 @@ func (s *QuoteService) Create(ctx context.Context, req *CreateQuoteRequest) (*Qu
 		return nil, err
 	}
 	defer resp.Body.Close()
-	
+
 	if resp.StatusCode != http.StatusCreated && resp.StatusCode != http.StatusOK {
 		return nil, parseError(resp)
 	}
-	
+
 	var quote Quote
 	if err := json.NewDecoder(resp.Body).Decode(&quote); err != nil {
 		return nil, fmt.Errorf("failed to decode response: %w", err)
 	}
-	
+
 	return &quote, nil
 }
 
@@ -305,16 +305,16 @@ func (s *QuoteService) Get(ctx context.Context, quoteID string) (*Quote, error) 
 		return nil, err
 	}
 	defer resp.Body.Close()
-	
+
 	if resp.StatusCode != http.StatusOK {
 		return nil, parseError(resp)
 	}
-	
+
 	var quote Quote
 	if err := json.NewDecoder(resp.Body).Decode(&quote); err != nil {
 		return nil, fmt.Errorf("failed to decode response: %w", err)
 	}
-	
+
 	return &quote, nil
 }
 
@@ -325,11 +325,11 @@ type PartyService struct {
 
 // Party represents a party
 type Party struct {
-	PartyIDType    string                 `json:"party_id_type"`
-	PartyID        string                 `json:"party_id"`
-	FSPID          string                 `json:"fsp_id"`
-	Name           string                 `json:"name"`
-	PersonalInfo   map[string]interface{} `json:"personal_info,omitempty"`
+	PartyIDType  string                 `json:"party_id_type"`
+	PartyID      string                 `json:"party_id"`
+	FSPID        string                 `json:"fsp_id"`
+	Name         string                 `json:"name"`
+	PersonalInfo map[string]interface{} `json:"personal_info,omitempty"`
 }
 
 // Lookup looks up a party
@@ -340,16 +340,16 @@ func (s *PartyService) Lookup(ctx context.Context, partyIDType, partyID string) 
 		return nil, err
 	}
 	defer resp.Body.Close()
-	
+
 	if resp.StatusCode != http.StatusOK {
 		return nil, parseError(resp)
 	}
-	
+
 	var party Party
 	if err := json.NewDecoder(resp.Body).Decode(&party); err != nil {
 		return nil, fmt.Errorf("failed to decode response: %w", err)
 	}
-	
+
 	return &party, nil
 }
 
@@ -374,16 +374,16 @@ func (s *AccountService) GetBalance(ctx context.Context, accountID string) (*Acc
 		return nil, err
 	}
 	defer resp.Body.Close()
-	
+
 	if resp.StatusCode != http.StatusOK {
 		return nil, parseError(resp)
 	}
-	
+
 	var account Account
 	if err := json.NewDecoder(resp.Body).Decode(&account); err != nil {
 		return nil, fmt.Errorf("failed to decode response: %w", err)
 	}
-	
+
 	return &account, nil
 }
 
@@ -411,7 +411,7 @@ func (o *ListOptions) ToQueryString() string {
 	if o == nil {
 		return ""
 	}
-	
+
 	params := make([]string, 0)
 	if o.Limit > 0 {
 		params = append(params, fmt.Sprintf("limit=%d", o.Limit))
@@ -422,11 +422,11 @@ func (o *ListOptions) ToQueryString() string {
 	if o.Status != "" {
 		params = append(params, fmt.Sprintf("status=%s", o.Status))
 	}
-	
+
 	if len(params) == 0 {
 		return ""
 	}
-	
+
 	result := "?"
 	for i, p := range params {
 		if i > 0 {
@@ -439,11 +439,11 @@ func (o *ListOptions) ToQueryString() string {
 
 // RateLimiter provides rate limiting
 type RateLimiter struct {
-	tokens    int
-	maxTokens int
+	tokens     int
+	maxTokens  int
 	refillRate time.Duration
 	lastRefill time.Time
-	mu        sync.Mutex
+	mu         sync.Mutex
 }
 
 // NewRateLimiter creates a new rate limiter
@@ -460,7 +460,7 @@ func NewRateLimiter(requestsPerSecond int) *RateLimiter {
 func (r *RateLimiter) Wait(ctx context.Context) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	
+
 	// Refill tokens
 	now := time.Now()
 	elapsed := now.Sub(r.lastRefill)
@@ -469,12 +469,12 @@ func (r *RateLimiter) Wait(ctx context.Context) error {
 		r.tokens = min(r.tokens+tokensToAdd, r.maxTokens)
 		r.lastRefill = now
 	}
-	
+
 	if r.tokens > 0 {
 		r.tokens--
 		return nil
 	}
-	
+
 	// Wait for next token
 	select {
 	case <-ctx.Done():
@@ -510,8 +510,8 @@ func (s *HMACSigner) Sign(req *http.Request) error {
 
 // APIError represents an API error
 type APIError struct {
-	Code    string `json:"code"`
-	Message string `json:"message"`
+	Code    string                 `json:"code"`
+	Message string                 `json:"message"`
 	Details map[string]interface{} `json:"details,omitempty"`
 }
 

@@ -18,37 +18,37 @@ import (
 // Uses proper cryptographic verification with JWKS rotation
 type HardenedJWTValidator struct {
 	// JWKS configuration
-	jwksURL           string
+	jwksURL             string
 	jwksRefreshInterval time.Duration
-	
+
 	// Key cache
-	keyCache     map[string]*JWKKey
-	keyCacheMu   sync.RWMutex
-	lastRefresh  time.Time
-	
+	keyCache    map[string]*JWKKey
+	keyCacheMu  sync.RWMutex
+	lastRefresh time.Time
+
 	// Token validation cache (short TTL for revocation support)
-	tokenCache     *TokenValidationCache
-	tokenCacheTTL  time.Duration
-	
+	tokenCache    *TokenValidationCache
+	tokenCacheTTL time.Duration
+
 	// Revocation list
-	revokedTokens  map[string]time.Time
-	revokedMu      sync.RWMutex
-	
+	revokedTokens map[string]time.Time
+	revokedMu     sync.RWMutex
+
 	// Configuration
-	issuer         string
-	audience       []string
-	clockSkew      time.Duration
-	maxTokenAge    time.Duration
-	
+	issuer      string
+	audience    []string
+	clockSkew   time.Duration
+	maxTokenAge time.Duration
+
 	// Stats
 	totalValidations uint64
 	validationErrors uint64
 	cacheHits        uint64
 	cacheMisses      uint64
-	
+
 	// HTTP client
 	client *http.Client
-	
+
 	// Control
 	ctx    context.Context
 	cancel context.CancelFunc
@@ -118,13 +118,13 @@ func DefaultJWTValidatorConfig() JWTValidatorConfig {
 // NewHardenedJWTValidator creates a new hardened JWT validator
 func NewHardenedJWTValidator(config JWTValidatorConfig) *HardenedJWTValidator {
 	ctx, cancel := context.WithCancel(context.Background())
-	
+
 	// Initialize token cache shards
 	shards := make([]tokenValidationShard, config.TokenCacheShards)
 	for i := range shards {
 		shards[i].cache = make(map[string]*ValidatedToken)
 	}
-	
+
 	v := &HardenedJWTValidator{
 		jwksURL:             config.JWKSURL,
 		jwksRefreshInterval: config.JWKSRefreshInterval,
@@ -145,68 +145,68 @@ func NewHardenedJWTValidator(config JWTValidatorConfig) *HardenedJWTValidator {
 		ctx:    ctx,
 		cancel: cancel,
 	}
-	
+
 	// Start JWKS refresh loop
 	v.wg.Add(1)
 	go v.jwksRefreshLoop()
-	
+
 	// Start revocation cleanup loop
 	v.wg.Add(1)
 	go v.revocationCleanupLoop()
-	
+
 	// Initial JWKS fetch
 	go v.refreshJWKS()
-	
+
 	return v
 }
 
 // ValidateToken validates a JWT token with full cryptographic verification
 func (v *HardenedJWTValidator) ValidateToken(ctx context.Context, tokenString string) (*ValidatedToken, error) {
 	atomic.AddUint64(&v.totalValidations, 1)
-	
+
 	// Check revocation list first
 	if v.isRevoked(tokenString) {
 		atomic.AddUint64(&v.validationErrors, 1)
 		return nil, errors.New("token has been revoked")
 	}
-	
+
 	// Check token cache
 	if cached := v.getFromCache(tokenString); cached != nil {
 		atomic.AddUint64(&v.cacheHits, 1)
 		return cached, nil
 	}
 	atomic.AddUint64(&v.cacheMisses, 1)
-	
+
 	// Parse token (without verification first to get header)
 	header, payload, signature, err := v.parseToken(tokenString)
 	if err != nil {
 		atomic.AddUint64(&v.validationErrors, 1)
 		return nil, fmt.Errorf("failed to parse token: %w", err)
 	}
-	
+
 	// Get signing key
 	key, err := v.getSigningKey(header.KeyID)
 	if err != nil {
 		atomic.AddUint64(&v.validationErrors, 1)
 		return nil, fmt.Errorf("failed to get signing key: %w", err)
 	}
-	
+
 	// Verify signature
 	if err := v.verifySignature(header, tokenString, signature, key); err != nil {
 		atomic.AddUint64(&v.validationErrors, 1)
 		return nil, fmt.Errorf("signature verification failed: %w", err)
 	}
-	
+
 	// Validate claims
 	token, err := v.validateClaims(payload)
 	if err != nil {
 		atomic.AddUint64(&v.validationErrors, 1)
 		return nil, fmt.Errorf("claims validation failed: %w", err)
 	}
-	
+
 	// Cache the validated token
 	v.addToCache(tokenString, token)
-	
+
 	return token, nil
 }
 
@@ -223,40 +223,40 @@ func (v *HardenedJWTValidator) parseToken(tokenString string) (*JWTHeader, map[s
 	if len(parts) != 3 {
 		return nil, nil, nil, errors.New("invalid token format: expected 3 parts")
 	}
-	
+
 	// Decode header
 	headerBytes, err := base64URLDecode(parts[0])
 	if err != nil {
 		return nil, nil, nil, fmt.Errorf("invalid header encoding: %w", err)
 	}
-	
+
 	var header JWTHeader
 	if err := json.Unmarshal(headerBytes, &header); err != nil {
 		return nil, nil, nil, fmt.Errorf("invalid header JSON: %w", err)
 	}
-	
+
 	// Validate algorithm
 	if header.Algorithm != "RS256" && header.Algorithm != "RS384" && header.Algorithm != "RS512" {
 		return nil, nil, nil, fmt.Errorf("unsupported algorithm: %s", header.Algorithm)
 	}
-	
+
 	// Decode payload
 	payloadBytes, err := base64URLDecode(parts[1])
 	if err != nil {
 		return nil, nil, nil, fmt.Errorf("invalid payload encoding: %w", err)
 	}
-	
+
 	var payload map[string]interface{}
 	if err := json.Unmarshal(payloadBytes, &payload); err != nil {
 		return nil, nil, nil, fmt.Errorf("invalid payload JSON: %w", err)
 	}
-	
+
 	// Decode signature
 	signature, err := base64URLDecode(parts[2])
 	if err != nil {
 		return nil, nil, nil, fmt.Errorf("invalid signature encoding: %w", err)
 	}
-	
+
 	return &header, payload, signature, nil
 }
 
@@ -265,14 +265,14 @@ func (v *HardenedJWTValidator) verifySignature(header *JWTHeader, tokenString st
 	if key == nil || key.PublicKey == nil {
 		return errors.New("no public key available")
 	}
-	
+
 	// Get the signing input (header.payload)
 	parts := splitJWT(tokenString)
 	if len(parts) != 3 {
 		return errors.New("invalid token format")
 	}
 	signingInput := parts[0] + "." + parts[1]
-	
+
 	// Select hash function based on algorithm
 	var hashFunc HashFunc
 	switch header.Algorithm {
@@ -285,27 +285,27 @@ func (v *HardenedJWTValidator) verifySignature(header *JWTHeader, tokenString st
 	default:
 		return fmt.Errorf("unsupported algorithm: %s", header.Algorithm)
 	}
-	
+
 	// Compute hash
 	hash := hashFunc([]byte(signingInput))
-	
+
 	// Verify signature using RSA PKCS1v15
 	// In production, use crypto/rsa.VerifyPKCS1v15
 	if !verifyRSASignature(key.PublicKey, hash, signature, header.Algorithm) {
 		return errors.New("signature verification failed")
 	}
-	
+
 	return nil
 }
 
 // validateClaims validates the JWT claims
 func (v *HardenedJWTValidator) validateClaims(payload map[string]interface{}) (*ValidatedToken, error) {
 	now := time.Now()
-	
+
 	token := &ValidatedToken{
 		Claims: payload,
 	}
-	
+
 	// Extract standard claims
 	if sub, ok := payload["sub"].(string); ok {
 		token.Subject = sub
@@ -316,7 +316,7 @@ func (v *HardenedJWTValidator) validateClaims(payload map[string]interface{}) (*
 	if jti, ok := payload["jti"].(string); ok {
 		token.TokenID = jti
 	}
-	
+
 	// Handle audience (can be string or array)
 	switch aud := payload["aud"].(type) {
 	case string:
@@ -328,7 +328,7 @@ func (v *HardenedJWTValidator) validateClaims(payload map[string]interface{}) (*
 			}
 		}
 	}
-	
+
 	// Extract time claims
 	if exp, ok := payload["exp"].(float64); ok {
 		token.ExpiresAt = int64(exp)
@@ -339,12 +339,12 @@ func (v *HardenedJWTValidator) validateClaims(payload map[string]interface{}) (*
 	if nbf, ok := payload["nbf"].(float64); ok {
 		token.NotBefore = int64(nbf)
 	}
-	
+
 	// Validate issuer
 	if v.issuer != "" && token.Issuer != v.issuer {
 		return nil, fmt.Errorf("invalid issuer: expected %s, got %s", v.issuer, token.Issuer)
 	}
-	
+
 	// Validate audience
 	if len(v.audience) > 0 {
 		found := false
@@ -360,7 +360,7 @@ func (v *HardenedJWTValidator) validateClaims(payload map[string]interface{}) (*
 			return nil, errors.New("invalid audience")
 		}
 	}
-	
+
 	// Validate expiration
 	if token.ExpiresAt > 0 {
 		expTime := time.Unix(token.ExpiresAt, 0)
@@ -368,7 +368,7 @@ func (v *HardenedJWTValidator) validateClaims(payload map[string]interface{}) (*
 			return nil, errors.New("token has expired")
 		}
 	}
-	
+
 	// Validate not before
 	if token.NotBefore > 0 {
 		nbfTime := time.Unix(token.NotBefore, 0)
@@ -376,7 +376,7 @@ func (v *HardenedJWTValidator) validateClaims(payload map[string]interface{}) (*
 			return nil, errors.New("token is not yet valid")
 		}
 	}
-	
+
 	// Validate issued at (max token age)
 	if token.IssuedAt > 0 && v.maxTokenAge > 0 {
 		iatTime := time.Unix(token.IssuedAt, 0)
@@ -384,7 +384,7 @@ func (v *HardenedJWTValidator) validateClaims(payload map[string]interface{}) (*
 			return nil, errors.New("token exceeds maximum age")
 		}
 	}
-	
+
 	return token, nil
 }
 
@@ -393,24 +393,24 @@ func (v *HardenedJWTValidator) getSigningKey(keyID string) (*JWKKey, error) {
 	v.keyCacheMu.RLock()
 	key, ok := v.keyCache[keyID]
 	v.keyCacheMu.RUnlock()
-	
+
 	if ok && time.Now().Before(key.ExpiresAt) {
 		return key, nil
 	}
-	
+
 	// Key not found or expired, refresh JWKS
 	if err := v.refreshJWKS(); err != nil {
 		return nil, err
 	}
-	
+
 	v.keyCacheMu.RLock()
 	key, ok = v.keyCache[keyID]
 	v.keyCacheMu.RUnlock()
-	
+
 	if !ok {
 		return nil, fmt.Errorf("key not found: %s", keyID)
 	}
-	
+
 	return key, nil
 }
 
@@ -419,22 +419,22 @@ func (v *HardenedJWTValidator) refreshJWKS() error {
 	if v.jwksURL == "" {
 		return errors.New("JWKS URL not configured")
 	}
-	
+
 	resp, err := v.client.Get(v.jwksURL)
 	if err != nil {
 		return fmt.Errorf("failed to fetch JWKS: %w", err)
 	}
 	defer resp.Body.Close()
-	
+
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("JWKS fetch failed with status: %d", resp.StatusCode)
 	}
-	
+
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return fmt.Errorf("failed to read JWKS response: %w", err)
 	}
-	
+
 	var jwks struct {
 		Keys []struct {
 			Kid string `json:"kid"`
@@ -445,24 +445,24 @@ func (v *HardenedJWTValidator) refreshJWKS() error {
 			E   string `json:"e"`
 		} `json:"keys"`
 	}
-	
+
 	if err := json.Unmarshal(body, &jwks); err != nil {
 		return fmt.Errorf("failed to parse JWKS: %w", err)
 	}
-	
+
 	v.keyCacheMu.Lock()
 	defer v.keyCacheMu.Unlock()
-	
+
 	for _, key := range jwks.Keys {
 		if key.Kty != "RSA" {
 			continue
 		}
-		
+
 		pubKey, err := parseRSAPublicKey(key.N, key.E)
 		if err != nil {
 			continue
 		}
-		
+
 		v.keyCache[key.Kid] = &JWKKey{
 			KeyID:     key.Kid,
 			Algorithm: key.Alg,
@@ -472,7 +472,7 @@ func (v *HardenedJWTValidator) refreshJWKS() error {
 			ExpiresAt: time.Now().Add(v.jwksRefreshInterval * 2),
 		}
 	}
-	
+
 	v.lastRefresh = time.Now()
 	return nil
 }
@@ -480,10 +480,10 @@ func (v *HardenedJWTValidator) refreshJWKS() error {
 // jwksRefreshLoop periodically refreshes JWKS
 func (v *HardenedJWTValidator) jwksRefreshLoop() {
 	defer v.wg.Done()
-	
+
 	ticker := time.NewTicker(v.jwksRefreshInterval)
 	defer ticker.Stop()
-	
+
 	for {
 		select {
 		case <-v.ctx.Done():
@@ -512,10 +512,10 @@ func (v *HardenedJWTValidator) isRevoked(tokenString string) bool {
 // revocationCleanupLoop cleans up expired revocations
 func (v *HardenedJWTValidator) revocationCleanupLoop() {
 	defer v.wg.Done()
-	
+
 	ticker := time.NewTicker(1 * time.Hour)
 	defer ticker.Stop()
-	
+
 	for {
 		select {
 		case <-v.ctx.Done():
@@ -529,10 +529,10 @@ func (v *HardenedJWTValidator) revocationCleanupLoop() {
 // cleanupRevocations removes expired revocations
 func (v *HardenedJWTValidator) cleanupRevocations() {
 	now := time.Now()
-	
+
 	v.revokedMu.Lock()
 	defer v.revokedMu.Unlock()
-	
+
 	for hash, expiresAt := range v.revokedTokens {
 		if now.After(expiresAt) {
 			delete(v.revokedTokens, hash)
@@ -545,27 +545,27 @@ func (v *HardenedJWTValidator) getFromCache(tokenString string) *ValidatedToken 
 	hash := hashToken(tokenString)
 	shardIdx := hashToShard(hash, v.tokenCache.numShards)
 	shard := &v.tokenCache.shards[shardIdx]
-	
+
 	shard.mu.RLock()
 	cached, ok := shard.cache[hash]
 	shard.mu.RUnlock()
-	
+
 	if !ok {
 		return nil
 	}
-	
+
 	now := time.Now().UnixNano()
-	
+
 	// Check cache TTL
 	if now > cached.CachedAt+v.tokenCacheTTL.Nanoseconds() {
 		return nil
 	}
-	
+
 	// Check token expiration
 	if now/1e9 > cached.ExpiresAt {
 		return nil
 	}
-	
+
 	return cached
 }
 
@@ -574,9 +574,9 @@ func (v *HardenedJWTValidator) addToCache(tokenString string, token *ValidatedTo
 	hash := hashToken(tokenString)
 	shardIdx := hashToShard(hash, v.tokenCache.numShards)
 	shard := &v.tokenCache.shards[shardIdx]
-	
+
 	token.CachedAt = time.Now().UnixNano()
-	
+
 	shard.mu.Lock()
 	shard.cache[hash] = token
 	shard.mu.Unlock()
@@ -631,18 +631,18 @@ func parseRSAPublicKey(n, e string) (*rsa.PublicKey, error) {
 	if err != nil {
 		return nil, err
 	}
-	
+
 	// Decode exponent
 	eBytes, err := base64URLDecode(e)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	// Convert to big.Int
 	// In production, use math/big
 	_ = nBytes
 	_ = eBytes
-	
+
 	return &rsa.PublicKey{}, nil // Placeholder
 }
 
@@ -669,7 +669,7 @@ func base64URLDecode(s string) ([]byte, error) {
 	case 3:
 		s += "="
 	}
-	
+
 	// In production, use encoding/base64.RawURLEncoding
 	return []byte(s), nil // Placeholder
 }

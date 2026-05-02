@@ -31,10 +31,10 @@ const (
 	TBHeaderSize   = 128
 
 	// Account flags
-	TBAccountFlagLinked                    uint16 = 1 << 0
+	TBAccountFlagLinked                     uint16 = 1 << 0
 	TBAccountFlagDebitsMustNotExceedCredits uint16 = 1 << 1
 	TBAccountFlagCreditsMustNotExceedDebits uint16 = 1 << 2
-	TBAccountFlagHistory                   uint16 = 1 << 3
+	TBAccountFlagHistory                    uint16 = 1 << 3
 
 	// Transfer flags
 	TBTransferFlagLinked              uint16 = 1 << 0

@@ -21,14 +21,14 @@ type LinkedTransferManager struct {
 type AccountModel struct {
 	// Account mappings by participant and currency
 	ParticipantAccounts map[string]map[string]uint128 // fspID -> currency -> accountID
-	
+
 	// Hub accounts
 	HubNostroAccounts   map[string]uint128 // currency -> hub nostro account
 	HubFeeAccounts      map[string]uint128 // currency -> hub fee account
 	InterchangeAccounts map[string]uint128 // currency -> interchange account
-	
+
 	// Settlement accounts
-	SettlementAccounts  map[string]map[string]uint128 // fspID -> currency -> settlement account
+	SettlementAccounts map[string]map[string]uint128 // fspID -> currency -> settlement account
 }
 
 // NewLinkedTransferManager creates a new linked transfer manager
@@ -53,13 +53,13 @@ func NewAccountModel() *AccountModel {
 
 // LinkedTransferGroup represents a group of linked transfers
 type LinkedTransferGroup struct {
-	GroupID       string           `json:"group_id"`
-	TransferID    string           `json:"transfer_id"` // Mojaloop transfer ID
-	Legs          []*TransferLeg   `json:"legs"`
-	State         LinkedGroupState `json:"state"`
-	CreatedAt     time.Time        `json:"created_at"`
-	PostedAt      *time.Time       `json:"posted_at,omitempty"`
-	VoidedAt      *time.Time       `json:"voided_at,omitempty"`
+	GroupID    string           `json:"group_id"`
+	TransferID string           `json:"transfer_id"` // Mojaloop transfer ID
+	Legs       []*TransferLeg   `json:"legs"`
+	State      LinkedGroupState `json:"state"`
+	CreatedAt  time.Time        `json:"created_at"`
+	PostedAt   *time.Time       `json:"posted_at,omitempty"`
+	VoidedAt   *time.Time       `json:"voided_at,omitempty"`
 }
 
 // LinkedGroupState represents the state of a linked transfer group
@@ -73,47 +73,47 @@ const (
 
 // TransferLeg represents a single leg in a linked transfer
 type TransferLeg struct {
-	LegIndex        int       `json:"leg_index"`
-	LegType         LegType   `json:"leg_type"`
-	DebitAccountID  uint128   `json:"debit_account_id"`
-	CreditAccountID uint128   `json:"credit_account_id"`
-	Amount          uint64    `json:"amount"`
-	Currency        string    `json:"currency"`
-	TBTransferID    uint128   `json:"tb_transfer_id"`
-	Description     string    `json:"description,omitempty"`
+	LegIndex        int     `json:"leg_index"`
+	LegType         LegType `json:"leg_type"`
+	DebitAccountID  uint128 `json:"debit_account_id"`
+	CreditAccountID uint128 `json:"credit_account_id"`
+	Amount          uint64  `json:"amount"`
+	Currency        string  `json:"currency"`
+	TBTransferID    uint128 `json:"tb_transfer_id"`
+	Description     string  `json:"description,omitempty"`
 }
 
 // LegType identifies the type of transfer leg
 type LegType string
 
 const (
-	LegTypePrincipal    LegType = "PRINCIPAL"     // Main transfer amount
-	LegTypePayerFee     LegType = "PAYER_FEE"     // Fee charged to payer
-	LegTypePayeeFee     LegType = "PAYEE_FEE"     // Fee charged to payee
-	LegTypeHubFee       LegType = "HUB_FEE"       // Hub fee
-	LegTypeInterchange  LegType = "INTERCHANGE"   // Interchange fee
-	LegTypeFXDebit      LegType = "FX_DEBIT"      // FX source currency debit
-	LegTypeFXCredit     LegType = "FX_CREDIT"     // FX target currency credit
-	LegTypeFXSpread     LegType = "FX_SPREAD"     // FX spread/margin
-	LegTypeSettlement   LegType = "SETTLEMENT"    // Settlement posting
+	LegTypePrincipal   LegType = "PRINCIPAL"   // Main transfer amount
+	LegTypePayerFee    LegType = "PAYER_FEE"   // Fee charged to payer
+	LegTypePayeeFee    LegType = "PAYEE_FEE"   // Fee charged to payee
+	LegTypeHubFee      LegType = "HUB_FEE"     // Hub fee
+	LegTypeInterchange LegType = "INTERCHANGE" // Interchange fee
+	LegTypeFXDebit     LegType = "FX_DEBIT"    // FX source currency debit
+	LegTypeFXCredit    LegType = "FX_CREDIT"   // FX target currency credit
+	LegTypeFXSpread    LegType = "FX_SPREAD"   // FX spread/margin
+	LegTypeSettlement  LegType = "SETTLEMENT"  // Settlement posting
 )
 
 // FXTransferRequest represents a foreign exchange transfer request
 type FXTransferRequest struct {
-	TransferID        string    `json:"transfer_id"`
-	PayerFSP          string    `json:"payer_fsp"`
-	PayeeFSP          string    `json:"payee_fsp"`
-	SourceAmount      uint64    `json:"source_amount"`
-	SourceCurrency    string    `json:"source_currency"`
-	TargetAmount      uint64    `json:"target_amount"`
-	TargetCurrency    string    `json:"target_currency"`
-	ExchangeRate      float64   `json:"exchange_rate"`
-	PayerFee          uint64    `json:"payer_fee,omitempty"`
-	PayeeFee          uint64    `json:"payee_fee,omitempty"`
-	HubFee            uint64    `json:"hub_fee,omitempty"`
-	FXSpread          uint64    `json:"fx_spread,omitempty"`
-	Expiration        time.Time `json:"expiration"`
-	ILPCondition      string    `json:"ilp_condition"`
+	TransferID     string    `json:"transfer_id"`
+	PayerFSP       string    `json:"payer_fsp"`
+	PayeeFSP       string    `json:"payee_fsp"`
+	SourceAmount   uint64    `json:"source_amount"`
+	SourceCurrency string    `json:"source_currency"`
+	TargetAmount   uint64    `json:"target_amount"`
+	TargetCurrency string    `json:"target_currency"`
+	ExchangeRate   float64   `json:"exchange_rate"`
+	PayerFee       uint64    `json:"payer_fee,omitempty"`
+	PayeeFee       uint64    `json:"payee_fee,omitempty"`
+	HubFee         uint64    `json:"hub_fee,omitempty"`
+	FXSpread       uint64    `json:"fx_spread,omitempty"`
+	Expiration     time.Time `json:"expiration"`
+	ILPCondition   string    `json:"ilp_condition"`
 }
 
 // CreateFXTransfer creates a linked transfer group for an FX transfer
@@ -390,7 +390,7 @@ func (m *LinkedTransferManager) buildTBTransfers(legs []*TransferLeg, expiration
 
 	for i, leg := range legs {
 		flags := uint16(TransferFlagPending)
-		
+
 		// Set linked flag for all but the last transfer
 		if i < len(legs)-1 {
 			flags |= uint16(TransferFlagLinked)
@@ -445,16 +445,14 @@ func legTypeToCode(legType LegType) uint16 {
 
 // BulkTransferRequest represents a bulk transfer request
 
-
 // BulkTransferResult represents the result of a bulk transfer
 type BulkTransferResult struct {
-	BulkTransferID     string                     `json:"bulk_transfer_id"`
-	TotalTransfers     int                        `json:"total_transfers"`
-	SuccessfulTransfers int                       `json:"successful_transfers"`
-	FailedTransfers    int                        `json:"failed_transfers"`
-	Results            []*IndividualTransferResult `json:"results"`
+	BulkTransferID      string                      `json:"bulk_transfer_id"`
+	TotalTransfers      int                         `json:"total_transfers"`
+	SuccessfulTransfers int                         `json:"successful_transfers"`
+	FailedTransfers     int                         `json:"failed_transfers"`
+	Results             []*IndividualTransferResult `json:"results"`
 }
-
 
 // CreateBulkTransfer creates a batch of transfers using TigerBeetle batching
 func (m *LinkedTransferManager) CreateBulkTransfer(ctx context.Context, req *BulkTransferRequest) (*BulkTransferResult, error) {
@@ -462,9 +460,9 @@ func (m *LinkedTransferManager) CreateBulkTransfer(ctx context.Context, req *Bul
 	defer m.mu.Unlock()
 
 	result := &BulkTransferResult{
-		BulkTransferID:  req.BulkTransferID,
-		TotalTransfers:  len(req.Transfers),
-		Results:         make([]*IndividualTransferResult, 0, len(req.Transfers)),
+		BulkTransferID: req.BulkTransferID,
+		TotalTransfers: len(req.Transfers),
+		Results:        make([]*IndividualTransferResult, 0, len(req.Transfers)),
 	}
 
 	// Build batch of TigerBeetle transfers
@@ -519,9 +517,9 @@ func (m *LinkedTransferManager) CreateBulkTransfer(ctx context.Context, req *Bul
 
 // SettlementTransferRequest represents a settlement transfer request
 type SettlementTransferRequest struct {
-	SettlementID    string                    `json:"settlement_id"`
-	SettlementWindowID string                 `json:"settlement_window_id"`
-	Entries         []*SettlementEntry        `json:"entries"`
+	SettlementID       string             `json:"settlement_id"`
+	SettlementWindowID string             `json:"settlement_window_id"`
+	Entries            []*SettlementEntry `json:"entries"`
 }
 
 // SettlementEntry represents a single settlement entry

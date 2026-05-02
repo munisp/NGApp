@@ -15,13 +15,13 @@ import (
 type ProvisioningStep string
 
 const (
-	StepValidateConfig     ProvisioningStep = "validate_config"
-	StepHealthCheck        ProvisioningStep = "health_check"
-	StepKeycloakSetup      ProvisioningStep = "keycloak_setup"
-	StepAPISIXSetup        ProvisioningStep = "apisix_setup"
-	StepTigerBeetleSetup   ProvisioningStep = "tigerbeetle_setup"
-	StepMojaloopSetup      ProvisioningStep = "mojaloop_setup"
-	StepVerification       ProvisioningStep = "verification"
+	StepValidateConfig   ProvisioningStep = "validate_config"
+	StepHealthCheck      ProvisioningStep = "health_check"
+	StepKeycloakSetup    ProvisioningStep = "keycloak_setup"
+	StepAPISIXSetup      ProvisioningStep = "apisix_setup"
+	StepTigerBeetleSetup ProvisioningStep = "tigerbeetle_setup"
+	StepMojaloopSetup    ProvisioningStep = "mojaloop_setup"
+	StepVerification     ProvisioningStep = "verification"
 )
 
 // ProvisioningStatus represents the status of a provisioning step
@@ -73,16 +73,16 @@ type ProvisioningStepResult struct {
 
 // ParticipantProvisionResult represents the complete result of provisioning
 type ParticipantProvisionResult struct {
-	ParticipantID string                    `json:"participant_id"`
-	Mode          ProvisioningMode          `json:"mode"`
-	Status        ProvisioningStatus        `json:"status"`
-	StartedAt     time.Time                 `json:"started_at"`
-	CompletedAt   time.Time                 `json:"completed_at,omitempty"`
-	TotalDuration time.Duration             `json:"total_duration_ms,omitempty"`
-	Steps         []ProvisioningStepResult  `json:"steps"`
-	ExternalIDs   map[string]string         `json:"external_ids"`
-	Credentials   *ProvisionedCredentials   `json:"credentials,omitempty"`
-	Error         string                    `json:"error,omitempty"`
+	ParticipantID string                   `json:"participant_id"`
+	Mode          ProvisioningMode         `json:"mode"`
+	Status        ProvisioningStatus       `json:"status"`
+	StartedAt     time.Time                `json:"started_at"`
+	CompletedAt   time.Time                `json:"completed_at,omitempty"`
+	TotalDuration time.Duration            `json:"total_duration_ms,omitempty"`
+	Steps         []ProvisioningStepResult `json:"steps"`
+	ExternalIDs   map[string]string        `json:"external_ids"`
+	Credentials   *ProvisionedCredentials  `json:"credentials,omitempty"`
+	Error         string                   `json:"error,omitempty"`
 }
 
 // ProvisionedCredentials contains the credentials created during provisioning
@@ -103,8 +103,8 @@ type ProductionProvisioningOrchestrator struct {
 	apisix        *ProductionAPISIXClient
 	healthChecker *ProductionHealthChecker
 
-	mu            sync.Mutex
-	activeJobs    map[string]*ParticipantProvisionResult
+	mu         sync.Mutex
+	activeJobs map[string]*ParticipantProvisionResult
 }
 
 // NewProductionProvisioningOrchestrator creates a new orchestrator

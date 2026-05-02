@@ -15,13 +15,13 @@ import (
 type DisputeStatus string
 
 const (
-	DisputeStatusOpen           DisputeStatus = "open"
-	DisputeStatusUnderReview    DisputeStatus = "under_review"
-	DisputeStatusPendingInfo    DisputeStatus = "pending_info"
-	DisputeStatusResolved       DisputeStatus = "resolved"
-	DisputeStatusRejected       DisputeStatus = "rejected"
-	DisputeStatusEscalated      DisputeStatus = "escalated"
-	DisputeStatusClosed         DisputeStatus = "closed"
+	DisputeStatusOpen        DisputeStatus = "open"
+	DisputeStatusUnderReview DisputeStatus = "under_review"
+	DisputeStatusPendingInfo DisputeStatus = "pending_info"
+	DisputeStatusResolved    DisputeStatus = "resolved"
+	DisputeStatusRejected    DisputeStatus = "rejected"
+	DisputeStatusEscalated   DisputeStatus = "escalated"
+	DisputeStatusClosed      DisputeStatus = "closed"
 )
 
 // DisputeReason represents the reason for a dispute
@@ -87,11 +87,11 @@ type Evidence struct {
 
 // TimelineEvent represents an event in the dispute timeline
 type TimelineEvent struct {
-	ID          string    `json:"id"`
-	Type        string    `json:"type"`
-	Description string    `json:"description"`
-	Actor       string    `json:"actor"`
-	Timestamp   time.Time `json:"timestamp"`
+	ID          string                 `json:"id"`
+	Type        string                 `json:"type"`
+	Description string                 `json:"description"`
+	Actor       string                 `json:"actor"`
+	Timestamp   time.Time              `json:"timestamp"`
 	Details     map[string]interface{} `json:"details,omitempty"`
 }
 
@@ -99,12 +99,12 @@ type TimelineEvent struct {
 type RefundStatus string
 
 const (
-	RefundStatusPending   RefundStatus = "pending"
-	RefundStatusApproved  RefundStatus = "approved"
+	RefundStatusPending    RefundStatus = "pending"
+	RefundStatusApproved   RefundStatus = "approved"
 	RefundStatusProcessing RefundStatus = "processing"
-	RefundStatusCompleted RefundStatus = "completed"
-	RefundStatusFailed    RefundStatus = "failed"
-	RefundStatusCancelled RefundStatus = "cancelled"
+	RefundStatusCompleted  RefundStatus = "completed"
+	RefundStatusFailed     RefundStatus = "failed"
+	RefundStatusCancelled  RefundStatus = "cancelled"
 )
 
 // RefundType represents the type of refund
@@ -117,24 +117,24 @@ const (
 
 // Refund represents a payment refund
 type Refund struct {
-	ID              string       `json:"id"`
-	TransactionID   string       `json:"transaction_id"`
-	DisputeID       string       `json:"dispute_id,omitempty"`
-	ParticipantID   string       `json:"participant_id"`
-	CustomerID      string       `json:"customer_id"`
-	OriginalAmount  int64        `json:"original_amount"`
-	RefundAmount    int64        `json:"refund_amount"`
-	Currency        string       `json:"currency"`
-	Type            RefundType   `json:"type"`
-	Status          RefundStatus `json:"status"`
-	Reason          string       `json:"reason"`
-	Notes           string       `json:"notes,omitempty"`
-	RequestedBy     string       `json:"requested_by"`
-	ApprovedBy      string       `json:"approved_by,omitempty"`
-	ProcessedAt     *time.Time   `json:"processed_at,omitempty"`
-	CreatedAt       time.Time    `json:"created_at"`
-	UpdatedAt       time.Time    `json:"updated_at"`
-	Metadata        map[string]string `json:"metadata,omitempty"`
+	ID             string            `json:"id"`
+	TransactionID  string            `json:"transaction_id"`
+	DisputeID      string            `json:"dispute_id,omitempty"`
+	ParticipantID  string            `json:"participant_id"`
+	CustomerID     string            `json:"customer_id"`
+	OriginalAmount int64             `json:"original_amount"`
+	RefundAmount   int64             `json:"refund_amount"`
+	Currency       string            `json:"currency"`
+	Type           RefundType        `json:"type"`
+	Status         RefundStatus      `json:"status"`
+	Reason         string            `json:"reason"`
+	Notes          string            `json:"notes,omitempty"`
+	RequestedBy    string            `json:"requested_by"`
+	ApprovedBy     string            `json:"approved_by,omitempty"`
+	ProcessedAt    *time.Time        `json:"processed_at,omitempty"`
+	CreatedAt      time.Time         `json:"created_at"`
+	UpdatedAt      time.Time         `json:"updated_at"`
+	Metadata       map[string]string `json:"metadata,omitempty"`
 }
 
 // DisputeStore defines the interface for dispute storage

@@ -12,14 +12,14 @@ import (
 
 // StreamTransaction represents an operational database transaction record for streaming reconciliation
 type StreamTransaction struct {
-	ID          string
-	AccountID   string
-	Amount      int64 // Positive = credit, negative = debit
-	Currency    string
-	Reference   string
-	Status      string
-	Timestamp   time.Time
-	CounterID   string // Counterparty account
+	ID        string
+	AccountID string
+	Amount    int64 // Positive = credit, negative = debit
+	Currency  string
+	Reference string
+	Status    string
+	Timestamp time.Time
+	CounterID string // Counterparty account
 }
 
 // StreamLedgerEntry represents a TigerBeetle ledger entry for streaming reconciliation
@@ -36,17 +36,17 @@ type StreamLedgerEntry struct {
 
 // StreamDiscrepancy represents a mismatch between DB and ledger found during streaming
 type StreamDiscrepancy struct {
-	ID              string
-	Type            StreamDiscrepancyType
-	TransactionID   string
-	LedgerEntryID   string
-	DBAmount        int64
-	LedgerAmount    int64
-	Difference      int64
-	Currency        string
-	DetectedAt      time.Time
-	Status          string
-	Resolution      string
+	ID            string
+	Type          StreamDiscrepancyType
+	TransactionID string
+	LedgerEntryID string
+	DBAmount      int64
+	LedgerAmount  int64
+	Difference    int64
+	Currency      string
+	DetectedAt    time.Time
+	Status        string
+	Resolution    string
 }
 
 // StreamDiscrepancyType categorizes the mismatch in streaming reconciliation
@@ -75,11 +75,11 @@ type StreamResult struct {
 
 // StreamConfig configures the streaming reconciliation
 type StreamConfig struct {
-	BatchSize       int           // Records per batch (default 10000)
-	Workers         int           // Parallel workers (default num CPUs)
-	Timeout         time.Duration // Max reconciliation duration
-	ToleranceAmount int64         // Amount tolerance (e.g., rounding)
-	MaxDiscrepancies int          // Stop after this many discrepancies
+	BatchSize        int           // Records per batch (default 10000)
+	Workers          int           // Parallel workers (default num CPUs)
+	Timeout          time.Duration // Max reconciliation duration
+	ToleranceAmount  int64         // Amount tolerance (e.g., rounding)
+	MaxDiscrepancies int           // Stop after this many discrepancies
 }
 
 // DefaultStreamConfig returns production defaults
@@ -109,8 +109,8 @@ type StreamLedgerSource interface {
 
 // Streamer performs streaming reconciliation with constant memory
 type Streamer struct {
-	config StreamConfig
-	txSource StreamTransactionSource
+	config       StreamConfig
+	txSource     StreamTransactionSource
 	ledgerSource StreamLedgerSource
 
 	// Results
@@ -125,9 +125,9 @@ type Streamer struct {
 // NewStreamer creates a new reconciliation streamer
 func NewStreamer(config StreamConfig, txSource StreamTransactionSource, ledgerSource StreamLedgerSource) *Streamer {
 	return &Streamer{
-		config:       config,
-		txSource:     txSource,
-		ledgerSource: ledgerSource,
+		config:        config,
+		txSource:      txSource,
+		ledgerSource:  ledgerSource,
 		discrepancies: make([]StreamDiscrepancy, 0, 100),
 	}
 }

@@ -33,61 +33,61 @@ func NewParticipantLifecycleManager(ledger LedgerEngine, workflow WorkflowStore,
 type ParticipantStatus string
 
 const (
-	ParticipantStatusPending    ParticipantStatus = "PENDING"
-	ParticipantStatusActive     ParticipantStatus = "ACTIVE"
-	ParticipantStatusSuspended  ParticipantStatus = "SUSPENDED"
-	ParticipantStatusDisabled   ParticipantStatus = "DISABLED"
-	ParticipantStatusClosed     ParticipantStatus = "CLOSED"
+	ParticipantStatusPending   ParticipantStatus = "PENDING"
+	ParticipantStatusActive    ParticipantStatus = "ACTIVE"
+	ParticipantStatusSuspended ParticipantStatus = "SUSPENDED"
+	ParticipantStatusDisabled  ParticipantStatus = "DISABLED"
+	ParticipantStatusClosed    ParticipantStatus = "CLOSED"
 )
 
 // ParticipantDetails holds detailed participant information
 type ParticipantDetails struct {
-	ParticipantID   int               `json:"participant_id"`
-	Name            string            `json:"name"`
-	Description     string            `json:"description,omitempty"`
-	Status          ParticipantStatus `json:"status"`
-	CreatedDate     time.Time         `json:"created_date"`
-	UpdatedDate     time.Time         `json:"updated_date"`
-	
+	ParticipantID int               `json:"participant_id"`
+	Name          string            `json:"name"`
+	Description   string            `json:"description,omitempty"`
+	Status        ParticipantStatus `json:"status"`
+	CreatedDate   time.Time         `json:"created_date"`
+	UpdatedDate   time.Time         `json:"updated_date"`
+
 	// TigerBeetle account mapping
-	TBAccounts      map[string]uint128 `json:"tb_accounts"` // currency -> account ID
+	TBAccounts           map[string]uint128 `json:"tb_accounts"` // currency -> account ID
 	TBSettlementAccounts map[string]uint128 `json:"tb_settlement_accounts"`
-	
+
 	// Limits and configuration
-	NetDebitCap     map[string]int64   `json:"net_debit_cap"` // currency -> limit in minor units
-	LiquidityCheck  bool               `json:"liquidity_check"`
-	
+	NetDebitCap    map[string]int64 `json:"net_debit_cap"` // currency -> limit in minor units
+	LiquidityCheck bool             `json:"liquidity_check"`
+
 	// Endpoints
-	Endpoints       []*ParticipantEndpoint `json:"endpoints,omitempty"`
-	
+	Endpoints []*ParticipantEndpoint `json:"endpoints,omitempty"`
+
 	// Currencies
-	Currencies      []string           `json:"currencies"`
-	
+	Currencies []string `json:"currencies"`
+
 	// Contact information
-	ContactName     string             `json:"contact_name,omitempty"`
-	ContactEmail    string             `json:"contact_email,omitempty"`
-	ContactPhone    string             `json:"contact_phone,omitempty"`
+	ContactName  string `json:"contact_name,omitempty"`
+	ContactEmail string `json:"contact_email,omitempty"`
+	ContactPhone string `json:"contact_phone,omitempty"`
 }
 
 // ParticipantEndpoint represents a participant's callback endpoint
 type ParticipantEndpoint struct {
-	Type    string `json:"type"` // FSPIOP_CALLBACK_URL_TRANSFER_POST, etc.
-	Value   string `json:"value"`
-	IsActive bool  `json:"is_active"`
+	Type     string `json:"type"` // FSPIOP_CALLBACK_URL_TRANSFER_POST, etc.
+	Value    string `json:"value"`
+	IsActive bool   `json:"is_active"`
 }
 
 // OnboardingRequest represents a request to onboard a new participant
 type OnboardingRequest struct {
-	Name           string   `json:"name"`
-	Description    string   `json:"description,omitempty"`
-	Currencies     []string `json:"currencies"`
-	NetDebitCap    map[string]int64 `json:"net_debit_cap,omitempty"`
-	LiquidityCheck bool     `json:"liquidity_check"`
+	Name           string                 `json:"name"`
+	Description    string                 `json:"description,omitempty"`
+	Currencies     []string               `json:"currencies"`
+	NetDebitCap    map[string]int64       `json:"net_debit_cap,omitempty"`
+	LiquidityCheck bool                   `json:"liquidity_check"`
 	Endpoints      []*ParticipantEndpoint `json:"endpoints,omitempty"`
-	ContactName    string   `json:"contact_name,omitempty"`
-	ContactEmail   string   `json:"contact_email,omitempty"`
-	ContactPhone   string   `json:"contact_phone,omitempty"`
-	InitialFunding map[string]int64 `json:"initial_funding,omitempty"` // currency -> amount
+	ContactName    string                 `json:"contact_name,omitempty"`
+	ContactEmail   string                 `json:"contact_email,omitempty"`
+	ContactPhone   string                 `json:"contact_phone,omitempty"`
+	InitialFunding map[string]int64       `json:"initial_funding,omitempty"` // currency -> amount
 }
 
 // OnboardParticipant onboards a new participant
@@ -103,20 +103,20 @@ func (m *ParticipantLifecycleManager) OnboardParticipant(ctx context.Context, re
 
 	// Create participant record
 	participant := &ParticipantDetails{
-		Name:           req.Name,
-		Description:    req.Description,
-		Status:         ParticipantStatusPending,
-		CreatedDate:    time.Now(),
-		UpdatedDate:    time.Now(),
-		TBAccounts:     make(map[string]uint128),
+		Name:                 req.Name,
+		Description:          req.Description,
+		Status:               ParticipantStatusPending,
+		CreatedDate:          time.Now(),
+		UpdatedDate:          time.Now(),
+		TBAccounts:           make(map[string]uint128),
 		TBSettlementAccounts: make(map[string]uint128),
-		NetDebitCap:    req.NetDebitCap,
-		LiquidityCheck: req.LiquidityCheck,
-		Endpoints:      req.Endpoints,
-		Currencies:     req.Currencies,
-		ContactName:    req.ContactName,
-		ContactEmail:   req.ContactEmail,
-		ContactPhone:   req.ContactPhone,
+		NetDebitCap:          req.NetDebitCap,
+		LiquidityCheck:       req.LiquidityCheck,
+		Endpoints:            req.Endpoints,
+		Currencies:           req.Currencies,
+		ContactName:          req.ContactName,
+		ContactEmail:         req.ContactEmail,
+		ContactPhone:         req.ContactPhone,
 	}
 
 	// Set default net debit caps if not provided

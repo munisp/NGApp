@@ -25,12 +25,12 @@ func (s *OCRService) ExtractDocumentWithEvents(ctx context.Context, imageData []
 	}
 
 	emitErr := events.GetEmitter().Emit(ctx, events.EventOCRProcessed, "document", result.DocumentID, map[string]interface{}{
-		"customer_id":     customerID,
-		"document_type":   string(documentType),
-		"confidence":      result.Confidence,
-		"processing_time": result.ProcessingTime,
-		"provider":        string(result.Provider),
-		"warnings_count":  len(result.Warnings),
+		"customer_id":      customerID,
+		"document_type":    string(documentType),
+		"confidence":       result.Confidence,
+		"processing_time":  result.ProcessingTime,
+		"provider":         string(result.Provider),
+		"warnings_count":   len(result.Warnings),
 		"fields_extracted": len(result.ExtractedFields),
 	})
 	if emitErr != nil {
@@ -63,14 +63,14 @@ func (s *AMLScreeningService) ScreenIndividualWithEvents(ctx context.Context, re
 	}
 
 	emitErr = events.GetEmitter().Emit(ctx, events.EventAMLScreeningCompleted, "customer", req.ReferenceID, map[string]interface{}{
-		"screening_id":      result.ScreeningID,
-		"risk_score":        result.RiskScore,
-		"risk_level":        string(result.RiskLevel),
-		"total_matches":     result.TotalMatches,
-		"potential_matches": result.PotentialMatches,
-		"confirmed_matches": result.ConfirmedMatches,
+		"screening_id":       result.ScreeningID,
+		"risk_score":         result.RiskScore,
+		"risk_level":         string(result.RiskLevel),
+		"total_matches":      result.TotalMatches,
+		"potential_matches":  result.PotentialMatches,
+		"confirmed_matches":  result.ConfirmedMatches,
 		"watchlists_checked": result.WatchlistsChecked,
-		"processing_time":   result.ProcessingTime,
+		"processing_time":    result.ProcessingTime,
 	})
 	if emitErr != nil {
 		log.Printf("Failed to emit AML screening completed event: %v", emitErr)

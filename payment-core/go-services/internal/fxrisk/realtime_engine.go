@@ -24,7 +24,7 @@ type Position struct {
 
 // RateTick represents a market data tick
 type RateTick struct {
-	Pair      string  // e.g., "USD/NGN"
+	Pair      string // e.g., "USD/NGN"
 	Bid       float64
 	Ask       float64
 	Mid       float64
@@ -90,15 +90,15 @@ type RealTimeEngine struct {
 	limits sync.Map // map[string]*ExposureLimit
 
 	// Channels
-	tickChan    chan *RateTick
-	orderChan   chan *HedgeOrder
-	alertChan   chan *Alert
+	tickChan  chan *RateTick
+	orderChan chan *HedgeOrder
+	alertChan chan *Alert
 
 	// Stats
-	totalTicks     uint64
-	totalAlerts    uint64
-	totalHedges    uint64
-	totalLocks     uint64
+	totalTicks  uint64
+	totalAlerts uint64
+	totalHedges uint64
+	totalLocks  uint64
 
 	// Control
 	ctx    context.Context
@@ -331,9 +331,9 @@ func (e *RealTimeEngine) checkLimits(tick *RateTick) {
 			Severity: "medium",
 			Message:  fmt.Sprintf("%s approaching exposure limit (%.0f%%)", baseCurrency, float64(absNet)/float64(limit.MaxNet)*100),
 			Data: map[string]interface{}{
-				"currency":  baseCurrency,
-				"net":       pos.Net,
-				"limit":     limit.MaxNet,
+				"currency": baseCurrency,
+				"net":      pos.Net,
+				"limit":    limit.MaxNet,
 				"pct_used": float64(absNet) / float64(limit.MaxNet) * 100,
 			},
 			Timestamp: time.Now(),
@@ -377,11 +377,11 @@ func (e *RealTimeEngine) lockExpiryChecker() {
 				if lock.Status == "active" && now.After(lock.ExpiresAt) {
 					lock.Status = "expired"
 					e.emitAlert(&Alert{
-						ID:       fmt.Sprintf("alert-%d", now.UnixNano()),
-						Type:     "rate_lock_expiry",
-						Severity: "low",
-						Message:  fmt.Sprintf("Rate lock %s expired for customer %s", lock.ID, lock.CustomerID),
-						Data:     map[string]interface{}{"lock_id": lock.ID, "pair": lock.Pair},
+						ID:        fmt.Sprintf("alert-%d", now.UnixNano()),
+						Type:      "rate_lock_expiry",
+						Severity:  "low",
+						Message:   fmt.Sprintf("Rate lock %s expired for customer %s", lock.ID, lock.CustomerID),
+						Data:      map[string]interface{}{"lock_id": lock.ID, "pair": lock.Pair},
 						Timestamp: now,
 					})
 				}

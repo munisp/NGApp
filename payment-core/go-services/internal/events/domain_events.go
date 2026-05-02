@@ -17,84 +17,84 @@ type EventType string
 
 const (
 	// KYC Events
-	EventKYCInitiated           EventType = "kyc.initiated"
+	EventKYCInitiated             EventType = "kyc.initiated"
 	EventKYCVerificationCompleted EventType = "kyc.verification.completed"
 	EventKYCVerificationFailed    EventType = "kyc.verification.failed"
 	EventOCRProcessed             EventType = "kyc.ocr.processed"
 
 	// AML Events
-	EventAMLScreeningInitiated  EventType = "aml.screening.initiated"
-	EventAMLScreeningCompleted  EventType = "aml.screening.completed"
-	EventAMLAlertRaised         EventType = "aml.alert.raised"
-	EventSanctionsMatchFound    EventType = "aml.sanctions.match"
+	EventAMLScreeningInitiated EventType = "aml.screening.initiated"
+	EventAMLScreeningCompleted EventType = "aml.screening.completed"
+	EventAMLAlertRaised        EventType = "aml.alert.raised"
+	EventSanctionsMatchFound   EventType = "aml.sanctions.match"
 
 	// Transaction Events
-	EventTransactionInitiated   EventType = "transaction.initiated"
-	EventTransactionCompleted   EventType = "transaction.completed"
-	EventTransactionFailed      EventType = "transaction.failed"
-	EventTransactionBlocked     EventType = "transaction.blocked"
+	EventTransactionInitiated EventType = "transaction.initiated"
+	EventTransactionCompleted EventType = "transaction.completed"
+	EventTransactionFailed    EventType = "transaction.failed"
+	EventTransactionBlocked   EventType = "transaction.blocked"
 
 	// Remittance Events
-	EventRemittanceInitiated    EventType = "remittance.initiated"
-	EventRemittanceCompleted    EventType = "remittance.completed"
-	EventRemittanceFailed       EventType = "remittance.failed"
+	EventRemittanceInitiated EventType = "remittance.initiated"
+	EventRemittanceCompleted EventType = "remittance.completed"
+	EventRemittanceFailed    EventType = "remittance.failed"
 
 	// Settlement Events
-	EventSettlementInitiated    EventType = "settlement.initiated"
-	EventSettlementCompleted    EventType = "settlement.completed"
-	EventSettlementFailed       EventType = "settlement.failed"
+	EventSettlementInitiated EventType = "settlement.initiated"
+	EventSettlementCompleted EventType = "settlement.completed"
+	EventSettlementFailed    EventType = "settlement.failed"
 
 	// Reconciliation Events
-	EventReconciliationStarted  EventType = "reconciliation.started"
+	EventReconciliationStarted   EventType = "reconciliation.started"
 	EventReconciliationCompleted EventType = "reconciliation.completed"
-	EventReconciliationMismatch EventType = "reconciliation.mismatch.found"
+	EventReconciliationMismatch  EventType = "reconciliation.mismatch.found"
 
 	// FX Events
-	EventFXLockCreated          EventType = "fx.lock.created"
-	EventFXLockExpired          EventType = "fx.lock.expired"
-	EventFXHedgeExecuted        EventType = "fx.hedge.executed"
+	EventFXLockCreated   EventType = "fx.lock.created"
+	EventFXLockExpired   EventType = "fx.lock.expired"
+	EventFXHedgeExecuted EventType = "fx.hedge.executed"
 
 	// Rate Alert Events
-	EventRateAlertCreated       EventType = "rate.alert.created"
-	EventRateAlertTriggered     EventType = "rate.alert.triggered"
+	EventRateAlertCreated   EventType = "rate.alert.created"
+	EventRateAlertTriggered EventType = "rate.alert.triggered"
 
 	// Fraud Events
-	EventFraudScoreCalculated   EventType = "fraud.score.calculated"
-	EventFraudAlertRaised       EventType = "fraud.alert.raised"
+	EventFraudScoreCalculated EventType = "fraud.score.calculated"
+	EventFraudAlertRaised     EventType = "fraud.alert.raised"
 
 	// Dispute Events
-	EventDisputeOpened          EventType = "dispute.opened"
-	EventDisputeResolved        EventType = "dispute.resolved"
-	EventDisputeEscalated       EventType = "dispute.escalated"
+	EventDisputeOpened    EventType = "dispute.opened"
+	EventDisputeResolved  EventType = "dispute.resolved"
+	EventDisputeEscalated EventType = "dispute.escalated"
 
 	// Auth Events
-	EventAuthLoginSuccess       EventType = "auth.login.success"
-	EventAuthLoginFailed        EventType = "auth.login.failed"
-	EventAuth2FAVerified        EventType = "auth.2fa.verified"
-	EventAuthDeviceTrusted      EventType = "auth.device.trusted"
+	EventAuthLoginSuccess  EventType = "auth.login.success"
+	EventAuthLoginFailed   EventType = "auth.login.failed"
+	EventAuth2FAVerified   EventType = "auth.2fa.verified"
+	EventAuthDeviceTrusted EventType = "auth.device.trusted"
 
 	// Notification Events
-	EventNotificationSent       EventType = "notification.sent"
-	EventNotificationFailed     EventType = "notification.failed"
+	EventNotificationSent   EventType = "notification.sent"
+	EventNotificationFailed EventType = "notification.failed"
 
 	// Banking Events
-	EventBankTransferInitiated  EventType = "bank.transfer.initiated"
-	EventBankTransferCompleted  EventType = "bank.transfer.completed"
-	EventMobileMoneyInitiated   EventType = "mobile.money.initiated"
-	EventMobileMoneyCompleted   EventType = "mobile.money.completed"
+	EventBankTransferInitiated EventType = "bank.transfer.initiated"
+	EventBankTransferCompleted EventType = "bank.transfer.completed"
+	EventMobileMoneyInitiated  EventType = "mobile.money.initiated"
+	EventMobileMoneyCompleted  EventType = "mobile.money.completed"
 
 	// Crypto Events
-	EventCryptoDepositReceived  EventType = "crypto.deposit.received"
-	EventCryptoWithdrawalSent   EventType = "crypto.withdrawal.sent"
+	EventCryptoDepositReceived EventType = "crypto.deposit.received"
+	EventCryptoWithdrawalSent  EventType = "crypto.withdrawal.sent"
 
 	// Monetization Events
-	EventAPIKeyCreated          EventType = "api.key.created"
-	EventAPIKeyRevoked          EventType = "api.key.revoked"
-	EventUsageMetered           EventType = "usage.metered"
-	EventInvoiceGenerated       EventType = "invoice.generated"
+	EventAPIKeyCreated    EventType = "api.key.created"
+	EventAPIKeyRevoked    EventType = "api.key.revoked"
+	EventUsageMetered     EventType = "usage.metered"
+	EventInvoiceGenerated EventType = "invoice.generated"
 
 	// Sandbox Events
-	EventSandboxCreated         EventType = "sandbox.created"
+	EventSandboxCreated              EventType = "sandbox.created"
 	EventSandboxTransactionSimulated EventType = "sandbox.transaction.simulated"
 )
 
@@ -293,10 +293,10 @@ func EmitReconciliationCompleted(ctx context.Context, reconciliationID string, m
 
 func EmitFraudScoreCalculated(ctx context.Context, transactionID string, score float64, riskLevel string, factors []string) error {
 	return GetEmitter().Emit(ctx, EventFraudScoreCalculated, "transaction", transactionID, map[string]interface{}{
-		"score":       score,
-		"risk_level":  riskLevel,
-		"factors":     factors,
-		"scored_at":   time.Now().UTC().Format(time.RFC3339),
+		"score":      score,
+		"risk_level": riskLevel,
+		"factors":    factors,
+		"scored_at":  time.Now().UTC().Format(time.RFC3339),
 	})
 }
 

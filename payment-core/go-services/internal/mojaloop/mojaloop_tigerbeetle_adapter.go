@@ -14,8 +14,7 @@ import (
 
 // MojaloopTransferState represents the state of a Mojaloop transfer
 
-const (
-)
+const ()
 
 // MojaloopTransfer represents a Mojaloop transfer with TigerBeetle backing
 type MojaloopTransfer struct {
@@ -67,10 +66,10 @@ func NewMojaloopTigerBeetleAdapter() *MojaloopTigerBeetleAdapter {
 // FIXED: Uses TransferStore for durable storage instead of in-memory maps
 // FIXED: Uses collision-resistant TigerBeetle ID generation
 type ProductionMojaloopAdapter struct {
-	tbClient    *TigerBeetleClient
-	ilpCrypto   *ILPCryptoService
-	store       *TransferStore
-	mu          sync.RWMutex
+	tbClient  *TigerBeetleClient
+	ilpCrypto *ILPCryptoService
+	store     *TransferStore
+	mu        sync.RWMutex
 }
 
 // NewProductionMojaloopAdapter creates a production-ready adapter with PostgreSQL persistence
@@ -458,7 +457,7 @@ func (a *MojaloopTigerBeetleAdapter) RegisterParticipant(
 		ctx,
 		accountID,
 		ledger,
-		1, // code for participant account
+		1,                                     // code for participant account
 		AccountFlagDebitsMustNotExceedCredits, // prevent overdraft
 		0,
 	)
@@ -481,14 +480,14 @@ func (a *MojaloopTigerBeetleAdapter) GetParticipantAccount(fspID string) (uint64
 
 // PrepareTransferRequest contains the parameters for preparing a transfer
 type PrepareTransferRequest struct {
-	TransferID  string
-	PayerFSP    string
-	PayeeFSP    string
-	Amount      uint64
-	Currency    string
-	ILPPacket   string
-	Condition   string
-	Expiration  time.Time
+	TransferID string
+	PayerFSP   string
+	PayeeFSP   string
+	Amount     uint64
+	Currency   string
+	ILPPacket  string
+	Condition  string
+	Expiration time.Time
 }
 
 // PrepareTransferResponse contains the result of preparing a transfer

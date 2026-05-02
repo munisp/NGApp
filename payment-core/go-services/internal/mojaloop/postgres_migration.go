@@ -129,46 +129,46 @@ type IndexSchema struct {
 // MySQLToPostgresTypeMap maps MySQL types to PostgreSQL types
 var MySQLToPostgresTypeMap = map[string]string{
 	// Numeric types
-	"tinyint(1)":          "boolean",
-	"tinyint":             "smallint",
-	"smallint":            "smallint",
-	"mediumint":           "integer",
-	"int":                 "integer",
-	"integer":             "integer",
-	"bigint":              "bigint",
-	"bigint unsigned":     "bigint", // Add CHECK constraint for unsigned
-	"int unsigned":        "integer",
-	"decimal":             "decimal",
-	"numeric":             "numeric",
-	"float":               "real",
-	"double":              "double precision",
+	"tinyint(1)":      "boolean",
+	"tinyint":         "smallint",
+	"smallint":        "smallint",
+	"mediumint":       "integer",
+	"int":             "integer",
+	"integer":         "integer",
+	"bigint":          "bigint",
+	"bigint unsigned": "bigint", // Add CHECK constraint for unsigned
+	"int unsigned":    "integer",
+	"decimal":         "decimal",
+	"numeric":         "numeric",
+	"float":           "real",
+	"double":          "double precision",
 
 	// String types
-	"char":                "char",
-	"varchar":             "varchar",
-	"tinytext":            "text",
-	"text":                "text",
-	"mediumtext":          "text",
-	"longtext":            "text",
-	"binary":              "bytea",
-	"varbinary":           "bytea",
-	"tinyblob":            "bytea",
-	"blob":                "bytea",
-	"mediumblob":          "bytea",
-	"longblob":            "bytea",
+	"char":       "char",
+	"varchar":    "varchar",
+	"tinytext":   "text",
+	"text":       "text",
+	"mediumtext": "text",
+	"longtext":   "text",
+	"binary":     "bytea",
+	"varbinary":  "bytea",
+	"tinyblob":   "bytea",
+	"blob":       "bytea",
+	"mediumblob": "bytea",
+	"longblob":   "bytea",
 
 	// Date/time types
-	"date":                "date",
-	"datetime":            "timestamp",
-	"timestamp":           "timestamp with time zone",
-	"time":                "time",
-	"year":                "smallint",
+	"date":      "date",
+	"datetime":  "timestamp",
+	"timestamp": "timestamp with time zone",
+	"time":      "time",
+	"year":      "smallint",
 
 	// JSON
-	"json":                "jsonb",
+	"json": "jsonb",
 
 	// Enum (handled specially)
-	"enum":                "text", // Use TEXT + CHECK constraint
+	"enum": "text", // Use TEXT + CHECK constraint
 }
 
 // TranslateType converts MySQL type to PostgreSQL type
@@ -882,11 +882,11 @@ func (m *PostgresMigration) MigrateSchema(ctx context.Context) error {
 
 // MigrationResult holds the result of a migration
 type MigrationResult struct {
-	Database     string
-	TablesCount  int
-	RowsCount    int64
-	Duration     time.Duration
-	Errors       []string
+	Database    string
+	TablesCount int
+	RowsCount   int64
+	Duration    time.Duration
+	Errors      []string
 }
 
 // Migrate performs the full migration from MySQL to PostgreSQL

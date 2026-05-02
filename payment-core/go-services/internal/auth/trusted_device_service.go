@@ -14,16 +14,16 @@ import (
 const TrustDurationDays = 30
 
 type TrustedDevice struct {
-	ID                int64      `json:"id"`
-	UserID            int64      `json:"userId"`
-	DeviceFingerprint string     `json:"deviceFingerprint"`
-	DeviceName        string     `json:"deviceName"`
-	UserAgent         string     `json:"userAgent"`
-	IPAddress         string     `json:"ipAddress,omitempty"`
-	IsActive          bool       `json:"isActive"`
-	CreatedAt         time.Time  `json:"createdAt"`
-	LastUsedAt        time.Time  `json:"lastUsedAt"`
-	ExpiresAt         time.Time  `json:"expiresAt"`
+	ID                int64     `json:"id"`
+	UserID            int64     `json:"userId"`
+	DeviceFingerprint string    `json:"deviceFingerprint"`
+	DeviceName        string    `json:"deviceName"`
+	UserAgent         string    `json:"userAgent"`
+	IPAddress         string    `json:"ipAddress,omitempty"`
+	IsActive          bool      `json:"isActive"`
+	CreatedAt         time.Time `json:"createdAt"`
+	LastUsedAt        time.Time `json:"lastUsedAt"`
+	ExpiresAt         time.Time `json:"expiresAt"`
 }
 
 type TrustDeviceParams struct {
@@ -52,16 +52,16 @@ type RevokeAllResult struct {
 }
 
 type TrustedDeviceService struct {
-	mu       sync.RWMutex
-	db       *sql.DB
-	devices  map[int64][]*TrustedDevice
+	mu        sync.RWMutex
+	db        *sql.DB
+	devices   map[int64][]*TrustedDevice
 	idCounter int64
 }
 
 func NewTrustedDeviceService(db *sql.DB) *TrustedDeviceService {
 	return &TrustedDeviceService{
-		db:       db,
-		devices:  make(map[int64][]*TrustedDevice),
+		db:        db,
+		devices:   make(map[int64][]*TrustedDevice),
 		idCounter: 1,
 	}
 }

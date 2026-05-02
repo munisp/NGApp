@@ -40,23 +40,23 @@ type BatchTransferClient struct {
 	maxInflight   int
 
 	// Ring buffer for incoming requests
-	ringBuffer    *LockFreeRingBuffer
-	
+	ringBuffer *LockFreeRingBuffer
+
 	// Batch accumulator
-	currentBatch  []TransferRequest
-	batchMu       sync.Mutex
-	
+	currentBatch []TransferRequest
+	batchMu      sync.Mutex
+
 	// Stats
-	totalBatched  uint64
-	totalFlushed  uint64
-	
+	totalBatched uint64
+	totalFlushed uint64
+
 	// Control
-	ctx           context.Context
-	cancel        context.CancelFunc
-	wg            sync.WaitGroup
-	
+	ctx    context.Context
+	cancel context.CancelFunc
+	wg     sync.WaitGroup
+
 	// TigerBeetle client (interface for testing)
-	tbClient      TigerBeetleClient
+	tbClient TigerBeetleClient
 }
 
 // TigerBeetleClient interface for TigerBeetle operations
@@ -66,10 +66,10 @@ type TigerBeetleClient interface {
 
 // BatchConfig configures the batch transfer client
 type BatchConfig struct {
-	BatchSize     int           // Target batch size (default: 1000)
-	FlushInterval time.Duration // Max time before flush (default: 5ms)
-	MaxInflight   int           // Max concurrent batches (default: 10)
-	RingBufferSize int          // Ring buffer capacity (default: 100000)
+	BatchSize      int           // Target batch size (default: 1000)
+	FlushInterval  time.Duration // Max time before flush (default: 5ms)
+	MaxInflight    int           // Max concurrent batches (default: 10)
+	RingBufferSize int           // Ring buffer capacity (default: 100000)
 }
 
 // DefaultBatchConfig returns optimized defaults for high throughput
@@ -85,7 +85,7 @@ func DefaultBatchConfig() BatchConfig {
 // NewBatchTransferClient creates a new batch transfer client
 func NewBatchTransferClient(tbClient TigerBeetleClient, config BatchConfig) *BatchTransferClient {
 	ctx, cancel := context.WithCancel(context.Background())
-	
+
 	client := &BatchTransferClient{
 		batchSize:     config.BatchSize,
 		flushInterval: config.FlushInterval,
@@ -96,11 +96,11 @@ func NewBatchTransferClient(tbClient TigerBeetleClient, config BatchConfig) *Bat
 		cancel:        cancel,
 		tbClient:      tbClient,
 	}
-	
+
 	// Start batch processor
 	client.wg.Add(1)
 	go client.batchProcessor()
-	
+
 	return client
 }
 
@@ -110,11 +110,11 @@ func (c *BatchTransferClient) Submit(req TransferRequest) error {
 	if req.ResponseChan == nil {
 		req.ResponseChan = make(chan TransferResponse, 1)
 	}
-	
+
 	if !c.ringBuffer.Push(req) {
 		return ErrBufferFull
 	}
-	
+
 	atomic.AddUint64(&c.totalBatched, 1)
 	return nil
 }
@@ -122,11 +122,11 @@ func (c *BatchTransferClient) Submit(req TransferRequest) error {
 // SubmitSync submits a transfer and waits for the result
 func (c *BatchTransferClient) SubmitSync(ctx context.Context, req TransferRequest) (TransferResponse, error) {
 	req.ResponseChan = make(chan TransferResponse, 1)
-	
+
 	if err := c.Submit(req); err != nil {
 		return TransferResponse{}, err
 	}
-	
+
 	select {
 	case resp := <-req.ResponseChan:
 		return resp, resp.Error
@@ -138,20 +138,20 @@ func (c *BatchTransferClient) SubmitSync(ctx context.Context, req TransferReques
 // batchProcessor runs the batch processing loop
 func (c *BatchTransferClient) batchProcessor() {
 	defer c.wg.Done()
-	
+
 	ticker := time.NewTicker(c.flushInterval)
 	defer ticker.Stop()
-	
+
 	// Semaphore for max inflight batches
 	sem := make(chan struct{}, c.maxInflight)
-	
+
 	for {
 		select {
 		case <-c.ctx.Done():
 			// Flush remaining
 			c.flushBatch(sem)
 			return
-			
+
 		case <-ticker.C:
 			// Time-based flush
 			c.collectAndFlush(sem)
@@ -162,7 +162,7 @@ func (c *BatchTransferClient) batchProcessor() {
 // collectAndFlush collects from ring buffer and flushes if batch is ready
 func (c *BatchTransferClient) collectAndFlush(sem chan struct{}) {
 	c.batchMu.Lock()
-	
+
 	// Drain ring buffer into current batch
 	for len(c.currentBatch) < c.batchSize {
 		req, ok := c.ringBuffer.Pop()
@@ -171,16 +171,16 @@ func (c *BatchTransferClient) collectAndFlush(sem chan struct{}) {
 		}
 		c.currentBatch = append(c.currentBatch, req)
 	}
-	
+
 	// Flush if we have items
 	if len(c.currentBatch) > 0 {
 		batch := c.currentBatch
 		c.currentBatch = make([]TransferRequest, 0, c.batchSize)
 		c.batchMu.Unlock()
-		
+
 		// Acquire semaphore slot
 		sem <- struct{}{}
-		
+
 		go func() {
 			defer func() { <-sem }()
 			c.executeBatch(batch)
@@ -193,7 +193,7 @@ func (c *BatchTransferClient) collectAndFlush(sem chan struct{}) {
 // flushBatch flushes any pending items
 func (c *BatchTransferClient) flushBatch(sem chan struct{}) {
 	c.batchMu.Lock()
-	
+
 	// Drain remaining from ring buffer
 	for {
 		req, ok := c.ringBuffer.Pop()
@@ -202,12 +202,12 @@ func (c *BatchTransferClient) flushBatch(sem chan struct{}) {
 		}
 		c.currentBatch = append(c.currentBatch, req)
 	}
-	
+
 	if len(c.currentBatch) > 0 {
 		batch := c.currentBatch
 		c.currentBatch = nil
 		c.batchMu.Unlock()
-		
+
 		sem <- struct{}{}
 		go func() {
 			defer func() { <-sem }()
@@ -222,11 +222,11 @@ func (c *BatchTransferClient) flushBatch(sem chan struct{}) {
 func (c *BatchTransferClient) executeBatch(batch []TransferRequest) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
-	
+
 	responses, err := c.tbClient.CreateTransfers(ctx, batch)
-	
+
 	atomic.AddUint64(&c.totalFlushed, uint64(len(batch)))
-	
+
 	// Distribute responses
 	if err != nil {
 		// Error case: notify all waiters
@@ -240,13 +240,13 @@ func (c *BatchTransferClient) executeBatch(batch []TransferRequest) {
 		}
 		return
 	}
-	
+
 	// Success case: match responses to requests
 	responseMap := make(map[[16]byte]TransferResponse, len(responses))
 	for _, resp := range responses {
 		responseMap[resp.ID] = resp
 	}
-	
+
 	for _, req := range batch {
 		if req.ResponseChan != nil {
 			resp, ok := responseMap[req.ID]
@@ -277,8 +277,8 @@ func (c *BatchTransferClient) Close() error {
 type LockFreeRingBuffer struct {
 	buffer   []TransferRequest
 	mask     uint64
-	head     uint64 // Consumer reads from here
-	tail     uint64 // Producers write here
+	head     uint64   // Consumer reads from here
+	tail     uint64   // Producers write here
 	_padding [56]byte // Prevent false sharing
 }
 
@@ -287,7 +287,7 @@ type LockFreeRingBuffer struct {
 func NewLockFreeRingBuffer(size int) *LockFreeRingBuffer {
 	// Round up to power of 2
 	size = nextPowerOf2(size)
-	
+
 	return &LockFreeRingBuffer{
 		buffer: make([]TransferRequest, size),
 		mask:   uint64(size - 1),
@@ -299,12 +299,12 @@ func (rb *LockFreeRingBuffer) Push(item TransferRequest) bool {
 	for {
 		tail := atomic.LoadUint64(&rb.tail)
 		head := atomic.LoadUint64(&rb.head)
-		
+
 		// Check if full
 		if tail-head >= uint64(len(rb.buffer)) {
 			return false
 		}
-		
+
 		// Try to claim slot
 		if atomic.CompareAndSwapUint64(&rb.tail, tail, tail+1) {
 			rb.buffer[tail&rb.mask] = item
@@ -317,11 +317,11 @@ func (rb *LockFreeRingBuffer) Push(item TransferRequest) bool {
 func (rb *LockFreeRingBuffer) Pop() (TransferRequest, bool) {
 	head := atomic.LoadUint64(&rb.head)
 	tail := atomic.LoadUint64(&rb.tail)
-	
+
 	if head >= tail {
 		return TransferRequest{}, false
 	}
-	
+
 	item := rb.buffer[head&rb.mask]
 	atomic.AddUint64(&rb.head, 1)
 	return item, true

@@ -13,13 +13,13 @@ import (
 
 // Config holds the database configuration
 type Config struct {
-	Host     string
-	Port     int
-	Database string
-	User     string
-	Password string
-	MinConns int
-	MaxConns int
+	Host        string
+	Port        int
+	Database    string
+	User        string
+	Password    string
+	MinConns    int
+	MaxConns    int
 	MaxIdleTime time.Duration
 	MaxLifetime time.Duration
 }
@@ -393,22 +393,22 @@ func (db *DB) LookupParty(ctx context.Context, partyType, partyIdentifier string
 
 // Quote represents a payment quote
 type Quote struct {
-	ID                   string
-	QuoteID              string
-	TransactionID        string
-	PayerParticipantID   string
-	PayeeParticipantID   string
-	Amount               string
-	Currency             string
-	PayeeReceiveAmount   string
-	PayeeFeeAmount       string
-	PayeeCommission      string
-	ILPPacket            *string
-	Condition            *string
-	Expiration           time.Time
-	Status               string
-	CreatedAt            time.Time
-	UpdatedAt            time.Time
+	ID                 string
+	QuoteID            string
+	TransactionID      string
+	PayerParticipantID string
+	PayeeParticipantID string
+	Amount             string
+	Currency           string
+	PayeeReceiveAmount string
+	PayeeFeeAmount     string
+	PayeeCommission    string
+	ILPPacket          *string
+	Condition          *string
+	Expiration         time.Time
+	Status             string
+	CreatedAt          time.Time
+	UpdatedAt          time.Time
 }
 
 // CreateQuote creates a new quote
@@ -480,16 +480,16 @@ func (db *DB) GetQuote(ctx context.Context, quoteID string) (*Quote, error) {
 
 // FraudCheck represents a fraud check record
 type FraudCheck struct {
-	ID              string
-	TransactionID   string
-	RiskScore       float64
-	RiskLevel       string
-	Blocked         bool
-	RulesTriggered  []string
-	Reasons         []string
-	MLScore         *float64
-	GNNScore        *float64
-	CheckedAt       time.Time
+	ID             string
+	TransactionID  string
+	RiskScore      float64
+	RiskLevel      string
+	Blocked        bool
+	RulesTriggered []string
+	Reasons        []string
+	MLScore        *float64
+	GNNScore       *float64
+	CheckedAt      time.Time
 }
 
 // InsertFraudCheck inserts a fraud check result

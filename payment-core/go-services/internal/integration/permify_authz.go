@@ -24,12 +24,12 @@ type PermifyClient struct {
 
 // PermifyConfig holds Permify client configuration
 type PermifyConfig struct {
-	BaseURL        string        `json:"base_url"`
-	TenantID       string        `json:"tenant_id"`
-	Timeout        time.Duration `json:"timeout"`
-	CacheTTL       time.Duration `json:"cache_ttl"`
-	CacheMaxSize   int           `json:"cache_max_size"`
-	EnableMetrics  bool          `json:"enable_metrics"`
+	BaseURL       string        `json:"base_url"`
+	TenantID      string        `json:"tenant_id"`
+	Timeout       time.Duration `json:"timeout"`
+	CacheTTL      time.Duration `json:"cache_ttl"`
+	CacheMaxSize  int           `json:"cache_max_size"`
+	EnableMetrics bool          `json:"enable_metrics"`
 }
 
 // DefaultPermifyConfig returns default configuration
@@ -46,10 +46,10 @@ func DefaultPermifyConfig() *PermifyConfig {
 
 // AuthzCache provides caching for authorization decisions
 type AuthzCache struct {
-	entries  map[string]*CacheEntry
-	maxSize  int
-	ttl      time.Duration
-	mu       sync.RWMutex
+	entries map[string]*CacheEntry
+	maxSize int
+	ttl     time.Duration
+	mu      sync.RWMutex
 }
 
 // CacheEntry represents a cached authorization decision
@@ -60,14 +60,14 @@ type CacheEntry struct {
 
 // AuthzMetrics tracks authorization metrics
 type AuthzMetrics struct {
-	ChecksTotal     int64   `json:"checks_total"`
-	ChecksAllowed   int64   `json:"checks_allowed"`
-	ChecksDenied    int64   `json:"checks_denied"`
-	ChecksFailed    int64   `json:"checks_failed"`
-	CacheHits       int64   `json:"cache_hits"`
-	CacheMisses     int64   `json:"cache_misses"`
-	AvgLatencyMs    float64 `json:"avg_latency_ms"`
-	mu              sync.RWMutex
+	ChecksTotal   int64   `json:"checks_total"`
+	ChecksAllowed int64   `json:"checks_allowed"`
+	ChecksDenied  int64   `json:"checks_denied"`
+	ChecksFailed  int64   `json:"checks_failed"`
+	CacheHits     int64   `json:"cache_hits"`
+	CacheMisses   int64   `json:"cache_misses"`
+	AvgLatencyMs  float64 `json:"avg_latency_ms"`
+	mu            sync.RWMutex
 }
 
 // NewPermifyClient creates a new Permify client
@@ -101,67 +101,67 @@ const (
 	PermissionViewKillSwitches     Permission = "view_kill_switches"
 
 	// Settlement permissions
-	PermissionApproveSettlement    Permission = "approve_settlement"
-	PermissionRejectSettlement     Permission = "reject_settlement"
-	PermissionViewSettlements      Permission = "view_settlements"
-	PermissionInitiateSettlement   Permission = "initiate_settlement"
+	PermissionApproveSettlement  Permission = "approve_settlement"
+	PermissionRejectSettlement   Permission = "reject_settlement"
+	PermissionViewSettlements    Permission = "view_settlements"
+	PermissionInitiateSettlement Permission = "initiate_settlement"
 
 	// Participant permissions
-	PermissionOnboardParticipant   Permission = "onboard_participant"
-	PermissionSuspendParticipant   Permission = "suspend_participant"
-	PermissionActivateParticipant  Permission = "activate_participant"
-	PermissionViewParticipants     Permission = "view_participants"
-	PermissionSetLimits            Permission = "set_limits"
+	PermissionOnboardParticipant  Permission = "onboard_participant"
+	PermissionSuspendParticipant  Permission = "suspend_participant"
+	PermissionActivateParticipant Permission = "activate_participant"
+	PermissionViewParticipants    Permission = "view_participants"
+	PermissionSetLimits           Permission = "set_limits"
 
 	// Transfer permissions
-	PermissionViewTransfers        Permission = "view_transfers"
-	PermissionReverseTransfer      Permission = "reverse_transfer"
-	PermissionHoldTransfer         Permission = "hold_transfer"
+	PermissionViewTransfers   Permission = "view_transfers"
+	PermissionReverseTransfer Permission = "reverse_transfer"
+	PermissionHoldTransfer    Permission = "hold_transfer"
 
 	// Audit permissions
-	PermissionViewAuditLogs        Permission = "view_audit_logs"
-	PermissionExportAuditLogs      Permission = "export_audit_logs"
+	PermissionViewAuditLogs   Permission = "view_audit_logs"
+	PermissionExportAuditLogs Permission = "export_audit_logs"
 
 	// Regulatory permissions
-	PermissionGenerateReports      Permission = "generate_reports"
-	PermissionSubmitReports        Permission = "submit_reports"
-	PermissionViewReports          Permission = "view_reports"
+	PermissionGenerateReports Permission = "generate_reports"
+	PermissionSubmitReports   Permission = "submit_reports"
+	PermissionViewReports     Permission = "view_reports"
 
 	// Fraud permissions
-	PermissionViewFraudAlerts      Permission = "view_fraud_alerts"
-	PermissionResolveFraudAlert    Permission = "resolve_fraud_alert"
-	PermissionUpdateFraudRules     Permission = "update_fraud_rules"
+	PermissionViewFraudAlerts   Permission = "view_fraud_alerts"
+	PermissionResolveFraudAlert Permission = "resolve_fraud_alert"
+	PermissionUpdateFraudRules  Permission = "update_fraud_rules"
 
 	// Admin permissions
-	PermissionManageUsers          Permission = "manage_users"
-	PermissionManageRoles          Permission = "manage_roles"
-	PermissionViewSystemMetrics    Permission = "view_system_metrics"
-	PermissionManageConfiguration  Permission = "manage_configuration"
+	PermissionManageUsers         Permission = "manage_users"
+	PermissionManageRoles         Permission = "manage_roles"
+	PermissionViewSystemMetrics   Permission = "view_system_metrics"
+	PermissionManageConfiguration Permission = "manage_configuration"
 )
 
 // ResourceType represents a resource type in the authorization model
 type ResourceType string
 
 const (
-	ResourceKillSwitch    ResourceType = "kill_switch"
-	ResourceSettlement    ResourceType = "settlement"
-	ResourceParticipant   ResourceType = "participant"
-	ResourceTransfer      ResourceType = "transfer"
-	ResourceAuditLog      ResourceType = "audit_log"
-	ResourceReport        ResourceType = "report"
-	ResourceFraudAlert    ResourceType = "fraud_alert"
-	ResourceFraudRule     ResourceType = "fraud_rule"
-	ResourceUser          ResourceType = "user"
-	ResourceRole          ResourceType = "role"
-	ResourceSystem        ResourceType = "system"
+	ResourceKillSwitch  ResourceType = "kill_switch"
+	ResourceSettlement  ResourceType = "settlement"
+	ResourceParticipant ResourceType = "participant"
+	ResourceTransfer    ResourceType = "transfer"
+	ResourceAuditLog    ResourceType = "audit_log"
+	ResourceReport      ResourceType = "report"
+	ResourceFraudAlert  ResourceType = "fraud_alert"
+	ResourceFraudRule   ResourceType = "fraud_rule"
+	ResourceUser        ResourceType = "user"
+	ResourceRole        ResourceType = "role"
+	ResourceSystem      ResourceType = "system"
 )
 
 // CheckRequest represents an authorization check request
 type CheckRequest struct {
-	Subject      Subject      `json:"subject"`
-	Permission   Permission   `json:"permission"`
-	Resource     Resource     `json:"resource"`
-	Context      *AuthzContext `json:"context,omitempty"`
+	Subject    Subject       `json:"subject"`
+	Permission Permission    `json:"permission"`
+	Resource   Resource      `json:"resource"`
+	Context    *AuthzContext `json:"context,omitempty"`
 }
 
 // Subject represents the entity requesting access
@@ -178,11 +178,11 @@ type Resource struct {
 
 // AuthzContext provides additional context for authorization decisions
 type AuthzContext struct {
-	IPAddress     string            `json:"ip_address,omitempty"`
-	UserAgent     string            `json:"user_agent,omitempty"`
-	RequestID     string            `json:"request_id,omitempty"`
-	Timestamp     time.Time         `json:"timestamp"`
-	Attributes    map[string]string `json:"attributes,omitempty"`
+	IPAddress  string            `json:"ip_address,omitempty"`
+	UserAgent  string            `json:"user_agent,omitempty"`
+	RequestID  string            `json:"request_id,omitempty"`
+	Timestamp  time.Time         `json:"timestamp"`
+	Attributes map[string]string `json:"attributes,omitempty"`
 }
 
 // CheckResponse represents an authorization check response
@@ -245,9 +245,9 @@ func (c *PermifyClient) Check(ctx context.Context, req *CheckRequest) (*CheckRes
 
 	if req.Context != nil {
 		permifyReq["context"] = map[string]interface{}{
-			"tuples": []interface{}{},
+			"tuples":     []interface{}{},
 			"attributes": []interface{}{},
-			"data": req.Context.Attributes,
+			"data":       req.Context.Attributes,
 		}
 	}
 
@@ -260,7 +260,7 @@ func (c *PermifyClient) Check(ctx context.Context, req *CheckRequest) (*CheckRes
 	}
 
 	// Make HTTP request to Permify
-	httpReq, err := http.NewRequestWithContext(ctx, "POST", 
+	httpReq, err := http.NewRequestWithContext(ctx, "POST",
 		fmt.Sprintf("%s/v1/tenants/%s/permissions/check", c.baseURL, c.tenantID),
 		strings.NewReader(string(reqBody)))
 	if err != nil {
@@ -415,10 +415,10 @@ func (c *PermifyClient) GetMetrics() *AuthzMetrics {
 
 // AuthzMiddleware provides HTTP middleware for authorization
 type AuthzMiddleware struct {
-	client          *PermifyClient
-	resourceMapper  ResourceMapper
+	client           *PermifyClient
+	resourceMapper   ResourceMapper
 	permissionMapper PermissionMapper
-	auditLogger     AuditLogger
+	auditLogger      AuditLogger
 }
 
 // ResourceMapper maps HTTP requests to resources
@@ -522,7 +522,7 @@ func extractSubjectFromRequest(r *http.Request) *Subject {
 func DefaultResourceMapper() ResourceMapper {
 	return func(r *http.Request) Resource {
 		path := r.URL.Path
-		
+
 		// Map paths to resources
 		switch {
 		case strings.HasPrefix(path, "/api/v1/kill-switches"):

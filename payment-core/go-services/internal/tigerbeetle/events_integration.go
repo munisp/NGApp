@@ -63,11 +63,11 @@ func NewTigerBeetleServiceWithEvents(service interface{}) *TigerBeetleServiceWit
 
 func (s *TigerBeetleServiceWithEvents) CreateTransfer(ctx context.Context, debitAccountID, creditAccountID string, amount uint64, ledger uint32) (string, error) {
 	transferID := generateTransferID()
-	
+
 	if err := EmitTransferCreated(ctx, transferID, debitAccountID, creditAccountID, amount, ledger); err != nil {
 		log.Printf("Failed to emit transfer created event: %v", err)
 	}
-	
+
 	return transferID, nil
 }
 
@@ -80,11 +80,11 @@ func (s *TigerBeetleServiceWithEvents) CompleteTransfer(ctx context.Context, tra
 
 func (s *TigerBeetleServiceWithEvents) CreateAccount(ctx context.Context, ledger uint32, code uint16) (string, error) {
 	accountID := generateAccountID()
-	
+
 	if err := EmitAccountCreated(ctx, accountID, ledger, code); err != nil {
 		log.Printf("Failed to emit account created event: %v", err)
 	}
-	
+
 	return accountID, nil
 }
 

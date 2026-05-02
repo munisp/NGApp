@@ -97,8 +97,8 @@ func (c *KafkaConsumer) publishToDeadLetter(event PaymentEvent, err error) {
 	}
 	defer writer.Close()
 	data, _ := json.Marshal(map[string]interface{}{
-		"event": event,
-		"error": err.Error(),
+		"event":     event,
+		"error":     err.Error(),
 		"timestamp": time.Now(),
 	})
 	_ = writer.WriteMessages(context.Background(), kafka.Message{Value: data})

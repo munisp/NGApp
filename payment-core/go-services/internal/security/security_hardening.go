@@ -22,22 +22,22 @@ import (
 type SecurityHardeningService struct {
 	// Content Security Policy
 	csp *ContentSecurityPolicy
-	
+
 	// HTTP Security Headers
 	headers *SecurityHeaders
-	
+
 	// Input Validation
 	validator *InputValidator
-	
+
 	// Encryption Service
 	encryption *EncryptionService
-	
+
 	// Session Manager
 	sessions *SecureSessionManager
-	
+
 	// Rate Limiter
 	rateLimiter *RateLimiter
-	
+
 	// Configuration
 	config SecurityHardeningConfig
 }
@@ -45,29 +45,29 @@ type SecurityHardeningService struct {
 // SecurityHardeningConfig configures security hardening
 type SecurityHardeningConfig struct {
 	// CSP
-	CSPEnabled           bool
-	CSPReportOnly        bool
-	CSPReportURI         string
-	
+	CSPEnabled    bool
+	CSPReportOnly bool
+	CSPReportURI  string
+
 	// HSTS
-	HSTSEnabled          bool
-	HSTSMaxAge           int
+	HSTSEnabled           bool
+	HSTSMaxAge            int
 	HSTSIncludeSubdomains bool
-	HSTSPreload          bool
-	
+	HSTSPreload           bool
+
 	// Sessions
-	SessionTimeout       time.Duration
-	SessionSecure        bool
-	SessionHTTPOnly      bool
-	SessionSameSite      string
-	
+	SessionTimeout  time.Duration
+	SessionSecure   bool
+	SessionHTTPOnly bool
+	SessionSameSite string
+
 	// Encryption
-	EncryptionKey        []byte
-	
+	EncryptionKey []byte
+
 	// Rate Limiting
-	RateLimitEnabled     bool
-	RateLimitRequests    int
-	RateLimitWindow      time.Duration
+	RateLimitEnabled  bool
+	RateLimitRequests int
+	RateLimitWindow   time.Duration
 }
 
 // DefaultSecurityHardeningConfig returns secure defaults
@@ -93,14 +93,14 @@ func DefaultSecurityHardeningConfig() SecurityHardeningConfig {
 func NewSecurityHardeningService(config SecurityHardeningConfig) (*SecurityHardeningService, error) {
 	var encService *EncryptionService
 	var err error
-	
+
 	if len(config.EncryptionKey) > 0 {
 		encService, err = NewEncryptionService(config.EncryptionKey)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create encryption service: %w", err)
 		}
 	}
-	
+
 	return &SecurityHardeningService{
 		csp:         NewContentSecurityPolicy(),
 		headers:     NewSecurityHeaders(config),
@@ -117,12 +117,12 @@ func (s *SecurityHardeningService) Middleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Apply security headers
 		s.headers.Apply(w)
-		
+
 		// Apply CSP
 		if s.config.CSPEnabled {
 			s.csp.Apply(w, s.config.CSPReportOnly)
 		}
-		
+
 		// Rate limiting
 		if s.config.RateLimitEnabled {
 			clientIP := getClientIP(r)
@@ -131,7 +131,7 @@ func (s *SecurityHardeningService) Middleware(next http.Handler) http.Handler {
 				return
 			}
 		}
-		
+
 		next.ServeHTTP(w, r)
 	})
 }
@@ -151,7 +151,7 @@ func NewContentSecurityPolicy() *ContentSecurityPolicy {
 	csp := &ContentSecurityPolicy{
 		directives: make(map[string][]string),
 	}
-	
+
 	// Set secure defaults
 	csp.directives["default-src"] = []string{"'self'"}
 	csp.directives["script-src"] = []string{"'self'", "'strict-dynamic'"}
@@ -164,7 +164,7 @@ func NewContentSecurityPolicy() *ContentSecurityPolicy {
 	csp.directives["base-uri"] = []string{"'self'"}
 	csp.directives["object-src"] = []string{"'none'"}
 	csp.directives["upgrade-insecure-requests"] = []string{}
-	
+
 	return csp
 }
 
@@ -186,7 +186,7 @@ func (c *ContentSecurityPolicy) AddSource(directive, source string) {
 func (c *ContentSecurityPolicy) Build() string {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
-	
+
 	var parts []string
 	for directive, values := range c.directives {
 		if len(values) == 0 {
@@ -195,7 +195,7 @@ func (c *ContentSecurityPolicy) Build() string {
 			parts = append(parts, directive+" "+strings.Join(values, " "))
 		}
 	}
-	
+
 	return strings.Join(parts, "; ")
 }
 
@@ -235,27 +235,27 @@ func (h *SecurityHeaders) Apply(w http.ResponseWriter) {
 		}
 		w.Header().Set("Strict-Transport-Security", hsts)
 	}
-	
+
 	// X-Frame-Options (defense in depth with CSP frame-ancestors)
 	w.Header().Set("X-Frame-Options", "DENY")
-	
+
 	// X-Content-Type-Options
 	w.Header().Set("X-Content-Type-Options", "nosniff")
-	
+
 	// X-XSS-Protection (legacy, but still useful for older browsers)
 	w.Header().Set("X-XSS-Protection", "1; mode=block")
-	
+
 	// Referrer-Policy
 	w.Header().Set("Referrer-Policy", "strict-origin-when-cross-origin")
-	
+
 	// Permissions-Policy (formerly Feature-Policy)
 	w.Header().Set("Permissions-Policy", "geolocation=(), microphone=(), camera=(), payment=(self)")
-	
+
 	// Cache-Control for sensitive pages
 	w.Header().Set("Cache-Control", "no-store, no-cache, must-revalidate, private")
 	w.Header().Set("Pragma", "no-cache")
 	w.Header().Set("Expires", "0")
-	
+
 	// Cross-Origin policies
 	w.Header().Set("Cross-Origin-Opener-Policy", "same-origin")
 	w.Header().Set("Cross-Origin-Embedder-Policy", "require-corp")
@@ -273,8 +273,8 @@ type InputValidator struct {
 
 // ValidationResult represents validation result
 type ValidationResult struct {
-	Valid   bool
-	Errors  []ValidationError
+	Valid  bool
+	Errors []ValidationError
 }
 
 // ValidationError represents a validation error
@@ -288,18 +288,18 @@ type ValidationError struct {
 func NewInputValidator() *InputValidator {
 	return &InputValidator{
 		patterns: map[string]*regexp.Regexp{
-			"email":       regexp.MustCompile(`^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`),
-			"phone":       regexp.MustCompile(`^\+?[1-9]\d{1,14}$`),
-			"uuid":        regexp.MustCompile(`^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$`),
+			"email":        regexp.MustCompile(`^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`),
+			"phone":        regexp.MustCompile(`^\+?[1-9]\d{1,14}$`),
+			"uuid":         regexp.MustCompile(`^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$`),
 			"alphanumeric": regexp.MustCompile(`^[a-zA-Z0-9]+$`),
-			"numeric":     regexp.MustCompile(`^[0-9]+$`),
-			"alpha":       regexp.MustCompile(`^[a-zA-Z]+$`),
-			"iban":        regexp.MustCompile(`^[A-Z]{2}[0-9]{2}[A-Z0-9]{4}[0-9]{7}([A-Z0-9]?){0,16}$`),
-			"swift":       regexp.MustCompile(`^[A-Z]{6}[A-Z0-9]{2}([A-Z0-9]{3})?$`),
-			"card_number": regexp.MustCompile(`^[0-9]{13,19}$`),
-			"cvv":         regexp.MustCompile(`^[0-9]{3,4}$`),
-			"ip_address":  regexp.MustCompile(`^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$`),
-			"url":         regexp.MustCompile(`^https?://[^\s/$.?#].[^\s]*$`),
+			"numeric":      regexp.MustCompile(`^[0-9]+$`),
+			"alpha":        regexp.MustCompile(`^[a-zA-Z]+$`),
+			"iban":         regexp.MustCompile(`^[A-Z]{2}[0-9]{2}[A-Z0-9]{4}[0-9]{7}([A-Z0-9]?){0,16}$`),
+			"swift":        regexp.MustCompile(`^[A-Z]{6}[A-Z0-9]{2}([A-Z0-9]{3})?$`),
+			"card_number":  regexp.MustCompile(`^[0-9]{13,19}$`),
+			"cvv":          regexp.MustCompile(`^[0-9]{3,4}$`),
+			"ip_address":   regexp.MustCompile(`^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$`),
+			"url":          regexp.MustCompile(`^https?://[^\s/$.?#].[^\s]*$`),
 		},
 	}
 }
@@ -335,11 +335,11 @@ func (v *InputValidator) ValidateSWIFT(swift string) bool {
 func (v *InputValidator) ValidateCardNumber(cardNumber string) bool {
 	// Remove spaces and dashes
 	cardNumber = strings.ReplaceAll(strings.ReplaceAll(cardNumber, " ", ""), "-", "")
-	
+
 	if !v.patterns["card_number"].MatchString(cardNumber) {
 		return false
 	}
-	
+
 	// Luhn algorithm
 	return v.luhnCheck(cardNumber)
 }
@@ -348,7 +348,7 @@ func (v *InputValidator) ValidateCardNumber(cardNumber string) bool {
 func (v *InputValidator) luhnCheck(number string) bool {
 	var sum int
 	alt := false
-	
+
 	for i := len(number) - 1; i >= 0; i-- {
 		n := int(number[i] - '0')
 		if alt {
@@ -360,7 +360,7 @@ func (v *InputValidator) luhnCheck(number string) bool {
 		sum += n
 		alt = !alt
 	}
-	
+
 	return sum%10 == 0
 }
 
@@ -375,7 +375,7 @@ func (v *InputValidator) ValidateAmount(amount string) bool {
 func (v *InputValidator) SanitizeString(input string) string {
 	// Remove null bytes
 	input = strings.ReplaceAll(input, "\x00", "")
-	
+
 	// Remove control characters except newlines and tabs
 	var result strings.Builder
 	for _, r := range input {
@@ -383,7 +383,7 @@ func (v *InputValidator) SanitizeString(input string) string {
 			result.WriteRune(r)
 		}
 	}
-	
+
 	return result.String()
 }
 
@@ -402,7 +402,7 @@ func (v *InputValidator) SanitizeHTML(input string) string {
 // ValidatePassword validates password strength
 func (v *InputValidator) ValidatePassword(password string) *ValidationResult {
 	result := &ValidationResult{Valid: true}
-	
+
 	if len(password) < 12 {
 		result.Valid = false
 		result.Errors = append(result.Errors, ValidationError{
@@ -411,7 +411,7 @@ func (v *InputValidator) ValidatePassword(password string) *ValidationResult {
 			Code:    "PASSWORD_TOO_SHORT",
 		})
 	}
-	
+
 	if len(password) > 128 {
 		result.Valid = false
 		result.Errors = append(result.Errors, ValidationError{
@@ -420,7 +420,7 @@ func (v *InputValidator) ValidatePassword(password string) *ValidationResult {
 			Code:    "PASSWORD_TOO_LONG",
 		})
 	}
-	
+
 	var hasUpper, hasLower, hasDigit, hasSpecial bool
 	for _, r := range password {
 		switch {
@@ -434,7 +434,7 @@ func (v *InputValidator) ValidatePassword(password string) *ValidationResult {
 			hasSpecial = true
 		}
 	}
-	
+
 	if !hasUpper {
 		result.Valid = false
 		result.Errors = append(result.Errors, ValidationError{
@@ -443,7 +443,7 @@ func (v *InputValidator) ValidatePassword(password string) *ValidationResult {
 			Code:    "PASSWORD_NO_UPPERCASE",
 		})
 	}
-	
+
 	if !hasLower {
 		result.Valid = false
 		result.Errors = append(result.Errors, ValidationError{
@@ -452,7 +452,7 @@ func (v *InputValidator) ValidatePassword(password string) *ValidationResult {
 			Code:    "PASSWORD_NO_LOWERCASE",
 		})
 	}
-	
+
 	if !hasDigit {
 		result.Valid = false
 		result.Errors = append(result.Errors, ValidationError{
@@ -461,7 +461,7 @@ func (v *InputValidator) ValidatePassword(password string) *ValidationResult {
 			Code:    "PASSWORD_NO_DIGIT",
 		})
 	}
-	
+
 	if !hasSpecial {
 		result.Valid = false
 		result.Errors = append(result.Errors, ValidationError{
@@ -470,7 +470,7 @@ func (v *InputValidator) ValidatePassword(password string) *ValidationResult {
 			Code:    "PASSWORD_NO_SPECIAL",
 		})
 	}
-	
+
 	return result
 }
 
@@ -489,17 +489,17 @@ func NewEncryptionService(key []byte) (*EncryptionService, error) {
 	if len(key) != 32 {
 		return nil, fmt.Errorf("encryption key must be 32 bytes (256 bits)")
 	}
-	
+
 	block, err := aes.NewCipher(key)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	gcm, err := cipher.NewGCM(block)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	return &EncryptionService{
 		key:    key,
 		cipher: gcm,
@@ -512,7 +512,7 @@ func (e *EncryptionService) Encrypt(plaintext []byte) ([]byte, error) {
 	if _, err := io.ReadFull(rand.Reader, nonce); err != nil {
 		return nil, err
 	}
-	
+
 	ciphertext := e.cipher.Seal(nonce, nonce, plaintext, nil)
 	return ciphertext, nil
 }
@@ -522,15 +522,15 @@ func (e *EncryptionService) Decrypt(ciphertext []byte) ([]byte, error) {
 	if len(ciphertext) < e.cipher.NonceSize() {
 		return nil, fmt.Errorf("ciphertext too short")
 	}
-	
+
 	nonce := ciphertext[:e.cipher.NonceSize()]
 	ciphertext = ciphertext[e.cipher.NonceSize():]
-	
+
 	plaintext, err := e.cipher.Open(nil, nonce, ciphertext, nil)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	return plaintext, nil
 }
 
@@ -549,12 +549,12 @@ func (e *EncryptionService) DecryptString(ciphertext string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	
+
 	plaintext, err := e.Decrypt(data)
 	if err != nil {
 		return "", err
 	}
-	
+
 	return string(plaintext), nil
 }
 
@@ -600,12 +600,12 @@ func NewSecureSessionManager(config SecurityHardeningConfig) *SecureSessionManag
 func (m *SecureSessionManager) CreateSession(userID, ipAddress, userAgent string) (*SecureSession, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	
+
 	sessionID, err := generateSecureSessionID()
 	if err != nil {
 		return nil, err
 	}
-	
+
 	now := time.Now()
 	session := &SecureSession{
 		ID:           sessionID,
@@ -617,7 +617,7 @@ func (m *SecureSessionManager) CreateSession(userID, ipAddress, userAgent string
 		UserAgent:    userAgent,
 		Data:         make(map[string]interface{}),
 	}
-	
+
 	m.sessions[sessionID] = session
 	return session, nil
 }
@@ -626,20 +626,20 @@ func (m *SecureSessionManager) CreateSession(userID, ipAddress, userAgent string
 func (m *SecureSessionManager) GetSession(sessionID string) (*SecureSession, error) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
-	
+
 	session, ok := m.sessions[sessionID]
 	if !ok {
 		return nil, fmt.Errorf("session not found")
 	}
-	
+
 	if session.Revoked {
 		return nil, fmt.Errorf("session revoked")
 	}
-	
+
 	if time.Now().After(session.ExpiresAt) {
 		return nil, fmt.Errorf("session expired")
 	}
-	
+
 	return session, nil
 }
 
@@ -649,18 +649,18 @@ func (m *SecureSessionManager) ValidateSession(sessionID, ipAddress, userAgent s
 	if err != nil {
 		return nil, err
 	}
-	
+
 	// Validate IP address (optional - can be disabled for mobile users)
 	// if session.IPAddress != ipAddress {
 	// 	return nil, fmt.Errorf("IP address mismatch")
 	// }
-	
+
 	// Update last activity
 	m.mu.Lock()
 	session.LastActivity = time.Now()
 	session.ExpiresAt = time.Now().Add(m.config.SessionTimeout)
 	m.mu.Unlock()
-	
+
 	return session, nil
 }
 
@@ -668,12 +668,12 @@ func (m *SecureSessionManager) ValidateSession(sessionID, ipAddress, userAgent s
 func (m *SecureSessionManager) RevokeSession(sessionID string) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	
+
 	session, ok := m.sessions[sessionID]
 	if !ok {
 		return fmt.Errorf("session not found")
 	}
-	
+
 	session.Revoked = true
 	return nil
 }
@@ -682,7 +682,7 @@ func (m *SecureSessionManager) RevokeSession(sessionID string) error {
 func (m *SecureSessionManager) RevokeUserSessions(userID string) int {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	
+
 	count := 0
 	for _, session := range m.sessions {
 		if session.UserID == userID && !session.Revoked {
@@ -697,7 +697,7 @@ func (m *SecureSessionManager) RevokeUserSessions(userID string) int {
 func (m *SecureSessionManager) CleanupExpiredSessions() int {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	
+
 	count := 0
 	now := time.Now()
 	for id, session := range m.sessions {
@@ -767,10 +767,10 @@ func parseSameSite(s string) http.SameSite {
 
 // RateLimiter implements token bucket rate limiting
 type RateLimiter struct {
-	buckets  map[string]*tokenBucket
-	limit    int
-	window   time.Duration
-	mu       sync.RWMutex
+	buckets map[string]*tokenBucket
+	limit   int
+	window  time.Duration
+	mu      sync.RWMutex
 }
 
 // tokenBucket represents a token bucket for rate limiting
@@ -792,7 +792,7 @@ func NewRateLimiter(limit int, window time.Duration) *RateLimiter {
 func (r *RateLimiter) Allow(key string) bool {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	
+
 	bucket, ok := r.buckets[key]
 	if !ok {
 		bucket = &tokenBucket{
@@ -801,18 +801,18 @@ func (r *RateLimiter) Allow(key string) bool {
 		}
 		r.buckets[key] = bucket
 	}
-	
+
 	// Reset bucket if window has passed
 	if time.Since(bucket.lastReset) > r.window {
 		bucket.tokens = r.limit
 		bucket.lastReset = time.Now()
 	}
-	
+
 	if bucket.tokens > 0 {
 		bucket.tokens--
 		return true
 	}
-	
+
 	return false
 }
 
@@ -820,16 +820,16 @@ func (r *RateLimiter) Allow(key string) bool {
 func (r *RateLimiter) Remaining(key string) int {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
-	
+
 	bucket, ok := r.buckets[key]
 	if !ok {
 		return r.limit
 	}
-	
+
 	if time.Since(bucket.lastReset) > r.window {
 		return r.limit
 	}
-	
+
 	return bucket.tokens
 }
 
@@ -869,12 +869,12 @@ func NewCSRFProtection() *CSRFProtection {
 func (c *CSRFProtection) GenerateToken(sessionID string) (string, error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	
+
 	bytes := make([]byte, 32)
 	if _, err := rand.Read(bytes); err != nil {
 		return "", err
 	}
-	
+
 	token := hex.EncodeToString(bytes)
 	c.tokens[token] = &csrfToken{
 		token:     token,
@@ -882,7 +882,7 @@ func (c *CSRFProtection) GenerateToken(sessionID string) (string, error) {
 		createdAt: time.Now(),
 		expiresAt: time.Now().Add(time.Hour),
 	}
-	
+
 	return token, nil
 }
 
@@ -890,20 +890,20 @@ func (c *CSRFProtection) GenerateToken(sessionID string) (string, error) {
 func (c *CSRFProtection) ValidateToken(token, sessionID string) bool {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
-	
+
 	t, ok := c.tokens[token]
 	if !ok {
 		return false
 	}
-	
+
 	if t.sessionID != sessionID {
 		return false
 	}
-	
+
 	if time.Now().After(t.expiresAt) {
 		return false
 	}
-	
+
 	return true
 }
 
@@ -922,25 +922,25 @@ func (c *CSRFProtection) Middleware(next http.Handler) http.Handler {
 			next.ServeHTTP(w, r)
 			return
 		}
-		
+
 		// Get session ID from cookie
 		sessionCookie, err := r.Cookie("session_id")
 		if err != nil {
 			http.Error(w, "Session required", http.StatusUnauthorized)
 			return
 		}
-		
+
 		// Get CSRF token from header or form
 		token := r.Header.Get("X-CSRF-Token")
 		if token == "" {
 			token = r.FormValue("csrf_token")
 		}
-		
+
 		if !c.ValidateToken(token, sessionCookie.Value) {
 			http.Error(w, "Invalid CSRF token", http.StatusForbidden)
 			return
 		}
-		
+
 		next.ServeHTTP(w, r)
 	})
 }
@@ -957,13 +957,13 @@ func getClientIP(r *http.Request) string {
 		ips := strings.Split(xff, ",")
 		return strings.TrimSpace(ips[0])
 	}
-	
+
 	// Check X-Real-IP header
 	xri := r.Header.Get("X-Real-IP")
 	if xri != "" {
 		return xri
 	}
-	
+
 	// Fall back to RemoteAddr
 	ip := r.RemoteAddr
 	if idx := strings.LastIndex(ip, ":"); idx != -1 {

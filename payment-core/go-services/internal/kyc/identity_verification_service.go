@@ -51,24 +51,24 @@ type NINVerificationRequest struct {
 
 // NINVerificationResponse represents a NIN verification response
 type NINVerificationResponse struct {
-	RequestID       string             `json:"request_id"`
-	NIN             string             `json:"nin"`
-	Status          VerificationStatus `json:"status"`
-	FirstName       string             `json:"first_name,omitempty"`
-	MiddleName      string             `json:"middle_name,omitempty"`
-	LastName        string             `json:"last_name,omitempty"`
-	DateOfBirth     string             `json:"date_of_birth,omitempty"`
-	Gender          string             `json:"gender,omitempty"`
-	PhoneNumber     string             `json:"phone_number,omitempty"`
-	Email           string             `json:"email,omitempty"`
-	Photo           string             `json:"photo,omitempty"` // Base64 encoded
-	Address         string             `json:"address,omitempty"`
-	StateOfOrigin   string             `json:"state_of_origin,omitempty"`
-	LGA             string             `json:"lga,omitempty"`
-	MatchScore      float64            `json:"match_score"`
-	VerifiedAt      time.Time          `json:"verified_at"`
-	ErrorMessage    string             `json:"error_message,omitempty"`
-	ProviderRef     string             `json:"provider_ref,omitempty"`
+	RequestID     string             `json:"request_id"`
+	NIN           string             `json:"nin"`
+	Status        VerificationStatus `json:"status"`
+	FirstName     string             `json:"first_name,omitempty"`
+	MiddleName    string             `json:"middle_name,omitempty"`
+	LastName      string             `json:"last_name,omitempty"`
+	DateOfBirth   string             `json:"date_of_birth,omitempty"`
+	Gender        string             `json:"gender,omitempty"`
+	PhoneNumber   string             `json:"phone_number,omitempty"`
+	Email         string             `json:"email,omitempty"`
+	Photo         string             `json:"photo,omitempty"` // Base64 encoded
+	Address       string             `json:"address,omitempty"`
+	StateOfOrigin string             `json:"state_of_origin,omitempty"`
+	LGA           string             `json:"lga,omitempty"`
+	MatchScore    float64            `json:"match_score"`
+	VerifiedAt    time.Time          `json:"verified_at"`
+	ErrorMessage  string             `json:"error_message,omitempty"`
+	ProviderRef   string             `json:"provider_ref,omitempty"`
 }
 
 // BVNVerificationRequest represents a BVN verification request
@@ -110,9 +110,9 @@ type BVNVerificationResponse struct {
 
 // CACVerificationRequest represents a CAC verification request
 type CACVerificationRequest struct {
-	RCNumber        string `json:"rc_number"`
-	CompanyName     string `json:"company_name,omitempty"`
-	CompanyType     string `json:"company_type,omitempty"` // BN, RC, IT, LLP
+	RCNumber    string `json:"rc_number"`
+	CompanyName string `json:"company_name,omitempty"`
+	CompanyType string `json:"company_type,omitempty"` // BN, RC, IT, LLP
 }
 
 // CACVerificationResponse represents a CAC verification response
@@ -179,27 +179,27 @@ type PassportVerificationRequest struct {
 
 // PassportVerificationResponse represents a passport verification response
 type PassportVerificationResponse struct {
-	RequestID       string             `json:"request_id"`
-	PassportNumber  string             `json:"passport_number"`
-	Status          VerificationStatus `json:"status"`
-	FirstName       string             `json:"first_name,omitempty"`
-	MiddleName      string             `json:"middle_name,omitempty"`
-	LastName        string             `json:"last_name,omitempty"`
-	DateOfBirth     string             `json:"date_of_birth,omitempty"`
-	Gender          string             `json:"gender,omitempty"`
-	Nationality     string             `json:"nationality,omitempty"`
-	PlaceOfBirth    string             `json:"place_of_birth,omitempty"`
-	IssueDate       string             `json:"issue_date,omitempty"`
-	ExpiryDate      string             `json:"expiry_date,omitempty"`
-	IssuingAuthority string            `json:"issuing_authority,omitempty"`
-	Photo           string             `json:"photo,omitempty"`
-	MRZLine1        string             `json:"mrz_line_1,omitempty"`
-	MRZLine2        string             `json:"mrz_line_2,omitempty"`
-	IsExpired       bool               `json:"is_expired"`
-	MatchScore      float64            `json:"match_score"`
-	VerifiedAt      time.Time          `json:"verified_at"`
-	ErrorMessage    string             `json:"error_message,omitempty"`
-	ProviderRef     string             `json:"provider_ref,omitempty"`
+	RequestID        string             `json:"request_id"`
+	PassportNumber   string             `json:"passport_number"`
+	Status           VerificationStatus `json:"status"`
+	FirstName        string             `json:"first_name,omitempty"`
+	MiddleName       string             `json:"middle_name,omitempty"`
+	LastName         string             `json:"last_name,omitempty"`
+	DateOfBirth      string             `json:"date_of_birth,omitempty"`
+	Gender           string             `json:"gender,omitempty"`
+	Nationality      string             `json:"nationality,omitempty"`
+	PlaceOfBirth     string             `json:"place_of_birth,omitempty"`
+	IssueDate        string             `json:"issue_date,omitempty"`
+	ExpiryDate       string             `json:"expiry_date,omitempty"`
+	IssuingAuthority string             `json:"issuing_authority,omitempty"`
+	Photo            string             `json:"photo,omitempty"`
+	MRZLine1         string             `json:"mrz_line_1,omitempty"`
+	MRZLine2         string             `json:"mrz_line_2,omitempty"`
+	IsExpired        bool               `json:"is_expired"`
+	MatchScore       float64            `json:"match_score"`
+	VerifiedAt       time.Time          `json:"verified_at"`
+	ErrorMessage     string             `json:"error_message,omitempty"`
+	ProviderRef      string             `json:"provider_ref,omitempty"`
 }
 
 // VerificationEvent represents a verification event for lakehouse
@@ -303,7 +303,7 @@ func (s *IdentityVerificationService) VerifyNIN(ctx context.Context, caseID stri
 	} else {
 		response = apiResp
 		response.RequestID = requestID
-		
+
 		// Calculate match score if names provided
 		if req.FirstName != "" || req.LastName != "" {
 			response.MatchScore = s.calculateNameMatchScore(
@@ -311,7 +311,7 @@ func (s *IdentityVerificationService) VerifyNIN(ctx context.Context, caseID stri
 				response.FirstName, response.LastName,
 			)
 		}
-		
+
 		// Cache successful response
 		s.setCache(cacheKey, response, 24*time.Hour)
 	}
@@ -376,7 +376,7 @@ func (s *IdentityVerificationService) VerifyBVN(ctx context.Context, caseID stri
 	} else {
 		response = apiResp
 		response.RequestID = requestID
-		
+
 		// Calculate match score
 		if req.FirstName != "" || req.LastName != "" {
 			response.MatchScore = s.calculateNameMatchScore(
@@ -384,7 +384,7 @@ func (s *IdentityVerificationService) VerifyBVN(ctx context.Context, caseID stri
 				response.FirstName, response.LastName,
 			)
 		}
-		
+
 		// Cache successful response
 		s.setCache(cacheKey, response, 24*time.Hour)
 	}
@@ -401,9 +401,9 @@ func (s *IdentityVerificationService) VerifyBVN(ctx context.Context, caseID stri
 		Provider:     "NIBSS",
 		Duration:     time.Since(startTime).Milliseconds(),
 		Metadata: map[string]interface{}{
-			"request_id":    requestID,
-			"provider_ref":  response.ProviderRef,
-			"watch_listed":  response.WatchListed,
+			"request_id":   requestID,
+			"provider_ref": response.ProviderRef,
+			"watch_listed": response.WatchListed,
 		},
 	})
 
@@ -450,12 +450,12 @@ func (s *IdentityVerificationService) VerifyCAC(ctx context.Context, caseID stri
 	} else {
 		response = apiResp
 		response.RequestID = requestID
-		
+
 		// Calculate match score if company name provided
 		if req.CompanyName != "" {
 			response.MatchScore = s.calculateCompanyNameMatchScore(req.CompanyName, response.CompanyName)
 		}
-		
+
 		// Cache successful response
 		s.setCache(cacheKey, response, 24*time.Hour)
 	}
@@ -504,7 +504,7 @@ func (s *IdentityVerificationService) VerifyPassport(ctx context.Context, caseID
 	} else {
 		response = apiResp
 		response.RequestID = requestID
-		
+
 		// Check if passport is expired
 		if response.ExpiryDate != "" {
 			expiryDate, err := time.Parse("2006-01-02", response.ExpiryDate)
@@ -513,7 +513,7 @@ func (s *IdentityVerificationService) VerifyPassport(ctx context.Context, caseID
 				response.Status = VerificationExpired
 			}
 		}
-		
+
 		// Calculate match score
 		if req.FirstName != "" || req.LastName != "" {
 			response.MatchScore = s.calculateNameMatchScore(
@@ -573,9 +573,9 @@ func (s *IdentityVerificationService) callNIMCAPI(ctx context.Context, req *NINV
 	}
 
 	payload := map[string]interface{}{
-		"nin":          req.NIN,
-		"first_name":   req.FirstName,
-		"last_name":    req.LastName,
+		"nin":           req.NIN,
+		"first_name":    req.FirstName,
+		"last_name":     req.LastName,
 		"date_of_birth": req.DateOfBirth,
 	}
 	body, err := json.Marshal(payload)
@@ -908,8 +908,8 @@ func (s *IdentityVerificationService) HandleVerifyNIN(w http.ResponseWriter, r *
 	}
 
 	var req struct {
-		CaseID string                  `json:"case_id"`
-		Data   NINVerificationRequest  `json:"data"`
+		CaseID string                 `json:"case_id"`
+		Data   NINVerificationRequest `json:"data"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -934,8 +934,8 @@ func (s *IdentityVerificationService) HandleVerifyBVN(w http.ResponseWriter, r *
 	}
 
 	var req struct {
-		CaseID string                  `json:"case_id"`
-		Data   BVNVerificationRequest  `json:"data"`
+		CaseID string                 `json:"case_id"`
+		Data   BVNVerificationRequest `json:"data"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -960,8 +960,8 @@ func (s *IdentityVerificationService) HandleVerifyCAC(w http.ResponseWriter, r *
 	}
 
 	var req struct {
-		CaseID string                  `json:"case_id"`
-		Data   CACVerificationRequest  `json:"data"`
+		CaseID string                 `json:"case_id"`
+		Data   CACVerificationRequest `json:"data"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)

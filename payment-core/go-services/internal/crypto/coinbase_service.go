@@ -38,12 +38,12 @@ type CryptoCharge struct {
 		USDC     *CryptoPricing `json:"usdc,omitempty"`
 		Tether   *CryptoPricing `json:"tether,omitempty"`
 	} `json:"pricing"`
-	HostedURL   string           `json:"hosted_url"`
-	CreatedAt   string           `json:"created_at"`
-	ExpiresAt   string           `json:"expires_at"`
-	ConfirmedAt string           `json:"confirmed_at,omitempty"`
-	Timeline    []TimelineEvent  `json:"timeline"`
-	Metadata    map[string]any   `json:"metadata"`
+	HostedURL   string          `json:"hosted_url"`
+	CreatedAt   string          `json:"created_at"`
+	ExpiresAt   string          `json:"expires_at"`
+	ConfirmedAt string          `json:"confirmed_at,omitempty"`
+	Timeline    []TimelineEvent `json:"timeline"`
+	Metadata    map[string]any  `json:"metadata"`
 }
 
 type CryptoPricing struct {
@@ -95,8 +95,8 @@ type ConversionStatus struct {
 }
 
 type WebhookResult struct {
-	RemittanceID         string `json:"remittanceId"`
-	Status               string `json:"status"`
+	RemittanceID           string `json:"remittanceId"`
+	Status                 string `json:"status"`
 	ShouldUpdateRemittance bool   `json:"shouldUpdateRemittance"`
 }
 
@@ -383,12 +383,12 @@ func (s *CoinbaseService) HandleWebhook(eventID, eventType string, charge *Crypt
 	}
 
 	statusMap := map[string]string{
-		"charge:created":  "crypto_pending",
+		"charge:created":   "crypto_pending",
 		"charge:confirmed": "crypto_confirmed",
-		"charge:failed":   "crypto_failed",
-		"charge:delayed":  "crypto_delayed",
-		"charge:pending":  "crypto_pending",
-		"charge:resolved": "crypto_completed",
+		"charge:failed":    "crypto_failed",
+		"charge:delayed":   "crypto_delayed",
+		"charge:pending":   "crypto_pending",
+		"charge:resolved":  "crypto_completed",
 	}
 
 	status, ok := statusMap[eventType]
@@ -397,8 +397,8 @@ func (s *CoinbaseService) HandleWebhook(eventID, eventType string, charge *Crypt
 	}
 
 	return &WebhookResult{
-		RemittanceID:         remittanceID,
-		Status:               status,
+		RemittanceID:           remittanceID,
+		Status:                 status,
 		ShouldUpdateRemittance: status != "unknown",
 	}, nil
 }

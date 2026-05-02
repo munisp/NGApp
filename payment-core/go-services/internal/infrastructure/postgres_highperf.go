@@ -14,16 +14,16 @@ import (
 // PostgresHighPerfConfig configures the high-performance PostgreSQL client
 type PostgresHighPerfConfig struct {
 	// Primary connection
-	PrimaryHost     string
-	PrimaryPort     int
-	Database        string
-	Username        string
-	Password        string
-	SSLMode         string
-	
+	PrimaryHost string
+	PrimaryPort int
+	Database    string
+	Username    string
+	Password    string
+	SSLMode     string
+
 	// Read replicas
-	ReadReplicas    []string
-	
+	ReadReplicas []string
+
 	// PgBouncer settings
 	PgBouncerHost   string
 	PgBouncerPort   int
@@ -32,13 +32,13 @@ type PostgresHighPerfConfig struct {
 	DefaultPoolSize int
 	MinPoolSize     int
 	ReservePoolSize int
-	
+
 	// Connection pool settings
 	MaxOpenConns    int
 	MaxIdleConns    int
 	ConnMaxLifetime time.Duration
 	ConnMaxIdleTime time.Duration
-	
+
 	// Query settings
 	StatementTimeout time.Duration
 	LockTimeout      time.Duration
@@ -47,62 +47,62 @@ type PostgresHighPerfConfig struct {
 // DefaultPostgresHighPerfConfig returns optimized defaults for 1M TPS
 func DefaultPostgresHighPerfConfig() PostgresHighPerfConfig {
 	return PostgresHighPerfConfig{
-		PrimaryHost:     "postgres-primary",
-		PrimaryPort:     5432,
-		Database:        "payment_switch",
-		Username:        "payment_user",
-		SSLMode:         "require",
-		ReadReplicas:    []string{"postgres-replica-1:5432", "postgres-replica-2:5432"},
-		PgBouncerHost:   "pgbouncer",
-		PgBouncerPort:   6432,
-		PoolMode:        "transaction",
-		MaxClientConn:   10000,
-		DefaultPoolSize: 100,
-		MinPoolSize:     50,
-		ReservePoolSize: 25,
-		MaxOpenConns:    100,
-		MaxIdleConns:    50,
-		ConnMaxLifetime: 30 * time.Minute,
-		ConnMaxIdleTime: 5 * time.Minute,
+		PrimaryHost:      "postgres-primary",
+		PrimaryPort:      5432,
+		Database:         "payment_switch",
+		Username:         "payment_user",
+		SSLMode:          "require",
+		ReadReplicas:     []string{"postgres-replica-1:5432", "postgres-replica-2:5432"},
+		PgBouncerHost:    "pgbouncer",
+		PgBouncerPort:    6432,
+		PoolMode:         "transaction",
+		MaxClientConn:    10000,
+		DefaultPoolSize:  100,
+		MinPoolSize:      50,
+		ReservePoolSize:  25,
+		MaxOpenConns:     100,
+		MaxIdleConns:     50,
+		ConnMaxLifetime:  30 * time.Minute,
+		ConnMaxIdleTime:  5 * time.Minute,
 		StatementTimeout: 30 * time.Second,
-		LockTimeout:     10 * time.Second,
+		LockTimeout:      10 * time.Second,
 	}
 }
 
 // PostgresHighPerfClient is an optimized PostgreSQL client with read/write splitting
 type PostgresHighPerfClient struct {
-	config       PostgresHighPerfConfig
-	
+	config PostgresHighPerfConfig
+
 	// Connection pools
-	writePool    *sql.DB
-	readPools    []*sql.DB
-	readPoolIdx  uint64
-	
+	writePool   *sql.DB
+	readPools   []*sql.DB
+	readPoolIdx uint64
+
 	// Prepared statements cache
-	stmtCache    map[string]*sql.Stmt
-	stmtCacheMu  sync.RWMutex
-	
+	stmtCache   map[string]*sql.Stmt
+	stmtCacheMu sync.RWMutex
+
 	// Stats
 	queriesExec  uint64
 	queryErrors  uint64
 	avgLatencyNs uint64
-	
+
 	// Control
-	ctx          context.Context
-	cancel       context.CancelFunc
+	ctx    context.Context
+	cancel context.CancelFunc
 }
 
 // NewPostgresHighPerfClient creates a new high-performance PostgreSQL client
 func NewPostgresHighPerfClient(config PostgresHighPerfConfig) (*PostgresHighPerfClient, error) {
 	ctx, cancel := context.WithCancel(context.Background())
-	
+
 	client := &PostgresHighPerfClient{
 		config:    config,
 		stmtCache: make(map[string]*sql.Stmt),
 		ctx:       ctx,
 		cancel:    cancel,
 	}
-	
+
 	// Create write pool (through PgBouncer)
 	writeConnStr := fmt.Sprintf(
 		"host=%s port=%d dbname=%s user=%s password=%s sslmode=%s "+
@@ -112,20 +112,20 @@ func NewPostgresHighPerfClient(config PostgresHighPerfConfig) (*PostgresHighPerf
 		int(config.StatementTimeout.Milliseconds()),
 		int(config.LockTimeout.Milliseconds()),
 	)
-	
+
 	writePool, err := sql.Open("postgres", writeConnStr)
 	if err != nil {
 		cancel()
 		return nil, fmt.Errorf("failed to create write pool: %w", err)
 	}
-	
+
 	writePool.SetMaxOpenConns(config.MaxOpenConns)
 	writePool.SetMaxIdleConns(config.MaxIdleConns)
 	writePool.SetConnMaxLifetime(config.ConnMaxLifetime)
 	writePool.SetConnMaxIdleTime(config.ConnMaxIdleTime)
-	
+
 	client.writePool = writePool
-	
+
 	// Create read pools for replicas
 	client.readPools = make([]*sql.DB, len(config.ReadReplicas))
 	for i, replica := range config.ReadReplicas {
@@ -135,24 +135,24 @@ func NewPostgresHighPerfClient(config PostgresHighPerfConfig) (*PostgresHighPerf
 			replica, config.Database, config.Username, config.Password, config.SSLMode,
 			int(config.StatementTimeout.Milliseconds()),
 		)
-		
+
 		readPool, err := sql.Open("postgres", readConnStr)
 		if err != nil {
 			log.Printf("Warning: failed to create read pool for %s: %v", replica, err)
 			continue
 		}
-		
+
 		readPool.SetMaxOpenConns(config.MaxOpenConns / 2)
 		readPool.SetMaxIdleConns(config.MaxIdleConns / 2)
 		readPool.SetConnMaxLifetime(config.ConnMaxLifetime)
 		readPool.SetConnMaxIdleTime(config.ConnMaxIdleTime)
-		
+
 		client.readPools[i] = readPool
 	}
-	
+
 	log.Printf("PostgresHighPerfClient initialized: write=%s:%d, %d read replicas",
 		config.PgBouncerHost, config.PgBouncerPort, len(config.ReadReplicas))
-	
+
 	return client, nil
 }
 
@@ -161,7 +161,7 @@ func (c *PostgresHighPerfClient) getReadPool() *sql.DB {
 	if len(c.readPools) == 0 {
 		return c.writePool
 	}
-	
+
 	idx := atomic.AddUint64(&c.readPoolIdx, 1) % uint64(len(c.readPools))
 	pool := c.readPools[idx]
 	if pool == nil {
@@ -174,14 +174,14 @@ func (c *PostgresHighPerfClient) getReadPool() *sql.DB {
 func (c *PostgresHighPerfClient) ExecContext(ctx context.Context, query string, args ...interface{}) (sql.Result, error) {
 	start := time.Now()
 	result, err := c.writePool.ExecContext(ctx, query, args...)
-	
+
 	atomic.AddUint64(&c.queriesExec, 1)
 	atomic.AddUint64(&c.avgLatencyNs, uint64(time.Since(start).Nanoseconds()))
-	
+
 	if err != nil {
 		atomic.AddUint64(&c.queryErrors, 1)
 	}
-	
+
 	return result, err
 }
 
@@ -190,14 +190,14 @@ func (c *PostgresHighPerfClient) QueryContext(ctx context.Context, query string,
 	start := time.Now()
 	pool := c.getReadPool()
 	rows, err := pool.QueryContext(ctx, query, args...)
-	
+
 	atomic.AddUint64(&c.queriesExec, 1)
 	atomic.AddUint64(&c.avgLatencyNs, uint64(time.Since(start).Nanoseconds()))
-	
+
 	if err != nil {
 		atomic.AddUint64(&c.queryErrors, 1)
 	}
-	
+
 	return rows, err
 }
 
@@ -217,24 +217,24 @@ func (c *PostgresHighPerfClient) PrepareContext(ctx context.Context, query strin
 	c.stmtCacheMu.RLock()
 	stmt, ok := c.stmtCache[query]
 	c.stmtCacheMu.RUnlock()
-	
+
 	if ok {
 		return stmt, nil
 	}
-	
+
 	c.stmtCacheMu.Lock()
 	defer c.stmtCacheMu.Unlock()
-	
+
 	// Double-check after acquiring write lock
 	if stmt, ok := c.stmtCache[query]; ok {
 		return stmt, nil
 	}
-	
+
 	stmt, err := c.writePool.PrepareContext(ctx, query)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	c.stmtCache[query] = stmt
 	return stmt, nil
 }
@@ -244,14 +244,14 @@ func (c *PostgresHighPerfClient) BulkInsert(ctx context.Context, table string, c
 	if len(values) == 0 {
 		return nil
 	}
-	
+
 	// Build multi-value INSERT for simplicity
 	// In production, use COPY for better performance
 	query := fmt.Sprintf("INSERT INTO %s (%s) VALUES ", table, joinStrings(columns, ", "))
-	
+
 	var args []interface{}
 	var placeholders []string
-	
+
 	argIdx := 1
 	for _, row := range values {
 		var rowPlaceholders []string
@@ -262,9 +262,9 @@ func (c *PostgresHighPerfClient) BulkInsert(ctx context.Context, table string, c
 		placeholders = append(placeholders, "("+joinStrings(rowPlaceholders, ", ")+")")
 		args = append(args, row...)
 	}
-	
+
 	query += joinStrings(placeholders, ", ")
-	
+
 	_, err := c.ExecContext(ctx, query, args...)
 	return err
 }
@@ -274,7 +274,7 @@ func (c *PostgresHighPerfClient) Stats() (queries, errors uint64, avgLatencyMs f
 	queries = atomic.LoadUint64(&c.queriesExec)
 	errors = atomic.LoadUint64(&c.queryErrors)
 	totalLatency := atomic.LoadUint64(&c.avgLatencyNs)
-	
+
 	if queries > 0 {
 		avgLatencyMs = float64(totalLatency) / float64(queries) / 1e6
 	}
@@ -286,7 +286,7 @@ func (c *PostgresHighPerfClient) HealthCheck(ctx context.Context) error {
 	if err := c.writePool.PingContext(ctx); err != nil {
 		return fmt.Errorf("write pool unhealthy: %w", err)
 	}
-	
+
 	for i, pool := range c.readPools {
 		if pool != nil {
 			if err := pool.PingContext(ctx); err != nil {
@@ -294,32 +294,32 @@ func (c *PostgresHighPerfClient) HealthCheck(ctx context.Context) error {
 			}
 		}
 	}
-	
+
 	return nil
 }
 
 // Close shuts down the client
 func (c *PostgresHighPerfClient) Close() error {
 	c.cancel()
-	
+
 	// Close prepared statements
 	c.stmtCacheMu.Lock()
 	for _, stmt := range c.stmtCache {
 		stmt.Close()
 	}
 	c.stmtCacheMu.Unlock()
-	
+
 	// Close pools
 	if err := c.writePool.Close(); err != nil {
 		return err
 	}
-	
+
 	for _, pool := range c.readPools {
 		if pool != nil {
 			pool.Close()
 		}
 	}
-	
+
 	return nil
 }
 
@@ -337,32 +337,32 @@ func joinStrings(strs []string, sep string) string {
 
 // PgBouncerConfig represents PgBouncer configuration
 type PgBouncerConfig struct {
-	ListenAddr      string
-	ListenPort      int
-	AuthType        string
-	PoolMode        string
-	MaxClientConn   int
-	DefaultPoolSize int
-	MinPoolSize     int
-	ReservePoolSize int
-	ReservePoolTimeout int
-	MaxDBConnections int
-	MaxUserConnections int
-	ServerIdleTimeout int
+	ListenAddr           string
+	ListenPort           int
+	AuthType             string
+	PoolMode             string
+	MaxClientConn        int
+	DefaultPoolSize      int
+	MinPoolSize          int
+	ReservePoolSize      int
+	ReservePoolTimeout   int
+	MaxDBConnections     int
+	MaxUserConnections   int
+	ServerIdleTimeout    int
 	ServerConnectTimeout int
-	ServerLoginRetry int
-	QueryTimeout    int
-	QueryWaitTimeout int
-	ClientIdleTimeout int
-	ClientLoginTimeout int
-	AutodbIdleTimeout int
-	DNSMaxTTL       int
-	DNSNxdomainTTL  int
-	LogConnections  int
-	LogDisconnections int
-	LogPoolerErrors int
-	StatsUsers      string
-	AdminUsers      string
+	ServerLoginRetry     int
+	QueryTimeout         int
+	QueryWaitTimeout     int
+	ClientIdleTimeout    int
+	ClientLoginTimeout   int
+	AutodbIdleTimeout    int
+	DNSMaxTTL            int
+	DNSNxdomainTTL       int
+	LogConnections       int
+	LogDisconnections    int
+	LogPoolerErrors      int
+	StatsUsers           string
+	AdminUsers           string
 }
 
 // OptimalPgBouncerConfig returns optimized PgBouncer configuration
@@ -450,11 +450,11 @@ server_tls_ca_file = /etc/pgbouncer/ca.crt
 		config.DNSMaxTTL, config.DNSNxdomainTTL, config.LogConnections,
 		config.LogDisconnections, config.LogPoolerErrors, config.StatsUsers, config.AdminUsers,
 	)
-	
+
 	for dbName, connStr := range databases {
 		ini += fmt.Sprintf("%s = %s\n", dbName, connStr)
 	}
-	
+
 	return ini
 }
 
@@ -462,60 +462,60 @@ server_tls_ca_file = /etc/pgbouncer/ca.crt
 func PostgresOptimizedSettings() map[string]string {
 	return map[string]string{
 		// Memory
-		"shared_buffers":             "8GB",
-		"effective_cache_size":       "24GB",
-		"work_mem":                   "256MB",
-		"maintenance_work_mem":       "2GB",
-		"wal_buffers":                "64MB",
-		
+		"shared_buffers":       "8GB",
+		"effective_cache_size": "24GB",
+		"work_mem":             "256MB",
+		"maintenance_work_mem": "2GB",
+		"wal_buffers":          "64MB",
+
 		// Connections
-		"max_connections":            "500",
+		"max_connections":                "500",
 		"superuser_reserved_connections": "5",
-		
+
 		// WAL
-		"wal_level":                  "replica",
-		"max_wal_size":               "4GB",
-		"min_wal_size":               "1GB",
+		"wal_level":                    "replica",
+		"max_wal_size":                 "4GB",
+		"min_wal_size":                 "1GB",
 		"checkpoint_completion_target": "0.9",
-		"checkpoint_timeout":         "15min",
-		
+		"checkpoint_timeout":           "15min",
+
 		// Replication
-		"max_wal_senders":            "10",
-		"max_replication_slots":      "10",
-		"hot_standby":                "on",
-		"hot_standby_feedback":       "on",
-		
+		"max_wal_senders":       "10",
+		"max_replication_slots": "10",
+		"hot_standby":           "on",
+		"hot_standby_feedback":  "on",
+
 		// Query planning
-		"random_page_cost":           "1.1",
-		"effective_io_concurrency":   "200",
-		"default_statistics_target":  "100",
-		
+		"random_page_cost":          "1.1",
+		"effective_io_concurrency":  "200",
+		"default_statistics_target": "100",
+
 		// Parallelism
-		"max_worker_processes":       "16",
-		"max_parallel_workers_per_gather": "4",
-		"max_parallel_workers":       "16",
+		"max_worker_processes":             "16",
+		"max_parallel_workers_per_gather":  "4",
+		"max_parallel_workers":             "16",
 		"max_parallel_maintenance_workers": "4",
-		
+
 		// Logging
 		"log_min_duration_statement": "1000",
 		"log_checkpoints":            "on",
 		"log_connections":            "off",
 		"log_disconnections":         "off",
 		"log_lock_waits":             "on",
-		
+
 		// Autovacuum
-		"autovacuum":                 "on",
-		"autovacuum_max_workers":     "4",
-		"autovacuum_naptime":         "30s",
-		"autovacuum_vacuum_threshold": "50",
-		"autovacuum_analyze_threshold": "50",
-		"autovacuum_vacuum_scale_factor": "0.05",
+		"autovacuum":                      "on",
+		"autovacuum_max_workers":          "4",
+		"autovacuum_naptime":              "30s",
+		"autovacuum_vacuum_threshold":     "50",
+		"autovacuum_analyze_threshold":    "50",
+		"autovacuum_vacuum_scale_factor":  "0.05",
 		"autovacuum_analyze_scale_factor": "0.025",
-		
+
 		// Security
-		"ssl":                        "on",
-		"ssl_min_protocol_version":   "TLSv1.2",
-		"password_encryption":        "scram-sha-256",
+		"ssl":                      "on",
+		"ssl_min_protocol_version": "TLSv1.2",
+		"password_encryption":      "scram-sha-256",
 	}
 }
 

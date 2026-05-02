@@ -14,10 +14,10 @@ import (
 type BackupType string
 
 const (
-	BackupTypeFull        BackupType = "full"
-	BackupTypeIncremental BackupType = "incremental"
+	BackupTypeFull         BackupType = "full"
+	BackupTypeIncremental  BackupType = "incremental"
 	BackupTypeDifferential BackupType = "differential"
-	BackupTypeSnapshot    BackupType = "snapshot"
+	BackupTypeSnapshot     BackupType = "snapshot"
 )
 
 type BackupStatus string
@@ -43,93 +43,93 @@ const (
 type FailoverStatus string
 
 const (
-	FailoverStatusActive   FailoverStatus = "active"
-	FailoverStatusStandby  FailoverStatus = "standby"
-	FailoverStatusFailing  FailoverStatus = "failing_over"
-	FailoverStatusFailed   FailoverStatus = "failed"
+	FailoverStatusActive  FailoverStatus = "active"
+	FailoverStatusStandby FailoverStatus = "standby"
+	FailoverStatusFailing FailoverStatus = "failing_over"
+	FailoverStatusFailed  FailoverStatus = "failed"
 )
 
 type BackupTarget struct {
-	ID              string            `json:"id"`
-	Name            string            `json:"name"`
-	Type            string            `json:"type"`
-	ConnectionString string           `json:"connection_string"`
-	Schedule        string            `json:"schedule"`
-	RetentionDays   int               `json:"retention_days"`
-	BackupType      BackupType        `json:"backup_type"`
-	Enabled         bool              `json:"enabled"`
-	RPOMinutes      int               `json:"rpo_minutes"`
-	RTOMinutes      int               `json:"rto_minutes"`
-	Metadata        map[string]string `json:"metadata,omitempty"`
-	CreatedAt       time.Time         `json:"created_at"`
-	UpdatedAt       time.Time         `json:"updated_at"`
+	ID               string            `json:"id"`
+	Name             string            `json:"name"`
+	Type             string            `json:"type"`
+	ConnectionString string            `json:"connection_string"`
+	Schedule         string            `json:"schedule"`
+	RetentionDays    int               `json:"retention_days"`
+	BackupType       BackupType        `json:"backup_type"`
+	Enabled          bool              `json:"enabled"`
+	RPOMinutes       int               `json:"rpo_minutes"`
+	RTOMinutes       int               `json:"rto_minutes"`
+	Metadata         map[string]string `json:"metadata,omitempty"`
+	CreatedAt        time.Time         `json:"created_at"`
+	UpdatedAt        time.Time         `json:"updated_at"`
 }
 
 type BackupJob struct {
-	ID            string            `json:"id"`
-	TargetID      string            `json:"target_id"`
-	TargetName    string            `json:"target_name"`
-	BackupType    BackupType        `json:"backup_type"`
-	Status        BackupStatus      `json:"status"`
-	SizeBytes     int64             `json:"size_bytes"`
-	RowsBackedUp  int64             `json:"rows_backed_up"`
-	StartedAt     time.Time         `json:"started_at"`
-	CompletedAt   *time.Time        `json:"completed_at,omitempty"`
-	Duration      time.Duration     `json:"duration"`
-	StoragePath   string            `json:"storage_path"`
-	Checksum      string            `json:"checksum"`
-	Error         string            `json:"error,omitempty"`
-	Metadata      map[string]string `json:"metadata,omitempty"`
+	ID           string            `json:"id"`
+	TargetID     string            `json:"target_id"`
+	TargetName   string            `json:"target_name"`
+	BackupType   BackupType        `json:"backup_type"`
+	Status       BackupStatus      `json:"status"`
+	SizeBytes    int64             `json:"size_bytes"`
+	RowsBackedUp int64             `json:"rows_backed_up"`
+	StartedAt    time.Time         `json:"started_at"`
+	CompletedAt  *time.Time        `json:"completed_at,omitempty"`
+	Duration     time.Duration     `json:"duration"`
+	StoragePath  string            `json:"storage_path"`
+	Checksum     string            `json:"checksum"`
+	Error        string            `json:"error,omitempty"`
+	Metadata     map[string]string `json:"metadata,omitempty"`
 }
 
 type RestoreJob struct {
-	ID            string            `json:"id"`
-	BackupJobID   string            `json:"backup_job_id"`
-	TargetID      string            `json:"target_id"`
-	Status        RestoreStatus     `json:"status"`
-	RowsRestored  int64             `json:"rows_restored"`
-	StartedAt     time.Time         `json:"started_at"`
-	CompletedAt   *time.Time        `json:"completed_at,omitempty"`
-	Duration      time.Duration     `json:"duration"`
-	VerifiedAt    *time.Time        `json:"verified_at,omitempty"`
-	Error         string            `json:"error,omitempty"`
-	Metadata      map[string]string `json:"metadata,omitempty"`
+	ID           string            `json:"id"`
+	BackupJobID  string            `json:"backup_job_id"`
+	TargetID     string            `json:"target_id"`
+	Status       RestoreStatus     `json:"status"`
+	RowsRestored int64             `json:"rows_restored"`
+	StartedAt    time.Time         `json:"started_at"`
+	CompletedAt  *time.Time        `json:"completed_at,omitempty"`
+	Duration     time.Duration     `json:"duration"`
+	VerifiedAt   *time.Time        `json:"verified_at,omitempty"`
+	Error        string            `json:"error,omitempty"`
+	Metadata     map[string]string `json:"metadata,omitempty"`
 }
 
 type Region struct {
-	ID            string         `json:"id"`
-	Name          string         `json:"name"`
-	Location      string         `json:"location"`
-	Status        FailoverStatus `json:"status"`
-	Priority      int            `json:"priority"`
-	Endpoint      string         `json:"endpoint"`
-	HealthCheckURL string        `json:"health_check_url"`
-	LastHealthCheck time.Time    `json:"last_health_check"`
-	IsHealthy     bool           `json:"is_healthy"`
-	Metadata      map[string]string `json:"metadata,omitempty"`
+	ID              string            `json:"id"`
+	Name            string            `json:"name"`
+	Location        string            `json:"location"`
+	Status          FailoverStatus    `json:"status"`
+	Priority        int               `json:"priority"`
+	Endpoint        string            `json:"endpoint"`
+	HealthCheckURL  string            `json:"health_check_url"`
+	LastHealthCheck time.Time         `json:"last_health_check"`
+	IsHealthy       bool              `json:"is_healthy"`
+	Metadata        map[string]string `json:"metadata,omitempty"`
 }
 
 type FailoverEvent struct {
-	ID            string         `json:"id"`
-	FromRegion    string         `json:"from_region"`
-	ToRegion      string         `json:"to_region"`
-	Reason        string         `json:"reason"`
-	Status        FailoverStatus `json:"status"`
-	StartedAt     time.Time      `json:"started_at"`
-	CompletedAt   *time.Time     `json:"completed_at,omitempty"`
-	Duration      time.Duration  `json:"duration"`
-	DataLossRPO   time.Duration  `json:"data_loss_rpo"`
-	Error         string         `json:"error,omitempty"`
+	ID          string         `json:"id"`
+	FromRegion  string         `json:"from_region"`
+	ToRegion    string         `json:"to_region"`
+	Reason      string         `json:"reason"`
+	Status      FailoverStatus `json:"status"`
+	StartedAt   time.Time      `json:"started_at"`
+	CompletedAt *time.Time     `json:"completed_at,omitempty"`
+	Duration    time.Duration  `json:"duration"`
+	DataLossRPO time.Duration  `json:"data_loss_rpo"`
+	Error       string         `json:"error,omitempty"`
 }
 
 type DRConfig struct {
-	RPOMinutes           int
-	RTOMinutes           int
-	HealthCheckInterval  time.Duration
-	FailoverThreshold    int
-	AutoFailoverEnabled  bool
-	BackupRetentionDays  int
-	RestoreTestInterval  time.Duration
+	RPOMinutes          int
+	RTOMinutes          int
+	HealthCheckInterval time.Duration
+	FailoverThreshold   int
+	AutoFailoverEnabled bool
+	BackupRetentionDays int
+	RestoreTestInterval time.Duration
 }
 
 type DisasterRecoveryManager struct {
@@ -195,64 +195,64 @@ func NewDisasterRecoveryManager(config *DRConfig) *DisasterRecoveryManager {
 func (drm *DisasterRecoveryManager) initializeDefaultTargets() {
 	defaultTargets := []BackupTarget{
 		{
-			Name:           "PostgreSQL Database",
-			Type:           "postgresql",
-			Schedule:       "0 */6 * * *",
-			RetentionDays:  30,
-			BackupType:     BackupTypeFull,
-			Enabled:        true,
-			RPOMinutes:     15,
-			RTOMinutes:     60,
+			Name:          "PostgreSQL Database",
+			Type:          "postgresql",
+			Schedule:      "0 */6 * * *",
+			RetentionDays: 30,
+			BackupType:    BackupTypeFull,
+			Enabled:       true,
+			RPOMinutes:    15,
+			RTOMinutes:    60,
 		},
 		{
-			Name:           "TigerBeetle Ledger",
-			Type:           "tigerbeetle",
-			Schedule:       "0 */4 * * *",
-			RetentionDays:  90,
-			BackupType:     BackupTypeSnapshot,
-			Enabled:        true,
-			RPOMinutes:     5,
-			RTOMinutes:     30,
+			Name:          "TigerBeetle Ledger",
+			Type:          "tigerbeetle",
+			Schedule:      "0 */4 * * *",
+			RetentionDays: 90,
+			BackupType:    BackupTypeSnapshot,
+			Enabled:       true,
+			RPOMinutes:    5,
+			RTOMinutes:    30,
 		},
 		{
-			Name:           "Keycloak Realm",
-			Type:           "keycloak",
-			Schedule:       "0 0 * * *",
-			RetentionDays:  30,
-			BackupType:     BackupTypeFull,
-			Enabled:        true,
-			RPOMinutes:     60,
-			RTOMinutes:     120,
+			Name:          "Keycloak Realm",
+			Type:          "keycloak",
+			Schedule:      "0 0 * * *",
+			RetentionDays: 30,
+			BackupType:    BackupTypeFull,
+			Enabled:       true,
+			RPOMinutes:    60,
+			RTOMinutes:    120,
 		},
 		{
-			Name:           "RustFS Object Storage",
-			Type:           "rustfs",
-			Schedule:       "0 */12 * * *",
-			RetentionDays:  60,
-			BackupType:     BackupTypeIncremental,
-			Enabled:        true,
-			RPOMinutes:     30,
-			RTOMinutes:     120,
+			Name:          "RustFS Object Storage",
+			Type:          "rustfs",
+			Schedule:      "0 */12 * * *",
+			RetentionDays: 60,
+			BackupType:    BackupTypeIncremental,
+			Enabled:       true,
+			RPOMinutes:    30,
+			RTOMinutes:    120,
 		},
 		{
-			Name:           "Kafka Topics",
-			Type:           "kafka",
-			Schedule:       "0 0 * * *",
-			RetentionDays:  7,
-			BackupType:     BackupTypeSnapshot,
-			Enabled:        true,
-			RPOMinutes:     60,
-			RTOMinutes:     60,
+			Name:          "Kafka Topics",
+			Type:          "kafka",
+			Schedule:      "0 0 * * *",
+			RetentionDays: 7,
+			BackupType:    BackupTypeSnapshot,
+			Enabled:       true,
+			RPOMinutes:    60,
+			RTOMinutes:    60,
 		},
 		{
-			Name:           "Redis Cache",
-			Type:           "redis",
-			Schedule:       "0 */2 * * *",
-			RetentionDays:  7,
-			BackupType:     BackupTypeSnapshot,
-			Enabled:        true,
-			RPOMinutes:     30,
-			RTOMinutes:     15,
+			Name:          "Redis Cache",
+			Type:          "redis",
+			Schedule:      "0 */2 * * *",
+			RetentionDays: 7,
+			BackupType:    BackupTypeSnapshot,
+			Enabled:       true,
+			RPOMinutes:    30,
+			RTOMinutes:    15,
 		},
 	}
 
@@ -375,12 +375,12 @@ func (drm *DisasterRecoveryManager) StartBackup(ctx context.Context, targetID st
 	}
 
 	job := BackupJob{
-		ID:         uuid.New().String(),
-		TargetID:   targetID,
-		TargetName: target.Name,
-		BackupType: backupType,
-		Status:     BackupStatusRunning,
-		StartedAt:  time.Now(),
+		ID:          uuid.New().String(),
+		TargetID:    targetID,
+		TargetName:  target.Name,
+		BackupType:  backupType,
+		Status:      BackupStatusRunning,
+		StartedAt:   time.Now(),
 		StoragePath: fmt.Sprintf("backups/%s/%s/%s", target.Type, time.Now().Format("2006-01-02"), uuid.New().String()),
 	}
 
@@ -683,18 +683,18 @@ func (drm *DisasterRecoveryManager) performHealthChecks() {
 }
 
 type DRStats struct {
-	TotalBackups       int                `json:"total_backups"`
-	SuccessfulBackups  int                `json:"successful_backups"`
-	FailedBackups      int                `json:"failed_backups"`
-	TotalRestores      int                `json:"total_restores"`
-	SuccessfulRestores int                `json:"successful_restores"`
-	TotalFailovers     int                `json:"total_failovers"`
-	ActiveRegion       string             `json:"active_region"`
-	RegionHealth       map[string]bool    `json:"region_health"`
-	LastBackupTime     *time.Time         `json:"last_backup_time,omitempty"`
-	LastRestoreTime    *time.Time         `json:"last_restore_time,omitempty"`
-	RPOCompliance      bool               `json:"rpo_compliance"`
-	RTOCompliance      bool               `json:"rto_compliance"`
+	TotalBackups       int             `json:"total_backups"`
+	SuccessfulBackups  int             `json:"successful_backups"`
+	FailedBackups      int             `json:"failed_backups"`
+	TotalRestores      int             `json:"total_restores"`
+	SuccessfulRestores int             `json:"successful_restores"`
+	TotalFailovers     int             `json:"total_failovers"`
+	ActiveRegion       string          `json:"active_region"`
+	RegionHealth       map[string]bool `json:"region_health"`
+	LastBackupTime     *time.Time      `json:"last_backup_time,omitempty"`
+	LastRestoreTime    *time.Time      `json:"last_restore_time,omitempty"`
+	RPOCompliance      bool            `json:"rpo_compliance"`
+	RTOCompliance      bool            `json:"rto_compliance"`
 }
 
 func (drm *DisasterRecoveryManager) GetStats() *DRStats {

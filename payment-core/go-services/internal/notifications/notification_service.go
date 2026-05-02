@@ -11,7 +11,6 @@ import (
 	"time"
 )
 
-
 const (
 	NotificationTypePaymentConfirmation NotificationType = "payment_confirmation"
 	NotificationTypePaymentFailed       NotificationType = "payment_failed"
@@ -30,10 +29,10 @@ const (
 type DeliveryChannel string
 
 const (
-	ChannelSMS    DeliveryChannel = "sms"
-	ChannelEmail  DeliveryChannel = "email"
-	ChannelPush   DeliveryChannel = "push"
-	ChannelInApp  DeliveryChannel = "in_app"
+	ChannelSMS   DeliveryChannel = "sms"
+	ChannelEmail DeliveryChannel = "email"
+	ChannelPush  DeliveryChannel = "push"
+	ChannelInApp DeliveryChannel = "in_app"
 )
 
 type NotificationStatus string
@@ -63,7 +62,6 @@ type Notification struct {
 	ReadAt      *time.Time             `json:"readAt,omitempty"`
 }
 
-
 type ChannelPrefs struct {
 	EmailEnabled bool `json:"emailEnabled"`
 	SMSEnabled   bool `json:"smsEnabled"`
@@ -72,17 +70,17 @@ type ChannelPrefs struct {
 }
 
 type QuietHours struct {
-	Enabled   bool   `json:"enabled"`
-	StartHour int    `json:"startHour"`
-	EndHour   int    `json:"endHour"`
+	Enabled   bool `json:"enabled"`
+	StartHour int  `json:"startHour"`
+	EndHour   int  `json:"endHour"`
 }
 
 // SMSProvider represents the SMS provider type
 type SMSProvider string
 
 const (
-	SMSProviderTwilio   SMSProvider = "twilio"
-	SMSProviderNexmo    SMSProvider = "nexmo"
+	SMSProviderTwilio         SMSProvider = "twilio"
+	SMSProviderNexmo          SMSProvider = "nexmo"
 	SMSProviderAfricasTalking SMSProvider = "africastalking"
 )
 
@@ -513,13 +511,13 @@ func (s *NotificationService) GetUserPreferences(userID int64) *NotificationPref
 	if !ok {
 		now := time.Now()
 		return &NotificationPreferences{
-			UserID:               userID,
-			EmailNotifications:   true,
-			SMSNotifications:     false,
-			TransactionAlerts:    true,
-			QuietHoursEnabled:    false,
-			CreatedAt:            now,
-			UpdatedAt:            now,
+			UserID:             userID,
+			EmailNotifications: true,
+			SMSNotifications:   false,
+			TransactionAlerts:  true,
+			QuietHoursEnabled:  false,
+			CreatedAt:          now,
+			UpdatedAt:          now,
 		}
 	}
 

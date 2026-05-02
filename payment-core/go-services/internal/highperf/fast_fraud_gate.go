@@ -14,9 +14,9 @@ type FastFraudGate struct {
 	velocityCounters *ShardedCounterMap
 
 	// Blocklists (in-memory, refreshed async)
-	blockedAccounts  *BloomFilter
-	blockedIPs       *BloomFilter
-	blockedDevices   *BloomFilter
+	blockedAccounts *BloomFilter
+	blockedIPs      *BloomFilter
+	blockedDevices  *BloomFilter
 
 	// Thresholds
 	maxAmountPerTx   uint64
@@ -24,23 +24,23 @@ type FastFraudGate struct {
 	maxAmountPerHour uint64
 
 	// Stats
-	totalChecks      uint64
-	totalBlocked     uint64
-	totalAllowed     uint64
+	totalChecks  uint64
+	totalBlocked uint64
+	totalAllowed uint64
 
 	// Async ML scoring channel
-	mlScoringChan    chan FraudScoringRequest
+	mlScoringChan chan FraudScoringRequest
 }
 
 // FraudScoringRequest for async ML scoring
 type FraudScoringRequest struct {
-	TransferID      [16]byte
-	PayerAccountID  [16]byte
-	PayeeAccountID  [16]byte
-	Amount          uint64
-	Timestamp       int64
-	DeviceID        string
-	IPAddress       string
+	TransferID     [16]byte
+	PayerAccountID [16]byte
+	PayeeAccountID [16]byte
+	Amount         uint64
+	Timestamp      int64
+	DeviceID       string
+	IPAddress      string
 }
 
 // FastFraudConfig configures the fraud gate
@@ -99,7 +99,7 @@ func (g *FastFraudGate) QuickCheck(req Request) bool {
 	// Check 3: Velocity check (sharded counters, low contention)
 	key := string(req.DebitAccountID[:])
 	minuteKey := key + ":m:" + minuteBucket()
-	
+
 	count := g.velocityCounters.Increment(minuteKey)
 	if count > g.maxTxPerMinute {
 		atomic.AddUint64(&g.totalBlocked, 1)
@@ -300,7 +300,7 @@ func fastHashString(s string) uint64 {
 
 // RateLimiter provides token bucket rate limiting
 type RateLimiter struct {
-	buckets   *ShardedTokenBuckets
+	buckets    *ShardedTokenBuckets
 	ratePerSec int
 	burstSize  int
 }

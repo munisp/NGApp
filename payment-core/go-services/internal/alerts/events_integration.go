@@ -43,11 +43,11 @@ func NewRateAlertServiceWithEvents(service interface{}) *RateAlertServiceWithEve
 
 func (s *RateAlertServiceWithEvents) CreateAlert(ctx context.Context, userID, fromCurrency, toCurrency string, targetRate float64) (string, error) {
 	alertID := generateAlertID()
-	
+
 	if err := EmitRateAlertCreated(ctx, alertID, userID, fromCurrency, toCurrency, targetRate); err != nil {
 		log.Printf("Failed to emit rate alert created event: %v", err)
 	}
-	
+
 	return alertID, nil
 }
 

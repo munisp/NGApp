@@ -13,25 +13,25 @@ import (
 // TemporalHighPerfConfig configures the high-performance Temporal client
 type TemporalHighPerfConfig struct {
 	// Server settings
-	HostPort        string
-	Namespace       string
-	
+	HostPort  string
+	Namespace string
+
 	// Worker settings
-	MaxConcurrentActivities    int
-	MaxConcurrentWorkflows     int
+	MaxConcurrentActivities      int
+	MaxConcurrentWorkflows       int
 	MaxConcurrentLocalActivities int
-	WorkerActivitiesPerSecond  float64
+	WorkerActivitiesPerSecond    float64
 	TaskQueueActivitiesPerSecond float64
-	
+
 	// Client settings
-	Identity        string
-	DataConverter   string
-	
+	Identity      string
+	DataConverter string
+
 	// Connection settings
-	MaxPayloadSize  int
-	KeepAliveTime   time.Duration
+	MaxPayloadSize   int
+	KeepAliveTime    time.Duration
 	KeepAliveTimeout time.Duration
-	
+
 	// Retry settings
 	InitialInterval time.Duration
 	MaxInterval     time.Duration
@@ -42,50 +42,50 @@ type TemporalHighPerfConfig struct {
 // DefaultTemporalHighPerfConfig returns optimized defaults for 1M TPS
 func DefaultTemporalHighPerfConfig() TemporalHighPerfConfig {
 	return TemporalHighPerfConfig{
-		HostPort:                    "temporal-frontend:7233",
-		Namespace:                   "payment-switch",
-		MaxConcurrentActivities:     1000,
-		MaxConcurrentWorkflows:      1000,
+		HostPort:                     "temporal-frontend:7233",
+		Namespace:                    "payment-switch",
+		MaxConcurrentActivities:      1000,
+		MaxConcurrentWorkflows:       1000,
 		MaxConcurrentLocalActivities: 1000,
-		WorkerActivitiesPerSecond:   100000,
+		WorkerActivitiesPerSecond:    100000,
 		TaskQueueActivitiesPerSecond: 100000,
-		Identity:                    "payment-switch-worker",
-		MaxPayloadSize:              4 * 1024 * 1024, // 4MB
-		KeepAliveTime:               30 * time.Second,
-		KeepAliveTimeout:            10 * time.Second,
-		InitialInterval:             100 * time.Millisecond,
-		MaxInterval:                 10 * time.Second,
-		MaxAttempts:                 5,
-		BackoffCoeff:                2.0,
+		Identity:                     "payment-switch-worker",
+		MaxPayloadSize:               4 * 1024 * 1024, // 4MB
+		KeepAliveTime:                30 * time.Second,
+		KeepAliveTimeout:             10 * time.Second,
+		InitialInterval:              100 * time.Millisecond,
+		MaxInterval:                  10 * time.Second,
+		MaxAttempts:                  5,
+		BackoffCoeff:                 2.0,
 	}
 }
 
 // TemporalHighPerfClient is an optimized Temporal client
 type TemporalHighPerfClient struct {
-	config       TemporalHighPerfConfig
-	
+	config TemporalHighPerfConfig
+
 	// Workflow execution pool
 	workflowPool chan struct{}
-	
+
 	// Activity execution pool
 	activityPool chan struct{}
-	
+
 	// Stats
-	workflowsStarted  uint64
+	workflowsStarted   uint64
 	workflowsCompleted uint64
-	activitiesExec    uint64
-	errors            uint64
-	
+	activitiesExec     uint64
+	errors             uint64
+
 	// Control
-	ctx          context.Context
-	cancel       context.CancelFunc
-	wg           sync.WaitGroup
+	ctx    context.Context
+	cancel context.CancelFunc
+	wg     sync.WaitGroup
 }
 
 // NewTemporalHighPerfClient creates a new high-performance Temporal client
 func NewTemporalHighPerfClient(config TemporalHighPerfConfig) (*TemporalHighPerfClient, error) {
 	ctx, cancel := context.WithCancel(context.Background())
-	
+
 	client := &TemporalHighPerfClient{
 		config:       config,
 		workflowPool: make(chan struct{}, config.MaxConcurrentWorkflows),
@@ -93,7 +93,7 @@ func NewTemporalHighPerfClient(config TemporalHighPerfConfig) (*TemporalHighPerf
 		ctx:          ctx,
 		cancel:       cancel,
 	}
-	
+
 	// Pre-fill pools
 	for i := 0; i < config.MaxConcurrentWorkflows; i++ {
 		client.workflowPool <- struct{}{}
@@ -101,24 +101,24 @@ func NewTemporalHighPerfClient(config TemporalHighPerfConfig) (*TemporalHighPerf
 	for i := 0; i < config.MaxConcurrentActivities; i++ {
 		client.activityPool <- struct{}{}
 	}
-	
+
 	log.Printf("TemporalHighPerfClient initialized: namespace=%s, maxWorkflows=%d, maxActivities=%d",
 		config.Namespace, config.MaxConcurrentWorkflows, config.MaxConcurrentActivities)
-	
+
 	return client, nil
 }
 
 // WorkflowOptions configures workflow execution
 type WorkflowOptions struct {
-	ID                       string
-	TaskQueue                string
-	ExecutionTimeout         time.Duration
-	RunTimeout               time.Duration
-	TaskTimeout              time.Duration
-	RetryPolicy              *RetryPolicy
-	CronSchedule             string
-	Memo                     map[string]interface{}
-	SearchAttributes         map[string]interface{}
+	ID               string
+	TaskQueue        string
+	ExecutionTimeout time.Duration
+	RunTimeout       time.Duration
+	TaskTimeout      time.Duration
+	RetryPolicy      *RetryPolicy
+	CronSchedule     string
+	Memo             map[string]interface{}
+	SearchAttributes map[string]interface{}
 }
 
 // RetryPolicy configures retry behavior
@@ -156,12 +156,12 @@ func (c *TemporalHighPerfClient) StartWorkflow(ctx context.Context, options Work
 	case <-ctx.Done():
 		return "", ctx.Err()
 	}
-	
+
 	atomic.AddUint64(&c.workflowsStarted, 1)
-	
+
 	// In production, this would use the actual Temporal client
 	runID := fmt.Sprintf("run-%d", time.Now().UnixNano())
-	
+
 	return runID, nil
 }
 
@@ -227,9 +227,9 @@ func (c *TemporalHighPerfClient) ExecuteActivity(ctx context.Context, options Ac
 	case <-ctx.Done():
 		return nil, ctx.Err()
 	}
-	
+
 	atomic.AddUint64(&c.activitiesExec, 1)
-	
+
 	return nil, nil
 }
 
@@ -250,36 +250,36 @@ func (c *TemporalHighPerfClient) Close() error {
 
 // TemporalServerConfig represents Temporal server configuration
 type TemporalServerConfig struct {
-	NumHistoryShards     int
-	FrontendReplicas     int
-	HistoryReplicas      int
-	MatchingReplicas     int
-	WorkerReplicas       int
-	
+	NumHistoryShards int
+	FrontendReplicas int
+	HistoryReplicas  int
+	MatchingReplicas int
+	WorkerReplicas   int
+
 	// Database
-	DBType               string
-	DBHost               string
-	DBPort               int
-	DBName               string
-	DBUser               string
-	MaxConns             int
-	MaxIdleConns         int
-	
+	DBType       string
+	DBHost       string
+	DBPort       int
+	DBName       string
+	DBUser       string
+	MaxConns     int
+	MaxIdleConns int
+
 	// Performance
-	RPS                  int
-	MaxConcurrentTasks   int
-	PersistenceMaxQPS    int
-	VisibilityMaxQPS     int
+	RPS                int
+	MaxConcurrentTasks int
+	PersistenceMaxQPS  int
+	VisibilityMaxQPS   int
 }
 
 // OptimalTemporalServerConfig returns optimized Temporal server config for 1M TPS
 func OptimalTemporalServerConfig() TemporalServerConfig {
 	return TemporalServerConfig{
-		NumHistoryShards:   1024,  // Increased from 512
-		FrontendReplicas:   5,     // Increased from 3
-		HistoryReplicas:    5,     // Increased from 3
-		MatchingReplicas:   5,     // Increased from 3
-		WorkerReplicas:     3,     // Increased from 2
+		NumHistoryShards:   1024, // Increased from 512
+		FrontendReplicas:   5,    // Increased from 3
+		HistoryReplicas:    5,    // Increased from 3
+		MatchingReplicas:   5,    // Increased from 3
+		WorkerReplicas:     3,    // Increased from 2
 		DBType:             "postgres",
 		DBHost:             "postgres-primary",
 		DBPort:             5432,
@@ -467,17 +467,17 @@ history.taskSchedulerRoundRobinWeights:
 
 // PaymentWorkflowDefinition defines a high-performance payment workflow
 type PaymentWorkflowDefinition struct {
-	Name              string
-	TaskQueue         string
-	ExecutionTimeout  time.Duration
-	Activities        []ActivityDefinition
+	Name             string
+	TaskQueue        string
+	ExecutionTimeout time.Duration
+	Activities       []ActivityDefinition
 }
 
 // ActivityDefinition defines a workflow activity
 type ActivityDefinition struct {
-	Name           string
-	Timeout        time.Duration
-	RetryPolicy    *RetryPolicy
+	Name             string
+	Timeout          time.Duration
+	RetryPolicy      *RetryPolicy
 	HeartbeatTimeout time.Duration
 }
 

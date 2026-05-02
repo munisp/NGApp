@@ -60,11 +60,11 @@ func NewFXRiskServiceWithEvents(service interface{}) *FXRiskServiceWithEvents {
 func (s *FXRiskServiceWithEvents) CreateLock(ctx context.Context, userID, fromCurrency, toCurrency string, rate float64, durationMinutes int) (string, error) {
 	lockID := generateLockID()
 	expiresAt := time.Now().Add(time.Duration(durationMinutes) * time.Minute)
-	
+
 	if err := EmitFXLockCreated(ctx, lockID, userID, fromCurrency, toCurrency, rate, expiresAt); err != nil {
 		log.Printf("Failed to emit FX lock created event: %v", err)
 	}
-	
+
 	return lockID, nil
 }
 
@@ -77,11 +77,11 @@ func (s *FXRiskServiceWithEvents) UseLock(ctx context.Context, lockID, userID, t
 
 func (s *FXRiskServiceWithEvents) ExecuteHedge(ctx context.Context, corridor string, amount, rate float64) (string, error) {
 	hedgeID := generateHedgeID()
-	
+
 	if err := EmitHedgeExecuted(ctx, hedgeID, corridor, amount, rate); err != nil {
 		log.Printf("Failed to emit hedge executed event: %v", err)
 	}
-	
+
 	return hedgeID, nil
 }
 

@@ -44,17 +44,17 @@ const (
 )
 
 type KYCRequest struct {
-	RemittanceID    string  `json:"remittanceId"`
-	FirstName       string  `json:"firstName"`
-	LastName        string  `json:"lastName"`
-	DateOfBirth     string  `json:"dateOfBirth"`
-	Address         string  `json:"address"`
-	IDType          IDType  `json:"idType"`
-	IDNumber        string  `json:"idNumber"`
-	PhoneNumber     string  `json:"phoneNumber"`
-	Email           string  `json:"email,omitempty"`
-	SelfieImage     string  `json:"selfieImage,omitempty"`
-	IDDocumentImage string  `json:"idDocumentImage,omitempty"`
+	RemittanceID    string `json:"remittanceId"`
+	FirstName       string `json:"firstName"`
+	LastName        string `json:"lastName"`
+	DateOfBirth     string `json:"dateOfBirth"`
+	Address         string `json:"address"`
+	IDType          IDType `json:"idType"`
+	IDNumber        string `json:"idNumber"`
+	PhoneNumber     string `json:"phoneNumber"`
+	Email           string `json:"email,omitempty"`
+	SelfieImage     string `json:"selfieImage,omitempty"`
+	IDDocumentImage string `json:"idDocumentImage,omitempty"`
 }
 
 type VerifiedData struct {
@@ -68,18 +68,18 @@ type VerifiedData struct {
 }
 
 type KYCResult struct {
-	VerificationID   string        `json:"verificationId"`
-	Status           KYCStatus     `json:"status"`
-	ConfidenceScore  float64       `json:"confidenceScore"`
-	LivenessCheck    bool          `json:"livenessCheck"`
-	DocumentMatch    bool          `json:"documentMatch"`
-	AMLScreening     bool          `json:"amlScreening"`
-	SanctionsCheck   bool          `json:"sanctionsCheck"`
-	RiskScore        float64       `json:"riskScore"`
-	RiskLevel        RiskLevel     `json:"riskLevel"`
-	VerifiedData     *VerifiedData `json:"verifiedData,omitempty"`
-	RejectionReason  string        `json:"rejectionReason,omitempty"`
-	CompletedAt      *time.Time    `json:"completedAt,omitempty"`
+	VerificationID  string        `json:"verificationId"`
+	Status          KYCStatus     `json:"status"`
+	ConfidenceScore float64       `json:"confidenceScore"`
+	LivenessCheck   bool          `json:"livenessCheck"`
+	DocumentMatch   bool          `json:"documentMatch"`
+	AMLScreening    bool          `json:"amlScreening"`
+	SanctionsCheck  bool          `json:"sanctionsCheck"`
+	RiskScore       float64       `json:"riskScore"`
+	RiskLevel       RiskLevel     `json:"riskLevel"`
+	VerifiedData    *VerifiedData `json:"verifiedData,omitempty"`
+	RejectionReason string        `json:"rejectionReason,omitempty"`
+	CompletedAt     *time.Time    `json:"completedAt,omitempty"`
 }
 
 type KYCInitiationResult struct {
@@ -137,9 +137,9 @@ type KYCRequirements struct {
 }
 
 type SmileIDJobResponse struct {
-	JobID     string `json:"job_id"`
-	JobType   string `json:"job_type"`
-	Result    struct {
+	JobID   string `json:"job_id"`
+	JobType string `json:"job_type"`
+	Result  struct {
 		ResultText      string `json:"ResultText"`
 		ResultCode      string `json:"ResultCode"`
 		ConfidenceValue string `json:"ConfidenceValue"`
@@ -561,8 +561,8 @@ func (s *KYCService) CalculateRiskScore(kycResult *KYCResult, amlResult *AMLScre
 		sanctionsRisk = 100
 	}
 	factors = append(factors, RiskFactor{
-		Factor:      "Sanctions Check",
-		Impact:      sanctionsRisk * 0.2,
+		Factor: "Sanctions Check",
+		Impact: sanctionsRisk * 0.2,
 		Description: func() string {
 			if sanctionsResult.Passed {
 				return "No sanctions matches"

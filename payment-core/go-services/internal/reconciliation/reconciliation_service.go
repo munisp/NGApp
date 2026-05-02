@@ -29,9 +29,9 @@ type Transaction struct {
 }
 
 type LedgerEntry struct {
-	ID              string `json:"id"`
-	DebitAccountID  string `json:"debitAccountId"`
-	CreditAccountID string `json:"creditAccountId"`
+	ID              string  `json:"id"`
+	DebitAccountID  string  `json:"debitAccountId"`
+	CreditAccountID string  `json:"creditAccountId"`
 	Amount          float64 `json:"amount"`
 	PendingAmount   float64 `json:"pendingAmount"`
 	Timestamp       int64   `json:"timestamp"`
@@ -91,12 +91,12 @@ const (
 )
 
 type ReconciliationSummary struct {
-	TotalDBAmount          float64 `json:"totalDbAmount"`
-	TotalLedgerAmount      float64 `json:"totalLedgerAmount"`
-	NetDifference          float64 `json:"netDifference"`
-	MatchRate              float64 `json:"matchRate"`
-	DiscrepancyCount       int     `json:"discrepancyCount"`
-	CriticalDiscrepancies  int     `json:"criticalDiscrepancies"`
+	TotalDBAmount         float64 `json:"totalDbAmount"`
+	TotalLedgerAmount     float64 `json:"totalLedgerAmount"`
+	NetDifference         float64 `json:"netDifference"`
+	MatchRate             float64 `json:"matchRate"`
+	DiscrepancyCount      int     `json:"discrepancyCount"`
+	CriticalDiscrepancies int     `json:"criticalDiscrepancies"`
 }
 
 type ReconciliationResult struct {
@@ -120,17 +120,17 @@ type AccountBalance struct {
 }
 
 type ReconciliationConfig struct {
-	BatchSize            int     `json:"batchSize"`
-	ToleranceAmount      float64 `json:"toleranceAmount"`
-	TolerancePercentage  float64 `json:"tolerancePercentage"`
-	MaxRetries           int     `json:"maxRetries"`
-	AlertThreshold       int     `json:"alertThreshold"`
+	BatchSize           int     `json:"batchSize"`
+	ToleranceAmount     float64 `json:"toleranceAmount"`
+	TolerancePercentage float64 `json:"tolerancePercentage"`
+	MaxRetries          int     `json:"maxRetries"`
+	AlertThreshold      int     `json:"alertThreshold"`
 }
 
 type ExceptionQueue struct {
-	mu       sync.RWMutex
-	queue    []*Discrepancy
-	maxSize  int
+	mu      sync.RWMutex
+	queue   []*Discrepancy
+	maxSize int
 }
 
 func NewExceptionQueue(maxSize int) *ExceptionQueue {
@@ -239,11 +239,11 @@ func (q *ExceptionQueue) GetStats() map[string]interface{} {
 	defer q.mu.RUnlock()
 
 	stats := map[string]interface{}{
-		"total":        len(q.queue),
-		"pending":      0,
+		"total":         len(q.queue),
+		"pending":       0,
 		"investigating": 0,
-		"resolved":     0,
-		"escalated":    0,
+		"resolved":      0,
+		"escalated":     0,
 		"bySeverity": map[string]int{
 			"low":      0,
 			"medium":   0,

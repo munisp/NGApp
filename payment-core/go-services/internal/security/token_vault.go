@@ -46,12 +46,12 @@ type storedToken struct {
 }
 
 type VaultKeyMetadata struct {
-	KeyID     string    `json:"key_id"`
-	Version   int       `json:"version"`
-	Algorithm string    `json:"algorithm"`
-	CreatedAt time.Time `json:"created_at"`
+	KeyID     string     `json:"key_id"`
+	Version   int        `json:"version"`
+	Algorithm string     `json:"algorithm"`
+	CreatedAt time.Time  `json:"created_at"`
 	RotatedAt *time.Time `json:"rotated_at,omitempty"`
-	Status    string    `json:"status"`
+	Status    string     `json:"status"`
 }
 
 type keyData struct {

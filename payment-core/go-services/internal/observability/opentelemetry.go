@@ -37,15 +37,15 @@ type OTelProvider struct {
 
 // PaymentOTelMetrics holds OpenTelemetry metrics for payment switch
 type PaymentOTelMetrics struct {
-	TransactionCounter     metric.Int64Counter
-	TransactionDuration    metric.Float64Histogram
-	TransactionInFlight    metric.Int64UpDownCounter
-	CurrentTPS             metric.Float64Gauge
-	ParticipantLatency     metric.Float64Histogram
-	FraudAlertsOpen        metric.Int64UpDownCounter
-	SettlementsPending     metric.Int64UpDownCounter
-	KafkaConsumerLag       metric.Int64Gauge
-	DeltaLakeWriteLatency  metric.Float64Histogram
+	TransactionCounter    metric.Int64Counter
+	TransactionDuration   metric.Float64Histogram
+	TransactionInFlight   metric.Int64UpDownCounter
+	CurrentTPS            metric.Float64Gauge
+	ParticipantLatency    metric.Float64Histogram
+	FraudAlertsOpen       metric.Int64UpDownCounter
+	SettlementsPending    metric.Int64UpDownCounter
+	KafkaConsumerLag      metric.Int64Gauge
+	DeltaLakeWriteLatency metric.Float64Histogram
 }
 
 // InitOpenTelemetry initializes OpenTelemetry with OTLP exporters

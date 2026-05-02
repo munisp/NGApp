@@ -13,34 +13,34 @@ import (
 
 // GeoResult contains location data for an IP address
 type GeoResult struct {
-	CountryCode   string
-	CountryName   string
-	City          string
-	Region        string
-	Latitude      float64
-	Longitude     float64
-	Timezone      string
-	ISP           string
-	ASN           uint32
-	IsProxy       bool
-	IsVPN         bool
-	IsTor         bool
-	IsDatacenter  bool
-	RiskScore     uint8 // 0-100, higher = riskier
+	CountryCode  string
+	CountryName  string
+	City         string
+	Region       string
+	Latitude     float64
+	Longitude    float64
+	Timezone     string
+	ISP          string
+	ASN          uint32
+	IsProxy      bool
+	IsVPN        bool
+	IsTor        bool
+	IsDatacenter bool
+	RiskScore    uint8 // 0-100, higher = riskier
 }
 
 // GeoConfig configures the geolocation service
 type GeoConfig struct {
 	// Path to MaxMind GeoLite2 database
-	DBPath         string
+	DBPath string
 	// Path to ASN database
-	ASNDBPath      string
+	ASNDBPath string
 	// High-risk countries for payment fraud
 	HighRiskCountries []string
 	// Known VPN/proxy ASN ranges
-	ProxyASNs       []uint32
+	ProxyASNs []uint32
 	// Cache size for recently looked-up IPs
-	CacheSize       int
+	CacheSize int
 }
 
 // DefaultGeoConfig returns production defaults
@@ -98,8 +98,8 @@ type GeoService struct {
 	cache  *IPCache
 
 	// In-memory risk data
-	highRiskSet  map[string]bool
-	proxyASNSet  map[uint32]bool
+	highRiskSet map[string]bool
+	proxyASNSet map[uint32]bool
 
 	// Stats
 	totalLookups uint64

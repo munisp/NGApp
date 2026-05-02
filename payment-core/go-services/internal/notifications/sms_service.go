@@ -16,9 +16,8 @@ import (
 	"time"
 )
 
-
 const (
-	SMSProviderTermii         SMSProvider = "termii"
+	SMSProviderTermii SMSProvider = "termii"
 )
 
 type SMSConfig struct {

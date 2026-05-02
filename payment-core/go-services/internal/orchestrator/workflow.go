@@ -14,24 +14,24 @@ import (
 type WorkflowState int32
 
 const (
-	StateCreated          WorkflowState = iota
-	StateValidating                     // Input validation + fraud check
-	StateReservingFunds                 // TigerBeetle pending transfer
-	StateKYCVerification                // Parallel KYC checks
-	StateExchanging                     // FX conversion
-	StateRouting                        // Determining delivery path
-	StateExecuting                      // Bank/Mobile Money/Agent transfer
-	StateSettling                       // Confirming settlement
-	StateCompleted                      // Success
-	StateFailed                         // Terminal failure
-	StateCompensating                   // Rolling back (saga compensation)
+	StateCreated         WorkflowState = iota
+	StateValidating                    // Input validation + fraud check
+	StateReservingFunds                // TigerBeetle pending transfer
+	StateKYCVerification               // Parallel KYC checks
+	StateExchanging                    // FX conversion
+	StateRouting                       // Determining delivery path
+	StateExecuting                     // Bank/Mobile Money/Agent transfer
+	StateSettling                      // Confirming settlement
+	StateCompleted                     // Success
+	StateFailed                        // Terminal failure
+	StateCompensating                  // Rolling back (saga compensation)
 )
 
 // WorkflowEvent triggers state transitions
 type WorkflowEvent int32
 
 const (
-	EventStart            WorkflowEvent = iota
+	EventStart WorkflowEvent = iota
 	EventValidationPassed
 	EventValidationFailed
 	EventFundsReserved
@@ -51,27 +51,27 @@ const (
 
 // Workflow represents a single remittance workflow instance
 type Workflow struct {
-	ID              string
-	State           WorkflowState
-	RemittanceID    string
-	SenderID        string
-	RecipientID     string
-	Amount          uint64
-	SourceCurrency  string
-	TargetCurrency  string
-	DeliveryMethod  string
-	CreatedAt       time.Time
-	UpdatedAt       time.Time
-	CompletedAt     *time.Time
-	Error           string
-	RetryCount      int32
-	MaxRetries      int32
-	Metadata        map[string]string
+	ID             string
+	State          WorkflowState
+	RemittanceID   string
+	SenderID       string
+	RecipientID    string
+	Amount         uint64
+	SourceCurrency string
+	TargetCurrency string
+	DeliveryMethod string
+	CreatedAt      time.Time
+	UpdatedAt      time.Time
+	CompletedAt    *time.Time
+	Error          string
+	RetryCount     int32
+	MaxRetries     int32
+	Metadata       map[string]string
 
 	// Internal state for compensation
-	reservationID   string
-	exchangeRef     string
-	transferRef     string
+	reservationID string
+	exchangeRef   string
+	transferRef   string
 }
 
 // WorkflowEngine manages concurrent workflow execution
@@ -80,7 +80,7 @@ type WorkflowEngine struct {
 	workflows sync.Map // map[string]*Workflow
 
 	// Worker pool
-	workChan   chan *Workflow
+	workChan    chan *Workflow
 	workerCount int
 
 	// Stats
@@ -90,13 +90,13 @@ type WorkflowEngine struct {
 	totalActive    int64
 
 	// Dependencies (injected)
-	validator     WorkflowValidator
-	ledger        WorkflowLedger
-	kyc           WorkflowKYC
-	exchange      WorkflowExchange
-	router        WorkflowRouter
-	executor      WorkflowExecutor
-	notifier      WorkflowNotifier
+	validator WorkflowValidator
+	ledger    WorkflowLedger
+	kyc       WorkflowKYC
+	exchange  WorkflowExchange
+	router    WorkflowRouter
+	executor  WorkflowExecutor
+	notifier  WorkflowNotifier
 
 	ctx    context.Context
 	cancel context.CancelFunc

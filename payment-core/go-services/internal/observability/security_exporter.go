@@ -14,20 +14,20 @@ import (
 
 // SecurityExporter exports metrics from OpenAppSec, Wazuh, and OpenCTI
 type SecurityExporter struct {
-	client         *http.Client
-	openAppSecURL  string
-	wazuhURL       string
-	openCTIURL     string
-	mu             sync.RWMutex
+	client        *http.Client
+	openAppSecURL string
+	wazuhURL      string
+	openCTIURL    string
+	mu            sync.RWMutex
 
 	// OpenAppSec WAF metrics
-	wafRequestsTotal     *prometheus.CounterVec
-	wafBlockedRequests   *prometheus.CounterVec
-	wafLatency           *prometheus.HistogramVec
-	wafAttacksDetected   *prometheus.CounterVec
-	wafRulesActive       prometheus.Gauge
-	wafLearningMode      prometheus.Gauge
-	wafThreatScore       *prometheus.HistogramVec
+	wafRequestsTotal   *prometheus.CounterVec
+	wafBlockedRequests *prometheus.CounterVec
+	wafLatency         *prometheus.HistogramVec
+	wafAttacksDetected *prometheus.CounterVec
+	wafRulesActive     prometheus.Gauge
+	wafLearningMode    prometheus.Gauge
+	wafThreatScore     *prometheus.HistogramVec
 
 	// Wazuh SIEM metrics
 	siemAlertsTotal      *prometheus.CounterVec
@@ -40,21 +40,21 @@ type SecurityExporter struct {
 	siemSCAResults       *prometheus.GaugeVec
 
 	// OpenCTI Threat Intelligence metrics
-	ctiIndicatorsTotal   *prometheus.GaugeVec
-	ctiMaliciousIPs      prometheus.Gauge
-	ctiFraudIndicators   prometheus.Gauge
-	ctiThreatActors      prometheus.Gauge
-	ctiCampaigns         prometheus.Gauge
-	ctiSyncErrors        *prometheus.CounterVec
-	ctiLastSync          prometheus.Gauge
-	ctiIOCsBlocked       *prometheus.CounterVec
+	ctiIndicatorsTotal *prometheus.GaugeVec
+	ctiMaliciousIPs    prometheus.Gauge
+	ctiFraudIndicators prometheus.Gauge
+	ctiThreatActors    prometheus.Gauge
+	ctiCampaigns       prometheus.Gauge
+	ctiSyncErrors      *prometheus.CounterVec
+	ctiLastSync        prometheus.Gauge
+	ctiIOCsBlocked     *prometheus.CounterVec
 
 	// Combined security metrics
-	securityScore        prometheus.Gauge
-	incidentsOpen        *prometheus.GaugeVec
-	incidentsResolved    *prometheus.CounterVec
-	blockedIPsTotal      prometheus.Gauge
-	suspiciousActivity   *prometheus.CounterVec
+	securityScore      prometheus.Gauge
+	incidentsOpen      *prometheus.GaugeVec
+	incidentsResolved  *prometheus.CounterVec
+	blockedIPsTotal    prometheus.Gauge
+	suspiciousActivity *prometheus.CounterVec
 }
 
 // NewSecurityExporter creates a new security exporter
@@ -226,8 +226,8 @@ func (e *SecurityExporter) collectOpenAppSec() {
 	defer resp.Body.Close()
 
 	var metrics struct {
-		RulesActive   int  `json:"rules_active"`
-		LearningMode  bool `json:"learning_mode"`
+		RulesActive  int  `json:"rules_active"`
+		LearningMode bool `json:"learning_mode"`
 	}
 
 	if err := json.NewDecoder(resp.Body).Decode(&metrics); err != nil {

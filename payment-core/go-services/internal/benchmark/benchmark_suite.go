@@ -17,11 +17,11 @@ import (
 type BenchmarkSuite struct {
 	// Configuration
 	config BenchmarkConfig
-	
+
 	// Results
-	results     map[string]*BenchmarkResult
-	resultsMu   sync.Mutex
-	
+	results   map[string]*BenchmarkResult
+	resultsMu sync.Mutex
+
 	// Performance budgets
 	budgets map[string]PerformanceBudget
 }
@@ -59,18 +59,18 @@ type PerformanceBudget struct {
 
 // BenchmarkResult contains benchmark results
 type BenchmarkResult struct {
-	Name          string         `json:"name"`
-	StartTime     time.Time      `json:"start_time"`
-	EndTime       time.Time      `json:"end_time"`
-	Duration      time.Duration  `json:"duration"`
-	Operations    int64          `json:"operations"`
-	Throughput    float64        `json:"throughput"` // ops/sec
-	Latencies     LatencyStats   `json:"latencies"`
-	Allocations   AllocationStats `json:"allocations"`
-	Errors        int64          `json:"errors"`
+	Name          string             `json:"name"`
+	StartTime     time.Time          `json:"start_time"`
+	EndTime       time.Time          `json:"end_time"`
+	Duration      time.Duration      `json:"duration"`
+	Operations    int64              `json:"operations"`
+	Throughput    float64            `json:"throughput"` // ops/sec
+	Latencies     LatencyStats       `json:"latencies"`
+	Allocations   AllocationStats    `json:"allocations"`
+	Errors        int64              `json:"errors"`
 	Budget        *PerformanceBudget `json:"budget,omitempty"`
-	BudgetPassed  bool           `json:"budget_passed"`
-	BudgetDetails []string       `json:"budget_details,omitempty"`
+	BudgetPassed  bool               `json:"budget_passed"`
+	BudgetDetails []string           `json:"budget_details,omitempty"`
 }
 
 // LatencyStats contains latency statistics
@@ -89,10 +89,10 @@ type LatencyStats struct {
 
 // AllocationStats contains allocation statistics
 type AllocationStats struct {
-	TotalAllocs   int64 `json:"total_allocs"`
-	TotalBytes    int64 `json:"total_bytes"`
-	AllocsPerOp   int64 `json:"allocs_per_op"`
-	BytesPerOp    int64 `json:"bytes_per_op"`
+	TotalAllocs int64 `json:"total_allocs"`
+	TotalBytes  int64 `json:"total_bytes"`
+	AllocsPerOp int64 `json:"allocs_per_op"`
+	BytesPerOp  int64 `json:"bytes_per_op"`
 }
 
 // NewBenchmarkSuite creates a new benchmark suite
@@ -168,40 +168,40 @@ func (s *BenchmarkSuite) Run(name string, fn BenchmarkFunc) (*BenchmarkResult, e
 		Name:      name,
 		StartTime: time.Now(),
 	}
-	
+
 	// Get budget if exists
 	if budget, ok := s.budgets[name]; ok {
 		result.Budget = &budget
 	}
-	
+
 	// Warmup phase
 	ctx, cancel := context.WithTimeout(context.Background(), s.config.WarmupDuration)
 	s.runPhase(ctx, fn, nil)
 	cancel()
-	
+
 	// Reset GC
 	runtime.GC()
-	
+
 	// Collect latencies
 	latencies := make([]time.Duration, 0, 100000)
 	var latenciesMu sync.Mutex
-	
+
 	var operations int64
 	var errors int64
-	
+
 	// Get initial memory stats
 	var memStatsBefore runtime.MemStats
 	runtime.ReadMemStats(&memStatsBefore)
-	
+
 	// Test phase
 	ctx, cancel = context.WithTimeout(context.Background(), s.config.TestDuration)
-	
+
 	var wg sync.WaitGroup
 	for i := 0; i < s.config.Concurrency; i++ {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			
+
 			for {
 				select {
 				case <-ctx.Done():
@@ -210,12 +210,12 @@ func (s *BenchmarkSuite) Run(name string, fn BenchmarkFunc) (*BenchmarkResult, e
 					start := time.Now()
 					err := fn(ctx)
 					elapsed := time.Since(start)
-					
+
 					if err != nil {
 						atomic.AddInt64(&errors, 1)
 					} else {
 						atomic.AddInt64(&operations, 1)
-						
+
 						latenciesMu.Lock()
 						latencies = append(latencies, elapsed)
 						latenciesMu.Unlock()
@@ -224,23 +224,23 @@ func (s *BenchmarkSuite) Run(name string, fn BenchmarkFunc) (*BenchmarkResult, e
 			}
 		}()
 	}
-	
+
 	wg.Wait()
 	cancel()
-	
+
 	// Get final memory stats
 	var memStatsAfter runtime.MemStats
 	runtime.ReadMemStats(&memStatsAfter)
-	
+
 	result.EndTime = time.Now()
 	result.Duration = result.EndTime.Sub(result.StartTime)
 	result.Operations = operations
 	result.Errors = errors
 	result.Throughput = float64(operations) / s.config.TestDuration.Seconds()
-	
+
 	// Calculate latency stats
 	result.Latencies = calculateLatencyStats(latencies)
-	
+
 	// Calculate allocation stats
 	result.Allocations = AllocationStats{
 		TotalAllocs: int64(memStatsAfter.Mallocs - memStatsBefore.Mallocs),
@@ -250,15 +250,15 @@ func (s *BenchmarkSuite) Run(name string, fn BenchmarkFunc) (*BenchmarkResult, e
 		result.Allocations.AllocsPerOp = result.Allocations.TotalAllocs / operations
 		result.Allocations.BytesPerOp = result.Allocations.TotalBytes / operations
 	}
-	
+
 	// Check budget
 	result.BudgetPassed, result.BudgetDetails = s.checkBudget(result)
-	
+
 	// Store result
 	s.resultsMu.Lock()
 	s.results[name] = result
 	s.resultsMu.Unlock()
-	
+
 	return result, nil
 }
 
@@ -287,21 +287,21 @@ func calculateLatencyStats(latencies []time.Duration) LatencyStats {
 	if len(latencies) == 0 {
 		return LatencyStats{}
 	}
-	
+
 	// Sort for percentiles
 	sort.Slice(latencies, func(i, j int) bool {
 		return latencies[i] < latencies[j]
 	})
-	
+
 	n := len(latencies)
-	
+
 	// Calculate mean
 	var sum time.Duration
 	for _, l := range latencies {
 		sum += l
 	}
 	mean := sum / time.Duration(n)
-	
+
 	// Calculate std dev
 	var variance float64
 	for _, l := range latencies {
@@ -309,7 +309,7 @@ func calculateLatencyStats(latencies []time.Duration) LatencyStats {
 		variance += diff * diff
 	}
 	stdDev := time.Duration(variance / float64(n))
-	
+
 	return LatencyStats{
 		Min:    latencies[0],
 		Max:    latencies[n-1],
@@ -329,46 +329,46 @@ func (s *BenchmarkSuite) checkBudget(result *BenchmarkResult) (bool, []string) {
 	if result.Budget == nil {
 		return true, nil
 	}
-	
+
 	budget := result.Budget
 	passed := true
 	details := make([]string, 0)
-	
+
 	// Check P50 latency
 	if budget.MaxP50Latency > 0 && result.Latencies.P50 > budget.MaxP50Latency {
 		passed = false
 		details = append(details, fmt.Sprintf("P50 latency %v exceeds budget %v", result.Latencies.P50, budget.MaxP50Latency))
 	}
-	
+
 	// Check P95 latency
 	if budget.MaxP95Latency > 0 && result.Latencies.P95 > budget.MaxP95Latency {
 		passed = false
 		details = append(details, fmt.Sprintf("P95 latency %v exceeds budget %v", result.Latencies.P95, budget.MaxP95Latency))
 	}
-	
+
 	// Check P99 latency
 	if budget.MaxP99Latency > 0 && result.Latencies.P99 > budget.MaxP99Latency {
 		passed = false
 		details = append(details, fmt.Sprintf("P99 latency %v exceeds budget %v", result.Latencies.P99, budget.MaxP99Latency))
 	}
-	
+
 	// Check throughput
 	if budget.MinThroughput > 0 && result.Throughput < budget.MinThroughput {
 		passed = false
 		details = append(details, fmt.Sprintf("Throughput %.2f ops/sec below budget %.2f ops/sec", result.Throughput, budget.MinThroughput))
 	}
-	
+
 	// Check allocations
 	if budget.MaxAllocsPerOp > 0 && result.Allocations.AllocsPerOp > budget.MaxAllocsPerOp {
 		passed = false
 		details = append(details, fmt.Sprintf("Allocs/op %d exceeds budget %d", result.Allocations.AllocsPerOp, budget.MaxAllocsPerOp))
 	}
-	
+
 	if budget.MaxBytesPerOp > 0 && result.Allocations.BytesPerOp > budget.MaxBytesPerOp {
 		passed = false
 		details = append(details, fmt.Sprintf("Bytes/op %d exceeds budget %d", result.Allocations.BytesPerOp, budget.MaxBytesPerOp))
 	}
-	
+
 	return passed, details
 }
 
@@ -376,26 +376,26 @@ func (s *BenchmarkSuite) checkBudget(result *BenchmarkResult) (bool, []string) {
 func (s *BenchmarkSuite) GenerateReport() (*BenchmarkReport, error) {
 	s.resultsMu.Lock()
 	defer s.resultsMu.Unlock()
-	
+
 	report := &BenchmarkReport{
 		Timestamp:   time.Now(),
 		Environment: getEnvironmentInfo(),
 		Results:     make([]*BenchmarkResult, 0, len(s.results)),
 		AllPassed:   true,
 	}
-	
+
 	for _, result := range s.results {
 		report.Results = append(report.Results, result)
 		if !result.BudgetPassed {
 			report.AllPassed = false
 		}
 	}
-	
+
 	// Sort by name
 	sort.Slice(report.Results, func(i, j int) bool {
 		return report.Results[i].Name < report.Results[j].Name
 	})
-	
+
 	return report, nil
 }
 
@@ -405,12 +405,12 @@ func (s *BenchmarkSuite) SaveReport(path string) error {
 	if err != nil {
 		return err
 	}
-	
+
 	data, err := json.MarshalIndent(report, "", "  ")
 	if err != nil {
 		return err
 	}
-	
+
 	return os.WriteFile(path, data, 0644)
 }
 
@@ -424,11 +424,11 @@ type BenchmarkReport struct {
 
 // EnvironmentInfo contains environment information
 type EnvironmentInfo struct {
-	GoVersion   string `json:"go_version"`
-	NumCPU      int    `json:"num_cpu"`
-	GOMAXPROCS  int    `json:"gomaxprocs"`
-	OS          string `json:"os"`
-	Arch        string `json:"arch"`
+	GoVersion  string `json:"go_version"`
+	NumCPU     int    `json:"num_cpu"`
+	GOMAXPROCS int    `json:"gomaxprocs"`
+	OS         string `json:"os"`
+	Arch       string `json:"arch"`
 }
 
 func getEnvironmentInfo() EnvironmentInfo {

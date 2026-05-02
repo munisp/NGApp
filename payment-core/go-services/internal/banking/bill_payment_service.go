@@ -386,7 +386,7 @@ func (s *BillPaymentService) generateElectricityToken() string {
 		rand.Read(b)
 		num := 10000 + int(b[0])*256 + int(b[1])
 		if num > 99999 {
-			num = num % 90000 + 10000
+			num = num%90000 + 10000
 		}
 		parts = append(parts, fmt.Sprintf("%05d", num))
 	}

@@ -10,27 +10,27 @@ import (
 )
 
 type LoginHistory struct {
-	ID                int64      `json:"id"`
-	UserID            int64      `json:"userId"`
-	Success           bool       `json:"success"`
-	UserAgent         string     `json:"userAgent"`
-	DeviceFingerprint string     `json:"deviceFingerprint,omitempty"`
-	DeviceName        string     `json:"deviceName,omitempty"`
-	IPAddress         string     `json:"ipAddress"`
-	Country           string     `json:"country,omitempty"`
-	City              string     `json:"city,omitempty"`
-	Region            string     `json:"region,omitempty"`
-	Latitude          string     `json:"latitude,omitempty"`
-	Longitude         string     `json:"longitude,omitempty"`
-	IsTrustedDevice   bool       `json:"isTrustedDevice"`
-	IsSuspicious      bool       `json:"isSuspicious"`
-	RequiresTwoFactor bool       `json:"requiresTwoFactor"`
-	TwoFactorCompleted bool      `json:"twoFactorCompleted"`
-	SessionID         string     `json:"sessionId,omitempty"`
-	SessionActive     bool       `json:"sessionActive"`
-	SessionEndedAt    *time.Time `json:"sessionEndedAt,omitempty"`
-	FailureReason     string     `json:"failureReason,omitempty"`
-	LoginAt           time.Time  `json:"loginAt"`
+	ID                 int64      `json:"id"`
+	UserID             int64      `json:"userId"`
+	Success            bool       `json:"success"`
+	UserAgent          string     `json:"userAgent"`
+	DeviceFingerprint  string     `json:"deviceFingerprint,omitempty"`
+	DeviceName         string     `json:"deviceName,omitempty"`
+	IPAddress          string     `json:"ipAddress"`
+	Country            string     `json:"country,omitempty"`
+	City               string     `json:"city,omitempty"`
+	Region             string     `json:"region,omitempty"`
+	Latitude           string     `json:"latitude,omitempty"`
+	Longitude          string     `json:"longitude,omitempty"`
+	IsTrustedDevice    bool       `json:"isTrustedDevice"`
+	IsSuspicious       bool       `json:"isSuspicious"`
+	RequiresTwoFactor  bool       `json:"requiresTwoFactor"`
+	TwoFactorCompleted bool       `json:"twoFactorCompleted"`
+	SessionID          string     `json:"sessionId,omitempty"`
+	SessionActive      bool       `json:"sessionActive"`
+	SessionEndedAt     *time.Time `json:"sessionEndedAt,omitempty"`
+	FailureReason      string     `json:"failureReason,omitempty"`
+	LoginAt            time.Time  `json:"loginAt"`
 }
 
 type LogLoginAttemptParams struct {
@@ -86,11 +86,11 @@ type GeolocationData struct {
 }
 
 type AccountActivityService struct {
-	mu          sync.RWMutex
-	db          *sql.DB
+	mu           sync.RWMutex
+	db           *sql.DB
 	loginHistory map[int64]*LoginHistory
-	idCounter   int64
-	geoProvider GeolocationProvider
+	idCounter    int64
+	geoProvider  GeolocationProvider
 }
 
 func NewAccountActivityService(db *sql.DB, geoProvider GeolocationProvider) *AccountActivityService {

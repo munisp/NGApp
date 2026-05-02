@@ -16,21 +16,21 @@ import (
 
 // EmailNotification represents an email notification
 type EmailNotification struct {
-	ID          string                 `json:"id"`
-	To          string                 `json:"to"`
-	CC          []string               `json:"cc,omitempty"`
-	BCC         []string               `json:"bcc,omitempty"`
-	Subject     string                 `json:"subject"`
-	Body        string                 `json:"body"`
-	HTMLBody    string                 `json:"html_body,omitempty"`
-	TemplateID  string                 `json:"template_id,omitempty"`
+	ID           string                 `json:"id"`
+	To           string                 `json:"to"`
+	CC           []string               `json:"cc,omitempty"`
+	BCC          []string               `json:"bcc,omitempty"`
+	Subject      string                 `json:"subject"`
+	Body         string                 `json:"body"`
+	HTMLBody     string                 `json:"html_body,omitempty"`
+	TemplateID   string                 `json:"template_id,omitempty"`
 	TemplateData map[string]interface{} `json:"template_data,omitempty"`
-	Status      string                 `json:"status"` // PENDING, SENT, FAILED, BOUNCED
-	SentAt      *time.Time             `json:"sent_at,omitempty"`
-	Error       string                 `json:"error,omitempty"`
-	CreatedAt   time.Time              `json:"created_at"`
-	CaseID      string                 `json:"case_id,omitempty"`
-	EventType   string                 `json:"event_type,omitempty"`
+	Status       string                 `json:"status"` // PENDING, SENT, FAILED, BOUNCED
+	SentAt       *time.Time             `json:"sent_at,omitempty"`
+	Error        string                 `json:"error,omitempty"`
+	CreatedAt    time.Time              `json:"created_at"`
+	CaseID       string                 `json:"case_id,omitempty"`
+	EventType    string                 `json:"event_type,omitempty"`
 }
 
 // SMSNotification represents an SMS notification
@@ -63,59 +63,59 @@ type PushNotification struct {
 
 // NotificationPreferences represents user notification preferences
 type NotificationPreferences struct {
-	UserID              string   `json:"user_id"`
-	Email               string   `json:"email"`
-	Phone               string   `json:"phone,omitempty"`
-	EmailEnabled        bool     `json:"email_enabled"`
-	SMSEnabled          bool     `json:"sms_enabled"`
-	PushEnabled         bool     `json:"push_enabled"`
-	EnabledEventTypes   []string `json:"enabled_event_types"`
-	DisabledEventTypes  []string `json:"disabled_event_types"`
-	DigestFrequency     string   `json:"digest_frequency"` // IMMEDIATE, DAILY, WEEKLY
-	QuietHoursStart     string   `json:"quiet_hours_start,omitempty"`
-	QuietHoursEnd       string   `json:"quiet_hours_end,omitempty"`
-	Language            string   `json:"language"`
-	Timezone            string   `json:"timezone"`
+	UserID             string   `json:"user_id"`
+	Email              string   `json:"email"`
+	Phone              string   `json:"phone,omitempty"`
+	EmailEnabled       bool     `json:"email_enabled"`
+	SMSEnabled         bool     `json:"sms_enabled"`
+	PushEnabled        bool     `json:"push_enabled"`
+	EnabledEventTypes  []string `json:"enabled_event_types"`
+	DisabledEventTypes []string `json:"disabled_event_types"`
+	DigestFrequency    string   `json:"digest_frequency"` // IMMEDIATE, DAILY, WEEKLY
+	QuietHoursStart    string   `json:"quiet_hours_start,omitempty"`
+	QuietHoursEnd      string   `json:"quiet_hours_end,omitempty"`
+	Language           string   `json:"language"`
+	Timezone           string   `json:"timezone"`
 }
 
 // NotificationTemplate represents an email/SMS template
 type NotificationTemplate struct {
-	ID          string            `json:"id"`
-	Name        string            `json:"name"`
-	Type        string            `json:"type"` // EMAIL, SMS
-	Subject     string            `json:"subject,omitempty"`
-	Body        string            `json:"body"`
-	HTMLBody    string            `json:"html_body,omitempty"`
-	Variables   []string          `json:"variables"`
-	Language    string            `json:"language"`
-	EventType   string            `json:"event_type"`
-	IsActive    bool              `json:"is_active"`
-	CreatedAt   time.Time         `json:"created_at"`
-	UpdatedAt   time.Time         `json:"updated_at"`
+	ID        string    `json:"id"`
+	Name      string    `json:"name"`
+	Type      string    `json:"type"` // EMAIL, SMS
+	Subject   string    `json:"subject,omitempty"`
+	Body      string    `json:"body"`
+	HTMLBody  string    `json:"html_body,omitempty"`
+	Variables []string  `json:"variables"`
+	Language  string    `json:"language"`
+	EventType string    `json:"event_type"`
+	IsActive  bool      `json:"is_active"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
 // OnboardingNotificationService handles all onboarding notifications
 type OnboardingNotificationService struct {
-	emailQueue      []*EmailNotification
-	emailQueueMu    sync.Mutex
-	smsQueue        []*SMSNotification
-	smsQueueMu      sync.Mutex
-	pushQueue       []*PushNotification
-	pushQueueMu     sync.Mutex
-	preferences     map[string]*NotificationPreferences
-	preferencesMu   sync.RWMutex
-	templates       map[string]*NotificationTemplate
-	templatesMu     sync.RWMutex
-	sentEmails      map[string]*EmailNotification
-	sentEmailsMu    sync.RWMutex
-	smtpHost        string
-	smtpPort        int
-	smtpUser        string
-	smtpPassword    string
-	smsProvider     string
-	smsAPIKey       string
-	pushProvider    string
-	pushAPIKey      string
+	emailQueue    []*EmailNotification
+	emailQueueMu  sync.Mutex
+	smsQueue      []*SMSNotification
+	smsQueueMu    sync.Mutex
+	pushQueue     []*PushNotification
+	pushQueueMu   sync.Mutex
+	preferences   map[string]*NotificationPreferences
+	preferencesMu sync.RWMutex
+	templates     map[string]*NotificationTemplate
+	templatesMu   sync.RWMutex
+	sentEmails    map[string]*EmailNotification
+	sentEmailsMu  sync.RWMutex
+	smtpHost      string
+	smtpPort      int
+	smtpUser      string
+	smtpPassword  string
+	smsProvider   string
+	smsAPIKey     string
+	pushProvider  string
+	pushAPIKey    string
 }
 
 // NewOnboardingNotificationService creates a new notification service

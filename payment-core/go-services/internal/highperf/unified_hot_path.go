@@ -36,11 +36,11 @@ type UnifiedHotPath struct {
 	config UnifiedConfig
 
 	// Stats
-	totalRequests    uint64
-	totalSuccess     uint64
-	totalFailed      uint64
-	totalRejected    uint64
-	totalLatencyNs   uint64
+	totalRequests  uint64
+	totalSuccess   uint64
+	totalFailed    uint64
+	totalRejected  uint64
+	totalLatencyNs uint64
 
 	// Control
 	ctx    context.Context
@@ -370,61 +370,61 @@ func (uhp *UnifiedHotPath) Stats() HotPathStats {
 	kafkaQueued, kafkaSent, kafkaFailed, kafkaDropped := uhp.kafkaOutbox.Stats()
 
 	return HotPathStats{
-		TotalRequests:     requests,
-		TotalSuccess:      success,
-		TotalFailed:       failed,
-		TotalRejected:     rejected,
-		AvgLatencyMs:      avgLatencyMs,
-		FraudChecks:       fraudChecks,
-		FraudBlocked:      fraudBlocked,
-		FraudAllowed:      fraudAllowed,
-		JWTValidations:    jwtValidations,
-		JWTCacheHits:      jwtHits,
-		JWTCacheMisses:    jwtMisses,
-		JWTErrors:         jwtErrors,
+		TotalRequests:         requests,
+		TotalSuccess:          success,
+		TotalFailed:           failed,
+		TotalRejected:         rejected,
+		AvgLatencyMs:          avgLatencyMs,
+		FraudChecks:           fraudChecks,
+		FraudBlocked:          fraudBlocked,
+		FraudAllowed:          fraudAllowed,
+		JWTValidations:        jwtValidations,
+		JWTCacheHits:          jwtHits,
+		JWTCacheMisses:        jwtMisses,
+		JWTErrors:             jwtErrors,
 		BackpressureAccepted:  bpAccepted,
 		BackpressureShed:      bpShed,
 		BackpressureThrottled: bpThrottled,
 		BackpressureDepth:     bpDepth,
-		BatchedTransfers:  batched,
-		FlushedTransfers:  flushed,
-		KafkaQueued:       kafkaQueued,
-		KafkaSent:         kafkaSent,
-		KafkaFailed:       kafkaFailed,
-		KafkaDropped:      kafkaDropped,
-		TBCircuitState:    uhp.tbCircuitBreaker.State(),
-		KafkaCircuitState: uhp.kafkaCircuitBreaker.State(),
-		HealthStatus:      uhp.healthChecker.IsHealthy(),
+		BatchedTransfers:      batched,
+		FlushedTransfers:      flushed,
+		KafkaQueued:           kafkaQueued,
+		KafkaSent:             kafkaSent,
+		KafkaFailed:           kafkaFailed,
+		KafkaDropped:          kafkaDropped,
+		TBCircuitState:        uhp.tbCircuitBreaker.State(),
+		KafkaCircuitState:     uhp.kafkaCircuitBreaker.State(),
+		HealthStatus:          uhp.healthChecker.IsHealthy(),
 	}
 }
 
 // HotPathStats contains all hot path statistics
 type HotPathStats struct {
-	TotalRequests     uint64
-	TotalSuccess      uint64
-	TotalFailed       uint64
-	TotalRejected     uint64
-	AvgLatencyMs      float64
-	FraudChecks       uint64
-	FraudBlocked      uint64
-	FraudAllowed      uint64
-	JWTValidations    uint64
-	JWTCacheHits      uint64
-	JWTCacheMisses    uint64
-	JWTErrors         uint64
+	TotalRequests         uint64
+	TotalSuccess          uint64
+	TotalFailed           uint64
+	TotalRejected         uint64
+	AvgLatencyMs          float64
+	FraudChecks           uint64
+	FraudBlocked          uint64
+	FraudAllowed          uint64
+	JWTValidations        uint64
+	JWTCacheHits          uint64
+	JWTCacheMisses        uint64
+	JWTErrors             uint64
 	BackpressureAccepted  uint64
 	BackpressureShed      uint64
 	BackpressureThrottled uint64
 	BackpressureDepth     int64
-	BatchedTransfers  uint64
-	FlushedTransfers  uint64
-	KafkaQueued       uint64
-	KafkaSent         uint64
-	KafkaFailed       uint64
-	KafkaDropped      uint64
-	TBCircuitState    string
-	KafkaCircuitState string
-	HealthStatus      bool
+	BatchedTransfers      uint64
+	FlushedTransfers      uint64
+	KafkaQueued           uint64
+	KafkaSent             uint64
+	KafkaFailed           uint64
+	KafkaDropped          uint64
+	TBCircuitState        string
+	KafkaCircuitState     string
+	HealthStatus          bool
 }
 
 // HealthCheck returns health status

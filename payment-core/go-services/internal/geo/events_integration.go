@@ -50,22 +50,22 @@ func NewGeoServiceWithEvents(service interface{}) *GeoServiceWithEvents {
 func (s *GeoServiceWithEvents) VerifyLocation(ctx context.Context, userID string, latitude, longitude float64) (string, string, error) {
 	country := "NG"
 	city := "Lagos"
-	
+
 	if err := EmitLocationVerified(ctx, userID, latitude, longitude, country, city); err != nil {
 		log.Printf("Failed to emit location verified event: %v", err)
 	}
-	
+
 	return country, city, nil
 }
 
 func (s *GeoServiceWithEvents) CheckAnomaly(ctx context.Context, userID, previousCountry, currentCountry string, distanceKm float64) (bool, error) {
 	isAnomaly := distanceKm > 5000
-	
+
 	if isAnomaly {
 		if err := EmitGeoAnomalyDetected(ctx, userID, previousCountry, currentCountry, distanceKm); err != nil {
 			log.Printf("Failed to emit geo anomaly event: %v", err)
 		}
 	}
-	
+
 	return isAnomaly, nil
 }

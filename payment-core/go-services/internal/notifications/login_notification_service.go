@@ -38,11 +38,11 @@ type UserInfo struct {
 }
 
 type LoginNotificationService struct {
-	mu                  sync.RWMutex
-	emailService        *EmailService
-	smsService          *SMSService
-	preferencesService  *NotificationPreferencesService
-	frontendURL         string
+	mu                 sync.RWMutex
+	emailService       *EmailService
+	smsService         *SMSService
+	preferencesService *NotificationPreferencesService
+	frontendURL        string
 }
 
 func NewLoginNotificationService(emailService *EmailService, smsService *SMSService, prefsService *NotificationPreferencesService) *LoginNotificationService {

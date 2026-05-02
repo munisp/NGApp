@@ -14,16 +14,16 @@ import (
 
 // TestScenario represents a test scenario for integration testing
 type TestScenario struct {
-	ID          string            `json:"id"`
-	Name        string            `json:"name"`
-	Description string            `json:"description"`
-	Category    string            `json:"category"` // TRANSFER, QUOTE, PARTY_LOOKUP, BULK, FX
-	Difficulty  string            `json:"difficulty"` // BASIC, INTERMEDIATE, ADVANCED
-	Steps       []TestStep        `json:"steps"`
-	ExpectedOutcome string        `json:"expected_outcome"`
-	Timeout     int               `json:"timeout_seconds"`
-	IsRequired  bool              `json:"is_required"` // Required for certification
-	Tags        []string          `json:"tags"`
+	ID              string     `json:"id"`
+	Name            string     `json:"name"`
+	Description     string     `json:"description"`
+	Category        string     `json:"category"`   // TRANSFER, QUOTE, PARTY_LOOKUP, BULK, FX
+	Difficulty      string     `json:"difficulty"` // BASIC, INTERMEDIATE, ADVANCED
+	Steps           []TestStep `json:"steps"`
+	ExpectedOutcome string     `json:"expected_outcome"`
+	Timeout         int        `json:"timeout_seconds"`
+	IsRequired      bool       `json:"is_required"` // Required for certification
+	Tags            []string   `json:"tags"`
 }
 
 // TestStep represents a step in a test scenario
@@ -50,38 +50,38 @@ type TestAssertion struct {
 
 // TestRun represents a test run execution
 type TestRun struct {
-	ID              string           `json:"id"`
-	ParticipantID   string           `json:"participant_id"`
-	ScenarioID      string           `json:"scenario_id"`
-	ScenarioName    string           `json:"scenario_name"`
-	Environment     string           `json:"environment"` // SANDBOX, PRODUCTION
-	Status          string           `json:"status"`      // PENDING, RUNNING, PASSED, FAILED, TIMEOUT
-	StartedAt       time.Time        `json:"started_at"`
-	CompletedAt     *time.Time       `json:"completed_at,omitempty"`
-	Duration        int              `json:"duration_ms"`
-	StepResults     []TestStepResult `json:"step_results"`
-	ErrorMessage    string           `json:"error_message,omitempty"`
-	Logs            []TestLog        `json:"logs"`
+	ID            string           `json:"id"`
+	ParticipantID string           `json:"participant_id"`
+	ScenarioID    string           `json:"scenario_id"`
+	ScenarioName  string           `json:"scenario_name"`
+	Environment   string           `json:"environment"` // SANDBOX, PRODUCTION
+	Status        string           `json:"status"`      // PENDING, RUNNING, PASSED, FAILED, TIMEOUT
+	StartedAt     time.Time        `json:"started_at"`
+	CompletedAt   *time.Time       `json:"completed_at,omitempty"`
+	Duration      int              `json:"duration_ms"`
+	StepResults   []TestStepResult `json:"step_results"`
+	ErrorMessage  string           `json:"error_message,omitempty"`
+	Logs          []TestLog        `json:"logs"`
 }
 
 // TestStepResult represents the result of a test step
 type TestStepResult struct {
-	StepOrder       int                    `json:"step_order"`
-	StepName        string                 `json:"step_name"`
-	Status          string                 `json:"status"` // PASSED, FAILED, SKIPPED
-	Duration        int                    `json:"duration_ms"`
-	Request         *TestRequest           `json:"request,omitempty"`
-	Response        *TestResponse          `json:"response,omitempty"`
-	AssertionResults []AssertionResult     `json:"assertion_results"`
-	ErrorMessage    string                 `json:"error_message,omitempty"`
+	StepOrder        int               `json:"step_order"`
+	StepName         string            `json:"step_name"`
+	Status           string            `json:"status"` // PASSED, FAILED, SKIPPED
+	Duration         int               `json:"duration_ms"`
+	Request          *TestRequest      `json:"request,omitempty"`
+	Response         *TestResponse     `json:"response,omitempty"`
+	AssertionResults []AssertionResult `json:"assertion_results"`
+	ErrorMessage     string            `json:"error_message,omitempty"`
 }
 
 // TestRequest represents the request made during a test step
 type TestRequest struct {
-	Method   string                 `json:"method"`
-	URL      string                 `json:"url"`
-	Headers  map[string]string      `json:"headers"`
-	Body     map[string]interface{} `json:"body,omitempty"`
+	Method  string                 `json:"method"`
+	URL     string                 `json:"url"`
+	Headers map[string]string      `json:"headers"`
+	Body    map[string]interface{} `json:"body,omitempty"`
 }
 
 // TestResponse represents the response received during a test step
@@ -110,72 +110,72 @@ type TestLog struct {
 
 // CertificationProgress represents certification progress for a participant
 type CertificationProgress struct {
-	ParticipantID     string                    `json:"participant_id"`
-	Environment       string                    `json:"environment"`
-	TotalScenarios    int                       `json:"total_scenarios"`
-	PassedScenarios   int                       `json:"passed_scenarios"`
-	FailedScenarios   int                       `json:"failed_scenarios"`
-	PendingScenarios  int                       `json:"pending_scenarios"`
-	ProgressPercent   float64                   `json:"progress_percent"`
-	IsCertified       bool                      `json:"is_certified"`
-	CertifiedAt       *time.Time                `json:"certified_at,omitempty"`
-	CertificateID     string                    `json:"certificate_id,omitempty"`
-	ScenarioStatuses  map[string]string         `json:"scenario_statuses"` // scenario_id -> status
-	LastRunAt         *time.Time                `json:"last_run_at,omitempty"`
-	RequiredRemaining int                       `json:"required_remaining"`
+	ParticipantID     string            `json:"participant_id"`
+	Environment       string            `json:"environment"`
+	TotalScenarios    int               `json:"total_scenarios"`
+	PassedScenarios   int               `json:"passed_scenarios"`
+	FailedScenarios   int               `json:"failed_scenarios"`
+	PendingScenarios  int               `json:"pending_scenarios"`
+	ProgressPercent   float64           `json:"progress_percent"`
+	IsCertified       bool              `json:"is_certified"`
+	CertifiedAt       *time.Time        `json:"certified_at,omitempty"`
+	CertificateID     string            `json:"certificate_id,omitempty"`
+	ScenarioStatuses  map[string]string `json:"scenario_statuses"` // scenario_id -> status
+	LastRunAt         *time.Time        `json:"last_run_at,omitempty"`
+	RequiredRemaining int               `json:"required_remaining"`
 }
 
 // SandboxCredentials represents sandbox API credentials
 type SandboxCredentials struct {
-	ParticipantID   string    `json:"participant_id"`
-	ClientID        string    `json:"client_id"`
-	ClientSecret    string    `json:"client_secret,omitempty"` // Only shown once
-	APIKey          string    `json:"api_key"`
-	APISecret       string    `json:"api_secret,omitempty"` // Only shown once
-	Environment     string    `json:"environment"`
-	BaseURL         string    `json:"base_url"`
-	WebhookSecret   string    `json:"webhook_secret,omitempty"`
-	CreatedAt       time.Time `json:"created_at"`
-	ExpiresAt       *time.Time `json:"expires_at,omitempty"`
-	IsActive        bool      `json:"is_active"`
-	RateLimitTPS    int       `json:"rate_limit_tps"`
-	AllowedEndpoints []string `json:"allowed_endpoints"`
+	ParticipantID    string     `json:"participant_id"`
+	ClientID         string     `json:"client_id"`
+	ClientSecret     string     `json:"client_secret,omitempty"` // Only shown once
+	APIKey           string     `json:"api_key"`
+	APISecret        string     `json:"api_secret,omitempty"` // Only shown once
+	Environment      string     `json:"environment"`
+	BaseURL          string     `json:"base_url"`
+	WebhookSecret    string     `json:"webhook_secret,omitempty"`
+	CreatedAt        time.Time  `json:"created_at"`
+	ExpiresAt        *time.Time `json:"expires_at,omitempty"`
+	IsActive         bool       `json:"is_active"`
+	RateLimitTPS     int        `json:"rate_limit_tps"`
+	AllowedEndpoints []string   `json:"allowed_endpoints"`
 }
 
 // MockParticipant represents a mock participant for testing
 type MockParticipant struct {
-	ID          string            `json:"id"`
-	Name        string            `json:"name"`
-	FSPID       string            `json:"fsp_id"`
-	Type        string            `json:"type"` // BANK, MMO, FINTECH
-	Currency    string            `json:"currency"`
-	Balance     float64           `json:"balance"`
-	IsActive    bool              `json:"is_active"`
-	Accounts    []MockAccount     `json:"accounts"`
-	Parties     []MockParty       `json:"parties"`
+	ID       string        `json:"id"`
+	Name     string        `json:"name"`
+	FSPID    string        `json:"fsp_id"`
+	Type     string        `json:"type"` // BANK, MMO, FINTECH
+	Currency string        `json:"currency"`
+	Balance  float64       `json:"balance"`
+	IsActive bool          `json:"is_active"`
+	Accounts []MockAccount `json:"accounts"`
+	Parties  []MockParty   `json:"parties"`
 }
 
 // MockAccount represents a mock account for testing
 type MockAccount struct {
-	ID          string  `json:"id"`
-	AccountNo   string  `json:"account_no"`
-	Currency    string  `json:"currency"`
-	Balance     float64 `json:"balance"`
-	Status      string  `json:"status"`
-	PartyID     string  `json:"party_id"`
+	ID        string  `json:"id"`
+	AccountNo string  `json:"account_no"`
+	Currency  string  `json:"currency"`
+	Balance   float64 `json:"balance"`
+	Status    string  `json:"status"`
+	PartyID   string  `json:"party_id"`
 }
 
 // MockParty represents a mock party (customer) for testing
 type MockParty struct {
-	ID          string `json:"id"`
-	Type        string `json:"type"` // CONSUMER, BUSINESS
-	FirstName   string `json:"first_name,omitempty"`
-	LastName    string `json:"last_name,omitempty"`
+	ID           string `json:"id"`
+	Type         string `json:"type"` // CONSUMER, BUSINESS
+	FirstName    string `json:"first_name,omitempty"`
+	LastName     string `json:"last_name,omitempty"`
 	BusinessName string `json:"business_name,omitempty"`
-	MSISDN      string `json:"msisdn,omitempty"`
-	Email       string `json:"email,omitempty"`
-	IDType      string `json:"id_type,omitempty"`
-	IDValue     string `json:"id_value,omitempty"`
+	MSISDN       string `json:"msisdn,omitempty"`
+	Email        string `json:"email,omitempty"`
+	IDType       string `json:"id_type,omitempty"`
+	IDValue      string `json:"id_value,omitempty"`
 }
 
 // IntegrationTestingPortal provides self-service integration testing
@@ -261,28 +261,28 @@ func (p *IntegrationTestingPortal) registerDefaultScenarios() {
 					Method:      "POST",
 					Endpoint:    "/quotes",
 					Body: map[string]interface{}{
-						"quoteId": "{{quote_id}}",
+						"quoteId":       "{{quote_id}}",
 						"transactionId": "{{transaction_id}}",
 						"payer": map[string]interface{}{
 							"partyIdInfo": map[string]interface{}{
-								"partyIdType": "MSISDN",
+								"partyIdType":     "MSISDN",
 								"partyIdentifier": "{{payer_msisdn}}",
 							},
 						},
 						"payee": map[string]interface{}{
 							"partyIdInfo": map[string]interface{}{
-								"partyIdType": "MSISDN",
+								"partyIdType":     "MSISDN",
 								"partyIdentifier": "{{payee_msisdn}}",
 							},
 						},
 						"amountType": "SEND",
 						"amount": map[string]interface{}{
-							"amount": "100",
+							"amount":   "100",
 							"currency": "NGN",
 						},
 						"transactionType": map[string]interface{}{
-							"scenario": "TRANSFER",
-							"initiator": "PAYER",
+							"scenario":      "TRANSFER",
+							"initiator":     "PAYER",
 							"initiatorType": "CONSUMER",
 						},
 					},
@@ -299,14 +299,14 @@ func (p *IntegrationTestingPortal) registerDefaultScenarios() {
 					Endpoint:    "/transfers",
 					Body: map[string]interface{}{
 						"transferId": "{{transfer_id}}",
-						"payerFsp": "{{payer_fsp}}",
-						"payeeFsp": "{{payee_fsp}}",
+						"payerFsp":   "{{payer_fsp}}",
+						"payeeFsp":   "{{payee_fsp}}",
 						"amount": map[string]interface{}{
-							"amount": "100",
+							"amount":   "100",
 							"currency": "NGN",
 						},
-						"ilpPacket": "{{ilp_packet}}",
-						"condition": "{{condition}}",
+						"ilpPacket":  "{{ilp_packet}}",
+						"condition":  "{{condition}}",
 						"expiration": "{{expiration}}",
 					},
 					Assertions: []TestAssertion{
@@ -385,9 +385,9 @@ func (p *IntegrationTestingPortal) registerDefaultScenarios() {
 					Endpoint:    "/bulkTransfers",
 					Body: map[string]interface{}{
 						"bulkTransferId": "{{bulk_transfer_id}}",
-						"bulkQuoteId": "{{bulk_quote_id}}",
-						"payerFsp": "{{payer_fsp}}",
-						"payeeFsp": "{{payee_fsp}}",
+						"bulkQuoteId":    "{{bulk_quote_id}}",
+						"payerFsp":       "{{payer_fsp}}",
+						"payeeFsp":       "{{payee_fsp}}",
 						"individualTransfers": []map[string]interface{}{
 							{"transferId": "{{transfer_id_1}}", "transferAmount": map[string]interface{}{"amount": "100", "currency": "NGN"}},
 							{"transferId": "{{transfer_id_2}}", "transferAmount": map[string]interface{}{"amount": "200", "currency": "NGN"}},

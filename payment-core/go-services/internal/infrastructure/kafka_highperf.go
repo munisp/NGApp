@@ -14,31 +14,31 @@ import (
 
 // KafkaHighPerfConfig configures the high-performance Kafka client
 type KafkaHighPerfConfig struct {
-	Brokers           []string
-	SecurityProtocol  string // PLAINTEXT, SASL_PLAINTEXT, SASL_SSL, SSL
-	SASLMechanism     string // PLAIN, SCRAM-SHA-256, SCRAM-SHA-512
-	SASLUsername      string
-	SASLPassword      string
-	TLSConfig         *tls.Config
-	
+	Brokers          []string
+	SecurityProtocol string // PLAINTEXT, SASL_PLAINTEXT, SASL_SSL, SSL
+	SASLMechanism    string // PLAIN, SCRAM-SHA-256, SCRAM-SHA-512
+	SASLUsername     string
+	SASLPassword     string
+	TLSConfig        *tls.Config
+
 	// Producer settings
-	BatchSize         int           // Messages per batch (default: 16384)
-	LingerMs          int           // Max wait before sending batch (default: 5)
-	CompressionType   string        // none, gzip, snappy, lz4, zstd
-	Acks              string        // 0, 1, all
-	MaxInFlightReqs   int           // Max unacknowledged requests (default: 5)
-	
+	BatchSize       int    // Messages per batch (default: 16384)
+	LingerMs        int    // Max wait before sending batch (default: 5)
+	CompressionType string // none, gzip, snappy, lz4, zstd
+	Acks            string // 0, 1, all
+	MaxInFlightReqs int    // Max unacknowledged requests (default: 5)
+
 	// Consumer settings
-	GroupID           string
-	AutoOffsetReset   string        // earliest, latest
-	MaxPollRecords    int           // Max records per poll (default: 500)
-	SessionTimeoutMs  int           // Consumer session timeout (default: 30000)
-	HeartbeatMs       int           // Heartbeat interval (default: 3000)
-	
+	GroupID          string
+	AutoOffsetReset  string // earliest, latest
+	MaxPollRecords   int    // Max records per poll (default: 500)
+	SessionTimeoutMs int    // Consumer session timeout (default: 30000)
+	HeartbeatMs      int    // Heartbeat interval (default: 3000)
+
 	// Connection settings
-	NumPartitions     int           // Default partitions for new topics
-	ReplicationFactor int           // Default replication factor
-	RetentionMs       int64         // Message retention (default: 7 days)
+	NumPartitions     int   // Default partitions for new topics
+	ReplicationFactor int   // Default replication factor
+	RetentionMs       int64 // Message retention (default: 7 days)
 }
 
 // DefaultKafkaHighPerfConfig returns optimized defaults for 1M TPS
@@ -47,41 +47,41 @@ func DefaultKafkaHighPerfConfig() KafkaHighPerfConfig {
 		Brokers:           []string{"kafka-0:9092", "kafka-1:9092", "kafka-2:9092"},
 		SecurityProtocol:  "SASL_SSL",
 		SASLMechanism:     "SCRAM-SHA-512",
-		BatchSize:         65536,      // 64KB batches
-		LingerMs:          5,          // 5ms linger
-		CompressionType:   "lz4",      // Fast compression
-		Acks:              "1",        // Leader ack only for speed
-		MaxInFlightReqs:   10,         // High parallelism
+		BatchSize:         65536, // 64KB batches
+		LingerMs:          5,     // 5ms linger
+		CompressionType:   "lz4", // Fast compression
+		Acks:              "1",   // Leader ack only for speed
+		MaxInFlightReqs:   10,    // High parallelism
 		AutoOffsetReset:   "latest",
-		MaxPollRecords:    1000,       // Large batches
+		MaxPollRecords:    1000, // Large batches
 		SessionTimeoutMs:  30000,
 		HeartbeatMs:       3000,
-		NumPartitions:     32,         // High parallelism
-		ReplicationFactor: 3,          // HA
-		RetentionMs:       604800000,  // 7 days
+		NumPartitions:     32,        // High parallelism
+		ReplicationFactor: 3,         // HA
+		RetentionMs:       604800000, // 7 days
 	}
 }
 
 // KafkaHighPerfProducer is an optimized Kafka producer for 1M+ TPS
 type KafkaHighPerfProducer struct {
-	config       KafkaHighPerfConfig
-	
+	config KafkaHighPerfConfig
+
 	// Batch accumulator
-	batches      map[string]*MessageBatch
-	batchesMu    sync.RWMutex
-	
+	batches   map[string]*MessageBatch
+	batchesMu sync.RWMutex
+
 	// Async send queue
-	sendQueue    chan *MessageBatch
-	
+	sendQueue chan *MessageBatch
+
 	// Stats
 	messagesSent uint64
 	bytesSent    uint64
 	errors       uint64
-	
+
 	// Control
-	ctx          context.Context
-	cancel       context.CancelFunc
-	wg           sync.WaitGroup
+	ctx    context.Context
+	cancel context.CancelFunc
+	wg     sync.WaitGroup
 }
 
 // MessageBatch accumulates messages for batch sending
@@ -104,7 +104,7 @@ type Message struct {
 // NewKafkaHighPerfProducer creates a new high-performance producer
 func NewKafkaHighPerfProducer(config KafkaHighPerfConfig) (*KafkaHighPerfProducer, error) {
 	ctx, cancel := context.WithCancel(context.Background())
-	
+
 	p := &KafkaHighPerfProducer{
 		config:    config,
 		batches:   make(map[string]*MessageBatch),
@@ -112,21 +112,21 @@ func NewKafkaHighPerfProducer(config KafkaHighPerfConfig) (*KafkaHighPerfProduce
 		ctx:       ctx,
 		cancel:    cancel,
 	}
-	
+
 	// Start batch sender workers
 	numWorkers := 10
 	for i := 0; i < numWorkers; i++ {
 		p.wg.Add(1)
 		go p.batchSender(i)
 	}
-	
+
 	// Start batch flusher
 	p.wg.Add(1)
 	go p.batchFlusher()
-	
+
 	log.Printf("KafkaHighPerfProducer initialized: %d brokers, batch=%d, linger=%dms",
 		len(config.Brokers), config.BatchSize, config.LingerMs)
-	
+
 	return p, nil
 }
 
@@ -143,7 +143,7 @@ func (p *KafkaHighPerfProducer) SendWithHeaders(topic string, key, value []byte,
 		Headers:   headers,
 		Timestamp: time.Now(),
 	}
-	
+
 	p.batchesMu.Lock()
 	batch, ok := p.batches[topic]
 	if !ok {
@@ -155,16 +155,16 @@ func (p *KafkaHighPerfProducer) SendWithHeaders(topic string, key, value []byte,
 		p.batches[topic] = batch
 	}
 	p.batchesMu.Unlock()
-	
+
 	batch.mu.Lock()
 	batch.Messages = append(batch.Messages, msg)
 	shouldFlush := len(batch.Messages) >= p.config.BatchSize/1024 // Approximate message count
 	batch.mu.Unlock()
-	
+
 	if shouldFlush {
 		p.flushTopic(topic)
 	}
-	
+
 	return nil
 }
 
@@ -176,12 +176,12 @@ func (p *KafkaHighPerfProducer) SendSync(ctx context.Context, topic string, key,
 		Value:     value,
 		Timestamp: time.Now(),
 	}
-	
+
 	batch := &MessageBatch{
 		Topic:    topic,
 		Messages: []Message{msg},
 	}
-	
+
 	return p.sendBatch(batch)
 }
 
@@ -193,21 +193,21 @@ func (p *KafkaHighPerfProducer) flushTopic(topic string) {
 		p.batchesMu.Unlock()
 		return
 	}
-	
+
 	// Take ownership of batch
 	batch.mu.Lock()
 	messages := batch.Messages
 	batch.Messages = make([]Message, 0, 1000)
 	batch.mu.Unlock()
-	
+
 	p.batchesMu.Unlock()
-	
+
 	// Queue for sending
 	sendBatch := &MessageBatch{
 		Topic:    topic,
 		Messages: messages,
 	}
-	
+
 	select {
 	case p.sendQueue <- sendBatch:
 	default:
@@ -219,10 +219,10 @@ func (p *KafkaHighPerfProducer) flushTopic(topic string) {
 // batchFlusher periodically flushes all batches
 func (p *KafkaHighPerfProducer) batchFlusher() {
 	defer p.wg.Done()
-	
+
 	ticker := time.NewTicker(time.Duration(p.config.LingerMs) * time.Millisecond)
 	defer ticker.Stop()
-	
+
 	for {
 		select {
 		case <-p.ctx.Done():
@@ -243,7 +243,7 @@ func (p *KafkaHighPerfProducer) flushAll() {
 		topics = append(topics, topic)
 	}
 	p.batchesMu.RUnlock()
-	
+
 	for _, topic := range topics {
 		p.flushTopic(topic)
 	}
@@ -252,7 +252,7 @@ func (p *KafkaHighPerfProducer) flushAll() {
 // batchSender sends batches from the queue
 func (p *KafkaHighPerfProducer) batchSender(workerID int) {
 	defer p.wg.Done()
-	
+
 	for {
 		select {
 		case <-p.ctx.Done():
@@ -271,17 +271,17 @@ func (p *KafkaHighPerfProducer) sendBatch(batch *MessageBatch) error {
 	if len(batch.Messages) == 0 {
 		return nil
 	}
-	
+
 	// In production, this would use the actual Kafka producer
 	// For now, we simulate the send
 	var totalBytes uint64
 	for _, msg := range batch.Messages {
 		totalBytes += uint64(len(msg.Key) + len(msg.Value))
 	}
-	
+
 	atomic.AddUint64(&p.messagesSent, uint64(len(batch.Messages)))
 	atomic.AddUint64(&p.bytesSent, totalBytes)
-	
+
 	return nil
 }
 
@@ -302,19 +302,19 @@ func (p *KafkaHighPerfProducer) Close() error {
 
 // KafkaHighPerfConsumer is an optimized Kafka consumer
 type KafkaHighPerfConsumer struct {
-	config       KafkaHighPerfConfig
-	topics       []string
-	handler      MessageHandler
-	
+	config  KafkaHighPerfConfig
+	topics  []string
+	handler MessageHandler
+
 	// Stats
 	messagesRecv uint64
 	bytesRecv    uint64
 	errors       uint64
-	
+
 	// Control
-	ctx          context.Context
-	cancel       context.CancelFunc
-	wg           sync.WaitGroup
+	ctx    context.Context
+	cancel context.CancelFunc
+	wg     sync.WaitGroup
 }
 
 // MessageHandler handles consumed messages
@@ -323,7 +323,7 @@ type MessageHandler func(topic string, partition int32, offset int64, key, value
 // NewKafkaHighPerfConsumer creates a new high-performance consumer
 func NewKafkaHighPerfConsumer(config KafkaHighPerfConfig, topics []string, handler MessageHandler) (*KafkaHighPerfConsumer, error) {
 	ctx, cancel := context.WithCancel(context.Background())
-	
+
 	c := &KafkaHighPerfConsumer{
 		config:  config,
 		topics:  topics,
@@ -331,9 +331,9 @@ func NewKafkaHighPerfConsumer(config KafkaHighPerfConfig, topics []string, handl
 		ctx:     ctx,
 		cancel:  cancel,
 	}
-	
+
 	log.Printf("KafkaHighPerfConsumer initialized: group=%s, topics=%v", config.GroupID, topics)
-	
+
 	return c, nil
 }
 
@@ -345,14 +345,14 @@ func (c *KafkaHighPerfConsumer) Start() error {
 		c.wg.Add(1)
 		go c.consumeWorker(i)
 	}
-	
+
 	return nil
 }
 
 // consumeWorker consumes messages from Kafka
 func (c *KafkaHighPerfConsumer) consumeWorker(workerID int) {
 	defer c.wg.Done()
-	
+
 	// In production, this would use the actual Kafka consumer
 	// For now, we simulate consumption
 	for {
@@ -471,8 +471,8 @@ type BrokerConfig struct {
 
 // ZookeeperConfig represents Zookeeper configuration
 type ZookeeperConfig struct {
-	Servers       []string
-	SessionTimeout int
+	Servers           []string
+	SessionTimeout    int
 	ConnectionTimeout int
 }
 
@@ -487,15 +487,15 @@ func OptimalKafkaClusterConfig() KafkaClusterConfig {
 				LogDirs:               "/var/lib/kafka/data",
 				NumNetworkThreads:     8,
 				NumIOThreads:          16,
-				SocketSendBufferBytes: 1048576,  // 1MB
-				SocketRecvBufferBytes: 1048576,  // 1MB
+				SocketSendBufferBytes: 1048576,   // 1MB
+				SocketRecvBufferBytes: 1048576,   // 1MB
 				SocketRequestMaxBytes: 104857600, // 100MB
 				NumPartitions:         32,
 				DefaultReplication:    3,
 				MinInsyncReplicas:     2,
-				LogRetentionHours:     168, // 7 days
+				LogRetentionHours:     168,        // 7 days
 				LogSegmentBytes:       1073741824, // 1GB
-				LogRetentionCheckMs:   300000, // 5 minutes
+				LogRetentionCheckMs:   300000,     // 5 minutes
 			},
 			{
 				ID:                    1,

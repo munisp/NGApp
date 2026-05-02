@@ -21,13 +21,13 @@ import (
 // 4. Async event emission
 // 5. Optimized serialization
 type HighPerfMojaloopAdapter struct {
-	tbClient    *tigerbeetle.HighPerfClient
-	ilpCrypto   *ILPCryptoService
-	store       *TransferStore
+	tbClient  *tigerbeetle.HighPerfClient
+	ilpCrypto *ILPCryptoService
+	store     *TransferStore
 
 	// Pre-allocated ID pools per currency/ledger
-	idPools     map[uint32]*IDPool
-	idPoolsMu   sync.RWMutex
+	idPools   map[uint32]*IDPool
+	idPoolsMu sync.RWMutex
 
 	// In-flight transfer tracking (for fulfill/abort)
 	inflightMap sync.Map // transferID -> *InflightTransfer
@@ -41,15 +41,15 @@ type HighPerfMojaloopAdapter struct {
 
 // InflightTransfer tracks a pending transfer
 type InflightTransfer struct {
-	TransferID        string
-	TigerBeetleID     uint64
-	PayerAccountID    uint64
-	PayeeAccountID    uint64
-	Amount            uint64
-	Ledger            uint32
-	Condition         string
-	Expiration        time.Time
-	CreatedAt         time.Time
+	TransferID     string
+	TigerBeetleID  uint64
+	PayerAccountID uint64
+	PayeeAccountID uint64
+	Amount         uint64
+	Ledger         uint32
+	Condition      string
+	Expiration     time.Time
+	CreatedAt      time.Time
 }
 
 // IDPool provides pre-allocated IDs for a specific ledger
@@ -616,7 +616,6 @@ func GetHighPerfMojaloopAdapter() (*HighPerfMojaloopAdapter, error) {
 }
 
 // BulkTransferRequest represents a bulk transfer request
-
 
 // BulkTransferResponse contains the results of a bulk transfer
 type BulkTransferResponse struct {

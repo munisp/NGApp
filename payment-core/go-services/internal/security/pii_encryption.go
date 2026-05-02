@@ -41,24 +41,24 @@ type HSMProvider interface {
 
 // DataKey represents an encryption key from HSM
 type DataKey struct {
-	KeyID          string    `json:"key_id"`
-	PlaintextKey   []byte    `json:"-"` // Never persisted
-	EncryptedKey   []byte    `json:"encrypted_key"`
-	Algorithm      string    `json:"algorithm"`
-	CreatedAt      time.Time `json:"created_at"`
-	ExpiresAt      time.Time `json:"expires_at"`
-	Version        int       `json:"version"`
+	KeyID        string    `json:"key_id"`
+	PlaintextKey []byte    `json:"-"` // Never persisted
+	EncryptedKey []byte    `json:"encrypted_key"`
+	Algorithm    string    `json:"algorithm"`
+	CreatedAt    time.Time `json:"created_at"`
+	ExpiresAt    time.Time `json:"expires_at"`
+	Version      int       `json:"version"`
 }
 
 // KeyMetadata contains key metadata without the actual key
 type KeyMetadata struct {
-	KeyID       string    `json:"key_id"`
-	Algorithm   string    `json:"algorithm"`
-	CreatedAt   time.Time `json:"created_at"`
-	ExpiresAt   time.Time `json:"expires_at"`
-	Version     int       `json:"version"`
-	Status      string    `json:"status"` // ACTIVE, ROTATING, RETIRED
-	UsageCount  int64     `json:"usage_count"`
+	KeyID      string    `json:"key_id"`
+	Algorithm  string    `json:"algorithm"`
+	CreatedAt  time.Time `json:"created_at"`
+	ExpiresAt  time.Time `json:"expires_at"`
+	Version    int       `json:"version"`
+	Status     string    `json:"status"` // ACTIVE, ROTATING, RETIRED
+	UsageCount int64     `json:"usage_count"`
 }
 
 // CachedKey represents a cached decrypted key
@@ -76,31 +76,31 @@ type EncryptionAuditLogger interface {
 
 // EncryptionAuditEvent represents an encryption/decryption audit event
 type EncryptionAuditEvent struct {
-	EventID       string    `json:"event_id"`
-	Operation     string    `json:"operation"` // ENCRYPT, DECRYPT
-	KeyID         string    `json:"key_id"`
-	KeyVersion    int       `json:"key_version"`
-	DataType      string    `json:"data_type"` // KYC_PII, KYB_PII, EVIDENCE
-	RecordID      string    `json:"record_id"`
-	UserID        string    `json:"user_id"`
-	Reason        string    `json:"reason"`
-	IPAddress     string    `json:"ip_address"`
-	Timestamp     time.Time `json:"timestamp"`
-	Success       bool      `json:"success"`
-	ErrorMessage  string    `json:"error_message,omitempty"`
+	EventID      string    `json:"event_id"`
+	Operation    string    `json:"operation"` // ENCRYPT, DECRYPT
+	KeyID        string    `json:"key_id"`
+	KeyVersion   int       `json:"key_version"`
+	DataType     string    `json:"data_type"` // KYC_PII, KYB_PII, EVIDENCE
+	RecordID     string    `json:"record_id"`
+	UserID       string    `json:"user_id"`
+	Reason       string    `json:"reason"`
+	IPAddress    string    `json:"ip_address"`
+	Timestamp    time.Time `json:"timestamp"`
+	Success      bool      `json:"success"`
+	ErrorMessage string    `json:"error_message,omitempty"`
 }
 
 // KeyRotationEvent represents a key rotation audit event
 type KeyRotationEvent struct {
-	EventID       string    `json:"event_id"`
-	OldKeyID      string    `json:"old_key_id"`
-	OldKeyVersion int       `json:"old_key_version"`
-	NewKeyID      string    `json:"new_key_id"`
-	NewKeyVersion int       `json:"new_key_version"`
-	Reason        string    `json:"reason"`
-	InitiatedBy   string    `json:"initiated_by"`
-	Timestamp     time.Time `json:"timestamp"`
-	RecordsReEncrypted int64 `json:"records_re_encrypted"`
+	EventID            string    `json:"event_id"`
+	OldKeyID           string    `json:"old_key_id"`
+	OldKeyVersion      int       `json:"old_key_version"`
+	NewKeyID           string    `json:"new_key_id"`
+	NewKeyVersion      int       `json:"new_key_version"`
+	Reason             string    `json:"reason"`
+	InitiatedBy        string    `json:"initiated_by"`
+	Timestamp          time.Time `json:"timestamp"`
+	RecordsReEncrypted int64     `json:"records_re_encrypted"`
 }
 
 // PIIField represents a field that contains PII
@@ -114,13 +114,13 @@ type PIIField struct {
 
 // EncryptedPII represents encrypted PII data
 type EncryptedPII struct {
-	Ciphertext    string `json:"ciphertext"`
-	KeyID         string `json:"key_id"`
-	KeyVersion    int    `json:"key_version"`
-	Algorithm     string `json:"algorithm"`
-	Nonce         string `json:"nonce"`
-	EncryptedAt   time.Time `json:"encrypted_at"`
-	DataType      string `json:"data_type"`
+	Ciphertext  string    `json:"ciphertext"`
+	KeyID       string    `json:"key_id"`
+	KeyVersion  int       `json:"key_version"`
+	Algorithm   string    `json:"algorithm"`
+	Nonce       string    `json:"nonce"`
+	EncryptedAt time.Time `json:"encrypted_at"`
+	DataType    string    `json:"data_type"`
 }
 
 // NewPIIEncryptionService creates a new PII encryption service
@@ -442,11 +442,11 @@ type TamperDetector interface {
 
 // TamperResult represents tamper detection result
 type TamperResult struct {
-	Tampered      bool     `json:"tampered"`
-	Confidence    float64  `json:"confidence"`
-	Indicators    []string `json:"indicators"`
-	OriginalHash  string   `json:"original_hash"`
-	MetadataHash  string   `json:"metadata_hash"`
+	Tampered     bool     `json:"tampered"`
+	Confidence   float64  `json:"confidence"`
+	Indicators   []string `json:"indicators"`
+	OriginalHash string   `json:"original_hash"`
+	MetadataHash string   `json:"metadata_hash"`
 }
 
 // SecureStorageProvider interface for secure storage
@@ -471,29 +471,29 @@ type StorageMetadata struct {
 
 // EvidenceValidationResult represents validation result
 type EvidenceValidationResult struct {
-	Valid           bool         `json:"valid"`
-	Errors          []string     `json:"errors"`
-	Warnings        []string     `json:"warnings"`
-	ScanResult      *ScanResult  `json:"scan_result"`
-	TamperResult    *TamperResult `json:"tamper_result"`
-	SanitizedData   []byte       `json:"-"`
-	ContentType     string       `json:"content_type"`
-	DetectedType    string       `json:"detected_type"`
+	Valid         bool          `json:"valid"`
+	Errors        []string      `json:"errors"`
+	Warnings      []string      `json:"warnings"`
+	ScanResult    *ScanResult   `json:"scan_result"`
+	TamperResult  *TamperResult `json:"tamper_result"`
+	SanitizedData []byte        `json:"-"`
+	ContentType   string        `json:"content_type"`
+	DetectedType  string        `json:"detected_type"`
 }
 
 // NewEvidenceSecurityService creates a new evidence security service
 func NewEvidenceSecurityService(scanner VirusScanner, tamper TamperDetector, storage SecureStorageProvider) *EvidenceSecurityService {
 	return &EvidenceSecurityService{
-		virusScanner:   scanner,
-		tamperDetector: tamper,
+		virusScanner:    scanner,
+		tamperDetector:  tamper,
 		storageProvider: storage,
-		maxFileSize:    10 * 1024 * 1024, // 10MB default
+		maxFileSize:     10 * 1024 * 1024, // 10MB default
 		allowedTypes: map[string]bool{
-			"application/pdf":  true,
-			"image/jpeg":       true,
-			"image/png":        true,
-			"image/gif":        true,
-			"image/webp":       true,
+			"application/pdf": true,
+			"image/jpeg":      true,
+			"image/png":       true,
+			"image/gif":       true,
+			"image/webp":      true,
 		},
 	}
 }
@@ -671,13 +671,13 @@ type Role struct {
 
 // AccessRequest represents an access request
 type AccessRequest struct {
-	UserID       string `json:"user_id"`
-	Resource     string `json:"resource"`
-	Action       string `json:"action"`
-	RecordID     string `json:"record_id"`
-	Reason       string `json:"reason"`
-	IPAddress    string `json:"ip_address"`
-	SessionID    string `json:"session_id"`
+	UserID    string `json:"user_id"`
+	Resource  string `json:"resource"`
+	Action    string `json:"action"`
+	RecordID  string `json:"record_id"`
+	Reason    string `json:"reason"`
+	IPAddress string `json:"ip_address"`
+	SessionID string `json:"session_id"`
 }
 
 // AccessDecision represents an access decision
@@ -879,31 +879,31 @@ type HardenedStepUpAuth struct {
 
 // HardenedChallenge represents a hardened step-up challenge
 type HardenedChallenge struct {
-	ChallengeID     string    `json:"challenge_id"`
-	TransactionID   string    `json:"transaction_id"`
-	AccountID       string    `json:"account_id"`
-	Method          string    `json:"method"`
-	Challenge       string    `json:"challenge"`
-	ContextHash     string    `json:"context_hash"` // Hash of transaction context
-	DeviceFingerprint string  `json:"device_fingerprint"`
-	IPAddress       string    `json:"ip_address"`
-	CreatedAt       time.Time `json:"created_at"`
-	ExpiresAt       time.Time `json:"expires_at"`
-	Attempts        int       `json:"attempts"`
-	MaxAttempts     int       `json:"max_attempts"`
-	Status          string    `json:"status"`
+	ChallengeID       string    `json:"challenge_id"`
+	TransactionID     string    `json:"transaction_id"`
+	AccountID         string    `json:"account_id"`
+	Method            string    `json:"method"`
+	Challenge         string    `json:"challenge"`
+	ContextHash       string    `json:"context_hash"` // Hash of transaction context
+	DeviceFingerprint string    `json:"device_fingerprint"`
+	IPAddress         string    `json:"ip_address"`
+	CreatedAt         time.Time `json:"created_at"`
+	ExpiresAt         time.Time `json:"expires_at"`
+	Attempts          int       `json:"attempts"`
+	MaxAttempts       int       `json:"max_attempts"`
+	Status            string    `json:"status"`
 }
 
 // TransactionContext represents transaction context for binding
 type TransactionContext struct {
-	TransactionID   string  `json:"transaction_id"`
-	Amount          float64 `json:"amount"`
-	Currency        string  `json:"currency"`
-	PayeeAccount    string  `json:"payee_account"`
-	PayeeName       string  `json:"payee_name"`
-	DeviceID        string  `json:"device_id"`
-	IPAddress       string  `json:"ip_address"`
-	Timestamp       int64   `json:"timestamp"`
+	TransactionID string  `json:"transaction_id"`
+	Amount        float64 `json:"amount"`
+	Currency      string  `json:"currency"`
+	PayeeAccount  string  `json:"payee_account"`
+	PayeeName     string  `json:"payee_name"`
+	DeviceID      string  `json:"device_id"`
+	IPAddress     string  `json:"ip_address"`
+	Timestamp     int64   `json:"timestamp"`
 }
 
 // DeviceValidator interface for device validation

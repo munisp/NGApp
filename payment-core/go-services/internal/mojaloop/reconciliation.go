@@ -23,7 +23,6 @@ type ReconciliationLoop struct {
 
 // ReconciliationConfig holds reconciliation configuration
 
-
 // NewReconciliationLoop creates a new reconciliation loop
 func NewReconciliationLoop(ledger LedgerEngine, workflow WorkflowStore, db *sql.DB, config *ReconciliationConfig) *ReconciliationLoop {
 	if config == nil {
@@ -50,7 +49,7 @@ func (r *ReconciliationLoop) Start(ctx context.Context) error {
 
 	// Start fast loop
 	go r.runFastLoop(ctx)
-	
+
 	// Start slow loop
 	go r.runSlowLoop(ctx)
 
@@ -61,7 +60,7 @@ func (r *ReconciliationLoop) Start(ctx context.Context) error {
 func (r *ReconciliationLoop) Stop() {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	
+
 	if r.running {
 		close(r.stopCh)
 		r.running = false
@@ -85,11 +84,11 @@ func (r *ReconciliationLoop) runFastLoop(ctx context.Context) {
 				r.logError("fast reconciliation failed", err)
 				continue
 			}
-			
+
 			if len(result.Discrepancies) > 0 {
 				r.handleDiscrepancies(ctx, result)
 			}
-			
+
 			if len(result.StuckTransfers) > 0 && r.config.AlertOnStuck {
 				r.alertStuckTransfers(ctx, result.StuckTransfers)
 			}
@@ -114,10 +113,10 @@ func (r *ReconciliationLoop) runSlowLoop(ctx context.Context) {
 				r.logError("balance reconciliation failed", err)
 				continue
 			}
-			
+
 			// Save snapshot
 			r.saveBalanceSnapshot(ctx, result)
-			
+
 			if len(result.Drifts) > 0 && r.config.AlertOnDrift {
 				r.alertBalanceDrift(ctx, result.Drifts)
 			}
@@ -127,11 +126,11 @@ func (r *ReconciliationLoop) runSlowLoop(ctx context.Context) {
 
 // FastReconciliationResult holds the result of fast reconciliation
 type FastReconciliationResult struct {
-	Timestamp       time.Time                `json:"timestamp"`
-	TransfersChecked int                     `json:"transfers_checked"`
-	Discrepancies   []*TransferDiscrepancy   `json:"discrepancies,omitempty"`
-	StuckTransfers  []*StuckTransfer         `json:"stuck_transfers,omitempty"`
-	Duration        time.Duration            `json:"duration"`
+	Timestamp        time.Time              `json:"timestamp"`
+	TransfersChecked int                    `json:"transfers_checked"`
+	Discrepancies    []*TransferDiscrepancy `json:"discrepancies,omitempty"`
+	StuckTransfers   []*StuckTransfer       `json:"stuck_transfers,omitempty"`
+	Duration         time.Duration          `json:"duration"`
 }
 
 // TransferDiscrepancy represents a discrepancy between Mojaloop and TigerBeetle state
@@ -149,20 +148,20 @@ type TransferDiscrepancy struct {
 type DiscrepancyAction string
 
 const (
-	ActionPostPending    DiscrepancyAction = "POST_PENDING"
-	ActionVoidPending    DiscrepancyAction = "VOID_PENDING"
+	ActionPostPending     DiscrepancyAction = "POST_PENDING"
+	ActionVoidPending     DiscrepancyAction = "VOID_PENDING"
 	ActionAdvanceMojaloop DiscrepancyAction = "ADVANCE_MOJALOOP"
-	ActionManualReview   DiscrepancyAction = "MANUAL_REVIEW"
-	ActionHaltProcessing DiscrepancyAction = "HALT_PROCESSING"
+	ActionManualReview    DiscrepancyAction = "MANUAL_REVIEW"
+	ActionHaltProcessing  DiscrepancyAction = "HALT_PROCESSING"
 )
 
 // StuckTransfer represents a transfer that has been pending too long
 type StuckTransfer struct {
-	TransferID    string        `json:"transfer_id"`
-	State         MojaloopTransferState `json:"state"`
-	Age           time.Duration `json:"age"`
-	ExpirationDate time.Time    `json:"expiration_date"`
-	IsExpired     bool          `json:"is_expired"`
+	TransferID     string                `json:"transfer_id"`
+	State          MojaloopTransferState `json:"state"`
+	Age            time.Duration         `json:"age"`
+	ExpirationDate time.Time             `json:"expiration_date"`
+	IsExpired      bool                  `json:"is_expired"`
 }
 
 // runFastReconciliation checks recent transfers for state alignment
@@ -206,7 +205,7 @@ func (r *ReconciliationLoop) runFastReconciliation(ctx context.Context) (*FastRe
 				TigerBeetleState: transfer.TigerBeetleState,
 				ExpectedTBState:  expectedTBState,
 			}
-			
+
 			// Determine action
 			discrepancy.Action = r.determineAction(discrepancy)
 			result.Discrepancies = append(result.Discrepancies, discrepancy)
@@ -293,21 +292,21 @@ func (r *ReconciliationLoop) handleDiscrepancies(ctx context.Context, result *Fa
 
 // BalanceReconciliationResult holds the result of balance reconciliation
 type BalanceReconciliationResult struct {
-	Timestamp        time.Time              `json:"timestamp"`
-	AccountsChecked  int                    `json:"accounts_checked"`
-	Balances         []*AccountBalanceCheck `json:"balances"`
-	Drifts           []*BalanceDrift        `json:"drifts,omitempty"`
-	Duration         time.Duration          `json:"duration"`
+	Timestamp       time.Time              `json:"timestamp"`
+	AccountsChecked int                    `json:"accounts_checked"`
+	Balances        []*AccountBalanceCheck `json:"balances"`
+	Drifts          []*BalanceDrift        `json:"drifts,omitempty"`
+	Duration        time.Duration          `json:"duration"`
 }
 
 // AccountBalanceCheck holds balance information for an account
 type AccountBalanceCheck struct {
-	ParticipantID    string  `json:"participant_id"`
-	Currency         string  `json:"currency"`
-	AccountType      string  `json:"account_type"`
-	TBBalance        int64   `json:"tb_balance"`
-	OperationalView  int64   `json:"operational_view"`
-	Match            bool    `json:"match"`
+	ParticipantID   string `json:"participant_id"`
+	Currency        string `json:"currency"`
+	AccountType     string `json:"account_type"`
+	TBBalance       int64  `json:"tb_balance"`
+	OperationalView int64  `json:"operational_view"`
+	Match           bool   `json:"match"`
 }
 
 // BalanceDrift represents a drift between TigerBeetle and operational view
@@ -485,7 +484,7 @@ func (r *ReconciliationLoop) getOperationalBalance(ctx context.Context, fspID, c
 		JOIN currency c ON pc.currency_id = c.currency_id
 		WHERE p.name = $1 AND c.currency_id = $2
 	`, fspID, currency).Scan(&balance)
-	
+
 	if err == sql.ErrNoRows {
 		return 0, nil
 	}
@@ -495,7 +494,7 @@ func (r *ReconciliationLoop) getOperationalBalance(ctx context.Context, fspID, c
 func (r *ReconciliationLoop) haltProcessing(ctx context.Context, d *TransferDiscrepancy) {
 	// Log critical error
 	r.logError(fmt.Sprintf("CRITICAL: Halting processing due to discrepancy in transfer %s", d.TransferID), nil)
-	
+
 	// In production, this would:
 	// 1. Set a circuit breaker flag
 	// 2. Reject new transfers for affected participants

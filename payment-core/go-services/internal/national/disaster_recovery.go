@@ -25,39 +25,39 @@ type DisasterRecoveryManager struct {
 
 // DRConfig holds disaster recovery configuration
 type DRConfig struct {
-	PrimaryRegion           string
-	Regions                 []string
-	ReplicationMode         ReplicationMode
-	FailoverThresholdMs     int64
-	MaxReplicationLagMs     int64
-	HealthCheckIntervalSec  int
-	AutoFailoverEnabled     bool
-	MinHealthyReplicas      int
-	DataConsistencyCheck    bool
-	CrossRegionEncryption   bool
+	PrimaryRegion          string
+	Regions                []string
+	ReplicationMode        ReplicationMode
+	FailoverThresholdMs    int64
+	MaxReplicationLagMs    int64
+	HealthCheckIntervalSec int
+	AutoFailoverEnabled    bool
+	MinHealthyReplicas     int
+	DataConsistencyCheck   bool
+	CrossRegionEncryption  bool
 }
 
 // ReplicationMode defines the replication mode
 type ReplicationMode string
 
 const (
-	ReplicationModeSync      ReplicationMode = "SYNCHRONOUS"
-	ReplicationModeAsync     ReplicationMode = "ASYNCHRONOUS"
-	ReplicationModeSemiSync  ReplicationMode = "SEMI_SYNCHRONOUS"
+	ReplicationModeSync     ReplicationMode = "SYNCHRONOUS"
+	ReplicationModeAsync    ReplicationMode = "ASYNCHRONOUS"
+	ReplicationModeSemiSync ReplicationMode = "SEMI_SYNCHRONOUS"
 )
 
 // Region represents a deployment region
 type Region struct {
-	RegionID        string          `json:"region_id"`
-	RegionName      string          `json:"region_name"`
-	Role            RegionRole      `json:"role"`
-	Endpoint        string          `json:"endpoint"`
-	DatabaseDSN     string          `json:"database_dsn"`
-	TigerBeetleAddr string          `json:"tigerbeetle_addr"`
-	KafkaBrokers    []string        `json:"kafka_brokers"`
-	Status          RegionStatus    `json:"status"`
-	Priority        int             `json:"priority"` // Lower = higher priority for failover
-	LastHealthCheck time.Time       `json:"last_health_check"`
+	RegionID        string       `json:"region_id"`
+	RegionName      string       `json:"region_name"`
+	Role            RegionRole   `json:"role"`
+	Endpoint        string       `json:"endpoint"`
+	DatabaseDSN     string       `json:"database_dsn"`
+	TigerBeetleAddr string       `json:"tigerbeetle_addr"`
+	KafkaBrokers    []string     `json:"kafka_brokers"`
+	Status          RegionStatus `json:"status"`
+	Priority        int          `json:"priority"` // Lower = higher priority for failover
+	LastHealthCheck time.Time    `json:"last_health_check"`
 }
 
 // RegionRole defines the role of a region
@@ -114,11 +114,11 @@ type FailoverEvent struct {
 type FailoverReason string
 
 const (
-	FailoverReasonPrimaryFailure   FailoverReason = "PRIMARY_FAILURE"
-	FailoverReasonNetworkPartition FailoverReason = "NETWORK_PARTITION"
+	FailoverReasonPrimaryFailure     FailoverReason = "PRIMARY_FAILURE"
+	FailoverReasonNetworkPartition   FailoverReason = "NETWORK_PARTITION"
 	FailoverReasonPlannedMaintenance FailoverReason = "PLANNED_MAINTENANCE"
-	FailoverReasonManual           FailoverReason = "MANUAL"
-	FailoverReasonDRTest           FailoverReason = "DR_TEST"
+	FailoverReasonManual             FailoverReason = "MANUAL"
+	FailoverReasonDRTest             FailoverReason = "DR_TEST"
 )
 
 // FailoverStatus defines the status of a failover
@@ -219,7 +219,7 @@ func (drm *DisasterRecoveryManager) checkAllRegions() {
 
 	for regionID, region := range drm.regions {
 		health := drm.checkRegionHealth(ctx, region)
-		
+
 		drm.mu.Lock()
 		drm.healthStatus[regionID] = health
 		drm.mu.Unlock()
@@ -304,12 +304,12 @@ func (drm *DisasterRecoveryManager) checkDatabaseHealth(ctx context.Context, reg
 	if region.DatabaseDSN == "" {
 		return true // Assume healthy if not configured
 	}
-	
+
 	// db, err := sql.Open("postgres", region.DatabaseDSN)
 	// if err != nil { return false }
 	// defer db.Close()
 	// return db.PingContext(ctx) == nil
-	
+
 	return true
 }
 
@@ -318,12 +318,12 @@ func (drm *DisasterRecoveryManager) checkTigerBeetleHealth(ctx context.Context, 
 	if region.TigerBeetleAddr == "" {
 		return true
 	}
-	
+
 	// client, err := tigerbeetle.NewClient(region.TigerBeetleAddr)
 	// if err != nil { return false }
 	// defer client.Close()
 	// return client.Ping() == nil
-	
+
 	return true
 }
 
@@ -332,13 +332,13 @@ func (drm *DisasterRecoveryManager) checkKafkaHealth(ctx context.Context, region
 	if len(region.KafkaBrokers) == 0 {
 		return true
 	}
-	
+
 	// admin, err := kafka.NewAdminClient(region.KafkaBrokers)
 	// if err != nil { return false }
 	// defer admin.Close()
 	// _, err = admin.GetMetadata(nil, true, 5000)
 	// return err == nil
-	
+
 	return true
 }
 
@@ -347,12 +347,12 @@ func (drm *DisasterRecoveryManager) checkAPIHealth(ctx context.Context, region *
 	if region.Endpoint == "" {
 		return true
 	}
-	
+
 	// resp, err := http.Get(region.Endpoint + "/health")
 	// if err != nil { return false }
 	// defer resp.Body.Close()
 	// return resp.StatusCode == 200
-	
+
 	return true
 }
 
@@ -360,7 +360,7 @@ func (drm *DisasterRecoveryManager) measureReplicationLag(ctx context.Context, r
 	// In production, compare LSN/WAL positions between primary and secondary
 	// For PostgreSQL: SELECT pg_last_wal_receive_lsn() - pg_last_wal_replay_lsn()
 	// For TigerBeetle: Compare commit indices
-	
+
 	return 0
 }
 
@@ -696,10 +696,10 @@ func (drm *DisasterRecoveryManager) ValidateDataConsistency(ctx context.Context)
 
 // ConsistencyReport represents a data consistency report
 type ConsistencyReport struct {
-	ReportID          string                       `json:"report_id"`
-	GeneratedAt       time.Time                    `json:"generated_at"`
-	Regions           map[string]*RegionConsistency `json:"regions"`
-	HasInconsistencies bool                        `json:"has_inconsistencies"`
+	ReportID           string                        `json:"report_id"`
+	GeneratedAt        time.Time                     `json:"generated_at"`
+	Regions            map[string]*RegionConsistency `json:"regions"`
+	HasInconsistencies bool                          `json:"has_inconsistencies"`
 }
 
 // RegionConsistency represents consistency status for a region
@@ -713,7 +713,7 @@ type RegionConsistency struct {
 func (drm *DisasterRecoveryManager) getDataChecksums(ctx context.Context, region *Region) (map[string]string, error) {
 	// In production, calculate checksums for critical tables
 	checksums := make(map[string]string)
-	
+
 	tables := []string{
 		"mojaloop_transfers",
 		"participants",

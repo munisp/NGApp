@@ -15,14 +15,14 @@ import (
 // OutboxPublisher implements the transactional outbox pattern
 // It polls the outbox table and publishes events to Kafka
 type OutboxPublisher struct {
-	store         *TransferStore
-	producer      sarama.SyncProducer
-	topicPrefix   string
-	pollInterval  time.Duration
-	batchSize     int
-	running       bool
-	stopCh        chan struct{}
-	wg            sync.WaitGroup
+	store        *TransferStore
+	producer     sarama.SyncProducer
+	topicPrefix  string
+	pollInterval time.Duration
+	batchSize    int
+	running      bool
+	stopCh       chan struct{}
+	wg           sync.WaitGroup
 }
 
 // OutboxPublisherConfig holds configuration for the outbox publisher
@@ -150,14 +150,14 @@ func (p *OutboxPublisher) publishBatch(ctx context.Context) {
 // PublishTransferEvent publishes a transfer event through the outbox
 func PublishTransferEvent(ctx context.Context, store *TransferStore, eventType string, transfer *MojaloopTransfer) error {
 	payload := map[string]interface{}{
-		"transfer_id":       transfer.TransferID,
-		"tigerbeetle_id":    transfer.TigerBeetleID,
-		"payer_fsp":         transfer.PayerFSP,
-		"payee_fsp":         transfer.PayeeFSP,
-		"amount":            transfer.Amount,
-		"currency":          transfer.Currency,
-		"state":             transfer.State,
-		"timestamp":         time.Now().UTC().Format(time.RFC3339),
+		"transfer_id":    transfer.TransferID,
+		"tigerbeetle_id": transfer.TigerBeetleID,
+		"payer_fsp":      transfer.PayerFSP,
+		"payee_fsp":      transfer.PayeeFSP,
+		"amount":         transfer.Amount,
+		"currency":       transfer.Currency,
+		"state":          transfer.State,
+		"timestamp":      time.Now().UTC().Format(time.RFC3339),
 	}
 
 	return store.SaveOutboxEvent(ctx, nil, "transfer", transfer.TransferID, eventType, payload)
@@ -165,17 +165,16 @@ func PublishTransferEvent(ctx context.Context, store *TransferStore, eventType s
 
 // ReconciliationService handles reconciliation between TigerBeetle and Mojaloop
 type ReconciliationService struct {
-	store          *TransferStore
-	tbClient       *TBProtocolClient
+	store             *TransferStore
+	tbClient          *TBProtocolClient
 	reconcileInterval time.Duration
-	driftThreshold uint64
-	running        bool
-	stopCh         chan struct{}
-	wg             sync.WaitGroup
+	driftThreshold    uint64
+	running           bool
+	stopCh            chan struct{}
+	wg                sync.WaitGroup
 }
 
 // ReconciliationConfig holds configuration for reconciliation
-
 
 // NewReconciliationService creates a new reconciliation service
 func NewReconciliationService(store *TransferStore, tbClient *TBProtocolClient, config *ReconciliationConfig) *ReconciliationService {
@@ -374,13 +373,13 @@ func (r *ReconciliationService) calculateExpectedBalance(ctx context.Context, fs
 
 // TimeoutHandler handles expired transfers
 type TimeoutHandler struct {
-	store       *TransferStore
-	tbClient    *TBProtocolClient
-	adapter     *MojaloopTigerBeetleAdapter
+	store         *TransferStore
+	tbClient      *TBProtocolClient
+	adapter       *MojaloopTigerBeetleAdapter
 	checkInterval time.Duration
-	running     bool
-	stopCh      chan struct{}
-	wg          sync.WaitGroup
+	running       bool
+	stopCh        chan struct{}
+	wg            sync.WaitGroup
 }
 
 // NewTimeoutHandler creates a new timeout handler

@@ -32,12 +32,12 @@ type RedisClient interface {
 
 // IdempotencyConfig holds configuration for idempotency store
 type IdempotencyConfig struct {
-	KeyPrefix       string        `json:"key_prefix"`
-	DefaultTTL      time.Duration `json:"default_ttl"`
-	LockTTL         time.Duration `json:"lock_ttl"`
-	MaxRetries      int           `json:"max_retries"`
-	RetryDelay      time.Duration `json:"retry_delay"`
-	EnableMetrics   bool          `json:"enable_metrics"`
+	KeyPrefix     string        `json:"key_prefix"`
+	DefaultTTL    time.Duration `json:"default_ttl"`
+	LockTTL       time.Duration `json:"lock_ttl"`
+	MaxRetries    int           `json:"max_retries"`
+	RetryDelay    time.Duration `json:"retry_delay"`
+	EnableMetrics bool          `json:"enable_metrics"`
 }
 
 // DefaultIdempotencyConfig returns default configuration
@@ -66,14 +66,14 @@ type IdempotencyMetrics struct {
 
 // IdempotencyRecord represents a stored idempotency record
 type IdempotencyRecord struct {
-	Key           string                 `json:"key"`
-	RequestHash   string                 `json:"request_hash"`
-	Status        IdempotencyStatus      `json:"status"`
-	Response      *IdempotencyResponse   `json:"response,omitempty"`
-	CreatedAt     time.Time              `json:"created_at"`
-	CompletedAt   *time.Time             `json:"completed_at,omitempty"`
-	ExpiresAt     time.Time              `json:"expires_at"`
-	Metadata      map[string]string      `json:"metadata,omitempty"`
+	Key         string               `json:"key"`
+	RequestHash string               `json:"request_hash"`
+	Status      IdempotencyStatus    `json:"status"`
+	Response    *IdempotencyResponse `json:"response,omitempty"`
+	CreatedAt   time.Time            `json:"created_at"`
+	CompletedAt *time.Time           `json:"completed_at,omitempty"`
+	ExpiresAt   time.Time            `json:"expires_at"`
+	Metadata    map[string]string    `json:"metadata,omitempty"`
 }
 
 // IdempotencyStatus represents the status of an idempotent request
@@ -300,9 +300,9 @@ func (s *RedisIdempotencyStore) GetMetrics() *IdempotencyMetrics {
 
 // IdempotencyMiddleware provides HTTP middleware for idempotency
 type IdempotencyMiddleware struct {
-	store           *RedisIdempotencyStore
-	keyExtractor    IdempotencyKeyExtractor
-	hashGenerator   RequestHashGenerator
+	store             *RedisIdempotencyStore
+	keyExtractor      IdempotencyKeyExtractor
+	hashGenerator     RequestHashGenerator
 	applicableMethods map[string]bool
 }
 
@@ -315,8 +315,8 @@ type RequestHashGenerator func(r *http.Request) string
 // NewIdempotencyMiddleware creates a new idempotency middleware
 func NewIdempotencyMiddleware(store *RedisIdempotencyStore) *IdempotencyMiddleware {
 	return &IdempotencyMiddleware{
-		store:        store,
-		keyExtractor: DefaultKeyExtractor,
+		store:         store,
+		keyExtractor:  DefaultKeyExtractor,
 		hashGenerator: DefaultHashGenerator,
 		applicableMethods: map[string]bool{
 			"POST":  true,
@@ -511,7 +511,7 @@ func DefaultHashGenerator(r *http.Request) string {
 	h := sha256.New()
 	h.Write([]byte(r.Method))
 	h.Write([]byte(r.URL.Path))
-	
+
 	// Include relevant headers in hash
 	for _, header := range []string{"Content-Type", "X-Payer-FSP", "X-Payee-FSP"} {
 		if v := r.Header.Get(header); v != "" {
@@ -590,18 +590,18 @@ $$ LANGUAGE plpgsql;
 
 // RedisClusterConfig holds Redis cluster configuration
 type RedisClusterConfig struct {
-	Addresses       []string      `json:"addresses"`
-	Password        string        `json:"password"`
-	MaxRetries      int           `json:"max_retries"`
-	DialTimeout     time.Duration `json:"dial_timeout"`
-	ReadTimeout     time.Duration `json:"read_timeout"`
-	WriteTimeout    time.Duration `json:"write_timeout"`
-	PoolSize        int           `json:"pool_size"`
-	MinIdleConns    int           `json:"min_idle_conns"`
-	MaxConnAge      time.Duration `json:"max_conn_age"`
-	PoolTimeout     time.Duration `json:"pool_timeout"`
-	IdleTimeout     time.Duration `json:"idle_timeout"`
-	EnableTLS       bool          `json:"enable_tls"`
+	Addresses    []string      `json:"addresses"`
+	Password     string        `json:"password"`
+	MaxRetries   int           `json:"max_retries"`
+	DialTimeout  time.Duration `json:"dial_timeout"`
+	ReadTimeout  time.Duration `json:"read_timeout"`
+	WriteTimeout time.Duration `json:"write_timeout"`
+	PoolSize     int           `json:"pool_size"`
+	MinIdleConns int           `json:"min_idle_conns"`
+	MaxConnAge   time.Duration `json:"max_conn_age"`
+	PoolTimeout  time.Duration `json:"pool_timeout"`
+	IdleTimeout  time.Duration `json:"idle_timeout"`
+	EnableTLS    bool          `json:"enable_tls"`
 }
 
 // DefaultRedisClusterConfig returns default Redis cluster configuration

@@ -26,53 +26,53 @@ type FluvioKafkaBridge struct {
 
 // BridgeConfig holds configuration for the Fluvio-Kafka bridge
 type BridgeConfig struct {
-	FluvioEndpoint    string            `json:"fluvio_endpoint"`
-	KafkaBrokers      []string          `json:"kafka_brokers"`
-	TopicMappings     []TopicMapping    `json:"topic_mappings"`
-	BatchSize         int               `json:"batch_size"`
-	FlushIntervalMs   int               `json:"flush_interval_ms"`
-	RetryAttempts     int               `json:"retry_attempts"`
-	RetryDelayMs      int               `json:"retry_delay_ms"`
-	EnableCompression bool              `json:"enable_compression"`
-	EnableIdempotence bool              `json:"enable_idempotence"`
+	FluvioEndpoint    string         `json:"fluvio_endpoint"`
+	KafkaBrokers      []string       `json:"kafka_brokers"`
+	TopicMappings     []TopicMapping `json:"topic_mappings"`
+	BatchSize         int            `json:"batch_size"`
+	FlushIntervalMs   int            `json:"flush_interval_ms"`
+	RetryAttempts     int            `json:"retry_attempts"`
+	RetryDelayMs      int            `json:"retry_delay_ms"`
+	EnableCompression bool           `json:"enable_compression"`
+	EnableIdempotence bool           `json:"enable_idempotence"`
 }
 
 // TopicMapping defines how Fluvio topics map to Kafka topics
 type TopicMapping struct {
-	FluvioTopic     string            `json:"fluvio_topic"`
-	KafkaTopic      string            `json:"kafka_topic"`
-	TransformFunc   string            `json:"transform_func,omitempty"`
-	PartitionKey    string            `json:"partition_key,omitempty"`
-	FilterCondition string            `json:"filter_condition,omitempty"`
-	Enabled         bool              `json:"enabled"`
+	FluvioTopic     string `json:"fluvio_topic"`
+	KafkaTopic      string `json:"kafka_topic"`
+	TransformFunc   string `json:"transform_func,omitempty"`
+	PartitionKey    string `json:"partition_key,omitempty"`
+	FilterCondition string `json:"filter_condition,omitempty"`
+	Enabled         bool   `json:"enabled"`
 }
 
 // BridgeMetrics tracks bridge performance
 type BridgeMetrics struct {
-	MessagesReceived   int64     `json:"messages_received"`
-	MessagesPublished  int64     `json:"messages_published"`
-	MessagesFailed     int64     `json:"messages_failed"`
-	BytesTransferred   int64     `json:"bytes_transferred"`
-	LastMessageTime    time.Time `json:"last_message_time"`
-	AverageLatencyMs   float64   `json:"average_latency_ms"`
-	ErrorCount         int64     `json:"error_count"`
-	mu                 sync.RWMutex
+	MessagesReceived  int64     `json:"messages_received"`
+	MessagesPublished int64     `json:"messages_published"`
+	MessagesFailed    int64     `json:"messages_failed"`
+	BytesTransferred  int64     `json:"bytes_transferred"`
+	LastMessageTime   time.Time `json:"last_message_time"`
+	AverageLatencyMs  float64   `json:"average_latency_ms"`
+	ErrorCount        int64     `json:"error_count"`
+	mu                sync.RWMutex
 }
 
 // FluvioClient wraps Fluvio consumer functionality
 type FluvioClient struct {
-	endpoint    string
-	consumers   map[string]*FluvioConsumer
-	mu          sync.RWMutex
+	endpoint  string
+	consumers map[string]*FluvioConsumer
+	mu        sync.RWMutex
 }
 
 // FluvioConsumer represents a Fluvio topic consumer
 type FluvioConsumer struct {
-	topic       string
-	offset      int64
-	running     bool
-	messageCh   chan *FluvioMessage
-	stopCh      chan struct{}
+	topic     string
+	offset    int64
+	running   bool
+	messageCh chan *FluvioMessage
+	stopCh    chan struct{}
 }
 
 // FluvioMessage represents a message from Fluvio
@@ -99,28 +99,28 @@ func DefaultBridgeConfig() *BridgeConfig {
 		EnableIdempotence: true,
 		TopicMappings: []TopicMapping{
 			{
-				FluvioTopic:   "pos-transactions",
-				KafkaTopic:    "domain.events.pos",
-				PartitionKey:  "transaction_id",
-				Enabled:       true,
+				FluvioTopic:  "pos-transactions",
+				KafkaTopic:   "domain.events.pos",
+				PartitionKey: "transaction_id",
+				Enabled:      true,
 			},
 			{
-				FluvioTopic:   "pos-settlements",
-				KafkaTopic:    "domain.events.settlement",
-				PartitionKey:  "settlement_id",
-				Enabled:       true,
+				FluvioTopic:  "pos-settlements",
+				KafkaTopic:   "domain.events.settlement",
+				PartitionKey: "settlement_id",
+				Enabled:      true,
 			},
 			{
-				FluvioTopic:   "agent-transactions",
-				KafkaTopic:    "domain.events.agent",
-				PartitionKey:  "agent_id",
-				Enabled:       true,
+				FluvioTopic:  "agent-transactions",
+				KafkaTopic:   "domain.events.agent",
+				PartitionKey: "agent_id",
+				Enabled:      true,
 			},
 			{
-				FluvioTopic:   "mobile-money-events",
-				KafkaTopic:    "domain.events.mobile_money",
-				PartitionKey:  "transaction_id",
-				Enabled:       true,
+				FluvioTopic:  "mobile-money-events",
+				KafkaTopic:   "domain.events.mobile_money",
+				PartitionKey: "transaction_id",
+				Enabled:      true,
 			},
 		},
 	}
@@ -354,54 +354,54 @@ func (b *FluvioKafkaBridge) transformMessage(msg *FluvioMessage, mapping TopicMa
 // transformPOSTransaction transforms POS transaction to domain event format
 func (b *FluvioKafkaBridge) transformPOSTransaction(data map[string]interface{}) map[string]interface{} {
 	return map[string]interface{}{
-		"event_type":      "pos.transaction.completed",
-		"event_version":   "1.0",
-		"aggregate_type":  "pos_transaction",
-		"aggregate_id":    data["transaction_id"],
-		"timestamp":       time.Now().UTC().Format(time.RFC3339),
-		"payload":         data,
-		"correlation_id":  data["correlation_id"],
+		"event_type":     "pos.transaction.completed",
+		"event_version":  "1.0",
+		"aggregate_type": "pos_transaction",
+		"aggregate_id":   data["transaction_id"],
+		"timestamp":      time.Now().UTC().Format(time.RFC3339),
+		"payload":        data,
+		"correlation_id": data["correlation_id"],
 	}
 }
 
 // transformPOSSettlement transforms POS settlement to domain event format
 func (b *FluvioKafkaBridge) transformPOSSettlement(data map[string]interface{}) map[string]interface{} {
 	return map[string]interface{}{
-		"event_type":      "pos.settlement.completed",
-		"event_version":   "1.0",
-		"aggregate_type":  "pos_settlement",
-		"aggregate_id":    data["settlement_id"],
-		"timestamp":       time.Now().UTC().Format(time.RFC3339),
-		"payload":         data,
-		"correlation_id":  data["correlation_id"],
+		"event_type":     "pos.settlement.completed",
+		"event_version":  "1.0",
+		"aggregate_type": "pos_settlement",
+		"aggregate_id":   data["settlement_id"],
+		"timestamp":      time.Now().UTC().Format(time.RFC3339),
+		"payload":        data,
+		"correlation_id": data["correlation_id"],
 	}
 }
 
 // transformAgentTransaction transforms agent transaction to domain event format
 func (b *FluvioKafkaBridge) transformAgentTransaction(data map[string]interface{}) map[string]interface{} {
 	return map[string]interface{}{
-		"event_type":      "agent.transaction.completed",
-		"event_version":   "1.0",
-		"aggregate_type":  "agent_transaction",
-		"aggregate_id":    data["transaction_id"],
-		"timestamp":       time.Now().UTC().Format(time.RFC3339),
-		"payload":         data,
-		"agent_id":        data["agent_id"],
-		"correlation_id":  data["correlation_id"],
+		"event_type":     "agent.transaction.completed",
+		"event_version":  "1.0",
+		"aggregate_type": "agent_transaction",
+		"aggregate_id":   data["transaction_id"],
+		"timestamp":      time.Now().UTC().Format(time.RFC3339),
+		"payload":        data,
+		"agent_id":       data["agent_id"],
+		"correlation_id": data["correlation_id"],
 	}
 }
 
 // transformMobileMoneyEvent transforms mobile money event to domain event format
 func (b *FluvioKafkaBridge) transformMobileMoneyEvent(data map[string]interface{}) map[string]interface{} {
 	return map[string]interface{}{
-		"event_type":      "mobile_money.transaction.completed",
-		"event_version":   "1.0",
-		"aggregate_type":  "mobile_money_transaction",
-		"aggregate_id":    data["transaction_id"],
-		"timestamp":       time.Now().UTC().Format(time.RFC3339),
-		"payload":         data,
-		"provider":        data["provider"],
-		"correlation_id":  data["correlation_id"],
+		"event_type":     "mobile_money.transaction.completed",
+		"event_version":  "1.0",
+		"aggregate_type": "mobile_money_transaction",
+		"aggregate_id":   data["transaction_id"],
+		"timestamp":      time.Now().UTC().Format(time.RFC3339),
+		"payload":        data,
+		"provider":       data["provider"],
+		"correlation_id": data["correlation_id"],
 	}
 }
 

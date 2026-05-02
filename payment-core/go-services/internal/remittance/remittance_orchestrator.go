@@ -49,28 +49,28 @@ type BankAccountInfo struct {
 }
 
 type RemittanceWorkflowState struct {
-	RemittanceID         string                 `json:"remittanceId"`
-	CurrentStep          WorkflowStep           `json:"currentStep"`
-	ChargeID             string                 `json:"chargeId"`
-	SenderCurrency       string                 `json:"senderCurrency"`
-	SenderAmount         float64                `json:"senderAmount"`
-	RecipientCurrency    string                 `json:"recipientCurrency"`
-	RecipientPhone       string                 `json:"recipientPhone"`
-	DeliveryOption       DeliveryOption         `json:"deliveryOption"`
-	KYCData              *KYCData               `json:"kycData,omitempty"`
-	BankAccount          *BankAccountInfo       `json:"bankAccount,omitempty"`
-	Metadata             map[string]interface{} `json:"metadata,omitempty"`
-	CryptoPaymentConfirmed bool                 `json:"cryptoPaymentConfirmed"`
-	CryptoAmount         float64                `json:"cryptoAmount,omitempty"`
-	FiatAmount           float64                `json:"fiatAmount,omitempty"`
-	ExchangeRate         float64                `json:"exchangeRate,omitempty"`
-	KYCVerificationID    string                 `json:"kycVerificationId,omitempty"`
-	KYCApproved          bool                   `json:"kycApproved,omitempty"`
-	AccountID            string                 `json:"accountId,omitempty"`
-	TransferReference    string                 `json:"transferReference,omitempty"`
-	Error                string                 `json:"error,omitempty"`
-	RetryCount           int                    `json:"retryCount"`
-	LastUpdated          time.Time              `json:"lastUpdated"`
+	RemittanceID           string                 `json:"remittanceId"`
+	CurrentStep            WorkflowStep           `json:"currentStep"`
+	ChargeID               string                 `json:"chargeId"`
+	SenderCurrency         string                 `json:"senderCurrency"`
+	SenderAmount           float64                `json:"senderAmount"`
+	RecipientCurrency      string                 `json:"recipientCurrency"`
+	RecipientPhone         string                 `json:"recipientPhone"`
+	DeliveryOption         DeliveryOption         `json:"deliveryOption"`
+	KYCData                *KYCData               `json:"kycData,omitempty"`
+	BankAccount            *BankAccountInfo       `json:"bankAccount,omitempty"`
+	Metadata               map[string]interface{} `json:"metadata,omitempty"`
+	CryptoPaymentConfirmed bool                   `json:"cryptoPaymentConfirmed"`
+	CryptoAmount           float64                `json:"cryptoAmount,omitempty"`
+	FiatAmount             float64                `json:"fiatAmount,omitempty"`
+	ExchangeRate           float64                `json:"exchangeRate,omitempty"`
+	KYCVerificationID      string                 `json:"kycVerificationId,omitempty"`
+	KYCApproved            bool                   `json:"kycApproved,omitempty"`
+	AccountID              string                 `json:"accountId,omitempty"`
+	TransferReference      string                 `json:"transferReference,omitempty"`
+	Error                  string                 `json:"error,omitempty"`
+	RetryCount             int                    `json:"retryCount"`
+	LastUpdated            time.Time              `json:"lastUpdated"`
 }
 
 type StartWorkflowParams struct {
@@ -128,20 +128,20 @@ func (o *RemittanceOrchestrator) OnSMS(handler func(phone, message string)) {
 
 func (o *RemittanceOrchestrator) StartWorkflow(params *StartWorkflowParams) (*RemittanceWorkflowState, error) {
 	state := &RemittanceWorkflowState{
-		RemittanceID:         params.RemittanceID,
-		CurrentStep:          StepWaitingPayment,
-		ChargeID:             params.ChargeID,
-		SenderCurrency:       params.SenderCurrency,
-		SenderAmount:         params.SenderAmount,
-		RecipientCurrency:    params.RecipientCurrency,
-		RecipientPhone:       params.RecipientPhone,
-		DeliveryOption:       params.DeliveryOption,
-		KYCData:              params.KYCData,
-		BankAccount:          params.BankAccount,
-		Metadata:             params.Metadata,
+		RemittanceID:           params.RemittanceID,
+		CurrentStep:            StepWaitingPayment,
+		ChargeID:               params.ChargeID,
+		SenderCurrency:         params.SenderCurrency,
+		SenderAmount:           params.SenderAmount,
+		RecipientCurrency:      params.RecipientCurrency,
+		RecipientPhone:         params.RecipientPhone,
+		DeliveryOption:         params.DeliveryOption,
+		KYCData:                params.KYCData,
+		BankAccount:            params.BankAccount,
+		Metadata:               params.Metadata,
 		CryptoPaymentConfirmed: false,
-		RetryCount:           0,
-		LastUpdated:          time.Now(),
+		RetryCount:             0,
+		LastUpdated:            time.Now(),
 	}
 
 	o.mu.Lock()

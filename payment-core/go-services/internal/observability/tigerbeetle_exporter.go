@@ -19,15 +19,15 @@ type TigerBeetleExporter struct {
 	mu         sync.RWMutex
 
 	// Cluster metrics
-	clusterHealth     prometheus.Gauge
-	clusterNodes      prometheus.Gauge
-	clusterLeader     *prometheus.GaugeVec
-	replicationLag    prometheus.Gauge
+	clusterHealth  prometheus.Gauge
+	clusterNodes   prometheus.Gauge
+	clusterLeader  *prometheus.GaugeVec
+	replicationLag prometheus.Gauge
 
 	// Account metrics
-	accountsTotal     prometheus.Gauge
-	accountsActive    prometheus.Gauge
-	accountBalance    *prometheus.GaugeVec
+	accountsTotal  prometheus.Gauge
+	accountsActive prometheus.Gauge
+	accountBalance *prometheus.GaugeVec
 
 	// Transfer metrics
 	transfersTotal    *prometheus.CounterVec
@@ -37,20 +37,20 @@ type TigerBeetleExporter struct {
 	transferRate      prometheus.Gauge
 
 	// Two-phase commit metrics
-	pendingTransfers  prometheus.Gauge
-	postedTransfers   *prometheus.CounterVec
-	voidedTransfers   *prometheus.CounterVec
+	pendingTransfers prometheus.Gauge
+	postedTransfers  *prometheus.CounterVec
+	voidedTransfers  *prometheus.CounterVec
 
 	// Performance metrics
-	batchSize         *prometheus.HistogramVec
-	ioLatency         *prometheus.HistogramVec
-	cacheHitRate      prometheus.Gauge
-	diskUsage         prometheus.Gauge
-	memoryUsage       prometheus.Gauge
+	batchSize    *prometheus.HistogramVec
+	ioLatency    *prometheus.HistogramVec
+	cacheHitRate prometheus.Gauge
+	diskUsage    prometheus.Gauge
+	memoryUsage  prometheus.Gauge
 
 	// Error metrics
-	errors            *prometheus.CounterVec
-	timeouts          *prometheus.CounterVec
+	errors   *prometheus.CounterVec
+	timeouts *prometheus.CounterVec
 }
 
 // NewTigerBeetleExporter creates a new TigerBeetle exporter
@@ -204,17 +204,17 @@ func (e *TigerBeetleExporter) collect() {
 	}
 
 	var status struct {
-		Healthy       bool    `json:"healthy"`
-		Nodes         int     `json:"nodes"`
-		LeaderID      string  `json:"leader_id"`
-		ReplicationLag int64  `json:"replication_lag"`
-		Accounts      int64   `json:"accounts"`
-		ActiveAccounts int64  `json:"active_accounts"`
-		PendingTransfers int64 `json:"pending_transfers"`
-		TransfersPerSec float64 `json:"transfers_per_second"`
-		CacheHitRate  float64 `json:"cache_hit_rate"`
-		DiskUsage     int64   `json:"disk_usage_bytes"`
-		MemoryUsage   int64   `json:"memory_usage_bytes"`
+		Healthy          bool    `json:"healthy"`
+		Nodes            int     `json:"nodes"`
+		LeaderID         string  `json:"leader_id"`
+		ReplicationLag   int64   `json:"replication_lag"`
+		Accounts         int64   `json:"accounts"`
+		ActiveAccounts   int64   `json:"active_accounts"`
+		PendingTransfers int64   `json:"pending_transfers"`
+		TransfersPerSec  float64 `json:"transfers_per_second"`
+		CacheHitRate     float64 `json:"cache_hit_rate"`
+		DiskUsage        int64   `json:"disk_usage_bytes"`
+		MemoryUsage      int64   `json:"memory_usage_bytes"`
 	}
 
 	if err := json.NewDecoder(resp.Body).Decode(&status); err != nil {
