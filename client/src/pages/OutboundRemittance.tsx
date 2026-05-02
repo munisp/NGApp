@@ -12,12 +12,12 @@ import {
   LayoutDashboard, ArrowRightLeft, Wallet, Receipt, Globe, Shield, UserPlus,
   Settings, TrendingUp, CheckCircle2, Clock, AlertTriangle, XCircle, Building2,
   Search, Plus, Send, AlertOctagon, ArrowUpCircle, Gavel, RefreshCw,
-  DollarSign, BarChart3, Layers,
+  DollarSign, BarChart3, Layers, Network,
 } from 'lucide-react';
 
 // --- Types ---
 type UserRole = 'participant' | 'admin' | 'cbn';
-type NavSection = 'dashboard' | 'transfers' | 'prefund' | 'billing' | 'corridors' | 'compliance' | 'disputes' | 'approvals' | 'participants' | 'fx_management' | 'tier_management' | 'analytics' | 'settings';
+type NavSection = 'dashboard' | 'transfers' | 'prefund' | 'billing' | 'corridors' | 'compliance' | 'disputes' | 'approvals' | 'participants' | 'fx_management' | 'tier_management' | 'analytics' | 'payment_rails' | 'settings';
 
 // 13 CBN-regulated corridors (static reference data)
 const corridors = [
@@ -60,6 +60,7 @@ function getNavItems(role: UserRole) {
     { id: 'corridors' as NavSection, label: 'Corridors', icon: Globe },
     { id: 'fx_management' as NavSection, label: 'FX & Rates', icon: DollarSign },
     { id: 'tier_management' as NavSection, label: 'Tier Mgmt', icon: Layers },
+    { id: 'payment_rails' as NavSection, label: 'Payment Rails', icon: Network },
     { id: 'analytics' as NavSection, label: 'Analytics', icon: BarChart3 },
     { id: 'billing' as NavSection, label: 'Billing', icon: Receipt },
     { id: 'settings' as NavSection, label: 'Settings', icon: Settings },
@@ -170,6 +171,7 @@ export default function OutboundRemittance() {
         {activeSection === 'fx_management' && <FXManagementSection />}
         {activeSection === 'tier_management' && <TierManagementSection />}
         {activeSection === 'analytics' && <AnalyticsSection />}
+        {activeSection === 'payment_rails' && <PaymentRailsSection />}
         {activeSection === 'settings' && <SettingsSection role={userRole} />}
       </main>
     </div>
@@ -1068,6 +1070,269 @@ function TierManagementSection() {
               ))}
             </TableBody>
           </Table>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+// =============================================================================
+// PAYMENT RAILS — SWIFT, PAPSS, CIPS, UPI, SEPA, Mobile Money, ACH, FPS
+// Integrated with Mojaloop Hub Router
+// =============================================================================
+
+function PaymentRailsSection() {
+  const [railsTab, setRailsTab] = useState<'overview' | 'corridorRouting' | 'dfsps' | 'feeCalculator'>('overview');
+  const railsQuery = trpc.outboundRemittance.getPaymentRails.useQuery();
+  const statusesQuery = trpc.outboundRemittance.getRailStatuses.useQuery();
+  const routingQuery = trpc.outboundRemittance.getCorridorRouting.useQuery();
+  const dfspsQuery = trpc.outboundRemittance.getDFSPRegistry.useQuery();
+
+  const rails = railsQuery.data ?? [];
+  const statuses = statusesQuery.data ?? [];
+  const routing = routingQuery.data ?? [];
+  const dfsps = dfspsQuery.data ?? [];
+
+  const railStatusColor = (s: string) => {
+    if (s === 'operational') return 'default';
+    if (s === 'degraded') return 'secondary';
+    return 'destructive';
+  };
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-2xl font-bold">Payment Rails & Mojaloop Hub</h2>
+        <p className="text-sm text-muted-foreground">9 payment rails integrated via Mojaloop interoperability hub. Rail selection per corridor with automatic fallback.</p>
+      </div>
+
+      {/* Sub-tabs */}
+      <div className="flex gap-2 border-b pb-2">
+        {(['overview', 'corridorRouting', 'dfsps', 'feeCalculator'] as const).map(tab => (
+          <button key={tab} onClick={() => setRailsTab(tab)}
+            className={`px-3 py-1.5 text-sm rounded-md ${railsTab === tab ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'}`}>
+            {tab === 'overview' ? 'Rail Status' : tab === 'corridorRouting' ? 'Corridor Routing' : tab === 'dfsps' ? 'DFSP Registry' : 'Fee Calculator'}
+          </button>
+        ))}
+      </div>
+
+      {/* --- Rail Status Overview --- */}
+      {railsTab === 'overview' && (
+        <div className="space-y-4">
+          {/* Status cards */}
+          <div className="grid grid-cols-3 gap-3">
+            <Card><CardContent className="pt-4">
+              <div className="text-2xl font-bold">{statuses.length}</div>
+              <p className="text-xs text-muted-foreground">Active Rails</p>
+            </CardContent></Card>
+            <Card><CardContent className="pt-4">
+              <div className="text-2xl font-bold">{statuses.filter(s => s.status === 'operational').length}</div>
+              <p className="text-xs text-muted-foreground">Operational</p>
+            </CardContent></Card>
+            <Card><CardContent className="pt-4">
+              <div className="text-2xl font-bold">${(statuses.reduce((sum, s) => sum + s.dailyVolumeUSD, 0) / 1_000_000).toFixed(1)}M</div>
+              <p className="text-xs text-muted-foreground">24h Volume (All Rails)</p>
+            </CardContent></Card>
+          </div>
+
+          {/* Rail details table */}
+          <Card>
+            <CardHeader><CardTitle>Payment Rail Network Status</CardTitle></CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Rail</TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead>Settlement</TableHead>
+                    <TableHead>Format</TableHead>
+                    <TableHead>Max Settlement</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Latency</TableHead>
+                    <TableHead>Success</TableHead>
+                    <TableHead>24h Volume</TableHead>
+                    <TableHead>Active Txn</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {rails.map((rail) => {
+                    const status = statuses.find(s => s.rail === rail.type);
+                    return (
+                      <TableRow key={rail.type}>
+                        <TableCell className="font-medium">{rail.name}</TableCell>
+                        <TableCell><Badge variant="outline">{rail.type}</Badge></TableCell>
+                        <TableCell>{rail.settlementCurrency}</TableCell>
+                        <TableCell className="text-xs">{rail.messageFormat}</TableCell>
+                        <TableCell>{rail.maxSettlement}</TableCell>
+                        <TableCell><Badge variant={railStatusColor(status?.status ?? 'unknown')}>{status?.status ?? 'unknown'}</Badge></TableCell>
+                        <TableCell>{status?.avgLatencyMs ?? 0}ms</TableCell>
+                        <TableCell>{status?.successRate24h?.toFixed(1) ?? 0}%</TableCell>
+                        <TableCell>${((status?.dailyVolumeUSD ?? 0) / 1000).toFixed(0)}K</TableCell>
+                        <TableCell>{status?.activeTxnCount ?? 0}</TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+
+          {/* Rail descriptions */}
+          <div className="grid grid-cols-3 gap-3">
+            {rails.map(rail => (
+              <Card key={rail.type}>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm">{rail.name}</CardTitle>
+                  <Badge variant="outline" className="w-fit">{rail.corridors.length} corridors</Badge>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-xs text-muted-foreground">{rail.description}</p>
+                  <div className="mt-2 flex flex-wrap gap-1">
+                    {rail.corridors.map((c: string) => <Badge key={c} variant="secondary" className="text-xs">{c}</Badge>)}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* --- Corridor Routing --- */}
+      {railsTab === 'corridorRouting' && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Corridor-to-Rail Routing Configuration</CardTitle>
+            <CardDescription>Per architecture doc §12.4: CorridorFee = PrincipalAmount × CorridorRate(dest, rail) + FixedFee</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Corridor</TableHead>
+                  <TableHead>Primary Rail</TableHead>
+                  <TableHead>Fallback Rails</TableHead>
+                  <TableHead>Fee Rate</TableHead>
+                  <TableHead>Fixed Fee</TableHead>
+                  <TableHead>$1K Fee</TableHead>
+                  <TableHead>$10K Fee</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {routing.map(route => (
+                  <TableRow key={route.corridorId}>
+                    <TableCell className="font-medium">{route.corridorId}</TableCell>
+                    <TableCell><Badge>{route.primaryRail}</Badge></TableCell>
+                    <TableCell>
+                      <div className="flex gap-1">{route.fallbackRails.length > 0
+                        ? route.fallbackRails.map((r: string) => <Badge key={r} variant="outline" className="text-xs">{r}</Badge>)
+                        : <span className="text-xs text-muted-foreground">none</span>}
+                      </div>
+                    </TableCell>
+                    <TableCell>{(route.railFeeRate * 100).toFixed(2)}%</TableCell>
+                    <TableCell>${route.railFixedFee.toFixed(2)}</TableCell>
+                    <TableCell className="text-green-600">${(1000 * route.railFeeRate + route.railFixedFee).toFixed(2)}</TableCell>
+                    <TableCell className="text-green-600">${(10000 * route.railFeeRate + route.railFixedFee).toFixed(2)}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* --- DFSP Registry --- */}
+      {railsTab === 'dfsps' && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Mojaloop DFSP Registry</CardTitle>
+            <CardDescription>All payment rails registered as Digital Financial Service Providers in the Mojaloop hub</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>DFSP ID</TableHead>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Rail Type</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Settlement Model</TableHead>
+                  <TableHead>Party ID Types</TableHead>
+                  <TableHead>Corridors</TableHead>
+                  <TableHead>Settlement Account</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {dfsps.map(dfsp => (
+                  <TableRow key={dfsp.dfspId}>
+                    <TableCell className="font-mono text-xs">{dfsp.dfspId}</TableCell>
+                    <TableCell className="font-medium">{dfsp.name}</TableCell>
+                    <TableCell><Badge>{dfsp.railType}</Badge></TableCell>
+                    <TableCell><Badge variant={dfsp.status === 'active' ? 'default' : 'destructive'}>{dfsp.status}</Badge></TableCell>
+                    <TableCell className="text-xs">{dfsp.settlementModel}</TableCell>
+                    <TableCell>
+                      <div className="flex gap-1">{dfsp.partyIdTypes.map((t: string) => <Badge key={t} variant="outline" className="text-xs">{t}</Badge>)}</div>
+                    </TableCell>
+                    <TableCell className="text-xs">{dfsp.corridors.join(', ')}</TableCell>
+                    <TableCell className="font-mono text-xs">{dfsp.settlementAcct}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* --- Fee Calculator --- */}
+      {railsTab === 'feeCalculator' && <FeeCalculatorPanel />}
+    </div>
+  );
+}
+
+function FeeCalculatorPanel() {
+  const [selectedCorridor, setSelectedCorridor] = useState('NG-GH');
+  const [principal, setPrincipal] = useState(1000);
+  const feeQuery = trpc.outboundRemittance.calculateCorridorFee.useQuery(
+    { corridorId: selectedCorridor, principalUSD: principal },
+    { enabled: principal > 0 }
+  );
+
+  return (
+    <div className="grid grid-cols-2 gap-4">
+      <Card>
+        <CardHeader><CardTitle>Rail-Aware Fee Calculator</CardTitle></CardHeader>
+        <CardContent className="space-y-4">
+          <div>
+            <Label>Corridor</Label>
+            <Select value={selectedCorridor} onValueChange={setSelectedCorridor}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {corridors.map(c => <SelectItem key={c.id} value={c.id}>{c.id} — {c.dest} ({c.currency})</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label>Principal Amount (USD)</Label>
+            <Input type="number" value={principal} onChange={e => setPrincipal(Number(e.target.value))} min={1} />
+          </div>
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader><CardTitle>Fee Breakdown</CardTitle></CardHeader>
+        <CardContent>
+          {feeQuery.data ? (
+            <div className="space-y-3">
+              <div className="flex justify-between"><span className="text-muted-foreground">Corridor</span><span className="font-medium">{feeQuery.data.corridorId}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Rail</span><Badge>{feeQuery.data.railType}</Badge></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Rail Name</span><span>{feeQuery.data.railName}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Principal</span><span>${feeQuery.data.principalUSD.toLocaleString()}</span></div>
+              <hr />
+              <div className="flex justify-between text-lg font-bold"><span>Corridor Fee</span><span className="text-green-600">${feeQuery.data.corridorFee.toFixed(2)}</span></div>
+              <p className="text-xs text-muted-foreground mt-2">Formula: {feeQuery.data.formula}</p>
+              <p className="text-xs text-muted-foreground">Per architecture doc Appendix A.1: CorridorFee = PrincipalAmount × CorridorRate(dest, rail) + FixedFee</p>
+            </div>
+          ) : (
+            <p className="text-muted-foreground">Enter amount to calculate</p>
+          )}
         </CardContent>
       </Card>
     </div>

@@ -493,4 +493,105 @@ export const outboundRemittanceRouter = router({
 
       return { transfers, participants, disputes };
     }),
+
+  // ==========================================================================
+  // PAYMENT RAILS — SWIFT, PAPSS, CIPS, UPI, SEPA, Mobile Money, ACH, FPS
+  // ==========================================================================
+
+  getPaymentRails: protectedProcedure.query(async () => {
+    return paymentRailsData.rails;
+  }),
+
+  getRailStatuses: protectedProcedure.query(async () => {
+    return paymentRailsData.railStatuses;
+  }),
+
+  getCorridorRouting: protectedProcedure.query(async () => {
+    return paymentRailsData.corridorRoutes;
+  }),
+
+  getDFSPRegistry: protectedProcedure.query(async () => {
+    return paymentRailsData.dfsps;
+  }),
+
+  getRailsForCorridor: protectedProcedure
+    .input(z.object({ corridorId: z.string() }))
+    .query(async ({ input }) => {
+      const route = paymentRailsData.corridorRoutes.find(r => r.corridorId === input.corridorId);
+      const availableRails = paymentRailsData.dfsps.filter(d =>
+        d.corridors.includes(input.corridorId) && d.status === 'active'
+      );
+      return { route, availableRails };
+    }),
+
+  calculateCorridorFee: protectedProcedure
+    .input(z.object({ corridorId: z.string(), principalUSD: z.number().positive() }))
+    .query(async ({ input }) => {
+      const route = paymentRailsData.corridorRoutes.find(r => r.corridorId === input.corridorId);
+      if (!route) throw new TRPCError({ code: 'NOT_FOUND', message: `No routing for corridor ${input.corridorId}` });
+      const corridorFee = input.principalUSD * route.railFeeRate + route.railFixedFee;
+      const rail = paymentRailsData.rails.find(r => r.type === route.primaryRail);
+      return {
+        corridorId: input.corridorId,
+        principalUSD: input.principalUSD,
+        corridorFee: Math.round(corridorFee * 100) / 100,
+        railType: route.primaryRail,
+        railName: rail?.name ?? route.primaryRail,
+        formula: `${input.principalUSD} × ${route.railFeeRate} + ${route.railFixedFee}`,
+      };
+    }),
 });
+
+// =============================================================================
+// Payment Rails seed data — mirrors Go PaymentRailRegistry + MojaloopHubRouter
+// =============================================================================
+
+const paymentRailsData = {
+  rails: [
+    { type: 'SWIFT', name: 'SWIFT gpi', settlementCurrency: 'USD', messageFormat: 'MT103/ISO20022', maxSettlement: '48h', tracking: true, corridors: ['NG-GB', 'NG-US', 'NG-CA', 'NG-AE', 'NG-TR', 'NG-CN', 'NG-ZA'], description: 'Correspondent banking via SWIFT Global Payments Innovation. Uses MT103 messages and UETR tracking for cross-border bank transfers.' },
+    { type: 'PAPSS', name: 'PAPSS (Pan-African)', settlementCurrency: 'LOCAL', messageFormat: 'ISO20022', maxSettlement: '2min', tracking: true, corridors: ['NG-GH', 'NG-KE', 'NG-ZA', 'NG-SN', 'NG-CI', 'NG-CM'], description: 'Pan-African Payment and Settlement System by Afreximbank. Instant intra-African transfers in local currencies without USD intermediation.' },
+    { type: 'CIPS', name: 'CIPS (China)', settlementCurrency: 'CNY', messageFormat: 'ISO20022/CIPS', maxSettlement: '4h', tracking: true, corridors: ['NG-CN'], description: 'China Cross-Border Interbank Payment System operated by PBOC. Settles in CNY for China-bound transfers.' },
+    { type: 'UPI', name: 'UPI International (India)', settlementCurrency: 'INR', messageFormat: 'UPI/ISO20022', maxSettlement: '30s', tracking: true, corridors: ['NG-IN'], description: 'India Unified Payments Interface by NPCI. Near-instant settlement to Indian bank accounts, VPAs, or Aadhaar-linked mobiles.' },
+    { type: 'SEPA', name: 'SEPA (Europe)', settlementCurrency: 'EUR', messageFormat: 'ISO20022/pain.001', maxSettlement: '10s', tracking: true, corridors: ['NG-GB', 'NG-TR'], description: 'Single Euro Payments Area. SEPA Instant (SCT Inst) for near-instant EUR transfers across EU/EEA.' },
+    { type: 'MOBILE_MONEY', name: 'Mobile Money (Africa)', settlementCurrency: 'LOCAL', messageFormat: 'GSMA_MMAPI', maxSettlement: '5min', tracking: true, corridors: ['NG-GH', 'NG-KE', 'NG-CM', 'NG-CI', 'NG-SN', 'NG-ZA'], description: 'MTN MoMo (West Africa), M-Pesa (East Africa), Airtel Money. Low-cost mobile wallet transfers via GSMA Mobile Money API.' },
+    { type: 'MOJALOOP', name: 'Mojaloop Hub', settlementCurrency: 'LOCAL', messageFormat: 'FSPIOP/ISO20022', maxSettlement: '10min', tracking: true, corridors: ['NG-GH', 'NG-KE', 'NG-SN', 'NG-CI', 'NG-CM', 'NG-ZA'], description: 'Mojaloop interoperability hub. Universal fallback rail using FSPIOP API for any participating DFSP.' },
+    { type: 'ACH', name: 'ACH (US)', settlementCurrency: 'USD', messageFormat: 'NACHA', maxSettlement: '24h', tracking: false, corridors: ['NG-US', 'NG-CA'], description: 'US Automated Clearing House. Same-day ACH for USD transfers to US and Canadian bank accounts.' },
+    { type: 'FASTER_PAY', name: 'Faster Payments (UK)', settlementCurrency: 'GBP', messageFormat: 'ISO20022', maxSettlement: '2h', tracking: true, corridors: ['NG-GB'], description: 'UK Faster Payments Service. Near-instant GBP transfers to UK bank accounts.' },
+  ],
+  railStatuses: [
+    { rail: 'SWIFT', status: 'operational', avgLatencyMs: 850, successRate24h: 99.2, activeTxnCount: 47, dailyVolumeUSD: 2_450_000 },
+    { rail: 'PAPSS', status: 'operational', avgLatencyMs: 120, successRate24h: 99.8, activeTxnCount: 156, dailyVolumeUSD: 890_000 },
+    { rail: 'CIPS', status: 'operational', avgLatencyMs: 340, successRate24h: 99.5, activeTxnCount: 12, dailyVolumeUSD: 340_000 },
+    { rail: 'UPI', status: 'operational', avgLatencyMs: 45, successRate24h: 99.9, activeTxnCount: 89, dailyVolumeUSD: 560_000 },
+    { rail: 'SEPA', status: 'operational', avgLatencyMs: 80, successRate24h: 99.7, activeTxnCount: 23, dailyVolumeUSD: 180_000 },
+    { rail: 'MOBILE_MONEY', status: 'operational', avgLatencyMs: 200, successRate24h: 98.5, activeTxnCount: 234, dailyVolumeUSD: 420_000 },
+    { rail: 'MOJALOOP', status: 'operational', avgLatencyMs: 180, successRate24h: 99.1, activeTxnCount: 67, dailyVolumeUSD: 310_000 },
+    { rail: 'ACH', status: 'operational', avgLatencyMs: 1200, successRate24h: 99.6, activeTxnCount: 31, dailyVolumeUSD: 780_000 },
+    { rail: 'FASTER_PAY', status: 'operational', avgLatencyMs: 65, successRate24h: 99.8, activeTxnCount: 18, dailyVolumeUSD: 210_000 },
+  ],
+  corridorRoutes: [
+    { corridorId: 'NG-GH', primaryRail: 'PAPSS', fallbackRails: ['MOBILE_MONEY', 'MOJALOOP'], railFeeRate: 0.0005, railFixedFee: 0.10 },
+    { corridorId: 'NG-SN', primaryRail: 'PAPSS', fallbackRails: ['MOBILE_MONEY', 'MOJALOOP'], railFeeRate: 0.0008, railFixedFee: 0.10 },
+    { corridorId: 'NG-CI', primaryRail: 'PAPSS', fallbackRails: ['MOBILE_MONEY', 'MOJALOOP'], railFeeRate: 0.0008, railFixedFee: 0.10 },
+    { corridorId: 'NG-CM', primaryRail: 'PAPSS', fallbackRails: ['MOBILE_MONEY', 'MOJALOOP'], railFeeRate: 0.0008, railFixedFee: 0.10 },
+    { corridorId: 'NG-KE', primaryRail: 'PAPSS', fallbackRails: ['MOBILE_MONEY', 'SWIFT'], railFeeRate: 0.0006, railFixedFee: 0.10 },
+    { corridorId: 'NG-ZA', primaryRail: 'PAPSS', fallbackRails: ['SWIFT'], railFeeRate: 0.0007, railFixedFee: 0.15 },
+    { corridorId: 'NG-GB', primaryRail: 'SWIFT', fallbackRails: ['FASTER_PAY', 'SEPA'], railFeeRate: 0.0010, railFixedFee: 0.25 },
+    { corridorId: 'NG-US', primaryRail: 'SWIFT', fallbackRails: ['ACH'], railFeeRate: 0.0010, railFixedFee: 0.25 },
+    { corridorId: 'NG-CA', primaryRail: 'SWIFT', fallbackRails: ['ACH'], railFeeRate: 0.0012, railFixedFee: 0.25 },
+    { corridorId: 'NG-AE', primaryRail: 'SWIFT', fallbackRails: [], railFeeRate: 0.0015, railFixedFee: 0.30 },
+    { corridorId: 'NG-TR', primaryRail: 'SWIFT', fallbackRails: ['SEPA'], railFeeRate: 0.0012, railFixedFee: 0.25 },
+    { corridorId: 'NG-CN', primaryRail: 'CIPS', fallbackRails: ['SWIFT'], railFeeRate: 0.0008, railFixedFee: 0.20 },
+    { corridorId: 'NG-IN', primaryRail: 'UPI', fallbackRails: ['SWIFT'], railFeeRate: 0.0004, railFixedFee: 0.05 },
+  ],
+  dfsps: [
+    { dfspId: 'dfsp-swift', name: 'SWIFT gpi Network', railType: 'SWIFT', corridors: ['NG-GB', 'NG-US', 'NG-CA', 'NG-AE', 'NG-TR', 'NG-CN', 'NG-ZA'], status: 'active', settlementModel: 'deferred_net', partyIdTypes: ['IBAN', 'ACCOUNT_ID'], endpoint: 'swift-adapter.remit-switch.internal', settlementAcct: 'SWIFT_NOSTRO_USD' },
+    { dfspId: 'dfsp-papss', name: 'PAPSS (Pan-African)', railType: 'PAPSS', corridors: ['NG-GH', 'NG-KE', 'NG-ZA', 'NG-SN', 'NG-CI', 'NG-CM'], status: 'active', settlementModel: 'immediate_gross', partyIdTypes: ['MSISDN', 'ACCOUNT_ID', 'IBAN'], endpoint: 'papss-adapter.remit-switch.internal', settlementAcct: 'PAPSS_CLEARING' },
+    { dfspId: 'dfsp-cips', name: 'CIPS (China)', railType: 'CIPS', corridors: ['NG-CN'], status: 'active', settlementModel: 'deferred_net', partyIdTypes: ['ACCOUNT_ID'], endpoint: 'cips-adapter.remit-switch.internal', settlementAcct: 'CIPS_NOSTRO_CNY' },
+    { dfspId: 'dfsp-upi', name: 'UPI International (India)', railType: 'UPI', corridors: ['NG-IN'], status: 'active', settlementModel: 'immediate_gross', partyIdTypes: ['MSISDN', 'ACCOUNT_ID', 'VPA'], endpoint: 'upi-adapter.remit-switch.internal', settlementAcct: 'UPI_CLEARING_INR' },
+    { dfspId: 'dfsp-sepa', name: 'SEPA (Europe)', railType: 'SEPA', corridors: ['NG-GB', 'NG-TR'], status: 'active', settlementModel: 'immediate_gross', partyIdTypes: ['IBAN'], endpoint: 'sepa-adapter.remit-switch.internal', settlementAcct: 'SEPA_CLEARING_EUR' },
+    { dfspId: 'dfsp-mobile-money', name: 'Mobile Money (Africa)', railType: 'MOBILE_MONEY', corridors: ['NG-GH', 'NG-KE', 'NG-CM', 'NG-CI', 'NG-SN', 'NG-ZA'], status: 'active', settlementModel: 'immediate_gross', partyIdTypes: ['MSISDN'], endpoint: 'momo-adapter.remit-switch.internal', settlementAcct: 'MOMO_CLEARING' },
+    { dfspId: 'dfsp-ach', name: 'ACH (US)', railType: 'ACH', corridors: ['NG-US', 'NG-CA'], status: 'active', settlementModel: 'deferred_net', partyIdTypes: ['ACCOUNT_ID'], endpoint: 'ach-adapter.remit-switch.internal', settlementAcct: 'ACH_CLEARING_USD' },
+    { dfspId: 'dfsp-faster-payments', name: 'Faster Payments (UK)', railType: 'FASTER_PAY', corridors: ['NG-GB'], status: 'active', settlementModel: 'immediate_gross', partyIdTypes: ['ACCOUNT_ID'], endpoint: 'fps-adapter.remit-switch.internal', settlementAcct: 'FPS_CLEARING_GBP' },
+  ],
+};

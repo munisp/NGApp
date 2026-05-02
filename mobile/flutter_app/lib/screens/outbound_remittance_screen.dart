@@ -26,7 +26,7 @@ class _OutboundRemittanceScreenState extends State<OutboundRemittanceScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 9, vsync: this);
+    _tabController = TabController(length: 10, vsync: this);
   }
 
   @override
@@ -53,6 +53,7 @@ class _OutboundRemittanceScreenState extends State<OutboundRemittanceScreen>
             Tab(text: 'Tier'),
             Tab(text: 'Alerts'),
             Tab(text: 'Compliance'),
+            Tab(text: 'Rails'),
             Tab(text: 'Onboarding'),
           ],
         ),
@@ -68,6 +69,7 @@ class _OutboundRemittanceScreenState extends State<OutboundRemittanceScreen>
           _TierInfoTab(),
           _AlertsTab(),
           _ComplianceTab(),
+          _PaymentRailsTab(),
           _OnboardingTab(),
         ],
       ),
@@ -1087,6 +1089,145 @@ class _AlertsTab extends StatelessWidget {
           );
         }),
       ],
+    );
+  }
+}
+
+/// Payment Rails Tab — shows settlement rails available for participant corridors
+class _PaymentRailsTab extends StatelessWidget {
+  const _PaymentRailsTab();
+
+  @override
+  Widget build(BuildContext context) {
+    final rails = [
+      {'type': 'SWIFT', 'name': 'SWIFT gpi', 'settlement': 'USD', 'maxTime': '48h', 'status': 'operational', 'corridors': 'GB, US, CA, AE, TR, CN, ZA', 'fee': '\$15-25', 'format': 'MT103/ISO20022'},
+      {'type': 'PAPSS', 'name': 'PAPSS (Pan-African)', 'settlement': 'LOCAL', 'maxTime': '2min', 'status': 'operational', 'corridors': 'GH, KE, ZA, SN, CI, CM', 'fee': '\$0.50', 'format': 'ISO20022'},
+      {'type': 'CIPS', 'name': 'CIPS (China)', 'settlement': 'CNY', 'maxTime': '4h', 'status': 'operational', 'corridors': 'CN', 'fee': '\$8-12', 'format': 'ISO20022/CIPS'},
+      {'type': 'UPI', 'name': 'UPI International', 'settlement': 'INR', 'maxTime': '30s', 'status': 'operational', 'corridors': 'IN', 'fee': '\$0.10', 'format': 'UPI/ISO20022'},
+      {'type': 'SEPA', 'name': 'SEPA Instant', 'settlement': 'EUR', 'maxTime': '10s', 'status': 'operational', 'corridors': 'GB, TR', 'fee': '\$1.50', 'format': 'pain.001'},
+      {'type': 'MOBILE_MONEY', 'name': 'Mobile Money', 'settlement': 'LOCAL', 'maxTime': '5min', 'status': 'operational', 'corridors': 'GH, KE, CM, CI, SN, ZA', 'fee': '\$0.30', 'format': 'GSMA MMAPI'},
+      {'type': 'MOJALOOP', 'name': 'Mojaloop Hub', 'settlement': 'LOCAL', 'maxTime': '10min', 'status': 'operational', 'corridors': 'GH, KE, SN, CI, CM, ZA', 'fee': '\$0.50', 'format': 'FSPIOP'},
+      {'type': 'ACH', 'name': 'ACH (US)', 'settlement': 'USD', 'maxTime': '24h', 'status': 'operational', 'corridors': 'US, CA', 'fee': '\$0.25', 'format': 'NACHA'},
+      {'type': 'FASTER_PAY', 'name': 'Faster Payments', 'settlement': 'GBP', 'maxTime': '2h', 'status': 'operational', 'corridors': 'GB', 'fee': '\$0.50', 'format': 'ISO20022'},
+    ];
+
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        // Summary cards
+        Row(
+          children: [
+            Expanded(
+              child: Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('${rails.length}', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+                      const Text('Active Rails', style: TextStyle(fontSize: 11, color: Colors.grey)),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('${rails.where((r) => r['status'] == 'operational').length}', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.green)),
+                      const Text('Operational', style: TextStyle(fontSize: 11, color: Colors.grey)),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        const Text('Settlement Rail Network', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 4),
+        const Text('All rails integrated via Mojaloop interoperability hub', style: TextStyle(fontSize: 12, color: Colors.grey)),
+        const SizedBox(height: 12),
+        // Rail cards
+        ...rails.map((rail) {
+          final isInstant = ['UPI', 'SEPA', 'FASTER_PAY'].contains(rail['type']);
+          return Card(
+            margin: const EdgeInsets.only(bottom: 8),
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(rail['name']!, style: const TextStyle(fontWeight: FontWeight.bold)),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: Colors.green.shade100,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(rail['status']!, style: TextStyle(fontSize: 10, color: Colors.green.shade800)),
+                      ),
+                      if (isInstant) ...[
+                        const SizedBox(width: 4),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: Colors.blue.shade100,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Text('INSTANT', style: TextStyle(fontSize: 9, color: Colors.blue, fontWeight: FontWeight.bold)),
+                        ),
+                      ],
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      _railInfoChip('Type', rail['type']!),
+                      _railInfoChip('Settlement', rail['settlement']!),
+                      _railInfoChip('Max Time', rail['maxTime']!),
+                      _railInfoChip('Fee', rail['fee']!),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      const Icon(Icons.public, size: 12, color: Colors.grey),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text('Corridors: ${rail['corridors']}', style: const TextStyle(fontSize: 11, color: Colors.grey)),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text('Format: ${rail['format']}', style: TextStyle(fontSize: 10, color: Colors.grey.shade500)),
+                ],
+              ),
+            ),
+          );
+        }),
+      ],
+    );
+  }
+
+  Widget _railInfoChip(String label, String value) {
+    return Expanded(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label, style: const TextStyle(fontSize: 9, color: Colors.grey)),
+          Text(value, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w500)),
+        ],
+      ),
     );
   }
 }
