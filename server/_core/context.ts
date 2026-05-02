@@ -30,8 +30,50 @@ export async function createContext(
     }
   } catch (error) {
     // Authentication is optional for public procedures.
-    user = null;
+    // In development (no Keycloak/DB), provide a default participant user
+    // so the platform can be demonstrated with seed data.
+    if (process.env.NODE_ENV !== 'production' && !user) {
+      const devRole = (opts.req.headers['x-dev-role'] as string) || 'participant';
+      const devUserId = devRole === 'admin' || devRole === 'cbn' ? 200 : 101;
+      user = {
+        id: devUserId,
+        sub: `dev-${devRole}-${devUserId}`,
+        name: devRole === 'admin' ? 'Platform Admin' : devRole === 'cbn' ? 'CBN Regulator' : 'PayApp Nigeria Ltd',
+        email: `${devRole}@switch.dev`,
+        loginMethod: 'dev',
+        role: devRole as any,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        lastSignedIn: new Date(),
+        twoFactorSecret: null,
+        twoFactorEnabled: 'false' as any,
+        twoFactorBackupCodes: null,
+      };
+    } else {
+      user = null;
+    }
     session = null;
+  }
+
+  // Development fallback: if no auth succeeded and we're not in production,
+  // provide a default user so the platform can be demonstrated with seed data.
+  if (!user && process.env.NODE_ENV !== 'production' && !process.env.DISABLE_DEV_AUTH) {
+    const devRole = (opts.req.headers['x-dev-role'] as string) || 'participant';
+    const devUserId = devRole === 'admin' || devRole === 'cbn' ? 200 : 101;
+    user = {
+      id: devUserId,
+      sub: `dev-${devRole}-${devUserId}`,
+      name: devRole === 'admin' ? 'Platform Admin' : devRole === 'cbn' ? 'CBN Regulator' : 'PayApp Nigeria Ltd',
+      email: `${devRole}@switch.dev`,
+      loginMethod: 'dev',
+      role: devRole as any,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      lastSignedIn: new Date(),
+      twoFactorSecret: null,
+      twoFactorEnabled: 'false' as any,
+      twoFactorBackupCodes: null,
+    };
   }
 
   return {

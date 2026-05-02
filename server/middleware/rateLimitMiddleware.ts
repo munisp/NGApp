@@ -21,7 +21,7 @@ export const generalRateLimiter = rateLimit({
   },
   standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
   legacyHeaders: false, // Disable the `X-RateLimit-*` headers
-  validate: { xForwardedForHeader: false, ip: false },
+  validate: false,
   // Skip rate limiting for certain IPs (e.g., internal services)
   skip: (req: Request) => {
     const allowedIPs = process.env.RATE_LIMIT_WHITELIST?.split(',') || [];
@@ -165,7 +165,7 @@ export function createApiKeyRateLimiter(options: ApiKeyRateLimitOptions) {
       // Normalize IPv6-mapped IPv4 addresses
       return ip.startsWith('::ffff:') ? ip.slice(7) : ip;
     },
-    validate: { xForwardedForHeader: false, ip: false },
+    validate: false,
     message: {
       error: 'API key rate limit exceeded. Upgrade your plan for higher limits.',
       retryAfter: 'varies by plan',

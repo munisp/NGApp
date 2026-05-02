@@ -9,32 +9,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { trpc } from '@/lib/trpc';
 import { Loader2 } from 'lucide-react';
 import {
-  LayoutDashboard,
-  ArrowRightLeft,
-  Wallet,
-  Receipt,
-  Globe,
-  Shield,
-  UserPlus,
-  Settings,
-  TrendingUp,
-  CheckCircle2,
-  Clock,
-  AlertTriangle,
-  XCircle,
-  Building2,
-  Users,
-  Landmark,
-  Server,
-  FileCheck,
-  ChevronRight,
+  LayoutDashboard, ArrowRightLeft, Wallet, Receipt, Globe, Shield, UserPlus,
+  Settings, TrendingUp, CheckCircle2, Clock, AlertTriangle, XCircle, Building2,
+  Search, Plus, Send, AlertOctagon, ArrowUpCircle, Gavel, RefreshCw,
 } from 'lucide-react';
 
 // --- Types ---
 type UserRole = 'participant' | 'admin' | 'cbn';
-type NavSection = 'dashboard' | 'transfers' | 'prefund' | 'billing' | 'corridors' | 'compliance' | 'onboarding' | 'settings' | 'participants';
+type NavSection = 'dashboard' | 'transfers' | 'prefund' | 'billing' | 'corridors' | 'compliance' | 'disputes' | 'approvals' | 'participants' | 'settings';
 
-// 13 CBN-regulated corridors (static reference data — shared across roles)
+// 13 CBN-regulated corridors (static reference data)
 const corridors = [
   { id: 'NG-GH', dest: 'Ghana', currency: 'GHS', category: 'West Africa Labor', spreadCap: 150, maxUsd: 5000 },
   { id: 'NG-SN', dest: 'Senegal', currency: 'XOF', category: 'West Africa Labor', spreadCap: 200, maxUsd: 5000 },
@@ -51,59 +35,57 @@ const corridors = [
   { id: 'NG-ZA', dest: 'South Africa', currency: 'ZAR', category: 'General Personal', spreadCap: 130, maxUsd: 10000 },
 ];
 
-// Role-based navigation: participants see own data, admins/CBN see system-wide
 function getNavItems(role: UserRole) {
-  const base = [
-    { id: 'dashboard' as NavSection, label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'transfers' as NavSection, label: role === 'participant' ? 'My Transfers' : 'All Transfers', icon: ArrowRightLeft },
-  ];
   if (role === 'participant') {
     return [
-      ...base,
+      { id: 'dashboard' as NavSection, label: 'Dashboard', icon: LayoutDashboard },
+      { id: 'transfers' as NavSection, label: 'My Transfers', icon: ArrowRightLeft },
       { id: 'prefund' as NavSection, label: 'My Prefund', icon: Wallet },
       { id: 'billing' as NavSection, label: 'My Billing', icon: Receipt },
+      { id: 'disputes' as NavSection, label: 'My Disputes', icon: AlertOctagon },
       { id: 'corridors' as NavSection, label: 'Corridors', icon: Globe },
       { id: 'compliance' as NavSection, label: 'My Compliance', icon: Shield },
-      { id: 'onboarding' as NavSection, label: 'My Onboarding', icon: UserPlus },
       { id: 'settings' as NavSection, label: 'Settings', icon: Settings },
     ];
   }
-  // Admin / CBN
   return [
-    ...base,
+    { id: 'dashboard' as NavSection, label: 'Dashboard', icon: LayoutDashboard },
+    { id: 'approvals' as NavSection, label: 'Approvals', icon: Gavel },
+    { id: 'transfers' as NavSection, label: 'All Transfers', icon: ArrowRightLeft },
     { id: 'participants' as NavSection, label: 'Participants', icon: Building2 },
     { id: 'prefund' as NavSection, label: 'Prefund Accounts', icon: Wallet },
-    { id: 'billing' as NavSection, label: 'Billing & Tiers', icon: Receipt },
-    { id: 'corridors' as NavSection, label: 'Corridors', icon: Globe },
+    { id: 'disputes' as NavSection, label: 'All Disputes', icon: AlertOctagon },
     { id: 'compliance' as NavSection, label: 'Compliance', icon: Shield },
-    { id: 'onboarding' as NavSection, label: 'Onboarding Mgmt', icon: UserPlus },
+    { id: 'corridors' as NavSection, label: 'Corridors', icon: Globe },
+    { id: 'billing' as NavSection, label: 'Billing', icon: Receipt },
     { id: 'settings' as NavSection, label: 'Settings', icon: Settings },
   ];
 }
 
-// --- Status Badge Helper ---
 function StatusBadge({ status }: { status: string }) {
   const variants: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
-    completed: 'default',
-    active: 'default',
-    processing: 'secondary',
-    pending: 'secondary',
-    manual_review: 'outline',
-    failed: 'destructive',
-    blocked: 'destructive',
+    completed: 'default', active: 'default', clear: 'default', paid: 'default', approved: 'default', resolved: 'default',
+    routing: 'secondary', admitted: 'secondary', pending: 'secondary', pending_approval: 'secondary', pending_review: 'secondary', under_review: 'secondary', open: 'secondary',
+    manual_review: 'outline', escalated: 'outline',
+    failed: 'destructive', blocked: 'destructive', rejected: 'destructive', critical: 'destructive',
   };
-  return <Badge variant={variants[status] || 'outline'}>{status.replace('_', ' ')}</Badge>;
+  return <Badge variant={variants[status] || 'outline'}>{status.replace(/_/g, ' ')}</Badge>;
 }
 
-// --- Main Component ---
-// Role is determined server-side from Keycloak JWT + Permify PBAC via tRPC
+function formatNgn(amount: string | number) {
+  return `₦${Number(amount).toLocaleString()}`;
+}
+
+// =============================================================================
+// MAIN COMPONENT
+// =============================================================================
+
 export default function OutboundRemittance() {
   const [activeSection, setActiveSection] = useState<NavSection>('dashboard');
+  const [searchQuery, setSearchQuery] = useState('');
 
-  // Role comes from the server (Keycloak JWT context)
   const { data: authContext, isLoading: loadingAuth, error: authError } = trpc.outboundRemittance.getMyContext.useQuery(
-    undefined,
-    { retry: 1, retryDelay: 1000 }
+    undefined, { retry: 1, retryDelay: 1000 }
   );
   const userRole: UserRole = authContext?.role ?? 'participant';
   const navItems = getNavItems(userRole);
@@ -122,7 +104,6 @@ export default function OutboundRemittance() {
     <div className="min-h-screen bg-background flex">
       {/* Left Sidebar */}
       <aside className="w-64 border-r bg-card flex flex-col">
-        {/* Module Header */}
         <div className="p-4 border-b">
           <div className="flex items-center gap-2">
             <Globe className="h-5 w-5 text-blue-600" />
@@ -132,344 +113,236 @@ export default function OutboundRemittance() {
             </div>
           </div>
         </div>
-
-        {/* User Context */}
-        <div className="p-4 border-b bg-muted/30">
-          {userRole === 'participant' ? (
-            <>
-              <p className="text-xs text-muted-foreground">Your Account</p>
-              <p className="font-medium text-sm">PayApp Nigeria Ltd</p>
-              <div className="flex items-center gap-1 mt-1">
-                <Badge variant="secondary" className="text-xs">Growth Tier</Badge>
-                <Badge variant="default" className="text-xs bg-green-600">Connected</Badge>
-              </div>
-            </>
-          ) : userRole === 'admin' ? (
-            <>
-              <p className="text-xs text-muted-foreground">Platform Admin</p>
-              <p className="font-medium text-sm">Switch Operations</p>
-              <div className="flex items-center gap-1 mt-1">
-                <Badge variant="default" className="text-xs bg-blue-600">Admin</Badge>
-                <Badge variant="secondary" className="text-xs">L3 Ops</Badge>
-              </div>
-            </>
-          ) : (
-            <>
-              <p className="text-xs text-muted-foreground">Regulator</p>
-              <p className="font-medium text-sm">CBN Oversight</p>
-              <div className="flex items-center gap-1 mt-1">
-                <Badge variant="default" className="text-xs bg-purple-600">CBN</Badge>
-                <Badge variant="secondary" className="text-xs">Read-Only</Badge>
-              </div>
-            </>
-          )}
+        <div className="p-4 border-b">
+          <p className="text-xs text-muted-foreground">{isAdmin ? 'Platform Admin' : 'Your Account'}</p>
+          <p className="font-medium text-sm">{authContext?.participantName ?? (isAdmin ? 'CBN / Admin' : 'Participant')}</p>
+          <div className="flex items-center gap-2 mt-1">
+            {authContext?.tier && <Badge variant="outline" className="text-xs">{authContext.tier} Tier</Badge>}
+            <Badge className="text-xs bg-green-600">Connected</Badge>
+          </div>
         </div>
-
-        {/* Navigation */}
-        <nav className="flex-1 p-2">
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = activeSection === item.id;
-            return (
-              <button
-                key={item.id}
-                onClick={() => setActiveSection(item.id)}
-                className={`w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors ${
-                  isActive
-                    ? 'bg-blue-50 text-blue-700 font-medium border border-blue-200'
-                    : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-                }`}
-              >
-                <Icon className={`h-4 w-4 ${isActive ? 'text-blue-600' : ''}`} />
-                {item.label}
-                {item.id === 'compliance' && (
-                  <Badge variant="destructive" className="ml-auto text-xs px-1.5">{isAdmin ? '12' : '3'}</Badge>
-                )}
-                {item.id === 'onboarding' && isAdmin && (
-                  <Badge variant="secondary" className="ml-auto text-xs px-1.5">5</Badge>
-                )}
-                {item.id === 'participants' && (
-                  <Badge variant="secondary" className="ml-auto text-xs px-1.5">25</Badge>
-                )}
-              </button>
-            );
-          })}
+        {/* Search */}
+        <div className="p-3 border-b">
+          <div className="relative">
+            <Search className="absolute left-2 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
+            <Input
+              placeholder="Search..."
+              className="pl-8 h-8 text-xs"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter' && searchQuery.length >= 2) setActiveSection('transfers'); }}
+            />
+          </div>
+        </div>
+        <nav className="flex-1 p-2 space-y-0.5">
+          {navItems.map((item) => (
+            <button
+              key={item.id}
+              onClick={() => setActiveSection(item.id)}
+              className={`w-full flex items-center gap-2 px-3 py-2 text-sm rounded-md transition-colors ${activeSection === item.id ? 'bg-primary text-primary-foreground' : 'hover:bg-accent'}`}
+            >
+              <item.icon className="h-4 w-4" />
+              {item.label}
+            </button>
+          ))}
         </nav>
-
-        {/* Role from server auth — no client-side switcher */}
-        <div className="p-3 border-t">
-          <p className="text-xs text-muted-foreground">Role: {userRole}</p>
-        </div>
-
-        {/* Footer */}
-        <div className="p-4 border-t">
-          <p className="text-xs text-muted-foreground">API v2.1 • Switch v4.2</p>
-          <p className="text-xs text-muted-foreground">Latency: 890ms avg</p>
+        <div className="p-3 border-t text-xs text-muted-foreground">
+          <p>Role: {userRole}</p>
+          <p className="mt-1">API v2.1 • Switch v4.2</p>
         </div>
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-auto">
-        <div className="p-6">
-          {activeSection === 'dashboard' && <DashboardSection role={userRole} />}
-          {activeSection === 'transfers' && <TransfersSection role={userRole} />}
-          {activeSection === 'participants' && isAdmin && <ParticipantsSection role={userRole} />}
-          {activeSection === 'prefund' && <PrefundSection role={userRole} />}
-          {activeSection === 'billing' && <BillingSection role={userRole} />}
-          {activeSection === 'corridors' && <CorridorsSection />}
-          {activeSection === 'compliance' && <ComplianceSection role={userRole} />}
-          {activeSection === 'onboarding' && <OnboardingSection role={userRole} />}
-          {activeSection === 'settings' && <SettingsSection role={userRole} />}
-        </div>
+      <main className="flex-1 p-6 overflow-auto">
+        {activeSection === 'dashboard' && <DashboardSection role={userRole} />}
+        {activeSection === 'transfers' && <TransfersSection role={userRole} search={searchQuery} />}
+        {activeSection === 'prefund' && <PrefundSection role={userRole} />}
+        {activeSection === 'billing' && <BillingSection role={userRole} />}
+        {activeSection === 'corridors' && <CorridorsSection />}
+        {activeSection === 'compliance' && <ComplianceSection role={userRole} />}
+        {activeSection === 'disputes' && <DisputesSection role={userRole} />}
+        {activeSection === 'approvals' && <ApprovalsSection role={userRole} />}
+        {activeSection === 'participants' && <ParticipantsSection role={userRole} />}
+        {activeSection === 'settings' && <SettingsSection role={userRole} />}
       </main>
     </div>
   );
 }
 
-// --- Participants Section (Admin/CBN only — enforced server-side) ---
-function ParticipantsSection({ role }: { role: UserRole }) {
-  // Server-side: throws FORBIDDEN if not admin/cbn
-  const { data: participants, isLoading } = trpc.outboundRemittance.listParticipants.useQuery();
+// =============================================================================
+// DASHBOARD
+// =============================================================================
 
-  if (isLoading) {
-    return <div className="flex items-center justify-center py-12"><Loader2 className="h-6 w-6 animate-spin" /></div>;
-  }
-
-  return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">Participant Management</h1>
-        <p className="text-muted-foreground">
-          {role === 'cbn' ? 'Regulatory oversight of all switch participants' : 'Manage all registered participants on the switch'}
-        </p>
-      </div>
-
-      <Card>
-        <CardHeader><CardTitle className="text-lg">All Participants</CardTitle></CardHeader>
-        <CardContent>
-          {participants && participants.length > 0 ? (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Participant</TableHead>
-                  <TableHead>Short Code</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Tier</TableHead>
-                  <TableHead>License</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Corridors</TableHead>
-                  {role === 'admin' && <TableHead>Actions</TableHead>}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {participants.map((p) => (
-                  <TableRow key={p.id}>
-                    <TableCell className="font-medium">{p.name}</TableCell>
-                    <TableCell className="font-mono text-xs">{p.shortCode}</TableCell>
-                    <TableCell>{p.type}</TableCell>
-                    <TableCell><Badge variant="secondary" className="text-xs">{p.tier}</Badge></TableCell>
-                    <TableCell className="font-mono text-xs">{p.cbnLicense ?? '-'}</TableCell>
-                    <TableCell><StatusBadge status={p.status} /></TableCell>
-                    <TableCell>{p.activeCorridors}</TableCell>
-                    {role === 'admin' && (
-                      <TableCell>
-                        <Button size="sm" variant="outline" className="h-7 text-xs">Manage</Button>
-                      </TableCell>
-                    )}
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          ) : (
-            <p className="text-center py-8 text-muted-foreground">No participants registered yet</p>
-          )}
-        </CardContent>
-      </Card>
-    </div>
-  );
-}
-
-// --- Dashboard Section ---
 function DashboardSection({ role }: { role: UserRole }) {
   const isAdmin = role === 'admin' || role === 'cbn';
+  const { data: metrics, isLoading } = trpc.outboundRemittance.getDashboardMetrics.useQuery();
 
-  // All data comes from server — filtered by user's auth context
-  const { data: metrics } = trpc.outboundRemittance.getDashboardMetrics.useQuery();
-  const { data: recentTransfers, isLoading } = trpc.outboundRemittance.listTransfers.useQuery({ limit: 5 });
+  if (isLoading) return <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin" /></div>;
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">
-          {isAdmin ? 'Switch Operations Overview' : 'Your Operations Dashboard'}
-        </h1>
-        <p className="text-muted-foreground">
-          {isAdmin ? 'System-wide metrics across all participants' : 'Real-time view of your outbound transfer pipeline'}
-        </p>
+        <h1 className="text-2xl font-bold">{isAdmin ? 'Platform Operations Dashboard' : 'Your Operations Dashboard'}</h1>
+        <p className="text-muted-foreground">{isAdmin ? 'System-wide outbound remittance metrics' : 'Real-time view of your outbound transfer pipeline'}</p>
       </div>
-
-      {/* Metrics from server */}
       <div className="grid grid-cols-4 gap-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>{isAdmin ? 'System Transfers' : 'Your Transfers'}</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold">{metrics?.totalTransfers ?? 0}</p>
-            <p className="text-xs text-muted-foreground">{isAdmin ? 'All participants' : 'Your organization only'}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Success Rate</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold">—</p>
-            <p className="text-xs text-muted-foreground">Computed from DB records</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>{isAdmin ? 'Total Prefund Held' : 'Your Prefund Balance'}</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold">—</p>
-            <p className="text-xs text-muted-foreground">From TigerBeetle ledger</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>{isAdmin ? 'Active Participants' : 'Active Corridors'}</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold">—</p>
-            <p className="text-xs text-muted-foreground">From switch state</p>
-          </CardContent>
-        </Card>
+        <Card><CardContent className="pt-4">
+          <p className="text-sm text-muted-foreground">{isAdmin ? 'Total Transfers' : 'Your Transfers'}</p>
+          <p className="text-2xl font-bold">{metrics?.totalTransfers ?? 0}</p>
+          <p className="text-xs text-muted-foreground">{isAdmin ? 'All participants' : 'Your organization only'}</p>
+        </CardContent></Card>
+        <Card><CardContent className="pt-4">
+          <p className="text-sm text-muted-foreground">Success Rate</p>
+          <p className="text-2xl font-bold">{metrics?.successRate ?? 0}%</p>
+          <p className="text-xs text-muted-foreground">Computed from DB records</p>
+        </CardContent></Card>
+        <Card><CardContent className="pt-4">
+          <p className="text-sm text-muted-foreground">Prefund Balance</p>
+          <p className="text-2xl font-bold">{metrics?.totalPrefundBalance ? formatNgn(metrics.totalPrefundBalance) : '—'}</p>
+          <p className="text-xs text-muted-foreground">From TigerBeetle ledger</p>
+        </CardContent></Card>
+        <Card><CardContent className="pt-4">
+          <p className="text-sm text-muted-foreground">{isAdmin ? 'Pending Approvals' : 'Active Corridors'}</p>
+          <p className="text-2xl font-bold">{isAdmin ? metrics?.pendingApprovals ?? 0 : metrics?.activeCorridors ?? 0}</p>
+          <p className="text-xs text-muted-foreground">{isAdmin ? 'Require action' : 'From switch state'}</p>
+        </CardContent></Card>
       </div>
-
-      {/* Recent Transfers from server (already filtered by participant) */}
+      {metrics?.totalVolume ? (
+        <Card><CardContent className="pt-4">
+          <p className="text-sm text-muted-foreground">Total Volume (Period)</p>
+          <p className="text-2xl font-bold">{formatNgn(metrics.totalVolume)}</p>
+        </CardContent></Card>
+      ) : null}
       <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">{isAdmin ? 'Recent Transfers (All Participants)' : 'Your Recent Transfers'}</CardTitle>
-        </CardHeader>
+        <CardHeader><CardTitle className="text-lg">Recent Transfers</CardTitle></CardHeader>
         <CardContent>
-          {isLoading ? (
-            <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin" /></div>
-          ) : recentTransfers && recentTransfers.length > 0 ? (
+          {metrics?.recentTransfers && metrics.recentTransfers.length > 0 ? (
             <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Transfer ID</TableHead>
-                  {isAdmin && <TableHead>Participant</TableHead>}
-                  <TableHead>Reference</TableHead>
-                  <TableHead>Corridor</TableHead>
-                  <TableHead>Amount</TableHead>
-                  <TableHead>Status</TableHead>
-                </TableRow>
-              </TableHeader>
+              <TableHeader><TableRow>
+                <TableHead>Ref</TableHead><TableHead>Beneficiary</TableHead><TableHead>Corridor</TableHead><TableHead>Amount</TableHead><TableHead>Status</TableHead>
+              </TableRow></TableHeader>
               <TableBody>
-                {recentTransfers.map((t) => (
+                {metrics.recentTransfers.map((t: any) => (
                   <TableRow key={t.id}>
                     <TableCell className="font-mono text-xs">{t.transferRef}</TableCell>
-                    {isAdmin && <TableCell className="text-xs">{t.participantId}</TableCell>}
-                    <TableCell className="text-xs">{t.senderRef}</TableCell>
+                    <TableCell>{t.beneficiaryName}</TableCell>
                     <TableCell><Badge variant="outline">{t.corridor}</Badge></TableCell>
-                    <TableCell>₦{Number(t.amountNgn).toLocaleString()}</TableCell>
+                    <TableCell>{formatNgn(t.amountNgn)}</TableCell>
                     <TableCell><StatusBadge status={t.status} /></TableCell>
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
-          ) : (
-            <p className="text-center py-8 text-muted-foreground">No transfers found</p>
-          )}
+          ) : <p className="text-center text-muted-foreground py-4">No transfers found</p>}
         </CardContent>
       </Card>
     </div>
   );
 }
 
-// --- Transfers Section ---
-function TransfersSection({ role }: { role: UserRole }) {
-  const isAdmin = role === 'admin' || role === 'cbn';
-  const [filter, setFilter] = useState('all');
+// =============================================================================
+// TRANSFERS (with CRUD + Search)
+// =============================================================================
 
-  // Server-side filtered: participants see ONLY their own, admin/CBN sees all
-  const { data: transfers, isLoading } = trpc.outboundRemittance.listTransfers.useQuery(
-    filter === 'all' ? undefined : { status: filter }
-  );
+function TransfersSection({ role, search }: { role: UserRole; search: string }) {
+  const isAdmin = role === 'admin' || role === 'cbn';
+  const [statusFilter, setStatusFilter] = useState<string>('');
+  const [showCreateForm, setShowCreateForm] = useState(false);
+
+  const { data, isLoading } = trpc.outboundRemittance.listTransfers.useQuery({
+    status: statusFilter || undefined,
+    search: search || undefined,
+    limit: 50,
+    offset: 0,
+  });
+  const createMutation = trpc.outboundRemittance.createTransfer.useMutation();
+
+  const [newTransfer, setNewTransfer] = useState({ beneficiaryName: '', beneficiaryAccount: '', corridor: 'NG-GH', amountNgn: '', destCurrency: 'GHS', purpose: 'Family Support', senderRef: '' });
+
+  const handleCreate = async () => {
+    if (!newTransfer.beneficiaryName || !newTransfer.amountNgn) return;
+    await createMutation.mutateAsync(newTransfer);
+    setShowCreateForm(false);
+    setNewTransfer({ beneficiaryName: '', beneficiaryAccount: '', corridor: 'NG-GH', amountNgn: '', destCurrency: 'GHS', purpose: 'Family Support', senderRef: '' });
+  };
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">{isAdmin ? 'All Transfers (System-Wide)' : 'My Transfers'}</h1>
-          <p className="text-muted-foreground">
-            {isAdmin ? 'All outbound transfers across all participants' : 'Transfers submitted by your organization via API'}
-          </p>
+          <p className="text-muted-foreground">{isAdmin ? 'Cross-border transfers from all participants' : 'Transfers submitted by your organization via API'}</p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline">Export CSV</Button>
-          {!isAdmin && <Button>Submit Batch</Button>}
-        </div>
+        {!isAdmin && <Button onClick={() => setShowCreateForm(!showCreateForm)}><Plus className="h-4 w-4 mr-1" /> Submit Transfer</Button>}
       </div>
+
+      {/* Create Transfer Form */}
+      {showCreateForm && !isAdmin && (
+        <Card>
+          <CardHeader><CardTitle>Submit New Transfer</CardTitle></CardHeader>
+          <CardContent className="grid grid-cols-2 gap-4">
+            <div><Label>Sender Reference</Label><Input value={newTransfer.senderRef} onChange={e => setNewTransfer(p => ({...p, senderRef: e.target.value}))} placeholder="Your internal ref" /></div>
+            <div><Label>Beneficiary Name</Label><Input value={newTransfer.beneficiaryName} onChange={e => setNewTransfer(p => ({...p, beneficiaryName: e.target.value}))} placeholder="Full name" /></div>
+            <div><Label>Beneficiary Account</Label><Input value={newTransfer.beneficiaryAccount} onChange={e => setNewTransfer(p => ({...p, beneficiaryAccount: e.target.value}))} placeholder="Account/IBAN" /></div>
+            <div><Label>Corridor</Label>
+              <Select value={newTransfer.corridor} onValueChange={v => setNewTransfer(p => ({...p, corridor: v, destCurrency: corridors.find(c => c.id === v)?.currency ?? 'USD'}))}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>{corridors.map(c => <SelectItem key={c.id} value={c.id}>{c.id} — {c.dest}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            <div><Label>Amount (NGN)</Label><Input type="number" value={newTransfer.amountNgn} onChange={e => setNewTransfer(p => ({...p, amountNgn: e.target.value}))} placeholder="e.g. 5000000" /></div>
+            <div><Label>Purpose</Label>
+              <Select value={newTransfer.purpose} onValueChange={v => setNewTransfer(p => ({...p, purpose: v}))}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Family Support">Family Support</SelectItem>
+                  <SelectItem value="Education">Education</SelectItem>
+                  <SelectItem value="Medical">Medical</SelectItem>
+                  <SelectItem value="Business Payment">Business Payment</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="col-span-2 flex gap-2">
+              <Button onClick={handleCreate} disabled={createMutation.isPending}>{createMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4 mr-1" />} Submit</Button>
+              <Button variant="outline" onClick={() => setShowCreateForm(false)}>Cancel</Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Filters */}
       <div className="flex gap-2">
-        {['all', 'admitted', 'routing', 'completed', 'manual_review', 'failed'].map((f) => (
-          <Button
-            key={f}
-            variant={filter === f ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setFilter(f)}
-          >
-            {f === 'all' ? 'All' : f.replace('_', ' ')}
+        {['', 'admitted', 'routing', 'completed', 'manual_review', 'failed', 'blocked'].map(s => (
+          <Button key={s} variant={statusFilter === s ? 'default' : 'outline'} size="sm" onClick={() => setStatusFilter(s)}>
+            {s || 'All'}
           </Button>
         ))}
+        <span className="ml-auto text-sm text-muted-foreground">{data?.total ?? 0} transfers</span>
       </div>
 
+      {/* Table */}
       <Card>
         <CardContent className="p-0">
-          {isLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-            </div>
-          ) : (
+          {isLoading ? <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin" /></div> : (
             <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Transfer ID</TableHead>
-                  {isAdmin && <TableHead>Participant</TableHead>}
-                  <TableHead>{isAdmin ? 'Reference' : 'Your Reference'}</TableHead>
-                  <TableHead>Beneficiary</TableHead>
-                  <TableHead>Corridor</TableHead>
-                  <TableHead>Amount (NGN)</TableHead>
-                  <TableHead>Dest Amount</TableHead>
-                  <TableHead>Provider</TableHead>
-                  <TableHead>Status</TableHead>
-                </TableRow>
-              </TableHeader>
+              <TableHeader><TableRow>
+                <TableHead>Ref</TableHead>
+                {isAdmin && <TableHead>Participant</TableHead>}
+                <TableHead>Beneficiary</TableHead><TableHead>Corridor</TableHead><TableHead>Amount (NGN)</TableHead><TableHead>Provider</TableHead><TableHead>Status</TableHead><TableHead>Step</TableHead>
+              </TableRow></TableHeader>
               <TableBody>
-                {transfers && transfers.length > 0 ? transfers.map((t) => (
+                {data?.transfers.map((t: any) => (
                   <TableRow key={t.id}>
-                    <TableCell className="font-mono text-xs text-blue-600">{t.transferRef}</TableCell>
-                    {isAdmin && <TableCell className="text-xs font-medium">{t.participantId}</TableCell>}
-                    <TableCell className="text-xs">{t.senderRef}</TableCell>
+                    <TableCell className="font-mono text-xs">{t.transferRef}</TableCell>
+                    {isAdmin && <TableCell className="text-xs">{t.senderRef?.split('-')[0]}</TableCell>}
                     <TableCell>{t.beneficiaryName}</TableCell>
                     <TableCell><Badge variant="outline">{t.corridor}</Badge></TableCell>
-                    <TableCell>₦{Number(t.amountNgn).toLocaleString()}</TableCell>
-                    <TableCell>{t.amountDest}</TableCell>
-                    <TableCell>{t.provider ?? '-'}</TableCell>
+                    <TableCell>{formatNgn(t.amountNgn)}</TableCell>
+                    <TableCell className="text-xs">{t.provider ?? '—'}</TableCell>
                     <TableCell><StatusBadge status={t.status} /></TableCell>
+                    <TableCell className="text-xs font-mono">{t.lifecycleStep}</TableCell>
                   </TableRow>
-                )) : (
-                  <TableRow>
-                    <TableCell colSpan={isAdmin ? 9 : 8} className="text-center py-8 text-muted-foreground">
-                      No transfers found
-                    </TableCell>
-                  </TableRow>
-                )}
+                ))}
               </TableBody>
             </Table>
           )}
@@ -479,50 +352,102 @@ function TransfersSection({ role }: { role: UserRole }) {
   );
 }
 
-// --- Prefund Section ---
+// =============================================================================
+// PREFUND (with Funding Request)
+// =============================================================================
+
 function PrefundSection({ role }: { role: UserRole }) {
   const isAdmin = role === 'admin' || role === 'cbn';
-
-  // Server-side filtered: participant sees own account, admin sees all
   const { data: accounts, isLoading } = trpc.outboundRemittance.getPrefundAccounts.useQuery();
+  const { data: fundingRequests } = trpc.outboundRemittance.listFundingRequests.useQuery();
+  const fundingMutation = trpc.outboundRemittance.requestFunding.useMutation();
+  const [showFundForm, setShowFundForm] = useState(false);
+  const [fundReq, setFundReq] = useState({ amount: '', sourceBank: '', sourceAccount: '', method: 'RTGS' as const });
 
-  if (isLoading) {
-    return <div className="flex items-center justify-center py-12"><Loader2 className="h-6 w-6 animate-spin" /></div>;
-  }
+  const handleFund = async () => {
+    if (!fundReq.amount || !fundReq.sourceBank) return;
+    await fundingMutation.mutateAsync(fundReq);
+    setShowFundForm(false);
+    setFundReq({ amount: '', sourceBank: '', sourceAccount: '', method: 'RTGS' });
+  };
+
+  if (isLoading) return <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin" /></div>;
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">{isAdmin ? 'Prefund Accounts (All Participants)' : 'My Prefund Account'}</h1>
-        <p className="text-muted-foreground">
-          {isAdmin ? 'TigerBeetle ledger balances across all participants' : 'Your TigerBeetle ledger account balance and deductions'}
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold">{isAdmin ? 'Prefund Accounts (All Participants)' : 'My Prefund Account'}</h1>
+          <p className="text-muted-foreground">{isAdmin ? 'TigerBeetle ledger balances' : 'Your TigerBeetle ledger account balance and deductions'}</p>
+        </div>
+        {!isAdmin && <Button onClick={() => setShowFundForm(!showFundForm)}><Plus className="h-4 w-4 mr-1" /> Request Funding</Button>}
       </div>
 
-      {accounts && accounts.length > 0 ? (
-        <>
-          {accounts.map((account) => (
-            <Card key={account.id}>
-              <CardHeader>
-                <CardTitle className="text-lg">Account: {account.accountRef}</CardTitle>
-                <CardDescription>Currency: {account.currency}</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="flex justify-between py-2 border-b"><span className="text-muted-foreground">Balance</span><span className="font-bold">₦{Number(account.balance).toLocaleString()}</span></div>
-                  <div className="flex justify-between py-2 border-b"><span className="text-muted-foreground">Committed</span><span>₦{Number(account.committedBalance).toLocaleString()}</span></div>
-                  <div className="flex justify-between py-2 border-b"><span className="text-muted-foreground">Available</span><span>₦{Number(account.availableBalance).toLocaleString()}</span></div>
-                  <div className="flex justify-between py-2 border-b"><span className="text-muted-foreground">Daily Limit</span><span>{account.dailyLimit ? `₦${Number(account.dailyLimit).toLocaleString()}` : '—'}</span></div>
-                  <div className="flex justify-between py-2 border-b"><span className="text-muted-foreground">Last Top-Up</span><span>{account.lastTopUp ? new Date(account.lastTopUp).toLocaleDateString() : '—'}</span></div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </>
-      ) : (
+      {/* Fund Request Form */}
+      {showFundForm && !isAdmin && (
         <Card>
-          <CardContent className="py-8 text-center text-muted-foreground">
-            No prefund accounts found. Contact admin to set up your TigerBeetle ledger account.
+          <CardHeader><CardTitle>Request Prefund Top-Up</CardTitle><CardDescription>Submit a funding request — admin will approve and credit your TigerBeetle account</CardDescription></CardHeader>
+          <CardContent className="grid grid-cols-2 gap-4">
+            <div><Label>Amount (NGN)</Label><Input type="number" value={fundReq.amount} onChange={e => setFundReq(p => ({...p, amount: e.target.value}))} placeholder="e.g. 500000000" /></div>
+            <div><Label>Source Bank</Label><Input value={fundReq.sourceBank} onChange={e => setFundReq(p => ({...p, sourceBank: e.target.value}))} placeholder="e.g. Zenith Bank Plc" /></div>
+            <div><Label>Source Account</Label><Input value={fundReq.sourceAccount} onChange={e => setFundReq(p => ({...p, sourceAccount: e.target.value}))} placeholder="Account number" /></div>
+            <div><Label>Method</Label>
+              <Select value={fundReq.method} onValueChange={(v: any) => setFundReq(p => ({...p, method: v}))}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent><SelectItem value="RTGS">RTGS</SelectItem><SelectItem value="NIP">NIP (Instant)</SelectItem><SelectItem value="Wire">Wire Transfer</SelectItem></SelectContent>
+              </Select>
+            </div>
+            <div className="col-span-2 flex gap-2">
+              <Button onClick={handleFund} disabled={fundingMutation.isPending}>{fundingMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4 mr-1" />} Submit Request</Button>
+              <Button variant="outline" onClick={() => setShowFundForm(false)}>Cancel</Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Accounts */}
+      {accounts && accounts.length > 0 ? accounts.map((account: any) => (
+        <Card key={account.id}>
+          <CardHeader>
+            <CardTitle className="text-lg">Account: {account.accountRef}</CardTitle>
+            <CardDescription>Family: {account.accountFamily} | Bank: {account.settlementBank ?? '—'}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-3 gap-4">
+              <div className="p-3 bg-green-50 rounded"><p className="text-xs text-muted-foreground">Balance</p><p className="text-xl font-bold text-green-700">{formatNgn(account.balance)}</p></div>
+              <div className="p-3 bg-orange-50 rounded"><p className="text-xs text-muted-foreground">Today's Deductions</p><p className="text-xl font-bold text-orange-700">{formatNgn(account.todayDeductions)}</p></div>
+              <div className="p-3 bg-blue-50 rounded"><p className="text-xs text-muted-foreground">Daily Limit</p><p className="text-xl font-bold text-blue-700">{formatNgn(account.dailyLimit)}</p></div>
+            </div>
+            {account.lowBalanceThreshold && parseFloat(account.balance) < parseFloat(account.lowBalanceThreshold) && (
+              <div className="mt-3 p-2 bg-red-50 border border-red-200 rounded flex items-center gap-2">
+                <AlertTriangle className="h-4 w-4 text-red-500" />
+                <span className="text-sm text-red-700">Balance below threshold ({formatNgn(account.lowBalanceThreshold)}) — top up required</span>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )) : <Card><CardContent className="py-8 text-center text-muted-foreground">No prefund accounts found.</CardContent></Card>}
+
+      {/* Funding History */}
+      {fundingRequests && fundingRequests.length > 0 && (
+        <Card>
+          <CardHeader><CardTitle className="text-lg">Funding Requests</CardTitle></CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader><TableRow><TableHead>Ref</TableHead><TableHead>Amount</TableHead><TableHead>Bank</TableHead><TableHead>Method</TableHead><TableHead>Status</TableHead><TableHead>Date</TableHead></TableRow></TableHeader>
+              <TableBody>
+                {fundingRequests.map((f: any) => (
+                  <TableRow key={f.id}>
+                    <TableCell className="font-mono text-xs">{f.requestRef}</TableCell>
+                    <TableCell className="font-bold">{formatNgn(f.amount)}</TableCell>
+                    <TableCell>{f.sourceBank}</TableCell>
+                    <TableCell><Badge variant="outline">{f.method}</Badge></TableCell>
+                    <TableCell><StatusBadge status={f.status} /></TableCell>
+                    <TableCell className="text-xs">{new Date(f.createdAt).toLocaleDateString()}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           </CardContent>
         </Card>
       )}
@@ -530,97 +455,231 @@ function PrefundSection({ role }: { role: UserRole }) {
   );
 }
 
-// --- Billing Section ---
+// =============================================================================
+// BILLING
+// =============================================================================
+
 function BillingSection({ role }: { role: UserRole }) {
   const isAdmin = role === 'admin' || role === 'cbn';
+  const { data: records, isLoading } = trpc.outboundRemittance.getBilling.useQuery();
 
-  // Server-side filtered: participant sees own billing, admin sees all
-  const { data: billingRecords, isLoading } = trpc.outboundRemittance.getBilling.useQuery();
+  if (isLoading) return <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin" /></div>;
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">{isAdmin ? 'Billing & Tiers (All Participants)' : 'My Billing'}</h1>
-        <p className="text-muted-foreground">{isAdmin ? 'System-wide billing overview' : 'Your subscription and fee records'}</p>
+        <h1 className="text-2xl font-bold">{isAdmin ? 'Billing (All Participants)' : 'My Billing'}</h1>
+        <p className="text-muted-foreground">{isAdmin ? 'System-wide billing and invoices' : 'Your subscription and fee records'}</p>
       </div>
-
-      {/* Tier reference table (shared reference data) */}
       <Card>
-        <CardHeader><CardTitle className="text-lg">Tier Schedule</CardTitle></CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Tier</TableHead>
-                <TableHead>Monthly Fee</TableHead>
-                <TableHead>Switch Fee/Txn</TableHead>
-                <TableHead>Corridor Discount</TableHead>
-                <TableHead>FX Revenue Share</TableHead>
-                <TableHead>Volume Cap</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {[
-                { tier: 'Starter', fee: '$200', switchFee: '$0.25', discount: '0%', fxShare: '0%', cap: '₦1B' },
-                { tier: 'Growth', fee: '$500', switchFee: '$0.15', discount: '10%', fxShare: '5%', cap: '₦10B' },
-                { tier: 'Enterprise', fee: '$2,000', switchFee: '$0.08', discount: '25%', fxShare: '15%', cap: '₦50B' },
-                { tier: 'Premium', fee: '$5,000', switchFee: '$0.05', discount: '35%', fxShare: '25%', cap: 'Unlimited' },
-              ].map((t) => (
-                <TableRow key={t.tier}>
-                  <TableCell className="font-medium">{t.tier}</TableCell>
-                  <TableCell>{t.fee}/mo</TableCell>
-                  <TableCell>{t.switchFee}</TableCell>
-                  <TableCell>{t.discount}</TableCell>
-                  <TableCell>{t.fxShare}</TableCell>
-                  <TableCell>{t.cap}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-
-      {/* Billing records from DB */}
-      <Card>
-        <CardHeader><CardTitle className="text-lg">{isAdmin ? 'All Invoices' : 'My Invoices'}</CardTitle></CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin" /></div>
-          ) : billingRecords && billingRecords.length > 0 ? (
+        <CardContent className="p-0">
+          {records && records.length > 0 ? (
             <Table>
-              <TableHeader>
-                <TableRow>
-                  {isAdmin && <TableHead>Participant</TableHead>}
-                  <TableHead>Period</TableHead>
-                  <TableHead>Subscription</TableHead>
-                  <TableHead>Txn Fees</TableHead>
-                  <TableHead>Total</TableHead>
-                  <TableHead>Status</TableHead>
-                </TableRow>
-              </TableHeader>
+              <TableHeader><TableRow><TableHead>Period</TableHead><TableHead>Subscription</TableHead><TableHead>Txn Fees</TableHead><TableHead>Corridor Fees</TableHead><TableHead>FX Share</TableHead><TableHead>Total</TableHead><TableHead>Status</TableHead></TableRow></TableHeader>
               <TableBody>
-                {billingRecords.map((b) => (
-                  <TableRow key={b.id}>
-                    {isAdmin && <TableCell>{b.participantId}</TableCell>}
-                    <TableCell>{b.billingPeriod}</TableCell>
-                    <TableCell>₦{Number(b.subscriptionFee).toLocaleString()}</TableCell>
-                    <TableCell>₦{Number(b.transactionFees).toLocaleString()}</TableCell>
-                    <TableCell className="font-bold">₦{Number(b.totalAmount).toLocaleString()}</TableCell>
-                    <TableCell><StatusBadge status={b.status} /></TableCell>
+                {records.map((r: any) => (
+                  <TableRow key={r.id}>
+                    <TableCell className="font-medium">{r.billingPeriod}</TableCell>
+                    <TableCell>{formatNgn(r.subscriptionFee)}</TableCell>
+                    <TableCell>{formatNgn(r.transactionFees)}</TableCell>
+                    <TableCell>{formatNgn(r.corridorFees)}</TableCell>
+                    <TableCell>{formatNgn(r.fxRevenueShare)}</TableCell>
+                    <TableCell className="font-bold">{formatNgn(r.totalAmount)}</TableCell>
+                    <TableCell><StatusBadge status={r.status} /></TableCell>
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
-          ) : (
-            <p className="text-center py-8 text-muted-foreground">No billing records found</p>
-          )}
+          ) : <p className="text-center py-8 text-muted-foreground">No billing records found</p>}
         </CardContent>
       </Card>
     </div>
   );
 }
 
-// --- Corridors Section ---
+// =============================================================================
+// DISPUTES (with Create + Resolve)
+// =============================================================================
+
+function DisputesSection({ role }: { role: UserRole }) {
+  const isAdmin = role === 'admin' || role === 'cbn';
+  const { data: disputes, isLoading, refetch } = trpc.outboundRemittance.listDisputes.useQuery();
+  const resolveMutation = trpc.outboundRemittance.resolveDispute.useMutation({ onSuccess: () => refetch() });
+
+  if (isLoading) return <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin" /></div>;
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold">{isAdmin ? 'All Disputes' : 'My Disputes'}</h1>
+        <p className="text-muted-foreground">{isAdmin ? 'Transaction disputes across all participants' : 'Disputes raised by your organization'}</p>
+      </div>
+      <Card>
+        <CardContent className="p-0">
+          {disputes && disputes.length > 0 ? (
+            <Table>
+              <TableHeader><TableRow><TableHead>Ref</TableHead><TableHead>Type</TableHead><TableHead>Reason</TableHead><TableHead>Amount</TableHead><TableHead>Priority</TableHead><TableHead>Status</TableHead>{isAdmin && <TableHead>Action</TableHead>}</TableRow></TableHeader>
+              <TableBody>
+                {disputes.map((d: any) => (
+                  <TableRow key={d.id}>
+                    <TableCell className="font-mono text-xs">{d.disputeRef}</TableCell>
+                    <TableCell><Badge variant="outline">{d.type.replace(/_/g, ' ')}</Badge></TableCell>
+                    <TableCell className="max-w-xs truncate text-xs">{d.reason}</TableCell>
+                    <TableCell>{formatNgn(d.amount)}</TableCell>
+                    <TableCell><StatusBadge status={d.priority} /></TableCell>
+                    <TableCell><StatusBadge status={d.status} /></TableCell>
+                    {isAdmin && d.status === 'open' && (
+                      <TableCell>
+                        <Button size="sm" variant="outline" onClick={() => resolveMutation.mutate({ disputeId: d.id, action: 'resolved', resolution: 'Reviewed and resolved by admin' })}>
+                          Resolve
+                        </Button>
+                      </TableCell>
+                    )}
+                    {isAdmin && d.status !== 'open' && <TableCell>—</TableCell>}
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          ) : <p className="text-center py-8 text-muted-foreground">No disputes found</p>}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+// =============================================================================
+// APPROVALS (Admin/CBN only)
+// =============================================================================
+
+function ApprovalsSection({ role }: { role: UserRole }) {
+  const isAdmin = role === 'admin' || role === 'cbn';
+  if (!isAdmin) return <p className="text-muted-foreground">Access denied — admin/CBN only</p>;
+
+  const { data: approvals, isLoading, refetch } = trpc.outboundRemittance.listApprovals.useQuery();
+  const processMutation = trpc.outboundRemittance.processApproval.useMutation({ onSuccess: () => refetch() });
+
+  if (isLoading) return <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin" /></div>;
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold">Approval Queue</h1>
+        <p className="text-muted-foreground">Pending items requiring admin/CBN authorization</p>
+      </div>
+      {approvals && approvals.length > 0 ? approvals.map((a: any) => (
+        <Card key={a.id}>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-base">{a.action.replace(/_/g, ' ').toUpperCase()}</CardTitle>
+                <CardDescription>{a.requestedByName} • {a.entityType}</CardDescription>
+              </div>
+              <Badge variant="outline">{a.entityType}</Badge>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm mb-4">{a.reason}</p>
+            <div className="flex gap-2">
+              <Button size="sm" onClick={() => processMutation.mutate({ approvalId: a.id, action: 'approved' })} disabled={processMutation.isPending}>
+                <CheckCircle2 className="h-4 w-4 mr-1" /> Approve
+              </Button>
+              <Button size="sm" variant="destructive" onClick={() => processMutation.mutate({ approvalId: a.id, action: 'rejected', notes: 'Rejected by admin' })} disabled={processMutation.isPending}>
+                <XCircle className="h-4 w-4 mr-1" /> Reject
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )) : <Card><CardContent className="py-8 text-center text-muted-foreground">No pending approvals</CardContent></Card>}
+    </div>
+  );
+}
+
+// =============================================================================
+// COMPLIANCE
+// =============================================================================
+
+function ComplianceSection({ role }: { role: UserRole }) {
+  const isAdmin = role === 'admin' || role === 'cbn';
+  const { data: screenings, isLoading } = trpc.outboundRemittance.getComplianceScreenings.useQuery();
+
+  if (isLoading) return <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin" /></div>;
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold">{isAdmin ? 'Compliance & Sanctions (System-Wide)' : 'My Compliance'}</h1>
+        <p className="text-muted-foreground">{isAdmin ? 'Screening results across all participants' : 'Sanctions screening results for your transfers'}</p>
+      </div>
+      <Card>
+        <CardContent className="p-0">
+          {screenings && screenings.length > 0 ? (
+            <Table>
+              <TableHeader><TableRow><TableHead>Transfer</TableHead><TableHead>Type</TableHead><TableHead>List</TableHead><TableHead>Score</TableHead><TableHead>Decision</TableHead><TableHead>Matched Entity</TableHead></TableRow></TableHeader>
+              <TableBody>
+                {screenings.map((s: any) => (
+                  <TableRow key={s.id}>
+                    <TableCell className="font-mono text-xs">#{s.transferId}</TableCell>
+                    <TableCell>{s.screeningType}</TableCell>
+                    <TableCell className="text-xs">{s.listChecked}</TableCell>
+                    <TableCell><Badge variant={parseFloat(s.matchScore) > 0.75 ? 'destructive' : 'outline'}>{(parseFloat(s.matchScore) * 100).toFixed(0)}%</Badge></TableCell>
+                    <TableCell><StatusBadge status={s.decision} /></TableCell>
+                    <TableCell className="max-w-xs truncate text-xs">{s.matchedEntity ?? '—'}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          ) : <p className="text-center py-8 text-muted-foreground">No compliance screenings found</p>}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+// =============================================================================
+// PARTICIPANTS (Admin only)
+// =============================================================================
+
+function ParticipantsSection({ role }: { role: UserRole }) {
+  const isAdmin = role === 'admin' || role === 'cbn';
+  if (!isAdmin) return <p className="text-muted-foreground">Access denied</p>;
+
+  const { data: participants, isLoading } = trpc.outboundRemittance.listParticipants.useQuery();
+  if (isLoading) return <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin" /></div>;
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold">Participants</h1>
+        <p className="text-muted-foreground">Licensed IMTOs and fintechs on the switch</p>
+      </div>
+      <Card>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader><TableRow><TableHead>Name</TableHead><TableHead>Code</TableHead><TableHead>Type</TableHead><TableHead>CBN License</TableHead><TableHead>Tier</TableHead><TableHead>Corridors</TableHead><TableHead>Status</TableHead></TableRow></TableHeader>
+            <TableBody>
+              {participants?.map((p: any) => (
+                <TableRow key={p.id}>
+                  <TableCell className="font-medium">{p.name}</TableCell>
+                  <TableCell className="font-mono">{p.shortCode}</TableCell>
+                  <TableCell><Badge variant="outline">{p.type}</Badge></TableCell>
+                  <TableCell className="text-xs">{p.cbnLicense}</TableCell>
+                  <TableCell><Badge>{p.tier}</Badge></TableCell>
+                  <TableCell>{p.activeCorridors}</TableCell>
+                  <TableCell><StatusBadge status={p.status} /></TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+// =============================================================================
+// CORRIDORS (Reference Data)
+// =============================================================================
+
 function CorridorsSection() {
   return (
     <div className="space-y-6">
@@ -628,20 +687,10 @@ function CorridorsSection() {
         <h1 className="text-2xl font-bold">Corridors</h1>
         <p className="text-muted-foreground">13 Nigerian corridors with CBN-mandated spread caps</p>
       </div>
-
       <Card>
         <CardContent className="p-0">
           <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Corridor</TableHead>
-                <TableHead>Destination</TableHead>
-                <TableHead>Currency</TableHead>
-                <TableHead>Category</TableHead>
-                <TableHead>CBN Spread Cap</TableHead>
-                <TableHead>Max (USD)</TableHead>
-              </TableRow>
-            </TableHeader>
+            <TableHeader><TableRow><TableHead>Corridor</TableHead><TableHead>Destination</TableHead><TableHead>Currency</TableHead><TableHead>Category</TableHead><TableHead>CBN Spread Cap</TableHead><TableHead>Max (USD)</TableHead></TableRow></TableHeader>
             <TableBody>
               {corridors.map((c) => (
                 <TableRow key={c.id}>
@@ -661,553 +710,79 @@ function CorridorsSection() {
   );
 }
 
-// --- Compliance Section ---
-function ComplianceSection({ role }: { role: UserRole }) {
-  const isAdmin = role === 'admin' || role === 'cbn';
+// =============================================================================
+// SETTINGS (includes Tier Upgrade)
+// =============================================================================
 
-  // Server-side filtered: participant sees own screenings, admin sees all
-  const { data: screenings, isLoading } = trpc.outboundRemittance.getComplianceScreenings.useQuery();
-
-  return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">{isAdmin ? 'Compliance & Sanctions (System-Wide)' : 'My Compliance'}</h1>
-        <p className="text-muted-foreground">
-          {isAdmin ? 'Screening results across all participants' : 'Sanctions screening results for your transfers'}
-        </p>
-      </div>
-
-      {/* Screening results from DB */}
-      <Card>
-        <CardHeader><CardTitle className="text-lg">{isAdmin ? 'All Screenings' : 'Your Screening Results'}</CardTitle></CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin" /></div>
-          ) : screenings && screenings.length > 0 ? (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  {isAdmin && <TableHead>Participant</TableHead>}
-                  <TableHead>Transfer</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>List</TableHead>
-                  <TableHead>Score</TableHead>
-                  <TableHead>Decision</TableHead>
-                  <TableHead>Matched Entity</TableHead>
-                  {isAdmin && <TableHead>Actions</TableHead>}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {screenings.map((s) => (
-                  <TableRow key={s.id}>
-                    {isAdmin && <TableCell className="text-xs">{s.participantId}</TableCell>}
-                    <TableCell className="font-mono text-xs text-blue-600">{s.transferId}</TableCell>
-                    <TableCell>{s.screeningType}</TableCell>
-                    <TableCell>{s.listChecked}</TableCell>
-                    <TableCell>
-                      <Badge variant={Number(s.matchScore) >= 0.9 ? 'destructive' : Number(s.matchScore) >= 0.75 ? 'secondary' : 'default'}>
-                        {Number(s.matchScore).toFixed(2)}
-                      </Badge>
-                    </TableCell>
-                    <TableCell><StatusBadge status={s.decision} /></TableCell>
-                    <TableCell className="text-xs">{s.matchedEntity ?? '-'}</TableCell>
-                    {isAdmin && (
-                      <TableCell>
-                        <div className="flex gap-1">
-                          <Button size="sm" variant="outline" className="h-7"><CheckCircle2 className="h-3 w-3 mr-1" />Clear</Button>
-                          <Button size="sm" variant="destructive" className="h-7"><XCircle className="h-3 w-3 mr-1" />Block</Button>
-                        </div>
-                      </TableCell>
-                    )}
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          ) : (
-            <p className="text-center py-8 text-muted-foreground">No compliance screenings found</p>
-          )}
-        </CardContent>
-      </Card>
-    </div>
-  );
-}
-
-// --- Onboarding Section ---
-function OnboardingSection({ role }: { role: UserRole }) {
-  const isAdmin = role === 'admin' || role === 'cbn';
-  const [selectedRole, setSelectedRole] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'overview' | 'applications' | 'in_progress' | 'completed'>('overview');
-
-  const stakeholders = [
-    {
-      id: 'participant',
-      title: 'Regulated Participant (Fintech/IMTO)',
-      icon: Building2,
-      description: 'Licensed fintech or IMTO applying to send outbound transfers via the switch',
-      requirements: ['CBN License (IMTO/PSP/MFB)', 'Minimum capital ₦2B', 'AML/CFT compliance program', 'Technical readiness (API integration)', 'KYC/CDD procedures documentation'],
-      steps: ['Application received (via public portal)', 'Document verification & compliance check', 'Technical assessment & API sandbox issued', 'Prefund account setup (TigerBeetle)', 'Certification testing (all corridors)', 'Production go-live approval'],
-      timeline: '4-6 weeks',
-    },
-    {
-      id: 'provider',
-      title: 'External Provider (Payout Rail)',
-      icon: Server,
-      description: 'International payout provider seeking to be listed as a settlement rail on the switch',
-      requirements: ['License in destination country', 'API documentation for disbursement', 'Settlement agreement & bank details', 'SLA commitment (latency, uptime)', 'Compliance certification'],
-      steps: ['Application received (via public portal)', 'Technical API review & adapter development', 'Settlement agreement negotiation', 'Sandbox testing & certification', 'Corridor assignment & go-live'],
-      timeline: '6-8 weeks',
-    },
-    {
-      id: 'regulator',
-      title: 'Regulator (CBN/NFIU)',
-      icon: Landmark,
-      description: 'Regulatory body requiring oversight access to the switch operations',
-      requirements: ['Official regulatory mandate', 'Designated oversight officers', 'Secure VPN access request', 'Data classification agreement'],
-      steps: ['Formal request received', 'Access scope definition (read-only/audit)', 'Security clearance & VPN provisioning', 'Training on reporting dashboards', 'Periodic review schedule setup'],
-      timeline: '2-3 weeks',
-    },
-    {
-      id: 'ops',
-      title: 'Operations Staff',
-      icon: Users,
-      description: 'Internal switch operators managing day-to-day platform operations',
-      requirements: ['Employment verification', 'Background check clearance', 'Role assignment (L1/L2/L3)', 'Security training completion'],
-      steps: ['HR onboarding & background check', 'Role-based access provisioning (Permify)', 'Keycloak account creation', 'Platform training & certification', 'Supervised probation period (2 weeks)'],
-      timeline: '1-2 weeks',
-    },
-  ];
-
-  const pendingApplications = [
-    { name: 'OPay Financial', type: 'Fintech (IMTO)', license: 'CBN/IMTO/2024/012', submitted: '2024-03-15', stage: 'Technical Assessment', status: 'pending', step: 3, totalSteps: 6, ref: 'APP-LQ4R2-X9F3' },
-    { name: 'PalmPay Ltd', type: 'Fintech (PSP)', license: 'CBN/PSP/2024/087', submitted: '2024-03-18', stage: 'Compliance Review', status: 'pending', step: 2, totalSteps: 6, ref: 'APP-MN8T5-K2P7' },
-    { name: 'Kuda MFB', type: 'Microfinance Bank', license: 'CBN/MFB/2020/145', submitted: '2024-03-20', stage: 'Document Verification', status: 'pending', step: 2, totalSteps: 6, ref: 'APP-QR7W1-Y4H6' },
-    { name: 'TerraPay Global', type: 'Provider (Rail)', license: 'UK FCA #892341', submitted: '2024-03-22', stage: 'API Integration', status: 'processing', step: 2, totalSteps: 5, ref: 'APP-JK3V9-B8N2' },
-    { name: 'Thunes Network', type: 'Provider (Rail)', license: 'SG MAS #PS21', submitted: '2024-03-25', stage: 'Settlement Agreement', status: 'processing', step: 3, totalSteps: 5, ref: 'APP-DF6L4-C1M8' },
-  ];
-
-  const inProgressOnboarding = [
-    { name: 'Moniepoint Inc', type: 'Fintech (IMTO)', currentStep: 'Certification Testing', step: 5, totalSteps: 6, startDate: '2024-02-10', credentials: 'Issued 2024-02-28' },
-    { name: 'Carbon (Paylater)', type: 'Fintech (PSP)', currentStep: 'Prefund Account Setup', step: 4, totalSteps: 6, startDate: '2024-02-20', credentials: 'Issued 2024-03-05' },
-    { name: 'Cellulant Ltd', type: 'Provider (Rail)', currentStep: 'Sandbox Testing', step: 4, totalSteps: 5, startDate: '2024-03-01', credentials: 'Issued 2024-03-12' },
-  ];
-
-  // PARTICIPANT VIEW: show only their own onboarding progress
-  if (!isAdmin) {
-    return (
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold">My Onboarding Status</h1>
-          <p className="text-muted-foreground">Track your organization's onboarding progress on the switch</p>
-        </div>
-
-        {/* Your Current Stage */}
-        <Card className="border-green-200 bg-green-50/30">
-          <CardContent className="py-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-green-800">Status: Production Live</p>
-                <p className="text-xs text-green-600 mt-1">PayApp Nigeria Ltd — Approved 2024-01-28 — Go-live 2024-02-14</p>
-              </div>
-              <Badge variant="default" className="bg-green-600">Active</Badge>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Completed Steps */}
-        <Card>
-          <CardHeader><CardTitle className="text-lg">Onboarding Steps (Completed)</CardTitle></CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {[
-                { step: 1, label: 'Application Submitted', date: '2024-01-05', detail: 'Via public portal — Ref: APP-KL7M2-R3T8' },
-                { step: 2, label: 'Document Verification', date: '2024-01-08', detail: 'CBN license, AML/CFT policies verified' },
-                { step: 3, label: 'Technical Assessment', date: '2024-01-15', detail: 'API integration capability confirmed' },
-                { step: 4, label: 'Prefund Account Created', date: '2024-01-22', detail: 'TigerBeetle account TB-PFND-PAYAPP-001' },
-                { step: 5, label: 'Certification Testing', date: '2024-02-05', detail: 'All 8 corridors tested successfully' },
-                { step: 6, label: 'Production Go-Live', date: '2024-02-14', detail: 'Full API access enabled, live transfers active' },
-              ].map((s) => (
-                <div key={s.step} className="flex items-start gap-3">
-                  <div className="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <CheckCircle2 className="h-3.5 w-3.5 text-green-600" />
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center justify-between">
-                      <p className="text-sm font-medium">{s.label}</p>
-                      <span className="text-xs text-muted-foreground">{s.date}</span>
-                    </div>
-                    <p className="text-xs text-muted-foreground">{s.detail}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Account Details */}
-        <Card>
-          <CardHeader><CardTitle className="text-lg">Your Platform Access</CardTitle></CardHeader>
-          <CardContent className="space-y-3">
-            <div className="grid grid-cols-2 gap-4 text-sm">
-              <div><p className="text-xs text-muted-foreground">License</p><p className="font-medium">CBN/IMTO/2023/045</p></div>
-              <div><p className="text-xs text-muted-foreground">Tier</p><p className="font-medium">Growth</p></div>
-              <div><p className="text-xs text-muted-foreground">Prefund Account</p><p className="font-mono text-xs">TB-PFND-PAYAPP-001</p></div>
-              <div><p className="text-xs text-muted-foreground">Active Corridors</p><p className="font-medium">8 of 13</p></div>
-              <div><p className="text-xs text-muted-foreground">API Key</p><p className="font-mono text-xs">pk_live_***...x4f2</p></div>
-              <div><p className="text-xs text-muted-foreground">Webhook</p><p className="font-mono text-xs">https://payapp.ng/webhooks/switch</p></div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  // ADMIN / CBN VIEW: full onboarding management
-  return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Onboarding Management</h1>
-          <p className="text-muted-foreground">Full lifecycle: Application &rarr; Review &rarr; Credentials &rarr; Testing &rarr; Go-Live</p>
-        </div>
-        <a href="/outbound/apply" target="_blank" rel="noopener noreferrer">
-          <Button variant="outline" size="sm">
-            <Globe className="h-4 w-4 mr-1" /> View Public Application Portal
-          </Button>
-        </a>
-      </div>
-
-      {/* Lifecycle Pipeline */}
-      <Card className="bg-muted/30">
-        <CardContent className="py-4">
-          <p className="text-xs font-medium text-muted-foreground mb-3">ONBOARDING LIFECYCLE</p>
-          <div className="flex items-center justify-between text-xs">
-            <div className="flex flex-col items-center gap-1">
-              <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center"><Globe className="h-4 w-4 text-blue-600" /></div>
-              <span className="font-medium">Apply</span>
-              <span className="text-muted-foreground">(Public portal)</span>
-            </div>
-            <ChevronRight className="h-4 w-4 text-muted-foreground" />
-            <div className="flex flex-col items-center gap-1">
-              <div className="w-8 h-8 rounded-full bg-yellow-100 flex items-center justify-center"><FileCheck className="h-4 w-4 text-yellow-600" /></div>
-              <span className="font-medium">Review</span>
-              <span className="text-muted-foreground">(Admin team)</span>
-            </div>
-            <ChevronRight className="h-4 w-4 text-muted-foreground" />
-            <div className="flex flex-col items-center gap-1">
-              <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center"><Shield className="h-4 w-4 text-purple-600" /></div>
-              <span className="font-medium">Credentials</span>
-              <span className="text-muted-foreground">(Keycloak/Permify)</span>
-            </div>
-            <ChevronRight className="h-4 w-4 text-muted-foreground" />
-            <div className="flex flex-col items-center gap-1">
-              <div className="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center"><Server className="h-4 w-4 text-orange-600" /></div>
-              <span className="font-medium">Sandbox</span>
-              <span className="text-muted-foreground">(API testing)</span>
-            </div>
-            <ChevronRight className="h-4 w-4 text-muted-foreground" />
-            <div className="flex flex-col items-center gap-1">
-              <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center"><CheckCircle2 className="h-4 w-4 text-green-600" /></div>
-              <span className="font-medium">Go-Live</span>
-              <span className="text-muted-foreground">(Production)</span>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Metrics */}
-      <div className="grid grid-cols-5 gap-4">
-        <Card>
-          <CardHeader className="pb-2"><CardDescription>New Applications</CardDescription></CardHeader>
-          <CardContent><p className="text-2xl font-bold text-blue-600">5</p><p className="text-xs text-muted-foreground">Awaiting review</p></CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2"><CardDescription>In Progress</CardDescription></CardHeader>
-          <CardContent><p className="text-2xl font-bold text-yellow-600">3</p><p className="text-xs text-muted-foreground">Credentials issued</p></CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2"><CardDescription>Active Participants</CardDescription></CardHeader>
-          <CardContent><p className="text-2xl font-bold text-green-600">25</p><p className="text-xs text-muted-foreground">Production live</p></CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2"><CardDescription>Active Providers</CardDescription></CardHeader>
-          <CardContent><p className="text-2xl font-bold">7</p><p className="text-xs text-muted-foreground">Payout rails</p></CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2"><CardDescription>Ops Staff</CardDescription></CardHeader>
-          <CardContent><p className="text-2xl font-bold">12</p><p className="text-xs text-muted-foreground">Active operators</p></CardContent>
-        </Card>
-      </div>
-
-      {/* Tab navigation */}
-      <div className="flex gap-2 border-b pb-2">
-        {[
-          { id: 'overview' as const, label: 'Stakeholder Types' },
-          { id: 'applications' as const, label: 'Pending Applications (5)' },
-          { id: 'in_progress' as const, label: 'In Progress (3)' },
-          { id: 'completed' as const, label: 'Recently Completed' },
-        ].map(t => (
-          <button
-            key={t.id}
-            onClick={() => setActiveTab(t.id)}
-            className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
-              activeTab === t.id ? 'bg-blue-50 text-blue-700 font-medium' : 'text-muted-foreground hover:bg-muted'
-            }`}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
-
-      {/* Tab content: Overview */}
-      {activeTab === 'overview' && (
-        <div className="grid grid-cols-2 gap-4">
-          {stakeholders.map((s) => {
-            const Icon = s.icon;
-            return (
-              <Card
-                key={s.id}
-                className={`cursor-pointer transition-all ${selectedRole === s.id ? 'ring-2 ring-blue-500' : 'hover:border-blue-300'}`}
-                onClick={() => setSelectedRole(selectedRole === s.id ? null : s.id)}
-              >
-                <CardHeader>
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-lg bg-blue-50">
-                      <Icon className="h-5 w-5 text-blue-600" />
-                    </div>
-                    <div>
-                      <CardTitle className="text-base">{s.title}</CardTitle>
-                      <CardDescription>{s.description}</CardDescription>
-                    </div>
-                  </div>
-                </CardHeader>
-                {selectedRole === s.id && (
-                  <CardContent className="space-y-4">
-                    <div>
-                      <p className="text-sm font-medium mb-2">Requirements:</p>
-                      <ul className="space-y-1">
-                        {s.requirements.map((r, i) => (
-                          <li key={i} className="text-sm text-muted-foreground flex items-center gap-2">
-                            <CheckCircle2 className="h-3 w-3 text-green-500" /> {r}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium mb-2">Onboarding Steps:</p>
-                      <ol className="space-y-1">
-                        {s.steps.map((st, i) => (
-                          <li key={i} className="text-sm text-muted-foreground flex items-center gap-2">
-                            <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-blue-100 text-blue-700 text-xs font-medium">{i + 1}</span>
-                            {st}
-                          </li>
-                        ))}
-                      </ol>
-                    </div>
-                    <div className="flex items-center justify-between pt-2 border-t">
-                      <span className="text-xs text-muted-foreground">Typical timeline: {s.timeline}</span>
-                      <Badge variant="secondary" className="text-xs">Begins at /outbound/apply</Badge>
-                    </div>
-                  </CardContent>
-                )}
-              </Card>
-            );
-          })}
-        </div>
-      )}
-
-      {/* Tab content: Pending Applications */}
-      {activeTab === 'applications' && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Pending Applications</CardTitle>
-            <CardDescription>Applications received from the public portal awaiting admin review and credential provisioning</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Reference</TableHead>
-                  <TableHead>Applicant</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>License</TableHead>
-                  <TableHead>Submitted</TableHead>
-                  <TableHead>Stage</TableHead>
-                  <TableHead>Progress</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {pendingApplications.map((a) => (
-                  <TableRow key={a.ref}>
-                    <TableCell className="font-mono text-xs">{a.ref}</TableCell>
-                    <TableCell className="font-medium">{a.name}</TableCell>
-                    <TableCell className="text-sm">{a.type}</TableCell>
-                    <TableCell className="font-mono text-xs">{a.license}</TableCell>
-                    <TableCell className="text-xs">{a.submitted}</TableCell>
-                    <TableCell className="text-sm">{a.stage}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <div className="w-16 h-2 bg-muted rounded-full overflow-hidden">
-                          <div className="h-full bg-blue-500 rounded-full" style={{ width: `${(a.step / a.totalSteps) * 100}%` }} />
-                        </div>
-                        <span className="text-xs text-muted-foreground">{a.step}/{a.totalSteps}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex gap-1">
-                        <Button size="sm" variant="outline" className="h-7 text-xs">
-                          <FileCheck className="h-3 w-3 mr-1" />Review
-                        </Button>
-                        <Button size="sm" className="h-7 text-xs bg-green-600 hover:bg-green-700">
-                          Approve
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Tab content: In Progress (credentials issued, completing remaining steps) */}
-      {activeTab === 'in_progress' && (
-        <div className="space-y-4">
-          <p className="text-sm text-muted-foreground">
-            These participants have been approved, received Keycloak credentials, and are completing sandbox testing before production go-live.
-          </p>
-          {inProgressOnboarding.map((p) => (
-            <Card key={p.name}>
-              <CardContent className="py-4">
-                <div className="flex items-center justify-between mb-3">
-                  <div>
-                    <p className="font-medium">{p.name}</p>
-                    <p className="text-xs text-muted-foreground">{p.type} &bull; Started {p.startDate} &bull; {p.credentials}</p>
-                  </div>
-                  <Badge variant="secondary">{p.currentStep}</Badge>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
-                    <div className="h-full bg-blue-500 rounded-full transition-all" style={{ width: `${(p.step / p.totalSteps) * 100}%` }} />
-                  </div>
-                  <span className="text-xs text-muted-foreground font-medium">Step {p.step} of {p.totalSteps}</span>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
-
-      {/* Tab content: Recently Completed */}
-      {activeTab === 'completed' && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Recently Onboarded</CardTitle>
-            <CardDescription>Participants that completed the full lifecycle and are now live in production</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Participant</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Applied</TableHead>
-                  <TableHead>Go-Live Date</TableHead>
-                  <TableHead>Duration</TableHead>
-                  <TableHead>Status</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {[
-                  { name: 'Flutterwave Ltd', type: 'Fintech (IMTO)', applied: '2024-01-05', goLive: '2024-02-14', duration: '40 days' },
-                  { name: 'Paystack (Stripe)', type: 'Fintech (PSP)', applied: '2024-01-10', goLive: '2024-02-20', duration: '41 days' },
-                  { name: 'WorldRemit', type: 'Provider (Rail)', applied: '2024-01-12', goLive: '2024-03-01', duration: '48 days' },
-                  { name: 'Wise Payments', type: 'Provider (Rail)', applied: '2024-01-15', goLive: '2024-03-05', duration: '49 days' },
-                  { name: 'CBN Oversight Team', type: 'Regulator', applied: '2024-02-01', goLive: '2024-02-14', duration: '13 days' },
-                ].map((p) => (
-                  <TableRow key={p.name}>
-                    <TableCell className="font-medium">{p.name}</TableCell>
-                    <TableCell>{p.type}</TableCell>
-                    <TableCell className="text-xs">{p.applied}</TableCell>
-                    <TableCell className="text-xs">{p.goLive}</TableCell>
-                    <TableCell className="text-sm">{p.duration}</TableCell>
-                    <TableCell><Badge variant="default" className="bg-green-600">Live</Badge></TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-      )}
-    </div>
-  );
-}
-
-// --- Settings Section ---
 function SettingsSection({ role }: { role: UserRole }) {
   const isAdmin = role === 'admin' || role === 'cbn';
+  const { data: tierUpgrades } = trpc.outboundRemittance.listTierUpgrades.useQuery();
+  const upgradeMutation = trpc.outboundRemittance.requestTierUpgrade.useMutation();
+  const [showUpgrade, setShowUpgrade] = useState(false);
+  const [upgradeReq, setUpgradeReq] = useState({ requestedTier: 'enterprise' as const, justification: '', monthlyVolume: '' });
+
+  const handleUpgrade = async () => {
+    if (!upgradeReq.justification || !upgradeReq.monthlyVolume) return;
+    await upgradeMutation.mutateAsync(upgradeReq);
+    setShowUpgrade(false);
+  };
+
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Module Settings</h1>
-        <p className="text-muted-foreground">Configure outbound remittance module parameters</p>
+        <h1 className="text-2xl font-bold">Settings</h1>
+        <p className="text-muted-foreground">{isAdmin ? 'Platform configuration' : 'Account settings and tier management'}</p>
       </div>
 
-      <div className="grid grid-cols-2 gap-6">
-        <Card>
-          <CardHeader><CardTitle className="text-lg">API Configuration</CardTitle></CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label>API Endpoint</Label>
-              <Input value="https://switch.payapp.ng/api/v2/outbound" disabled />
-            </div>
-            <div className="space-y-2">
-              <Label>Webhook URL</Label>
-              <Input placeholder="https://your-backend.com/webhooks/outbound" />
-            </div>
-            <div className="space-y-2">
-              <Label>Callback Auth</Label>
-              <Select>
-                <SelectTrigger><SelectValue placeholder="Select auth method" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="hmac">HMAC-SHA256</SelectItem>
-                  <SelectItem value="bearer">Bearer Token</SelectItem>
-                  <SelectItem value="mtls">Mutual TLS</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <Button>Save Configuration</Button>
-          </CardContent>
-        </Card>
+      {!isAdmin && (
+        <>
+          <Card>
+            <CardHeader><CardTitle>Tier Upgrade</CardTitle><CardDescription>Request a higher tier for increased limits and corridor access</CardDescription></CardHeader>
+            <CardContent>
+              {!showUpgrade ? (
+                <Button onClick={() => setShowUpgrade(true)}><ArrowUpCircle className="h-4 w-4 mr-1" /> Request Tier Upgrade</Button>
+              ) : (
+                <div className="grid grid-cols-2 gap-4">
+                  <div><Label>Requested Tier</Label>
+                    <Select value={upgradeReq.requestedTier} onValueChange={(v: any) => setUpgradeReq(p => ({...p, requestedTier: v}))}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent><SelectItem value="growth">Growth</SelectItem><SelectItem value="enterprise">Enterprise</SelectItem><SelectItem value="premium">Premium</SelectItem></SelectContent>
+                    </Select>
+                  </div>
+                  <div><Label>Monthly Volume (NGN)</Label><Input value={upgradeReq.monthlyVolume} onChange={e => setUpgradeReq(p => ({...p, monthlyVolume: e.target.value}))} placeholder="e.g. 5000000000" /></div>
+                  <div className="col-span-2"><Label>Justification</Label><Input value={upgradeReq.justification} onChange={e => setUpgradeReq(p => ({...p, justification: e.target.value}))} placeholder="Why do you need this tier?" /></div>
+                  <div className="col-span-2 flex gap-2">
+                    <Button onClick={handleUpgrade} disabled={upgradeMutation.isPending}>Submit Request</Button>
+                    <Button variant="outline" onClick={() => setShowUpgrade(false)}>Cancel</Button>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
 
-        <Card>
-          <CardHeader><CardTitle className="text-lg">Notification Preferences</CardTitle></CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label>Low Balance Alert Threshold</Label>
-              <Input type="number" placeholder="200000000" />
-              <p className="text-xs text-muted-foreground">In kobo (₦200M = 20,000,000,000 kobo)</p>
-            </div>
-            <div className="space-y-2">
-              <Label>Compliance Escalation Email</Label>
-              <Input placeholder="compliance@payapp.ng" />
-            </div>
-            <div className="space-y-2">
-              <Label>Settlement Confirmation</Label>
-              <Select>
-                <SelectTrigger><SelectValue placeholder="Notification method" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="email">Email</SelectItem>
-                  <SelectItem value="webhook">Webhook</SelectItem>
-                  <SelectItem value="both">Both</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <Button>Save Preferences</Button>
-          </CardContent>
-        </Card>
-      </div>
+          {tierUpgrades && tierUpgrades.length > 0 && (
+            <Card>
+              <CardHeader><CardTitle>Upgrade History</CardTitle></CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader><TableRow><TableHead>From</TableHead><TableHead>To</TableHead><TableHead>Volume</TableHead><TableHead>Status</TableHead><TableHead>Date</TableHead></TableRow></TableHeader>
+                  <TableBody>
+                    {tierUpgrades.map((u: any) => (
+                      <TableRow key={u.id}>
+                        <TableCell><Badge variant="outline">{u.currentTier}</Badge></TableCell>
+                        <TableCell><Badge>{u.requestedTier}</Badge></TableCell>
+                        <TableCell>{formatNgn(u.monthlyVolume)}</TableCell>
+                        <TableCell><StatusBadge status={u.status} /></TableCell>
+                        <TableCell className="text-xs">{new Date(u.createdAt).toLocaleDateString()}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          )}
+        </>
+      )}
     </div>
   );
 }
