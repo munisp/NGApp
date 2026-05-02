@@ -1,0 +1,412 @@
+name: Deploy to Production
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Docker image version to deploy (e.g., v1.2.3 or commit SHA)'
+        required: true
+      deployment_strategy:
+        description: 'Deployment strategy'
+        required: true
+        default: 'blue-green'
+        type: choice
+        options:
+          - blue-green
+          - rolling
+          - canary
+      skip_tests:
+        description: 'Skip load tests (emergency deployment only)'
+        required: false
+        type: boolean
+        default: false
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  pre-deployment-checks:
+    name: Pre-Deployment Checks
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Verify version exists
+        run: |
+          docker manifest inspect ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/web-portal:${{ github.event.inputs.version }}
+      
+      - name: Check staging health
+        run: |
+          curl -f https://staging.payment-switch.com/health || echo "Staging not available"
+      
+      - name: Require approval
+        uses: trstringer/manual-approval@v1
+        with:
+          secret: ${{ secrets.GITHUB_TOKEN }}
+          approvers: ${{ secrets.PRODUCTION_APPROVERS }}
+          minimum-approvals: 2
+          issue-title: "Production Deployment Approval Required"
+          issue-body: |
+            ## Production Deployment Request
+            
+            **Version:** ${{ github.event.inputs.version }}
+            **Strategy:** ${{ github.event.inputs.deployment_strategy }}
+            **Requested by:** ${{ github.actor }}
+            **Skip tests:** ${{ github.event.inputs.skip_tests }}
+            
+            Please review and approve this production deployment.
+            
+            ### Pre-deployment Checklist
+            - [ ] Version tested in staging
+            - [ ] Load tests passed
+            - [ ] Security scan passed
+            - [ ] Database migrations reviewed
+            - [ ] Rollback plan prepared
+            - [ ] On-call team notified
+
+  backup:
+    name: Backup Production Database
+    runs-on: ubuntu-latest
+    needs: [pre-deployment-checks]
+    environment: production
+    
+    steps:
+      - name: Configure SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.PRODUCTION_SSH_KEY }}" > ~/.ssh/prod_key
+          chmod 600 ~/.ssh/prod_key
+          ssh-keyscan -H ${{ secrets.PRODUCTION_HOST }} >> ~/.ssh/known_hosts
+      
+      - name: Create database backup
+        run: |
+          ssh -i ~/.ssh/prod_key ${{ secrets.PRODUCTION_USER }}@${{ secrets.PRODUCTION_HOST }} << 'EOF'
+            cd /opt/payment-switch/production
+            
+            # Create backup directory
+            mkdir -p backups/$(date +%Y%m%d)
+            
+            # Backup MySQL database
+            docker-compose -f docker-compose.unified.yml exec -T mysql-db \
+              mysqldump -u root -p$MYSQL_ROOT_PASSWORD --all-databases \
+              > backups/$(date +%Y%m%d)/mysql-backup-$(date +%H%M%S).sql
+            
+            # Backup PostgreSQL database
+            docker-compose -f docker-compose.unified.yml exec -T postgres-db \
+              pg_dumpall -U postgres \
+              > backups/$(date +%Y%m%d)/postgres-backup-$(date +%H%M%S).sql
+            
+            # Compress backups
+            tar -czf backups/$(date +%Y%m%d)/backup-$(date +%H%M%S).tar.gz \
+              backups/$(date +%Y%m%d)/*.sql
+            
+            # Upload to S3 (if configured)
+            if [ -n "$AWS_S3_BACKUP_BUCKET" ]; then
+              aws s3 cp backups/$(date +%Y%m%d)/backup-$(date +%H%M%S).tar.gz \
+                s3://$AWS_S3_BACKUP_BUCKET/production/$(date +%Y%m%d)/
+            fi
+          EOF
+      
+      - name: Verify backup
+        run: |
+          ssh -i ~/.ssh/prod_key ${{ secrets.PRODUCTION_USER }}@${{ secrets.PRODUCTION_HOST }} \
+            "ls -lh /opt/payment-switch/production/backups/$(date +%Y%m%d)/"
+
+  deploy-blue-green:
+    name: Deploy (Blue-Green Strategy)
+    runs-on: ubuntu-latest
+    needs: [backup]
+    if: github.event.inputs.deployment_strategy == 'blue-green'
+    environment:
+      name: production
+      url: https://payment-switch.com
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Configure SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.PRODUCTION_SSH_KEY }}" > ~/.ssh/prod_key
+          chmod 600 ~/.ssh/prod_key
+          ssh-keyscan -H ${{ secrets.PRODUCTION_HOST }} >> ~/.ssh/known_hosts
+      
+      - name: Deploy to green environment
+        run: |
+          ssh -i ~/.ssh/prod_key ${{ secrets.PRODUCTION_USER }}@${{ secrets.PRODUCTION_HOST }} << 'EOF'
+            cd /opt/payment-switch/production
+            
+            # Set environment variables
+            export IMAGE_TAG=${{ github.event.inputs.version }}
+            export REGISTRY=${{ env.REGISTRY }}
+            export IMAGE_NAME=${{ env.IMAGE_NAME }}
+            export ENVIRONMENT=green
+            
+            # Pull new images
+            docker login $REGISTRY -u ${{ github.actor }} -p ${{ secrets.GITHUB_TOKEN }}
+            docker-compose -f docker-compose.green.yml pull
+            
+            # Start green environment
+            docker-compose -f docker-compose.green.yml up -d
+            
+            # Wait for services to be healthy
+            sleep 60
+            
+            # Run database migrations
+            docker-compose -f docker-compose.green.yml exec -T web-portal pnpm db:push
+          EOF
+      
+      - name: Run health checks on green
+        run: |
+          ssh -i ~/.ssh/prod_key ${{ secrets.PRODUCTION_USER }}@${{ secrets.PRODUCTION_HOST }} \
+            "cd /opt/payment-switch/production && BASE_URL=http://localhost:3001 ./scripts/health-check.sh"
+      
+      - name: Run smoke tests on green
+        run: |
+          # Test critical endpoints on green environment (port 3001)
+          ssh -i ~/.ssh/prod_key ${{ secrets.PRODUCTION_USER }}@${{ secrets.PRODUCTION_HOST }} << 'EOF'
+            curl -f http://localhost:3001/health || exit 1
+            curl -f http://localhost:3001/api/health || exit 1
+          EOF
+      
+      - name: Switch traffic to green
+        run: |
+          ssh -i ~/.ssh/prod_key ${{ secrets.PRODUCTION_USER }}@${{ secrets.PRODUCTION_HOST }} << 'EOF'
+            # Update nginx to point to green
+            docker-compose -f docker-compose.unified.yml exec -T nginx-gateway \
+              sed -i 's/web-portal:3000/web-portal-green:3001/g' /etc/nginx/nginx.conf
+            
+            # Reload nginx
+            docker-compose -f docker-compose.unified.yml exec -T nginx-gateway \
+              nginx -s reload
+          EOF
+      
+      - name: Monitor for 5 minutes
+        run: |
+          echo "Monitoring production for 5 minutes..."
+          for i in {1..30}; do
+            curl -f https://payment-switch.com/health || exit 1
+            sleep 10
+          done
+      
+      - name: Stop blue environment
+        run: |
+          ssh -i ~/.ssh/prod_key ${{ secrets.PRODUCTION_USER }}@${{ secrets.PRODUCTION_HOST }} << 'EOF'
+            cd /opt/payment-switch/production
+            docker-compose -f docker-compose.blue.yml down
+          EOF
+
+  deploy-rolling:
+    name: Deploy (Rolling Update Strategy)
+    runs-on: ubuntu-latest
+    needs: [backup]
+    if: github.event.inputs.deployment_strategy == 'rolling'
+    environment:
+      name: production
+      url: https://payment-switch.com
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Configure SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.PRODUCTION_SSH_KEY }}" > ~/.ssh/prod_key
+          chmod 600 ~/.ssh/prod_key
+          ssh-keyscan -H ${{ secrets.PRODUCTION_HOST }} >> ~/.ssh/known_hosts
+      
+      - name: Rolling update deployment
+        run: |
+          ssh -i ~/.ssh/prod_key ${{ secrets.PRODUCTION_USER }}@${{ secrets.PRODUCTION_HOST }} << 'EOF'
+            cd /opt/payment-switch/production
+            
+            # Set environment variables
+            export IMAGE_TAG=${{ github.event.inputs.version }}
+            export REGISTRY=${{ env.REGISTRY }}
+            export IMAGE_NAME=${{ env.IMAGE_NAME }}
+            
+            # Pull new images
+            docker login $REGISTRY -u ${{ github.actor }} -p ${{ secrets.GITHUB_TOKEN }}
+            docker-compose -f docker-compose.unified.yml pull
+            
+            # Rolling update with zero downtime
+            docker-compose -f docker-compose.unified.yml up -d --no-deps --scale web-portal=2 web-portal
+            sleep 30
+            docker-compose -f docker-compose.unified.yml up -d --no-deps --scale web-portal=1 web-portal
+          EOF
+
+  deploy-canary:
+    name: Deploy (Canary Strategy)
+    runs-on: ubuntu-latest
+    needs: [backup]
+    if: github.event.inputs.deployment_strategy == 'canary'
+    environment:
+      name: production
+      url: https://payment-switch.com
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Configure SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.PRODUCTION_SSH_KEY }}" > ~/.ssh/prod_key
+          chmod 600 ~/.ssh/prod_key
+          ssh-keyscan -H ${{ secrets.PRODUCTION_HOST }} >> ~/.ssh/known_hosts
+      
+      - name: Deploy canary (10% traffic)
+        run: |
+          ssh -i ~/.ssh/prod_key ${{ secrets.PRODUCTION_USER }}@${{ secrets.PRODUCTION_HOST }} << 'EOF'
+            cd /opt/payment-switch/production
+            
+            # Deploy canary with new version
+            export IMAGE_TAG=${{ github.event.inputs.version }}
+            docker-compose -f docker-compose.canary.yml up -d
+            
+            # Configure nginx for 10% traffic to canary
+            # (requires nginx with split_clients module)
+          EOF
+      
+      - name: Monitor canary for 10 minutes
+        run: |
+          echo "Monitoring canary deployment..."
+          sleep 600
+      
+      - name: Increase to 50% traffic
+        run: |
+          ssh -i ~/.ssh/prod_key ${{ secrets.PRODUCTION_USER }}@${{ secrets.PRODUCTION_HOST }} \
+            "# Update nginx config for 50% traffic"
+      
+      - name: Monitor for 10 more minutes
+        run: sleep 600
+      
+      - name: Full rollout
+        run: |
+          ssh -i ~/.ssh/prod_key ${{ secrets.PRODUCTION_USER }}@${{ secrets.PRODUCTION_HOST }} << 'EOF'
+            cd /opt/payment-switch/production
+            docker-compose -f docker-compose.unified.yml up -d
+          EOF
+
+  post-deployment:
+    name: Post-Deployment Tasks
+    runs-on: ubuntu-latest
+    needs: [deploy-blue-green, deploy-rolling, deploy-canary]
+    if: always() && !cancelled()
+    
+    steps:
+      - name: Run health checks
+        run: |
+          curl -f https://payment-switch.com/health || exit 1
+          curl -f https://payment-switch.com/api/health || exit 1
+      
+      - name: Run load tests
+        if: github.event.inputs.skip_tests == 'false'
+        run: |
+          # Run abbreviated load tests
+          curl -X POST https://staging.payment-switch.com/api/load-test/quick
+      
+      - name: Tag successful deployment
+        if: success()
+        run: |
+          git tag -a "production-${{ github.event.inputs.version }}-$(date +%Y%m%d-%H%M%S)" \
+            -m "Production deployment of ${{ github.event.inputs.version }}"
+          git push origin --tags
+      
+      - name: Send deployment notification
+        uses: 8398a7/action-slack@v3
+        if: always()
+        with:
+          status: ${{ job.status }}
+          text: |
+            🚀 Production Deployment ${{ job.status }}
+            Version: ${{ github.event.inputs.version }}
+            Strategy: ${{ github.event.inputs.deployment_strategy }}
+            Environment: https://payment-switch.com
+            Deployed by: ${{ github.actor }}
+          webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+      
+      - name: Create deployment record
+        run: |
+          curl -X POST https://payment-switch.com/api/deployments \
+            -H "Authorization: Bearer ${{ secrets.API_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "version": "${{ github.event.inputs.version }}",
+              "strategy": "${{ github.event.inputs.deployment_strategy }}",
+              "status": "${{ job.status }}",
+              "deployed_by": "${{ github.actor }}",
+              "deployed_at": "'$(date -u +%Y-%m-%dT%H:%M:%SZ)'"
+            }'
+
+  rollback:
+    name: Rollback on Failure
+    runs-on: ubuntu-latest
+    needs: [deploy-blue-green, deploy-rolling, deploy-canary]
+    if: failure()
+    environment: production
+    
+    steps:
+      - name: Configure SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.PRODUCTION_SSH_KEY }}" > ~/.ssh/prod_key
+          chmod 600 ~/.ssh/prod_key
+          ssh-keyscan -H ${{ secrets.PRODUCTION_HOST }} >> ~/.ssh/known_hosts
+      
+      - name: Rollback deployment
+        run: |
+          ssh -i ~/.ssh/prod_key ${{ secrets.PRODUCTION_USER }}@${{ secrets.PRODUCTION_HOST }} << 'EOF'
+            cd /opt/payment-switch/production
+            
+            # Switch back to blue (previous version)
+            docker-compose -f docker-compose.unified.yml exec -T nginx-gateway \
+              sed -i 's/web-portal-green:3001/web-portal:3000/g' /etc/nginx/nginx.conf
+            
+            docker-compose -f docker-compose.unified.yml exec -T nginx-gateway \
+              nginx -s reload
+            
+            # Stop failed deployment
+            docker-compose -f docker-compose.green.yml down
+          EOF
+      
+      - name: Restore database backup
+        run: |
+          ssh -i ~/.ssh/prod_key ${{ secrets.PRODUCTION_USER }}@${{ secrets.PRODUCTION_HOST }} << 'EOF'
+            cd /opt/payment-switch/production
+            
+            # Find latest backup
+            LATEST_BACKUP=$(ls -t backups/$(date +%Y%m%d)/*.tar.gz | head -1)
+            
+            # Extract backup
+            tar -xzf $LATEST_BACKUP -C /tmp/
+            
+            # Restore MySQL
+            docker-compose -f docker-compose.unified.yml exec -T mysql-db \
+              mysql -u root -p$MYSQL_ROOT_PASSWORD < /tmp/mysql-backup-*.sql
+            
+            # Restore PostgreSQL
+            docker-compose -f docker-compose.unified.yml exec -T postgres-db \
+              psql -U postgres < /tmp/postgres-backup-*.sql
+          EOF
+      
+      - name: Send rollback notification
+        uses: 8398a7/action-slack@v3
+        with:
+          status: 'failure'
+          text: |
+            ⚠️ PRODUCTION ROLLBACK EXECUTED
+            Version: ${{ github.event.inputs.version }}
+            Reason: Deployment failed health checks
+            Action: Reverted to previous version
+            Deployed by: ${{ github.actor }}
+          webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}

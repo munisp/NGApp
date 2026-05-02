@@ -31,19 +31,6 @@ import TrustedDevices from "@/pages/TrustedDevices";
 import NotificationSettings from "@/pages/NotificationSettings";
 import AccountActivity from "@/pages/AccountActivity";
 import IntegrationsDashboard from "@/pages/IntegrationsDashboard";
-import Disputes from "@/pages/Disputes";
-import RecurringRemittances from "@/pages/RecurringRemittances";
-import BatchTransfers from "@/pages/BatchTransfers";
-import ComplianceReports from "@/pages/ComplianceReports";
-import SupportCenter from "@/pages/SupportCenter";
-import TransactionLimits from "@/pages/TransactionLimits";
-import FeeManagement from "@/pages/FeeManagement";
-import UserPreferences from "@/pages/UserPreferences";
-import ReferralProgram from "@/pages/ReferralProgram";
-import MaintenanceMode from "@/pages/admin/MaintenanceMode";
-import AuditLogViewer from "@/pages/admin/AuditLogViewer";
-import SecurityDashboard from "@/pages/admin/SecurityDashboard";
-import TransactionLimitsAdmin from "@/pages/admin/TransactionLimitsAdmin";
 
 function Router() {
   return (
@@ -53,12 +40,6 @@ function Router() {
       <Route path="/admin/reminders" component={ReminderEmailManagement} />
       <Route path="/admin/recovery-requests" component={RecoveryRequests} />
       <Route path="/admin/integrations" component={IntegrationsDashboard} />
-      <Route path="/admin/maintenance" component={MaintenanceMode} />
-      <Route path="/admin/audit-log" component={AuditLogViewer} />
-      <Route path="/admin/security" component={SecurityDashboard} />
-      <Route path="/admin/fees" component={FeeManagement} />
-      <Route path="/admin/transaction-limits" component={TransactionLimitsAdmin} />
-      <Route path="/admin/compliance-reports" component={ComplianceReports} />
       <Route path={"/payments"} component={PaymentGateway} />
       <Route path={"/checkout/:sessionId"} component={Checkout} />
       <Route path={"/dashboard"} component={Dashboard} />
@@ -73,17 +54,10 @@ function Router() {
       <Route path="/admin/remittances" component={RemittanceAdminDashboard} />
       <Route path="/rate-alerts" component={RateAlerts} />
       <Route path="/rate-alert-analytics" component={RateAlertAnalytics} />
-      <Route path="/disputes" component={Disputes} />
-      <Route path="/recurring-remittances" component={RecurringRemittances} />
-      <Route path="/batch-transfers" component={BatchTransfers} />
-      <Route path="/support" component={SupportCenter} />
-      <Route path="/transaction-limits" component={TransactionLimits} />
-      <Route path="/referrals" component={ReferralProgram} />
       <Route path="/settings/2fa" component={TwoFactorSettings} />
       <Route path="/settings/trusted-devices" component={TrustedDevices} />
       <Route path="/settings/notifications" component={NotificationSettings} />
       <Route path="/settings/activity" component={AccountActivity} />
-      <Route path="/settings/preferences" component={UserPreferences} />
       <Route path="/verify-2fa" component={VerifyTwoFactor} />
       <Route path="/account-recovery" component={AccountRecovery} />
       <Route path={"/404"} component={NotFound} />
