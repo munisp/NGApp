@@ -101,15 +101,19 @@ export default function OutboundRemittance() {
   const [activeSection, setActiveSection] = useState<NavSection>('dashboard');
 
   // Role comes from the server (Keycloak JWT context)
-  const { data: authContext, isLoading: loadingAuth } = trpc.outboundRemittance.getMyContext.useQuery();
+  const { data: authContext, isLoading: loadingAuth, error: authError } = trpc.outboundRemittance.getMyContext.useQuery(
+    undefined,
+    { retry: 1, retryDelay: 1000 }
+  );
   const userRole: UserRole = authContext?.role ?? 'participant';
   const navItems = getNavItems(userRole);
   const isAdmin = userRole === 'admin' || userRole === 'cbn';
 
-  if (loadingAuth) {
+  if (loadingAuth && !authError) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        <p className="ml-3 text-muted-foreground text-sm">Authenticating...</p>
       </div>
     );
   }
