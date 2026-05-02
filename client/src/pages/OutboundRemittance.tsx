@@ -1501,52 +1501,64 @@ function FeeCalculatorPanel() {
 // =============================================================================
 
 function AnalyticsSection() {
-  const [analyticsTab, setAnalyticsTab] = useState<'anomalies' | 'capacity' | 'sla' | 'sanctions'>('anomalies');
+  const [analyticsTab, setAnalyticsTab] = useState<'anomalies' | 'capacity' | 'sla' | 'sanctions' | 'audit' | 'approvals' | 'batches' | 'netting' | 'fxlocks' | 'webhooks' | 'apiUsage' | 'ipAllowlist' | 'sandbox'>('anomalies');
 
-  const anomalies = [
-    { id: 'ANM-001', participant: 'PayApp Nigeria Ltd', type: 'volume_spike', severity: 'high', score: 78, description: '340% volume increase in NG-CN corridor over 1hr window', detected: '14:22 UTC', acknowledged: false },
-    { id: 'ANM-002', participant: 'Chipper Cash', type: 'rapid_fire', severity: 'medium', score: 55, description: '18 transfers in 5-minute window (threshold: 20)', detected: '13:45 UTC', acknowledged: false },
-    { id: 'ANM-003', participant: 'OPay Nigeria', type: 'amount_deviation', severity: 'critical', score: 92, description: '₦450M single transfer — 85x participant average', detected: '12:10 UTC', acknowledged: true },
-  ];
+  const anomaliesQuery = trpc.outboundRemittance.getAnomalyAlerts.useQuery();
+  const capacityQuery = trpc.outboundRemittance.getCapacityForecasts.useQuery();
+  const slaQuery = trpc.outboundRemittance.getSLABreaches.useQuery();
+  const sanctionsQuery = trpc.outboundRemittance.getSanctionsUpdates.useQuery();
+  const auditQuery = trpc.outboundRemittance.getAuditTrail.useQuery();
+  const approvalsQuery = trpc.outboundRemittance.getPendingApprovals.useQuery();
+  const batchesQuery = trpc.outboundRemittance.getBatches.useQuery();
+  const nettingQuery = trpc.outboundRemittance.getNettingCycles.useQuery();
+  const fxLocksQuery = trpc.outboundRemittance.getActiveFXLocks.useQuery();
+  const webhooksQuery = trpc.outboundRemittance.getWebhookEvents.useQuery();
+  const apiUsageQuery = trpc.outboundRemittance.getAPIUsage.useQuery();
+  const ipAllowlistQuery = trpc.outboundRemittance.getIPAllowlist.useQuery();
+  const sandboxQuery = trpc.outboundRemittance.getSandboxEnvironments.useQuery();
 
-  const capacityForecasts = [
-    { corridor: 'NG-GH', date: 'Tomorrow', predicted: '₦680M', confidence: '₦544M–₦816M', patterns: 'salary_day', liquidity: '₦300M', gap: '₦516M', risk: 'critical' },
-    { corridor: 'NG-GB', date: 'Tomorrow', predicted: '₦920M', confidence: '₦736M–₦1.1B', patterns: 'school_fees', liquidity: '₦500M', gap: '₦604M', risk: 'high' },
-    { corridor: 'NG-US', date: 'Tomorrow', predicted: '₦1.1B', confidence: '₦880M–₦1.3B', patterns: 'month_end', liquidity: '₦700M', gap: '₦620M', risk: 'high' },
-    { corridor: 'NG-SN', date: 'Tomorrow', predicted: '₦250M', confidence: '₦200M–₦300M', patterns: 'none', liquidity: '₦400M', gap: '₦0', risk: 'low' },
-    { corridor: 'NG-CN', date: '+3 days', predicted: '₦380M', confidence: '₦285M–₦475M', patterns: 'weekend', liquidity: '₦350M', gap: '₦106M', risk: 'medium' },
-  ];
+  const utils = trpc.useUtils();
+  const approvalMut = trpc.outboundRemittance.submitApprovalDecision.useMutation({ onSuccess: () => utils.outboundRemittance.getPendingApprovals.invalidate() });
+  const replayMut = trpc.outboundRemittance.replayWebhook.useMutation({ onSuccess: () => utils.outboundRemittance.getWebhookEvents.invalidate() });
 
-  const slaBreaches = [
-    { corridor: 'NG-IN', target: '45s / 96%', actual: '62s / 94.2%', breachType: 'latency+success', consecutive: 3, action: 'Auto-escalated to backup provider (Wise)' },
-    { corridor: 'NG-TR', target: '60s / 95%', actual: '58s / 93.8%', breachType: 'success_rate', consecutive: 2, action: 'Warning issued, monitoring' },
-  ];
-
-  const sanctionsUpdates = [
-    { list: 'OFAC SDN', lastUpdate: '2h ago', entries: 12847, added: 3, removed: 1, rescreeningStatus: 'completed', newMatches: 0 },
-    { list: 'UN Consolidated', lastUpdate: '1d ago', entries: 8234, added: 0, removed: 0, rescreeningStatus: 'n/a', newMatches: 0 },
-    { list: 'EU Sanctions', lastUpdate: '3h ago', entries: 5621, added: 1, removed: 0, rescreeningStatus: 'completed', newMatches: 1 },
-    { list: 'CBN Designated', lastUpdate: '5d ago', entries: 342, added: 0, removed: 0, rescreeningStatus: 'n/a', newMatches: 0 },
-    { list: 'INTERPOL Red', lastUpdate: '12h ago', entries: 7891, added: 2, removed: 0, rescreeningStatus: 'in_progress', newMatches: 0 },
-    { list: 'CBN PEP List', lastUpdate: '2d ago', entries: 1256, added: 0, removed: 0, rescreeningStatus: 'n/a', newMatches: 0 },
-    { list: 'OFAC Non-SDN', lastUpdate: '4h ago', entries: 3412, added: 1, removed: 0, rescreeningStatus: 'completed', newMatches: 0 },
-  ];
+  const anomalies = anomaliesQuery.data ?? [];
+  const capacityForecasts = capacityQuery.data ?? [];
+  const slaBreaches = slaQuery.data ?? [];
+  const sanctionsUpdates = sanctionsQuery.data ?? [];
+  const auditEntries = auditQuery.data ?? [];
+  const pendingApprovals = approvalsQuery.data ?? [];
+  const batches = batchesQuery.data ?? [];
+  const nettingCycles = nettingQuery.data ?? [];
+  const fxLocks = fxLocksQuery.data ?? [];
+  const webhookEvents = webhooksQuery.data ?? [];
+  const apiUsage = apiUsageQuery.data ?? [];
+  const ipEntries = ipAllowlistQuery.data ?? [];
+  const sandboxEnvs = sandboxQuery.data ?? [];
 
   const tabs = [
-    { id: 'anomalies' as const, label: 'Anomaly Detection' },
-    { id: 'capacity' as const, label: 'Capacity Planning' },
-    { id: 'sla' as const, label: 'SLA Monitoring' },
-    { id: 'sanctions' as const, label: 'Sanctions Updates' },
+    { id: 'anomalies' as const, label: 'Anomalies' },
+    { id: 'approvals' as const, label: `Approvals (${pendingApprovals.filter((a: any) => a.status === 'pending').length})` },
+    { id: 'audit' as const, label: 'Audit Trail' },
+    { id: 'batches' as const, label: 'Batch Processing' },
+    { id: 'netting' as const, label: 'Netting' },
+    { id: 'fxlocks' as const, label: 'FX Rate Locks' },
+    { id: 'capacity' as const, label: 'Capacity' },
+    { id: 'sla' as const, label: 'SLA' },
+    { id: 'sanctions' as const, label: 'Sanctions' },
+    { id: 'webhooks' as const, label: 'Webhooks' },
+    { id: 'apiUsage' as const, label: 'API Usage' },
+    { id: 'ipAllowlist' as const, label: 'IP Allowlist' },
+    { id: 'sandbox' as const, label: 'Sandbox' },
   ];
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Platform Analytics</h1>
-        <p className="text-muted-foreground">Anomaly detection, capacity forecasts, SLA health, sanctions monitoring</p>
+        <h1 className="text-2xl font-bold">Platform Analytics & Operations</h1>
+        <p className="text-muted-foreground">Full operational visibility — anomalies, approvals, audit, batches, netting, FX locks, SLA, sanctions, webhooks, API usage, security</p>
       </div>
 
-      <div className="flex gap-2 border-b pb-2">
+      <div className="flex flex-wrap gap-2 border-b pb-2">
         {tabs.map(tab => (
           <Button key={tab.id} variant={analyticsTab === tab.id ? 'default' : 'outline'} size="sm" onClick={() => setAnalyticsTab(tab.id)}>
             {tab.label}
@@ -1554,28 +1566,62 @@ function AnalyticsSection() {
         ))}
       </div>
 
+      {/* Anomaly Detection */}
       {analyticsTab === 'anomalies' && (
         <Card>
-          <CardHeader><CardTitle>Detected Anomalies</CardTitle><CardDescription>Statistical pattern analysis flagging unusual transfer behavior</CardDescription></CardHeader>
+          <CardHeader><CardTitle>Detected Anomalies ({anomalies.length})</CardTitle><CardDescription>ML-based pattern analysis flagging unusual transfer behavior</CardDescription></CardHeader>
           <CardContent>
             <Table>
               <TableHeader><TableRow>
-                <TableHead>ID</TableHead><TableHead>Participant</TableHead><TableHead>Type</TableHead>
-                <TableHead>Severity</TableHead><TableHead>Score</TableHead><TableHead>Description</TableHead><TableHead>Detected</TableHead><TableHead>Actions</TableHead>
+                <TableHead>ID</TableHead><TableHead>Severity</TableHead><TableHead>Type</TableHead>
+                <TableHead>Corridor</TableHead><TableHead>Description</TableHead><TableHead>Detected</TableHead><TableHead>Status</TableHead><TableHead>Affected Txns</TableHead>
               </TableRow></TableHeader>
               <TableBody>
-                {anomalies.map(a => (
-                  <TableRow key={a.id}>
-                    <TableCell className="font-mono text-xs">{a.id}</TableCell>
-                    <TableCell>{a.participant}</TableCell>
-                    <TableCell><Badge variant="outline">{a.type.replace(/_/g, ' ')}</Badge></TableCell>
+                {anomalies.map((a: any) => (
+                  <TableRow key={a.alertId}>
+                    <TableCell className="font-mono text-xs">{a.alertId}</TableCell>
                     <TableCell><Badge variant={a.severity === 'critical' ? 'destructive' : a.severity === 'high' ? 'destructive' : 'secondary'}>{a.severity}</Badge></TableCell>
-                    <TableCell className="font-bold">{a.score}</TableCell>
+                    <TableCell><Badge variant="outline">{a.type?.replace(/_/g, ' ')}</Badge></TableCell>
+                    <TableCell className="font-medium">{a.corridor}</TableCell>
                     <TableCell className="text-xs max-w-[300px]">{a.description}</TableCell>
-                    <TableCell className="text-xs">{a.detected}</TableCell>
+                    <TableCell className="text-xs">{new Date(a.detectedAt).toLocaleTimeString()}</TableCell>
+                    <TableCell><Badge variant={a.status === 'escalated' ? 'destructive' : 'outline'}>{a.status}</Badge></TableCell>
+                    <TableCell className="font-bold">{a.affectedTransfers}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Dual-Approval Workflow */}
+      {analyticsTab === 'approvals' && (
+        <Card>
+          <CardHeader><CardTitle>Pending Approvals ({pendingApprovals.filter((a: any) => a.status === 'pending').length})</CardTitle><CardDescription>Dual-approval workflow — high-value transfers, tier upgrades, compliance escalations</CardDescription></CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader><TableRow>
+                <TableHead>ID</TableHead><TableHead>Type</TableHead><TableHead>Subject</TableHead>
+                <TableHead>Requested By</TableHead><TableHead>Approvals</TableHead><TableHead>Status</TableHead><TableHead>Expires</TableHead><TableHead>Actions</TableHead>
+              </TableRow></TableHeader>
+              <TableBody>
+                {pendingApprovals.map((a: any) => (
+                  <TableRow key={a.requestId}>
+                    <TableCell className="font-mono text-xs">{a.requestId}</TableCell>
+                    <TableCell><Badge variant="outline">{a.type?.replace(/_/g, ' ')}</Badge></TableCell>
+                    <TableCell className="text-xs max-w-[250px]">{a.subject}</TableCell>
+                    <TableCell className="text-xs">{a.requestedBy}</TableCell>
+                    <TableCell className="font-bold">{a.currentApprovals}/{a.requiredApprovals}</TableCell>
+                    <TableCell><Badge variant={a.status === 'approved' ? 'default' : a.status === 'rejected' ? 'destructive' : 'secondary'}>{a.status}</Badge></TableCell>
+                    <TableCell className="text-xs">{new Date(a.expiresAt).toLocaleString()}</TableCell>
                     <TableCell>
-                      {!a.acknowledged && <Button size="sm" variant="outline">Acknowledge</Button>}
-                      {a.acknowledged && <Badge variant="outline">Ack'd</Badge>}
+                      {a.status === 'pending' && (
+                        <div className="flex gap-1">
+                          <Button size="sm" variant="default" onClick={() => approvalMut.mutate({ requestId: a.requestId, approved: true, comment: 'Approved' })} disabled={approvalMut.isPending}>Approve</Button>
+                          <Button size="sm" variant="destructive" onClick={() => approvalMut.mutate({ requestId: a.requestId, approved: false, comment: 'Rejected' })} disabled={approvalMut.isPending}>Reject</Button>
+                        </div>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))}
@@ -1585,26 +1631,27 @@ function AnalyticsSection() {
         </Card>
       )}
 
-      {analyticsTab === 'capacity' && (
+      {/* Immutable Audit Trail */}
+      {analyticsTab === 'audit' && (
         <Card>
-          <CardHeader><CardTitle>30-Day Capacity Forecast</CardTitle><CardDescription>Volume predictions with Nigerian seasonal calendar (salary days, Eid, Christmas, school fees)</CardDescription></CardHeader>
+          <CardHeader><CardTitle>Immutable Audit Trail ({auditEntries.length} entries)</CardTitle><CardDescription>Cryptographically chained, append-only event log — every state change recorded</CardDescription></CardHeader>
           <CardContent>
             <Table>
               <TableHeader><TableRow>
-                <TableHead>Corridor</TableHead><TableHead>Date</TableHead><TableHead>Predicted Volume</TableHead>
-                <TableHead>Confidence</TableHead><TableHead>Patterns</TableHead><TableHead>Current Liquidity</TableHead><TableHead>Gap</TableHead><TableHead>Risk</TableHead>
+                <TableHead>#</TableHead><TableHead>Timestamp</TableHead><TableHead>Action</TableHead>
+                <TableHead>Actor</TableHead><TableHead>Role</TableHead><TableHead>Resource</TableHead><TableHead>Details</TableHead><TableHead>Hash</TableHead>
               </TableRow></TableHeader>
               <TableBody>
-                {capacityForecasts.map((f, i) => (
-                  <TableRow key={i}>
-                    <TableCell className="font-medium">{f.corridor}</TableCell>
-                    <TableCell>{f.date}</TableCell>
-                    <TableCell className="font-bold">{f.predicted}</TableCell>
-                    <TableCell className="text-xs">{f.confidence}</TableCell>
-                    <TableCell><Badge variant="outline">{f.patterns}</Badge></TableCell>
-                    <TableCell>{f.liquidity}</TableCell>
-                    <TableCell className={f.gap !== '₦0' ? 'text-red-500 font-medium' : ''}>{f.gap}</TableCell>
-                    <TableCell><Badge variant={f.risk === 'critical' ? 'destructive' : f.risk === 'high' ? 'destructive' : f.risk === 'medium' ? 'secondary' : 'outline'}>{f.risk}</Badge></TableCell>
+                {auditEntries.map((e: any) => (
+                  <TableRow key={e.sequence}>
+                    <TableCell className="font-mono text-xs">{e.sequence}</TableCell>
+                    <TableCell className="text-xs">{new Date(e.timestamp).toLocaleTimeString()}</TableCell>
+                    <TableCell><Badge variant="outline">{e.action}</Badge></TableCell>
+                    <TableCell className="text-xs">{e.actorId}</TableCell>
+                    <TableCell><Badge variant={e.actorRole === 'admin' ? 'default' : 'secondary'}>{e.actorRole}</Badge></TableCell>
+                    <TableCell className="text-xs">{e.resourceType}/{e.resourceId}</TableCell>
+                    <TableCell className="text-xs max-w-[200px]">{JSON.stringify(e.details)}</TableCell>
+                    <TableCell className="font-mono text-xs text-muted-foreground">{e.entryHash?.slice(0, 8)}…</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -1613,55 +1660,286 @@ function AnalyticsSection() {
         </Card>
       )}
 
-      {analyticsTab === 'sla' && (
+      {/* Batch Processing */}
+      {analyticsTab === 'batches' && (
         <Card>
-          <CardHeader><CardTitle>SLA Breach Monitor</CardTitle><CardDescription>Corridor health tracking with auto-escalation on consecutive breaches</CardDescription></CardHeader>
+          <CardHeader><CardTitle>Batch Transfers ({batches.length} batches)</CardTitle><CardDescription>Bulk transfer processing — CSV/API upload up to 5,000 transfers per batch</CardDescription></CardHeader>
           <CardContent>
-            {slaBreaches.length === 0 ? (
-              <p className="text-center text-muted-foreground py-8">All corridors within SLA targets</p>
-            ) : (
-              <Table>
-                <TableHeader><TableRow>
-                  <TableHead>Corridor</TableHead><TableHead>Target</TableHead><TableHead>Actual</TableHead>
-                  <TableHead>Breach Type</TableHead><TableHead>Consecutive</TableHead><TableHead>Action Taken</TableHead>
-                </TableRow></TableHeader>
-                <TableBody>
-                  {slaBreaches.map((b, i) => (
-                    <TableRow key={i}>
-                      <TableCell className="font-medium">{b.corridor}</TableCell>
-                      <TableCell className="text-xs">{b.target}</TableCell>
-                      <TableCell className="text-xs text-red-500">{b.actual}</TableCell>
-                      <TableCell><Badge variant="destructive">{b.breachType}</Badge></TableCell>
-                      <TableCell className="font-bold">{b.consecutive}</TableCell>
-                      <TableCell className="text-xs">{b.action}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
+            <Table>
+              <TableHeader><TableRow>
+                <TableHead>Batch ID</TableHead><TableHead>Participant</TableHead><TableHead>Submitted</TableHead>
+                <TableHead>Total Items</TableHead><TableHead>Success</TableHead><TableHead>Failed</TableHead><TableHead>Amount (NGN)</TableHead><TableHead>Fees (USD)</TableHead><TableHead>Status</TableHead>
+              </TableRow></TableHeader>
+              <TableBody>
+                {batches.map((b: any) => (
+                  <TableRow key={b.batchId}>
+                    <TableCell className="font-mono text-xs">{b.batchId}</TableCell>
+                    <TableCell className="text-xs">{b.participantId}</TableCell>
+                    <TableCell className="text-xs">{new Date(b.submittedAt).toLocaleString()}</TableCell>
+                    <TableCell className="font-bold">{b.totalItems}</TableCell>
+                    <TableCell className="text-green-600">{b.successCount}</TableCell>
+                    <TableCell className={b.failedCount > 0 ? 'text-red-500' : ''}>{b.failedCount}</TableCell>
+                    <TableCell>₦{(b.totalAmountNGN || 0).toLocaleString()}</TableCell>
+                    <TableCell>${(b.totalFeesUSD || 0).toFixed(2)}</TableCell>
+                    <TableCell><Badge variant={b.status === 'completed' ? 'default' : b.status === 'processing' ? 'secondary' : 'destructive'}>{b.status}</Badge></TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           </CardContent>
         </Card>
       )}
 
-      {analyticsTab === 'sanctions' && (
+      {/* Multi-Currency Netting */}
+      {analyticsTab === 'netting' && (
         <Card>
-          <CardHeader><CardTitle>Sanctions List Monitoring</CardTitle><CardDescription>Continuous re-screening when lists update — 7 lists monitored</CardDescription></CardHeader>
+          <CardHeader><CardTitle>Multi-Currency Netting ({nettingCycles.length} cycles)</CardTitle><CardDescription>Bilateral netting of offsetting flows — reduces FX exposure and settlement costs</CardDescription></CardHeader>
           <CardContent>
             <Table>
               <TableHeader><TableRow>
-                <TableHead>List</TableHead><TableHead>Last Update</TableHead><TableHead>Total Entries</TableHead>
-                <TableHead>Added</TableHead><TableHead>Removed</TableHead><TableHead>Re-screening</TableHead><TableHead>New Matches</TableHead>
+                <TableHead>Cycle ID</TableHead><TableHead>Period</TableHead>
+                <TableHead>Gross Total</TableHead><TableHead>Net Total</TableHead><TableHead>Savings</TableHead><TableHead>Savings %</TableHead><TableHead>Pairs Netted</TableHead>
               </TableRow></TableHeader>
               <TableBody>
-                {sanctionsUpdates.map((s, i) => (
+                {nettingCycles.map((c: any) => (
+                  <TableRow key={c.cycleId}>
+                    <TableCell className="font-mono text-xs">{c.cycleId}</TableCell>
+                    <TableCell className="text-xs">{new Date(c.cycleStart).toLocaleDateString()} — {new Date(c.cycleEnd).toLocaleDateString()}</TableCell>
+                    <TableCell>${(c.grossTotalUSD || 0).toLocaleString()}</TableCell>
+                    <TableCell>${(c.netTotalUSD || 0).toLocaleString()}</TableCell>
+                    <TableCell className="text-green-600 font-bold">${(c.savingsUSD || 0).toLocaleString()}</TableCell>
+                    <TableCell className="text-green-600 font-bold">{c.savingsPercent}%</TableCell>
+                    <TableCell>{c.pairsNetted}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* FX Rate Locks */}
+      {analyticsTab === 'fxlocks' && (
+        <Card>
+          <CardHeader><CardTitle>FX Rate Locks ({fxLocks.length})</CardTitle><CardDescription>Lock quoted FX rates for 30-300s — prevents rate disputes, gives participants time to confirm</CardDescription></CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader><TableRow>
+                <TableHead>Lock ID</TableHead><TableHead>Participant</TableHead><TableHead>Corridor</TableHead>
+                <TableHead>Market Rate</TableHead><TableHead>Locked Rate</TableHead><TableHead>Spread (bps)</TableHead><TableHead>Amount</TableHead><TableHead>Status</TableHead><TableHead>Expires</TableHead>
+              </TableRow></TableHeader>
+              <TableBody>
+                {fxLocks.map((l: any) => (
+                  <TableRow key={l.lockId}>
+                    <TableCell className="font-mono text-xs">{l.lockId}</TableCell>
+                    <TableCell className="text-xs">{l.participantId}</TableCell>
+                    <TableCell className="font-medium">{l.corridorId}</TableCell>
+                    <TableCell>{l.marketRate?.toLocaleString()}</TableCell>
+                    <TableCell className="font-bold">{l.lockedRate?.toLocaleString()}</TableCell>
+                    <TableCell>{l.spread}</TableCell>
+                    <TableCell>₦{(l.amountFrom || 0).toLocaleString()}</TableCell>
+                    <TableCell><Badge variant={l.status === 'active' ? 'default' : l.status === 'used' ? 'secondary' : 'destructive'}>{l.status}</Badge></TableCell>
+                    <TableCell className="text-xs">{new Date(l.expiresAt).toLocaleTimeString()}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Capacity Planning */}
+      {analyticsTab === 'capacity' && (
+        <Card>
+          <CardHeader><CardTitle>Capacity Forecasts ({capacityForecasts.length} corridors)</CardTitle><CardDescription>ML-predicted volume + liquidity gap analysis per corridor</CardDescription></CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader><TableRow>
+                <TableHead>Corridor</TableHead><TableHead>Date</TableHead><TableHead>Forecast Volume</TableHead>
+                <TableHead>Current Liquidity</TableHead><TableHead>Gap</TableHead><TableHead>Risk</TableHead><TableHead>Notes</TableHead>
+              </TableRow></TableHeader>
+              <TableBody>
+                {capacityForecasts.map((f: any, i: number) => (
                   <TableRow key={i}>
-                    <TableCell className="font-medium">{s.list}</TableCell>
-                    <TableCell className="text-xs">{s.lastUpdate}</TableCell>
-                    <TableCell>{s.entries.toLocaleString()}</TableCell>
-                    <TableCell className={s.added > 0 ? 'text-yellow-500 font-medium' : ''}>{s.added}</TableCell>
-                    <TableCell>{s.removed}</TableCell>
-                    <TableCell><Badge variant={s.rescreeningStatus === 'in_progress' ? 'secondary' : s.rescreeningStatus === 'completed' ? 'outline' : 'outline'}>{s.rescreeningStatus}</Badge></TableCell>
-                    <TableCell className={s.newMatches > 0 ? 'text-red-500 font-bold' : ''}>{s.newMatches}</TableCell>
+                    <TableCell className="font-medium">{f.corridor}</TableCell>
+                    <TableCell className="text-xs">{f.date}</TableCell>
+                    <TableCell className="font-bold">${(f.forecastVolumeUSD || 0).toLocaleString()}</TableCell>
+                    <TableCell>${(f.currentLiquidityUSD || 0).toLocaleString()}</TableCell>
+                    <TableCell className={f.liquidityGap > 0 ? 'text-red-500 font-medium' : 'text-green-600'}>${(f.liquidityGap || 0).toLocaleString()}</TableCell>
+                    <TableCell><Badge variant={f.riskLevel === 'high' ? 'destructive' : f.riskLevel === 'medium' ? 'secondary' : 'outline'}>{f.riskLevel}</Badge></TableCell>
+                    <TableCell className="text-xs max-w-[200px]">{f.notes}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* SLA Monitoring */}
+      {analyticsTab === 'sla' && (
+        <Card>
+          <CardHeader><CardTitle>SLA Breach Monitor ({slaBreaches.length} breaches)</CardTitle><CardDescription>Auto-escalation to backup provider on consecutive SLA breaches</CardDescription></CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader><TableRow>
+                <TableHead>Corridor</TableHead><TableHead>Rail</TableHead><TableHead>SLA Target (ms)</TableHead>
+                <TableHead>Actual (ms)</TableHead><TableHead>Transfer</TableHead><TableHead>Auto-Escalated</TableHead><TableHead>Fallback Used</TableHead><TableHead>Resolved</TableHead>
+              </TableRow></TableHeader>
+              <TableBody>
+                {slaBreaches.map((b: any, i: number) => (
+                  <TableRow key={i}>
+                    <TableCell className="font-medium">{b.corridor}</TableCell>
+                    <TableCell><Badge variant="outline">{b.rail}</Badge></TableCell>
+                    <TableCell>{b.slaTargetMs}ms</TableCell>
+                    <TableCell className="text-red-500 font-bold">{b.actualMs}ms</TableCell>
+                    <TableCell className="font-mono text-xs">{b.transferRef}</TableCell>
+                    <TableCell>{b.autoEscalated ? '✓' : '—'}</TableCell>
+                    <TableCell>{b.fallbackUsed || '—'}</TableCell>
+                    <TableCell><Badge variant={b.resolved ? 'default' : 'destructive'}>{b.resolved ? 'Resolved' : 'Active'}</Badge></TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Sanctions Updates */}
+      {analyticsTab === 'sanctions' && (
+        <Card>
+          <CardHeader><CardTitle>Sanctions List Monitoring ({sanctionsUpdates.length} lists)</CardTitle><CardDescription>Continuous re-screening when lists update — automated SAR filing to NFIU</CardDescription></CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader><TableRow>
+                <TableHead>List</TableHead><TableHead>Last Updated</TableHead><TableHead>Total Entries</TableHead>
+                <TableHead>New</TableHead><TableHead>Removed</TableHead><TableHead>Re-screen Status</TableHead><TableHead>New Matches</TableHead>
+              </TableRow></TableHeader>
+              <TableBody>
+                {sanctionsUpdates.map((s: any, i: number) => (
+                  <TableRow key={i}>
+                    <TableCell className="font-medium">{s.name || s.listId}</TableCell>
+                    <TableCell className="text-xs">{new Date(s.lastUpdated).toLocaleString()}</TableCell>
+                    <TableCell>{(s.totalEntries || 0).toLocaleString()}</TableCell>
+                    <TableCell className={s.newEntries > 0 ? 'text-yellow-500 font-medium' : ''}>{s.newEntries}</TableCell>
+                    <TableCell>{s.removedEntries}</TableCell>
+                    <TableCell><Badge variant={s.rescreenStatus === 'in_progress' ? 'secondary' : 'outline'}>{s.rescreenStatus}</Badge></TableCell>
+                    <TableCell className={s.rescreenMatches > 0 ? 'text-red-500 font-bold' : ''}>{s.rescreenMatches}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Webhook Events */}
+      {analyticsTab === 'webhooks' && (
+        <Card>
+          <CardHeader><CardTitle>Webhook Event Catalog ({webhookEvents.length} events)</CardTitle><CardDescription>Full event history with replay capability for failed deliveries</CardDescription></CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader><TableRow>
+                <TableHead>Event ID</TableHead><TableHead>Type</TableHead><TableHead>Participant</TableHead>
+                <TableHead>Delivered</TableHead><TableHead>HTTP Status</TableHead><TableHead>Retries</TableHead><TableHead>Actions</TableHead>
+              </TableRow></TableHeader>
+              <TableBody>
+                {webhookEvents.map((e: any) => (
+                  <TableRow key={e.eventId}>
+                    <TableCell className="font-mono text-xs">{e.eventId}</TableCell>
+                    <TableCell><Badge variant="outline">{e.type}</Badge></TableCell>
+                    <TableCell className="text-xs">{e.participantId}</TableCell>
+                    <TableCell className="text-xs">{new Date(e.deliveredAt).toLocaleString()}</TableCell>
+                    <TableCell><Badge variant={e.httpStatus === 200 ? 'default' : 'destructive'}>{e.httpStatus}</Badge></TableCell>
+                    <TableCell className={e.retryCount > 0 ? 'text-yellow-500' : ''}>{e.retryCount}</TableCell>
+                    <TableCell>
+                      {e.httpStatus !== 200 && <Button size="sm" variant="outline" onClick={() => replayMut.mutate({ eventId: e.eventId })} disabled={replayMut.isPending}>Replay</Button>}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* API Usage */}
+      {analyticsTab === 'apiUsage' && (
+        <Card>
+          <CardHeader><CardTitle>API Usage Dashboard ({apiUsage.length} keys)</CardTitle><CardDescription>Per-participant rate limits and usage tracking — tiered quotas (Starter/Growth/Enterprise/Premium)</CardDescription></CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader><TableRow>
+                <TableHead>Participant</TableHead><TableHead>Key ID</TableHead><TableHead>Tier</TableHead>
+                <TableHead>Total Requests</TableHead><TableHead>Today</TableHead><TableHead>Daily Limit</TableHead><TableHead>Usage %</TableHead><TableHead>Rate/min</TableHead>
+              </TableRow></TableHeader>
+              <TableBody>
+                {apiUsage.map((u: any) => (
+                  <TableRow key={u.keyId}>
+                    <TableCell className="text-xs">{u.participantId}</TableCell>
+                    <TableCell className="font-mono text-xs">{u.keyId}</TableCell>
+                    <TableCell><Badge variant={u.tier === 'premium' ? 'default' : u.tier === 'enterprise' ? 'default' : 'outline'}>{u.tier}</Badge></TableCell>
+                    <TableCell>{(u.totalRequests || 0).toLocaleString()}</TableCell>
+                    <TableCell>{(u.requestsToday || 0).toLocaleString()}</TableCell>
+                    <TableCell>{(u.dailyLimit || 0).toLocaleString()}</TableCell>
+                    <TableCell className={u.dailyUsagePercent > 80 ? 'text-red-500 font-bold' : u.dailyUsagePercent > 50 ? 'text-yellow-500' : ''}>{u.dailyUsagePercent?.toFixed(1)}%</TableCell>
+                    <TableCell>{u.ratePerMin}/min</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* IP Allowlist */}
+      {analyticsTab === 'ipAllowlist' && (
+        <Card>
+          <CardHeader><CardTitle>IP Allowlist ({ipEntries.length} entries)</CardTitle><CardDescription>Per-participant IP/CIDR restrictions — prevents unauthorized API access</CardDescription></CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader><TableRow>
+                <TableHead>ID</TableHead><TableHead>Participant</TableHead><TableHead>CIDR</TableHead>
+                <TableHead>Label</TableHead><TableHead>Added By</TableHead><TableHead>Hit Count</TableHead><TableHead>Enforced</TableHead>
+              </TableRow></TableHeader>
+              <TableBody>
+                {ipEntries.map((e: any) => (
+                  <TableRow key={e.id}>
+                    <TableCell className="font-mono text-xs">{e.id}</TableCell>
+                    <TableCell className="text-xs">{e.participantId}</TableCell>
+                    <TableCell className="font-mono">{e.cidr}</TableCell>
+                    <TableCell>{e.label}</TableCell>
+                    <TableCell className="text-xs">{e.addedBy}</TableCell>
+                    <TableCell className="font-bold">{(e.hitCount || 0).toLocaleString()}</TableCell>
+                    <TableCell><Badge variant={e.enforced ? 'default' : 'outline'}>{e.enforced ? 'Yes' : 'No'}</Badge></TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Sandbox Environments */}
+      {analyticsTab === 'sandbox' && (
+        <Card>
+          <CardHeader><CardTitle>Sandbox Environments ({sandboxEnvs.length})</CardTitle><CardDescription>Participant sandbox with simulated providers — test integration without real money</CardDescription></CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader><TableRow>
+                <TableHead>Env ID</TableHead><TableHead>Participant</TableHead><TableHead>Status</TableHead>
+                <TableHead>Corridors</TableHead><TableHead>Transfers Processed</TableHead><TableHead>Last Activity</TableHead><TableHead>API Endpoint</TableHead>
+              </TableRow></TableHeader>
+              <TableBody>
+                {sandboxEnvs.map((s: any) => (
+                  <TableRow key={s.envId}>
+                    <TableCell className="font-mono text-xs">{s.envId}</TableCell>
+                    <TableCell className="text-xs">{s.participantId}</TableCell>
+                    <TableCell><Badge variant={s.status === 'active' ? 'default' : 'secondary'}>{s.status}</Badge></TableCell>
+                    <TableCell className="text-xs">{s.corridors?.join(', ')}</TableCell>
+                    <TableCell className="font-bold">{s.transfersProcessed}</TableCell>
+                    <TableCell className="text-xs">{new Date(s.lastActivity).toLocaleString()}</TableCell>
+                    <TableCell className="font-mono text-xs">{s.apiEndpoint}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>

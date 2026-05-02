@@ -748,6 +748,184 @@ export const outboundRemittanceRouter = router({
       paymentRailsData.dfsps.splice(idx, 1);
       return { deleted: input.dfspId };
     }),
+
+  // ==========================================================================
+  // ENHANCEMENT QUERIES — Batch, Approvals, Audit, Netting, Rate Locks, etc.
+  // ==========================================================================
+
+  getAuditTrail: protectedProcedure.query(async ({ ctx }) => {
+    const { isAdmin } = getScope(ctx.user);
+    if (!isAdmin) throw new TRPCError({ code: 'FORBIDDEN', message: 'Admin only' });
+    return enhancementData.auditTrail;
+  }),
+
+  getPendingApprovals: protectedProcedure.query(async ({ ctx }) => {
+    const { isAdmin } = getScope(ctx.user);
+    if (!isAdmin) throw new TRPCError({ code: 'FORBIDDEN', message: 'Admin only' });
+    return enhancementData.pendingApprovals;
+  }),
+
+  submitApprovalDecision: protectedProcedure
+    .input(z.object({ requestId: z.string(), approved: z.boolean(), comment: z.string().optional() }))
+    .mutation(async ({ ctx, input }) => {
+      const { isAdmin } = getScope(ctx.user);
+      if (!isAdmin) throw new TRPCError({ code: 'FORBIDDEN', message: 'Admin only' });
+      const req = enhancementData.pendingApprovals.find(a => a.requestId === input.requestId);
+      if (!req) throw new TRPCError({ code: 'NOT_FOUND', message: 'Approval not found' });
+      req.decisions.push({ approverId: ctx.user?.id || 'admin', approverRole: 'admin', decision: input.approved ? 'approved' : 'rejected', comment: input.comment || '', decidedAt: new Date().toISOString() });
+      req.currentApprovals += input.approved ? 1 : 0;
+      if (!input.approved) req.status = 'rejected';
+      else if (req.currentApprovals >= req.requiredApprovals) req.status = 'approved';
+      return req;
+    }),
+
+  getBatches: protectedProcedure.query(async ({ ctx }) => {
+    const { isAdmin, participantId } = getScope(ctx.user);
+    if (isAdmin) return enhancementData.batches;
+    return enhancementData.batches.filter(b => b.participantId === String(participantId));
+  }),
+
+  submitBatch: protectedProcedure
+    .input(z.object({
+      items: z.array(z.object({
+        beneficiaryName: z.string(),
+        beneficiaryAccount: z.string(),
+        corridorId: z.string(),
+        amountNGN: z.number().positive(),
+        purpose: z.string().optional(),
+      })),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const { participantId } = getScope(ctx.user);
+      const batchId = `BATCH-${participantId}-${Date.now()}`;
+      const batch = {
+        batchId,
+        participantId,
+        submittedAt: new Date().toISOString(),
+        status: 'processing' as const,
+        totalItems: input.items.length,
+        processedItems: 0,
+        successCount: 0,
+        failedCount: 0,
+        totalAmountNGN: input.items.reduce((s, i) => s + i.amountNGN, 0),
+        items: input.items.map((item, idx) => ({
+          ...item,
+          lineNumber: idx + 1,
+          status: 'completed' as const,
+          transferRef: `NOR-${new Date().getFullYear()}-${String(idx + 1).padStart(5, '0')}`,
+          feeUSD: item.amountNGN * 0.001 / 1600,
+        })),
+      };
+      batch.processedItems = batch.totalItems;
+      batch.successCount = batch.totalItems;
+      (batch as any).status = 'completed';
+      enhancementData.batches.push(batch as any);
+      return batch;
+    }),
+
+  getNettingCycles: protectedProcedure.query(async ({ ctx }) => {
+    const { isAdmin } = getScope(ctx.user);
+    if (!isAdmin) throw new TRPCError({ code: 'FORBIDDEN', message: 'Admin only' });
+    return enhancementData.nettingCycles;
+  }),
+
+  getActiveFXLocks: protectedProcedure.query(async ({ ctx }) => {
+    const { participantId, isAdmin } = getScope(ctx.user);
+    if (isAdmin) return enhancementData.fxRateLocks;
+    return enhancementData.fxRateLocks.filter(l => l.participantId === String(participantId));
+  }),
+
+  lockFXRate: protectedProcedure
+    .input(z.object({
+      corridorId: z.string(),
+      fromCurrency: z.string(),
+      toCurrency: z.string(),
+      amountFrom: z.number().positive(),
+      ttlSeconds: z.number().min(10).max(300).optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const { participantId } = getScope(ctx.user);
+      const pid = String(participantId);
+      const route = paymentRailsData.corridorRoutes.find(r => r.corridorId === input.corridorId);
+      const marketRate = fxRates[input.toCurrency] || 1;
+      const spread = 50; // 50 bps default
+      const ttl = input.ttlSeconds || 60;
+      const lock = {
+        lockId: `LOCK-${pid}-${Date.now()}`,
+        participantId: pid,
+        corridorId: input.corridorId,
+        fromCurrency: input.fromCurrency,
+        toCurrency: input.toCurrency,
+        marketRate,
+        lockedRate: marketRate * (1 + spread / 10000),
+        spread,
+        amountFrom: input.amountFrom,
+        amountTo: input.amountFrom / (marketRate * (1 + spread / 10000)),
+        status: 'active' as const,
+        lockedAt: new Date().toISOString(),
+        expiresAt: new Date(Date.now() + ttl * 1000).toISOString(),
+      };
+      enhancementData.fxRateLocks.push(lock);
+      return lock;
+    }),
+
+  getIPAllowlist: protectedProcedure.query(async ({ ctx }) => {
+    const { isAdmin } = getScope(ctx.user);
+    if (!isAdmin) throw new TRPCError({ code: 'FORBIDDEN', message: 'Admin only' });
+    return enhancementData.ipAllowlist;
+  }),
+
+  getAPIUsage: protectedProcedure.query(async ({ ctx }) => {
+    const { isAdmin, participantId } = getScope(ctx.user);
+    if (isAdmin) return enhancementData.apiUsage;
+    return enhancementData.apiUsage.filter(u => u.participantId === String(participantId));
+  }),
+
+  getAnomalyAlerts: protectedProcedure.query(async ({ ctx }) => {
+    const { isAdmin } = getScope(ctx.user);
+    if (!isAdmin) throw new TRPCError({ code: 'FORBIDDEN', message: 'Admin only' });
+    return enhancementData.anomalyAlerts;
+  }),
+
+  getSLABreaches: protectedProcedure.query(async ({ ctx }) => {
+    const { isAdmin } = getScope(ctx.user);
+    if (!isAdmin) throw new TRPCError({ code: 'FORBIDDEN', message: 'Admin only' });
+    return enhancementData.slaBreaches;
+  }),
+
+  getCapacityForecasts: protectedProcedure.query(async ({ ctx }) => {
+    const { isAdmin } = getScope(ctx.user);
+    if (!isAdmin) throw new TRPCError({ code: 'FORBIDDEN', message: 'Admin only' });
+    return enhancementData.capacityForecasts;
+  }),
+
+  getSanctionsUpdates: protectedProcedure.query(async ({ ctx }) => {
+    const { isAdmin } = getScope(ctx.user);
+    if (!isAdmin) throw new TRPCError({ code: 'FORBIDDEN', message: 'Admin only' });
+    return enhancementData.sanctionsUpdates;
+  }),
+
+  getWebhookEvents: protectedProcedure.query(async ({ ctx }) => {
+    const { isAdmin, participantId } = getScope(ctx.user);
+    if (isAdmin) return enhancementData.webhookEvents;
+    return enhancementData.webhookEvents.filter(e => e.participantId === String(participantId));
+  }),
+
+  replayWebhook: protectedProcedure
+    .input(z.object({ eventId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const { isAdmin } = getScope(ctx.user);
+      if (!isAdmin) throw new TRPCError({ code: 'FORBIDDEN', message: 'Admin only' });
+      const evt = enhancementData.webhookEvents.find(e => e.eventId === input.eventId);
+      if (!evt) throw new TRPCError({ code: 'NOT_FOUND', message: 'Webhook event not found' });
+      return { ...evt, replayed: true, replayedAt: new Date().toISOString() };
+    }),
+
+  getSandboxEnvironments: protectedProcedure.query(async ({ ctx }) => {
+    const { participantId, isAdmin } = getScope(ctx.user);
+    if (isAdmin) return enhancementData.sandboxEnvs;
+    return enhancementData.sandboxEnvs.filter(s => s.participantId === String(participantId));
+  }),
 });
 
 // =============================================================================
@@ -801,5 +979,90 @@ const paymentRailsData = {
     { dfspId: 'dfsp-mobile-money', name: 'Mobile Money (Africa)', railType: 'MOBILE_MONEY', corridors: ['NG-GH', 'NG-KE', 'NG-CM', 'NG-CI', 'NG-SN', 'NG-ZA'], status: 'active', settlementModel: 'immediate_gross', partyIdTypes: ['MSISDN'], endpoint: 'momo-adapter.remit-switch.internal', settlementAcct: 'MOMO_CLEARING' },
     { dfspId: 'dfsp-ach', name: 'ACH (US)', railType: 'ACH', corridors: ['NG-US', 'NG-CA'], status: 'active', settlementModel: 'deferred_net', partyIdTypes: ['ACCOUNT_ID'], endpoint: 'ach-adapter.remit-switch.internal', settlementAcct: 'ACH_CLEARING_USD' },
     { dfspId: 'dfsp-faster-payments', name: 'Faster Payments (UK)', railType: 'FASTER_PAY', corridors: ['NG-GB'], status: 'active', settlementModel: 'immediate_gross', partyIdTypes: ['ACCOUNT_ID'], endpoint: 'fps-adapter.remit-switch.internal', settlementAcct: 'FPS_CLEARING_GBP' },
+  ],
+};
+
+// FX rates (currency -> 1 unit in NGN)
+const fxRates: Record<string, number> = {
+  NGN: 1, USD: 1600, GBP: 1960, EUR: 1750, GHS: 103, KES: 10.5,
+  ZAR: 86.5, CNY: 221, INR: 19.2, XOF: 2.62, XAF: 2.62, CAD: 1185, AED: 435, TRY: 50,
+};
+
+// =============================================================================
+// Enhancement seed data — approvals, audit, batches, netting, rate locks, etc.
+// =============================================================================
+const enhancementData = {
+  pendingApprovals: [
+    { requestId: 'APR-001', type: 'high_value_transfer', requestedBy: 'operator-payapp', requestedAt: '2026-05-02T08:30:00Z', expiresAt: '2026-05-02T12:30:00Z', status: 'pending', requiredApprovals: 2, currentApprovals: 1, subject: 'Transfer ₦750M to NG-GB via SWIFT', details: { corridor: 'NG-GB', amount: '750000000', beneficiary: 'London Holdings Ltd' }, decisions: [{ approverId: 'admin-ops-1', approverRole: 'admin', decision: 'approved', comment: 'Verified beneficiary', decidedAt: '2026-05-02T09:15:00Z' }] },
+    { requestId: 'APR-002', type: 'tier_upgrade', requestedBy: 'operator-opay', requestedAt: '2026-05-01T14:00:00Z', expiresAt: '2026-05-03T14:00:00Z', status: 'pending', requiredApprovals: 2, currentApprovals: 0, subject: 'OPay tier upgrade: Growth → Enterprise', details: { participant: 'OPay', currentTier: 'Growth', requestedTier: 'Enterprise', monthlyVolume: '₦8.2B' }, decisions: [] },
+    { requestId: 'APR-003', type: 'rail_config_change', requestedBy: 'admin-infra', requestedAt: '2026-05-02T10:00:00Z', expiresAt: '2026-05-03T10:00:00Z', status: 'pending', requiredApprovals: 2, currentApprovals: 0, subject: 'SWIFT rail: change max settlement from 48h to 24h', details: { rail: 'SWIFT', field: 'maxSettlement', oldValue: '48h', newValue: '24h' }, decisions: [] },
+    { requestId: 'APR-004', type: 'compliance_escalation', requestedBy: 'compliance-bot', requestedAt: '2026-05-02T11:00:00Z', expiresAt: '2026-05-02T23:00:00Z', status: 'pending', requiredApprovals: 2, currentApprovals: 0, subject: 'Sanctions match: beneficiary "A. Khan" vs OFAC SDN entry', details: { transferRef: 'NOR-2026-00047', matchScore: '87%', listSource: 'OFAC SDN' }, decisions: [] },
+    { requestId: 'APR-005', type: 'participant_onboard', requestedBy: 'onboarding-system', requestedAt: '2026-04-30T09:00:00Z', expiresAt: '2026-05-03T09:00:00Z', status: 'pending', requiredApprovals: 2, currentApprovals: 1, subject: 'Kuda MFB onboarding: Final production go-live approval', details: { participant: 'Kuda MFB', stage: 'certification_complete', corridors: 'NG-GH, NG-GB, NG-US' }, decisions: [{ approverId: 'admin-compliance', approverRole: 'admin', decision: 'approved', comment: 'Compliance passed', decidedAt: '2026-05-01T16:00:00Z' }] },
+  ] as any[],
+  auditTrail: [
+    { sequence: 1, timestamp: '2026-05-02T08:00:00Z', action: 'transfer.created', actorId: 'payapp-api', actorRole: 'participant', resourceType: 'transfer', resourceId: 'NOR-2026-00001', details: { corridor: 'NG-GH', amount: '2500000' }, entryHash: 'a1b2c3' },
+    { sequence: 2, timestamp: '2026-05-02T08:00:05Z', action: 'transfer.approved', actorId: 'system', actorRole: 'system', resourceType: 'transfer', resourceId: 'NOR-2026-00001', details: { stage: 'compliance_cleared' }, entryHash: 'd4e5f6' },
+    { sequence: 3, timestamp: '2026-05-02T08:01:00Z', action: 'transfer.completed', actorId: 'swift-adapter', actorRole: 'system', resourceType: 'transfer', resourceId: 'NOR-2026-00001', details: { rail: 'PAPSS', latencyMs: '850' }, entryHash: 'g7h8i9' },
+    { sequence: 4, timestamp: '2026-05-02T09:00:00Z', action: 'rail.status_changed', actorId: 'admin-ops-1', actorRole: 'admin', resourceType: 'rail', resourceId: 'MOBILE_MONEY', details: { oldStatus: 'operational', newStatus: 'degraded', reason: 'MTN API timeout spike' }, entryHash: 'j0k1l2' },
+    { sequence: 5, timestamp: '2026-05-02T09:30:00Z', action: 'config.changed', actorId: 'admin-infra', actorRole: 'admin', resourceType: 'corridor', resourceId: 'NG-GH', details: { field: 'railFeeRate', oldValue: '0.0005', newValue: '0.0004' }, entryHash: 'm3n4o5' },
+    { sequence: 6, timestamp: '2026-05-02T10:00:00Z', action: 'approval.decision', actorId: 'admin-ops-1', actorRole: 'admin', resourceType: 'approval', resourceId: 'APR-001', details: { decision: 'approved' }, entryHash: 'p6q7r8' },
+    { sequence: 7, timestamp: '2026-05-02T10:15:00Z', action: 'rate.override', actorId: 'admin-treasury', actorRole: 'admin', resourceType: 'fxRate', resourceId: 'NGN-GBP', details: { oldSpread: '100bps', newSpread: '80bps', justification: 'Competitive pressure' }, entryHash: 's9t0u1' },
+    { sequence: 8, timestamp: '2026-05-02T11:00:00Z', action: 'compliance.escalated', actorId: 'sanctions-engine', actorRole: 'system', resourceType: 'transfer', resourceId: 'NOR-2026-00047', details: { matchScore: '87%', list: 'OFAC SDN' }, entryHash: 'v2w3x4' },
+    { sequence: 9, timestamp: '2026-05-02T12:00:00Z', action: 'prefund.deposit', actorId: 'payapp-treasury', actorRole: 'participant', resourceType: 'prefund', resourceId: 'TB-PFND-PAYAPP-001', details: { amount: '500000000', currency: 'NGN' }, entryHash: 'y5z6a7' },
+    { sequence: 10, timestamp: '2026-05-02T13:00:00Z', action: 'batch.submitted', actorId: 'payapp-api', actorRole: 'participant', resourceType: 'batch', resourceId: 'BATCH-PAYAPP-001', details: { items: '47', totalNGN: '125000000' }, entryHash: 'b8c9d0' },
+  ],
+  batches: [
+    { batchId: 'BATCH-PAYAPP-001', participantId: 'PAYAPP-001', submittedAt: '2026-05-02T06:00:00Z', status: 'completed', totalItems: 47, processedItems: 47, successCount: 45, failedCount: 2, totalAmountNGN: 125_000_000, totalFeesUSD: 78.13, items: [] },
+    { batchId: 'BATCH-OPAY-001', participantId: 'OPAY-001', submittedAt: '2026-05-01T22:00:00Z', status: 'completed', totalItems: 312, processedItems: 312, successCount: 308, failedCount: 4, totalAmountNGN: 890_000_000, totalFeesUSD: 556.25, items: [] },
+    { batchId: 'BATCH-PAYAPP-002', participantId: 'PAYAPP-001', submittedAt: '2026-05-02T12:00:00Z', status: 'processing', totalItems: 85, processedItems: 62, successCount: 60, failedCount: 2, totalAmountNGN: 240_000_000, totalFeesUSD: 93.75, items: [] },
+  ] as any[],
+  nettingCycles: [
+    { cycleId: 'NET-20260502-AM', cycleStart: '2026-05-02T00:00:00Z', cycleEnd: '2026-05-02T12:00:00Z', grossTotalUSD: 3_850_000, netTotalUSD: 2_695_000, savingsUSD: 1_155_000, savingsPercent: 30, pairsNetted: 5, grossFlows: [{ fromCurrency: 'NGN', toCurrency: 'GHS', grossAmount: 850000, txnCount: 34 }, { fromCurrency: 'NGN', toCurrency: 'GBP', grossAmount: 1200000, txnCount: 12 }, { fromCurrency: 'NGN', toCurrency: 'USD', grossAmount: 950000, txnCount: 18 }] },
+    { cycleId: 'NET-20260501-PM', cycleStart: '2026-05-01T12:00:00Z', cycleEnd: '2026-05-01T23:59:59Z', grossTotalUSD: 4_200_000, netTotalUSD: 3_150_000, savingsUSD: 1_050_000, savingsPercent: 25, pairsNetted: 4, grossFlows: [] },
+  ],
+  fxRateLocks: [
+    { lockId: 'LOCK-PAYAPP-001', participantId: 'PAYAPP-001', corridorId: 'NG-GB', fromCurrency: 'NGN', toCurrency: 'GBP', marketRate: 1960, lockedRate: 1969.8, spread: 50, amountFrom: 50_000_000, amountTo: 25381, status: 'active', lockedAt: '2026-05-02T14:50:00Z', expiresAt: '2026-05-02T14:51:00Z' },
+    { lockId: 'LOCK-OPAY-001', participantId: 'OPAY-001', corridorId: 'NG-US', fromCurrency: 'NGN', toCurrency: 'USD', marketRate: 1600, lockedRate: 1608, spread: 50, amountFrom: 100_000_000, amountTo: 62189, status: 'used', lockedAt: '2026-05-02T10:00:00Z', expiresAt: '2026-05-02T10:01:00Z' },
+  ],
+  ipAllowlist: [
+    { id: 'IP-PAYAPP-1', participantId: 'PAYAPP-001', cidr: '10.0.1.0/24', label: 'PayApp HQ Office', addedBy: 'admin-1', addedAt: '2026-04-01T00:00:00Z', hitCount: 14523, enforced: true },
+    { id: 'IP-PAYAPP-2', participantId: 'PAYAPP-001', cidr: '172.16.0.0/16', label: 'PayApp Cloud VPC', addedBy: 'admin-1', addedAt: '2026-04-01T00:00:00Z', hitCount: 89234, enforced: true },
+    { id: 'IP-OPAY-1', participantId: 'OPAY-001', cidr: '10.10.0.0/16', label: 'OPay Production VPC', addedBy: 'admin-2', addedAt: '2026-04-15T00:00:00Z', hitCount: 45120, enforced: true },
+  ],
+  apiUsage: [
+    { participantId: 'PAYAPP-001', keyId: 'ak_payapp_001', tier: 'enterprise', totalRequests: 2_450_000, requestsToday: 18_420, dailyLimit: 100000, dailyUsagePercent: 18.4, ratePerMin: 500, currentMinUsage: 12 },
+    { participantId: 'OPAY-001', keyId: 'ak_opay_001', tier: 'premium', totalRequests: 8_900_000, requestsToday: 45_200, dailyLimit: 500000, dailyUsagePercent: 9.0, ratePerMin: 2000, currentMinUsage: 45 },
+    { participantId: 'MONIEPOINT-001', keyId: 'ak_moniepoint_001', tier: 'growth', totalRequests: 890_000, requestsToday: 3_200, dailyLimit: 25000, dailyUsagePercent: 12.8, ratePerMin: 100, currentMinUsage: 3 },
+  ],
+  anomalyAlerts: [
+    { alertId: 'ANOM-001', severity: 'high', type: 'velocity_spike', corridor: 'NG-AE', description: 'Transfer volume to UAE spiked 340% vs 30-day average', detectedAt: '2026-05-02T11:30:00Z', status: 'investigating', participantId: 'PAYAPP-001', affectedTransfers: 12 },
+    { alertId: 'ANOM-002', severity: 'medium', type: 'new_beneficiary_country', corridor: 'NG-TR', description: 'First-time beneficiary in Turkey for Moniepoint', detectedAt: '2026-05-02T10:45:00Z', status: 'cleared', participantId: 'MONIEPOINT-001', affectedTransfers: 1 },
+    { alertId: 'ANOM-003', severity: 'critical', type: 'amount_outlier', corridor: 'NG-CN', description: 'Single transfer ₦89M to China — 15x participant average', detectedAt: '2026-05-02T13:00:00Z', status: 'escalated', participantId: 'OPAY-001', affectedTransfers: 1 },
+  ],
+  slaBreaches: [
+    { breachId: 'SLA-001', corridor: 'NG-GB', rail: 'SWIFT', slaTargetMs: 5000, actualMs: 12400, breachedAt: '2026-05-02T09:45:00Z', transferRef: 'NOR-2026-00023', autoEscalated: true, fallbackUsed: 'FASTER_PAY', resolved: true },
+    { breachId: 'SLA-002', corridor: 'NG-GH', rail: 'MOBILE_MONEY', slaTargetMs: 3000, actualMs: 8900, breachedAt: '2026-05-02T13:20:00Z', transferRef: 'NOR-2026-00051', autoEscalated: true, fallbackUsed: 'PAPSS', resolved: false },
+  ],
+  capacityForecasts: [
+    { corridor: 'NG-GH', date: '2026-05-03', forecastVolumeUSD: 1_200_000, currentLiquidityUSD: 2_500_000, liquidityGap: 0, riskLevel: 'low', notes: 'Adequate liquidity' },
+    { corridor: 'NG-GB', date: '2026-05-03', forecastVolumeUSD: 3_500_000, currentLiquidityUSD: 2_800_000, liquidityGap: 700_000, riskLevel: 'medium', notes: 'May need pre-positioning by 6pm' },
+    { corridor: 'NG-US', date: '2026-05-03', forecastVolumeUSD: 2_100_000, currentLiquidityUSD: 3_000_000, liquidityGap: 0, riskLevel: 'low', notes: 'Adequate liquidity' },
+    { corridor: 'NG-CN', date: '2026-05-03', forecastVolumeUSD: 800_000, currentLiquidityUSD: 400_000, liquidityGap: 400_000, riskLevel: 'high', notes: 'CNY shortage — CIPS settlement delay expected' },
+    { corridor: 'NG-IN', date: '2026-05-05', forecastVolumeUSD: 1_800_000, currentLiquidityUSD: 1_500_000, liquidityGap: 300_000, riskLevel: 'medium', notes: 'Salary day spike expected' },
+  ],
+  sanctionsUpdates: [
+    { listId: 'OFAC-SDN', name: 'OFAC SDN', lastUpdated: '2026-05-02T06:00:00Z', totalEntries: 12893, newEntries: 46, removedEntries: 3, rescreenStatus: 'completed', rescreenMatches: 0 },
+    { listId: 'UN-CONSOLIDATED', name: 'UN Consolidated', lastUpdated: '2026-05-01T00:00:00Z', totalEntries: 1247, newEntries: 2, removedEntries: 0, rescreenStatus: 'completed', rescreenMatches: 0 },
+    { listId: 'EU-SANCTIONS', name: 'EU Financial Sanctions', lastUpdated: '2026-04-30T12:00:00Z', totalEntries: 2156, newEntries: 8, removedEntries: 1, rescreenStatus: 'completed', rescreenMatches: 1 },
+    { listId: 'CBN-WATCHLIST', name: 'CBN Watchlist', lastUpdated: '2026-05-02T08:00:00Z', totalEntries: 523, newEntries: 5, removedEntries: 0, rescreenStatus: 'in_progress', rescreenMatches: 0 },
+  ],
+  webhookEvents: [
+    { eventId: 'WH-001', type: 'transfer.completed', participantId: 'PAYAPP-001', payload: { transferRef: 'NOR-2026-00001', status: 'completed' }, deliveredAt: '2026-05-02T08:01:05Z', httpStatus: 200, retryCount: 0 },
+    { eventId: 'WH-002', type: 'transfer.failed', participantId: 'OPAY-001', payload: { transferRef: 'NOR-2026-00015', status: 'failed', reason: 'beneficiary_not_found' }, deliveredAt: '2026-05-02T09:30:00Z', httpStatus: 500, retryCount: 3 },
+    { eventId: 'WH-003', type: 'prefund.low_balance', participantId: 'MONIEPOINT-001', payload: { balance: 45000000, threshold: 100000000 }, deliveredAt: '2026-05-02T12:00:00Z', httpStatus: 200, retryCount: 0 },
+  ],
+  sandboxEnvs: [
+    { envId: 'SBX-PAYAPP', participantId: 'PAYAPP-001', status: 'active', createdAt: '2026-04-15T00:00:00Z', corridors: ['NG-GH', 'NG-GB', 'NG-US'], transfersProcessed: 1247, lastActivity: '2026-05-02T14:00:00Z', apiEndpoint: 'https://sandbox.remit-switch.internal/v2/payapp' },
+    { envId: 'SBX-KUDA', participantId: 'KUDA-001', status: 'testing', createdAt: '2026-05-01T00:00:00Z', corridors: ['NG-GH', 'NG-GB'], transfersProcessed: 23, lastActivity: '2026-05-02T11:00:00Z', apiEndpoint: 'https://sandbox.remit-switch.internal/v2/kuda' },
   ],
 };
