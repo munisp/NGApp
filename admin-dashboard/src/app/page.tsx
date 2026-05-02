@@ -36,6 +36,7 @@ import { ReferralProgram } from '@/components/referrals/ReferralProgram';
 import { WebhookConfig } from '@/components/webhooks/WebhookConfig';
 import { MaintenanceDashboard } from '@/components/maintenance-mode/MaintenanceDashboard';
 import { RustServices } from '@/components/infrastructure/RustServices';
+import OutboundRemittanceDashboard from '@/components/outbound/OutboundRemittanceDashboard';
 import { GoServices } from '@/components/infrastructure/GoServices';
 import { MiddlewareDashboard } from '@/components/infrastructure/MiddlewareDashboard';
 import { useAuth } from '@/lib/auth';
@@ -128,6 +129,8 @@ export default function Home() {
           return <MaintenanceDashboard />;
         case 'reports':
           return <ReportsInterface />;
+        case 'outbound-remittance':
+          return <OutboundRemittanceDashboard />;
         case 'rust-services':
           return <RustServices />;
         case 'go-services':

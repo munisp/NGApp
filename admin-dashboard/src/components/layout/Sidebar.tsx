@@ -235,6 +235,13 @@ const navItems: NavItem[] = [
     label: 'Reports',
     icon: <FileText className="h-5 w-5" />,
   },
+  // Outbound Remittance
+  {
+    id: 'outbound-remittance',
+    label: 'Outbound Remittance',
+    icon: <Globe className="h-5 w-5" />,
+    section: 'Cross-Border',
+  },
   // Infrastructure
   {
     id: 'rust-services',
