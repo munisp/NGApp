@@ -171,7 +171,7 @@ export default function OutboundRemittance() {
         {activeSection === 'fx_management' && <FXManagementSection />}
         {activeSection === 'tier_management' && <TierManagementSection />}
         {activeSection === 'analytics' && <AnalyticsSection />}
-        {activeSection === 'payment_rails' && <PaymentRailsSection />}
+        {activeSection === 'payment_rails' && <PaymentRailsSection isAdmin={isAdmin} />}
         {activeSection === 'settings' && <SettingsSection role={userRole} />}
       </main>
     </div>
@@ -1081,32 +1081,59 @@ function TierManagementSection() {
 // Integrated with Mojaloop Hub Router
 // =============================================================================
 
-function PaymentRailsSection() {
+function PaymentRailsSection({ isAdmin }: { isAdmin: boolean }) {
   const [railsTab, setRailsTab] = useState<'overview' | 'corridorRouting' | 'dfsps' | 'feeCalculator'>('overview');
+  const [showCreateRail, setShowCreateRail] = useState(false);
+  const [editingRail, setEditingRail] = useState<string | null>(null);
+  const [showCreateRoute, setShowCreateRoute] = useState(false);
+  const [editingRoute, setEditingRoute] = useState<string | null>(null);
+  const [showCreateDFSP, setShowCreateDFSP] = useState(false);
+  const [editingDFSP, setEditingDFSP] = useState<string | null>(null);
+  const [changingStatus, setChangingStatus] = useState<string | null>(null);
+
+  const utils = trpc.useUtils();
   const railsQuery = trpc.outboundRemittance.getPaymentRails.useQuery();
   const statusesQuery = trpc.outboundRemittance.getRailStatuses.useQuery();
   const routingQuery = trpc.outboundRemittance.getCorridorRouting.useQuery();
   const dfspsQuery = trpc.outboundRemittance.getDFSPRegistry.useQuery();
 
+  const invalidateAll = () => {
+    utils.outboundRemittance.getPaymentRails.invalidate();
+    utils.outboundRemittance.getRailStatuses.invalidate();
+    utils.outboundRemittance.getCorridorRouting.invalidate();
+    utils.outboundRemittance.getDFSPRegistry.invalidate();
+  };
+
+  const createRailMut = trpc.outboundRemittance.createRail.useMutation({ onSuccess: () => { invalidateAll(); setShowCreateRail(false); } });
+  const updateRailMut = trpc.outboundRemittance.updateRail.useMutation({ onSuccess: () => { invalidateAll(); setEditingRail(null); } });
+  const deleteRailMut = trpc.outboundRemittance.deleteRail.useMutation({ onSuccess: invalidateAll });
+  const updateStatusMut = trpc.outboundRemittance.updateRailStatus.useMutation({ onSuccess: () => { invalidateAll(); setChangingStatus(null); } });
+  const createRouteMut = trpc.outboundRemittance.createCorridorRoute.useMutation({ onSuccess: () => { invalidateAll(); setShowCreateRoute(false); } });
+  const updateRouteMut = trpc.outboundRemittance.updateCorridorRoute.useMutation({ onSuccess: () => { invalidateAll(); setEditingRoute(null); } });
+  const deleteRouteMut = trpc.outboundRemittance.deleteCorridorRoute.useMutation({ onSuccess: invalidateAll });
+  const createDFSPMut = trpc.outboundRemittance.createDFSP.useMutation({ onSuccess: () => { invalidateAll(); setShowCreateDFSP(false); } });
+  const updateDFSPMut = trpc.outboundRemittance.updateDFSP.useMutation({ onSuccess: () => { invalidateAll(); setEditingDFSP(null); } });
+  const deleteDFSPMut = trpc.outboundRemittance.deleteDFSP.useMutation({ onSuccess: invalidateAll });
+
   const rails = railsQuery.data ?? [];
   const statuses = statusesQuery.data ?? [];
   const routing = routingQuery.data ?? [];
   const dfsps = dfspsQuery.data ?? [];
+  const railTypes = rails.map(r => r.type);
 
   const railStatusColor = (s: string) => {
-    if (s === 'operational') return 'default';
-    if (s === 'degraded') return 'secondary';
-    return 'destructive';
+    if (s === 'operational') return 'default' as const;
+    if (s === 'degraded') return 'secondary' as const;
+    return 'destructive' as const;
   };
 
   return (
     <div className="space-y-6">
       <div>
         <h2 className="text-2xl font-bold">Payment Rails & Mojaloop Hub</h2>
-        <p className="text-sm text-muted-foreground">9 payment rails integrated via Mojaloop interoperability hub. Rail selection per corridor with automatic fallback.</p>
+        <p className="text-sm text-muted-foreground">{rails.length} payment rails integrated via Mojaloop interoperability hub. Rail selection per corridor with automatic fallback.</p>
       </div>
 
-      {/* Sub-tabs */}
       <div className="flex gap-2 border-b pb-2">
         {(['overview', 'corridorRouting', 'dfsps', 'feeCalculator'] as const).map(tab => (
           <button key={tab} onClick={() => setRailsTab(tab)}
@@ -1116,47 +1143,75 @@ function PaymentRailsSection() {
         ))}
       </div>
 
-      {/* --- Rail Status Overview --- */}
+      {/* ============ RAIL STATUS OVERVIEW ============ */}
       {railsTab === 'overview' && (
         <div className="space-y-4">
-          {/* Status cards */}
           <div className="grid grid-cols-3 gap-3">
-            <Card><CardContent className="pt-4">
-              <div className="text-2xl font-bold">{statuses.length}</div>
-              <p className="text-xs text-muted-foreground">Active Rails</p>
-            </CardContent></Card>
-            <Card><CardContent className="pt-4">
-              <div className="text-2xl font-bold">{statuses.filter(s => s.status === 'operational').length}</div>
-              <p className="text-xs text-muted-foreground">Operational</p>
-            </CardContent></Card>
-            <Card><CardContent className="pt-4">
-              <div className="text-2xl font-bold">${(statuses.reduce((sum, s) => sum + s.dailyVolumeUSD, 0) / 1_000_000).toFixed(1)}M</div>
-              <p className="text-xs text-muted-foreground">24h Volume (All Rails)</p>
-            </CardContent></Card>
+            <Card><CardContent className="pt-4"><div className="text-2xl font-bold">{statuses.length}</div><p className="text-xs text-muted-foreground">Active Rails</p></CardContent></Card>
+            <Card><CardContent className="pt-4"><div className="text-2xl font-bold">{statuses.filter(s => s.status === 'operational').length}</div><p className="text-xs text-muted-foreground">Operational</p></CardContent></Card>
+            <Card><CardContent className="pt-4"><div className="text-2xl font-bold">${(statuses.reduce((sum, s) => sum + s.dailyVolumeUSD, 0) / 1_000_000).toFixed(1)}M</div><p className="text-xs text-muted-foreground">24h Volume (All Rails)</p></CardContent></Card>
           </div>
 
-          {/* Rail details table */}
+          {isAdmin && <div className="flex justify-end"><Button size="sm" onClick={() => setShowCreateRail(true)}><Plus className="h-4 w-4 mr-1" /> Add Rail</Button></div>}
+
+          {/* Create Rail Form */}
+          {showCreateRail && isAdmin && (
+            <Card className="border-blue-300">
+              <CardHeader><CardTitle className="text-base">Add New Payment Rail</CardTitle></CardHeader>
+              <CardContent>
+                <form onSubmit={e => { e.preventDefault(); const fd = new FormData(e.currentTarget);
+                  createRailMut.mutate({ type: fd.get('type') as string, name: fd.get('name') as string, settlementCurrency: fd.get('settlementCurrency') as string, messageFormat: fd.get('messageFormat') as string, maxSettlement: fd.get('maxSettlement') as string, tracking: fd.get('tracking') === 'true', corridors: (fd.get('corridors') as string).split(',').map(s => s.trim()).filter(Boolean), description: fd.get('description') as string });
+                }} className="grid grid-cols-2 gap-3">
+                  <div><Label>Type (e.g. SWIFT_V2)</Label><Input name="type" required /></div>
+                  <div><Label>Name</Label><Input name="name" required /></div>
+                  <div><Label>Settlement Currency</Label><Input name="settlementCurrency" required /></div>
+                  <div><Label>Message Format</Label><Input name="messageFormat" required /></div>
+                  <div><Label>Max Settlement</Label><Input name="maxSettlement" required placeholder="e.g. 48h, 30s, 5min" /></div>
+                  <div><Label>Tracking</Label><Select name="tracking" defaultValue="true"><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="true">Yes</SelectItem><SelectItem value="false">No</SelectItem></SelectContent></Select></div>
+                  <div className="col-span-2"><Label>Corridors (comma-separated)</Label><Input name="corridors" required placeholder="NG-GH, NG-US" /></div>
+                  <div className="col-span-2"><Label>Description</Label><Input name="description" required /></div>
+                  <div className="col-span-2 flex gap-2"><Button type="submit" disabled={createRailMut.isPending}>{createRailMut.isPending ? 'Creating...' : 'Create Rail'}</Button><Button type="button" variant="outline" onClick={() => setShowCreateRail(false)}>Cancel</Button></div>
+                  {createRailMut.error && <p className="col-span-2 text-sm text-destructive">{createRailMut.error.message}</p>}
+                </form>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Rail Table */}
           <Card>
             <CardHeader><CardTitle>Payment Rail Network Status</CardTitle></CardHeader>
             <CardContent>
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Rail</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Settlement</TableHead>
-                    <TableHead>Format</TableHead>
-                    <TableHead>Max Settlement</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Latency</TableHead>
-                    <TableHead>Success</TableHead>
-                    <TableHead>24h Volume</TableHead>
-                    <TableHead>Active Txn</TableHead>
+                    <TableHead>Rail</TableHead><TableHead>Type</TableHead><TableHead>Settlement</TableHead><TableHead>Format</TableHead><TableHead>Max Settlement</TableHead><TableHead>Status</TableHead><TableHead>Latency</TableHead><TableHead>Success</TableHead><TableHead>24h Volume</TableHead>
+                    {isAdmin && <TableHead>Actions</TableHead>}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {rails.map((rail) => {
                     const status = statuses.find(s => s.rail === rail.type);
+                    if (editingRail === rail.type && isAdmin) {
+                      return (
+                        <TableRow key={rail.type}>
+                          <TableCell colSpan={10}>
+                            <form onSubmit={e => { e.preventDefault(); const fd = new FormData(e.currentTarget);
+                              updateRailMut.mutate({ type: rail.type, name: fd.get('name') as string, settlementCurrency: fd.get('settlementCurrency') as string, messageFormat: fd.get('messageFormat') as string, maxSettlement: fd.get('maxSettlement') as string, corridors: (fd.get('corridors') as string).split(',').map(s => s.trim()).filter(Boolean), description: fd.get('description') as string });
+                            }} className="flex flex-wrap gap-2 items-end">
+                              <div><Label className="text-xs">Name</Label><Input name="name" defaultValue={rail.name} className="h-8 w-40" /></div>
+                              <div><Label className="text-xs">Currency</Label><Input name="settlementCurrency" defaultValue={rail.settlementCurrency} className="h-8 w-20" /></div>
+                              <div><Label className="text-xs">Format</Label><Input name="messageFormat" defaultValue={rail.messageFormat} className="h-8 w-36" /></div>
+                              <div><Label className="text-xs">Max Settlement</Label><Input name="maxSettlement" defaultValue={rail.maxSettlement} className="h-8 w-20" /></div>
+                              <div><Label className="text-xs">Corridors</Label><Input name="corridors" defaultValue={rail.corridors.join(', ')} className="h-8 w-48" /></div>
+                              <div><Label className="text-xs">Description</Label><Input name="description" defaultValue={rail.description} className="h-8 w-64" /></div>
+                              <Button type="submit" size="sm" disabled={updateRailMut.isPending}>Save</Button>
+                              <Button type="button" size="sm" variant="outline" onClick={() => setEditingRail(null)}>Cancel</Button>
+                              {updateRailMut.error && <p className="text-xs text-destructive">{updateRailMut.error.message}</p>}
+                            </form>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    }
                     return (
                       <TableRow key={rail.type}>
                         <TableCell className="font-medium">{rail.name}</TableCell>
@@ -1164,32 +1219,48 @@ function PaymentRailsSection() {
                         <TableCell>{rail.settlementCurrency}</TableCell>
                         <TableCell className="text-xs">{rail.messageFormat}</TableCell>
                         <TableCell>{rail.maxSettlement}</TableCell>
-                        <TableCell><Badge variant={railStatusColor(status?.status ?? 'unknown')}>{status?.status ?? 'unknown'}</Badge></TableCell>
+                        <TableCell>
+                          {changingStatus === rail.type && isAdmin ? (
+                            <Select defaultValue={status?.status ?? 'operational'} onValueChange={v => updateStatusMut.mutate({ rail: rail.type, status: v as 'operational' | 'degraded' | 'down' | 'maintenance' })}>
+                              <SelectTrigger className="h-7 w-32"><SelectValue /></SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="operational">Operational</SelectItem>
+                                <SelectItem value="degraded">Degraded</SelectItem>
+                                <SelectItem value="down">Down</SelectItem>
+                                <SelectItem value="maintenance">Maintenance</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          ) : (
+                            <Badge variant={railStatusColor(status?.status ?? 'unknown')} className={isAdmin ? 'cursor-pointer' : ''} onClick={() => isAdmin && setChangingStatus(rail.type)}>{status?.status ?? 'unknown'}</Badge>
+                          )}
+                        </TableCell>
                         <TableCell>{status?.avgLatencyMs ?? 0}ms</TableCell>
                         <TableCell>{status?.successRate24h?.toFixed(1) ?? 0}%</TableCell>
                         <TableCell>${((status?.dailyVolumeUSD ?? 0) / 1000).toFixed(0)}K</TableCell>
-                        <TableCell>{status?.activeTxnCount ?? 0}</TableCell>
+                        {isAdmin && (
+                          <TableCell>
+                            <div className="flex gap-1">
+                              <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => setEditingRail(rail.type)}>Edit</Button>
+                              <Button size="sm" variant="ghost" className="h-7 px-2 text-xs text-destructive" onClick={() => { if (confirm(`Delete rail ${rail.type}?`)) deleteRailMut.mutate({ type: rail.type }); }}>Delete</Button>
+                            </div>
+                          </TableCell>
+                        )}
                       </TableRow>
                     );
                   })}
                 </TableBody>
               </Table>
+              {deleteRailMut.error && <p className="text-sm text-destructive mt-2">{deleteRailMut.error.message}</p>}
             </CardContent>
           </Card>
 
-          {/* Rail descriptions */}
           <div className="grid grid-cols-3 gap-3">
             {rails.map(rail => (
               <Card key={rail.type}>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm">{rail.name}</CardTitle>
-                  <Badge variant="outline" className="w-fit">{rail.corridors.length} corridors</Badge>
-                </CardHeader>
+                <CardHeader className="pb-2"><CardTitle className="text-sm">{rail.name}</CardTitle><Badge variant="outline" className="w-fit">{rail.corridors.length} corridors</Badge></CardHeader>
                 <CardContent>
                   <p className="text-xs text-muted-foreground">{rail.description}</p>
-                  <div className="mt-2 flex flex-wrap gap-1">
-                    {rail.corridors.map((c: string) => <Badge key={c} variant="secondary" className="text-xs">{c}</Badge>)}
-                  </div>
+                  <div className="mt-2 flex flex-wrap gap-1">{rail.corridors.map((c: string) => <Badge key={c} variant="secondary" className="text-xs">{c}</Badge>)}</div>
                 </CardContent>
               </Card>
             ))}
@@ -1197,92 +1268,178 @@ function PaymentRailsSection() {
         </div>
       )}
 
-      {/* --- Corridor Routing --- */}
+      {/* ============ CORRIDOR ROUTING ============ */}
       {railsTab === 'corridorRouting' && (
         <Card>
           <CardHeader>
-            <CardTitle>Corridor-to-Rail Routing Configuration</CardTitle>
-            <CardDescription>Per architecture doc §12.4: CorridorFee = PrincipalAmount × CorridorRate(dest, rail) + FixedFee</CardDescription>
+            <div className="flex justify-between items-start">
+              <div><CardTitle>Corridor-to-Rail Routing Configuration</CardTitle><CardDescription>Per architecture doc §12.4: CorridorFee = PrincipalAmount × CorridorRate(dest, rail) + FixedFee</CardDescription></div>
+              {isAdmin && <Button size="sm" onClick={() => setShowCreateRoute(true)}><Plus className="h-4 w-4 mr-1" /> Add Route</Button>}
+            </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
+            {showCreateRoute && isAdmin && (
+              <Card className="border-blue-300">
+                <CardContent className="pt-4">
+                  <form onSubmit={e => { e.preventDefault(); const fd = new FormData(e.currentTarget);
+                    createRouteMut.mutate({ corridorId: fd.get('corridorId') as string, primaryRail: fd.get('primaryRail') as string, fallbackRails: (fd.get('fallbackRails') as string).split(',').map(s => s.trim()).filter(Boolean), railFeeRate: Number(fd.get('railFeeRate')), railFixedFee: Number(fd.get('railFixedFee')) });
+                  }} className="grid grid-cols-3 gap-3">
+                    <div><Label>Corridor ID</Label><Input name="corridorId" required placeholder="e.g. NG-JP" /></div>
+                    <div><Label>Primary Rail</Label><Select name="primaryRail"><SelectTrigger><SelectValue placeholder="Select rail" /></SelectTrigger><SelectContent>{railTypes.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent></Select></div>
+                    <div><Label>Fallback Rails (comma-separated)</Label><Input name="fallbackRails" placeholder="SWIFT, ACH" /></div>
+                    <div><Label>Fee Rate (decimal, e.g. 0.001)</Label><Input name="railFeeRate" type="number" step="0.0001" required /></div>
+                    <div><Label>Fixed Fee (USD)</Label><Input name="railFixedFee" type="number" step="0.01" required /></div>
+                    <div className="flex items-end gap-2"><Button type="submit" disabled={createRouteMut.isPending}>{createRouteMut.isPending ? 'Creating...' : 'Create Route'}</Button><Button type="button" variant="outline" onClick={() => setShowCreateRoute(false)}>Cancel</Button></div>
+                    {createRouteMut.error && <p className="col-span-3 text-sm text-destructive">{createRouteMut.error.message}</p>}
+                  </form>
+                </CardContent>
+              </Card>
+            )}
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Corridor</TableHead>
-                  <TableHead>Primary Rail</TableHead>
-                  <TableHead>Fallback Rails</TableHead>
-                  <TableHead>Fee Rate</TableHead>
-                  <TableHead>Fixed Fee</TableHead>
-                  <TableHead>$1K Fee</TableHead>
-                  <TableHead>$10K Fee</TableHead>
+                  <TableHead>Corridor</TableHead><TableHead>Primary Rail</TableHead><TableHead>Fallback Rails</TableHead><TableHead>Fee Rate</TableHead><TableHead>Fixed Fee</TableHead><TableHead>$1K Fee</TableHead><TableHead>$10K Fee</TableHead>
+                  {isAdmin && <TableHead>Actions</TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {routing.map(route => (
-                  <TableRow key={route.corridorId}>
-                    <TableCell className="font-medium">{route.corridorId}</TableCell>
-                    <TableCell><Badge>{route.primaryRail}</Badge></TableCell>
-                    <TableCell>
-                      <div className="flex gap-1">{route.fallbackRails.length > 0
-                        ? route.fallbackRails.map((r: string) => <Badge key={r} variant="outline" className="text-xs">{r}</Badge>)
-                        : <span className="text-xs text-muted-foreground">none</span>}
-                      </div>
-                    </TableCell>
-                    <TableCell>{(route.railFeeRate * 100).toFixed(2)}%</TableCell>
-                    <TableCell>${route.railFixedFee.toFixed(2)}</TableCell>
-                    <TableCell className="text-green-600">${(1000 * route.railFeeRate + route.railFixedFee).toFixed(2)}</TableCell>
-                    <TableCell className="text-green-600">${(10000 * route.railFeeRate + route.railFixedFee).toFixed(2)}</TableCell>
-                  </TableRow>
-                ))}
+                {routing.map(route => {
+                  if (editingRoute === route.corridorId && isAdmin) {
+                    return (
+                      <TableRow key={route.corridorId}>
+                        <TableCell colSpan={8}>
+                          <form onSubmit={e => { e.preventDefault(); const fd = new FormData(e.currentTarget);
+                            updateRouteMut.mutate({ corridorId: route.corridorId, primaryRail: fd.get('primaryRail') as string, fallbackRails: (fd.get('fallbackRails') as string).split(',').map(s => s.trim()).filter(Boolean), railFeeRate: Number(fd.get('railFeeRate')), railFixedFee: Number(fd.get('railFixedFee')) });
+                          }} className="flex flex-wrap gap-2 items-end">
+                            <div><Label className="text-xs">Corridor</Label><Input value={route.corridorId} disabled className="h-8 w-24" /></div>
+                            <div><Label className="text-xs">Primary Rail</Label><Input name="primaryRail" defaultValue={route.primaryRail} className="h-8 w-28" /></div>
+                            <div><Label className="text-xs">Fallback Rails</Label><Input name="fallbackRails" defaultValue={route.fallbackRails.join(', ')} className="h-8 w-44" /></div>
+                            <div><Label className="text-xs">Fee Rate</Label><Input name="railFeeRate" type="number" step="0.0001" defaultValue={route.railFeeRate} className="h-8 w-24" /></div>
+                            <div><Label className="text-xs">Fixed Fee</Label><Input name="railFixedFee" type="number" step="0.01" defaultValue={route.railFixedFee} className="h-8 w-24" /></div>
+                            <Button type="submit" size="sm" disabled={updateRouteMut.isPending}>Save</Button>
+                            <Button type="button" size="sm" variant="outline" onClick={() => setEditingRoute(null)}>Cancel</Button>
+                            {updateRouteMut.error && <p className="text-xs text-destructive">{updateRouteMut.error.message}</p>}
+                          </form>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  }
+                  return (
+                    <TableRow key={route.corridorId}>
+                      <TableCell className="font-medium">{route.corridorId}</TableCell>
+                      <TableCell><Badge>{route.primaryRail}</Badge></TableCell>
+                      <TableCell><div className="flex gap-1">{route.fallbackRails.length > 0 ? route.fallbackRails.map((r: string) => <Badge key={r} variant="outline" className="text-xs">{r}</Badge>) : <span className="text-xs text-muted-foreground">none</span>}</div></TableCell>
+                      <TableCell>{(route.railFeeRate * 100).toFixed(2)}%</TableCell>
+                      <TableCell>${route.railFixedFee.toFixed(2)}</TableCell>
+                      <TableCell className="text-green-600">${(1000 * route.railFeeRate + route.railFixedFee).toFixed(2)}</TableCell>
+                      <TableCell className="text-green-600">${(10000 * route.railFeeRate + route.railFixedFee).toFixed(2)}</TableCell>
+                      {isAdmin && (
+                        <TableCell>
+                          <div className="flex gap-1">
+                            <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => setEditingRoute(route.corridorId)}>Edit</Button>
+                            <Button size="sm" variant="ghost" className="h-7 px-2 text-xs text-destructive" onClick={() => { if (confirm(`Delete route ${route.corridorId}?`)) deleteRouteMut.mutate({ corridorId: route.corridorId }); }}>Delete</Button>
+                          </div>
+                        </TableCell>
+                      )}
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
+            {deleteRouteMut.error && <p className="text-sm text-destructive mt-2">{deleteRouteMut.error.message}</p>}
           </CardContent>
         </Card>
       )}
 
-      {/* --- DFSP Registry --- */}
+      {/* ============ DFSP REGISTRY ============ */}
       {railsTab === 'dfsps' && (
         <Card>
           <CardHeader>
-            <CardTitle>Mojaloop DFSP Registry</CardTitle>
-            <CardDescription>All payment rails registered as Digital Financial Service Providers in the Mojaloop hub</CardDescription>
+            <div className="flex justify-between items-start">
+              <div><CardTitle>Mojaloop DFSP Registry</CardTitle><CardDescription>All payment rails registered as Digital Financial Service Providers in the Mojaloop hub</CardDescription></div>
+              {isAdmin && <Button size="sm" onClick={() => setShowCreateDFSP(true)}><Plus className="h-4 w-4 mr-1" /> Register DFSP</Button>}
+            </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
+            {showCreateDFSP && isAdmin && (
+              <Card className="border-blue-300">
+                <CardContent className="pt-4">
+                  <form onSubmit={e => { e.preventDefault(); const fd = new FormData(e.currentTarget);
+                    createDFSPMut.mutate({ dfspId: fd.get('dfspId') as string, name: fd.get('name') as string, railType: fd.get('railType') as string, corridors: (fd.get('corridors') as string).split(',').map(s => s.trim()).filter(Boolean), status: (fd.get('status') as 'active' | 'inactive' | 'suspended'), settlementModel: (fd.get('settlementModel') as 'deferred_net' | 'immediate_gross'), partyIdTypes: (fd.get('partyIdTypes') as string).split(',').map(s => s.trim()).filter(Boolean), endpoint: fd.get('endpoint') as string, settlementAcct: fd.get('settlementAcct') as string });
+                  }} className="grid grid-cols-3 gap-3">
+                    <div><Label>DFSP ID</Label><Input name="dfspId" required placeholder="e.g. dfsp-newrail" /></div>
+                    <div><Label>Name</Label><Input name="name" required /></div>
+                    <div><Label>Rail Type</Label><Select name="railType"><SelectTrigger><SelectValue placeholder="Select rail" /></SelectTrigger><SelectContent>{railTypes.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent></Select></div>
+                    <div><Label>Status</Label><Select name="status" defaultValue="active"><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="active">Active</SelectItem><SelectItem value="inactive">Inactive</SelectItem><SelectItem value="suspended">Suspended</SelectItem></SelectContent></Select></div>
+                    <div><Label>Settlement Model</Label><Select name="settlementModel" defaultValue="deferred_net"><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="deferred_net">Deferred Net</SelectItem><SelectItem value="immediate_gross">Immediate Gross</SelectItem></SelectContent></Select></div>
+                    <div><Label>Party ID Types (comma-separated)</Label><Input name="partyIdTypes" required placeholder="IBAN, MSISDN" /></div>
+                    <div><Label>Corridors (comma-separated)</Label><Input name="corridors" required placeholder="NG-GH, NG-US" /></div>
+                    <div><Label>Endpoint URL</Label><Input name="endpoint" required placeholder="swift-adapter.remit-switch.internal" /></div>
+                    <div><Label>Settlement Account</Label><Input name="settlementAcct" required /></div>
+                    <div className="col-span-3 flex gap-2"><Button type="submit" disabled={createDFSPMut.isPending}>{createDFSPMut.isPending ? 'Registering...' : 'Register DFSP'}</Button><Button type="button" variant="outline" onClick={() => setShowCreateDFSP(false)}>Cancel</Button></div>
+                    {createDFSPMut.error && <p className="col-span-3 text-sm text-destructive">{createDFSPMut.error.message}</p>}
+                  </form>
+                </CardContent>
+              </Card>
+            )}
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>DFSP ID</TableHead>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Rail Type</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Settlement Model</TableHead>
-                  <TableHead>Party ID Types</TableHead>
-                  <TableHead>Corridors</TableHead>
-                  <TableHead>Settlement Account</TableHead>
+                  <TableHead>DFSP ID</TableHead><TableHead>Name</TableHead><TableHead>Rail Type</TableHead><TableHead>Status</TableHead><TableHead>Settlement Model</TableHead><TableHead>Party ID Types</TableHead><TableHead>Corridors</TableHead>
+                  {isAdmin && <TableHead>Actions</TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {dfsps.map(dfsp => (
-                  <TableRow key={dfsp.dfspId}>
-                    <TableCell className="font-mono text-xs">{dfsp.dfspId}</TableCell>
-                    <TableCell className="font-medium">{dfsp.name}</TableCell>
-                    <TableCell><Badge>{dfsp.railType}</Badge></TableCell>
-                    <TableCell><Badge variant={dfsp.status === 'active' ? 'default' : 'destructive'}>{dfsp.status}</Badge></TableCell>
-                    <TableCell className="text-xs">{dfsp.settlementModel}</TableCell>
-                    <TableCell>
-                      <div className="flex gap-1">{dfsp.partyIdTypes.map((t: string) => <Badge key={t} variant="outline" className="text-xs">{t}</Badge>)}</div>
-                    </TableCell>
-                    <TableCell className="text-xs">{dfsp.corridors.join(', ')}</TableCell>
-                    <TableCell className="font-mono text-xs">{dfsp.settlementAcct}</TableCell>
-                  </TableRow>
-                ))}
+                {dfsps.map(dfsp => {
+                  if (editingDFSP === dfsp.dfspId && isAdmin) {
+                    return (
+                      <TableRow key={dfsp.dfspId}>
+                        <TableCell colSpan={8}>
+                          <form onSubmit={e => { e.preventDefault(); const fd = new FormData(e.currentTarget);
+                            updateDFSPMut.mutate({ dfspId: dfsp.dfspId, name: fd.get('name') as string, status: fd.get('status') as 'active' | 'inactive' | 'suspended', corridors: (fd.get('corridors') as string).split(',').map(s => s.trim()).filter(Boolean), partyIdTypes: (fd.get('partyIdTypes') as string).split(',').map(s => s.trim()).filter(Boolean), endpoint: fd.get('endpoint') as string, settlementAcct: fd.get('settlementAcct') as string });
+                          }} className="flex flex-wrap gap-2 items-end">
+                            <div><Label className="text-xs">DFSP ID</Label><Input value={dfsp.dfspId} disabled className="h-8 w-36" /></div>
+                            <div><Label className="text-xs">Name</Label><Input name="name" defaultValue={dfsp.name} className="h-8 w-40" /></div>
+                            <div><Label className="text-xs">Status</Label><select name="status" defaultValue={dfsp.status} className="h-8 border rounded px-2 text-xs"><option value="active">Active</option><option value="inactive">Inactive</option><option value="suspended">Suspended</option></select></div>
+                            <div><Label className="text-xs">Corridors</Label><Input name="corridors" defaultValue={dfsp.corridors.join(', ')} className="h-8 w-48" /></div>
+                            <div><Label className="text-xs">Party ID Types</Label><Input name="partyIdTypes" defaultValue={dfsp.partyIdTypes.join(', ')} className="h-8 w-36" /></div>
+                            <div><Label className="text-xs">Endpoint</Label><Input name="endpoint" defaultValue={dfsp.endpoint} className="h-8 w-56" /></div>
+                            <div><Label className="text-xs">Settlement Acct</Label><Input name="settlementAcct" defaultValue={dfsp.settlementAcct} className="h-8 w-36" /></div>
+                            <Button type="submit" size="sm" disabled={updateDFSPMut.isPending}>Save</Button>
+                            <Button type="button" size="sm" variant="outline" onClick={() => setEditingDFSP(null)}>Cancel</Button>
+                            {updateDFSPMut.error && <p className="text-xs text-destructive">{updateDFSPMut.error.message}</p>}
+                          </form>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  }
+                  return (
+                    <TableRow key={dfsp.dfspId}>
+                      <TableCell className="font-mono text-xs">{dfsp.dfspId}</TableCell>
+                      <TableCell className="font-medium">{dfsp.name}</TableCell>
+                      <TableCell><Badge>{dfsp.railType}</Badge></TableCell>
+                      <TableCell><Badge variant={dfsp.status === 'active' ? 'default' : 'destructive'}>{dfsp.status}</Badge></TableCell>
+                      <TableCell className="text-xs">{dfsp.settlementModel}</TableCell>
+                      <TableCell><div className="flex gap-1">{dfsp.partyIdTypes.map((t: string) => <Badge key={t} variant="outline" className="text-xs">{t}</Badge>)}</div></TableCell>
+                      <TableCell className="text-xs">{dfsp.corridors.join(', ')}</TableCell>
+                      {isAdmin && (
+                        <TableCell>
+                          <div className="flex gap-1">
+                            <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => setEditingDFSP(dfsp.dfspId)}>Edit</Button>
+                            <Button size="sm" variant="ghost" className="h-7 px-2 text-xs text-destructive" onClick={() => { if (confirm(`Deregister DFSP ${dfsp.dfspId}?`)) deleteDFSPMut.mutate({ dfspId: dfsp.dfspId }); }}>Delete</Button>
+                          </div>
+                        </TableCell>
+                      )}
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
+            {deleteDFSPMut.error && <p className="text-sm text-destructive mt-2">{deleteDFSPMut.error.message}</p>}
           </CardContent>
         </Card>
       )}
 
-      {/* --- Fee Calculator --- */}
       {railsTab === 'feeCalculator' && <FeeCalculatorPanel />}
     </div>
   );

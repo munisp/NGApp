@@ -540,6 +540,214 @@ export const outboundRemittanceRouter = router({
         formula: `${input.principalUSD} × ${route.railFeeRate} + ${route.railFixedFee}`,
       };
     }),
+
+  // ==========================================================================
+  // PAYMENT RAILS CRUD — Admin only
+  // ==========================================================================
+
+  // --- Rails CRUD ---
+  createRail: protectedProcedure
+    .input(z.object({
+      type: z.string().min(2),
+      name: z.string().min(2),
+      settlementCurrency: z.string().min(2),
+      messageFormat: z.string().min(2),
+      maxSettlement: z.string().min(1),
+      tracking: z.boolean(),
+      corridors: z.array(z.string()),
+      description: z.string(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const { isAdmin } = getScope(ctx.user);
+      if (!isAdmin) throw new TRPCError({ code: 'FORBIDDEN', message: 'Only admin can manage payment rails' });
+      if (paymentRailsData.rails.find(r => r.type === input.type)) {
+        throw new TRPCError({ code: 'CONFLICT', message: `Rail type ${input.type} already exists` });
+      }
+      paymentRailsData.rails.push(input);
+      paymentRailsData.railStatuses.push({ rail: input.type, status: 'operational', avgLatencyMs: 0, successRate24h: 0, activeTxnCount: 0, dailyVolumeUSD: 0 });
+      return input;
+    }),
+
+  updateRail: protectedProcedure
+    .input(z.object({
+      type: z.string(),
+      name: z.string().optional(),
+      settlementCurrency: z.string().optional(),
+      messageFormat: z.string().optional(),
+      maxSettlement: z.string().optional(),
+      tracking: z.boolean().optional(),
+      corridors: z.array(z.string()).optional(),
+      description: z.string().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const { isAdmin } = getScope(ctx.user);
+      if (!isAdmin) throw new TRPCError({ code: 'FORBIDDEN', message: 'Only admin can manage payment rails' });
+      const idx = paymentRailsData.rails.findIndex(r => r.type === input.type);
+      if (idx === -1) throw new TRPCError({ code: 'NOT_FOUND', message: `Rail ${input.type} not found` });
+      const rail = paymentRailsData.rails[idx];
+      if (input.name !== undefined) rail.name = input.name;
+      if (input.settlementCurrency !== undefined) rail.settlementCurrency = input.settlementCurrency;
+      if (input.messageFormat !== undefined) rail.messageFormat = input.messageFormat;
+      if (input.maxSettlement !== undefined) rail.maxSettlement = input.maxSettlement;
+      if (input.tracking !== undefined) rail.tracking = input.tracking;
+      if (input.corridors !== undefined) rail.corridors = input.corridors;
+      if (input.description !== undefined) rail.description = input.description;
+      return rail;
+    }),
+
+  deleteRail: protectedProcedure
+    .input(z.object({ type: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const { isAdmin } = getScope(ctx.user);
+      if (!isAdmin) throw new TRPCError({ code: 'FORBIDDEN', message: 'Only admin can manage payment rails' });
+      const idx = paymentRailsData.rails.findIndex(r => r.type === input.type);
+      if (idx === -1) throw new TRPCError({ code: 'NOT_FOUND', message: `Rail ${input.type} not found` });
+      const routesUsingRail = paymentRailsData.corridorRoutes.filter(r => r.primaryRail === input.type);
+      if (routesUsingRail.length > 0) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: `Cannot delete rail ${input.type} — used as primary rail for ${routesUsingRail.map(r => r.corridorId).join(', ')}` });
+      }
+      paymentRailsData.rails.splice(idx, 1);
+      const statusIdx = paymentRailsData.railStatuses.findIndex(s => s.rail === input.type);
+      if (statusIdx !== -1) paymentRailsData.railStatuses.splice(statusIdx, 1);
+      const dfspIdx = paymentRailsData.dfsps.findIndex(d => d.railType === input.type);
+      if (dfspIdx !== -1) paymentRailsData.dfsps.splice(dfspIdx, 1);
+      return { deleted: input.type };
+    }),
+
+  // --- Rail Status CRUD ---
+  updateRailStatus: protectedProcedure
+    .input(z.object({
+      rail: z.string(),
+      status: z.enum(['operational', 'degraded', 'down', 'maintenance']),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const { isAdmin } = getScope(ctx.user);
+      if (!isAdmin) throw new TRPCError({ code: 'FORBIDDEN', message: 'Only admin can update rail status' });
+      const status = paymentRailsData.railStatuses.find(s => s.rail === input.rail);
+      if (!status) throw new TRPCError({ code: 'NOT_FOUND', message: `Rail status for ${input.rail} not found` });
+      status.status = input.status;
+      return status;
+    }),
+
+  // --- Corridor Route CRUD ---
+  createCorridorRoute: protectedProcedure
+    .input(z.object({
+      corridorId: z.string().min(4),
+      primaryRail: z.string(),
+      fallbackRails: z.array(z.string()),
+      railFeeRate: z.number().min(0).max(0.1),
+      railFixedFee: z.number().min(0),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const { isAdmin } = getScope(ctx.user);
+      if (!isAdmin) throw new TRPCError({ code: 'FORBIDDEN', message: 'Only admin can manage corridor routing' });
+      if (paymentRailsData.corridorRoutes.find(r => r.corridorId === input.corridorId)) {
+        throw new TRPCError({ code: 'CONFLICT', message: `Route for ${input.corridorId} already exists` });
+      }
+      if (!paymentRailsData.rails.find(r => r.type === input.primaryRail)) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: `Primary rail ${input.primaryRail} does not exist` });
+      }
+      paymentRailsData.corridorRoutes.push(input);
+      return input;
+    }),
+
+  updateCorridorRoute: protectedProcedure
+    .input(z.object({
+      corridorId: z.string(),
+      primaryRail: z.string().optional(),
+      fallbackRails: z.array(z.string()).optional(),
+      railFeeRate: z.number().min(0).max(0.1).optional(),
+      railFixedFee: z.number().min(0).optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const { isAdmin } = getScope(ctx.user);
+      if (!isAdmin) throw new TRPCError({ code: 'FORBIDDEN', message: 'Only admin can manage corridor routing' });
+      const route = paymentRailsData.corridorRoutes.find(r => r.corridorId === input.corridorId);
+      if (!route) throw new TRPCError({ code: 'NOT_FOUND', message: `Route for ${input.corridorId} not found` });
+      if (input.primaryRail !== undefined) {
+        if (!paymentRailsData.rails.find(r => r.type === input.primaryRail)) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: `Rail ${input.primaryRail} does not exist` });
+        }
+        route.primaryRail = input.primaryRail;
+      }
+      if (input.fallbackRails !== undefined) route.fallbackRails = input.fallbackRails;
+      if (input.railFeeRate !== undefined) route.railFeeRate = input.railFeeRate;
+      if (input.railFixedFee !== undefined) route.railFixedFee = input.railFixedFee;
+      return route;
+    }),
+
+  deleteCorridorRoute: protectedProcedure
+    .input(z.object({ corridorId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const { isAdmin } = getScope(ctx.user);
+      if (!isAdmin) throw new TRPCError({ code: 'FORBIDDEN', message: 'Only admin can manage corridor routing' });
+      const idx = paymentRailsData.corridorRoutes.findIndex(r => r.corridorId === input.corridorId);
+      if (idx === -1) throw new TRPCError({ code: 'NOT_FOUND', message: `Route for ${input.corridorId} not found` });
+      paymentRailsData.corridorRoutes.splice(idx, 1);
+      return { deleted: input.corridorId };
+    }),
+
+  // --- DFSP Registry CRUD ---
+  createDFSP: protectedProcedure
+    .input(z.object({
+      dfspId: z.string().min(4),
+      name: z.string().min(2),
+      railType: z.string(),
+      corridors: z.array(z.string()),
+      status: z.enum(['active', 'inactive', 'suspended']),
+      settlementModel: z.enum(['deferred_net', 'immediate_gross']),
+      partyIdTypes: z.array(z.string()),
+      endpoint: z.string(),
+      settlementAcct: z.string(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const { isAdmin } = getScope(ctx.user);
+      if (!isAdmin) throw new TRPCError({ code: 'FORBIDDEN', message: 'Only admin can manage DFSP registry' });
+      if (paymentRailsData.dfsps.find(d => d.dfspId === input.dfspId)) {
+        throw new TRPCError({ code: 'CONFLICT', message: `DFSP ${input.dfspId} already exists` });
+      }
+      paymentRailsData.dfsps.push(input);
+      return input;
+    }),
+
+  updateDFSP: protectedProcedure
+    .input(z.object({
+      dfspId: z.string(),
+      name: z.string().optional(),
+      railType: z.string().optional(),
+      corridors: z.array(z.string()).optional(),
+      status: z.enum(['active', 'inactive', 'suspended']).optional(),
+      settlementModel: z.enum(['deferred_net', 'immediate_gross']).optional(),
+      partyIdTypes: z.array(z.string()).optional(),
+      endpoint: z.string().optional(),
+      settlementAcct: z.string().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const { isAdmin } = getScope(ctx.user);
+      if (!isAdmin) throw new TRPCError({ code: 'FORBIDDEN', message: 'Only admin can manage DFSP registry' });
+      const dfsp = paymentRailsData.dfsps.find(d => d.dfspId === input.dfspId);
+      if (!dfsp) throw new TRPCError({ code: 'NOT_FOUND', message: `DFSP ${input.dfspId} not found` });
+      if (input.name !== undefined) dfsp.name = input.name;
+      if (input.railType !== undefined) dfsp.railType = input.railType;
+      if (input.corridors !== undefined) dfsp.corridors = input.corridors;
+      if (input.status !== undefined) dfsp.status = input.status;
+      if (input.settlementModel !== undefined) dfsp.settlementModel = input.settlementModel;
+      if (input.partyIdTypes !== undefined) dfsp.partyIdTypes = input.partyIdTypes;
+      if (input.endpoint !== undefined) dfsp.endpoint = input.endpoint;
+      if (input.settlementAcct !== undefined) dfsp.settlementAcct = input.settlementAcct;
+      return dfsp;
+    }),
+
+  deleteDFSP: protectedProcedure
+    .input(z.object({ dfspId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const { isAdmin } = getScope(ctx.user);
+      if (!isAdmin) throw new TRPCError({ code: 'FORBIDDEN', message: 'Only admin can manage DFSP registry' });
+      const idx = paymentRailsData.dfsps.findIndex(d => d.dfspId === input.dfspId);
+      if (idx === -1) throw new TRPCError({ code: 'NOT_FOUND', message: `DFSP ${input.dfspId} not found` });
+      paymentRailsData.dfsps.splice(idx, 1);
+      return { deleted: input.dfspId };
+    }),
 });
 
 // =============================================================================
