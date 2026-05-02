@@ -4,10 +4,17 @@ import (
 	"bytes"
 	"crypto/sha256"
 	"encoding/base64"
+	"os"
 	"strings"
 	"testing"
 	"time"
 )
+
+func TestMain(m *testing.M) {
+	// Allow dev mode so tests can run without a real ILP key configured
+	os.Setenv("ILP_ALLOW_DEV_MODE", "true")
+	os.Exit(m.Run())
+}
 
 func TestFulfillmentGenerationIsDeterministic(t *testing.T) {
 	crypto := NewILPCryptoService("test-secret-key")
