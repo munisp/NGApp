@@ -29,7 +29,8 @@ import {
 } from 'lucide-react';
 
 // --- Types ---
-type NavSection = 'dashboard' | 'transfers' | 'prefund' | 'billing' | 'corridors' | 'compliance' | 'onboarding' | 'settings';
+type UserRole = 'participant' | 'admin' | 'cbn';
+type NavSection = 'dashboard' | 'transfers' | 'prefund' | 'billing' | 'corridors' | 'compliance' | 'onboarding' | 'settings' | 'participants';
 
 interface Transfer {
   id: string;
@@ -71,16 +72,35 @@ const corridors = [
   { id: 'NG-ZA', dest: 'South Africa', currency: 'ZAR', category: 'General Personal', spreadCap: 130, maxUsd: 10000, todayVolume: '₦38M', status: 'active' },
 ];
 
-const navItems = [
-  { id: 'dashboard' as NavSection, label: 'Dashboard', icon: LayoutDashboard },
-  { id: 'transfers' as NavSection, label: 'Transfers', icon: ArrowRightLeft },
-  { id: 'prefund' as NavSection, label: 'Prefund', icon: Wallet },
-  { id: 'billing' as NavSection, label: 'Billing', icon: Receipt },
-  { id: 'corridors' as NavSection, label: 'Corridors', icon: Globe },
-  { id: 'compliance' as NavSection, label: 'Compliance', icon: Shield },
-  { id: 'onboarding' as NavSection, label: 'Onboarding', icon: UserPlus },
-  { id: 'settings' as NavSection, label: 'Settings', icon: Settings },
-];
+// Role-based navigation: participants see own data, admins/CBN see system-wide
+function getNavItems(role: UserRole) {
+  const base = [
+    { id: 'dashboard' as NavSection, label: 'Dashboard', icon: LayoutDashboard },
+    { id: 'transfers' as NavSection, label: role === 'participant' ? 'My Transfers' : 'All Transfers', icon: ArrowRightLeft },
+  ];
+  if (role === 'participant') {
+    return [
+      ...base,
+      { id: 'prefund' as NavSection, label: 'My Prefund', icon: Wallet },
+      { id: 'billing' as NavSection, label: 'My Billing', icon: Receipt },
+      { id: 'corridors' as NavSection, label: 'Corridors', icon: Globe },
+      { id: 'compliance' as NavSection, label: 'My Compliance', icon: Shield },
+      { id: 'onboarding' as NavSection, label: 'My Onboarding', icon: UserPlus },
+      { id: 'settings' as NavSection, label: 'Settings', icon: Settings },
+    ];
+  }
+  // Admin / CBN
+  return [
+    ...base,
+    { id: 'participants' as NavSection, label: 'Participants', icon: Building2 },
+    { id: 'prefund' as NavSection, label: 'Prefund Accounts', icon: Wallet },
+    { id: 'billing' as NavSection, label: 'Billing & Tiers', icon: Receipt },
+    { id: 'corridors' as NavSection, label: 'Corridors', icon: Globe },
+    { id: 'compliance' as NavSection, label: 'Compliance', icon: Shield },
+    { id: 'onboarding' as NavSection, label: 'Onboarding Mgmt', icon: UserPlus },
+    { id: 'settings' as NavSection, label: 'Settings', icon: Settings },
+  ];
+}
 
 // --- Status Badge Helper ---
 function StatusBadge({ status }: { status: string }) {
@@ -97,8 +117,16 @@ function StatusBadge({ status }: { status: string }) {
 }
 
 // --- Main Component ---
+// In production, role comes from Keycloak JWT + Permify PBAC
+// participant = IMTO/fintech (sees only own data)
+// admin = platform operator (sees all participants)
+// cbn = regulator (read-only oversight of all participants)
 export default function OutboundRemittance() {
   const [activeSection, setActiveSection] = useState<NavSection>('dashboard');
+  const [userRole, setUserRole] = useState<UserRole>('participant');
+
+  const navItems = getNavItems(userRole);
+  const isAdmin = userRole === 'admin' || userRole === 'cbn';
 
   return (
     <div className="min-h-screen bg-background flex">
@@ -115,14 +143,36 @@ export default function OutboundRemittance() {
           </div>
         </div>
 
-        {/* Participant Info */}
+        {/* User Context */}
         <div className="p-4 border-b bg-muted/30">
-          <p className="text-xs text-muted-foreground">Participant</p>
-          <p className="font-medium text-sm">PayApp Nigeria Ltd</p>
-          <div className="flex items-center gap-1 mt-1">
-            <Badge variant="secondary" className="text-xs">Growth Tier</Badge>
-            <Badge variant="default" className="text-xs bg-green-600">Connected</Badge>
-          </div>
+          {userRole === 'participant' ? (
+            <>
+              <p className="text-xs text-muted-foreground">Your Account</p>
+              <p className="font-medium text-sm">PayApp Nigeria Ltd</p>
+              <div className="flex items-center gap-1 mt-1">
+                <Badge variant="secondary" className="text-xs">Growth Tier</Badge>
+                <Badge variant="default" className="text-xs bg-green-600">Connected</Badge>
+              </div>
+            </>
+          ) : userRole === 'admin' ? (
+            <>
+              <p className="text-xs text-muted-foreground">Platform Admin</p>
+              <p className="font-medium text-sm">Switch Operations</p>
+              <div className="flex items-center gap-1 mt-1">
+                <Badge variant="default" className="text-xs bg-blue-600">Admin</Badge>
+                <Badge variant="secondary" className="text-xs">L3 Ops</Badge>
+              </div>
+            </>
+          ) : (
+            <>
+              <p className="text-xs text-muted-foreground">Regulator</p>
+              <p className="font-medium text-sm">CBN Oversight</p>
+              <div className="flex items-center gap-1 mt-1">
+                <Badge variant="default" className="text-xs bg-purple-600">CBN</Badge>
+                <Badge variant="secondary" className="text-xs">Read-Only</Badge>
+              </div>
+            </>
+          )}
         </div>
 
         {/* Navigation */}
@@ -143,15 +193,33 @@ export default function OutboundRemittance() {
                 <Icon className={`h-4 w-4 ${isActive ? 'text-blue-600' : ''}`} />
                 {item.label}
                 {item.id === 'compliance' && (
-                  <Badge variant="destructive" className="ml-auto text-xs px-1.5">3</Badge>
+                  <Badge variant="destructive" className="ml-auto text-xs px-1.5">{isAdmin ? '12' : '3'}</Badge>
                 )}
-                {item.id === 'onboarding' && (
-                  <Badge variant="secondary" className="ml-auto text-xs px-1.5">New</Badge>
+                {item.id === 'onboarding' && isAdmin && (
+                  <Badge variant="secondary" className="ml-auto text-xs px-1.5">5</Badge>
+                )}
+                {item.id === 'participants' && (
+                  <Badge variant="secondary" className="ml-auto text-xs px-1.5">25</Badge>
                 )}
               </button>
             );
           })}
         </nav>
+
+        {/* Role Switcher (demo only — in production, role comes from Keycloak JWT) */}
+        <div className="p-3 border-t">
+          <p className="text-xs text-muted-foreground mb-2">View as (demo):</p>
+          <Select value={userRole} onValueChange={(v) => { setUserRole(v as UserRole); setActiveSection('dashboard'); }}>
+            <SelectTrigger className="h-7 text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="participant">Participant (IMTO)</SelectItem>
+              <SelectItem value="admin">Platform Admin</SelectItem>
+              <SelectItem value="cbn">CBN Regulator</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
 
         {/* Footer */}
         <div className="p-4 border-t">
@@ -163,37 +231,114 @@ export default function OutboundRemittance() {
       {/* Main Content */}
       <main className="flex-1 overflow-auto">
         <div className="p-6">
-          {activeSection === 'dashboard' && <DashboardSection />}
-          {activeSection === 'transfers' && <TransfersSection />}
-          {activeSection === 'prefund' && <PrefundSection />}
-          {activeSection === 'billing' && <BillingSection />}
+          {activeSection === 'dashboard' && <DashboardSection role={userRole} />}
+          {activeSection === 'transfers' && <TransfersSection role={userRole} />}
+          {activeSection === 'participants' && isAdmin && <ParticipantsSection role={userRole} />}
+          {activeSection === 'prefund' && <PrefundSection role={userRole} />}
+          {activeSection === 'billing' && <BillingSection role={userRole} />}
           {activeSection === 'corridors' && <CorridorsSection />}
-          {activeSection === 'compliance' && <ComplianceSection />}
-          {activeSection === 'onboarding' && <OnboardingSection />}
-          {activeSection === 'settings' && <SettingsSection />}
+          {activeSection === 'compliance' && <ComplianceSection role={userRole} />}
+          {activeSection === 'onboarding' && <OnboardingSection role={userRole} />}
+          {activeSection === 'settings' && <SettingsSection role={userRole} />}
         </div>
       </main>
     </div>
   );
 }
 
-// --- Dashboard Section ---
-function DashboardSection() {
+// --- Participants Section (Admin/CBN only) ---
+function ParticipantsSection({ role }: { role: UserRole }) {
+  const participants = [
+    { name: 'PayApp Nigeria Ltd', type: 'IMTO', tier: 'Growth', license: 'CBN/IMTO/2023/045', status: 'active', volume: '₦2.4B', transfers: 3882, corridors: 8 },
+    { name: 'Flutterwave Ltd', type: 'IMTO', tier: 'Enterprise', license: 'CBN/IMTO/2022/012', status: 'active', volume: '₦8.1B', transfers: 12450, corridors: 13 },
+    { name: 'Paystack (Stripe)', type: 'PSP', tier: 'Enterprise', license: 'CBN/PSP/2021/089', status: 'active', volume: '₦5.2B', transfers: 8790, corridors: 10 },
+    { name: 'Moniepoint Inc', type: 'IMTO', tier: 'Growth', license: 'CBN/IMTO/2023/078', status: 'onboarding', volume: '₦0', transfers: 0, corridors: 0 },
+    { name: 'OPay Financial', type: 'IMTO', tier: 'Starter', license: 'CBN/IMTO/2024/012', status: 'pending', volume: '₦0', transfers: 0, corridors: 0 },
+    { name: 'PalmPay Ltd', type: 'PSP', tier: 'Starter', license: 'CBN/PSP/2024/087', status: 'pending', volume: '₦0', transfers: 0, corridors: 0 },
+    { name: 'Kuda MFB', type: 'MFB', tier: 'Starter', license: 'CBN/MFB/2020/145', status: 'pending', volume: '₦0', transfers: 0, corridors: 0 },
+  ];
+
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Outbound Remittance Operations</h1>
-        <p className="text-muted-foreground">Real-time view of your outbound transfer pipeline</p>
+        <h1 className="text-2xl font-bold">Participant Management</h1>
+        <p className="text-muted-foreground">
+          {role === 'cbn' ? 'Regulatory oversight of all switch participants' : 'Manage all registered participants on the switch'}
+        </p>
       </div>
 
-      {/* Metrics */}
+      <div className="grid grid-cols-4 gap-4">
+        <Card><CardHeader className="pb-2"><CardDescription>Active</CardDescription></CardHeader><CardContent><p className="text-2xl font-bold text-green-600">3</p></CardContent></Card>
+        <Card><CardHeader className="pb-2"><CardDescription>Onboarding</CardDescription></CardHeader><CardContent><p className="text-2xl font-bold text-blue-600">1</p></CardContent></Card>
+        <Card><CardHeader className="pb-2"><CardDescription>Pending</CardDescription></CardHeader><CardContent><p className="text-2xl font-bold text-yellow-600">3</p></CardContent></Card>
+        <Card><CardHeader className="pb-2"><CardDescription>Total Volume (Today)</CardDescription></CardHeader><CardContent><p className="text-2xl font-bold">₦15.7B</p></CardContent></Card>
+      </div>
+
+      <Card>
+        <CardHeader><CardTitle className="text-lg">All Participants</CardTitle></CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Participant</TableHead>
+                <TableHead>Type</TableHead>
+                <TableHead>Tier</TableHead>
+                <TableHead>License</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Today Volume</TableHead>
+                <TableHead>Transfers</TableHead>
+                <TableHead>Corridors</TableHead>
+                {role === 'admin' && <TableHead>Actions</TableHead>}
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {participants.map((p) => (
+                <TableRow key={p.name}>
+                  <TableCell className="font-medium">{p.name}</TableCell>
+                  <TableCell>{p.type}</TableCell>
+                  <TableCell><Badge variant="secondary" className="text-xs">{p.tier}</Badge></TableCell>
+                  <TableCell className="font-mono text-xs">{p.license}</TableCell>
+                  <TableCell><StatusBadge status={p.status} /></TableCell>
+                  <TableCell>{p.volume}</TableCell>
+                  <TableCell>{p.transfers.toLocaleString()}</TableCell>
+                  <TableCell>{p.corridors}</TableCell>
+                  {role === 'admin' && (
+                    <TableCell>
+                      <Button size="sm" variant="outline" className="h-7 text-xs">Manage</Button>
+                    </TableCell>
+                  )}
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+// --- Dashboard Section ---
+function DashboardSection({ role }: { role: UserRole }) {
+  const isAdmin = role === 'admin' || role === 'cbn';
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold">
+          {isAdmin ? 'Switch Operations Overview' : 'Your Operations Dashboard'}
+        </h1>
+        <p className="text-muted-foreground">
+          {isAdmin ? 'System-wide metrics across all participants' : 'Real-time view of your outbound transfer pipeline'}
+        </p>
+      </div>
+
+      {/* Metrics - scoped to role */}
       <div className="grid grid-cols-4 gap-4">
         <Card>
           <CardHeader className="pb-2">
-            <CardDescription>Today's Volume</CardDescription>
+            <CardDescription>{isAdmin ? 'System Volume (Today)' : 'Your Volume (Today)'}</CardDescription>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold">₦2.4B</p>
+            <p className="text-2xl font-bold">{isAdmin ? '₦15.7B' : '₦2.4B'}</p>
             <p className="text-xs text-green-600 flex items-center gap-1">
               <TrendingUp className="h-3 w-3" /> +12% vs yesterday
             </p>
@@ -205,25 +350,25 @@ function DashboardSection() {
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold">99.1%</p>
-            <p className="text-xs text-muted-foreground">3,847 of 3,882 transfers</p>
+            <p className="text-xs text-muted-foreground">{isAdmin ? '25,120 of 25,347 transfers' : '3,847 of 3,882 transfers'}</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardDescription>Prefund Balance</CardDescription>
+            <CardDescription>{isAdmin ? 'Total Prefund Held' : 'Your Prefund Balance'}</CardDescription>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold">₦847M</p>
-            <p className="text-xs text-muted-foreground">62% of daily limit</p>
+            <p className="text-2xl font-bold">{isAdmin ? '₦42.3B' : '₦847M'}</p>
+            <p className="text-xs text-muted-foreground">{isAdmin ? 'Across 25 participants' : '62% of your daily limit'}</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardDescription>Avg Latency</CardDescription>
+            <CardDescription>{isAdmin ? 'Active Participants' : 'Avg Latency'}</CardDescription>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold">890ms</p>
-            <p className="text-xs text-muted-foreground">p99: 2.1s end-to-end</p>
+            <p className="text-2xl font-bold">{isAdmin ? '25' : '890ms'}</p>
+            <p className="text-xs text-muted-foreground">{isAdmin ? '3 onboarding, 5 pending' : 'p99: 2.1s end-to-end'}</p>
           </CardContent>
         </Card>
       </div>
@@ -344,18 +489,21 @@ function DashboardSection() {
 }
 
 // --- Transfers Section ---
-function TransfersSection() {
+function TransfersSection({ role }: { role: UserRole }) {
+  const isAdmin = role === 'admin' || role === 'cbn';
   const [filter, setFilter] = useState('all');
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Transfers</h1>
-          <p className="text-muted-foreground">Manage and monitor outbound transfers submitted via API</p>
+          <h1 className="text-2xl font-bold">{isAdmin ? 'All Transfers (System-Wide)' : 'My Transfers'}</h1>
+          <p className="text-muted-foreground">
+            {isAdmin ? 'All outbound transfers across all participants' : 'Transfers submitted by your organization via API'}
+          </p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline">Export CSV</Button>
-          <Button>Submit Batch</Button>
+          {!isAdmin && <Button>Submit Batch</Button>}
         </div>
       </div>
 
@@ -416,12 +564,15 @@ function TransfersSection() {
 }
 
 // --- Prefund Section ---
-function PrefundSection() {
+function PrefundSection({ role }: { role: UserRole }) {
+  const isAdmin = role === 'admin' || role === 'cbn';
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Prefund Management</h1>
-        <p className="text-muted-foreground">TigerBeetle ledger account balance and deductions</p>
+        <h1 className="text-2xl font-bold">{isAdmin ? 'Prefund Accounts (All Participants)' : 'My Prefund Account'}</h1>
+        <p className="text-muted-foreground">
+          {isAdmin ? 'TigerBeetle ledger balances across all participants' : 'Your TigerBeetle ledger account balance and deductions'}
+        </p>
       </div>
 
       <div className="grid grid-cols-3 gap-4">
@@ -502,7 +653,8 @@ function PrefundSection() {
 }
 
 // --- Billing Section ---
-function BillingSection() {
+function BillingSection({ role }: { role: UserRole }) {
+  const isAdmin = role === 'admin' || role === 'cbn';
   return (
     <div className="space-y-6">
       <div>
@@ -611,7 +763,8 @@ function CorridorsSection() {
 }
 
 // --- Compliance Section ---
-function ComplianceSection() {
+function ComplianceSection({ role }: { role: UserRole }) {
+  const isAdmin = role === 'admin' || role === 'cbn';
   return (
     <div className="space-y-6">
       <div>
@@ -700,7 +853,8 @@ function ComplianceSection() {
 }
 
 // --- Onboarding Section ---
-function OnboardingSection() {
+function OnboardingSection({ role }: { role: UserRole }) {
+  const isAdmin = role === 'admin' || role === 'cbn';
   const [selectedRole, setSelectedRole] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'overview' | 'applications' | 'in_progress' | 'completed'>('overview');
 
@@ -757,6 +911,77 @@ function OnboardingSection() {
     { name: 'Cellulant Ltd', type: 'Provider (Rail)', currentStep: 'Sandbox Testing', step: 4, totalSteps: 5, startDate: '2024-03-01', credentials: 'Issued 2024-03-12' },
   ];
 
+  // PARTICIPANT VIEW: show only their own onboarding progress
+  if (!isAdmin) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold">My Onboarding Status</h1>
+          <p className="text-muted-foreground">Track your organization's onboarding progress on the switch</p>
+        </div>
+
+        {/* Your Current Stage */}
+        <Card className="border-green-200 bg-green-50/30">
+          <CardContent className="py-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-green-800">Status: Production Live</p>
+                <p className="text-xs text-green-600 mt-1">PayApp Nigeria Ltd — Approved 2024-01-28 — Go-live 2024-02-14</p>
+              </div>
+              <Badge variant="default" className="bg-green-600">Active</Badge>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Completed Steps */}
+        <Card>
+          <CardHeader><CardTitle className="text-lg">Onboarding Steps (Completed)</CardTitle></CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {[
+                { step: 1, label: 'Application Submitted', date: '2024-01-05', detail: 'Via public portal — Ref: APP-KL7M2-R3T8' },
+                { step: 2, label: 'Document Verification', date: '2024-01-08', detail: 'CBN license, AML/CFT policies verified' },
+                { step: 3, label: 'Technical Assessment', date: '2024-01-15', detail: 'API integration capability confirmed' },
+                { step: 4, label: 'Prefund Account Created', date: '2024-01-22', detail: 'TigerBeetle account TB-PFND-PAYAPP-001' },
+                { step: 5, label: 'Certification Testing', date: '2024-02-05', detail: 'All 8 corridors tested successfully' },
+                { step: 6, label: 'Production Go-Live', date: '2024-02-14', detail: 'Full API access enabled, live transfers active' },
+              ].map((s) => (
+                <div key={s.step} className="flex items-start gap-3">
+                  <div className="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <CheckCircle2 className="h-3.5 w-3.5 text-green-600" />
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-medium">{s.label}</p>
+                      <span className="text-xs text-muted-foreground">{s.date}</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">{s.detail}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Account Details */}
+        <Card>
+          <CardHeader><CardTitle className="text-lg">Your Platform Access</CardTitle></CardHeader>
+          <CardContent className="space-y-3">
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              <div><p className="text-xs text-muted-foreground">License</p><p className="font-medium">CBN/IMTO/2023/045</p></div>
+              <div><p className="text-xs text-muted-foreground">Tier</p><p className="font-medium">Growth</p></div>
+              <div><p className="text-xs text-muted-foreground">Prefund Account</p><p className="font-mono text-xs">TB-PFND-PAYAPP-001</p></div>
+              <div><p className="text-xs text-muted-foreground">Active Corridors</p><p className="font-medium">8 of 13</p></div>
+              <div><p className="text-xs text-muted-foreground">API Key</p><p className="font-mono text-xs">pk_live_***...x4f2</p></div>
+              <div><p className="text-xs text-muted-foreground">Webhook</p><p className="font-mono text-xs">https://payapp.ng/webhooks/switch</p></div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // ADMIN / CBN VIEW: full onboarding management
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -1040,7 +1265,8 @@ function OnboardingSection() {
 }
 
 // --- Settings Section ---
-function SettingsSection() {
+function SettingsSection({ role }: { role: UserRole }) {
+  const isAdmin = role === 'admin' || role === 'cbn';
   return (
     <div className="space-y-6">
       <div>

@@ -2,13 +2,15 @@ import 'package:flutter/material.dart';
 
 /// Outbound Remittance Participant Dashboard (Mobile).
 ///
-/// For use by fintech/IMTO operators to:
-/// - Monitor transfer pipeline and corridor health
-/// - View prefund balance and deductions
-/// - Review compliance escalations
-/// - Track provider performance
+/// For use by the LOGGED-IN participant (fintech/IMTO) to:
+/// - Monitor THEIR OWN transfer pipeline and corridor health
+/// - View THEIR OWN prefund balance and deductions
+/// - Review THEIR OWN compliance escalations
+/// - Track provider performance on corridors they use
+/// - Track THEIR OWN onboarding progress
 ///
 /// This is NOT a consumer "send money" screen.
+/// Admin/CBN management is done via the web admin dashboard only.
 class OutboundRemittanceScreen extends StatefulWidget {
   const OutboundRemittanceScreen({super.key});
 
@@ -704,7 +706,7 @@ class _DetailRow extends StatelessWidget {
   }
 }
 
-// --- Onboarding Tab ---
+// --- Onboarding Tab (Participant's own onboarding status only) ---
 class _OnboardingTab extends StatelessWidget {
   const _OnboardingTab();
 
@@ -715,264 +717,115 @@ class _OnboardingTab extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Lifecycle Pipeline
+          // Status banner
           Card(
-            color: Colors.grey.shade50,
+            color: Colors.green.shade50,
             child: Padding(
               padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              child: Row(
                 children: [
-                  Text('ONBOARDING LIFECYCLE', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: Colors.grey.shade600, letterSpacing: 0.5)),
-                  const SizedBox(height: 12),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      _lifecycleStep(Icons.public, 'Apply', 'Public portal', Colors.blue),
-                      Icon(Icons.chevron_right, size: 16, color: Colors.grey.shade400),
-                      _lifecycleStep(Icons.fact_check, 'Review', 'Admin team', Colors.orange),
-                      Icon(Icons.chevron_right, size: 16, color: Colors.grey.shade400),
-                      _lifecycleStep(Icons.vpn_key, 'Credentials', 'Keycloak', Colors.purple),
-                      Icon(Icons.chevron_right, size: 16, color: Colors.grey.shade400),
-                      _lifecycleStep(Icons.science, 'Sandbox', 'API test', Colors.deepOrange),
-                      Icon(Icons.chevron_right, size: 16, color: Colors.grey.shade400),
-                      _lifecycleStep(Icons.check_circle, 'Go-Live', 'Production', Colors.green),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-
-          // Metrics
-          Row(
-            children: [
-              Expanded(child: _MetricCard(
-                title: 'Applications',
-                value: '5',
-                subtitle: 'Awaiting review',
-                icon: Icons.pending_actions,
-                color: Colors.blue,
-              )),
-              const SizedBox(width: 12),
-              Expanded(child: _MetricCard(
-                title: 'In Progress',
-                value: '3',
-                subtitle: 'Credentials issued',
-                icon: Icons.sync,
-                color: Colors.orange,
-              )),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(child: _MetricCard(
-                title: 'Live',
-                value: '25',
-                subtitle: 'Production active',
-                icon: Icons.check_circle,
-                color: Colors.green,
-              )),
-              const SizedBox(width: 12),
-              Expanded(child: _MetricCard(
-                title: 'Providers',
-                value: '7',
-                subtitle: 'Payout rails',
-                icon: Icons.dns,
-                color: Colors.purple,
-              )),
-            ],
-          ),
-          const SizedBox(height: 24),
-
-          // In-progress onboarding
-          Text('In Progress (Credentials Issued)',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
-          const SizedBox(height: 4),
-          Text('Approved participants completing sandbox testing', style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
-          const SizedBox(height: 12),
-          ..._inProgress.map((p) => Card(
-            margin: const EdgeInsets.only(bottom: 8),
-            child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(p['name'] as String, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(color: Colors.blue.shade50, borderRadius: BorderRadius.circular(4)),
-                        child: Text(p['currentStep'] as String, style: TextStyle(fontSize: 10, color: Colors.blue.shade700)),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  Text('${p['type']} • ${p['credentials']}', style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
-                  const SizedBox(height: 8),
-                  Row(children: [
-                    Expanded(
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(4),
-                        child: LinearProgressIndicator(
-                          value: (p['step'] as int) / (p['totalSteps'] as int),
-                          backgroundColor: Colors.grey.shade200,
-                          color: Colors.blue.shade600,
-                          minHeight: 6,
-                        ),
-                      ),
+                  Icon(Icons.check_circle, color: Colors.green.shade700, size: 28),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Status: Production Live', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14, color: Colors.green.shade800)),
+                        const SizedBox(height: 2),
+                        Text('Approved 2024-01-28 • Go-live 2024-02-14', style: TextStyle(fontSize: 12, color: Colors.green.shade600)),
+                      ],
                     ),
-                    const SizedBox(width: 8),
-                    Text('${p['step']}/${p['totalSteps']}', style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
-                  ]),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(color: Colors.green.shade600, borderRadius: BorderRadius.circular(4)),
+                    child: const Text('Active', style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w500)),
+                  ),
                 ],
               ),
             ),
-          )),
-          const SizedBox(height: 24),
+          ),
+          const SizedBox(height: 20),
 
-          // Pending applications
-          Text('Pending Applications',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
-          const SizedBox(height: 4),
-          Text('Received from public application portal', style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
-          const SizedBox(height: 12),
-          ..._pendingApplications.map((a) => Card(
-            margin: const EdgeInsets.only(bottom: 8),
-            child: ListTile(
-              title: Text(a['name'] as String, style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14)),
-              subtitle: Text('${a['type']} • ${a['stage']}', style: const TextStyle(fontSize: 12)),
-              trailing: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: a['status'] == 'pending' ? Colors.orange.shade50 : Colors.blue.shade50,
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Text(a['status'] as String, style: TextStyle(fontSize: 11, color: a['status'] == 'pending' ? Colors.orange.shade700 : Colors.blue.shade700)),
-              ),
-            ),
-          )),
-          const SizedBox(height: 24),
-
-          // Stakeholder types
-          Text('Stakeholder Types',
+          // Your completed steps
+          Text('Your Onboarding Steps',
             style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
           const SizedBox(height: 12),
-          ..._stakeholders.map((s) => Card(
-            margin: const EdgeInsets.only(bottom: 8),
-            child: ExpansionTile(
-              leading: Icon(s['icon'] as IconData, color: Colors.blue.shade700),
-              title: Text(s['title'] as String, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
-              subtitle: Text(s['subtitle'] as String, style: const TextStyle(fontSize: 12)),
+          ..._mySteps.asMap().entries.map((e) => Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Padding(
-                  padding: const EdgeInsets.all(16),
+                Container(
+                  width: 24, height: 24,
+                  decoration: BoxDecoration(color: Colors.green.shade100, borderRadius: BorderRadius.circular(12)),
+                  child: Icon(Icons.check, size: 14, color: Colors.green.shade700),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('Requirements:', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
-                      const SizedBox(height: 8),
-                      ...(s['requirements'] as List<String>).map((r) => Padding(
-                        padding: const EdgeInsets.only(bottom: 4),
-                        child: Row(children: [
-                          Icon(Icons.check_circle, size: 14, color: Colors.green.shade600),
-                          const SizedBox(width: 8),
-                          Expanded(child: Text(r, style: const TextStyle(fontSize: 12))),
-                        ]),
-                      )),
-                      const SizedBox(height: 12),
-                      const Text('Steps:', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
-                      const SizedBox(height: 8),
-                      ...(s['steps'] as List<String>).asMap().entries.map((e) => Padding(
-                        padding: const EdgeInsets.only(bottom: 4),
-                        child: Row(children: [
-                          Container(
-                            width: 20, height: 20,
-                            decoration: BoxDecoration(color: Colors.blue.shade100, borderRadius: BorderRadius.circular(10)),
-                            child: Center(child: Text('${e.key + 1}', style: TextStyle(fontSize: 11, color: Colors.blue.shade700, fontWeight: FontWeight.bold))),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(child: Text(e.value, style: const TextStyle(fontSize: 12))),
-                        ]),
-                      )),
-                      const SizedBox(height: 8),
-                      Text('Timeline: ${s['timeline']}', style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(e.value['label'] as String, style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13)),
+                          Text(e.value['date'] as String, style: TextStyle(fontSize: 11, color: Colors.grey.shade500)),
+                        ],
+                      ),
+                      const SizedBox(height: 2),
+                      Text(e.value['detail'] as String, style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
                     ],
                   ),
                 ),
               ],
             ),
           )),
+          const SizedBox(height: 20),
+
+          // Account details
+          Text('Your Platform Access',
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+          const SizedBox(height: 12),
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                children: [
+                  _accessRow('License', 'CBN/IMTO/2023/045'),
+                  _accessRow('Tier', 'Growth'),
+                  _accessRow('Prefund Account', 'TB-PFND-PAYAPP-001'),
+                  _accessRow('Active Corridors', '8 of 13'),
+                  _accessRow('API Key', 'pk_live_***...x4f2'),
+                  _accessRow('Webhook', 'https://payapp.ng/webhooks/switch'),
+                ],
+              ),
+            ),
+          ),
         ],
       ),
     );
   }
 
-  static Widget _lifecycleStep(IconData icon, String label, String sub, Color color) {
-    return Column(
-      children: [
-        Container(
-          width: 28, height: 28,
-          decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(14)),
-          child: Icon(icon, size: 14, color: color),
-        ),
-        const SizedBox(height: 4),
-        Text(label, style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w600)),
-        Text(sub, style: TextStyle(fontSize: 8, color: Colors.grey.shade500)),
-      ],
+  static Widget _accessRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+          Text(value, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
+        ],
+      ),
     );
   }
 
-  static final _inProgress = [
-    {'name': 'Moniepoint Inc', 'type': 'Fintech (IMTO)', 'currentStep': 'Certification Testing', 'step': 5, 'totalSteps': 6, 'credentials': 'Issued 2024-02-28'},
-    {'name': 'Carbon (Paylater)', 'type': 'Fintech (PSP)', 'currentStep': 'Prefund Setup', 'step': 4, 'totalSteps': 6, 'credentials': 'Issued 2024-03-05'},
-    {'name': 'Cellulant Ltd', 'type': 'Provider (Rail)', 'currentStep': 'Sandbox Testing', 'step': 4, 'totalSteps': 5, 'credentials': 'Issued 2024-03-12'},
-  ];
-
-  static final _stakeholders = [
-    {
-      'title': 'Regulated Participant',
-      'subtitle': 'Fintech/IMTO applying for switch access',
-      'icon': Icons.business,
-      'timeline': '4-6 weeks',
-      'requirements': ['CBN License (IMTO/PSP/MFB)', 'Minimum capital ₦2B', 'AML/CFT compliance program', 'Technical readiness (API)', 'KYC/CDD documentation'],
-      'steps': ['Application received (public portal)', 'Document verification & compliance', 'Technical assessment & sandbox issued', 'Prefund account setup (TigerBeetle)', 'Certification testing', 'Production go-live'],
-    },
-    {
-      'title': 'External Provider',
-      'subtitle': 'Payout rail seeking listing on switch',
-      'icon': Icons.dns,
-      'timeline': '6-8 weeks',
-      'requirements': ['License in destination country', 'API documentation', 'Settlement agreement', 'SLA commitment', 'Compliance certification'],
-      'steps': ['Application received (public portal)', 'API review & adapter development', 'Settlement agreement', 'Sandbox testing', 'Corridor assignment & go-live'],
-    },
-    {
-      'title': 'Regulator (CBN/NFIU)',
-      'subtitle': 'Regulatory oversight access',
-      'icon': Icons.account_balance,
-      'timeline': '2-3 weeks',
-      'requirements': ['Official regulatory mandate', 'Designated oversight officers', 'Secure VPN access', 'Data classification agreement'],
-      'steps': ['Formal request received', 'Access scope definition', 'Security clearance & VPN', 'Training on dashboards', 'Periodic review setup'],
-    },
-    {
-      'title': 'Operations Staff',
-      'subtitle': 'Internal switch operators',
-      'icon': Icons.people,
-      'timeline': '1-2 weeks',
-      'requirements': ['Employment verification', 'Background check', 'Role assignment (L1/L2/L3)', 'Security training'],
-      'steps': ['HR onboarding', 'Role provisioning (Permify)', 'Keycloak account creation', 'Platform training', 'Supervised probation'],
-    },
-  ];
-
-  static final _pendingApplications = [
-    {'name': 'OPay Financial', 'type': 'Fintech (IMTO)', 'stage': 'Technical Assessment', 'status': 'pending'},
-    {'name': 'PalmPay Ltd', 'type': 'Fintech (PSP)', 'stage': 'Compliance Review', 'status': 'pending'},
-    {'name': 'Kuda MFB', 'type': 'Microfinance Bank', 'stage': 'Document Verification', 'status': 'pending'},
-    {'name': 'TerraPay Global', 'type': 'Provider (Rail)', 'stage': 'API Integration', 'status': 'processing'},
-    {'name': 'Thunes Network', 'type': 'Provider (Rail)', 'stage': 'Settlement Agreement', 'status': 'processing'},
+  static final _mySteps = [
+    {'label': 'Application Submitted', 'date': '2024-01-05', 'detail': 'Via public portal — Ref: APP-KL7M2-R3T8'},
+    {'label': 'Document Verification', 'date': '2024-01-08', 'detail': 'CBN license, AML/CFT policies verified'},
+    {'label': 'Technical Assessment', 'date': '2024-01-15', 'detail': 'API integration capability confirmed'},
+    {'label': 'Prefund Account Created', 'date': '2024-01-22', 'detail': 'TigerBeetle account TB-PFND-PAYAPP-001'},
+    {'label': 'Certification Testing', 'date': '2024-02-05', 'detail': 'All 8 corridors tested successfully'},
+    {'label': 'Production Go-Live', 'date': '2024-02-14', 'detail': 'Full API access enabled, live transfers active'},
   ];
 }
