@@ -1,0 +1,583 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: apisix-unified-gateway-config
+  namespace: payment-switch
+data:
+  config.yaml: |
+    # APISIX Configuration for Unified Gateway Integration
+    apisix:
+      node_listen: 9080
+      enable_ipv6: false
+      
+    deployment:
+      role: traditional
+      role_traditional:
+        config_provider: etcd
+      
+      admin:
+        admin_key:
+          - name: "admin"
+            key: "${ADMIN_API_KEY}"
+            role: admin
+      
+      etcd:
+        host:
+          - "http://apisix-etcd:2379"
+        prefix: "/apisix"
+        timeout: 30
+    
+    nginx_config:
+      error_log: "/dev/stderr"
+      error_log_level: "warn"
+      
+    plugin_attr:
+      prometheus:
+        export_addr:
+          ip: "0.0.0.0"
+          port: 9091
+
+---
+apiVersion: apisix.apache.org/v2
+kind: ApisixUpstream
+metadata:
+  name: unified-api-gateway-upstream
+  namespace: payment-switch
+spec:
+  name: unified-api-gateway
+  scheme: http
+  loadbalancer:
+    type: roundrobin
+  healthCheck:
+    active:
+      type: http
+      httpPath: /health
+      healthy:
+        interval: 2
+        successes: 2
+      unhealthy:
+        interval: 1
+        httpFailures: 2
+  discovery:
+    type: kubernetes
+    serviceName: unified-api-gateway
+    servicePort: 8080
+
+---
+apiVersion: apisix.apache.org/v2
+kind: ApisixRoute
+metadata:
+  name: unified-gateway-vpa-routes
+  namespace: payment-switch
+spec:
+  http:
+  - name: vpa-create
+    match:
+      paths:
+      - /api/v1/vpa/create
+      methods:
+      - POST
+    backends:
+    - serviceName: unified-api-gateway
+      servicePort: 8080
+    plugins:
+    - name: request-id
+      enable: true
+    - name: jwt-auth
+      enable: true
+    - name: limit-req
+      enable: true
+      config:
+        rate: 100
+        burst: 200
+        key: remote_addr
+    - name: prometheus
+      enable: true
+    - name: opentelemetry
+      enable: true
+      config:
+        sampler:
+          name: always_on
+  
+  - name: vpa-resolve
+    match:
+      paths:
+      - /api/v1/vpa/resolve/*
+      methods:
+      - GET
+    backends:
+    - serviceName: unified-api-gateway
+      servicePort: 8080
+    plugins:
+    - name: request-id
+      enable: true
+    - name: jwt-auth
+      enable: true
+    - name: limit-req
+      enable: true
+      config:
+        rate: 1000
+        burst: 2000
+        key: remote_addr
+    - name: proxy-cache
+      enable: true
+      config:
+        cache_ttl: 60
+        cache_key:
+        - "$uri"
+    - name: prometheus
+      enable: true
+
+---
+apiVersion: apisix.apache.org/v2
+kind: ApisixRoute
+metadata:
+  name: unified-gateway-payment-routes
+  namespace: payment-switch
+spec:
+  http:
+  - name: payment-transfer
+    match:
+      paths:
+      - /api/v1/payments/transfer
+      methods:
+      - POST
+    backends:
+    - serviceName: unified-api-gateway
+      servicePort: 8080
+    plugins:
+    - name: request-id
+      enable: true
+    - name: jwt-auth
+      enable: true
+    - name: limit-req
+      enable: true
+      config:
+        rate: 500
+        burst: 1000
+        key: consumer_name
+    - name: request-validation
+      enable: true
+      config:
+        body_schema:
+          type: object
+          required:
+          - payer_vpa
+          - payee_vpa
+          - amount
+          - currency
+          properties:
+            payer_vpa:
+              type: string
+            payee_vpa:
+              type: string
+            amount:
+              type: number
+              minimum: 0.01
+            currency:
+              type: string
+              enum: ["NGN", "USD", "EUR", "GBP"]
+    - name: prometheus
+      enable: true
+    - name: opentelemetry
+      enable: true
+  
+  - name: qr-payment
+    match:
+      paths:
+      - /api/v1/payments/qr
+      methods:
+      - POST
+    backends:
+    - serviceName: unified-api-gateway
+      servicePort: 8080
+    plugins:
+    - name: request-id
+      enable: true
+    - name: jwt-auth
+      enable: true
+    - name: limit-req
+      enable: true
+      config:
+        rate: 500
+        burst: 1000
+        key: consumer_name
+    - name: prometheus
+      enable: true
+  
+  - name: offline-payment
+    match:
+      paths:
+      - /api/v1/payments/offline
+      methods:
+      - POST
+    backends:
+    - serviceName: unified-api-gateway
+      servicePort: 8080
+    plugins:
+    - name: request-id
+      enable: true
+    - name: jwt-auth
+      enable: true
+    - name: limit-req
+      enable: true
+      config:
+        rate: 200
+        burst: 400
+        key: consumer_name
+    - name: prometheus
+      enable: true
+  
+  - name: payment-status
+    match:
+      paths:
+      - /api/v1/payments/*
+      methods:
+      - GET
+    backends:
+    - serviceName: unified-api-gateway
+      servicePort: 8080
+    plugins:
+    - name: request-id
+      enable: true
+    - name: jwt-auth
+      enable: true
+    - name: limit-req
+      enable: true
+      config:
+        rate: 2000
+        burst: 4000
+        key: consumer_name
+    - name: proxy-cache
+      enable: true
+      config:
+        cache_ttl: 30
+    - name: prometheus
+      enable: true
+
+---
+apiVersion: apisix.apache.org/v2
+kind: ApisixRoute
+metadata:
+  name: unified-gateway-ledger-routes
+  namespace: payment-switch
+spec:
+  http:
+  - name: ledger-accounts
+    match:
+      paths:
+      - /api/v1/ledger/accounts
+      methods:
+      - POST
+      - GET
+    backends:
+    - serviceName: unified-api-gateway
+      servicePort: 8080
+    plugins:
+    - name: request-id
+      enable: true
+    - name: jwt-auth
+      enable: true
+    - name: limit-req
+      enable: true
+      config:
+        rate: 1000
+        burst: 2000
+        key: consumer_name
+    - name: prometheus
+      enable: true
+  
+  - name: ledger-transfers
+    match:
+      paths:
+      - /api/v1/ledger/transfers
+      - /api/v1/ledger/transfers/*
+      methods:
+      - POST
+      - GET
+    backends:
+    - serviceName: unified-api-gateway
+      servicePort: 8080
+    plugins:
+    - name: request-id
+      enable: true
+    - name: jwt-auth
+      enable: true
+    - name: limit-req
+      enable: true
+      config:
+        rate: 1000
+        burst: 2000
+        key: consumer_name
+    - name: prometheus
+      enable: true
+
+---
+apiVersion: apisix.apache.org/v2
+kind: ApisixRoute
+metadata:
+  name: unified-gateway-settlement-routes
+  namespace: payment-switch
+spec:
+  http:
+  - name: instant-settlement
+    match:
+      paths:
+      - /api/v1/settlement/instant
+      methods:
+      - POST
+    backends:
+    - serviceName: unified-api-gateway
+      servicePort: 8080
+    plugins:
+    - name: request-id
+      enable: true
+    - name: jwt-auth
+      enable: true
+    - name: limit-req
+      enable: true
+      config:
+        rate: 100
+        burst: 200
+        key: consumer_name
+    - name: prometheus
+      enable: true
+  
+  - name: settlement-status
+    match:
+      paths:
+      - /api/v1/settlement/status/*
+      methods:
+      - GET
+    backends:
+    - serviceName: unified-api-gateway
+      servicePort: 8080
+    plugins:
+    - name: request-id
+      enable: true
+    - name: jwt-auth
+      enable: true
+    - name: limit-req
+      enable: true
+      config:
+        rate: 500
+        burst: 1000
+        key: consumer_name
+    - name: proxy-cache
+      enable: true
+      config:
+        cache_ttl: 30
+    - name: prometheus
+      enable: true
+
+---
+apiVersion: apisix.apache.org/v2
+kind: ApisixRoute
+metadata:
+  name: unified-gateway-biometric-routes
+  namespace: payment-switch
+spec:
+  http:
+  - name: biometric-enroll
+    match:
+      paths:
+      - /api/v1/biometric/enroll
+      methods:
+      - POST
+    backends:
+    - serviceName: unified-api-gateway
+      servicePort: 8080
+    plugins:
+    - name: request-id
+      enable: true
+    - name: jwt-auth
+      enable: true
+    - name: limit-req
+      enable: true
+      config:
+        rate: 50
+        burst: 100
+        key: consumer_name
+    - name: prometheus
+      enable: true
+  
+  - name: biometric-verify
+    match:
+      paths:
+      - /api/v1/biometric/verify
+      methods:
+      - POST
+    backends:
+    - serviceName: unified-api-gateway
+      servicePort: 8080
+    plugins:
+    - name: request-id
+      enable: true
+    - name: jwt-auth
+      enable: true
+    - name: limit-req
+      enable: true
+      config:
+        rate: 500
+        burst: 1000
+        key: consumer_name
+    - name: prometheus
+      enable: true
+
+---
+apiVersion: apisix.apache.org/v2
+kind: ApisixRoute
+metadata:
+  name: unified-gateway-pos-routes
+  namespace: payment-switch
+spec:
+  http:
+  - name: pos-transactions
+    match:
+      paths:
+      - /api/v1/pos/transactions
+      methods:
+      - POST
+    backends:
+    - serviceName: unified-api-gateway
+      servicePort: 8080
+    plugins:
+    - name: request-id
+      enable: true
+    - name: jwt-auth
+      enable: true
+    - name: limit-req
+      enable: true
+      config:
+        rate: 5000
+        burst: 10000
+        key: consumer_name
+    - name: prometheus
+      enable: true
+  
+  - name: pos-transaction-status
+    match:
+      paths:
+      - /api/v1/pos/transactions/*
+      methods:
+      - GET
+    backends:
+    - serviceName: unified-api-gateway
+      servicePort: 8080
+    plugins:
+    - name: request-id
+      enable: true
+    - name: jwt-auth
+      enable: true
+    - name: limit-req
+      enable: true
+      config:
+        rate: 2000
+        burst: 4000
+        key: consumer_name
+    - name: proxy-cache
+      enable: true
+      config:
+        cache_ttl: 30
+    - name: prometheus
+      enable: true
+
+---
+apiVersion: apisix.apache.org/v2
+kind: ApisixRoute
+metadata:
+  name: unified-gateway-offline-routes
+  namespace: payment-switch
+spec:
+  http:
+  - name: offline-sync
+    match:
+      paths:
+      - /api/v1/offline/sync
+      methods:
+      - POST
+    backends:
+    - serviceName: unified-api-gateway
+      servicePort: 8080
+    plugins:
+    - name: request-id
+      enable: true
+    - name: jwt-auth
+      enable: true
+    - name: limit-req
+      enable: true
+      config:
+        rate: 100
+        burst: 200
+        key: consumer_name
+    - name: prometheus
+      enable: true
+  
+  - name: offline-pending
+    match:
+      paths:
+      - /api/v1/offline/pending
+      methods:
+      - GET
+    backends:
+    - serviceName: unified-api-gateway
+      servicePort: 8080
+    plugins:
+    - name: request-id
+      enable: true
+    - name: jwt-auth
+      enable: true
+    - name: limit-req
+      enable: true
+      config:
+        rate: 500
+        burst: 1000
+        key: consumer_name
+    - name: proxy-cache
+      enable: true
+      config:
+        cache_ttl: 10
+    - name: prometheus
+      enable: true
+
+---
+apiVersion: apisix.apache.org/v2
+kind: ApisixGlobalRule
+metadata:
+  name: global-security-rules
+  namespace: payment-switch
+spec:
+  plugins:
+  - name: cors
+    enable: true
+    config:
+      allow_origins: "*"
+      allow_methods: "GET,POST,PUT,DELETE,OPTIONS"
+      allow_headers: "Content-Type,Authorization,X-Request-ID"
+      expose_headers: "X-Request-ID"
+      max_age: 3600
+  
+  - name: response-rewrite
+    enable: true
+    config:
+      headers:
+        set:
+          X-Frame-Options: "DENY"
+          X-Content-Type-Options: "nosniff"
+          X-XSS-Protection: "1; mode=block"
+          Strict-Transport-Security: "max-age=31536000; includeSubDomains"
+  
+  - name: ip-restriction
+    enable: false
+    config:
+      whitelist:
+      - "0.0.0.0/0"
+  
+  - name: opentelemetry
+    enable: true
+    config:
+      sampler:
+        name: always_on
+      resource:
+        service.name: "apisix-gateway"

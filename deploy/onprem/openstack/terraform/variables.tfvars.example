@@ -1,0 +1,28 @@
+# Payment Switch Platform - OpenStack Terraform Variables
+# Copy this file to terraform.tfvars and customize for your environment
+
+# Cluster Configuration
+cluster_name = "payment-switch"
+environment  = "production"
+
+# OpenStack Network Configuration
+external_network_name = "external"  # Name of your external/public network
+dns_nameservers       = ["8.8.8.8", "8.8.4.4"]
+
+# Node Configuration
+control_plane_count = 3  # Minimum 3 for HA
+worker_count        = 5  # Adjust based on workload
+
+# Flavors (adjust to match your OpenStack flavors)
+control_plane_flavor = "m1.xlarge"   # 8 vCPU, 16GB RAM minimum
+worker_flavor        = "m1.2xlarge"  # 16 vCPU, 32GB RAM recommended
+data_node_flavor     = "m1.4xlarge"  # 32 vCPU, 64GB RAM for data nodes
+
+# OS Image
+image_name = "Ubuntu-22.04-LTS"
+
+# SSH Key (paste your public key here)
+ssh_public_key = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQ... your-key-here"
+
+# Availability Zones (adjust for your OpenStack deployment)
+availability_zones = ["nova"]  # Or ["az1", "az2", "az3"] for multi-AZ

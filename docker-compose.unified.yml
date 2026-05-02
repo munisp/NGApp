@@ -1,0 +1,605 @@
+version: '3.9'
+
+# Unified Payment Switch Platform
+# Integrates Web-Checkout Portal + NEXTGEN Payment Core Backend
+
+networks:
+  payment-switch-network:
+    driver: bridge
+
+volumes:
+  # Shared volumes
+  redis_data:
+  
+  # Database volumes (PostgreSQL only - MySQL removed)
+  postgres_data:
+  tigerbeetle_data:
+  kafka_data:
+  zookeeper_data:
+  prometheus_data:
+  grafana_data:
+  
+  # Mojaloop volumes
+  mojaloop_mysql_data:
+
+services:
+  # ============================================================================
+  # DATABASE SERVICES (PostgreSQL only - MySQL removed)
+  # ============================================================================
+  
+  # PostgreSQL for all services (Web-Checkout Portal + Payment Core)
+  postgres:
+    image: postgres:15-alpine
+    container_name: payment-core-postgres
+    environment:
+      POSTGRES_DB: payment_switch
+      POSTGRES_USER: payment_user
+      POSTGRES_PASSWORD: payment_pass_2024
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./payment-core/services/database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U payment_user -d payment_switch"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - payment-switch-network
+    restart: unless-stopped
+
+  # Redis (shared by all services)
+  redis:
+    image: redis:7-alpine
+    container_name: shared-redis
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-redis_pass_2024}
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks:
+      - payment-switch-network
+    restart: unless-stopped
+
+  # TigerBeetle (High-performance financial ledger)
+  tigerbeetle:
+    image: ghcr.io/tigerbeetle/tigerbeetle:latest
+    container_name: tigerbeetle-ledger
+    command: start --addresses=0.0.0.0:3001 /var/lib/tigerbeetle/0_0.tigerbeetle
+    volumes:
+      - tigerbeetle_data:/var/lib/tigerbeetle
+    ports:
+      - "3002:3001"  # Map to 3002 externally to avoid conflict with admin dashboard
+    networks:
+      - payment-switch-network
+    restart: unless-stopped
+
+  # ============================================================================
+  # MESSAGE BROKER
+  # ============================================================================
+  
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    container_name: zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    volumes:
+      - zookeeper_data:/var/lib/zookeeper/data
+    networks:
+      - payment-switch-network
+    restart: unless-stopped
+
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: kafka
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+      - "9093:9093"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:9093
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    volumes:
+      - kafka_data:/var/lib/kafka/data
+    networks:
+      - payment-switch-network
+    healthcheck:
+      test: ["CMD", "kafka-broker-api-versions", "--bootstrap-server", "localhost:9092"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  # ============================================================================
+  # WEB-CHECKOUT PORTAL (Node.js/TypeScript)
+  # ============================================================================
+  
+  web-portal:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: web-checkout-portal
+    environment:
+      # Database (PostgreSQL - MySQL removed)
+      DATABASE_URL: postgresql://payment_user:payment_pass_2024@postgres:5432/payment_switch
+      
+      # Redis
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-redis_pass_2024}
+      
+      # Authentication (Keycloak)
+      JWT_SECRET: ${JWT_SECRET:-your-super-secret-jwt-key-change-in-production}
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: ${KEYCLOAK_REALM:-payment-switch}
+      KEYCLOAK_CLIENT_ID: ${KEYCLOAK_CLIENT_ID:-payment-switch-portal}
+      KEYCLOAK_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET}
+      # APISIX Gateway
+      APISIX_ADMIN_URL: http://apisix:9180
+      APISIX_ADMIN_KEY: ${APISIX_ADMIN_KEY}
+      # Permify RBAC
+      PERMIFY_URL: http://permify:3476
+      # OpenAppSec WAF
+      OPENAPPSEC_URL: http://openappsec:8080
+      
+      # App Configuration
+      VITE_APP_ID: ${VITE_APP_ID}
+      VITE_APP_TITLE: ${VITE_APP_TITLE:-Payment Switch Platform}
+      VITE_APP_LOGO: ${VITE_APP_LOGO}
+      
+      # External Services
+      SENDGRID_API_KEY: ${SENDGRID_API_KEY}
+      SENDGRID_FROM_EMAIL: ${SENDGRID_FROM_EMAIL}
+      SENDGRID_FROM_NAME: ${SENDGRID_FROM_NAME:-Payment Switch Platform}
+      RESEND_API_KEY: ${RESEND_API_KEY}
+      RESEND_FROM_EMAIL: ${RESEND_FROM_EMAIL}
+      TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID}
+      TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN}
+      TWILIO_PHONE_NUMBER: ${TWILIO_PHONE_NUMBER}
+      
+      # Built-in Services
+      BUILT_IN_FORGE_API_URL: ${BUILT_IN_FORGE_API_URL}
+      BUILT_IN_FORGE_API_KEY: ${BUILT_IN_FORGE_API_KEY}
+      VITE_FRONTEND_FORGE_API_KEY: ${VITE_FRONTEND_FORGE_API_KEY}
+      VITE_FRONTEND_FORGE_API_URL: ${VITE_FRONTEND_FORGE_API_URL}
+      
+      # Payment Core Integration
+      PAYMENT_CORE_URL: http://go-ledger:8080
+      FRAUD_DETECTION_URL: http://fraud-detection:8081
+      ANALYTICS_URL: http://data-pipeline:8082
+      
+      # Node Environment
+      NODE_ENV: production
+      PORT: 3000
+    ports:
+      - "3000:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - payment-switch-network
+    volumes:
+      - ./storage:/app/storage
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ============================================================================
+  # PAYMENT CORE SERVICES (Go)
+  # ============================================================================
+  
+  go-ledger:
+    build:
+      context: ./payment-core/go-services
+      dockerfile: Dockerfile
+    container_name: go-ledger-service
+    environment:
+      # TigerBeetle
+      TIGERBEETLE_ADDRESS: tigerbeetle:3001
+      
+      # PostgreSQL
+      DATABASE_URL: postgresql://payment_user:payment_pass_2024@postgres:5432/payment_switch
+      
+      # Redis
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-redis_pass_2024}
+      
+      # Kafka
+      KAFKA_BROKERS: kafka:9092
+      
+      # Service Config
+      SERVICE_PORT: 8080
+      LOG_LEVEL: info
+    ports:
+      - "8080:8080"
+    depends_on:
+      - tigerbeetle
+      - postgres
+      - redis
+      - kafka
+    networks:
+      - payment-switch-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ============================================================================
+  # FRAUD DETECTION SERVICE (Python)
+  # ============================================================================
+  
+  fraud-detection:
+    build:
+      context: ./payment-core/fraud-detection
+      dockerfile: Dockerfile
+    container_name: fraud-detection-service
+    environment:
+      # PostgreSQL
+      DATABASE_URL: postgresql://payment_user:payment_pass_2024@postgres:5432/payment_switch
+      
+      # Redis
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-redis_pass_2024}
+      
+      # Kafka
+      KAFKA_BROKERS: kafka:9092
+      
+      # ML Models
+      MODEL_PATH: /app/models
+      GNN_MODEL_PATH: /app/models/gnn
+      ML_MODEL_PATH: /app/models/ml
+      
+      # Service Config
+      SERVICE_PORT: 8081
+      LOG_LEVEL: info
+      PYTHONUNBUFFERED: 1
+    ports:
+      - "8081:8081"
+    depends_on:
+      - postgres
+      - redis
+      - kafka
+    networks:
+      - payment-switch-network
+    volumes:
+      - ./payment-core/fraud-detection/models:/app/models
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ============================================================================
+  # DATA PIPELINE SERVICE (Python)
+  # ============================================================================
+  
+  data-pipeline:
+    build:
+      context: ./payment-core/lakehouse-pipelines
+      dockerfile: Dockerfile
+    container_name: data-pipeline-service
+    environment:
+      # PostgreSQL
+      DATABASE_URL: postgresql://payment_user:payment_pass_2024@postgres:5432/payment_switch
+      
+      # Kafka
+      KAFKA_BROKERS: kafka:9092
+      
+      # Spark
+      SPARK_MASTER: local[*]
+      
+      # Service Config
+      SERVICE_PORT: 8082
+      LOG_LEVEL: info
+      PYTHONUNBUFFERED: 1
+    ports:
+      - "8082:8082"
+      - "4040:4040"  # Spark UI
+    depends_on:
+      - postgres
+      - kafka
+    networks:
+      - payment-switch-network
+    volumes:
+      - ./payment-core/lakehouse-pipelines/data:/app/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8082/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ============================================================================
+  # API GATEWAY (Nginx)
+  # ============================================================================
+  
+  api-gateway:
+    image: nginx:alpine
+    container_name: api-gateway
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - web-portal
+      - go-ledger
+      - fraud-detection
+      - data-pipeline
+    networks:
+      - payment-switch-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ============================================================================
+  # MONITORING STACK
+  # ============================================================================
+  
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    networks:
+      - payment-switch-network
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin}
+      - GF_USERS_ALLOW_SIGN_UP=false
+    ports:
+      - "3001:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./monitoring/grafana/datasources:/etc/grafana/provisioning/datasources:ro
+    depends_on:
+      - prometheus
+    networks:
+      - payment-switch-network
+    restart: unless-stopped
+
+  # ============================================================================
+  # ADMIN TOOLS
+  # ============================================================================
+  
+  adminer:
+    image: adminer:latest
+    container_name: adminer
+    ports:
+      - "8090:8080"
+    environment:
+      ADMINER_DEFAULT_SERVER: postgres
+      ADMINER_DESIGN: pepa-linha
+    networks:
+      - payment-switch-network
+    restart: unless-stopped
+
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: redis-commander
+    environment:
+      - REDIS_HOSTS=local:redis:6379:0:${REDIS_PASSWORD:-redis_pass_2024}
+    ports:
+      - "8091:8081"
+    networks:
+      - payment-switch-network
+    restart: unless-stopped
+
+  # ============================================================================
+  # AUTHENTICATION & AUTHORIZATION STACK
+  # ============================================================================
+  
+  # Keycloak - Identity and Access Management
+  keycloak:
+    image: quay.io/keycloak/keycloak:23.0
+    container_name: keycloak
+    command: start-dev
+    environment:
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN:-admin}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin_change_me}
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
+      KC_DB_USERNAME: payment_user
+      KC_DB_PASSWORD: payment_pass_2024
+      KC_HEALTH_ENABLED: "true"
+      KC_METRICS_ENABLED: "true"
+    ports:
+      - "8180:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - payment-switch-network
+    healthcheck:
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/8080;echo -e 'GET /health/ready HTTP/1.1\r\nhost: localhost\r\nConnection: close\r\n\r\n' >&3;if [ $? -eq 0 ]; then echo 'Healthcheck Successful';exit 0;else echo 'Healthcheck Failed';exit 1;fi;"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    restart: unless-stopped
+
+  # APISIX - API Gateway with Authentication
+  apisix:
+    image: apache/apisix:3.8.0-debian
+    container_name: apisix
+    environment:
+      APISIX_STAND_ALONE: "true"
+    ports:
+      - "9080:9080"   # HTTP
+      - "9443:9443"   # HTTPS
+      - "9180:9180"   # Admin API
+      - "9091:9091"   # Prometheus metrics
+    volumes:
+      - ./config/apisix/config.yaml:/usr/local/apisix/conf/config.yaml
+      - ./config/apisix/apisix.yaml:/usr/local/apisix/conf/apisix.yaml
+    depends_on:
+      - keycloak
+    networks:
+      - payment-switch-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9080/apisix/status"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  # Permify - Fine-grained Authorization (RBAC/ABAC)
+  permify:
+    image: ghcr.io/permify/permify:latest
+    container_name: permify
+    command: serve
+    environment:
+      PERMIFY_DATABASE_ENGINE: postgres
+      PERMIFY_DATABASE_URI: postgres://payment_user:payment_pass_2024@postgres:5432/permify?sslmode=disable
+      PERMIFY_LOG_LEVEL: info
+    ports:
+      - "3476:3476"   # gRPC
+      - "3478:3478"   # HTTP
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - payment-switch-network
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3478/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  # OpenAppSec - Web Application Firewall (WAF)
+  openappsec:
+    image: ghcr.io/openappsec/open-appsec-standalone:latest
+    container_name: openappsec
+    environment:
+      LEARNING_MODE: "true"
+      LOG_LEVEL: info
+    ports:
+      - "8085:8080"   # WAF proxy
+      - "8086:8081"   # Management API
+    volumes:
+      - ./config/openappsec/local_policy.yaml:/etc/cp/conf/local_policy.yaml:ro
+    networks:
+      - payment-switch-network
+    restart: unless-stopped
+
+  # ============================================================================
+  # MOJALOOP SERVICES (Minimal deployment for participant registration)
+  # ============================================================================
+  
+  # MySQL for Mojaloop (central-ledger requires MySQL)
+  mojaloop-mysql:
+    image: mysql:8.0
+    container_name: mojaloop-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: mojaloop_root_2024
+      MYSQL_DATABASE: central_ledger
+      MYSQL_USER: mojaloop
+      MYSQL_PASSWORD: mojaloop_pass_2024
+    ports:
+      - "3307:3306"
+    volumes:
+      - mojaloop_mysql_data:/var/lib/mysql
+    networks:
+      - payment-switch-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-pmojaloop_root_2024"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  # Mojaloop Central Ledger - Core ledger service for participant management
+  central-ledger:
+    image: mojaloop/central-ledger:v17.3.0
+    container_name: central-ledger
+    environment:
+      CLEDG_DATABASE__HOST: mojaloop-mysql
+      CLEDG_DATABASE__PORT: 3306
+      CLEDG_DATABASE__USER: mojaloop
+      CLEDG_DATABASE__PASSWORD: mojaloop_pass_2024
+      CLEDG_DATABASE__SCHEMA: central_ledger
+      CLEDG_KAFKA__PRODUCER__BROKER_LIST: kafka:9092
+      CLEDG_KAFKA__CONSUMER__BROKER_LIST: kafka:9092
+      LOG_LEVEL: info
+    ports:
+      - "3000:3001"  # Admin API
+    depends_on:
+      mojaloop-mysql:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    networks:
+      - payment-switch-network
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    restart: unless-stopped
+
+  # Mojaloop Account Lookup Service - For participant endpoint resolution
+  account-lookup-service:
+    image: mojaloop/account-lookup-service:v15.1.0
+    container_name: account-lookup-service
+    environment:
+      ALS_DATABASE__HOST: mojaloop-mysql
+      ALS_DATABASE__PORT: 3306
+      ALS_DATABASE__USER: mojaloop
+      ALS_DATABASE__PASSWORD: mojaloop_pass_2024
+      ALS_DATABASE__SCHEMA: account_lookup
+      LOG_LEVEL: info
+    ports:
+      - "4001:4001"  # Admin API
+      - "4002:4002"  # FSPIOP API
+    depends_on:
+      mojaloop-mysql:
+        condition: service_healthy
+    networks:
+      - payment-switch-network
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:4001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    restart: unless-stopped

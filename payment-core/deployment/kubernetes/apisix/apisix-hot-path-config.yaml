@@ -1,0 +1,383 @@
+---
+# APISIX Hot Path Configuration for 1M TPS
+# Optimized for minimal latency and maximum throughput
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: apisix-hot-path-config
+  namespace: apisix
+data:
+  config.yaml: |
+    apisix:
+      # Enable hot path mode
+      enable_admin: true
+      enable_control: true
+      
+      # Connection optimization
+      node_listen:
+        - port: 9080
+          enable_http2: true
+        - port: 9443
+          enable_http2: true
+          ssl: true
+      
+      # SSL optimization
+      ssl:
+        enable: true
+        ssl_protocols: "TLSv1.3"
+        ssl_ciphers: "TLS_AES_256_GCM_SHA384:TLS_CHACHA20_POLY1305_SHA256"
+        ssl_session_tickets: true
+        ssl_session_timeout: 86400
+      
+      # Router optimization
+      router:
+        http: radixtree_host_uri
+        ssl: radixtree_sni
+      
+      # Proxy optimization
+      proxy_cache:
+        cache_ttl: 10s
+        zones:
+          - name: hot_path_cache
+            memory_size: 512m
+            disk_size: 2g
+            disk_path: /tmp/apisix_cache
+            cache_levels: 1:2
+      
+      # Upstream optimization
+      upstream:
+        # Connection pooling
+        keepalive_pool:
+          size: 1000
+          idle_timeout: 60s
+          requests: 10000
+        
+        # Health checks
+        health_check:
+          active:
+            type: http
+            timeout: 1
+            http_path: /health
+            healthy:
+              interval: 2
+              successes: 1
+            unhealthy:
+              interval: 1
+              http_failures: 3
+      
+      # Real IP
+      real_ip_header: X-Forwarded-For
+      real_ip_recursive: "on"
+      real_ip_from:
+        - 10.0.0.0/8
+        - 172.16.0.0/12
+        - 192.168.0.0/16
+    
+    # Nginx optimization for high throughput
+    nginx_config:
+      error_log_level: warn
+      
+      # Worker optimization
+      worker_processes: auto
+      worker_cpu_affinity: auto
+      worker_rlimit_nofile: 1048576
+      
+      # Event optimization
+      event:
+        worker_connections: 65535
+        accept_mutex: "off"
+        multi_accept: "on"
+        use: epoll
+      
+      # HTTP optimization
+      http:
+        # Buffers
+        client_body_buffer_size: 16k
+        client_header_buffer_size: 4k
+        large_client_header_buffers: 4 32k
+        client_max_body_size: 10m
+        
+        # Timeouts
+        client_body_timeout: 10s
+        client_header_timeout: 10s
+        keepalive_timeout: 75s
+        send_timeout: 10s
+        
+        # Keepalive
+        keepalive_requests: 10000
+        
+        # Gzip (disabled for hot path - adds latency)
+        gzip: "off"
+        
+        # Access log (disabled for hot path)
+        access_log: "off"
+        
+        # Sendfile
+        sendfile: "on"
+        tcp_nopush: "on"
+        tcp_nodelay: "on"
+        
+        # Open file cache
+        open_file_cache: max=200000 inactive=20s
+        open_file_cache_valid: 30s
+        open_file_cache_min_uses: 2
+        open_file_cache_errors: "on"
+        
+        # Upstream keepalive
+        upstream_keepalive_timeout: 60s
+        upstream_keepalive_requests: 10000
+        
+        # Variables hash
+        variables_hash_max_size: 2048
+        variables_hash_bucket_size: 128
+        
+        # Server names hash
+        server_names_hash_max_size: 1024
+        server_names_hash_bucket_size: 128
+        
+        # Lua optimization
+        lua_socket_pool_size: 1000
+        lua_socket_keepalive_timeout: 60s
+        lua_socket_log_errors: "off"
+        
+        # Shared dict sizes
+        lua_shared_dict:
+          internal-status: 10m
+          plugin-limit-req: 50m
+          plugin-limit-count: 50m
+          prometheus-metrics: 50m
+          plugin-limit-conn: 50m
+          upstream-healthcheck: 10m
+          worker-events: 10m
+          lrucache-lock: 10m
+          balancer-ewma: 10m
+          balancer-ewma-locks: 10m
+          balancer-ewma-last-touched-at: 10m
+          plugin-graphql-limit-count: 10m
+          tracing_buffer: 50m
+          jwt-cache: 100m
+          route-cache: 50m
+    
+    # Plugin optimization
+    plugins:
+      # Minimal plugins for hot path
+      - prometheus
+      - jwt-auth
+      - limit-req
+      - limit-count
+      - proxy-rewrite
+      - response-rewrite
+      
+    # Disable expensive plugins on hot path
+    plugin_attr:
+      prometheus:
+        export_uri: /apisix/prometheus/metrics
+        export_addr:
+          ip: 0.0.0.0
+          port: 9091
+        # Disable per-route metrics for performance
+        enable_export_server: true
+        
+      jwt-auth:
+        # Use local validation
+        header: Authorization
+        query: jwt
+        cookie: jwt
+        # Cache validated tokens
+        cache_ttl: 30
+        
+      limit-req:
+        # High limits for hot path
+        rate: 100000
+        burst: 50000
+        
+      limit-count:
+        # High limits for hot path
+        count: 1000000
+        time_window: 60
+        
+    # Etcd optimization
+    etcd:
+      host:
+        - "http://etcd:2379"
+      prefix: /apisix
+      timeout: 30
+      # Reduce etcd polling for hot path
+      resync_delay: 5
+      health_check_timeout: 10
+      startup_retry: 2
+      tls:
+        verify: false
+
+---
+# Hot path routes configuration
+apiVersion: apisix.apache.org/v2
+kind: ApisixRoute
+metadata:
+  name: hot-path-transfers
+  namespace: apisix
+spec:
+  http:
+    - name: transfers-hot-path
+      match:
+        hosts:
+          - api.payment-switch.local
+        paths:
+          - /v1/transfers
+          - /v1/transfers/*
+      backends:
+        - serviceName: transfer-service
+          servicePort: 8080
+          weight: 100
+      plugins:
+        # Minimal plugins for hot path
+        - name: jwt-auth
+          enable: true
+          config:
+            header: Authorization
+            # Local validation only
+            
+        - name: limit-req
+          enable: true
+          config:
+            rate: 100000
+            burst: 50000
+            key: remote_addr
+            rejected_code: 429
+            
+        - name: prometheus
+          enable: true
+          config:
+            prefer_name: true
+
+---
+# Hot path upstream configuration
+apiVersion: apisix.apache.org/v2
+kind: ApisixUpstream
+metadata:
+  name: transfer-service-upstream
+  namespace: apisix
+spec:
+  loadbalancer:
+    type: roundrobin
+  healthCheck:
+    active:
+      type: http
+      httpPath: /health
+      timeout: 1
+      healthy:
+        interval: 2
+        successes: 1
+      unhealthy:
+        interval: 1
+        httpFailures: 3
+  # Connection pooling
+  keepalivePool:
+    size: 1000
+    idleTimeout: 60
+    requests: 10000
+  # Retry configuration
+  retries: 2
+  timeout:
+    connect: 1
+    send: 5
+    read: 5
+
+---
+# Disable expensive plugins globally for hot path routes
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: apisix-plugin-metadata
+  namespace: apisix
+data:
+  # Disable request/response logging for hot path
+  http-logger: |
+    {
+      "inactive_timeout": 3600,
+      "batch_max_size": 10000,
+      "max_retry_count": 0
+    }
+  
+  # Disable tracing for hot path (use sampling instead)
+  opentelemetry: |
+    {
+      "sampler": {
+        "name": "parent_based_trace_id_ratio",
+        "options": {
+          "fraction": 0.001
+        }
+      }
+    }
+
+---
+# APISIX deployment optimized for hot path
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: apisix-hot-path
+  namespace: apisix
+spec:
+  replicas: 6
+  selector:
+    matchLabels:
+      app: apisix-hot-path
+  template:
+    metadata:
+      labels:
+        app: apisix-hot-path
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9091"
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchLabels:
+                  app: apisix-hot-path
+              topologyKey: kubernetes.io/hostname
+      containers:
+        - name: apisix
+          image: apache/apisix:3.7.0-debian
+          ports:
+            - containerPort: 9080
+              name: http
+            - containerPort: 9443
+              name: https
+            - containerPort: 9091
+              name: metrics
+          resources:
+            requests:
+              cpu: "4"
+              memory: 8Gi
+            limits:
+              cpu: "8"
+              memory: 16Gi
+          env:
+            - name: APISIX_STAND_ALONE
+              value: "false"
+          volumeMounts:
+            - name: config
+              mountPath: /usr/local/apisix/conf/config.yaml
+              subPath: config.yaml
+          livenessProbe:
+            httpGet:
+              path: /apisix/status
+              port: 9080
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /apisix/status
+              port: 9080
+            initialDelaySeconds: 5
+            periodSeconds: 5
+      volumes:
+        - name: config
+          configMap:
+            name: apisix-hot-path-config
+      # Use host network for reduced latency
+      # hostNetwork: true
+      # dnsPolicy: ClusterFirstWithHostNet

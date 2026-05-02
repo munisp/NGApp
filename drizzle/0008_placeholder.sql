@@ -1,0 +1,1 @@
+-- Migration 0008: Already applied

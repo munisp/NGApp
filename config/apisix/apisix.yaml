@@ -1,0 +1,245 @@
+# APISIX Routes and Upstreams for Payment Switch Platform
+# This file defines the API routes with Keycloak OIDC authentication
+
+upstreams:
+  - id: web-portal
+    type: roundrobin
+    nodes:
+      "web-portal:3000": 1
+    checks:
+      active:
+        type: http
+        http_path: /api/health
+        healthy:
+          interval: 5
+          successes: 2
+        unhealthy:
+          interval: 5
+          http_failures: 3
+
+  - id: go-ledger
+    type: roundrobin
+    nodes:
+      "go-ledger:8080": 1
+    checks:
+      active:
+        type: http
+        http_path: /health
+        healthy:
+          interval: 5
+          successes: 2
+        unhealthy:
+          interval: 5
+          http_failures: 3
+
+  - id: fraud-detection
+    type: roundrobin
+    nodes:
+      "fraud-detection:8081": 1
+    checks:
+      active:
+        type: http
+        http_path: /health
+        healthy:
+          interval: 5
+          successes: 2
+        unhealthy:
+          interval: 5
+          http_failures: 3
+
+  - id: data-pipeline
+    type: roundrobin
+    nodes:
+      "data-pipeline:8082": 1
+    checks:
+      active:
+        type: http
+        http_path: /health
+        healthy:
+          interval: 5
+          successes: 2
+        unhealthy:
+          interval: 5
+          http_failures: 3
+
+  - id: keycloak
+    type: roundrobin
+    nodes:
+      "keycloak:8080": 1
+
+  - id: permify
+    type: roundrobin
+    nodes:
+      "permify:3478": 1
+
+global_rules:
+  - id: 1
+    plugins:
+      prometheus:
+        prefer_name: true
+      request-id:
+        header_name: X-Request-ID
+        include_in_response: true
+
+routes:
+  # Health check endpoint (no auth required)
+  - id: health
+    uri: /health
+    upstream_id: web-portal
+    plugins:
+      proxy-rewrite:
+        uri: /api/health
+
+  # APISIX status endpoint
+  - id: apisix-status
+    uri: /apisix/status
+    plugins:
+      public-api: {}
+
+  # Keycloak proxy (for browser-based auth flows)
+  - id: keycloak-auth
+    uri: /auth/*
+    upstream_id: keycloak
+    plugins:
+      proxy-rewrite:
+        regex_uri: ["^/auth/(.*)", "/realms/payment-switch/protocol/openid-connect/$1"]
+
+  # Public API endpoints (no auth required)
+  - id: public-api
+    uri: /api/public/*
+    upstream_id: web-portal
+    plugins:
+      limit-req:
+        rate: 100
+        burst: 50
+        key: remote_addr
+      cors:
+        allow_origins: "*"
+        allow_methods: "GET,POST,OPTIONS"
+        allow_headers: "Content-Type,Authorization,X-Request-ID"
+        expose_headers: "X-Request-ID"
+        max_age: 3600
+
+  # Protected API endpoints (Keycloak auth required)
+  - id: protected-api
+    uri: /api/*
+    upstream_id: web-portal
+    plugins:
+      openid-connect:
+        client_id: apisix-gateway
+        client_secret: ${KEYCLOAK_APISIX_CLIENT_SECRET}
+        discovery: http://keycloak:8080/realms/payment-switch/.well-known/openid-configuration
+        bearer_only: true
+        realm: payment-switch
+        introspection_endpoint_auth_method: client_secret_post
+        token_signing_alg_values_expected: RS256
+        set_userinfo_header: true
+        set_id_token_header: true
+      limit-req:
+        rate: 1000
+        burst: 500
+        key: consumer_name
+      cors:
+        allow_origins: "*"
+        allow_methods: "GET,POST,PUT,DELETE,PATCH,OPTIONS"
+        allow_headers: "Content-Type,Authorization,X-Request-ID"
+        expose_headers: "X-Request-ID"
+        max_age: 3600
+
+  # Ledger API (Go service)
+  - id: ledger-api
+    uri: /api/v1/ledger/*
+    upstream_id: go-ledger
+    plugins:
+      openid-connect:
+        client_id: apisix-gateway
+        client_secret: ${KEYCLOAK_APISIX_CLIENT_SECRET}
+        discovery: http://keycloak:8080/realms/payment-switch/.well-known/openid-configuration
+        bearer_only: true
+        realm: payment-switch
+        introspection_endpoint_auth_method: client_secret_post
+      proxy-rewrite:
+        regex_uri: ["^/api/v1/ledger/(.*)", "/api/v1/$1"]
+      limit-req:
+        rate: 5000
+        burst: 2000
+        key: consumer_name
+
+  # Fraud Detection API (Python service)
+  - id: fraud-api
+    uri: /api/v1/fraud/*
+    upstream_id: fraud-detection
+    plugins:
+      openid-connect:
+        client_id: apisix-gateway
+        client_secret: ${KEYCLOAK_APISIX_CLIENT_SECRET}
+        discovery: http://keycloak:8080/realms/payment-switch/.well-known/openid-configuration
+        bearer_only: true
+        realm: payment-switch
+        introspection_endpoint_auth_method: client_secret_post
+      proxy-rewrite:
+        regex_uri: ["^/api/v1/fraud/(.*)", "/api/v1/$1"]
+      limit-req:
+        rate: 2000
+        burst: 1000
+        key: consumer_name
+
+  # Analytics API (Python service)
+  - id: analytics-api
+    uri: /api/v1/analytics/*
+    upstream_id: data-pipeline
+    plugins:
+      openid-connect:
+        client_id: apisix-gateway
+        client_secret: ${KEYCLOAK_APISIX_CLIENT_SECRET}
+        discovery: http://keycloak:8080/realms/payment-switch/.well-known/openid-configuration
+        bearer_only: true
+        realm: payment-switch
+        introspection_endpoint_auth_method: client_secret_post
+      proxy-rewrite:
+        regex_uri: ["^/api/v1/analytics/(.*)", "/api/v1/$1"]
+      limit-req:
+        rate: 500
+        burst: 200
+        key: consumer_name
+
+  # Admin API (requires admin role)
+  - id: admin-api
+    uri: /api/admin/*
+    upstream_id: web-portal
+    plugins:
+      openid-connect:
+        client_id: apisix-gateway
+        client_secret: ${KEYCLOAK_APISIX_CLIENT_SECRET}
+        discovery: http://keycloak:8080/realms/payment-switch/.well-known/openid-configuration
+        bearer_only: true
+        realm: payment-switch
+        introspection_endpoint_auth_method: client_secret_post
+      authz-keycloak:
+        client_id: payment-switch-api
+        client_secret: ${KEYCLOAK_API_CLIENT_SECRET}
+        discovery: http://keycloak:8080/realms/payment-switch/.well-known/uma2-configuration
+        policy_enforcement_mode: ENFORCING
+        permissions:
+          - "admin-resource#admin"
+      limit-req:
+        rate: 100
+        burst: 50
+        key: consumer_name
+
+  # Permify authorization API
+  - id: permify-api
+    uri: /api/v1/permissions/*
+    upstream_id: permify
+    plugins:
+      openid-connect:
+        client_id: apisix-gateway
+        client_secret: ${KEYCLOAK_APISIX_CLIENT_SECRET}
+        discovery: http://keycloak:8080/realms/payment-switch/.well-known/openid-configuration
+        bearer_only: true
+        realm: payment-switch
+        introspection_endpoint_auth_method: client_secret_post
+      proxy-rewrite:
+        regex_uri: ["^/api/v1/permissions/(.*)", "/v1/$1"]
+
+#END

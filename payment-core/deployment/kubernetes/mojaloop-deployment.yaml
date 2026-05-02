@@ -1,0 +1,283 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: mojaloop-api-adapter
+  namespace: payment-switch
+spec:
+  ports:
+  - port: 3000
+    targetPort: 3000
+    name: http
+  selector:
+    app: mojaloop
+    component: api-adapter
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mojaloop-api-adapter
+  namespace: payment-switch
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: mojaloop
+      component: api-adapter
+  template:
+    metadata:
+      labels:
+        app: mojaloop
+        component: api-adapter
+      annotations:
+        dapr.io/enabled: "true"
+        dapr.io/app-id: "mojaloop-api-adapter"
+        dapr.io/app-port: "3000"
+        dapr.io/config: "dapr-config"
+    spec:
+      containers:
+      - name: api-adapter
+        image: mojaloop/ml-api-adapter:v14.0.0
+        ports:
+        - containerPort: 3000
+        env:
+        - name: MLAPI_ENDPOINT_SOURCE_URL
+          value: "http://mojaloop-api-adapter:3000"
+        - name: MLAPI_ENDPOINT_HEALTH_URL
+          value: "http://mojaloop-api-adapter:3000/health"
+        - name: MLAPI_KAFKA_HOST
+          value: "kafka"
+        - name: MLAPI_KAFKA_PORT
+          value: "9092"
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mojaloop-central-ledger
+  namespace: payment-switch
+spec:
+  ports:
+  - port: 3001
+    targetPort: 3001
+    name: http
+  selector:
+    app: mojaloop
+    component: central-ledger
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mojaloop-central-ledger
+  namespace: payment-switch
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: mojaloop
+      component: central-ledger
+  template:
+    metadata:
+      labels:
+        app: mojaloop
+        component: central-ledger
+      annotations:
+        dapr.io/enabled: "true"
+        dapr.io/app-id: "mojaloop-central-ledger"
+        dapr.io/app-port: "3001"
+        dapr.io/config: "dapr-config"
+    spec:
+      containers:
+      - name: central-ledger
+        image: mojaloop/central-ledger:v17.0.0
+        ports:
+        - containerPort: 3001
+        env:
+        - name: CLEDG_DATABASE_URI
+          value: "mysql://central_ledger:password@mysql:3306/central_ledger"
+        - name: CLEDG_KAFKA_HOST
+          value: "kafka"
+        - name: CLEDG_KAFKA_PORT
+          value: "9092"
+        resources:
+          requests:
+            memory: "1Gi"
+            cpu: "500m"
+          limits:
+            memory: "2Gi"
+            cpu: "1000m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mojaloop-account-lookup
+  namespace: payment-switch
+spec:
+  ports:
+  - port: 4002
+    targetPort: 4002
+    name: http
+  selector:
+    app: mojaloop
+    component: account-lookup
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mojaloop-account-lookup
+  namespace: payment-switch
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: mojaloop
+      component: account-lookup
+  template:
+    metadata:
+      labels:
+        app: mojaloop
+        component: account-lookup
+      annotations:
+        dapr.io/enabled: "true"
+        dapr.io/app-id: "mojaloop-account-lookup"
+        dapr.io/app-port: "4002"
+        dapr.io/config: "dapr-config"
+    spec:
+      containers:
+      - name: account-lookup
+        image: mojaloop/account-lookup-service:v14.0.0
+        ports:
+        - containerPort: 4002
+        env:
+        - name: ALS_DATABASE_URI
+          value: "mysql://account_lookup:password@mysql:3306/account_lookup"
+        - name: ALS_KAFKA_HOST
+          value: "kafka"
+        - name: ALS_KAFKA_PORT
+          value: "9092"
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mojaloop-quoting-service
+  namespace: payment-switch
+spec:
+  ports:
+  - port: 3002
+    targetPort: 3002
+    name: http
+  selector:
+    app: mojaloop
+    component: quoting-service
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mojaloop-quoting-service
+  namespace: payment-switch
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: mojaloop
+      component: quoting-service
+  template:
+    metadata:
+      labels:
+        app: mojaloop
+        component: quoting-service
+      annotations:
+        dapr.io/enabled: "true"
+        dapr.io/app-id: "mojaloop-quoting-service"
+        dapr.io/app-port: "3002"
+        dapr.io/config: "dapr-config"
+    spec:
+      containers:
+      - name: quoting-service
+        image: mojaloop/quoting-service:v15.0.0
+        ports:
+        - containerPort: 3002
+        env:
+        - name: QS_DATABASE_URI
+          value: "mysql://quoting_service:password@mysql:3306/quoting_service"
+        - name: QS_KAFKA_HOST
+          value: "kafka"
+        - name: QS_KAFKA_PORT
+          value: "9092"
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql
+  namespace: payment-switch
+spec:
+  ports:
+  - port: 3306
+    targetPort: 3306
+  selector:
+    app: mysql
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mysql
+  namespace: payment-switch
+spec:
+  serviceName: mysql
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mysql
+  template:
+    metadata:
+      labels:
+        app: mysql
+    spec:
+      containers:
+      - name: mysql
+        image: mysql:8.0
+        ports:
+        - containerPort: 3306
+        env:
+        - name: MYSQL_ROOT_PASSWORD
+          value: "rootpassword"
+        - name: MYSQL_DATABASE
+          value: "central_ledger"
+        volumeMounts:
+        - name: mysql-data
+          mountPath: /var/lib/mysql
+        resources:
+          requests:
+            memory: "2Gi"
+            cpu: "1000m"
+          limits:
+            memory: "4Gi"
+            cpu: "2000m"
+  volumeClaimTemplates:
+  - metadata:
+      name: mysql-data
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      storageClassName: "standard"
+      resources:
+        requests:
+          storage: 50Gi
