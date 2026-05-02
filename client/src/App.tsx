@@ -223,6 +223,7 @@ function Router() {
     <DashboardLayout>
       <Switch>
         <Route path="/" component={Dashboard} />
+        <Route path="/gov-dashboard" component={Dashboard} />
         <Route path="/discovery" component={DiscoveryEngine} />
         <Route path="/catalog" component={DataCatalog} />
         <Route path="/compliance" component={ComplianceEngine} />
