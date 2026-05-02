@@ -123,7 +123,7 @@ type KYCPersonVerification struct {
 	ScreeningResults []KYCScreeningResult   `json:"screening_results"`
 	RiskScore        int                    `json:"risk_score"`
 	RiskLevel        string                 `json:"risk_level"`
-	Decision         *KYCDecision           `json:"decision,omitempty"`
+	Decision         *KYCDecisionResult           `json:"decision,omitempty"`
 	Metadata         map[string]interface{} `json:"metadata"`
 	CreatedAt        time.Time              `json:"created_at"`
 	UpdatedAt        time.Time              `json:"updated_at"`
@@ -255,7 +255,7 @@ type KYCScreeningResult struct {
 }
 
 // KYCDecision represents the final KYC decision
-type KYCDecision struct {
+type KYCDecisionResult struct {
 	Decision    string    `json:"decision"`
 	RiskLevel   string    `json:"risk_level"`
 	ReasonCodes []string  `json:"reason_codes,omitempty"`
@@ -290,7 +290,7 @@ type KYCStore interface {
 type KYCNotifier interface {
 	NotifyDocumentRequired(ctx context.Context, personID string, docType KYCDocumentType) error
 	NotifyManualReviewRequired(ctx context.Context, personID string, reason string) error
-	NotifyKYCComplete(ctx context.Context, personID string, decision *KYCDecision) error
+	NotifyKYCComplete(ctx context.Context, personID string, decision *KYCDecisionResult) error
 }
 
 // NewEnhancedKYCService creates a new enhanced KYC service
@@ -675,7 +675,7 @@ func (s *EnhancedKYCService) ApproveKYC(ctx context.Context, personID, approverI
 		return fmt.Errorf("failed to get verification: %w", err)
 	}
 
-	decision := &KYCDecision{
+	decision := &KYCDecisionResult{
 		Decision:   "APPROVED",
 		RiskLevel:  "LOW",
 		DecidedBy:  approverID,
@@ -707,7 +707,7 @@ func (s *EnhancedKYCService) RejectKYC(ctx context.Context, personID, approverID
 		return fmt.Errorf("failed to get verification: %w", err)
 	}
 
-	decision := &KYCDecision{
+	decision := &KYCDecisionResult{
 		Decision:    "REJECTED",
 		RiskLevel:   "HIGH",
 		ReasonCodes: reasonCodes,
@@ -772,7 +772,7 @@ type KYCStatusResponse struct {
 	LivenessPassed   bool                  `json:"liveness_passed"`
 	MissingDocuments []KYCDocumentType     `json:"missing_documents"`
 	Flags            []string              `json:"flags"`
-	Decision         *KYCDecision          `json:"decision,omitempty"`
+	Decision         *KYCDecisionResult          `json:"decision,omitempty"`
 	CreatedAt        time.Time             `json:"created_at"`
 	UpdatedAt        time.Time             `json:"updated_at"`
 }

@@ -45,7 +45,7 @@ type storedToken struct {
 	ExpiresAt     *time.Time
 }
 
-type KeyMetadata struct {
+type VaultKeyMetadata struct {
 	KeyID     string    `json:"key_id"`
 	Version   int       `json:"version"`
 	Algorithm string    `json:"algorithm"`
@@ -56,7 +56,7 @@ type KeyMetadata struct {
 
 type keyData struct {
 	Key      []byte
-	Metadata KeyMetadata
+	Metadata VaultKeyMetadata
 }
 
 type AuditEntry struct {
@@ -102,7 +102,7 @@ func (tv *TokenVault) initializeKeys() error {
 	}
 	tv.keyStore[tv.masterKeyID] = &keyData{
 		Key: masterKey,
-		Metadata: KeyMetadata{
+		Metadata: VaultKeyMetadata{
 			KeyID:     tv.masterKeyID,
 			Version:   1,
 			Algorithm: "AES-256-GCM",
@@ -117,7 +117,7 @@ func (tv *TokenVault) initializeKeys() error {
 	}
 	tv.keyStore[tv.currentDataKeyID] = &keyData{
 		Key: dataKey,
-		Metadata: KeyMetadata{
+		Metadata: VaultKeyMetadata{
 			KeyID:     tv.currentDataKeyID,
 			Version:   1,
 			Algorithm: "AES-256-GCM",
@@ -317,7 +317,7 @@ func (tv *TokenVault) DeleteToken(token string) bool {
 	return existed
 }
 
-func (tv *TokenVault) RotateDataKey() (*KeyMetadata, error) {
+func (tv *TokenVault) RotateDataKey() (*VaultKeyMetadata, error) {
 	tv.mu.Lock()
 	defer tv.mu.Unlock()
 
@@ -340,7 +340,7 @@ func (tv *TokenVault) RotateDataKey() (*KeyMetadata, error) {
 
 	tv.keyStore[newKeyID] = &keyData{
 		Key: newKey,
-		Metadata: KeyMetadata{
+		Metadata: VaultKeyMetadata{
 			KeyID:     newKeyID,
 			Version:   newVersion,
 			Algorithm: "AES-256-GCM",
@@ -361,7 +361,7 @@ func (tv *TokenVault) RotateDataKey() (*KeyMetadata, error) {
 	return &tv.keyStore[newKeyID].Metadata, nil
 }
 
-func (tv *TokenVault) GetKeyMetadata(keyID string) *KeyMetadata {
+func (tv *TokenVault) GetKeyMetadata(keyID string) *VaultKeyMetadata {
 	tv.mu.RLock()
 	defer tv.mu.RUnlock()
 
@@ -375,11 +375,11 @@ func (tv *TokenVault) GetKeyMetadata(keyID string) *KeyMetadata {
 	return nil
 }
 
-func (tv *TokenVault) ListKeys() []KeyMetadata {
+func (tv *TokenVault) ListKeys() []VaultKeyMetadata {
 	tv.mu.RLock()
 	defer tv.mu.RUnlock()
 
-	keys := make([]KeyMetadata, 0, len(tv.keyStore))
+	keys := make([]VaultKeyMetadata, 0, len(tv.keyStore))
 	for _, kd := range tv.keyStore {
 		keys = append(keys, kd.Metadata)
 	}

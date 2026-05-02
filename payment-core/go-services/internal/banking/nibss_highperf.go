@@ -84,8 +84,8 @@ type NameEnquiryResponse struct {
 	ResponseCode  string `json:"responseCode"`
 }
 
-// TransferStatus for tracking
-type TransferStatus struct {
+// HighPerfTransferStatus for tracking in high-performance NIBSS operations
+type HighPerfTransferStatus struct {
 	Reference       string `json:"reference"`
 	Status          string `json:"status"` // pending, processing, completed, failed, reversed
 	ResponseCode    string `json:"responseCode"`
@@ -222,7 +222,7 @@ func (c *NIBSSClient) Transfer(ctx context.Context, req *TransferRequest) (*Tran
 }
 
 // GetTransferStatus checks the status of a transfer
-func (c *NIBSSClient) GetTransferStatus(ctx context.Context, reference string) (*TransferStatus, error) {
+func (c *NIBSSClient) GetTransferStatus(ctx context.Context, reference string) (*HighPerfTransferStatus, error) {
 	start := time.Now()
 	atomic.AddUint64(&c.totalRequests, 1)
 
@@ -233,7 +233,7 @@ func (c *NIBSSClient) GetTransferStatus(ctx context.Context, reference string) (
 	}
 	defer resp.Body.Close()
 
-	var result TransferStatus
+	var result HighPerfTransferStatus
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
 		return nil, err
 	}

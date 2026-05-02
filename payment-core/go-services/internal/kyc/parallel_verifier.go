@@ -19,16 +19,10 @@ const (
 	LevelFull                              // + Source of funds
 )
 
-// IDType represents identity document types
-type IDType string
-
+// Additional ID types for parallel verifier (extends IDType from kyc_service.go)
 const (
-	IDBVN            IDType = "BVN"
-	IDNIN            IDType = "NIN"
-	IDPassport       IDType = "PASSPORT"
-	IDDriversLicense IDType = "DRIVERS_LICENSE"
-	IDVoterCard      IDType = "VOTERS_CARD"
-	IDNationalID     IDType = "NATIONAL_ID"
+	IDTypeVoterCard  IDType = "VOTERS_CARD"
+	IDTypeNationalID IDType = "NATIONAL_ID"
 )
 
 // VerificationRequest contains data to verify

@@ -32,8 +32,8 @@ type RateTick struct {
 	Source    string
 }
 
-// RateLock represents a locked FX rate for a customer
-type RateLock struct {
+// RealtimeRateLock represents a locked FX rate for a customer in real-time engine
+type RealtimeRateLock struct {
 	ID         string
 	CustomerID string
 	Pair       string
@@ -81,7 +81,7 @@ type RealTimeEngine struct {
 	positions sync.Map // map[string]*Position
 
 	// Rate locks
-	rateLocks sync.Map // map[string]*RateLock
+	rateLocks sync.Map // map[string]*RealtimeRateLock
 
 	// Current rates
 	currentRates sync.Map // map[string]*RateTick
@@ -139,8 +139,8 @@ func (e *RealTimeEngine) SubmitTick(tick *RateTick) {
 }
 
 // CreateRateLock locks a rate for a customer
-func (e *RealTimeEngine) CreateRateLock(customerID, pair string, rate float64, amount int64, duration time.Duration) (*RateLock, error) {
-	lock := &RateLock{
+func (e *RealTimeEngine) CreateRateLock(customerID, pair string, rate float64, amount int64, duration time.Duration) (*RealtimeRateLock, error) {
+	lock := &RealtimeRateLock{
 		ID:         fmt.Sprintf("rl-%d", time.Now().UnixNano()),
 		CustomerID: customerID,
 		Pair:       pair,
@@ -161,13 +161,13 @@ func (e *RealTimeEngine) CreateRateLock(customerID, pair string, rate float64, a
 }
 
 // UseRateLock uses a locked rate for a transaction
-func (e *RealTimeEngine) UseRateLock(lockID string) (*RateLock, error) {
+func (e *RealTimeEngine) UseRateLock(lockID string) (*RealtimeRateLock, error) {
 	v, ok := e.rateLocks.Load(lockID)
 	if !ok {
 		return nil, fmt.Errorf("rate lock not found: %s", lockID)
 	}
 
-	lock := v.(*RateLock)
+	lock := v.(*RealtimeRateLock)
 	if lock.Status != "active" {
 		return nil, fmt.Errorf("rate lock is %s", lock.Status)
 	}
@@ -373,7 +373,7 @@ func (e *RealTimeEngine) lockExpiryChecker() {
 		case <-ticker.C:
 			now := time.Now()
 			e.rateLocks.Range(func(key, value interface{}) bool {
-				lock := value.(*RateLock)
+				lock := value.(*RealtimeRateLock)
 				if lock.Status == "active" && now.After(lock.ExpiresAt) {
 					lock.Status = "expired"
 					e.emitAlert(&Alert{

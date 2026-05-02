@@ -10,8 +10,8 @@ import (
 	"time"
 )
 
-// Transaction represents an operational database transaction record
-type Transaction struct {
+// StreamTransaction represents an operational database transaction record for streaming reconciliation
+type StreamTransaction struct {
 	ID          string
 	AccountID   string
 	Amount      int64 // Positive = credit, negative = debit
@@ -22,8 +22,8 @@ type Transaction struct {
 	CounterID   string // Counterparty account
 }
 
-// LedgerEntry represents a TigerBeetle ledger entry
-type LedgerEntry struct {
+// StreamLedgerEntry represents a TigerBeetle ledger entry for streaming reconciliation
+type StreamLedgerEntry struct {
 	ID              [16]byte
 	DebitAccountID  [16]byte
 	CreditAccountID [16]byte
@@ -34,10 +34,10 @@ type LedgerEntry struct {
 	UserData        string
 }
 
-// Discrepancy represents a mismatch between DB and ledger
-type Discrepancy struct {
+// StreamDiscrepancy represents a mismatch between DB and ledger found during streaming
+type StreamDiscrepancy struct {
 	ID              string
-	Type            DiscrepancyType
+	Type            StreamDiscrepancyType
 	TransactionID   string
 	LedgerEntryID   string
 	DBAmount        int64
@@ -49,26 +49,26 @@ type Discrepancy struct {
 	Resolution      string
 }
 
-// DiscrepancyType categorizes the mismatch
-type DiscrepancyType int
+// StreamDiscrepancyType categorizes the mismatch in streaming reconciliation
+type StreamDiscrepancyType int
 
 const (
-	DiscrepancyMissing     DiscrepancyType = iota // In DB but not in ledger
-	DiscrepancyOrphan                             // In ledger but not in DB
-	DiscrepancyAmount                             // Amount mismatch
-	DiscrepancyStatus                             // Status mismatch
-	DiscrepancyDuplicate                          // Duplicate entry
+	StreamDiscrepancyMissing   StreamDiscrepancyType = iota // In DB but not in ledger
+	StreamDiscrepancyOrphan                                 // In ledger but not in DB
+	StreamDiscrepancyAmount                                 // Amount mismatch
+	StreamDiscrepancyStatusErr                              // Status mismatch
+	StreamDiscrepancyDuplicate                              // Duplicate entry
 )
 
-// ReconciliationResult is the outcome of a reconciliation run
-type ReconciliationResult struct {
+// StreamResult is the outcome of a streaming reconciliation run
+type StreamResult struct {
 	ID                  string
 	StartTime           time.Time
 	EndTime             time.Time
 	Status              string
 	TotalTransactions   uint64
 	MatchedTransactions uint64
-	Discrepancies       []Discrepancy
+	Discrepancies       []StreamDiscrepancy
 	ProcessedPerSecond  float64
 	MemoryUsedBytes     int64
 }
@@ -93,28 +93,28 @@ func DefaultStreamConfig() StreamConfig {
 	}
 }
 
-// TransactionSource provides paginated access to DB transactions
-type TransactionSource interface {
+// StreamTransactionSource provides paginated access to DB transactions
+type StreamTransactionSource interface {
 	// FetchBatch returns the next batch of transactions starting after cursor
-	FetchBatch(ctx context.Context, cursor string, limit int) ([]Transaction, string, error)
+	FetchBatch(ctx context.Context, cursor string, limit int) ([]StreamTransaction, string, error)
 }
 
-// LedgerSource provides access to ledger entries
-type LedgerSource interface {
+// StreamLedgerSource provides access to ledger entries
+type StreamLedgerSource interface {
 	// GetByReference looks up a ledger entry by transaction reference
-	GetByReference(ctx context.Context, reference string) (*LedgerEntry, error)
+	GetByReference(ctx context.Context, reference string) (*StreamLedgerEntry, error)
 	// GetByTimeRange fetches all entries in a time range
-	GetByTimeRange(ctx context.Context, start, end time.Time, cursor string, limit int) ([]LedgerEntry, string, error)
+	GetByTimeRange(ctx context.Context, start, end time.Time, cursor string, limit int) ([]StreamLedgerEntry, string, error)
 }
 
 // Streamer performs streaming reconciliation with constant memory
 type Streamer struct {
 	config StreamConfig
-	txSource TransactionSource
-	ledgerSource LedgerSource
+	txSource StreamTransactionSource
+	ledgerSource StreamLedgerSource
 
 	// Results
-	discrepancies []Discrepancy
+	discrepancies []StreamDiscrepancy
 	mu            sync.Mutex
 
 	// Stats
@@ -123,22 +123,22 @@ type Streamer struct {
 }
 
 // NewStreamer creates a new reconciliation streamer
-func NewStreamer(config StreamConfig, txSource TransactionSource, ledgerSource LedgerSource) *Streamer {
+func NewStreamer(config StreamConfig, txSource StreamTransactionSource, ledgerSource StreamLedgerSource) *Streamer {
 	return &Streamer{
 		config:       config,
 		txSource:     txSource,
 		ledgerSource: ledgerSource,
-		discrepancies: make([]Discrepancy, 0, 100),
+		discrepancies: make([]StreamDiscrepancy, 0, 100),
 	}
 }
 
 // Run executes the streaming reconciliation
-func (s *Streamer) Run(ctx context.Context) (*ReconciliationResult, error) {
+func (s *Streamer) Run(ctx context.Context) (*StreamResult, error) {
 	ctx, cancel := context.WithTimeout(ctx, s.config.Timeout)
 	defer cancel()
 
 	start := time.Now()
-	result := &ReconciliationResult{
+	result := &StreamResult{
 		ID:        fmt.Sprintf("recon-%d", start.UnixNano()),
 		StartTime: start,
 		Status:    "running",
@@ -205,7 +205,7 @@ func (s *Streamer) Run(ctx context.Context) (*ReconciliationResult, error) {
 }
 
 // processBatch reconciles a batch of transactions against the ledger
-func (s *Streamer) processBatch(ctx context.Context, transactions []Transaction) {
+func (s *Streamer) processBatch(ctx context.Context, transactions []StreamTransaction) {
 	var wg sync.WaitGroup
 	sem := make(chan struct{}, s.config.Workers)
 
@@ -213,7 +213,7 @@ func (s *Streamer) processBatch(ctx context.Context, transactions []Transaction)
 		wg.Add(1)
 		sem <- struct{}{}
 
-		go func(tx *Transaction) {
+		go func(tx *StreamTransaction) {
 			defer wg.Done()
 			defer func() { <-sem }()
 
@@ -225,16 +225,16 @@ func (s *Streamer) processBatch(ctx context.Context, transactions []Transaction)
 }
 
 // reconcileTransaction matches a single transaction against the ledger
-func (s *Streamer) reconcileTransaction(ctx context.Context, tx *Transaction) {
+func (s *Streamer) reconcileTransaction(ctx context.Context, tx *StreamTransaction) {
 	atomic.AddUint64(&s.totalProcessed, 1)
 
 	// Look up corresponding ledger entry
 	entry, err := s.ledgerSource.GetByReference(ctx, tx.Reference)
 	if err != nil {
 		// Missing from ledger
-		s.addDiscrepancy(Discrepancy{
+		s.addDiscrepancy(StreamDiscrepancy{
 			ID:            fmt.Sprintf("disc-%s", tx.ID),
-			Type:          DiscrepancyMissing,
+			Type:          StreamDiscrepancyMissing,
 			TransactionID: tx.ID,
 			DBAmount:      tx.Amount,
 			Currency:      tx.Currency,
@@ -245,9 +245,9 @@ func (s *Streamer) reconcileTransaction(ctx context.Context, tx *Transaction) {
 	}
 
 	if entry == nil {
-		s.addDiscrepancy(Discrepancy{
+		s.addDiscrepancy(StreamDiscrepancy{
 			ID:            fmt.Sprintf("disc-%s", tx.ID),
-			Type:          DiscrepancyMissing,
+			Type:          StreamDiscrepancyMissing,
 			TransactionID: tx.ID,
 			DBAmount:      tx.Amount,
 			Currency:      tx.Currency,
@@ -261,9 +261,9 @@ func (s *Streamer) reconcileTransaction(ctx context.Context, tx *Transaction) {
 	ledgerAmount := int64(entry.Amount)
 	diff := abs64(tx.Amount) - ledgerAmount
 	if abs64(diff) > s.config.ToleranceAmount {
-		s.addDiscrepancy(Discrepancy{
+		s.addDiscrepancy(StreamDiscrepancy{
 			ID:            fmt.Sprintf("disc-%s", tx.ID),
-			Type:          DiscrepancyAmount,
+			Type:          StreamDiscrepancyAmount,
 			TransactionID: tx.ID,
 			LedgerEntryID: fmt.Sprintf("%x", entry.ID),
 			DBAmount:      tx.Amount,
@@ -279,7 +279,7 @@ func (s *Streamer) reconcileTransaction(ctx context.Context, tx *Transaction) {
 	atomic.AddUint64(&s.totalMatched, 1)
 }
 
-func (s *Streamer) addDiscrepancy(d Discrepancy) {
+func (s *Streamer) addDiscrepancy(d StreamDiscrepancy) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if len(s.discrepancies) < s.config.MaxDiscrepancies {
