@@ -26,7 +26,7 @@ class _OutboundRemittanceScreenState extends State<OutboundRemittanceScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 6, vsync: this);
+    _tabController = TabController(length: 9, vsync: this);
   }
 
   @override
@@ -49,6 +49,9 @@ class _OutboundRemittanceScreenState extends State<OutboundRemittanceScreen>
             Tab(text: 'Transfers'),
             Tab(text: 'Prefund'),
             Tab(text: 'Corridors'),
+            Tab(text: 'FX Rates'),
+            Tab(text: 'Tier'),
+            Tab(text: 'Alerts'),
             Tab(text: 'Compliance'),
             Tab(text: 'Onboarding'),
           ],
@@ -61,6 +64,9 @@ class _OutboundRemittanceScreenState extends State<OutboundRemittanceScreen>
           _TransfersTab(),
           _PrefundTab(),
           _CorridorsTab(),
+          _FXRatesTab(),
+          _TierInfoTab(),
+          _AlertsTab(),
           _ComplianceTab(),
           _OnboardingTab(),
         ],
@@ -828,4 +834,259 @@ class _OnboardingTab extends StatelessWidget {
     {'label': 'Certification Testing', 'date': '2024-02-05', 'detail': 'All 8 corridors tested successfully'},
     {'label': 'Production Go-Live', 'date': '2024-02-14', 'detail': 'Full API access enabled, live transfers active'},
   ];
+}
+
+// --- FX Rates Tab ---
+class _FXRatesTab extends StatelessWidget {
+  const _FXRatesTab();
+
+  @override
+  Widget build(BuildContext context) {
+    final rates = [
+      {'pair': 'NGN/GHS', 'mid': '0.002000', 'spread': '60 bps', 'cap': '80 bps', 'source': 'Bloomberg', 'status': 'Live'},
+      {'pair': 'NGN/GBP', 'mid': '0.000792', 'spread': '50 bps', 'cap': '80 bps', 'source': 'Bloomberg', 'status': 'Live'},
+      {'pair': 'NGN/USD', 'mid': '0.000630', 'spread': '50 bps', 'cap': '80 bps', 'source': 'Bloomberg', 'status': 'Live'},
+      {'pair': 'NGN/CAD', 'mid': '0.000845', 'spread': '60 bps', 'cap': '90 bps', 'source': 'Bloomberg', 'status': 'Live'},
+      {'pair': 'NGN/INR', 'mid': '0.053000', 'spread': '90 bps', 'cap': '120 bps', 'source': 'Bloomberg', 'status': 'Live'},
+      {'pair': 'NGN/CNY', 'mid': '0.004600', 'spread': '100 bps', 'cap': '150 bps', 'source': 'Reuters', 'status': 'Stale'},
+      {'pair': 'NGN/AED', 'mid': '0.002330', 'spread': '80 bps', 'cap': '120 bps', 'source': 'Bloomberg', 'status': 'Live'},
+      {'pair': 'NGN/KES', 'mid': '0.081500', 'spread': '75 bps', 'cap': '100 bps', 'source': 'CBN', 'status': 'Live'},
+      {'pair': 'NGN/ZAR', 'mid': '0.011400', 'spread': '70 bps', 'cap': '90 bps', 'source': 'Bloomberg', 'status': 'Live'},
+      {'pair': 'NGN/XOF', 'mid': '0.370000', 'spread': '80 bps', 'cap': '100 bps', 'source': 'CBN', 'status': 'Live'},
+      {'pair': 'NGN/TRY', 'mid': '0.021500', 'spread': '120 bps', 'cap': '200 bps', 'source': 'Reuters', 'status': 'Live'},
+    ];
+
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text('FX Rates', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(color: Colors.green.shade100, borderRadius: BorderRadius.circular(8)),
+                      child: Text('Live', style: TextStyle(color: Colors.green.shade800, fontSize: 11, fontWeight: FontWeight.w600)),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Text('Bloomberg / Reuters / CBN feeds', style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+        ...rates.map((r) => Card(
+          child: ListTile(
+            dense: true,
+            title: Text(r['pair']!, style: const TextStyle(fontWeight: FontWeight.w600, fontFamily: 'monospace')),
+            subtitle: Text('Spread: ${r['spread']} / Cap: ${r['cap']} • ${r['source']}', style: const TextStyle(fontSize: 11)),
+            trailing: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(r['mid']!, style: const TextStyle(fontWeight: FontWeight.bold, fontFamily: 'monospace')),
+                Text(r['status']!, style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                  color: r['status'] == 'Live' ? Colors.green : Colors.orange,
+                )),
+              ],
+            ),
+          ),
+        )),
+      ],
+    );
+  }
+}
+
+// --- Tier Info Tab ---
+class _TierInfoTab extends StatelessWidget {
+  const _TierInfoTab();
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Your Tier', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 12),
+                _tierRow('Current Tier', 'Growth', Colors.blue),
+                _tierRow('Monthly Fee', '\$500/mo', null),
+                _tierRow('Transaction Fee', '₦1,000/txn', null),
+                _tierRow('FX Spread Discount', '10%', null),
+                _tierRow('Max Corridors', '7', null),
+                _tierRow('Active Corridors', '5 of 7', null),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Upgrade to Enterprise', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 8),
+                Text('Requirements:', style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+                const SizedBox(height: 8),
+                _requirementRow('Avg monthly volume ≥ ₦5B', '₦2.1B', false),
+                _requirementRow('Min 6 months on platform', '8 months', true),
+                _requirementRow('Max 1 sanctions block (90d)', '0 blocks', true),
+                _requirementRow('Success rate ≥ 97%', '98.1%', true),
+                _requirementRow('Prefund consistency ≥ 90%', '92%', true),
+                const SizedBox(height: 12),
+                Text('Volume is the only missing criteria. Increase monthly volume to ₦5B to qualify.',
+                  style: TextStyle(fontSize: 11, color: Colors.grey.shade500, fontStyle: FontStyle.italic)),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('All Tiers', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 8),
+                _allTierRow('Starter', '\$200/mo', '₦1,500/txn', '0%', '3 corridors'),
+                _allTierRow('Growth ★', '\$500/mo', '₦1,000/txn', '10%', '7 corridors'),
+                _allTierRow('Enterprise', '\$2,000/mo', '₦500/txn', '25%', '13 corridors'),
+                _allTierRow('Premium', '\$5,000/mo', '₦250/txn', '40%', '13 corridors'),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  static Widget _tierRow(String label, String value, Color? valueColor) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: TextStyle(fontSize: 13, color: Colors.grey.shade600)),
+          Text(value, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: valueColor)),
+        ],
+      ),
+    );
+  }
+
+  static Widget _requirementRow(String requirement, String current, bool met) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Row(
+        children: [
+          Icon(met ? Icons.check_circle : Icons.cancel, size: 16, color: met ? Colors.green : Colors.red),
+          const SizedBox(width: 8),
+          Expanded(child: Text(requirement, style: const TextStyle(fontSize: 12))),
+          Text(current, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: met ? Colors.green : Colors.red)),
+        ],
+      ),
+    );
+  }
+
+  static Widget _allTierRow(String name, String fee, String txnFee, String discount, String corridors) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        children: [
+          SizedBox(width: 90, child: Text(name, style: TextStyle(fontSize: 12, fontWeight: name.contains('★') ? FontWeight.bold : FontWeight.normal))),
+          SizedBox(width: 70, child: Text(fee, style: const TextStyle(fontSize: 11))),
+          SizedBox(width: 75, child: Text(txnFee, style: const TextStyle(fontSize: 11))),
+          SizedBox(width: 35, child: Text(discount, style: const TextStyle(fontSize: 11))),
+          Expanded(child: Text(corridors, style: const TextStyle(fontSize: 11))),
+        ],
+      ),
+    );
+  }
+}
+
+// --- Alerts Tab ---
+class _AlertsTab extends StatelessWidget {
+  const _AlertsTab();
+
+  @override
+  Widget build(BuildContext context) {
+    final alerts = [
+      {'type': 'SLA Breach', 'severity': 'high', 'message': 'NG-IN corridor latency exceeded 45s target (62s actual)', 'time': '14:22 UTC', 'action': 'Auto-escalated to backup provider'},
+      {'type': 'Low Balance', 'severity': 'medium', 'message': 'Prefund balance ₦847M approaching ₦500M threshold', 'time': '13:45 UTC', 'action': 'Top-up recommended'},
+      {'type': 'Compliance', 'severity': 'high', 'message': 'New match on EU sanctions list for beneficiary Chen Wei', 'time': '12:10 UTC', 'action': 'Transfer TXN-PAYAPP-005 held for review'},
+      {'type': 'Rate Alert', 'severity': 'low', 'message': 'NGN/CNY rate source stale (>30s)', 'time': '11:55 UTC', 'action': 'Fallback to Reuters rate active'},
+      {'type': 'Capacity', 'severity': 'medium', 'message': 'NG-GB predicted ₦920M tomorrow (school fees pattern) — current liquidity ₦500M', 'time': '10:00 UTC', 'action': 'Pre-position ₦420M recommended'},
+    ];
+
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Active Alerts', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 4),
+                Text('SLA breaches, compliance holds, capacity warnings', style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+        ...alerts.map((a) {
+          final color = a['severity'] == 'high' ? Colors.red : a['severity'] == 'medium' ? Colors.orange : Colors.blue;
+          return Card(
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(4)),
+                        child: Text(a['type']!, style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: color)),
+                      ),
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(4)),
+                        child: Text(a['severity']!, style: TextStyle(fontSize: 10, color: color)),
+                      ),
+                      const Spacer(),
+                      Text(a['time']!, style: TextStyle(fontSize: 10, color: Colors.grey.shade500)),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(a['message']!, style: const TextStyle(fontSize: 13)),
+                  const SizedBox(height: 4),
+                  Text('Action: ${a['action']}', style: TextStyle(fontSize: 11, color: Colors.grey.shade600, fontStyle: FontStyle.italic)),
+                ],
+              ),
+            ),
+          );
+        }),
+      ],
+    );
+  }
 }
