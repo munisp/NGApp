@@ -128,7 +128,7 @@ func (p *OutboxPublisher) publishBatch(ctx context.Context) {
 			Value: sarama.ByteEncoder(event.Payload),
 			Headers: []sarama.RecordHeader{
 				{Key: []byte("aggregate_type"), Value: []byte(event.AggregateType)},
-				{Key: []byte("event_id"), Value: []byte(fmt.Sprintf("%d", event.EventID))},
+				{Key: []byte("event_id"), Value: []byte(fmt.Sprintf("%s", event.EventID))},
 				{Key: []byte("created_at"), Value: []byte(event.CreatedAt.Format(time.RFC3339))},
 			},
 		}
@@ -142,7 +142,7 @@ func (p *OutboxPublisher) publishBatch(ctx context.Context) {
 
 		err = p.store.MarkEventPublished(ctx, event.ID)
 		if err != nil {
-			log.Printf("Failed to mark event %d as published: %v", event.EventID, err)
+			log.Printf("Failed to mark event %s as published: %v", event.EventID, err)
 		}
 	}
 }

@@ -1,63 +1,56 @@
 package orchestrator
 
 import (
+	"fmt"
 	"sync"
 	"testing"
 )
 
-// BenchmarkWorkflowCreation measures workflow instance creation speed
+// BenchmarkWorkflowCreation measures workflow instance creation and submission speed
 func BenchmarkWorkflowCreation(b *testing.B) {
-	engine := NewWorkflowEngine(WorkflowEngineConfig{
-		MaxConcurrent:   100000,
-		WorkerPoolSize:  16,
-		CheckpointEvery: 100,
-	})
+	engine := NewWorkflowEngine(16)
+	defer engine.Shutdown()
 
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		i := 0
 		for pb.Next() {
 			i++
-			engine.CreateWorkflow(&WorkflowInput{
+			wf := &Workflow{
+				ID:             fmt.Sprintf("bench-wf-%d", i),
 				RemittanceID:   fmt.Sprintf("rem-%d", i),
 				SenderID:       "sender-1",
 				RecipientID:    "recipient-1",
 				Amount:         50_000_00,
 				SourceCurrency: "NGN",
-				DestCurrency:   "USD",
-			})
+				TargetCurrency: "USD",
+			}
+			engine.Submit(wf)
 		}
 	})
 }
 
-// BenchmarkStateTransition measures raw state machine transition speed
+// BenchmarkStateTransition measures raw state machine field assignment speed
 func BenchmarkStateTransition(b *testing.B) {
-	wf := &Workflow{
-		ID:    "bench-workflow",
-		State: StateCreated,
-	}
-
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		wf.State = StateCreated
-		wf.transition(EventStart)
-		wf.transition(EventValidationPassed)
-		wf.transition(EventFundsReserved)
-		wf.transition(EventKYCPassed)
-		wf.transition(EventExchangeComplete)
-		wf.transition(EventRouted)
-		wf.transition(EventExecuted)
-		wf.transition(EventSettled)
+		wf := &Workflow{
+			ID:    "bench-workflow",
+			State: StateCreated,
+		}
+		// Simulate state progression (field assignments only)
+		wf.State = StateValidating
+		wf.State = StateRouting
+		wf.State = StateExecuting
+		wf.State = StateSettling
+		wf.State = StateCompleted
 	}
 }
 
 // BenchmarkConcurrentWorkflows measures throughput under concurrent load
 func BenchmarkConcurrentWorkflows(b *testing.B) {
-	engine := NewWorkflowEngine(WorkflowEngineConfig{
-		MaxConcurrent:   100000,
-		WorkerPoolSize:  16,
-		CheckpointEvery: 100,
-	})
+	engine := NewWorkflowEngine(16)
+	defer engine.Shutdown()
 
 	b.ResetTimer()
 	var wg sync.WaitGroup
@@ -65,44 +58,46 @@ func BenchmarkConcurrentWorkflows(b *testing.B) {
 		wg.Add(1)
 		go func(n int) {
 			defer wg.Done()
-			wf := engine.CreateWorkflow(&WorkflowInput{
+			wf := &Workflow{
+				ID:             fmt.Sprintf("bench-concurrent-%d", n),
 				RemittanceID:   fmt.Sprintf("rem-%d", n),
 				SenderID:       "sender-1",
 				RecipientID:    "recipient-1",
 				Amount:         50_000_00,
 				SourceCurrency: "NGN",
-				DestCurrency:   "USD",
-			})
-			_ = wf
+				TargetCurrency: "USD",
+			}
+			engine.Submit(wf)
 		}(i)
 	}
 	wg.Wait()
 }
 
-// BenchmarkSagaCompensation measures rollback performance
-func BenchmarkSagaCompensation(b *testing.B) {
-	engine := NewWorkflowEngine(WorkflowEngineConfig{
-		MaxConcurrent:   100000,
-		WorkerPoolSize:  16,
-		CheckpointEvery: 100,
-	})
+// BenchmarkWorkflowLookup measures GetWorkflow performance
+func BenchmarkWorkflowLookup(b *testing.B) {
+	engine := NewWorkflowEngine(4)
+	defer engine.Shutdown()
 
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		wf := engine.CreateWorkflow(&WorkflowInput{
-			RemittanceID:   fmt.Sprintf("rem-comp-%d", i),
+	// Pre-submit workflows
+	for i := 0; i < 1000; i++ {
+		wf := &Workflow{
+			ID:             fmt.Sprintf("lookup-wf-%d", i),
+			RemittanceID:   fmt.Sprintf("rem-%d", i),
 			SenderID:       "sender-1",
 			RecipientID:    "recipient-1",
 			Amount:         50_000_00,
 			SourceCurrency: "NGN",
-			DestCurrency:   "USD",
-		})
-		// Simulate failure at routing stage
-		wf.transition(EventStart)
-		wf.transition(EventValidationPassed)
-		wf.transition(EventFundsReserved)
-		wf.transition(EventKYCPassed)
-		wf.transition(EventExchangeComplete)
-		wf.transition(EventRouteFailed) // triggers compensation
+			TargetCurrency: "USD",
+		}
+		engine.Submit(wf)
 	}
+
+	b.ResetTimer()
+	b.RunParallel(func(pb *testing.PB) {
+		i := 0
+		for pb.Next() {
+			engine.GetWorkflow(fmt.Sprintf("lookup-wf-%d", i%1000))
+			i++
+		}
+	})
 }

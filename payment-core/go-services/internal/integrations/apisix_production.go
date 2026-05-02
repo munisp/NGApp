@@ -79,7 +79,7 @@ type APISIXUpstream struct {
 	Desc          string                 `json:"desc,omitempty"`
 	Type          string                 `json:"type,omitempty"` // roundrobin, chash, ewma, least_conn
 	Nodes         map[string]int         `json:"nodes,omitempty"`
-	NodesList     []APISIXNode           `json:"nodes,omitempty"`
+	NodesList     []APISIXNode           `json:"nodes_list,omitempty"`
 	Retries       int                    `json:"retries,omitempty"`
 	RetryTimeout  int                    `json:"retry_timeout,omitempty"`
 	Timeout       *APISIXTimeout         `json:"timeout,omitempty"`
