@@ -31,6 +31,7 @@ import TrustedDevices from "@/pages/TrustedDevices";
 import NotificationSettings from "@/pages/NotificationSettings";
 import AccountActivity from "@/pages/AccountActivity";
 import IntegrationsDashboard from "@/pages/IntegrationsDashboard";
+import OutboundRemittance from "@/pages/OutboundRemittance";
 
 function Router() {
   return (
@@ -60,6 +61,7 @@ function Router() {
       <Route path="/settings/activity" component={AccountActivity} />
       <Route path="/verify-2fa" component={VerifyTwoFactor} />
       <Route path="/account-recovery" component={AccountRecovery} />
+      <Route path="/outbound-remittance" component={OutboundRemittance} />
       <Route path={"/404"} component={NotFound} />
       {/* Final fallback route */}
       <Route component={NotFound} />
