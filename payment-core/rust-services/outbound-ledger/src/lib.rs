@@ -19,7 +19,9 @@
 pub mod accounts;
 pub mod postings;
 pub mod fx_pricing;
+pub mod dynamic_pricing;
 
 pub use accounts::{AccountFamily, AccountId, ParticipantAccounts};
 pub use postings::{PostingEngine, TransferCommand, TransferBatch, PostingResult};
 pub use fx_pricing::{CorridorFxEngine, CorridorQuote, CorridorConfig};
+pub use dynamic_pricing::{DynamicPricingEngine, DynamicPrice, RTGSEngine, NettingEngine};
