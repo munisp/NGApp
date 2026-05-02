@@ -3,7 +3,10 @@ import { serial, integer, pgEnum, pgTable, text, timestamp, varchar, decimal, bo
 // PostgreSQL Enum Definitions
 // Note: In PostgreSQL, enums must be defined separately before use in tables
 
-export const roleEnum = pgEnum("role", ["user", "admin", "merchant"]);
+export const roleEnum = pgEnum("role", ["user", "admin", "merchant", "participant", "cbn"]);
+export const outboundTransferStatusEnum = pgEnum("outbound_transfer_status", ["admitted", "workflow", "compliance", "pricing", "routing", "settlement", "audit", "completed", "failed", "manual_review"]);
+export const participantStatusEnum = pgEnum("participant_status", ["pending", "onboarding", "sandbox", "active", "suspended"]);
+export const participantTierEnum = pgEnum("participant_tier", ["starter", "growth", "enterprise", "premium"]);
 export const twoFactorEnabledEnum = pgEnum("two_factor_enabled", ["true", "false"]);
 export const businessTypeEnum = pgEnum("business_type", ["ecommerce", "saas", "marketplace", "nonprofit", "other"]);
 export const merchantStatusEnum = pgEnum("merchant_status", ["active", "suspended", "pending"]);
@@ -1682,3 +1685,123 @@ export const connectionStatusLog = pgTable("connection_status_log", {
   region: varchar("region", { length: 64 }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
+
+// ============================================================
+// OUTBOUND REMITTANCE MODULE - National Payment Switch
+// ============================================================
+
+/**
+ * Switch Participants - Licensed fintechs/IMTOs/providers on the national outbound switch
+ */
+export const switchParticipants = pgTable("switch_participants", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  name: varchar("name", { length: 256 }).notNull(),
+  shortCode: varchar("short_code", { length: 32 }).notNull().unique(),
+  type: varchar("type", { length: 64 }).notNull(),
+  cbnLicense: varchar("cbn_license", { length: 128 }),
+  tier: participantTierEnum("tier").default("starter").notNull(),
+  status: participantStatusEnum("status").default("pending").notNull(),
+  prefundAccountId: varchar("prefund_account_id", { length: 128 }),
+  dailyLimit: decimal("daily_limit", { precision: 20, scale: 2 }),
+  activeCorridors: integer("active_corridors").default(0).notNull(),
+  webhookUrl: varchar("webhook_url", { length: 512 }),
+  apiKeyPrefix: varchar("api_key_prefix", { length: 32 }),
+  onboardedAt: timestamp("onboarded_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export type SwitchParticipant = typeof switchParticipants.$inferSelect;
+export type InsertSwitchParticipant = typeof switchParticipants.$inferInsert;
+
+/**
+ * Outbound Transfers - Cross-border transfers submitted by participants
+ */
+export const outboundTransfers = pgTable("outbound_transfers", {
+  id: serial("id").primaryKey(),
+  transferRef: varchar("transfer_ref", { length: 64 }).notNull().unique(),
+  participantId: integer("participant_id").notNull(),
+  senderRef: varchar("sender_ref", { length: 128 }).notNull(),
+  beneficiaryName: varchar("beneficiary_name", { length: 256 }).notNull(),
+  beneficiaryAccount: varchar("beneficiary_account", { length: 128 }),
+  corridor: varchar("corridor", { length: 16 }).notNull(),
+  amountNgn: decimal("amount_ngn", { precision: 20, scale: 2 }).notNull(),
+  amountDest: varchar("amount_dest", { length: 64 }).notNull(),
+  destCurrency: varchar("dest_currency", { length: 8 }).notNull(),
+  fxRate: decimal("fx_rate", { precision: 16, scale: 8 }),
+  provider: varchar("provider", { length: 128 }),
+  status: outboundTransferStatusEnum("status").default("admitted").notNull(),
+  lifecycleStep: varchar("lifecycle_step", { length: 32 }).notNull(),
+  complianceResult: varchar("compliance_result", { length: 32 }),
+  feeAmount: decimal("fee_amount", { precision: 16, scale: 2 }),
+  purpose: varchar("purpose", { length: 64 }),
+  submittedAt: timestamp("submitted_at").defaultNow().notNull(),
+  completedAt: timestamp("completed_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export type OutboundTransfer = typeof outboundTransfers.$inferSelect;
+export type InsertOutboundTransfer = typeof outboundTransfers.$inferInsert;
+
+/**
+ * Prefund Accounts - TigerBeetle ledger accounts for participant prefunding
+ */
+export const prefundAccounts = pgTable("prefund_accounts", {
+  id: serial("id").primaryKey(),
+  participantId: integer("participant_id").notNull(),
+  accountRef: varchar("account_ref", { length: 128 }).notNull().unique(),
+  balance: decimal("balance", { precision: 20, scale: 2 }).default("0").notNull(),
+  dailyLimit: decimal("daily_limit", { precision: 20, scale: 2 }).notNull(),
+  todayDeductions: decimal("today_deductions", { precision: 20, scale: 2 }).default("0").notNull(),
+  lowBalanceThreshold: decimal("low_balance_threshold", { precision: 20, scale: 2 }),
+  settlementBank: varchar("settlement_bank", { length: 128 }),
+  accountFamily: varchar("account_family", { length: 64 }).default("fintech_prefund_ngn").notNull(),
+  lastTopUpAt: timestamp("last_top_up_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export type PrefundAccount = typeof prefundAccounts.$inferSelect;
+export type InsertPrefundAccount = typeof prefundAccounts.$inferInsert;
+
+/**
+ * Compliance Screenings - Sanctions/AML screening results per transfer
+ */
+export const complianceScreenings = pgTable("compliance_screenings", {
+  id: serial("id").primaryKey(),
+  transferId: integer("transfer_id").notNull(),
+  participantId: integer("participant_id").notNull(),
+  screeningType: varchar("screening_type", { length: 64 }).notNull(),
+  listChecked: varchar("list_checked", { length: 128 }).notNull(),
+  matchScore: decimal("match_score", { precision: 5, scale: 4 }),
+  decision: varchar("decision", { length: 32 }).notNull(),
+  matchedEntity: varchar("matched_entity", { length: 256 }),
+  reviewedBy: integer("reviewed_by"),
+  reviewedAt: timestamp("reviewed_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export type ComplianceScreening = typeof complianceScreenings.$inferSelect;
+export type InsertComplianceScreening = typeof complianceScreenings.$inferInsert;
+
+/**
+ * Participant Billing - Monthly invoices and fee records
+ */
+export const participantBilling = pgTable("participant_billing", {
+  id: serial("id").primaryKey(),
+  participantId: integer("participant_id").notNull(),
+  billingPeriod: varchar("billing_period", { length: 16 }).notNull(),
+  subscriptionFee: decimal("subscription_fee", { precision: 16, scale: 2 }).notNull(),
+  transactionFees: decimal("transaction_fees", { precision: 16, scale: 2 }).default("0").notNull(),
+  corridorFees: decimal("corridor_fees", { precision: 16, scale: 2 }).default("0").notNull(),
+  fxRevenueShare: decimal("fx_revenue_share", { precision: 16, scale: 2 }).default("0").notNull(),
+  totalAmount: decimal("total_amount", { precision: 16, scale: 2 }).notNull(),
+  status: varchar("status", { length: 32 }).default("pending").notNull(),
+  invoiceRef: varchar("invoice_ref", { length: 64 }),
+  paidAt: timestamp("paid_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export type ParticipantBilling = typeof participantBilling.$inferSelect;
+export type InsertParticipantBilling = typeof participantBilling.$inferInsert;

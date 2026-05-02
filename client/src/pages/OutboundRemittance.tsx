@@ -6,6 +6,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { trpc } from '@/lib/trpc';
+import { Loader2 } from 'lucide-react';
 import {
   LayoutDashboard,
   ArrowRightLeft,
@@ -32,44 +34,21 @@ import {
 type UserRole = 'participant' | 'admin' | 'cbn';
 type NavSection = 'dashboard' | 'transfers' | 'prefund' | 'billing' | 'corridors' | 'compliance' | 'onboarding' | 'settings' | 'participants';
 
-interface Transfer {
-  id: string;
-  senderRef: string;
-  beneficiary: string;
-  corridor: string;
-  amountNGN: number;
-  amountDest: string;
-  status: string;
-  provider: string;
-  timestamp: string;
-  lifecycleStep: string;
-}
-
-// --- Mock Data ---
-const mockTransfers: Transfer[] = [
-  { id: 'TRF-2024-000142', senderRef: 'PAY-APP-98712', beneficiary: 'Kwame A. (GH)', corridor: 'NG-GH', amountNGN: 750000, amountDest: 'GHS 3,750', status: 'completed', provider: 'Chipper Cash', timestamp: '14:32:01', lifecycleStep: 'G. Audit' },
-  { id: 'TRF-2024-000141', senderRef: 'PAY-APP-98711', beneficiary: 'James S. (GB)', corridor: 'NG-GB', amountNGN: 18000000, amountDest: 'GBP 9,540', status: 'completed', provider: 'Wise', timestamp: '14:28:15', lifecycleStep: 'G. Audit' },
-  { id: 'TRF-2024-000140', senderRef: 'FIN-BETA-4451', beneficiary: 'Raj P. (IN)', corridor: 'NG-IN', amountNGN: 12750000, amountDest: 'INR 714,000', status: 'processing', provider: 'Flutterwave', timestamp: '14:25:03', lifecycleStep: 'E. Routing' },
-  { id: 'TRF-2024-000139', senderRef: 'FIN-BETA-4450', beneficiary: 'Chen W. (CN)', corridor: 'NG-CN', amountNGN: 67500000, amountDest: 'CNY 324,000', status: 'manual_review', provider: '-', timestamp: '14:20:47', lifecycleStep: 'C. Compliance' },
-  { id: 'TRF-2024-000138', senderRef: 'PAY-APP-98710', beneficiary: 'Fatou D. (SN)', corridor: 'NG-SN', amountNGN: 300000, amountDest: 'XOF 123,000', status: 'completed', provider: 'MTN MoMo', timestamp: '14:15:22', lifecycleStep: 'G. Audit' },
-  { id: 'TRF-2024-000137', senderRef: 'MON-GO-7821', beneficiary: 'Ahmed B. (AE)', corridor: 'NG-AE', amountNGN: 45000000, amountDest: 'AED 108,000', status: 'processing', provider: 'Wise', timestamp: '14:12:09', lifecycleStep: 'D. Pricing' },
-  { id: 'TRF-2024-000136', senderRef: 'PAY-APP-98709', beneficiary: 'Kofi M. (GH)', corridor: 'NG-GH', amountNGN: 450000, amountDest: 'GHS 2,250', status: 'completed', provider: 'Mojaloop Hub', timestamp: '14:08:33', lifecycleStep: 'G. Audit' },
-];
-
+// 13 CBN-regulated corridors (static reference data — shared across roles)
 const corridors = [
-  { id: 'NG-GH', dest: 'Ghana', currency: 'GHS', category: 'West Africa Labor', spreadCap: 150, maxUsd: 5000, todayVolume: '₦340M', status: 'active' },
-  { id: 'NG-SN', dest: 'Senegal', currency: 'XOF', category: 'West Africa Labor', spreadCap: 200, maxUsd: 5000, todayVolume: '₦45M', status: 'active' },
-  { id: 'NG-CI', dest: "Côte d'Ivoire", currency: 'XOF', category: 'West Africa Labor', spreadCap: 200, maxUsd: 5000, todayVolume: '₦32M', status: 'active' },
-  { id: 'NG-CM', dest: 'Cameroon', currency: 'XAF', category: 'West Africa Labor', spreadCap: 200, maxUsd: 5000, todayVolume: '₦18M', status: 'active' },
-  { id: 'NG-GB', dest: 'United Kingdom', currency: 'GBP', category: 'Education', spreadCap: 100, maxUsd: 50000, todayVolume: '₦890M', status: 'active' },
-  { id: 'NG-US', dest: 'United States', currency: 'USD', category: 'Education', spreadCap: 100, maxUsd: 50000, todayVolume: '₦620M', status: 'active' },
-  { id: 'NG-CA', dest: 'Canada', currency: 'CAD', category: 'Education', spreadCap: 120, maxUsd: 50000, todayVolume: '₦78M', status: 'active' },
-  { id: 'NG-IN', dest: 'India', currency: 'INR', category: 'Medical', spreadCap: 150, maxUsd: 30000, todayVolume: '₦170M', status: 'active' },
-  { id: 'NG-TR', dest: 'Turkey', currency: 'TRY', category: 'Medical', spreadCap: 175, maxUsd: 30000, todayVolume: '₦22M', status: 'active' },
-  { id: 'NG-CN', dest: 'China', currency: 'CNY', category: 'Premium Business', spreadCap: 80, maxUsd: 100000, todayVolume: '₦280M', status: 'active' },
-  { id: 'NG-AE', dest: 'UAE', currency: 'AED', category: 'Premium Business', spreadCap: 90, maxUsd: 100000, todayVolume: '₦195M', status: 'active' },
-  { id: 'NG-KE', dest: 'Kenya', currency: 'KES', category: 'General Personal', spreadCap: 150, maxUsd: 10000, todayVolume: '₦56M', status: 'active' },
-  { id: 'NG-ZA', dest: 'South Africa', currency: 'ZAR', category: 'General Personal', spreadCap: 130, maxUsd: 10000, todayVolume: '₦38M', status: 'active' },
+  { id: 'NG-GH', dest: 'Ghana', currency: 'GHS', category: 'West Africa Labor', spreadCap: 150, maxUsd: 5000 },
+  { id: 'NG-SN', dest: 'Senegal', currency: 'XOF', category: 'West Africa Labor', spreadCap: 200, maxUsd: 5000 },
+  { id: 'NG-CI', dest: "Côte d'Ivoire", currency: 'XOF', category: 'West Africa Labor', spreadCap: 200, maxUsd: 5000 },
+  { id: 'NG-CM', dest: 'Cameroon', currency: 'XAF', category: 'West Africa Labor', spreadCap: 200, maxUsd: 5000 },
+  { id: 'NG-GB', dest: 'United Kingdom', currency: 'GBP', category: 'Education', spreadCap: 100, maxUsd: 50000 },
+  { id: 'NG-US', dest: 'United States', currency: 'USD', category: 'Education', spreadCap: 100, maxUsd: 50000 },
+  { id: 'NG-CA', dest: 'Canada', currency: 'CAD', category: 'Education', spreadCap: 120, maxUsd: 50000 },
+  { id: 'NG-IN', dest: 'India', currency: 'INR', category: 'Medical', spreadCap: 150, maxUsd: 30000 },
+  { id: 'NG-TR', dest: 'Turkey', currency: 'TRY', category: 'Medical', spreadCap: 175, maxUsd: 30000 },
+  { id: 'NG-CN', dest: 'China', currency: 'CNY', category: 'Premium Business', spreadCap: 80, maxUsd: 100000 },
+  { id: 'NG-AE', dest: 'UAE', currency: 'AED', category: 'Premium Business', spreadCap: 90, maxUsd: 100000 },
+  { id: 'NG-KE', dest: 'Kenya', currency: 'KES', category: 'General Personal', spreadCap: 150, maxUsd: 10000 },
+  { id: 'NG-ZA', dest: 'South Africa', currency: 'ZAR', category: 'General Personal', spreadCap: 130, maxUsd: 10000 },
 ];
 
 // Role-based navigation: participants see own data, admins/CBN see system-wide
@@ -117,16 +96,23 @@ function StatusBadge({ status }: { status: string }) {
 }
 
 // --- Main Component ---
-// In production, role comes from Keycloak JWT + Permify PBAC
-// participant = IMTO/fintech (sees only own data)
-// admin = platform operator (sees all participants)
-// cbn = regulator (read-only oversight of all participants)
+// Role is determined server-side from Keycloak JWT + Permify PBAC via tRPC
 export default function OutboundRemittance() {
   const [activeSection, setActiveSection] = useState<NavSection>('dashboard');
-  const [userRole, setUserRole] = useState<UserRole>('participant');
 
+  // Role comes from the server (Keycloak JWT context)
+  const { data: authContext, isLoading: loadingAuth } = trpc.outboundRemittance.getMyContext.useQuery();
+  const userRole: UserRole = authContext?.role ?? 'participant';
   const navItems = getNavItems(userRole);
   const isAdmin = userRole === 'admin' || userRole === 'cbn';
+
+  if (loadingAuth) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background flex">
@@ -206,19 +192,9 @@ export default function OutboundRemittance() {
           })}
         </nav>
 
-        {/* Role Switcher (demo only — in production, role comes from Keycloak JWT) */}
+        {/* Role from server auth — no client-side switcher */}
         <div className="p-3 border-t">
-          <p className="text-xs text-muted-foreground mb-2">View as (demo):</p>
-          <Select value={userRole} onValueChange={(v) => { setUserRole(v as UserRole); setActiveSection('dashboard'); }}>
-            <SelectTrigger className="h-7 text-xs">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="participant">Participant (IMTO)</SelectItem>
-              <SelectItem value="admin">Platform Admin</SelectItem>
-              <SelectItem value="cbn">CBN Regulator</SelectItem>
-            </SelectContent>
-          </Select>
+          <p className="text-xs text-muted-foreground">Role: {userRole}</p>
         </div>
 
         {/* Footer */}
@@ -246,17 +222,14 @@ export default function OutboundRemittance() {
   );
 }
 
-// --- Participants Section (Admin/CBN only) ---
+// --- Participants Section (Admin/CBN only — enforced server-side) ---
 function ParticipantsSection({ role }: { role: UserRole }) {
-  const participants = [
-    { name: 'PayApp Nigeria Ltd', type: 'IMTO', tier: 'Growth', license: 'CBN/IMTO/2023/045', status: 'active', volume: '₦2.4B', transfers: 3882, corridors: 8 },
-    { name: 'Flutterwave Ltd', type: 'IMTO', tier: 'Enterprise', license: 'CBN/IMTO/2022/012', status: 'active', volume: '₦8.1B', transfers: 12450, corridors: 13 },
-    { name: 'Paystack (Stripe)', type: 'PSP', tier: 'Enterprise', license: 'CBN/PSP/2021/089', status: 'active', volume: '₦5.2B', transfers: 8790, corridors: 10 },
-    { name: 'Moniepoint Inc', type: 'IMTO', tier: 'Growth', license: 'CBN/IMTO/2023/078', status: 'onboarding', volume: '₦0', transfers: 0, corridors: 0 },
-    { name: 'OPay Financial', type: 'IMTO', tier: 'Starter', license: 'CBN/IMTO/2024/012', status: 'pending', volume: '₦0', transfers: 0, corridors: 0 },
-    { name: 'PalmPay Ltd', type: 'PSP', tier: 'Starter', license: 'CBN/PSP/2024/087', status: 'pending', volume: '₦0', transfers: 0, corridors: 0 },
-    { name: 'Kuda MFB', type: 'MFB', tier: 'Starter', license: 'CBN/MFB/2020/145', status: 'pending', volume: '₦0', transfers: 0, corridors: 0 },
-  ];
+  // Server-side: throws FORBIDDEN if not admin/cbn
+  const { data: participants, isLoading } = trpc.outboundRemittance.listParticipants.useQuery();
+
+  if (isLoading) {
+    return <div className="flex items-center justify-center py-12"><Loader2 className="h-6 w-6 animate-spin" /></div>;
+  }
 
   return (
     <div className="space-y-6">
@@ -267,50 +240,45 @@ function ParticipantsSection({ role }: { role: UserRole }) {
         </p>
       </div>
 
-      <div className="grid grid-cols-4 gap-4">
-        <Card><CardHeader className="pb-2"><CardDescription>Active</CardDescription></CardHeader><CardContent><p className="text-2xl font-bold text-green-600">3</p></CardContent></Card>
-        <Card><CardHeader className="pb-2"><CardDescription>Onboarding</CardDescription></CardHeader><CardContent><p className="text-2xl font-bold text-blue-600">1</p></CardContent></Card>
-        <Card><CardHeader className="pb-2"><CardDescription>Pending</CardDescription></CardHeader><CardContent><p className="text-2xl font-bold text-yellow-600">3</p></CardContent></Card>
-        <Card><CardHeader className="pb-2"><CardDescription>Total Volume (Today)</CardDescription></CardHeader><CardContent><p className="text-2xl font-bold">₦15.7B</p></CardContent></Card>
-      </div>
-
       <Card>
         <CardHeader><CardTitle className="text-lg">All Participants</CardTitle></CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Participant</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Tier</TableHead>
-                <TableHead>License</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Today Volume</TableHead>
-                <TableHead>Transfers</TableHead>
-                <TableHead>Corridors</TableHead>
-                {role === 'admin' && <TableHead>Actions</TableHead>}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {participants.map((p) => (
-                <TableRow key={p.name}>
-                  <TableCell className="font-medium">{p.name}</TableCell>
-                  <TableCell>{p.type}</TableCell>
-                  <TableCell><Badge variant="secondary" className="text-xs">{p.tier}</Badge></TableCell>
-                  <TableCell className="font-mono text-xs">{p.license}</TableCell>
-                  <TableCell><StatusBadge status={p.status} /></TableCell>
-                  <TableCell>{p.volume}</TableCell>
-                  <TableCell>{p.transfers.toLocaleString()}</TableCell>
-                  <TableCell>{p.corridors}</TableCell>
-                  {role === 'admin' && (
-                    <TableCell>
-                      <Button size="sm" variant="outline" className="h-7 text-xs">Manage</Button>
-                    </TableCell>
-                  )}
+          {participants && participants.length > 0 ? (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Participant</TableHead>
+                  <TableHead>Short Code</TableHead>
+                  <TableHead>Type</TableHead>
+                  <TableHead>Tier</TableHead>
+                  <TableHead>License</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Corridors</TableHead>
+                  {role === 'admin' && <TableHead>Actions</TableHead>}
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {participants.map((p) => (
+                  <TableRow key={p.id}>
+                    <TableCell className="font-medium">{p.name}</TableCell>
+                    <TableCell className="font-mono text-xs">{p.shortCode}</TableCell>
+                    <TableCell>{p.type}</TableCell>
+                    <TableCell><Badge variant="secondary" className="text-xs">{p.tier}</Badge></TableCell>
+                    <TableCell className="font-mono text-xs">{p.cbnLicense ?? '-'}</TableCell>
+                    <TableCell><StatusBadge status={p.status} /></TableCell>
+                    <TableCell>{p.activeCorridors}</TableCell>
+                    {role === 'admin' && (
+                      <TableCell>
+                        <Button size="sm" variant="outline" className="h-7 text-xs">Manage</Button>
+                      </TableCell>
+                    )}
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          ) : (
+            <p className="text-center py-8 text-muted-foreground">No participants registered yet</p>
+          )}
         </CardContent>
       </Card>
     </div>
@@ -320,6 +288,11 @@ function ParticipantsSection({ role }: { role: UserRole }) {
 // --- Dashboard Section ---
 function DashboardSection({ role }: { role: UserRole }) {
   const isAdmin = role === 'admin' || role === 'cbn';
+
+  // All data comes from server — filtered by user's auth context
+  const { data: metrics } = trpc.outboundRemittance.getDashboardMetrics.useQuery();
+  const { data: recentTransfers, isLoading } = trpc.outboundRemittance.listTransfers.useQuery({ limit: 5 });
+
   return (
     <div className="space-y-6">
       <div>
@@ -331,17 +304,15 @@ function DashboardSection({ role }: { role: UserRole }) {
         </p>
       </div>
 
-      {/* Metrics - scoped to role */}
+      {/* Metrics from server */}
       <div className="grid grid-cols-4 gap-4">
         <Card>
           <CardHeader className="pb-2">
-            <CardDescription>{isAdmin ? 'System Volume (Today)' : 'Your Volume (Today)'}</CardDescription>
+            <CardDescription>{isAdmin ? 'System Transfers' : 'Your Transfers'}</CardDescription>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold">{isAdmin ? '₦15.7B' : '₦2.4B'}</p>
-            <p className="text-xs text-green-600 flex items-center gap-1">
-              <TrendingUp className="h-3 w-3" /> +12% vs yesterday
-            </p>
+            <p className="text-2xl font-bold">{metrics?.totalTransfers ?? 0}</p>
+            <p className="text-xs text-muted-foreground">{isAdmin ? 'All participants' : 'Your organization only'}</p>
           </CardContent>
         </Card>
         <Card>
@@ -349,8 +320,8 @@ function DashboardSection({ role }: { role: UserRole }) {
             <CardDescription>Success Rate</CardDescription>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold">99.1%</p>
-            <p className="text-xs text-muted-foreground">{isAdmin ? '25,120 of 25,347 transfers' : '3,847 of 3,882 transfers'}</p>
+            <p className="text-2xl font-bold">—</p>
+            <p className="text-xs text-muted-foreground">Computed from DB records</p>
           </CardContent>
         </Card>
         <Card>
@@ -358,130 +329,57 @@ function DashboardSection({ role }: { role: UserRole }) {
             <CardDescription>{isAdmin ? 'Total Prefund Held' : 'Your Prefund Balance'}</CardDescription>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold">{isAdmin ? '₦42.3B' : '₦847M'}</p>
-            <p className="text-xs text-muted-foreground">{isAdmin ? 'Across 25 participants' : '62% of your daily limit'}</p>
+            <p className="text-2xl font-bold">—</p>
+            <p className="text-xs text-muted-foreground">From TigerBeetle ledger</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardDescription>{isAdmin ? 'Active Participants' : 'Avg Latency'}</CardDescription>
+            <CardDescription>{isAdmin ? 'Active Participants' : 'Active Corridors'}</CardDescription>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold">{isAdmin ? '25' : '890ms'}</p>
-            <p className="text-xs text-muted-foreground">{isAdmin ? '3 onboarding, 5 pending' : 'p99: 2.1s end-to-end'}</p>
+            <p className="text-2xl font-bold">—</p>
+            <p className="text-xs text-muted-foreground">From switch state</p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Transaction Pipeline */}
+      {/* Recent Transfers from server (already filtered by participant) */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Active Transaction Pipeline (A→G)</CardTitle>
-          <CardDescription>Transfers currently in each lifecycle stage</CardDescription>
+          <CardTitle className="text-lg">{isAdmin ? 'Recent Transfers (All Participants)' : 'Your Recent Transfers'}</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center justify-between">
-            {[
-              { code: 'A', label: 'Admission', count: 12 },
-              { code: 'B', label: 'Workflow', count: 8 },
-              { code: 'C', label: 'Compliance', count: 5 },
-              { code: 'D', label: 'Pricing', count: 3 },
-              { code: 'E', label: 'Routing', count: 7 },
-              { code: 'F', label: 'Settlement', count: 4 },
-              { code: 'G', label: 'Audit', count: 1208 },
-            ].map((stage, i) => (
-              <div key={stage.code} className="flex items-center">
-                <div className="text-center px-4 py-2">
-                  <p className="text-xs text-muted-foreground">{stage.code}. {stage.label}</p>
-                  <p className="text-xl font-bold">{stage.count}</p>
-                </div>
-                {i < 6 && <ChevronRight className="h-4 w-4 text-muted-foreground" />}
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Provider Health + Top Corridors */}
-      <div className="grid grid-cols-2 gap-4">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Top Corridors (Today)</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {[
-              { id: 'NG-GB', volume: '₦890M', txns: 312 },
-              { id: 'NG-US', volume: '₦620M', txns: 245 },
-              { id: 'NG-GH', volume: '₦340M', txns: 428 },
-              { id: 'NG-CN', volume: '₦280M', txns: 45 },
-              { id: 'NG-IN', volume: '₦170M', txns: 89 },
-            ].map((c) => (
-              <div key={c.id} className="flex items-center justify-between">
-                <span className="font-mono text-sm">{c.id}</span>
-                <div className="flex-1 mx-4 bg-muted rounded-full h-2">
-                  <div className="bg-blue-600 rounded-full h-2" style={{ width: `${(c.txns / 428) * 100}%` }} />
-                </div>
-                <span className="text-sm text-muted-foreground">{c.volume}</span>
-                <span className="text-xs text-muted-foreground ml-2">{c.txns} txns</span>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Provider Health</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {[
-              { name: 'Mojaloop Hub', latency: '400ms', success: '99.8%', healthy: true },
-              { name: 'Flutterwave', latency: '800ms', success: '98.8%', healthy: true },
-              { name: 'Wise', latency: '2.0s', success: '99.6%', healthy: true },
-              { name: 'Chipper Cash', latency: '600ms', success: '97.5%', healthy: false },
-              { name: 'MTN MoMo', latency: '500ms', success: '96.5%', healthy: true },
-            ].map((p) => (
-              <div key={p.name} className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className={`h-2 w-2 rounded-full ${p.healthy ? 'bg-green-500' : 'bg-yellow-500'}`} />
-                  <span className="text-sm">{p.name}</span>
-                </div>
-                <span className="text-xs text-muted-foreground">{p.latency}</span>
-                <span className="text-xs font-medium">{p.success}</span>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Recent Transfers */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Recent Transfers</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Transfer ID</TableHead>
-                <TableHead>Your Ref</TableHead>
-                <TableHead>Corridor</TableHead>
-                <TableHead>Amount</TableHead>
-                <TableHead>Step</TableHead>
-                <TableHead>Status</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {mockTransfers.slice(0, 5).map((t) => (
-                <TableRow key={t.id}>
-                  <TableCell className="font-mono text-xs">{t.id}</TableCell>
-                  <TableCell className="text-xs">{t.senderRef}</TableCell>
-                  <TableCell><Badge variant="outline">{t.corridor}</Badge></TableCell>
-                  <TableCell>₦{t.amountNGN.toLocaleString()}</TableCell>
-                  <TableCell className="text-xs">{t.lifecycleStep}</TableCell>
-                  <TableCell><StatusBadge status={t.status} /></TableCell>
+          {isLoading ? (
+            <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin" /></div>
+          ) : recentTransfers && recentTransfers.length > 0 ? (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Transfer ID</TableHead>
+                  {isAdmin && <TableHead>Participant</TableHead>}
+                  <TableHead>Reference</TableHead>
+                  <TableHead>Corridor</TableHead>
+                  <TableHead>Amount</TableHead>
+                  <TableHead>Status</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {recentTransfers.map((t) => (
+                  <TableRow key={t.id}>
+                    <TableCell className="font-mono text-xs">{t.transferRef}</TableCell>
+                    {isAdmin && <TableCell className="text-xs">{t.participantId}</TableCell>}
+                    <TableCell className="text-xs">{t.senderRef}</TableCell>
+                    <TableCell><Badge variant="outline">{t.corridor}</Badge></TableCell>
+                    <TableCell>₦{Number(t.amountNgn).toLocaleString()}</TableCell>
+                    <TableCell><StatusBadge status={t.status} /></TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          ) : (
+            <p className="text-center py-8 text-muted-foreground">No transfers found</p>
+          )}
         </CardContent>
       </Card>
     </div>
@@ -492,6 +390,12 @@ function DashboardSection({ role }: { role: UserRole }) {
 function TransfersSection({ role }: { role: UserRole }) {
   const isAdmin = role === 'admin' || role === 'cbn';
   const [filter, setFilter] = useState('all');
+
+  // Server-side filtered: participants see ONLY their own, admin/CBN sees all
+  const { data: transfers, isLoading } = trpc.outboundRemittance.listTransfers.useQuery(
+    filter === 'all' ? undefined : { status: filter }
+  );
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -509,7 +413,7 @@ function TransfersSection({ role }: { role: UserRole }) {
 
       {/* Filters */}
       <div className="flex gap-2">
-        {['all', 'processing', 'completed', 'manual_review', 'failed'].map((f) => (
+        {['all', 'admitted', 'routing', 'completed', 'manual_review', 'failed'].map((f) => (
           <Button
             key={f}
             variant={filter === f ? 'default' : 'outline'}
@@ -523,40 +427,48 @@ function TransfersSection({ role }: { role: UserRole }) {
 
       <Card>
         <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Transfer ID</TableHead>
-                <TableHead>Your Reference</TableHead>
-                <TableHead>Beneficiary</TableHead>
-                <TableHead>Corridor</TableHead>
-                <TableHead>Amount (NGN)</TableHead>
-                <TableHead>Dest Amount</TableHead>
-                <TableHead>Provider</TableHead>
-                <TableHead>Lifecycle</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Time</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {mockTransfers
-                .filter((t) => filter === 'all' || t.status === filter)
-                .map((t) => (
+          {isLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Transfer ID</TableHead>
+                  {isAdmin && <TableHead>Participant</TableHead>}
+                  <TableHead>{isAdmin ? 'Reference' : 'Your Reference'}</TableHead>
+                  <TableHead>Beneficiary</TableHead>
+                  <TableHead>Corridor</TableHead>
+                  <TableHead>Amount (NGN)</TableHead>
+                  <TableHead>Dest Amount</TableHead>
+                  <TableHead>Provider</TableHead>
+                  <TableHead>Status</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {transfers && transfers.length > 0 ? transfers.map((t) => (
                   <TableRow key={t.id}>
-                    <TableCell className="font-mono text-xs text-blue-600">{t.id}</TableCell>
+                    <TableCell className="font-mono text-xs text-blue-600">{t.transferRef}</TableCell>
+                    {isAdmin && <TableCell className="text-xs font-medium">{t.participantId}</TableCell>}
                     <TableCell className="text-xs">{t.senderRef}</TableCell>
-                    <TableCell>{t.beneficiary}</TableCell>
+                    <TableCell>{t.beneficiaryName}</TableCell>
                     <TableCell><Badge variant="outline">{t.corridor}</Badge></TableCell>
-                    <TableCell>₦{t.amountNGN.toLocaleString()}</TableCell>
+                    <TableCell>₦{Number(t.amountNgn).toLocaleString()}</TableCell>
                     <TableCell>{t.amountDest}</TableCell>
-                    <TableCell>{t.provider}</TableCell>
-                    <TableCell className="text-xs">{t.lifecycleStep}</TableCell>
+                    <TableCell>{t.provider ?? '-'}</TableCell>
                     <TableCell><StatusBadge status={t.status} /></TableCell>
-                    <TableCell className="text-xs">{t.timestamp}</TableCell>
                   </TableRow>
-                ))}
-            </TableBody>
-          </Table>
+                )) : (
+                  <TableRow>
+                    <TableCell colSpan={isAdmin ? 9 : 8} className="text-center py-8 text-muted-foreground">
+                      No transfers found
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          )}
         </CardContent>
       </Card>
     </div>
@@ -566,6 +478,14 @@ function TransfersSection({ role }: { role: UserRole }) {
 // --- Prefund Section ---
 function PrefundSection({ role }: { role: UserRole }) {
   const isAdmin = role === 'admin' || role === 'cbn';
+
+  // Server-side filtered: participant sees own account, admin sees all
+  const { data: accounts, isLoading } = trpc.outboundRemittance.getPrefundAccounts.useQuery();
+
+  if (isLoading) {
+    return <div className="flex items-center justify-center py-12"><Loader2 className="h-6 w-6 animate-spin" /></div>;
+  }
+
   return (
     <div className="space-y-6">
       <div>
@@ -575,79 +495,33 @@ function PrefundSection({ role }: { role: UserRole }) {
         </p>
       </div>
 
-      <div className="grid grid-cols-3 gap-4">
-        <Card className="border-blue-200 bg-blue-50/30">
-          <CardHeader className="pb-2"><CardDescription>Prefund Balance</CardDescription></CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold">₦847,320,000</p>
-            <p className="text-xs text-muted-foreground">Last updated: 2 min ago</p>
+      {accounts && accounts.length > 0 ? (
+        <>
+          {accounts.map((account) => (
+            <Card key={account.id}>
+              <CardHeader>
+                <CardTitle className="text-lg">Account: {account.accountRef}</CardTitle>
+                <CardDescription>Currency: {account.currency}</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="flex justify-between py-2 border-b"><span className="text-muted-foreground">Balance</span><span className="font-bold">₦{Number(account.balance).toLocaleString()}</span></div>
+                  <div className="flex justify-between py-2 border-b"><span className="text-muted-foreground">Committed</span><span>₦{Number(account.committedBalance).toLocaleString()}</span></div>
+                  <div className="flex justify-between py-2 border-b"><span className="text-muted-foreground">Available</span><span>₦{Number(account.availableBalance).toLocaleString()}</span></div>
+                  <div className="flex justify-between py-2 border-b"><span className="text-muted-foreground">Daily Limit</span><span>{account.dailyLimit ? `₦${Number(account.dailyLimit).toLocaleString()}` : '—'}</span></div>
+                  <div className="flex justify-between py-2 border-b"><span className="text-muted-foreground">Last Top-Up</span><span>{account.lastTopUp ? new Date(account.lastTopUp).toLocaleDateString() : '—'}</span></div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </>
+      ) : (
+        <Card>
+          <CardContent className="py-8 text-center text-muted-foreground">
+            No prefund accounts found. Contact admin to set up your TigerBeetle ledger account.
           </CardContent>
         </Card>
-        <Card className="border-yellow-200 bg-yellow-50/30">
-          <CardHeader className="pb-2"><CardDescription>Today's Deductions</CardDescription></CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold">₦2,152,800,000</p>
-            <p className="text-xs text-muted-foreground">1,247 transfers processed</p>
-          </CardContent>
-        </Card>
-        <Card className="border-red-200 bg-red-50/30">
-          <CardHeader className="pb-2"><CardDescription>Available Headroom</CardDescription></CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold">₦1.37B</p>
-            <p className="text-xs text-muted-foreground">Daily limit: ₦3.5B</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Prefund Account (TigerBeetle Ledger)</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="flex justify-between py-2 border-b"><span className="text-muted-foreground">Account ID</span><span className="font-mono">TB-PFND-PAYAPP-001</span></div>
-            <div className="flex justify-between py-2 border-b"><span className="text-muted-foreground">Tier</span><span>Growth (₦500/mo subscription)</span></div>
-            <div className="flex justify-between py-2 border-b"><span className="text-muted-foreground">Daily Limit</span><span>₦3,500,000,000</span></div>
-            <div className="flex justify-between py-2 border-b"><span className="text-muted-foreground">Low Balance Threshold</span><span>₦200,000,000 (alert at 5.7%)</span></div>
-            <div className="flex justify-between py-2 border-b"><span className="text-muted-foreground">Settlement Bank</span><span>Zenith Bank Plc</span></div>
-            <div className="flex justify-between py-2 border-b"><span className="text-muted-foreground">Account Family</span><span className="font-mono">fintech_prefund_ngn</span></div>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader><CardTitle className="text-lg">Recent Deductions</CardTitle></CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Time</TableHead>
-                <TableHead>Transfer</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Amount</TableHead>
-                <TableHead>State</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {[
-                { time: '14:32:01', transfer: 'TRF-000142', type: 'Principal + Fees', amount: '₦752,250', state: 'committed' },
-                { time: '14:28:15', transfer: 'TRF-000141', type: 'Principal + Fees', amount: '₦18,014,400', state: 'committed' },
-                { time: '14:25:03', transfer: 'TRF-000140', type: 'Principal + Fees', amount: '₦12,756,375', state: 'pending' },
-                { time: '14:20:47', transfer: 'TRF-000139', type: 'Reserve (compliance hold)', amount: '₦67,540,500', state: 'pending' },
-                { time: '14:15:22', transfer: 'TRF-000138', type: 'Principal + Fees', amount: '₦300,900', state: 'committed' },
-              ].map((d) => (
-                <TableRow key={d.transfer}>
-                  <TableCell className="text-xs">{d.time}</TableCell>
-                  <TableCell className="font-mono text-xs text-blue-600">{d.transfer}</TableCell>
-                  <TableCell>{d.type}</TableCell>
-                  <TableCell className="font-medium">{d.amount}</TableCell>
-                  <TableCell><StatusBadge status={d.state} /></TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+      )}
     </div>
   );
 }
@@ -655,32 +529,20 @@ function PrefundSection({ role }: { role: UserRole }) {
 // --- Billing Section ---
 function BillingSection({ role }: { role: UserRole }) {
   const isAdmin = role === 'admin' || role === 'cbn';
+
+  // Server-side filtered: participant sees own billing, admin sees all
+  const { data: billingRecords, isLoading } = trpc.outboundRemittance.getBilling.useQuery();
+
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Billing & Subscription</h1>
-        <p className="text-muted-foreground">Tiered subscription management and fee schedule</p>
+        <h1 className="text-2xl font-bold">{isAdmin ? 'Billing & Tiers (All Participants)' : 'My Billing'}</h1>
+        <p className="text-muted-foreground">{isAdmin ? 'System-wide billing overview' : 'Your subscription and fee records'}</p>
       </div>
 
+      {/* Tier reference table (shared reference data) */}
       <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Current Subscription</CardTitle>
-          <CardDescription>Growth Tier — ₦500/month</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="flex justify-between py-2 border-b"><span className="text-muted-foreground">Base Switch Fee</span><span>$0.15/txn (₦22,500 kobo)</span></div>
-            <div className="flex justify-between py-2 border-b"><span className="text-muted-foreground">Corridor Discount</span><span>10%</span></div>
-            <div className="flex justify-between py-2 border-b"><span className="text-muted-foreground">FX Revenue Share</span><span>5%</span></div>
-            <div className="flex justify-between py-2 border-b"><span className="text-muted-foreground">CBN Levy</span><span>0.5% on fees</span></div>
-            <div className="flex justify-between py-2 border-b"><span className="text-muted-foreground">Monthly Volume Cap</span><span>₦10B</span></div>
-            <div className="flex justify-between py-2 border-b"><span className="text-muted-foreground">Billing Period</span><span>1 Apr — 30 Apr 2024</span></div>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader><CardTitle className="text-lg">Available Tiers</CardTitle></CardHeader>
+        <CardHeader><CardTitle className="text-lg">Tier Schedule</CardTitle></CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
@@ -696,12 +558,12 @@ function BillingSection({ role }: { role: UserRole }) {
             <TableBody>
               {[
                 { tier: 'Starter', fee: '$200', switchFee: '$0.25', discount: '0%', fxShare: '0%', cap: '₦1B' },
-                { tier: 'Growth', fee: '$500', switchFee: '$0.15', discount: '10%', fxShare: '5%', cap: '₦10B', current: true },
+                { tier: 'Growth', fee: '$500', switchFee: '$0.15', discount: '10%', fxShare: '5%', cap: '₦10B' },
                 { tier: 'Enterprise', fee: '$2,000', switchFee: '$0.08', discount: '25%', fxShare: '15%', cap: '₦50B' },
                 { tier: 'Premium', fee: '$5,000', switchFee: '$0.05', discount: '35%', fxShare: '25%', cap: 'Unlimited' },
               ].map((t) => (
-                <TableRow key={t.tier} className={t.current ? 'bg-blue-50' : ''}>
-                  <TableCell className="font-medium">{t.tier} {t.current && <Badge className="ml-1">Current</Badge>}</TableCell>
+                <TableRow key={t.tier}>
+                  <TableCell className="font-medium">{t.tier}</TableCell>
                   <TableCell>{t.fee}/mo</TableCell>
                   <TableCell>{t.switchFee}</TableCell>
                   <TableCell>{t.discount}</TableCell>
@@ -711,6 +573,43 @@ function BillingSection({ role }: { role: UserRole }) {
               ))}
             </TableBody>
           </Table>
+        </CardContent>
+      </Card>
+
+      {/* Billing records from DB */}
+      <Card>
+        <CardHeader><CardTitle className="text-lg">{isAdmin ? 'All Invoices' : 'My Invoices'}</CardTitle></CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin" /></div>
+          ) : billingRecords && billingRecords.length > 0 ? (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  {isAdmin && <TableHead>Participant</TableHead>}
+                  <TableHead>Period</TableHead>
+                  <TableHead>Subscription</TableHead>
+                  <TableHead>Txn Fees</TableHead>
+                  <TableHead>Total</TableHead>
+                  <TableHead>Status</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {billingRecords.map((b) => (
+                  <TableRow key={b.id}>
+                    {isAdmin && <TableCell>{b.participantId}</TableCell>}
+                    <TableCell>{b.billingPeriod}</TableCell>
+                    <TableCell>₦{Number(b.subscriptionFee).toLocaleString()}</TableCell>
+                    <TableCell>₦{Number(b.transactionFees).toLocaleString()}</TableCell>
+                    <TableCell className="font-bold">₦{Number(b.totalAmount).toLocaleString()}</TableCell>
+                    <TableCell><StatusBadge status={b.status} /></TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          ) : (
+            <p className="text-center py-8 text-muted-foreground">No billing records found</p>
+          )}
         </CardContent>
       </Card>
     </div>
@@ -737,8 +636,6 @@ function CorridorsSection() {
                 <TableHead>Category</TableHead>
                 <TableHead>CBN Spread Cap</TableHead>
                 <TableHead>Max (USD)</TableHead>
-                <TableHead>Today Volume</TableHead>
-                <TableHead>Status</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -750,8 +647,6 @@ function CorridorsSection() {
                   <TableCell>{c.category}</TableCell>
                   <TableCell>{c.spreadCap} bps</TableCell>
                   <TableCell>${c.maxUsd.toLocaleString()}</TableCell>
-                  <TableCell>{c.todayVolume}</TableCell>
-                  <TableCell><StatusBadge status={c.status} /></TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -765,87 +660,68 @@ function CorridorsSection() {
 // --- Compliance Section ---
 function ComplianceSection({ role }: { role: UserRole }) {
   const isAdmin = role === 'admin' || role === 'cbn';
+
+  // Server-side filtered: participant sees own screenings, admin sees all
+  const { data: screenings, isLoading } = trpc.outboundRemittance.getComplianceScreenings.useQuery();
+
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Compliance & Sanctions</h1>
-        <p className="text-muted-foreground">Real-time sanctions screening across 7 global lists</p>
+        <h1 className="text-2xl font-bold">{isAdmin ? 'Compliance & Sanctions (System-Wide)' : 'My Compliance'}</h1>
+        <p className="text-muted-foreground">
+          {isAdmin ? 'Screening results across all participants' : 'Sanctions screening results for your transfers'}
+        </p>
       </div>
 
-      <div className="grid grid-cols-4 gap-4">
-        <Card><CardHeader className="pb-2"><CardDescription>Screened Today</CardDescription></CardHeader>
-          <CardContent><p className="text-2xl font-bold">1,247</p><p className="text-xs text-muted-foreground">All transfers</p></CardContent></Card>
-        <Card><CardHeader className="pb-2"><CardDescription>Cleared</CardDescription></CardHeader>
-          <CardContent><p className="text-2xl font-bold text-green-600">1,233</p><p className="text-xs text-muted-foreground">98.9% pass rate</p></CardContent></Card>
-        <Card><CardHeader className="pb-2"><CardDescription>Escalated</CardDescription></CardHeader>
-          <CardContent><p className="text-2xl font-bold text-yellow-600">11</p><p className="text-xs text-muted-foreground">Manual review required</p></CardContent></Card>
-        <Card><CardHeader className="pb-2"><CardDescription>Blocked</CardDescription></CardHeader>
-          <CardContent><p className="text-2xl font-bold text-red-600">3</p><p className="text-xs text-muted-foreground">Auto-blocked by sanctions hit</p></CardContent></Card>
-      </div>
-
+      {/* Screening results from DB */}
       <Card>
-        <CardHeader><CardTitle className="text-lg">Sanctions Lists Active</CardTitle></CardHeader>
+        <CardHeader><CardTitle className="text-lg">{isAdmin ? 'All Screenings' : 'Your Screening Results'}</CardTitle></CardHeader>
         <CardContent>
-          <div className="grid grid-cols-4 gap-4">
-            {[
-              { name: 'OFAC SDN', entries: '12,847', updated: 'Today' },
-              { name: 'UN Consolidated', entries: '789', updated: 'Yesterday' },
-              { name: 'EU Sanctions', entries: '2,156', updated: 'Today' },
-              { name: 'CBN Watchlist', entries: '456', updated: 'Today' },
-              { name: 'INTERPOL Red', entries: '7,312', updated: '2 days ago' },
-              { name: 'PEP List', entries: '15,000', updated: 'Today' },
-              { name: 'OFAC Non-SDN', entries: '3,421', updated: 'Today' },
-            ].map((l) => (
-              <Card key={l.name} className="border">
-                <CardContent className="pt-4">
-                  <p className="font-medium text-sm">{l.name}</p>
-                  <p className="text-lg font-bold">{l.entries}</p>
-                  <p className="text-xs text-muted-foreground">Updated: {l.updated}</p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader><CardTitle className="text-lg">Escalated Transfers (Pending Review)</CardTitle></CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Transfer</TableHead>
-                <TableHead>Beneficiary</TableHead>
-                <TableHead>Match Score</TableHead>
-                <TableHead>List</TableHead>
-                <TableHead>Reason</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {[
-                { transfer: 'TRF-000139', beneficiary: 'Chen Wei (CN)', score: 0.82, list: 'PEP List', reason: 'Name similarity to PEP entry', status: 'pending' },
-                { transfer: 'TRF-000131', beneficiary: 'Al-Hassan M. (AE)', score: 0.78, list: 'UN Consolidated', reason: 'Partial name match', status: 'pending' },
-                { transfer: 'TRF-000128', beneficiary: 'Kim J. (KR)', score: 0.91, list: 'OFAC SDN', reason: 'High-confidence name match', status: 'under_review' },
-              ].map((e) => (
-                <TableRow key={e.transfer}>
-                  <TableCell className="font-mono text-xs text-blue-600">{e.transfer}</TableCell>
-                  <TableCell>{e.beneficiary}</TableCell>
-                  <TableCell><Badge variant={e.score >= 0.9 ? 'destructive' : 'secondary'}>{e.score.toFixed(2)}</Badge></TableCell>
-                  <TableCell>{e.list}</TableCell>
-                  <TableCell className="text-xs">{e.reason}</TableCell>
-                  <TableCell><StatusBadge status={e.status} /></TableCell>
-                  <TableCell>
-                    <div className="flex gap-1">
-                      <Button size="sm" variant="outline" className="h-7"><CheckCircle2 className="h-3 w-3 mr-1" />Clear</Button>
-                      <Button size="sm" variant="destructive" className="h-7"><XCircle className="h-3 w-3 mr-1" />Block</Button>
-                    </div>
-                  </TableCell>
+          {isLoading ? (
+            <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin" /></div>
+          ) : screenings && screenings.length > 0 ? (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  {isAdmin && <TableHead>Participant</TableHead>}
+                  <TableHead>Transfer</TableHead>
+                  <TableHead>Type</TableHead>
+                  <TableHead>List</TableHead>
+                  <TableHead>Score</TableHead>
+                  <TableHead>Decision</TableHead>
+                  <TableHead>Matched Entity</TableHead>
+                  {isAdmin && <TableHead>Actions</TableHead>}
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {screenings.map((s) => (
+                  <TableRow key={s.id}>
+                    {isAdmin && <TableCell className="text-xs">{s.participantId}</TableCell>}
+                    <TableCell className="font-mono text-xs text-blue-600">{s.transferId}</TableCell>
+                    <TableCell>{s.screeningType}</TableCell>
+                    <TableCell>{s.listChecked}</TableCell>
+                    <TableCell>
+                      <Badge variant={Number(s.matchScore) >= 0.9 ? 'destructive' : Number(s.matchScore) >= 0.75 ? 'secondary' : 'default'}>
+                        {Number(s.matchScore).toFixed(2)}
+                      </Badge>
+                    </TableCell>
+                    <TableCell><StatusBadge status={s.decision} /></TableCell>
+                    <TableCell className="text-xs">{s.matchedEntity ?? '-'}</TableCell>
+                    {isAdmin && (
+                      <TableCell>
+                        <div className="flex gap-1">
+                          <Button size="sm" variant="outline" className="h-7"><CheckCircle2 className="h-3 w-3 mr-1" />Clear</Button>
+                          <Button size="sm" variant="destructive" className="h-7"><XCircle className="h-3 w-3 mr-1" />Block</Button>
+                        </div>
+                      </TableCell>
+                    )}
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          ) : (
+            <p className="text-center py-8 text-muted-foreground">No compliance screenings found</p>
+          )}
         </CardContent>
       </Card>
     </div>

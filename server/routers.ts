@@ -48,6 +48,7 @@ import { webhookConfigRouter } from './routers/webhookConfigRouter';
 import { savedSearchRouter } from './routers/savedSearchRouter';
 import { securityRouter } from './routers/securityRouter';
 import { resilienceRouter } from './routers/resilienceRouter';
+import { outboundRemittanceRouter } from './routers/outboundRemittanceRouter';
 import { startRateAlertMonitor, getRateAlertMonitorStatus } from './jobs/rateAlertMonitor';
 import { exportToCSV, exportToExcel, exportToPDF, formatRemittanceForExport, getRemittanceExportColumns, formatRateAlertsForExport, getRateAlertExportColumns } from './services/exportService';
 
@@ -115,6 +116,7 @@ export const appRouter = router({
     savedSearches: savedSearchRouter,
     security: securityRouter,
     resilience: resilienceRouter,
+    outboundRemittance: outboundRemittanceRouter,
   
     // Rate Alerts
   rateAlerts: router({
