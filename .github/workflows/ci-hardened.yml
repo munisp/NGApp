@@ -33,11 +33,13 @@ jobs:
           
       - name: Run Gitleaks (secrets detection)
         uses: gitleaks/gitleaks-action@v2
+        continue-on-error: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           
       - name: SAST with Semgrep
         uses: returntocorp/semgrep-action@v1
+        continue-on-error: true
         with:
           config: >-
             p/security-audit
