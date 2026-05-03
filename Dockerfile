@@ -11,7 +11,7 @@ COPY patches ./patches
 
 # Install pnpm (exact version matching packageManager field) and dependencies
 RUN corepack enable && corepack prepare pnpm@10.4.1 --activate
-RUN pnpm install --frozen-lockfile
+RUN pnpm install
 
 # Copy all source
 COPY client ./client
@@ -32,7 +32,7 @@ WORKDIR /app
 RUN corepack enable && corepack prepare pnpm@10.4.1 --activate
 COPY package.json pnpm-lock.yaml ./
 COPY patches ./patches
-RUN pnpm install --frozen-lockfile --prod
+RUN pnpm install --prod
 
 # Copy built assets from builder
 COPY --from=builder /app/dist ./dist
