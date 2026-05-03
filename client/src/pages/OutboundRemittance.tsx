@@ -798,6 +798,192 @@ function SettingsSection({ role }: { role: UserRole }) {
           )}
         </>
       )}
+
+      {isAdmin && (
+        <>
+          <Card>
+            <CardHeader>
+              <CardTitle>Platform Configuration</CardTitle>
+              <CardDescription>Global settings for the outbound remittance switch</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <h3 className="font-semibold text-sm">Transfer Limits</h3>
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center p-3 border rounded">
+                      <div><p className="text-sm font-medium">RTGS Threshold</p><p className="text-xs text-muted-foreground">Transfers above this bypass batching</p></div>
+                      <Badge variant="outline">₦500,000,000</Badge>
+                    </div>
+                    <div className="flex justify-between items-center p-3 border rounded">
+                      <div><p className="text-sm font-medium">Dual Approval Threshold</p><p className="text-xs text-muted-foreground">Requires 2 admin approvals above this</p></div>
+                      <Badge variant="outline">₦100,000,000</Badge>
+                    </div>
+                    <div className="flex justify-between items-center p-3 border rounded">
+                      <div><p className="text-sm font-medium">Daily Per-Participant Cap</p><p className="text-xs text-muted-foreground">Maximum daily volume per IMTO</p></div>
+                      <Badge variant="outline">₦10,000,000,000</Badge>
+                    </div>
+                  </div>
+                </div>
+                <div className="space-y-4">
+                  <h3 className="font-semibold text-sm">Compliance Settings</h3>
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center p-3 border rounded">
+                      <div><p className="text-sm font-medium">Sanctions Lists</p><p className="text-xs text-muted-foreground">OFAC, UN, EU, CBN, EFCC</p></div>
+                      <Badge className="bg-green-100 text-green-800">5 Active</Badge>
+                    </div>
+                    <div className="flex justify-between items-center p-3 border rounded">
+                      <div><p className="text-sm font-medium">Re-screening Interval</p><p className="text-xs text-muted-foreground">Continuous re-screening of existing beneficiaries</p></div>
+                      <Badge variant="outline">24 hours</Badge>
+                    </div>
+                    <div className="flex justify-between items-center p-3 border rounded">
+                      <div><p className="text-sm font-medium">SAR Auto-Filing</p><p className="text-xs text-muted-foreground">Automatic filing to NFIU</p></div>
+                      <Badge className="bg-green-100 text-green-800">Enabled</Badge>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>System Health</CardTitle>
+              <CardDescription>Infrastructure and middleware status</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                {[
+                  { name: 'PostgreSQL', status: 'operational', latency: '2ms' },
+                  { name: 'TigerBeetle', status: 'operational', latency: '0.5ms' },
+                  { name: 'Redis Cache', status: 'operational', latency: '1ms' },
+                  { name: 'Kafka', status: 'operational', latency: '8ms' },
+                  { name: 'Keycloak IAM', status: 'operational', latency: '15ms' },
+                  { name: 'Temporal', status: 'operational', latency: '5ms' },
+                  { name: 'OpenSearch', status: 'operational', latency: '12ms' },
+                  { name: 'APISIX Gateway', status: 'operational', latency: '3ms' },
+                ].map(svc => (
+                  <div key={svc.name} className="border rounded-lg p-3 space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium">{svc.name}</span>
+                      <span className="h-2 w-2 rounded-full bg-green-500" />
+                    </div>
+                    <p className="text-xs text-muted-foreground">{svc.status} • {svc.latency}</p>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Notification Preferences</CardTitle>
+              <CardDescription>Configure platform-wide alerts and notifications</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {[
+                  { event: 'Transfer SLA Breach', channel: 'Email + SMS', threshold: 'Exceeds corridor SLA target' },
+                  { event: 'Prefund Low Balance', channel: 'Email + Push', threshold: 'Below 20% of daily avg volume' },
+                  { event: 'Sanctions Hit', channel: 'Email + SMS + Slack', threshold: 'Any match (immediate)' },
+                  { event: 'Rail Degradation', channel: 'Email + Slack', threshold: 'Success rate below 95%' },
+                  { event: 'High-Value Transfer', channel: 'Email', threshold: 'Above ₦100M (requires dual approval)' },
+                  { event: 'New Participant Onboarding', channel: 'Email', threshold: 'Application submitted' },
+                ].map((n, i) => (
+                  <div key={i} className="flex items-center justify-between p-3 border rounded">
+                    <div>
+                      <p className="text-sm font-medium">{n.event}</p>
+                      <p className="text-xs text-muted-foreground">{n.threshold}</p>
+                    </div>
+                    <Badge variant="outline" className="text-xs">{n.channel}</Badge>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Audit & Security</CardTitle>
+              <CardDescription>Security configuration and audit settings</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center p-3 border rounded">
+                    <div><p className="text-sm font-medium">FIDO2 Hardware Keys</p><p className="text-xs text-muted-foreground">Required for approvals above ₦100M</p></div>
+                    <Badge className="bg-green-100 text-green-800">Enforced</Badge>
+                  </div>
+                  <div className="flex justify-between items-center p-3 border rounded">
+                    <div><p className="text-sm font-medium">Session Timeout</p><p className="text-xs text-muted-foreground">Idle session expiration</p></div>
+                    <Badge variant="outline">15 minutes</Badge>
+                  </div>
+                  <div className="flex justify-between items-center p-3 border rounded">
+                    <div><p className="text-sm font-medium">IP Allowlisting</p><p className="text-xs text-muted-foreground">Restrict API access per participant</p></div>
+                    <Badge className="bg-green-100 text-green-800">Enabled</Badge>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center p-3 border rounded">
+                    <div><p className="text-sm font-medium">Audit Log Retention</p><p className="text-xs text-muted-foreground">Immutable event log (SHA-256 chained)</p></div>
+                    <Badge variant="outline">7 years</Badge>
+                  </div>
+                  <div className="flex justify-between items-center p-3 border rounded">
+                    <div><p className="text-sm font-medium">Behavioral Biometrics</p><p className="text-xs text-muted-foreground">Admin session anomaly detection</p></div>
+                    <Badge className="bg-green-100 text-green-800">Active</Badge>
+                  </div>
+                  <div className="flex justify-between items-center p-3 border rounded">
+                    <div><p className="text-sm font-medium">Rate Limit (Global)</p><p className="text-xs text-muted-foreground">Platform-wide API throttle</p></div>
+                    <Badge variant="outline">10,000 req/min</Badge>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </>
+      )}
+
+      {/* Common settings for all roles */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Account Information</CardTitle>
+          <CardDescription>Your account details and role</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-2">
+            <div className="flex justify-between items-center p-3 border rounded">
+              <span className="text-sm font-medium">Role</span>
+              <Badge>{role === 'admin' ? 'Platform Admin' : role === 'cbn' ? 'CBN Regulator' : 'Participant (IMTO)'}</Badge>
+            </div>
+            {!isAdmin && (
+              <>
+                <div className="flex justify-between items-center p-3 border rounded">
+                  <span className="text-sm font-medium">Organization</span>
+                  <span className="text-sm">PayApp Nigeria Ltd</span>
+                </div>
+                <div className="flex justify-between items-center p-3 border rounded">
+                  <span className="text-sm font-medium">Current Tier</span>
+                  <Badge variant="outline">Enterprise</Badge>
+                </div>
+                <div className="flex justify-between items-center p-3 border rounded">
+                  <span className="text-sm font-medium">CBN License</span>
+                  <span className="text-sm font-mono text-xs">CBN/IMTO/2024/0012</span>
+                </div>
+                <div className="flex justify-between items-center p-3 border rounded">
+                  <span className="text-sm font-medium">Assigned Corridors</span>
+                  <span className="text-sm">NG-GH, NG-GB, NG-US, NG-SN, NG-KE, NG-IN, NG-CN</span>
+                </div>
+              </>
+            )}
+            {isAdmin && (
+              <div className="flex justify-between items-center p-3 border rounded">
+                <span className="text-sm font-medium">Platform Version</span>
+                <span className="text-sm">Switch v4.2 • API v2.1 • Last updated May 2026</span>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
