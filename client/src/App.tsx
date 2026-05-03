@@ -41,6 +41,8 @@ import GovernmentPayments from "@/pages/GovernmentPayments";
 import OpenBanking from "@/pages/OpenBanking";
 import MiddlewareMonitoring from "@/pages/MiddlewareMonitoring";
 import SecurityDashboard from "@/pages/SecurityDashboard";
+import Settlements from "@/pages/Settlements";
+import SanctionsScreening from "@/pages/SanctionsScreening";
 
 function Router() {
   return (
@@ -80,6 +82,8 @@ function Router() {
       <Route path="/open-banking" component={OpenBanking} />
       <Route path="/middleware" component={MiddlewareMonitoring} />
       <Route path="/security" component={SecurityDashboard} />
+      <Route path="/settlements" component={Settlements} />
+      <Route path="/sanctions" component={SanctionsScreening} />
       <Route path={"/404"} component={NotFound} />
       {/* Final fallback route */}
       <Route component={NotFound} />

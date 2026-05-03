@@ -56,7 +56,6 @@ import { cardProcessingRouter } from './routers/cardProcessingRouter';
 import { governmentPaymentsRouter } from './routers/governmentPaymentsRouter';
 import { openBankingRouter } from './routers/openBankingRouter';
 import { middlewareRouter } from './routers/middlewareRouter';
-import { securityRouter } from './routers/securityRouter';
 import { startRateAlertMonitor, getRateAlertMonitorStatus } from './jobs/rateAlertMonitor';
 import { exportToCSV, exportToExcel, exportToPDF, formatRemittanceForExport, getRemittanceExportColumns, formatRateAlertsForExport, getRateAlertExportColumns } from './services/exportService';
 
