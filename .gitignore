@@ -107,3 +107,4 @@ temp/
 *.sqlite3
 payment-core/rust-services/outbound-ledger/target/
 **/__pycache__/
+target/
