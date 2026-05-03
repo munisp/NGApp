@@ -57,6 +57,15 @@ function getNavItems(role: UserRole) {
       { id: 'developer_portal' as NavSection, label: 'Developer', tKey: 'devPortal', icon: Code },
       { id: 'transaction_monitoring' as NavSection, label: 'Live Tracking', tKey: 'liveMonitor', icon: Activity },
       { id: 'settings' as NavSection, label: 'Settings', tKey: 'settings', icon: Settings },
+      // AI / ML
+      { id: 'ai_prophet' as NavSection, label: 'Prophet Pipeline', tKey: 'aiProphet', icon: TrendingUp },
+      { id: 'ai_cocoindex' as NavSection, label: 'CocoIndex', tKey: 'aiCocoIndex', icon: Layers },
+      { id: 'ai_kgqa' as NavSection, label: 'EPR-KGQA', tKey: 'aiKGQA', icon: Search },
+      { id: 'ai_falkordb' as NavSection, label: 'FalkorDB', tKey: 'aiFalkorDB', icon: Network },
+      { id: 'ai_ollama' as NavSection, label: 'Ollama LLM', tKey: 'aiOllama', icon: Zap },
+      { id: 'ai_art' as NavSection, label: 'ART Robustness', tKey: 'aiART', icon: ShieldAlert },
+      { id: 'ai_gnn' as NavSection, label: 'GNN + Neo4j', tKey: 'aiGNN', icon: Network },
+      { id: 'ai_mcmc' as NavSection, label: 'MCMC Fraud', tKey: 'aiMCMC', icon: Activity },
     ];
   }
   return [
