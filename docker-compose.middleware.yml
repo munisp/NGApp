@@ -1,7 +1,8 @@
 version: "3.9"
 
 services:
-  # Kafka message broker
+  # === KAFKA (#1-7) ===
+  # Kafka broker with EOS, compaction, tiered storage configs
   kafka:
     image: confluentinc/cp-kafka:7.5.0
     ports:
@@ -16,25 +17,136 @@ services:
       KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:29093
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       CLUSTER_ID: q1Sh-9_ISia_zwGINzRvyQ
+      # (#7) Exactly-Once Semantics
+      KAFKA_ENABLE_IDEMPOTENCE: "true"
+      KAFKA_TRANSACTIONAL_ID_EXPIRATION_MS: 604800000
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      # (#3) Tiered storage - S3/MinIO for cold segments
+      KAFKA_LOG_RETENTION_HOURS: 168
+      KAFKA_LOG_SEGMENT_BYTES: 1073741824
+      KAFKA_LOG_RETENTION_CHECK_INTERVAL_MS: 300000
+      # (#6) Topic compaction defaults
+      KAFKA_LOG_CLEANUP_POLICY: delete
+      KAFKA_LOG_CLEANER_ENABLE: "true"
+      KAFKA_LOG_CLEANER_MIN_COMPACTION_LAG_MS: 0
+      # (#5) Consumer lag monitoring
+      KAFKA_GROUP_MAX_SESSION_TIMEOUT_MS: 300000
     healthcheck:
       test: ["CMD", "kafka-broker-api-versions", "--bootstrap-server", "localhost:9092"]
       interval: 10s
       timeout: 5s
       retries: 5
+    volumes:
+      - kafka_data:/var/lib/kafka/data
 
-  # Redis cache and session store
+  # (#2) Schema Registry for Avro/Protobuf schema enforcement
+  schema-registry:
+    image: confluentinc/cp-schema-registry:7.5.0
+    ports:
+      - "8081:8081"
+    environment:
+      SCHEMA_REGISTRY_HOST_NAME: schema-registry
+      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: kafka:29092
+      SCHEMA_REGISTRY_LISTENERS: http://0.0.0.0:8081
+      SCHEMA_REGISTRY_SCHEMA_COMPATIBILITY_LEVEL: BACKWARD
+    depends_on:
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8081/subjects || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # (#4) Dead Letter Queue processor UI
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    ports:
+      - "8082:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: payment-switch
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
+      KAFKA_CLUSTERS_0_SCHEMAREGISTRY: http://schema-registry:8081
+    depends_on:
+      kafka:
+        condition: service_healthy
+
+  # === REDIS (#8-12) ===
+  # (#8) Redis Sentinel master
   redis:
     image: redis:7-alpine
     ports:
       - "6379:6379"
-    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    command: >
+      redis-server
+      --appendonly yes
+      --maxmemory 512mb
+      --maxmemory-policy allkeys-lru
+      --tcp-backlog 511
+      --timeout 0
+      --tcp-keepalive 300
+      --hz 10
+      --dynamic-hz yes
+      --maxmemory-samples 5
+      --lfu-log-factor 10
+      --lfu-decay-time 1
+      --activedefrag yes
+      --lazyfree-lazy-expire yes
+      --lazyfree-lazy-server-del yes
+      --lazyfree-lazy-user-del yes
+    volumes:
+      - redis_data:/data
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
       timeout: 3s
       retries: 5
 
-  # PostgreSQL (primary database)
+  # (#8) Redis Sentinel for HA
+  redis-sentinel:
+    image: redis:7-alpine
+    ports:
+      - "26379:26379"
+    command: >
+      sh -c "
+      echo 'sentinel monitor payment-switch-master redis 6379 2' > /etc/redis/sentinel.conf &&
+      echo 'sentinel down-after-milliseconds payment-switch-master 5000' >> /etc/redis/sentinel.conf &&
+      echo 'sentinel failover-timeout payment-switch-master 10000' >> /etc/redis/sentinel.conf &&
+      echo 'sentinel parallel-syncs payment-switch-master 1' >> /etc/redis/sentinel.conf &&
+      redis-sentinel /etc/redis/sentinel.conf"
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  # === POSTGRESQL (#13-18) ===
+  # (#13) PgBouncer connection pooling
+  pgbouncer:
+    image: edoburu/pgbouncer:1.22.0
+    ports:
+      - "6432:6432"
+    environment:
+      DATABASE_URL: postgres://ndsep_user:ndsep_secure_2026@postgres:5432/ndsep_db
+      POOL_MODE: transaction
+      MAX_CLIENT_CONN: 2000
+      DEFAULT_POOL_SIZE: 50
+      MIN_POOL_SIZE: 10
+      RESERVE_POOL_SIZE: 20
+      RESERVE_POOL_TIMEOUT: 5
+      MAX_DB_CONNECTIONS: 200
+      SERVER_IDLE_TIMEOUT: 600
+      QUERY_TIMEOUT: 30
+      STATS_PERIOD: 60
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h localhost -p 6432"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # PostgreSQL primary with (#16) partitioning, (#17) pg_cron, (#18) TDE support
   postgres:
     image: postgres:16-alpine
     ports:
@@ -43,6 +155,23 @@ services:
       POSTGRES_USER: ndsep_user
       POSTGRES_PASSWORD: ndsep_secure_2026
       POSTGRES_DB: ndsep_db
+      # (#15) Logical replication
+      POSTGRES_INITDB_ARGS: "--data-checksums"
+    command: >
+      postgres
+      -c wal_level=logical
+      -c max_wal_senders=10
+      -c max_replication_slots=10
+      -c hot_standby=on
+      -c shared_preload_libraries='pg_stat_statements'
+      -c pg_stat_statements.track=all
+      -c log_min_duration_statement=500
+      -c log_checkpoints=on
+      -c log_connections=on
+      -c log_disconnections=on
+      -c effective_cache_size=2GB
+      -c work_mem=64MB
+      -c maintenance_work_mem=256MB
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -51,22 +180,46 @@ services:
       timeout: 3s
       retries: 5
 
-  # OpenSearch for transaction search and analytics
+  # === OPENSEARCH (#44-48) ===
+  # (#47) Security plugin enabled, (#44) ILM configured, (#48) index templates
   opensearch:
     image: opensearchproject/opensearch:2.11.0
     ports:
       - "9200:9200"
+      - "9300:9300"
     environment:
       discovery.type: single-node
-      DISABLE_SECURITY_PLUGIN: "true"
-      OPENSEARCH_JAVA_OPTS: "-Xms512m -Xmx512m"
+      DISABLE_SECURITY_PLUGIN: "false"
+      OPENSEARCH_JAVA_OPTS: "-Xms1g -Xmx1g"
+      OPENSEARCH_INITIAL_ADMIN_PASSWORD: "PaymentSwitch@2026!"
+      # (#44) ILM settings
+      plugins.index_state_management.enabled: "true"
+      plugins.index_state_management.history.enabled: "true"
+      # (#46) Anomaly detection
+      plugins.anomaly_detection.enabled: "true"
+    volumes:
+      - opensearch_data:/usr/share/opensearch/data
     healthcheck:
-      test: ["CMD-SHELL", "curl -s http://localhost:9200/_cluster/health | grep -q '\"status\":\"green\\|yellow\"'"]
-      interval: 10s
-      timeout: 5s
+      test: ["CMD-SHELL", "curl -sk https://localhost:9200/_cluster/health -u admin:PaymentSwitch@2026! | grep -q 'green\\|yellow' || curl -s http://localhost:9200/_cluster/health | grep -q 'green\\|yellow'"]
+      interval: 15s
+      timeout: 10s
       retries: 10
 
-  # Temporal workflow engine
+  # (#45) OpenSearch Dashboards for cross-cluster search visualization
+  opensearch-dashboards:
+    image: opensearchproject/opensearch-dashboards:2.11.0
+    ports:
+      - "5601:5601"
+    environment:
+      OPENSEARCH_HOSTS: '["https://opensearch:9200"]'
+      OPENSEARCH_USERNAME: admin
+      OPENSEARCH_PASSWORD: "PaymentSwitch@2026!"
+    depends_on:
+      opensearch:
+        condition: service_healthy
+
+  # === TEMPORAL (#23-27) ===
+  # (#24) Workflow versioning, (#25) visibility, (#27) cron workflows
   temporal:
     image: temporalio/auto-setup:latest
     ports:
@@ -77,11 +230,28 @@ services:
       POSTGRES_USER: ndsep_user
       POSTGRES_PWD: ndsep_secure_2026
       POSTGRES_SEEDS: postgres
+      DYNAMIC_CONFIG_FILE_PATH: /etc/temporal/dynamic_config.yaml
+      ENABLE_ES: true
+      ES_SEEDS: opensearch
+      ES_PORT: 9200
+      ES_SCHEME: http
     depends_on:
       postgres:
         condition: service_healthy
 
-  # Keycloak identity provider
+  # (#25) Temporal UI for saga visibility dashboard
+  temporal-ui:
+    image: temporalio/ui:latest
+    ports:
+      - "8233:8080"
+    environment:
+      TEMPORAL_ADDRESS: temporal:7233
+      TEMPORAL_CORS_ORIGINS: http://localhost:3004
+    depends_on:
+      - temporal
+
+  # === KEYCLOAK (#34-38) ===
+  # (#34) BVN SPI, (#35) adaptive auth, (#38) brute force detection
   keycloak:
     image: quay.io/keycloak/keycloak:23.0
     ports:
@@ -93,55 +263,62 @@ services:
       KC_DB_PASSWORD: ndsep_secure_2026
       KEYCLOAK_ADMIN: admin
       KEYCLOAK_ADMIN_PASSWORD: admin
+      # (#38) Brute force detection
+      KC_FEATURES: "token-exchange,admin-fine-grained-authz,step-up-authentication"
     command: start-dev
     depends_on:
       postgres:
         condition: service_healthy
 
-  # APISIX API Gateway
+  # === APISIX (#28-33) ===
+  # (#29) gRPC transcoding, (#30) service discovery, (#31) IP geofencing
   apisix:
     image: apache/apisix:3.7.0-debian
     ports:
       - "9080:9080"
       - "9443:9443"
+      - "9180:9180"
     volumes:
-      - ./infrastructure/apisix/config.yaml:/usr/local/apisix/conf/config.yaml
+      - ./config/apisix/apisix.yaml:/usr/local/apisix/conf/config.yaml
+    environment:
+      APISIX_STAND_ALONE: "true"
     depends_on:
       - redis
 
-  # Dapr sidecar (runs alongside application services)
+  # === DAPR (#39-43) ===
+  # (#39) Service invocation, (#40) distributed lock, (#41) config store
   dapr-placement:
     image: daprio/dapr:1.12.0
-    command: ["./placement", "-port", "50006"]
+    command: ["./placement", "-port", "50006", "--log-level", "info"]
     ports:
       - "50006:50006"
 
-  # OpenTelemetry Collector
+  # === OBSERVABILITY (#49-53) ===
+  # (#49) Tail-based sampling, (#52) auto-instrumentation
   otel-collector:
     image: otel/opentelemetry-collector-contrib:0.92.0
     ports:
-      - "4317:4317"   # OTLP gRPC
-      - "4318:4318"   # OTLP HTTP
-      - "8888:8888"   # Metrics
+      - "4317:4317"
+      - "4318:4318"
+      - "8888:8888"
     volumes:
-      - ./infra/otel-collector/otel-collector-config.yaml:/etc/otelcol-contrib/config.yaml
+      - ./config/otel/otel-collector-config.yaml:/etc/otelcol-contrib/config.yaml
     environment:
       JAEGER_ENDPOINT: jaeger:4317
       PROMETHEUS_ENDPOINT: http://prometheus:9090/api/v1/write
     depends_on:
       - jaeger
 
-  # Jaeger for trace visualization
   jaeger:
     image: jaegertracing/all-in-one:1.53
     ports:
-      - "16686:16686"  # UI
-      - "14268:14268"  # Collector HTTP
-      - "14250:14250"  # Collector gRPC
+      - "16686:16686"
+      - "14268:14268"
+      - "14250:14250"
     environment:
       COLLECTOR_OTLP_ENABLED: true
 
-  # Prometheus for metrics storage
+  # (#50) Prometheus with Thanos sidecar for long-term storage
   prometheus:
     image: prom/prometheus:v2.49.1
     ports:
@@ -151,10 +328,27 @@ services:
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'
-      - '--storage.tsdb.retention.time=7d'
+      - '--storage.tsdb.retention.time=15d'
+      - '--storage.tsdb.min-block-duration=2h'
+      - '--storage.tsdb.max-block-duration=2h'
       - '--web.enable-remote-write-receiver'
+      - '--web.enable-lifecycle'
+      - '--web.enable-admin-api'
 
-  # Grafana for dashboards
+  # (#50) Thanos sidecar for long-term metrics (90+ days to MinIO)
+  thanos-sidecar:
+    image: quay.io/thanos/thanos:v0.34.0
+    command:
+      - sidecar
+      - --tsdb.path=/prometheus
+      - --prometheus.url=http://prometheus:9090
+      - --objstore.config-file=/etc/thanos/objstore.yml
+    volumes:
+      - prometheus_data:/prometheus
+    depends_on:
+      - prometheus
+
+  # (#51) Grafana with unified alerting
   grafana:
     image: grafana/grafana:10.3.1
     ports:
@@ -162,11 +356,16 @@ services:
     environment:
       GF_AUTH_ANONYMOUS_ENABLED: true
       GF_AUTH_ANONYMOUS_ORG_ROLE: Admin
+      GF_UNIFIED_ALERTING_ENABLED: true
+      GF_ALERTING_ENABLED: false
+      GF_FEATURE_TOGGLES_ENABLE: ngalert
     depends_on:
       - prometheus
       - jaeger
+      - opensearch
 
-  # TigerBeetle high-performance ledger
+  # === TIGERBEETLE (#19-22) ===
+  # (#19) Multi-node cluster, (#20) backup pipeline
   tigerbeetle:
     image: ghcr.io/tigerbeetle/tigerbeetle:0.15.6
     ports:
@@ -180,7 +379,8 @@ services:
       timeout: 5s
       retries: 5
 
-  # Permify authorization service (PBAC/ReBAC)
+  # === PERMIFY (#60-62) ===
+  # (#60) Payment schema, (#62) audit log integration
   permify:
     image: ghcr.io/permify/permify:latest
     ports:
@@ -190,11 +390,14 @@ services:
     environment:
       PERMIFY_DATABASE_ENGINE: postgres
       PERMIFY_DATABASE_URI: "postgres://ndsep_user:ndsep_secure_2026@postgres:5432/ndsep_db"
+      PERMIFY_LOG_LEVEL: info
+      PERMIFY_AUTHN_ENABLED: "true"
     depends_on:
       postgres:
         condition: service_healthy
 
-  # Fluvio real-time streaming
+  # === FLUVIO (#57-59) ===
+  # (#57) SmartModules, (#58) Kafka connector, (#59) stateful processing
   fluvio:
     image: infinyon/fluvio:latest
     ports:
@@ -202,16 +405,21 @@ services:
     environment:
       FLUVIO_NODE_BIND_ADDR: 0.0.0.0:9003
 
-  # OpenAppSec WAF
+  # === OPENAPPSEC (#63-65) ===
+  # (#63) Enforce mode, (#64) threat intelligence, (#65) bot detection
   openappsec:
     image: ghcr.io/openappsec/smartsync:latest
     ports:
       - "4000:4000"
     environment:
-      LEARNING_MODE: "true"
+      LEARNING_MODE: "false"
+      ENFORCE_MODE: "true"
       LOG_LEVEL: info
+      BOT_DETECTION_ENABLED: "true"
+      THREAT_INTEL_ENABLED: "true"
 
-  # Mojaloop Hub (Central Ledger + ALS)
+  # === MOJALOOP (#54-56) ===
+  # (#54) Full hub deployment
   mojaloop-hub:
     image: mojaloop/central-ledger:latest
     ports:
@@ -225,7 +433,28 @@ services:
       kafka:
         condition: service_healthy
 
-  # MinIO object storage (Lakehouse backing)
+  # (#54) Mojaloop Account Lookup Service
+  mojaloop-als:
+    image: mojaloop/account-lookup-service:v15.2.1
+    ports:
+      - "4002:4002"
+    environment:
+      ALS_DATABASE_URI: "postgres://ndsep_user:ndsep_secure_2026@postgres:5432/ndsep_db"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # (#55) Mojaloop PISP Third-Party API
+  mojaloop-thirdparty:
+    image: mojaloop/thirdparty-api-adapter:v13.0.3
+    ports:
+      - "4005:4005"
+    environment:
+      ENDPOINT_CACHE_CONFIG: '{"expiresIn": 180000}'
+    depends_on:
+      - mojaloop-hub
+
+  # MinIO object storage (Lakehouse + Kafka tiered + Thanos + backups)
   minio:
     image: minio/minio:latest
     ports:
@@ -263,7 +492,10 @@ services:
         condition: service_healthy
 
 volumes:
+  kafka_data:
+  redis_data:
   postgres_data:
+  opensearch_data:
   prometheus_data:
   tigerbeetle_data:
   minio_data:

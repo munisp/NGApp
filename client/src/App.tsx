@@ -39,6 +39,7 @@ import TradePayments from "@/pages/TradePayments";
 import CardProcessing from "@/pages/CardProcessing";
 import GovernmentPayments from "@/pages/GovernmentPayments";
 import OpenBanking from "@/pages/OpenBanking";
+import MiddlewareMonitoring from "@/pages/MiddlewareMonitoring";
 
 function Router() {
   return (
@@ -76,6 +77,7 @@ function Router() {
       <Route path="/card-processing" component={CardProcessing} />
       <Route path="/government-payments" component={GovernmentPayments} />
       <Route path="/open-banking" component={OpenBanking} />
+      <Route path="/middleware" component={MiddlewareMonitoring} />
       <Route path={"/404"} component={NotFound} />
       {/* Final fallback route */}
       <Route component={NotFound} />
