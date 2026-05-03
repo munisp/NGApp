@@ -60,14 +60,14 @@ export default function InboundRemittance() {
   ];
 
   const aiNavItems: { id: Tab; label: string; icon: typeof LayoutDashboard }[] = [
-    { id: 'ai_prophet', label: 'Prophet Pipeline', icon: TrendingUp },
-    { id: 'ai_cocoindex', label: 'CocoIndex', icon: Layers },
-    { id: 'ai_kgqa', label: 'EPR-KGQA', icon: Search },
-    { id: 'ai_falkordb', label: 'FalkorDB', icon: Network },
-    { id: 'ai_ollama', label: 'Ollama LLM', icon: Zap },
-    { id: 'ai_art', label: 'ART Robustness', icon: ShieldAlert },
-    { id: 'ai_gnn', label: 'GNN + Neo4j', icon: Network },
-    { id: 'ai_mcmc', label: 'MCMC Fraud', icon: Activity },
+    { id: 'ai_prophet', label: 'Volume Forecasting', icon: TrendingUp },
+    { id: 'ai_cocoindex', label: 'Data Pipeline', icon: Layers },
+    { id: 'ai_kgqa', label: 'Knowledge Search', icon: Search },
+    { id: 'ai_falkordb', label: 'Graph Analytics', icon: Network },
+    { id: 'ai_ollama', label: 'AI Assistant', icon: Zap },
+    { id: 'ai_art', label: 'Model Security', icon: ShieldAlert },
+    { id: 'ai_gnn', label: 'Fraud Networks', icon: Network },
+    { id: 'ai_mcmc', label: 'Risk Scoring', icon: Activity },
   ];
 
   return (
@@ -92,7 +92,7 @@ export default function InboundRemittance() {
               {item.label}
             </button>
           ))}
-          <div style={{ fontSize: 10, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: 1, padding: '12px 14px 4px' }}>AI / ML</div>
+          <div style={{ fontSize: 10, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: 1, padding: '12px 14px 4px' }}>Intelligence</div>
           {aiNavItems.map(item => (
             <button key={item.id} onClick={() => setActiveTab(item.id)}
               style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 600, width: '100%', textAlign: 'left',

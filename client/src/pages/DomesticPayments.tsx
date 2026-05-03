@@ -145,43 +145,43 @@ export default function DomesticPayments() {
 
   const navItems: { id: Tab; label: string; icon: typeof LayoutDashboard; section?: string }[] = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'payments', label: 'NIP Payments', icon: ArrowRightLeft },
+    { id: 'payments', label: 'Instant Payments', icon: ArrowRightLeft },
     { id: 'bills', label: 'Bill Providers', icon: FileText },
     { id: 'standing_orders', label: 'Standing Orders', icon: Repeat },
     { id: 'bulk', label: 'Bulk Disbursements', icon: Package },
     // NIBSS Gap Features
-    { id: 'neft', label: 'NEFT Batches', icon: Layers, section: 'NIBSS' },
-    { id: 'cheques', label: 'NACS Cheques', icon: BookOpen, section: 'NIBSS' },
-    { id: 'mandates', label: 'Direct Debit (NDD)', icon: Receipt, section: 'NIBSS' },
+    { id: 'neft', label: 'Batch Transfers', icon: Layers, section: 'NIBSS' },
+    { id: 'cheques', label: 'Cheque Clearing', icon: BookOpen, section: 'NIBSS' },
+    { id: 'mandates', label: 'Direct Debit', icon: Receipt, section: 'NIBSS' },
     { id: 'reversals', label: 'Reversals', icon: RotateCcw, section: 'NIBSS' },
     { id: 'disputes', label: 'Inter-Bank Disputes', icon: Scale, section: 'NIBSS' },
-    { id: 'merchants', label: 'mCash+ Merchants', icon: Store, section: 'NIBSS' },
-    { id: 'paydirect', label: 'PayDirect', icon: Building2, section: 'NIBSS' },
-    { id: 'identity', label: 'Identity (BVN/NIN)', icon: UserCheck, section: 'NIBSS' },
-    { id: 'iso20022', label: 'ISO 20022', icon: FileCode, section: 'NIBSS' },
-    { id: 'nqr', label: 'NQR Codes', icon: ScanLine, section: 'NIBSS' },
-    { id: 'emandate', label: 'e-Mandate Portal', icon: FileCheck, section: 'NIBSS' },
+    { id: 'merchants', label: 'Merchant Registry', icon: Store, section: 'NIBSS' },
+    { id: 'paydirect', label: 'Corporate Collections', icon: Building2, section: 'NIBSS' },
+    { id: 'identity', label: 'Identity Verification', icon: UserCheck, section: 'NIBSS' },
+    { id: 'iso20022', label: 'Message Standards', icon: FileCode, section: 'NIBSS' },
+    { id: 'nqr', label: 'QR Payments', icon: ScanLine, section: 'NIBSS' },
+    { id: 'emandate', label: 'Mandate Approvals', icon: FileCheck, section: 'NIBSS' },
     { id: 'fraud', label: 'Fraud Detection', icon: Shield, section: 'ADVANCED' },
     { id: 'onboarding', label: 'Stakeholder Onboarding', icon: UserPlus, section: 'ADVANCED' },
-    { id: 'nip_monitor', label: 'NIP Monitor', icon: Gauge, section: 'OPS' },
+    { id: 'nip_monitor', label: 'Real-Time Monitor', icon: Gauge, section: 'OPS' },
     { id: 'reconciliation', label: 'Reconciliation', icon: FileSpreadsheet, section: 'OPS' },
-    { id: 'sla', label: 'SLA Monitoring', icon: Timer, section: 'OPS' },
+    { id: 'sla', label: 'Service Levels', icon: Timer, section: 'OPS' },
     { id: 'health', label: 'Participant Health', icon: HeartPulse, section: 'OPS' },
-    { id: 'circuit_breaker', label: 'Circuit Breakers', icon: Zap, section: 'OPS' },
+    { id: 'circuit_breaker', label: 'Service Health', icon: Zap, section: 'OPS' },
     { id: 'compliance', label: 'Regulatory Reports', icon: FileWarning, section: 'COMPLIANCE' },
-    { id: 'monitoring', label: 'Tx Monitoring', icon: Eye, section: 'COMPLIANCE' },
+    { id: 'monitoring', label: 'Transaction Monitoring', icon: Eye, section: 'COMPLIANCE' },
     { id: 'revenue', label: 'Revenue Analytics', icon: DollarSign, section: 'ANALYTICS' },
     { id: 'corridors', label: 'Corridor Analytics', icon: Map, section: 'ANALYTICS' },
     { id: 'forecast', label: 'Volume Forecast', icon: Brain, section: 'ANALYTICS' },
     // AI/ML Section
-    { id: 'prophet', label: 'Prophet Pipeline', icon: TrendingUp, section: 'AI_ML' },
-    { id: 'cocoindex', label: 'CocoIndex', icon: Database, section: 'AI_ML' },
-    { id: 'kgqa', label: 'EPR-KGQA', icon: MessageSquare, section: 'AI_ML' },
-    { id: 'falkordb', label: 'FalkorDB', icon: Network, section: 'AI_ML' },
-    { id: 'ollama', label: 'Ollama LLM', icon: Bot, section: 'AI_ML' },
-    { id: 'art', label: 'ART Robustness', icon: ShieldAlert, section: 'AI_ML' },
-    { id: 'gnn_neo4j', label: 'GNN + Neo4j', icon: GitGraph, section: 'AI_ML' },
-    { id: 'mcmc', label: 'MCMC Fraud', icon: Dice1, section: 'AI_ML' },
+    { id: 'prophet', label: 'Volume Forecasting', icon: TrendingUp, section: 'AI_ML' },
+    { id: 'cocoindex', label: 'Data Pipeline', icon: Database, section: 'AI_ML' },
+    { id: 'kgqa', label: 'Knowledge Search', icon: MessageSquare, section: 'AI_ML' },
+    { id: 'falkordb', label: 'Graph Analytics', icon: Network, section: 'AI_ML' },
+    { id: 'ollama', label: 'AI Assistant', icon: Bot, section: 'AI_ML' },
+    { id: 'art', label: 'Model Security', icon: ShieldAlert, section: 'AI_ML' },
+    { id: 'gnn_neo4j', label: 'Fraud Networks', icon: GitGraph, section: 'AI_ML' },
+    { id: 'mcmc', label: 'Risk Scoring', icon: Dice1, section: 'AI_ML' },
   ];
 
   const coreItems = navItems.filter(n => !n.section);
@@ -200,7 +200,7 @@ export default function DomesticPayments() {
             <Banknote size={22} color="#2563eb" />
             <div>
               <div style={{ fontWeight: 700, fontSize: 14 }}>Domestic Payments</div>
-              <div style={{ fontSize: 11, color: '#6b7280' }}>NIP + NIBSS Switch</div>
+              <div style={{ fontSize: 11, color: '#6b7280' }}>Payment Switch Module</div>
             </div>
           </div>
         </div>
@@ -213,7 +213,7 @@ export default function DomesticPayments() {
               {item.label}
             </button>
           ))}
-          <div style={{ fontSize: 10, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: 1, padding: '12px 14px 4px' }}>NIBSS Features</div>
+          <div style={{ fontSize: 10, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: 1, padding: '12px 14px 4px' }}>Clearing & Settlement</div>
           {nibssItems.map(item => (
             <button key={item.id} onClick={() => setActiveTab(item.id)}
               style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 14px', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600, width: '100%', textAlign: 'left',
@@ -222,7 +222,7 @@ export default function DomesticPayments() {
               {item.label}
             </button>
           ))}
-          <div style={{ fontSize: 10, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: 1, padding: '12px 14px 4px' }}>Advanced</div>
+          <div style={{ fontSize: 10, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: 1, padding: '12px 14px 4px' }}>Risk & Onboarding</div>
           {advancedItems.map(item => (
             <button key={item.id} onClick={() => setActiveTab(item.id)}
               style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 14px', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600, width: '100%', textAlign: 'left',
@@ -258,7 +258,7 @@ export default function DomesticPayments() {
               {item.label}
             </button>
           ))}
-          <div style={{ fontSize: 10, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: 1, padding: '12px 14px 4px' }}>AI / ML</div>
+          <div style={{ fontSize: 10, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: 1, padding: '12px 14px 4px' }}>Intelligence</div>
           {aimlItems.map(item => (
             <button key={item.id} onClick={() => setActiveTab(item.id)}
               style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 14px', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600, width: '100%', textAlign: 'left',

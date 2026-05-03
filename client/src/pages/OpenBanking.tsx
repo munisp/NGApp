@@ -40,9 +40,9 @@ export default function OpenBanking() {
 
   const navItems: { id: Tab; label: string; icon: typeof LayoutDashboard }[] = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'tpps', label: 'TPP Registry', icon: Users },
+    { id: 'tpps', label: 'Third-Party Providers', icon: Users },
     { id: 'consents', label: 'Consents', icon: Shield },
-    { id: 'api_catalog', label: 'API Catalog', icon: Server },
+    { id: 'api_catalog', label: 'API Services', icon: Server },
     { id: 'sandboxes', label: 'Sandboxes', icon: Box },
   ];
 

@@ -54,18 +54,18 @@ function getNavItems(role: UserRole) {
       { id: 'disputes' as NavSection, label: 'My Disputes', tKey: 'disputes', icon: AlertOctagon },
       { id: 'corridors' as NavSection, label: 'Corridors', tKey: 'corridors', icon: Globe },
       { id: 'compliance' as NavSection, label: 'My Compliance', tKey: 'compliance', icon: Shield },
-      { id: 'developer_portal' as NavSection, label: 'Developer', tKey: 'devPortal', icon: Code },
+      { id: 'developer_portal' as NavSection, label: 'API Portal', tKey: 'devPortal', icon: Code },
       { id: 'transaction_monitoring' as NavSection, label: 'Live Tracking', tKey: 'liveMonitor', icon: Activity },
       { id: 'settings' as NavSection, label: 'Settings', tKey: 'settings', icon: Settings },
-      // AI / ML
-      { id: 'ai_prophet' as NavSection, label: 'Prophet Pipeline', tKey: 'aiProphet', icon: TrendingUp },
-      { id: 'ai_cocoindex' as NavSection, label: 'CocoIndex', tKey: 'aiCocoIndex', icon: Layers },
-      { id: 'ai_kgqa' as NavSection, label: 'EPR-KGQA', tKey: 'aiKGQA', icon: Search },
-      { id: 'ai_falkordb' as NavSection, label: 'FalkorDB', tKey: 'aiFalkorDB', icon: Network },
-      { id: 'ai_ollama' as NavSection, label: 'Ollama LLM', tKey: 'aiOllama', icon: Zap },
-      { id: 'ai_art' as NavSection, label: 'ART Robustness', tKey: 'aiART', icon: ShieldAlert },
-      { id: 'ai_gnn' as NavSection, label: 'GNN + Neo4j', tKey: 'aiGNN', icon: Network },
-      { id: 'ai_mcmc' as NavSection, label: 'MCMC Fraud', tKey: 'aiMCMC', icon: Activity },
+      // Intelligence
+      { id: 'ai_prophet' as NavSection, label: 'Volume Forecasting', tKey: '', icon: TrendingUp },
+      { id: 'ai_cocoindex' as NavSection, label: 'Data Pipeline', tKey: '', icon: Layers },
+      { id: 'ai_kgqa' as NavSection, label: 'Knowledge Search', tKey: '', icon: Search },
+      { id: 'ai_falkordb' as NavSection, label: 'Graph Analytics', tKey: '', icon: Network },
+      { id: 'ai_ollama' as NavSection, label: 'AI Assistant', tKey: '', icon: Zap },
+      { id: 'ai_art' as NavSection, label: 'Model Security', tKey: '', icon: ShieldAlert },
+      { id: 'ai_gnn' as NavSection, label: 'Fraud Networks', tKey: '', icon: Network },
+      { id: 'ai_mcmc' as NavSection, label: 'Risk Scoring', tKey: '', icon: Activity },
     ];
   }
   return [
@@ -79,23 +79,23 @@ function getNavItems(role: UserRole) {
     { id: 'compliance' as NavSection, label: 'Compliance', tKey: 'compliance', icon: Shield },
     { id: 'corridors' as NavSection, label: 'Corridors', tKey: 'corridors', icon: Globe },
     { id: 'fx_management' as NavSection, label: 'FX & Rates', tKey: 'fxRates', icon: DollarSign },
-    { id: 'tier_management' as NavSection, label: 'Tier Mgmt', tKey: 'tierMgmt', icon: Layers },
+    { id: 'tier_management' as NavSection, label: 'Tier Management', tKey: 'tierMgmt', icon: Layers },
     { id: 'payment_rails' as NavSection, label: 'Payment Rails', tKey: 'paymentRails', icon: Network },
     { id: 'analytics' as NavSection, label: 'Analytics', tKey: 'analytics', icon: BarChart3 },
-    { id: 'developer_portal' as NavSection, label: 'Developer Portal', tKey: 'devPortal', icon: Code },
+    { id: 'developer_portal' as NavSection, label: 'API Portal', tKey: 'devPortal', icon: Code },
     { id: 'transaction_monitoring' as NavSection, label: 'Live Monitoring', tKey: 'liveMonitor', icon: Activity },
     { id: 'settlement' as NavSection, label: 'Settlement', tKey: 'settlement', icon: Layers },
     { id: 'billing' as NavSection, label: 'Billing', tKey: 'billing', icon: Receipt },
     { id: 'settings' as NavSection, label: 'Settings', tKey: 'settings', icon: Settings },
-    // AI / ML
-    { id: 'ai_prophet' as NavSection, label: 'Prophet Pipeline', tKey: 'aiProphet', icon: TrendingUp },
-    { id: 'ai_cocoindex' as NavSection, label: 'CocoIndex', tKey: 'aiCocoIndex', icon: Layers },
-    { id: 'ai_kgqa' as NavSection, label: 'EPR-KGQA', tKey: 'aiKGQA', icon: Search },
-    { id: 'ai_falkordb' as NavSection, label: 'FalkorDB', tKey: 'aiFalkorDB', icon: Network },
-    { id: 'ai_ollama' as NavSection, label: 'Ollama LLM', tKey: 'aiOllama', icon: Zap },
-    { id: 'ai_art' as NavSection, label: 'ART Robustness', tKey: 'aiART', icon: ShieldAlert },
-    { id: 'ai_gnn' as NavSection, label: 'GNN + Neo4j', tKey: 'aiGNN', icon: Network },
-    { id: 'ai_mcmc' as NavSection, label: 'MCMC Fraud', tKey: 'aiMCMC', icon: Activity },
+    // Intelligence
+    { id: 'ai_prophet' as NavSection, label: 'Volume Forecasting', tKey: '', icon: TrendingUp },
+    { id: 'ai_cocoindex' as NavSection, label: 'Data Pipeline', tKey: '', icon: Layers },
+    { id: 'ai_kgqa' as NavSection, label: 'Knowledge Search', tKey: '', icon: Search },
+    { id: 'ai_falkordb' as NavSection, label: 'Graph Analytics', tKey: '', icon: Network },
+    { id: 'ai_ollama' as NavSection, label: 'AI Assistant', tKey: '', icon: Zap },
+    { id: 'ai_art' as NavSection, label: 'Model Security', tKey: '', icon: ShieldAlert },
+    { id: 'ai_gnn' as NavSection, label: 'Fraud Networks', tKey: '', icon: Network },
+    { id: 'ai_mcmc' as NavSection, label: 'Risk Scoring', tKey: '', icon: Activity },
   ];
 }
 
@@ -408,7 +408,7 @@ export default function OutboundRemittance() {
               {sidebarCollapsed && <TooltipContent side="right">{item.tKey ? t(item.tKey) : item.label}</TooltipContent>}
             </Tooltip>
           ))}
-          {!sidebarCollapsed && <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider px-3 pt-3 pb-1">AI / ML</div>}
+          {!sidebarCollapsed && <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider px-3 pt-3 pb-1">Intelligence</div>}
           {navItems.filter(n => n.id.startsWith('ai_')).map((item) => (
             <Tooltip key={item.id} delayDuration={sidebarCollapsed ? 0 : 999999}>
               <TooltipTrigger asChild>
