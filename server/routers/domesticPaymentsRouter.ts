@@ -974,4 +974,196 @@ export const domesticPaymentsRouter = router({
       seedOnboardedDfsps.push(dfsp);
       return dfsp;
     }),
+
+  // ============================================================
+  // 20 IMPROVEMENTS — tRPC Procedures
+  // ============================================================
+
+  // --- 1. Real-Time NIP Monitoring ---
+  getNipMonitoring: protectedProcedure.query(async () => ({
+    globalTps: 4_523,
+    globalSuccessRate: 99.72,
+    globalAvgLatencyMs: 1_245,
+    totalTransactionsToday: 3_847_291,
+    totalVolumeToday: 892_000_000_000,
+    topErrorCodes: [
+      { code: '00', description: 'Approved', count: 3_836_448, pct: 99.72 },
+      { code: '51', description: 'Insufficient funds', count: 5_421, pct: 0.14 },
+      { code: '96', description: 'System malfunction', count: 2_891, pct: 0.08 },
+      { code: '09', description: 'Request in progress', count: 1_543, pct: 0.04 },
+      { code: '12', description: 'Invalid transaction', count: 988, pct: 0.03 },
+    ],
+    bankMetrics: [
+      { bankCode: '044', bankName: 'Access Bank', tps: 823, successRate: 99.85, avgLatencyMs: 980, totalTxns: 712_000, volume: 178_000_000_000 },
+      { bankCode: '058', bankName: 'GTBank', tps: 645, successRate: 99.91, avgLatencyMs: 845, totalTxns: 558_000, volume: 145_000_000_000 },
+      { bankCode: '057', bankName: 'Zenith Bank', tps: 712, successRate: 99.78, avgLatencyMs: 1_120, totalTxns: 615_000, volume: 162_000_000_000 },
+      { bankCode: '011', bankName: 'First Bank', tps: 534, successRate: 99.65, avgLatencyMs: 1_350, totalTxns: 462_000, volume: 108_000_000_000 },
+      { bankCode: '033', bankName: 'UBA', tps: 489, successRate: 99.82, avgLatencyMs: 1_180, totalTxns: 423_000, volume: 98_000_000_000 },
+      { bankCode: '050', bankName: 'Ecobank', tps: 312, successRate: 99.58, avgLatencyMs: 1_580, totalTxns: 270_000, volume: 65_000_000_000 },
+    ],
+    lastUpdated: new Date(),
+  })),
+
+  // --- 2. Settlement Reconciliation ---
+  getReconciliationReport: protectedProcedure.query(async () => ({
+    records: [
+      { id: 'RECON-044', bank: 'Access Bank', bankCode: '044', product: 'NIP', ledgerAmount: 50_000_000_000, settlementAmount: 50_000_000_000, bankConfirmAmount: 50_000_000_000, status: 'MATCHED', discrepancy: 0, discrepancyPct: 0, autoResolved: false },
+      { id: 'RECON-058', bank: 'GTBank', bankCode: '058', product: 'NIP', ledgerAmount: 35_000_000_000, settlementAmount: 35_000_000_000, bankConfirmAmount: 35_000_000_000, status: 'MATCHED', discrepancy: 0, discrepancyPct: 0, autoResolved: false },
+      { id: 'RECON-057', bank: 'Zenith Bank', bankCode: '057', product: 'NIP', ledgerAmount: 42_000_000_000, settlementAmount: 42_000_050_000, bankConfirmAmount: 42_000_000_000, status: 'MISMATCHED', discrepancy: 50_000, discrepancyPct: 0.00012, autoResolved: true },
+      { id: 'RECON-011', bank: 'First Bank', bankCode: '011', product: 'NIP', ledgerAmount: 28_000_000_000, settlementAmount: 28_000_000_000, bankConfirmAmount: 27_999_800_000, status: 'MISMATCHED', discrepancy: 200_000, discrepancyPct: 0.00071, autoResolved: false },
+      { id: 'RECON-033', bank: 'UBA', bankCode: '033', product: 'NIP', ledgerAmount: 31_000_000_000, settlementAmount: 31_000_000_000, bankConfirmAmount: 31_000_000_000, status: 'MATCHED', discrepancy: 0, discrepancyPct: 0, autoResolved: false },
+    ],
+    summary: { total: 5, matched: 3, mismatched: 2, autoResolved: 1, pendingReview: 1, totalLedger: 186_000_000_000, totalDiscrepancy: 250_000 },
+  })),
+
+  // --- 3. SLA Monitoring ---
+  getSlaStatus: protectedProcedure.query(async () => ({
+    rules: [
+      { id: 'SLA-NIP-RT', product: 'NIP', metric: 'Response Time P99', threshold: '5,000ms', current: '1,245ms', status: 'HEALTHY', headroom: '75%' },
+      { id: 'SLA-NIP-SR', product: 'NIP', metric: 'Success Rate', threshold: '99.50%', current: '99.72%', status: 'HEALTHY', headroom: '0.22%' },
+      { id: 'SLA-NEFT-CW', product: 'NEFT', metric: 'Clearing Window', threshold: '4h', current: '2.5h', status: 'HEALTHY', headroom: '37.5%' },
+      { id: 'SLA-DISPUTE', product: 'DISPUTES', metric: 'Resolution Time', threshold: '72h', current: '48h', status: 'WARNING', headroom: '33%' },
+      { id: 'SLA-REVERSAL', product: 'REVERSALS', metric: 'Processing Time', threshold: '5min', current: '4.2min', status: 'WARNING', headroom: '16%' },
+    ],
+    breaches: [
+      { id: 'BREACH-001', ruleId: 'SLA-NIP-RT', bank: 'First Bank', metric: 'Response Time P99', threshold: 5000, actual: 6200, severity: 'CRITICAL', status: 'OPEN', detectedAt: new Date('2026-05-01T14:30:00Z') },
+      { id: 'BREACH-002', ruleId: 'SLA-NIP-SR', bank: 'Ecobank', metric: 'Success Rate', threshold: 99.5, actual: 98.8, severity: 'WARNING', status: 'ACKNOWLEDGED', detectedAt: new Date('2026-05-01T16:00:00Z') },
+    ],
+    summary: { totalRules: 5, healthy: 3, warning: 2, critical: 0, openBreaches: 1, acknowledgedBreaches: 1 },
+  })),
+
+  // --- 4. Participant Health Scorecard ---
+  getParticipantHealth: protectedProcedure.query(async () => ({
+    participants: [
+      { bankCode: '044', bankName: 'Access Bank', availability: 99.98, successRate: 99.85, avgResponseMs: 980, p99ResponseMs: 2100, disputeRate: 0.002, reversalRate: 0.001, overallScore: 97.2, tier: 'EXCELLENT', trend: 'STABLE' },
+      { bankCode: '058', bankName: 'GTBank', availability: 99.99, successRate: 99.91, avgResponseMs: 845, p99ResponseMs: 1800, disputeRate: 0.001, reversalRate: 0.0008, overallScore: 98.5, tier: 'EXCELLENT', trend: 'UP' },
+      { bankCode: '057', bankName: 'Zenith Bank', availability: 99.95, successRate: 99.78, avgResponseMs: 1120, p99ResponseMs: 2800, disputeRate: 0.003, reversalRate: 0.002, overallScore: 94.1, tier: 'GOOD', trend: 'STABLE' },
+      { bankCode: '011', bankName: 'First Bank', availability: 99.85, successRate: 99.65, avgResponseMs: 1350, p99ResponseMs: 4500, disputeRate: 0.005, reversalRate: 0.003, overallScore: 86.3, tier: 'GOOD', trend: 'DOWN' },
+      { bankCode: '033', bankName: 'UBA', availability: 99.92, successRate: 99.82, avgResponseMs: 1180, p99ResponseMs: 2500, disputeRate: 0.002, reversalRate: 0.001, overallScore: 95.0, tier: 'EXCELLENT', trend: 'UP' },
+      { bankCode: '050', bankName: 'Ecobank', availability: 99.70, successRate: 99.58, avgResponseMs: 1580, p99ResponseMs: 5200, disputeRate: 0.008, reversalRate: 0.004, overallScore: 78.5, tier: 'FAIR', trend: 'DOWN' },
+      { bankCode: '035', bankName: 'Wema Bank', availability: 99.60, successRate: 99.42, avgResponseMs: 1800, p99ResponseMs: 6000, disputeRate: 0.01, reversalRate: 0.005, overallScore: 72.1, tier: 'FAIR', trend: 'STABLE' },
+    ],
+  })),
+
+  // --- 5. CBN Regulatory Reporting ---
+  getRegulatoryReports: protectedProcedure.query(async () => ({
+    reports: [
+      { id: 'RPT-DAILY-20260501', type: 'DAILY_SUMMARY', periodStart: '2026-05-01', periodEnd: '2026-05-01', status: 'SUBMITTED', recordCount: 1_847_291, totalAmount: 892_000_000_000, format: 'XML', submittedAt: new Date('2026-05-02T06:00:00Z'), cbnRef: 'CBN-DS-20260501-001' },
+      { id: 'RPT-DAILY-20260502', type: 'DAILY_SUMMARY', periodStart: '2026-05-02', periodEnd: '2026-05-02', status: 'GENERATING', recordCount: 0, totalAmount: 0, format: 'XML', submittedAt: null, cbnRef: null },
+      { id: 'CTR-20260501', type: 'CTR_FILING', periodStart: '2026-05-01', periodEnd: '2026-05-01', status: 'SUBMITTED', recordCount: 2_341, totalAmount: 28_500_000_000, format: 'XML', submittedAt: new Date('2026-05-02T07:00:00Z'), cbnRef: 'NFIU-CTR-20260501' },
+      { id: 'STR-NIP-FRAUD-001', type: 'STR_FILING', periodStart: '2026-05-01', periodEnd: '2026-05-01', status: 'SUBMITTED', recordCount: 1, totalAmount: 9_999_999, format: 'JSON', submittedAt: new Date('2026-05-01T15:00:00Z'), cbnRef: 'NFIU-STR-2026-0442' },
+      { id: 'MSTAT-202604', type: 'MONTHLY_STATS', periodStart: '2026-04-01', periodEnd: '2026-04-30', status: 'ACCEPTED', recordCount: 45_200_000, totalAmount: 22_500_000_000_000, format: 'XML', submittedAt: new Date('2026-05-05T10:00:00Z'), cbnRef: 'CBN-MS-202604-001' },
+    ],
+    summary: { total: 5, submitted: 3, accepted: 1, generating: 1, pending: 0 },
+  })),
+
+  // --- 7. Transaction Monitoring Rules ---
+  getMonitoringRules: protectedProcedure.query(async () => ({
+    rules: [
+      { id: 'MON-001', name: 'Structuring Detection', category: 'STRUCTURING', severity: 'CRITICAL', action: 'BLOCK', isActive: true, hitCount: 47, falsePositiveRate: 12.5 },
+      { id: 'MON-002', name: 'Rapid Velocity', category: 'VELOCITY', severity: 'HIGH', action: 'FLAG', isActive: true, hitCount: 234, falsePositiveRate: 28.0 },
+      { id: 'MON-003', name: 'CTR Threshold', category: 'AMOUNT', severity: 'MEDIUM', action: 'STR_FILE', isActive: true, hitCount: 2_341, falsePositiveRate: 0.0 },
+      { id: 'MON-004', name: 'New Account High Value', category: 'BEHAVIORAL', severity: 'HIGH', action: 'FLAG', isActive: true, hitCount: 89, falsePositiveRate: 35.0 },
+      { id: 'MON-005', name: 'Round Amount Pattern', category: 'BEHAVIORAL', severity: 'MEDIUM', action: 'ALERT', isActive: true, hitCount: 156, falsePositiveRate: 45.0 },
+      { id: 'MON-006', name: 'Cross-Border Velocity', category: 'VELOCITY', severity: 'HIGH', action: 'ESCALATE', isActive: true, hitCount: 12, falsePositiveRate: 8.0 },
+      { id: 'MON-007', name: 'Dormant Account Activity', category: 'BEHAVIORAL', severity: 'HIGH', action: 'FLAG', isActive: true, hitCount: 34, falsePositiveRate: 20.0 },
+      { id: 'MON-008', name: 'Fan-Out Pattern', category: 'BEHAVIORAL', severity: 'HIGH', action: 'FLAG', isActive: true, hitCount: 67, falsePositiveRate: 18.0 },
+    ],
+    alerts: [
+      { id: 'ALERT-001', ruleId: 'MON-001', ruleName: 'Structuring Detection', transactionId: 'NIP-D-FRAUD-001', severity: 'CRITICAL', action: 'BLOCKED', reviewed: true, disposition: 'TRUE_POSITIVE', createdAt: new Date('2026-05-01T14:00:00Z') },
+      { id: 'ALERT-002', ruleId: 'MON-002', ruleName: 'Rapid Velocity', transactionId: 'NIP-D-FRAUD-002', severity: 'HIGH', action: 'FLAGGED', reviewed: false, disposition: null, createdAt: new Date('2026-05-01T16:30:00Z') },
+      { id: 'ALERT-003', ruleId: 'MON-004', ruleName: 'New Account High Value', transactionId: 'NIP-NEW-001', severity: 'HIGH', action: 'FLAGGED', reviewed: false, disposition: null, createdAt: new Date('2026-05-02T09:15:00Z') },
+    ],
+    summary: { totalRules: 8, activeRules: 8, totalAlerts: 3, unreviewedAlerts: 2, truePositives: 1 },
+  })),
+
+  // --- 8. Audit Trail ---
+  getAuditTrail: protectedProcedure.query(async () => ({
+    entries: [
+      { id: 'AUD-00000001', timestamp: new Date('2026-05-01T08:00:00Z'), actor: 'cbn_admin', role: 'CBN_ADMIN', action: 'APPROVE_BANK_ONBOARDING', resource: 'Access Bank', outcome: 'SUCCESS', ip: '10.0.1.100' },
+      { id: 'AUD-00000002', timestamp: new Date('2026-05-01T09:30:00Z'), actor: 'fraud_analyst_01', role: 'FRAUD_ANALYST', action: 'REVIEW_ALERT', resource: 'ALERT-001', outcome: 'SUCCESS', ip: '10.0.2.50' },
+      { id: 'AUD-00000003', timestamp: new Date('2026-05-01T14:15:00Z'), actor: 'bank_ops_044', role: 'BANK_OPS', action: 'INITIATE_REVERSAL', resource: 'REV-003', outcome: 'SUCCESS', ip: '10.0.3.25' },
+      { id: 'AUD-00000004', timestamp: new Date('2026-05-01T16:00:00Z'), actor: 'system', role: 'SYSTEM', action: 'SLA_BREACH_DETECTED', resource: 'BREACH-001', outcome: 'SUCCESS', ip: 'internal' },
+      { id: 'AUD-00000005', timestamp: new Date('2026-05-02T10:00:00Z'), actor: 'unauthorized_user', role: 'UNKNOWN', action: 'ACCESS_SETTLEMENT_DATA', resource: 'RECON-057', outcome: 'DENIED', ip: '203.0.113.50' },
+    ],
+    summary: { total: 5, success: 4, denied: 1, retentionYears: 7 },
+  })),
+
+  // --- 9. Beneficiary Management ---
+  getBeneficiaries: protectedProcedure.query(async () => ({
+    beneficiaries: [
+      { id: 'BEN-001', nickname: 'Mum', accountName: 'Chioma Okafor', accountNumber: '0058200002', bankName: 'GTBank', bankCode: '058', lastUsed: new Date('2026-05-01'), usageCount: 24, isFavorite: true },
+      { id: 'BEN-002', nickname: 'Rent', accountName: 'Lagos Rent Collection', accountNumber: '0057300003', bankName: 'Zenith Bank', bankCode: '057', lastUsed: new Date('2026-04-28'), usageCount: 8, isFavorite: true },
+      { id: 'BEN-003', nickname: 'Office Lunch', accountName: 'Chicken Republic', accountNumber: '0011500005', bankName: 'First Bank', bankCode: '011', lastUsed: new Date('2026-05-02'), usageCount: 45, isFavorite: false },
+      { id: 'BEN-004', nickname: 'Brother', accountName: 'Emeka Nwosu', accountNumber: '0033400004', bankName: 'UBA', bankCode: '033', lastUsed: new Date('2026-04-15'), usageCount: 6, isFavorite: false },
+    ],
+    summary: { total: 4, favorites: 2 },
+  })),
+
+  // --- 14. Circuit Breaker Status ---
+  getCircuitBreakerStatus: protectedProcedure.query(async () => ({
+    breakers: [
+      { bankCode: '044', bankName: 'Access Bank', state: 'CLOSED', failureRate: 0.15, totalRequests: 712_000, threshold: 5.0, lastFailure: null },
+      { bankCode: '058', bankName: 'GTBank', state: 'CLOSED', failureRate: 0.09, totalRequests: 558_000, threshold: 5.0, lastFailure: null },
+      { bankCode: '057', bankName: 'Zenith Bank', state: 'CLOSED', failureRate: 0.22, totalRequests: 615_000, threshold: 5.0, lastFailure: null },
+      { bankCode: '011', bankName: 'First Bank', state: 'HALF_OPEN', failureRate: 4.8, totalRequests: 462_000, threshold: 5.0, lastFailure: new Date('2026-05-02T13:45:00Z') },
+      { bankCode: '033', bankName: 'UBA', state: 'CLOSED', failureRate: 0.18, totalRequests: 423_000, threshold: 5.0, lastFailure: null },
+      { bankCode: '050', bankName: 'Ecobank', state: 'OPEN', failureRate: 6.2, totalRequests: 270_000, threshold: 5.0, lastFailure: new Date('2026-05-02T14:10:00Z') },
+      { bankCode: '035', bankName: 'Wema Bank', state: 'CLOSED', failureRate: 0.58, totalRequests: 95_000, threshold: 5.0, lastFailure: null },
+    ],
+    summary: { total: 7, closed: 5, halfOpen: 1, open: 1 },
+  })),
+
+  // --- 17. Dynamic Fee Configuration ---
+  getFeeRules: protectedProcedure.query(async () => ({
+    rules: [
+      { id: 'FEE-NIP-1', product: 'NIP', channel: 'ALL', range: '₦0 — ₦5,000', feeType: 'FLAT', fee: '₦10', isActive: true },
+      { id: 'FEE-NIP-2', product: 'NIP', channel: 'ALL', range: '₦5,001 — ₦50,000', feeType: 'FLAT', fee: '₦25', isActive: true },
+      { id: 'FEE-NIP-3', product: 'NIP', channel: 'ALL', range: '₦50,001 — ₦500,000', feeType: 'FLAT', fee: '₦50', isActive: true },
+      { id: 'FEE-NIP-4', product: 'NIP', channel: 'ALL', range: '₦500,001+', feeType: 'CAPPED %', fee: '0.5% (max ₦250)', isActive: true },
+      { id: 'FEE-NEFT-1', product: 'NEFT', channel: 'ALL', range: 'All amounts', feeType: 'TIERED', fee: '₦5 + 0.1%', isActive: true },
+      { id: 'FEE-BVN-1', product: 'BVN', channel: 'ALL', range: 'Per lookup', feeType: 'FLAT', fee: '₦50', isActive: true },
+      { id: 'FEE-NQR-1', product: 'NQR', channel: 'ALL', range: 'All amounts', feeType: 'CAPPED %', fee: '0.75% (max ₦2,000)', isActive: true },
+    ],
+    summary: { totalRules: 7, activeRules: 7 },
+  })),
+
+  // --- 18. Revenue Analytics ---
+  getRevenueAnalytics: protectedProcedure.query(async () => ({
+    breakdown: [
+      { product: 'NIP', totalRevenue: 87_500_000, txnCount: 3_500_000, avgFeePerTx: 25, growthPct: 12.5, topBank: 'Access Bank', topBankPct: 22.5 },
+      { product: 'NEFT', totalRevenue: 2_700_000, txnCount: 180_000, avgFeePerTx: 15, growthPct: 5.2, topBank: 'GTBank', topBankPct: 18.0 },
+      { product: 'NACS', totalRevenue: 1_500_000, txnCount: 30_000, avgFeePerTx: 50, growthPct: -2.1, topBank: 'Zenith Bank', topBankPct: 25.0 },
+      { product: 'BVN', totalRevenue: 25_000_000, txnCount: 500_000, avgFeePerTx: 50, growthPct: 18.3, topBank: 'First Bank', topBankPct: 15.0 },
+      { product: 'NQR', totalRevenue: 4_800_000, txnCount: 400_000, avgFeePerTx: 12, growthPct: 45.0, topBank: 'UBA', topBankPct: 20.0 },
+      { product: 'PayDirect', totalRevenue: 7_000_000, txnCount: 200_000, avgFeePerTx: 35, growthPct: 8.7, topBank: 'Access Bank', topBankPct: 28.0 },
+      { product: 'e-BillsPay', totalRevenue: 10_500_000, txnCount: 350_000, avgFeePerTx: 30, growthPct: 15.2, topBank: 'GTBank', topBankPct: 24.0 },
+    ],
+    totalMonthlyRevenue: 139_000_000,
+    totalMonthlyGrowth: 14.8,
+  })),
+
+  // --- 19. Corridor Analytics ---
+  getCorridorAnalytics: protectedProcedure.query(async () => ({
+    corridors: [
+      { corridor: 'NIP-P2P', totalTxns: 2_500_000, totalVolume: 112_500_000_000, avgValue: 45_000, successRate: 99.82, avgLatencyMs: 1_100, peakHour: 13, peakTps: 4_200, growthPct: 15.2, failureRate: 0.18, topError: '51' },
+      { corridor: 'NIP-P2B', totalTxns: 1_800_000, totalVolume: 54_000_000_000, avgValue: 30_000, successRate: 99.75, avgLatencyMs: 1_300, peakHour: 12, peakTps: 3_100, growthPct: 22.5, failureRate: 0.25, topError: '96' },
+      { corridor: 'NEFT', totalTxns: 150_000, totalVolume: 37_500_000_000, avgValue: 250_000, successRate: 99.92, avgLatencyMs: 2_500, peakHour: 10, peakTps: 450, growthPct: 5.1, failureRate: 0.08, topError: '96' },
+      { corridor: 'NQR', totalTxns: 350_000, totalVolume: 1_925_000_000, avgValue: 5_500, successRate: 99.65, avgLatencyMs: 1_800, peakHour: 13, peakTps: 850, growthPct: 45.0, failureRate: 0.35, topError: '12' },
+      { corridor: 'USSD', totalTxns: 900_000, totalVolume: 7_200_000_000, avgValue: 8_000, successRate: 99.45, avgLatencyMs: 2_200, peakHour: 11, peakTps: 1_500, growthPct: -3.2, failureRate: 0.55, topError: '96' },
+      { corridor: 'NDD', totalTxns: 45_000, totalVolume: 1_575_000_000, avgValue: 35_000, successRate: 99.88, avgLatencyMs: 3_500, peakHour: 9, peakTps: 200, growthPct: 8.5, failureRate: 0.12, topError: '51' },
+    ],
+  })),
+
+  // --- 20. Volume Forecasting ---
+  getVolumeForecast: protectedProcedure.query(async () => ({
+    forecasts: [
+      { product: 'NIP', date: '2026-05-03', predicted: 3_850_000, low: 3_465_000, high: 4_235_000, confidence: 92.5, peakHour: 13, peakTps: 5_200, recommendedPrefund: 208_000_000_000, isSalaryDay: false },
+      { product: 'NIP', date: '2026-05-25', predicted: 5_600_000, low: 5_040_000, high: 6_160_000, confidence: 88.0, peakHour: 11, peakTps: 8_400, recommendedPrefund: 302_400_000_000, isSalaryDay: true },
+      { product: 'NEFT', date: '2026-05-03', predicted: 185_000, low: 166_500, high: 203_500, confidence: 90.0, peakHour: 10, peakTps: 500, recommendedPrefund: 55_500_000_000, isSalaryDay: false },
+      { product: 'NQR', date: '2026-05-03', predicted: 420_000, low: 378_000, high: 462_000, confidence: 85.0, peakHour: 13, peakTps: 950, recommendedPrefund: 2_772_000_000, isSalaryDay: false },
+    ],
+    modelVersion: 'prophet-ng-v1.3',
+    lastTrainedAt: new Date('2026-05-01T00:00:00Z'),
+  })),
 });

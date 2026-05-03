@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { trpc } from '@/lib/trpc';
-import { Banknote, QrCode, FileText, Repeat, Users, ArrowRightLeft, CheckCircle, XCircle, Clock, BarChart3, TrendingUp, Activity, PieChart, LayoutDashboard, Globe, Ship, CreditCard, Landmark, Code, ArrowDownLeft, Package, RefreshCw, AlertTriangle, ShieldCheck, Search, Layers, Building2, BookOpen, UserCheck, Hash, RotateCcw, Scale, Store, Receipt, FileCode, ScanLine, FileCheck, Fingerprint, Shield, UserPlus } from 'lucide-react';
+import { Banknote, QrCode, FileText, Repeat, Users, ArrowRightLeft, CheckCircle, XCircle, Clock, BarChart3, TrendingUp, Activity, PieChart, LayoutDashboard, Globe, Ship, CreditCard, Landmark, Code, ArrowDownLeft, Package, RefreshCw, AlertTriangle, ShieldCheck, Search, Layers, Building2, BookOpen, UserCheck, Hash, RotateCcw, Scale, Store, Receipt, FileCode, ScanLine, FileCheck, Fingerprint, Shield, UserPlus, Gauge, FileSpreadsheet, Timer, HeartPulse, FileWarning, Eye, DollarSign, Map, Brain, Zap } from 'lucide-react';
 
 type Tab = 'dashboard' | 'payments' | 'bills' | 'standing_orders' | 'bulk'
   | 'neft' | 'cheques' | 'mandates' | 'reversals' | 'disputes'
   | 'merchants' | 'paydirect' | 'identity' | 'iso20022'
-  | 'nqr' | 'emandate' | 'fraud' | 'onboarding';
+  | 'nqr' | 'emandate' | 'fraud' | 'onboarding'
+  | 'nip_monitor' | 'reconciliation' | 'sla' | 'health' | 'compliance' | 'monitoring' | 'revenue' | 'corridors' | 'forecast' | 'circuit_breaker';
 
 const moduleLinks = [
   { label: 'Outbound Remittance', href: '/', icon: Globe, color: '#3b82f6' },
@@ -42,6 +43,18 @@ export default function DomesticPayments() {
   const banksQuery = trpc.domesticPayments.listOnboardedBanks.useQuery(undefined, { retry: false });
   const billersQuery = trpc.domesticPayments.listOnboardedBillers.useQuery(undefined, { retry: false });
   const dfspsQuery = trpc.domesticPayments.listOnboardedDfsps.useQuery(undefined, { retry: false });
+
+  // 20 Improvements Queries
+  const nipMonitorQuery = trpc.domesticPayments.getNipMonitoring.useQuery(undefined, { retry: false });
+  const reconQuery = trpc.domesticPayments.getReconciliationReport.useQuery(undefined, { retry: false });
+  const slaQuery = trpc.domesticPayments.getSlaStatus.useQuery(undefined, { retry: false });
+  const healthQuery = trpc.domesticPayments.getParticipantHealth.useQuery(undefined, { retry: false });
+  const complianceQuery = trpc.domesticPayments.getRegulatoryReports.useQuery(undefined, { retry: false });
+  const monitoringQuery = trpc.domesticPayments.getMonitoringRules.useQuery(undefined, { retry: false });
+  const revenueQuery = trpc.domesticPayments.getRevenueAnalytics.useQuery(undefined, { retry: false });
+  const corridorQuery = trpc.domesticPayments.getCorridorAnalytics.useQuery(undefined, { retry: false });
+  const forecastQuery = trpc.domesticPayments.getVolumeForecast.useQuery(undefined, { retry: false });
+  const circuitQuery = trpc.domesticPayments.getCircuitBreakerStatus.useQuery(undefined, { retry: false });
 
   const payments = paymentsQuery.data?.payments ?? [];
   const summary = paymentsQuery.data?.summary;
@@ -129,11 +142,24 @@ export default function DomesticPayments() {
     { id: 'emandate', label: 'e-Mandate Portal', icon: FileCheck, section: 'NIBSS' },
     { id: 'fraud', label: 'Fraud Detection', icon: Shield, section: 'ADVANCED' },
     { id: 'onboarding', label: 'Stakeholder Onboarding', icon: UserPlus, section: 'ADVANCED' },
+    { id: 'nip_monitor', label: 'NIP Monitor', icon: Gauge, section: 'OPS' },
+    { id: 'reconciliation', label: 'Reconciliation', icon: FileSpreadsheet, section: 'OPS' },
+    { id: 'sla', label: 'SLA Monitoring', icon: Timer, section: 'OPS' },
+    { id: 'health', label: 'Participant Health', icon: HeartPulse, section: 'OPS' },
+    { id: 'circuit_breaker', label: 'Circuit Breakers', icon: Zap, section: 'OPS' },
+    { id: 'compliance', label: 'Regulatory Reports', icon: FileWarning, section: 'COMPLIANCE' },
+    { id: 'monitoring', label: 'Tx Monitoring', icon: Eye, section: 'COMPLIANCE' },
+    { id: 'revenue', label: 'Revenue Analytics', icon: DollarSign, section: 'ANALYTICS' },
+    { id: 'corridors', label: 'Corridor Analytics', icon: Map, section: 'ANALYTICS' },
+    { id: 'forecast', label: 'Volume Forecast', icon: Brain, section: 'ANALYTICS' },
   ];
 
   const coreItems = navItems.filter(n => !n.section);
   const nibssItems = navItems.filter(n => n.section === 'NIBSS');
   const advancedItems = navItems.filter(n => n.section === 'ADVANCED');
+  const opsItems = navItems.filter(n => n.section === 'OPS');
+  const complianceItems = navItems.filter(n => n.section === 'COMPLIANCE');
+  const analyticsItems = navItems.filter(n => n.section === 'ANALYTICS');
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
@@ -167,6 +193,33 @@ export default function DomesticPayments() {
           ))}
           <div style={{ fontSize: 10, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: 1, padding: '12px 14px 4px' }}>Advanced</div>
           {advancedItems.map(item => (
+            <button key={item.id} onClick={() => setActiveTab(item.id)}
+              style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 14px', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600, width: '100%', textAlign: 'left',
+                background: activeTab === item.id ? '#2563eb' : 'transparent', color: activeTab === item.id ? 'white' : '#374151' }}>
+              <item.icon size={14} />
+              {item.label}
+            </button>
+          ))}
+          <div style={{ fontSize: 10, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: 1, padding: '12px 14px 4px' }}>Operations</div>
+          {opsItems.map(item => (
+            <button key={item.id} onClick={() => setActiveTab(item.id)}
+              style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 14px', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600, width: '100%', textAlign: 'left',
+                background: activeTab === item.id ? '#2563eb' : 'transparent', color: activeTab === item.id ? 'white' : '#374151' }}>
+              <item.icon size={14} />
+              {item.label}
+            </button>
+          ))}
+          <div style={{ fontSize: 10, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: 1, padding: '12px 14px 4px' }}>Compliance</div>
+          {complianceItems.map(item => (
+            <button key={item.id} onClick={() => setActiveTab(item.id)}
+              style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 14px', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600, width: '100%', textAlign: 'left',
+                background: activeTab === item.id ? '#2563eb' : 'transparent', color: activeTab === item.id ? 'white' : '#374151' }}>
+              <item.icon size={14} />
+              {item.label}
+            </button>
+          ))}
+          <div style={{ fontSize: 10, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: 1, padding: '12px 14px 4px' }}>Analytics</div>
+          {analyticsItems.map(item => (
             <button key={item.id} onClick={() => setActiveTab(item.id)}
               style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 14px', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600, width: '100%', textAlign: 'left',
                 background: activeTab === item.id ? '#2563eb' : 'transparent', color: activeTab === item.id ? 'white' : '#374151' }}>
@@ -1060,6 +1113,388 @@ export default function DomesticPayments() {
                 </div>
               </div>
             ))}
+          </div>
+        )}
+
+        {/* ============ NIP MONITOR ============ */}
+        {activeTab === 'nip_monitor' && nipMonitorQuery.data && (
+          <div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 24 }}>
+              {[
+                { label: 'Global TPS', value: nipMonitorQuery.data.globalTps.toLocaleString(), color: '#2563eb' },
+                { label: 'Success Rate', value: `${nipMonitorQuery.data.globalSuccessRate}%`, color: '#059669' },
+                { label: 'Avg Latency', value: `${nipMonitorQuery.data.globalAvgLatencyMs}ms`, color: '#d97706' },
+                { label: 'Today Volume', value: `₦${(nipMonitorQuery.data.totalVolumeToday / 1e9).toFixed(0)}B`, color: '#7c3aed' },
+              ].map(c => (
+                <div key={c.label} style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 16, borderTop: `3px solid ${c.color}` }}>
+                  <div style={{ fontSize: 11, color: '#6b7280', marginBottom: 4 }}>{c.label}</div>
+                  <div style={{ fontSize: 24, fontWeight: 700, color: c.color }}>{c.value}</div>
+                </div>
+              ))}
+            </div>
+            <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 12 }}>Bank Metrics</h3>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+              <thead><tr style={{ borderBottom: '2px solid #e5e7eb' }}>
+                {['Bank', 'TPS', 'Success Rate', 'Avg Latency', 'Total Txns', 'Volume'].map(h => <th key={h} style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 700 }}>{h}</th>)}
+              </tr></thead>
+              <tbody>{nipMonitorQuery.data.bankMetrics.map((b: any) => (
+                <tr key={b.bankCode} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                  <td style={{ padding: '10px 12px', fontWeight: 600 }}>{b.bankName}</td>
+                  <td style={{ padding: '10px 12px' }}>{b.tps.toLocaleString()}</td>
+                  <td style={{ padding: '10px 12px', color: b.successRate >= 99.8 ? '#059669' : '#d97706' }}>{b.successRate}%</td>
+                  <td style={{ padding: '10px 12px' }}>{b.avgLatencyMs}ms</td>
+                  <td style={{ padding: '10px 12px' }}>{b.totalTxns.toLocaleString()}</td>
+                  <td style={{ padding: '10px 12px' }}>₦{(b.volume / 1e9).toFixed(0)}B</td>
+                </tr>
+              ))}</tbody>
+            </table>
+            <h3 style={{ fontSize: 16, fontWeight: 700, margin: '24px 0 12px' }}>Top Error Codes</h3>
+            <div style={{ display: 'flex', gap: 12 }}>
+              {nipMonitorQuery.data.topErrorCodes.map((e: any) => (
+                <div key={e.code} style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 8, padding: 12, flex: 1, textAlign: 'center' }}>
+                  <div style={{ fontSize: 18, fontWeight: 700, color: e.code === '00' ? '#059669' : '#dc2626' }}>{e.code}</div>
+                  <div style={{ fontSize: 11, color: '#6b7280' }}>{e.description}</div>
+                  <div style={{ fontSize: 12, fontWeight: 600 }}>{e.count.toLocaleString()} ({e.pct}%)</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ============ RECONCILIATION ============ */}
+        {activeTab === 'reconciliation' && reconQuery.data && (
+          <div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 24 }}>
+              {[
+                { label: 'Matched', value: reconQuery.data.summary.matched, color: '#059669' },
+                { label: 'Mismatched', value: reconQuery.data.summary.mismatched, color: '#dc2626' },
+                { label: 'Auto-Resolved', value: reconQuery.data.summary.autoResolved, color: '#d97706' },
+                { label: 'Total Discrepancy', value: `₦${(reconQuery.data.summary.totalDiscrepancy / 100).toLocaleString()}`, color: '#7c3aed' },
+              ].map(c => (
+                <div key={c.label} style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 16, borderTop: `3px solid ${c.color}` }}>
+                  <div style={{ fontSize: 11, color: '#6b7280', marginBottom: 4 }}>{c.label}</div>
+                  <div style={{ fontSize: 24, fontWeight: 700, color: c.color }}>{c.value}</div>
+                </div>
+              ))}
+            </div>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+              <thead><tr style={{ borderBottom: '2px solid #e5e7eb' }}>
+                {['Bank', 'Ledger', 'Settlement', 'Bank Confirm', 'Status', 'Discrepancy'].map(h => <th key={h} style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 700 }}>{h}</th>)}
+              </tr></thead>
+              <tbody>{reconQuery.data.records.map((r: any) => (
+                <tr key={r.id} style={{ borderBottom: '1px solid #f3f4f6', background: r.status === 'MISMATCHED' && !r.autoResolved ? '#fef2f2' : 'transparent' }}>
+                  <td style={{ padding: '10px 12px', fontWeight: 600 }}>{r.bank}</td>
+                  <td style={{ padding: '10px 12px' }}>₦{(r.ledgerAmount / 1e9).toFixed(1)}B</td>
+                  <td style={{ padding: '10px 12px' }}>₦{(r.settlementAmount / 1e9).toFixed(1)}B</td>
+                  <td style={{ padding: '10px 12px' }}>₦{(r.bankConfirmAmount / 1e9).toFixed(1)}B</td>
+                  <td style={{ padding: '10px 12px' }}>
+                    <span style={{ padding: '2px 8px', borderRadius: 6, fontSize: 11, fontWeight: 600, background: r.status === 'MATCHED' ? '#dcfce7' : r.autoResolved ? '#fef3c7' : '#fee2e2', color: r.status === 'MATCHED' ? '#166534' : r.autoResolved ? '#92400e' : '#991b1b' }}>
+                      {r.autoResolved ? 'AUTO-RESOLVED' : r.status}
+                    </span>
+                  </td>
+                  <td style={{ padding: '10px 12px', color: r.discrepancy > 0 ? '#dc2626' : '#059669' }}>₦{r.discrepancy.toLocaleString()}</td>
+                </tr>
+              ))}</tbody>
+            </table>
+          </div>
+        )}
+
+        {/* ============ SLA MONITORING ============ */}
+        {activeTab === 'sla' && slaQuery.data && (
+          <div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginBottom: 24 }}>
+              {[
+                { label: 'Healthy', value: slaQuery.data.summary.healthy, color: '#059669' },
+                { label: 'Warning', value: slaQuery.data.summary.warning, color: '#d97706' },
+                { label: 'Open Breaches', value: slaQuery.data.summary.openBreaches, color: '#dc2626' },
+              ].map(c => (
+                <div key={c.label} style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 16, borderTop: `3px solid ${c.color}` }}>
+                  <div style={{ fontSize: 11, color: '#6b7280', marginBottom: 4 }}>{c.label}</div>
+                  <div style={{ fontSize: 24, fontWeight: 700, color: c.color }}>{c.value}</div>
+                </div>
+              ))}
+            </div>
+            <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 12 }}>SLA Rules</h3>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+              <thead><tr style={{ borderBottom: '2px solid #e5e7eb' }}>
+                {['Product', 'Metric', 'Threshold', 'Current', 'Status', 'Headroom'].map(h => <th key={h} style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 700 }}>{h}</th>)}
+              </tr></thead>
+              <tbody>{slaQuery.data.rules.map((r: any) => (
+                <tr key={r.id} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                  <td style={{ padding: '10px 12px', fontWeight: 600 }}>{r.product}</td>
+                  <td style={{ padding: '10px 12px' }}>{r.metric}</td>
+                  <td style={{ padding: '10px 12px' }}>{r.threshold}</td>
+                  <td style={{ padding: '10px 12px' }}>{r.current}</td>
+                  <td style={{ padding: '10px 12px' }}>
+                    <span style={{ padding: '2px 8px', borderRadius: 6, fontSize: 11, fontWeight: 600, background: r.status === 'HEALTHY' ? '#dcfce7' : '#fef3c7', color: r.status === 'HEALTHY' ? '#166534' : '#92400e' }}>{r.status}</span>
+                  </td>
+                  <td style={{ padding: '10px 12px' }}>{r.headroom}</td>
+                </tr>
+              ))}</tbody>
+            </table>
+            {slaQuery.data.breaches.length > 0 && <>
+              <h3 style={{ fontSize: 16, fontWeight: 700, margin: '24px 0 12px', color: '#dc2626' }}>Active Breaches</h3>
+              {slaQuery.data.breaches.map((b: any) => (
+                <div key={b.id} style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 12, padding: 16, marginBottom: 12 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ fontWeight: 700 }}>{b.bank} — {b.metric}</span>
+                    <span style={{ padding: '2px 8px', borderRadius: 6, fontSize: 11, fontWeight: 600, background: b.severity === 'CRITICAL' ? '#fee2e2' : '#fef3c7', color: b.severity === 'CRITICAL' ? '#991b1b' : '#92400e' }}>{b.severity}</span>
+                  </div>
+                  <div style={{ fontSize: 13, color: '#6b7280', marginTop: 4 }}>Threshold: {b.threshold} | Actual: {b.actual} | Status: {b.status}</div>
+                </div>
+              ))}
+            </>}
+          </div>
+        )}
+
+        {/* ============ PARTICIPANT HEALTH ============ */}
+        {activeTab === 'health' && healthQuery.data && (
+          <div>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+              <thead><tr style={{ borderBottom: '2px solid #e5e7eb' }}>
+                {['Bank', 'Availability', 'Success Rate', 'Avg Resp', 'P99 Resp', 'Dispute Rate', 'Score', 'Tier', 'Trend'].map(h => <th key={h} style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 700 }}>{h}</th>)}
+              </tr></thead>
+              <tbody>{healthQuery.data.participants.map((p: any) => (
+                <tr key={p.bankCode} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                  <td style={{ padding: '10px 12px', fontWeight: 600 }}>{p.bankName}</td>
+                  <td style={{ padding: '10px 12px' }}>{p.availability}%</td>
+                  <td style={{ padding: '10px 12px' }}>{p.successRate}%</td>
+                  <td style={{ padding: '10px 12px' }}>{p.avgResponseMs}ms</td>
+                  <td style={{ padding: '10px 12px' }}>{p.p99ResponseMs}ms</td>
+                  <td style={{ padding: '10px 12px' }}>{(p.disputeRate * 100).toFixed(2)}%</td>
+                  <td style={{ padding: '10px 12px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <div style={{ width: 60, height: 6, borderRadius: 3, background: '#e5e7eb' }}>
+                        <div style={{ width: `${p.overallScore}%`, height: '100%', borderRadius: 3, background: p.overallScore >= 95 ? '#059669' : p.overallScore >= 85 ? '#2563eb' : p.overallScore >= 70 ? '#d97706' : '#dc2626' }} />
+                      </div>
+                      <span style={{ fontWeight: 700, fontSize: 12 }}>{p.overallScore}</span>
+                    </div>
+                  </td>
+                  <td style={{ padding: '10px 12px' }}>
+                    <span style={{ padding: '2px 8px', borderRadius: 6, fontSize: 11, fontWeight: 600, background: p.tier === 'EXCELLENT' ? '#dcfce7' : p.tier === 'GOOD' ? '#dbeafe' : p.tier === 'FAIR' ? '#fef3c7' : '#fee2e2', color: p.tier === 'EXCELLENT' ? '#166534' : p.tier === 'GOOD' ? '#1d4ed8' : p.tier === 'FAIR' ? '#92400e' : '#991b1b' }}>{p.tier}</span>
+                  </td>
+                  <td style={{ padding: '10px 12px', fontSize: 16 }}>{p.trend === 'UP' ? '↑' : p.trend === 'DOWN' ? '↓' : '→'}</td>
+                </tr>
+              ))}</tbody>
+            </table>
+          </div>
+        )}
+
+        {/* ============ REGULATORY REPORTS ============ */}
+        {activeTab === 'compliance' && complianceQuery.data && (
+          <div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 24 }}>
+              {[
+                { label: 'Total Reports', value: complianceQuery.data.summary.total, color: '#2563eb' },
+                { label: 'Submitted', value: complianceQuery.data.summary.submitted, color: '#059669' },
+                { label: 'Accepted', value: complianceQuery.data.summary.accepted, color: '#7c3aed' },
+                { label: 'Generating', value: complianceQuery.data.summary.generating, color: '#d97706' },
+              ].map(c => (
+                <div key={c.label} style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 16, borderTop: `3px solid ${c.color}` }}>
+                  <div style={{ fontSize: 11, color: '#6b7280', marginBottom: 4 }}>{c.label}</div>
+                  <div style={{ fontSize: 24, fontWeight: 700, color: c.color }}>{c.value}</div>
+                </div>
+              ))}
+            </div>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+              <thead><tr style={{ borderBottom: '2px solid #e5e7eb' }}>
+                {['Report ID', 'Type', 'Period', 'Records', 'Amount', 'Format', 'Status', 'CBN Ref'].map(h => <th key={h} style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 700 }}>{h}</th>)}
+              </tr></thead>
+              <tbody>{complianceQuery.data.reports.map((r: any) => (
+                <tr key={r.id} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                  <td style={{ padding: '10px 12px', fontFamily: 'monospace', fontSize: 11 }}>{r.id}</td>
+                  <td style={{ padding: '10px 12px' }}><span style={{ padding: '2px 8px', borderRadius: 6, fontSize: 10, fontWeight: 600, background: '#f3f4f6' }}>{r.type.replace(/_/g, ' ')}</span></td>
+                  <td style={{ padding: '10px 12px', fontSize: 12 }}>{r.periodStart}</td>
+                  <td style={{ padding: '10px 12px' }}>{r.recordCount.toLocaleString()}</td>
+                  <td style={{ padding: '10px 12px' }}>{r.totalAmount > 0 ? `₦${(r.totalAmount / 1e9).toFixed(1)}B` : '—'}</td>
+                  <td style={{ padding: '10px 12px' }}>{r.format}</td>
+                  <td style={{ padding: '10px 12px' }}>
+                    <span style={{ padding: '2px 8px', borderRadius: 6, fontSize: 11, fontWeight: 600, background: r.status === 'ACCEPTED' ? '#dcfce7' : r.status === 'SUBMITTED' ? '#dbeafe' : '#fef3c7', color: r.status === 'ACCEPTED' ? '#166534' : r.status === 'SUBMITTED' ? '#1d4ed8' : '#92400e' }}>{r.status}</span>
+                  </td>
+                  <td style={{ padding: '10px 12px', fontFamily: 'monospace', fontSize: 11 }}>{r.cbnRef ?? '—'}</td>
+                </tr>
+              ))}</tbody>
+            </table>
+          </div>
+        )}
+
+        {/* ============ TX MONITORING ============ */}
+        {activeTab === 'monitoring' && monitoringQuery.data && (
+          <div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 24 }}>
+              {[
+                { label: 'Active Rules', value: monitoringQuery.data.summary.activeRules, color: '#2563eb' },
+                { label: 'Total Alerts', value: monitoringQuery.data.summary.totalAlerts, color: '#d97706' },
+                { label: 'Unreviewed', value: monitoringQuery.data.summary.unreviewedAlerts, color: '#dc2626' },
+                { label: 'True Positives', value: monitoringQuery.data.summary.truePositives, color: '#059669' },
+              ].map(c => (
+                <div key={c.label} style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 16, borderTop: `3px solid ${c.color}` }}>
+                  <div style={{ fontSize: 11, color: '#6b7280', marginBottom: 4 }}>{c.label}</div>
+                  <div style={{ fontSize: 24, fontWeight: 700, color: c.color }}>{c.value}</div>
+                </div>
+              ))}
+            </div>
+            <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 12 }}>Monitoring Rules</h3>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+              <thead><tr style={{ borderBottom: '2px solid #e5e7eb' }}>
+                {['Rule', 'Category', 'Severity', 'Action', 'Hits', 'FP Rate', 'Active'].map(h => <th key={h} style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 700 }}>{h}</th>)}
+              </tr></thead>
+              <tbody>{monitoringQuery.data.rules.map((r: any) => (
+                <tr key={r.id} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                  <td style={{ padding: '10px 12px', fontWeight: 600 }}>{r.name}</td>
+                  <td style={{ padding: '10px 12px' }}><span style={{ padding: '2px 6px', borderRadius: 4, fontSize: 10, background: '#f3f4f6' }}>{r.category}</span></td>
+                  <td style={{ padding: '10px 12px' }}>
+                    <span style={{ padding: '2px 8px', borderRadius: 6, fontSize: 11, fontWeight: 600, background: r.severity === 'CRITICAL' ? '#fee2e2' : r.severity === 'HIGH' ? '#fef3c7' : '#f3f4f6', color: r.severity === 'CRITICAL' ? '#991b1b' : r.severity === 'HIGH' ? '#92400e' : '#374151' }}>{r.severity}</span>
+                  </td>
+                  <td style={{ padding: '10px 12px' }}>{r.action}</td>
+                  <td style={{ padding: '10px 12px' }}>{r.hitCount.toLocaleString()}</td>
+                  <td style={{ padding: '10px 12px', color: r.falsePositiveRate > 30 ? '#dc2626' : '#059669' }}>{r.falsePositiveRate}%</td>
+                  <td style={{ padding: '10px 12px' }}>{r.isActive ? '●' : '○'}</td>
+                </tr>
+              ))}</tbody>
+            </table>
+            {monitoringQuery.data.alerts.length > 0 && <>
+              <h3 style={{ fontSize: 16, fontWeight: 700, margin: '24px 0 12px' }}>Recent Alerts</h3>
+              {monitoringQuery.data.alerts.map((a: any) => (
+                <div key={a.id} style={{ background: a.severity === 'CRITICAL' ? '#fef2f2' : '#fffbeb', border: `1px solid ${a.severity === 'CRITICAL' ? '#fecaca' : '#fde68a'}`, borderRadius: 12, padding: 16, marginBottom: 12 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ fontWeight: 700 }}>{a.ruleName}</span>
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <span style={{ padding: '2px 8px', borderRadius: 6, fontSize: 11, fontWeight: 600, background: a.severity === 'CRITICAL' ? '#fee2e2' : '#fef3c7', color: a.severity === 'CRITICAL' ? '#991b1b' : '#92400e' }}>{a.severity}</span>
+                      {a.reviewed && <span style={{ padding: '2px 8px', borderRadius: 6, fontSize: 11, fontWeight: 600, background: '#dcfce7', color: '#166534' }}>{a.disposition}</span>}
+                    </div>
+                  </div>
+                  <div style={{ fontSize: 12, color: '#6b7280', marginTop: 4 }}>Tx: {a.transactionId} | Action: {a.action} | {a.reviewed ? 'Reviewed' : 'Pending Review'}</div>
+                </div>
+              ))}
+            </>}
+          </div>
+        )}
+
+        {/* ============ CIRCUIT BREAKERS ============ */}
+        {activeTab === 'circuit_breaker' && circuitQuery.data && (
+          <div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginBottom: 24 }}>
+              {[
+                { label: 'Closed (Healthy)', value: circuitQuery.data.summary.closed, color: '#059669' },
+                { label: 'Half-Open (Recovering)', value: circuitQuery.data.summary.halfOpen, color: '#d97706' },
+                { label: 'Open (Blocked)', value: circuitQuery.data.summary.open, color: '#dc2626' },
+              ].map(c => (
+                <div key={c.label} style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 16, borderTop: `3px solid ${c.color}` }}>
+                  <div style={{ fontSize: 11, color: '#6b7280', marginBottom: 4 }}>{c.label}</div>
+                  <div style={{ fontSize: 24, fontWeight: 700, color: c.color }}>{c.value}</div>
+                </div>
+              ))}
+            </div>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+              <thead><tr style={{ borderBottom: '2px solid #e5e7eb' }}>
+                {['Bank', 'State', 'Failure Rate', 'Threshold', 'Total Requests', 'Last Failure'].map(h => <th key={h} style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 700 }}>{h}</th>)}
+              </tr></thead>
+              <tbody>{circuitQuery.data.breakers.map((b: any) => (
+                <tr key={b.bankCode} style={{ borderBottom: '1px solid #f3f4f6', background: b.state === 'OPEN' ? '#fef2f2' : b.state === 'HALF_OPEN' ? '#fffbeb' : 'transparent' }}>
+                  <td style={{ padding: '10px 12px', fontWeight: 600 }}>{b.bankName}</td>
+                  <td style={{ padding: '10px 12px' }}>
+                    <span style={{ padding: '2px 8px', borderRadius: 6, fontSize: 11, fontWeight: 600, background: b.state === 'CLOSED' ? '#dcfce7' : b.state === 'HALF_OPEN' ? '#fef3c7' : '#fee2e2', color: b.state === 'CLOSED' ? '#166534' : b.state === 'HALF_OPEN' ? '#92400e' : '#991b1b' }}>{b.state}</span>
+                  </td>
+                  <td style={{ padding: '10px 12px', color: b.failureRate > b.threshold ? '#dc2626' : '#059669' }}>{b.failureRate}%</td>
+                  <td style={{ padding: '10px 12px' }}>{b.threshold}%</td>
+                  <td style={{ padding: '10px 12px' }}>{b.totalRequests.toLocaleString()}</td>
+                  <td style={{ padding: '10px 12px', fontSize: 12 }}>{b.lastFailure ? new Date(b.lastFailure).toLocaleString() : '—'}</td>
+                </tr>
+              ))}</tbody>
+            </table>
+          </div>
+        )}
+
+        {/* ============ REVENUE ANALYTICS ============ */}
+        {activeTab === 'revenue' && revenueQuery.data && (
+          <div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16, marginBottom: 24 }}>
+              <div style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 16, borderTop: '3px solid #059669' }}>
+                <div style={{ fontSize: 11, color: '#6b7280', marginBottom: 4 }}>Total Monthly Revenue</div>
+                <div style={{ fontSize: 24, fontWeight: 700, color: '#059669' }}>₦{(revenueQuery.data.totalMonthlyRevenue / 1e6).toFixed(0)}M</div>
+              </div>
+              <div style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 16, borderTop: '3px solid #2563eb' }}>
+                <div style={{ fontSize: 11, color: '#6b7280', marginBottom: 4 }}>Monthly Growth</div>
+                <div style={{ fontSize: 24, fontWeight: 700, color: '#2563eb' }}>+{revenueQuery.data.totalMonthlyGrowth}%</div>
+              </div>
+            </div>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+              <thead><tr style={{ borderBottom: '2px solid #e5e7eb' }}>
+                {['Product', 'Revenue', 'Transactions', 'Avg Fee', 'Growth', 'Top Bank'].map(h => <th key={h} style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 700 }}>{h}</th>)}
+              </tr></thead>
+              <tbody>{revenueQuery.data.breakdown.map((r: any) => (
+                <tr key={r.product} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                  <td style={{ padding: '10px 12px', fontWeight: 600 }}>{r.product}</td>
+                  <td style={{ padding: '10px 12px' }}>₦{(r.totalRevenue / 1e6).toFixed(1)}M</td>
+                  <td style={{ padding: '10px 12px' }}>{r.txnCount.toLocaleString()}</td>
+                  <td style={{ padding: '10px 12px' }}>₦{r.avgFeePerTx}</td>
+                  <td style={{ padding: '10px 12px', color: r.growthPct >= 0 ? '#059669' : '#dc2626' }}>{r.growthPct > 0 ? '+' : ''}{r.growthPct}%</td>
+                  <td style={{ padding: '10px 12px', fontSize: 12 }}>{r.topBank} ({r.topBankPct}%)</td>
+                </tr>
+              ))}</tbody>
+            </table>
+          </div>
+        )}
+
+        {/* ============ CORRIDOR ANALYTICS ============ */}
+        {activeTab === 'corridors' && corridorQuery.data && (
+          <div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
+              {corridorQuery.data.corridors.map((c: any) => (
+                <div key={c.corridor} style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 16 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                    <span style={{ fontSize: 16, fontWeight: 700 }}>{c.corridor}</span>
+                    <span style={{ padding: '2px 8px', borderRadius: 6, fontSize: 11, fontWeight: 600, background: c.growthPct >= 0 ? '#dcfce7' : '#fee2e2', color: c.growthPct >= 0 ? '#166534' : '#991b1b' }}>
+                      {c.growthPct > 0 ? '+' : ''}{c.growthPct}%
+                    </span>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, fontSize: 12 }}>
+                    <div><span style={{ color: '#6b7280' }}>Transactions:</span> <strong>{(c.totalTxns / 1e6).toFixed(1)}M</strong></div>
+                    <div><span style={{ color: '#6b7280' }}>Volume:</span> <strong>₦{(c.totalVolume / 1e9).toFixed(0)}B</strong></div>
+                    <div><span style={{ color: '#6b7280' }}>Success:</span> <strong style={{ color: c.successRate >= 99.7 ? '#059669' : '#d97706' }}>{c.successRate}%</strong></div>
+                    <div><span style={{ color: '#6b7280' }}>Avg Latency:</span> <strong>{c.avgLatencyMs}ms</strong></div>
+                    <div><span style={{ color: '#6b7280' }}>Peak TPS:</span> <strong>{c.peakTps.toLocaleString()}</strong></div>
+                    <div><span style={{ color: '#6b7280' }}>Peak Hour:</span> <strong>{c.peakHour}:00</strong></div>
+                    <div><span style={{ color: '#6b7280' }}>Failure:</span> <strong style={{ color: '#dc2626' }}>{c.failureRate}%</strong></div>
+                    <div><span style={{ color: '#6b7280' }}>Top Error:</span> <strong>{c.topError}</strong></div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ============ VOLUME FORECAST ============ */}
+        {activeTab === 'forecast' && forecastQuery.data && (
+          <div>
+            <div style={{ background: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: 12, padding: 16, marginBottom: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 600, color: '#0369a1' }}>Model: {forecastQuery.data.modelVersion}</div>
+                <div style={{ fontSize: 12, color: '#6b7280' }}>Last trained: {new Date(forecastQuery.data.lastTrainedAt).toLocaleDateString()}</div>
+              </div>
+              <Brain size={24} color="#0369a1" />
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16 }}>
+              {forecastQuery.data.forecasts.map((f: any) => (
+                <div key={`${f.product}-${f.date}`} style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 16 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                    <div>
+                      <span style={{ fontSize: 16, fontWeight: 700 }}>{f.product}</span>
+                      <span style={{ fontSize: 12, color: '#6b7280', marginLeft: 8 }}>{f.date}</span>
+                    </div>
+                    {f.isSalaryDay && <span style={{ padding: '2px 8px', borderRadius: 6, fontSize: 10, fontWeight: 600, background: '#fef3c7', color: '#92400e' }}>SALARY DAY</span>}
+                  </div>
+                  <div style={{ fontSize: 24, fontWeight: 700, color: '#2563eb', marginBottom: 8 }}>{(f.predicted / 1e6).toFixed(1)}M txns</div>
+                  <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 4 }}>Range: {(f.low / 1e6).toFixed(1)}M — {(f.high / 1e6).toFixed(1)}M ({f.confidence}% confidence)</div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, fontSize: 12, marginTop: 8 }}>
+                    <div><span style={{ color: '#6b7280' }}>Peak TPS:</span> <strong>{f.peakTps.toLocaleString()}</strong></div>
+                    <div><span style={{ color: '#6b7280' }}>Peak Hour:</span> <strong>{f.peakHour}:00</strong></div>
+                    <div style={{ gridColumn: 'span 2' }}><span style={{ color: '#6b7280' }}>Recommended Prefund:</span> <strong style={{ color: '#059669' }}>₦{(f.recommendedPrefund / 1e9).toFixed(0)}B</strong></div>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
