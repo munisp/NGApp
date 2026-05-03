@@ -123,6 +123,19 @@ type FXService interface {
 	Convert(ctx context.Context, from, to string, amount float64) (converted float64, rate float64, err error)
 }
 
+// InboundMetricsSnapshot is a point-in-time copy of inbound metrics (no mutex).
+type InboundMetricsSnapshot struct {
+	TotalReceived         int64   `json:"totalReceived"`
+	TotalCredited         int64   `json:"totalCredited"`
+	TotalFailed           int64   `json:"totalFailed"`
+	TotalReturned         int64   `json:"totalReturned"`
+	TotalVolumeUSD        float64 `json:"totalVolumeUSD"`
+	TotalVolumeNGN        float64 `json:"totalVolumeNGN"`
+	AvgProcessingMs       int64   `json:"avgProcessingMs"`
+	ComplianceHoldRate    float64 `json:"complianceHoldRate"`
+	SuccessRate           float64 `json:"successRate"`
+}
+
 // InboundMetrics tracks operational metrics for inbound remittance.
 type InboundMetrics struct {
 	mu                    sync.RWMutex
@@ -267,11 +280,21 @@ func (p *InboundProcessor) ReturnTransfer(ctx context.Context, transferID, reaso
 	return nil
 }
 
-// GetMetrics returns current inbound remittance metrics.
-func (p *InboundProcessor) GetMetrics() InboundMetrics {
+// GetMetrics returns a snapshot of current inbound remittance metrics.
+func (p *InboundProcessor) GetMetrics() InboundMetricsSnapshot {
 	p.metrics.mu.RLock()
 	defer p.metrics.mu.RUnlock()
-	return *p.metrics
+	return InboundMetricsSnapshot{
+		TotalReceived:      p.metrics.TotalReceived,
+		TotalCredited:      p.metrics.TotalCredited,
+		TotalFailed:        p.metrics.TotalFailed,
+		TotalReturned:      p.metrics.TotalReturned,
+		TotalVolumeUSD:     p.metrics.TotalVolumeUSD,
+		TotalVolumeNGN:     p.metrics.TotalVolumeNGN,
+		AvgProcessingMs:    p.metrics.AvgProcessingMs,
+		ComplianceHoldRate: p.metrics.ComplianceHoldRate,
+		SuccessRate:        p.metrics.SuccessRate,
+	}
 }
 
 func defaultCorridors() []InboundCorridor {

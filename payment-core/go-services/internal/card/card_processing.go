@@ -137,6 +137,22 @@ type CardSettlementBatch struct {
 	ReconciledAt    *time.Time `json:"reconciledAt,omitempty"`
 }
 
+// CardMetricsSnapshot is a point-in-time copy of card processing metrics (no mutex).
+type CardMetricsSnapshot struct {
+	TotalCards        int     `json:"totalCards"`
+	ActiveCards       int     `json:"activeCards"`
+	TotalTxns         int64   `json:"totalTxns"`
+	ApprovedTxns      int64   `json:"approvedTxns"`
+	DeclinedTxns      int64   `json:"declinedTxns"`
+	TotalVolumeNGN    float64 `json:"totalVolumeNGN"`
+	AvgTxnAmountNGN   float64 `json:"avgTxnAmountNGN"`
+	ApprovalRate      float64 `json:"approvalRate"`
+	FraudRate         float64 `json:"fraudRate"`
+	ActiveChargebacks int     `json:"activeChargebacks"`
+	ChargebackRate    float64 `json:"chargebackRate"`
+	TotalMerchants    int     `json:"totalMerchants"`
+}
+
 // CardMetrics tracks card processing operational metrics.
 type CardMetrics struct {
 	mu                sync.RWMutex
@@ -282,9 +298,22 @@ func (e *CardProcessingEngine) FileChargeback(cb *Chargeback) error {
 	return nil
 }
 
-// GetMetrics returns current card processing metrics.
-func (e *CardProcessingEngine) GetMetrics() CardMetrics {
+// GetMetrics returns a snapshot of current card processing metrics.
+func (e *CardProcessingEngine) GetMetrics() CardMetricsSnapshot {
 	e.metrics.mu.RLock()
 	defer e.metrics.mu.RUnlock()
-	return *e.metrics
+	return CardMetricsSnapshot{
+		TotalCards:        e.metrics.TotalCards,
+		ActiveCards:       e.metrics.ActiveCards,
+		TotalTxns:         e.metrics.TotalTxns,
+		ApprovedTxns:      e.metrics.ApprovedTxns,
+		DeclinedTxns:      e.metrics.DeclinedTxns,
+		TotalVolumeNGN:    e.metrics.TotalVolumeNGN,
+		AvgTxnAmountNGN:   e.metrics.AvgTxnAmountNGN,
+		ApprovalRate:      e.metrics.ApprovalRate,
+		FraudRate:         e.metrics.FraudRate,
+		ActiveChargebacks: e.metrics.ActiveChargebacks,
+		ChargebackRate:    e.metrics.ChargebackRate,
+		TotalMerchants:    e.metrics.TotalMerchants,
+	}
 }

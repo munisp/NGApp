@@ -126,6 +126,18 @@ type CustomsDutyPayment struct {
 	PaidAt          *time.Time `json:"paidAt,omitempty"`
 }
 
+// TradeMetricsSnapshot is a point-in-time copy of trade metrics (no mutex).
+type TradeMetricsSnapshot struct {
+	ActiveLCs          int     `json:"activeLCs"`
+	TotalLCValue       float64 `json:"totalLCValue"`
+	ActiveEscrows      int     `json:"activeEscrows"`
+	TotalEscrowValue   float64 `json:"totalEscrowValue"`
+	PendingInvoices    int     `json:"pendingInvoices"`
+	CustomsDutyPaid    float64 `json:"customsDutyPaid"`
+	AfCFTATransactions int     `json:"afcftaTransactions"`
+	AfCFTASavings      float64 `json:"afcftaSavings"`
+}
+
 // TradeMetrics tracks operational metrics for trade payments.
 type TradeMetrics struct {
 	mu                 sync.RWMutex
@@ -229,9 +241,18 @@ func (e *TradePaymentEngine) PayCustomsDuty(duty *CustomsDutyPayment) error {
 	return nil
 }
 
-// GetMetrics returns current trade payment metrics.
-func (e *TradePaymentEngine) GetMetrics() TradeMetrics {
+// GetMetrics returns a snapshot of current trade payment metrics.
+func (e *TradePaymentEngine) GetMetrics() TradeMetricsSnapshot {
 	e.metrics.mu.RLock()
 	defer e.metrics.mu.RUnlock()
-	return *e.metrics
+	return TradeMetricsSnapshot{
+		ActiveLCs:          e.metrics.ActiveLCs,
+		TotalLCValue:       e.metrics.TotalLCValue,
+		ActiveEscrows:      e.metrics.ActiveEscrows,
+		TotalEscrowValue:   e.metrics.TotalEscrowValue,
+		PendingInvoices:    e.metrics.PendingInvoices,
+		CustomsDutyPaid:    e.metrics.CustomsDutyPaid,
+		AfCFTATransactions: e.metrics.AfCFTATransactions,
+		AfCFTASavings:      e.metrics.AfCFTASavings,
+	}
 }
