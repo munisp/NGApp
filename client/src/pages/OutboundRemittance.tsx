@@ -130,6 +130,20 @@ function relativeTime(dateStr: string) {
   return `${days}d ago`;
 }
 
+// --- i18n (#18) ---
+type Locale = 'en' | 'fr' | 'ar';
+const translations: Record<Locale, Record<string, string>> = {
+  en: { dashboard: 'Dashboard', approvals: 'Approvals', transfers: 'All Transfers', participants: 'Participants', prefund: 'Prefund Accounts', disputes: 'All Disputes', compliance: 'Compliance', corridors: 'Corridors', fxRates: 'FX & Rates', tierMgmt: 'Tier Mgmt', paymentRails: 'Payment Rails', analytics: 'Analytics', devPortal: 'Developer Portal', liveMonitor: 'Live Monitoring', settlement: 'Settlement', billing: 'Billing', settings: 'Settings', search: 'Search...', export: 'Export', totalTransfers: 'Total Transfers', successRate: 'Success Rate', prefundBalance: 'Prefund Balance', pendingApprovals: 'Pending Approvals' },
+  fr: { dashboard: 'Tableau de Bord', approvals: 'Approbations', transfers: 'Tous les Transferts', participants: 'Participants', prefund: 'Comptes de Préfinancement', disputes: 'Tous les Litiges', compliance: 'Conformité', corridors: 'Corridors', fxRates: 'FX & Taux', tierMgmt: 'Gestion des Niveaux', paymentRails: 'Rails de Paiement', analytics: 'Analytique', devPortal: 'Portail Développeur', liveMonitor: 'Suivi en Direct', settlement: 'Règlement', billing: 'Facturation', settings: 'Paramètres', search: 'Rechercher...', export: 'Exporter', totalTransfers: 'Total des Transferts', successRate: 'Taux de Réussite', prefundBalance: 'Solde de Préfinancement', pendingApprovals: 'Approbations en Attente' },
+  ar: { dashboard: 'لوحة المعلومات', approvals: 'الموافقات', transfers: 'جميع التحويلات', participants: 'المشاركون', prefund: 'حسابات التمويل المسبق', disputes: 'جميع النزاعات', compliance: 'الامتثال', corridors: 'الممرات', fxRates: 'أسعار الصرف', tierMgmt: 'إدارة المستويات', paymentRails: 'مسارات الدفع', analytics: 'التحليلات', devPortal: 'بوابة المطورين', liveMonitor: 'المراقبة المباشرة', settlement: 'التسوية', billing: 'الفوترة', settings: 'الإعدادات', search: '...بحث', export: 'تصدير', totalTransfers: 'إجمالي التحويلات', successRate: 'معدل النجاح', prefundBalance: 'رصيد التمويل المسبق', pendingApprovals: 'الموافقات المعلقة' },
+};
+function useLocale(): { locale: Locale; t: (key: string) => string; setLocale: (l: Locale) => void } {
+  const [locale, setLocale] = useState<Locale>(() => (localStorage.getItem('locale') as Locale) || 'en');
+  const t = useCallback((key: string) => translations[locale]?.[key] ?? key, [locale]);
+  const set = useCallback((l: Locale) => { setLocale(l); localStorage.setItem('locale', l); }, []);
+  return { locale, t, setLocale: set };
+}
+
 // --- Loading skeleton ---
 function TableSkeleton({ rows = 5, cols = 6 }: { rows?: number; cols?: number }) {
   return (
@@ -221,6 +235,7 @@ export default function OutboundRemittance() {
   const [cmdOpen, setCmdOpen] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const { dark, toggle: toggleDark } = useDarkMode();
+  const { locale, t, setLocale } = useLocale();
 
   const { data: authContext, isLoading: loadingAuth, error: authError } = trpc.outboundRemittance.getMyContext.useQuery(
     undefined, { retry: 1, retryDelay: 1000 }
@@ -398,6 +413,13 @@ export default function OutboundRemittance() {
               <div className="text-xs text-muted-foreground">
                 <p>Role: {userRole}</p>
                 <p className="mt-0.5">API v2.1 • Switch v4.2</p>
+                <div className="flex gap-1 mt-1">
+                  {(['en', 'fr', 'ar'] as Locale[]).map(l => (
+                    <button key={l} onClick={() => setLocale(l)} className={`px-1.5 py-0.5 rounded text-[10px] ${locale === l ? 'bg-primary text-primary-foreground' : 'hover:bg-accent'}`}>
+                      {l.toUpperCase()}
+                    </button>
+                  ))}
+                </div>
               </div>
             )}
           </div>
@@ -1023,13 +1045,63 @@ function ParticipantsSection({ role }: { role: UserRole }) {
 // =============================================================================
 
 function CorridorsSection() {
+  // Simulated volume data for heatmap
+  const heatmapData = useMemo(() => corridors.map(c => ({
+    ...c,
+    volume: Math.round(Math.random() * 500 + 50) * 1000000,
+    transfers: Math.round(Math.random() * 200 + 10),
+    successRate: Math.round(Math.random() * 8 + 92),
+    avgLatency: Math.round(Math.random() * 2000 + 200),
+  })), []);
+  const maxVol = Math.max(...heatmapData.map(c => c.volume));
+
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold">Corridors</h1>
         <p className="text-muted-foreground">13 Nigerian corridors with CBN-mandated spread caps</p>
       </div>
+
+      {/* Corridor Heatmap (#6) */}
       <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Corridor Flow Heatmap</CardTitle>
+          <CardDescription>Transfer volume intensity across corridors (darker = higher volume)</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-4 gap-3">
+            {heatmapData.map(c => {
+              const intensity = c.volume / maxVol;
+              const bg = `rgba(59, 130, 246, ${0.1 + intensity * 0.8})`;
+              return (
+                <Tooltip key={c.id}>
+                  <TooltipTrigger asChild>
+                    <div className="rounded-lg p-3 cursor-pointer border transition-transform hover:scale-105" style={{ backgroundColor: bg }}>
+                      <p className={`font-mono font-bold text-sm ${intensity > 0.5 ? 'text-white' : ''}`}>{c.id}</p>
+                      <p className={`text-xs ${intensity > 0.5 ? 'text-blue-100' : 'text-muted-foreground'}`}>{c.dest}</p>
+                      <p className={`text-lg font-bold ${intensity > 0.5 ? 'text-white' : ''}`}>₦{(c.volume / 1000000).toFixed(0)}M</p>
+                      <p className={`text-xs ${intensity > 0.5 ? 'text-blue-100' : 'text-muted-foreground'}`}>{c.transfers} transfers</p>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p className="font-mono">{c.id} ({c.currency})</p>
+                    <p>Success: {c.successRate}% · Latency: {c.avgLatency}ms</p>
+                    <p>Spread cap: {c.spreadCap} bps</p>
+                  </TooltipContent>
+                </Tooltip>
+              );
+            })}
+          </div>
+          <div className="flex items-center gap-2 mt-4 text-xs text-muted-foreground">
+            <span>Low</span>
+            <div className="flex-1 h-2 rounded-full" style={{ background: 'linear-gradient(to right, rgba(59,130,246,0.1), rgba(59,130,246,0.9))' }} />
+            <span>High</span>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader><CardTitle className="text-lg">Corridor Details</CardTitle></CardHeader>
         <CardContent className="p-0">
           <Table>
             <TableHeader><TableRow><TableHead>Corridor</TableHead><TableHead>Destination</TableHead><TableHead>Currency</TableHead><TableHead>Category</TableHead><TableHead>CBN Spread Cap</TableHead><TableHead>Max (USD)</TableHead></TableRow></TableHeader>
