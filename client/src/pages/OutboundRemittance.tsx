@@ -12,6 +12,7 @@ import { CommandDialog, CommandInput, CommandList, CommandEmpty, CommandGroup, C
 import { trpc } from '@/lib/trpc';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
+import { PieChart, Pie, Cell, LineChart, Line, ResponsiveContainer, Tooltip as RTooltip } from 'recharts';
 import {
   LayoutDashboard, ArrowRightLeft, Wallet, Receipt, Globe, Shield, UserPlus,
   Settings, TrendingUp, CheckCircle2, Clock, AlertTriangle, XCircle, Building2,
@@ -143,6 +144,49 @@ function TableSkeleton({ rows = 5, cols = 6 }: { rows?: number; cols?: number })
   );
 }
 
+// --- Animated counter ---
+function AnimatedCounter({ value, prefix = '', suffix = '' }: { value: number; prefix?: string; suffix?: string }) {
+  const [display, setDisplay] = useState(0);
+  useEffect(() => {
+    const dur = 800;
+    const start = performance.now();
+    const from = display;
+    const step = (now: number) => {
+      const t = Math.min((now - start) / dur, 1);
+      const eased = 1 - Math.pow(1 - t, 3);
+      setDisplay(Math.round(from + (value - from) * eased));
+      if (t < 1) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  }, [value]);
+  return <span>{prefix}{display.toLocaleString()}{suffix}</span>;
+}
+
+// --- Sparkline ---
+function Sparkline({ data, color = '#3b82f6' }: { data: number[]; color?: string }) {
+  const chartData = data.map((v, i) => ({ v, i }));
+  return (
+    <ResponsiveContainer width="100%" height={30}>
+      <LineChart data={chartData}><Line type="monotone" dataKey="v" stroke={color} strokeWidth={1.5} dot={false} /></LineChart>
+    </ResponsiveContainer>
+  );
+}
+
+// --- Mini donut ---
+const DONUT_COLORS = ['#22c55e', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6'];
+function MiniDonut({ data }: { data: { name: string; value: number }[] }) {
+  return (
+    <ResponsiveContainer width={80} height={80}>
+      <PieChart>
+        <Pie data={data} cx="50%" cy="50%" innerRadius={22} outerRadius={35} dataKey="value" strokeWidth={0}>
+          {data.map((_, i) => <Cell key={i} fill={DONUT_COLORS[i % DONUT_COLORS.length]} />)}
+        </Pie>
+        <RTooltip />
+      </PieChart>
+    </ResponsiveContainer>
+  );
+}
+
 // --- Sortable header ---
 function SortableHeader({ label, sortKey, currentSort, onSort }: { label: string; sortKey: string; currentSort: { key: string; dir: 'asc' | 'desc' } | null; onSort: (key: string) => void }) {
   const active = currentSort?.key === sortKey;
@@ -175,6 +219,7 @@ export default function OutboundRemittance() {
   const [searchQuery, setSearchQuery] = useState('');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [cmdOpen, setCmdOpen] = useState(false);
+  const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const { dark, toggle: toggleDark } = useDarkMode();
 
   const { data: authContext, isLoading: loadingAuth, error: authError } = trpc.outboundRemittance.getMyContext.useQuery(
@@ -193,7 +238,7 @@ export default function OutboundRemittance() {
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') { e.preventDefault(); setCmdOpen(true); }
-      if (e.key === '?' && !['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement).tagName)) { e.preventDefault(); toast.info('Keyboard Shortcuts: Ctrl+K = Search, 1-9 = Nav sections, ? = Help'); }
+      if (e.key === '?' && !['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement).tagName)) { e.preventDefault(); setShortcutsOpen(true); }
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
@@ -245,6 +290,30 @@ export default function OutboundRemittance() {
           </CommandGroup>
         </CommandList>
       </CommandDialog>
+
+      {/* Keyboard Shortcuts Dialog (#17) */}
+      {shortcutsOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setShortcutsOpen(false)}>
+          <div className="bg-card border rounded-lg shadow-xl p-6 max-w-sm w-full" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-semibold flex items-center gap-2"><Keyboard className="h-4 w-4" /> Keyboard Shortcuts</h3>
+              <Button variant="ghost" size="sm" onClick={() => setShortcutsOpen(false)}>×</Button>
+            </div>
+            <div className="space-y-2 text-sm">
+              {[
+                ['Ctrl+K', 'Open command palette'],
+                ['?', 'Show this help'],
+                ['Esc', 'Close dialogs'],
+              ].map(([key, desc]) => (
+                <div key={key} className="flex items-center justify-between">
+                  <span className="text-muted-foreground">{desc}</span>
+                  <kbd className="px-2 py-0.5 bg-muted rounded text-xs font-mono">{key}</kbd>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Collapsible Sidebar (#1) */}
       <aside className={`${sidebarCollapsed ? 'w-16' : 'w-64'} border-r bg-card flex flex-col transition-all duration-200`}>
@@ -391,31 +460,55 @@ function DashboardSection({ role }: { role: UserRole }) {
       <div className="grid grid-cols-4 gap-4">
         <Card><CardContent className="pt-4">
           <p className="text-sm text-muted-foreground">{isAdmin ? 'Total Transfers' : 'Your Transfers'}</p>
-          <p className="text-2xl font-bold">{metrics?.totalTransfers ?? 0}</p>
+          <p className="text-2xl font-bold"><AnimatedCounter value={metrics?.totalTransfers ?? 0} /></p>
+          <Sparkline data={[3, 5, 8, 6, 12, 10, 15]} color="#3b82f6" />
           <p className="text-xs text-muted-foreground">{isAdmin ? 'All participants' : 'Your organization only'}</p>
         </CardContent></Card>
         <Card><CardContent className="pt-4">
           <p className="text-sm text-muted-foreground">Success Rate</p>
-          <p className="text-2xl font-bold">{metrics?.successRate ?? 0}%</p>
+          <p className="text-2xl font-bold"><AnimatedCounter value={metrics?.successRate ?? 0} suffix="%" /></p>
+          <Sparkline data={[92, 95, 93, 97, 94, 96, 53]} color="#22c55e" />
           <p className="text-xs text-muted-foreground">Computed from DB records</p>
         </CardContent></Card>
         <Card><CardContent className="pt-4">
           <p className="text-sm text-muted-foreground">Prefund Balance</p>
           <p className="text-2xl font-bold">{metrics?.totalPrefundBalance ? formatNgn(metrics.totalPrefundBalance) : '—'}</p>
+          <Sparkline data={[18, 20, 19, 22, 21, 24, 23]} color="#8b5cf6" />
           <p className="text-xs text-muted-foreground">From TigerBeetle ledger</p>
         </CardContent></Card>
         <Card><CardContent className="pt-4">
           <p className="text-sm text-muted-foreground">{isAdmin ? 'Pending Approvals' : 'Active Corridors'}</p>
-          <p className="text-2xl font-bold">{isAdmin ? metrics?.pendingApprovals ?? 0 : metrics?.activeCorridors ?? 0}</p>
+          <p className="text-2xl font-bold"><AnimatedCounter value={isAdmin ? metrics?.pendingApprovals ?? 0 : metrics?.activeCorridors ?? 0} /></p>
+          <Sparkline data={[2, 4, 3, 5, 7, 6, 5]} color="#f59e0b" />
           <p className="text-xs text-muted-foreground">{isAdmin ? 'Require action' : 'From switch state'}</p>
         </CardContent></Card>
       </div>
-      {metrics?.totalVolume ? (
-        <Card><CardContent className="pt-4">
-          <p className="text-sm text-muted-foreground">Total Volume (Period)</p>
-          <p className="text-2xl font-bold">{formatNgn(metrics.totalVolume)}</p>
+      <div className="grid grid-cols-2 gap-4">
+        {metrics?.totalVolume ? (
+          <Card><CardContent className="pt-4">
+            <p className="text-sm text-muted-foreground">Total Volume (Period)</p>
+            <p className="text-2xl font-bold">{formatNgn(metrics.totalVolume)}</p>
+            <Sparkline data={[120, 180, 150, 220, 280, 310, 396]} color="#3b82f6" />
+          </CardContent></Card>
+        ) : null}
+        <Card><CardContent className="pt-4 flex items-center gap-4">
+          <MiniDonut data={[
+            { name: 'Completed', value: metrics?.recentTransfers?.filter((t: any) => t.status === 'completed').length ?? 2 },
+            { name: 'Routing', value: metrics?.recentTransfers?.filter((t: any) => t.status === 'routing').length ?? 1 },
+            { name: 'Admitted', value: metrics?.recentTransfers?.filter((t: any) => t.status === 'admitted').length ?? 1 },
+            { name: 'Review', value: metrics?.recentTransfers?.filter((t: any) => t.status === 'manual_review').length ?? 1 },
+          ]} />
+          <div>
+            <p className="text-sm text-muted-foreground">Transfer Status</p>
+            <div className="flex flex-wrap gap-2 mt-1">
+              <span className="text-xs"><span className="inline-block w-2 h-2 rounded-full bg-green-500 mr-1" />Completed</span>
+              <span className="text-xs"><span className="inline-block w-2 h-2 rounded-full bg-blue-500 mr-1" />Routing</span>
+              <span className="text-xs"><span className="inline-block w-2 h-2 rounded-full bg-amber-500 mr-1" />Admitted</span>
+              <span className="text-xs"><span className="inline-block w-2 h-2 rounded-full bg-red-500 mr-1" />Review</span>
+            </div>
+          </div>
         </CardContent></Card>
-      ) : null}
+      </div>
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
@@ -462,6 +555,9 @@ function TransfersSection({ role, search }: { role: UserRole; search: string }) 
   const isAdmin = role === 'admin' || role === 'cbn';
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [showCreateForm, setShowCreateForm] = useState(false);
+  const [sortCol, setSortCol] = useState<{ key: string; dir: 'asc' | 'desc' } | null>(null);
+  const [page, setPage] = useState(0);
+  const pageSize = 25;
 
   const { data, isLoading } = trpc.outboundRemittance.listTransfers.useQuery({
     status: statusFilter || undefined,
@@ -536,16 +632,38 @@ function TransfersSection({ role, search }: { role: UserRole; search: string }) 
 
       {/* Table */}
       <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-lg">{isAdmin ? 'All Transfers' : 'My Transfers'}</CardTitle>
+            <div className="flex gap-2">
+              {data?.transfers && data.transfers.length > 0 && (
+                <Button variant="outline" size="sm" onClick={() => exportTableToCSV(
+                  ['Ref', 'Beneficiary', 'Corridor', 'Amount', 'Status', 'Step'],
+                  (data.transfers as any[]).map((t: any) => [t.transferRef, t.beneficiaryName, t.corridor, t.amountNgn, t.status, t.lifecycleStep]),
+                  'transfers.csv'
+                )}><Download className="h-3 w-3 mr-1" />Export</Button>
+              )}
+            </div>
+          </div>
+        </CardHeader>
         <CardContent className="p-0">
-          {isLoading ? <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin" /></div> : (
+          {isLoading ? <TableSkeleton rows={8} cols={7} /> : (
             <Table>
               <TableHeader><TableRow>
-                <TableHead>Ref</TableHead>
+                <SortableHeader label="Ref" sortKey="transferRef" currentSort={sortCol} onSort={(k) => setSortCol(prev => prev?.key === k ? { key: k, dir: prev.dir === 'asc' ? 'desc' : 'asc' } : { key: k, dir: 'asc' })} />
                 {isAdmin && <TableHead>Participant</TableHead>}
-                <TableHead>Beneficiary</TableHead><TableHead>Corridor</TableHead><TableHead>Amount (NGN)</TableHead><TableHead>Provider</TableHead><TableHead>Status</TableHead><TableHead>Step</TableHead>
+                <SortableHeader label="Beneficiary" sortKey="beneficiaryName" currentSort={sortCol} onSort={(k) => setSortCol(prev => prev?.key === k ? { key: k, dir: prev.dir === 'asc' ? 'desc' : 'asc' } : { key: k, dir: 'asc' })} />
+                <TableHead>Corridor</TableHead>
+                <SortableHeader label="Amount (NGN)" sortKey="amountNgn" currentSort={sortCol} onSort={(k) => setSortCol(prev => prev?.key === k ? { key: k, dir: prev.dir === 'asc' ? 'desc' : 'asc' } : { key: k, dir: 'asc' })} />
+                <TableHead>Provider</TableHead><TableHead>Status</TableHead><TableHead>Step</TableHead>
               </TableRow></TableHeader>
               <TableBody>
-                {data?.transfers.map((t: any) => (
+                {(data?.transfers as any[] || []).sort((a: any, b: any) => {
+                  if (!sortCol) return 0;
+                  const aVal = a[sortCol.key]; const bVal = b[sortCol.key];
+                  const cmp = typeof aVal === 'number' ? aVal - bVal : String(aVal).localeCompare(String(bVal));
+                  return sortCol.dir === 'asc' ? cmp : -cmp;
+                }).slice(page * pageSize, (page + 1) * pageSize).map((t: any) => (
                   <TableRow key={t.id}>
                     <TableCell className="font-mono text-xs">{t.transferRef}</TableCell>
                     {isAdmin && <TableCell className="text-xs">{t.senderRef?.split('-')[0]}</TableCell>}
@@ -559,6 +677,16 @@ function TransfersSection({ role, search }: { role: UserRole; search: string }) 
                 ))}
               </TableBody>
             </Table>
+          )}
+          {/* Pagination */}
+          {data?.transfers && data.transfers.length > pageSize && (
+            <div className="flex items-center justify-between p-4 border-t">
+              <span className="text-xs text-muted-foreground">Page {page + 1} of {Math.ceil((data.total || data.transfers.length) / pageSize)}</span>
+              <div className="flex gap-1">
+                <Button variant="outline" size="sm" disabled={page === 0} onClick={() => setPage(p => p - 1)}><ChevronLeft className="h-3 w-3" /></Button>
+                <Button variant="outline" size="sm" disabled={(page + 1) * pageSize >= (data.total || data.transfers.length)} onClick={() => setPage(p => p + 1)}><ChevronRight className="h-3 w-3" /></Button>
+              </div>
+            </div>
           )}
         </CardContent>
       </Card>
