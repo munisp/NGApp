@@ -29,6 +29,10 @@ import {
   seedFundingRequests,
   seedTierUpgrades,
   seedApprovals,
+  seedEnforcementActions,
+  seedAutoTriggers,
+  type EnforcementAction,
+  type AutoSuspensionTrigger,
 } from '../seed/outboundSeedData';
 
 // --- Helpers ---
@@ -1125,6 +1129,316 @@ export const outboundRemittanceRouter = router({
       (batch as any).failedAt = null;
       (batch as any).failReason = null;
       return { success: true, batchId: input.batchId, retryCount: batch.retryCount + 1 };
+    }),
+
+  // ==========================================================================
+  // CBN ENFORCEMENT ACTIONS
+  // ==========================================================================
+
+  listEnforcementActions: protectedProcedure
+    .input(z.object({
+      status: z.enum(['active', 'resolved', 'expired', 'pending_review']).optional(),
+      participantId: z.number().optional(),
+      type: z.string().optional(),
+    }).optional())
+    .query(async ({ ctx, input }) => {
+      const { isAdmin } = getScope(ctx.user);
+      if (!isAdmin) throw new TRPCError({ code: 'FORBIDDEN', message: 'Only CBN/admin can view enforcement actions' });
+      let actions = [...seedEnforcementActions] as EnforcementAction[];
+      if (input?.status) actions = actions.filter(a => a.status === input.status);
+      if (input?.participantId) actions = actions.filter(a => a.participantId === input.participantId);
+      if (input?.type) actions = actions.filter(a => a.type === input.type);
+      return {
+        actions,
+        total: actions.length,
+        summary: {
+          active: seedEnforcementActions.filter(a => a.status === 'active').length,
+          pendingReview: seedEnforcementActions.filter(a => a.status === 'pending_review').length,
+          resolved: seedEnforcementActions.filter(a => a.status === 'resolved').length,
+          expired: seedEnforcementActions.filter(a => a.status === 'expired').length,
+          suspensions: seedEnforcementActions.filter(a => a.type === 'suspension' && a.status === 'active').length,
+          corridorRestrictions: seedEnforcementActions.filter(a => a.type === 'corridor_restriction' && a.status === 'active').length,
+          limitOverrides: seedEnforcementActions.filter(a => a.type === 'limit_override' && a.status === 'active').length,
+        },
+      };
+    }),
+
+  suspendParticipant: protectedProcedure
+    .input(z.object({
+      participantId: z.number(),
+      reason: z.string().min(10),
+      cbnReference: z.string().min(5),
+      freezePrefund: z.boolean().default(true),
+      haltInFlight: z.boolean().default(false),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const { isAdmin, isCbn } = getScope(ctx.user);
+      if (!isAdmin) throw new TRPCError({ code: 'FORBIDDEN', message: 'Only CBN/admin can suspend participants' });
+      const participant = seedParticipants.find(p => p.id === input.participantId);
+      if (!participant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Participant not found' });
+      if (participant.status === 'suspended') throw new TRPCError({ code: 'BAD_REQUEST', message: 'Participant already suspended' });
+      (participant as any).status = 'suspended';
+      const action: EnforcementAction = {
+        id: seedEnforcementActions.length + 1,
+        participantId: input.participantId,
+        participantName: participant.name,
+        type: 'suspension',
+        status: 'active',
+        reason: input.reason,
+        cbnReference: input.cbnReference,
+        issuedBy: isCbn ? 'CBN Regulator' : 'Platform Admin',
+        issuedAt: new Date(),
+        effectiveAt: new Date(),
+        expiresAt: null,
+        resolvedAt: null,
+        resolvedBy: null,
+        resolutionNote: null,
+        details: { freezePrefund: input.freezePrefund, haltInFlight: input.haltInFlight },
+      };
+      seedEnforcementActions.push(action);
+      return action;
+    }),
+
+  reinstateParticipant: protectedProcedure
+    .input(z.object({
+      participantId: z.number(),
+      resolutionNote: z.string().min(10),
+      enforcementId: z.number(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const { isAdmin } = getScope(ctx.user);
+      if (!isAdmin) throw new TRPCError({ code: 'FORBIDDEN', message: 'Only CBN/admin can reinstate participants' });
+      const participant = seedParticipants.find(p => p.id === input.participantId);
+      if (!participant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Participant not found' });
+      const action = seedEnforcementActions.find(a => a.id === input.enforcementId);
+      if (!action) throw new TRPCError({ code: 'NOT_FOUND', message: 'Enforcement action not found' });
+      (participant as any).status = 'active';
+      action.status = 'resolved';
+      action.resolvedAt = new Date();
+      action.resolvedBy = 'CBN/Admin';
+      action.resolutionNote = input.resolutionNote;
+      return { participant, action };
+    }),
+
+  restrictCorridors: protectedProcedure
+    .input(z.object({
+      participantId: z.number(),
+      restrictedCorridors: z.array(z.string()).min(1),
+      reason: z.string().min(10),
+      cbnReference: z.string().min(5),
+      expiresInDays: z.number().min(1).max(365).optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const { isAdmin, isCbn } = getScope(ctx.user);
+      if (!isAdmin) throw new TRPCError({ code: 'FORBIDDEN', message: 'Only CBN/admin can restrict corridors' });
+      const participant = seedParticipants.find(p => p.id === input.participantId);
+      if (!participant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Participant not found' });
+      const action: EnforcementAction = {
+        id: seedEnforcementActions.length + 1,
+        participantId: input.participantId,
+        participantName: participant.name,
+        type: 'corridor_restriction',
+        status: 'active',
+        reason: input.reason,
+        cbnReference: input.cbnReference,
+        issuedBy: isCbn ? 'CBN Regulator' : 'Platform Admin',
+        issuedAt: new Date(),
+        effectiveAt: new Date(),
+        expiresAt: input.expiresInDays ? new Date(Date.now() + input.expiresInDays * 86400000) : null,
+        resolvedAt: null, resolvedBy: null, resolutionNote: null,
+        details: { restrictedCorridors: input.restrictedCorridors, originalCorridors: participant.activeCorridors },
+      };
+      (participant as any).activeCorridors = Math.max(0, participant.activeCorridors - input.restrictedCorridors.length);
+      seedEnforcementActions.push(action);
+      return action;
+    }),
+
+  overrideLimits: protectedProcedure
+    .input(z.object({
+      participantId: z.number(),
+      newDailyLimit: z.string().optional(),
+      newTransactionMax: z.string().optional(),
+      reason: z.string().min(10),
+      cbnReference: z.string().min(5),
+      expiresInDays: z.number().min(1).max(365).optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const { isAdmin, isCbn } = getScope(ctx.user);
+      if (!isAdmin) throw new TRPCError({ code: 'FORBIDDEN', message: 'Only CBN/admin can override limits' });
+      const participant = seedParticipants.find(p => p.id === input.participantId);
+      if (!participant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Participant not found' });
+      const action: EnforcementAction = {
+        id: seedEnforcementActions.length + 1,
+        participantId: input.participantId,
+        participantName: participant.name,
+        type: 'limit_override',
+        status: 'active',
+        reason: input.reason,
+        cbnReference: input.cbnReference,
+        issuedBy: isCbn ? 'CBN Regulator' : 'Platform Admin',
+        issuedAt: new Date(),
+        effectiveAt: new Date(),
+        expiresAt: input.expiresInDays ? new Date(Date.now() + input.expiresInDays * 86400000) : null,
+        resolvedAt: null, resolvedBy: null, resolutionNote: null,
+        details: { originalLimit: participant.dailyLimit, overrideLimit: input.newDailyLimit, overrideTxnMax: input.newTransactionMax },
+      };
+      if (input.newDailyLimit) (participant as any).dailyLimit = input.newDailyLimit;
+      seedEnforcementActions.push(action);
+      return action;
+    }),
+
+  issueDirective: protectedProcedure
+    .input(z.object({
+      participantId: z.number(),
+      directiveType: z.enum(['warning', 'show_cause', 'remediation_order']),
+      reason: z.string().min(10),
+      cbnReference: z.string().min(5),
+      requiredActions: z.array(z.string()).min(1),
+      deadlineDays: z.number().min(1).max(365),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const { isAdmin, isCbn } = getScope(ctx.user);
+      if (!isAdmin) throw new TRPCError({ code: 'FORBIDDEN', message: 'Only CBN/admin can issue directives' });
+      const participant = seedParticipants.find(p => p.id === input.participantId);
+      if (!participant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Participant not found' });
+      const action: EnforcementAction = {
+        id: seedEnforcementActions.length + 1,
+        participantId: input.participantId,
+        participantName: participant.name,
+        type: 'compliance_directive',
+        status: 'pending_review',
+        reason: input.reason,
+        cbnReference: input.cbnReference,
+        issuedBy: isCbn ? 'CBN Regulator' : 'Platform Admin',
+        issuedAt: new Date(),
+        effectiveAt: new Date(),
+        expiresAt: new Date(Date.now() + input.deadlineDays * 86400000),
+        resolvedAt: null, resolvedBy: null, resolutionNote: null,
+        details: { directiveType: input.directiveType, requiredActions: input.requiredActions, deadline: new Date(Date.now() + input.deadlineDays * 86400000).toISOString().split('T')[0], requiresResponse: true, responseReceived: false },
+      };
+      seedEnforcementActions.push(action);
+      return action;
+    }),
+
+  revokeLicense: protectedProcedure
+    .input(z.object({
+      participantId: z.number(),
+      reason: z.string().min(10),
+      cbnReference: z.string().min(5),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const { isCbn } = getScope(ctx.user);
+      if (!isCbn) throw new TRPCError({ code: 'FORBIDDEN', message: 'Only CBN can revoke licenses' });
+      const participant = seedParticipants.find(p => p.id === input.participantId);
+      if (!participant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Participant not found' });
+      if (participant.status === 'revoked') throw new TRPCError({ code: 'BAD_REQUEST', message: 'License already revoked' });
+      (participant as any).status = 'revoked';
+      (participant as any).activeCorridors = 0;
+      const action: EnforcementAction = {
+        id: seedEnforcementActions.length + 1,
+        participantId: input.participantId,
+        participantName: participant.name,
+        type: 'license_revocation',
+        status: 'active',
+        reason: input.reason,
+        cbnReference: input.cbnReference,
+        issuedBy: 'CBN Regulator',
+        issuedAt: new Date(),
+        effectiveAt: new Date(),
+        expiresAt: null,
+        resolvedAt: null, resolvedBy: null, resolutionNote: null,
+        details: { previousLicense: participant.cbnLicense, previousTier: participant.tier, previousCorridors: participant.activeCorridors },
+      };
+      seedEnforcementActions.push(action);
+      return action;
+    }),
+
+  resolveEnforcement: protectedProcedure
+    .input(z.object({
+      enforcementId: z.number(),
+      resolutionNote: z.string().min(10),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const { isAdmin } = getScope(ctx.user);
+      if (!isAdmin) throw new TRPCError({ code: 'FORBIDDEN', message: 'Only CBN/admin can resolve enforcement actions' });
+      const action = seedEnforcementActions.find(a => a.id === input.enforcementId);
+      if (!action) throw new TRPCError({ code: 'NOT_FOUND', message: 'Enforcement action not found' });
+      if (action.status === 'resolved') throw new TRPCError({ code: 'BAD_REQUEST', message: 'Already resolved' });
+      action.status = 'resolved';
+      action.resolvedAt = new Date();
+      action.resolvedBy = 'CBN/Admin';
+      action.resolutionNote = input.resolutionNote;
+      if (action.type === 'suspension') {
+        const p = seedParticipants.find(p => p.id === action.participantId);
+        if (p) (p as any).status = 'active';
+      }
+      return action;
+    }),
+
+  // --- Auto-Suspension Triggers ---
+  listAutoTriggers: protectedProcedure
+    .query(async ({ ctx }) => {
+      const { isAdmin } = getScope(ctx.user);
+      if (!isAdmin) throw new TRPCError({ code: 'FORBIDDEN', message: 'Only CBN/admin can view auto-triggers' });
+      return seedAutoTriggers;
+    }),
+
+  createAutoTrigger: protectedProcedure
+    .input(z.object({
+      name: z.string().min(3),
+      description: z.string(),
+      metric: z.string(),
+      operator: z.enum(['gt', 'lt', 'gte', 'lte']),
+      threshold: z.number(),
+      unit: z.string(),
+      windowDays: z.number().min(1).max(365),
+      action: z.enum(['suspend', 'restrict_corridors', 'reduce_limit', 'warning']),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const { isAdmin } = getScope(ctx.user);
+      if (!isAdmin) throw new TRPCError({ code: 'FORBIDDEN', message: 'Only CBN/admin can create auto-triggers' });
+      const trigger: AutoSuspensionTrigger = {
+        id: seedAutoTriggers.length + 1,
+        ...input,
+        isActive: true,
+        lastTriggered: null,
+        triggeredCount: 0,
+        createdBy: 'CBN/Admin',
+        createdAt: new Date(),
+      };
+      seedAutoTriggers.push(trigger);
+      return trigger;
+    }),
+
+  updateAutoTrigger: protectedProcedure
+    .input(z.object({
+      id: z.number(),
+      isActive: z.boolean().optional(),
+      threshold: z.number().optional(),
+      windowDays: z.number().min(1).max(365).optional(),
+      action: z.enum(['suspend', 'restrict_corridors', 'reduce_limit', 'warning']).optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const { isAdmin } = getScope(ctx.user);
+      if (!isAdmin) throw new TRPCError({ code: 'FORBIDDEN', message: 'Only CBN/admin can update auto-triggers' });
+      const trigger = seedAutoTriggers.find(t => t.id === input.id);
+      if (!trigger) throw new TRPCError({ code: 'NOT_FOUND', message: 'Trigger not found' });
+      if (input.isActive !== undefined) trigger.isActive = input.isActive;
+      if (input.threshold !== undefined) trigger.threshold = input.threshold;
+      if (input.windowDays !== undefined) trigger.windowDays = input.windowDays;
+      if (input.action !== undefined) trigger.action = input.action;
+      return trigger;
+    }),
+
+  deleteAutoTrigger: protectedProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      const { isAdmin } = getScope(ctx.user);
+      if (!isAdmin) throw new TRPCError({ code: 'FORBIDDEN', message: 'Only CBN/admin can delete auto-triggers' });
+      const idx = seedAutoTriggers.findIndex(t => t.id === input.id);
+      if (idx === -1) throw new TRPCError({ code: 'NOT_FOUND', message: 'Trigger not found' });
+      seedAutoTriggers.splice(idx, 1);
+      return { deleted: input.id };
     }),
 });
 

@@ -287,3 +287,97 @@ export const seedApprovals: SeedApproval[] = [
   { id: 4, entityType: 'onboarding', entityId: 9, action: 'approve_onboarding', requestedBy: 0, requestedByName: 'TerraPay Global', reason: 'New IMTO application — CBN license CBN/IMTO/2024/011', status: 'pending', approvedBy: null, approvedAt: null, createdAt: new Date('2025-04-25T10:00:00Z') },
   { id: 5, entityType: 'transfer', entityId: 15, action: 'confirm_block', requestedBy: 201, requestedByName: 'System (Auto-block)', reason: 'OFAC SDN exact match — Hassan Nasrallah Foundation. Awaiting CBN confirmation to file SAR.', status: 'pending', approvedBy: null, approvedAt: null, createdAt: new Date('2025-05-02T10:30:00Z') },
 ];
+
+// --- CBN Enforcement Actions ---
+export type EnforcementAction = {
+  id: number;
+  participantId: number;
+  participantName: string;
+  type: 'suspension' | 'corridor_restriction' | 'limit_override' | 'compliance_directive' | 'license_revocation' | 'warning' | 'show_cause';
+  status: 'active' | 'resolved' | 'expired' | 'pending_review';
+  reason: string;
+  cbnReference: string;
+  issuedBy: string;
+  issuedAt: Date;
+  effectiveAt: Date;
+  expiresAt: Date | null;
+  resolvedAt: Date | null;
+  resolvedBy: string | null;
+  resolutionNote: string | null;
+  details: Record<string, any>;
+};
+
+export const seedEnforcementActions: EnforcementAction[] = [
+  {
+    id: 1, participantId: 7, participantName: 'Chipper Cash Nigeria',
+    type: 'suspension', status: 'active',
+    reason: 'Elevated sanctions hit rate (8.2%) exceeding 5% threshold over 30-day rolling window. Multiple OFAC partial matches on NG-AE and NG-CN corridors.',
+    cbnReference: 'CBN/ENF/2026/0042', issuedBy: 'CBN Compliance Division',
+    issuedAt: new Date('2026-04-28T10:00:00Z'), effectiveAt: new Date('2026-04-28T12:00:00Z'),
+    expiresAt: null, resolvedAt: null, resolvedBy: null, resolutionNote: null,
+    details: { sanctionsHitRate: 8.2, threshold: 5, period: '30d', affectedCorridors: ['NG-AE', 'NG-CN'], blockedTransfers: 12, prefundFrozen: true },
+  },
+  {
+    id: 2, participantId: 4, participantName: 'PalmPay Finance',
+    type: 'corridor_restriction', status: 'active',
+    reason: 'Elevated AML risk on NG-TR corridor. Structuring patterns detected in 14 transactions over 2 weeks.',
+    cbnReference: 'CBN/ENF/2026/0039', issuedBy: 'CBN AML Unit',
+    issuedAt: new Date('2026-04-25T14:00:00Z'), effectiveAt: new Date('2026-04-25T16:00:00Z'),
+    expiresAt: new Date('2026-05-25T16:00:00Z'), resolvedAt: null, resolvedBy: null, resolutionNote: null,
+    details: { restrictedCorridors: ['NG-TR'], structuringCount: 14, originalCorridors: 7, remainingCorridors: 6 },
+  },
+  {
+    id: 3, participantId: 8, participantName: 'LemFi (Formerly Lemonade Finance)',
+    type: 'limit_override', status: 'active',
+    reason: 'Pending investigation into high-value transfers exceeding declared business volume. Daily limit reduced from ₦2B to ₦500M.',
+    cbnReference: 'CBN/ENF/2026/0041', issuedBy: 'CBN Supervision Department',
+    issuedAt: new Date('2026-04-27T09:00:00Z'), effectiveAt: new Date('2026-04-27T09:00:00Z'),
+    expiresAt: new Date('2026-05-27T09:00:00Z'), resolvedAt: null, resolvedBy: null, resolutionNote: null,
+    details: { originalLimit: '2000000000.00', overrideLimit: '500000000.00', originalTxnMax: null, overrideTxnMax: '50000000.00' },
+  },
+  {
+    id: 4, participantId: 4, participantName: 'PalmPay Finance',
+    type: 'compliance_directive', status: 'pending_review',
+    reason: 'Show-cause notice: Failure to implement enhanced due diligence (EDD) for PEP beneficiaries as required under CBN AML/CFT Regulations 2022.',
+    cbnReference: 'CBN/DIR/2026/0015', issuedBy: 'CBN Director of Banking Supervision',
+    issuedAt: new Date('2026-04-20T11:00:00Z'), effectiveAt: new Date('2026-04-20T11:00:00Z'),
+    expiresAt: new Date('2026-05-20T11:00:00Z'), resolvedAt: null, resolvedBy: null, resolutionNote: null,
+    details: { directiveType: 'show_cause', deadline: '2026-05-20', requiresResponse: true, responseReceived: false, requiredActions: ['Implement EDD for PEP beneficiaries', 'Submit updated AML/CFT compliance manual', 'Provide 90-day transaction review report'] },
+  },
+  {
+    id: 5, participantId: 5, participantName: 'Kuda MFB',
+    type: 'warning', status: 'resolved',
+    reason: 'SLA breach: Settlement confirmation latency exceeded 48h SLA on 6 occasions in April 2026.',
+    cbnReference: 'CBN/WARN/2026/0028', issuedBy: 'CBN Payment Systems Department',
+    issuedAt: new Date('2026-04-15T08:00:00Z'), effectiveAt: new Date('2026-04-15T08:00:00Z'),
+    expiresAt: null, resolvedAt: new Date('2026-04-22T16:00:00Z'), resolvedBy: 'CBN Payment Systems Department',
+    resolutionNote: 'Kuda provided root cause analysis and remediation plan. Settlement processing upgraded to dedicated infrastructure.',
+    details: { slaBreachCount: 6, slaTarget: '48h', worstCase: '72h', affectedCorridors: ['NG-US', 'NG-GB'] },
+  },
+];
+
+// --- Auto-Suspension Triggers ---
+export type AutoSuspensionTrigger = {
+  id: number;
+  name: string;
+  description: string;
+  metric: string;
+  operator: 'gt' | 'lt' | 'gte' | 'lte';
+  threshold: number;
+  unit: string;
+  windowDays: number;
+  action: 'suspend' | 'restrict_corridors' | 'reduce_limit' | 'warning';
+  isActive: boolean;
+  lastTriggered: Date | null;
+  triggeredCount: number;
+  createdBy: string;
+  createdAt: Date;
+};
+
+export const seedAutoTriggers: AutoSuspensionTrigger[] = [
+  { id: 1, name: 'High Sanctions Hit Rate', description: 'Auto-suspend participant if sanctions screening hit rate exceeds threshold', metric: 'sanctions_hit_rate', operator: 'gt', threshold: 5, unit: '%', windowDays: 30, action: 'suspend', isActive: true, lastTriggered: new Date('2026-04-28T10:00:00Z'), triggeredCount: 1, createdBy: 'CBN Compliance', createdAt: new Date('2026-01-15') },
+  { id: 2, name: 'Excessive SLA Breaches', description: 'Issue warning if settlement SLA breaches exceed count in window', metric: 'sla_breach_count', operator: 'gt', threshold: 10, unit: 'breaches', windowDays: 30, action: 'warning', isActive: true, lastTriggered: null, triggeredCount: 0, createdBy: 'CBN Payment Systems', createdAt: new Date('2026-02-01') },
+  { id: 3, name: 'Structuring Detection', description: 'Restrict corridors if structuring pattern score exceeds threshold', metric: 'structuring_score', operator: 'gt', threshold: 75, unit: 'score', windowDays: 14, action: 'restrict_corridors', isActive: true, lastTriggered: new Date('2026-04-25T14:00:00Z'), triggeredCount: 1, createdBy: 'CBN AML Unit', createdAt: new Date('2026-01-20') },
+  { id: 4, name: 'Volume Anomaly', description: 'Reduce daily limit if transfer volume exceeds 200% of 90-day average', metric: 'volume_anomaly_pct', operator: 'gt', threshold: 200, unit: '%', windowDays: 7, action: 'reduce_limit', isActive: true, lastTriggered: null, triggeredCount: 0, createdBy: 'CBN Supervision', createdAt: new Date('2026-03-01') },
+  { id: 5, name: 'Failed Transfer Spike', description: 'Issue warning if failure rate exceeds threshold', metric: 'failure_rate', operator: 'gt', threshold: 15, unit: '%', windowDays: 7, action: 'warning', isActive: false, lastTriggered: null, triggeredCount: 0, createdBy: 'CBN Operations', createdAt: new Date('2026-03-15') },
+];

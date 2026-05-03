@@ -20,11 +20,12 @@ import {
   DollarSign, BarChart3, Layers, Network, Key, Activity, Code, FileText, Eye, Copy,
   PanelLeftClose, PanelLeft, Moon, Sun, Download, ChevronRight, ArrowUpDown,
   ChevronLeft, ChevronDown, Keyboard, Filter, FileSpreadsheet,
+  ShieldAlert, Ban, Scale, AlertCircle, Zap, ToggleLeft, ToggleRight, Trash2,
 } from 'lucide-react';
 
 // --- Types ---
 type UserRole = 'participant' | 'admin' | 'cbn';
-type NavSection = 'dashboard' | 'transfers' | 'prefund' | 'billing' | 'corridors' | 'compliance' | 'disputes' | 'approvals' | 'participants' | 'fx_management' | 'tier_management' | 'analytics' | 'payment_rails' | 'developer_portal' | 'transaction_monitoring' | 'settlement' | 'settings';
+type NavSection = 'dashboard' | 'transfers' | 'prefund' | 'billing' | 'corridors' | 'compliance' | 'disputes' | 'approvals' | 'participants' | 'enforcement' | 'fx_management' | 'tier_management' | 'analytics' | 'payment_rails' | 'developer_portal' | 'transaction_monitoring' | 'settlement' | 'settings';
 
 // 13 CBN-regulated corridors (static reference data)
 const corridors = [
@@ -46,36 +47,37 @@ const corridors = [
 function getNavItems(role: UserRole) {
   if (role === 'participant') {
     return [
-      { id: 'dashboard' as NavSection, label: 'Dashboard', icon: LayoutDashboard },
-      { id: 'transfers' as NavSection, label: 'My Transfers', icon: ArrowRightLeft },
-      { id: 'prefund' as NavSection, label: 'My Prefund', icon: Wallet },
-      { id: 'billing' as NavSection, label: 'My Billing', icon: Receipt },
-      { id: 'disputes' as NavSection, label: 'My Disputes', icon: AlertOctagon },
-      { id: 'corridors' as NavSection, label: 'Corridors', icon: Globe },
-      { id: 'compliance' as NavSection, label: 'My Compliance', icon: Shield },
-      { id: 'developer_portal' as NavSection, label: 'Developer', icon: Code },
-      { id: 'transaction_monitoring' as NavSection, label: 'Live Tracking', icon: Activity },
-      { id: 'settings' as NavSection, label: 'Settings', icon: Settings },
+      { id: 'dashboard' as NavSection, label: 'Dashboard', tKey: 'dashboard', icon: LayoutDashboard },
+      { id: 'transfers' as NavSection, label: 'My Transfers', tKey: 'transfers', icon: ArrowRightLeft },
+      { id: 'prefund' as NavSection, label: 'My Prefund', tKey: 'prefund', icon: Wallet },
+      { id: 'billing' as NavSection, label: 'My Billing', tKey: 'billing', icon: Receipt },
+      { id: 'disputes' as NavSection, label: 'My Disputes', tKey: 'disputes', icon: AlertOctagon },
+      { id: 'corridors' as NavSection, label: 'Corridors', tKey: 'corridors', icon: Globe },
+      { id: 'compliance' as NavSection, label: 'My Compliance', tKey: 'compliance', icon: Shield },
+      { id: 'developer_portal' as NavSection, label: 'Developer', tKey: 'devPortal', icon: Code },
+      { id: 'transaction_monitoring' as NavSection, label: 'Live Tracking', tKey: 'liveMonitor', icon: Activity },
+      { id: 'settings' as NavSection, label: 'Settings', tKey: 'settings', icon: Settings },
     ];
   }
   return [
-    { id: 'dashboard' as NavSection, label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'approvals' as NavSection, label: 'Approvals', icon: Gavel },
-    { id: 'transfers' as NavSection, label: 'All Transfers', icon: ArrowRightLeft },
-    { id: 'participants' as NavSection, label: 'Participants', icon: Building2 },
-    { id: 'prefund' as NavSection, label: 'Prefund Accounts', icon: Wallet },
-    { id: 'disputes' as NavSection, label: 'All Disputes', icon: AlertOctagon },
-    { id: 'compliance' as NavSection, label: 'Compliance', icon: Shield },
-    { id: 'corridors' as NavSection, label: 'Corridors', icon: Globe },
-    { id: 'fx_management' as NavSection, label: 'FX & Rates', icon: DollarSign },
-    { id: 'tier_management' as NavSection, label: 'Tier Mgmt', icon: Layers },
-    { id: 'payment_rails' as NavSection, label: 'Payment Rails', icon: Network },
-    { id: 'analytics' as NavSection, label: 'Analytics', icon: BarChart3 },
-    { id: 'developer_portal' as NavSection, label: 'Developer Portal', icon: Code },
-    { id: 'transaction_monitoring' as NavSection, label: 'Live Monitoring', icon: Activity },
-    { id: 'settlement' as NavSection, label: 'Settlement', icon: Layers },
-    { id: 'billing' as NavSection, label: 'Billing', icon: Receipt },
-    { id: 'settings' as NavSection, label: 'Settings', icon: Settings },
+    { id: 'dashboard' as NavSection, label: 'Dashboard', tKey: 'dashboard', icon: LayoutDashboard },
+    { id: 'approvals' as NavSection, label: 'Approvals', tKey: 'approvals', icon: Gavel },
+    { id: 'transfers' as NavSection, label: 'All Transfers', tKey: 'transfers', icon: ArrowRightLeft },
+    { id: 'participants' as NavSection, label: 'Participants', tKey: 'participants', icon: Building2 },
+    { id: 'enforcement' as NavSection, label: 'Enforcement', tKey: 'enforcement', icon: ShieldAlert },
+    { id: 'prefund' as NavSection, label: 'Prefund Accounts', tKey: 'prefund', icon: Wallet },
+    { id: 'disputes' as NavSection, label: 'All Disputes', tKey: 'disputes', icon: AlertOctagon },
+    { id: 'compliance' as NavSection, label: 'Compliance', tKey: 'compliance', icon: Shield },
+    { id: 'corridors' as NavSection, label: 'Corridors', tKey: 'corridors', icon: Globe },
+    { id: 'fx_management' as NavSection, label: 'FX & Rates', tKey: 'fxRates', icon: DollarSign },
+    { id: 'tier_management' as NavSection, label: 'Tier Mgmt', tKey: 'tierMgmt', icon: Layers },
+    { id: 'payment_rails' as NavSection, label: 'Payment Rails', tKey: 'paymentRails', icon: Network },
+    { id: 'analytics' as NavSection, label: 'Analytics', tKey: 'analytics', icon: BarChart3 },
+    { id: 'developer_portal' as NavSection, label: 'Developer Portal', tKey: 'devPortal', icon: Code },
+    { id: 'transaction_monitoring' as NavSection, label: 'Live Monitoring', tKey: 'liveMonitor', icon: Activity },
+    { id: 'settlement' as NavSection, label: 'Settlement', tKey: 'settlement', icon: Layers },
+    { id: 'billing' as NavSection, label: 'Billing', tKey: 'billing', icon: Receipt },
+    { id: 'settings' as NavSection, label: 'Settings', tKey: 'settings', icon: Settings },
   ];
 }
 
@@ -133,9 +135,9 @@ function relativeTime(dateStr: string) {
 // --- i18n (#18) ---
 type Locale = 'en' | 'fr' | 'ar';
 const translations: Record<Locale, Record<string, string>> = {
-  en: { dashboard: 'Dashboard', approvals: 'Approvals', transfers: 'All Transfers', participants: 'Participants', prefund: 'Prefund Accounts', disputes: 'All Disputes', compliance: 'Compliance', corridors: 'Corridors', fxRates: 'FX & Rates', tierMgmt: 'Tier Mgmt', paymentRails: 'Payment Rails', analytics: 'Analytics', devPortal: 'Developer Portal', liveMonitor: 'Live Monitoring', settlement: 'Settlement', billing: 'Billing', settings: 'Settings', search: 'Search...', export: 'Export', totalTransfers: 'Total Transfers', successRate: 'Success Rate', prefundBalance: 'Prefund Balance', pendingApprovals: 'Pending Approvals' },
-  fr: { dashboard: 'Tableau de Bord', approvals: 'Approbations', transfers: 'Tous les Transferts', participants: 'Participants', prefund: 'Comptes de Préfinancement', disputes: 'Tous les Litiges', compliance: 'Conformité', corridors: 'Corridors', fxRates: 'FX & Taux', tierMgmt: 'Gestion des Niveaux', paymentRails: 'Rails de Paiement', analytics: 'Analytique', devPortal: 'Portail Développeur', liveMonitor: 'Suivi en Direct', settlement: 'Règlement', billing: 'Facturation', settings: 'Paramètres', search: 'Rechercher...', export: 'Exporter', totalTransfers: 'Total des Transferts', successRate: 'Taux de Réussite', prefundBalance: 'Solde de Préfinancement', pendingApprovals: 'Approbations en Attente' },
-  ar: { dashboard: 'لوحة المعلومات', approvals: 'الموافقات', transfers: 'جميع التحويلات', participants: 'المشاركون', prefund: 'حسابات التمويل المسبق', disputes: 'جميع النزاعات', compliance: 'الامتثال', corridors: 'الممرات', fxRates: 'أسعار الصرف', tierMgmt: 'إدارة المستويات', paymentRails: 'مسارات الدفع', analytics: 'التحليلات', devPortal: 'بوابة المطورين', liveMonitor: 'المراقبة المباشرة', settlement: 'التسوية', billing: 'الفوترة', settings: 'الإعدادات', search: '...بحث', export: 'تصدير', totalTransfers: 'إجمالي التحويلات', successRate: 'معدل النجاح', prefundBalance: 'رصيد التمويل المسبق', pendingApprovals: 'الموافقات المعلقة' },
+  en: { dashboard: 'Dashboard', approvals: 'Approvals', transfers: 'All Transfers', participants: 'Participants', enforcement: 'Enforcement', prefund: 'Prefund Accounts', disputes: 'All Disputes', compliance: 'Compliance', corridors: 'Corridors', fxRates: 'FX & Rates', tierMgmt: 'Tier Mgmt', paymentRails: 'Payment Rails', analytics: 'Analytics', devPortal: 'Developer Portal', liveMonitor: 'Live Monitoring', settlement: 'Settlement', billing: 'Billing', settings: 'Settings', search: 'Search...', export: 'Export', totalTransfers: 'Total Transfers', successRate: 'Success Rate', prefundBalance: 'Prefund Balance', pendingApprovals: 'Pending Approvals' },
+  fr: { dashboard: 'Tableau de Bord', approvals: 'Approbations', transfers: 'Tous les Transferts', participants: 'Participants', enforcement: 'Application', prefund: 'Comptes de Préfinancement', disputes: 'Tous les Litiges', compliance: 'Conformité', corridors: 'Corridors', fxRates: 'FX & Taux', tierMgmt: 'Gestion des Niveaux', paymentRails: 'Rails de Paiement', analytics: 'Analytique', devPortal: 'Portail Développeur', liveMonitor: 'Suivi en Direct', settlement: 'Règlement', billing: 'Facturation', settings: 'Paramètres', search: 'Rechercher...', export: 'Exporter', totalTransfers: 'Total des Transferts', successRate: 'Taux de Réussite', prefundBalance: 'Solde de Préfinancement', pendingApprovals: 'Approbations en Attente' },
+  ar: { dashboard: 'لوحة المعلومات', approvals: 'الموافقات', transfers: 'جميع التحويلات', participants: 'المشاركون', enforcement: 'الإنفاذ', prefund: 'حسابات التمويل المسبق', disputes: 'جميع النزاعات', compliance: 'الامتثال', corridors: 'الممرات', fxRates: 'أسعار الصرف', tierMgmt: 'إدارة المستويات', paymentRails: 'مسارات الدفع', analytics: 'التحليلات', devPortal: 'بوابة المطورين', liveMonitor: 'المراقبة المباشرة', settlement: 'التسوية', billing: 'الفوترة', settings: 'الإعدادات', search: '...بحث', export: 'تصدير', totalTransfers: 'إجمالي التحويلات', successRate: 'معدل النجاح', prefundBalance: 'رصيد التمويل المسبق', pendingApprovals: 'الموافقات المعلقة' },
 };
 function useLocale(): { locale: Locale; t: (key: string) => string; setLocale: (l: Locale) => void } {
   const [locale, setLocale] = useState<Locale>(() => (localStorage.getItem('locale') as Locale) || 'en');
@@ -289,7 +291,7 @@ export default function OutboundRemittance() {
             {navItems.map(item => (
               <CommandItem key={item.id} onSelect={() => { setActiveSection(item.id); setCmdOpen(false); }}>
                 <item.icon className="mr-2 h-4 w-4" />
-                {item.label}
+                {item.tKey ? t(item.tKey) : item.label}
               </CommandItem>
             ))}
           </CommandGroup>
@@ -382,10 +384,10 @@ export default function OutboundRemittance() {
                   className={`w-full flex items-center ${sidebarCollapsed ? 'justify-center px-2' : 'gap-2 px-3'} py-2 text-sm rounded-md transition-colors ${activeSection === item.id ? 'bg-primary text-primary-foreground' : 'hover:bg-accent'}`}
                 >
                   <item.icon className="h-4 w-4 shrink-0" />
-                  {!sidebarCollapsed && item.label}
+                  {!sidebarCollapsed && (item.tKey ? t(item.tKey) : item.label)}
                 </button>
               </TooltipTrigger>
-              {sidebarCollapsed && <TooltipContent side="right">{item.label}</TooltipContent>}
+              {sidebarCollapsed && <TooltipContent side="right">{item.tKey ? t(item.tKey) : item.label}</TooltipContent>}
             </Tooltip>
           ))}
         </nav>
@@ -432,7 +434,7 @@ export default function OutboundRemittance() {
         <div className="flex items-center gap-1 text-xs text-muted-foreground mb-4">
           <span className="cursor-pointer hover:text-foreground" onClick={() => setActiveSection('dashboard')}>Home</span>
           <ChevronRight className="h-3 w-3" />
-          <span className="text-foreground font-medium">{navItems.find(n => n.id === activeSection)?.label ?? activeSection}</span>
+          <span className="text-foreground font-medium">{(() => { const nav = navItems.find(n => n.id === activeSection); return nav?.tKey ? t(nav.tKey) : nav?.label ?? activeSection; })()}</span>
         </div>
         {activeSection === 'dashboard' && <DashboardSection role={userRole} />}
         {activeSection === 'transfers' && <TransfersSection role={userRole} search={searchQuery} />}
@@ -443,6 +445,7 @@ export default function OutboundRemittance() {
         {activeSection === 'disputes' && <DisputesSection role={userRole} />}
         {activeSection === 'approvals' && <ApprovalsSection role={userRole} />}
         {activeSection === 'participants' && <ParticipantsSection role={userRole} />}
+        {activeSection === 'enforcement' && <EnforcementSection role={userRole} />}
         {activeSection === 'fx_management' && <FXManagementSection />}
         {activeSection === 'tier_management' && <TierManagementSection />}
         {activeSection === 'analytics' && <AnalyticsSection />}
@@ -1007,8 +1010,20 @@ function ParticipantsSection({ role }: { role: UserRole }) {
   const isAdmin = role === 'admin' || role === 'cbn';
   if (!isAdmin) return <p className="text-muted-foreground">Access denied</p>;
 
+  const utils = trpc.useUtils();
   const { data: participants, isLoading } = trpc.outboundRemittance.listParticipants.useQuery();
+  const { data: enforcement } = trpc.outboundRemittance.listEnforcementActions.useQuery({});
+  const suspendMut = trpc.outboundRemittance.suspendParticipant.useMutation({ onSuccess: () => { utils.outboundRemittance.listParticipants.invalidate(); utils.outboundRemittance.listEnforcementActions.invalidate(); toast.success('Participant suspended'); } });
+  const reinstateMut = trpc.outboundRemittance.reinstateParticipant.useMutation({ onSuccess: () => { utils.outboundRemittance.listParticipants.invalidate(); utils.outboundRemittance.listEnforcementActions.invalidate(); toast.success('Participant reinstated'); } });
+
+  const [suspendForm, setSuspendForm] = useState<{ id: number; name: string } | null>(null);
+  const [suspendReason, setSuspendReason] = useState('');
+  const [suspendRef, setSuspendRef] = useState('');
+
   if (isLoading) return <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin" /></div>;
+
+  const activeEnforcementByParticipant = (pid: number) =>
+    enforcement?.actions?.filter((a: any) => a.participantId === pid && a.status === 'active') ?? [];
 
   return (
     <div className="space-y-6">
@@ -1016,26 +1031,376 @@ function ParticipantsSection({ role }: { role: UserRole }) {
         <h1 className="text-2xl font-bold">Participants</h1>
         <p className="text-muted-foreground">Licensed IMTOs and fintechs on the switch</p>
       </div>
+
+      {/* Suspend Participant Form */}
+      {suspendForm && (
+        <Card className="border-red-200 bg-red-50 dark:bg-red-950/20">
+          <CardHeader><CardTitle className="text-red-700 dark:text-red-400 flex items-center gap-2"><Ban className="h-4 w-4" /> Suspend {suspendForm.name}</CardTitle></CardHeader>
+          <CardContent className="space-y-3">
+            <div><Label>CBN Reference</Label><Input placeholder="CBN/ENF/2026/XXXX" value={suspendRef} onChange={e => setSuspendRef(e.target.value)} /></div>
+            <div><Label>Reason for Suspension</Label><textarea className="w-full border rounded-md p-2 text-sm min-h-[80px]" placeholder="Detailed reason for enforcement action..." value={suspendReason} onChange={e => setSuspendReason(e.target.value)} /></div>
+            <div className="flex gap-2">
+              <Button variant="destructive" disabled={!suspendReason || !suspendRef || suspendMut.isPending} onClick={() => {
+                suspendMut.mutate({ participantId: suspendForm.id, reason: suspendReason, cbnReference: suspendRef });
+                setSuspendForm(null); setSuspendReason(''); setSuspendRef('');
+              }}>{suspendMut.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Ban className="h-4 w-4 mr-1" />} Confirm Suspension</Button>
+              <Button variant="outline" onClick={() => { setSuspendForm(null); setSuspendReason(''); setSuspendRef(''); }}>Cancel</Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       <Card>
         <CardContent className="p-0">
           <Table>
-            <TableHeader><TableRow><TableHead>Name</TableHead><TableHead>Code</TableHead><TableHead>Type</TableHead><TableHead>CBN License</TableHead><TableHead>Tier</TableHead><TableHead>Corridors</TableHead><TableHead>Status</TableHead></TableRow></TableHeader>
+            <TableHeader><TableRow><TableHead>Name</TableHead><TableHead>Code</TableHead><TableHead>Type</TableHead><TableHead>CBN License</TableHead><TableHead>Tier</TableHead><TableHead>Corridors</TableHead><TableHead>Status</TableHead><TableHead>Enforcement</TableHead><TableHead>Actions</TableHead></TableRow></TableHeader>
             <TableBody>
-              {participants?.map((p: any) => (
-                <TableRow key={p.id}>
-                  <TableCell className="font-medium">{p.name}</TableCell>
-                  <TableCell className="font-mono">{p.shortCode}</TableCell>
-                  <TableCell><Badge variant="outline">{p.type}</Badge></TableCell>
-                  <TableCell className="text-xs">{p.cbnLicense}</TableCell>
-                  <TableCell><Badge>{p.tier}</Badge></TableCell>
-                  <TableCell>{p.activeCorridors}</TableCell>
-                  <TableCell><StatusBadge status={p.status} /></TableCell>
-                </TableRow>
-              ))}
+              {participants?.map((p: any) => {
+                const pEnforcements = activeEnforcementByParticipant(p.id);
+                return (
+                  <TableRow key={p.id} className={p.status === 'suspended' ? 'bg-red-50 dark:bg-red-950/10' : p.status === 'revoked' ? 'bg-gray-100 dark:bg-gray-900/30' : ''}>
+                    <TableCell className="font-medium">{p.name}</TableCell>
+                    <TableCell className="font-mono">{p.shortCode}</TableCell>
+                    <TableCell><Badge variant="outline">{p.type}</Badge></TableCell>
+                    <TableCell className="text-xs">{p.cbnLicense}</TableCell>
+                    <TableCell><Badge>{p.tier}</Badge></TableCell>
+                    <TableCell>{p.activeCorridors}</TableCell>
+                    <TableCell><StatusBadge status={p.status} /></TableCell>
+                    <TableCell>
+                      {pEnforcements.length > 0 ? (
+                        <div className="flex flex-col gap-0.5">
+                          {pEnforcements.map((e: any) => (
+                            <Badge key={e.id} variant="destructive" className="text-[10px]">
+                              {e.type === 'suspension' ? 'Suspended' : e.type === 'corridor_restriction' ? 'Corridor Restricted' : e.type === 'limit_override' ? 'Limit Override' : e.type}
+                            </Badge>
+                          ))}
+                        </div>
+                      ) : <span className="text-xs text-muted-foreground">None</span>}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex gap-1">
+                        {p.status === 'active' && (
+                          <Button size="sm" variant="destructive" className="h-7 text-xs" onClick={() => setSuspendForm({ id: p.id, name: p.name })}>
+                            <Ban className="h-3 w-3 mr-1" /> Suspend
+                          </Button>
+                        )}
+                        {p.status === 'suspended' && pEnforcements.find((e: any) => e.type === 'suspension') && (
+                          <Button size="sm" variant="outline" className="h-7 text-xs border-green-500 text-green-700" onClick={() => {
+                            const enfAction = pEnforcements.find((e: any) => e.type === 'suspension');
+                            if (enfAction) reinstateMut.mutate({ participantId: p.id, enforcementId: enfAction.id, resolutionNote: 'Reinstated by admin — compliance issue resolved' });
+                          }}>
+                            <CheckCircle2 className="h-3 w-3 mr-1" /> Reinstate
+                          </Button>
+                        )}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
         </CardContent>
       </Card>
+    </div>
+  );
+}
+
+// =============================================================================
+// CBN ENFORCEMENT DASHBOARD
+// =============================================================================
+
+function EnforcementSection({ role }: { role: UserRole }) {
+  const isAdmin = role === 'admin' || role === 'cbn';
+  if (!isAdmin) return <p className="text-muted-foreground">Access denied — CBN/Admin only</p>;
+
+  const utils = trpc.useUtils();
+  const [activeTab, setActiveTab] = useState<'actions' | 'triggers' | 'new_action'>('actions');
+  const [statusFilter, setStatusFilter] = useState<string>('');
+  const [typeFilter, setTypeFilter] = useState<string>('');
+
+  const { data: enforcement, isLoading } = trpc.outboundRemittance.listEnforcementActions.useQuery(
+    { status: (statusFilter || undefined) as any, type: typeFilter || undefined },
+  );
+  const { data: participants } = trpc.outboundRemittance.listParticipants.useQuery();
+  const { data: triggers } = trpc.outboundRemittance.listAutoTriggers.useQuery();
+
+  const suspendMut = trpc.outboundRemittance.suspendParticipant.useMutation({ onSuccess: () => { utils.outboundRemittance.listEnforcementActions.invalidate(); utils.outboundRemittance.listParticipants.invalidate(); toast.success('Participant suspended'); } });
+  const restrictMut = trpc.outboundRemittance.restrictCorridors.useMutation({ onSuccess: () => { utils.outboundRemittance.listEnforcementActions.invalidate(); toast.success('Corridor restriction applied'); } });
+  const limitMut = trpc.outboundRemittance.overrideLimits.useMutation({ onSuccess: () => { utils.outboundRemittance.listEnforcementActions.invalidate(); toast.success('Limit override applied'); } });
+  const directiveMut = trpc.outboundRemittance.issueDirective.useMutation({ onSuccess: () => { utils.outboundRemittance.listEnforcementActions.invalidate(); toast.success('Compliance directive issued'); } });
+  const revokeMut = trpc.outboundRemittance.revokeLicense.useMutation({ onSuccess: () => { utils.outboundRemittance.listEnforcementActions.invalidate(); utils.outboundRemittance.listParticipants.invalidate(); toast.success('License revoked'); } });
+  const resolveMut = trpc.outboundRemittance.resolveEnforcement.useMutation({ onSuccess: () => { utils.outboundRemittance.listEnforcementActions.invalidate(); utils.outboundRemittance.listParticipants.invalidate(); toast.success('Enforcement action resolved'); } });
+  const createTriggerMut = trpc.outboundRemittance.createAutoTrigger.useMutation({ onSuccess: () => { utils.outboundRemittance.listAutoTriggers.invalidate(); toast.success('Auto-trigger created'); } });
+  const updateTriggerMut = trpc.outboundRemittance.updateAutoTrigger.useMutation({ onSuccess: () => { utils.outboundRemittance.listAutoTriggers.invalidate(); toast.success('Trigger updated'); } });
+  const deleteTriggerMut = trpc.outboundRemittance.deleteAutoTrigger.useMutation({ onSuccess: () => { utils.outboundRemittance.listAutoTriggers.invalidate(); toast.success('Trigger deleted'); } });
+
+  // New action form state
+  const [actionType, setActionType] = useState<string>('suspension');
+  const [targetParticipant, setTargetParticipant] = useState<string>('');
+  const [actionReason, setActionReason] = useState('');
+  const [actionRef, setActionRef] = useState('');
+  const [restrictedCorridors, setRestrictedCorridors] = useState('');
+  const [newLimit, setNewLimit] = useState('');
+  const [newTxnMax, setNewTxnMax] = useState('');
+  const [directiveActions, setDirectiveActions] = useState('');
+  const [expiryDays, setExpiryDays] = useState('30');
+
+  if (isLoading) return <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin" /></div>;
+
+  const handleSubmitAction = () => {
+    const pid = parseInt(targetParticipant);
+    if (!pid || !actionReason || !actionRef) return;
+    switch (actionType) {
+      case 'suspension':
+        suspendMut.mutate({ participantId: pid, reason: actionReason, cbnReference: actionRef });
+        break;
+      case 'corridor_restriction':
+        restrictMut.mutate({ participantId: pid, restrictedCorridors: restrictedCorridors.split(',').map(s => s.trim()).filter(Boolean), reason: actionReason, cbnReference: actionRef, expiresInDays: parseInt(expiryDays) || 30 });
+        break;
+      case 'limit_override':
+        limitMut.mutate({ participantId: pid, newDailyLimit: newLimit || undefined, newTransactionMax: newTxnMax || undefined, reason: actionReason, cbnReference: actionRef, expiresInDays: parseInt(expiryDays) || 30 });
+        break;
+      case 'warning': case 'show_cause': case 'remediation_order':
+        directiveMut.mutate({ participantId: pid, directiveType: actionType as any, reason: actionReason, cbnReference: actionRef, requiredActions: directiveActions.split('\n').filter(Boolean), deadlineDays: parseInt(expiryDays) || 30 });
+        break;
+      case 'license_revocation':
+        revokeMut.mutate({ participantId: pid, reason: actionReason, cbnReference: actionRef });
+        break;
+    }
+    setActiveTab('actions');
+    setActionReason(''); setActionRef(''); setTargetParticipant(''); setRestrictedCorridors(''); setNewLimit(''); setNewTxnMax(''); setDirectiveActions('');
+  };
+
+  const enforcementTypeColors: Record<string, string> = {
+    suspension: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',
+    corridor_restriction: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300',
+    limit_override: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300',
+    compliance_directive: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300',
+    license_revocation: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300',
+    warning: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300',
+    show_cause: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300',
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold flex items-center gap-2"><ShieldAlert className="h-6 w-6 text-red-600" /> CBN Enforcement</h1>
+          <p className="text-muted-foreground">Suspend, restrict, and manage compliance enforcement actions against participants</p>
+        </div>
+        <Button onClick={() => setActiveTab('new_action')} className="bg-red-600 hover:bg-red-700"><Plus className="h-4 w-4 mr-1" /> New Enforcement Action</Button>
+      </div>
+
+      {/* Summary Cards */}
+      <div className="grid grid-cols-4 gap-4">
+        <Card><CardContent className="p-4"><div className="text-sm text-muted-foreground">Active Actions</div><div className="text-2xl font-bold text-red-600">{enforcement?.summary?.active ?? 0}</div></CardContent></Card>
+        <Card><CardContent className="p-4"><div className="text-sm text-muted-foreground">Pending Review</div><div className="text-2xl font-bold text-amber-600">{enforcement?.summary?.pendingReview ?? 0}</div></CardContent></Card>
+        <Card><CardContent className="p-4"><div className="text-sm text-muted-foreground">Active Suspensions</div><div className="text-2xl font-bold text-red-700">{enforcement?.summary?.suspensions ?? 0}</div></CardContent></Card>
+        <Card><CardContent className="p-4"><div className="text-sm text-muted-foreground">Resolved</div><div className="text-2xl font-bold text-green-600">{enforcement?.summary?.resolved ?? 0}</div></CardContent></Card>
+      </div>
+
+      {/* Tab Navigation */}
+      <div className="flex gap-2 border-b pb-2">
+        {(['actions', 'triggers', 'new_action'] as const).map(tab => (
+          <Button key={tab} variant={activeTab === tab ? 'default' : 'outline'} size="sm" onClick={() => setActiveTab(tab)}>
+            {tab === 'actions' ? 'Enforcement Actions' : tab === 'triggers' ? 'Auto-Suspension Triggers' : 'New Action'}
+          </Button>
+        ))}
+      </div>
+
+      {/* Actions List */}
+      {activeTab === 'actions' && (
+        <div className="space-y-4">
+          <div className="flex gap-2">
+            {['', 'active', 'pending_review', 'resolved', 'expired'].map(s => (
+              <Button key={s} variant={statusFilter === s ? 'default' : 'outline'} size="sm" onClick={() => setStatusFilter(s)}>{s || 'All'}</Button>
+            ))}
+            <div className="ml-auto flex gap-2">
+              {['', 'suspension', 'corridor_restriction', 'limit_override', 'compliance_directive', 'warning'].map(t => (
+                <Button key={t} variant={typeFilter === t ? 'default' : 'outline'} size="sm" onClick={() => setTypeFilter(t)} className="text-xs">{t ? t.replace(/_/g, ' ') : 'All Types'}</Button>
+              ))}
+            </div>
+          </div>
+
+          {enforcement?.actions?.map((action: any) => (
+            <Card key={action.id} className={`border-l-4 ${action.status === 'active' ? 'border-l-red-500' : action.status === 'pending_review' ? 'border-l-amber-500' : action.status === 'resolved' ? 'border-l-green-500' : 'border-l-gray-400'}`}>
+              <CardContent className="p-4">
+                <div className="flex items-start justify-between">
+                  <div className="space-y-2 flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className={`px-2 py-0.5 rounded text-xs font-medium ${enforcementTypeColors[action.type] || 'bg-gray-100'}`}>
+                        {action.type.replace(/_/g, ' ').toUpperCase()}
+                      </span>
+                      <Badge variant={action.status === 'active' ? 'destructive' : action.status === 'resolved' ? 'default' : 'secondary'}>{action.status}</Badge>
+                      <span className="text-xs text-muted-foreground font-mono">{action.cbnReference}</span>
+                    </div>
+                    <p className="font-medium">{action.participantName}</p>
+                    <p className="text-sm text-muted-foreground">{action.reason}</p>
+                    <div className="flex gap-4 text-xs text-muted-foreground">
+                      <span>Issued: {new Date(action.issuedAt).toLocaleDateString()}</span>
+                      <span>By: {action.issuedBy}</span>
+                      {action.expiresAt && <span>Expires: {new Date(action.expiresAt).toLocaleDateString()}</span>}
+                      {action.resolvedAt && <span className="text-green-600">Resolved: {new Date(action.resolvedAt).toLocaleDateString()}</span>}
+                    </div>
+                    {/* Details */}
+                    {action.details && (
+                      <div className="mt-2 bg-muted/50 rounded p-2 text-xs">
+                        {action.type === 'corridor_restriction' && action.details.restrictedCorridors && (
+                          <span>Restricted corridors: {action.details.restrictedCorridors.join(', ')}</span>
+                        )}
+                        {action.type === 'limit_override' && (
+                          <span>Limit: {action.details.originalLimit ? `₦${Number(action.details.originalLimit).toLocaleString()}` : '—'} → {action.details.overrideLimit ? `₦${Number(action.details.overrideLimit).toLocaleString()}` : '—'}</span>
+                        )}
+                        {action.type === 'compliance_directive' && action.details.requiredActions && (
+                          <ul className="list-disc list-inside">{action.details.requiredActions.map((a: string, i: number) => <li key={i}>{a}</li>)}</ul>
+                        )}
+                        {action.type === 'suspension' && action.details.sanctionsHitRate && (
+                          <span>Sanctions hit rate: {action.details.sanctionsHitRate}% (threshold: {action.details.threshold}%)</span>
+                        )}
+                        {action.resolutionNote && <p className="mt-1 text-green-700 dark:text-green-400">Resolution: {action.resolutionNote}</p>}
+                      </div>
+                    )}
+                  </div>
+                  {(action.status === 'active' || action.status === 'pending_review') && (
+                    <Button size="sm" variant="outline" className="border-green-500 text-green-700 ml-4" onClick={() => resolveMut.mutate({ enforcementId: action.id, resolutionNote: 'Resolved — compliance requirements met, remediation completed.' })}>
+                      <CheckCircle2 className="h-3 w-3 mr-1" /> Resolve
+                    </Button>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+          {enforcement?.actions?.length === 0 && <p className="text-center text-muted-foreground py-8">No enforcement actions found</p>}
+        </div>
+      )}
+
+      {/* Auto-Suspension Triggers */}
+      {activeTab === 'triggers' && (
+        <div className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2"><Zap className="h-4 w-4 text-amber-500" /> Auto-Suspension Triggers</CardTitle>
+              <CardDescription>Configurable rules that automatically trigger enforcement actions when thresholds are breached</CardDescription>
+            </CardHeader>
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader><TableRow><TableHead>Name</TableHead><TableHead>Metric</TableHead><TableHead>Condition</TableHead><TableHead>Window</TableHead><TableHead>Action</TableHead><TableHead>Triggered</TableHead><TableHead>Status</TableHead><TableHead>Controls</TableHead></TableRow></TableHeader>
+                <TableBody>
+                  {triggers?.map((trigger: any) => (
+                    <TableRow key={trigger.id}>
+                      <TableCell>
+                        <div><p className="font-medium text-sm">{trigger.name}</p><p className="text-xs text-muted-foreground">{trigger.description}</p></div>
+                      </TableCell>
+                      <TableCell className="font-mono text-xs">{trigger.metric}</TableCell>
+                      <TableCell className="text-sm">{trigger.operator === 'gt' ? '>' : trigger.operator === 'lt' ? '<' : trigger.operator === 'gte' ? '≥' : '≤'} {trigger.threshold}{trigger.unit}</TableCell>
+                      <TableCell className="text-sm">{trigger.windowDays}d</TableCell>
+                      <TableCell><Badge variant={trigger.action === 'suspend' ? 'destructive' : trigger.action === 'warning' ? 'secondary' : 'outline'}>{trigger.action}</Badge></TableCell>
+                      <TableCell className="text-xs">{trigger.triggeredCount > 0 ? `${trigger.triggeredCount}× (last: ${new Date(trigger.lastTriggered).toLocaleDateString()})` : 'Never'}</TableCell>
+                      <TableCell>{trigger.isActive ? <Badge className="bg-green-600">Active</Badge> : <Badge variant="secondary">Disabled</Badge>}</TableCell>
+                      <TableCell>
+                        <div className="flex gap-1">
+                          <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => updateTriggerMut.mutate({ id: trigger.id, isActive: !trigger.isActive })}>
+                            {trigger.isActive ? <ToggleRight className="h-4 w-4 text-green-600" /> : <ToggleLeft className="h-4 w-4 text-gray-400" />}
+                          </Button>
+                          <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-red-500" onClick={() => deleteTriggerMut.mutate({ id: trigger.id })}>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+
+          {/* New Trigger Form */}
+          <Card>
+            <CardHeader><CardTitle className="text-lg">Add New Trigger</CardTitle></CardHeader>
+            <CardContent>
+              <form onSubmit={e => { e.preventDefault(); const fd = new FormData(e.currentTarget);
+                createTriggerMut.mutate({
+                  name: fd.get('name') as string, description: fd.get('description') as string,
+                  metric: fd.get('metric') as string, operator: fd.get('operator') as any,
+                  threshold: parseFloat(fd.get('threshold') as string), unit: fd.get('unit') as string,
+                  windowDays: parseInt(fd.get('windowDays') as string), action: fd.get('action') as any,
+                });
+                e.currentTarget.reset();
+              }} className="grid grid-cols-4 gap-3">
+                <div className="col-span-2"><Label>Name</Label><Input name="name" required placeholder="e.g. High Failure Rate" /></div>
+                <div className="col-span-2"><Label>Description</Label><Input name="description" required placeholder="What this trigger monitors" /></div>
+                <div><Label>Metric</Label><Input name="metric" required placeholder="e.g. failure_rate" /></div>
+                <div><Label>Operator</Label><Select name="operator" defaultValue="gt"><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="gt">&gt;</SelectItem><SelectItem value="lt">&lt;</SelectItem><SelectItem value="gte">≥</SelectItem><SelectItem value="lte">≤</SelectItem></SelectContent></Select></div>
+                <div><Label>Threshold</Label><Input name="threshold" type="number" required placeholder="5" /></div>
+                <div><Label>Unit</Label><Input name="unit" required placeholder="%" /></div>
+                <div><Label>Window (days)</Label><Input name="windowDays" type="number" required defaultValue="30" /></div>
+                <div><Label>Action</Label><Select name="action" defaultValue="warning"><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="suspend">Suspend</SelectItem><SelectItem value="restrict_corridors">Restrict Corridors</SelectItem><SelectItem value="reduce_limit">Reduce Limit</SelectItem><SelectItem value="warning">Warning</SelectItem></SelectContent></Select></div>
+                <div className="col-span-2 flex items-end"><Button type="submit" disabled={createTriggerMut.isPending}><Plus className="h-4 w-4 mr-1" /> Add Trigger</Button></div>
+              </form>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* New Action Form */}
+      {activeTab === 'new_action' && (
+        <Card>
+          <CardHeader><CardTitle className="text-lg flex items-center gap-2"><ShieldAlert className="h-4 w-4 text-red-600" /> Issue New Enforcement Action</CardTitle></CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Action Type</Label>
+                <Select value={actionType} onValueChange={setActionType}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="suspension"><span className="flex items-center gap-2"><Ban className="h-3 w-3 text-red-500" /> Full Suspension</span></SelectItem>
+                    <SelectItem value="corridor_restriction"><span className="flex items-center gap-2"><Globe className="h-3 w-3 text-orange-500" /> Corridor Restriction</span></SelectItem>
+                    <SelectItem value="limit_override"><span className="flex items-center gap-2"><Scale className="h-3 w-3 text-yellow-500" /> Limit Override</span></SelectItem>
+                    <SelectItem value="warning"><span className="flex items-center gap-2"><AlertTriangle className="h-3 w-3 text-amber-500" /> Warning</span></SelectItem>
+                    <SelectItem value="show_cause"><span className="flex items-center gap-2"><FileText className="h-3 w-3 text-blue-500" /> Show-Cause Notice</span></SelectItem>
+                    <SelectItem value="remediation_order"><span className="flex items-center gap-2"><Shield className="h-3 w-3 text-indigo-500" /> Remediation Order</span></SelectItem>
+                    <SelectItem value="license_revocation"><span className="flex items-center gap-2"><XCircle className="h-3 w-3 text-purple-500" /> License Revocation</span></SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>Target Participant</Label>
+                <Select value={targetParticipant} onValueChange={setTargetParticipant}>
+                  <SelectTrigger><SelectValue placeholder="Select participant" /></SelectTrigger>
+                  <SelectContent>
+                    {participants?.map((p: any) => (
+                      <SelectItem key={p.id} value={String(p.id)}>{p.name} ({p.shortCode})</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div><Label>CBN Reference Number</Label><Input placeholder="CBN/ENF/2026/XXXX" value={actionRef} onChange={e => setActionRef(e.target.value)} /></div>
+              {(actionType !== 'suspension' && actionType !== 'license_revocation') && (
+                <div><Label>Expiry (days)</Label><Input type="number" value={expiryDays} onChange={e => setExpiryDays(e.target.value)} /></div>
+              )}
+              {actionType === 'corridor_restriction' && (
+                <div className="col-span-2"><Label>Restricted Corridors (comma-separated)</Label><Input placeholder="NG-TR, NG-AE" value={restrictedCorridors} onChange={e => setRestrictedCorridors(e.target.value)} /></div>
+              )}
+              {actionType === 'limit_override' && (
+                <>
+                  <div><Label>New Daily Limit (NGN)</Label><Input placeholder="500000000" value={newLimit} onChange={e => setNewLimit(e.target.value)} /></div>
+                  <div><Label>New Max Transaction (NGN)</Label><Input placeholder="50000000" value={newTxnMax} onChange={e => setNewTxnMax(e.target.value)} /></div>
+                </>
+              )}
+              {(actionType === 'warning' || actionType === 'show_cause' || actionType === 'remediation_order') && (
+                <div className="col-span-2"><Label>Required Actions (one per line)</Label><textarea className="w-full border rounded-md p-2 text-sm min-h-[80px]" placeholder="Action 1&#10;Action 2&#10;Action 3" value={directiveActions} onChange={e => setDirectiveActions(e.target.value)} /></div>
+              )}
+            </div>
+            <div><Label>Reason / Justification</Label><textarea className="w-full border rounded-md p-2 text-sm min-h-[100px]" placeholder="Detailed reason for this enforcement action..." value={actionReason} onChange={e => setActionReason(e.target.value)} /></div>
+            <div className="flex gap-2">
+              <Button className="bg-red-600 hover:bg-red-700" disabled={!targetParticipant || !actionReason || !actionRef} onClick={handleSubmitAction}>
+                <ShieldAlert className="h-4 w-4 mr-1" /> Issue Enforcement Action
+              </Button>
+              <Button variant="outline" onClick={() => setActiveTab('actions')}>Cancel</Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
