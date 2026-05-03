@@ -12,12 +12,12 @@ import {
   LayoutDashboard, ArrowRightLeft, Wallet, Receipt, Globe, Shield, UserPlus,
   Settings, TrendingUp, CheckCircle2, Clock, AlertTriangle, XCircle, Building2,
   Search, Plus, Send, AlertOctagon, ArrowUpCircle, Gavel, RefreshCw,
-  DollarSign, BarChart3, Layers, Network,
+  DollarSign, BarChart3, Layers, Network, Key, Activity, Code, FileText, Eye, Copy,
 } from 'lucide-react';
 
 // --- Types ---
 type UserRole = 'participant' | 'admin' | 'cbn';
-type NavSection = 'dashboard' | 'transfers' | 'prefund' | 'billing' | 'corridors' | 'compliance' | 'disputes' | 'approvals' | 'participants' | 'fx_management' | 'tier_management' | 'analytics' | 'payment_rails' | 'settings';
+type NavSection = 'dashboard' | 'transfers' | 'prefund' | 'billing' | 'corridors' | 'compliance' | 'disputes' | 'approvals' | 'participants' | 'fx_management' | 'tier_management' | 'analytics' | 'payment_rails' | 'developer_portal' | 'transaction_monitoring' | 'settings';
 
 // 13 CBN-regulated corridors (static reference data)
 const corridors = [
@@ -46,6 +46,8 @@ function getNavItems(role: UserRole) {
       { id: 'disputes' as NavSection, label: 'My Disputes', icon: AlertOctagon },
       { id: 'corridors' as NavSection, label: 'Corridors', icon: Globe },
       { id: 'compliance' as NavSection, label: 'My Compliance', icon: Shield },
+      { id: 'developer_portal' as NavSection, label: 'Developer', icon: Code },
+      { id: 'transaction_monitoring' as NavSection, label: 'Live Tracking', icon: Activity },
       { id: 'settings' as NavSection, label: 'Settings', icon: Settings },
     ];
   }
@@ -62,6 +64,8 @@ function getNavItems(role: UserRole) {
     { id: 'tier_management' as NavSection, label: 'Tier Mgmt', icon: Layers },
     { id: 'payment_rails' as NavSection, label: 'Payment Rails', icon: Network },
     { id: 'analytics' as NavSection, label: 'Analytics', icon: BarChart3 },
+    { id: 'developer_portal' as NavSection, label: 'Developer Portal', icon: Code },
+    { id: 'transaction_monitoring' as NavSection, label: 'Live Monitoring', icon: Activity },
     { id: 'billing' as NavSection, label: 'Billing', icon: Receipt },
     { id: 'settings' as NavSection, label: 'Settings', icon: Settings },
   ];
@@ -172,6 +176,8 @@ export default function OutboundRemittance() {
         {activeSection === 'tier_management' && <TierManagementSection />}
         {activeSection === 'analytics' && <AnalyticsSection />}
         {activeSection === 'payment_rails' && <PaymentRailsSection isAdmin={isAdmin} />}
+        {activeSection === 'developer_portal' && <DeveloperPortalSection role={userRole} />}
+        {activeSection === 'transaction_monitoring' && <TransactionMonitoringSection role={userRole} />}
         {activeSection === 'settings' && <SettingsSection role={userRole} />}
       </main>
     </div>
@@ -1940,6 +1946,503 @@ function AnalyticsSection() {
                     <TableCell className="font-bold">{s.transfersProcessed}</TableCell>
                     <TableCell className="text-xs">{new Date(s.lastActivity).toLocaleString()}</TableCell>
                     <TableCell className="font-mono text-xs">{s.apiEndpoint}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+}
+
+// =============================================================================
+// DEVELOPER PORTAL — API Keys, SDKs, Integration Guide, Webhooks
+// =============================================================================
+
+function DeveloperPortalSection({ role }: { role: UserRole }) {
+  const [devTab, setDevTab] = useState<'apiKeys' | 'sdks' | 'guide' | 'webhookSubs'>('apiKeys');
+  const [showKeyForm, setShowKeyForm] = useState(false);
+  const [keyLabel, setKeyLabel] = useState('');
+  const [showWebhookForm, setShowWebhookForm] = useState(false);
+  const [webhookUrl, setWebhookUrl] = useState('');
+  const [webhookEvents, setWebhookEvents] = useState('transfer.completed,transfer.failed');
+
+  const apiKeysQuery = trpc.outboundRemittance.getAPIKeys.useQuery();
+  const sdksQuery = trpc.outboundRemittance.getSDKInfo.useQuery();
+  const guideQuery = trpc.outboundRemittance.getIntegrationGuide.useQuery();
+  const webhookSubsQuery = trpc.outboundRemittance.getWebhookSubscriptions.useQuery();
+
+  const utils = trpc.useUtils();
+  const generateKeyMut = trpc.outboundRemittance.generateAPIKey.useMutation({
+    onSuccess: () => { utils.outboundRemittance.getAPIKeys.invalidate(); setShowKeyForm(false); setKeyLabel(''); },
+  });
+  const revokeKeyMut = trpc.outboundRemittance.revokeAPIKey.useMutation({
+    onSuccess: () => { utils.outboundRemittance.getAPIKeys.invalidate(); },
+  });
+  const createWebhookMut = trpc.outboundRemittance.createWebhookSubscription.useMutation({
+    onSuccess: () => { utils.outboundRemittance.getWebhookSubscriptions.invalidate(); setShowWebhookForm(false); setWebhookUrl(''); },
+  });
+
+  const tabs = [
+    { id: 'apiKeys' as const, label: `API Keys (${apiKeysQuery.data?.length ?? 0})` },
+    { id: 'sdks' as const, label: 'SDKs' },
+    { id: 'guide' as const, label: 'Integration Guide' },
+    { id: 'webhookSubs' as const, label: `Webhooks (${webhookSubsQuery.data?.length ?? 0})` },
+  ];
+
+  return (
+    <div className="space-y-4">
+      <div>
+        <h1 className="text-2xl font-bold">Developer Portal</h1>
+        <p className="text-muted-foreground">API keys, SDKs, integration guide, and webhook management</p>
+      </div>
+
+      <div className="flex flex-wrap gap-2">
+        {tabs.map(tab => (
+          <Button key={tab.id} variant={devTab === tab.id ? 'default' : 'outline'} size="sm" onClick={() => setDevTab(tab.id)}>
+            {tab.label}
+          </Button>
+        ))}
+      </div>
+
+      {devTab === 'apiKeys' && (
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="flex items-center gap-2"><Key className="h-5 w-5" /> API Keys</CardTitle>
+                <CardDescription>Manage API keys for programmatic access to the remittance platform</CardDescription>
+              </div>
+              <Button size="sm" onClick={() => setShowKeyForm(!showKeyForm)}><Plus className="h-4 w-4 mr-1" /> Generate Key</Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {showKeyForm && (
+              <div className="mb-4 p-4 border rounded-lg bg-muted/50 space-y-3">
+                <div>
+                  <Label>Key Label</Label>
+                  <Input value={keyLabel} onChange={e => setKeyLabel(e.target.value)} placeholder="e.g. Production API Key" />
+                </div>
+                <Button size="sm" onClick={() => generateKeyMut.mutate({ label: keyLabel })} disabled={!keyLabel || generateKeyMut.isPending}>
+                  {generateKeyMut.isPending ? 'Generating...' : 'Generate'}
+                </Button>
+                {generateKeyMut.data && (
+                  <div className="p-3 bg-yellow-50 border border-yellow-200 rounded text-sm">
+                    <p className="font-bold text-yellow-800">Save this secret — it won't be shown again!</p>
+                    <code className="block mt-1 text-xs break-all">{(generateKeyMut.data as any).secret}</code>
+                  </div>
+                )}
+              </div>
+            )}
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Key ID</TableHead>
+                  <TableHead>Label</TableHead>
+                  <TableHead>Tier</TableHead>
+                  <TableHead>Scopes</TableHead>
+                  <TableHead>Requests</TableHead>
+                  <TableHead>Rate Limit</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Last Used</TableHead>
+                  <TableHead>Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {(apiKeysQuery.data ?? []).map((k: any) => (
+                  <TableRow key={k.keyId}>
+                    <TableCell className="font-mono text-xs">{k.keyId}</TableCell>
+                    <TableCell>{k.label}</TableCell>
+                    <TableCell><StatusBadge status={k.tier} /></TableCell>
+                    <TableCell className="text-xs max-w-[200px] truncate">{k.scopes?.join(', ')}</TableCell>
+                    <TableCell>{k.requestCount?.toLocaleString()}</TableCell>
+                    <TableCell className="text-xs">{k.rateLimit?.perMinute}/min, {k.rateLimit?.perDay?.toLocaleString()}/day</TableCell>
+                    <TableCell><StatusBadge status={k.status} /></TableCell>
+                    <TableCell className="text-xs">{k.lastUsedAt ? new Date(k.lastUsedAt).toLocaleString() : 'Never'}</TableCell>
+                    <TableCell>
+                      {k.status === 'active' && (
+                        <Button size="sm" variant="destructive" onClick={() => revokeKeyMut.mutate({ keyId: k.keyId })}>Revoke</Button>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
+
+      {devTab === 'sdks' && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2"><Code className="h-5 w-5" /> SDK Libraries</CardTitle>
+            <CardDescription>Official client libraries for integrating with the Remittance Switch API</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {(sdksQuery.data ?? []).map((sdk: any) => (
+                <div key={sdk.language} className="border rounded-lg p-4 space-y-2">
+                  <h3 className="font-semibold">{sdk.language}</h3>
+                  <p className="text-xs text-muted-foreground">{sdk.package} v{sdk.version}</p>
+                  <div className="flex items-center gap-2 bg-muted p-2 rounded text-xs font-mono">
+                    <code className="flex-1">{sdk.install}</code>
+                    <Copy className="h-3 w-3 cursor-pointer text-muted-foreground" />
+                  </div>
+                  <div className="text-xs space-y-1">
+                    {sdk.features?.map((f: string, i: number) => (
+                      <div key={i} className="flex items-center gap-1"><CheckCircle2 className="h-3 w-3 text-green-500" />{f}</div>
+                    ))}
+                  </div>
+                  <Button size="sm" variant="outline" className="w-full text-xs mt-2" onClick={() => window.open(sdk.docs, '_blank')}>
+                    <FileText className="h-3 w-3 mr-1" /> Documentation
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {devTab === 'guide' && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2"><FileText className="h-5 w-5" /> Integration Guide</CardTitle>
+            <CardDescription>Step-by-step guide from application to production go-live</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {(guideQuery.data ?? []).map((step: any) => (
+                <div key={step.step} className="flex gap-4 items-start">
+                  <div className="flex-shrink-0 w-10 h-10 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-sm">
+                    {step.step}
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="font-semibold">{step.title}</h3>
+                    <p className="text-sm text-muted-foreground mt-1">{step.description}</p>
+                    <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
+                      <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> {step.estimatedTime}</span>
+                      <Badge variant="outline" className="text-xs">{step.status}</Badge>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {devTab === 'webhookSubs' && (
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="flex items-center gap-2"><Send className="h-5 w-5" /> Webhook Subscriptions</CardTitle>
+                <CardDescription>Configure webhook endpoints to receive real-time event notifications</CardDescription>
+              </div>
+              <Button size="sm" onClick={() => setShowWebhookForm(!showWebhookForm)}><Plus className="h-4 w-4 mr-1" /> Add Webhook</Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {showWebhookForm && (
+              <div className="mb-4 p-4 border rounded-lg bg-muted/50 space-y-3">
+                <div>
+                  <Label>Webhook URL</Label>
+                  <Input value={webhookUrl} onChange={e => setWebhookUrl(e.target.value)} placeholder="https://api.yoursite.com/webhooks" />
+                </div>
+                <div>
+                  <Label>Events (comma-separated)</Label>
+                  <Input value={webhookEvents} onChange={e => setWebhookEvents(e.target.value)} placeholder="transfer.completed,transfer.failed" />
+                </div>
+                <Button size="sm" onClick={() => createWebhookMut.mutate({ url: webhookUrl, events: webhookEvents.split(',').map(e => e.trim()) })}
+                  disabled={!webhookUrl || createWebhookMut.isPending}>
+                  {createWebhookMut.isPending ? 'Creating...' : 'Create Subscription'}
+                </Button>
+              </div>
+            )}
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Subscription ID</TableHead>
+                  <TableHead>URL</TableHead>
+                  <TableHead>Events</TableHead>
+                  <TableHead>Success</TableHead>
+                  <TableHead>Failed</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Last Delivery</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {(webhookSubsQuery.data ?? []).map((w: any) => (
+                  <TableRow key={w.subscriptionId}>
+                    <TableCell className="font-mono text-xs">{w.subscriptionId}</TableCell>
+                    <TableCell className="text-xs max-w-[200px] truncate">{w.url}</TableCell>
+                    <TableCell className="text-xs">{w.events?.join(', ')}</TableCell>
+                    <TableCell className="text-green-600">{w.successCount?.toLocaleString()}</TableCell>
+                    <TableCell className="text-red-600">{w.failureCount}</TableCell>
+                    <TableCell><StatusBadge status={w.status} /></TableCell>
+                    <TableCell className="text-xs">{w.lastDelivery ? new Date(w.lastDelivery).toLocaleString() : 'None'}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+}
+
+// =============================================================================
+// TRANSACTION MONITORING — Live tracker, search, detail view
+// =============================================================================
+
+function TransactionMonitoringSection({ role }: { role: UserRole }) {
+  const [monitorTab, setMonitorTab] = useState<'live' | 'search' | 'stuck'>('live');
+  const [txSearchQuery, setTxSearchQuery] = useState('');
+  const [searchCorridor, setSearchCorridor] = useState('');
+  const [searchStatus, setSearchStatus] = useState('');
+  const [selectedTransfer, setSelectedTransfer] = useState<string | null>(null);
+
+  const isAdmin = role === 'admin' || role === 'cbn';
+  const liveQuery = trpc.outboundRemittance.getLiveTransfers.useQuery();
+  const statsQuery = trpc.outboundRemittance.getTransferStats.useQuery();
+  const searchResults = trpc.outboundRemittance.searchTransfers.useQuery({
+    query: txSearchQuery || undefined,
+    corridor: searchCorridor || undefined,
+    status: searchStatus || undefined,
+  }, { enabled: monitorTab === 'search' });
+  const stuckQuery = trpc.outboundRemittance.getStuckTransfers.useQuery(undefined, { enabled: isAdmin && monitorTab === 'stuck' });
+  const lifecycleQuery = trpc.outboundRemittance.getTransferLifecycle.useQuery(
+    { transferRef: selectedTransfer! },
+    { enabled: !!selectedTransfer }
+  );
+
+  const stageOrder = ['admitted', 'screened', 'priced', 'debited', 'routed', 'switched', 'settled', 'confirmed'];
+
+  const tabs = [
+    { id: 'live' as const, label: `Live Transfers (${liveQuery.data?.length ?? 0})` },
+    { id: 'search' as const, label: 'Search' },
+    ...(isAdmin ? [{ id: 'stuck' as const, label: `Stuck (${stuckQuery.data?.length ?? 0})` }] : []),
+  ];
+
+  return (
+    <div className="space-y-4">
+      <div>
+        <h1 className="text-2xl font-bold">Transaction Monitoring</h1>
+        <p className="text-muted-foreground">Real-time transfer lifecycle tracking, search, and alerting</p>
+      </div>
+
+      {statsQuery.data && (
+        <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
+          <Card><CardContent className="p-3"><p className="text-xs text-muted-foreground">Total</p><p className="text-xl font-bold">{statsQuery.data.total}</p></CardContent></Card>
+          <Card><CardContent className="p-3"><p className="text-xs text-muted-foreground">Completed</p><p className="text-xl font-bold text-green-600">{statsQuery.data.completed}</p></CardContent></Card>
+          <Card><CardContent className="p-3"><p className="text-xs text-muted-foreground">In-Flight</p><p className="text-xl font-bold text-blue-600">{statsQuery.data.inFlight}</p></CardContent></Card>
+          <Card><CardContent className="p-3"><p className="text-xs text-muted-foreground">Failed</p><p className="text-xl font-bold text-red-600">{statsQuery.data.failed}</p></CardContent></Card>
+          <Card><CardContent className="p-3"><p className="text-xs text-muted-foreground">Stuck</p><p className="text-xl font-bold text-orange-600">{statsQuery.data.stuck}</p></CardContent></Card>
+          <Card><CardContent className="p-3"><p className="text-xs text-muted-foreground">Avg Latency</p><p className="text-xl font-bold">{statsQuery.data.avgLatencyMs}ms</p></CardContent></Card>
+        </div>
+      )}
+
+      <div className="flex flex-wrap gap-2">
+        {tabs.map(tab => (
+          <Button key={tab.id} variant={monitorTab === tab.id ? 'default' : 'outline'} size="sm" onClick={() => setMonitorTab(tab.id as any)}>
+            {tab.label}
+          </Button>
+        ))}
+      </div>
+
+      {selectedTransfer && lifecycleQuery.data && (
+        <Card className="border-2 border-blue-300">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2">
+                <Eye className="h-5 w-5" /> Transfer Lifecycle: {lifecycleQuery.data.transferRef}
+              </CardTitle>
+              <Button size="sm" variant="outline" onClick={() => setSelectedTransfer(null)}>Close</Button>
+            </div>
+            <CardDescription>
+              {lifecycleQuery.data.beneficiaryName} • {lifecycleQuery.data.corridor} via {lifecycleQuery.data.rail} • {formatNgn(lifecycleQuery.data.amountNGN)} → {lifecycleQuery.data.destCurrency} {lifecycleQuery.data.amountDest?.toLocaleString()}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center gap-1 mb-4">
+              {stageOrder.map((stage) => {
+                const reached = (lifecycleQuery.data as any).stages?.some((s: any) => s.stage === stage);
+                const isCurrent = (lifecycleQuery.data as any).currentStatus === stage;
+                return (
+                  <div key={stage} className="flex items-center gap-1 flex-1">
+                    <div className={`h-2 flex-1 rounded ${reached ? (isCurrent ? 'bg-blue-500 animate-pulse' : 'bg-green-500') : 'bg-gray-200'}`} />
+                    <span className={`text-[10px] ${reached ? 'text-foreground' : 'text-muted-foreground'}`}>{stage.slice(0, 4)}</span>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="space-y-2">
+              {(lifecycleQuery.data as any).stages?.map((s: any, i: number) => (
+                <div key={i} className="flex items-start gap-3 text-sm">
+                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-green-100 text-green-700 flex items-center justify-center text-xs">{i + 1}</div>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium">{s.stage}</span>
+                      <span className="text-xs text-muted-foreground">{new Date(s.timestamp).toLocaleTimeString()}</span>
+                      {s.latencyMs > 0 && <Badge variant="outline" className="text-xs">{s.latencyMs}ms</Badge>}
+                    </div>
+                    {s.detail && <p className="text-xs text-muted-foreground mt-0.5">{s.detail}</p>}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {monitorTab === 'live' && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2"><Activity className="h-5 w-5" /> Live Transfer Pipeline</CardTitle>
+            <CardDescription>All in-flight and recent transfers with real-time status</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Ref</TableHead>
+                  <TableHead>Beneficiary</TableHead>
+                  <TableHead>Corridor</TableHead>
+                  <TableHead>Rail</TableHead>
+                  <TableHead>Amount</TableHead>
+                  <TableHead>Stage</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Latency</TableHead>
+                  <TableHead>Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {(liveQuery.data ?? []).map((t: any) => (
+                  <TableRow key={t.transferRef} className={t.isStuck ? 'bg-red-50' : ''}>
+                    <TableCell className="font-mono text-xs">{t.transferRef}</TableCell>
+                    <TableCell>{t.beneficiaryName}</TableCell>
+                    <TableCell><Badge variant="outline">{t.corridor}</Badge></TableCell>
+                    <TableCell className="text-xs">{t.rail}</TableCell>
+                    <TableCell>{formatNgn(t.amountNGN)}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-1">
+                        {stageOrder.map(s => {
+                          const reached = t.stages?.some((st: any) => st.stage === s);
+                          return <div key={s} className={`h-1.5 w-3 rounded ${reached ? 'bg-green-500' : 'bg-gray-200'}`} />;
+                        })}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <StatusBadge status={t.currentStatus} />
+                      {t.isStuck && <Badge variant="destructive" className="ml-1 text-xs">STUCK</Badge>}
+                    </TableCell>
+                    <TableCell className="text-xs">{t.totalLatencyMs ? `${t.totalLatencyMs}ms` : '—'}</TableCell>
+                    <TableCell>
+                      <Button size="sm" variant="outline" onClick={() => setSelectedTransfer(t.transferRef)}>
+                        <Eye className="h-3 w-3 mr-1" /> Detail
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
+
+      {monitorTab === 'search' && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2"><Search className="h-5 w-5" /> Transfer Search</CardTitle>
+            <CardDescription>Search transfers by reference, beneficiary, corridor, or status</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+              <div>
+                <Label>Search</Label>
+                <Input value={txSearchQuery} onChange={e => setTxSearchQuery(e.target.value)} placeholder="Reference or beneficiary..." />
+              </div>
+              <div>
+                <Label>Corridor</Label>
+                <Input value={searchCorridor} onChange={e => setSearchCorridor(e.target.value)} placeholder="e.g. NG-GH" />
+              </div>
+              <div>
+                <Label>Status</Label>
+                <Input value={searchStatus} onChange={e => setSearchStatus(e.target.value)} placeholder="e.g. confirmed, failed" />
+              </div>
+            </div>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Ref</TableHead>
+                  <TableHead>Beneficiary</TableHead>
+                  <TableHead>Corridor</TableHead>
+                  <TableHead>Rail</TableHead>
+                  <TableHead>Amount</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {(searchResults.data ?? []).map((t: any) => (
+                  <TableRow key={t.transferRef}>
+                    <TableCell className="font-mono text-xs">{t.transferRef}</TableCell>
+                    <TableCell>{t.beneficiaryName}</TableCell>
+                    <TableCell><Badge variant="outline">{t.corridor}</Badge></TableCell>
+                    <TableCell className="text-xs">{t.rail}</TableCell>
+                    <TableCell>{formatNgn(t.amountNGN)}</TableCell>
+                    <TableCell><StatusBadge status={t.currentStatus} /></TableCell>
+                    <TableCell>
+                      <Button size="sm" variant="outline" onClick={() => setSelectedTransfer(t.transferRef)}>
+                        <Eye className="h-3 w-3 mr-1" /> Detail
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
+
+      {monitorTab === 'stuck' && isAdmin && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2"><AlertTriangle className="h-5 w-5 text-red-500" /> Stuck Transfers</CardTitle>
+            <CardDescription>Transfers that have exceeded SLA or are stuck at a stage</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Ref</TableHead>
+                  <TableHead>Participant</TableHead>
+                  <TableHead>Beneficiary</TableHead>
+                  <TableHead>Corridor</TableHead>
+                  <TableHead>Rail</TableHead>
+                  <TableHead>Amount</TableHead>
+                  <TableHead>Current Stage</TableHead>
+                  <TableHead>Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {(stuckQuery.data ?? []).map((t: any) => (
+                  <TableRow key={t.transferRef} className="bg-red-50">
+                    <TableCell className="font-mono text-xs">{t.transferRef}</TableCell>
+                    <TableCell className="text-xs">{t.participantId}</TableCell>
+                    <TableCell>{t.beneficiaryName}</TableCell>
+                    <TableCell><Badge variant="outline">{t.corridor}</Badge></TableCell>
+                    <TableCell className="text-xs">{t.rail}</TableCell>
+                    <TableCell>{formatNgn(t.amountNGN)}</TableCell>
+                    <TableCell><StatusBadge status={t.currentStatus} /></TableCell>
+                    <TableCell>
+                      <Button size="sm" variant="outline" onClick={() => setSelectedTransfer(t.transferRef)}>
+                        <Eye className="h-3 w-3 mr-1" /> Investigate
+                      </Button>
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
