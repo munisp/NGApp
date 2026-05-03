@@ -67,6 +67,16 @@ export default function DomesticPayments() {
   const gnnQuery = trpc.domesticPayments.getGNNFraudNetworks.useQuery(undefined, { retry: false });
   const mcmcQuery = trpc.domesticPayments.getMCMCFraudScoring.useQuery(undefined, { retry: false });
 
+  // Ollama interactive query
+  const [ollamaInput, setOllamaInput] = useState('');
+  const [ollamaHistory, setOllamaHistory] = useState<Array<{ question: string; answer: string; latencyMs: number; tokens: number }>>([]);
+  const ollamaMutation = trpc.domesticPayments.queryOllama.useMutation({
+    onSuccess: (data) => {
+      setOllamaHistory(prev => [{ question: ollamaInput, answer: data.answer, latencyMs: data.latencyMs, tokens: data.tokensGenerated }, ...prev]);
+      setOllamaInput('');
+    },
+  });
+
   const payments = paymentsQuery.data?.payments ?? [];
   const summary = paymentsQuery.data?.summary;
   const providers = billsQuery.data?.providers ?? [];
@@ -1715,6 +1725,11 @@ export default function DomesticPayments() {
         {/* 25. Ollama LLM */}
         {activeTab === 'ollama' && ollamaQuery.data && (
           <div>
+            {/* Source indicator */}
+            <div style={{ background: (ollamaQuery.data as any)._source?.includes('LIVE') ? '#dcfce7' : '#fef3c7', border: `1px solid ${(ollamaQuery.data as any)._source?.includes('LIVE') ? '#86efac' : '#fcd34d'}`, borderRadius: 8, padding: '8px 16px', marginBottom: 16, fontSize: 12, fontWeight: 600, color: (ollamaQuery.data as any)._source?.includes('LIVE') ? '#166534' : '#92400e' }}>
+              {(ollamaQuery.data as any)._source || 'Data source unknown'}
+            </div>
+
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 24 }}>
               {[
                 { label: 'Total Queries', value: ollamaQuery.data.stats.totalQueries.toLocaleString(), color: '#2563eb' },
@@ -1732,6 +1747,56 @@ export default function DomesticPayments() {
               <div style={{ fontSize: 14, fontWeight: 700, color: '#1d4ed8', marginBottom: 4 }}>Ollama — {ollamaQuery.data.config.model}</div>
               <div style={{ fontSize: 12, color: '#1d4ed8' }}>{ollamaQuery.data.config.framework} | Temp: {ollamaQuery.data.config.temperature} | Sources: {ollamaQuery.data.contextSources.join(', ')}</div>
             </div>
+
+            {/* Interactive Query Form */}
+            <div style={{ background: 'white', border: '2px solid #3b82f6', borderRadius: 12, padding: 20, marginBottom: 24 }}>
+              <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 12, color: '#1d4ed8' }}>Ask Ollama (Live LLM Query)</div>
+              <form onSubmit={(e) => { e.preventDefault(); if (ollamaInput.trim()) ollamaMutation.mutate({ question: ollamaInput }); }} style={{ display: 'flex', gap: 8 }}>
+                <input
+                  type="text"
+                  value={ollamaInput}
+                  onChange={(e) => setOllamaInput(e.target.value)}
+                  placeholder="Ask about NIP volumes, fraud trends, compliance status..."
+                  style={{ flex: 1, padding: '10px 16px', borderRadius: 8, border: '1px solid #d1d5db', fontSize: 14, outline: 'none' }}
+                  disabled={ollamaMutation.isPending}
+                />
+                <button
+                  type="submit"
+                  disabled={ollamaMutation.isPending || !ollamaInput.trim()}
+                  style={{ padding: '10px 24px', borderRadius: 8, border: 'none', background: ollamaMutation.isPending ? '#93c5fd' : '#2563eb', color: 'white', fontWeight: 700, fontSize: 14, cursor: ollamaMutation.isPending ? 'wait' : 'pointer' }}
+                >
+                  {ollamaMutation.isPending ? 'Thinking...' : 'Ask'}
+                </button>
+              </form>
+              {ollamaMutation.error && (
+                <div style={{ marginTop: 8, padding: '8px 12px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, fontSize: 12, color: '#dc2626' }}>
+                  {ollamaMutation.error.message}
+                </div>
+              )}
+            </div>
+
+            {/* Interactive query history */}
+            {ollamaHistory.length > 0 && (
+              <>
+                <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 12, color: '#059669' }}>Live LLM Responses</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 24 }}>
+                  {ollamaHistory.map((q, i) => (
+                    <div key={i} style={{ background: '#f0fdf4', border: '1px solid #86efac', borderRadius: 12, padding: 16 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                        <div style={{ fontSize: 13, fontWeight: 700 }}>{q.question}</div>
+                        <span style={{ padding: '2px 8px', borderRadius: 6, fontSize: 10, fontWeight: 600, background: '#dcfce7', color: '#166534' }}>LIVE</span>
+                      </div>
+                      <div style={{ fontSize: 13, color: '#4b5563', padding: '8px 12px', background: 'white', borderRadius: 8, marginBottom: 8, whiteSpace: 'pre-wrap' }}>{q.answer}</div>
+                      <div style={{ display: 'flex', gap: 16, fontSize: 11, color: '#6b7280' }}>
+                        <span>Latency: <strong>{(q.latencyMs / 1000).toFixed(1)}s</strong></span>
+                        <span>Tokens: <strong>{q.tokens}</strong></span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+
             <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 12 }}>Recent Queries</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               {ollamaQuery.data.recentQueries.map((q: any, i: number) => (
@@ -1740,7 +1805,7 @@ export default function DomesticPayments() {
                     <div style={{ fontSize: 13, fontWeight: 700 }}>{q.question}</div>
                     <span style={{ padding: '2px 8px', borderRadius: 6, fontSize: 10, fontWeight: 600, background: '#dbeafe', color: '#1d4ed8' }}>{q.category}</span>
                   </div>
-                  <div style={{ fontSize: 13, color: '#4b5563', padding: '8px 12px', background: '#f9fafb', borderRadius: 8, marginBottom: 8 }}>{q.answer}</div>
+                  <div style={{ fontSize: 13, color: '#4b5563', padding: '8px 12px', background: '#f9fafb', borderRadius: 8, marginBottom: 8, whiteSpace: 'pre-wrap' }}>{q.answer}</div>
                   <div style={{ display: 'flex', gap: 16, fontSize: 11, color: '#6b7280' }}>
                     <span>Latency: <strong>{(q.latencyMs / 1000).toFixed(1)}s</strong></span>
                     <span>Tokens: <strong>{q.tokens}</strong></span>
