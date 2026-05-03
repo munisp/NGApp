@@ -49,6 +49,12 @@ import { savedSearchRouter } from './routers/savedSearchRouter';
 import { securityRouter } from './routers/securityRouter';
 import { resilienceRouter } from './routers/resilienceRouter';
 import { outboundRemittanceRouter } from './routers/outboundRemittanceRouter';
+import { inboundRemittanceRouter } from './routers/inboundRemittanceRouter';
+import { domesticPaymentsRouter } from './routers/domesticPaymentsRouter';
+import { tradePaymentsRouter } from './routers/tradePaymentsRouter';
+import { cardProcessingRouter } from './routers/cardProcessingRouter';
+import { governmentPaymentsRouter } from './routers/governmentPaymentsRouter';
+import { openBankingRouter } from './routers/openBankingRouter';
 import { startRateAlertMonitor, getRateAlertMonitorStatus } from './jobs/rateAlertMonitor';
 import { exportToCSV, exportToExcel, exportToPDF, formatRemittanceForExport, getRemittanceExportColumns, formatRateAlertsForExport, getRateAlertExportColumns } from './services/exportService';
 
@@ -117,6 +123,12 @@ export const appRouter = router({
     security: securityRouter,
     resilience: resilienceRouter,
     outboundRemittance: outboundRemittanceRouter,
+    inboundRemittance: inboundRemittanceRouter,
+    domesticPayments: domesticPaymentsRouter,
+    tradePayments: tradePaymentsRouter,
+    cardProcessing: cardProcessingRouter,
+    governmentPayments: governmentPaymentsRouter,
+    openBanking: openBankingRouter,
   
     // Rate Alerts
   rateAlerts: router({

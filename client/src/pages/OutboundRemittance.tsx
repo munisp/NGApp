@@ -391,6 +391,24 @@ export default function OutboundRemittance() {
             </Tooltip>
           ))}
         </nav>
+        {!sidebarCollapsed && userRole !== 'participant' && (
+          <div className="px-2 pb-2 border-t pt-2">
+            <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider px-3 mb-1">Payment Switch Modules</p>
+            {[
+              { label: 'Inbound Remittance', href: '/inbound-remittance', color: '#059669' },
+              { label: 'Domestic Payments', href: '/domestic-payments', color: '#2563eb' },
+              { label: 'Trade Payments', href: '/trade-payments', color: '#7c3aed' },
+              { label: 'Card Processing', href: '/card-processing', color: '#dc2626' },
+              { label: 'Government Payments', href: '/government-payments', color: '#0369a1' },
+              { label: 'Open Banking', href: '/open-banking', color: '#0ea5e9' },
+            ].map(m => (
+              <a key={m.href} href={m.href} className="flex items-center gap-2 px-3 py-1.5 text-xs rounded-md hover:bg-accent transition-colors" style={{ color: m.color }}>
+                <span className="w-1.5 h-1.5 rounded-full" style={{ background: m.color }} />
+                {m.label}
+              </a>
+            ))}
+          </div>
+        )}
         <div className={`border-t ${sidebarCollapsed ? 'p-1' : 'p-3'}`}>
           <div className={`flex ${sidebarCollapsed ? 'flex-col items-center gap-1' : 'items-center justify-between'}`}>
             <Tooltip delayDuration={0}>

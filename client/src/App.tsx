@@ -33,6 +33,12 @@ import AccountActivity from "@/pages/AccountActivity";
 import IntegrationsDashboard from "@/pages/IntegrationsDashboard";
 import OutboundRemittance from "@/pages/OutboundRemittance";
 import OutboundApply from "@/pages/OutboundApply";
+import InboundRemittance from "@/pages/InboundRemittance";
+import DomesticPayments from "@/pages/DomesticPayments";
+import TradePayments from "@/pages/TradePayments";
+import CardProcessing from "@/pages/CardProcessing";
+import GovernmentPayments from "@/pages/GovernmentPayments";
+import OpenBanking from "@/pages/OpenBanking";
 
 function Router() {
   return (
@@ -64,6 +70,12 @@ function Router() {
       <Route path="/account-recovery" component={AccountRecovery} />
       <Route path="/outbound-remittance" component={OutboundRemittance} />
       <Route path="/outbound/apply" component={OutboundApply} />
+      <Route path="/inbound-remittance" component={InboundRemittance} />
+      <Route path="/domestic-payments" component={DomesticPayments} />
+      <Route path="/trade-payments" component={TradePayments} />
+      <Route path="/card-processing" component={CardProcessing} />
+      <Route path="/government-payments" component={GovernmentPayments} />
+      <Route path="/open-banking" component={OpenBanking} />
       <Route path={"/404"} component={NotFound} />
       {/* Final fallback route */}
       <Route component={NotFound} />
