@@ -228,6 +228,98 @@ const seedIso20022Messages: Iso20022Message[] = [
   { id: 'ISO-007', messageType: 'camt.054', messageId: 'CAMT054-2026-05-001', creationDateTime: '2026-05-01T12:00:00Z', senderBic: 'NIBSNGLA', receiverBic: 'GTBINGLA', transactionCount: 5, totalAmount: 3_500_000, currency: 'NGN', status: 'ACCEPTED', settlementMethod: 'CLRG', rawXmlSizeBytes: 22_000 },
 ];
 
+// ============================================================
+// REMAINING 5% GAPS — Seed Data
+// ============================================================
+
+// --- NQR (Dynamic QR Codes) ---
+const seedNqrCodes: {
+  id: string; version: string; merchantCode: string; merchantName: string; merchantCategory: string;
+  bankAcct: string; bankName: string; amount: number | null; currency: string; narration: string | null;
+  isDynamic: boolean; expiresAt: Date; createdAt: Date; status: string;
+  emvPayload: string; scansCount: number; paymentsCount: number; totalCollected: number;
+}[] = [
+  { id: 'NQR-001', version: '01', merchantCode: 'MCH-SHOPRITE', merchantName: 'ShopRite Nigeria', merchantCategory: 'RETAIL', bankAcct: '0057300003', bankName: 'Zenith Bank', amount: null, currency: 'NGN', narration: null, isDynamic: false, expiresAt: new Date('2027-12-31'), createdAt: new Date('2026-01-01'), status: 'ACTIVE', emvPayload: '00020101021126580016com.nibss.nqr0114MCH-SHOPRITE52040000530356654000.005802NG5913ShopRite Nige6005Lagos63041234', scansCount: 15420, paymentsCount: 12300, totalCollected: 186_500_000 },
+  { id: 'NQR-002', version: '01', merchantCode: 'MCH-CHICKEN', merchantName: 'Chicken Republic', merchantCategory: 'FOOD_BEVERAGE', bankAcct: '0011500005', bankName: 'First Bank', amount: 3500, currency: 'NGN', narration: 'Combo meal', isDynamic: true, expiresAt: new Date('2026-05-02T12:00:00Z'), createdAt: new Date('2026-05-01T10:00:00Z'), status: 'ACTIVE', emvPayload: '00020101021226580016com.nibss.nqr0114MCH-CHICKEN52040000530356654003500.005802NG5913Chicken Repub6005Lagos63045678', scansCount: 340, paymentsCount: 285, totalCollected: 997_500 },
+  { id: 'NQR-003', version: '01', merchantCode: 'MCH-JUMIA', merchantName: 'Jumia Nigeria', merchantCategory: 'ECOMMERCE', bankAcct: '0033400004', bankName: 'UBA', amount: 45000, currency: 'NGN', narration: 'Samsung Galaxy A54', isDynamic: true, expiresAt: new Date('2026-05-01T18:00:00Z'), createdAt: new Date('2026-05-01T08:00:00Z'), status: 'EXPIRED', emvPayload: '00020101021226580016com.nibss.nqr0114MCH-JUMIA520400005303566540045000.005802NG5913Jumia Nigeria6005Lagos630491011', scansCount: 5, paymentsCount: 1, totalCollected: 45000 },
+];
+
+// --- e-Mandate Portal ---
+const seedEmandates: {
+  id: string; mandateRef: string; subscriberBvn: string; subscriberBank: string;
+  billerName: string; amount: number; frequency: string;
+  approvalStatus: string; bankRedirectUrl: string; customerRedirectUrl: string;
+  otpSent: boolean; otpChannel: string;
+  initiatedAt: Date; approvedAt: Date | null; expiresAt: Date;
+}[] = [
+  { id: 'EMND-001', mandateRef: 'NDD-2026-0001', subscriberBvn: '22345678901', subscriberBank: 'Access Bank', billerName: 'MTN Nigeria', amount: 5000, frequency: 'MONTHLY', approvalStatus: 'APPROVED', bankRedirectUrl: 'https://ibank.accessbank.com.ng/emandate/approve/NDD-2026-0001', customerRedirectUrl: 'https://mtn.com.ng/subscription/callback', otpSent: true, otpChannel: 'SMS', initiatedAt: new Date('2026-04-01'), approvedAt: new Date('2026-04-01T10:30:00Z'), expiresAt: new Date('2026-07-01') },
+  { id: 'EMND-002', mandateRef: 'NDD-2026-0002', subscriberBvn: '22345678902', subscriberBank: 'GTBank', billerName: 'Lagos Gym Club', amount: 75000, frequency: 'MONTHLY', approvalStatus: 'PENDING_CUSTOMER_APPROVAL', bankRedirectUrl: 'https://ibank.gtbank.com.ng/emandate/approve/NDD-2026-0002', customerRedirectUrl: 'https://lagosgym.com/mandate/callback', otpSent: true, otpChannel: 'SMS', initiatedAt: new Date('2026-05-01'), approvedAt: null, expiresAt: new Date('2026-05-04') },
+  { id: 'EMND-003', mandateRef: 'NDD-2026-0003', subscriberBvn: '12345678901', subscriberBank: 'UBA', billerName: 'AXA Mansard Insurance', amount: 250000, frequency: 'QUARTERLY', approvalStatus: 'REJECTED', bankRedirectUrl: 'https://ibank.uba.com.ng/emandate/approve/NDD-2026-0003', customerRedirectUrl: 'https://axamansard.com/mandate/callback', otpSent: true, otpChannel: 'SMS', initiatedAt: new Date('2026-04-20'), approvedAt: null, expiresAt: new Date('2026-04-23') },
+  { id: 'EMND-004', mandateRef: 'NDD-2026-0004', subscriberBvn: '22345678901', subscriberBank: 'Access Bank', billerName: 'FIRS Tax Collection', amount: 150000, frequency: 'MONTHLY', approvalStatus: 'EXPIRED', bankRedirectUrl: 'https://ibank.accessbank.com.ng/emandate/approve/NDD-2026-0004', customerRedirectUrl: 'https://firs.gov.ng/emandate/callback', otpSent: true, otpChannel: 'SMS', initiatedAt: new Date('2026-03-15'), approvedAt: null, expiresAt: new Date('2026-03-18') },
+];
+
+// --- Fraud Alerts (Pluto-equivalent) ---
+const seedFraudAlerts: {
+  id: string; nipRef: string; amount: number; senderBvn: string; senderBank: string;
+  receiverAcct: string; receiverBank: string; channel: string;
+  riskScore: number; severity: string; action: string;
+  ruleTriggered: string; description: string;
+  detectedAt: Date; reviewedAt: Date | null; reviewedBy: string | null;
+}[] = [
+  { id: 'FRD-001', nipRef: 'NIP-D-FRAUD-001', amount: 9_999_999, senderBvn: '99988877766', senderBank: 'Access Bank', receiverAcct: '0099887766', receiverBank: 'Opay', channel: 'mobile_app', riskScore: 92, severity: 'CRITICAL', action: 'BLOCKED', ruleTriggered: 'STRUCTURING_DETECTION', description: 'Multiple transactions just below ₦10M threshold within 30 minutes — potential structuring', detectedAt: new Date('2026-05-01T14:00:00Z'), reviewedAt: new Date('2026-05-01T14:15:00Z'), reviewedBy: 'fraud_analyst_01' },
+  { id: 'FRD-002', nipRef: 'NIP-D-FRAUD-002', amount: 2_500_000, senderBvn: '11122233344', senderBank: 'GTBank', receiverAcct: '0011223344', receiverBank: 'Kuda', channel: 'internet_banking', riskScore: 78, severity: 'HIGH', action: 'FLAGGED', ruleTriggered: 'VELOCITY_ANOMALY', description: 'Sender initiated 15 transactions in 10 minutes — unusual velocity pattern', detectedAt: new Date('2026-05-01T16:30:00Z'), reviewedAt: null, reviewedBy: null },
+  { id: 'FRD-003', nipRef: 'NIP-D-FRAUD-003', amount: 450_000, senderBvn: '55566677788', senderBank: 'Zenith Bank', receiverAcct: '0055667788', receiverBank: 'PalmPay', channel: 'USSD', riskScore: 65, severity: 'MEDIUM', action: 'FLAGGED', ruleTriggered: 'NEW_DEVICE_HIGH_VALUE', description: 'First transaction from new device exceeds ₦100K — requires additional verification', detectedAt: new Date('2026-05-01T18:00:00Z'), reviewedAt: null, reviewedBy: null },
+  { id: 'FRD-004', nipRef: 'NIP-D-FRAUD-004', amount: 15_000_000, senderBvn: '44455566677', senderBank: 'UBA', receiverAcct: '0044556677', receiverBank: 'First Bank', channel: 'internet_banking', riskScore: 88, severity: 'CRITICAL', action: 'BLOCKED', ruleTriggered: 'MULE_NETWORK', description: 'Receiver account flagged in known mule network — graph analysis detected 3-hop connection to confirmed fraud ring', detectedAt: new Date('2026-05-02T09:00:00Z'), reviewedAt: new Date('2026-05-02T09:05:00Z'), reviewedBy: 'fraud_analyst_02' },
+  { id: 'FRD-005', nipRef: 'NIP-D-FRAUD-005', amount: 800_000, senderBvn: '22345678901', senderBank: 'Access Bank', receiverAcct: '0058200002', receiverBank: 'GTBank', channel: 'mobile_app', riskScore: 25, severity: 'LOW', action: 'ALLOWED', ruleTriggered: 'NONE', description: 'Regular P2P between known counterparties — low risk', detectedAt: new Date('2026-05-02T10:00:00Z'), reviewedAt: null, reviewedBy: null },
+];
+
+// ============================================================
+// STAKEHOLDER ONBOARDING — Seed Data
+// ============================================================
+
+const seedOnboardedBanks: {
+  id: string; bankName: string; bankCode: string; cbnLicenseNo: string;
+  nipParticipantCode: string; settlementAcct: string; prefundBalance: number;
+  contactName: string; contactEmail: string; contactPhone: string;
+  services: string[]; status: string; apiKeyProvisioned: boolean; apiKey: string | null;
+  nipConnected: boolean; testCompleted: boolean;
+  goLiveDate: Date | null; onboardedAt: Date; approvedBy: string | null;
+}[] = [
+  { id: 'BANK-001', bankName: 'Access Bank', bankCode: '044', cbnLicenseNo: 'CBN/BK/044', nipParticipantCode: 'NIP-044', settlementAcct: '0001234567', prefundBalance: 50_000_000_000, contactName: 'Ade Johnson', contactEmail: 'ade.johnson@accessbank.com', contactPhone: '08012345678', services: ['NIP', 'NEFT', 'NACS', 'NDD', 'NQR'], status: 'ACTIVE', apiKeyProvisioned: true, apiKey: 'nibss_044_live_xxxxx', nipConnected: true, testCompleted: true, goLiveDate: new Date('2025-01-15'), onboardedAt: new Date('2024-12-01'), approvedBy: 'cbn_admin' },
+  { id: 'BANK-002', bankName: 'GTBank', bankCode: '058', cbnLicenseNo: 'CBN/BK/058', nipParticipantCode: 'NIP-058', settlementAcct: '0009876543', prefundBalance: 35_000_000_000, contactName: 'Chidi Obi', contactEmail: 'chidi.obi@gtbank.com', contactPhone: '08098765432', services: ['NIP', 'NEFT', 'NDD', 'NQR'], status: 'ACTIVE', apiKeyProvisioned: true, apiKey: 'nibss_058_live_xxxxx', nipConnected: true, testCompleted: true, goLiveDate: new Date('2025-01-20'), onboardedAt: new Date('2024-12-05'), approvedBy: 'cbn_admin' },
+  { id: 'BANK-003', bankName: 'Moniepoint MFB', bankCode: '50515', cbnLicenseNo: 'CBN/MFB/50515', nipParticipantCode: 'NIP-50515', settlementAcct: '0005050505', prefundBalance: 5_000_000_000, contactName: 'Femi Adebayo', contactEmail: 'femi@moniepoint.com', contactPhone: '07055555555', services: ['NIP', 'NQR', 'mCash'], status: 'PENDING_APPROVAL', apiKeyProvisioned: false, apiKey: null, nipConnected: false, testCompleted: false, goLiveDate: null, onboardedAt: new Date('2026-05-01'), approvedBy: null },
+];
+
+const seedOnboardedBillers: {
+  id: string; billerName: string; billerCode: string; category: string;
+  rcNumber: string; settlementBank: string; settlementAcct: string;
+  contactName: string; contactEmail: string;
+  products: { name: string; code: string; minAmount: number; maxAmount: number }[];
+  channels: string[]; status: string; productCount: number;
+  ebillspayIntegrated: boolean; paydirectIntegrated: boolean;
+  totalCollected: number; transactionCount: number;
+  registeredAt: Date; approvedAt: Date | null;
+}[] = [
+  { id: 'BLR-001', billerName: 'Eko Electricity Distribution', billerCode: 'EKEDC', category: 'UTILITY', rcNumber: 'RC-445566', settlementBank: 'Access Bank', settlementAcct: '0041234567', contactName: 'Bola Adeyemi', contactEmail: 'bola@ekedc.com', products: [{ name: 'Prepaid Token', code: 'EKEDC-PRE', minAmount: 500, maxAmount: 500_000 }, { name: 'Postpaid Bill', code: 'EKEDC-POST', minAmount: 1000, maxAmount: 2_000_000 }], channels: ['WEB', 'MOBILE', 'USSD', 'POS', 'AGENT'], status: 'ACTIVE', productCount: 2, ebillspayIntegrated: true, paydirectIntegrated: true, totalCollected: 45_000_000_000, transactionCount: 2_500_000, registeredAt: new Date('2024-06-01'), approvedAt: new Date('2024-06-15') },
+  { id: 'BLR-002', billerName: 'DStv MultiChoice', billerCode: 'DSTV', category: 'ENTERTAINMENT', rcNumber: 'RC-112233', settlementBank: 'Zenith Bank', settlementAcct: '0059876543', contactName: 'Ngozi Eze', contactEmail: 'ngozi@multichoice.com', products: [{ name: 'Premium', code: 'DSTV-PREM', minAmount: 29500, maxAmount: 29500 }, { name: 'Compact+', code: 'DSTV-COMP', minAmount: 19800, maxAmount: 19800 }, { name: 'Compact', code: 'DSTV-CMPT', minAmount: 12500, maxAmount: 12500 }], channels: ['WEB', 'MOBILE', 'USSD', 'ATM'], status: 'ACTIVE', productCount: 3, ebillspayIntegrated: true, paydirectIntegrated: false, totalCollected: 120_000_000_000, transactionCount: 8_000_000, registeredAt: new Date('2024-03-01'), approvedAt: new Date('2024-03-10') },
+  { id: 'BLR-003', billerName: 'Lagos State Internal Revenue', billerCode: 'LIRS', category: 'GOVERNMENT', rcNumber: 'GOV-LIRS', settlementBank: 'First Bank', settlementAcct: '0011223344', contactName: 'Toyin Bakare', contactEmail: 'toyin@lirs.gov.ng', products: [{ name: 'PAYE Tax', code: 'LIRS-PAYE', minAmount: 5000, maxAmount: 50_000_000 }, { name: 'WHT', code: 'LIRS-WHT', minAmount: 1000, maxAmount: 10_000_000 }], channels: ['WEB', 'MOBILE', 'POS'], status: 'ACTIVE', productCount: 2, ebillspayIntegrated: true, paydirectIntegrated: true, totalCollected: 350_000_000_000, transactionCount: 1_200_000, registeredAt: new Date('2024-01-15'), approvedAt: new Date('2024-02-01') },
+  { id: 'BLR-004', billerName: 'Interswitch Health', billerCode: 'ISHLT', category: 'HEALTH', rcNumber: 'RC-998877', settlementBank: 'GTBank', settlementAcct: '0058112233', contactName: 'Uche Nnamdi', contactEmail: 'uche@interswitch.com', products: [{ name: 'HMO Subscription', code: 'ISHLT-HMO', minAmount: 15000, maxAmount: 500_000 }], channels: ['WEB', 'MOBILE'], status: 'PENDING_APPROVAL', productCount: 1, ebillspayIntegrated: false, paydirectIntegrated: false, totalCollected: 0, transactionCount: 0, registeredAt: new Date('2026-04-28'), approvedAt: null },
+];
+
+const seedOnboardedDfsps: {
+  id: string; dfspName: string; dfspCode: string; type: string;
+  cbnLicenseNo: string; contactName: string; contactEmail: string;
+  corridors: string[]; services: string[];
+  status: string; mojaConnected: boolean; mojaFspId: string | null;
+  prefundBalance: number; apiKeyProvisioned: boolean;
+  onboardingSteps: { step: string; status: string; completedAt: Date | null }[];
+  registeredAt: Date;
+}[] = [
+  { id: 'DFSP-001', dfspName: 'Flutterwave', dfspCode: 'FWAVE', type: 'PSP', cbnLicenseNo: 'CBN/PSP/FWAVE', contactName: 'Olu Ogundimu', contactEmail: 'olu@flutterwave.com', corridors: ['NG-GH', 'NG-KE', 'NG-ZA'], services: ['INBOUND', 'OUTBOUND', 'DOMESTIC', 'NIP'], status: 'ACTIVE', mojaConnected: true, mojaFspId: 'fwave-ng', prefundBalance: 10_000_000_000, apiKeyProvisioned: true, onboardingSteps: [{ step: 'KYC_VERIFICATION', status: 'COMPLETED', completedAt: new Date('2025-01-10') }, { step: 'COMPLIANCE_CHECK', status: 'COMPLETED', completedAt: new Date('2025-01-15') }, { step: 'TECHNICAL_INTEGRATION', status: 'COMPLETED', completedAt: new Date('2025-02-01') }, { step: 'SANDBOX_TESTING', status: 'COMPLETED', completedAt: new Date('2025-02-15') }, { step: 'UAT_CERTIFICATION', status: 'COMPLETED', completedAt: new Date('2025-03-01') }, { step: 'GO_LIVE_APPROVAL', status: 'COMPLETED', completedAt: new Date('2025-03-10') }], registeredAt: new Date('2025-01-05') },
+  { id: 'DFSP-002', dfspName: 'Paystack', dfspCode: 'PSTK', type: 'PSP', cbnLicenseNo: 'CBN/PSP/PSTK', contactName: 'Adaeze Okoro', contactEmail: 'adaeze@paystack.com', corridors: ['NG-GH', 'NG-ZA'], services: ['INBOUND', 'DOMESTIC', 'NIP'], status: 'ACTIVE', mojaConnected: true, mojaFspId: 'pstk-ng', prefundBalance: 8_000_000_000, apiKeyProvisioned: true, onboardingSteps: [{ step: 'KYC_VERIFICATION', status: 'COMPLETED', completedAt: new Date('2025-02-01') }, { step: 'COMPLIANCE_CHECK', status: 'COMPLETED', completedAt: new Date('2025-02-10') }, { step: 'TECHNICAL_INTEGRATION', status: 'COMPLETED', completedAt: new Date('2025-03-01') }, { step: 'SANDBOX_TESTING', status: 'COMPLETED', completedAt: new Date('2025-03-15') }, { step: 'UAT_CERTIFICATION', status: 'COMPLETED', completedAt: new Date('2025-03-25') }, { step: 'GO_LIVE_APPROVAL', status: 'COMPLETED', completedAt: new Date('2025-04-01') }], registeredAt: new Date('2025-01-20') },
+  { id: 'DFSP-003', dfspName: 'LemFi', dfspCode: 'LEMFI', type: 'IMTO', cbnLicenseNo: 'CBN/IMTO/LEMFI', contactName: 'Babajide Alao', contactEmail: 'bj@lemfi.com', corridors: ['GB-NG', 'CA-NG', 'US-NG'], services: ['INBOUND', 'NIP'], status: 'PENDING_APPROVAL', mojaConnected: false, mojaFspId: null, prefundBalance: 0, apiKeyProvisioned: false, onboardingSteps: [{ step: 'KYC_VERIFICATION', status: 'COMPLETED', completedAt: new Date('2026-04-15') }, { step: 'COMPLIANCE_CHECK', status: 'COMPLETED', completedAt: new Date('2026-04-20') }, { step: 'TECHNICAL_INTEGRATION', status: 'IN_PROGRESS', completedAt: null }, { step: 'SANDBOX_TESTING', status: 'PENDING', completedAt: null }, { step: 'UAT_CERTIFICATION', status: 'PENDING', completedAt: null }, { step: 'GO_LIVE_APPROVAL', status: 'PENDING', completedAt: null }], registeredAt: new Date('2026-04-10') },
+];
+
 export const domesticPaymentsRouter = router({
   listPayments: protectedProcedure
     .input(z.object({ type: z.string().optional(), status: z.string().optional(), channel: z.string().optional() }).optional())
@@ -524,4 +616,362 @@ export const domesticPaymentsRouter = router({
       camt053: seedIso20022Messages.filter(m => m.messageType === 'camt.053').length,
     },
   })),
+
+  // ============================================================
+  // REMAINING 5% NIBSS GAPS
+  // ============================================================
+
+  // --- 12. Dynamic NQR (QR Code Generation) ---
+  generateNqrCode: protectedProcedure
+    .input(z.object({
+      merchantCode: z.string(),
+      amount: z.number().positive().optional(),
+      currency: z.string().default('NGN'),
+      narration: z.string().optional(),
+      expiresInMinutes: z.number().min(1).max(1440).default(30),
+    }))
+    .mutation(async ({ input }) => {
+      const merchant = seedMerchants.find(m => m.merchantCode === input.merchantCode);
+      if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+      const qrRef = `NQR-${Date.now()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+      const qrData = {
+        id: qrRef,
+        version: '01',
+        merchantCode: merchant.merchantCode,
+        merchantName: merchant.merchantName,
+        merchantCategory: merchant.category,
+        bankAcct: merchant.bankAcct,
+        bankName: merchant.bankName,
+        amount: input.amount ?? null,
+        currency: input.currency,
+        narration: input.narration ?? null,
+        isDynamic: !!input.amount,
+        expiresAt: new Date(Date.now() + input.expiresInMinutes * 60000),
+        createdAt: new Date(),
+        status: 'ACTIVE' as const,
+        emvPayload: `00020101021226${qrRef}520400005303566540${input.amount ?? '0'}5802NG5913${merchant.merchantName.substring(0, 13)}6005Lagos63`,
+        scansCount: 0,
+        paymentsCount: 0,
+        totalCollected: 0,
+      };
+      seedNqrCodes.push(qrData);
+      return qrData;
+    }),
+
+  listNqrCodes: protectedProcedure.query(async () => ({
+    codes: seedNqrCodes,
+    summary: {
+      total: seedNqrCodes.length,
+      active: seedNqrCodes.filter(q => q.status === 'ACTIVE').length,
+      dynamic: seedNqrCodes.filter(q => q.isDynamic).length,
+      static: seedNqrCodes.filter(q => !q.isDynamic).length,
+      totalCollected: seedNqrCodes.reduce((s, q) => s + q.totalCollected, 0),
+      totalScans: seedNqrCodes.reduce((s, q) => s + q.scansCount, 0),
+    },
+  })),
+
+  // --- 13. e-Mandate Portal ---
+  listEmandates: protectedProcedure.query(async () => ({
+    emandates: seedEmandates,
+    summary: {
+      total: seedEmandates.length,
+      approved: seedEmandates.filter(e => e.approvalStatus === 'APPROVED').length,
+      pendingApproval: seedEmandates.filter(e => e.approvalStatus === 'PENDING_CUSTOMER_APPROVAL').length,
+      rejected: seedEmandates.filter(e => e.approvalStatus === 'REJECTED').length,
+      expired: seedEmandates.filter(e => e.approvalStatus === 'EXPIRED').length,
+    },
+  })),
+
+  initiateEmandate: protectedProcedure
+    .input(z.object({
+      mandateRef: z.string(),
+      subscriberBvn: z.string(),
+      subscriberBank: z.string(),
+      billerName: z.string(),
+      amount: z.number().positive(),
+      frequency: z.enum(['DAILY', 'WEEKLY', 'MONTHLY', 'QUARTERLY', 'ANNUALLY']),
+      redirectUrl: z.string().url(),
+    }))
+    .mutation(async ({ input }) => {
+      const emandate = {
+        id: `EMND-${Date.now()}`,
+        mandateRef: input.mandateRef,
+        subscriberBvn: input.subscriberBvn,
+        subscriberBank: input.subscriberBank,
+        billerName: input.billerName,
+        amount: input.amount,
+        frequency: input.frequency,
+        approvalStatus: 'PENDING_CUSTOMER_APPROVAL' as const,
+        bankRedirectUrl: `https://ibank.${input.subscriberBank.toLowerCase().replace(/\s/g, '')}.com.ng/emandate/approve/${input.mandateRef}`,
+        customerRedirectUrl: input.redirectUrl,
+        otpSent: true,
+        otpChannel: 'SMS' as const,
+        initiatedAt: new Date(),
+        approvedAt: null as Date | null,
+        expiresAt: new Date(Date.now() + 72 * 3600000),
+      };
+      seedEmandates.push(emandate);
+      return emandate;
+    }),
+
+  // --- 14. BVN Biometric Matching ---
+  biometricMatch: protectedProcedure
+    .input(z.object({
+      bvn: z.string().length(11),
+      matchType: z.enum(['FINGERPRINT', 'FACE', 'BOTH']),
+    }))
+    .query(async ({ input }) => {
+      const matchScores: Record<string, { fingerprint: number; face: number; liveness: number }> = {
+        '22345678901': { fingerprint: 98.5, face: 97.2, liveness: 99.1 },
+        '22345678902': { fingerprint: 96.8, face: 95.4, liveness: 98.7 },
+        '12345678901': { fingerprint: 99.1, face: 98.8, liveness: 99.5 },
+      };
+      const scores = matchScores[input.bvn];
+      if (!scores) return { matched: false as const, bvn: input.bvn, matchType: input.matchType, reason: 'BVN not found in biometric database' };
+
+      const threshold = 90.0;
+      const fingerprintPass = scores.fingerprint >= threshold;
+      const facePass = scores.face >= threshold;
+      const livenessPass = scores.liveness >= 95.0;
+
+      const passed = input.matchType === 'FINGERPRINT' ? fingerprintPass && livenessPass
+        : input.matchType === 'FACE' ? facePass && livenessPass
+        : fingerprintPass && facePass && livenessPass;
+
+      return {
+        matched: true as const,
+        bvn: input.bvn,
+        matchType: input.matchType,
+        passed,
+        scores: {
+          fingerprint: input.matchType !== 'FACE' ? scores.fingerprint : undefined,
+          face: input.matchType !== 'FINGERPRINT' ? scores.face : undefined,
+          liveness: scores.liveness,
+        },
+        threshold,
+        verifiedAt: new Date(),
+        nibbsRef: `BIO-${Date.now()}`,
+        fee: input.matchType === 'BOTH' ? 100 : 75,
+      };
+    }),
+
+  // --- 15. Fraud Detection Engine (Pluto-equivalent) ---
+  listFraudAlerts: protectedProcedure.query(async () => ({
+    alerts: seedFraudAlerts,
+    summary: {
+      total: seedFraudAlerts.length,
+      critical: seedFraudAlerts.filter(a => a.severity === 'CRITICAL').length,
+      high: seedFraudAlerts.filter(a => a.severity === 'HIGH').length,
+      medium: seedFraudAlerts.filter(a => a.severity === 'MEDIUM').length,
+      blocked: seedFraudAlerts.filter(a => a.action === 'BLOCKED').length,
+      flagged: seedFraudAlerts.filter(a => a.action === 'FLAGGED').length,
+      totalAmountBlocked: seedFraudAlerts.filter(a => a.action === 'BLOCKED').reduce((s, a) => s + a.amount, 0),
+    },
+  })),
+
+  scoreTransaction: protectedProcedure
+    .input(z.object({
+      nipRef: z.string(),
+      senderBvn: z.string(),
+      receiverAcct: z.string(),
+      amount: z.number(),
+      channel: z.string(),
+      deviceId: z.string().optional(),
+      ipAddress: z.string().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const riskFactors: { factor: string; score: number; weight: number }[] = [];
+
+      if (input.amount > 5_000_000) riskFactors.push({ factor: 'HIGH_VALUE_TRANSACTION', score: 75, weight: 0.25 });
+      else if (input.amount > 1_000_000) riskFactors.push({ factor: 'ELEVATED_VALUE', score: 45, weight: 0.15 });
+      else riskFactors.push({ factor: 'NORMAL_VALUE', score: 10, weight: 0.10 });
+
+      if (input.channel === 'USSD') riskFactors.push({ factor: 'USSD_CHANNEL', score: 20, weight: 0.10 });
+      if (!input.deviceId) riskFactors.push({ factor: 'UNKNOWN_DEVICE', score: 60, weight: 0.20 });
+      else riskFactors.push({ factor: 'KNOWN_DEVICE', score: 5, weight: 0.05 });
+
+      riskFactors.push({ factor: 'VELOCITY_CHECK', score: Math.floor(Math.random() * 30), weight: 0.15 });
+      riskFactors.push({ factor: 'BEHAVIORAL_PATTERN', score: Math.floor(Math.random() * 25), weight: 0.15 });
+      riskFactors.push({ factor: 'NETWORK_ANALYSIS', score: Math.floor(Math.random() * 20), weight: 0.10 });
+
+      const compositeScore = Math.round(riskFactors.reduce((s, f) => s + f.score * f.weight, 0));
+      const action = compositeScore >= 70 ? 'BLOCKED' : compositeScore >= 50 ? 'FLAGGED' : compositeScore >= 30 ? 'REVIEW' : 'ALLOWED';
+
+      return {
+        nipRef: input.nipRef,
+        compositeScore,
+        action,
+        riskFactors,
+        recommendation: action === 'BLOCKED' ? 'Transaction blocked — manual review required'
+          : action === 'FLAGGED' ? 'Transaction flagged — additional verification recommended'
+          : action === 'REVIEW' ? 'Transaction requires analyst review within 24h'
+          : 'Transaction cleared — proceed normally',
+        scoredAt: new Date(),
+        modelVersion: 'pluto-ng-v2.4',
+        processingTimeMs: Math.floor(Math.random() * 5) + 1,
+      };
+    }),
+
+  // ============================================================
+  // STAKEHOLDER ONBOARDING
+  // ============================================================
+
+  // --- Bank Onboarding ---
+  listOnboardedBanks: protectedProcedure.query(async () => ({
+    banks: seedOnboardedBanks,
+    summary: {
+      total: seedOnboardedBanks.length,
+      active: seedOnboardedBanks.filter(b => b.status === 'ACTIVE').length,
+      pendingApproval: seedOnboardedBanks.filter(b => b.status === 'PENDING_APPROVAL').length,
+      suspended: seedOnboardedBanks.filter(b => b.status === 'SUSPENDED').length,
+      totalPrefund: seedOnboardedBanks.reduce((s, b) => s + b.prefundBalance, 0),
+    },
+  })),
+
+  onboardBank: protectedProcedure
+    .input(z.object({
+      bankName: z.string(), bankCode: z.string(), cbnLicenseNo: z.string(),
+      nipParticipantCode: z.string(), settlementAcct: z.string(),
+      initialPrefund: z.number().positive(), contactName: z.string(),
+      contactEmail: z.string().email(), contactPhone: z.string(),
+      services: z.array(z.enum(['NIP', 'NEFT', 'NACS', 'NDD', 'mCash', 'PayDirect', 'NQR'])),
+    }))
+    .mutation(async ({ input }) => {
+      const bank = {
+        id: `BANK-${Date.now()}`,
+        ...input,
+        status: 'PENDING_APPROVAL' as const,
+        prefundBalance: input.initialPrefund,
+        apiKeyProvisioned: false,
+        apiKey: null as string | null,
+        nipConnected: false,
+        testCompleted: false,
+        goLiveDate: null as Date | null,
+        onboardedAt: new Date(),
+        approvedBy: null as string | null,
+      };
+      seedOnboardedBanks.push(bank);
+      return bank;
+    }),
+
+  approveBankOnboarding: protectedProcedure
+    .input(z.object({ bankId: z.string(), approvedBy: z.string() }))
+    .mutation(async ({ input }) => {
+      const bank = seedOnboardedBanks.find(b => b.id === input.bankId);
+      if (!bank) throw new TRPCError({ code: 'NOT_FOUND', message: 'Bank not found' });
+      bank.status = 'ACTIVE';
+      bank.approvedBy = input.approvedBy;
+      bank.apiKeyProvisioned = true;
+      bank.apiKey = `nibss_${bank.bankCode}_${Date.now().toString(36)}`;
+      bank.nipConnected = true;
+      bank.goLiveDate = new Date();
+      return bank;
+    }),
+
+  // --- Biller Onboarding ---
+  listOnboardedBillers: protectedProcedure.query(async () => ({
+    billers: seedOnboardedBillers,
+    summary: {
+      total: seedOnboardedBillers.length,
+      active: seedOnboardedBillers.filter(b => b.status === 'ACTIVE').length,
+      pending: seedOnboardedBillers.filter(b => b.status === 'PENDING_APPROVAL').length,
+      totalProducts: seedOnboardedBillers.reduce((s, b) => s + b.productCount, 0),
+    },
+  })),
+
+  onboardBiller: protectedProcedure
+    .input(z.object({
+      billerName: z.string(), billerCode: z.string(), category: z.string(),
+      rcNumber: z.string(), settlementBank: z.string(), settlementAcct: z.string(),
+      contactName: z.string(), contactEmail: z.string().email(),
+      products: z.array(z.object({ name: z.string(), code: z.string(), minAmount: z.number(), maxAmount: z.number() })),
+      channels: z.array(z.enum(['WEB', 'MOBILE', 'USSD', 'POS', 'ATM', 'AGENT'])),
+    }))
+    .mutation(async ({ input }) => {
+      const biller = {
+        id: `BLR-${Date.now()}`,
+        ...input,
+        status: 'PENDING_APPROVAL' as const,
+        productCount: input.products.length,
+        ebillspayIntegrated: false,
+        paydirectIntegrated: false,
+        totalCollected: 0,
+        transactionCount: 0,
+        registeredAt: new Date(),
+        approvedAt: null as Date | null,
+      };
+      seedOnboardedBillers.push(biller);
+      return biller;
+    }),
+
+  // --- Merchant Onboarding (mCash+) ---
+  onboardMerchant: protectedProcedure
+    .input(z.object({
+      merchantName: z.string(), category: z.string(),
+      ownerBvn: z.string().length(11), ownerName: z.string(),
+      bankAcct: z.string(), bankName: z.string(), location: z.string(),
+      requestUssd: z.boolean().default(false),
+    }))
+    .mutation(async ({ input }) => {
+      const merchantCode = `MCH-${Date.now().toString(36).toUpperCase()}`;
+      const ussdCode = input.requestUssd ? `*714*${Math.floor(1000 + Math.random() * 9000)}#` : null;
+      const merchant: MerchantRecord = {
+        id: `MERCH-${Date.now()}`,
+        merchantName: input.merchantName,
+        merchantCode,
+        ussdShortCode: ussdCode ?? '',
+        category: input.category,
+        bankAcct: input.bankAcct,
+        bankName: input.bankName,
+        status: 'PENDING_KYC',
+        transactionCount: 0,
+        totalVolume: 0,
+        location: input.location,
+        registeredAt: new Date(),
+      };
+      seedMerchants.push(merchant);
+      return { merchant, bvnVerificationRequired: true, kycStatus: 'PENDING', estimatedApproval: '2-3 business days' };
+    }),
+
+  // --- IMTO/DFSP Onboarding ---
+  listOnboardedDfsps: protectedProcedure.query(async () => ({
+    dfsps: seedOnboardedDfsps,
+    summary: {
+      total: seedOnboardedDfsps.length,
+      active: seedOnboardedDfsps.filter(d => d.status === 'ACTIVE').length,
+      pending: seedOnboardedDfsps.filter(d => d.status === 'PENDING_APPROVAL').length,
+      mojaConnected: seedOnboardedDfsps.filter(d => d.mojaConnected).length,
+      totalCorridors: seedOnboardedDfsps.reduce((s, d) => s + d.corridors.length, 0),
+    },
+  })),
+
+  onboardDfsp: protectedProcedure
+    .input(z.object({
+      dfspName: z.string(), dfspCode: z.string(), type: z.enum(['IMTO', 'BANK', 'MFB', 'MMO', 'PSP']),
+      cbnLicenseNo: z.string(), contactName: z.string(), contactEmail: z.string().email(),
+      corridors: z.array(z.string()),
+      services: z.array(z.enum(['INBOUND', 'OUTBOUND', 'DOMESTIC', 'NIP', 'NEFT'])),
+    }))
+    .mutation(async ({ input }) => {
+      const dfsp = {
+        id: `DFSP-${Date.now()}`,
+        ...input,
+        status: 'PENDING_APPROVAL' as const,
+        mojaConnected: false,
+        mojaFspId: null as string | null,
+        prefundBalance: 0,
+        apiKeyProvisioned: false,
+        onboardingSteps: [
+          { step: 'KYC_VERIFICATION', status: 'PENDING', completedAt: null as Date | null },
+          { step: 'COMPLIANCE_CHECK', status: 'PENDING', completedAt: null as Date | null },
+          { step: 'TECHNICAL_INTEGRATION', status: 'PENDING', completedAt: null as Date | null },
+          { step: 'SANDBOX_TESTING', status: 'PENDING', completedAt: null as Date | null },
+          { step: 'UAT_CERTIFICATION', status: 'PENDING', completedAt: null as Date | null },
+          { step: 'GO_LIVE_APPROVAL', status: 'PENDING', completedAt: null as Date | null },
+        ],
+        registeredAt: new Date(),
+      };
+      seedOnboardedDfsps.push(dfsp);
+      return dfsp;
+    }),
 });

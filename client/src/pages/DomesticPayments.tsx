@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { trpc } from '@/lib/trpc';
-import { Banknote, QrCode, FileText, Repeat, Users, ArrowRightLeft, CheckCircle, XCircle, Clock, BarChart3, TrendingUp, Activity, PieChart, LayoutDashboard, Globe, Ship, CreditCard, Landmark, Code, ArrowDownLeft, Package, RefreshCw, AlertTriangle, ShieldCheck, Search, Layers, Building2, BookOpen, UserCheck, Hash, RotateCcw, Scale, Store, Receipt, FileCode } from 'lucide-react';
+import { Banknote, QrCode, FileText, Repeat, Users, ArrowRightLeft, CheckCircle, XCircle, Clock, BarChart3, TrendingUp, Activity, PieChart, LayoutDashboard, Globe, Ship, CreditCard, Landmark, Code, ArrowDownLeft, Package, RefreshCw, AlertTriangle, ShieldCheck, Search, Layers, Building2, BookOpen, UserCheck, Hash, RotateCcw, Scale, Store, Receipt, FileCode, ScanLine, FileCheck, Fingerprint, Shield, UserPlus } from 'lucide-react';
 
 type Tab = 'dashboard' | 'payments' | 'bills' | 'standing_orders' | 'bulk'
   | 'neft' | 'cheques' | 'mandates' | 'reversals' | 'disputes'
-  | 'merchants' | 'paydirect' | 'identity' | 'iso20022';
+  | 'merchants' | 'paydirect' | 'identity' | 'iso20022'
+  | 'nqr' | 'emandate' | 'fraud' | 'onboarding';
 
 const moduleLinks = [
   { label: 'Outbound Remittance', href: '/', icon: Globe, color: '#3b82f6' },
@@ -34,6 +35,14 @@ export default function DomesticPayments() {
   const paydirectQuery = trpc.domesticPayments.listPayDirectCollections.useQuery(undefined, { retry: false });
   const iso20022Query = trpc.domesticPayments.listIso20022Messages.useQuery(undefined, { retry: false });
 
+  // Remaining 5% + Onboarding Queries
+  const nqrQuery = trpc.domesticPayments.listNqrCodes.useQuery(undefined, { retry: false });
+  const emandateQuery = trpc.domesticPayments.listEmandates.useQuery(undefined, { retry: false });
+  const fraudQuery = trpc.domesticPayments.listFraudAlerts.useQuery(undefined, { retry: false });
+  const banksQuery = trpc.domesticPayments.listOnboardedBanks.useQuery(undefined, { retry: false });
+  const billersQuery = trpc.domesticPayments.listOnboardedBillers.useQuery(undefined, { retry: false });
+  const dfspsQuery = trpc.domesticPayments.listOnboardedDfsps.useQuery(undefined, { retry: false });
+
   const payments = paymentsQuery.data?.payments ?? [];
   const summary = paymentsQuery.data?.summary;
   const providers = billsQuery.data?.providers ?? [];
@@ -56,6 +65,19 @@ export default function DomesticPayments() {
   const pdSummary = paydirectQuery.data?.summary;
   const isoMessages = iso20022Query.data?.messages ?? [];
   const isoSummary = iso20022Query.data?.summary;
+
+  const nqrCodes = nqrQuery.data?.codes ?? [];
+  const nqrSummary = nqrQuery.data?.summary;
+  const emandates = emandateQuery.data?.emandates ?? [];
+  const emandateSummary = emandateQuery.data?.summary;
+  const fraudAlerts = fraudQuery.data?.alerts ?? [];
+  const fraudSummary = fraudQuery.data?.summary;
+  const onboardedBanks = banksQuery.data?.banks ?? [];
+  const banksSummary = banksQuery.data?.summary;
+  const onboardedBillers = billersQuery.data?.billers ?? [];
+  const billersSummary = billersQuery.data?.summary;
+  const onboardedDfsps = dfspsQuery.data?.dfsps ?? [];
+  const dfspsSummary = dfspsQuery.data?.summary;
 
   const fmt = (n: number) => n >= 1e9 ? `₦${(n / 1e9).toFixed(1)}B` : n >= 1e6 ? `₦${(n / 1e6).toFixed(1)}M` : `₦${n.toLocaleString()}`;
 
@@ -103,10 +125,15 @@ export default function DomesticPayments() {
     { id: 'paydirect', label: 'PayDirect', icon: Building2, section: 'NIBSS' },
     { id: 'identity', label: 'Identity (BVN/NIN)', icon: UserCheck, section: 'NIBSS' },
     { id: 'iso20022', label: 'ISO 20022', icon: FileCode, section: 'NIBSS' },
+    { id: 'nqr', label: 'NQR Codes', icon: ScanLine, section: 'NIBSS' },
+    { id: 'emandate', label: 'e-Mandate Portal', icon: FileCheck, section: 'NIBSS' },
+    { id: 'fraud', label: 'Fraud Detection', icon: Shield, section: 'ADVANCED' },
+    { id: 'onboarding', label: 'Stakeholder Onboarding', icon: UserPlus, section: 'ADVANCED' },
   ];
 
   const coreItems = navItems.filter(n => !n.section);
   const nibssItems = navItems.filter(n => n.section === 'NIBSS');
+  const advancedItems = navItems.filter(n => n.section === 'ADVANCED');
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
@@ -131,6 +158,15 @@ export default function DomesticPayments() {
           ))}
           <div style={{ fontSize: 10, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: 1, padding: '12px 14px 4px' }}>NIBSS Features</div>
           {nibssItems.map(item => (
+            <button key={item.id} onClick={() => setActiveTab(item.id)}
+              style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 14px', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600, width: '100%', textAlign: 'left',
+                background: activeTab === item.id ? '#2563eb' : 'transparent', color: activeTab === item.id ? 'white' : '#374151' }}>
+              <item.icon size={14} />
+              {item.label}
+            </button>
+          ))}
+          <div style={{ fontSize: 10, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: 1, padding: '12px 14px 4px' }}>Advanced</div>
+          {advancedItems.map(item => (
             <button key={item.id} onClick={() => setActiveTab(item.id)}
               style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 14px', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600, width: '100%', textAlign: 'left',
                 background: activeTab === item.id ? '#2563eb' : 'transparent', color: activeTab === item.id ? 'white' : '#374151' }}>
@@ -759,6 +795,271 @@ export default function DomesticPayments() {
                 ))}
               </tbody>
             </table>
+          </div>
+        )}
+
+        {/* ============== NQR Codes Tab ============== */}
+        {activeTab === 'nqr' && (
+          <div>
+            {nqrSummary && (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 14, marginBottom: 24 }}>
+                {[
+                  { label: 'Total QR Codes', value: nqrSummary.total, color: '#3b82f6' },
+                  { label: 'Active', value: nqrSummary.active, color: '#10b981' },
+                  { label: 'Dynamic', value: nqrSummary.dynamic, color: '#7c3aed' },
+                  { label: 'Static', value: nqrSummary.static, color: '#0369a1' },
+                  { label: 'Total Scans', value: nqrSummary.totalScans?.toLocaleString(), color: '#f59e0b' },
+                  { label: 'Collected', value: fmt(nqrSummary.totalCollected), color: '#2563eb' },
+                ].map((c, i) => (
+                  <div key={i} style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 14 }}>
+                    <span style={{ fontSize: 11, color: '#6b7280' }}>{c.label}</span>
+                    <div style={{ fontSize: 22, fontWeight: 700, color: c.color, marginTop: 4 }}>{c.value}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 16 }}>
+              {nqrCodes.map((q: any) => (
+                <div key={q.id} style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 20 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                    <span style={{ fontSize: 16, fontWeight: 700 }}>{q.merchantName}</span>
+                    {statusBadge(q.status)}
+                  </div>
+                  <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+                    <span style={{ padding: '2px 8px', borderRadius: 6, fontSize: 11, fontWeight: 600, background: q.isDynamic ? '#f3e8ff' : '#dbeafe', color: q.isDynamic ? '#6b21a8' : '#1d4ed8' }}>{q.isDynamic ? 'DYNAMIC' : 'STATIC'}</span>
+                    <span style={{ padding: '2px 8px', borderRadius: 6, fontSize: 11, background: '#f3f4f6' }}>{q.merchantCategory}</span>
+                  </div>
+                  {q.amount && <div style={{ fontSize: 28, fontWeight: 800, color: '#2563eb', marginBottom: 8 }}>{fmt(q.amount)}</div>}
+                  {q.narration && <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 8 }}>{q.narration}</div>}
+                  <div style={{ background: '#f9fafb', borderRadius: 8, padding: 12, marginBottom: 12, fontFamily: 'monospace', fontSize: 10, wordBreak: 'break-all', color: '#6b7280' }}>{q.emvPayload}</div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
+                    <div><span style={{ fontSize: 10, color: '#9ca3af' }}>Scans</span><div style={{ fontWeight: 700 }}>{q.scansCount?.toLocaleString()}</div></div>
+                    <div><span style={{ fontSize: 10, color: '#9ca3af' }}>Payments</span><div style={{ fontWeight: 700 }}>{q.paymentsCount?.toLocaleString()}</div></div>
+                    <div><span style={{ fontSize: 10, color: '#9ca3af' }}>Collected</span><div style={{ fontWeight: 700 }}>{fmt(q.totalCollected)}</div></div>
+                  </div>
+                  <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 8 }}>Expires: {new Date(q.expiresAt).toLocaleString()}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ============== e-Mandate Portal Tab ============== */}
+        {activeTab === 'emandate' && (
+          <div>
+            {emandateSummary && (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 14, marginBottom: 24 }}>
+                {[
+                  { label: 'Total', value: emandateSummary.total, color: '#3b82f6' },
+                  { label: 'Approved', value: emandateSummary.approved, color: '#10b981' },
+                  { label: 'Pending Approval', value: emandateSummary.pendingApproval, color: '#f59e0b' },
+                  { label: 'Rejected', value: emandateSummary.rejected, color: '#ef4444' },
+                  { label: 'Expired', value: emandateSummary.expired, color: '#6b7280' },
+                ].map((c, i) => (
+                  <div key={i} style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 14 }}>
+                    <span style={{ fontSize: 11, color: '#6b7280' }}>{c.label}</span>
+                    <div style={{ fontSize: 22, fontWeight: 700, color: c.color, marginTop: 4 }}>{c.value}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 20, marginBottom: 20 }}>
+              <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 12 }}>How e-Mandate Works</h3>
+              <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+                {['1. Biller initiates mandate request', '2. Customer redirected to bank portal', '3. Bank sends OTP to customer', '4. Customer approves via OTP', '5. Mandate activated for auto-debit'].map((step, i) => (
+                  <div key={i} style={{ padding: '8px 16px', background: '#eff6ff', borderRadius: 8, fontSize: 12, color: '#1d4ed8', fontWeight: 600 }}>{step}</div>
+                ))}
+              </div>
+            </div>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+              <thead><tr style={{ background: '#f9fafb' }}>
+                {['Mandate Ref', 'Bank', 'Biller', 'Amount', 'Frequency', 'Status', 'OTP', 'Bank Portal', 'Initiated', 'Expires'].map(h => (
+                  <th key={h} style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 600, borderBottom: '2px solid #e5e7eb', whiteSpace: 'nowrap' }}>{h}</th>
+                ))}
+              </tr></thead>
+              <tbody>
+                {emandates.map((e: any) => (
+                  <tr key={e.id} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                    <td style={{ padding: '10px 12px', fontFamily: 'monospace', fontSize: 12 }}>{e.mandateRef}</td>
+                    <td style={{ padding: '10px 12px' }}>{e.subscriberBank}</td>
+                    <td style={{ padding: '10px 12px' }}>{e.billerName}</td>
+                    <td style={{ padding: '10px 12px', fontFamily: 'monospace', fontWeight: 600 }}>{fmt(e.amount)}</td>
+                    <td style={{ padding: '10px 12px', fontSize: 12 }}>{e.frequency}</td>
+                    <td style={{ padding: '10px 12px' }}>{statusBadge(e.approvalStatus)}</td>
+                    <td style={{ padding: '10px 12px' }}><span style={{ padding: '2px 6px', borderRadius: 4, fontSize: 10, background: e.otpSent ? '#dcfce7' : '#fef2f2', color: e.otpSent ? '#166534' : '#991b1b' }}>{e.otpChannel}</span></td>
+                    <td style={{ padding: '10px 12px', fontSize: 11, color: '#2563eb' }}><a href={e.bankRedirectUrl} target="_blank" rel="noopener noreferrer" style={{ color: '#2563eb' }}>Open</a></td>
+                    <td style={{ padding: '10px 12px', fontSize: 11, color: '#6b7280' }}>{new Date(e.initiatedAt).toLocaleString()}</td>
+                    <td style={{ padding: '10px 12px', fontSize: 11, color: new Date(e.expiresAt) < new Date() ? '#ef4444' : '#6b7280' }}>{new Date(e.expiresAt).toLocaleString()}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* ============== Fraud Detection Tab ============== */}
+        {activeTab === 'fraud' && (
+          <div>
+            {fraudSummary && (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 14, marginBottom: 24 }}>
+                {[
+                  { label: 'Total Alerts', value: fraudSummary.total, color: '#3b82f6' },
+                  { label: 'Critical', value: fraudSummary.critical, color: '#dc2626' },
+                  { label: 'High', value: fraudSummary.high, color: '#f59e0b' },
+                  { label: 'Medium', value: fraudSummary.medium, color: '#7c3aed' },
+                  { label: 'Blocked', value: fraudSummary.blocked, color: '#ef4444' },
+                  { label: 'Flagged', value: fraudSummary.flagged, color: '#f59e0b' },
+                  { label: 'Amount Blocked', value: fmt(fraudSummary.totalAmountBlocked), color: '#dc2626' },
+                ].map((c, i) => (
+                  <div key={i} style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 14 }}>
+                    <span style={{ fontSize: 11, color: '#6b7280' }}>{c.label}</span>
+                    <div style={{ fontSize: 22, fontWeight: 700, color: c.color, marginTop: 4 }}>{c.value}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+              <thead><tr style={{ background: '#f9fafb' }}>
+                {['NIP Ref', 'Amount', 'Sender Bank', 'Receiver Bank', 'Channel', 'Risk Score', 'Severity', 'Action', 'Rule Triggered', 'Detected', 'Reviewed By'].map(h => (
+                  <th key={h} style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 600, borderBottom: '2px solid #e5e7eb', whiteSpace: 'nowrap' }}>{h}</th>
+                ))}
+              </tr></thead>
+              <tbody>
+                {fraudAlerts.map((a: any) => (
+                  <tr key={a.id} style={{ borderBottom: '1px solid #f3f4f6', background: a.severity === 'CRITICAL' ? '#fef2f2' : 'transparent' }}>
+                    <td style={{ padding: '10px 12px', fontFamily: 'monospace', fontSize: 12 }}>{a.nipRef}</td>
+                    <td style={{ padding: '10px 12px', fontFamily: 'monospace', fontWeight: 600 }}>{fmt(a.amount)}</td>
+                    <td style={{ padding: '10px 12px', fontSize: 12 }}>{a.senderBank}</td>
+                    <td style={{ padding: '10px 12px', fontSize: 12 }}>{a.receiverBank}</td>
+                    <td style={{ padding: '10px 12px', fontSize: 12 }}>{a.channel}</td>
+                    <td style={{ padding: '10px 12px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <div style={{ width: 40, height: 6, background: '#f3f4f6', borderRadius: 3, overflow: 'hidden' }}>
+                          <div style={{ width: `${a.riskScore}%`, height: '100%', background: a.riskScore >= 70 ? '#ef4444' : a.riskScore >= 50 ? '#f59e0b' : '#10b981', borderRadius: 3 }} />
+                        </div>
+                        <span style={{ fontWeight: 700, fontSize: 12, color: a.riskScore >= 70 ? '#ef4444' : a.riskScore >= 50 ? '#f59e0b' : '#10b981' }}>{a.riskScore}</span>
+                      </div>
+                    </td>
+                    <td style={{ padding: '10px 12px' }}><span style={{ padding: '2px 8px', borderRadius: 6, fontSize: 11, fontWeight: 600, background: a.severity === 'CRITICAL' ? '#fef2f2' : a.severity === 'HIGH' ? '#fff7ed' : a.severity === 'MEDIUM' ? '#fef3c7' : '#f0fdf4', color: a.severity === 'CRITICAL' ? '#991b1b' : a.severity === 'HIGH' ? '#9a3412' : a.severity === 'MEDIUM' ? '#92400e' : '#166534' }}>{a.severity}</span></td>
+                    <td style={{ padding: '10px 12px' }}>{statusBadge(a.action)}</td>
+                    <td style={{ padding: '10px 12px', fontSize: 11 }}>{a.ruleTriggered?.replace(/_/g, ' ')}</td>
+                    <td style={{ padding: '10px 12px', fontSize: 11, color: '#6b7280' }}>{new Date(a.detectedAt).toLocaleString()}</td>
+                    <td style={{ padding: '10px 12px', fontSize: 12 }}>{a.reviewedBy || <span style={{ color: '#f59e0b' }}>Pending</span>}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <div style={{ marginTop: 16 }}>
+              {fraudAlerts.filter((a: any) => a.severity === 'CRITICAL' || a.severity === 'HIGH').map((a: any) => (
+                <div key={a.id} style={{ background: a.severity === 'CRITICAL' ? '#fef2f2' : '#fff7ed', border: `1px solid ${a.severity === 'CRITICAL' ? '#fecaca' : '#fed7aa'}`, borderRadius: 8, padding: 12, marginBottom: 8 }}>
+                  <div style={{ fontWeight: 700, fontSize: 13, color: a.severity === 'CRITICAL' ? '#991b1b' : '#9a3412' }}>{a.ruleTriggered?.replace(/_/g, ' ')} — {fmt(a.amount)}</div>
+                  <div style={{ fontSize: 12, color: '#6b7280', marginTop: 4 }}>{a.description}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ============== Stakeholder Onboarding Tab ============== */}
+        {activeTab === 'onboarding' && (
+          <div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20, marginBottom: 24 }}>
+              <div style={{ background: 'linear-gradient(135deg, #2563eb, #3b82f6)', borderRadius: 16, padding: 24, color: 'white' }}>
+                <div style={{ fontSize: 13, opacity: 0.9, marginBottom: 8 }}>Banks / NIP Participants</div>
+                <div style={{ fontSize: 32, fontWeight: 800 }}>{banksSummary?.total ?? 0}</div>
+                <div style={{ fontSize: 12, opacity: 0.8, marginTop: 4 }}>{banksSummary?.active ?? 0} active, {banksSummary?.pendingApproval ?? 0} pending</div>
+                <div style={{ fontSize: 12, opacity: 0.8 }}>Prefund: {banksSummary ? fmt(banksSummary.totalPrefund) : '₦0'}</div>
+              </div>
+              <div style={{ background: 'linear-gradient(135deg, #059669, #10b981)', borderRadius: 16, padding: 24, color: 'white' }}>
+                <div style={{ fontSize: 13, opacity: 0.9, marginBottom: 8 }}>Billers (e-BillsPay/PayDirect)</div>
+                <div style={{ fontSize: 32, fontWeight: 800 }}>{billersSummary?.total ?? 0}</div>
+                <div style={{ fontSize: 12, opacity: 0.8, marginTop: 4 }}>{billersSummary?.active ?? 0} active, {billersSummary?.pending ?? 0} pending</div>
+                <div style={{ fontSize: 12, opacity: 0.8 }}>{billersSummary?.totalProducts ?? 0} products registered</div>
+              </div>
+              <div style={{ background: 'linear-gradient(135deg, #7c3aed, #8b5cf6)', borderRadius: 16, padding: 24, color: 'white' }}>
+                <div style={{ fontSize: 13, opacity: 0.9, marginBottom: 8 }}>DFSPs / IMTOs</div>
+                <div style={{ fontSize: 32, fontWeight: 800 }}>{dfspsSummary?.total ?? 0}</div>
+                <div style={{ fontSize: 12, opacity: 0.8, marginTop: 4 }}>{dfspsSummary?.active ?? 0} active, {dfspsSummary?.mojaConnected ?? 0} Mojaloop-connected</div>
+                <div style={{ fontSize: 12, opacity: 0.8 }}>{dfspsSummary?.totalCorridors ?? 0} corridors</div>
+              </div>
+            </div>
+
+            {/* Banks */}
+            <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 12 }}>Bank / NIP Participant Onboarding</h3>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, marginBottom: 24 }}>
+              <thead><tr style={{ background: '#f9fafb' }}>
+                {['Bank', 'Code', 'CBN License', 'NIP Code', 'Prefund', 'Services', 'API Key', 'NIP', 'Status', 'Go-Live'].map(h => (
+                  <th key={h} style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 600, borderBottom: '2px solid #e5e7eb', whiteSpace: 'nowrap' }}>{h}</th>
+                ))}
+              </tr></thead>
+              <tbody>
+                {onboardedBanks.map((b: any) => (
+                  <tr key={b.id} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                    <td style={{ padding: '10px 12px', fontWeight: 600 }}>{b.bankName}</td>
+                    <td style={{ padding: '10px 12px', fontFamily: 'monospace' }}>{b.bankCode}</td>
+                    <td style={{ padding: '10px 12px', fontSize: 11 }}>{b.cbnLicenseNo}</td>
+                    <td style={{ padding: '10px 12px', fontFamily: 'monospace', fontSize: 11 }}>{b.nipParticipantCode}</td>
+                    <td style={{ padding: '10px 12px', fontFamily: 'monospace', fontWeight: 600 }}>{fmt(b.prefundBalance)}</td>
+                    <td style={{ padding: '10px 12px' }}><div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>{b.services.map((s: string) => <span key={s} style={{ padding: '1px 6px', borderRadius: 4, fontSize: 10, background: '#f3f4f6' }}>{s}</span>)}</div></td>
+                    <td style={{ padding: '10px 12px' }}><span style={{ padding: '2px 6px', borderRadius: 4, fontSize: 10, background: b.apiKeyProvisioned ? '#dcfce7' : '#fef2f2', color: b.apiKeyProvisioned ? '#166534' : '#991b1b' }}>{b.apiKeyProvisioned ? 'Provisioned' : 'Pending'}</span></td>
+                    <td style={{ padding: '10px 12px' }}><span style={{ padding: '2px 6px', borderRadius: 4, fontSize: 10, background: b.nipConnected ? '#dcfce7' : '#fef2f2', color: b.nipConnected ? '#166534' : '#991b1b' }}>{b.nipConnected ? 'Connected' : 'Pending'}</span></td>
+                    <td style={{ padding: '10px 12px' }}>{statusBadge(b.status)}</td>
+                    <td style={{ padding: '10px 12px', fontSize: 11, color: '#6b7280' }}>{b.goLiveDate ? new Date(b.goLiveDate).toLocaleDateString() : '-'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+
+            {/* Billers */}
+            <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 12 }}>Biller Onboarding</h3>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 16, marginBottom: 24 }}>
+              {onboardedBillers.map((b: any) => (
+                <div key={b.id} style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 16 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                    <span style={{ fontSize: 15, fontWeight: 700 }}>{b.billerName}</span>
+                    {statusBadge(b.status)}
+                  </div>
+                  <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 4 }}>Code: <strong>{b.billerCode}</strong> | RC: {b.rcNumber}</div>
+                  <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 4 }}>Category: <strong>{b.category}</strong></div>
+                  <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 8 }}>{b.productCount} products | {b.transactionCount?.toLocaleString()} txns | {fmt(b.totalCollected)} collected</div>
+                  <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+                    <span style={{ padding: '2px 6px', borderRadius: 4, fontSize: 10, background: b.ebillspayIntegrated ? '#dcfce7' : '#f3f4f6', color: b.ebillspayIntegrated ? '#166534' : '#9ca3af' }}>e-BillsPay</span>
+                    <span style={{ padding: '2px 6px', borderRadius: 4, fontSize: 10, background: b.paydirectIntegrated ? '#dcfce7' : '#f3f4f6', color: b.paydirectIntegrated ? '#166534' : '#9ca3af' }}>PayDirect</span>
+                  </div>
+                  <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                    {b.channels.map((ch: string) => <span key={ch} style={{ padding: '1px 6px', borderRadius: 4, fontSize: 10, background: '#f3f4f6' }}>{ch}</span>)}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* DFSPs */}
+            <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 12 }}>DFSP / IMTO Onboarding</h3>
+            {onboardedDfsps.map((d: any) => (
+              <div key={d.id} style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 16, marginBottom: 16 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                  <div>
+                    <span style={{ fontSize: 16, fontWeight: 700 }}>{d.dfspName}</span>
+                    <span style={{ padding: '2px 8px', borderRadius: 6, fontSize: 11, background: '#f3e8ff', color: '#6b21a8', marginLeft: 8 }}>{d.type}</span>
+                  </div>
+                  {statusBadge(d.status)}
+                </div>
+                <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 8 }}>
+                  Code: <strong>{d.dfspCode}</strong> | CBN: {d.cbnLicenseNo} | Mojaloop: {d.mojaFspId || 'Not connected'}
+                </div>
+                <div style={{ display: 'flex', gap: 4, marginBottom: 12, flexWrap: 'wrap' }}>
+                  {d.corridors.map((c: string) => <span key={c} style={{ padding: '2px 8px', borderRadius: 6, fontSize: 11, background: '#dbeafe', color: '#1d4ed8' }}>{c}</span>)}
+                  {d.services.map((s: string) => <span key={s} style={{ padding: '2px 8px', borderRadius: 6, fontSize: 11, background: '#dcfce7', color: '#166534' }}>{s}</span>)}
+                </div>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  {d.onboardingSteps.map((step: any, i: number) => (
+                    <div key={i} style={{ padding: '6px 12px', borderRadius: 8, fontSize: 11, fontWeight: 600, background: step.status === 'COMPLETED' ? '#dcfce7' : step.status === 'IN_PROGRESS' ? '#fef3c7' : '#f3f4f6', color: step.status === 'COMPLETED' ? '#166534' : step.status === 'IN_PROGRESS' ? '#92400e' : '#6b7280' }}>
+                      {step.step.replace(/_/g, ' ')}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
           </div>
         )}
 
