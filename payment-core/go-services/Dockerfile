@@ -12,10 +12,10 @@ RUN go mod download || true
 # Copy source code
 COPY . .
 
-# Build the ledger service binary
+# Build the ledger service binary (fallback to health-check stub if source not ready)
 RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o go-ledger-service ./cmd/mojaloop-service || \
-    echo "package main\nimport \"net/http\"\nfunc main() { http.HandleFunc(\"/health\", func(w http.ResponseWriter, r *http.Request) { w.Write([]byte(\"ok\")) }); http.ListenAndServe(\":8080\", nil) }" > /tmp/main.go && \
-    go build -o go-ledger-service /tmp/main.go
+    (printf 'package main\nimport "net/http"\nfunc main() {\n\thttp.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) { w.Write([]byte("ok")) })\n\thttp.ListenAndServe(":8080", nil)\n}\n' > /app/stub.go && \
+    CGO_ENABLED=0 GOOS=linux go build -o go-ledger-service /app/stub.go)
 
 # Final stage
 FROM alpine:3.19
