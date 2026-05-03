@@ -17,7 +17,7 @@ import {
 
 // --- Types ---
 type UserRole = 'participant' | 'admin' | 'cbn';
-type NavSection = 'dashboard' | 'transfers' | 'prefund' | 'billing' | 'corridors' | 'compliance' | 'disputes' | 'approvals' | 'participants' | 'fx_management' | 'tier_management' | 'analytics' | 'payment_rails' | 'developer_portal' | 'transaction_monitoring' | 'settings';
+type NavSection = 'dashboard' | 'transfers' | 'prefund' | 'billing' | 'corridors' | 'compliance' | 'disputes' | 'approvals' | 'participants' | 'fx_management' | 'tier_management' | 'analytics' | 'payment_rails' | 'developer_portal' | 'transaction_monitoring' | 'settlement' | 'settings';
 
 // 13 CBN-regulated corridors (static reference data)
 const corridors = [
@@ -66,6 +66,7 @@ function getNavItems(role: UserRole) {
     { id: 'analytics' as NavSection, label: 'Analytics', icon: BarChart3 },
     { id: 'developer_portal' as NavSection, label: 'Developer Portal', icon: Code },
     { id: 'transaction_monitoring' as NavSection, label: 'Live Monitoring', icon: Activity },
+    { id: 'settlement' as NavSection, label: 'Settlement', icon: Layers },
     { id: 'billing' as NavSection, label: 'Billing', icon: Receipt },
     { id: 'settings' as NavSection, label: 'Settings', icon: Settings },
   ];
@@ -178,6 +179,7 @@ export default function OutboundRemittance() {
         {activeSection === 'payment_rails' && <PaymentRailsSection isAdmin={isAdmin} />}
         {activeSection === 'developer_portal' && <DeveloperPortalSection role={userRole} />}
         {activeSection === 'transaction_monitoring' && <TransactionMonitoringSection role={userRole} />}
+        {activeSection === 'settlement' && <SettlementSection />}
         {activeSection === 'settings' && <SettingsSection role={userRole} />}
       </main>
     </div>
@@ -2635,6 +2637,210 @@ function TransactionMonitoringSection({ role }: { role: UserRole }) {
             </Table>
           </CardContent>
         </Card>
+      )}
+    </div>
+  );
+}
+
+// =============================================================================
+// SETTLEMENT ENGINE
+// =============================================================================
+
+function SettlementSection() {
+  const [stlTab, setStlTab] = useState<'batches' | 'railConfig' | 'positions'>('batches');
+  const [selectedBatch, setSelectedBatch] = useState<string | null>(null);
+
+  const statsQuery = trpc.outboundRemittance.getSettlementStats.useQuery();
+  const batchesQuery = trpc.outboundRemittance.getSettlementBatches.useQuery();
+  const railConfigsQuery = trpc.outboundRemittance.getSettlementRailConfigs.useQuery();
+  const batchDetailQuery = trpc.outboundRemittance.getSettlementBatchDetail.useQuery(
+    { batchId: selectedBatch! },
+    { enabled: !!selectedBatch }
+  );
+
+  const utils = trpc.useUtils();
+  const confirmMut = trpc.outboundRemittance.confirmSettlementBatch.useMutation({
+    onSuccess: () => { utils.outboundRemittance.getSettlementBatches.invalidate(); utils.outboundRemittance.getSettlementStats.invalidate(); },
+  });
+  const retryMut = trpc.outboundRemittance.retrySettlementBatch.useMutation({
+    onSuccess: () => { utils.outboundRemittance.getSettlementBatches.invalidate(); utils.outboundRemittance.getSettlementStats.invalidate(); },
+  });
+
+  const stats = statsQuery.data;
+  const batches = batchesQuery.data || [];
+
+  const stlStatusColor = (s: string) => {
+    switch (s) {
+      case 'CONFIRMED': case 'RECONCILED': return 'bg-green-100 text-green-800';
+      case 'SUBMITTED': return 'bg-blue-100 text-blue-800';
+      case 'NETTING': return 'bg-yellow-100 text-yellow-800';
+      case 'FAILED': return 'bg-red-100 text-red-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold">Settlement Engine</h1>
+        <p className="text-muted-foreground">Batch netting, settlement windows, reconciliation across all 9 payment rails</p>
+      </div>
+
+      {stats && (
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+          <Card><CardContent className="pt-4"><p className="text-xs text-muted-foreground">Total Batches</p><p className="text-2xl font-bold">{stats.totalBatches}</p></CardContent></Card>
+          <Card><CardContent className="pt-4"><p className="text-xs text-muted-foreground">Gross Volume</p><p className="text-2xl font-bold">{formatNgn(stats.totalGrossVolume)}</p></CardContent></Card>
+          <Card><CardContent className="pt-4"><p className="text-xs text-muted-foreground">Net Volume</p><p className="text-2xl font-bold">{formatNgn(stats.totalNetVolume)}</p></CardContent></Card>
+          <Card><CardContent className="pt-4"><p className="text-xs text-muted-foreground">Netting Savings</p><p className="text-2xl font-bold text-green-600">{formatNgn(stats.nettingSavings)}</p><p className="text-xs text-green-600">{stats.nettingSavingsPct}% saved</p></CardContent></Card>
+          <Card><CardContent className="pt-4"><p className="text-xs text-muted-foreground">Avg Settlement</p><p className="text-2xl font-bold">{(stats.avgSettlementTimeMs / 1000).toFixed(0)}s</p></CardContent></Card>
+        </div>
+      )}
+
+      <div className="flex gap-2 border-b pb-2">
+        {(['batches', 'railConfig', 'positions'] as const).map(t => (
+          <Button key={t} variant={stlTab === t ? 'default' : 'ghost'} size="sm" onClick={() => setStlTab(t)}>
+            {t === 'batches' ? `Batches (${batches.length})` : t === 'railConfig' ? 'Rail Config' : 'Pending Queues'}
+          </Button>
+        ))}
+      </div>
+
+      {stlTab === 'batches' && (
+        <Card>
+          <CardHeader><CardTitle>Settlement Batches</CardTitle><CardDescription>Active and completed batch settlements across all rails</CardDescription></CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Batch ID</TableHead><TableHead>Rail</TableHead><TableHead>Status</TableHead>
+                  <TableHead>Transfers</TableHead><TableHead>Gross</TableHead><TableHead>Net</TableHead>
+                  <TableHead>Window</TableHead><TableHead>Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {batches.map((b: any) => (
+                  <TableRow key={b.batchId}>
+                    <TableCell className="font-mono text-xs">{b.batchId}</TableCell>
+                    <TableCell><Badge variant="outline">{b.railId}</Badge></TableCell>
+                    <TableCell><Badge className={stlStatusColor(b.status)}>{b.status}</Badge></TableCell>
+                    <TableCell>{b.transferCount}</TableCell>
+                    <TableCell className="font-mono text-xs">{formatNgn(b.totalGrossNGN)}</TableCell>
+                    <TableCell className="font-mono text-xs">{b.totalNetNGN > 0 ? formatNgn(b.totalNetNGN) : '---'}</TableCell>
+                    <TableCell className="text-xs">{new Date(b.windowStart).toLocaleTimeString()} - {new Date(b.windowEnd).toLocaleTimeString()}</TableCell>
+                    <TableCell className="flex gap-1">
+                      <Button size="sm" variant="outline" onClick={() => setSelectedBatch(b.batchId)}>Detail</Button>
+                      {b.status === 'SUBMITTED' && <Button size="sm" onClick={() => confirmMut.mutate({ batchId: b.batchId })} disabled={confirmMut.isPending}>Confirm</Button>}
+                      {b.status === 'FAILED' && <Button size="sm" variant="destructive" onClick={() => retryMut.mutate({ batchId: b.batchId })} disabled={retryMut.isPending}>Retry</Button>}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
+
+      {stlTab === 'railConfig' && (
+        <Card>
+          <CardHeader><CardTitle>Settlement Rail Configuration</CardTitle><CardDescription>Settlement model, windows, and file formats per payment rail</CardDescription></CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Rail</TableHead><TableHead>Model</TableHead><TableHead>Window</TableHead>
+                  <TableHead>Cutoff</TableHead><TableHead>Max Batch</TableHead><TableHead>Retries</TableHead>
+                  <TableHead>File Format</TableHead><TableHead>Currencies</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {(railConfigsQuery.data || []).map((rc: any) => (
+                  <TableRow key={rc.railId}>
+                    <TableCell className="font-semibold">{rc.railName}</TableCell>
+                    <TableCell><Badge variant={rc.model === 'DEFERRED_NET' ? 'default' : 'secondary'}>{rc.model === 'DEFERRED_NET' ? 'Deferred Net' : 'Immediate Gross'}</Badge></TableCell>
+                    <TableCell>{rc.windowHours > 0 ? `${rc.windowHours}h` : 'Real-time'}</TableCell>
+                    <TableCell className="text-xs">{rc.cutoffTime}</TableCell>
+                    <TableCell>{rc.maxBatchSize.toLocaleString()}</TableCell>
+                    <TableCell>{rc.retryAttempts}</TableCell>
+                    <TableCell><Badge variant="outline">{rc.fileFormat}</Badge></TableCell>
+                    <TableCell className="text-xs">{rc.currencies.join(', ')}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
+
+      {stlTab === 'positions' && stats && (
+        <Card>
+          <CardHeader><CardTitle>Pending Settlement Queues</CardTitle><CardDescription>Transfers awaiting next settlement window per rail</CardDescription></CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-3 md:grid-cols-5 gap-3">
+              {Object.entries(stats.pendingTransfers).map(([rail, count]: [string, any]) => (
+                <div key={rail} className="border rounded-lg p-3 text-center">
+                  <p className="text-xs font-semibold text-muted-foreground">{rail}</p>
+                  <p className={`text-2xl font-bold ${count > 0 ? 'text-blue-600' : 'text-gray-400'}`}>{count}</p>
+                  <p className="text-xs text-muted-foreground">pending</p>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {selectedBatch && batchDetailQuery.data && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setSelectedBatch(null)}>
+          <div className="bg-white rounded-lg shadow-lg max-w-3xl w-full max-h-[80vh] overflow-auto p-6" onClick={e => e.stopPropagation()}>
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-lg font-bold">Batch: {batchDetailQuery.data.batchId}</h2>
+              <Button variant="ghost" size="sm" onClick={() => setSelectedBatch(null)}>Close</Button>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+              <div className="border rounded p-2"><p className="text-xs text-muted-foreground">Rail</p><p className="font-semibold">{batchDetailQuery.data.railId}</p></div>
+              <div className="border rounded p-2"><p className="text-xs text-muted-foreground">Status</p><Badge className={stlStatusColor(batchDetailQuery.data.status)}>{batchDetailQuery.data.status}</Badge></div>
+              <div className="border rounded p-2"><p className="text-xs text-muted-foreground">Transfers</p><p className="font-semibold">{batchDetailQuery.data.transferCount}</p></div>
+              <div className="border rounded p-2"><p className="text-xs text-muted-foreground">Retries</p><p className="font-semibold">{batchDetailQuery.data.retryCount}</p></div>
+            </div>
+            <div className="grid grid-cols-3 gap-3 mb-4">
+              <div className="border rounded p-2"><p className="text-xs text-muted-foreground">Gross</p><p className="font-mono text-sm">{formatNgn(batchDetailQuery.data.totalGrossNGN)}</p></div>
+              <div className="border rounded p-2"><p className="text-xs text-muted-foreground">Net</p><p className="font-mono text-sm">{batchDetailQuery.data.totalNetNGN > 0 ? formatNgn(batchDetailQuery.data.totalNetNGN) : '---'}</p></div>
+              <div className="border rounded p-2"><p className="text-xs text-muted-foreground">Savings</p><p className="font-mono text-sm text-green-600">{batchDetailQuery.data.totalNetNGN > 0 ? formatNgn(batchDetailQuery.data.totalGrossNGN - batchDetailQuery.data.totalNetNGN) : '---'}</p></div>
+            </div>
+            {batchDetailQuery.data.failReason && (
+              <div className="bg-red-50 border border-red-200 rounded p-3 mb-4">
+                <p className="text-sm font-semibold text-red-800">Failure Reason</p>
+                <p className="text-sm text-red-700">{batchDetailQuery.data.failReason}</p>
+              </div>
+            )}
+            <h3 className="text-sm font-semibold mb-2">Net Positions</h3>
+            <Table>
+              <TableHeader><TableRow><TableHead>Participant</TableHead><TableHead>Currency</TableHead><TableHead>Gross</TableHead><TableHead>Net</TableHead><TableHead>Txns</TableHead></TableRow></TableHeader>
+              <TableBody>
+                {batchDetailQuery.data.netPositions.map((np: any, i: number) => (
+                  <TableRow key={i}>
+                    <TableCell className="font-semibold">{np.participantId}</TableCell>
+                    <TableCell><Badge variant="outline">{np.currency}</Badge></TableCell>
+                    <TableCell className="font-mono text-xs">{formatNgn(np.grossDebit)}</TableCell>
+                    <TableCell className="font-mono text-xs">{formatNgn(np.netAmount)}</TableCell>
+                    <TableCell>{np.transferCount}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+            {batchDetailQuery.data.reconciliation && (
+              <div className="mt-4">
+                <h3 className="text-sm font-semibold mb-2">Reconciliation</h3>
+                <div className="grid grid-cols-3 md:grid-cols-6 gap-2">
+                  <div className="border rounded p-2 text-center"><p className="text-xs text-muted-foreground">Matched</p><p className="font-bold text-green-600">{batchDetailQuery.data.reconciliation.matched}</p></div>
+                  <div className="border rounded p-2 text-center"><p className="text-xs text-muted-foreground">Unmatched</p><p className="font-bold text-red-600">{batchDetailQuery.data.reconciliation.unmatched}</p></div>
+                  <div className="border rounded p-2 text-center"><p className="text-xs text-muted-foreground">Overpaid</p><p className="font-bold">{batchDetailQuery.data.reconciliation.overpaid}</p></div>
+                  <div className="border rounded p-2 text-center"><p className="text-xs text-muted-foreground">Underpaid</p><p className="font-bold">{batchDetailQuery.data.reconciliation.underpaid}</p></div>
+                  <div className="border rounded p-2 text-center"><p className="text-xs text-muted-foreground">Discrepancy</p><p className="font-bold">{formatNgn(Math.abs(batchDetailQuery.data.reconciliation.discrepancy))}</p></div>
+                  <div className="border rounded p-2 text-center"><p className="text-xs text-muted-foreground">Status</p><Badge className={batchDetailQuery.data.reconciliation.status === 'clean' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}>{batchDetailQuery.data.reconciliation.status}</Badge></div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
       )}
     </div>
   );

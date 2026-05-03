@@ -926,6 +926,206 @@ export const outboundRemittanceRouter = router({
     if (isAdmin) return enhancementData.sandboxEnvs;
     return enhancementData.sandboxEnvs.filter(s => s.participantId === String(participantId));
   }),
+
+  // ==========================================================================
+  // DEVELOPER PORTAL — API Keys, SDK, Integration Guide
+  // ==========================================================================
+
+  getAPIKeys: protectedProcedure.query(async ({ ctx }) => {
+    const { participantId, isAdmin } = getScope(ctx.user);
+    if (isAdmin) return developerData.apiKeys;
+    return developerData.apiKeys.filter(k => k.participantId === String(participantId));
+  }),
+
+  generateAPIKey: protectedProcedure
+    .input(z.object({ label: z.string().min(2), tier: z.string().optional(), scopes: z.array(z.string()).optional() }))
+    .mutation(async ({ ctx, input }) => {
+      const { participantId } = getScope(ctx.user);
+      const pid = String(participantId);
+      const keyId = `ak_${pid.toLowerCase().replace(/-/g, '_')}_${Date.now()}`;
+      const secret = `sk_live_${Array.from({ length: 32 }, () => 'abcdefghijklmnopqrstuvwxyz0123456789'[Math.floor(Math.random() * 36)]).join('')}`;
+      const key = {
+        keyId,
+        participantId: pid,
+        label: input.label,
+        secretPrefix: secret.slice(0, 12) + '...',
+        tier: input.tier || 'starter',
+        scopes: input.scopes || ['transfers:read', 'transfers:write', 'webhooks:read'],
+        status: 'active' as const,
+        createdAt: new Date().toISOString(),
+        lastUsedAt: null as string | null,
+        requestCount: 0,
+        rateLimit: { perMinute: 30, perDay: 5000 },
+      };
+      developerData.apiKeys.push(key);
+      return { ...key, secret };
+    }),
+
+  revokeAPIKey: protectedProcedure
+    .input(z.object({ keyId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const { participantId, isAdmin } = getScope(ctx.user);
+      const pid = String(participantId);
+      const key = developerData.apiKeys.find(k => k.keyId === input.keyId);
+      if (!key) throw new TRPCError({ code: 'NOT_FOUND', message: 'API key not found' });
+      if (!isAdmin && key.participantId !== pid) throw new TRPCError({ code: 'FORBIDDEN', message: 'Cannot revoke another participant\'s key' });
+      key.status = 'revoked' as any;
+      return { revoked: input.keyId };
+    }),
+
+  getSDKInfo: protectedProcedure.query(async () => {
+    return developerData.sdks;
+  }),
+
+  getIntegrationGuide: protectedProcedure.query(async () => {
+    return developerData.integrationSteps;
+  }),
+
+  getWebhookSubscriptions: protectedProcedure.query(async ({ ctx }) => {
+    const { participantId, isAdmin } = getScope(ctx.user);
+    if (isAdmin) return developerData.webhookSubscriptions;
+    return developerData.webhookSubscriptions.filter(w => w.participantId === String(participantId));
+  }),
+
+  createWebhookSubscription: protectedProcedure
+    .input(z.object({ url: z.string().url(), events: z.array(z.string()), secret: z.string().optional() }))
+    .mutation(async ({ ctx, input }) => {
+      const { participantId } = getScope(ctx.user);
+      const pid = String(participantId);
+      const sub = {
+        subscriptionId: `wh_sub_${Date.now()}`,
+        participantId: pid,
+        url: input.url,
+        events: input.events,
+        status: 'active' as const,
+        createdAt: new Date().toISOString(),
+        successCount: 0,
+        failureCount: 0,
+        lastDelivery: null as string | null,
+      };
+      developerData.webhookSubscriptions.push(sub);
+      return sub;
+    }),
+
+  // ==========================================================================
+  // TRANSACTION MONITORING — Live tracker, search, detail view
+  // ==========================================================================
+
+  getTransferLifecycle: protectedProcedure
+    .input(z.object({ transferRef: z.string() }))
+    .query(async ({ ctx, input }) => {
+      const { participantId, isAdmin } = getScope(ctx.user);
+      const transfer = monitoringData.transferLifecycles.find(t => t.transferRef === input.transferRef);
+      if (!transfer) throw new TRPCError({ code: 'NOT_FOUND', message: 'Transfer not found' });
+      if (!isAdmin && transfer.participantId !== String(participantId)) throw new TRPCError({ code: 'FORBIDDEN', message: 'Not your transfer' });
+      return transfer;
+    }),
+
+  getLiveTransfers: protectedProcedure.query(async ({ ctx }) => {
+    const { participantId, isAdmin } = getScope(ctx.user);
+    if (isAdmin) return monitoringData.transferLifecycles;
+    return monitoringData.transferLifecycles.filter(t => t.participantId === String(participantId));
+  }),
+
+  searchTransfers: protectedProcedure
+    .input(z.object({
+      query: z.string().optional(),
+      corridor: z.string().optional(),
+      status: z.string().optional(),
+      dateFrom: z.string().optional(),
+      dateTo: z.string().optional(),
+      amountMin: z.number().optional(),
+      amountMax: z.number().optional(),
+    }))
+    .query(async ({ ctx, input }) => {
+      const { participantId, isAdmin } = getScope(ctx.user);
+      let results = monitoringData.transferLifecycles;
+      if (!isAdmin) results = results.filter(t => t.participantId === String(participantId));
+      if (input.query) {
+        const q = input.query.toLowerCase();
+        results = results.filter(t => t.transferRef.toLowerCase().includes(q) || t.beneficiaryName.toLowerCase().includes(q));
+      }
+      if (input.corridor) results = results.filter(t => t.corridor === input.corridor);
+      if (input.status) results = results.filter(t => t.currentStatus === input.status);
+      if (input.amountMin) results = results.filter(t => t.amountNGN >= (input.amountMin || 0));
+      if (input.amountMax) results = results.filter(t => t.amountNGN <= (input.amountMax || Infinity));
+      return results;
+    }),
+
+  getStuckTransfers: protectedProcedure.query(async ({ ctx }) => {
+    const { isAdmin } = getScope(ctx.user);
+    if (!isAdmin) throw new TRPCError({ code: 'FORBIDDEN', message: 'Admin only' });
+    return monitoringData.transferLifecycles.filter(t => t.isStuck);
+  }),
+
+  getTransferStats: protectedProcedure.query(async ({ ctx }) => {
+    const { participantId, isAdmin } = getScope(ctx.user);
+    let transfers = monitoringData.transferLifecycles;
+    if (!isAdmin) transfers = transfers.filter(t => t.participantId === String(participantId));
+    const total = transfers.length;
+    const completed = transfers.filter(t => t.currentStatus === 'confirmed').length;
+    const inFlight = transfers.filter(t => !['confirmed', 'failed', 'returned'].includes(t.currentStatus)).length;
+    const failed = transfers.filter(t => t.currentStatus === 'failed').length;
+    const stuck = transfers.filter(t => t.isStuck).length;
+    const avgLatencyMs = transfers.filter(t => t.totalLatencyMs).reduce((s, t) => s + (t.totalLatencyMs || 0), 0) / Math.max(completed, 1);
+    return { total, completed, inFlight, failed, stuck, avgLatencyMs: Math.round(avgLatencyMs) };
+  }),
+
+  // ===========================================================================
+  // Settlement Engine Endpoints
+  // ===========================================================================
+
+  getSettlementRailConfigs: protectedProcedure.query(async () => {
+    return settlementRailConfigs;
+  }),
+
+  getSettlementBatches: protectedProcedure.query(async ({ ctx }) => {
+    const { isAdmin } = getScope(ctx.user);
+    if (!isAdmin) throw new TRPCError({ code: 'FORBIDDEN', message: 'Admin only' });
+    return settlementBatches;
+  }),
+
+  getSettlementStats: protectedProcedure.query(async ({ ctx }) => {
+    const { isAdmin } = getScope(ctx.user);
+    if (!isAdmin) throw new TRPCError({ code: 'FORBIDDEN', message: 'Admin only' });
+    return settlementStats;
+  }),
+
+  getSettlementBatchDetail: protectedProcedure
+    .input(z.object({ batchId: z.string() }))
+    .query(async ({ ctx, input }) => {
+      const { isAdmin } = getScope(ctx.user);
+      if (!isAdmin) throw new TRPCError({ code: 'FORBIDDEN', message: 'Admin only' });
+      const batch = settlementBatches.find(b => b.batchId === input.batchId);
+      if (!batch) throw new TRPCError({ code: 'NOT_FOUND', message: 'Batch not found' });
+      return batch;
+    }),
+
+  confirmSettlementBatch: protectedProcedure
+    .input(z.object({ batchId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const { isAdmin } = getScope(ctx.user);
+      if (!isAdmin) throw new TRPCError({ code: 'FORBIDDEN', message: 'Admin only' });
+      const batch = settlementBatches.find(b => b.batchId === input.batchId);
+      if (!batch) throw new TRPCError({ code: 'NOT_FOUND', message: 'Batch not found' });
+      (batch as any).status = 'CONFIRMED';
+      (batch as any).confirmedAt = new Date().toISOString();
+      return { success: true, batchId: input.batchId };
+    }),
+
+  retrySettlementBatch: protectedProcedure
+    .input(z.object({ batchId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const { isAdmin } = getScope(ctx.user);
+      if (!isAdmin) throw new TRPCError({ code: 'FORBIDDEN', message: 'Admin only' });
+      const batch = settlementBatches.find(b => b.batchId === input.batchId);
+      if (!batch) throw new TRPCError({ code: 'NOT_FOUND', message: 'Batch not found' });
+      (batch as any).status = 'SUBMITTED';
+      (batch as any).retryCount += 1;
+      (batch as any).failedAt = null;
+      (batch as any).failReason = null;
+      return { success: true, batchId: input.batchId, retryCount: batch.retryCount + 1 };
+    }),
 });
 
 // =============================================================================
@@ -1065,4 +1265,191 @@ const enhancementData = {
     { envId: 'SBX-PAYAPP', participantId: 'PAYAPP-001', status: 'active', createdAt: '2026-04-15T00:00:00Z', corridors: ['NG-GH', 'NG-GB', 'NG-US'], transfersProcessed: 1247, lastActivity: '2026-05-02T14:00:00Z', apiEndpoint: 'https://sandbox.remit-switch.internal/v2/payapp' },
     { envId: 'SBX-KUDA', participantId: 'KUDA-001', status: 'testing', createdAt: '2026-05-01T00:00:00Z', corridors: ['NG-GH', 'NG-GB'], transfersProcessed: 23, lastActivity: '2026-05-02T11:00:00Z', apiEndpoint: 'https://sandbox.remit-switch.internal/v2/kuda' },
   ],
+};
+
+// =============================================================================
+// Developer Portal seed data — API keys, SDKs, integration guide
+// =============================================================================
+const developerData = {
+  apiKeys: [
+    { keyId: 'ak_payapp_prod_001', participantId: 'PAYAPP-001', label: 'Production API Key', secretPrefix: 'sk_live_a3f8...', tier: 'enterprise', scopes: ['transfers:read', 'transfers:write', 'webhooks:read', 'webhooks:write', 'prefund:read', 'compliance:read'], status: 'active', createdAt: '2026-03-15T00:00:00Z', lastUsedAt: '2026-05-02T14:50:00Z', requestCount: 2_450_000, rateLimit: { perMinute: 500, perDay: 100000 } },
+    { keyId: 'ak_payapp_sandbox_001', participantId: 'PAYAPP-001', label: 'Sandbox Test Key', secretPrefix: 'sk_test_b7c2...', tier: 'enterprise', scopes: ['transfers:read', 'transfers:write', 'webhooks:read'], status: 'active', createdAt: '2026-03-10T00:00:00Z', lastUsedAt: '2026-05-02T12:00:00Z', requestCount: 89_000, rateLimit: { perMinute: 500, perDay: 100000 } },
+    { keyId: 'ak_opay_prod_001', participantId: 'OPAY-001', label: 'OPay Production Key', secretPrefix: 'sk_live_d9e1...', tier: 'premium', scopes: ['transfers:read', 'transfers:write', 'webhooks:read', 'webhooks:write', 'prefund:read', 'prefund:write', 'compliance:read', 'batch:write'], status: 'active', createdAt: '2026-02-20T00:00:00Z', lastUsedAt: '2026-05-02T14:55:00Z', requestCount: 8_900_000, rateLimit: { perMinute: 2000, perDay: 500000 } },
+    { keyId: 'ak_moniepoint_prod_001', participantId: 'MONIEPOINT-001', label: 'Moniepoint API Key', secretPrefix: 'sk_live_f4g7...', tier: 'growth', scopes: ['transfers:read', 'transfers:write', 'webhooks:read'], status: 'active', createdAt: '2026-04-01T00:00:00Z', lastUsedAt: '2026-05-02T13:30:00Z', requestCount: 890_000, rateLimit: { perMinute: 100, perDay: 25000 } },
+  ] as any[],
+  sdks: [
+    { language: 'Node.js / TypeScript', package: '@remit-switch/sdk', version: '2.4.1', install: 'npm install @remit-switch/sdk', docs: 'https://docs.remit-switch.ng/sdk/nodejs', features: ['Typed transfer submission', 'Webhook signature verification', 'Automatic retry with backoff', 'Batch upload helper', 'WebSocket live tracking'] },
+    { language: 'Python', package: 'remit-switch-sdk', version: '2.4.0', install: 'pip install remit-switch-sdk', docs: 'https://docs.remit-switch.ng/sdk/python', features: ['Async transfer submission', 'HMAC webhook verification', 'Pandas DataFrame batch import', 'Rate lock helper'] },
+    { language: 'Java', package: 'ng.remitswitch:sdk', version: '2.3.2', install: 'implementation "ng.remitswitch:sdk:2.3.2"', docs: 'https://docs.remit-switch.ng/sdk/java', features: ['Spring Boot integration', 'Transfer builder pattern', 'Webhook filter chain', 'Connection pooling'] },
+    { language: 'PHP', package: 'remit-switch/sdk', version: '2.2.0', install: 'composer require remit-switch/sdk', docs: 'https://docs.remit-switch.ng/sdk/php', features: ['Laravel integration', 'Transfer submission', 'Webhook middleware', 'PSR-18 HTTP client'] },
+    { language: 'Go', package: 'github.com/remit-switch/go-sdk', version: '2.4.1', install: 'go get github.com/remit-switch/go-sdk@v2.4.1', docs: 'https://docs.remit-switch.ng/sdk/go', features: ['Context-aware API calls', 'Concurrent batch processing', 'gRPC + REST support', 'OpenTelemetry tracing'] },
+  ],
+  integrationSteps: [
+    { step: 1, title: 'Apply for Platform Access', description: 'Submit application at /outbound/apply with organization details, CBN license, and compliance documents. Receive reference number.', status: 'required', estimatedTime: '1-2 business days' },
+    { step: 2, title: 'Complete Onboarding Review', description: 'Platform admin reviews application. Dual-approval required. Keycloak credentials provisioned on approval.', status: 'required', estimatedTime: '2-5 business days' },
+    { step: 3, title: 'Generate API Keys', description: 'Log in to Developer Portal → API Keys → Generate. Save the secret — shown only once. Choose scopes based on your use case.', status: 'required', estimatedTime: '5 minutes' },
+    { step: 4, title: 'Install SDK', description: 'Choose your language SDK. Install via package manager. Initialize with API key and environment (sandbox/production).', status: 'required', estimatedTime: '15 minutes' },
+    { step: 5, title: 'Configure Webhooks', description: 'Set webhook URL in Developer Portal. Select events (transfer.completed, transfer.failed, prefund.low_balance). Verify HMAC signatures.', status: 'required', estimatedTime: '30 minutes' },
+    { step: 6, title: 'Test in Sandbox', description: 'Submit test transfers in sandbox environment. Verify webhook delivery. Test error scenarios (insufficient prefund, sanctions match, rate expiry).', status: 'required', estimatedTime: '1-3 days' },
+    { step: 7, title: 'Certification Testing', description: 'Complete 50 test transfers covering all assigned corridors. Pass compliance scenarios. Demonstrate webhook handling.', status: 'required', estimatedTime: '3-5 days' },
+    { step: 8, title: 'Go Live', description: 'Request production access. Admin dual-approval. Switch API key to production. Start with low-value transfers, ramp up after 7-day burn-in.', status: 'required', estimatedTime: '1-2 days' },
+  ],
+  webhookSubscriptions: [
+    { subscriptionId: 'wh_sub_payapp_001', participantId: 'PAYAPP-001', url: 'https://api.payapp.ng/webhooks/remit-switch', events: ['transfer.completed', 'transfer.failed', 'prefund.low_balance', 'compliance.hold'], status: 'active', createdAt: '2026-03-15T00:00:00Z', successCount: 14523, failureCount: 3, lastDelivery: '2026-05-02T14:50:00Z' },
+    { subscriptionId: 'wh_sub_opay_001', participantId: 'OPAY-001', url: 'https://hooks.opay.ng/remittance/callback', events: ['transfer.completed', 'transfer.failed', 'batch.completed', 'prefund.low_balance'], status: 'active', createdAt: '2026-02-20T00:00:00Z', successCount: 45200, failureCount: 12, lastDelivery: '2026-05-02T14:55:00Z' },
+  ] as any[],
+};
+
+// =============================================================================
+// Transaction Monitoring seed data — lifecycle tracking, search
+// =============================================================================
+const monitoringData = {
+  transferLifecycles: [
+    { transferRef: 'NOR-2026-00001', participantId: 'PAYAPP-001', beneficiaryName: 'Kwame Asante', corridor: 'NG-GH', rail: 'PAPSS', amountNGN: 2_500_000, amountDest: 24_272, destCurrency: 'GHS', fxRate: 103, feeUSD: 1.56, currentStatus: 'confirmed', isStuck: false, totalLatencyMs: 850, stages: [
+      { stage: 'admitted', timestamp: '2026-05-02T08:00:00Z', latencyMs: 0 },
+      { stage: 'screened', timestamp: '2026-05-02T08:00:02Z', latencyMs: 200, detail: 'Sanctions clear' },
+      { stage: 'priced', timestamp: '2026-05-02T08:00:03Z', latencyMs: 100, detail: 'Rate: 103 NGN/GHS' },
+      { stage: 'debited', timestamp: '2026-05-02T08:00:04Z', latencyMs: 50, detail: 'Prefund debited ₦2.5M' },
+      { stage: 'routed', timestamp: '2026-05-02T08:00:04Z', latencyMs: 20, detail: 'PAPSS selected (primary)' },
+      { stage: 'switched', timestamp: '2026-05-02T08:00:05Z', latencyMs: 150, detail: 'PAPSS adapter dispatched' },
+      { stage: 'settled', timestamp: '2026-05-02T08:00:06Z', latencyMs: 280, detail: 'GHS 24,272 credited' },
+      { stage: 'confirmed', timestamp: '2026-05-02T08:00:07Z', latencyMs: 50, detail: 'Beneficiary confirmed' },
+    ]},
+    { transferRef: 'NOR-2026-00002', participantId: 'PAYAPP-001', beneficiaryName: 'John Smith', corridor: 'NG-GB', rail: 'SWIFT', amountNGN: 15_000_000, amountDest: 7_653, destCurrency: 'GBP', fxRate: 1960, feeUSD: 9.38, currentStatus: 'confirmed', isStuck: false, totalLatencyMs: 3200, stages: [
+      { stage: 'admitted', timestamp: '2026-05-02T08:30:00Z', latencyMs: 0 },
+      { stage: 'screened', timestamp: '2026-05-02T08:30:05Z', latencyMs: 500, detail: 'Enhanced due diligence — UK PEP check' },
+      { stage: 'priced', timestamp: '2026-05-02T08:30:06Z', latencyMs: 100, detail: 'Rate: 1960 NGN/GBP' },
+      { stage: 'debited', timestamp: '2026-05-02T08:30:07Z', latencyMs: 50 },
+      { stage: 'routed', timestamp: '2026-05-02T08:30:07Z', latencyMs: 30, detail: 'SWIFT gpi selected' },
+      { stage: 'switched', timestamp: '2026-05-02T08:30:08Z', latencyMs: 200, detail: 'MT103 dispatched, UETR tracking' },
+      { stage: 'settled', timestamp: '2026-05-02T08:30:10Z', latencyMs: 2100, detail: 'GBP 7,653 credited via CHAPS' },
+      { stage: 'confirmed', timestamp: '2026-05-02T08:30:11Z', latencyMs: 220, detail: 'Beneficiary bank confirmed' },
+    ]},
+    { transferRef: 'NOR-2026-00003', participantId: 'PAYAPP-001', beneficiaryName: 'Raj Patel', corridor: 'NG-IN', rail: 'UPI', amountNGN: 8_500_000, amountDest: 442_708, destCurrency: 'INR', fxRate: 19.2, feeUSD: 5.31, currentStatus: 'routing', isStuck: false, totalLatencyMs: 0, stages: [
+      { stage: 'admitted', timestamp: '2026-05-02T14:00:00Z', latencyMs: 0 },
+      { stage: 'screened', timestamp: '2026-05-02T14:00:03Z', latencyMs: 300, detail: 'Sanctions clear' },
+      { stage: 'priced', timestamp: '2026-05-02T14:00:04Z', latencyMs: 80, detail: 'Rate: 19.2 NGN/INR' },
+      { stage: 'debited', timestamp: '2026-05-02T14:00:04Z', latencyMs: 50, detail: 'Prefund debited ₦8.5M' },
+      { stage: 'routing', timestamp: '2026-05-02T14:00:05Z', latencyMs: 0, detail: 'UPI International selected — awaiting VPA validation' },
+    ]},
+    { transferRef: 'NOR-2026-00004', participantId: 'PAYAPP-001', beneficiaryName: 'Amadou Diallo', corridor: 'NG-SN', rail: 'PAPSS', amountNGN: 1_200_000, amountDest: 457_252, destCurrency: 'XOF', fxRate: 2.62, feeUSD: 0.75, currentStatus: 'admitted', isStuck: false, totalLatencyMs: 0, stages: [
+      { stage: 'admitted', timestamp: '2026-05-02T14:30:00Z', latencyMs: 0, detail: 'Queued for sanctions screening' },
+    ]},
+    { transferRef: 'NOR-2026-00005', participantId: 'PAYAPP-001', beneficiaryName: 'Chen Wei', corridor: 'NG-CN', rail: 'CIPS', amountNGN: 45_000_000, amountDest: 203_619, destCurrency: 'CNY', fxRate: 221, feeUSD: 28.13, currentStatus: 'manual_review', isStuck: true, totalLatencyMs: 0, stages: [
+      { stage: 'admitted', timestamp: '2026-05-02T13:00:00Z', latencyMs: 0 },
+      { stage: 'screened', timestamp: '2026-05-02T13:00:08Z', latencyMs: 800, detail: 'ALERT: Amount outlier — 15x average for PAYAPP-001' },
+      { stage: 'manual_review', timestamp: '2026-05-02T13:00:08Z', latencyMs: 0, detail: 'Escalated for compliance review — awaiting officer decision' },
+    ]},
+    { transferRef: 'NOR-2026-00015', participantId: 'OPAY-001', beneficiaryName: 'Ahmed Hassan', corridor: 'NG-AE', rail: 'SWIFT', amountNGN: 35_000_000, amountDest: 80_460, destCurrency: 'AED', fxRate: 435, feeUSD: 21.88, currentStatus: 'failed', isStuck: false, totalLatencyMs: 0, stages: [
+      { stage: 'admitted', timestamp: '2026-05-02T09:00:00Z', latencyMs: 0 },
+      { stage: 'screened', timestamp: '2026-05-02T09:00:04Z', latencyMs: 400, detail: 'Sanctions clear' },
+      { stage: 'priced', timestamp: '2026-05-02T09:00:05Z', latencyMs: 100 },
+      { stage: 'debited', timestamp: '2026-05-02T09:00:05Z', latencyMs: 50 },
+      { stage: 'routed', timestamp: '2026-05-02T09:00:06Z', latencyMs: 20, detail: 'SWIFT selected' },
+      { stage: 'switched', timestamp: '2026-05-02T09:00:07Z', latencyMs: 150 },
+      { stage: 'failed', timestamp: '2026-05-02T09:00:30Z', latencyMs: 23000, detail: 'Beneficiary account not found — SWIFT NACK received' },
+    ]},
+    { transferRef: 'NOR-2026-00020', participantId: 'OPAY-001', beneficiaryName: 'Maria Garcia', corridor: 'NG-US', rail: 'ACH', amountNGN: 12_000_000, amountDest: 7_500, destCurrency: 'USD', fxRate: 1600, feeUSD: 7.50, currentStatus: 'settled', isStuck: false, totalLatencyMs: 1800, stages: [
+      { stage: 'admitted', timestamp: '2026-05-02T10:00:00Z', latencyMs: 0 },
+      { stage: 'screened', timestamp: '2026-05-02T10:00:02Z', latencyMs: 200 },
+      { stage: 'priced', timestamp: '2026-05-02T10:00:03Z', latencyMs: 80 },
+      { stage: 'debited', timestamp: '2026-05-02T10:00:03Z', latencyMs: 50 },
+      { stage: 'routed', timestamp: '2026-05-02T10:00:04Z', latencyMs: 20, detail: 'ACH same-day selected' },
+      { stage: 'switched', timestamp: '2026-05-02T10:00:05Z', latencyMs: 150, detail: 'NACHA file submitted' },
+      { stage: 'settled', timestamp: '2026-05-02T10:00:06Z', latencyMs: 1300, detail: 'USD 7,500 posted — awaiting bank confirmation' },
+    ]},
+    { transferRef: 'NOR-2026-00025', participantId: 'MONIEPOINT-001', beneficiaryName: 'Fatou Sow', corridor: 'NG-SN', rail: 'MOBILE_MONEY', amountNGN: 500_000, amountDest: 190_839, destCurrency: 'XOF', fxRate: 2.62, feeUSD: 0.31, currentStatus: 'switched', isStuck: true, totalLatencyMs: 0, stages: [
+      { stage: 'admitted', timestamp: '2026-05-02T11:00:00Z', latencyMs: 0 },
+      { stage: 'screened', timestamp: '2026-05-02T11:00:01Z', latencyMs: 100 },
+      { stage: 'priced', timestamp: '2026-05-02T11:00:02Z', latencyMs: 50 },
+      { stage: 'debited', timestamp: '2026-05-02T11:00:02Z', latencyMs: 40 },
+      { stage: 'routed', timestamp: '2026-05-02T11:00:03Z', latencyMs: 20, detail: 'Mobile Money selected' },
+      { stage: 'switched', timestamp: '2026-05-02T11:00:04Z', latencyMs: 100, detail: 'MTN MoMo dispatch — STUCK: MTN API timeout >5min' },
+    ]},
+  ],
+};
+
+// =============================================================================
+// Settlement Engine — Seed Data
+// =============================================================================
+
+const settlementRailConfigs = [
+  { railId: 'SWIFT', railName: 'SWIFT gpi', model: 'DEFERRED_NET' as const, windowHours: 8, cutoffTime: '16:00 UTC', maxBatchSize: 5000, retryAttempts: 3, fileFormat: 'MT940', currencies: ['USD','GBP','EUR','CAD','AED'] },
+  { railId: 'PAPSS', railName: 'PAPSS Pan-African', model: 'DEFERRED_NET' as const, windowHours: 2, cutoffTime: 'Every 2h', maxBatchSize: 10000, retryAttempts: 5, fileFormat: 'ISO20022', currencies: ['GHS','KES','ZAR','XOF','XAF'] },
+  { railId: 'CIPS', railName: 'CIPS China', model: 'DEFERRED_NET' as const, windowHours: 6, cutoffTime: '15:00 UTC', maxBatchSize: 3000, retryAttempts: 3, fileFormat: 'ISO20022', currencies: ['CNY'] },
+  { railId: 'UPI', railName: 'UPI India', model: 'IMMEDIATE_GROSS' as const, windowHours: 0, cutoffTime: 'Real-time', maxBatchSize: 1, retryAttempts: 3, fileFormat: 'UPI_XML', currencies: ['INR'] },
+  { railId: 'SEPA', railName: 'SEPA Europe', model: 'DEFERRED_NET' as const, windowHours: 24, cutoffTime: '14:00 UTC', maxBatchSize: 50000, retryAttempts: 3, fileFormat: 'pain.001', currencies: ['EUR'] },
+  { railId: 'MOBILE_MONEY', railName: 'Mobile Money Africa', model: 'IMMEDIATE_GROSS' as const, windowHours: 0, cutoffTime: 'Real-time', maxBatchSize: 1, retryAttempts: 5, fileFormat: 'JSON_API', currencies: ['GHS','KES','XOF'] },
+  { railId: 'MOJALOOP', railName: 'Mojaloop Hub', model: 'DEFERRED_NET' as const, windowHours: 4, cutoffTime: 'Every 4h', maxBatchSize: 20000, retryAttempts: 5, fileFormat: 'FSPIOP_JSON', currencies: ['GHS','KES','ZAR','XOF','XAF'] },
+  { railId: 'ACH', railName: 'ACH US', model: 'DEFERRED_NET' as const, windowHours: 24, cutoffTime: '17:00 UTC', maxBatchSize: 100000, retryAttempts: 2, fileFormat: 'NACHA', currencies: ['USD'] },
+  { railId: 'FASTER_PAYMENTS', railName: 'Faster Payments UK', model: 'IMMEDIATE_GROSS' as const, windowHours: 0, cutoffTime: 'Real-time', maxBatchSize: 1, retryAttempts: 3, fileFormat: 'ISO20022', currencies: ['GBP'] },
+];
+
+const settlementBatches = [
+  {
+    batchId: 'STL-PAPSS-000142', railId: 'PAPSS', status: 'CONFIRMED' as const, model: 'DEFERRED_NET',
+    windowStart: '2026-05-02T08:00:00Z', windowEnd: '2026-05-02T10:00:00Z',
+    transferCount: 47, totalGrossNGN: 892_500_000, totalNetNGN: 743_200_000,
+    fileReference: 'PAPSS_STL-PAPSS-000142_20260502.ISO20022',
+    submittedAt: '2026-05-02T10:00:05Z', confirmedAt: '2026-05-02T10:02:30Z',
+    reconciledAt: '2026-05-02T10:05:00Z', retryCount: 0, failedAt: null as string | null, failReason: null as string | null,
+    netPositions: [
+      { participantId: 'PAYAPP-001', currency: 'GHS', grossDebit: 345_000_000, netAmount: 287_500_000, transferCount: 18 },
+      { participantId: 'OPAY-001', currency: 'GHS', grossDebit: 412_000_000, netAmount: 343_200_000, transferCount: 21 },
+      { participantId: 'MONIEPOINT-001', currency: 'KES', grossDebit: 135_500_000, netAmount: 112_500_000, transferCount: 8 },
+    ],
+    reconciliation: { matched: 47, unmatched: 0, overpaid: 0, underpaid: 0, discrepancy: 0, status: 'clean' },
+  },
+  {
+    batchId: 'STL-SWIFT-000089', railId: 'SWIFT', status: 'SUBMITTED' as const, model: 'DEFERRED_NET',
+    windowStart: '2026-05-02T08:00:00Z', windowEnd: '2026-05-02T16:00:00Z',
+    transferCount: 12, totalGrossNGN: 3_450_000_000, totalNetNGN: 3_120_000_000,
+    fileReference: 'SWIFT_STL-SWIFT-000089_20260502.MT940',
+    submittedAt: '2026-05-02T16:00:05Z', confirmedAt: null as string | null,
+    reconciledAt: null as string | null, retryCount: 0, failedAt: null as string | null, failReason: null as string | null,
+    netPositions: [
+      { participantId: 'PAYAPP-001', currency: 'USD', grossDebit: 1_500_000_000, netAmount: 1_350_000_000, transferCount: 5 },
+      { participantId: 'OPAY-001', currency: 'GBP', grossDebit: 1_200_000_000, netAmount: 1_080_000_000, transferCount: 4 },
+      { participantId: 'KUDA-001', currency: 'EUR', grossDebit: 750_000_000, netAmount: 690_000_000, transferCount: 3 },
+    ],
+    reconciliation: null as any,
+  },
+  {
+    batchId: 'STL-CIPS-000034', railId: 'CIPS', status: 'NETTING' as const, model: 'DEFERRED_NET',
+    windowStart: '2026-05-02T09:00:00Z', windowEnd: '2026-05-02T15:00:00Z',
+    transferCount: 5, totalGrossNGN: 678_000_000, totalNetNGN: 0,
+    fileReference: null as string | null, submittedAt: null as string | null, confirmedAt: null as string | null, reconciledAt: null as string | null, retryCount: 0, failedAt: null as string | null, failReason: null as string | null,
+    netPositions: [
+      { participantId: 'PAYAPP-001', currency: 'CNY', grossDebit: 450_000_000, netAmount: 450_000_000, transferCount: 3 },
+      { participantId: 'MONIEPOINT-001', currency: 'CNY', grossDebit: 228_000_000, netAmount: 228_000_000, transferCount: 2 },
+    ],
+    reconciliation: null as any,
+  },
+  {
+    batchId: 'STL-ACH-000156', railId: 'ACH', status: 'FAILED' as const, model: 'DEFERRED_NET',
+    windowStart: '2026-05-01T17:00:00Z', windowEnd: '2026-05-02T17:00:00Z',
+    transferCount: 8, totalGrossNGN: 1_120_000_000, totalNetNGN: 980_000_000,
+    fileReference: 'ACH_STL-ACH-000156_20260502.NACHA',
+    submittedAt: '2026-05-02T17:00:05Z', confirmedAt: null as string | null,
+    reconciledAt: null as string | null, retryCount: 2, failedAt: '2026-05-02T17:15:00Z', failReason: 'NACHA processor rejected: invalid routing number in 3 entries',
+    netPositions: [
+      { participantId: 'OPAY-001', currency: 'USD', grossDebit: 780_000_000, netAmount: 680_000_000, transferCount: 5 },
+      { participantId: 'PAYAPP-001', currency: 'USD', grossDebit: 340_000_000, netAmount: 300_000_000, transferCount: 3 },
+    ],
+    reconciliation: null as any,
+  },
+];
+
+const settlementStats = {
+  totalBatches: 4,
+  confirmedBatches: 1,
+  submittedBatches: 1,
+  nettingBatches: 1,
+  failedBatches: 1,
+  totalGrossVolume: 6_140_500_000,
+  totalNetVolume: 4_843_200_000,
+  nettingSavings: 1_297_300_000,
+  nettingSavingsPct: 21.1,
+  avgSettlementTimeMs: 145_000,
+  pendingTransfers: { SWIFT: 0, PAPSS: 23, CIPS: 0, UPI: 0, SEPA: 5, MOBILE_MONEY: 0, MOJALOOP: 12, ACH: 0, FASTER_PAYMENTS: 0 },
 };
