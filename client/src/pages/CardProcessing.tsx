@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { trpc } from '@/lib/trpc';
-import { CreditCard, ShieldCheck, AlertTriangle, Store, CheckCircle, XCircle, BarChart3, Smartphone } from 'lucide-react';
+import { CreditCard, ShieldCheck, AlertTriangle, Store, CheckCircle, XCircle, BarChart3, Smartphone, TrendingUp, Activity, PieChart } from 'lucide-react';
 
-type Tab = 'cards' | 'transactions' | 'chargebacks' | 'terminals';
+type Tab = 'dashboard' | 'cards' | 'transactions' | 'chargebacks' | 'terminals';
 
 export default function CardProcessing() {
-  const [activeTab, setActiveTab] = useState<Tab>('transactions');
+  const [activeTab, setActiveTab] = useState<Tab>('dashboard');
 
   const cardsQuery = trpc.cardProcessing.listCards.useQuery(undefined, { retry: false });
   const txnsQuery = trpc.cardProcessing.listTransactions.useQuery(undefined, { retry: false });
@@ -59,14 +59,91 @@ export default function CardProcessing() {
       </div>
 
       <div style={{ display: 'flex', gap: 8, marginBottom: 20, borderBottom: '2px solid #e5e7eb', paddingBottom: 8 }}>
-        {(['transactions', 'cards', 'chargebacks', 'terminals'] as Tab[]).map(tab => (
+        {(['dashboard', 'transactions', 'cards', 'chargebacks', 'terminals'] as Tab[]).map(tab => (
           <button key={tab} onClick={() => setActiveTab(tab)}
             style={{ padding: '8px 20px', borderRadius: 8, border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: 14,
               background: activeTab === tab ? '#dc2626' : 'transparent', color: activeTab === tab ? 'white' : '#6b7280' }}>
-            {tab === 'transactions' ? 'Transactions' : tab === 'cards' ? 'Issued Cards' : tab === 'chargebacks' ? 'Chargebacks' : 'Terminals'}
+            {tab === 'dashboard' ? 'Dashboard' : tab === 'transactions' ? 'Transactions' : tab === 'cards' ? 'Issued Cards' : tab === 'chargebacks' ? 'Chargebacks' : 'Terminals'}
           </button>
         ))}
       </div>
+
+      {/* Dashboard Tab */}
+      {activeTab === 'dashboard' && (
+        <div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20, marginBottom: 24 }}>
+            <div style={{ background: 'linear-gradient(135deg, #dc2626, #ef4444)', borderRadius: 16, padding: 24, color: 'white' }}>
+              <div style={{ fontSize: 13, opacity: 0.9, marginBottom: 8 }}>Total Card Volume</div>
+              <div style={{ fontSize: 32, fontWeight: 800 }}>{fmt(Number(txnSummary?.totalVolumeNGN ?? 0))}</div>
+              <div style={{ fontSize: 12, opacity: 0.8, marginTop: 4 }}><TrendingUp size={14} style={{ display: 'inline', verticalAlign: 'middle' }} /> {txnSummary?.totalTxns ?? 0} transactions</div>
+            </div>
+            <div style={{ background: 'linear-gradient(135deg, #059669, #10b981)', borderRadius: 16, padding: 24, color: 'white' }}>
+              <div style={{ fontSize: 13, opacity: 0.9, marginBottom: 8 }}>Approval Rate</div>
+              <div style={{ fontSize: 32, fontWeight: 800 }}>{txnSummary?.approvalRate ?? 0}%</div>
+              <div style={{ fontSize: 12, opacity: 0.8, marginTop: 4 }}>{txnSummary?.approved ?? 0} approved, {txnSummary?.declined ?? 0} declined</div>
+            </div>
+            <div style={{ background: 'linear-gradient(135deg, #1a1f71, #3b4ebe)', borderRadius: 16, padding: 24, color: 'white' }}>
+              <div style={{ fontSize: 13, opacity: 0.9, marginBottom: 8 }}>Active Cards</div>
+              <div style={{ fontSize: 32, fontWeight: 800 }}>{cardSummary?.activeCards ?? 0}</div>
+              <div style={{ fontSize: 12, opacity: 0.8, marginTop: 4 }}>of {cardSummary?.totalCards ?? 0} total issued</div>
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 24 }}>
+            <div style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 20 }}>
+              <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}><PieChart size={18} color="#dc2626" /> Scheme Distribution</h3>
+              {['VISA', 'MASTERCARD', 'VERVE'].map((scheme, i) => {
+                const count = txns.filter(t => t.cardScheme === scheme).length;
+                const vol = txns.filter(t => t.cardScheme === scheme).reduce((s, t) => s + t.amount, 0);
+                return (
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10, padding: '10px 12px', background: '#f9fafb', borderRadius: 8 }}>
+                    <span style={{ ...schemeLogo(scheme), minWidth: 85, textAlign: 'center' as const }}>{scheme}</span>
+                    <span style={{ fontSize: 13, flex: 1 }}>{count} txns</span>
+                    <span style={{ fontSize: 13, fontWeight: 600, fontFamily: 'monospace' }}>{fmt(vol)}</span>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 20 }}>
+              <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}><Activity size={18} color="#059669" /> Transaction Performance</h3>
+              {[
+                { label: 'Approved', value: txnSummary?.approved ?? 0, total: txnSummary?.totalTxns ?? 1, color: '#10b981' },
+                { label: 'Declined', value: txnSummary?.declined ?? 0, total: txnSummary?.totalTxns ?? 1, color: '#ef4444' },
+              ].map((item, i) => (
+                <div key={i} style={{ marginBottom: 16 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, marginBottom: 4 }}>
+                    <span>{item.label}</span>
+                    <span style={{ fontWeight: 600 }}>{item.value} ({((item.value / item.total) * 100).toFixed(0)}%)</span>
+                  </div>
+                  <div style={{ height: 10, background: '#f3f4f6', borderRadius: 5, overflow: 'hidden' }}>
+                    <div style={{ height: '100%', width: `${(item.value / item.total) * 100}%`, background: item.color, borderRadius: 5 }} />
+                  </div>
+                </div>
+              ))}
+
+              <div style={{ marginTop: 16, padding: 16, background: '#fef2f2', borderRadius: 8, border: '1px solid #fecaca' }}>
+                <div style={{ fontSize: 12, color: '#991b1b', fontWeight: 600 }}>Active Chargebacks</div>
+                <div style={{ fontSize: 24, fontWeight: 800, color: '#dc2626' }}>{cbQuery.data?.totalActive ?? 0}</div>
+                <div style={{ fontSize: 11, color: '#b91c1c', marginTop: 2 }}>of {chargebacks.length} total disputes</div>
+              </div>
+            </div>
+          </div>
+
+          <div style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 20 }}>
+            <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}><Smartphone size={18} color="#7c3aed" /> Terminal Network</h3>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 12 }}>
+              {terminals.map((t, i) => (
+                <div key={i} style={{ padding: 14, background: '#f9fafb', borderRadius: 8, borderLeft: `4px solid ${t.status === 'ACTIVE' ? '#10b981' : '#f59e0b'}` }}>
+                  <div style={{ fontWeight: 700, fontSize: 13 }}>{t.terminalId}</div>
+                  <div style={{ fontSize: 12, color: '#6b7280', marginTop: 2 }}>{t.merchantName}</div>
+                  <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 4 }}>{t.type} · {t.location}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {activeTab === 'transactions' && (
         <div style={{ overflowX: 'auto' }}>

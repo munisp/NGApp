@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { trpc } from '@/lib/trpc';
-import { ArrowDownLeft, Globe, Building2, Shield, AlertTriangle, CheckCircle, Clock, XCircle, ArrowLeft } from 'lucide-react';
+import { ArrowDownLeft, Globe, Building2, Shield, AlertTriangle, CheckCircle, Clock, XCircle, ArrowLeft, BarChart3, TrendingUp, Activity } from 'lucide-react';
 
-type Tab = 'transfers' | 'corridors' | 'banks';
+type Tab = 'dashboard' | 'transfers' | 'corridors' | 'banks';
 
 export default function InboundRemittance() {
-  const [activeTab, setActiveTab] = useState<Tab>('transfers');
+  const [activeTab, setActiveTab] = useState<Tab>('dashboard');
   const [statusFilter, setStatusFilter] = useState('');
   const [railFilter, setRailFilter] = useState('');
 
@@ -75,14 +75,87 @@ export default function InboundRemittance() {
 
       {/* Tabs */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 20, borderBottom: '2px solid #e5e7eb', paddingBottom: 8 }}>
-        {(['transfers', 'corridors', 'banks'] as Tab[]).map(tab => (
+        {(['dashboard', 'transfers', 'corridors', 'banks'] as Tab[]).map(tab => (
           <button key={tab} onClick={() => setActiveTab(tab)}
             style={{ padding: '8px 20px', borderRadius: 8, border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: 14,
               background: activeTab === tab ? '#059669' : 'transparent', color: activeTab === tab ? 'white' : '#6b7280' }}>
-            {tab === 'transfers' ? 'Transfers' : tab === 'corridors' ? 'Corridors' : 'Receiving Banks'}
+            {tab === 'dashboard' ? 'Dashboard' : tab === 'transfers' ? 'Transfers' : tab === 'corridors' ? 'Corridors' : 'Receiving Banks'}
           </button>
         ))}
       </div>
+
+      {/* Dashboard Tab */}
+      {activeTab === 'dashboard' && summary && (
+        <div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20, marginBottom: 24 }}>
+            <div style={{ background: 'linear-gradient(135deg, #059669, #10b981)', borderRadius: 16, padding: 24, color: 'white' }}>
+              <div style={{ fontSize: 13, opacity: 0.9, marginBottom: 8 }}>Today's Inflow Volume</div>
+              <div style={{ fontSize: 32, fontWeight: 800 }}>{fmt(summary.totalVolumeNGN)}</div>
+              <div style={{ fontSize: 12, opacity: 0.8, marginTop: 4 }}><TrendingUp size={14} style={{ display: 'inline', verticalAlign: 'middle' }} /> +12.4% vs yesterday</div>
+            </div>
+            <div style={{ background: 'linear-gradient(135deg, #2563eb, #3b82f6)', borderRadius: 16, padding: 24, color: 'white' }}>
+              <div style={{ fontSize: 13, opacity: 0.9, marginBottom: 8 }}>Success Rate</div>
+              <div style={{ fontSize: 32, fontWeight: 800 }}>{summary.totalReceived > 0 ? ((summary.credited / summary.totalReceived) * 100).toFixed(1) : 0}%</div>
+              <div style={{ fontSize: 12, opacity: 0.8, marginTop: 4 }}>{summary.credited} of {summary.totalReceived} transfers credited</div>
+            </div>
+            <div style={{ background: 'linear-gradient(135deg, #7c3aed, #8b5cf6)', borderRadius: 16, padding: 24, color: 'white' }}>
+              <div style={{ fontSize: 13, opacity: 0.9, marginBottom: 8 }}>Active Corridors</div>
+              <div style={{ fontSize: 32, fontWeight: 800 }}>{corridors.filter(c => c.isActive).length}</div>
+              <div style={{ fontSize: 12, opacity: 0.8, marginTop: 4 }}>of {corridors.length} total corridors</div>
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 24 }}>
+            <div style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 20 }}>
+              <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}><BarChart3 size={18} color="#059669" /> Transfer Status Breakdown</h3>
+              {[
+                { label: 'Credited', value: summary.credited, total: summary.totalReceived, color: '#10b981' },
+                { label: 'Screening Held', value: summary.held, total: summary.totalReceived, color: '#f59e0b' },
+                { label: 'Processing', value: summary.processing, total: summary.totalReceived, color: '#8b5cf6' },
+                { label: 'Failed', value: summary.failed, total: summary.totalReceived, color: '#ef4444' },
+              ].map((item, i) => (
+                <div key={i} style={{ marginBottom: 12 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, marginBottom: 4 }}>
+                    <span>{item.label}</span>
+                    <span style={{ fontWeight: 600 }}>{item.value} ({item.total > 0 ? ((item.value / item.total) * 100).toFixed(0) : 0}%)</span>
+                  </div>
+                  <div style={{ height: 8, background: '#f3f4f6', borderRadius: 4, overflow: 'hidden' }}>
+                    <div style={{ height: '100%', width: `${item.total > 0 ? (item.value / item.total) * 100 : 0}%`, background: item.color, borderRadius: 4, transition: 'width 0.5s' }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 20 }}>
+              <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}><Activity size={18} color="#2563eb" /> Rail Distribution</h3>
+              {['SWIFT', 'PAPSS', 'CIPS', 'UPI', 'SEPA'].map((rail, i) => {
+                const count = transfers.filter(t => t.sourceRail === rail).length;
+                const vol = transfers.filter(t => t.sourceRail === rail).reduce((s, t) => s + t.destAmount, 0);
+                return (
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12, padding: '8px 12px', background: '#f9fafb', borderRadius: 8 }}>
+                    <span style={{ padding: '2px 10px', borderRadius: 4, fontSize: 11, fontWeight: 700, background: rail === 'SWIFT' ? '#2563eb' : rail === 'PAPSS' ? '#059669' : rail === 'CIPS' ? '#dc2626' : rail === 'UPI' ? '#ea580c' : '#4f46e5', color: 'white', minWidth: 60, textAlign: 'center' as const }}>{rail}</span>
+                    <span style={{ fontSize: 13, flex: 1 }}>{count} transfers</span>
+                    <span style={{ fontSize: 13, fontWeight: 600, fontFamily: 'monospace' }}>{fmt(vol)}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          <div style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 20 }}>
+            <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}><Globe size={18} color="#7c3aed" /> Top Corridors by Volume</h3>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 12 }}>
+              {corridors.sort((a, b) => b.dailyVolumeUSD - a.dailyVolumeUSD).slice(0, 6).map((c, i) => (
+                <div key={i} style={{ padding: 12, background: '#f9fafb', borderRadius: 8, borderLeft: `4px solid ${i === 0 ? '#059669' : i === 1 ? '#2563eb' : '#8b5cf6'}` }}>
+                  <div style={{ fontWeight: 700, fontSize: 14 }}>{c.sourceCountryName}</div>
+                  <div style={{ fontSize: 22, fontWeight: 800, color: '#059669', marginTop: 4 }}>{fmtUSD(c.dailyVolumeUSD)}</div>
+                  <div style={{ fontSize: 11, color: '#6b7280', marginTop: 2 }}>{c.rails.join(' · ')} · {(c.avgSettlementMs / 1000).toFixed(0)}s avg</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Transfers Tab */}
       {activeTab === 'transfers' && (

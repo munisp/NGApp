@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { trpc } from '@/lib/trpc';
-import { Landmark, Receipt, Building2, Heart, FileText, CheckCircle, Clock, AlertCircle } from 'lucide-react';
+import { Landmark, Receipt, Building2, Heart, FileText, CheckCircle, Clock, AlertCircle, BarChart3, TrendingUp, Activity, PieChart } from 'lucide-react';
 
-type Tab = 'tsa' | 'tax' | 'pension' | 'social' | 'reports';
+type Tab = 'dashboard' | 'tsa' | 'tax' | 'pension' | 'social' | 'reports';
 
 export default function GovernmentPayments() {
-  const [activeTab, setActiveTab] = useState<Tab>('tsa');
+  const [activeTab, setActiveTab] = useState<Tab>('dashboard');
 
   const govQuery = trpc.governmentPayments.listGovernmentPayments.useQuery(undefined, { retry: false });
   const taxQuery = trpc.governmentPayments.listTaxPayments.useQuery(undefined, { retry: false });
@@ -50,14 +50,93 @@ export default function GovernmentPayments() {
       </div>
 
       <div style={{ display: 'flex', gap: 4, marginBottom: 20, borderBottom: '2px solid #e5e7eb', paddingBottom: 8, flexWrap: 'wrap' }}>
-        {(['tsa', 'tax', 'pension', 'social', 'reports'] as Tab[]).map(tab => (
+        {(['dashboard', 'tsa', 'tax', 'pension', 'social', 'reports'] as Tab[]).map(tab => (
           <button key={tab} onClick={() => setActiveTab(tab)}
             style={{ padding: '8px 16px', borderRadius: 8, border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: 13,
               background: activeTab === tab ? '#0369a1' : 'transparent', color: activeTab === tab ? 'white' : '#6b7280' }}>
-            {tab === 'tsa' ? 'TSA Collections' : tab === 'tax' ? 'Tax Payments' : tab === 'pension' ? 'Pension' : tab === 'social' ? 'Social Payments' : 'Regulatory Reports'}
+            {tab === 'dashboard' ? 'Dashboard' : tab === 'tsa' ? 'TSA Collections' : tab === 'tax' ? 'Tax Payments' : tab === 'pension' ? 'Pension' : tab === 'social' ? 'Social Payments' : 'Regulatory Reports'}
           </button>
         ))}
       </div>
+
+      {/* Dashboard Tab */}
+      {activeTab === 'dashboard' && (
+        <div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20, marginBottom: 24 }}>
+            <div style={{ background: 'linear-gradient(135deg, #0369a1, #0ea5e9)', borderRadius: 16, padding: 24, color: 'white' }}>
+              <div style={{ fontSize: 13, opacity: 0.9, marginBottom: 8 }}>Total TSA Revenue</div>
+              <div style={{ fontSize: 32, fontWeight: 800 }}>{fmt(govSummary?.totalValueNGN ?? 0)}</div>
+              <div style={{ fontSize: 12, opacity: 0.8, marginTop: 4 }}><TrendingUp size={14} style={{ display: 'inline', verticalAlign: 'middle' }} /> {govSummary?.totalCollections ?? 0} collections</div>
+            </div>
+            <div style={{ background: 'linear-gradient(135deg, #7c3aed, #8b5cf6)', borderRadius: 16, padding: 24, color: 'white' }}>
+              <div style={{ fontSize: 13, opacity: 0.9, marginBottom: 8 }}>Tax Revenue Collected</div>
+              <div style={{ fontSize: 32, fontWeight: 800 }}>{fmt(taxQuery.data?.totalPaidNGN ?? 0)}</div>
+              <div style={{ fontSize: 12, opacity: 0.8, marginTop: 4 }}>{taxes.length} tax payments processed</div>
+            </div>
+            <div style={{ background: 'linear-gradient(135deg, #059669, #10b981)', borderRadius: 16, padding: 24, color: 'white' }}>
+              <div style={{ fontSize: 13, opacity: 0.9, marginBottom: 8 }}>Pension Contributions</div>
+              <div style={{ fontSize: 32, fontWeight: 800 }}>{fmt(pensionQuery.data?.totalContributions ?? 0)}</div>
+              <div style={{ fontSize: 12, opacity: 0.8, marginTop: 4 }}>{pensions.length} employer remittances</div>
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 24 }}>
+            <div style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 20 }}>
+              <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}><PieChart size={18} color="#0369a1" /> Revenue by Category</h3>
+              {[
+                { label: 'TSA Collections', value: govSummary?.totalValueNGN ?? 0, color: '#0369a1' },
+                { label: 'Tax (CIT/VAT/WHT)', value: taxQuery.data?.totalPaidNGN ?? 0, color: '#7c3aed' },
+                { label: 'Pension', value: pensionQuery.data?.totalContributions ?? 0, color: '#059669' },
+              ].map((item, i) => {
+                const total = (govSummary?.totalValueNGN ?? 0) + (taxQuery.data?.totalPaidNGN ?? 0) + (pensionQuery.data?.totalContributions ?? 0);
+                return (
+                  <div key={i} style={{ marginBottom: 12 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, marginBottom: 4 }}>
+                      <span>{item.label}</span>
+                      <span style={{ fontWeight: 600 }}>{fmt(item.value)}</span>
+                    </div>
+                    <div style={{ height: 10, background: '#f3f4f6', borderRadius: 5, overflow: 'hidden' }}>
+                      <div style={{ height: '100%', width: `${total > 0 ? (item.value / total) * 100 : 0}%`, background: item.color, borderRadius: 5 }} />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 20 }}>
+              <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}><Heart size={18} color="#dc2626" /> Social Programs</h3>
+              {socials.map((s, i) => (
+                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10, padding: '10px 12px', background: '#f9fafb', borderRadius: 8 }}>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontWeight: 600, fontSize: 13 }}>{s.programName}</div>
+                    <div style={{ fontSize: 11, color: '#6b7280' }}>{s.ministry}</div>
+                  </div>
+                  <div style={{ textAlign: 'right' as const }}>
+                    <div style={{ fontWeight: 700, fontFamily: 'monospace', fontSize: 13 }}>{fmt(s.totalDisbursed)}</div>
+                    <div style={{ fontSize: 10, color: '#9ca3af' }}>{(s.beneficiaryCount / 1e6).toFixed(1)}M beneficiaries</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 20 }}>
+            <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}><FileText size={18} color="#ea580c" /> Regulatory Reports Status</h3>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: 12 }}>
+              {reports.map((r, i) => (
+                <div key={i} style={{ padding: 14, background: '#f9fafb', borderRadius: 8, borderLeft: `4px solid ${r.status === 'SUBMITTED' ? '#10b981' : r.status === 'PENDING' ? '#f59e0b' : '#ef4444'}` }}>
+                  <div style={{ fontWeight: 700, fontSize: 13 }}>{r.reportName}</div>
+                  <div style={{ fontSize: 11, color: '#6b7280', marginTop: 2 }}>{r.reportType} · {r.frequency}</div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8 }}>
+                    <span style={{ padding: '2px 8px', borderRadius: 9999, fontSize: 10, fontWeight: 600, background: r.status === 'SUBMITTED' ? '#dcfce7' : '#fef3c7', color: r.status === 'SUBMITTED' ? '#166534' : '#92400e' }}>{r.status}</span>
+                    <span style={{ fontSize: 10, color: '#9ca3af' }}>Due: {new Date(r.dueDate).toLocaleDateString()}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {activeTab === 'tsa' && (
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>

@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { trpc } from '@/lib/trpc';
-import { Ship, FileText, Lock, Landmark, Package, CheckCircle, Clock, AlertCircle } from 'lucide-react';
+import { Ship, FileText, Lock, Landmark, Package, CheckCircle, Clock, AlertCircle, BarChart3, TrendingUp, Activity, Globe } from 'lucide-react';
 
-type Tab = 'lcs' | 'escrows' | 'customs';
+type Tab = 'dashboard' | 'lcs' | 'escrows' | 'customs';
 
 export default function TradePayments() {
-  const [activeTab, setActiveTab] = useState<Tab>('lcs');
+  const [activeTab, setActiveTab] = useState<Tab>('dashboard');
   const [lcTypeFilter, setLcTypeFilter] = useState('');
 
   const lcsQuery = trpc.tradePayments.listLCs.useQuery({ type: lcTypeFilter || undefined }, { retry: false });
@@ -60,14 +60,85 @@ export default function TradePayments() {
       )}
 
       <div style={{ display: 'flex', gap: 8, marginBottom: 20, borderBottom: '2px solid #e5e7eb', paddingBottom: 8 }}>
-        {(['lcs', 'escrows', 'customs'] as Tab[]).map(tab => (
+        {(['dashboard', 'lcs', 'escrows', 'customs'] as Tab[]).map(tab => (
           <button key={tab} onClick={() => setActiveTab(tab)}
             style={{ padding: '8px 20px', borderRadius: 8, border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: 14,
               background: activeTab === tab ? '#7c3aed' : 'transparent', color: activeTab === tab ? 'white' : '#6b7280' }}>
-            {tab === 'lcs' ? 'Letters of Credit' : tab === 'escrows' ? 'Escrow Payments' : 'Customs Duties'}
+            {tab === 'dashboard' ? 'Dashboard' : tab === 'lcs' ? 'Letters of Credit' : tab === 'escrows' ? 'Escrow Payments' : 'Customs Duties'}
           </button>
         ))}
       </div>
+
+      {/* Dashboard Tab */}
+      {activeTab === 'dashboard' && lcSummary && (
+        <div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20, marginBottom: 24 }}>
+            <div style={{ background: 'linear-gradient(135deg, #7c3aed, #8b5cf6)', borderRadius: 16, padding: 24, color: 'white' }}>
+              <div style={{ fontSize: 13, opacity: 0.9, marginBottom: 8 }}>Total Trade Value</div>
+              <div style={{ fontSize: 32, fontWeight: 800 }}>{fmt(lcSummary.totalValueUSD)}</div>
+              <div style={{ fontSize: 12, opacity: 0.8, marginTop: 4 }}><TrendingUp size={14} style={{ display: 'inline', verticalAlign: 'middle' }} /> {lcSummary.totalLCs} letters of credit</div>
+            </div>
+            <div style={{ background: 'linear-gradient(135deg, #2563eb, #3b82f6)', borderRadius: 16, padding: 24, color: 'white' }}>
+              <div style={{ fontSize: 13, opacity: 0.9, marginBottom: 8 }}>Import / Export Ratio</div>
+              <div style={{ fontSize: 32, fontWeight: 800 }}>{lcSummary.importLCs} / {lcSummary.exportLCs}</div>
+              <div style={{ fontSize: 12, opacity: 0.8, marginTop: 4 }}>{lcSummary.activeLCs} currently active</div>
+            </div>
+            <div style={{ background: 'linear-gradient(135deg, #dc2626, #ef4444)', borderRadius: 16, padding: 24, color: 'white' }}>
+              <div style={{ fontSize: 13, opacity: 0.9, marginBottom: 8 }}>Active Escrows</div>
+              <div style={{ fontSize: 32, fontWeight: 800 }}>{escrowsQuery.data?.totalActive ?? 0}</div>
+              <div style={{ fontSize: 12, opacity: 0.8, marginTop: 4 }}>{escrows.length} total escrow accounts</div>
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 24 }}>
+            <div style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 20 }}>
+              <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}><BarChart3 size={18} color="#7c3aed" /> LC Status Pipeline</h3>
+              {['ISSUED', 'ADVISED', 'CONFIRMED', 'DRAWN_DOWN', 'SETTLED', 'EXPIRED'].map((status, i) => {
+                const count = lcs.filter(l => l.status === status).length;
+                return (
+                  <div key={i} style={{ marginBottom: 12 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, marginBottom: 4 }}>
+                      <span>{status.replace(/_/g, ' ')}</span>
+                      <span style={{ fontWeight: 600 }}>{count}</span>
+                    </div>
+                    <div style={{ height: 8, background: '#f3f4f6', borderRadius: 4, overflow: 'hidden' }}>
+                      <div style={{ height: '100%', width: `${lcs.length > 0 ? (count / lcs.length) * 100 : 0}%`, background: lcSummary ? '#7c3aed' : '#6b7280', borderRadius: 4 }} />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 20 }}>
+              <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}><Globe size={18} color="#2563eb" /> Customs Duties Overview</h3>
+              {duties.map((d, i) => (
+                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10, padding: '10px 12px', background: '#f9fafb', borderRadius: 8 }}>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontWeight: 600, fontSize: 13 }}>{d.declarationRef}</div>
+                    <div style={{ fontSize: 11, color: '#6b7280' }}>{d.importerName} · {d.hsCode}</div>
+                  </div>
+                  <span style={{ fontWeight: 700, fontFamily: 'monospace', fontSize: 14 }}>{fmtNGN(d.dutyAmountNGN)}</span>
+                  <span style={{ padding: '2px 8px', borderRadius: 9999, fontSize: 10, fontWeight: 600, background: d.paymentStatus === 'PAID' ? '#dcfce7' : '#fef3c7', color: d.paymentStatus === 'PAID' ? '#166534' : '#92400e' }}>{d.paymentStatus}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 20 }}>
+            <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}><Activity size={18} color="#059669" /> Recent Escrow Activity</h3>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: 12 }}>
+              {escrows.slice(0, 4).map((e, i) => (
+                <div key={i} style={{ padding: 14, background: '#f9fafb', borderRadius: 8, borderLeft: `4px solid ${e.status === 'ACTIVE' ? '#10b981' : e.status === 'RELEASED' ? '#2563eb' : '#f59e0b'}` }}>
+                  <div style={{ fontWeight: 700, fontSize: 14 }}>{e.escrowRef}</div>
+                  <div style={{ fontSize: 12, color: '#6b7280', marginTop: 2 }}>{e.buyerName} → {e.sellerName}</div>
+                  <div style={{ fontSize: 20, fontWeight: 800, color: '#7c3aed', marginTop: 8 }}>{fmt(e.amountUSD)}</div>
+                  <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 4 }}>{e.milestonesCompleted}/{e.totalMilestones} milestones</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {activeTab === 'lcs' && (
         <div>

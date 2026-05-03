@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { trpc } from '@/lib/trpc';
-import { Globe, Key, Shield, Code, CheckCircle, XCircle, Clock, Zap, Users, Server } from 'lucide-react';
+import { Globe, Key, Shield, Code, CheckCircle, XCircle, Clock, Zap, Users, Server, BarChart3, TrendingUp, Activity, PieChart } from 'lucide-react';
 
-type Tab = 'tpps' | 'consents' | 'api_catalog' | 'sandboxes';
+type Tab = 'dashboard' | 'tpps' | 'consents' | 'api_catalog' | 'sandboxes';
 
 export default function OpenBanking() {
-  const [activeTab, setActiveTab] = useState<Tab>('tpps');
+  const [activeTab, setActiveTab] = useState<Tab>('dashboard');
 
   const tppsQuery = trpc.openBanking.listTPPs.useQuery(undefined, { retry: false });
   const consentsQuery = trpc.openBanking.listConsents.useQuery(undefined, { retry: false });
@@ -58,14 +58,90 @@ export default function OpenBanking() {
       </div>
 
       <div style={{ display: 'flex', gap: 8, marginBottom: 20, borderBottom: '2px solid #e5e7eb', paddingBottom: 8 }}>
-        {(['tpps', 'consents', 'api_catalog', 'sandboxes'] as Tab[]).map(tab => (
+        {(['dashboard', 'tpps', 'consents', 'api_catalog', 'sandboxes'] as Tab[]).map(tab => (
           <button key={tab} onClick={() => setActiveTab(tab)}
             style={{ padding: '8px 20px', borderRadius: 8, border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: 14,
               background: activeTab === tab ? '#0ea5e9' : 'transparent', color: activeTab === tab ? 'white' : '#6b7280' }}>
-            {tab === 'tpps' ? 'TPP Registry' : tab === 'consents' ? 'Consents' : tab === 'api_catalog' ? 'API Catalog' : 'Sandboxes'}
+            {tab === 'dashboard' ? 'Dashboard' : tab === 'tpps' ? 'TPP Registry' : tab === 'consents' ? 'Consents' : tab === 'api_catalog' ? 'API Catalog' : 'Sandboxes'}
           </button>
         ))}
       </div>
+
+      {/* Dashboard Tab */}
+      {activeTab === 'dashboard' && (
+        <div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20, marginBottom: 24 }}>
+            <div style={{ background: 'linear-gradient(135deg, #0ea5e9, #38bdf8)', borderRadius: 16, padding: 24, color: 'white' }}>
+              <div style={{ fontSize: 13, opacity: 0.9, marginBottom: 8 }}>Total API Calls (Monthly)</div>
+              <div style={{ fontSize: 32, fontWeight: 800 }}>{fmtCalls(tppSummary?.totalApiCalls ?? 0)}</div>
+              <div style={{ fontSize: 12, opacity: 0.8, marginTop: 4 }}><TrendingUp size={14} style={{ display: 'inline', verticalAlign: 'middle' }} /> {fmtCalls(endpointsQuery.data?.totalCalls24h ?? 0)} in last 24h</div>
+            </div>
+            <div style={{ background: 'linear-gradient(135deg, #059669, #10b981)', borderRadius: 16, padding: 24, color: 'white' }}>
+              <div style={{ fontSize: 13, opacity: 0.9, marginBottom: 8 }}>Active Consents</div>
+              <div style={{ fontSize: 32, fontWeight: 800 }}>{consentSummary?.authorized ?? 0}</div>
+              <div style={{ fontSize: 12, opacity: 0.8, marginTop: 4 }}>{consentSummary?.revoked ?? 0} revoked, {consentSummary?.expired ?? 0} expired</div>
+            </div>
+            <div style={{ background: 'linear-gradient(135deg, #7c3aed, #8b5cf6)', borderRadius: 16, padding: 24, color: 'white' }}>
+              <div style={{ fontSize: 13, opacity: 0.9, marginBottom: 8 }}>Registered TPPs</div>
+              <div style={{ fontSize: 32, fontWeight: 800 }}>{tppSummary?.totalTPPs ?? 0}</div>
+              <div style={{ fontSize: 12, opacity: 0.8, marginTop: 4 }}>{tppSummary?.activeTPPs ?? 0} active, {sandboxes.length} sandboxes</div>
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 24 }}>
+            <div style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 20 }}>
+              <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}><BarChart3 size={18} color="#0ea5e9" /> TPP Tier Distribution</h3>
+              {['ENTERPRISE', 'GROWTH', 'STARTER', 'SANDBOX'].map((tier, i) => {
+                const count = tpps.filter(t => t.tier === tier).length;
+                return (
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10, padding: '10px 12px', background: '#f9fafb', borderRadius: 8 }}>
+                    <span style={{ padding: '2px 10px', borderRadius: 9999, fontSize: 11, fontWeight: 600, background: tierColor(tier).bg, color: tierColor(tier).fg, minWidth: 80, textAlign: 'center' as const }}>{tier}</span>
+                    <div style={{ flex: 1, height: 8, background: '#f3f4f6', borderRadius: 4, overflow: 'hidden' }}>
+                      <div style={{ height: '100%', width: `${(tpps.length > 0 ? count / tpps.length : 0) * 100}%`, background: '#0ea5e9', borderRadius: 4 }} />
+                    </div>
+                    <span style={{ fontSize: 13, fontWeight: 600 }}>{count}</span>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 20 }}>
+              <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}><Shield size={18} color="#059669" /> Consent Status</h3>
+              {[
+                { label: 'Authorized', value: consentSummary?.authorized ?? 0, total: consentSummary?.total ?? 1, color: '#10b981' },
+                { label: 'Revoked', value: consentSummary?.revoked ?? 0, total: consentSummary?.total ?? 1, color: '#ef4444' },
+                { label: 'Expired', value: consentSummary?.expired ?? 0, total: consentSummary?.total ?? 1, color: '#6b7280' },
+              ].map((item, i) => (
+                <div key={i} style={{ marginBottom: 16 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, marginBottom: 4 }}>
+                    <span>{item.label}</span>
+                    <span style={{ fontWeight: 600 }}>{item.value} ({((item.value / item.total) * 100).toFixed(0)}%)</span>
+                  </div>
+                  <div style={{ height: 10, background: '#f3f4f6', borderRadius: 5, overflow: 'hidden' }}>
+                    <div style={{ height: '100%', width: `${(item.value / item.total) * 100}%`, background: item.color, borderRadius: 5 }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 20 }}>
+            <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}><Code size={18} color="#ea580c" /> Top API Endpoints</h3>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 12 }}>
+              {endpoints.sort((a, b) => b.calls24h - a.calls24h).slice(0, 6).map((ep, i) => (
+                <div key={i} style={{ padding: 14, background: '#f9fafb', borderRadius: 8, display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <span style={{ padding: '2px 8px', borderRadius: 4, fontSize: 10, fontWeight: 700, background: ep.method === 'GET' ? '#dbeafe' : ep.method === 'POST' ? '#dcfce7' : '#fef3c7', color: ep.method === 'GET' ? '#1d4ed8' : ep.method === 'POST' ? '#166534' : '#92400e' }}>{ep.method}</span>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontWeight: 600, fontSize: 12, fontFamily: 'monospace' }}>{ep.path}</div>
+                    <div style={{ fontSize: 11, color: '#6b7280' }}>{ep.category} · p{ep.avgLatencyMs}ms</div>
+                  </div>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: '#0ea5e9' }}>{fmtCalls(ep.calls24h)}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {activeTab === 'tpps' && (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 16 }}>

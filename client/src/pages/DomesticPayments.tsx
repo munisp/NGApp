@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { trpc } from '@/lib/trpc';
-import { Banknote, QrCode, FileText, Repeat, Users, ArrowRightLeft, CheckCircle, XCircle, Clock } from 'lucide-react';
+import { Banknote, QrCode, FileText, Repeat, Users, ArrowRightLeft, CheckCircle, XCircle, Clock, BarChart3, TrendingUp, Activity, PieChart } from 'lucide-react';
 
-type Tab = 'payments' | 'bills' | 'standing_orders' | 'bulk';
+type Tab = 'dashboard' | 'payments' | 'bills' | 'standing_orders' | 'bulk';
 
 export default function DomesticPayments() {
-  const [activeTab, setActiveTab] = useState<Tab>('payments');
+  const [activeTab, setActiveTab] = useState<Tab>('dashboard');
   const [typeFilter, setTypeFilter] = useState('');
 
   const paymentsQuery = trpc.domesticPayments.listPayments.useQuery({ type: typeFilter || undefined }, { retry: false });
@@ -64,14 +64,91 @@ export default function DomesticPayments() {
       )}
 
       <div style={{ display: 'flex', gap: 8, marginBottom: 20, borderBottom: '2px solid #e5e7eb', paddingBottom: 8 }}>
-        {(['payments', 'bills', 'standing_orders', 'bulk'] as Tab[]).map(tab => (
+        {(['dashboard', 'payments', 'bills', 'standing_orders', 'bulk'] as Tab[]).map(tab => (
           <button key={tab} onClick={() => setActiveTab(tab)}
             style={{ padding: '8px 20px', borderRadius: 8, border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: 14,
               background: activeTab === tab ? '#2563eb' : 'transparent', color: activeTab === tab ? 'white' : '#6b7280' }}>
-            {tab === 'payments' ? 'Payments' : tab === 'bills' ? 'Bill Providers' : tab === 'standing_orders' ? 'Standing Orders' : 'Bulk Disbursements'}
+            {tab === 'dashboard' ? 'Dashboard' : tab === 'payments' ? 'Payments' : tab === 'bills' ? 'Bill Providers' : tab === 'standing_orders' ? 'Standing Orders' : 'Bulk Disbursements'}
           </button>
         ))}
       </div>
+
+      {/* Dashboard Tab */}
+      {activeTab === 'dashboard' && summary && (
+        <div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20, marginBottom: 24 }}>
+            <div style={{ background: 'linear-gradient(135deg, #2563eb, #3b82f6)', borderRadius: 16, padding: 24, color: 'white' }}>
+              <div style={{ fontSize: 13, opacity: 0.9, marginBottom: 8 }}>Total Transaction Volume</div>
+              <div style={{ fontSize: 32, fontWeight: 800 }}>{fmt(summary.totalVolumeNGN)}</div>
+              <div style={{ fontSize: 12, opacity: 0.8, marginTop: 4 }}><TrendingUp size={14} style={{ display: 'inline', verticalAlign: 'middle' }} /> {summary.totalPayments} transactions today</div>
+            </div>
+            <div style={{ background: 'linear-gradient(135deg, #059669, #10b981)', borderRadius: 16, padding: 24, color: 'white' }}>
+              <div style={{ fontSize: 13, opacity: 0.9, marginBottom: 8 }}>Success Rate</div>
+              <div style={{ fontSize: 32, fontWeight: 800 }}>{summary.totalPayments > 0 ? ((summary.completed / summary.totalPayments) * 100).toFixed(1) : 0}%</div>
+              <div style={{ fontSize: 12, opacity: 0.8, marginTop: 4 }}>{summary.completed} completed, {summary.failed} failed</div>
+            </div>
+            <div style={{ background: 'linear-gradient(135deg, #7c3aed, #8b5cf6)', borderRadius: 16, padding: 24, color: 'white' }}>
+              <div style={{ fontSize: 13, opacity: 0.9, marginBottom: 8 }}>Active Services</div>
+              <div style={{ fontSize: 32, fontWeight: 800 }}>{providers.length}</div>
+              <div style={{ fontSize: 12, opacity: 0.8, marginTop: 4 }}>Bill providers + {orders.length} standing orders</div>
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 24 }}>
+            <div style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 20 }}>
+              <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}><PieChart size={18} color="#2563eb" /> Payment Type Distribution</h3>
+              {['P2P', 'P2B', 'QR_PAY', 'BILL_PAYMENT', 'REQUEST_TO_PAY', 'USSD'].map((type, i) => {
+                const count = payments.filter(p => p.type === type).length;
+                const vol = payments.filter(p => p.type === type).reduce((s, p) => s + p.amount, 0);
+                return (
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10, padding: '8px 12px', background: '#f9fafb', borderRadius: 8 }}>
+                    <span style={{ ...typeBadge(type), minWidth: 90, textAlign: 'center' as const }}>{type.replace(/_/g, ' ')}</span>
+                    <span style={{ fontSize: 13, flex: 1 }}>{count} payments</span>
+                    <span style={{ fontSize: 13, fontWeight: 600, fontFamily: 'monospace' }}>{fmt(vol)}</span>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 20 }}>
+              <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}><Activity size={18} color="#059669" /> Payment Pipeline</h3>
+              {[
+                { label: 'Completed', value: summary.completed, total: summary.totalPayments, color: '#10b981' },
+                { label: 'Pending', value: summary.pending, total: summary.totalPayments, color: '#f59e0b' },
+                { label: 'Failed', value: summary.failed, total: summary.totalPayments, color: '#ef4444' },
+              ].map((item, i) => (
+                <div key={i} style={{ marginBottom: 16 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, marginBottom: 4 }}>
+                    <span>{item.label}</span>
+                    <span style={{ fontWeight: 600 }}>{item.value} ({item.total > 0 ? ((item.value / item.total) * 100).toFixed(0) : 0}%)</span>
+                  </div>
+                  <div style={{ height: 10, background: '#f3f4f6', borderRadius: 5, overflow: 'hidden' }}>
+                    <div style={{ height: '100%', width: `${item.total > 0 ? (item.value / item.total) * 100 : 0}%`, background: item.color, borderRadius: 5 }} />
+                  </div>
+                </div>
+              ))}
+
+              <div style={{ marginTop: 20, padding: 16, background: '#f0fdf4', borderRadius: 8, border: '1px solid #bbf7d0' }}>
+                <div style={{ fontSize: 12, color: '#166534', fontWeight: 600 }}>Avg Transaction</div>
+                <div style={{ fontSize: 24, fontWeight: 800, color: '#059669' }}>{summary.totalPayments > 0 ? fmt(summary.totalVolumeNGN / summary.totalPayments) : '₦0'}</div>
+              </div>
+            </div>
+          </div>
+
+          <div style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 20 }}>
+            <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}><FileText size={18} color="#0891b2" /> Bill Provider Coverage</h3>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 12 }}>
+              {providers.map((p, i) => (
+                <div key={i} style={{ padding: 12, background: '#f9fafb', borderRadius: 8, borderLeft: `4px solid ${p.status === 'active' ? '#10b981' : '#f59e0b'}` }}>
+                  <div style={{ fontWeight: 700, fontSize: 14 }}>{p.name}</div>
+                  <div style={{ fontSize: 12, color: '#6b7280', marginTop: 2 }}>{p.category}</div>
+                  <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 4 }}>{p.services?.length || 0} services</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {activeTab === 'payments' && (
         <div>
