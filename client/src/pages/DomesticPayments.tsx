@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { trpc } from '@/lib/trpc';
-import { Banknote, QrCode, FileText, Repeat, Users, ArrowRightLeft, CheckCircle, XCircle, Clock, BarChart3, TrendingUp, Activity, PieChart, LayoutDashboard, Globe, Ship, CreditCard, Landmark, Code, ArrowDownLeft, Package, RefreshCw, AlertTriangle, ShieldCheck, Search, Layers, Building2, BookOpen, UserCheck, Hash, RotateCcw, Scale, Store, Receipt, FileCode, ScanLine, FileCheck, Fingerprint, Shield, UserPlus, Gauge, FileSpreadsheet, Timer, HeartPulse, FileWarning, Eye, DollarSign, Map, Brain, Zap } from 'lucide-react';
+import { Banknote, QrCode, FileText, Repeat, Users, ArrowRightLeft, CheckCircle, XCircle, Clock, BarChart3, TrendingUp, Activity, PieChart, LayoutDashboard, Globe, Ship, CreditCard, Landmark, Code, ArrowDownLeft, Package, RefreshCw, AlertTriangle, ShieldCheck, Search, Layers, Building2, BookOpen, UserCheck, Hash, RotateCcw, Scale, Store, Receipt, FileCode, ScanLine, FileCheck, Fingerprint, Shield, UserPlus, Gauge, FileSpreadsheet, Timer, HeartPulse, FileWarning, Eye, DollarSign, Map, Brain, Zap, Cpu, Database, MessageSquare, Network, Bot, ShieldAlert, GitGraph, Dice1 } from 'lucide-react';
 
 type Tab = 'dashboard' | 'payments' | 'bills' | 'standing_orders' | 'bulk'
   | 'neft' | 'cheques' | 'mandates' | 'reversals' | 'disputes'
   | 'merchants' | 'paydirect' | 'identity' | 'iso20022'
   | 'nqr' | 'emandate' | 'fraud' | 'onboarding'
-  | 'nip_monitor' | 'reconciliation' | 'sla' | 'health' | 'compliance' | 'monitoring' | 'revenue' | 'corridors' | 'forecast' | 'circuit_breaker';
+  | 'nip_monitor' | 'reconciliation' | 'sla' | 'health' | 'compliance' | 'monitoring' | 'revenue' | 'corridors' | 'forecast' | 'circuit_breaker'
+  | 'prophet' | 'cocoindex' | 'kgqa' | 'falkordb' | 'ollama' | 'art' | 'gnn_neo4j' | 'mcmc';
 
 const moduleLinks = [
   { label: 'Outbound Remittance', href: '/', icon: Globe, color: '#3b82f6' },
@@ -55,6 +56,16 @@ export default function DomesticPayments() {
   const corridorQuery = trpc.domesticPayments.getCorridorAnalytics.useQuery(undefined, { retry: false });
   const forecastQuery = trpc.domesticPayments.getVolumeForecast.useQuery(undefined, { retry: false });
   const circuitQuery = trpc.domesticPayments.getCircuitBreakerStatus.useQuery(undefined, { retry: false });
+
+  // AI/ML Queries
+  const prophetQuery = trpc.domesticPayments.getProphetPipeline.useQuery(undefined, { retry: false });
+  const cocoQuery = trpc.domesticPayments.getCocoIndexStatus.useQuery(undefined, { retry: false });
+  const kgqaQuery = trpc.domesticPayments.getKGQAStatus.useQuery(undefined, { retry: false });
+  const falkorQuery = trpc.domesticPayments.getFalkorDBMetrics.useQuery(undefined, { retry: false });
+  const ollamaQuery = trpc.domesticPayments.getOllamaStatus.useQuery(undefined, { retry: false });
+  const artQuery = trpc.domesticPayments.getARTResults.useQuery(undefined, { retry: false });
+  const gnnQuery = trpc.domesticPayments.getGNNFraudNetworks.useQuery(undefined, { retry: false });
+  const mcmcQuery = trpc.domesticPayments.getMCMCFraudScoring.useQuery(undefined, { retry: false });
 
   const payments = paymentsQuery.data?.payments ?? [];
   const summary = paymentsQuery.data?.summary;
@@ -152,6 +163,15 @@ export default function DomesticPayments() {
     { id: 'revenue', label: 'Revenue Analytics', icon: DollarSign, section: 'ANALYTICS' },
     { id: 'corridors', label: 'Corridor Analytics', icon: Map, section: 'ANALYTICS' },
     { id: 'forecast', label: 'Volume Forecast', icon: Brain, section: 'ANALYTICS' },
+    // AI/ML Section
+    { id: 'prophet', label: 'Prophet Pipeline', icon: TrendingUp, section: 'AI_ML' },
+    { id: 'cocoindex', label: 'CocoIndex', icon: Database, section: 'AI_ML' },
+    { id: 'kgqa', label: 'EPR-KGQA', icon: MessageSquare, section: 'AI_ML' },
+    { id: 'falkordb', label: 'FalkorDB', icon: Network, section: 'AI_ML' },
+    { id: 'ollama', label: 'Ollama LLM', icon: Bot, section: 'AI_ML' },
+    { id: 'art', label: 'ART Robustness', icon: ShieldAlert, section: 'AI_ML' },
+    { id: 'gnn_neo4j', label: 'GNN + Neo4j', icon: GitGraph, section: 'AI_ML' },
+    { id: 'mcmc', label: 'MCMC Fraud', icon: Dice1, section: 'AI_ML' },
   ];
 
   const coreItems = navItems.filter(n => !n.section);
@@ -160,6 +180,7 @@ export default function DomesticPayments() {
   const opsItems = navItems.filter(n => n.section === 'OPS');
   const complianceItems = navItems.filter(n => n.section === 'COMPLIANCE');
   const analyticsItems = navItems.filter(n => n.section === 'ANALYTICS');
+  const aimlItems = navItems.filter(n => n.section === 'AI_ML');
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
@@ -223,6 +244,15 @@ export default function DomesticPayments() {
             <button key={item.id} onClick={() => setActiveTab(item.id)}
               style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 14px', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600, width: '100%', textAlign: 'left',
                 background: activeTab === item.id ? '#2563eb' : 'transparent', color: activeTab === item.id ? 'white' : '#374151' }}>
+              <item.icon size={14} />
+              {item.label}
+            </button>
+          ))}
+          <div style={{ fontSize: 10, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: 1, padding: '12px 14px 4px' }}>AI / ML</div>
+          {aimlItems.map(item => (
+            <button key={item.id} onClick={() => setActiveTab(item.id)}
+              style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 14px', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600, width: '100%', textAlign: 'left',
+                background: activeTab === item.id ? '#7c3aed' : 'transparent', color: activeTab === item.id ? 'white' : '#374151' }}>
               <item.icon size={14} />
               {item.label}
             </button>
@@ -1494,6 +1524,413 @@ export default function DomesticPayments() {
                   </div>
                 </div>
               ))}
+            </div>
+          </div>
+        )}
+
+        {/* ===== AI/ML TABS ===== */}
+
+        {/* 21. Prophet Pipeline */}
+        {activeTab === 'prophet' && prophetQuery.data && (
+          <div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 24 }}>
+              {[
+                { label: 'Confidence Score', value: `${prophetQuery.data.metrics.confidenceScore}%`, color: '#059669' },
+                { label: 'MAPE', value: `${prophetQuery.data.metrics.mape}%`, color: '#2563eb' },
+                { label: 'R-Squared', value: prophetQuery.data.metrics.rSquared.toFixed(4), color: '#7c3aed' },
+                { label: 'Training Samples', value: `${prophetQuery.data.metrics.trainingSamples} days`, color: '#0369a1' },
+              ].map(m => (
+                <div key={m.label} style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 16 }}>
+                  <div style={{ fontSize: 11, color: '#6b7280', marginBottom: 4 }}>{m.label}</div>
+                  <div style={{ fontSize: 24, fontWeight: 700, color: m.color }}>{m.value}</div>
+                </div>
+              ))}
+            </div>
+            <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 12, padding: 16, marginBottom: 24 }}>
+              <div style={{ fontSize: 14, fontWeight: 700, color: '#166534', marginBottom: 8 }}>Model: {prophetQuery.data.model.id} — {prophetQuery.data.model.framework}</div>
+              <div style={{ fontSize: 12, color: '#166534' }}>Retraining: {prophetQuery.data.model.retainingSchedule} | Next: {prophetQuery.data.metrics.nextRetrain} | MCMC: {prophetQuery.data.model.mcmcSamples} samples</div>
+            </div>
+            <div style={{ marginBottom: 24 }}>
+              <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 12 }}>Cross-Validation (5-Fold)</div>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                <thead><tr style={{ borderBottom: '2px solid #e5e7eb' }}>{['Fold', 'MAPE %', 'RMSE', 'R-Squared'].map(h => <th key={h} style={{ padding: '8px 12px', textAlign: 'left', fontWeight: 600 }}>{h}</th>)}</tr></thead>
+                <tbody>{prophetQuery.data.crossValidation.map((cv: any) => (
+                  <tr key={cv.fold} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                    <td style={{ padding: '8px 12px' }}>Fold {cv.fold}</td>
+                    <td style={{ padding: '8px 12px', fontWeight: 600, color: cv.mape < 2.34 ? '#059669' : '#dc2626' }}>{cv.mape}%</td>
+                    <td style={{ padding: '8px 12px' }}>{cv.rmse.toLocaleString()}</td>
+                    <td style={{ padding: '8px 12px', fontWeight: 600 }}>{cv.rSquared.toFixed(4)}</td>
+                  </tr>
+                ))}</tbody>
+              </table>
+            </div>
+            <div style={{ marginBottom: 24 }}>
+              <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 12 }}>Nigerian Regressors</div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12 }}>
+                {prophetQuery.data.regressors.map((r: any) => (
+                  <div key={r.name} style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 8, padding: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: 600 }}>{r.name}</div>
+                      <div style={{ fontSize: 11, color: '#6b7280' }}>{r.description}</div>
+                    </div>
+                    <span style={{ fontSize: 14, fontWeight: 700, color: r.weight > 1 ? '#059669' : '#dc2626' }}>{r.weight}x</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div>
+              <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 12 }}>Forecasts (97.66% Confidence)</div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16 }}>
+                {prophetQuery.data.forecasts.map((f: any) => (
+                  <div key={`${f.product}-${f.date}`} style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 16 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                      <div><span style={{ fontSize: 16, fontWeight: 700 }}>{f.product}</span> <span style={{ fontSize: 12, color: '#6b7280' }}>{f.date}</span></div>
+                      <div style={{ display: 'flex', gap: 4 }}>
+                        {f.isSalaryDay && <span style={{ padding: '2px 6px', borderRadius: 6, fontSize: 10, fontWeight: 600, background: '#fef3c7', color: '#92400e' }}>SALARY DAY</span>}
+                        {f.isHoliday && <span style={{ padding: '2px 6px', borderRadius: 6, fontSize: 10, fontWeight: 600, background: '#fce7f3', color: '#9d174d' }}>HOLIDAY</span>}
+                      </div>
+                    </div>
+                    <div style={{ fontSize: 24, fontWeight: 700, color: '#7c3aed' }}>{(f.predicted / 1e6).toFixed(1)}M txns</div>
+                    <div style={{ fontSize: 12, color: '#6b7280', marginTop: 4 }}>CI: {(f.lower / 1e6).toFixed(1)}M — {(f.upper / 1e6).toFixed(1)}M ({f.confidence}%)</div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, fontSize: 12, marginTop: 8 }}>
+                      <div><span style={{ color: '#6b7280' }}>Peak TPS:</span> <strong>{f.peakTps.toLocaleString()}</strong></div>
+                      <div><span style={{ color: '#6b7280' }}>Peak:</span> <strong>{f.peakHour}</strong></div>
+                      <div><span style={{ color: '#6b7280' }}>Prefund:</span> <strong style={{ color: '#059669' }}>₦{f.recommendedPrefundBn.toFixed(0)}B</strong></div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* 22. CocoIndex */}
+        {activeTab === 'cocoindex' && cocoQuery.data && (
+          <div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 24 }}>
+              {[
+                { label: 'Status', value: cocoQuery.data.pipeline.status, color: '#059669' },
+                { label: 'Lag', value: `${cocoQuery.data.health.lagSeconds}s`, color: '#2563eb' },
+                { label: 'Throughput', value: `${cocoQuery.data.health.throughputAvg.toLocaleString()} docs/s`, color: '#7c3aed' },
+                { label: 'Error Rate', value: `${cocoQuery.data.health.errorRate}%`, color: '#059669' },
+              ].map(m => (
+                <div key={m.label} style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 16 }}>
+                  <div style={{ fontSize: 11, color: '#6b7280', marginBottom: 4 }}>{m.label}</div>
+                  <div style={{ fontSize: 24, fontWeight: 700, color: m.color }}>{m.value}</div>
+                </div>
+              ))}
+            </div>
+            <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 12, padding: 16, marginBottom: 24 }}>
+              <div style={{ fontSize: 14, fontWeight: 700, color: '#1d4ed8', marginBottom: 4 }}>Pipeline: {cocoQuery.data.pipeline.id} — {cocoQuery.data.pipeline.framework}</div>
+              <div style={{ fontSize: 12, color: '#1d4ed8' }}>Source: {cocoQuery.data.source.type} ({cocoQuery.data.source.tables.length} tables) | Batch: {cocoQuery.data.pipeline.batchSize.toLocaleString()} | Parallelism: {cocoQuery.data.pipeline.parallelism}</div>
+            </div>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+              <thead><tr style={{ borderBottom: '2px solid #e5e7eb' }}>{['Index', 'Total Docs', 'Indexed', 'Updated', 'Deleted', 'Errors', 'Duration', 'Throughput'].map(h => <th key={h} style={{ padding: '8px 12px', textAlign: 'left', fontWeight: 600 }}>{h}</th>)}</tr></thead>
+              <tbody>{cocoQuery.data.indexes.map((idx: any) => (
+                <tr key={idx.name} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                  <td style={{ padding: '8px 12px', fontWeight: 600 }}>{idx.name}</td>
+                  <td style={{ padding: '8px 12px' }}>{idx.totalDocs.toLocaleString()}</td>
+                  <td style={{ padding: '8px 12px', color: '#059669', fontWeight: 600 }}>{idx.docsIndexed.toLocaleString()}</td>
+                  <td style={{ padding: '8px 12px', color: '#2563eb' }}>{idx.docsUpdated.toLocaleString()}</td>
+                  <td style={{ padding: '8px 12px', color: '#dc2626' }}>{idx.docsDeleted}</td>
+                  <td style={{ padding: '8px 12px' }}>{idx.errors}</td>
+                  <td style={{ padding: '8px 12px' }}>{idx.durationMs}ms</td>
+                  <td style={{ padding: '8px 12px', fontWeight: 600 }}>{idx.throughputDps.toLocaleString()} docs/s</td>
+                </tr>
+              ))}</tbody>
+            </table>
+          </div>
+        )}
+
+        {/* 23. EPR-KGQA */}
+        {activeTab === 'kgqa' && kgqaQuery.data && (
+          <div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 24 }}>
+              {[
+                { label: 'Graph Nodes', value: kgqaQuery.data.graph.totalNodes.toLocaleString(), color: '#7c3aed' },
+                { label: 'Graph Edges', value: kgqaQuery.data.graph.totalEdges.toLocaleString(), color: '#2563eb' },
+                { label: 'Node Types', value: kgqaQuery.data.graph.nodeTypes.toString(), color: '#059669' },
+                { label: 'Relation Types', value: kgqaQuery.data.graph.relationTypes.toString(), color: '#dc2626' },
+              ].map(m => (
+                <div key={m.label} style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 16 }}>
+                  <div style={{ fontSize: 11, color: '#6b7280', marginBottom: 4 }}>{m.label}</div>
+                  <div style={{ fontSize: 24, fontWeight: 700, color: m.color }}>{m.value}</div>
+                </div>
+              ))}
+            </div>
+            <div style={{ background: '#faf5ff', border: '1px solid #e9d5ff', borderRadius: 12, padding: 16, marginBottom: 24 }}>
+              <div style={{ fontSize: 14, fontWeight: 700, color: '#7c3aed', marginBottom: 4 }}>{kgqaQuery.data.engine.name} — {kgqaQuery.data.engine.paper}</div>
+              <div style={{ fontSize: 12, color: '#7c3aed' }}>Graph: {kgqaQuery.data.engine.graphBackend} | LLM: {kgqaQuery.data.engine.llmBackend}</div>
+            </div>
+            <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 12 }}>Sample Queries & Answers</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {kgqaQuery.data.sampleQueries.map((q: any, i: number) => (
+                <div key={i} style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 16 }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: '#374151', marginBottom: 8 }}>{q.question}</div>
+                  <div style={{ fontSize: 13, color: '#4b5563', marginBottom: 8, padding: '8px 12px', background: '#f9fafb', borderRadius: 8 }}>{q.answer}</div>
+                  <div style={{ display: 'flex', gap: 16, fontSize: 11, color: '#6b7280' }}>
+                    <span>Confidence: <strong style={{ color: q.confidence > 0.9 ? '#059669' : '#f59e0b' }}>{(q.confidence * 100).toFixed(0)}%</strong></span>
+                    <span>Time: <strong>{q.timeMs}ms</strong></span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* 24. FalkorDB */}
+        {activeTab === 'falkordb' && falkorQuery.data && (
+          <div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 24 }}>
+              {[
+                { label: 'Avg Query Time', value: `${falkorQuery.data.metrics.avgQueryTimeMs}ms`, color: '#059669' },
+                { label: 'P99 Latency', value: `${falkorQuery.data.metrics.p99QueryTimeMs}ms`, color: '#f59e0b' },
+                { label: 'Queries/sec', value: falkorQuery.data.metrics.queriesPerSecond.toLocaleString(), color: '#2563eb' },
+                { label: 'Cache Hit Rate', value: `${(falkorQuery.data.metrics.cacheHitRate * 100).toFixed(0)}%`, color: '#7c3aed' },
+              ].map(m => (
+                <div key={m.label} style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 16 }}>
+                  <div style={{ fontSize: 11, color: '#6b7280', marginBottom: 4 }}>{m.label}</div>
+                  <div style={{ fontSize: 24, fontWeight: 700, color: m.color }}>{m.value}</div>
+                </div>
+              ))}
+            </div>
+            <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 12, padding: 16, marginBottom: 24 }}>
+              <div style={{ fontSize: 14, fontWeight: 700, color: '#991b1b', marginBottom: 4 }}>FalkorDB — {falkorQuery.data.connection.graphName}</div>
+              <div style={{ fontSize: 12, color: '#991b1b' }}>{falkorQuery.data.connection.host}:{falkorQuery.data.connection.port} | {falkorQuery.data.metrics.totalNodes.toLocaleString()} nodes | {falkorQuery.data.metrics.totalEdges.toLocaleString()} edges | {falkorQuery.data.metrics.memoryUsageMb}MB</div>
+            </div>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+              <thead><tr style={{ borderBottom: '2px solid #e5e7eb' }}>{['Query', 'Results', 'Time', 'Type'].map(h => <th key={h} style={{ padding: '8px 12px', textAlign: 'left', fontWeight: 600 }}>{h}</th>)}</tr></thead>
+              <tbody>{falkorQuery.data.recentQueries.map((q: any, i: number) => (
+                <tr key={i} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                  <td style={{ padding: '8px 12px', fontWeight: 600 }}>{q.query}</td>
+                  <td style={{ padding: '8px 12px' }}>{q.resultCount}</td>
+                  <td style={{ padding: '8px 12px', color: q.timeMs < 1 ? '#059669' : '#f59e0b', fontWeight: 600 }}>{q.timeMs}ms</td>
+                  <td style={{ padding: '8px 12px' }}><span style={{ padding: '2px 8px', borderRadius: 6, fontSize: 11, fontWeight: 600, background: '#f3e8ff', color: '#7c3aed' }}>{q.type}</span></td>
+                </tr>
+              ))}</tbody>
+            </table>
+          </div>
+        )}
+
+        {/* 25. Ollama LLM */}
+        {activeTab === 'ollama' && ollamaQuery.data && (
+          <div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 24 }}>
+              {[
+                { label: 'Total Queries', value: ollamaQuery.data.stats.totalQueries.toLocaleString(), color: '#2563eb' },
+                { label: 'Avg Latency', value: `${(ollamaQuery.data.stats.avgLatencyMs / 1000).toFixed(1)}s`, color: '#f59e0b' },
+                { label: 'Model Size', value: `${ollamaQuery.data.stats.modelSizeGb}GB`, color: '#7c3aed' },
+                { label: 'Uptime', value: `${ollamaQuery.data.stats.uptimeHours}h`, color: '#059669' },
+              ].map(m => (
+                <div key={m.label} style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 16 }}>
+                  <div style={{ fontSize: 11, color: '#6b7280', marginBottom: 4 }}>{m.label}</div>
+                  <div style={{ fontSize: 24, fontWeight: 700, color: m.color }}>{m.value}</div>
+                </div>
+              ))}
+            </div>
+            <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 12, padding: 16, marginBottom: 24 }}>
+              <div style={{ fontSize: 14, fontWeight: 700, color: '#1d4ed8', marginBottom: 4 }}>Ollama — {ollamaQuery.data.config.model}</div>
+              <div style={{ fontSize: 12, color: '#1d4ed8' }}>{ollamaQuery.data.config.framework} | Temp: {ollamaQuery.data.config.temperature} | Sources: {ollamaQuery.data.contextSources.join(', ')}</div>
+            </div>
+            <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 12 }}>Recent Queries</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {ollamaQuery.data.recentQueries.map((q: any, i: number) => (
+                <div key={i} style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 16 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                    <div style={{ fontSize: 13, fontWeight: 700 }}>{q.question}</div>
+                    <span style={{ padding: '2px 8px', borderRadius: 6, fontSize: 10, fontWeight: 600, background: '#dbeafe', color: '#1d4ed8' }}>{q.category}</span>
+                  </div>
+                  <div style={{ fontSize: 13, color: '#4b5563', padding: '8px 12px', background: '#f9fafb', borderRadius: 8, marginBottom: 8 }}>{q.answer}</div>
+                  <div style={{ display: 'flex', gap: 16, fontSize: 11, color: '#6b7280' }}>
+                    <span>Latency: <strong>{(q.latencyMs / 1000).toFixed(1)}s</strong></span>
+                    <span>Tokens: <strong>{q.tokens}</strong></span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* 26. ART Robustness */}
+        {activeTab === 'art' && artQuery.data && (
+          <div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginBottom: 24 }}>
+              {[
+                { label: 'Overall Robustness', value: `${artQuery.data.overallRobustness}%`, color: '#059669' },
+                { label: 'Tests Run', value: artQuery.data.testResults.length.toString(), color: '#2563eb' },
+                { label: 'Framework', value: 'ART v1.17', color: '#7c3aed' },
+              ].map(m => (
+                <div key={m.label} style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 16 }}>
+                  <div style={{ fontSize: 11, color: '#6b7280', marginBottom: 4 }}>{m.label}</div>
+                  <div style={{ fontSize: 24, fontWeight: 700, color: m.color }}>{m.value}</div>
+                </div>
+              ))}
+            </div>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12, marginBottom: 24 }}>
+              <thead><tr style={{ borderBottom: '2px solid #e5e7eb' }}>{['Test ID', 'Attack Type', 'Attack', 'Original', 'Adversarial', 'Robustness', 'Defense'].map(h => <th key={h} style={{ padding: '8px 10px', textAlign: 'left', fontWeight: 600 }}>{h}</th>)}</tr></thead>
+              <tbody>{artQuery.data.testResults.map((t: any) => (
+                <tr key={t.testId} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                  <td style={{ padding: '8px 10px', fontWeight: 600 }}>{t.testId}</td>
+                  <td style={{ padding: '8px 10px' }}><span style={{ padding: '2px 6px', borderRadius: 6, fontSize: 10, fontWeight: 600, background: t.attackType === 'EVASION' ? '#fef3c7' : t.attackType === 'POISONING' ? '#fce7f3' : '#e0e7ff', color: t.attackType === 'EVASION' ? '#92400e' : t.attackType === 'POISONING' ? '#9d174d' : '#3730a3' }}>{t.attackType}</span></td>
+                  <td style={{ padding: '8px 10px', fontSize: 11 }}>{t.attackName}</td>
+                  <td style={{ padding: '8px 10px', color: '#059669', fontWeight: 600 }}>{t.originalAccuracy}%</td>
+                  <td style={{ padding: '8px 10px', color: '#dc2626', fontWeight: 600 }}>{t.adversarialAccuracy}%</td>
+                  <td style={{ padding: '8px 10px', fontWeight: 700, color: t.robustness > 90 ? '#059669' : '#f59e0b' }}>{t.robustness}%</td>
+                  <td style={{ padding: '8px 10px', fontSize: 11 }}>{t.defense}</td>
+                </tr>
+              ))}</tbody>
+            </table>
+            <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 12, padding: 16 }}>
+              <div style={{ fontSize: 14, fontWeight: 700, color: '#92400e', marginBottom: 8 }}>Recommendations</div>
+              <ul style={{ margin: 0, paddingLeft: 20, fontSize: 13, color: '#92400e' }}>
+                {artQuery.data.recommendations.map((r: string, i: number) => <li key={i} style={{ marginBottom: 4 }}>{r}</li>)}
+              </ul>
+            </div>
+          </div>
+        )}
+
+        {/* 27. GNN + Neo4j */}
+        {activeTab === 'gnn_neo4j' && gnnQuery.data && (
+          <div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 24 }}>
+              {[
+                { label: 'Accuracy', value: `${gnnQuery.data.metrics.accuracy}%`, color: '#059669' },
+                { label: 'AUC-ROC', value: gnnQuery.data.metrics.aucRoc.toFixed(3), color: '#2563eb' },
+                { label: 'F1 Score', value: `${gnnQuery.data.metrics.f1Score}%`, color: '#7c3aed' },
+                { label: 'Networks Found', value: gnnQuery.data.detectedNetworks.length.toString(), color: '#dc2626' },
+              ].map(m => (
+                <div key={m.label} style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 16 }}>
+                  <div style={{ fontSize: 11, color: '#6b7280', marginBottom: 4 }}>{m.label}</div>
+                  <div style={{ fontSize: 24, fontWeight: 700, color: m.color }}>{m.value}</div>
+                </div>
+              ))}
+            </div>
+            <div style={{ background: '#faf5ff', border: '1px solid #e9d5ff', borderRadius: 12, padding: 16, marginBottom: 24 }}>
+              <div style={{ fontSize: 14, fontWeight: 700, color: '#7c3aed', marginBottom: 4 }}>{gnnQuery.data.model.type} — {gnnQuery.data.model.framework}</div>
+              <div style={{ fontSize: 12, color: '#7c3aed' }}>{gnnQuery.data.model.layers} layers | {gnnQuery.data.model.hiddenChannels} hidden | {gnnQuery.data.model.attentionHeads} heads | {gnnQuery.data.model.parameters.toLocaleString()} params | Neo4j: {gnnQuery.data.neo4j.database}</div>
+            </div>
+            <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 12 }}>Detected Fraud Networks</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              {gnnQuery.data.detectedNetworks.map((net: any) => (
+                <div key={net.networkId} style={{ background: 'white', border: `2px solid ${net.status === 'CONFIRMED' ? '#dc2626' : net.status === 'INVESTIGATING' ? '#f59e0b' : '#2563eb'}`, borderRadius: 12, padding: 16 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                    <div>
+                      <span style={{ fontSize: 16, fontWeight: 700 }}>{net.networkId}</span>
+                      <span style={{ marginLeft: 8, padding: '2px 8px', borderRadius: 6, fontSize: 11, fontWeight: 600, background: net.type === 'MONEY_MULE_RING' ? '#fef2f2' : net.type === 'FAN_OUT' ? '#eff6ff' : '#faf5ff', color: net.type === 'MONEY_MULE_RING' ? '#991b1b' : net.type === 'FAN_OUT' ? '#1d4ed8' : '#7c3aed' }}>{net.type.replace(/_/g, ' ')}</span>
+                    </div>
+                    <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                      <span style={{ fontSize: 12, color: '#6b7280' }}>Risk: <strong style={{ color: net.riskScore > 0.9 ? '#dc2626' : '#f59e0b' }}>{(net.riskScore * 100).toFixed(0)}%</strong></span>
+                      <span style={{ padding: '2px 8px', borderRadius: 6, fontSize: 11, fontWeight: 600, background: net.status === 'CONFIRMED' ? '#fef2f2' : net.status === 'INVESTIGATING' ? '#fef3c7' : '#dbeafe', color: net.status === 'CONFIRMED' ? '#991b1b' : net.status === 'INVESTIGATING' ? '#92400e' : '#1d4ed8' }}>{net.status}</span>
+                    </div>
+                  </div>
+                  <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 8 }}>Value: <strong>₦{(net.totalValue / 1e6).toFixed(1)}M</strong> | Edges: {net.edges} | Detected: {new Date(net.detectedAt).toLocaleString()}</div>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                    <thead><tr style={{ borderBottom: '1px solid #e5e7eb' }}>{['Account', 'Bank', 'Role', 'Risk', 'Connections', 'Amount', 'Age'].map(h => <th key={h} style={{ padding: '6px 8px', textAlign: 'left', fontWeight: 600 }}>{h}</th>)}</tr></thead>
+                    <tbody>{net.nodes.map((n: any) => (
+                      <tr key={n.accountId} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                        <td style={{ padding: '6px 8px', fontFamily: 'monospace', fontSize: 11 }}>{n.accountId}</td>
+                        <td style={{ padding: '6px 8px' }}>{n.bank}</td>
+                        <td style={{ padding: '6px 8px' }}><span style={{ padding: '1px 6px', borderRadius: 4, fontSize: 10, fontWeight: 600, background: n.role === 'ORCHESTRATOR' ? '#fef2f2' : n.role === 'MULE' ? '#fef3c7' : '#dcfce7', color: n.role === 'ORCHESTRATOR' ? '#991b1b' : n.role === 'MULE' ? '#92400e' : '#166534' }}>{n.role}</span></td>
+                        <td style={{ padding: '6px 8px', fontWeight: 600, color: n.riskScore > 0.9 ? '#dc2626' : '#f59e0b' }}>{(n.riskScore * 100).toFixed(0)}%</td>
+                        <td style={{ padding: '6px 8px' }}>{n.connections}</td>
+                        <td style={{ padding: '6px 8px' }}>₦{(n.totalAmount / 1e6).toFixed(1)}M</td>
+                        <td style={{ padding: '6px 8px' }}>{n.ageDays}d</td>
+                      </tr>
+                    ))}</tbody>
+                  </table>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* 28. MCMC Fraud Scoring */}
+        {activeTab === 'mcmc' && mcmcQuery.data && (
+          <div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 24 }}>
+              {[
+                { label: 'Total Scored', value: mcmcQuery.data.performance.totalScored.toLocaleString(), color: '#2563eb' },
+                { label: 'Scoring Rate', value: `${mcmcQuery.data.performance.scoringRatePerSec.toLocaleString()}/s`, color: '#059669' },
+                { label: 'Avg Time', value: `${mcmcQuery.data.performance.avgScoringTimeMs}ms`, color: '#7c3aed' },
+                { label: 'Blocked', value: mcmcQuery.data.actionDistribution.BLOCK.toLocaleString(), color: '#dc2626' },
+              ].map(m => (
+                <div key={m.label} style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 16 }}>
+                  <div style={{ fontSize: 11, color: '#6b7280', marginBottom: 4 }}>{m.label}</div>
+                  <div style={{ fontSize: 24, fontWeight: 700, color: m.color }}>{m.value}</div>
+                </div>
+              ))}
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 24 }}>
+              <div style={{ background: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: 12, padding: 16 }}>
+                <div style={{ fontSize: 14, fontWeight: 700, color: '#0369a1', marginBottom: 8 }}>MCMC Configuration</div>
+                <div style={{ fontSize: 12, color: '#0369a1', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4 }}>
+                  <div>Chains: <strong>{mcmcQuery.data.config.numChains}</strong></div>
+                  <div>Samples: <strong>{mcmcQuery.data.config.numSamples}</strong></div>
+                  <div>Burn-in: <strong>{mcmcQuery.data.config.burnIn}</strong></div>
+                  <div>Prior: <strong>{mcmcQuery.data.config.priorDistribution}</strong></div>
+                  <div>Framework: <strong>{mcmcQuery.data.config.framework}</strong></div>
+                  <div>Engine: <strong>{mcmcQuery.data.config.rustEngine}</strong></div>
+                </div>
+              </div>
+              <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 12, padding: 16 }}>
+                <div style={{ fontSize: 14, fontWeight: 700, color: '#991b1b', marginBottom: 8 }}>Action Distribution</div>
+                <div style={{ fontSize: 12, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  {Object.entries(mcmcQuery.data.actionDistribution).map(([action, count]) => (
+                    <div key={action} style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span style={{ fontWeight: 600, color: action === 'BLOCK' ? '#dc2626' : action === 'REVIEW' ? '#f59e0b' : action === 'FLAG' ? '#2563eb' : '#059669' }}>{action}</span>
+                      <strong>{(count as number).toLocaleString()}</strong>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <div style={{ marginBottom: 24 }}>
+              <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 12 }}>Chain Diagnostics</div>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                <thead><tr style={{ borderBottom: '2px solid #e5e7eb' }}>{['Chain', 'R-hat', 'ESS', 'Accept Rate', 'Mean P(fraud)'].map(h => <th key={h} style={{ padding: '8px 12px', textAlign: 'left', fontWeight: 600 }}>{h}</th>)}</tr></thead>
+                <tbody>{mcmcQuery.data.chainDiagnostics.map((c: any) => (
+                  <tr key={c.chain} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                    <td style={{ padding: '8px 12px', fontWeight: 600 }}>Chain {c.chain}</td>
+                    <td style={{ padding: '8px 12px', color: c.rHat < 1.01 ? '#059669' : '#dc2626', fontWeight: 600 }}>{c.rHat.toFixed(4)}</td>
+                    <td style={{ padding: '8px 12px' }}>{c.effectiveSampleSize.toLocaleString()}</td>
+                    <td style={{ padding: '8px 12px' }}>{(c.acceptanceRate * 100).toFixed(1)}%</td>
+                    <td style={{ padding: '8px 12px' }}>{c.meanFraudProb.toFixed(4)}</td>
+                  </tr>
+                ))}</tbody>
+              </table>
+            </div>
+            <div style={{ marginBottom: 24 }}>
+              <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 12 }}>Recent Scored Transactions</div>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                <thead><tr style={{ borderBottom: '2px solid #e5e7eb' }}>{['Reference', 'Bank', 'Amount', 'P(fraud)', 'Action', 'Risk Factors'].map(h => <th key={h} style={{ padding: '8px 10px', textAlign: 'left', fontWeight: 600 }}>{h}</th>)}</tr></thead>
+                <tbody>{mcmcQuery.data.recentScores.map((s: any) => (
+                  <tr key={s.ref} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                    <td style={{ padding: '8px 10px', fontFamily: 'monospace', fontSize: 11 }}>{s.ref}</td>
+                    <td style={{ padding: '8px 10px' }}>{s.bank}</td>
+                    <td style={{ padding: '8px 10px' }}>₦{(s.amount / 1e6).toFixed(1)}M</td>
+                    <td style={{ padding: '8px 10px', fontWeight: 700, color: s.probability > 0.85 ? '#dc2626' : s.probability > 0.5 ? '#f59e0b' : s.probability > 0.2 ? '#2563eb' : '#059669' }}>{(s.probability * 100).toFixed(1)}%</td>
+                    <td style={{ padding: '8px 10px' }}><span style={{ padding: '2px 6px', borderRadius: 4, fontSize: 10, fontWeight: 600, background: s.action === 'BLOCK' ? '#fef2f2' : s.action === 'REVIEW' ? '#fef3c7' : s.action === 'FLAG' ? '#dbeafe' : '#dcfce7', color: s.action === 'BLOCK' ? '#991b1b' : s.action === 'REVIEW' ? '#92400e' : s.action === 'FLAG' ? '#1d4ed8' : '#166534' }}>{s.action}</span></td>
+                    <td style={{ padding: '8px 10px' }}>{s.factors.length > 0 ? s.factors.map((f: string) => <span key={f} style={{ padding: '1px 4px', borderRadius: 4, fontSize: 9, fontWeight: 600, background: '#f3f4f6', color: '#374151', marginRight: 4 }}>{f}</span>) : <span style={{ fontSize: 11, color: '#9ca3af' }}>none</span>}</td>
+                  </tr>
+                ))}</tbody>
+              </table>
+            </div>
+            <div>
+              <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 12 }}>Risk Factors</div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12 }}>
+                {mcmcQuery.data.riskFactors.map((f: any) => (
+                  <div key={f.factor} style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 8, padding: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: 600 }}>{f.factor}</div>
+                      <div style={{ fontSize: 11, color: '#6b7280' }}>{f.description}</div>
+                    </div>
+                    <div style={{ textAlign: 'right' }}>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: '#7c3aed' }}>{f.weight}x</div>
+                      <div style={{ fontSize: 10, color: '#6b7280' }}>{f.triggerCount.toLocaleString()} triggers</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         )}
