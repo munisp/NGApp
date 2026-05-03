@@ -26,8 +26,8 @@ export default function TradePayments() {
   const escrows = escrowsQuery.data?.escrows ?? [];
   const duties = dutiesQuery.data?.duties ?? [];
 
-  const fmt = (n: number) => n >= 1e9 ? `$${(n / 1e9).toFixed(1)}B` : n >= 1e6 ? `$${(n / 1e6).toFixed(1)}M` : `$${n.toLocaleString()}`;
-  const fmtNGN = (n: number) => n >= 1e9 ? `₦${(n / 1e9).toFixed(1)}B` : n >= 1e6 ? `₦${(n / 1e6).toFixed(1)}M` : `₦${n.toLocaleString()}`;
+  const fmt = (n: number | undefined | null) => { const v = n ?? 0; return v >= 1e9 ? `$${(v / 1e9).toFixed(1)}B` : v >= 1e6 ? `$${(v / 1e6).toFixed(1)}M` : `$${v.toLocaleString()}`; };
+  const fmtNGN = (n: number | undefined | null) => { const v = n ?? 0; return v >= 1e9 ? `₦${(v / 1e9).toFixed(1)}B` : v >= 1e6 ? `₦${(v / 1e6).toFixed(1)}M` : `₦${v.toLocaleString()}`; };
 
   const lcStatusColor = (s: string) => {
     const m: Record<string, { bg: string; fg: string }> = {
