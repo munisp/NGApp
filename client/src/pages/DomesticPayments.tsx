@@ -7,7 +7,8 @@ type Tab = 'dashboard' | 'payments' | 'bills' | 'standing_orders' | 'bulk'
   | 'merchants' | 'paydirect' | 'identity' | 'iso20022'
   | 'nqr' | 'emandate' | 'fraud' | 'onboarding'
   | 'nip_monitor' | 'reconciliation' | 'sla' | 'health' | 'compliance' | 'monitoring' | 'revenue' | 'corridors' | 'forecast' | 'circuit_breaker'
-  | 'prophet' | 'cocoindex' | 'kgqa' | 'falkordb' | 'ollama' | 'art' | 'gnn_neo4j' | 'mcmc';
+  | 'prophet' | 'cocoindex' | 'kgqa' | 'falkordb' | 'ollama' | 'art' | 'gnn_neo4j' | 'mcmc'
+  | 'saga' | 'hotpath' | 'cqrs' | 'sanctions' | 'cbn_reporting' | 'multiregion' | 'smart_routing' | 'hsm' | 'incidents' | 'capacity' | 'whitelabel' | 'api_versions';
 
 const moduleLinks = [
   { label: 'Outbound Remittance', href: '/', icon: Globe, color: '#3b82f6' },
@@ -66,6 +67,20 @@ export default function DomesticPayments() {
   const artQuery = trpc.domesticPayments.getARTResults.useQuery(undefined, { retry: false });
   const gnnQuery = trpc.domesticPayments.getGNNFraudNetworks.useQuery(undefined, { retry: false });
   const mcmcQuery = trpc.domesticPayments.getMCMCFraudScoring.useQuery(undefined, { retry: false });
+
+  // Core Enhancement Queries
+  const sagaQuery = trpc.domesticPayments.getSagaStatus.useQuery(undefined, { retry: false });
+  const hotpathQuery = trpc.domesticPayments.getHotPathMetrics.useQuery(undefined, { retry: false });
+  const cqrsQuery = trpc.domesticPayments.getCQRSMetrics.useQuery(undefined, { retry: false });
+  const sanctionsQuery = trpc.domesticPayments.getSanctionsScreening.useQuery(undefined, { retry: false });
+  const cbnQuery = trpc.domesticPayments.getCBNReporting.useQuery(undefined, { retry: false });
+  const multiregionQuery = trpc.domesticPayments.getMultiRegionStatus.useQuery(undefined, { retry: false });
+  const routingQuery = trpc.domesticPayments.getSmartRoutingStatus.useQuery(undefined, { retry: false });
+  const hsmQuery = trpc.domesticPayments.getHSMStatus.useQuery(undefined, { retry: false });
+  const incidentQuery = trpc.domesticPayments.getIncidentDashboard.useQuery(undefined, { retry: false });
+  const capacityQuery = trpc.domesticPayments.getCapacityPlanning.useQuery(undefined, { retry: false });
+  const whitelabelQuery = trpc.domesticPayments.getWhiteLabelTenants.useQuery(undefined, { retry: false });
+  const apiVersionQuery = trpc.domesticPayments.getAPIVersions.useQuery(undefined, { retry: false });
 
   // Ollama interactive query
   const [ollamaInput, setOllamaInput] = useState('');
@@ -182,6 +197,19 @@ export default function DomesticPayments() {
     { id: 'art', label: 'Model Security', icon: ShieldAlert, section: 'AI_ML' },
     { id: 'gnn_neo4j', label: 'Fraud Networks', icon: GitGraph, section: 'AI_ML' },
     { id: 'mcmc', label: 'Risk Scoring', icon: Dice1, section: 'AI_ML' },
+    // Core Switch Enhancements
+    { id: 'saga', label: 'Transaction Sagas', icon: RefreshCw, section: 'INFRA' },
+    { id: 'hotpath', label: 'Hot Path Optimization', icon: Zap, section: 'INFRA' },
+    { id: 'cqrs', label: 'Read/Write Separation', icon: Layers, section: 'INFRA' },
+    { id: 'sanctions', label: 'Sanctions Screening', icon: ShieldCheck, section: 'COMPLIANCE' },
+    { id: 'cbn_reporting', label: 'CBN Reporting', icon: FileSpreadsheet, section: 'COMPLIANCE' },
+    { id: 'incidents', label: 'Incident Response', icon: AlertTriangle, section: 'OPS' },
+    { id: 'capacity', label: 'Capacity Planning', icon: Activity, section: 'OPS' },
+    { id: 'multiregion', label: 'Multi-Region', icon: Globe, section: 'INFRA' },
+    { id: 'smart_routing', label: 'Smart Routing', icon: ArrowRightLeft, section: 'INFRA' },
+    { id: 'hsm', label: 'Key Management', icon: ShieldCheck, section: 'SECURITY' },
+    { id: 'whitelabel', label: 'White-Label Tenants', icon: Building2, section: 'PLATFORM' },
+    { id: 'api_versions', label: 'API Versions', icon: Code, section: 'PLATFORM' },
   ];
 
   const coreItems = navItems.filter(n => !n.section);
@@ -191,6 +219,9 @@ export default function DomesticPayments() {
   const complianceItems = navItems.filter(n => n.section === 'COMPLIANCE');
   const analyticsItems = navItems.filter(n => n.section === 'ANALYTICS');
   const aimlItems = navItems.filter(n => n.section === 'AI_ML');
+  const infraItems = navItems.filter(n => n.section === 'INFRA');
+  const securityItems = navItems.filter(n => n.section === 'SECURITY');
+  const platformItems = navItems.filter(n => n.section === 'PLATFORM');
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
@@ -254,6 +285,33 @@ export default function DomesticPayments() {
             <button key={item.id} onClick={() => setActiveTab(item.id)}
               style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 14px', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600, width: '100%', textAlign: 'left',
                 background: activeTab === item.id ? '#2563eb' : 'transparent', color: activeTab === item.id ? 'white' : '#374151' }}>
+              <item.icon size={14} />
+              {item.label}
+            </button>
+          ))}
+          <div style={{ fontSize: 10, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: 1, padding: '12px 14px 4px' }}>Infrastructure</div>
+          {infraItems.map(item => (
+            <button key={item.id} onClick={() => setActiveTab(item.id)}
+              style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 14px', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600, width: '100%', textAlign: 'left',
+                background: activeTab === item.id ? '#0d9488' : 'transparent', color: activeTab === item.id ? 'white' : '#374151' }}>
+              <item.icon size={14} />
+              {item.label}
+            </button>
+          ))}
+          <div style={{ fontSize: 10, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: 1, padding: '12px 14px 4px' }}>Security</div>
+          {securityItems.map(item => (
+            <button key={item.id} onClick={() => setActiveTab(item.id)}
+              style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 14px', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600, width: '100%', textAlign: 'left',
+                background: activeTab === item.id ? '#dc2626' : 'transparent', color: activeTab === item.id ? 'white' : '#374151' }}>
+              <item.icon size={14} />
+              {item.label}
+            </button>
+          ))}
+          <div style={{ fontSize: 10, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: 1, padding: '12px 14px 4px' }}>Platform</div>
+          {platformItems.map(item => (
+            <button key={item.id} onClick={() => setActiveTab(item.id)}
+              style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 14px', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600, width: '100%', textAlign: 'left',
+                background: activeTab === item.id ? '#7c3aed' : 'transparent', color: activeTab === item.id ? 'white' : '#374151' }}>
               <item.icon size={14} />
               {item.label}
             </button>
@@ -1997,6 +2055,367 @@ export default function DomesticPayments() {
                 ))}
               </div>
             </div>
+          </div>
+        )}
+
+        {/* ============== Saga Orchestration ============== */}
+        {activeTab === 'saga' && sagaQuery.data && (
+          <div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14, marginBottom: 24 }}>
+              {[
+                { label: 'Compensations', value: sagaQuery.data.compensations.total.toLocaleString(), color: '#f59e0b' },
+                { label: 'Last Hour', value: sagaQuery.data.compensations.lastHour.toString(), color: '#ef4444' },
+                { label: 'Compensation Rate', value: `${sagaQuery.data.compensations.successRate}%`, color: '#10b981' },
+              ].map(c => (
+                <div key={c.label} style={{ background: 'white', borderRadius: 12, padding: 16, border: '1px solid #e5e7eb' }}>
+                  <div style={{ fontSize: 12, color: '#6b7280' }}>{c.label}</div>
+                  <div style={{ fontSize: 22, fontWeight: 700, color: c.color }}>{c.value}</div>
+                </div>
+              ))}
+            </div>
+            <h3 style={{ fontSize: 16, fontWeight: 600, marginBottom: 12 }}>Saga Types</h3>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+              <thead><tr style={{ background: '#f9fafb', textAlign: 'left' }}><th style={{ padding: 10 }}>Type</th><th style={{ padding: 10 }}>Steps</th><th style={{ padding: 10 }}>Avg Duration</th><th style={{ padding: 10 }}>Success Rate</th><th style={{ padding: 10 }}>Active</th></tr></thead>
+              <tbody>{sagaQuery.data.sagaTypes.map((s: any) => (
+                <tr key={s.type} style={{ borderBottom: '1px solid #e5e7eb' }}>
+                  <td style={{ padding: 10, fontWeight: 600 }}>{s.name}</td>
+                  <td style={{ padding: 10 }}>{s.steps}</td>
+                  <td style={{ padding: 10 }}>{s.avgDurationMs < 1000 ? `${s.avgDurationMs}ms` : s.avgDurationMs < 60000 ? `${(s.avgDurationMs/1000).toFixed(1)}s` : `${(s.avgDurationMs/3600000).toFixed(1)}h`}</td>
+                  <td style={{ padding: 10 }}><span style={{ color: s.successRate >= 99 ? '#10b981' : '#f59e0b' }}>{s.successRate}%</span></td>
+                  <td style={{ padding: 10 }}>{s.activeSagas}</td>
+                </tr>
+              ))}</tbody>
+            </table>
+            <h3 style={{ fontSize: 16, fontWeight: 600, marginTop: 24, marginBottom: 12 }}>Recent Sagas</h3>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+              <thead><tr style={{ background: '#f9fafb', textAlign: 'left' }}><th style={{ padding: 10 }}>ID</th><th style={{ padding: 10 }}>Type</th><th style={{ padding: 10 }}>Status</th><th style={{ padding: 10 }}>Duration</th><th style={{ padding: 10 }}>Steps</th></tr></thead>
+              <tbody>{sagaQuery.data.recentSagas.map((s: any) => (
+                <tr key={s.id} style={{ borderBottom: '1px solid #e5e7eb' }}>
+                  <td style={{ padding: 10, fontFamily: 'monospace', fontSize: 11 }}>{s.id}</td>
+                  <td style={{ padding: 10 }}>{s.type}</td>
+                  <td style={{ padding: 10 }}>{statusBadge(s.status)}</td>
+                  <td style={{ padding: 10 }}>{s.duration}</td>
+                  <td style={{ padding: 10 }}>{s.steps}</td>
+                </tr>
+              ))}</tbody>
+            </table>
+          </div>
+        )}
+
+        {/* ============== Hot Path Optimization ============== */}
+        {activeTab === 'hotpath' && hotpathQuery.data && (
+          <div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14, marginBottom: 24 }}>
+              {[
+                { label: 'Total Requests', value: hotpathQuery.data.metrics.totalRequests.toLocaleString(), color: '#3b82f6' },
+                { label: 'Async Deferred', value: hotpathQuery.data.metrics.asyncDeferred.toLocaleString(), color: '#8b5cf6' },
+                { label: 'Avg Latency', value: `${(hotpathQuery.data.metrics.avgLatencyNs / 1_000_000).toFixed(0)}ms`, color: '#10b981' },
+              ].map(c => (
+                <div key={c.label} style={{ background: 'white', borderRadius: 12, padding: 16, border: '1px solid #e5e7eb' }}>
+                  <div style={{ fontSize: 12, color: '#6b7280' }}>{c.label}</div>
+                  <div style={{ fontSize: 22, fontWeight: 700, color: c.color }}>{c.value}</div>
+                </div>
+              ))}
+            </div>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+              <thead><tr style={{ background: '#f9fafb', textAlign: 'left' }}><th style={{ padding: 10 }}>Payment Type</th><th style={{ padding: 10 }}>Fraud</th><th style={{ padding: 10 }}>Sanctions</th><th style={{ padding: 10 }}>Audit</th><th style={{ padding: 10 }}>Kafka</th><th style={{ padding: 10 }}>Target</th></tr></thead>
+              <tbody>{hotpathQuery.data.configs.map((c: any) => (
+                <tr key={c.paymentType} style={{ borderBottom: '1px solid #e5e7eb' }}>
+                  <td style={{ padding: 10, fontWeight: 600 }}>{c.paymentType}</td>
+                  <td style={{ padding: 10 }}><span style={{ color: c.fraudScoring === 'SYNC' ? '#ef4444' : '#10b981', fontWeight: 600 }}>{c.fraudScoring}</span></td>
+                  <td style={{ padding: 10 }}><span style={{ color: c.sanctions === 'SYNC' ? '#ef4444' : '#10b981', fontWeight: 600 }}>{c.sanctions}</span></td>
+                  <td style={{ padding: 10 }}><span style={{ color: c.auditLog === 'SYNC' ? '#ef4444' : '#10b981', fontWeight: 600 }}>{c.auditLog}</span></td>
+                  <td style={{ padding: 10 }}><span style={{ fontWeight: 600 }}>{c.kafka}</span></td>
+                  <td style={{ padding: 10, fontFamily: 'monospace', fontSize: 11 }}>{c.targetLatency}</td>
+                </tr>
+              ))}</tbody>
+            </table>
+          </div>
+        )}
+
+        {/* ============== CQRS Metrics ============== */}
+        {activeTab === 'cqrs' && cqrsQuery.data && (
+          <div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 14, marginBottom: 24 }}>
+              <div style={{ background: 'white', borderRadius: 12, padding: 16, border: '1px solid #e5e7eb' }}>
+                <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 8 }}>Write Store ({cqrsQuery.data.writeStore.engine})</div>
+                <div style={{ fontSize: 11, color: '#6b7280' }}>Commands: {cqrsQuery.data.writeStore.commandsProcessed.toLocaleString()}</div>
+                <div style={{ fontSize: 11, color: '#6b7280' }}>Avg Write Latency: {cqrsQuery.data.writeStore.avgWriteLatencyMs}ms</div>
+              </div>
+              <div style={{ background: 'white', borderRadius: 12, padding: 16, border: '1px solid #e5e7eb' }}>
+                <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 8 }}>Read Store ({cqrsQuery.data.readStore.engine})</div>
+                <div style={{ fontSize: 11, color: '#6b7280' }}>Queries: {cqrsQuery.data.readStore.queriesProcessed.toLocaleString()}</div>
+                <div style={{ fontSize: 11, color: '#6b7280' }}>Cache Hit Rate: {cqrsQuery.data.readStore.hitRate}%</div>
+              </div>
+            </div>
+            <h3 style={{ fontSize: 16, fontWeight: 600, marginBottom: 12 }}>Materialized Views</h3>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+              <thead><tr style={{ background: '#f9fafb', textAlign: 'left' }}><th style={{ padding: 10 }}>View</th><th style={{ padding: 10 }}>Source</th><th style={{ padding: 10 }}>Refresh</th><th style={{ padding: 10 }}>Rows</th></tr></thead>
+              <tbody>{cqrsQuery.data.materializedViews.map((v: any) => (
+                <tr key={v.name} style={{ borderBottom: '1px solid #e5e7eb' }}>
+                  <td style={{ padding: 10, fontFamily: 'monospace', fontSize: 11 }}>{v.name}</td>
+                  <td style={{ padding: 10 }}>{v.source}</td>
+                  <td style={{ padding: 10 }}>{v.interval}</td>
+                  <td style={{ padding: 10 }}>{v.rowCount.toLocaleString()}</td>
+                </tr>
+              ))}</tbody>
+            </table>
+          </div>
+        )}
+
+        {/* ============== Sanctions Screening ============== */}
+        {activeTab === 'sanctions' && sanctionsQuery.data && (
+          <div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14, marginBottom: 24 }}>
+              {[
+                { label: 'Total Screenings', value: sanctionsQuery.data.stats.totalScreenings.toLocaleString(), color: '#3b82f6' },
+                { label: 'Hits', value: sanctionsQuery.data.stats.hits.toString(), color: '#ef4444' },
+                { label: 'Potential Matches', value: sanctionsQuery.data.stats.potentialMatches.toString(), color: '#f59e0b' },
+                { label: 'Avg Screening', value: `${sanctionsQuery.data.stats.avgScreeningUs}μs`, color: '#10b981' },
+              ].map(c => (
+                <div key={c.label} style={{ background: 'white', borderRadius: 12, padding: 16, border: '1px solid #e5e7eb' }}>
+                  <div style={{ fontSize: 12, color: '#6b7280' }}>{c.label}</div>
+                  <div style={{ fontSize: 22, fontWeight: 700, color: c.color }}>{c.value}</div>
+                </div>
+              ))}
+            </div>
+            <h3 style={{ fontSize: 16, fontWeight: 600, marginBottom: 12 }}>Sanctions Lists</h3>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+              <thead><tr style={{ background: '#f9fafb', textAlign: 'left' }}><th style={{ padding: 10 }}>List</th><th style={{ padding: 10 }}>Entities</th><th style={{ padding: 10 }}>Last Updated</th><th style={{ padding: 10 }}>Status</th></tr></thead>
+              <tbody>{sanctionsQuery.data.lists.map((l: any) => (
+                <tr key={l.name} style={{ borderBottom: '1px solid #e5e7eb' }}>
+                  <td style={{ padding: 10, fontWeight: 600 }}>{l.name}</td>
+                  <td style={{ padding: 10 }}>{l.entities.toLocaleString()}</td>
+                  <td style={{ padding: 10 }}>{l.lastUpdated}</td>
+                  <td style={{ padding: 10 }}>{statusBadge(l.status)}</td>
+                </tr>
+              ))}</tbody>
+            </table>
+          </div>
+        )}
+
+        {/* ============== CBN Reporting ============== */}
+        {activeTab === 'cbn_reporting' && cbnQuery.data && (
+          <div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14, marginBottom: 24 }}>
+              {[
+                { label: 'Compliance Score', value: `${cbnQuery.data.compliance.score}%`, color: '#10b981' },
+                { label: 'Overdue Reports', value: cbnQuery.data.compliance.overdueReports.toString(), color: '#ef4444' },
+                { label: 'STR Filed', value: cbnQuery.data.strFilings.totalFiled.toString(), color: '#f59e0b' },
+              ].map(c => (
+                <div key={c.label} style={{ background: 'white', borderRadius: 12, padding: 16, border: '1px solid #e5e7eb' }}>
+                  <div style={{ fontSize: 12, color: '#6b7280' }}>{c.label}</div>
+                  <div style={{ fontSize: 22, fontWeight: 700, color: c.color }}>{c.value}</div>
+                </div>
+              ))}
+            </div>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+              <thead><tr style={{ background: '#f9fafb', textAlign: 'left' }}><th style={{ padding: 10 }}>Report</th><th style={{ padding: 10 }}>Regulator</th><th style={{ padding: 10 }}>Frequency</th><th style={{ padding: 10 }}>Next Due</th><th style={{ padding: 10 }}>Status</th></tr></thead>
+              <tbody>{cbnQuery.data.reportSchedule.map((r: any) => (
+                <tr key={r.type} style={{ borderBottom: '1px solid #e5e7eb' }}>
+                  <td style={{ padding: 10, fontWeight: 600 }}>{r.name}</td>
+                  <td style={{ padding: 10 }}>{r.regulator}</td>
+                  <td style={{ padding: 10 }}>{r.frequency}</td>
+                  <td style={{ padding: 10 }}>{r.nextDue}</td>
+                  <td style={{ padding: 10 }}><span style={{ padding: '2px 8px', borderRadius: 9999, fontSize: 11, fontWeight: 600, background: '#dcfce7', color: '#166534' }}>{r.status}</span></td>
+                </tr>
+              ))}</tbody>
+            </table>
+          </div>
+        )}
+
+        {/* ============== Multi-Region ============== */}
+        {activeTab === 'multiregion' && multiregionQuery.data && (
+          <div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14, marginBottom: 24 }}>
+              {multiregionQuery.data.regions.map((r: any) => (
+                <div key={r.id} style={{ background: 'white', borderRadius: 12, padding: 16, border: `2px solid ${r.status === 'ACTIVE' ? '#10b981' : '#e5e7eb'}` }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                    <div style={{ fontWeight: 700 }}>{r.name}</div>
+                    {statusBadge(r.status)}
+                  </div>
+                  <div style={{ fontSize: 12, color: '#6b7280' }}>{r.location}</div>
+                  <div style={{ fontSize: 12, color: '#6b7280' }}>Health: {r.healthScore}% | Latency: {r.latencyMs}ms</div>
+                  <div style={{ fontSize: 12, color: '#6b7280' }}>Services: {r.healthyServices}/{r.services}</div>
+                </div>
+              ))}
+            </div>
+            <h3 style={{ fontSize: 16, fontWeight: 600, marginBottom: 12 }}>Data Residency</h3>
+            {multiregionQuery.data.dataResidency.map((d: any) => (
+              <div key={d.region} style={{ padding: 12, marginBottom: 8, background: '#f9fafb', borderRadius: 8, fontSize: 13 }}>
+                <span style={{ fontWeight: 600 }}>{d.region}</span> — {d.regulation} | Data: {d.dataTypes.join(', ')} | Regions: {d.allowedRegions.join(', ')}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* ============== Smart Routing ============== */}
+        {activeTab === 'smart_routing' && routingQuery.data && (
+          <div>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, marginBottom: 24 }}>
+              <thead><tr style={{ background: '#f9fafb', textAlign: 'left' }}><th style={{ padding: 10 }}>Rail</th><th style={{ padding: 10 }}>TPS</th><th style={{ padding: 10 }}>Max TPS</th><th style={{ padding: 10 }}>Latency</th><th style={{ padding: 10 }}>Success</th><th style={{ padding: 10 }}>Cost</th></tr></thead>
+              <tbody>{routingQuery.data.rails.map((r: any) => (
+                <tr key={r.rail} style={{ borderBottom: '1px solid #e5e7eb' }}>
+                  <td style={{ padding: 10, fontWeight: 600 }}>{r.rail}</td>
+                  <td style={{ padding: 10 }}>{r.currentTPS.toLocaleString()}</td>
+                  <td style={{ padding: 10 }}>{r.maxTPS.toLocaleString()}</td>
+                  <td style={{ padding: 10 }}>{r.avgLatencyMs < 1000 ? `${r.avgLatencyMs}ms` : r.avgLatencyMs < 60000 ? `${(r.avgLatencyMs/1000).toFixed(0)}s` : `${(r.avgLatencyMs/3600000).toFixed(1)}h`}</td>
+                  <td style={{ padding: 10, color: r.successRate >= 99 ? '#10b981' : '#f59e0b' }}>{r.successRate}%</td>
+                  <td style={{ padding: 10 }}>{r.costPerTxn}</td>
+                </tr>
+              ))}</tbody>
+            </table>
+            <h3 style={{ fontSize: 16, fontWeight: 600, marginBottom: 12 }}>Recent Routing Decisions</h3>
+            {routingQuery.data.recentDecisions.map((d: any, i: number) => (
+              <div key={i} style={{ padding: 12, marginBottom: 8, background: '#f9fafb', borderRadius: 8, fontSize: 13 }}>
+                <span style={{ fontWeight: 600 }}>{d.amount}</span> ({d.urgency}) → <span style={{ color: '#2563eb', fontWeight: 600 }}>{d.selectedRail}</span> (score: {d.score}) — {d.reason}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* ============== HSM / Key Management ============== */}
+        {activeTab === 'hsm' && hsmQuery.data && (
+          <div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14, marginBottom: 24 }}>
+              {[
+                { label: 'Total Keys', value: hsmQuery.data.totalKeys, color: '#3b82f6' },
+                { label: 'Encryptions', value: `${(hsmQuery.data.stats.encryptions / 1e6).toFixed(0)}M`, color: '#10b981' },
+                { label: 'Signatures', value: `${(hsmQuery.data.stats.signatures / 1e6).toFixed(1)}M`, color: '#8b5cf6' },
+                { label: 'Rotations', value: hsmQuery.data.stats.rotations, color: '#f59e0b' },
+              ].map(c => (
+                <div key={c.label} style={{ background: 'white', borderRadius: 12, padding: 16, border: '1px solid #e5e7eb' }}>
+                  <div style={{ fontSize: 12, color: '#6b7280' }}>{c.label}</div>
+                  <div style={{ fontSize: 22, fontWeight: 700, color: c.color }}>{c.value}</div>
+                </div>
+              ))}
+            </div>
+            <h3 style={{ fontSize: 16, fontWeight: 600, marginBottom: 12 }}>Encryption at Rest</h3>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, marginBottom: 24 }}>
+              <thead><tr style={{ background: '#f9fafb', textAlign: 'left' }}><th style={{ padding: 10 }}>Component</th><th style={{ padding: 10 }}>Algorithm</th><th style={{ padding: 10 }}>Key Source</th><th style={{ padding: 10 }}>Rotation</th><th style={{ padding: 10 }}>Status</th></tr></thead>
+              <tbody>{hsmQuery.data.encryptionAtRest.map((e: any) => (
+                <tr key={e.component} style={{ borderBottom: '1px solid #e5e7eb' }}>
+                  <td style={{ padding: 10, fontWeight: 600 }}>{e.component}</td>
+                  <td style={{ padding: 10, fontFamily: 'monospace', fontSize: 11 }}>{e.algorithm}</td>
+                  <td style={{ padding: 10 }}>{e.keySource}</td>
+                  <td style={{ padding: 10 }}>{e.rotationDays}d</td>
+                  <td style={{ padding: 10 }}><span style={{ padding: '2px 8px', borderRadius: 9999, fontSize: 11, fontWeight: 600, background: '#dcfce7', color: '#166534' }}>{e.status}</span></td>
+                </tr>
+              ))}</tbody>
+            </table>
+          </div>
+        )}
+
+        {/* ============== Incident Response ============== */}
+        {activeTab === 'incidents' && incidentQuery.data && (
+          <div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14, marginBottom: 24 }}>
+              {[
+                { label: 'Active Incidents', value: incidentQuery.data.activeIncidents, color: incidentQuery.data.activeIncidents > 0 ? '#ef4444' : '#10b981' },
+                { label: 'P1 Active', value: incidentQuery.data.p1Active, color: incidentQuery.data.p1Active > 0 ? '#ef4444' : '#10b981' },
+                { label: 'Resolved (24h)', value: incidentQuery.data.resolved24h, color: '#3b82f6' },
+                { label: 'Avg MTTR', value: `${incidentQuery.data.avgMttrMinutes}min`, color: '#8b5cf6' },
+              ].map(c => (
+                <div key={c.label} style={{ background: 'white', borderRadius: 12, padding: 16, border: '1px solid #e5e7eb' }}>
+                  <div style={{ fontSize: 12, color: '#6b7280' }}>{c.label}</div>
+                  <div style={{ fontSize: 22, fontWeight: 700, color: c.color }}>{c.value}</div>
+                </div>
+              ))}
+            </div>
+            <h3 style={{ fontSize: 16, fontWeight: 600, marginBottom: 12 }}>Alert Rules ({incidentQuery.data.alertRules.length})</h3>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+              <thead><tr style={{ background: '#f9fafb', textAlign: 'left' }}><th style={{ padding: 10 }}>Rule</th><th style={{ padding: 10 }}>Metric</th><th style={{ padding: 10 }}>Threshold</th><th style={{ padding: 10 }}>Severity</th><th style={{ padding: 10 }}>Playbook</th></tr></thead>
+              <tbody>{incidentQuery.data.alertRules.map((r: any) => (
+                <tr key={r.name} style={{ borderBottom: '1px solid #e5e7eb' }}>
+                  <td style={{ padding: 10, fontWeight: 600 }}>{r.name}</td>
+                  <td style={{ padding: 10, fontFamily: 'monospace', fontSize: 11 }}>{r.metric}</td>
+                  <td style={{ padding: 10 }}>{r.threshold}</td>
+                  <td style={{ padding: 10 }}><span style={{ padding: '2px 8px', borderRadius: 9999, fontSize: 11, fontWeight: 600, background: r.severity === 'P1' ? '#fef2f2' : r.severity === 'P2' ? '#fef3c7' : '#f3f4f6', color: r.severity === 'P1' ? '#991b1b' : r.severity === 'P2' ? '#92400e' : '#374151' }}>{r.severity}</span></td>
+                  <td style={{ padding: 10, fontFamily: 'monospace', fontSize: 11 }}>{r.playbook}</td>
+                </tr>
+              ))}</tbody>
+            </table>
+          </div>
+        )}
+
+        {/* ============== Capacity Planning ============== */}
+        {activeTab === 'capacity' && capacityQuery.data && (
+          <div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14, marginBottom: 24 }}>
+              {capacityQuery.data.profiles.map((p: any) => (
+                <div key={p.name} style={{ background: 'white', borderRadius: 12, padding: 16, border: `2px solid ${p.name === capacityQuery.data.currentProfile.name ? '#2563eb' : '#e5e7eb'}` }}>
+                  <div style={{ fontWeight: 700, fontSize: 14 }}>{p.name}</div>
+                  <div style={{ fontSize: 12, color: '#6b7280' }}>{p.description}</div>
+                  <div style={{ fontSize: 18, fontWeight: 700, color: '#3b82f6', marginTop: 8 }}>{p.maxTPS.toLocaleString()} TPS</div>
+                  <div style={{ fontSize: 11, color: '#6b7280' }}>{p.totalPods} pods</div>
+                </div>
+              ))}
+            </div>
+            <h3 style={{ fontSize: 16, fontWeight: 600, marginBottom: 12 }}>7-Day Forecast</h3>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+              <thead><tr style={{ background: '#f9fafb', textAlign: 'left' }}><th style={{ padding: 10 }}>Date</th><th style={{ padding: 10 }}>Predicted TPS</th><th style={{ padding: 10 }}>Volume</th><th style={{ padding: 10 }}>Confidence</th><th style={{ padding: 10 }}>Event</th><th style={{ padding: 10 }}>Actions</th></tr></thead>
+              <tbody>{capacityQuery.data.forecast.map((f: any) => (
+                <tr key={f.date} style={{ borderBottom: '1px solid #e5e7eb', background: f.event === 'Salary Day' ? '#fef3c7' : 'transparent' }}>
+                  <td style={{ padding: 10 }}>{f.date}</td>
+                  <td style={{ padding: 10, fontWeight: 600 }}>{f.predictedTPS.toLocaleString()}</td>
+                  <td style={{ padding: 10 }}>{(f.volume / 1e6).toFixed(0)}M</td>
+                  <td style={{ padding: 10 }}>{f.confidence}%</td>
+                  <td style={{ padding: 10 }}>{f.event ? <span style={{ padding: '2px 8px', borderRadius: 9999, fontSize: 11, fontWeight: 600, background: '#fef3c7', color: '#92400e' }}>{f.event}</span> : '—'}</td>
+                  <td style={{ padding: 10 }}>{f.actions.join(', ') || '—'}</td>
+                </tr>
+              ))}</tbody>
+            </table>
+          </div>
+        )}
+
+        {/* ============== White-Label Tenants ============== */}
+        {activeTab === 'whitelabel' && whitelabelQuery.data && (
+          <div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14, marginBottom: 24 }}>
+              {whitelabelQuery.data.tenants.map((t: any) => (
+                <div key={t.id} style={{ background: 'white', borderRadius: 12, padding: 16, border: '1px solid #e5e7eb' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                    <div style={{ width: 16, height: 16, borderRadius: 4, background: t.primaryColor }} />
+                    <div style={{ fontWeight: 700 }}>{t.name}</div>
+                  </div>
+                  <div style={{ fontSize: 12, color: '#6b7280' }}>Domain: {t.domain}</div>
+                  <div style={{ fontSize: 12, color: '#6b7280' }}>Tier: {t.tier} | Modules: {t.modules}</div>
+                  <div style={{ marginTop: 8 }}>{t.active ? statusBadge('ACTIVE') : statusBadge('SUSPENDED')}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ============== API Versions ============== */}
+        {activeTab === 'api_versions' && apiVersionQuery.data && (
+          <div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14, marginBottom: 24 }}>
+              {[
+                { label: 'API Versions', value: apiVersionQuery.data.versions.length, color: '#3b82f6' },
+                { label: 'Total Routes', value: apiVersionQuery.data.totalRoutes, color: '#10b981' },
+                { label: 'Auth Methods', value: apiVersionQuery.data.authMethods.length, color: '#8b5cf6' },
+              ].map(c => (
+                <div key={c.label} style={{ background: 'white', borderRadius: 12, padding: 16, border: '1px solid #e5e7eb' }}>
+                  <div style={{ fontSize: 12, color: '#6b7280' }}>{c.label}</div>
+                  <div style={{ fontSize: 22, fontWeight: 700, color: c.color }}>{c.value}</div>
+                </div>
+              ))}
+            </div>
+            {apiVersionQuery.data.versions.map((v: any) => (
+              <div key={v.version} style={{ padding: 16, marginBottom: 12, background: 'white', borderRadius: 12, border: '1px solid #e5e7eb' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                  <span style={{ fontSize: 18, fontWeight: 700 }}>{v.version}</span>
+                  {statusBadge(v.status.toUpperCase())}
+                </div>
+                <div style={{ fontSize: 12, color: '#6b7280' }}>Released: {v.released} | Routes: {v.routes}</div>
+                <div style={{ marginTop: 8 }}>
+                  {v.changes.map((c: string, i: number) => (
+                    <span key={i} style={{ display: 'inline-block', padding: '2px 8px', borderRadius: 9999, fontSize: 11, background: '#f3f4f6', color: '#374151', marginRight: 6, marginBottom: 4 }}>{c}</span>
+                  ))}
+                </div>
+              </div>
+            ))}
           </div>
         )}
 

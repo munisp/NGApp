@@ -1847,4 +1847,187 @@ export const domesticPaymentsRouter = router({
     _source: 'SEED DATA — MCMC service not running',
     };
   }),
+
+  // === Core Payment Switch Enhancement Procedures ===
+
+  getSagaStatus: protectedProcedure.query(async () => ({
+    sagaTypes: [
+      { type: 'NIP_TRANSFER', name: 'NIP Instant Payment', steps: 7, avgDurationMs: 85, successRate: 99.2, activeSagas: 23 },
+      { type: 'NEFT_CLEARING', name: 'NEFT Batch Clearing', steps: 7, avgDurationMs: 3_600_000, successRate: 99.8, activeSagas: 3 },
+      { type: 'OUTBOUND_REMITTANCE', name: 'Outbound Remittance', steps: 8, avgDurationMs: 12_000, successRate: 98.5, activeSagas: 7 },
+      { type: 'DIRECT_DEBIT_EXECUTION', name: 'NDD Direct Debit', steps: 5, avgDurationMs: 4_500, successRate: 99.1, activeSagas: 15 },
+      { type: 'DISPUTE_RESOLUTION', name: 'Dispute Resolution', steps: 5, avgDurationMs: 86_400_000, successRate: 96.2, activeSagas: 34 },
+    ],
+    compensations: { total: 1_245, lastHour: 3, successRate: 98.8 },
+    recentSagas: [
+      { id: 'saga-001', type: 'NIP_TRANSFER', status: 'COMPLETED', startedAt: '2026-05-02T14:30:00Z', duration: '78ms', steps: '7/7' },
+      { id: 'saga-002', type: 'NEFT_CLEARING', status: 'RUNNING', startedAt: '2026-05-02T14:00:00Z', duration: '30m', steps: '5/7' },
+      { id: 'saga-003', type: 'OUTBOUND_REMITTANCE', status: 'COMPENSATING', startedAt: '2026-05-02T14:25:00Z', duration: '5.2s', steps: '6/8 (compensating)' },
+    ],
+  })),
+
+  getHotPathMetrics: protectedProcedure.query(async () => ({
+    configs: [
+      { paymentType: 'NIP', fraudScoring: 'SYNC', sanctions: 'SYNC', auditLog: 'ASYNC', opensearch: 'ASYNC', kafka: 'SYNC', lakehouse: 'BATCH', notification: 'ASYNC', targetLatency: '<100ms P99' },
+      { paymentType: 'NIP_LOW_VALUE', fraudScoring: 'ASYNC', sanctions: 'SYNC', auditLog: 'ASYNC', opensearch: 'ASYNC', kafka: 'SYNC', lakehouse: 'BATCH', notification: 'ASYNC', targetLatency: '<50ms P99' },
+      { paymentType: 'NEFT', fraudScoring: 'SYNC', sanctions: 'SYNC', auditLog: 'BATCH', opensearch: 'BATCH', kafka: 'SYNC', lakehouse: 'BATCH', notification: 'BATCH', targetLatency: '<5s P99' },
+      { paymentType: 'REVERSAL', fraudScoring: 'ASYNC', sanctions: 'ASYNC', auditLog: 'SYNC', opensearch: 'ASYNC', kafka: 'SYNC', lakehouse: 'BATCH', notification: 'SYNC', targetLatency: '<200ms P99' },
+    ],
+    metrics: { totalRequests: 4_523_000, syncProcessed: 9_046_000, asyncDeferred: 13_569_000, batchDeferred: 4_523_000, avgLatencyNs: 78_000_000, skippedOps: 12 },
+  })),
+
+  getCQRSMetrics: protectedProcedure.query(async () => ({
+    writeStore: { engine: 'TigerBeetle + Kafka', commandsProcessed: 4_523_000, avgWriteLatencyMs: 1.8, queueDepth: 120 },
+    readStore: { engine: 'OpenSearch + Redis + Materialized Views', queriesProcessed: 28_500_000, cacheHits: 22_800_000, cacheMisses: 5_700_000, hitRate: 80.0, avgReadLatencyMs: 0.4 },
+    materializedViews: [
+      { name: 'mv_daily_volumes', source: 'transactions', refreshPolicy: 'periodic', interval: '5min', rowCount: 365_000, lastRefreshed: '2026-05-02T14:50:00Z' },
+      { name: 'mv_corridor_stats', source: 'transactions', refreshPolicy: 'periodic', interval: '15min', rowCount: 45_000, lastRefreshed: '2026-05-02T14:45:00Z' },
+      { name: 'mv_bank_settlement', source: 'settlement_entries', refreshPolicy: 'immediate', interval: 'realtime', rowCount: 12_000, lastRefreshed: '2026-05-02T14:55:00Z' },
+      { name: 'mv_fraud_summary', source: 'fraud_scores', refreshPolicy: 'periodic', interval: '1min', rowCount: 890_000, lastRefreshed: '2026-05-02T14:54:00Z' },
+    ],
+    sharding: { strategy: 'time_based', hotRetention: '90 days', warmRetention: '1 year', coldStorage: 'Lakehouse (Apache Iceberg)' },
+  })),
+
+  getSanctionsScreening: protectedProcedure.query(async () => ({
+    engine: 'Rust — Sanctions Engine',
+    lists: [
+      { name: 'OFAC SDN', entities: 12_450, lastUpdated: '2026-05-01', status: 'ACTIVE' },
+      { name: 'UN Security Council', entities: 3_200, lastUpdated: '2026-04-28', status: 'ACTIVE' },
+      { name: 'EU Sanctions', entities: 8_900, lastUpdated: '2026-04-30', status: 'ACTIVE' },
+      { name: 'Nigeria EFCC', entities: 1_850, lastUpdated: '2026-05-02', status: 'ACTIVE' },
+      { name: 'PEP Database', entities: 45_000, lastUpdated: '2026-04-25', status: 'ACTIVE' },
+      { name: 'Interpol Red Notice', entities: 7_200, lastUpdated: '2026-04-27', status: 'ACTIVE' },
+    ],
+    stats: { totalScreenings: 4_523_000, clearResults: 4_522_984, hits: 4, potentialMatches: 12, avgScreeningUs: 45, cacheHitRate: 72.3 },
+    recentHits: [
+      { id: 'SCR-001', transactionId: 'NIP-89234', list: 'OFAC SDN', matchScore: 0.97, entity: 'REDACTED', action: 'BLOCKED', timestamp: '2026-05-02T12:30:00Z' },
+      { id: 'SCR-002', transactionId: 'REM-45678', list: 'PEP Database', matchScore: 0.82, entity: 'REDACTED', action: 'FLAGGED', timestamp: '2026-05-02T10:15:00Z' },
+    ],
+  })),
+
+  getCBNReporting: protectedProcedure.query(async () => ({
+    reportSchedule: [
+      { type: 'bop_monthly', name: 'Balance of Payments Return', regulator: 'CBN', frequency: 'Monthly', nextDue: '2026-05-15', status: 'ON_TRACK', format: 'CBN-BoP-001' },
+      { type: 'nip_daily', name: 'NIP Daily Settlement', regulator: 'CBN', frequency: 'Daily', nextDue: '2026-05-03', status: 'ON_TRACK', format: 'NIBSS-NIP-DAILY' },
+      { type: 'quarterly_risk', name: 'Quarterly Risk Assessment', regulator: 'CBN', frequency: 'Quarterly', nextDue: '2026-06-30', status: 'ON_TRACK', format: 'CBN-RISK-QTR' },
+      { type: 'nfiu_str', name: 'Suspicious Transaction Report', regulator: 'NFIU', frequency: 'Ad-hoc', nextDue: 'As needed', status: 'ACTIVE', format: 'NFIU-STR-001' },
+      { type: 'aml_compliance', name: 'AML Compliance Report', regulator: 'CBN', frequency: 'Quarterly', nextDue: '2026-06-30', status: 'ON_TRACK', format: 'CBN-AML-QTR' },
+      { type: 'fx_transaction', name: 'FX Transaction Report', regulator: 'CBN', frequency: 'Weekly', nextDue: '2026-05-05', status: 'ON_TRACK', format: 'CBN-FX-WEEKLY' },
+      { type: 'capital_adequacy', name: 'Capital Adequacy Return', regulator: 'CBN', frequency: 'Monthly', nextDue: '2026-05-20', status: 'ON_TRACK', format: 'CBN-CAR-001' },
+    ],
+    compliance: { score: 98.5, overdueReports: 0, lastCBNAudit: '2026-03-15', nextCBNAudit: '2026-09-15', openFindings: 0 },
+    strFilings: { totalFiled: 34, pendingReview: 3, submittedToNFIU: 31, autoFiledPct: 91.2 },
+  })),
+
+  getMultiRegionStatus: protectedProcedure.query(async () => ({
+    activeRegion: 'lagos-primary',
+    regions: [
+      { id: 'lagos-primary', name: 'Lagos Primary', location: 'Lagos, Nigeria', status: 'ACTIVE', healthScore: 99.8, latencyMs: 2, services: 6, healthyServices: 6 },
+      { id: 'london-secondary', name: 'London Secondary', location: 'London, UK', status: 'STANDBY', healthScore: 99.5, latencyMs: 85, services: 6, healthyServices: 6 },
+      { id: 'accra-dr', name: 'Accra DR', location: 'Accra, Ghana', status: 'STANDBY', healthScore: 99.0, latencyMs: 25, services: 4, healthyServices: 4 },
+    ],
+    failoverConfig: { autoFailover: true, healthCheckInterval: '10s', failoverThreshold: 3, drainTimeout: '30s' },
+    lastFailover: null,
+    dataResidency: [
+      { region: 'Nigeria', regulation: 'CBN Data Localization', dataTypes: ['transactions', 'customer PII'], allowedRegions: ['lagos-primary'] },
+      { region: 'UK/EU', regulation: 'GDPR', dataTypes: ['UK customer data'], allowedRegions: ['london-secondary'] },
+    ],
+  })),
+
+  getSmartRoutingStatus: protectedProcedure.query(async () => ({
+    rails: [
+      { rail: 'NIP', available: true, currentTPS: 4_523, maxTPS: 15_000, avgLatencyMs: 1.8, successRate: 99.2, costPerTxn: '₦10-50' },
+      { rail: 'NEFT', available: true, currentTPS: 250, maxTPS: 5_000, avgLatencyMs: 3_600_000, successRate: 99.8, costPerTxn: '₦5-30' },
+      { rail: 'RTGS', available: true, currentTPS: 50, maxTPS: 1_000, avgLatencyMs: 60_000, successRate: 99.95, costPerTxn: '₦500-1000' },
+      { rail: 'MOJALOOP', available: true, currentTPS: 100, maxTPS: 3_000, avgLatencyMs: 500, successRate: 98.5, costPerTxn: '₦15-100' },
+      { rail: 'SWIFT', available: true, currentTPS: 20, maxTPS: 500, avgLatencyMs: 7_200_000, successRate: 99.9, costPerTxn: '₦2000-10000' },
+    ],
+    routingWeights: { cost: 0.25, speed: 0.30, reliability: 0.30, availability: 0.15 },
+    recentDecisions: [
+      { amount: '₦50,000', urgency: 'instant', selectedRail: 'NIP', score: 0.92, reason: 'Fastest + lowest cost for domestic instant' },
+      { amount: '₦25M', urgency: 'same_day', selectedRail: 'RTGS', score: 0.88, reason: 'High-value requires RTGS for settlement finality' },
+      { amount: '$5,000', urgency: 'instant', selectedRail: 'MOJALOOP', score: 0.85, reason: 'Cross-border via ILP protocol' },
+    ],
+  })),
+
+  getHSMStatus: protectedProcedure.query(async () => ({
+    totalKeys: 12,
+    hsmBacked: 12,
+    keys: [
+      { id: 'tigerbeetle-encryption', alias: 'TigerBeetle Ledger Encryption', type: 'AES-256-GCM', purpose: 'Data Encryption', rotationDays: 90, version: 3, status: 'ACTIVE' },
+      { id: 'postgres-tde', alias: 'PostgreSQL TDE Master Key', type: 'AES-256-CBC', purpose: 'Data Encryption', rotationDays: 365, version: 1, status: 'ACTIVE' },
+      { id: 'transaction-signing', alias: 'Transaction Signing Key', type: 'ECDSA-P384', purpose: 'Signing', rotationDays: 30, version: 8, status: 'ACTIVE' },
+      { id: 'card-tokenization', alias: 'Card PAN Tokenization', type: 'AES-256-GCM', purpose: 'Tokenization', rotationDays: 30, version: 8, status: 'ACTIVE' },
+      { id: 'pci-card-vault', alias: 'PCI DSS Card Vault', type: 'AES-256-GCM', purpose: 'Data Encryption', rotationDays: 30, version: 8, status: 'ACTIVE' },
+      { id: 'tls-root-ca', alias: 'TLS Root CA', type: 'RSA-4096', purpose: 'TLS Certificate', rotationDays: 365, version: 1, status: 'ACTIVE' },
+    ],
+    stats: { encryptions: 892_000_000, decryptions: 445_000_000, signatures: 4_523_000, rotations: 48 },
+    encryptionAtRest: [
+      { component: 'TigerBeetle', algorithm: 'AES-256-GCM', keySource: 'HSM', rotationDays: 90, status: 'ENCRYPTED' },
+      { component: 'PostgreSQL', algorithm: 'AES-256-CBC (TDE)', keySource: 'HSM', rotationDays: 365, status: 'ENCRYPTED' },
+      { component: 'Redis', algorithm: 'AES-256-GCM', keySource: 'HSM', rotationDays: 90, status: 'ENCRYPTED' },
+      { component: 'Kafka Topics', algorithm: 'AES-256-GCM', keySource: 'HSM', rotationDays: 180, status: 'ENCRYPTED' },
+      { component: 'OpenSearch', algorithm: 'AES-256-GCM', keySource: 'HSM', rotationDays: 180, status: 'ENCRYPTED' },
+      { component: 'Lakehouse (Iceberg)', algorithm: 'AES-256-GCM', keySource: 'HSM', rotationDays: 365, status: 'ENCRYPTED' },
+    ],
+  })),
+
+  getIncidentDashboard: protectedProcedure.query(async () => ({
+    activeIncidents: 0,
+    p1Active: 0,
+    p2Active: 0,
+    resolved24h: 3,
+    avgMttrMinutes: 8.5,
+    alertRules: [
+      { name: 'NIP Success Rate Drop', metric: 'nip_success_rate_pct', threshold: '<95%', duration: '5min', severity: 'P1', playbook: 'pb-nip-degradation' },
+      { name: 'NIP Latency Breach', metric: 'nip_p99_latency_ms', threshold: '>5000ms', duration: '2min', severity: 'P1', playbook: 'pb-nip-latency' },
+      { name: 'TigerBeetle Down', metric: 'tigerbeetle_up', threshold: '==0', duration: '30s', severity: 'P1', playbook: 'pb-tigerbeetle-failure' },
+      { name: 'Kafka Consumer Lag', metric: 'kafka_consumer_lag', threshold: '>100K', duration: '10min', severity: 'P2', playbook: 'pb-kafka-lag' },
+      { name: 'Fraud Service Down', metric: 'fraud_service_health', threshold: '==0', duration: '1min', severity: 'P2', playbook: 'pb-fraud-fallback' },
+      { name: 'High Error Rate', metric: 'http_error_rate_pct', threshold: '>5%', duration: '5min', severity: 'P2', playbook: 'pb-error-rate' },
+      { name: 'Redis Memory Warning', metric: 'redis_memory_used_pct', threshold: '>85%', duration: '10min', severity: 'P3', playbook: 'pb-redis-memory' },
+      { name: 'Certificate Expiry', metric: 'cert_days_to_expiry', threshold: '<30d', duration: '24h', severity: 'P3', playbook: 'pb-cert-renewal' },
+    ],
+    playbooks: 5,
+    recentResolved: [
+      { id: 'INC-A1B2C3', title: 'Redis Memory Warning', severity: 'P3', resolvedAt: '2026-05-02T10:30:00Z', mttr: 12.5, autoRemediated: true },
+      { id: 'INC-D4E5F6', title: 'Kafka Consumer Lag', severity: 'P2', resolvedAt: '2026-05-02T08:15:00Z', mttr: 5.2, autoRemediated: true },
+    ],
+  })),
+
+  getCapacityPlanning: protectedProcedure.query(async () => ({
+    currentProfile: { name: 'Baseline', maxTPS: 8_000, totalPods: 13, event: null },
+    profiles: [
+      { name: 'Baseline', description: 'Normal weekday', maxTPS: 8_000, totalPods: 13 },
+      { name: 'Salary Day', description: '25th-28th month end', maxTPS: 25_000, totalPods: 36 },
+      { name: 'Peak', description: 'Holiday surge', maxTPS: 40_000, totalPods: 48 },
+      { name: 'Low Traffic', description: 'Weekends/night', maxTPS: 3_000, totalPods: 7 },
+    ],
+    forecast: [
+      { date: '2026-05-03', predictedTPS: 4_500, volume: 388_800_000, confidence: 96.0, event: null, actions: [] },
+      { date: '2026-05-04', predictedTPS: 2_250, volume: 194_400_000, confidence: 96.0, event: 'Weekend', actions: ['scale_down'] },
+      { date: '2026-05-05', predictedTPS: 4_800, volume: 414_720_000, confidence: 95.5, event: null, actions: [] },
+      { date: '2026-05-25', predictedTPS: 13_500, volume: 1_166_400_000, confidence: 92.5, event: 'Salary Day', actions: ['scale_up'] },
+      { date: '2026-05-26', predictedTPS: 12_800, volume: 1_105_920_000, confidence: 92.5, event: 'Salary Day', actions: ['scale_up'] },
+    ],
+    nigerianEvents: ['Salary Day (25th-28th)', 'Eid al-Fitr', 'Eid al-Adha', 'Christmas', 'Independence Day', 'Election Day'],
+  })),
+
+  getWhiteLabelTenants: protectedProcedure.query(async () => ({
+    tenants: [
+      { id: 'platform-owner', name: 'NGPaySwitch (Platform)', domain: 'payswitch.ng', tier: 'ENTERPRISE', active: true, modules: 7, primaryColor: '#2563eb' },
+      { id: 'gtbank-whitelabel', name: 'GTBank Pay', domain: 'pay.gtbank.com', tier: 'ENTERPRISE', active: true, modules: 4, primaryColor: '#FF6600' },
+      { id: 'fintech-startup', name: 'PayQuick', domain: 'app.payquick.ng', tier: 'STARTUP', active: true, modules: 2, primaryColor: '#10B981' },
+    ],
+    dataIsolation: { strategies: ['schema-level', 'database-level', 'row-level'], default: 'schema-level' },
+  })),
+
+  getAPIVersions: protectedProcedure.query(async () => ({
+    versions: [
+      { version: 'v1', status: 'current', released: '2026-01-01', routes: 6, changes: ['Initial API', 'NIP/NEFT/NDD endpoints'] },
+      { version: 'v2', status: 'current', released: '2026-04-01', routes: 11, changes: ['ISO 20022', 'Multi-currency', 'Webhooks', 'Batch API'] },
+    ],
+    totalRoutes: 12,
+    authMethods: ['Bearer JWT (Keycloak)', 'API Key', 'mTLS'],
+  })),
 });

@@ -1,0 +1,18 @@
+[package]
+name = "nibss-identity"
+version = "1.0.0"
+edition = "2021"
+description = "High-performance NIBSS identity verification: BVN/NIN lookup, account name enquiry, TSQ, ISO 20022 message parsing"
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+dashmap = "5"
+parking_lot = "0.12"
+
+[dev-dependencies]
+criterion = "0.5"
+
+[[bench]]
+name = "identity_bench"
+harness = false
