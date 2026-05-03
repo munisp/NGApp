@@ -29,7 +29,7 @@ export default function GovernmentPayments() {
   const socials = socialQuery.data?.disbursements ?? [];
   const reports = reportsQuery.data?.reports ?? [];
 
-  const fmt = (n: number) => n >= 1e12 ? `₦${(n / 1e12).toFixed(1)}T` : n >= 1e9 ? `₦${(n / 1e9).toFixed(1)}B` : n >= 1e6 ? `₦${(n / 1e6).toFixed(1)}M` : `₦${n.toLocaleString()}`;
+  const fmt = (n: number | undefined | null) => { const v = n ?? 0; return v >= 1e12 ? `₦${(v / 1e12).toFixed(1)}T` : v >= 1e9 ? `₦${(v / 1e9).toFixed(1)}B` : v >= 1e6 ? `₦${(v / 1e6).toFixed(1)}M` : `₦${v.toLocaleString()}`; };
 
   const navItems: { id: Tab; label: string; icon: typeof LayoutDashboard }[] = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
