@@ -10,6 +10,7 @@ interface LayoutProps {
 }
 
 const pageTitles: Record<string, string> = {
+  hub: 'Dashboard',
   dashboard: 'NOC Operations Dashboard',
   journeys: 'User Journeys',
   'journey-analytics': 'Journey Analytics',
