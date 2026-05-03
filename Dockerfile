@@ -9,8 +9,8 @@ WORKDIR /app
 COPY package.json pnpm-lock.yaml ./
 COPY patches ./patches
 
-# Install pnpm and dependencies
-RUN npm install -g pnpm@latest
+# Install pnpm (exact version matching packageManager field) and dependencies
+RUN corepack enable && corepack prepare pnpm@10.4.1 --activate
 RUN pnpm install --frozen-lockfile
 
 # Copy all source
@@ -29,7 +29,7 @@ FROM node:22-alpine
 WORKDIR /app
 
 # Install pnpm and production dependencies only
-RUN npm install -g pnpm@latest
+RUN corepack enable && corepack prepare pnpm@10.4.1 --activate
 COPY package.json pnpm-lock.yaml ./
 COPY patches ./patches
 RUN pnpm install --frozen-lockfile --prod
