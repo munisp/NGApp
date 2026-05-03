@@ -1,8 +1,17 @@
 import { useState } from 'react';
 import { trpc } from '@/lib/trpc';
-import { ArrowDownLeft, Globe, Building2, Shield, AlertTriangle, CheckCircle, Clock, XCircle, ArrowLeft, BarChart3, TrendingUp, Activity } from 'lucide-react';
+import { ArrowDownLeft, Globe, Building2, Shield, AlertTriangle, CheckCircle, Clock, XCircle, ArrowLeft, BarChart3, TrendingUp, Activity, LayoutDashboard, ArrowRightLeft, Map, Landmark, CreditCard, Banknote, Ship, Code } from 'lucide-react';
 
 type Tab = 'dashboard' | 'transfers' | 'corridors' | 'banks';
+
+const moduleLinks = [
+  { label: 'Outbound Remittance', href: '/', icon: Globe, color: '#3b82f6' },
+  { label: 'Domestic Payments', href: '/domestic-payments', icon: Banknote, color: '#2563eb' },
+  { label: 'Trade Payments', href: '/trade-payments', icon: Ship, color: '#7c3aed' },
+  { label: 'Card Processing', href: '/card-processing', icon: CreditCard, color: '#dc2626' },
+  { label: 'Government Payments', href: '/government-payments', icon: Landmark, color: '#0369a1' },
+  { label: 'Open Banking', href: '/open-banking', icon: Code, color: '#0ea5e9' },
+];
 
 export default function InboundRemittance() {
   const [activeTab, setActiveTab] = useState<Tab>('dashboard');
@@ -43,46 +52,78 @@ export default function InboundRemittance() {
   const fmt = (n: number) => n >= 1e9 ? `₦${(n / 1e9).toFixed(1)}B` : n >= 1e6 ? `₦${(n / 1e6).toFixed(1)}M` : `₦${n.toLocaleString()}`;
   const fmtUSD = (n: number) => n >= 1e6 ? `$${(n / 1e6).toFixed(1)}M` : `$${n.toLocaleString()}`;
 
-  return (
-    <div style={{ padding: 24, maxWidth: 1400, margin: '0 auto', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
-        <ArrowDownLeft size={28} color="#059669" />
-        <h1 style={{ fontSize: 24, fontWeight: 700, margin: 0 }}>Inbound Remittance</h1>
-        <span style={{ fontSize: 13, color: '#6b7280', marginLeft: 8 }}>Receiving international transfers into Nigerian accounts</span>
-      </div>
+  const navItems: { id: Tab; label: string; icon: typeof LayoutDashboard }[] = [
+    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { id: 'transfers', label: 'Transfers', icon: ArrowRightLeft },
+    { id: 'corridors', label: 'Corridors', icon: Map },
+    { id: 'banks', label: 'Receiving Banks', icon: Building2 },
+  ];
 
-      {/* Summary Cards */}
-      {summary && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16, marginBottom: 24 }}>
-          {[
-            { label: 'Total Received', value: summary.totalReceived, icon: ArrowDownLeft, color: '#3b82f6' },
-            { label: 'Credited', value: summary.credited, icon: CheckCircle, color: '#10b981' },
-            { label: 'Held for Review', value: summary.held, icon: AlertTriangle, color: '#f59e0b' },
-            { label: 'Failed', value: summary.failed, icon: XCircle, color: '#ef4444' },
-            { label: 'Processing', value: summary.processing, icon: Clock, color: '#8b5cf6' },
-            { label: 'Total Volume', value: fmt(summary.totalVolumeNGN), icon: Building2, color: '#059669' },
-          ].map((c, i) => (
-            <div key={i} style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 16 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                <c.icon size={18} color={c.color} />
-                <span style={{ fontSize: 12, color: '#6b7280' }}>{c.label}</span>
-              </div>
-              <div style={{ fontSize: 24, fontWeight: 700, color: c.color }}>{c.value}</div>
+  return (
+    <div style={{ display: 'flex', minHeight: '100vh', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+      {/* Left Sidebar */}
+      <aside style={{ width: 250, borderRight: '1px solid #e5e7eb', background: '#fafafa', display: 'flex', flexDirection: 'column', flexShrink: 0 }}>
+        <div style={{ padding: '16px 16px 12px', borderBottom: '1px solid #e5e7eb' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <ArrowDownLeft size={22} color="#059669" />
+            <div>
+              <div style={{ fontWeight: 700, fontSize: 14 }}>Inbound Remittance</div>
+              <div style={{ fontSize: 11, color: '#6b7280' }}>Payment Switch Module</div>
             </div>
+          </div>
+        </div>
+        <nav style={{ flex: 1, padding: 8, display: 'flex', flexDirection: 'column', gap: 2 }}>
+          {navItems.map(item => (
+            <button key={item.id} onClick={() => setActiveTab(item.id)}
+              style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 600, width: '100%', textAlign: 'left',
+                background: activeTab === item.id ? '#059669' : 'transparent', color: activeTab === item.id ? 'white' : '#374151', transition: 'all 0.15s' }}>
+              <item.icon size={16} />
+              {item.label}
+            </button>
+          ))}
+        </nav>
+        <div style={{ borderTop: '1px solid #e5e7eb', padding: '8px 8px 12px' }}>
+          <div style={{ fontSize: 10, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: 1, padding: '4px 14px 6px' }}>Other Modules</div>
+          {moduleLinks.map(m => (
+            <a key={m.href} href={m.href} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 14px', borderRadius: 6, fontSize: 12, color: m.color, textDecoration: 'none', transition: 'background 0.15s' }}
+              onMouseEnter={e => (e.currentTarget.style.background = '#f3f4f6')} onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+              <m.icon size={14} />
+              {m.label}
+            </a>
           ))}
         </div>
-      )}
+      </aside>
 
-      {/* Tabs */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: 20, borderBottom: '2px solid #e5e7eb', paddingBottom: 8 }}>
-        {(['dashboard', 'transfers', 'corridors', 'banks'] as Tab[]).map(tab => (
-          <button key={tab} onClick={() => setActiveTab(tab)}
-            style={{ padding: '8px 20px', borderRadius: 8, border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: 14,
-              background: activeTab === tab ? '#059669' : 'transparent', color: activeTab === tab ? 'white' : '#6b7280' }}>
-            {tab === 'dashboard' ? 'Dashboard' : tab === 'transfers' ? 'Transfers' : tab === 'corridors' ? 'Corridors' : 'Receiving Banks'}
-          </button>
-        ))}
-      </div>
+      {/* Main Content */}
+      <main style={{ flex: 1, padding: 24, overflowY: 'auto', maxWidth: 1200 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
+          <h1 style={{ fontSize: 24, fontWeight: 700, margin: 0 }}>
+            {navItems.find(n => n.id === activeTab)?.label ?? 'Dashboard'}
+          </h1>
+          <span style={{ fontSize: 13, color: '#6b7280' }}>Receiving international transfers into Nigerian accounts</span>
+        </div>
+
+        {/* Summary Cards */}
+        {summary && (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 16, marginBottom: 24 }}>
+            {[
+              { label: 'Total Received', value: summary.totalReceived, icon: ArrowDownLeft, color: '#3b82f6' },
+              { label: 'Credited', value: summary.credited, icon: CheckCircle, color: '#10b981' },
+              { label: 'Held for Review', value: summary.held, icon: AlertTriangle, color: '#f59e0b' },
+              { label: 'Failed', value: summary.failed, icon: XCircle, color: '#ef4444' },
+              { label: 'Processing', value: summary.processing, icon: Clock, color: '#8b5cf6' },
+              { label: 'Total Volume', value: fmt(summary.totalVolumeNGN), icon: Building2, color: '#059669' },
+            ].map((c, i) => (
+              <div key={i} style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 16 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                  <c.icon size={18} color={c.color} />
+                  <span style={{ fontSize: 12, color: '#6b7280' }}>{c.label}</span>
+                </div>
+                <div style={{ fontSize: 24, fontWeight: 700, color: c.color }}>{c.value}</div>
+              </div>
+            ))}
+          </div>
+        )}
 
       {/* Dashboard Tab */}
       {activeTab === 'dashboard' && summary && (
@@ -264,6 +305,7 @@ export default function InboundRemittance() {
           </tbody>
         </table>
       )}
+      </main>
     </div>
   );
 }

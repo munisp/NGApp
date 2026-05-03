@@ -1,8 +1,17 @@
 import { useState } from 'react';
 import { trpc } from '@/lib/trpc';
-import { Landmark, Receipt, Building2, Heart, FileText, CheckCircle, Clock, AlertCircle, BarChart3, TrendingUp, Activity, PieChart } from 'lucide-react';
+import { Landmark, Receipt, Building2, Heart, FileText, CheckCircle, Clock, AlertCircle, BarChart3, TrendingUp, Activity, PieChart, LayoutDashboard, Globe, ArrowDownLeft, Banknote, Ship, CreditCard, Code, Users } from 'lucide-react';
 
 type Tab = 'dashboard' | 'tsa' | 'tax' | 'pension' | 'social' | 'reports';
+
+const moduleLinks = [
+  { label: 'Outbound Remittance', href: '/', icon: Globe, color: '#3b82f6' },
+  { label: 'Inbound Remittance', href: '/inbound-remittance', icon: ArrowDownLeft, color: '#059669' },
+  { label: 'Domestic Payments', href: '/domestic-payments', icon: Banknote, color: '#2563eb' },
+  { label: 'Trade Payments', href: '/trade-payments', icon: Ship, color: '#7c3aed' },
+  { label: 'Card Processing', href: '/card-processing', icon: CreditCard, color: '#dc2626' },
+  { label: 'Open Banking', href: '/open-banking', icon: Code, color: '#0ea5e9' },
+];
 
 export default function GovernmentPayments() {
   const [activeTab, setActiveTab] = useState<Tab>('dashboard');
@@ -22,42 +31,72 @@ export default function GovernmentPayments() {
 
   const fmt = (n: number) => n >= 1e12 ? `₦${(n / 1e12).toFixed(1)}T` : n >= 1e9 ? `₦${(n / 1e9).toFixed(1)}B` : n >= 1e6 ? `₦${(n / 1e6).toFixed(1)}M` : `₦${n.toLocaleString()}`;
 
+  const navItems: { id: Tab; label: string; icon: typeof LayoutDashboard }[] = [
+    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { id: 'tsa', label: 'TSA Collections', icon: Landmark },
+    { id: 'tax', label: 'Tax Payments', icon: Receipt },
+    { id: 'pension', label: 'Pension', icon: Building2 },
+    { id: 'social', label: 'Social Payments', icon: Heart },
+    { id: 'reports', label: 'Regulatory Reports', icon: FileText },
+  ];
+
   return (
-    <div style={{ padding: 24, maxWidth: 1400, margin: '0 auto', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
-        <Landmark size={28} color="#0369a1" />
-        <h1 style={{ fontSize: 24, fontWeight: 700, margin: 0 }}>Government & Regulatory Payments</h1>
-        <span style={{ fontSize: 13, color: '#6b7280', marginLeft: 8 }}>TSA, Tax, Pension, Social Payments, CBN Reporting</span>
-      </div>
-
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, marginBottom: 24 }}>
-        {[
-          { label: 'TSA Collections', value: govSummary?.totalCollections ?? 0, sub: fmt(govSummary?.totalValueNGN ?? 0), icon: Landmark, color: '#0369a1' },
-          { label: 'Tax Payments', value: taxes.length, sub: fmt(taxQuery.data?.totalPaidNGN ?? 0), icon: Receipt, color: '#7c3aed' },
-          { label: 'Pension Remittances', value: pensions.length, sub: fmt(pensionQuery.data?.totalContributions ?? 0), icon: Building2, color: '#059669' },
-          { label: 'Social Programs', value: socials.length, sub: `${((socialQuery.data?.totalBeneficiaries ?? 0) / 1e6).toFixed(1)}M beneficiaries`, icon: Heart, color: '#dc2626' },
-          { label: 'Reg. Reports', value: reports.length, sub: `${reportsQuery.data?.totalSubmitted ?? 0} submitted`, icon: FileText, color: '#ea580c' },
-        ].map((c, i) => (
-          <div key={i} style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 16 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-              <c.icon size={18} color={c.color} />
-              <span style={{ fontSize: 12, color: '#6b7280' }}>{c.label}</span>
+    <div style={{ display: 'flex', minHeight: '100vh', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+      <aside style={{ width: 250, borderRight: '1px solid #e5e7eb', background: '#fafafa', display: 'flex', flexDirection: 'column', flexShrink: 0 }}>
+        <div style={{ padding: '16px 16px 12px', borderBottom: '1px solid #e5e7eb' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <Landmark size={22} color="#0369a1" />
+            <div>
+              <div style={{ fontWeight: 700, fontSize: 14 }}>Government Payments</div>
+              <div style={{ fontSize: 11, color: '#6b7280' }}>Payment Switch Module</div>
             </div>
-            <div style={{ fontSize: 24, fontWeight: 700, color: c.color }}>{c.value}</div>
-            <div style={{ fontSize: 12, color: '#9ca3af', marginTop: 4 }}>{c.sub}</div>
           </div>
-        ))}
-      </div>
+        </div>
+        <nav style={{ flex: 1, padding: 8, display: 'flex', flexDirection: 'column', gap: 2 }}>
+          {navItems.map(item => (
+            <button key={item.id} onClick={() => setActiveTab(item.id)}
+              style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 600, width: '100%', textAlign: 'left',
+                background: activeTab === item.id ? '#0369a1' : 'transparent', color: activeTab === item.id ? 'white' : '#374151' }}>
+              <item.icon size={16} />
+              {item.label}
+            </button>
+          ))}
+        </nav>
+        <div style={{ borderTop: '1px solid #e5e7eb', padding: '8px 8px 12px' }}>
+          <div style={{ fontSize: 10, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: 1, padding: '4px 14px 6px' }}>Other Modules</div>
+          {moduleLinks.map(m => (
+            <a key={m.href} href={m.href} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 14px', borderRadius: 6, fontSize: 12, color: m.color, textDecoration: 'none' }}>
+              <m.icon size={14} />
+              {m.label}
+            </a>
+          ))}
+        </div>
+      </aside>
 
-      <div style={{ display: 'flex', gap: 4, marginBottom: 20, borderBottom: '2px solid #e5e7eb', paddingBottom: 8, flexWrap: 'wrap' }}>
-        {(['dashboard', 'tsa', 'tax', 'pension', 'social', 'reports'] as Tab[]).map(tab => (
-          <button key={tab} onClick={() => setActiveTab(tab)}
-            style={{ padding: '8px 16px', borderRadius: 8, border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: 13,
-              background: activeTab === tab ? '#0369a1' : 'transparent', color: activeTab === tab ? 'white' : '#6b7280' }}>
-            {tab === 'dashboard' ? 'Dashboard' : tab === 'tsa' ? 'TSA Collections' : tab === 'tax' ? 'Tax Payments' : tab === 'pension' ? 'Pension' : tab === 'social' ? 'Social Payments' : 'Regulatory Reports'}
-          </button>
-        ))}
-      </div>
+      <main style={{ flex: 1, padding: 24, overflowY: 'auto', maxWidth: 1200 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
+          <h1 style={{ fontSize: 24, fontWeight: 700, margin: 0 }}>{navItems.find(n => n.id === activeTab)?.label ?? 'Dashboard'}</h1>
+          <span style={{ fontSize: 13, color: '#6b7280' }}>TSA, Tax, Pension, Social Payments, CBN Reporting</span>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16, marginBottom: 24 }}>
+          {[
+            { label: 'TSA', value: govSummary?.totalCollections ?? 0, sub: fmt(govSummary?.totalValueNGN ?? 0), icon: Landmark, color: '#0369a1' },
+            { label: 'Tax', value: taxes.length, sub: fmt(taxQuery.data?.totalPaidNGN ?? 0), icon: Receipt, color: '#7c3aed' },
+            { label: 'Pension', value: pensions.length, sub: fmt(pensionQuery.data?.totalContributions ?? 0), icon: Building2, color: '#059669' },
+            { label: 'Social', value: socials.length, sub: `${((socialQuery.data?.totalBeneficiaries ?? 0) / 1e6).toFixed(1)}M`, icon: Heart, color: '#dc2626' },
+            { label: 'Reports', value: reports.length, sub: `${reportsQuery.data?.totalSubmitted ?? 0} submitted`, icon: FileText, color: '#ea580c' },
+          ].map((c, i) => (
+            <div key={i} style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 16 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                <c.icon size={18} color={c.color} />
+                <span style={{ fontSize: 12, color: '#6b7280' }}>{c.label}</span>
+              </div>
+              <div style={{ fontSize: 24, fontWeight: 700, color: c.color }}>{c.value}</div>
+              <div style={{ fontSize: 12, color: '#9ca3af', marginTop: 4 }}>{c.sub}</div>
+            </div>
+          ))}
+        </div>
 
       {/* Dashboard Tab */}
       {activeTab === 'dashboard' && (
@@ -283,6 +322,7 @@ export default function GovernmentPayments() {
           </tbody>
         </table>
       )}
+      </main>
     </div>
   );
 }

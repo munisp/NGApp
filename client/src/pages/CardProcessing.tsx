@@ -1,8 +1,17 @@
 import { useState } from 'react';
 import { trpc } from '@/lib/trpc';
-import { CreditCard, ShieldCheck, AlertTriangle, Store, CheckCircle, XCircle, BarChart3, Smartphone, TrendingUp, Activity, PieChart } from 'lucide-react';
+import { CreditCard, ShieldCheck, AlertTriangle, Store, CheckCircle, XCircle, BarChart3, Smartphone, TrendingUp, Activity, PieChart, LayoutDashboard, Globe, ArrowDownLeft, Banknote, Ship, Landmark, Code, ArrowRightLeft } from 'lucide-react';
 
 type Tab = 'dashboard' | 'cards' | 'transactions' | 'chargebacks' | 'terminals';
+
+const moduleLinks = [
+  { label: 'Outbound Remittance', href: '/', icon: Globe, color: '#3b82f6' },
+  { label: 'Inbound Remittance', href: '/inbound-remittance', icon: ArrowDownLeft, color: '#059669' },
+  { label: 'Domestic Payments', href: '/domestic-payments', icon: Banknote, color: '#2563eb' },
+  { label: 'Trade Payments', href: '/trade-payments', icon: Ship, color: '#7c3aed' },
+  { label: 'Government Payments', href: '/government-payments', icon: Landmark, color: '#0369a1' },
+  { label: 'Open Banking', href: '/open-banking', icon: Code, color: '#0ea5e9' },
+];
 
 export default function CardProcessing() {
   const [activeTab, setActiveTab] = useState<Tab>('dashboard');
@@ -29,44 +38,70 @@ export default function CardProcessing() {
     return { background: c.bg, color: c.fg, padding: '2px 8px', borderRadius: 4, fontSize: 11, fontWeight: 700 as const };
   };
 
+  const navItems: { id: Tab; label: string; icon: typeof LayoutDashboard }[] = [
+    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { id: 'transactions', label: 'Transactions', icon: ArrowRightLeft },
+    { id: 'cards', label: 'Issued Cards', icon: CreditCard },
+    { id: 'chargebacks', label: 'Chargebacks', icon: AlertTriangle },
+    { id: 'terminals', label: 'Terminals', icon: Smartphone },
+  ];
+
   return (
-    <div style={{ padding: 24, maxWidth: 1400, margin: '0 auto', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
-        <CreditCard size={28} color="#dc2626" />
-        <h1 style={{ fontSize: 24, fontWeight: 700, margin: 0 }}>Card Payment Processing</h1>
-        <span style={{ fontSize: 13, color: '#6b7280', marginLeft: 8 }}>Issuing, Acquiring, 3DS, Chargebacks, Tokenization</span>
-      </div>
-
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 16, marginBottom: 24 }}>
-        {[
-          { label: 'Total Cards', value: cardSummary?.totalCards ?? 0, icon: CreditCard, color: '#dc2626' },
-          { label: 'Active Cards', value: cardSummary?.activeCards ?? 0, icon: CheckCircle, color: '#10b981' },
-          { label: 'Total Txns', value: txnSummary?.totalTxns ?? 0, icon: BarChart3, color: '#3b82f6' },
-          { label: 'Approved', value: txnSummary?.approved ?? 0, icon: CheckCircle, color: '#059669' },
-          { label: 'Declined', value: txnSummary?.declined ?? 0, icon: XCircle, color: '#ef4444' },
-          { label: 'Approval Rate', value: `${txnSummary?.approvalRate ?? 0}%`, icon: ShieldCheck, color: '#0891b2' },
-          { label: 'Volume', value: fmt(Number(txnSummary?.totalVolumeNGN ?? 0)), icon: Store, color: '#7c3aed' },
-          { label: 'Chargebacks', value: cbQuery.data?.totalActive ?? 0, icon: AlertTriangle, color: '#f59e0b' },
-        ].map((c, i) => (
-          <div key={i} style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 14 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
-              <c.icon size={16} color={c.color} />
-              <span style={{ fontSize: 11, color: '#6b7280' }}>{c.label}</span>
+    <div style={{ display: 'flex', minHeight: '100vh', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+      <aside style={{ width: 250, borderRight: '1px solid #e5e7eb', background: '#fafafa', display: 'flex', flexDirection: 'column', flexShrink: 0 }}>
+        <div style={{ padding: '16px 16px 12px', borderBottom: '1px solid #e5e7eb' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <CreditCard size={22} color="#dc2626" />
+            <div>
+              <div style={{ fontWeight: 700, fontSize: 14 }}>Card Processing</div>
+              <div style={{ fontSize: 11, color: '#6b7280' }}>Payment Switch Module</div>
             </div>
-            <div style={{ fontSize: 22, fontWeight: 700, color: c.color }}>{c.value}</div>
           </div>
-        ))}
-      </div>
+        </div>
+        <nav style={{ flex: 1, padding: 8, display: 'flex', flexDirection: 'column', gap: 2 }}>
+          {navItems.map(item => (
+            <button key={item.id} onClick={() => setActiveTab(item.id)}
+              style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 600, width: '100%', textAlign: 'left',
+                background: activeTab === item.id ? '#dc2626' : 'transparent', color: activeTab === item.id ? 'white' : '#374151' }}>
+              <item.icon size={16} />
+              {item.label}
+            </button>
+          ))}
+        </nav>
+        <div style={{ borderTop: '1px solid #e5e7eb', padding: '8px 8px 12px' }}>
+          <div style={{ fontSize: 10, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: 1, padding: '4px 14px 6px' }}>Other Modules</div>
+          {moduleLinks.map(m => (
+            <a key={m.href} href={m.href} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 14px', borderRadius: 6, fontSize: 12, color: m.color, textDecoration: 'none' }}>
+              <m.icon size={14} />
+              {m.label}
+            </a>
+          ))}
+        </div>
+      </aside>
 
-      <div style={{ display: 'flex', gap: 8, marginBottom: 20, borderBottom: '2px solid #e5e7eb', paddingBottom: 8 }}>
-        {(['dashboard', 'transactions', 'cards', 'chargebacks', 'terminals'] as Tab[]).map(tab => (
-          <button key={tab} onClick={() => setActiveTab(tab)}
-            style={{ padding: '8px 20px', borderRadius: 8, border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: 14,
-              background: activeTab === tab ? '#dc2626' : 'transparent', color: activeTab === tab ? 'white' : '#6b7280' }}>
-            {tab === 'dashboard' ? 'Dashboard' : tab === 'transactions' ? 'Transactions' : tab === 'cards' ? 'Issued Cards' : tab === 'chargebacks' ? 'Chargebacks' : 'Terminals'}
-          </button>
-        ))}
-      </div>
+      <main style={{ flex: 1, padding: 24, overflowY: 'auto', maxWidth: 1200 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
+          <h1 style={{ fontSize: 24, fontWeight: 700, margin: 0 }}>{navItems.find(n => n.id === activeTab)?.label ?? 'Dashboard'}</h1>
+          <span style={{ fontSize: 13, color: '#6b7280' }}>Issuing, Acquiring, 3DS, Chargebacks, Tokenization</span>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 14, marginBottom: 24 }}>
+          {[
+            { label: 'Cards', value: cardSummary?.totalCards ?? 0, icon: CreditCard, color: '#dc2626' },
+            { label: 'Active', value: cardSummary?.activeCards ?? 0, icon: CheckCircle, color: '#10b981' },
+            { label: 'Txns', value: txnSummary?.totalTxns ?? 0, icon: BarChart3, color: '#3b82f6' },
+            { label: 'Approval', value: `${txnSummary?.approvalRate ?? 0}%`, icon: ShieldCheck, color: '#0891b2' },
+            { label: 'Volume', value: fmt(Number(txnSummary?.totalVolumeNGN ?? 0)), icon: Store, color: '#7c3aed' },
+          ].map((c, i) => (
+            <div key={i} style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 14 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+                <c.icon size={16} color={c.color} />
+                <span style={{ fontSize: 11, color: '#6b7280' }}>{c.label}</span>
+              </div>
+              <div style={{ fontSize: 22, fontWeight: 700, color: c.color }}>{c.value}</div>
+            </div>
+          ))}
+        </div>
 
       {/* Dashboard Tab */}
       {activeTab === 'dashboard' && (
@@ -277,6 +312,7 @@ export default function CardProcessing() {
           </tbody>
         </table>
       )}
+      </main>
     </div>
   );
 }

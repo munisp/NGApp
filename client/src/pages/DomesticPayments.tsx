@@ -1,8 +1,17 @@
 import { useState } from 'react';
 import { trpc } from '@/lib/trpc';
-import { Banknote, QrCode, FileText, Repeat, Users, ArrowRightLeft, CheckCircle, XCircle, Clock, BarChart3, TrendingUp, Activity, PieChart } from 'lucide-react';
+import { Banknote, QrCode, FileText, Repeat, Users, ArrowRightLeft, CheckCircle, XCircle, Clock, BarChart3, TrendingUp, Activity, PieChart, LayoutDashboard, Globe, Ship, CreditCard, Landmark, Code, ArrowDownLeft, Package } from 'lucide-react';
 
 type Tab = 'dashboard' | 'payments' | 'bills' | 'standing_orders' | 'bulk';
+
+const moduleLinks = [
+  { label: 'Outbound Remittance', href: '/', icon: Globe, color: '#3b82f6' },
+  { label: 'Inbound Remittance', href: '/inbound-remittance', icon: ArrowDownLeft, color: '#059669' },
+  { label: 'Trade Payments', href: '/trade-payments', icon: Ship, color: '#7c3aed' },
+  { label: 'Card Processing', href: '/card-processing', icon: CreditCard, color: '#dc2626' },
+  { label: 'Government Payments', href: '/government-payments', icon: Landmark, color: '#0369a1' },
+  { label: 'Open Banking', href: '/open-banking', icon: Code, color: '#0ea5e9' },
+];
 
 export default function DomesticPayments() {
   const [activeTab, setActiveTab] = useState<Tab>('dashboard');
@@ -32,46 +41,72 @@ export default function DomesticPayments() {
     return { background: c.bg, color: c.fg, padding: '2px 8px', borderRadius: 9999, fontSize: 11, fontWeight: 600 as const };
   };
 
-  return (
-    <div style={{ padding: 24, maxWidth: 1400, margin: '0 auto', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
-        <Banknote size={28} color="#2563eb" />
-        <h1 style={{ fontSize: 24, fontWeight: 700, margin: 0 }}>Domestic Instant Payments</h1>
-        <span style={{ fontSize: 13, color: '#6b7280', marginLeft: 8 }}>P2P, P2B, QR, Bills, Bulk, Standing Orders</span>
-      </div>
+  const navItems: { id: Tab; label: string; icon: typeof LayoutDashboard }[] = [
+    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { id: 'payments', label: 'Payments', icon: ArrowRightLeft },
+    { id: 'bills', label: 'Bill Providers', icon: FileText },
+    { id: 'standing_orders', label: 'Standing Orders', icon: Repeat },
+    { id: 'bulk', label: 'Bulk Disbursements', icon: Package },
+  ];
 
-      {summary && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 16, marginBottom: 24 }}>
-          {[
-            { label: 'Total Payments', value: summary.totalPayments, icon: ArrowRightLeft, color: '#3b82f6' },
-            { label: 'Completed', value: summary.completed, icon: CheckCircle, color: '#10b981' },
-            { label: 'Failed', value: summary.failed, icon: XCircle, color: '#ef4444' },
-            { label: 'Pending', value: summary.pending, icon: Clock, color: '#f59e0b' },
-            { label: 'P2P', value: summary.p2pCount, icon: Users, color: '#8b5cf6' },
-            { label: 'P2B/QR', value: summary.p2bCount, icon: QrCode, color: '#059669' },
-            { label: 'Bills', value: summary.billCount, icon: FileText, color: '#0891b2' },
-            { label: 'Total Volume', value: fmt(summary.totalVolumeNGN), icon: Banknote, color: '#2563eb' },
-          ].map((c, i) => (
-            <div key={i} style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 14 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
-                <c.icon size={16} color={c.color} />
-                <span style={{ fontSize: 11, color: '#6b7280' }}>{c.label}</span>
-              </div>
-              <div style={{ fontSize: 22, fontWeight: 700, color: c.color }}>{c.value}</div>
+  return (
+    <div style={{ display: 'flex', minHeight: '100vh', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+      <aside style={{ width: 250, borderRight: '1px solid #e5e7eb', background: '#fafafa', display: 'flex', flexDirection: 'column', flexShrink: 0 }}>
+        <div style={{ padding: '16px 16px 12px', borderBottom: '1px solid #e5e7eb' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <Banknote size={22} color="#2563eb" />
+            <div>
+              <div style={{ fontWeight: 700, fontSize: 14 }}>Domestic Payments</div>
+              <div style={{ fontSize: 11, color: '#6b7280' }}>Payment Switch Module</div>
             </div>
+          </div>
+        </div>
+        <nav style={{ flex: 1, padding: 8, display: 'flex', flexDirection: 'column', gap: 2 }}>
+          {navItems.map(item => (
+            <button key={item.id} onClick={() => setActiveTab(item.id)}
+              style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 600, width: '100%', textAlign: 'left',
+                background: activeTab === item.id ? '#2563eb' : 'transparent', color: activeTab === item.id ? 'white' : '#374151' }}>
+              <item.icon size={16} />
+              {item.label}
+            </button>
+          ))}
+        </nav>
+        <div style={{ borderTop: '1px solid #e5e7eb', padding: '8px 8px 12px' }}>
+          <div style={{ fontSize: 10, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: 1, padding: '4px 14px 6px' }}>Other Modules</div>
+          {moduleLinks.map(m => (
+            <a key={m.href} href={m.href} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 14px', borderRadius: 6, fontSize: 12, color: m.color, textDecoration: 'none' }}>
+              <m.icon size={14} />
+              {m.label}
+            </a>
           ))}
         </div>
-      )}
+      </aside>
 
-      <div style={{ display: 'flex', gap: 8, marginBottom: 20, borderBottom: '2px solid #e5e7eb', paddingBottom: 8 }}>
-        {(['dashboard', 'payments', 'bills', 'standing_orders', 'bulk'] as Tab[]).map(tab => (
-          <button key={tab} onClick={() => setActiveTab(tab)}
-            style={{ padding: '8px 20px', borderRadius: 8, border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: 14,
-              background: activeTab === tab ? '#2563eb' : 'transparent', color: activeTab === tab ? 'white' : '#6b7280' }}>
-            {tab === 'dashboard' ? 'Dashboard' : tab === 'payments' ? 'Payments' : tab === 'bills' ? 'Bill Providers' : tab === 'standing_orders' ? 'Standing Orders' : 'Bulk Disbursements'}
-          </button>
-        ))}
-      </div>
+      <main style={{ flex: 1, padding: 24, overflowY: 'auto', maxWidth: 1200 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
+          <h1 style={{ fontSize: 24, fontWeight: 700, margin: 0 }}>{navItems.find(n => n.id === activeTab)?.label ?? 'Dashboard'}</h1>
+          <span style={{ fontSize: 13, color: '#6b7280' }}>P2P, P2B, QR, Bills, Bulk, Standing Orders</span>
+        </div>
+
+        {summary && (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 14, marginBottom: 24 }}>
+            {[
+              { label: 'Total', value: summary.totalPayments, icon: ArrowRightLeft, color: '#3b82f6' },
+              { label: 'Completed', value: summary.completed, icon: CheckCircle, color: '#10b981' },
+              { label: 'Failed', value: summary.failed, icon: XCircle, color: '#ef4444' },
+              { label: 'Pending', value: summary.pending, icon: Clock, color: '#f59e0b' },
+              { label: 'Volume', value: fmt(summary.totalVolumeNGN), icon: Banknote, color: '#2563eb' },
+            ].map((c, i) => (
+              <div key={i} style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 14 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+                  <c.icon size={16} color={c.color} />
+                  <span style={{ fontSize: 11, color: '#6b7280' }}>{c.label}</span>
+                </div>
+                <div style={{ fontSize: 22, fontWeight: 700, color: c.color }}>{c.value}</div>
+              </div>
+            ))}
+          </div>
+        )}
 
       {/* Dashboard Tab */}
       {activeTab === 'dashboard' && summary && (
@@ -272,6 +307,7 @@ export default function DomesticPayments() {
           </tbody>
         </table>
       )}
+      </main>
     </div>
   );
 }

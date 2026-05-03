@@ -1,8 +1,17 @@
 import { useState } from 'react';
 import { trpc } from '@/lib/trpc';
-import { Ship, FileText, Lock, Landmark, Package, CheckCircle, Clock, AlertCircle, BarChart3, TrendingUp, Activity, Globe } from 'lucide-react';
+import { Ship, FileText, Lock, Landmark, Package, CheckCircle, Clock, AlertCircle, BarChart3, TrendingUp, Activity, Globe, LayoutDashboard, CreditCard, Banknote, Code, ArrowDownLeft, ArrowRightLeft } from 'lucide-react';
 
 type Tab = 'dashboard' | 'lcs' | 'escrows' | 'customs';
+
+const moduleLinks = [
+  { label: 'Outbound Remittance', href: '/', icon: Globe, color: '#3b82f6' },
+  { label: 'Inbound Remittance', href: '/inbound-remittance', icon: ArrowDownLeft, color: '#059669' },
+  { label: 'Domestic Payments', href: '/domestic-payments', icon: Banknote, color: '#2563eb' },
+  { label: 'Card Processing', href: '/card-processing', icon: CreditCard, color: '#dc2626' },
+  { label: 'Government Payments', href: '/government-payments', icon: Landmark, color: '#0369a1' },
+  { label: 'Open Banking', href: '/open-banking', icon: Code, color: '#0ea5e9' },
+];
 
 export default function TradePayments() {
   const [activeTab, setActiveTab] = useState<Tab>('dashboard');
@@ -30,44 +39,72 @@ export default function TradePayments() {
     return { background: c.bg, color: c.fg };
   };
 
-  return (
-    <div style={{ padding: 24, maxWidth: 1400, margin: '0 auto', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
-        <Ship size={28} color="#7c3aed" />
-        <h1 style={{ fontSize: 24, fontWeight: 700, margin: 0 }}>Cross-Border Trade Payments</h1>
-        <span style={{ fontSize: 13, color: '#6b7280', marginLeft: 8 }}>LCs, Escrow, Customs Duties, Trade Finance</span>
-      </div>
+  const navItems: { id: Tab; label: string; icon: typeof LayoutDashboard }[] = [
+    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { id: 'lcs', label: 'Letters of Credit', icon: FileText },
+    { id: 'escrows', label: 'Escrow Payments', icon: Lock },
+    { id: 'customs', label: 'Customs Duties', icon: Package },
+  ];
 
-      {lcSummary && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16, marginBottom: 24 }}>
-          {[
-            { label: 'Total LCs', value: lcSummary.totalLCs, icon: FileText, color: '#7c3aed' },
-            { label: 'Import LCs', value: lcSummary.importLCs, icon: Package, color: '#2563eb' },
-            { label: 'Export LCs', value: lcSummary.exportLCs, icon: Ship, color: '#059669' },
-            { label: 'Active', value: lcSummary.activeLCs, icon: Clock, color: '#f59e0b' },
-            { label: 'Total Value', value: fmt(lcSummary.totalValueUSD), icon: Landmark, color: '#0891b2' },
-            { label: 'Active Escrows', value: escrowsQuery.data?.totalActive ?? 0, icon: Lock, color: '#dc2626' },
-          ].map((c, i) => (
-            <div key={i} style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 16 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                <c.icon size={18} color={c.color} />
-                <span style={{ fontSize: 12, color: '#6b7280' }}>{c.label}</span>
-              </div>
-              <div style={{ fontSize: 24, fontWeight: 700, color: c.color }}>{c.value}</div>
+  return (
+    <div style={{ display: 'flex', minHeight: '100vh', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+      <aside style={{ width: 250, borderRight: '1px solid #e5e7eb', background: '#fafafa', display: 'flex', flexDirection: 'column', flexShrink: 0 }}>
+        <div style={{ padding: '16px 16px 12px', borderBottom: '1px solid #e5e7eb' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <Ship size={22} color="#7c3aed" />
+            <div>
+              <div style={{ fontWeight: 700, fontSize: 14 }}>Trade Payments</div>
+              <div style={{ fontSize: 11, color: '#6b7280' }}>Payment Switch Module</div>
             </div>
+          </div>
+        </div>
+        <nav style={{ flex: 1, padding: 8, display: 'flex', flexDirection: 'column', gap: 2 }}>
+          {navItems.map(item => (
+            <button key={item.id} onClick={() => setActiveTab(item.id)}
+              style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 600, width: '100%', textAlign: 'left',
+                background: activeTab === item.id ? '#7c3aed' : 'transparent', color: activeTab === item.id ? 'white' : '#374151' }}>
+              <item.icon size={16} />
+              {item.label}
+            </button>
+          ))}
+        </nav>
+        <div style={{ borderTop: '1px solid #e5e7eb', padding: '8px 8px 12px' }}>
+          <div style={{ fontSize: 10, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: 1, padding: '4px 14px 6px' }}>Other Modules</div>
+          {moduleLinks.map(m => (
+            <a key={m.href} href={m.href} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 14px', borderRadius: 6, fontSize: 12, color: m.color, textDecoration: 'none' }}>
+              <m.icon size={14} />
+              {m.label}
+            </a>
           ))}
         </div>
-      )}
+      </aside>
 
-      <div style={{ display: 'flex', gap: 8, marginBottom: 20, borderBottom: '2px solid #e5e7eb', paddingBottom: 8 }}>
-        {(['dashboard', 'lcs', 'escrows', 'customs'] as Tab[]).map(tab => (
-          <button key={tab} onClick={() => setActiveTab(tab)}
-            style={{ padding: '8px 20px', borderRadius: 8, border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: 14,
-              background: activeTab === tab ? '#7c3aed' : 'transparent', color: activeTab === tab ? 'white' : '#6b7280' }}>
-            {tab === 'dashboard' ? 'Dashboard' : tab === 'lcs' ? 'Letters of Credit' : tab === 'escrows' ? 'Escrow Payments' : 'Customs Duties'}
-          </button>
-        ))}
-      </div>
+      <main style={{ flex: 1, padding: 24, overflowY: 'auto', maxWidth: 1200 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
+          <h1 style={{ fontSize: 24, fontWeight: 700, margin: 0 }}>{navItems.find(n => n.id === activeTab)?.label ?? 'Dashboard'}</h1>
+          <span style={{ fontSize: 13, color: '#6b7280' }}>LCs, Escrow, Customs Duties, Trade Finance</span>
+        </div>
+
+        {lcSummary && (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 16, marginBottom: 24 }}>
+            {[
+              { label: 'Total LCs', value: lcSummary.totalLCs, icon: FileText, color: '#7c3aed' },
+              { label: 'Import LCs', value: lcSummary.importLCs, icon: Package, color: '#2563eb' },
+              { label: 'Export LCs', value: lcSummary.exportLCs, icon: Ship, color: '#059669' },
+              { label: 'Active', value: lcSummary.activeLCs, icon: Clock, color: '#f59e0b' },
+              { label: 'Total Value', value: fmt(lcSummary.totalValueUSD), icon: Landmark, color: '#0891b2' },
+              { label: 'Escrows', value: escrowsQuery.data?.totalActive ?? 0, icon: Lock, color: '#dc2626' },
+            ].map((c, i) => (
+              <div key={i} style={{ background: 'white', border: '1px solid #e5e7eb', borderRadius: 12, padding: 16 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                  <c.icon size={18} color={c.color} />
+                  <span style={{ fontSize: 12, color: '#6b7280' }}>{c.label}</span>
+                </div>
+                <div style={{ fontSize: 24, fontWeight: 700, color: c.color }}>{c.value}</div>
+              </div>
+            ))}
+          </div>
+        )}
 
       {/* Dashboard Tab */}
       {activeTab === 'dashboard' && lcSummary && (
@@ -249,6 +286,7 @@ export default function TradePayments() {
           </tbody>
         </table>
       )}
+      </main>
     </div>
   );
 }
