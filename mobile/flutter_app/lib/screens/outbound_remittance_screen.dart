@@ -26,7 +26,7 @@ class _OutboundRemittanceScreenState extends State<OutboundRemittanceScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 10, vsync: this);
+    _tabController = TabController(length: 11, vsync: this);
   }
 
   @override
@@ -51,6 +51,7 @@ class _OutboundRemittanceScreenState extends State<OutboundRemittanceScreen>
             Tab(text: 'Corridors'),
             Tab(text: 'FX Rates'),
             Tab(text: 'Tier'),
+            Tab(text: 'Settlement'),
             Tab(text: 'Alerts'),
             Tab(text: 'Compliance'),
             Tab(text: 'Rails'),
@@ -67,6 +68,7 @@ class _OutboundRemittanceScreenState extends State<OutboundRemittanceScreen>
           _CorridorsTab(),
           _FXRatesTab(),
           _TierInfoTab(),
+          _SettlementTab(),
           _AlertsTab(),
           _ComplianceTab(),
           _PaymentRailsTab(),
@@ -83,7 +85,10 @@ class _DashboardTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
+    return RefreshIndicator(
+      onRefresh: () async { await Future.delayed(const Duration(seconds: 1)); },
+      child: SingleChildScrollView(
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -156,6 +161,7 @@ class _DashboardTab extends StatelessWidget {
             status: p['status'] as String,
           )),
         ],
+      ),
       ),
     );
   }
@@ -1228,6 +1234,169 @@ class _PaymentRailsTab extends StatelessWidget {
           Text(value, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w500)),
         ],
       ),
+    );
+  }
+}
+
+// --- Settlement Tab (#33 - Card-based layout) ---
+class _SettlementTab extends StatelessWidget {
+  const _SettlementTab();
+
+  @override
+  Widget build(BuildContext context) {
+    return RefreshIndicator(
+      onRefresh: () async { await Future.delayed(const Duration(seconds: 1)); },
+      child: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          // Summary cards
+          Row(children: [
+            Expanded(child: _MetricCard(title: 'Total Batches', value: '4', subtitle: 'Across all rails', icon: Icons.layers, color: Colors.blue)),
+            const SizedBox(width: 12),
+            Expanded(child: _MetricCard(title: 'Netting Savings', value: '₦1.3B', subtitle: '21.1% saved', icon: Icons.savings, color: Colors.green)),
+          ]),
+          const SizedBox(height: 12),
+          Row(children: [
+            Expanded(child: _MetricCard(title: 'Gross Volume', value: '₦6.1B', subtitle: 'All batches', icon: Icons.bar_chart, color: Colors.purple)),
+            const SizedBox(width: 12),
+            Expanded(child: _MetricCard(title: 'Avg Settlement', value: '145s', subtitle: '9 rails', icon: Icons.timer, color: Colors.orange)),
+          ]),
+          const SizedBox(height: 24),
+
+          Text('Settlement Batches', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+          const SizedBox(height: 12),
+
+          // Batch cards with swipe gesture (#26)
+          _SettlementBatchCard(
+            batchId: 'STL-PAPSS-000142', rail: 'PAPSS', status: 'CONFIRMED',
+            transfers: 47, grossNgn: '₦892.5M', netNgn: '₦743.2M', savings: '₦149.3M',
+            statusColor: Colors.green,
+          ),
+          _SettlementBatchCard(
+            batchId: 'STL-SWIFT-000089', rail: 'SWIFT', status: 'SUBMITTED',
+            transfers: 12, grossNgn: '₦3.45B', netNgn: '₦3.12B', savings: '₦330M',
+            statusColor: Colors.blue,
+          ),
+          _SettlementBatchCard(
+            batchId: 'STL-CIPS-000034', rail: 'CIPS', status: 'NETTING',
+            transfers: 5, grossNgn: '₦678M', netNgn: '---', savings: '---',
+            statusColor: Colors.orange,
+          ),
+          _SettlementBatchCard(
+            batchId: 'STL-ACH-000156', rail: 'ACH', status: 'FAILED',
+            transfers: 8, grossNgn: '₦1.12B', netNgn: '₦980M', savings: '₦140M',
+            statusColor: Colors.red,
+          ),
+
+          const SizedBox(height: 24),
+          Text('Pending Queues', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8, runSpacing: 8,
+            children: [
+              _PendingQueueChip('SWIFT', 0), _PendingQueueChip('PAPSS', 23),
+              _PendingQueueChip('CIPS', 0), _PendingQueueChip('UPI', 0),
+              _PendingQueueChip('SEPA', 5), _PendingQueueChip('Mobile Money', 0),
+              _PendingQueueChip('Mojaloop', 12), _PendingQueueChip('ACH', 0),
+              _PendingQueueChip('Faster Pay', 0),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SettlementBatchCard extends StatelessWidget {
+  final String batchId, rail, status, grossNgn, netNgn, savings;
+  final int transfers;
+  final Color statusColor;
+
+  const _SettlementBatchCard({
+    required this.batchId, required this.rail, required this.status,
+    required this.transfers, required this.grossNgn, required this.netNgn,
+    required this.savings, required this.statusColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Dismissible(
+      key: Key(batchId),
+      direction: DismissDirection.endToStart,
+      background: Container(
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.only(right: 20),
+        color: Colors.blue.shade100,
+        child: const Icon(Icons.info_outline, color: Colors.blue),
+      ),
+      confirmDismiss: (_) async {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('$batchId details'), duration: const Duration(seconds: 2)),
+        );
+        return false;
+      },
+      child: Card(
+        margin: const EdgeInsets.only(bottom: 12),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(children: [
+                Text(batchId, style: const TextStyle(fontWeight: FontWeight.bold, fontFamily: 'monospace', fontSize: 13)),
+                const Spacer(),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(color: statusColor.withOpacity(0.15), borderRadius: BorderRadius.circular(12)),
+                  child: Text(status, style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: statusColor)),
+                ),
+              ]),
+              const SizedBox(height: 8),
+              Row(children: [
+                const Icon(Icons.train, size: 14, color: Colors.grey),
+                const SizedBox(width: 4),
+                Text(rail, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                const SizedBox(width: 16),
+                const Icon(Icons.receipt_long, size: 14, color: Colors.grey),
+                const SizedBox(width: 4),
+                Text('$transfers transfers', style: const TextStyle(fontSize: 12, color: Colors.grey)),
+              ]),
+              const SizedBox(height: 8),
+              Row(children: [
+                Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  const Text('Gross', style: TextStyle(fontSize: 10, color: Colors.grey)),
+                  Text(grossNgn, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                ])),
+                Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  const Text('Net', style: TextStyle(fontSize: 10, color: Colors.grey)),
+                  Text(netNgn, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                ])),
+                Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  const Text('Savings', style: TextStyle(fontSize: 10, color: Colors.grey)),
+                  Text(savings, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.green.shade700)),
+                ])),
+              ]),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PendingQueueChip extends StatelessWidget {
+  final String rail;
+  final int count;
+  const _PendingQueueChip(this.rail, this.count);
+
+  @override
+  Widget build(BuildContext context) {
+    return Chip(
+      avatar: CircleAvatar(
+        backgroundColor: count > 0 ? Colors.blue : Colors.grey.shade300,
+        child: Text('$count', style: TextStyle(fontSize: 10, color: count > 0 ? Colors.white : Colors.grey)),
+      ),
+      label: Text(rail, style: const TextStyle(fontSize: 11)),
     );
   }
 }

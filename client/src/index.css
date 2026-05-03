@@ -174,4 +174,28 @@
       max-width: 1280px; /* Standard content width */
     }
   }
+
+  /* Sticky table headers (#4) */
+  thead th {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background-color: var(--card);
+  }
+
+  /* Smooth transitions for dark mode (#11) */
+  * {
+    transition-property: background-color, border-color, color;
+    transition-duration: 150ms;
+  }
+
+  /* Empty state styling (#16) */
+  .empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem 1rem;
+    color: var(--muted-foreground);
+  }
 }

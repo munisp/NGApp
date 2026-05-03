@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -6,13 +6,19 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { CommandDialog, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem } from '@/components/ui/command';
 import { trpc } from '@/lib/trpc';
+import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
 import {
   LayoutDashboard, ArrowRightLeft, Wallet, Receipt, Globe, Shield, UserPlus,
   Settings, TrendingUp, CheckCircle2, Clock, AlertTriangle, XCircle, Building2,
   Search, Plus, Send, AlertOctagon, ArrowUpCircle, Gavel, RefreshCw,
   DollarSign, BarChart3, Layers, Network, Key, Activity, Code, FileText, Eye, Copy,
+  PanelLeftClose, PanelLeft, Moon, Sun, Download, ChevronRight, ArrowUpDown,
+  ChevronLeft, ChevronDown, Keyboard, Filter, FileSpreadsheet,
 } from 'lucide-react';
 
 // --- Types ---
@@ -90,9 +96,86 @@ function formatNgn(amount: string | number) {
 // MAIN COMPONENT
 // =============================================================================
 
+// --- Dark mode hook ---
+function useDarkMode() {
+  const [dark, setDark] = useState(() => {
+    if (typeof window !== 'undefined') return document.documentElement.classList.contains('dark');
+    return false;
+  });
+  const toggle = useCallback(() => {
+    setDark(d => {
+      const next = !d;
+      document.documentElement.classList.toggle('dark', next);
+      localStorage.setItem('theme', next ? 'dark' : 'light');
+      return next;
+    });
+  }, []);
+  useEffect(() => {
+    const saved = localStorage.getItem('theme');
+    if (saved === 'dark') { document.documentElement.classList.add('dark'); setDark(true); }
+  }, []);
+  return { dark, toggle };
+}
+
+// --- Relative time ---
+function relativeTime(dateStr: string) {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'just now';
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  const days = Math.floor(hrs / 24);
+  return `${days}d ago`;
+}
+
+// --- Loading skeleton ---
+function TableSkeleton({ rows = 5, cols = 6 }: { rows?: number; cols?: number }) {
+  return (
+    <Table>
+      <TableHeader><TableRow>{Array.from({ length: cols }).map((_, i) => <TableHead key={i}><Skeleton className="h-4 w-20" /></TableHead>)}</TableRow></TableHeader>
+      <TableBody>
+        {Array.from({ length: rows }).map((_, r) => (
+          <TableRow key={r}>{Array.from({ length: cols }).map((_, c) => <TableCell key={c}><Skeleton className="h-4 w-full" /></TableCell>)}</TableRow>
+        ))}
+      </TableBody>
+    </Table>
+  );
+}
+
+// --- Sortable header ---
+function SortableHeader({ label, sortKey, currentSort, onSort }: { label: string; sortKey: string; currentSort: { key: string; dir: 'asc' | 'desc' } | null; onSort: (key: string) => void }) {
+  const active = currentSort?.key === sortKey;
+  return (
+    <TableHead className="cursor-pointer select-none hover:bg-accent/50" onClick={() => onSort(sortKey)}>
+      <div className="flex items-center gap-1">
+        {label}
+        <ArrowUpDown className={`h-3 w-3 ${active ? 'text-foreground' : 'text-muted-foreground/50'}`} />
+      </div>
+    </TableHead>
+  );
+}
+
+// --- Export helper ---
+function exportTableToCSV(headers: string[], rows: string[][], filename: string) {
+  const csv = [headers.join(','), ...rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(','))].join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename; a.click();
+  URL.revokeObjectURL(url);
+  toast.success(`Exported ${rows.length} rows to ${filename}`);
+}
+
 export default function OutboundRemittance() {
-  const [activeSection, setActiveSection] = useState<NavSection>('dashboard');
+  const [activeSection, setActiveSection] = useState<NavSection>(() => {
+    const hash = window.location.hash.replace('#', '') as NavSection;
+    return hash || 'dashboard';
+  });
   const [searchQuery, setSearchQuery] = useState('');
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [cmdOpen, setCmdOpen] = useState(false);
+  const { dark, toggle: toggleDark } = useDarkMode();
 
   const { data: authContext, isLoading: loadingAuth, error: authError } = trpc.outboundRemittance.getMyContext.useQuery(
     undefined, { retry: 1, retryDelay: 1000 }
@@ -101,69 +184,165 @@ export default function OutboundRemittance() {
   const navItems = getNavItems(userRole);
   const isAdmin = userRole === 'admin' || userRole === 'cbn';
 
+  // URL hash sync for tab persistence (#5)
+  useEffect(() => {
+    window.location.hash = activeSection;
+  }, [activeSection]);
+
+  // Global keyboard shortcut for command palette (#3)
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') { e.preventDefault(); setCmdOpen(true); }
+      if (e.key === '?' && !['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement).tagName)) { e.preventDefault(); toast.info('Keyboard Shortcuts: Ctrl+K = Search, 1-9 = Nav sections, ? = Help'); }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, []);
+
+  // Loading skeleton (#15)
   if (loadingAuth && !authError) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-        <p className="ml-3 text-muted-foreground text-sm">Authenticating...</p>
+      <div className="min-h-screen bg-background flex">
+        <aside className="w-64 border-r bg-card flex flex-col">
+          <div className="p-4 border-b"><Skeleton className="h-10 w-full" /></div>
+          <div className="p-4 border-b"><Skeleton className="h-12 w-full" /></div>
+          <div className="p-2 space-y-2 flex-1">{Array.from({ length: 10 }).map((_, i) => <Skeleton key={i} className="h-8 w-full" />)}</div>
+        </aside>
+        <main className="flex-1 p-6">
+          <Skeleton className="h-8 w-64 mb-4" />
+          <div className="grid grid-cols-4 gap-4 mb-6">{Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-24" />)}</div>
+          <Skeleton className="h-64 w-full" />
+        </main>
       </div>
     );
   }
 
   return (
+    <TooltipProvider>
     <div className="min-h-screen bg-background flex">
-      {/* Left Sidebar */}
-      <aside className="w-64 border-r bg-card flex flex-col">
-        <div className="p-4 border-b">
-          <div className="flex items-center gap-2">
-            <Globe className="h-5 w-5 text-blue-600" />
-            <div>
-              <h2 className="font-semibold text-sm">Outbound Remittance</h2>
-              <p className="text-xs text-muted-foreground">Payment Switch Module</p>
+      {/* Command Palette (#3) */}
+      <CommandDialog open={cmdOpen} onOpenChange={setCmdOpen}>
+        <CommandInput placeholder="Search sections, transfers, participants..." />
+        <CommandList>
+          <CommandEmpty>No results found.</CommandEmpty>
+          <CommandGroup heading="Sections">
+            {navItems.map(item => (
+              <CommandItem key={item.id} onSelect={() => { setActiveSection(item.id); setCmdOpen(false); }}>
+                <item.icon className="mr-2 h-4 w-4" />
+                {item.label}
+              </CommandItem>
+            ))}
+          </CommandGroup>
+          <CommandGroup heading="Actions">
+            <CommandItem onSelect={() => { toggleDark(); setCmdOpen(false); }}>
+              {dark ? <Sun className="mr-2 h-4 w-4" /> : <Moon className="mr-2 h-4 w-4" />}
+              Toggle {dark ? 'Light' : 'Dark'} Mode
+            </CommandItem>
+            <CommandItem onSelect={() => { setSidebarCollapsed(c => !c); setCmdOpen(false); }}>
+              <PanelLeft className="mr-2 h-4 w-4" />
+              Toggle Sidebar
+            </CommandItem>
+          </CommandGroup>
+        </CommandList>
+      </CommandDialog>
+
+      {/* Collapsible Sidebar (#1) */}
+      <aside className={`${sidebarCollapsed ? 'w-16' : 'w-64'} border-r bg-card flex flex-col transition-all duration-200`}>
+        <div className="p-3 border-b flex items-center justify-between">
+          <div className={`flex items-center gap-2 ${sidebarCollapsed ? 'justify-center w-full' : ''}`}>
+            <Globe className="h-5 w-5 text-blue-600 shrink-0" />
+            {!sidebarCollapsed && (
+              <div>
+                <h2 className="font-semibold text-sm">Outbound Remittance</h2>
+                <p className="text-xs text-muted-foreground">Payment Switch Module</p>
+              </div>
+            )}
+          </div>
+          {!sidebarCollapsed && (
+            <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => setSidebarCollapsed(true)}>
+              <PanelLeftClose className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
+        {!sidebarCollapsed && (
+          <div className="p-4 border-b">
+            <p className="text-xs text-muted-foreground">{isAdmin ? 'Platform Admin' : 'Your Account'}</p>
+            <p className="font-medium text-sm">{authContext?.participantName ?? (isAdmin ? 'CBN / Admin' : 'Participant')}</p>
+            <div className="flex items-center gap-2 mt-1">
+              {authContext?.tier && <Badge variant="outline" className="text-xs">{authContext.tier} Tier</Badge>}
+              <Badge className="text-xs bg-green-600">Connected</Badge>
             </div>
           </div>
-        </div>
-        <div className="p-4 border-b">
-          <p className="text-xs text-muted-foreground">{isAdmin ? 'Platform Admin' : 'Your Account'}</p>
-          <p className="font-medium text-sm">{authContext?.participantName ?? (isAdmin ? 'CBN / Admin' : 'Participant')}</p>
-          <div className="flex items-center gap-2 mt-1">
-            {authContext?.tier && <Badge variant="outline" className="text-xs">{authContext.tier} Tier</Badge>}
-            <Badge className="text-xs bg-green-600">Connected</Badge>
+        )}
+        {!sidebarCollapsed && (
+          <div className="p-3 border-b">
+            <div className="relative">
+              <Search className="absolute left-2 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
+              <Input
+                placeholder="Search... (Ctrl+K)"
+                className="pl-8 h-8 text-xs"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter' && searchQuery.length >= 2) setActiveSection('transfers'); }}
+                onFocus={() => setCmdOpen(true)}
+              />
+            </div>
           </div>
-        </div>
-        {/* Search */}
-        <div className="p-3 border-b">
-          <div className="relative">
-            <Search className="absolute left-2 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
-            <Input
-              placeholder="Search..."
-              className="pl-8 h-8 text-xs"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onKeyDown={(e) => { if (e.key === 'Enter' && searchQuery.length >= 2) setActiveSection('transfers'); }}
-            />
-          </div>
-        </div>
-        <nav className="flex-1 p-2 space-y-0.5">
+        )}
+        <nav className={`flex-1 ${sidebarCollapsed ? 'p-1' : 'p-2'} space-y-0.5 overflow-y-auto`}>
           {navItems.map((item) => (
-            <button
-              key={item.id}
-              onClick={() => setActiveSection(item.id)}
-              className={`w-full flex items-center gap-2 px-3 py-2 text-sm rounded-md transition-colors ${activeSection === item.id ? 'bg-primary text-primary-foreground' : 'hover:bg-accent'}`}
-            >
-              <item.icon className="h-4 w-4" />
-              {item.label}
-            </button>
+            <Tooltip key={item.id} delayDuration={sidebarCollapsed ? 0 : 999999}>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={() => setActiveSection(item.id)}
+                  className={`w-full flex items-center ${sidebarCollapsed ? 'justify-center px-2' : 'gap-2 px-3'} py-2 text-sm rounded-md transition-colors ${activeSection === item.id ? 'bg-primary text-primary-foreground' : 'hover:bg-accent'}`}
+                >
+                  <item.icon className="h-4 w-4 shrink-0" />
+                  {!sidebarCollapsed && item.label}
+                </button>
+              </TooltipTrigger>
+              {sidebarCollapsed && <TooltipContent side="right">{item.label}</TooltipContent>}
+            </Tooltip>
           ))}
         </nav>
-        <div className="p-3 border-t text-xs text-muted-foreground">
-          <p>Role: {userRole}</p>
-          <p className="mt-1">API v2.1 • Switch v4.2</p>
+        <div className={`border-t ${sidebarCollapsed ? 'p-1' : 'p-3'}`}>
+          <div className={`flex ${sidebarCollapsed ? 'flex-col items-center gap-1' : 'items-center justify-between'}`}>
+            <Tooltip delayDuration={0}>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={toggleDark}>
+                  {dark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side={sidebarCollapsed ? 'right' : 'top'}>Toggle {dark ? 'Light' : 'Dark'} Mode</TooltipContent>
+            </Tooltip>
+            {sidebarCollapsed && (
+              <Tooltip delayDuration={0}>
+                <TooltipTrigger asChild>
+                  <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => setSidebarCollapsed(false)}>
+                    <PanelLeft className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="right">Expand Sidebar</TooltipContent>
+              </Tooltip>
+            )}
+            {!sidebarCollapsed && (
+              <div className="text-xs text-muted-foreground">
+                <p>Role: {userRole}</p>
+                <p className="mt-0.5">API v2.1 • Switch v4.2</p>
+              </div>
+            )}
+          </div>
         </div>
       </aside>
 
       {/* Main Content */}
       <main className="flex-1 p-6 overflow-auto">
+        {/* Breadcrumb (#2) */}
+        <div className="flex items-center gap-1 text-xs text-muted-foreground mb-4">
+          <span className="cursor-pointer hover:text-foreground" onClick={() => setActiveSection('dashboard')}>Home</span>
+          <ChevronRight className="h-3 w-3" />
+          <span className="text-foreground font-medium">{navItems.find(n => n.id === activeSection)?.label ?? activeSection}</span>
+        </div>
         {activeSection === 'dashboard' && <DashboardSection role={userRole} />}
         {activeSection === 'transfers' && <TransfersSection role={userRole} search={searchQuery} />}
         {activeSection === 'prefund' && <PrefundSection role={userRole} />}
@@ -183,6 +362,7 @@ export default function OutboundRemittance() {
         {activeSection === 'settings' && <SettingsSection role={userRole} />}
       </main>
     </div>
+    </TooltipProvider>
   );
 }
 
@@ -194,7 +374,13 @@ function DashboardSection({ role }: { role: UserRole }) {
   const isAdmin = role === 'admin' || role === 'cbn';
   const { data: metrics, isLoading } = trpc.outboundRemittance.getDashboardMetrics.useQuery();
 
-  if (isLoading) return <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin" /></div>;
+  if (isLoading) return (
+    <div className="space-y-6">
+      <Skeleton className="h-8 w-64" />
+      <div className="grid grid-cols-4 gap-4">{Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-24" />)}</div>
+      <Skeleton className="h-64 w-full" />
+    </div>
+  );
 
   return (
     <div className="space-y-6">
@@ -231,7 +417,18 @@ function DashboardSection({ role }: { role: UserRole }) {
         </CardContent></Card>
       ) : null}
       <Card>
-        <CardHeader><CardTitle className="text-lg">Recent Transfers</CardTitle></CardHeader>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-lg">Recent Transfers</CardTitle>
+            {metrics?.recentTransfers && metrics.recentTransfers.length > 0 && (
+              <Button variant="outline" size="sm" onClick={() => exportTableToCSV(
+                ['Ref', 'Beneficiary', 'Corridor', 'Amount', 'Status'],
+                (metrics.recentTransfers as any[]).map((t: any) => [t.transferRef, t.beneficiaryName, t.corridor, t.amountNgn, t.status]),
+                'recent-transfers.csv'
+              )}><Download className="h-3 w-3 mr-1" />Export</Button>
+            )}
+          </div>
+        </CardHeader>
         <CardContent>
           {metrics?.recentTransfers && metrics.recentTransfers.length > 0 ? (
             <Table>
@@ -250,7 +447,7 @@ function DashboardSection({ role }: { role: UserRole }) {
                 ))}
               </TableBody>
             </Table>
-          ) : <p className="text-center text-muted-foreground py-4">No transfers found</p>}
+          ) : <div className="empty-state"><FileText className="h-12 w-12 mb-2 opacity-30" /><p className="text-sm">No transfers found</p><p className="text-xs">Transfers will appear here once submitted</p></div>}
         </CardContent>
       </Card>
     </div>
@@ -2660,10 +2857,12 @@ function SettlementSection() {
 
   const utils = trpc.useUtils();
   const confirmMut = trpc.outboundRemittance.confirmSettlementBatch.useMutation({
-    onSuccess: () => { utils.outboundRemittance.getSettlementBatches.invalidate(); utils.outboundRemittance.getSettlementStats.invalidate(); },
+    onSuccess: (d) => { utils.outboundRemittance.getSettlementBatches.invalidate(); utils.outboundRemittance.getSettlementStats.invalidate(); toast.success(`Batch ${d.batchId} confirmed`); },
+    onError: (e) => toast.error(`Confirm failed: ${e.message}`),
   });
   const retryMut = trpc.outboundRemittance.retrySettlementBatch.useMutation({
-    onSuccess: () => { utils.outboundRemittance.getSettlementBatches.invalidate(); utils.outboundRemittance.getSettlementStats.invalidate(); },
+    onSuccess: (d) => { utils.outboundRemittance.getSettlementBatches.invalidate(); utils.outboundRemittance.getSettlementStats.invalidate(); toast.success(`Batch ${d.batchId} retrying (attempt ${d.retryCount})`); },
+    onError: (e) => toast.error(`Retry failed: ${e.message}`),
   });
 
   const stats = statsQuery.data;
@@ -2706,7 +2905,16 @@ function SettlementSection() {
 
       {stlTab === 'batches' && (
         <Card>
-          <CardHeader><CardTitle>Settlement Batches</CardTitle><CardDescription>Active and completed batch settlements across all rails</CardDescription></CardHeader>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div><CardTitle>Settlement Batches</CardTitle><CardDescription>Active and completed batch settlements across all rails</CardDescription></div>
+              <Button variant="outline" size="sm" onClick={() => exportTableToCSV(
+                ['Batch ID', 'Rail', 'Status', 'Transfers', 'Gross NGN', 'Net NGN'],
+                batches.map((b: any) => [b.batchId, b.railId, b.status, b.transferCount, b.totalGrossNGN, b.totalNetNGN]),
+                'settlement-batches.csv'
+              )}><Download className="h-3 w-3 mr-1" />Export CSV</Button>
+            </div>
+          </CardHeader>
           <CardContent>
             <Table>
               <TableHeader>

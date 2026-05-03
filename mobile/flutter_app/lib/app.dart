@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'screens/home_screen.dart';
 import 'screens/dashboard_screen.dart';
@@ -15,6 +16,7 @@ import 'screens/limits_screen.dart';
 import 'screens/fees_screen.dart';
 import 'screens/audit_log_screen.dart';
 import 'screens/login_screen.dart';
+import 'screens/outbound_remittance_screen.dart';
 
 final GoRouter _router = GoRouter(
   initialLocation: '/login',
@@ -37,30 +39,60 @@ final GoRouter _router = GoRouter(
         GoRoute(path: '/fees', builder: (_, __) => const FeesScreen()),
         GoRoute(path: '/audit-log', builder: (_, __) => const AuditLogScreen()),
         GoRoute(path: '/settings', builder: (_, __) => const SettingsScreen()),
+        GoRoute(path: '/outbound', builder: (_, __) => const OutboundRemittanceScreen()),
       ],
     ),
   ],
 );
+
+// Theme notifier for dark mode toggle
+class ThemeNotifier extends ChangeNotifier {
+  ThemeMode _mode = ThemeMode.system;
+  ThemeMode get mode => _mode;
+
+  void toggle() {
+    _mode = _mode == ThemeMode.dark ? ThemeMode.light : ThemeMode.dark;
+    notifyListeners();
+  }
+}
+
+final themeNotifier = ThemeNotifier();
 
 class PaymentSwitchApp extends StatelessWidget {
   const PaymentSwitchApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp.router(
-      title: 'Payment Switch',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorSchemeSeed: const Color(0xFF1A73E8),
-        useMaterial3: true,
-        brightness: Brightness.light,
+    return AnimatedBuilder(
+      animation: themeNotifier,
+      builder: (context, _) => MaterialApp.router(
+        title: 'Payment Switch',
+        debugShowCheckedModeBanner: false,
+        themeMode: themeNotifier.mode,
+        theme: ThemeData(
+          colorSchemeSeed: const Color(0xFF1A73E8),
+          useMaterial3: true,
+          brightness: Brightness.light,
+          pageTransitionsTheme: const PageTransitionsTheme(
+            builders: {
+              TargetPlatform.android: FadeUpwardsPageTransitionsBuilder(),
+              TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+            },
+          ),
+        ),
+        darkTheme: ThemeData(
+          colorSchemeSeed: const Color(0xFF1A73E8),
+          useMaterial3: true,
+          brightness: Brightness.dark,
+          pageTransitionsTheme: const PageTransitionsTheme(
+            builders: {
+              TargetPlatform.android: FadeUpwardsPageTransitionsBuilder(),
+              TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+            },
+          ),
+        ),
+        routerConfig: _router,
       ),
-      darkTheme: ThemeData(
-        colorSchemeSeed: const Color(0xFF1A73E8),
-        useMaterial3: true,
-        brightness: Brightness.dark,
-      ),
-      routerConfig: _router,
     );
   }
 }
@@ -71,18 +103,67 @@ class MainShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isTablet = MediaQuery.of(context).size.shortestSide >= 600;
+
     return Scaffold(
       body: child,
+      // Floating Action Button (#32)
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => _showQuickActions(context),
+        child: const Icon(Icons.add),
+      ),
+      // Bottom Navigation (#25) - adaptive for tablet
       bottomNavigationBar: NavigationBar(
         selectedIndex: _getSelectedIndex(GoRouterState.of(context).uri.toString()),
         onDestinationSelected: (index) => _onItemTapped(context, index),
+        labelBehavior: isTablet
+            ? NavigationDestinationLabelBehavior.alwaysShow
+            : NavigationDestinationLabelBehavior.onlyShowSelected,
         destinations: const [
-          NavigationDestination(icon: Icon(Icons.home), label: 'Home'),
-          NavigationDestination(icon: Icon(Icons.dashboard), label: 'Dashboard'),
-          NavigationDestination(icon: Icon(Icons.send), label: 'Send'),
-          NavigationDestination(icon: Icon(Icons.support_agent), label: 'Support'),
-          NavigationDestination(icon: Icon(Icons.settings), label: 'Settings'),
+          NavigationDestination(icon: Icon(Icons.home_outlined), selectedIcon: Icon(Icons.home), label: 'Home'),
+          NavigationDestination(icon: Icon(Icons.dashboard_outlined), selectedIcon: Icon(Icons.dashboard), label: 'Dashboard'),
+          NavigationDestination(icon: Icon(Icons.send_outlined), selectedIcon: Icon(Icons.send), label: 'Send'),
+          NavigationDestination(icon: Icon(Icons.account_balance_outlined), selectedIcon: Icon(Icons.account_balance), label: 'Settlement'),
+          NavigationDestination(icon: Icon(Icons.more_horiz), selectedIcon: Icon(Icons.more_horiz), label: 'More'),
         ],
+      ),
+    );
+  }
+
+  // Quick actions bottom sheet (#32)
+  void _showQuickActions(BuildContext context) {
+    HapticFeedback.mediumImpact(); // Haptic feedback (#28)
+    showModalBottomSheet(
+      context: context,
+      builder: (ctx) => Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('Quick Actions', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 16),
+            ListTile(
+              leading: const Icon(Icons.send, color: Colors.blue),
+              title: const Text('New Transfer'),
+              onTap: () { Navigator.pop(ctx); context.go('/remittance'); },
+            ),
+            ListTile(
+              leading: const Icon(Icons.account_balance_wallet, color: Colors.green),
+              title: const Text('Check Balance'),
+              onTap: () { Navigator.pop(ctx); context.go('/dashboard'); },
+            ),
+            ListTile(
+              leading: const Icon(Icons.repeat, color: Colors.orange),
+              title: const Text('Recurring Transfer'),
+              onTap: () { Navigator.pop(ctx); context.go('/recurring'); },
+            ),
+            ListTile(
+              leading: const Icon(Icons.batch_prediction, color: Colors.purple),
+              title: const Text('Batch Transfer'),
+              onTap: () { Navigator.pop(ctx); context.go('/batch'); },
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -90,18 +171,44 @@ class MainShell extends StatelessWidget {
   int _getSelectedIndex(String location) {
     if (location.startsWith('/dashboard')) return 1;
     if (location.startsWith('/remittance')) return 2;
-    if (location.startsWith('/support')) return 3;
-    if (location.startsWith('/settings')) return 4;
+    if (location.startsWith('/outbound')) return 3;
+    if (location.startsWith('/settings') || location.startsWith('/support')) return 4;
     return 0;
   }
 
   void _onItemTapped(BuildContext context, int index) {
+    HapticFeedback.selectionClick(); // Haptic feedback (#28)
     switch (index) {
       case 0: context.go('/'); break;
       case 1: context.go('/dashboard'); break;
       case 2: context.go('/remittance'); break;
-      case 3: context.go('/support'); break;
-      case 4: context.go('/settings'); break;
+      case 3: context.go('/outbound'); break;
+      case 4: _showMoreSheet(context); break;
     }
+  }
+
+  // More menu bottom sheet
+  void _showMoreSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      builder: (ctx) => ListView(
+        shrinkWrap: true,
+        children: [
+          ListTile(leading: const Icon(Icons.gavel), title: const Text('Disputes'), onTap: () { Navigator.pop(ctx); context.go('/disputes'); }),
+          ListTile(leading: const Icon(Icons.verified_user), title: const Text('Compliance'), onTap: () { Navigator.pop(ctx); context.go('/compliance'); }),
+          ListTile(leading: const Icon(Icons.security), title: const Text('Security'), onTap: () { Navigator.pop(ctx); context.go('/security'); }),
+          ListTile(leading: const Icon(Icons.people), title: const Text('Referrals'), onTap: () { Navigator.pop(ctx); context.go('/referrals'); }),
+          ListTile(leading: const Icon(Icons.receipt_long), title: const Text('Fees'), onTap: () { Navigator.pop(ctx); context.go('/fees'); }),
+          ListTile(leading: const Icon(Icons.history), title: const Text('Audit Log'), onTap: () { Navigator.pop(ctx); context.go('/audit-log'); }),
+          ListTile(leading: const Icon(Icons.support_agent), title: const Text('Support'), onTap: () { Navigator.pop(ctx); context.go('/support'); }),
+          ListTile(
+            leading: Icon(themeNotifier.mode == ThemeMode.dark ? Icons.light_mode : Icons.dark_mode),
+            title: Text(themeNotifier.mode == ThemeMode.dark ? 'Light Mode' : 'Dark Mode'),
+            onTap: () { Navigator.pop(ctx); themeNotifier.toggle(); },
+          ),
+          ListTile(leading: const Icon(Icons.settings), title: const Text('Settings'), onTap: () { Navigator.pop(ctx); context.go('/settings'); }),
+        ],
+      ),
+    );
   }
 }
