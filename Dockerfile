@@ -34,9 +34,8 @@ COPY package.json pnpm-lock.yaml ./
 COPY patches ./patches
 RUN pnpm install --prod
 
-# Copy built assets from builder
+# Copy built assets from builder (dist/ contains both server bundle and public/ frontend)
 COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/client/dist ./client/dist
 
 # Copy shared and drizzle
 COPY shared ./shared
