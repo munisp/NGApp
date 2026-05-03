@@ -17,8 +17,7 @@ COPY client ./client
 COPY server ./server
 COPY shared ./shared
 COPY drizzle ./drizzle
-COPY tsconfig.json vite.config.ts tailwind.config.ts postcss.config.mjs ./
-COPY theme.json ./
+COPY tsconfig.json vite.config.ts ./
 
 # Build frontend (vite) + backend (esbuild)
 RUN pnpm run build
