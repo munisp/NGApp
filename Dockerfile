@@ -5,8 +5,9 @@ FROM node:22-alpine AS builder
 
 WORKDIR /app
 
-# Copy package files
+# Copy package files and patches
 COPY package.json pnpm-lock.yaml ./
+COPY patches ./patches
 
 # Install pnpm and dependencies
 RUN npm install -g pnpm@latest
@@ -30,6 +31,7 @@ WORKDIR /app
 # Install pnpm and production dependencies only
 RUN npm install -g pnpm@latest
 COPY package.json pnpm-lock.yaml ./
+COPY patches ./patches
 RUN pnpm install --frozen-lockfile --prod
 
 # Copy built assets from builder
