@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -25,7 +25,7 @@ import {
 
 // --- Types ---
 type UserRole = 'participant' | 'admin' | 'cbn';
-type NavSection = 'dashboard' | 'transfers' | 'prefund' | 'billing' | 'corridors' | 'compliance' | 'disputes' | 'approvals' | 'participants' | 'enforcement' | 'fx_management' | 'tier_management' | 'analytics' | 'payment_rails' | 'developer_portal' | 'transaction_monitoring' | 'settlement' | 'settings';
+type NavSection = 'dashboard' | 'transfers' | 'prefund' | 'billing' | 'corridors' | 'compliance' | 'disputes' | 'approvals' | 'participants' | 'enforcement' | 'fx_management' | 'tier_management' | 'analytics' | 'payment_rails' | 'developer_portal' | 'transaction_monitoring' | 'settlement' | 'settings' | 'ai_prophet' | 'ai_cocoindex' | 'ai_kgqa' | 'ai_falkordb' | 'ai_ollama' | 'ai_art' | 'ai_gnn' | 'ai_mcmc';
 
 // 13 CBN-regulated corridors (static reference data)
 const corridors = [
@@ -78,6 +78,15 @@ function getNavItems(role: UserRole) {
     { id: 'settlement' as NavSection, label: 'Settlement', tKey: 'settlement', icon: Layers },
     { id: 'billing' as NavSection, label: 'Billing', tKey: 'billing', icon: Receipt },
     { id: 'settings' as NavSection, label: 'Settings', tKey: 'settings', icon: Settings },
+    // AI / ML
+    { id: 'ai_prophet' as NavSection, label: 'Prophet Pipeline', tKey: 'aiProphet', icon: TrendingUp },
+    { id: 'ai_cocoindex' as NavSection, label: 'CocoIndex', tKey: 'aiCocoIndex', icon: Layers },
+    { id: 'ai_kgqa' as NavSection, label: 'EPR-KGQA', tKey: 'aiKGQA', icon: Search },
+    { id: 'ai_falkordb' as NavSection, label: 'FalkorDB', tKey: 'aiFalkorDB', icon: Network },
+    { id: 'ai_ollama' as NavSection, label: 'Ollama LLM', tKey: 'aiOllama', icon: Zap },
+    { id: 'ai_art' as NavSection, label: 'ART Robustness', tKey: 'aiART', icon: ShieldAlert },
+    { id: 'ai_gnn' as NavSection, label: 'GNN + Neo4j', tKey: 'aiGNN', icon: Network },
+    { id: 'ai_mcmc' as NavSection, label: 'MCMC Fraud', tKey: 'aiMCMC', icon: Activity },
   ];
 }
 
@@ -376,7 +385,22 @@ export default function OutboundRemittance() {
           </div>
         )}
         <nav className={`flex-1 ${sidebarCollapsed ? 'p-1' : 'p-2'} space-y-0.5 overflow-y-auto`}>
-          {navItems.map((item) => (
+          {navItems.filter(n => !n.id.startsWith('ai_')).map((item) => (
+            <Tooltip key={item.id} delayDuration={sidebarCollapsed ? 0 : 999999}>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={() => setActiveSection(item.id)}
+                  className={`w-full flex items-center ${sidebarCollapsed ? 'justify-center px-2' : 'gap-2 px-3'} py-2 text-sm rounded-md transition-colors ${activeSection === item.id ? 'bg-primary text-primary-foreground' : 'hover:bg-accent'}`}
+                >
+                  <item.icon className="h-4 w-4 shrink-0" />
+                  {!sidebarCollapsed && (item.tKey ? t(item.tKey) : item.label)}
+                </button>
+              </TooltipTrigger>
+              {sidebarCollapsed && <TooltipContent side="right">{item.tKey ? t(item.tKey) : item.label}</TooltipContent>}
+            </Tooltip>
+          ))}
+          {!sidebarCollapsed && <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider px-3 pt-3 pb-1">AI / ML</div>}
+          {navItems.filter(n => n.id.startsWith('ai_')).map((item) => (
             <Tooltip key={item.id} delayDuration={sidebarCollapsed ? 0 : 999999}>
               <TooltipTrigger asChild>
                 <button
@@ -472,10 +496,292 @@ export default function OutboundRemittance() {
         {activeSection === 'transaction_monitoring' && <TransactionMonitoringSection role={userRole} />}
         {activeSection === 'settlement' && <SettlementSection />}
         {activeSection === 'settings' && <SettingsSection role={userRole} />}
+        {activeSection?.startsWith('ai_') && <OutboundAIMLSection activeTab={activeSection} />}
       </main>
     </div>
     </TooltipProvider>
   );
+}
+
+// =============================================================================
+// OUTBOUND AI/ML SECTION
+// =============================================================================
+
+function SourceBanner({ source }: { source: string }) {
+  const isLive = source.includes('LIVE');
+  return (
+    <div className={`mb-4 p-3 rounded-md border text-sm ${isLive ? 'bg-green-50 border-green-300 text-green-800 dark:bg-green-950 dark:border-green-700 dark:text-green-300' : 'bg-amber-50 border-amber-300 text-amber-800 dark:bg-amber-950 dark:border-amber-700 dark:text-amber-300'}`}>
+      {source}
+    </div>
+  );
+}
+
+function MetricCard({ label, value, sub }: { label: string; value: string | number; sub?: string }) {
+  return (
+    <div className="border rounded-lg p-4">
+      <p className="text-xs text-muted-foreground">{label}</p>
+      <p className="text-xl font-bold mt-1">{value}</p>
+      {sub && <p className="text-xs text-muted-foreground mt-1">{sub}</p>}
+    </div>
+  );
+}
+
+function OutboundAIMLSection({ activeTab }: { activeTab: string }) {
+  const prophetQ = trpc.outboundRemittance.getOutboundProphetPipeline.useQuery(undefined, { enabled: activeTab === 'ai_prophet' });
+  const cocoQ = trpc.outboundRemittance.getOutboundCocoIndex.useQuery(undefined, { enabled: activeTab === 'ai_cocoindex' });
+  const kgqaQ = trpc.outboundRemittance.getOutboundEPRKGQA.useQuery(undefined, { enabled: activeTab === 'ai_kgqa' });
+  const falkorQ = trpc.outboundRemittance.getOutboundFalkorDB.useQuery(undefined, { enabled: activeTab === 'ai_falkordb' });
+  const ollamaQ = trpc.outboundRemittance.getOutboundOllamaStatus.useQuery(undefined, { enabled: activeTab === 'ai_ollama' });
+  const ollamaMut = trpc.outboundRemittance.queryOutboundOllama.useMutation();
+  const artQ = trpc.outboundRemittance.getOutboundARTResults.useQuery(undefined, { enabled: activeTab === 'ai_art' });
+  const gnnQ = trpc.outboundRemittance.getOutboundGNNFraudNetworks.useQuery(undefined, { enabled: activeTab === 'ai_gnn' });
+  const mcmcQ = trpc.outboundRemittance.getOutboundMCMCFraudScoring.useQuery(undefined, { enabled: activeTab === 'ai_mcmc' });
+  const [ollamaInput, setOllamaInput] = React.useState('');
+  const [ollamaHistory, setOllamaHistory] = React.useState<{q:string;a:string}[]>([]);
+
+  if (activeTab === 'ai_prophet') {
+    const d = prophetQ.data as any;
+    if (prophetQ.isLoading) return <Skeleton className="h-64 w-full" />;
+    if (!d) return <p className="text-muted-foreground">No Prophet data available</p>;
+    return (
+      <div className="space-y-4">
+        <h2 className="text-lg font-semibold">Prophet Forecasting Pipeline — Outbound Remittance</h2>
+        <SourceBanner source={d._source} />
+        <div className="grid grid-cols-4 gap-4">
+          <MetricCard label="Model" value={d.model.id} sub={d.model.framework} />
+          <MetricCard label="MAPE" value={`${d.metrics.mape.toFixed(2)}%`} sub={`Confidence: ${d.metrics.confidenceScore.toFixed(1)}%`} />
+          <MetricCard label="RMSE" value={d.metrics.rmse.toLocaleString()} sub={`MAE: ${d.metrics.mae.toLocaleString()}`} />
+          <MetricCard label="CV Folds" value={d.metrics.crossValidationFolds} sub={`R²: ${d.metrics.rSquared.toFixed(4)}`} />
+        </div>
+        <div className="border rounded-lg p-4">
+          <h3 className="font-medium mb-2">Cross-Validation Results</h3>
+          <table className="w-full text-sm"><thead><tr className="text-left text-muted-foreground"><th className="pb-1">Fold</th><th>MAPE</th><th>RMSE</th><th>R²</th></tr></thead>
+          <tbody>{d.crossValidation.map((cv: any) => <tr key={cv.fold}><td className="py-1">Fold {cv.fold}</td><td>{cv.mape.toFixed(2)}%</td><td>{cv.rmse.toLocaleString()}</td><td>{cv.rSquared.toFixed(4)}</td></tr>)}</tbody></table>
+        </div>
+        <div className="border rounded-lg p-4">
+          <h3 className="font-medium mb-2">Nigerian Regressors</h3>
+          <table className="w-full text-sm"><thead><tr className="text-left text-muted-foreground"><th className="pb-1">Regressor</th><th>Description</th><th>Weight</th><th>Active</th></tr></thead>
+          <tbody>{d.regressors.map((r: any) => <tr key={r.name}><td className="py-1 font-mono text-xs">{r.name}</td><td>{r.description}</td><td>{r.weight.toFixed(2)}</td><td>{r.active ? '✓' : '✗'}</td></tr>)}</tbody></table>
+        </div>
+        <div className="border rounded-lg p-4">
+          <h3 className="font-medium mb-2">Forecast (7-Day Horizon)</h3>
+          <table className="w-full text-sm"><thead><tr className="text-left text-muted-foreground"><th className="pb-1">Date</th><th>Corridor</th><th>Predicted (₦)</th><th>Lower</th><th>Upper</th><th>Tags</th></tr></thead>
+          <tbody>{d.forecasts.map((f: any, i: number) => <tr key={i}><td className="py-1">{f.date}</td><td>{f.corridor}</td><td className="font-medium">₦{f.predicted.toLocaleString()}</td><td>₦{f.lower.toLocaleString()}</td><td>₦{f.upper.toLocaleString()}</td><td>{f.isSalaryDay ? <span className="text-xs bg-blue-100 dark:bg-blue-900 px-1 rounded">SALARY DAY</span> : ''}{f.isHoliday ? <span className="text-xs bg-red-100 dark:bg-red-900 px-1 rounded ml-1">HOLIDAY</span> : ''}</td></tr>)}</tbody></table>
+        </div>
+      </div>
+    );
+  }
+
+  if (activeTab === 'ai_cocoindex') {
+    const d = cocoQ.data as any;
+    if (cocoQ.isLoading) return <Skeleton className="h-64 w-full" />;
+    if (!d) return <p className="text-muted-foreground">No CocoIndex data</p>;
+    return (
+      <div className="space-y-4">
+        <h2 className="text-lg font-semibold">CocoIndex Data Pipeline — Outbound Remittance</h2>
+        <div className="grid grid-cols-4 gap-4">
+          <MetricCard label="Pipeline" value={d.pipeline.name} sub={d.pipeline.framework} />
+          <MetricCard label="Total Docs" value={d.stats.totalDocs.toLocaleString()} sub={`${d.stats.indexingRate.toLocaleString()} docs/s`} />
+          <MetricCard label="Avg Latency" value={`${d.stats.avgLatencyMs}ms`} sub={`Cache hit: ${(d.stats.cacheHitRate * 100).toFixed(0)}%`} />
+          <MetricCard label="Status" value={d.pipeline.status} sub={d.pipeline.version} />
+        </div>
+        <div className="border rounded-lg p-4">
+          <h3 className="font-medium mb-2">Data Sources</h3>
+          <table className="w-full text-sm"><thead><tr className="text-left text-muted-foreground"><th className="pb-1">Source</th><th>Type</th><th>Status</th><th>Docs Indexed</th><th>Lag</th></tr></thead>
+          <tbody>{d.sources.map((s: any) => <tr key={s.name}><td className="py-1">{s.name}</td><td>{s.type}</td><td><span className={`text-xs px-1 rounded ${s.status === 'streaming' ? 'bg-green-100 dark:bg-green-900' : 'bg-blue-100 dark:bg-blue-900'}`}>{s.status}</span></td><td>{s.docsIndexed.toLocaleString()}</td><td>{s.lag}</td></tr>)}</tbody></table>
+        </div>
+        <div className="border rounded-lg p-4">
+          <h3 className="font-medium mb-2">Middleware Integration</h3>
+          <div className="grid grid-cols-3 gap-2 text-sm">
+            <div><span className="text-muted-foreground">Kafka:</span> {d.middleware.kafka}</div>
+            <div><span className="text-muted-foreground">Fluvio:</span> {d.middleware.fluvio}</div>
+            <div><span className="text-muted-foreground">Redis:</span> {d.middleware.redis}</div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (activeTab === 'ai_kgqa') {
+    const d = kgqaQ.data as any;
+    if (kgqaQ.isLoading) return <Skeleton className="h-64 w-full" />;
+    if (!d) return <p className="text-muted-foreground">No KGQA data</p>;
+    return (
+      <div className="space-y-4">
+        <h2 className="text-lg font-semibold">EPR-KGQA — Knowledge Graph QA (Outbound)</h2>
+        <div className="grid grid-cols-4 gap-4">
+          <MetricCard label="Nodes" value={d.graph.nodes.toLocaleString()} sub={d.graph.nodeTypes.join(', ')} />
+          <MetricCard label="Edges" value={d.graph.edges.toLocaleString()} sub={d.graph.edgeTypes.join(', ')} />
+          <MetricCard label="Total Queries" value={d.stats.totalQueries.toLocaleString()} sub={`Cache: ${(d.stats.cacheHitRate * 100).toFixed(0)}%`} />
+          <MetricCard label="Avg Latency" value={`${d.stats.avgLatencyMs}ms`} sub={d.graph.framework} />
+        </div>
+        <div className="border rounded-lg p-4">
+          <h3 className="font-medium mb-2">Recent KG Queries</h3>
+          {d.recentQueries.map((q: any, i: number) => (
+            <div key={i} className="mb-3 border-b last:border-0 pb-3">
+              <p className="font-medium text-sm">{q.question}</p>
+              <pre className="text-xs bg-muted p-2 rounded mt-1 overflow-x-auto">{q.cypher}</pre>
+              <p className="text-sm mt-1">{q.answer}</p>
+              <p className="text-xs text-muted-foreground mt-1">{q.latencyMs}ms • {q.tokens} tokens</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (activeTab === 'ai_falkordb') {
+    const d = falkorQ.data as any;
+    if (falkorQ.isLoading) return <Skeleton className="h-64 w-full" />;
+    if (!d) return <p className="text-muted-foreground">No FalkorDB data</p>;
+    return (
+      <div className="space-y-4">
+        <h2 className="text-lg font-semibold">FalkorDB Graph Engine — Outbound Remittance</h2>
+        <div className="grid grid-cols-4 gap-4">
+          <MetricCard label="Nodes" value={d.stats.totalNodes.toLocaleString()} sub={`${d.stats.totalEdges.toLocaleString()} edges`} />
+          <MetricCard label="Avg Query" value={`${d.stats.avgQueryMs}ms`} sub={`${d.stats.queriesPerSec.toLocaleString()} QPS`} />
+          <MetricCard label="Cache Hit" value={`${(d.stats.cacheHitRate * 100).toFixed(0)}%`} sub={`Memory: ${d.stats.memoryMb}MB`} />
+          <MetricCard label="Status" value={d.connection.status} sub={d.connection.graphName} />
+        </div>
+        <div className="border rounded-lg p-4">
+          <h3 className="font-medium mb-2">Corridor Graph</h3>
+          <table className="w-full text-sm"><thead><tr className="text-left text-muted-foreground"><th className="pb-1">Corridor</th><th>Nodes</th><th>Edges</th><th>Avg Degree</th><th>Risk Score</th></tr></thead>
+          <tbody>{d.corridorGraph.map((c: any) => <tr key={c.corridor}><td className="py-1 font-mono">{c.corridor}</td><td>{c.nodes.toLocaleString()}</td><td>{c.edges.toLocaleString()}</td><td>{c.avgDegree}</td><td><span className={`text-xs px-1 rounded ${c.riskScore > 0.15 ? 'bg-red-100 dark:bg-red-900' : 'bg-green-100 dark:bg-green-900'}`}>{c.riskScore}</span></td></tr>)}</tbody></table>
+        </div>
+        <div className="border rounded-lg p-4">
+          <h3 className="font-medium mb-2">Recent Queries</h3>
+          {d.recentQueries.map((q: any, i: number) => (
+            <div key={i} className="mb-2 border-b last:border-0 pb-2">
+              <pre className="text-xs bg-muted p-2 rounded overflow-x-auto">{q.query}</pre>
+              <p className="text-sm mt-1">Result: {q.result} <span className="text-muted-foreground">({q.latencyUs}μs)</span></p>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (activeTab === 'ai_ollama') {
+    const d = ollamaQ.data as any;
+    if (ollamaQ.isLoading) return <Skeleton className="h-64 w-full" />;
+    if (!d) return <p className="text-muted-foreground">No Ollama data</p>;
+    return (
+      <div className="space-y-4">
+        <h2 className="text-lg font-semibold">Ollama LLM — Outbound Remittance</h2>
+        <SourceBanner source={d._source} />
+        <div className="grid grid-cols-4 gap-4">
+          <MetricCard label="Model" value={d.config.model} sub={d.config.framework} />
+          <MetricCard label="Total Queries" value={d.stats.totalQueries} sub={`Avg: ${d.stats.avgLatencyMs}ms`} />
+          <MetricCard label="Tokens Used" value={d.stats.totalTokensUsed.toLocaleString()} sub={`Uptime: ${d.stats.uptimeHours}h`} />
+          <MetricCard label="Model Size" value={`${d.stats.modelSizeGb}GB`} sub={`Max Tokens: ${d.config.maxTokens}`} />
+        </div>
+        <div className="border rounded-lg p-4">
+          <h3 className="font-medium mb-2">Interactive Query</h3>
+          <div className="flex gap-2">
+            <input className="flex-1 border rounded px-3 py-2 text-sm" placeholder="Ask about outbound remittance..." value={ollamaInput} onChange={e => setOllamaInput(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && ollamaInput.trim()) { const q = ollamaInput.trim(); setOllamaInput(''); ollamaMut.mutate({ question: q }, { onSuccess: (r: any) => setOllamaHistory(h => [...h, { q, a: r.answer }]) }); } }} />
+            <Button size="sm" disabled={ollamaMut.isPending || !ollamaInput.trim()} onClick={() => { const q = ollamaInput.trim(); setOllamaInput(''); ollamaMut.mutate({ question: q }, { onSuccess: (r: any) => setOllamaHistory(h => [...h, { q, a: r.answer }]) }); }}>
+              {ollamaMut.isPending ? 'Thinking...' : 'Ask'}
+            </Button>
+          </div>
+          {ollamaHistory.map((h, i) => (
+            <div key={i} className="mt-3 border-t pt-2">
+              <p className="text-sm font-medium">Q: {h.q}</p>
+              <p className="text-sm mt-1 whitespace-pre-wrap">{h.a}</p>
+            </div>
+          ))}
+        </div>
+        <div className="border rounded-lg p-4">
+          <h3 className="font-medium mb-2">Recent Queries</h3>
+          {d.recentQueries.map((q: any, i: number) => (
+            <div key={i} className="mb-2 border-b last:border-0 pb-2">
+              <p className="text-sm font-medium">{q.question}</p>
+              <p className="text-sm mt-1">{q.answer}</p>
+              <p className="text-xs text-muted-foreground mt-1">{q.latencyMs}ms • {q.tokens} tokens • {q.category}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (activeTab === 'ai_art') {
+    const d = artQ.data as any;
+    if (artQ.isLoading) return <Skeleton className="h-64 w-full" />;
+    if (!d) return <p className="text-muted-foreground">No ART data</p>;
+    return (
+      <div className="space-y-4">
+        <h2 className="text-lg font-semibold">IBM ART Robustness — Outbound Remittance</h2>
+        <SourceBanner source={d._source} />
+        <div className="grid grid-cols-4 gap-4">
+          <MetricCard label="Model" value={d.model.name} sub={d.model.framework} />
+          <MetricCard label="Clean Accuracy" value={`${(d.model.accuracy * 100).toFixed(1)}%`} sub={`${d.model.trainingSamples} training samples`} />
+          <MetricCard label="Robustness" value={`${(d.model.robustness * 100).toFixed(1)}%`} sub={`${d.model.testSamples} test samples`} />
+          <MetricCard label="Features" value={d.model.features?.length || d.model.features} />
+        </div>
+        <div className="border rounded-lg p-4">
+          <h3 className="font-medium mb-2">Attack Results</h3>
+          <table className="w-full text-sm"><thead><tr className="text-left text-muted-foreground"><th className="pb-1">Attack</th><th>Type</th><th>Evasion Rate</th><th>Clean Acc</th><th>Adversarial Acc</th><th>Status</th></tr></thead>
+          <tbody>{d.attacks.map((a: any) => <tr key={a.name}><td className="py-1">{a.name}</td><td>{a.type}</td><td>{(a.evasionRate * 100).toFixed(1)}%</td><td>{(a.cleanAccuracy * 100).toFixed(1)}%</td><td>{(a.adversarialAccuracy * 100).toFixed(1)}%</td><td><span className="text-xs px-1 rounded bg-green-100 dark:bg-green-900">{a.status}</span></td></tr>)}</tbody></table>
+        </div>
+      </div>
+    );
+  }
+
+  if (activeTab === 'ai_gnn') {
+    const d = gnnQ.data as any;
+    if (gnnQ.isLoading) return <Skeleton className="h-64 w-full" />;
+    if (!d) return <p className="text-muted-foreground">No GNN data</p>;
+    return (
+      <div className="space-y-4">
+        <h2 className="text-lg font-semibold">GNN + Neo4j Fraud Detection — Outbound Remittance</h2>
+        <SourceBanner source={d._source} />
+        <div className="grid grid-cols-4 gap-4">
+          <MetricCard label="Model" value={d.model.name} sub={d.model.framework} />
+          <MetricCard label="Accuracy" value={`${(d.model.accuracy * 100).toFixed(1)}%`} sub={`±${(d.model.accuracyStd * 100).toFixed(2)}%`} />
+          <MetricCard label="AUC-ROC" value={d.model.aucRoc.toFixed(3)} sub={`CV: ${d.model.cvFolds} folds`} />
+          <MetricCard label="Graph" value={`${(d.graphStats.nodes / 1_000_000).toFixed(1)}M nodes`} sub={`${(d.graphStats.edges / 1_000_000).toFixed(1)}M edges`} />
+        </div>
+        <div className="border rounded-lg p-4">
+          <h3 className="font-medium mb-2">Detected Fraud Networks</h3>
+          <table className="w-full text-sm"><thead><tr className="text-left text-muted-foreground"><th className="pb-1">ID</th><th>Type</th><th>Nodes</th><th>Edges</th><th>Risk</th><th>Corridors</th><th>Description</th></tr></thead>
+          <tbody>{d.detectedNetworks.map((n: any) => <tr key={n.id}><td className="py-1 font-mono text-xs">{n.id}</td><td>{n.type}</td><td>{n.nodes}</td><td>{n.edges}</td><td><span className={`text-xs px-1 rounded ${n.risk_score > 0.8 ? 'bg-red-100 dark:bg-red-900' : 'bg-amber-100 dark:bg-amber-900'}`}>{n.risk_score}</span></td><td>{n.corridors.join(', ')}</td><td className="text-xs">{n.description}</td></tr>)}</tbody></table>
+        </div>
+      </div>
+    );
+  }
+
+  if (activeTab === 'ai_mcmc') {
+    const d = mcmcQ.data as any;
+    if (mcmcQ.isLoading) return <Skeleton className="h-64 w-full" />;
+    if (!d) return <p className="text-muted-foreground">No MCMC data</p>;
+    return (
+      <div className="space-y-4">
+        <h2 className="text-lg font-semibold">MCMC Bayesian Fraud Scoring — Outbound Remittance</h2>
+        <SourceBanner source={d._source} />
+        <div className="grid grid-cols-4 gap-4">
+          <MetricCard label="Framework" value={d.config.framework.split('(')[0].trim()} sub={d.config.framework} />
+          <MetricCard label="Posterior Mean" value={d.scoring.posteriorMean.toFixed(6)} sub={`Std: ${d.scoring.posteriorStd.toFixed(6)}`} />
+          <MetricCard label="HDI (94%)" value={`[${d.scoring.hdiLower.toFixed(4)}, ${d.scoring.hdiUpper.toFixed(4)}]`} sub={`R-hat: ${d.scoring.rHat.toFixed(3)}`} />
+          <MetricCard label="Risk Level" value={d.scoring.riskLevel} sub={`${d.config.chains} chains × ${d.config.samplesPerChain} samples`} />
+        </div>
+        <div className="border rounded-lg p-4">
+          <h3 className="font-medium mb-2">Example Transaction</h3>
+          <div className="text-sm space-y-1">
+            <p><span className="text-muted-foreground">Corridor:</span> {d.scoring.exampleTransaction.corridor}</p>
+            <p><span className="text-muted-foreground">Amount:</span> ${d.scoring.exampleTransaction.amountUsd.toLocaleString()}</p>
+            <p><span className="text-muted-foreground">Direction:</span> {d.scoring.exampleTransaction.direction}</p>
+          </div>
+        </div>
+        <div className="border rounded-lg p-4">
+          <h3 className="font-medium mb-2">Corridor Risk Map</h3>
+          <table className="w-full text-sm"><thead><tr className="text-left text-muted-foreground"><th className="pb-1">Corridor</th><th>Base Risk</th><th>Label</th></tr></thead>
+          <tbody>{d.corridorRiskMap.map((c: any) => <tr key={c.corridor}><td className="py-1 font-mono">{c.corridor}</td><td>{(c.baseRisk * 100).toFixed(1)}%</td><td><span className={`text-xs px-1 rounded ${c.label === 'HIGH' ? 'bg-red-100 dark:bg-red-900' : c.label === 'MEDIUM' ? 'bg-amber-100 dark:bg-amber-900' : 'bg-green-100 dark:bg-green-900'}`}>{c.label}</span></td></tr>)}</tbody></table>
+        </div>
+      </div>
+    );
+  }
+
+  return <p className="text-muted-foreground">Select an AI/ML tab from the sidebar</p>;
 }
 
 // =============================================================================
