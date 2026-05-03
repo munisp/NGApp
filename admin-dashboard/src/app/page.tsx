@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Layout } from '@/components/layout/Layout';
 import { NOCDashboard } from '@/components/dashboard/NOCDashboard';
 import { SettlementConsole } from '@/components/settlement/SettlementConsole';
@@ -39,12 +39,26 @@ import { RustServices } from '@/components/infrastructure/RustServices';
 import OutboundRemittanceDashboard from '@/components/outbound/OutboundRemittanceDashboard';
 import { GoServices } from '@/components/infrastructure/GoServices';
 import { MiddlewareDashboard } from '@/components/infrastructure/MiddlewareDashboard';
+import { DashboardHub } from '@/components/hub/DashboardHub';
+import { ROLE_DEFAULT_PAGES } from '@/components/layout/Sidebar';
 import { useAuth } from '@/lib/auth';
 import { Loader2 } from 'lucide-react';
 
 export default function Home() {
-  const { isAuthenticated, isLoading } = useAuth();
-  const [currentPage, setCurrentPage] = useState('dashboard');
+  const { isAuthenticated, isLoading, user, hasRole } = useAuth();
+  const [currentPage, setCurrentPage] = useState('hub');
+  const [initialRedirectDone, setInitialRedirectDone] = useState(false);
+
+  // Post-login redirect: set default page based on user's primary role
+  useEffect(() => {
+    if (isAuthenticated && user && !initialRedirectDone) {
+      const defaultPage = user.roles
+        .map((role) => ROLE_DEFAULT_PAGES[role])
+        .find(Boolean) || 'hub';
+      setCurrentPage(defaultPage);
+      setInitialRedirectDone(true);
+    }
+  }, [isAuthenticated, user, initialRedirectDone]);
 
   // Show loading spinner while checking auth
   if (isLoading) {
@@ -65,6 +79,8 @@ export default function Home() {
 
     const renderPage = () => {
       switch (currentPage) {
+        case 'hub':
+          return <DashboardHub onNavigate={setCurrentPage} />;
         case 'dashboard':
           return <NOCDashboard />;
         case 'journeys':
