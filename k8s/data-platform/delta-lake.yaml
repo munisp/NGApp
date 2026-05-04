@@ -1,0 +1,812 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: delta-lake-config
+  namespace: enterprise-crm
+data:
+  delta-lake.conf: |
+    # Delta Lake Configuration
+    spark.sql.extensions=io.delta.sql.DeltaSparkSessionExtension
+    spark.sql.catalog.spark_catalog=org.apache.spark.sql.delta.catalog.DeltaCatalog
+    spark.databricks.delta.retentionDurationCheck.enabled=false
+    spark.databricks.delta.schema.autoMerge.enabled=true
+    spark.databricks.delta.optimizeWrite.enabled=true
+    spark.databricks.delta.autoCompact.enabled=true
+    
+    # Storage Configuration
+    spark.hadoop.fs.s3a.impl=org.apache.hadoop.fs.s3a.S3AFileSystem
+    spark.hadoop.fs.s3a.aws.credentials.provider=org.apache.hadoop.fs.s3a.SimpleAWSCredentialsProvider
+    spark.hadoop.fs.s3a.endpoint=http://minio:9000
+    spark.hadoop.fs.s3a.path.style.access=true
+    spark.hadoop.fs.s3a.connection.ssl.enabled=false
+    
+    # Performance Tuning
+    spark.sql.adaptive.enabled=true
+    spark.sql.adaptive.coalescePartitions.enabled=true
+    spark.sql.adaptive.skewJoin.enabled=true
+    spark.serializer=org.apache.spark.serializer.KryoSerializer
+    
+  delta-tables-schema.sql: |
+    -- Enterprise CRM Delta Lake Tables Schema
+    
+    -- Customer Data Lake Table
+    CREATE TABLE IF NOT EXISTS delta.`/lakehouse/customers` (
+      customer_id STRING,
+      first_name STRING,
+      last_name STRING,
+      email STRING,
+      phone STRING,
+      date_of_birth DATE,
+      gender STRING,
+      status STRING,
+      customer_type STRING,
+      segment STRING,
+      lifetime_value DECIMAL(15,2),
+      acquisition_date DATE,
+      last_interaction_date TIMESTAMP,
+      address STRUCT<
+        street: STRING,
+        city: STRING,
+        state: STRING,
+        country: STRING,
+        postal_code: STRING,
+        latitude: DOUBLE,
+        longitude: DOUBLE
+      >,
+      preferences STRUCT<
+        communication_channel: STRING,
+        language: STRING,
+        timezone: STRING,
+        marketing_opt_in: BOOLEAN
+      >,
+      created_at TIMESTAMP,
+      updated_at TIMESTAMP,
+      _change_type STRING,
+      _commit_version BIGINT,
+      _commit_timestamp TIMESTAMP
+    )
+    USING DELTA
+    PARTITIONED BY (status, segment)
+    LOCATION '/lakehouse/customers'
+    TBLPROPERTIES (
+      'delta.autoOptimize.optimizeWrite' = 'true',
+      'delta.autoOptimize.autoCompact' = 'true',
+      'delta.deletedFileRetentionDuration' = 'interval 7 days',
+      'delta.logRetentionDuration' = 'interval 30 days'
+    );
+    
+    -- Product Data Lake Table
+    CREATE TABLE IF NOT EXISTS delta.`/lakehouse/products` (
+      product_id STRING,
+      sku STRING,
+      name STRING,
+      description STRING,
+      category STRING,
+      brand STRING,
+      manufacturer STRING,
+      price DECIMAL(10,2),
+      cost DECIMAL(10,2),
+      weight DECIMAL(8,3),
+      dimensions STRUCT<
+        length: DECIMAL(8,2),
+        width: DECIMAL(8,2),
+        height: DECIMAL(8,2)
+      >,
+      attributes MAP<STRING, STRING>,
+      tags ARRAY<STRING>,
+      status STRING,
+      created_at TIMESTAMP,
+      updated_at TIMESTAMP,
+      _change_type STRING,
+      _commit_version BIGINT,
+      _commit_timestamp TIMESTAMP
+    )
+    USING DELTA
+    PARTITIONED BY (category, status)
+    LOCATION '/lakehouse/products'
+    TBLPROPERTIES (
+      'delta.autoOptimize.optimizeWrite' = 'true',
+      'delta.autoOptimize.autoCompact' = 'true'
+    );
+    
+    -- Sales Opportunities Data Lake Table
+    CREATE TABLE IF NOT EXISTS delta.`/lakehouse/opportunities` (
+      opportunity_id STRING,
+      customer_id STRING,
+      account_id STRING,
+      name STRING,
+      description STRING,
+      stage STRING,
+      value DECIMAL(15,2),
+      probability INT,
+      expected_close_date DATE,
+      actual_close_date DATE,
+      sales_rep_id STRING,
+      source STRING,
+      products ARRAY<STRUCT<
+        product_id: STRING,
+        quantity: INT,
+        unit_price: DECIMAL(10,2),
+        total_price: DECIMAL(15,2)
+      >>,
+      activities ARRAY<STRUCT<
+        activity_id: STRING,
+        type: STRING,
+        date: TIMESTAMP,
+        description: STRING
+      >>,
+      created_at TIMESTAMP,
+      updated_at TIMESTAMP,
+      _change_type STRING,
+      _commit_version BIGINT,
+      _commit_timestamp TIMESTAMP
+    )
+    USING DELTA
+    PARTITIONED BY (stage, DATE(created_at))
+    LOCATION '/lakehouse/opportunities'
+    TBLPROPERTIES (
+      'delta.autoOptimize.optimizeWrite' = 'true',
+      'delta.autoOptimize.autoCompact' = 'true'
+    );
+    
+    -- Inventory Data Lake Table
+    CREATE TABLE IF NOT EXISTS delta.`/lakehouse/inventory` (
+      stock_id STRING,
+      product_id STRING,
+      warehouse_id STRING,
+      location STRUCT<
+        zone: STRING,
+        aisle: STRING,
+        rack: STRING,
+        shelf: STRING,
+        bin: STRING
+      >,
+      quantity_on_hand INT,
+      quantity_reserved INT,
+      quantity_available INT,
+      unit_cost DECIMAL(10,2),
+      total_value DECIMAL(15,2),
+      last_movement_date TIMESTAMP,
+      reorder_point INT,
+      max_stock_level INT,
+      warehouse_location STRUCT<
+        name: STRING,
+        address: STRING,
+        latitude: DOUBLE,
+        longitude: DOUBLE
+      >,
+      created_at TIMESTAMP,
+      updated_at TIMESTAMP,
+      _change_type STRING,
+      _commit_version BIGINT,
+      _commit_timestamp TIMESTAMP
+    )
+    USING DELTA
+    PARTITIONED BY (warehouse_id, DATE(updated_at))
+    LOCATION '/lakehouse/inventory'
+    TBLPROPERTIES (
+      'delta.autoOptimize.optimizeWrite' = 'true',
+      'delta.autoOptimize.autoCompact' = 'true'
+    );
+    
+    -- Interactions Data Lake Table
+    CREATE TABLE IF NOT EXISTS delta.`/lakehouse/interactions` (
+      interaction_id STRING,
+      customer_id STRING,
+      opportunity_id STRING,
+      type STRING,
+      channel STRING,
+      direction STRING,
+      subject STRING,
+      content STRING,
+      sentiment_score DECIMAL(3,2),
+      duration_seconds INT,
+      outcome STRING,
+      location STRUCT<
+        latitude: DOUBLE,
+        longitude: DOUBLE,
+        city: STRING,
+        country: STRING
+      >,
+      device_info STRUCT<
+        type: STRING,
+        os: STRING,
+        browser: STRING,
+        ip_address: STRING
+      >,
+      created_at TIMESTAMP,
+      _change_type STRING,
+      _commit_version BIGINT,
+      _commit_timestamp TIMESTAMP
+    )
+    USING DELTA
+    PARTITIONED BY (type, DATE(created_at))
+    LOCATION '/lakehouse/interactions'
+    TBLPROPERTIES (
+      'delta.autoOptimize.optimizeWrite' = 'true',
+      'delta.autoOptimize.autoCompact' = 'true'
+    );
+    
+    -- Analytics Aggregations Table
+    CREATE TABLE IF NOT EXISTS delta.`/lakehouse/analytics_aggregations` (
+      metric_name STRING,
+      dimension_keys MAP<STRING, STRING>,
+      metric_value DECIMAL(20,4),
+      metric_type STRING,
+      aggregation_level STRING,
+      time_period STRING,
+      start_time TIMESTAMP,
+      end_time TIMESTAMP,
+      calculated_at TIMESTAMP,
+      _change_type STRING,
+      _commit_version BIGINT,
+      _commit_timestamp TIMESTAMP
+    )
+    USING DELTA
+    PARTITIONED BY (metric_name, time_period)
+    LOCATION '/lakehouse/analytics_aggregations'
+    TBLPROPERTIES (
+      'delta.autoOptimize.optimizeWrite' = 'true',
+      'delta.autoOptimize.autoCompact' = 'true'
+    );
+
+  delta-lake-service.py: |
+    import os
+    import logging
+    from datetime import datetime, timedelta
+    from typing import Dict, List, Any, Optional
+    
+    from pyspark.sql import SparkSession, DataFrame
+    from pyspark.sql.functions import *
+    from pyspark.sql.types import *
+    from delta import *
+    import boto3
+    from kafka import KafkaConsumer, KafkaProducer
+    import json
+    
+    # Configure logging
+    logging.basicConfig(level=logging.INFO)
+    logger = logging.getLogger(__name__)
+    
+    class DeltaLakeService:
+        def __init__(self):
+            self.spark = None
+            self.kafka_consumer = None
+            self.kafka_producer = None
+            self.s3_client = None
+            
+        def initialize(self):
+            """Initialize Delta Lake service with Spark and dependencies"""
+            # Create Spark session with Delta Lake
+            builder = SparkSession.builder \
+                .appName("Enterprise-CRM-DeltaLake") \
+                .config("spark.sql.extensions", "io.delta.sql.DeltaSparkSessionExtension") \
+                .config("spark.sql.catalog.spark_catalog", "org.apache.spark.sql.delta.catalog.DeltaCatalog") \
+                .config("spark.databricks.delta.retentionDurationCheck.enabled", "false") \
+                .config("spark.databricks.delta.schema.autoMerge.enabled", "true") \
+                .config("spark.databricks.delta.optimizeWrite.enabled", "true") \
+                .config("spark.databricks.delta.autoCompact.enabled", "true") \
+                .config("spark.sql.adaptive.enabled", "true") \
+                .config("spark.sql.adaptive.coalescePartitions.enabled", "true") \
+                .config("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
+            
+            # S3/MinIO configuration
+            minio_endpoint = os.getenv("MINIO_ENDPOINT", "http://minio:9000")
+            access_key = os.getenv("MINIO_ACCESS_KEY", "minioadmin")
+            secret_key = os.getenv("MINIO_SECRET_KEY", "minioadmin")
+            
+            builder = builder \
+                .config("spark.hadoop.fs.s3a.impl", "org.apache.hadoop.fs.s3a.S3AFileSystem") \
+                .config("spark.hadoop.fs.s3a.endpoint", minio_endpoint) \
+                .config("spark.hadoop.fs.s3a.access.key", access_key) \
+                .config("spark.hadoop.fs.s3a.secret.key", secret_key) \
+                .config("spark.hadoop.fs.s3a.path.style.access", "true") \
+                .config("spark.hadoop.fs.s3a.connection.ssl.enabled", "false")
+            
+            self.spark = configure_spark_with_delta_pip(builder).getOrCreate()
+            
+            # Initialize S3 client
+            self.s3_client = boto3.client(
+                's3',
+                endpoint_url=minio_endpoint,
+                aws_access_key_id=access_key,
+                aws_secret_access_key=secret_key
+            )
+            
+            # Initialize Kafka
+            kafka_bootstrap = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "kafka:9092")
+            self.kafka_consumer = KafkaConsumer(
+                'enterprise-crm.data-changes',
+                bootstrap_servers=[kafka_bootstrap],
+                value_deserializer=lambda m: json.loads(m.decode('utf-8')),
+                group_id='delta-lake-service'
+            )
+            
+            self.kafka_producer = KafkaProducer(
+                bootstrap_servers=[kafka_bootstrap],
+                value_serializer=lambda v: json.dumps(v).encode('utf-8')
+            )
+            
+            # Create Delta tables
+            self.create_delta_tables()
+            
+            logger.info("Delta Lake service initialized successfully")
+    
+        def create_delta_tables(self):
+            """Create Delta Lake tables with proper schema"""
+            # Customer table schema
+            customer_schema = StructType([
+                StructField("customer_id", StringType(), False),
+                StructField("first_name", StringType(), True),
+                StructField("last_name", StringType(), True),
+                StructField("email", StringType(), True),
+                StructField("phone", StringType(), True),
+                StructField("date_of_birth", DateType(), True),
+                StructField("gender", StringType(), True),
+                StructField("status", StringType(), True),
+                StructField("customer_type", StringType(), True),
+                StructField("segment", StringType(), True),
+                StructField("lifetime_value", DecimalType(15, 2), True),
+                StructField("acquisition_date", DateType(), True),
+                StructField("last_interaction_date", TimestampType(), True),
+                StructField("address", StructType([
+                    StructField("street", StringType(), True),
+                    StructField("city", StringType(), True),
+                    StructField("state", StringType(), True),
+                    StructField("country", StringType(), True),
+                    StructField("postal_code", StringType(), True),
+                    StructField("latitude", DoubleType(), True),
+                    StructField("longitude", DoubleType(), True)
+                ]), True),
+                StructField("preferences", StructType([
+                    StructField("communication_channel", StringType(), True),
+                    StructField("language", StringType(), True),
+                    StructField("timezone", StringType(), True),
+                    StructField("marketing_opt_in", BooleanType(), True)
+                ]), True),
+                StructField("created_at", TimestampType(), True),
+                StructField("updated_at", TimestampType(), True),
+                StructField("_change_type", StringType(), True),
+                StructField("_commit_version", LongType(), True),
+                StructField("_commit_timestamp", TimestampType(), True)
+            ])
+            
+            # Create empty DataFrame and write as Delta table
+            empty_df = self.spark.createDataFrame([], customer_schema)
+            empty_df.write.format("delta").mode("ignore").option("path", "s3a://lakehouse/customers").saveAsTable("customers")
+            
+            # Similar for other tables (products, opportunities, inventory, interactions, analytics)
+            # ... (implementation would continue for all tables)
+            
+            logger.info("Delta Lake tables created successfully")
+    
+        def ingest_data_from_kafka(self):
+            """Ingest real-time data from Kafka into Delta Lake"""
+            for message in self.kafka_consumer:
+                try:
+                    event = message.value
+                    table_name = event.get('table_name')
+                    change_type = event.get('change_type', 'insert')
+                    record_data = event.get('record_data', {})
+                    
+                    if table_name and record_data:
+                        self.process_change_event(table_name, change_type, record_data)
+                        
+                except Exception as e:
+                    logger.error(f"Error processing Kafka message: {e}")
+    
+        def process_change_event(self, table_name: str, change_type: str, record_data: Dict[str, Any]):
+            """Process a single change event and update Delta Lake"""
+            try:
+                # Add metadata fields
+                record_data['_change_type'] = change_type
+                record_data['_commit_timestamp'] = datetime.utcnow()
+                
+                # Convert to DataFrame
+                df = self.spark.createDataFrame([record_data])
+                
+                # Write to Delta Lake based on change type
+                delta_table_path = f"s3a://lakehouse/{table_name}"
+                
+                if change_type == 'insert':
+                    df.write.format("delta").mode("append").save(delta_table_path)
+                    
+                elif change_type == 'update':
+                    # Perform upsert operation
+                    self.upsert_to_delta_table(delta_table_path, df, f"{table_name}_id")
+                    
+                elif change_type == 'delete':
+                    # Soft delete by updating status
+                    self.soft_delete_from_delta_table(delta_table_path, record_data.get(f"{table_name}_id"))
+                
+                logger.info(f"Processed {change_type} for {table_name}: {record_data.get(f'{table_name}_id')}")
+                
+            except Exception as e:
+                logger.error(f"Error processing change event for {table_name}: {e}")
+    
+        def upsert_to_delta_table(self, table_path: str, updates_df: DataFrame, key_column: str):
+            """Perform upsert operation on Delta table"""
+            from delta.tables import DeltaTable
+            
+            # Load existing Delta table
+            delta_table = DeltaTable.forPath(self.spark, table_path)
+            
+            # Perform merge operation
+            delta_table.alias("existing") \
+                .merge(
+                    updates_df.alias("updates"),
+                    f"existing.{key_column} = updates.{key_column}"
+                ) \
+                .whenMatchedUpdateAll() \
+                .whenNotMatchedInsertAll() \
+                .execute()
+    
+        def soft_delete_from_delta_table(self, table_path: str, record_id: str):
+            """Perform soft delete on Delta table"""
+            from delta.tables import DeltaTable
+            
+            delta_table = DeltaTable.forPath(self.spark, table_path)
+            
+            # Update status to 'deleted' instead of hard delete
+            delta_table.update(
+                condition=f"customer_id = '{record_id}'",
+                set={"status": "'deleted'", "_change_type": "'delete'", "_commit_timestamp": "current_timestamp()"}
+            )
+    
+        def optimize_delta_tables(self):
+            """Optimize Delta tables for better performance"""
+            tables = ['customers', 'products', 'opportunities', 'inventory', 'interactions', 'analytics_aggregations']
+            
+            for table in tables:
+                try:
+                    table_path = f"s3a://lakehouse/{table}"
+                    
+                    # Run OPTIMIZE command
+                    self.spark.sql(f"OPTIMIZE delta.`{table_path}`")
+                    
+                    # Run VACUUM to remove old files (keep 7 days)
+                    self.spark.sql(f"VACUUM delta.`{table_path}` RETAIN 168 HOURS")
+                    
+                    logger.info(f"Optimized Delta table: {table}")
+                    
+                except Exception as e:
+                    logger.error(f"Error optimizing table {table}: {e}")
+    
+        def create_analytics_aggregations(self):
+            """Create analytics aggregations from raw data"""
+            try:
+                # Customer metrics by segment
+                customer_metrics = self.spark.sql("""
+                    SELECT 
+                        'customers_by_segment' as metric_name,
+                        map('segment', segment) as dimension_keys,
+                        count(*) as metric_value,
+                        'count' as metric_type,
+                        'segment' as aggregation_level,
+                        'daily' as time_period,
+                        date_trunc('day', current_timestamp()) as start_time,
+                        current_timestamp() as end_time,
+                        current_timestamp() as calculated_at,
+                        'aggregation' as _change_type,
+                        0 as _commit_version,
+                        current_timestamp() as _commit_timestamp
+                    FROM delta.`s3a://lakehouse/customers`
+                    WHERE status = 'active'
+                    GROUP BY segment
+                """)
+                
+                customer_metrics.write.format("delta").mode("append").save("s3a://lakehouse/analytics_aggregations")
+                
+                # Revenue metrics by stage
+                revenue_metrics = self.spark.sql("""
+                    SELECT 
+                        'revenue_by_stage' as metric_name,
+                        map('stage', stage) as dimension_keys,
+                        sum(value) as metric_value,
+                        'sum' as metric_type,
+                        'stage' as aggregation_level,
+                        'daily' as time_period,
+                        date_trunc('day', current_timestamp()) as start_time,
+                        current_timestamp() as end_time,
+                        current_timestamp() as calculated_at,
+                        'aggregation' as _change_type,
+                        0 as _commit_version,
+                        current_timestamp() as _commit_timestamp
+                    FROM delta.`s3a://lakehouse/opportunities`
+                    WHERE stage != 'lost'
+                    GROUP BY stage
+                """)
+                
+                revenue_metrics.write.format("delta").mode("append").save("s3a://lakehouse/analytics_aggregations")
+                
+                # Inventory value by warehouse
+                inventory_metrics = self.spark.sql("""
+                    SELECT 
+                        'inventory_value_by_warehouse' as metric_name,
+                        map('warehouse_id', warehouse_id) as dimension_keys,
+                        sum(total_value) as metric_value,
+                        'sum' as metric_type,
+                        'warehouse' as aggregation_level,
+                        'daily' as time_period,
+                        date_trunc('day', current_timestamp()) as start_time,
+                        current_timestamp() as end_time,
+                        current_timestamp() as calculated_at,
+                        'aggregation' as _change_type,
+                        0 as _commit_version,
+                        current_timestamp() as _commit_timestamp
+                    FROM delta.`s3a://lakehouse/inventory`
+                    WHERE quantity_on_hand > 0
+                    GROUP BY warehouse_id
+                """)
+                
+                inventory_metrics.write.format("delta").mode("append").save("s3a://lakehouse/analytics_aggregations")
+                
+                logger.info("Analytics aggregations created successfully")
+                
+            except Exception as e:
+                logger.error(f"Error creating analytics aggregations: {e}")
+    
+        def time_travel_query(self, table_name: str, version: Optional[int] = None, timestamp: Optional[str] = None) -> DataFrame:
+            """Perform time travel query on Delta table"""
+            table_path = f"s3a://lakehouse/{table_name}"
+            
+            if version is not None:
+                return self.spark.read.format("delta").option("versionAsOf", version).load(table_path)
+            elif timestamp is not None:
+                return self.spark.read.format("delta").option("timestampAsOf", timestamp).load(table_path)
+            else:
+                return self.spark.read.format("delta").load(table_path)
+    
+        def get_table_history(self, table_name: str) -> DataFrame:
+            """Get Delta table history"""
+            table_path = f"s3a://lakehouse/{table_name}"
+            return self.spark.sql(f"DESCRIBE HISTORY delta.`{table_path}`")
+    
+        def restore_table(self, table_name: str, version: int):
+            """Restore Delta table to a specific version"""
+            table_path = f"s3a://lakehouse/{table_name}"
+            self.spark.sql(f"RESTORE TABLE delta.`{table_path}` TO VERSION AS OF {version}")
+    
+        def run_data_quality_checks(self):
+            """Run data quality checks on Delta tables"""
+            quality_results = []
+            
+            # Check for null values in critical fields
+            null_checks = self.spark.sql("""
+                SELECT 
+                    'customers' as table_name,
+                    'null_check' as check_type,
+                    count(*) as total_records,
+                    sum(case when customer_id is null then 1 else 0 end) as null_customer_id,
+                    sum(case when email is null then 1 else 0 end) as null_email,
+                    sum(case when first_name is null then 1 else 0 end) as null_first_name
+                FROM delta.`s3a://lakehouse/customers`
+            """)
+            
+            quality_results.append(null_checks)
+            
+            # Check for duplicate records
+            duplicate_checks = self.spark.sql("""
+                SELECT 
+                    'customers' as table_name,
+                    'duplicate_check' as check_type,
+                    count(*) as total_records,
+                    count(distinct customer_id) as unique_customer_ids,
+                    count(*) - count(distinct customer_id) as duplicate_count
+                FROM delta.`s3a://lakehouse/customers`
+            """)
+            
+            quality_results.append(duplicate_checks)
+            
+            return quality_results
+    
+        def shutdown(self):
+            """Shutdown Delta Lake service"""
+            if self.spark:
+                self.spark.stop()
+            if self.kafka_consumer:
+                self.kafka_consumer.close()
+            if self.kafka_producer:
+                self.kafka_producer.close()
+            
+            logger.info("Delta Lake service shutdown completed")
+    
+    # Main execution
+    if __name__ == "__main__":
+        service = DeltaLakeService()
+        
+        try:
+            service.initialize()
+            
+            # Start data ingestion from Kafka
+            service.ingest_data_from_kafka()
+            
+        except KeyboardInterrupt:
+            logger.info("Received shutdown signal")
+        except Exception as e:
+            logger.error(f"Error in Delta Lake service: {e}")
+        finally:
+            service.shutdown()
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: delta-lake-service
+  namespace: enterprise-crm
+  labels:
+    app: delta-lake-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: delta-lake-service
+  template:
+    metadata:
+      labels:
+        app: delta-lake-service
+    spec:
+      containers:
+      - name: delta-lake-service
+        image: apache/spark-py:v3.5.0
+        command:
+        - /bin/bash
+        - -c
+        - |
+          # Install Delta Lake and dependencies
+          pip install delta-spark==3.0.0 kafka-python boto3
+          
+          # Run the Delta Lake service
+          python /config/delta-lake-service.py
+        env:
+        - name: SPARK_MASTER_URL
+          value: "spark://spark-master:7077"
+        - name: MINIO_ENDPOINT
+          value: "http://minio:9000"
+        - name: MINIO_ACCESS_KEY
+          valueFrom:
+            secretKeyRef:
+              name: minio-secret
+              key: access-key
+        - name: MINIO_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: minio-secret
+              key: secret-key
+        - name: KAFKA_BOOTSTRAP_SERVERS
+          value: "kafka:9092"
+        volumeMounts:
+        - name: config
+          mountPath: /config
+        - name: spark-conf
+          mountPath: /opt/spark/conf
+        resources:
+          requests:
+            memory: "2Gi"
+            cpu: "1000m"
+          limits:
+            memory: "4Gi"
+            cpu: "2000m"
+      volumes:
+      - name: config
+        configMap:
+          name: delta-lake-config
+      - name: spark-conf
+        configMap:
+          name: spark-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: delta-lake-service
+  namespace: enterprise-crm
+  labels:
+    app: delta-lake-service
+spec:
+  ports:
+  - port: 8080
+    targetPort: 8080
+    name: http
+  selector:
+    app: delta-lake-service
+  type: ClusterIP
+---
+# MinIO for S3-compatible storage
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: minio
+  namespace: enterprise-crm
+  labels:
+    app: minio
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: minio
+  template:
+    metadata:
+      labels:
+        app: minio
+    spec:
+      containers:
+      - name: minio
+        image: minio/minio:latest
+        command:
+        - /bin/bash
+        - -c
+        - |
+          mkdir -p /data/lakehouse
+          minio server /data --console-address ":9001"
+        env:
+        - name: MINIO_ROOT_USER
+          valueFrom:
+            secretKeyRef:
+              name: minio-secret
+              key: access-key
+        - name: MINIO_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: minio-secret
+              key: secret-key
+        ports:
+        - containerPort: 9000
+          name: api
+        - containerPort: 9001
+          name: console
+        volumeMounts:
+        - name: data
+          mountPath: /data
+        resources:
+          requests:
+            memory: "1Gi"
+            cpu: "500m"
+          limits:
+            memory: "2Gi"
+            cpu: "1000m"
+      volumes:
+      - name: data
+        persistentVolumeClaim:
+          claimName: minio-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: minio
+  namespace: enterprise-crm
+  labels:
+    app: minio
+spec:
+  ports:
+  - port: 9000
+    targetPort: 9000
+    name: api
+  - port: 9001
+    targetPort: 9001
+    name: console
+  selector:
+    app: minio
+  type: ClusterIP
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: minio-pvc
+  namespace: enterprise-crm
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Gi
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: minio-secret
+  namespace: enterprise-crm
+type: Opaque
+data:
+  access-key: bWluaW9hZG1pbg==  # minioadmin
+  secret-key: bWluaW9hZG1pbg==  # minioadmin
+

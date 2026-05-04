@@ -1,0 +1,597 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: openappsec-config
+  namespace: security
+data:
+  policy.yaml: |
+    # OpenAppSec Policy Configuration for Enterprise CRM
+    version: "1.0"
+    
+    # Global settings
+    settings:
+      mode: "prevent"  # prevent, detect, or learn
+      log_level: "info"
+      max_body_size: "10MB"
+      max_header_size: "8KB"
+      timeout: "30s"
+      
+    # Security policies
+    policies:
+      - name: "enterprise-crm-web-protection"
+        description: "Web application protection for Enterprise CRM"
+        
+        # Asset protection
+        assets:
+          - name: "crm-frontend"
+            url: "https://app.enterprise-crm.com"
+            practices:
+              - "web-api-protection"
+              - "anti-bot-protection"
+              - "rate-limiting"
+          
+          - name: "crm-admin"
+            url: "https://admin.enterprise-crm.com"
+            practices:
+              - "web-api-protection"
+              - "anti-bot-protection"
+              - "rate-limiting"
+              - "admin-protection"
+          
+          - name: "crm-api"
+            url: "https://api.enterprise-crm.com"
+            practices:
+              - "api-protection"
+              - "rate-limiting"
+              - "jwt-validation"
+          
+          - name: "analytics-dashboard"
+            url: "https://analytics.enterprise-crm.com"
+            practices:
+              - "web-api-protection"
+              - "anti-bot-protection"
+              - "rate-limiting"
+          
+          - name: "auth-service"
+            url: "https://auth.enterprise-crm.com"
+            practices:
+              - "web-api-protection"
+              - "anti-bot-protection"
+              - "rate-limiting"
+              - "auth-protection"
+        
+        # Security practices
+        practices:
+          - name: "web-api-protection"
+            type: "web-api"
+            settings:
+              # OWASP Top 10 protection
+              sql_injection: true
+              xss_protection: true
+              csrf_protection: true
+              xxe_protection: true
+              lfi_protection: true
+              rfi_protection: true
+              command_injection: true
+              
+              # HTTP security
+              http_methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"]
+              content_types: ["application/json", "application/x-www-form-urlencoded", "multipart/form-data"]
+              
+              # File upload protection
+              file_upload:
+                enabled: true
+                max_size: "50MB"
+                allowed_types: ["pdf", "doc", "docx", "xls", "xlsx", "jpg", "jpeg", "png", "gif"]
+                scan_malware: true
+          
+          - name: "api-protection"
+            type: "api"
+            settings:
+              # API-specific protection
+              schema_validation: true
+              parameter_validation: true
+              response_validation: true
+              
+              # Rate limiting per endpoint
+              rate_limits:
+                - path: "/api/v1/auth/*"
+                  limit: "10/min"
+                - path: "/api/v1/customers"
+                  limit: "100/min"
+                - path: "/api/v1/leads"
+                  limit: "100/min"
+                - path: "/api/v1/opportunities"
+                  limit: "100/min"
+                - path: "/api/v1/products"
+                  limit: "200/min"
+                - path: "/api/v1/analytics/*"
+                  limit: "50/min"
+          
+          - name: "anti-bot-protection"
+            type: "anti-bot"
+            settings:
+              # Bot detection
+              javascript_challenge: true
+              captcha_challenge: true
+              behavioral_analysis: true
+              
+              # Bot categories to block
+              block_categories:
+                - "malicious"
+                - "suspicious"
+                - "automated_tools"
+              
+              # Allow legitimate bots
+              allow_categories:
+                - "search_engines"
+                - "monitoring_tools"
+          
+          - name: "rate-limiting"
+            type: "rate-limit"
+            settings:
+              # Global rate limits
+              global_limit: "1000/min"
+              per_ip_limit: "100/min"
+              per_user_limit: "200/min"
+              
+              # Burst protection
+              burst_limit: "50/10s"
+              
+              # Whitelist
+              whitelist:
+                - "10.0.0.0/8"    # Internal networks
+                - "172.16.0.0/12" # Private networks
+                - "192.168.0.0/16" # Local networks
+          
+          - name: "admin-protection"
+            type: "admin"
+            settings:
+              # Enhanced protection for admin interfaces
+              geo_blocking:
+                enabled: true
+                allowed_countries: ["US", "CA", "GB", "DE", "FR"]
+              
+              # IP whitelisting
+              ip_whitelist:
+                - "203.0.113.0/24"  # Office network
+                - "198.51.100.0/24" # VPN network
+              
+              # Time-based access
+              time_restrictions:
+                enabled: true
+                allowed_hours: "06:00-22:00"
+                timezone: "UTC"
+          
+          - name: "auth-protection"
+            type: "authentication"
+            settings:
+              # Authentication-specific protection
+              brute_force_protection: true
+              credential_stuffing_protection: true
+              account_takeover_protection: true
+              
+              # Login attempt limits
+              max_attempts: 5
+              lockout_duration: "15m"
+              
+              # Password policy enforcement
+              password_policy:
+                min_length: 8
+                require_uppercase: true
+                require_lowercase: true
+                require_numbers: true
+                require_symbols: true
+          
+          - name: "jwt-validation"
+            type: "jwt"
+            settings:
+              # JWT validation
+              validate_signature: true
+              validate_expiration: true
+              validate_issuer: true
+              validate_audience: true
+              
+              # JWT sources
+              sources:
+                - header: "Authorization"
+                  prefix: "Bearer "
+                - cookie: "access_token"
+              
+              # Issuer validation
+              trusted_issuers:
+                - "https://auth.enterprise-crm.com/realms/enterprise-crm"
+    
+    # Logging and monitoring
+    logging:
+      enabled: true
+      level: "info"
+      format: "json"
+      
+      # Log destinations
+      destinations:
+        - type: "file"
+          path: "/var/log/openappsec/security.log"
+          rotation: "daily"
+          retention: "30d"
+        
+        - type: "syslog"
+          server: "syslog.enterprise-crm.com:514"
+          protocol: "tcp"
+        
+        - type: "elasticsearch"
+          endpoint: "https://elasticsearch.enterprise-crm.com:9200"
+          index: "openappsec-logs"
+    
+    # Alerting
+    alerting:
+      enabled: true
+      
+      # Alert rules
+      rules:
+        - name: "high_threat_detected"
+          condition: "threat_level >= 8"
+          action: "block_and_alert"
+          notification:
+            - "security-team@enterprise-crm.com"
+            - "webhook:https://api.enterprise-crm.com/webhooks/security"
+        
+        - name: "multiple_blocked_requests"
+          condition: "blocked_requests > 100 in 5m"
+          action: "alert"
+          notification:
+            - "security-team@enterprise-crm.com"
+        
+        - name: "admin_access_violation"
+          condition: "admin_access_denied"
+          action: "alert"
+          notification:
+            - "security-team@enterprise-crm.com"
+            - "admin-team@enterprise-crm.com"
+    
+    # Machine learning
+    machine_learning:
+      enabled: true
+      
+      # Learning modes
+      learning:
+        duration: "7d"
+        min_requests: 1000
+        confidence_threshold: 0.8
+      
+      # Model updates
+      model_updates:
+        frequency: "daily"
+        auto_deploy: false
+        require_approval: true
+  
+  nginx.conf: |
+    # OpenAppSec Nginx Configuration
+    user nginx;
+    worker_processes auto;
+    error_log /var/log/nginx/error.log warn;
+    pid /var/run/nginx.pid;
+    
+    # Load OpenAppSec module
+    load_module modules/ngx_http_openappsec_module.so;
+    
+    events {
+        worker_connections 1024;
+        use epoll;
+        multi_accept on;
+    }
+    
+    http {
+        include /etc/nginx/mime.types;
+        default_type application/octet-stream;
+        
+        # Logging format
+        log_format main '$remote_addr - $remote_user [$time_local] "$request" '
+                       '$status $body_bytes_sent "$http_referer" '
+                       '"$http_user_agent" "$http_x_forwarded_for"';
+        
+        access_log /var/log/nginx/access.log main;
+        
+        # Basic settings
+        sendfile on;
+        tcp_nopush on;
+        tcp_nodelay on;
+        keepalive_timeout 65;
+        types_hash_max_size 2048;
+        client_max_body_size 50M;
+        
+        # Gzip compression
+        gzip on;
+        gzip_vary on;
+        gzip_min_length 1024;
+        gzip_types text/plain text/css application/json application/javascript text/xml application/xml application/xml+rss text/javascript;
+        
+        # Security headers
+        add_header X-Frame-Options SAMEORIGIN always;
+        add_header X-Content-Type-Options nosniff always;
+        add_header X-XSS-Protection "1; mode=block" always;
+        add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        
+        # OpenAppSec configuration
+        openappsec_config /etc/openappsec/policy.yaml;
+        openappsec on;
+        
+        # Upstream definitions
+        upstream crm-frontend {
+            server crm-frontend.enterprise-crm.svc.cluster.local:3000;
+        }
+        
+        upstream crm-api {
+            server customer-service.enterprise-crm.svc.cluster.local:8080;
+            server crm-core-service.enterprise-crm.svc.cluster.local:8080;
+            server inventory-service.enterprise-crm.svc.cluster.local:8080;
+            server analytics-service.enterprise-crm.svc.cluster.local:8080;
+        }
+        
+        upstream auth-service {
+            server keycloak.security.svc.cluster.local:8080;
+        }
+        
+        upstream analytics-dashboard {
+            server superset.enterprise-crm.svc.cluster.local:8088;
+        }
+        
+        # Server configurations
+        server {
+            listen 80;
+            server_name app.enterprise-crm.com admin.enterprise-crm.com;
+            return 301 https://$server_name$request_uri;
+        }
+        
+        server {
+            listen 443 ssl http2;
+            server_name app.enterprise-crm.com admin.enterprise-crm.com;
+            
+            # SSL configuration
+            ssl_certificate /etc/ssl/certs/enterprise-crm.crt;
+            ssl_certificate_key /etc/ssl/private/enterprise-crm.key;
+            ssl_protocols TLSv1.2 TLSv1.3;
+            ssl_ciphers ECDHE-RSA-AES256-GCM-SHA512:DHE-RSA-AES256-GCM-SHA512:ECDHE-RSA-AES256-GCM-SHA384:DHE-RSA-AES256-GCM-SHA384;
+            ssl_prefer_server_ciphers off;
+            
+            # OpenAppSec protection
+            openappsec_asset "crm-frontend";
+            
+            location / {
+                proxy_pass http://crm-frontend;
+                proxy_set_header Host $host;
+                proxy_set_header X-Real-IP $remote_addr;
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                proxy_set_header X-Forwarded-Proto $scheme;
+            }
+        }
+        
+        server {
+            listen 443 ssl http2;
+            server_name api.enterprise-crm.com;
+            
+            # SSL configuration
+            ssl_certificate /etc/ssl/certs/enterprise-crm.crt;
+            ssl_certificate_key /etc/ssl/private/enterprise-crm.key;
+            ssl_protocols TLSv1.2 TLSv1.3;
+            ssl_ciphers ECDHE-RSA-AES256-GCM-SHA512:DHE-RSA-AES256-GCM-SHA512:ECDHE-RSA-AES256-GCM-SHA384:DHE-RSA-AES256-GCM-SHA384;
+            ssl_prefer_server_ciphers off;
+            
+            # OpenAppSec protection
+            openappsec_asset "crm-api";
+            
+            location / {
+                proxy_pass http://crm-api;
+                proxy_set_header Host $host;
+                proxy_set_header X-Real-IP $remote_addr;
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                proxy_set_header X-Forwarded-Proto $scheme;
+            }
+        }
+        
+        server {
+            listen 443 ssl http2;
+            server_name auth.enterprise-crm.com;
+            
+            # SSL configuration
+            ssl_certificate /etc/ssl/certs/enterprise-crm.crt;
+            ssl_certificate_key /etc/ssl/private/enterprise-crm.key;
+            ssl_protocols TLSv1.2 TLSv1.3;
+            ssl_ciphers ECDHE-RSA-AES256-GCM-SHA512:DHE-RSA-AES256-GCM-SHA512:ECDHE-RSA-AES256-GCM-SHA384:DHE-RSA-AES256-GCM-SHA384;
+            ssl_prefer_server_ciphers off;
+            
+            # OpenAppSec protection
+            openappsec_asset "auth-service";
+            
+            location / {
+                proxy_pass http://auth-service;
+                proxy_set_header Host $host;
+                proxy_set_header X-Real-IP $remote_addr;
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                proxy_set_header X-Forwarded-Proto $scheme;
+            }
+        }
+        
+        server {
+            listen 443 ssl http2;
+            server_name analytics.enterprise-crm.com;
+            
+            # SSL configuration
+            ssl_certificate /etc/ssl/certs/enterprise-crm.crt;
+            ssl_certificate_key /etc/ssl/private/enterprise-crm.key;
+            ssl_protocols TLSv1.2 TLSv1.3;
+            ssl_ciphers ECDHE-RSA-AES256-GCM-SHA512:DHE-RSA-AES256-GCM-SHA512:ECDHE-RSA-AES256-GCM-SHA384:DHE-RSA-AES256-GCM-SHA384;
+            ssl_prefer_server_ciphers off;
+            
+            # OpenAppSec protection
+            openappsec_asset "analytics-dashboard";
+            
+            location / {
+                proxy_pass http://analytics-dashboard;
+                proxy_set_header Host $host;
+                proxy_set_header X-Real-IP $remote_addr;
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                proxy_set_header X-Forwarded-Proto $scheme;
+            }
+        }
+    }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: openappsec
+  namespace: security
+  labels:
+    app: openappsec
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: openappsec
+  template:
+    metadata:
+      labels:
+        app: openappsec
+    spec:
+      containers:
+      - name: openappsec
+        image: openappsec/openappsec:latest
+        ports:
+        - containerPort: 80
+          name: http
+        - containerPort: 443
+          name: https
+        - containerPort: 8080
+          name: management
+        volumeMounts:
+        - name: config
+          mountPath: /etc/openappsec
+        - name: nginx-config
+          mountPath: /etc/nginx/nginx.conf
+          subPath: nginx.conf
+        - name: ssl-certs
+          mountPath: /etc/ssl/certs
+          readOnly: true
+        - name: ssl-keys
+          mountPath: /etc/ssl/private
+          readOnly: true
+        resources:
+          requests:
+            memory: "1Gi"
+            cpu: "500m"
+          limits:
+            memory: "2Gi"
+            cpu: "1000m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 5
+        env:
+        - name: OPENAPPSEC_MODE
+          value: "production"
+        - name: OPENAPPSEC_LOG_LEVEL
+          value: "info"
+      volumes:
+      - name: config
+        configMap:
+          name: openappsec-config
+      - name: nginx-config
+        configMap:
+          name: openappsec-config
+      - name: ssl-certs
+        secret:
+          secretName: enterprise-crm-tls
+          items:
+          - key: tls.crt
+            path: enterprise-crm.crt
+      - name: ssl-keys
+        secret:
+          secretName: enterprise-crm-tls
+          items:
+          - key: tls.key
+            path: enterprise-crm.key
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: openappsec
+  namespace: security
+  labels:
+    app: openappsec
+spec:
+  ports:
+  - name: http
+    port: 80
+    targetPort: 80
+  - name: https
+    port: 443
+    targetPort: 443
+  - name: management
+    port: 8080
+    targetPort: 8080
+  selector:
+    app: openappsec
+  type: LoadBalancer
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: openappsec-pdb
+  namespace: security
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: openappsec
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: openappsec-hpa
+  namespace: security
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: openappsec
+  minReplicas: 3
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+---
+apiVersion: v1
+kind: ServiceMonitor
+metadata:
+  name: openappsec-metrics
+  namespace: security
+  labels:
+    app: openappsec
+spec:
+  selector:
+    matchLabels:
+      app: openappsec
+  endpoints:
+  - port: management
+    interval: 30s
+    path: /metrics
+

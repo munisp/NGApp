@@ -1,0 +1,548 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: ballerine-postgres-pvc
+  namespace: security
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 20Gi
+  storageClassName: fast-ssd
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: ballerine-secrets
+  namespace: security
+type: Opaque
+data:
+  # Base64 encoded values - replace with actual values
+  postgres-password: YmFsbGVyaW5lX3Bhc3N3b3Jk  # ballerine_password
+  jwt-secret: YmFsbGVyaW5lX2p3dF9zZWNyZXRfa2V5XzEyMw==  # ballerine_jwt_secret_key_123
+  encryption-key: YmFsbGVyaW5lX2VuY3J5cHRpb25fa2V5XzEyMw==  # ballerine_encryption_key_123
+  webhook-secret: YmFsbGVyaW5lX3dlYmhvb2tfc2VjcmV0  # ballerine_webhook_secret
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ballerine-config
+  namespace: security
+data:
+  config.json: |
+    {
+      "app": {
+        "name": "Enterprise CRM KYB Service",
+        "version": "1.0.0",
+        "environment": "production"
+      },
+      "server": {
+        "port": 3000,
+        "host": "0.0.0.0",
+        "cors": {
+          "origin": [
+            "https://app.enterprise-crm.com",
+            "https://admin.enterprise-crm.com",
+            "https://auth.enterprise-crm.com"
+          ],
+          "credentials": true
+        }
+      },
+      "database": {
+        "type": "postgres",
+        "host": "ballerine-postgres",
+        "port": 5432,
+        "database": "ballerine",
+        "username": "ballerine",
+        "synchronize": false,
+        "logging": false,
+        "ssl": false,
+        "migrations": ["dist/migrations/*.js"],
+        "entities": ["dist/entities/*.js"]
+      },
+      "redis": {
+        "host": "redis.enterprise-crm.svc.cluster.local",
+        "port": 6379,
+        "db": 3,
+        "keyPrefix": "ballerine:"
+      },
+      "auth": {
+        "jwtExpiresIn": "24h",
+        "refreshTokenExpiresIn": "7d",
+        "bcryptSaltRounds": 12
+      },
+      "kyb": {
+        "providers": {
+          "primary": "veriff",
+          "fallback": "jumio"
+        },
+        "workflows": {
+          "basic": {
+            "steps": [
+              "company_information",
+              "business_registration",
+              "beneficial_ownership",
+              "financial_information",
+              "compliance_screening"
+            ],
+            "autoApprove": false,
+            "requireManualReview": true
+          },
+          "enhanced": {
+            "steps": [
+              "company_information",
+              "business_registration",
+              "beneficial_ownership",
+              "financial_information",
+              "compliance_screening",
+              "source_of_funds",
+              "ongoing_monitoring"
+            ],
+            "autoApprove": false,
+            "requireManualReview": true
+          }
+        },
+        "riskLevels": {
+          "low": {
+            "workflow": "basic",
+            "autoApprove": true,
+            "reviewThreshold": 0.3
+          },
+          "medium": {
+            "workflow": "basic",
+            "autoApprove": false,
+            "reviewThreshold": 0.6
+          },
+          "high": {
+            "workflow": "enhanced",
+            "autoApprove": false,
+            "reviewThreshold": 0.8
+          }
+        }
+      },
+      "compliance": {
+        "sanctions": {
+          "enabled": true,
+          "providers": ["ofac", "eu", "un"],
+          "updateInterval": "24h"
+        },
+        "pep": {
+          "enabled": true,
+          "providers": ["worldcheck", "dow_jones"],
+          "updateInterval": "24h"
+        },
+        "aml": {
+          "enabled": true,
+          "riskScoring": true,
+          "transactionMonitoring": true
+        }
+      },
+      "notifications": {
+        "email": {
+          "enabled": true,
+          "provider": "smtp",
+          "from": "kyb@enterprise-crm.com",
+          "templates": {
+            "verification_started": "verification-started",
+            "verification_completed": "verification-completed",
+            "verification_rejected": "verification-rejected",
+            "manual_review_required": "manual-review-required"
+          }
+        },
+        "webhook": {
+          "enabled": true,
+          "endpoints": [
+            {
+              "url": "https://api.enterprise-crm.com/webhooks/kyb",
+              "events": ["verification.completed", "verification.rejected", "review.required"],
+              "secret": "webhook_secret"
+            }
+          ]
+        }
+      },
+      "storage": {
+        "provider": "s3",
+        "bucket": "enterprise-crm-kyb-documents",
+        "region": "us-east-1",
+        "encryption": true,
+        "retention": "7y"
+      },
+      "monitoring": {
+        "metrics": {
+          "enabled": true,
+          "port": 9090,
+          "path": "/metrics"
+        },
+        "logging": {
+          "level": "info",
+          "format": "json",
+          "auditLog": true
+        },
+        "tracing": {
+          "enabled": true,
+          "jaeger": {
+            "endpoint": "http://jaeger-collector:14268/api/traces"
+          }
+        }
+      },
+      "security": {
+        "rateLimiting": {
+          "enabled": true,
+          "windowMs": 900000,
+          "max": 100
+        },
+        "encryption": {
+          "algorithm": "aes-256-gcm",
+          "keyRotation": "30d"
+        },
+        "dataRetention": {
+          "documents": "7y",
+          "logs": "2y",
+          "analytics": "5y"
+        }
+      }
+    }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ballerine-postgres
+  namespace: security
+  labels:
+    app: ballerine-postgres
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ballerine-postgres
+  template:
+    metadata:
+      labels:
+        app: ballerine-postgres
+    spec:
+      containers:
+      - name: postgres
+        image: postgres:13
+        ports:
+        - containerPort: 5432
+        env:
+        - name: POSTGRES_DB
+          value: ballerine
+        - name: POSTGRES_USER
+          value: ballerine
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: ballerine-secrets
+              key: postgres-password
+        - name: PGDATA
+          value: /var/lib/postgresql/data/pgdata
+        volumeMounts:
+        - name: postgres-storage
+          mountPath: /var/lib/postgresql/data
+        resources:
+          requests:
+            memory: "1Gi"
+            cpu: "500m"
+          limits:
+            memory: "2Gi"
+            cpu: "1000m"
+        livenessProbe:
+          exec:
+            command:
+            - pg_isready
+            - -U
+            - ballerine
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          exec:
+            command:
+            - pg_isready
+            - -U
+            - ballerine
+          initialDelaySeconds: 5
+          periodSeconds: 5
+      volumes:
+      - name: postgres-storage
+        persistentVolumeClaim:
+          claimName: ballerine-postgres-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ballerine-postgres
+  namespace: security
+  labels:
+    app: ballerine-postgres
+spec:
+  ports:
+  - port: 5432
+    targetPort: 5432
+  selector:
+    app: ballerine-postgres
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ballerine
+  namespace: security
+  labels:
+    app: ballerine
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: ballerine
+  template:
+    metadata:
+      labels:
+        app: ballerine
+    spec:
+      initContainers:
+      - name: wait-for-postgres
+        image: postgres:13
+        command:
+        - sh
+        - -c
+        - |
+          until pg_isready -h ballerine-postgres -p 5432 -U ballerine; do
+            echo "Waiting for PostgreSQL..."
+            sleep 2
+          done
+        env:
+        - name: PGPASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: ballerine-secrets
+              key: postgres-password
+      - name: run-migrations
+        image: ballerine/ballerine:latest
+        command:
+        - npm
+        - run
+        - migration:run
+        env:
+        - name: DATABASE_URL
+          value: "postgresql://ballerine:$(POSTGRES_PASSWORD)@ballerine-postgres:5432/ballerine"
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: ballerine-secrets
+              key: postgres-password
+        volumeMounts:
+        - name: config
+          mountPath: /app/config
+      containers:
+      - name: ballerine
+        image: ballerine/ballerine:latest
+        ports:
+        - containerPort: 3000
+          name: http
+        - containerPort: 9090
+          name: metrics
+        env:
+        - name: NODE_ENV
+          value: "production"
+        - name: CONFIG_PATH
+          value: "/app/config/config.json"
+        - name: DATABASE_URL
+          value: "postgresql://ballerine:$(POSTGRES_PASSWORD)@ballerine-postgres:5432/ballerine"
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: ballerine-secrets
+              key: postgres-password
+        - name: JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: ballerine-secrets
+              key: jwt-secret
+        - name: ENCRYPTION_KEY
+          valueFrom:
+            secretKeyRef:
+              name: ballerine-secrets
+              key: encryption-key
+        - name: WEBHOOK_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: ballerine-secrets
+              key: webhook-secret
+        volumeMounts:
+        - name: config
+          mountPath: /app/config
+        resources:
+          requests:
+            memory: "1Gi"
+            cpu: "500m"
+          limits:
+            memory: "2Gi"
+            cpu: "1000m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 3000
+          initialDelaySeconds: 60
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /health/ready
+            port: 3000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        startupProbe:
+          httpGet:
+            path: /health/startup
+            port: 3000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          failureThreshold: 30
+      volumes:
+      - name: config
+        configMap:
+          name: ballerine-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ballerine
+  namespace: security
+  labels:
+    app: ballerine
+spec:
+  ports:
+  - name: http
+    port: 3000
+    targetPort: 3000
+  - name: metrics
+    port: 9090
+    targetPort: 9090
+  selector:
+    app: ballerine
+  type: ClusterIP
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ballerine-ingress
+  namespace: security
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "300"
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      more_set_headers "X-Frame-Options: SAMEORIGIN";
+      more_set_headers "X-Content-Type-Options: nosniff";
+      more_set_headers "X-XSS-Protection: 1; mode=block";
+      more_set_headers "Strict-Transport-Security: max-age=31536000; includeSubDomains";
+spec:
+  tls:
+  - hosts:
+    - kyb.enterprise-crm.com
+    secretName: ballerine-tls
+  rules:
+  - host: kyb.enterprise-crm.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: ballerine
+            port:
+              number: 3000
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: ballerine-pdb
+  namespace: security
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: ballerine
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: ballerine-hpa
+  namespace: security
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: ballerine
+  minReplicas: 3
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+---
+apiVersion: v1
+kind: ServiceMonitor
+metadata:
+  name: ballerine-metrics
+  namespace: security
+  labels:
+    app: ballerine
+spec:
+  selector:
+    matchLabels:
+      app: ballerine
+  endpoints:
+  - port: metrics
+    interval: 30s
+    path: /metrics
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: ballerine-compliance-update
+  namespace: security
+spec:
+  schedule: "0 2 * * *"  # Daily at 2 AM
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: compliance-update
+            image: ballerine/ballerine:latest
+            command:
+            - npm
+            - run
+            - compliance:update
+            env:
+            - name: DATABASE_URL
+              value: "postgresql://ballerine:$(POSTGRES_PASSWORD)@ballerine-postgres:5432/ballerine"
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: ballerine-secrets
+                  key: postgres-password
+            resources:
+              requests:
+                memory: "256Mi"
+                cpu: "250m"
+              limits:
+                memory: "512Mi"
+                cpu: "500m"
+          restartPolicy: OnFailure
+

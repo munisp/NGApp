@@ -1,0 +1,177 @@
+routes:
+  - id: 200
+    name: crm_customer_api
+    uri: /api/v1/crm/customers/*
+    upstream:
+      type: roundrobin
+      nodes:
+        "crm-customer-service:8080": 1
+    plugins:
+      jwt-auth:
+        header: Authorization
+        query: token
+        cookie: jwt
+        hide_credentials: true
+      proxy-rewrite:
+        regex_uri: ["^/api/v1/crm/customers/(.*)", "/api/customers/$1"]
+      request-validation:
+        body_schema:
+          type: object
+          required:
+            - customer_id
+          properties:
+            customer_id:
+              type: string
+              pattern: "^[a-zA-Z0-9-]+$"
+      response-rewrite:
+        headers:
+          set:
+            X-API-Version: "v1"
+      limit-req:
+        rate: 10
+        burst: 5
+        rejected_code: 429
+        key: remote_addr
+      cors:
+        allow_origins: "*"
+        allow_methods: "GET,POST,PUT,DELETE,PATCH,OPTIONS"
+        allow_headers: "Content-Type,Authorization"
+        expose_headers: "X-Request-ID"
+        max_age: 3600
+      prometheus:
+        prefer_name: true
+      proxy-cache:
+        cache_zone: crm_cache
+        cache_key: "$uri$args"
+        cache_bypass: "$arg_bypass_cache"
+        cache_method: ["GET"]
+        cache_http_status: [200]
+        hide_cache_headers: true
+        no_cache: "$arg_no_cache"
+  
+  - id: 201
+    name: crm_lead_api
+    uri: /api/v1/crm/leads/*
+    upstream:
+      type: roundrobin
+      nodes:
+        "crm-lead-service:8080": 1
+    plugins:
+      jwt-auth:
+        header: Authorization
+        query: token
+        cookie: jwt
+        hide_credentials: true
+      proxy-rewrite:
+        regex_uri: ["^/api/v1/crm/leads/(.*)", "/api/leads/$1"]
+      request-validation:
+        body_schema:
+          type: object
+          required:
+            - lead_id
+          properties:
+            lead_id:
+              type: string
+              pattern: "^[a-zA-Z0-9-]+$"
+      response-rewrite:
+        headers:
+          set:
+            X-API-Version: "v1"
+      limit-req:
+        rate: 10
+        burst: 5
+        rejected_code: 429
+        key: remote_addr
+      cors:
+        allow_origins: "*"
+        allow_methods: "GET,POST,PUT,DELETE,PATCH,OPTIONS"
+        allow_headers: "Content-Type,Authorization"
+        expose_headers: "X-Request-ID"
+        max_age: 3600
+      prometheus:
+        prefer_name: true
+  
+  - id: 202
+    name: crm_opportunity_api
+    uri: /api/v1/crm/opportunities/*
+    upstream:
+      type: roundrobin
+      nodes:
+        "crm-opportunity-service:8080": 1
+    plugins:
+      jwt-auth:
+        header: Authorization
+        query: token
+        cookie: jwt
+        hide_credentials: true
+      proxy-rewrite:
+        regex_uri: ["^/api/v1/crm/opportunities/(.*)", "/api/opportunities/$1"]
+      request-validation:
+        body_schema:
+          type: object
+          required:
+            - opportunity_id
+          properties:
+            opportunity_id:
+              type: string
+              pattern: "^[a-zA-Z0-9-]+$"
+      response-rewrite:
+        headers:
+          set:
+            X-API-Version: "v1"
+      limit-req:
+        rate: 10
+        burst: 5
+        rejected_code: 429
+        key: remote_addr
+      cors:
+        allow_origins: "*"
+        allow_methods: "GET,POST,PUT,DELETE,PATCH,OPTIONS"
+        allow_headers: "Content-Type,Authorization"
+        expose_headers: "X-Request-ID"
+        max_age: 3600
+      prometheus:
+        prefer_name: true
+  
+  - id: 203
+    name: crm_analytics_api
+    uri: /api/v1/crm/analytics/*
+    upstream:
+      type: roundrobin
+      nodes:
+        "crm-analytics-service:8080": 1
+    plugins:
+      jwt-auth:
+        header: Authorization
+        query: token
+        cookie: jwt
+        hide_credentials: true
+      proxy-rewrite:
+        regex_uri: ["^/api/v1/crm/analytics/(.*)", "/api/analytics/$1"]
+      response-rewrite:
+        headers:
+          set:
+            X-API-Version: "v1"
+      limit-req:
+        rate: 5
+        burst: 3
+        rejected_code: 429
+        key: remote_addr
+      cors:
+        allow_origins: "*"
+        allow_methods: "GET,POST,PUT,DELETE,PATCH,OPTIONS"
+        allow_headers: "Content-Type,Authorization"
+        expose_headers: "X-Request-ID"
+        max_age: 3600
+      prometheus:
+        prefer_name: true
+      proxy-cache:
+        cache_zone: analytics_cache
+        cache_key: "$uri$args"
+        cache_bypass: "$arg_bypass_cache"
+        cache_method: ["GET"]
+        cache_http_status: [200]
+        hide_cache_headers: true
+        no_cache: "$arg_no_cache"
+        cache_ttl: 300
+

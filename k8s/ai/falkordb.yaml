@@ -1,0 +1,202 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: falkordb
+  namespace: banking-crm
+  labels:
+    app: falkordb
+    app.kubernetes.io/name: falkordb
+    app.kubernetes.io/part-of: banking-crm-integration
+    app.kubernetes.io/component: database
+    app.kubernetes.io/version: "latest"
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: falkordb
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: falkordb
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9121"
+        prometheus.io/path: "/metrics"
+    spec:
+      terminationGracePeriodSeconds: 30
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+      containers:
+      - name: falkordb
+        image: falkordb/falkordb:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 6379
+          name: falkordb
+        env:
+        - name: FALKORDB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: ai-service-secrets
+              key: falkordb_password
+        args:
+        - "--requirepass"
+        - "$(FALKORDB_PASSWORD)"
+        - "--appendonly"
+        - "yes"
+        - "--loadmodule"
+        - "/usr/lib/redis/modules/falkordb.so"
+        resources:
+          limits:
+            cpu: "2"
+            memory: "4Gi"
+          requests:
+            cpu: "1"
+            memory: "2Gi"
+        livenessProbe:
+          tcpSocket:
+            port: falkordb
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          exec:
+            command:
+            - sh
+            - -c
+            - redis-cli -a $FALKORDB_PASSWORD ping | grep PONG
+          initialDelaySeconds: 15
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+        volumeMounts:
+        - name: data
+          mountPath: /data
+      - name: redis-exporter
+        image: oliver006/redis_exporter:v1.43.0
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 9121
+          name: metrics
+        env:
+        - name: REDIS_ADDR
+          value: "localhost:6379"
+        - name: REDIS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: ai-service-secrets
+              key: falkordb_password
+        resources:
+          limits:
+            cpu: "200m"
+            memory: "256Mi"
+          requests:
+            cpu: "100m"
+            memory: "128Mi"
+      volumes:
+      - name: data
+        persistentVolumeClaim:
+          claimName: falkordb-data-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: falkordb
+  namespace: banking-crm
+  labels:
+    app: falkordb
+    app.kubernetes.io/name: falkordb
+    app.kubernetes.io/part-of: banking-crm-integration
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "9121"
+    prometheus.io/path: "/metrics"
+spec:
+  type: ClusterIP
+  ports:
+  - port: 6379
+    targetPort: 6379
+    protocol: TCP
+    name: falkordb
+  - port: 9121
+    targetPort: 9121
+    protocol: TCP
+    name: metrics
+  selector:
+    app: falkordb
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: falkordb-data-pvc
+  namespace: banking-crm
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 20Gi
+  storageClassName: standard
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: falkordb-pdb
+  namespace: banking-crm
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: falkordb
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: falkordb-hpa
+  namespace: banking-crm
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: falkordb
+  minReplicas: 3
+  maxReplicas: 5
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+      - type: Percent
+        value: 10
+        periodSeconds: 60
+    scaleUp:
+      stabilizationWindowSeconds: 60
+      policies:
+      - type: Percent
+        value: 20
+        periodSeconds: 60
+      - type: Pods
+        value: 1
+        periodSeconds: 60
+      selectPolicy: Max
+

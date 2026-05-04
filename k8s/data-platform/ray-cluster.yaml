@@ -1,0 +1,1098 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ray-config
+  namespace: enterprise-crm
+data:
+  ray-cluster-config.yaml: |
+    # Ray Cluster Configuration for Enterprise CRM
+    cluster_name: enterprise-crm-ray-cluster
+    
+    # Ray version and image configuration
+    docker:
+      image: "rayproject/ray:2.8.0-py310"
+      container_name: "ray_container"
+      pull_policy: "Always"
+    
+    # Authentication and security
+    auth:
+      ssh_user: ray
+      ssh_private_key: ~/.ssh/ray-cluster-key
+    
+    # Provider configuration for Kubernetes
+    provider:
+      type: kubernetes
+      use_internal_ips: true
+      namespace: enterprise-crm
+      
+    # Available node types
+    available_node_types:
+      ray.head.default:
+        min_workers: 0
+        max_workers: 0
+        node_config:
+          apiVersion: v1
+          kind: Pod
+          metadata:
+            generateName: ray-head-
+            labels:
+              component: ray-head
+              type: ray
+          spec:
+            restartPolicy: Never
+            containers:
+            - name: ray-node
+              imagePullPolicy: Always
+              image: rayproject/ray:2.8.0-py310
+              command: ["/bin/bash", "-c", "--"]
+              args: ["trap : TERM INT; sleep infinity & wait;"]
+              ports:
+              - containerPort: 6379  # Redis port
+              - containerPort: 8265  # Ray dashboard
+              - containerPort: 10001 # Ray client server
+              resources:
+                requests:
+                  cpu: "2"
+                  memory: "4Gi"
+                limits:
+                  cpu: "4"
+                  memory: "8Gi"
+              volumeMounts:
+              - mountPath: /tmp/ray
+                name: ray-logs
+            volumes:
+            - name: ray-logs
+              emptyDir: {}
+              
+      ray.worker.default:
+        min_workers: 2
+        max_workers: 10
+        node_config:
+          apiVersion: v1
+          kind: Pod
+          metadata:
+            generateName: ray-worker-
+            labels:
+              component: ray-worker
+              type: ray
+          spec:
+            restartPolicy: Never
+            containers:
+            - name: ray-node
+              imagePullPolicy: Always
+              image: rayproject/ray:2.8.0-py310
+              command: ["/bin/bash", "-c", "--"]
+              args: ["trap : TERM INT; sleep infinity & wait;"]
+              resources:
+                requests:
+                  cpu: "2"
+                  memory: "4Gi"
+                limits:
+                  cpu: "4"
+                  memory: "8Gi"
+              volumeMounts:
+              - mountPath: /tmp/ray
+                name: ray-logs
+            volumes:
+            - name: ray-logs
+              emptyDir: {}
+    
+    # Head node configuration
+    head_node_type: ray.head.default
+    
+    # Worker node configuration
+    worker_node_types: [ray.worker.default]
+    
+    # Setup commands
+    setup_commands:
+      - pip install --upgrade pip
+      - pip install pandas numpy scikit-learn xgboost lightgbm
+      - pip install ray[default,serve,tune,rllib]==2.8.0
+      - pip install mlflow wandb optuna
+      - pip install psycopg2-binary redis kafka-python
+      - pip install delta-spark pyspark
+      - pip install geopy folium geopandas
+    
+    # Head setup commands
+    head_setup_commands:
+      - pip install --upgrade pip
+      - pip install ray[default,serve,tune,rllib]==2.8.0
+    
+    # Worker setup commands  
+    worker_setup_commands:
+      - pip install --upgrade pip
+      - pip install ray[default,serve,tune,rllib]==2.8.0
+    
+    # Head start ray command
+    head_start_ray_commands:
+      - ray stop
+      - ray start --head --port=6379 --object-manager-port=8076 --autoscaling-config=~/ray_bootstrap_config.yaml --dashboard-host=0.0.0.0 --dashboard-port=8265
+    
+    # Worker start ray commands
+    worker_start_ray_commands:
+      - ray stop
+      - ray start --address=$RAY_HEAD_IP:6379 --object-manager-port=8076
+
+  ray-ml-service.py: |
+    import os
+    import time
+    import logging
+    import asyncio
+    from typing import Dict, List, Any, Optional
+    import json
+    import numpy as np
+    import pandas as pd
+    
+    import ray
+    from ray import serve
+    from ray.train import ScalingConfig
+    from ray.train.sklearn import SklearnTrainer
+    from ray.train.xgboost import XGBoostTrainer
+    from ray.tune import Tuner
+    from ray.tune.schedulers import ASHAScheduler
+    from ray.tune.search.optuna import OptunaSearch
+    
+    from fastapi import FastAPI, HTTPException
+    from pydantic import BaseModel
+    import uvicorn
+    
+    # Configure logging
+    logging.basicConfig(level=logging.INFO)
+    logger = logging.getLogger(__name__)
+    
+    # Initialize Ray
+    ray.init(address="auto", ignore_reinit_error=True)
+    
+    class MLModelRequest(BaseModel):
+        model_type: str
+        features: List[str]
+        target: str
+        data_source: str
+        hyperparameters: Optional[Dict[str, Any]] = None
+        training_config: Optional[Dict[str, Any]] = None
+    
+    class PredictionRequest(BaseModel):
+        model_id: str
+        features: Dict[str, Any]
+        batch_features: Optional[List[Dict[str, Any]]] = None
+    
+    class HyperparameterTuningRequest(BaseModel):
+        model_type: str
+        features: List[str]
+        target: str
+        data_source: str
+        search_space: Dict[str, Any]
+        num_trials: int = 50
+        max_concurrent_trials: int = 4
+    
+    @ray.remote
+    class DataProcessor:
+        """Ray actor for distributed data processing"""
+        
+        def __init__(self):
+            self.cache = {}
+        
+        def load_data(self, data_source: str) -> pd.DataFrame:
+            """Load data from various sources"""
+            if data_source in self.cache:
+                return self.cache[data_source]
+            
+            if data_source.startswith("s3://"):
+                # Load from S3/MinIO
+                import boto3
+                # Implementation for S3 data loading
+                pass
+            elif data_source.startswith("postgresql://"):
+                # Load from PostgreSQL
+                import psycopg2
+                import pandas as pd
+                # Implementation for PostgreSQL data loading
+                pass
+            elif data_source.startswith("delta://"):
+                # Load from Delta Lake
+                from pyspark.sql import SparkSession
+                # Implementation for Delta Lake data loading
+                pass
+            else:
+                # Load from local file
+                if data_source.endswith('.csv'):
+                    df = pd.read_csv(data_source)
+                elif data_source.endswith('.parquet'):
+                    df = pd.read_parquet(data_source)
+                else:
+                    raise ValueError(f"Unsupported data source: {data_source}")
+            
+            self.cache[data_source] = df
+            return df
+        
+        def preprocess_data(self, df: pd.DataFrame, features: List[str], target: str) -> tuple:
+            """Preprocess data for ML training"""
+            # Handle missing values
+            df = df.dropna(subset=features + [target])
+            
+            # Feature engineering for CRM data
+            if 'customer_id' in df.columns:
+                # Customer-specific features
+                df['days_since_last_purchase'] = (pd.Timestamp.now() - pd.to_datetime(df.get('last_purchase_date', pd.Timestamp.now()))).dt.days
+                df['total_purchase_value'] = df.get('total_purchases', 0) * df.get('avg_order_value', 0)
+                df['purchase_frequency'] = df.get('total_purchases', 0) / (df.get('customer_age_days', 1) / 365.25)
+            
+            if 'opportunity_id' in df.columns:
+                # Opportunity-specific features
+                df['days_in_stage'] = (pd.Timestamp.now() - pd.to_datetime(df.get('stage_entry_date', pd.Timestamp.now()))).dt.days
+                df['opportunity_score'] = df.get('value', 0) * df.get('probability', 0) / 100.0
+                df['deal_velocity'] = df.get('value', 0) / (df.get('days_in_pipeline', 1) + 1)
+            
+            # Encode categorical variables
+            categorical_features = df[features].select_dtypes(include=['object']).columns
+            for col in categorical_features:
+                df[col] = pd.Categorical(df[col]).codes
+            
+            X = df[features].values
+            y = df[target].values
+            
+            return X, y, df[features].columns.tolist()
+        
+        def feature_engineering(self, df: pd.DataFrame) -> pd.DataFrame:
+            """Advanced feature engineering for CRM data"""
+            # Customer Lifetime Value features
+            if all(col in df.columns for col in ['total_purchases', 'avg_order_value', 'customer_age_days']):
+                df['clv_simple'] = df['total_purchases'] * df['avg_order_value']
+                df['purchase_rate'] = df['total_purchases'] / (df['customer_age_days'] / 365.25)
+            
+            # RFM Analysis features
+            if all(col in df.columns for col in ['last_purchase_date', 'total_purchases', 'total_spent']):
+                df['recency'] = (pd.Timestamp.now() - pd.to_datetime(df['last_purchase_date'])).dt.days
+                df['frequency'] = df['total_purchases']
+                df['monetary'] = df['total_spent']
+            
+            # Opportunity scoring features
+            if all(col in df.columns for col in ['value', 'probability', 'days_in_stage']):
+                df['weighted_value'] = df['value'] * df['probability'] / 100.0
+                df['urgency_score'] = 1.0 / (1.0 + df['days_in_stage'] * 0.01)
+                df['final_score'] = df['weighted_value'] * df['urgency_score']
+            
+            return df
+    
+    @ray.remote
+    class MLModelTrainer:
+        """Ray actor for distributed ML model training"""
+        
+        def __init__(self):
+            self.models = {}
+        
+        def train_customer_churn_model(self, X, y, hyperparameters=None):
+            """Train customer churn prediction model"""
+            from sklearn.ensemble import RandomForestClassifier
+            from sklearn.model_selection import train_test_split
+            from sklearn.metrics import classification_report, roc_auc_score
+            
+            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+            
+            params = hyperparameters or {
+                'n_estimators': 100,
+                'max_depth': 10,
+                'min_samples_split': 5,
+                'random_state': 42
+            }
+            
+            model = RandomForestClassifier(**params)
+            model.fit(X_train, y_train)
+            
+            # Evaluate model
+            y_pred = model.predict(X_test)
+            y_pred_proba = model.predict_proba(X_test)[:, 1]
+            
+            metrics = {
+                'accuracy': model.score(X_test, y_test),
+                'roc_auc': roc_auc_score(y_test, y_pred_proba),
+                'classification_report': classification_report(y_test, y_pred, output_dict=True)
+            }
+            
+            model_id = f"churn_model_{int(time.time())}"
+            self.models[model_id] = {
+                'model': model,
+                'type': 'churn_prediction',
+                'metrics': metrics,
+                'feature_names': None
+            }
+            
+            return model_id, metrics
+        
+        def train_clv_model(self, X, y, hyperparameters=None):
+            """Train Customer Lifetime Value prediction model"""
+            import xgboost as xgb
+            from sklearn.model_selection import train_test_split
+            from sklearn.metrics import mean_squared_error, r2_score
+            
+            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+            
+            params = hyperparameters or {
+                'n_estimators': 100,
+                'max_depth': 6,
+                'learning_rate': 0.1,
+                'random_state': 42
+            }
+            
+            model = xgb.XGBRegressor(**params)
+            model.fit(X_train, y_train)
+            
+            # Evaluate model
+            y_pred = model.predict(X_test)
+            
+            metrics = {
+                'mse': mean_squared_error(y_test, y_pred),
+                'rmse': np.sqrt(mean_squared_error(y_test, y_pred)),
+                'r2': r2_score(y_test, y_pred),
+                'mae': np.mean(np.abs(y_test - y_pred))
+            }
+            
+            model_id = f"clv_model_{int(time.time())}"
+            self.models[model_id] = {
+                'model': model,
+                'type': 'clv_prediction',
+                'metrics': metrics,
+                'feature_names': None
+            }
+            
+            return model_id, metrics
+        
+        def train_opportunity_scoring_model(self, X, y, hyperparameters=None):
+            """Train opportunity scoring model"""
+            from sklearn.ensemble import GradientBoostingRegressor
+            from sklearn.model_selection import train_test_split
+            from sklearn.metrics import mean_squared_error, r2_score
+            
+            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+            
+            params = hyperparameters or {
+                'n_estimators': 100,
+                'max_depth': 6,
+                'learning_rate': 0.1,
+                'random_state': 42
+            }
+            
+            model = GradientBoostingRegressor(**params)
+            model.fit(X_train, y_train)
+            
+            # Evaluate model
+            y_pred = model.predict(X_test)
+            
+            metrics = {
+                'mse': mean_squared_error(y_test, y_pred),
+                'rmse': np.sqrt(mean_squared_error(y_test, y_pred)),
+                'r2': r2_score(y_test, y_pred),
+                'mae': np.mean(np.abs(y_test - y_pred))
+            }
+            
+            model_id = f"opportunity_model_{int(time.time())}"
+            self.models[model_id] = {
+                'model': model,
+                'type': 'opportunity_scoring',
+                'metrics': metrics,
+                'feature_names': None
+            }
+            
+            return model_id, metrics
+        
+        def predict(self, model_id: str, features: np.ndarray):
+            """Make predictions using trained model"""
+            if model_id not in self.models:
+                raise ValueError(f"Model {model_id} not found")
+            
+            model = self.models[model_id]['model']
+            return model.predict(features)
+        
+        def get_model_info(self, model_id: str):
+            """Get model information and metrics"""
+            if model_id not in self.models:
+                raise ValueError(f"Model {model_id} not found")
+            
+            info = self.models[model_id].copy()
+            info.pop('model')  # Don't return the actual model object
+            return info
+    
+    @ray.remote
+    class HyperparameterTuner:
+        """Ray actor for distributed hyperparameter tuning"""
+        
+        def __init__(self):
+            pass
+        
+        def tune_model(self, model_type: str, X, y, search_space: Dict, num_trials: int = 50):
+            """Perform hyperparameter tuning using Ray Tune"""
+            from ray import tune
+            from ray.tune.schedulers import ASHAScheduler
+            from ray.tune.search.optuna import OptunaSearch
+            
+            def objective(config):
+                from sklearn.model_selection import cross_val_score
+                from sklearn.ensemble import RandomForestClassifier, GradientBoostingRegressor
+                import xgboost as xgb
+                
+                if model_type == 'churn_prediction':
+                    model = RandomForestClassifier(**config, random_state=42)
+                    scores = cross_val_score(model, X, y, cv=3, scoring='roc_auc')
+                elif model_type == 'clv_prediction':
+                    model = xgb.XGBRegressor(**config, random_state=42)
+                    scores = cross_val_score(model, X, y, cv=3, scoring='r2')
+                elif model_type == 'opportunity_scoring':
+                    model = GradientBoostingRegressor(**config, random_state=42)
+                    scores = cross_val_score(model, X, y, cv=3, scoring='r2')
+                else:
+                    raise ValueError(f"Unknown model type: {model_type}")
+                
+                return {"score": scores.mean()}
+            
+            # Configure search algorithm
+            search_alg = OptunaSearch()
+            scheduler = ASHAScheduler(metric="score", mode="max")
+            
+            # Run tuning
+            tuner = Tuner(
+                objective,
+                param_space=search_space,
+                tune_config=tune.TuneConfig(
+                    search_alg=search_alg,
+                    scheduler=scheduler,
+                    num_samples=num_trials,
+                ),
+            )
+            
+            results = tuner.fit()
+            best_result = results.get_best_result(metric="score", mode="max")
+            
+            return {
+                'best_config': best_result.config,
+                'best_score': best_result.metrics['score'],
+                'trial_count': len(results),
+            }
+    
+    # FastAPI application
+    app = FastAPI(title="Ray ML Service for Enterprise CRM", version="1.0.0")
+    
+    # Initialize Ray actors
+    data_processor = DataProcessor.remote()
+    model_trainer = MLModelTrainer.remote()
+    hyperparameter_tuner = HyperparameterTuner.remote()
+    
+    @app.post("/train")
+    async def train_model(request: MLModelRequest):
+        """Train ML model"""
+        try:
+            # Load and preprocess data
+            df = await data_processor.load_data.remote(request.data_source)
+            X, y, feature_names = await data_processor.preprocess_data.remote(
+                df, request.features, request.target
+            )
+            
+            # Train model based on type
+            if request.model_type == 'churn_prediction':
+                model_id, metrics = await model_trainer.train_customer_churn_model.remote(
+                    X, y, request.hyperparameters
+                )
+            elif request.model_type == 'clv_prediction':
+                model_id, metrics = await model_trainer.train_clv_model.remote(
+                    X, y, request.hyperparameters
+                )
+            elif request.model_type == 'opportunity_scoring':
+                model_id, metrics = await model_trainer.train_opportunity_scoring_model.remote(
+                    X, y, request.hyperparameters
+                )
+            else:
+                raise HTTPException(status_code=400, detail=f"Unknown model type: {request.model_type}")
+            
+            return {
+                "model_id": model_id,
+                "metrics": metrics,
+                "feature_names": feature_names
+            }
+            
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+    
+    @app.post("/predict")
+    async def predict(request: PredictionRequest):
+        """Make predictions"""
+        try:
+            if request.batch_features:
+                # Batch prediction
+                features_array = np.array([list(f.values()) for f in request.batch_features])
+                predictions = await model_trainer.predict.remote(request.model_id, features_array)
+                return {"predictions": predictions.tolist()}
+            else:
+                # Single prediction
+                features_array = np.array([list(request.features.values())])
+                prediction = await model_trainer.predict.remote(request.model_id, features_array)
+                return {"prediction": prediction[0]}
+                
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+    
+    @app.post("/tune")
+    async def tune_hyperparameters(request: HyperparameterTuningRequest):
+        """Perform hyperparameter tuning"""
+        try:
+            # Load and preprocess data
+            df = await data_processor.load_data.remote(request.data_source)
+            X, y, feature_names = await data_processor.preprocess_data.remote(
+                df, request.features, request.target
+            )
+            
+            # Perform tuning
+            results = await hyperparameter_tuner.tune_model.remote(
+                request.model_type, X, y, request.search_space, request.num_trials
+            )
+            
+            return results
+            
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+    
+    @app.get("/models/{model_id}")
+    async def get_model_info(model_id: str):
+        """Get model information"""
+        try:
+            info = await model_trainer.get_model_info.remote(model_id)
+            return info
+        except Exception as e:
+            raise HTTPException(status_code=404, detail=str(e))
+    
+    @app.get("/cluster/status")
+    async def get_cluster_status():
+        """Get Ray cluster status"""
+        try:
+            cluster_resources = ray.cluster_resources()
+            return {
+                "cluster_resources": cluster_resources,
+                "available_resources": ray.available_resources(),
+                "nodes": len(ray.nodes()),
+                "timestamp": time.time()
+            }
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+    
+    @app.get("/health")
+    async def health_check():
+        return {"status": "healthy", "timestamp": time.time()}
+    
+    if __name__ == "__main__":
+        uvicorn.run(app, host="0.0.0.0", port=8080)
+
+  ray-data-processing.py: |
+    import ray
+    import pandas as pd
+    import numpy as np
+    from typing import Dict, List, Any
+    import time
+    
+    # Initialize Ray
+    ray.init(address="auto", ignore_reinit_error=True)
+    
+    @ray.remote
+    class DistributedDataProcessor:
+        """Distributed data processing for Enterprise CRM"""
+        
+        def __init__(self):
+            self.processed_data_cache = {}
+        
+        def process_customer_data(self, customer_batch: List[Dict]) -> List[Dict]:
+            """Process customer data batch"""
+            processed_customers = []
+            
+            for customer in customer_batch:
+                # Calculate customer metrics
+                processed_customer = customer.copy()
+                
+                # Customer Lifetime Value calculation
+                if all(k in customer for k in ['total_purchases', 'avg_order_value', 'customer_age_days']):
+                    clv = (customer['total_purchases'] * 
+                          customer['avg_order_value'] * 
+                          (customer['customer_age_days'] / 365.25))
+                    processed_customer['calculated_clv'] = clv
+                
+                # RFM Score calculation
+                if 'last_purchase_date' in customer:
+                    recency = (pd.Timestamp.now() - pd.to_datetime(customer['last_purchase_date'])).days
+                    processed_customer['recency_days'] = recency
+                    processed_customer['recency_score'] = min(5, max(1, 6 - (recency // 30)))
+                
+                if 'total_purchases' in customer:
+                    frequency_score = min(5, max(1, customer['total_purchases'] // 2))
+                    processed_customer['frequency_score'] = frequency_score
+                
+                if 'total_spent' in customer:
+                    monetary_score = min(5, max(1, customer['total_spent'] // 1000))
+                    processed_customer['monetary_score'] = monetary_score
+                
+                # Customer segment assignment
+                if all(k in processed_customer for k in ['recency_score', 'frequency_score', 'monetary_score']):
+                    rfm_score = (processed_customer['recency_score'] + 
+                               processed_customer['frequency_score'] + 
+                               processed_customer['monetary_score'])
+                    
+                    if rfm_score >= 12:
+                        segment = 'Champions'
+                    elif rfm_score >= 9:
+                        segment = 'Loyal Customers'
+                    elif rfm_score >= 6:
+                        segment = 'Potential Loyalists'
+                    else:
+                        segment = 'At Risk'
+                    
+                    processed_customer['customer_segment'] = segment
+                
+                processed_customers.append(processed_customer)
+            
+            return processed_customers
+        
+        def process_opportunity_data(self, opportunity_batch: List[Dict]) -> List[Dict]:
+            """Process opportunity data batch"""
+            processed_opportunities = []
+            
+            for opportunity in opportunity_batch:
+                processed_opportunity = opportunity.copy()
+                
+                # Opportunity scoring
+                if all(k in opportunity for k in ['value', 'probability', 'days_in_stage']):
+                    base_score = opportunity['value'] * (opportunity['probability'] / 100.0)
+                    urgency_factor = 1.0 / (1.0 + opportunity['days_in_stage'] * 0.01)
+                    final_score = base_score * urgency_factor
+                    processed_opportunity['opportunity_score'] = final_score
+                
+                # Deal velocity calculation
+                if 'days_in_pipeline' in opportunity and opportunity['days_in_pipeline'] > 0:
+                    velocity = opportunity.get('value', 0) / opportunity['days_in_pipeline']
+                    processed_opportunity['deal_velocity'] = velocity
+                
+                # Stage progression analysis
+                if 'stage_history' in opportunity:
+                    stage_durations = []
+                    for i in range(1, len(opportunity['stage_history'])):
+                        prev_date = pd.to_datetime(opportunity['stage_history'][i-1]['date'])
+                        curr_date = pd.to_datetime(opportunity['stage_history'][i]['date'])
+                        duration = (curr_date - prev_date).days
+                        stage_durations.append(duration)
+                    
+                    if stage_durations:
+                        processed_opportunity['avg_stage_duration'] = np.mean(stage_durations)
+                        processed_opportunity['max_stage_duration'] = max(stage_durations)
+                
+                processed_opportunities.append(processed_opportunity)
+            
+            return processed_opportunities
+        
+        def process_inventory_data(self, inventory_batch: List[Dict]) -> List[Dict]:
+            """Process inventory data batch"""
+            processed_inventory = []
+            
+            for item in inventory_batch:
+                processed_item = item.copy()
+                
+                # Inventory turnover calculation
+                if all(k in item for k in ['cost_of_goods_sold', 'average_inventory']):
+                    if item['average_inventory'] > 0:
+                        turnover = item['cost_of_goods_sold'] / item['average_inventory']
+                        processed_item['inventory_turnover'] = turnover
+                        processed_item['days_in_inventory'] = 365 / turnover if turnover > 0 else 365
+                
+                # Stock level analysis
+                if all(k in item for k in ['current_stock', 'reorder_point', 'max_stock']):
+                    stock_ratio = item['current_stock'] / item['max_stock'] if item['max_stock'] > 0 else 0
+                    processed_item['stock_ratio'] = stock_ratio
+                    
+                    if item['current_stock'] <= item['reorder_point']:
+                        processed_item['stock_status'] = 'Low Stock'
+                    elif stock_ratio > 0.8:
+                        processed_item['stock_status'] = 'Overstock'
+                    else:
+                        processed_item['stock_status'] = 'Normal'
+                
+                # Demand forecasting features
+                if 'sales_history' in item:
+                    sales_data = item['sales_history']
+                    if len(sales_data) >= 3:
+                        recent_sales = sales_data[-3:]
+                        avg_sales = np.mean([s['quantity'] for s in recent_sales])
+                        trend = np.polyfit(range(len(recent_sales)), [s['quantity'] for s in recent_sales], 1)[0]
+                        
+                        processed_item['avg_recent_sales'] = avg_sales
+                        processed_item['sales_trend'] = trend
+                        processed_item['forecasted_demand'] = avg_sales + (trend * 30)  # 30-day forecast
+                
+                processed_inventory.append(processed_item)
+            
+            return processed_inventory
+    
+    @ray.remote
+    def parallel_data_aggregation(data_chunks: List[List[Dict]], processing_function: str) -> List[Dict]:
+        """Parallel data aggregation across multiple chunks"""
+        processor = DistributedDataProcessor.remote()
+        
+        if processing_function == 'customer':
+            futures = [processor.process_customer_data.remote(chunk) for chunk in data_chunks]
+        elif processing_function == 'opportunity':
+            futures = [processor.process_opportunity_data.remote(chunk) for chunk in data_chunks]
+        elif processing_function == 'inventory':
+            futures = [processor.process_inventory_data.remote(chunk) for chunk in data_chunks]
+        else:
+            raise ValueError(f"Unknown processing function: {processing_function}")
+        
+        # Wait for all tasks to complete
+        results = ray.get(futures)
+        
+        # Flatten results
+        aggregated_results = []
+        for result_batch in results:
+            aggregated_results.extend(result_batch)
+        
+        return aggregated_results
+    
+    def process_large_dataset(data: List[Dict], processing_function: str, chunk_size: int = 1000) -> List[Dict]:
+        """Process large dataset using Ray distributed computing"""
+        # Split data into chunks
+        data_chunks = [data[i:i + chunk_size] for i in range(0, len(data), chunk_size)]
+        
+        # Process chunks in parallel
+        start_time = time.time()
+        result = ray.get(parallel_data_aggregation.remote(data_chunks, processing_function))
+        end_time = time.time()
+        
+        print(f"Processed {len(data)} records in {end_time - start_time:.2f} seconds using Ray")
+        return result
+    
+    # Example usage and testing
+    if __name__ == "__main__":
+        # Generate sample customer data
+        sample_customers = []
+        for i in range(10000):
+            customer = {
+                'customer_id': f'CUST_{i:06d}',
+                'total_purchases': np.random.randint(1, 50),
+                'avg_order_value': np.random.uniform(50, 500),
+                'customer_age_days': np.random.randint(30, 1095),
+                'last_purchase_date': pd.Timestamp.now() - pd.Timedelta(days=np.random.randint(1, 365)),
+                'total_spent': np.random.uniform(100, 10000)
+            }
+            sample_customers.append(customer)
+        
+        # Process using Ray
+        processed_customers = process_large_dataset(sample_customers, 'customer')
+        
+        print(f"Processed {len(processed_customers)} customers")
+        print("Sample processed customer:", processed_customers[0])
+
+---
+# Ray Head Node Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ray-head
+  namespace: enterprise-crm
+  labels:
+    app: ray-head
+    component: ray-cluster
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ray-head
+  template:
+    metadata:
+      labels:
+        app: ray-head
+        component: ray-cluster
+    spec:
+      containers:
+      - name: ray-head
+        image: rayproject/ray:2.8.0-py310
+        command:
+        - /bin/bash
+        - -c
+        - |
+          # Install additional dependencies
+          pip install --upgrade pip
+          pip install pandas numpy scikit-learn xgboost lightgbm
+          pip install mlflow wandb optuna
+          pip install psycopg2-binary redis kafka-python
+          pip install delta-spark pyspark
+          pip install geopy folium geopandas
+          pip install fastapi uvicorn
+          
+          # Start Ray head node
+          ray start --head \
+            --port=6379 \
+            --dashboard-host=0.0.0.0 \
+            --dashboard-port=8265 \
+            --object-manager-port=8076 \
+            --node-manager-port=8077 \
+            --redis-password="" \
+            --block
+        env:
+        - name: RAY_DISABLE_IMPORT_WARNING
+          value: "1"
+        - name: RAY_OBJECT_STORE_ALLOW_SLOW_STORAGE
+          value: "1"
+        ports:
+        - containerPort: 6379
+          name: gcs-server
+        - containerPort: 8265
+          name: dashboard
+        - containerPort: 8076
+          name: object-manager
+        - containerPort: 8077
+          name: node-manager
+        - containerPort: 10001
+          name: client-server
+        volumeMounts:
+        - name: ray-config
+          mountPath: /ray-config
+        - name: ray-logs
+          mountPath: /tmp/ray
+        resources:
+          requests:
+            memory: "4Gi"
+            cpu: "2000m"
+          limits:
+            memory: "8Gi"
+            cpu: "4000m"
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 8265
+          initialDelaySeconds: 60
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 8265
+          initialDelaySeconds: 30
+          periodSeconds: 10
+      volumes:
+      - name: ray-config
+        configMap:
+          name: ray-config
+      - name: ray-logs
+        emptyDir: {}
+---
+# Ray Worker Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ray-worker
+  namespace: enterprise-crm
+  labels:
+    app: ray-worker
+    component: ray-cluster
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: ray-worker
+  template:
+    metadata:
+      labels:
+        app: ray-worker
+        component: ray-cluster
+    spec:
+      containers:
+      - name: ray-worker
+        image: rayproject/ray:2.8.0-py310
+        command:
+        - /bin/bash
+        - -c
+        - |
+          # Install additional dependencies
+          pip install --upgrade pip
+          pip install pandas numpy scikit-learn xgboost lightgbm
+          pip install mlflow wandb optuna
+          pip install psycopg2-binary redis kafka-python
+          pip install delta-spark pyspark
+          pip install geopy folium geopandas
+          
+          # Wait for head node to be ready
+          until ray status --address=ray-head:6379; do
+            echo "Waiting for Ray head node..."
+            sleep 5
+          done
+          
+          # Start Ray worker
+          ray start \
+            --address=ray-head:6379 \
+            --object-manager-port=8076 \
+            --node-manager-port=8077 \
+            --redis-password="" \
+            --block
+        env:
+        - name: RAY_DISABLE_IMPORT_WARNING
+          value: "1"
+        - name: RAY_OBJECT_STORE_ALLOW_SLOW_STORAGE
+          value: "1"
+        ports:
+        - containerPort: 8076
+          name: object-manager
+        - containerPort: 8077
+          name: node-manager
+        volumeMounts:
+        - name: ray-config
+          mountPath: /ray-config
+        - name: ray-logs
+          mountPath: /tmp/ray
+        resources:
+          requests:
+            memory: "4Gi"
+            cpu: "2000m"
+          limits:
+            memory: "8Gi"
+            cpu: "4000m"
+      volumes:
+      - name: ray-config
+        configMap:
+          name: ray-config
+      - name: ray-logs
+        emptyDir: {}
+---
+# Ray ML Service Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ray-ml-service
+  namespace: enterprise-crm
+  labels:
+    app: ray-ml-service
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: ray-ml-service
+  template:
+    metadata:
+      labels:
+        app: ray-ml-service
+    spec:
+      containers:
+      - name: ray-ml-service
+        image: rayproject/ray:2.8.0-py310
+        command:
+        - /bin/bash
+        - -c
+        - |
+          # Install additional dependencies
+          pip install --upgrade pip
+          pip install fastapi uvicorn
+          pip install pandas numpy scikit-learn xgboost lightgbm
+          pip install mlflow wandb optuna
+          pip install psycopg2-binary redis kafka-python
+          
+          # Wait for Ray cluster to be ready
+          until ray status --address=ray-head:6379; do
+            echo "Waiting for Ray cluster..."
+            sleep 5
+          done
+          
+          # Run ML service
+          python /ray-config/ray-ml-service.py
+        env:
+        - name: RAY_ADDRESS
+          value: "ray-head:6379"
+        - name: RAY_DISABLE_IMPORT_WARNING
+          value: "1"
+        ports:
+        - containerPort: 8080
+          name: http
+        volumeMounts:
+        - name: ray-config
+          mountPath: /ray-config
+        resources:
+          requests:
+            memory: "2Gi"
+            cpu: "1000m"
+          limits:
+            memory: "4Gi"
+            cpu: "2000m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 60
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+      volumes:
+      - name: ray-config
+        configMap:
+          name: ray-config
+---
+# Services
+apiVersion: v1
+kind: Service
+metadata:
+  name: ray-head
+  namespace: enterprise-crm
+  labels:
+    app: ray-head
+spec:
+  ports:
+  - port: 6379
+    targetPort: 6379
+    name: gcs-server
+  - port: 8265
+    targetPort: 8265
+    name: dashboard
+  - port: 8076
+    targetPort: 8076
+    name: object-manager
+  - port: 10001
+    targetPort: 10001
+    name: client-server
+  selector:
+    app: ray-head
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ray-ml-service
+  namespace: enterprise-crm
+  labels:
+    app: ray-ml-service
+spec:
+  ports:
+  - port: 8080
+    targetPort: 8080
+    name: http
+  selector:
+    app: ray-ml-service
+  type: ClusterIP
+---
+# HPA for Ray Workers
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: ray-worker-hpa
+  namespace: enterprise-crm
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: ray-worker
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+

@@ -1,0 +1,611 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: opensearch-config
+  namespace: enterprise-crm
+  labels:
+    app: opensearch
+data:
+  opensearch.yml: |
+    cluster.name: enterprise-crm-logs
+    node.name: ${HOSTNAME}
+    node.roles: [master, data, ingest]
+    
+    # Network settings
+    network.host: 0.0.0.0
+    http.port: 9200
+    transport.port: 9300
+    
+    # Discovery settings
+    discovery.seed_hosts: ["opensearch-0.opensearch.enterprise-crm.svc.cluster.local", "opensearch-1.opensearch.enterprise-crm.svc.cluster.local", "opensearch-2.opensearch.enterprise-crm.svc.cluster.local"]
+    cluster.initial_master_nodes: ["opensearch-0", "opensearch-1", "opensearch-2"]
+    
+    # Security settings
+    plugins.security.disabled: false
+    plugins.security.ssl.transport.pemcert_filepath: certs/tls.crt
+    plugins.security.ssl.transport.pemkey_filepath: certs/tls.key
+    plugins.security.ssl.transport.pemtrustedcas_filepath: certs/ca.crt
+    plugins.security.ssl.transport.enforce_hostname_verification: false
+    plugins.security.ssl.http.enabled: true
+    plugins.security.ssl.http.pemcert_filepath: certs/tls.crt
+    plugins.security.ssl.http.pemkey_filepath: certs/tls.key
+    plugins.security.ssl.http.pemtrustedcas_filepath: certs/ca.crt
+    
+    # Performance settings
+    indices.memory.index_buffer_size: 20%
+    indices.memory.min_index_buffer_size: 96mb
+    indices.fielddata.cache.size: 40%
+    indices.queries.cache.size: 10%
+    
+    # Index settings
+    action.auto_create_index: true
+    action.destructive_requires_name: true
+    
+    # Logging
+    logger.level: INFO
+    logger.org.opensearch.discovery: DEBUG
+
+  log4j2.properties: |
+    status = error
+    appender.console.type = Console
+    appender.console.name = console
+    appender.console.layout.type = PatternLayout
+    appender.console.layout.pattern = [%d{ISO8601}][%-5p][%-25c{1.}] [%node_name]%marker %m%n
+    rootLogger.level = info
+    rootLogger.appenderRef.console.ref = console
+
+---
+# OpenSearch StatefulSet
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: opensearch
+  namespace: enterprise-crm
+  labels:
+    app: opensearch
+spec:
+  serviceName: opensearch
+  replicas: 3
+  selector:
+    matchLabels:
+      app: opensearch
+  template:
+    metadata:
+      labels:
+        app: opensearch
+    spec:
+      serviceAccountName: opensearch
+      initContainers:
+      - name: init-sysctl
+        image: busybox:1.35
+        command:
+        - sh
+        - -c
+        - |
+          sysctl -w vm.max_map_count=262144
+          ulimit -n 65536
+          ulimit -u 4096
+        securityContext:
+          privileged: true
+      containers:
+      - name: opensearch
+        image: opensearchproject/opensearch:2.11.0
+        ports:
+        - containerPort: 9200
+          name: http
+        - containerPort: 9300
+          name: transport
+        env:
+        - name: OPENSEARCH_JAVA_OPTS
+          value: "-Xms2g -Xmx2g"
+        - name: node.name
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: cluster.initial_master_nodes
+          value: "opensearch-0,opensearch-1,opensearch-2"
+        - name: discovery.seed_hosts
+          value: "opensearch-0.opensearch.enterprise-crm.svc.cluster.local,opensearch-1.opensearch.enterprise-crm.svc.cluster.local,opensearch-2.opensearch.enterprise-crm.svc.cluster.local"
+        - name: OPENSEARCH_INITIAL_ADMIN_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: opensearch-secret
+              key: admin-password
+        resources:
+          requests:
+            memory: "3Gi"
+            cpu: "1000m"
+          limits:
+            memory: "4Gi"
+            cpu: "2000m"
+        volumeMounts:
+        - name: opensearch-data
+          mountPath: /usr/share/opensearch/data
+        - name: opensearch-config
+          mountPath: /usr/share/opensearch/config/opensearch.yml
+          subPath: opensearch.yml
+        - name: opensearch-config
+          mountPath: /usr/share/opensearch/config/log4j2.properties
+          subPath: log4j2.properties
+        - name: certs
+          mountPath: /usr/share/opensearch/config/certs
+        livenessProbe:
+          httpGet:
+            path: /_cluster/health
+            port: 9200
+            scheme: HTTPS
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          timeoutSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /_cluster/health
+            port: 9200
+            scheme: HTTPS
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+        securityContext:
+          runAsUser: 1000
+          runAsGroup: 1000
+          fsGroup: 1000
+      volumes:
+      - name: opensearch-config
+        configMap:
+          name: opensearch-config
+      - name: certs
+        secret:
+          secretName: opensearch-certs
+  volumeClaimTemplates:
+  - metadata:
+      name: opensearch-data
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      storageClassName: fast-ssd
+      resources:
+        requests:
+          storage: 100Gi
+
+---
+# OpenSearch Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: opensearch
+  namespace: enterprise-crm
+  labels:
+    app: opensearch
+spec:
+  ports:
+  - port: 9200
+    targetPort: 9200
+    name: http
+  - port: 9300
+    targetPort: 9300
+    name: transport
+  selector:
+    app: opensearch
+  type: ClusterIP
+
+---
+# OpenSearch Headless Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: opensearch-headless
+  namespace: enterprise-crm
+  labels:
+    app: opensearch
+spec:
+  ports:
+  - port: 9200
+    targetPort: 9200
+    name: http
+  - port: 9300
+    targetPort: 9300
+    name: transport
+  selector:
+    app: opensearch
+  clusterIP: None
+
+---
+# OpenSearch ServiceAccount
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: opensearch
+  namespace: enterprise-crm
+  labels:
+    app: opensearch
+
+---
+# OpenSearch Dashboards Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: opensearch-dashboards
+  namespace: enterprise-crm
+  labels:
+    app: opensearch-dashboards
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: opensearch-dashboards
+  template:
+    metadata:
+      labels:
+        app: opensearch-dashboards
+    spec:
+      serviceAccountName: opensearch-dashboards
+      containers:
+      - name: opensearch-dashboards
+        image: opensearchproject/opensearch-dashboards:2.11.0
+        ports:
+        - containerPort: 5601
+          name: http
+        env:
+        - name: OPENSEARCH_HOSTS
+          value: "https://opensearch:9200"
+        - name: OPENSEARCH_USERNAME
+          value: "admin"
+        - name: OPENSEARCH_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: opensearch-secret
+              key: admin-password
+        resources:
+          requests:
+            memory: "1Gi"
+            cpu: "500m"
+          limits:
+            memory: "2Gi"
+            cpu: "1000m"
+        volumeMounts:
+        - name: dashboards-config
+          mountPath: /usr/share/opensearch-dashboards/config/opensearch_dashboards.yml
+          subPath: opensearch_dashboards.yml
+        livenessProbe:
+          httpGet:
+            path: /api/status
+            port: 5601
+          initialDelaySeconds: 60
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /api/status
+            port: 5601
+          initialDelaySeconds: 30
+          periodSeconds: 10
+      volumes:
+      - name: dashboards-config
+        configMap:
+          name: opensearch-dashboards-config
+
+---
+# OpenSearch Dashboards ConfigMap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: opensearch-dashboards-config
+  namespace: enterprise-crm
+  labels:
+    app: opensearch-dashboards
+data:
+  opensearch_dashboards.yml: |
+    server.name: opensearch-dashboards
+    server.host: "0.0.0.0"
+    server.port: 5601
+    
+    opensearch.hosts: ["https://opensearch:9200"]
+    opensearch.username: "admin"
+    opensearch.password: "${OPENSEARCH_PASSWORD}"
+    opensearch.ssl.verificationMode: none
+    
+    # Security
+    opensearch_security.multitenancy.enabled: true
+    opensearch_security.multitenancy.tenants.preferred: ["Private", "Global"]
+    opensearch_security.readonly_mode.roles: ["kibana_read_only"]
+    
+    # Logging
+    logging.dest: stdout
+    logging.silent: false
+    logging.quiet: false
+    logging.verbose: false
+    
+    # Performance
+    server.maxPayloadBytes: 1048576
+    elasticsearch.requestTimeout: 30000
+    elasticsearch.shardTimeout: 30000
+
+---
+# OpenSearch Dashboards Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: opensearch-dashboards
+  namespace: enterprise-crm
+  labels:
+    app: opensearch-dashboards
+spec:
+  ports:
+  - port: 80
+    targetPort: 5601
+    name: http
+  selector:
+    app: opensearch-dashboards
+  type: ClusterIP
+
+---
+# OpenSearch Dashboards ServiceAccount
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: opensearch-dashboards
+  namespace: enterprise-crm
+  labels:
+    app: opensearch-dashboards
+
+---
+# Fluent Bit DaemonSet for Log Collection
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: fluent-bit
+  namespace: enterprise-crm
+  labels:
+    app: fluent-bit
+spec:
+  selector:
+    matchLabels:
+      app: fluent-bit
+  template:
+    metadata:
+      labels:
+        app: fluent-bit
+    spec:
+      serviceAccountName: fluent-bit
+      containers:
+      - name: fluent-bit
+        image: fluent/fluent-bit:2.2.0
+        ports:
+        - containerPort: 2020
+          name: http
+        env:
+        - name: FLUENT_OPENSEARCH_HOST
+          value: "opensearch"
+        - name: FLUENT_OPENSEARCH_PORT
+          value: "9200"
+        - name: FLUENT_OPENSEARCH_USER
+          value: "admin"
+        - name: FLUENT_OPENSEARCH_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: opensearch-secret
+              key: admin-password
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+        volumeMounts:
+        - name: fluent-bit-config
+          mountPath: /fluent-bit/etc
+        - name: varlog
+          mountPath: /var/log
+          readOnly: true
+        - name: varlibdockercontainers
+          mountPath: /var/lib/docker/containers
+          readOnly: true
+        - name: etcmachineid
+          mountPath: /etc/machine-id
+          readOnly: true
+      volumes:
+      - name: fluent-bit-config
+        configMap:
+          name: fluent-bit-config
+      - name: varlog
+        hostPath:
+          path: /var/log
+      - name: varlibdockercontainers
+        hostPath:
+          path: /var/lib/docker/containers
+      - name: etcmachineid
+        hostPath:
+          path: /etc/machine-id
+          type: File
+
+---
+# Fluent Bit ConfigMap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: fluent-bit-config
+  namespace: enterprise-crm
+  labels:
+    app: fluent-bit
+data:
+  fluent-bit.conf: |
+    [SERVICE]
+        Flush         1
+        Log_Level     info
+        Daemon        off
+        Parsers_File  parsers.conf
+        HTTP_Server   On
+        HTTP_Listen   0.0.0.0
+        HTTP_Port     2020
+
+    [INPUT]
+        Name              tail
+        Path              /var/log/containers/*enterprise-crm*.log
+        Parser            cri
+        Tag               kube.*
+        Refresh_Interval  5
+        Mem_Buf_Limit     50MB
+        Skip_Long_Lines   On
+
+    [INPUT]
+        Name              tail
+        Path              /var/log/containers/*customer-service*.log
+        Parser            cri
+        Tag               customer-service.*
+        Refresh_Interval  5
+        Mem_Buf_Limit     50MB
+
+    [INPUT]
+        Name              tail
+        Path              /var/log/containers/*crm-core-service*.log
+        Parser            cri
+        Tag               crm-core.*
+        Refresh_Interval  5
+        Mem_Buf_Limit     50MB
+
+    [INPUT]
+        Name              tail
+        Path              /var/log/containers/*inventory-service*.log
+        Parser            cri
+        Tag               inventory.*
+        Refresh_Interval  5
+        Mem_Buf_Limit     50MB
+
+    [INPUT]
+        Name              tail
+        Path              /var/log/containers/*analytics-service*.log
+        Parser            cri
+        Tag               analytics.*
+        Refresh_Interval  5
+        Mem_Buf_Limit     50MB
+
+    [FILTER]
+        Name                kubernetes
+        Match               kube.*
+        Kube_URL            https://kubernetes.default.svc:443
+        Kube_CA_File        /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+        Kube_Token_File     /var/run/secrets/kubernetes.io/serviceaccount/token
+        Kube_Tag_Prefix     kube.var.log.containers.
+        Merge_Log           On
+        Keep_Log            Off
+        K8S-Logging.Parser  On
+        K8S-Logging.Exclude On
+
+    [FILTER]
+        Name                modify
+        Match               *
+        Add                 cluster enterprise-crm
+        Add                 environment production
+
+    [OUTPUT]
+        Name            opensearch
+        Match           *
+        Host            ${FLUENT_OPENSEARCH_HOST}
+        Port            ${FLUENT_OPENSEARCH_PORT}
+        HTTP_User       ${FLUENT_OPENSEARCH_USER}
+        HTTP_Passwd     ${FLUENT_OPENSEARCH_PASSWORD}
+        Index           enterprise-crm-logs
+        Type            _doc
+        Logstash_Format On
+        Logstash_Prefix enterprise-crm
+        Logstash_DateFormat %Y.%m.%d
+        Include_Tag_Key On
+        Tag_Key         tag
+        Time_Key        @timestamp
+        TLS             On
+        TLS.Verify      Off
+        Suppress_Type_Name On
+
+  parsers.conf: |
+    [PARSER]
+        Name        cri
+        Format      regex
+        Regex       ^(?<time>[^ ]+) (?<stream>stdout|stderr) (?<logtag>[^ ]*) (?<message>.*)$
+        Time_Key    time
+        Time_Format %Y-%m-%dT%H:%M:%S.%L%z
+
+    [PARSER]
+        Name        json
+        Format      json
+        Time_Key    time
+        Time_Format %d/%b/%Y:%H:%M:%S %z
+
+---
+# Fluent Bit ServiceAccount
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: fluent-bit
+  namespace: enterprise-crm
+  labels:
+    app: fluent-bit
+
+---
+# Fluent Bit ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: fluent-bit
+rules:
+- apiGroups: [""]
+  resources:
+  - namespaces
+  - pods
+  - nodes
+  verbs: ["get", "list", "watch"]
+
+---
+# Fluent Bit ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: fluent-bit
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: fluent-bit
+subjects:
+- kind: ServiceAccount
+  name: fluent-bit
+  namespace: enterprise-crm
+
+---
+# OpenSearch Secrets
+apiVersion: v1
+kind: Secret
+metadata:
+  name: opensearch-secret
+  namespace: enterprise-crm
+type: Opaque
+data:
+  admin-password: "T3BlblNlYXJjaEFkbWluMjAyNA=="  # Base64 encoded: OpenSearchAdmin2024
+
+---
+# OpenSearch Ingress
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: opensearch-dashboards-ingress
+  namespace: enterprise-crm
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/backend-protocol: "HTTP"
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+spec:
+  tls:
+  - hosts:
+    - opensearch.enterprise-crm.local
+    secretName: opensearch-dashboards-tls
+  rules:
+  - host: opensearch.enterprise-crm.local
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: opensearch-dashboards
+            port:
+              number: 80
+

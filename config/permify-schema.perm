@@ -1,0 +1,337 @@
+// Enterprise CRM Authorization Schema
+// This schema defines the authorization model for the Enterprise CRM system
+
+// Entity definitions
+entity user {}
+
+entity organization {
+    // Organization can have multiple departments
+    relation department: department
+    // Organization can have administrators
+    relation admin: user
+    // Organization can have members
+    relation member: user
+    
+    // Permissions
+    permission view = member or admin
+    permission edit = admin
+    permission delete = admin
+    permission manage_users = admin
+}
+
+entity department {
+    // Department belongs to an organization
+    relation organization: organization
+    // Department can have managers
+    relation manager: user
+    // Department can have members
+    relation member: user
+    
+    // Permissions
+    permission view = member or manager or organization.admin
+    permission edit = manager or organization.admin
+    permission delete = organization.admin
+    permission manage_members = manager or organization.admin
+}
+
+entity customer {
+    // Customer belongs to an organization
+    relation organization: organization
+    // Customer can be assigned to users
+    relation assigned_to: user
+    // Customer can be viewed by department members
+    relation department: department
+    
+    // Permissions
+    permission view = assigned_to or department.member or department.manager or organization.admin
+    permission edit = assigned_to or department.manager or organization.admin
+    permission delete = department.manager or organization.admin
+    permission assign = department.manager or organization.admin
+}
+
+entity lead {
+    // Lead belongs to an organization
+    relation organization: organization
+    // Lead can be assigned to users
+    relation assigned_to: user
+    // Lead can be viewed by department members
+    relation department: department
+    // Lead can be converted by qualified users
+    relation converter: user
+    
+    // Permissions
+    permission view = assigned_to or department.member or department.manager or organization.admin
+    permission edit = assigned_to or department.manager or organization.admin
+    permission delete = department.manager or organization.admin
+    permission assign = department.manager or organization.admin
+    permission convert = converter or department.manager or organization.admin
+    permission qualify = assigned_to or department.manager or organization.admin
+}
+
+entity opportunity {
+    // Opportunity belongs to an organization
+    relation organization: organization
+    // Opportunity can be assigned to users
+    relation assigned_to: user
+    // Opportunity belongs to a customer
+    relation customer: customer
+    // Opportunity can be viewed by department members
+    relation department: department
+    
+    // Permissions
+    permission view = assigned_to or customer.assigned_to or department.member or department.manager or organization.admin
+    permission edit = assigned_to or department.manager or organization.admin
+    permission delete = department.manager or organization.admin
+    permission assign = department.manager or organization.admin
+    permission close = assigned_to or department.manager or organization.admin
+}
+
+entity account {
+    // Account belongs to an organization
+    relation organization: organization
+    // Account can be assigned to users
+    relation assigned_to: user
+    // Account can be viewed by department members
+    relation department: department
+    
+    // Permissions
+    permission view = assigned_to or department.member or department.manager or organization.admin
+    permission edit = assigned_to or department.manager or organization.admin
+    permission delete = department.manager or organization.admin
+    permission assign = department.manager or organization.admin
+}
+
+entity contact {
+    // Contact belongs to an organization
+    relation organization: organization
+    // Contact belongs to an account
+    relation account: account
+    // Contact can be assigned to users
+    relation assigned_to: user
+    // Contact can be viewed by department members
+    relation department: department
+    
+    // Permissions
+    permission view = assigned_to or account.assigned_to or department.member or department.manager or organization.admin
+    permission edit = assigned_to or account.assigned_to or department.manager or organization.admin
+    permission delete = department.manager or organization.admin
+    permission assign = department.manager or organization.admin
+}
+
+entity product {
+    // Product belongs to an organization
+    relation organization: organization
+    // Product can be managed by inventory managers
+    relation inventory_manager: user
+    // Product can be viewed by sales team
+    relation sales_team: department
+    
+    // Permissions
+    permission view = sales_team.member or inventory_manager or organization.admin
+    permission edit = inventory_manager or organization.admin
+    permission delete = inventory_manager or organization.admin
+    permission manage_stock = inventory_manager or organization.admin
+    permission view_cost = inventory_manager or organization.admin
+}
+
+entity supplier {
+    // Supplier belongs to an organization
+    relation organization: organization
+    // Supplier can be managed by procurement team
+    relation procurement_manager: user
+    // Supplier can be viewed by inventory team
+    relation inventory_team: department
+    
+    // Permissions
+    permission view = inventory_team.member or procurement_manager or organization.admin
+    permission edit = procurement_manager or organization.admin
+    permission delete = procurement_manager or organization.admin
+    permission manage_contracts = procurement_manager or organization.admin
+}
+
+entity warehouse {
+    // Warehouse belongs to an organization
+    relation organization: organization
+    // Warehouse can be managed by warehouse managers
+    relation manager: user
+    // Warehouse can be accessed by inventory team
+    relation inventory_team: department
+    
+    // Permissions
+    permission view = inventory_team.member or manager or organization.admin
+    permission edit = manager or organization.admin
+    permission delete = organization.admin
+    permission manage_stock = manager or organization.admin
+    permission view_locations = inventory_team.member or manager or organization.admin
+}
+
+entity stock_item {
+    // Stock item belongs to a warehouse
+    relation warehouse: warehouse
+    // Stock item belongs to a product
+    relation product: product
+    // Stock item can be managed by warehouse staff
+    relation manager: user
+    
+    // Permissions
+    permission view = warehouse.inventory_team.member or manager or warehouse.manager or product.inventory_manager or warehouse.organization.admin
+    permission edit = manager or warehouse.manager or product.inventory_manager or warehouse.organization.admin
+    permission delete = warehouse.manager or product.inventory_manager or warehouse.organization.admin
+    permission adjust_quantity = manager or warehouse.manager or product.inventory_manager or warehouse.organization.admin
+    permission transfer = manager or warehouse.manager or product.inventory_manager or warehouse.organization.admin
+}
+
+entity report {
+    // Report belongs to an organization
+    relation organization: organization
+    // Report can be created by analysts
+    relation creator: user
+    // Report can be viewed by specific departments
+    relation viewer_department: department
+    // Report can have specific viewers
+    relation viewer: user
+    
+    // Permissions
+    permission view = viewer or creator or viewer_department.member or viewer_department.manager or organization.admin
+    permission edit = creator or organization.admin
+    permission delete = creator or organization.admin
+    permission share = creator or organization.admin
+}
+
+entity dashboard {
+    // Dashboard belongs to an organization
+    relation organization: organization
+    // Dashboard can be created by users
+    relation creator: user
+    // Dashboard can be shared with departments
+    relation shared_department: department
+    // Dashboard can have specific viewers
+    relation viewer: user
+    
+    // Permissions
+    permission view = viewer or creator or shared_department.member or shared_department.manager or organization.admin
+    permission edit = creator or organization.admin
+    permission delete = creator or organization.admin
+    permission share = creator or organization.admin
+}
+
+entity analytics_data {
+    // Analytics data belongs to an organization
+    relation organization: organization
+    // Analytics data can be accessed by analysts
+    relation analyst: user
+    // Analytics data can be viewed by specific departments
+    relation department: department
+    
+    // Permissions
+    permission view = analyst or department.member or department.manager or organization.admin
+    permission export = analyst or department.manager or organization.admin
+    permission aggregate = analyst or organization.admin
+}
+
+entity api_key {
+    // API key belongs to an organization
+    relation organization: organization
+    // API key can be managed by developers
+    relation developer: user
+    // API key can be managed by admins
+    relation admin: user
+    
+    // Permissions
+    permission view = developer or admin or organization.admin
+    permission edit = admin or organization.admin
+    permission delete = admin or organization.admin
+    permission regenerate = admin or organization.admin
+}
+
+entity integration {
+    // Integration belongs to an organization
+    relation organization: organization
+    // Integration can be managed by integration managers
+    relation manager: user
+    // Integration can be configured by admins
+    relation admin: user
+    
+    // Permissions
+    permission view = manager or admin or organization.admin
+    permission edit = manager or admin or organization.admin
+    permission delete = admin or organization.admin
+    permission configure = manager or admin or organization.admin
+    permission enable_disable = admin or organization.admin
+}
+
+entity audit_log {
+    // Audit log belongs to an organization
+    relation organization: organization
+    // Audit log can be viewed by auditors
+    relation auditor: user
+    // Audit log can be viewed by compliance team
+    relation compliance_team: department
+    
+    // Permissions
+    permission view = auditor or compliance_team.member or compliance_team.manager or organization.admin
+    permission export = auditor or compliance_team.manager or organization.admin
+    permission delete = organization.admin
+}
+
+entity security_policy {
+    // Security policy belongs to an organization
+    relation organization: organization
+    // Security policy can be managed by security team
+    relation security_manager: user
+    // Security policy can be viewed by compliance team
+    relation compliance_team: department
+    
+    // Permissions
+    permission view = security_manager or compliance_team.member or compliance_team.manager or organization.admin
+    permission edit = security_manager or organization.admin
+    permission delete = security_manager or organization.admin
+    permission enforce = security_manager or organization.admin
+}
+
+entity backup {
+    // Backup belongs to an organization
+    relation organization: organization
+    // Backup can be managed by system administrators
+    relation system_admin: user
+    
+    // Permissions
+    permission view = system_admin or organization.admin
+    permission create = system_admin or organization.admin
+    permission restore = system_admin or organization.admin
+    permission delete = system_admin or organization.admin
+}
+
+entity notification {
+    // Notification belongs to an organization
+    relation organization: organization
+    // Notification can be sent to specific users
+    relation recipient: user
+    // Notification can be managed by admins
+    relation admin: user
+    
+    // Permissions
+    permission view = recipient or admin or organization.admin
+    permission mark_read = recipient
+    permission delete = recipient or admin or organization.admin
+    permission send = admin or organization.admin
+}
+
+entity workflow {
+    // Workflow belongs to an organization
+    relation organization: organization
+    // Workflow can be created by process managers
+    relation creator: user
+    // Workflow can be executed by users
+    relation executor: user
+    // Workflow can be managed by admins
+    relation admin: user
+    
+    // Permissions
+    permission view = executor or creator or admin or organization.admin
+    permission edit = creator or admin or organization.admin
+    permission delete = creator or admin or organization.admin
+    permission execute = executor or admin or organization.admin
+    permission approve = admin or organization.admin
+}
+

@@ -1,0 +1,866 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: data-quality-config
+  namespace: enterprise-crm
+data:
+  quality-rules.yaml: |
+    data_quality_rules:
+      # Customer data quality rules
+      customer_rules:
+        - name: "email_format_validation"
+          field: "email"
+          type: "format"
+          pattern: "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$"
+          severity: "error"
+          description: "Email must be in valid format"
+          
+        - name: "phone_format_validation"
+          field: "phone"
+          type: "format"
+          pattern: "^\\+?[1-9]\\d{1,14}$"
+          severity: "warning"
+          description: "Phone number should be in international format"
+          
+        - name: "customer_name_required"
+          field: "first_name"
+          type: "required"
+          severity: "error"
+          description: "Customer first name is required"
+          
+        - name: "customer_lastname_required"
+          field: "last_name"
+          type: "required"
+          severity: "error"
+          description: "Customer last name is required"
+          
+        - name: "customer_age_range"
+          field: "age"
+          type: "range"
+          min_value: 18
+          max_value: 120
+          severity: "warning"
+          description: "Customer age should be between 18 and 120"
+          
+        - name: "duplicate_email_check"
+          field: "email"
+          type: "uniqueness"
+          scope: "global"
+          severity: "error"
+          description: "Email address must be unique"
+
+      # Product data quality rules
+      product_rules:
+        - name: "sku_format_validation"
+          field: "sku"
+          type: "format"
+          pattern: "^[A-Z]{2,3}-[0-9]{4,6}$"
+          severity: "error"
+          description: "SKU must follow format: XX-NNNN or XXX-NNNNNN"
+          
+        - name: "product_name_required"
+          field: "name"
+          type: "required"
+          severity: "error"
+          description: "Product name is required"
+          
+        - name: "price_positive"
+          field: "price"
+          type: "range"
+          min_value: 0.01
+          max_value: 999999.99
+          severity: "error"
+          description: "Product price must be positive"
+          
+        - name: "stock_quantity_non_negative"
+          field: "stock_quantity"
+          type: "range"
+          min_value: 0
+          max_value: 999999
+          severity: "warning"
+          description: "Stock quantity cannot be negative"
+          
+        - name: "duplicate_sku_check"
+          field: "sku"
+          type: "uniqueness"
+          scope: "global"
+          severity: "error"
+          description: "SKU must be unique"
+
+      # Opportunity data quality rules
+      opportunity_rules:
+        - name: "opportunity_value_positive"
+          field: "value"
+          type: "range"
+          min_value: 1.00
+          max_value: 10000000.00
+          severity: "warning"
+          description: "Opportunity value should be positive and reasonable"
+          
+        - name: "close_date_future"
+          field: "close_date"
+          type: "date_range"
+          min_date: "today"
+          max_date: "today+2years"
+          severity: "warning"
+          description: "Close date should be in the future but within 2 years"
+          
+        - name: "probability_range"
+          field: "probability"
+          type: "range"
+          min_value: 0
+          max_value: 100
+          severity: "error"
+          description: "Probability must be between 0 and 100"
+          
+        - name: "stage_progression_validation"
+          field: "stage"
+          type: "business_rule"
+          rule: "stage_progression"
+          severity: "warning"
+          description: "Stage progression should follow logical order"
+
+    data_profiling_rules:
+      # Completeness checks
+      completeness:
+        - table: "customers"
+          required_fields: ["first_name", "last_name", "email"]
+          threshold: 95
+          
+        - table: "products"
+          required_fields: ["name", "sku", "price"]
+          threshold: 100
+          
+        - table: "opportunities"
+          required_fields: ["customer_id", "value", "stage"]
+          threshold: 90
+
+      # Accuracy checks
+      accuracy:
+        - table: "customers"
+          field: "email"
+          validation_type: "format"
+          threshold: 98
+          
+        - table: "customers"
+          field: "phone"
+          validation_type: "format"
+          threshold: 85
+          
+        - table: "products"
+          field: "price"
+          validation_type: "positive_number"
+          threshold: 100
+
+      # Consistency checks
+      consistency:
+        - name: "customer_opportunity_consistency"
+          description: "Opportunities must reference valid customers"
+          query: |
+            SELECT COUNT(*) as inconsistent_count
+            FROM opportunities o
+            LEFT JOIN customers c ON o.customer_id = c.id
+            WHERE c.id IS NULL
+          threshold: 0
+          
+        - name: "product_inventory_consistency"
+          description: "Inventory records must reference valid products"
+          query: |
+            SELECT COUNT(*) as inconsistent_count
+            FROM stock_items si
+            LEFT JOIN products p ON si.product_id = p.id
+            WHERE p.id IS NULL
+          threshold: 0
+
+      # Timeliness checks
+      timeliness:
+        - table: "customers"
+          field: "updated_at"
+          max_age_days: 90
+          threshold: 80
+          
+        - table: "products"
+          field: "updated_at"
+          max_age_days: 30
+          threshold: 90
+
+    anomaly_detection:
+      # Statistical anomaly detection
+      statistical_rules:
+        - name: "customer_age_outliers"
+          table: "customers"
+          field: "age"
+          method: "z_score"
+          threshold: 3.0
+          
+        - name: "product_price_outliers"
+          table: "products"
+          field: "price"
+          method: "iqr"
+          threshold: 1.5
+          
+        - name: "opportunity_value_outliers"
+          table: "opportunities"
+          field: "value"
+          method: "isolation_forest"
+          contamination: 0.1
+
+      # Pattern-based anomaly detection
+      pattern_rules:
+        - name: "unusual_customer_creation_rate"
+          description: "Detect unusual spikes in customer creation"
+          metric: "customer_creation_rate"
+          window: "1hour"
+          threshold_multiplier: 3.0
+          
+        - name: "unusual_order_patterns"
+          description: "Detect unusual order patterns"
+          metric: "order_frequency"
+          window: "1day"
+          threshold_multiplier: 2.5
+
+  data-quality-service.py: |
+    import asyncio
+    import json
+    import logging
+    import os
+    import re
+    import statistics
+    from datetime import datetime, timedelta
+    from typing import Dict, List, Any, Optional
+    
+    import asyncpg
+    import yaml
+    from fastapi import FastAPI, HTTPException, BackgroundTasks
+    from pydantic import BaseModel
+    from kafka import KafkaProducer, KafkaConsumer
+    import numpy as np
+    from sklearn.ensemble import IsolationForest
+    
+    # Configure logging
+    logging.basicConfig(level=logging.INFO)
+    logger = logging.getLogger(__name__)
+    
+    # Pydantic models
+    class QualityRule(BaseModel):
+        name: str
+        field: str
+        type: str
+        pattern: Optional[str] = None
+        min_value: Optional[float] = None
+        max_value: Optional[float] = None
+        severity: str
+        description: str
+        scope: Optional[str] = None
+        rule: Optional[str] = None
+    
+    class QualityIssue(BaseModel):
+        id: str
+        rule_name: str
+        table_name: str
+        record_id: str
+        field_name: str
+        issue_type: str
+        severity: str
+        description: str
+        current_value: Any
+        expected_value: Optional[Any] = None
+        detected_at: datetime
+        status: str = "open"
+    
+    class DataProfile(BaseModel):
+        table_name: str
+        field_name: str
+        total_records: int
+        null_count: int
+        unique_count: int
+        completeness_percentage: float
+        min_value: Optional[Any] = None
+        max_value: Optional[Any] = None
+        avg_value: Optional[float] = None
+        std_dev: Optional[float] = None
+        most_common_values: List[Dict[str, Any]]
+        profiled_at: datetime
+    
+    class DataQualityService:
+        def __init__(self):
+            self.db_pool = None
+            self.kafka_producer = None
+            self.kafka_consumer = None
+            self.quality_rules = {}
+            self.profiling_rules = {}
+            self.anomaly_rules = {}
+            
+        async def initialize(self):
+            """Initialize the data quality service"""
+            # Database connection
+            database_url = os.getenv("DATABASE_URL", "postgresql://postgres:password@localhost:5432/enterprise_crm")
+            self.db_pool = await asyncpg.create_pool(database_url)
+            
+            # Kafka setup
+            kafka_bootstrap = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092")
+            self.kafka_producer = KafkaProducer(
+                bootstrap_servers=[kafka_bootstrap],
+                value_serializer=lambda v: json.dumps(v).encode('utf-8')
+            )
+            
+            # Load quality rules
+            await self.load_quality_rules()
+            
+            # Start background tasks
+            asyncio.create_task(self.continuous_monitoring())
+            asyncio.create_task(self.consume_data_changes())
+            
+            logger.info("Data Quality Service initialized")
+    
+        async def load_quality_rules(self):
+            """Load data quality rules from configuration"""
+            config_path = os.getenv("CONFIG_PATH", "/config/quality-rules.yaml")
+            try:
+                with open(config_path, 'r') as file:
+                    config = yaml.safe_load(file)
+                    
+                self.quality_rules = config.get('data_quality_rules', {})
+                self.profiling_rules = config.get('data_profiling_rules', {})
+                self.anomaly_rules = config.get('anomaly_detection', {})
+                
+                logger.info(f"Loaded {len(self.quality_rules)} quality rule sets")
+            except Exception as e:
+                logger.error(f"Failed to load quality rules: {e}")
+    
+        async def validate_record(self, table_name: str, record: Dict[str, Any]) -> List[QualityIssue]:
+            """Validate a single record against quality rules"""
+            issues = []
+            
+            # Get rules for the table
+            table_rules = self.quality_rules.get(f"{table_name}_rules", [])
+            
+            for rule_config in table_rules:
+                rule = QualityRule(**rule_config)
+                issue = await self.apply_rule(table_name, record, rule)
+                if issue:
+                    issues.append(issue)
+            
+            return issues
+    
+        async def apply_rule(self, table_name: str, record: Dict[str, Any], rule: QualityRule) -> Optional[QualityIssue]:
+            """Apply a single quality rule to a record"""
+            field_value = record.get(rule.field)
+            
+            try:
+                if rule.type == "required":
+                    if field_value is None or field_value == "":
+                        return QualityIssue(
+                            id=f"{table_name}_{record.get('id', 'unknown')}_{rule.name}",
+                            rule_name=rule.name,
+                            table_name=table_name,
+                            record_id=str(record.get('id', 'unknown')),
+                            field_name=rule.field,
+                            issue_type="missing_value",
+                            severity=rule.severity,
+                            description=rule.description,
+                            current_value=field_value,
+                            detected_at=datetime.utcnow()
+                        )
+                
+                elif rule.type == "format" and field_value is not None:
+                    if not re.match(rule.pattern, str(field_value)):
+                        return QualityIssue(
+                            id=f"{table_name}_{record.get('id', 'unknown')}_{rule.name}",
+                            rule_name=rule.name,
+                            table_name=table_name,
+                            record_id=str(record.get('id', 'unknown')),
+                            field_name=rule.field,
+                            issue_type="format_violation",
+                            severity=rule.severity,
+                            description=rule.description,
+                            current_value=field_value,
+                            detected_at=datetime.utcnow()
+                        )
+                
+                elif rule.type == "range" and field_value is not None:
+                    try:
+                        num_value = float(field_value)
+                        if rule.min_value is not None and num_value < rule.min_value:
+                            return QualityIssue(
+                                id=f"{table_name}_{record.get('id', 'unknown')}_{rule.name}",
+                                rule_name=rule.name,
+                                table_name=table_name,
+                                record_id=str(record.get('id', 'unknown')),
+                                field_name=rule.field,
+                                issue_type="range_violation",
+                                severity=rule.severity,
+                                description=f"{rule.description} (value: {num_value}, min: {rule.min_value})",
+                                current_value=field_value,
+                                expected_value=f">= {rule.min_value}",
+                                detected_at=datetime.utcnow()
+                            )
+                        
+                        if rule.max_value is not None and num_value > rule.max_value:
+                            return QualityIssue(
+                                id=f"{table_name}_{record.get('id', 'unknown')}_{rule.name}",
+                                rule_name=rule.name,
+                                table_name=table_name,
+                                record_id=str(record.get('id', 'unknown')),
+                                field_name=rule.field,
+                                issue_type="range_violation",
+                                severity=rule.severity,
+                                description=f"{rule.description} (value: {num_value}, max: {rule.max_value})",
+                                current_value=field_value,
+                                expected_value=f"<= {rule.max_value}",
+                                detected_at=datetime.utcnow()
+                            )
+                    except ValueError:
+                        return QualityIssue(
+                            id=f"{table_name}_{record.get('id', 'unknown')}_{rule.name}",
+                            rule_name=rule.name,
+                            table_name=table_name,
+                            record_id=str(record.get('id', 'unknown')),
+                            field_name=rule.field,
+                            issue_type="type_violation",
+                            severity=rule.severity,
+                            description=f"Expected numeric value for range check",
+                            current_value=field_value,
+                            detected_at=datetime.utcnow()
+                        )
+                
+                elif rule.type == "uniqueness":
+                    # Check for duplicates
+                    is_duplicate = await self.check_uniqueness(table_name, rule.field, field_value, record.get('id'))
+                    if is_duplicate:
+                        return QualityIssue(
+                            id=f"{table_name}_{record.get('id', 'unknown')}_{rule.name}",
+                            rule_name=rule.name,
+                            table_name=table_name,
+                            record_id=str(record.get('id', 'unknown')),
+                            field_name=rule.field,
+                            issue_type="uniqueness_violation",
+                            severity=rule.severity,
+                            description=rule.description,
+                            current_value=field_value,
+                            detected_at=datetime.utcnow()
+                        )
+                
+            except Exception as e:
+                logger.error(f"Error applying rule {rule.name}: {e}")
+            
+            return None
+    
+        async def check_uniqueness(self, table_name: str, field_name: str, value: Any, record_id: Any) -> bool:
+            """Check if a value is unique in the specified field"""
+            async with self.db_pool.acquire() as conn:
+                query = f"""
+                    SELECT COUNT(*) 
+                    FROM {table_name} 
+                    WHERE {field_name} = $1 AND id != $2
+                """
+                count = await conn.fetchval(query, value, record_id)
+                return count > 0
+    
+        async def profile_table(self, table_name: str) -> List[DataProfile]:
+            """Generate data profile for a table"""
+            profiles = []
+            
+            async with self.db_pool.acquire() as conn:
+                # Get table columns
+                columns_query = """
+                    SELECT column_name, data_type 
+                    FROM information_schema.columns 
+                    WHERE table_name = $1 AND table_schema = 'public'
+                """
+                columns = await conn.fetch(columns_query, table_name)
+                
+                # Get total record count
+                total_count = await conn.fetchval(f"SELECT COUNT(*) FROM {table_name}")
+                
+                for column in columns:
+                    column_name = column['column_name']
+                    data_type = column['data_type']
+                    
+                    profile = await self.profile_column(conn, table_name, column_name, data_type, total_count)
+                    profiles.append(profile)
+            
+            return profiles
+    
+        async def profile_column(self, conn, table_name: str, column_name: str, data_type: str, total_count: int) -> DataProfile:
+            """Profile a single column"""
+            # Basic statistics
+            null_count = await conn.fetchval(f"SELECT COUNT(*) FROM {table_name} WHERE {column_name} IS NULL")
+            unique_count = await conn.fetchval(f"SELECT COUNT(DISTINCT {column_name}) FROM {table_name}")
+            
+            completeness = ((total_count - null_count) / total_count * 100) if total_count > 0 else 0
+            
+            # Type-specific statistics
+            min_value = None
+            max_value = None
+            avg_value = None
+            std_dev = None
+            
+            if data_type in ['integer', 'bigint', 'numeric', 'real', 'double precision']:
+                stats = await conn.fetchrow(f"""
+                    SELECT MIN({column_name}) as min_val, 
+                           MAX({column_name}) as max_val,
+                           AVG({column_name}) as avg_val,
+                           STDDEV({column_name}) as std_val
+                    FROM {table_name} 
+                    WHERE {column_name} IS NOT NULL
+                """)
+                if stats:
+                    min_value = stats['min_val']
+                    max_value = stats['max_val']
+                    avg_value = float(stats['avg_val']) if stats['avg_val'] else None
+                    std_dev = float(stats['std_val']) if stats['std_val'] else None
+            
+            elif data_type in ['character varying', 'text', 'character']:
+                stats = await conn.fetchrow(f"""
+                    SELECT MIN(LENGTH({column_name})) as min_len,
+                           MAX(LENGTH({column_name})) as max_len,
+                           AVG(LENGTH({column_name})) as avg_len
+                    FROM {table_name} 
+                    WHERE {column_name} IS NOT NULL
+                """)
+                if stats:
+                    min_value = stats['min_len']
+                    max_value = stats['max_len']
+                    avg_value = float(stats['avg_len']) if stats['avg_len'] else None
+            
+            # Most common values
+            common_values = await conn.fetch(f"""
+                SELECT {column_name} as value, COUNT(*) as count
+                FROM {table_name}
+                WHERE {column_name} IS NOT NULL
+                GROUP BY {column_name}
+                ORDER BY count DESC
+                LIMIT 10
+            """)
+            
+            most_common = [{"value": row['value'], "count": row['count']} for row in common_values]
+            
+            return DataProfile(
+                table_name=table_name,
+                field_name=column_name,
+                total_records=total_count,
+                null_count=null_count,
+                unique_count=unique_count,
+                completeness_percentage=completeness,
+                min_value=min_value,
+                max_value=max_value,
+                avg_value=avg_value,
+                std_dev=std_dev,
+                most_common_values=most_common,
+                profiled_at=datetime.utcnow()
+            )
+    
+        async def detect_anomalies(self, table_name: str, field_name: str) -> List[Dict[str, Any]]:
+            """Detect anomalies in a specific field"""
+            anomalies = []
+            
+            # Get statistical rules for this field
+            statistical_rules = self.anomaly_rules.get('statistical_rules', [])
+            
+            for rule in statistical_rules:
+                if rule.get('table') == table_name and rule.get('field') == field_name:
+                    method = rule.get('method', 'z_score')
+                    threshold = rule.get('threshold', 3.0)
+                    
+                    if method == 'z_score':
+                        anomalies.extend(await self.detect_z_score_anomalies(table_name, field_name, threshold))
+                    elif method == 'iqr':
+                        anomalies.extend(await self.detect_iqr_anomalies(table_name, field_name, threshold))
+                    elif method == 'isolation_forest':
+                        contamination = rule.get('contamination', 0.1)
+                        anomalies.extend(await self.detect_isolation_forest_anomalies(table_name, field_name, contamination))
+            
+            return anomalies
+    
+        async def detect_z_score_anomalies(self, table_name: str, field_name: str, threshold: float) -> List[Dict[str, Any]]:
+            """Detect anomalies using Z-score method"""
+            async with self.db_pool.acquire() as conn:
+                # Get values
+                values = await conn.fetch(f"SELECT id, {field_name} FROM {table_name} WHERE {field_name} IS NOT NULL")
+                
+                if len(values) < 10:  # Need sufficient data
+                    return []
+                
+                numeric_values = [float(row[field_name]) for row in values]
+                mean_val = statistics.mean(numeric_values)
+                std_val = statistics.stdev(numeric_values)
+                
+                anomalies = []
+                for i, row in enumerate(values):
+                    z_score = abs((float(row[field_name]) - mean_val) / std_val) if std_val > 0 else 0
+                    
+                    if z_score > threshold:
+                        anomalies.append({
+                            'id': row['id'],
+                            'table_name': table_name,
+                            'field_name': field_name,
+                            'value': row[field_name],
+                            'z_score': z_score,
+                            'method': 'z_score',
+                            'threshold': threshold,
+                            'detected_at': datetime.utcnow()
+                        })
+                
+                return anomalies
+    
+        async def detect_iqr_anomalies(self, table_name: str, field_name: str, threshold: float) -> List[Dict[str, Any]]:
+            """Detect anomalies using IQR method"""
+            async with self.db_pool.acquire() as conn:
+                values = await conn.fetch(f"SELECT id, {field_name} FROM {table_name} WHERE {field_name} IS NOT NULL")
+                
+                if len(values) < 10:
+                    return []
+                
+                numeric_values = [float(row[field_name]) for row in values]
+                q1 = np.percentile(numeric_values, 25)
+                q3 = np.percentile(numeric_values, 75)
+                iqr = q3 - q1
+                
+                lower_bound = q1 - threshold * iqr
+                upper_bound = q3 + threshold * iqr
+                
+                anomalies = []
+                for row in values:
+                    value = float(row[field_name])
+                    if value < lower_bound or value > upper_bound:
+                        anomalies.append({
+                            'id': row['id'],
+                            'table_name': table_name,
+                            'field_name': field_name,
+                            'value': value,
+                            'lower_bound': lower_bound,
+                            'upper_bound': upper_bound,
+                            'method': 'iqr',
+                            'threshold': threshold,
+                            'detected_at': datetime.utcnow()
+                        })
+                
+                return anomalies
+    
+        async def detect_isolation_forest_anomalies(self, table_name: str, field_name: str, contamination: float) -> List[Dict[str, Any]]:
+            """Detect anomalies using Isolation Forest"""
+            async with self.db_pool.acquire() as conn:
+                values = await conn.fetch(f"SELECT id, {field_name} FROM {table_name} WHERE {field_name} IS NOT NULL")
+                
+                if len(values) < 50:  # Need sufficient data for ML
+                    return []
+                
+                numeric_values = np.array([[float(row[field_name])] for row in values])
+                
+                # Train Isolation Forest
+                iso_forest = IsolationForest(contamination=contamination, random_state=42)
+                predictions = iso_forest.fit_predict(numeric_values)
+                
+                anomalies = []
+                for i, row in enumerate(values):
+                    if predictions[i] == -1:  # Anomaly
+                        anomalies.append({
+                            'id': row['id'],
+                            'table_name': table_name,
+                            'field_name': field_name,
+                            'value': row[field_name],
+                            'method': 'isolation_forest',
+                            'contamination': contamination,
+                            'detected_at': datetime.utcnow()
+                        })
+                
+                return anomalies
+    
+        async def continuous_monitoring(self):
+            """Continuous monitoring of data quality"""
+            while True:
+                try:
+                    # Run data profiling
+                    tables = ['customers', 'products', 'opportunities', 'stock_items']
+                    for table in tables:
+                        profiles = await self.profile_table(table)
+                        await self.store_profiles(profiles)
+                        
+                        # Check for anomalies
+                        for profile in profiles:
+                            if profile.field_name in ['age', 'price', 'value', 'stock_quantity']:
+                                anomalies = await self.detect_anomalies(table, profile.field_name)
+                                if anomalies:
+                                    await self.publish_anomalies(anomalies)
+                    
+                    # Wait before next monitoring cycle
+                    await asyncio.sleep(3600)  # 1 hour
+                    
+                except Exception as e:
+                    logger.error(f"Error in continuous monitoring: {e}")
+                    await asyncio.sleep(300)  # 5 minutes on error
+    
+        async def consume_data_changes(self):
+            """Consume data change events for real-time validation"""
+            kafka_bootstrap = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092")
+            consumer = KafkaConsumer(
+                'enterprise-crm.data-changes',
+                bootstrap_servers=[kafka_bootstrap],
+                value_deserializer=lambda m: json.loads(m.decode('utf-8')),
+                group_id='data-quality-service'
+            )
+            
+            for message in consumer:
+                try:
+                    event = message.value
+                    table_name = event.get('table_name')
+                    record = event.get('record_data')
+                    
+                    if table_name and record:
+                        issues = await self.validate_record(table_name, record)
+                        if issues:
+                            await self.store_quality_issues(issues)
+                            await self.publish_quality_issues(issues)
+                            
+                except Exception as e:
+                    logger.error(f"Error processing data change event: {e}")
+    
+        async def store_profiles(self, profiles: List[DataProfile]):
+            """Store data profiles in database"""
+            # Implementation would store profiles in a dedicated table
+            pass
+    
+        async def store_quality_issues(self, issues: List[QualityIssue]):
+            """Store quality issues in database"""
+            # Implementation would store issues in a dedicated table
+            pass
+    
+        async def publish_quality_issues(self, issues: List[QualityIssue]):
+            """Publish quality issues to Kafka"""
+            for issue in issues:
+                self.kafka_producer.send(
+                    'enterprise-crm.quality-issues',
+                    value=issue.dict()
+                )
+    
+        async def publish_anomalies(self, anomalies: List[Dict[str, Any]]):
+            """Publish anomalies to Kafka"""
+            for anomaly in anomalies:
+                self.kafka_producer.send(
+                    'enterprise-crm.anomalies',
+                    value=anomaly
+                )
+    
+    # FastAPI application
+    app = FastAPI(title="Data Quality Service", version="1.0.0")
+    service = DataQualityService()
+    
+    @app.on_event("startup")
+    async def startup_event():
+        await service.initialize()
+    
+    @app.post("/validate")
+    async def validate_record(table_name: str, record: Dict[str, Any]):
+        """Validate a single record"""
+        issues = await service.validate_record(table_name, record)
+        return {"issues": [issue.dict() for issue in issues]}
+    
+    @app.get("/profile/{table_name}")
+    async def get_table_profile(table_name: str):
+        """Get data profile for a table"""
+        profiles = await service.profile_table(table_name)
+        return {"profiles": [profile.dict() for profile in profiles]}
+    
+    @app.get("/anomalies/{table_name}/{field_name}")
+    async def get_anomalies(table_name: str, field_name: str):
+        """Get anomalies for a specific field"""
+        anomalies = await service.detect_anomalies(table_name, field_name)
+        return {"anomalies": anomalies}
+    
+    @app.get("/health")
+    async def health_check():
+        return {"status": "healthy", "timestamp": datetime.utcnow()}
+    
+    if __name__ == "__main__":
+        import uvicorn
+        uvicorn.run(app, host="0.0.0.0", port=8080)
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: data-quality-service
+  namespace: enterprise-crm
+  labels:
+    app: data-quality-service
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: data-quality-service
+  template:
+    metadata:
+      labels:
+        app: data-quality-service
+    spec:
+      containers:
+      - name: data-quality-service
+        image: python:3.11-slim
+        command:
+        - /bin/bash
+        - -c
+        - |
+          # Install dependencies
+          pip install fastapi uvicorn asyncpg pyyaml kafka-python numpy scikit-learn
+          
+          # Run the service
+          python /config/data-quality-service.py
+        env:
+        - name: DATABASE_URL
+          value: "postgresql://postgres:$(POSTGRES_PASSWORD)@postgresql:5432/enterprise_crm"
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: postgresql-secret
+              key: password
+        - name: KAFKA_BOOTSTRAP_SERVERS
+          value: "kafka:9092"
+        - name: CONFIG_PATH
+          value: "/config/quality-rules.yaml"
+        volumeMounts:
+        - name: config
+          mountPath: /config
+        ports:
+        - containerPort: 8080
+          name: http
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 60
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+      volumes:
+      - name: config
+        configMap:
+          name: data-quality-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: data-quality-service
+  namespace: enterprise-crm
+  labels:
+    app: data-quality-service
+spec:
+  ports:
+  - port: 8080
+    targetPort: 8080
+    name: http
+  selector:
+    app: data-quality-service
+  type: ClusterIP
+

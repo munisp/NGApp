@@ -89,11 +89,13 @@ class LRUCache {
   invalidatePattern(pattern: string): number {
     const regex = new RegExp(pattern.replace('*', '.*'));
     let count = 0;
-    for (const key of this.cache.keys()) {
-      if (regex.test(key)) {
-        this.cache.delete(key);
-        count++;
-      }
+    const keysToDelete: string[] = [];
+    this.cache.forEach((_, key) => {
+      if (regex.test(key)) keysToDelete.push(key);
+    });
+    for (const key of keysToDelete) {
+      this.cache.delete(key);
+      count++;
     }
     return count;
   }
@@ -127,8 +129,11 @@ interface RedisClient {
   subscribe(channel: string, callback: (message: string) => void): void;
 }
 
-// Mock Redis client for when Redis is unavailable
-class MockRedisClient implements RedisClient {
+/**
+ * In-memory fallback client for graceful degradation when Redis is unavailable.
+ * Provides the same interface so upper layers work transparently.
+ */
+class InMemoryRedisClient implements RedisClient {
   private store = new Map<string, { value: string; expiry: number }>();
 
   async get(key: string): Promise<string | null> {
@@ -161,7 +166,11 @@ class MockRedisClient implements RedisClient {
 
   async keys(pattern: string): Promise<string[]> {
     const regex = new RegExp(pattern.replace('*', '.*'));
-    return Array.from(this.store.keys()).filter(k => regex.test(k));
+    const keys: string[] = [];
+    this.store.forEach((_, k) => {
+      if (regex.test(k)) keys.push(k);
+    });
+    return keys;
   }
 
   async publish(): Promise<number> { return 0; }
@@ -170,7 +179,48 @@ class MockRedisClient implements RedisClient {
 
 // Singleton instances
 const l1Cache = new LRUCache(REDIS_CONFIG.maxMemoryItems);
-let redisClient: RedisClient = new MockRedisClient();
+let redisClient: RedisClient = new InMemoryRedisClient();
+let redisConnectionAttempted = false;
+
+/**
+ * Initialize the Redis client from environment configuration.
+ * Falls back to in-memory cache if Redis is unavailable.
+ */
+export async function initializeRedis(): Promise<void> {
+  if (redisConnectionAttempted) return;
+  redisConnectionAttempted = true;
+
+  const redisUrl = process.env.REDIS_URL;
+  if (!redisUrl) {
+    console.log('[cache] REDIS_URL not set, using in-memory fallback');
+    return;
+  }
+
+  try {
+    // @ts-ignore - redis is an optional dependency
+    const { createClient } = await import('redis');
+    const client = createClient({ url: redisUrl });
+    client.on('error', (err: Error) => console.error('[cache] Redis error:', err.message));
+    await client.connect();
+
+    redisClient = {
+      get: (key: string) => client.get(key),
+      set: (key: string, value: string) => client.set(key, value),
+      setex: (key: string, ttl: number, value: string) => client.setEx(key, ttl, value),
+      del: (...keys: string[]) => client.del(keys),
+      keys: (pattern: string) => client.keys(pattern),
+      publish: (channel: string, message: string) => client.publish(channel, message),
+      subscribe: (channel: string, callback: (message: string) => void) => {
+        const sub = client.duplicate();
+        sub.connect().then(() => sub.subscribe(channel, callback));
+      },
+    };
+    console.log('[cache] Connected to Redis at', redisUrl);
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.warn('[cache] Redis connection failed, using in-memory fallback:', msg);
+  }
+}
 
 /**
  * Set the Redis client (call during app initialization)

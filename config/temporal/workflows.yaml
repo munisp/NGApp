@@ -1,0 +1,1270 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: temporal-workflows-config
+  namespace: enterprise-crm
+data:
+  customer-onboarding-workflow.go: |
+    package workflows
+    
+    import (
+        "context"
+        "fmt"
+        "time"
+        
+        "go.temporal.io/sdk/activity"
+        "go.temporal.io/sdk/workflow"
+    )
+    
+    // CustomerOnboardingWorkflow orchestrates the complete customer onboarding process
+    type CustomerOnboardingWorkflow struct {
+        CustomerID   string
+        CustomerData CustomerOnboardingData
+        WorkflowID   string
+    }
+    
+    type CustomerOnboardingData struct {
+        PersonalInfo    PersonalInfo    `json:"personal_info"`
+        BusinessInfo    BusinessInfo    `json:"business_info"`
+        ContactInfo     ContactInfo     `json:"contact_info"`
+        Preferences     Preferences     `json:"preferences"`
+        KYCDocuments    []KYCDocument   `json:"kyc_documents"`
+        OnboardingType  string          `json:"onboarding_type"` // "individual", "business"
+    }
+    
+    type PersonalInfo struct {
+        FirstName    string    `json:"first_name"`
+        LastName     string    `json:"last_name"`
+        DateOfBirth  time.Time `json:"date_of_birth"`
+        Nationality  string    `json:"nationality"`
+        IDNumber     string    `json:"id_number"`
+        IDType       string    `json:"id_type"`
+    }
+    
+    type BusinessInfo struct {
+        CompanyName         string `json:"company_name"`
+        RegistrationNumber  string `json:"registration_number"`
+        Industry           string `json:"industry"`
+        BusinessType       string `json:"business_type"`
+        AnnualRevenue      float64 `json:"annual_revenue"`
+        EmployeeCount      int    `json:"employee_count"`
+    }
+    
+    type ContactInfo struct {
+        Email           string   `json:"email"`
+        Phone           string   `json:"phone"`
+        Address         Address  `json:"address"`
+        PreferredMethod string   `json:"preferred_method"`
+    }
+    
+    type Address struct {
+        Street     string `json:"street"`
+        City       string `json:"city"`
+        State      string `json:"state"`
+        PostalCode string `json:"postal_code"`
+        Country    string `json:"country"`
+    }
+    
+    type Preferences struct {
+        CommunicationChannels []string `json:"communication_channels"`
+        MarketingConsent      bool     `json:"marketing_consent"`
+        DataProcessingConsent bool     `json:"data_processing_consent"`
+        Language              string   `json:"language"`
+        Timezone              string   `json:"timezone"`
+    }
+    
+    type KYCDocument struct {
+        Type        string    `json:"type"`
+        DocumentID  string    `json:"document_id"`
+        UploadedAt  time.Time `json:"uploaded_at"`
+        Status      string    `json:"status"`
+        VerifiedAt  *time.Time `json:"verified_at,omitempty"`
+    }
+    
+    // CustomerOnboardingWorkflow defines the main workflow
+    func CustomerOnboardingWorkflow(ctx workflow.Context, input CustomerOnboardingData) error {
+        logger := workflow.GetLogger(ctx)
+        logger.Info("Starting customer onboarding workflow", "customer_id", input.PersonalInfo.FirstName)
+        
+        // Set workflow options
+        ao := workflow.ActivityOptions{
+            StartToCloseTimeout: 10 * time.Minute,
+            RetryPolicy: &temporal.RetryPolicy{
+                InitialInterval:    time.Second,
+                BackoffCoefficient: 2.0,
+                MaximumInterval:    100 * time.Second,
+                MaximumAttempts:    3,
+            },
+        }
+        ctx = workflow.WithActivityOptions(ctx, ao)
+        
+        // Step 1: Validate customer data
+        var validationResult ValidationResult
+        err := workflow.ExecuteActivity(ctx, ValidateCustomerDataActivity, input).Get(ctx, &validationResult)
+        if err != nil {
+            logger.Error("Customer data validation failed", "error", err)
+            return err
+        }
+        
+        if !validationResult.IsValid {
+            logger.Warn("Customer data validation failed", "errors", validationResult.Errors)
+            // Send notification to customer about validation errors
+            workflow.ExecuteActivity(ctx, SendNotificationActivity, NotificationRequest{
+                CustomerID: input.PersonalInfo.IDNumber,
+                Type:       "validation_failed",
+                Message:    fmt.Sprintf("Validation errors: %v", validationResult.Errors),
+                Channel:    input.ContactInfo.PreferredMethod,
+            })
+            return fmt.Errorf("customer data validation failed: %v", validationResult.Errors)
+        }
+        
+        // Step 2: Create customer record
+        var customerID string
+        err = workflow.ExecuteActivity(ctx, CreateCustomerRecordActivity, input).Get(ctx, &customerID)
+        if err != nil {
+            logger.Error("Failed to create customer record", "error", err)
+            return err
+        }
+        
+        logger.Info("Customer record created", "customer_id", customerID)
+        
+        // Step 3: Initiate KYC verification (parallel processing)
+        var kycFutures []workflow.Future
+        for _, doc := range input.KYCDocuments {
+            future := workflow.ExecuteActivity(ctx, VerifyKYCDocumentActivity, KYCVerificationRequest{
+                CustomerID: customerID,
+                Document:   doc,
+            })
+            kycFutures = append(kycFutures, future)
+        }
+        
+        // Step 4: Setup customer accounts and preferences
+        var accountSetupResult AccountSetupResult
+        err = workflow.ExecuteActivity(ctx, SetupCustomerAccountsActivity, AccountSetupRequest{
+            CustomerID:  customerID,
+            Preferences: input.Preferences,
+            AccountType: input.OnboardingType,
+        }).Get(ctx, &accountSetupResult)
+        if err != nil {
+            logger.Error("Failed to setup customer accounts", "error", err)
+            return err
+        }
+        
+        // Step 5: Wait for KYC verification completion
+        var kycResults []KYCVerificationResult
+        for _, future := range kycFutures {
+            var result KYCVerificationResult
+            err := future.Get(ctx, &result)
+            if err != nil {
+                logger.Error("KYC verification failed", "error", err)
+                // Continue with other verifications
+            }
+            kycResults = append(kycResults, result)
+        }
+        
+        // Step 6: Evaluate KYC results and determine customer risk level
+        var riskAssessment RiskAssessmentResult
+        err = workflow.ExecuteActivity(ctx, AssessCustomerRiskActivity, RiskAssessmentRequest{
+            CustomerID:  customerID,
+            KYCResults:  kycResults,
+            CustomerData: input,
+        }).Get(ctx, &riskAssessment)
+        if err != nil {
+            logger.Error("Risk assessment failed", "error", err)
+            return err
+        }
+        
+        // Step 7: Conditional approval based on risk assessment
+        if riskAssessment.RiskLevel == "HIGH" {
+            logger.Info("High risk customer detected, requiring manual review", "customer_id", customerID)
+            
+            // Send for manual review
+            err = workflow.ExecuteActivity(ctx, TriggerManualReviewActivity, ManualReviewRequest{
+                CustomerID:     customerID,
+                RiskAssessment: riskAssessment,
+                ReviewType:     "high_risk_onboarding",
+            }).Get(ctx, nil)
+            if err != nil {
+                logger.Error("Failed to trigger manual review", "error", err)
+                return err
+            }
+            
+            // Wait for manual review completion (with timeout)
+            selector := workflow.NewSelector(ctx)
+            
+            // Manual review signal
+            var reviewResult ManualReviewResult
+            reviewChannel := workflow.GetSignalChannel(ctx, "manual_review_completed")
+            selector.AddReceive(reviewChannel, func(c workflow.ReceiveChannel, more bool) {
+                c.Receive(ctx, &reviewResult)
+            })
+            
+            // Timeout after 7 days
+            timeoutTimer := workflow.NewTimer(ctx, 7*24*time.Hour)
+            selector.AddFuture(timeoutTimer, func(f workflow.Future) {
+                reviewResult = ManualReviewResult{
+                    Approved: false,
+                    Reason:   "Manual review timeout",
+                }
+            })
+            
+            selector.Select(ctx)
+            
+            if !reviewResult.Approved {
+                logger.Info("Customer onboarding rejected", "customer_id", customerID, "reason", reviewResult.Reason)
+                
+                // Reject customer and cleanup
+                workflow.ExecuteActivity(ctx, RejectCustomerActivity, CustomerRejectionRequest{
+                    CustomerID: customerID,
+                    Reason:     reviewResult.Reason,
+                })
+                
+                // Send rejection notification
+                workflow.ExecuteActivity(ctx, SendNotificationActivity, NotificationRequest{
+                    CustomerID: customerID,
+                    Type:       "onboarding_rejected",
+                    Message:    fmt.Sprintf("Your application has been rejected: %s", reviewResult.Reason),
+                    Channel:    input.ContactInfo.PreferredMethod,
+                })
+                
+                return fmt.Errorf("customer onboarding rejected: %s", reviewResult.Reason)
+            }
+        }
+        
+        // Step 8: Approve customer and activate accounts
+        err = workflow.ExecuteActivity(ctx, ApproveCustomerActivity, CustomerApprovalRequest{
+            CustomerID:     customerID,
+            RiskLevel:      riskAssessment.RiskLevel,
+            ApprovedLimits: riskAssessment.RecommendedLimits,
+        }).Get(ctx, nil)
+        if err != nil {
+            logger.Error("Failed to approve customer", "error", err)
+            return err
+        }
+        
+        // Step 9: Send welcome communications
+        err = workflow.ExecuteActivity(ctx, SendWelcomePackageActivity, WelcomePackageRequest{
+            CustomerID:    customerID,
+            CustomerData:  input,
+            AccountInfo:   accountSetupResult,
+            ContactMethod: input.ContactInfo.PreferredMethod,
+        }).Get(ctx, nil)
+        if err != nil {
+            logger.Error("Failed to send welcome package", "error", err)
+            // Don't fail the workflow for this
+        }
+        
+        // Step 10: Schedule follow-up activities
+        // Schedule 30-day follow-up
+        workflow.NewTimer(ctx, 30*24*time.Hour).Get(ctx, nil)
+        workflow.ExecuteActivity(ctx, ScheduleFollowUpActivity, FollowUpRequest{
+            CustomerID: customerID,
+            Type:       "30_day_checkin",
+            DueDate:    time.Now().Add(30 * 24 * time.Hour),
+        })
+        
+        // Schedule 90-day review
+        workflow.NewTimer(ctx, 90*24*time.Hour).Get(ctx, nil)
+        workflow.ExecuteActivity(ctx, ScheduleFollowUpActivity, FollowUpRequest{
+            CustomerID: customerID,
+            Type:       "90_day_review",
+            DueDate:    time.Now().Add(90 * 24 * time.Hour),
+        })
+        
+        logger.Info("Customer onboarding workflow completed successfully", "customer_id", customerID)
+        return nil
+    }
+    
+    // Supporting types for workflow activities
+    type ValidationResult struct {
+        IsValid bool     `json:"is_valid"`
+        Errors  []string `json:"errors"`
+    }
+    
+    type KYCVerificationRequest struct {
+        CustomerID string      `json:"customer_id"`
+        Document   KYCDocument `json:"document"`
+    }
+    
+    type KYCVerificationResult struct {
+        DocumentID   string    `json:"document_id"`
+        Status       string    `json:"status"` // "verified", "rejected", "pending"
+        Score        float64   `json:"score"`
+        VerifiedAt   time.Time `json:"verified_at"`
+        Errors       []string  `json:"errors,omitempty"`
+    }
+    
+    type AccountSetupRequest struct {
+        CustomerID  string      `json:"customer_id"`
+        Preferences Preferences `json:"preferences"`
+        AccountType string      `json:"account_type"`
+    }
+    
+    type AccountSetupResult struct {
+        AccountIDs    []string `json:"account_ids"`
+        SetupComplete bool     `json:"setup_complete"`
+    }
+    
+    type RiskAssessmentRequest struct {
+        CustomerID   string                  `json:"customer_id"`
+        KYCResults   []KYCVerificationResult `json:"kyc_results"`
+        CustomerData CustomerOnboardingData  `json:"customer_data"`
+    }
+    
+    type RiskAssessmentResult struct {
+        RiskLevel         string            `json:"risk_level"` // "LOW", "MEDIUM", "HIGH"
+        RiskScore         float64           `json:"risk_score"`
+        RiskFactors       []string          `json:"risk_factors"`
+        RecommendedLimits map[string]float64 `json:"recommended_limits"`
+    }
+    
+    type ManualReviewRequest struct {
+        CustomerID     string                `json:"customer_id"`
+        RiskAssessment RiskAssessmentResult  `json:"risk_assessment"`
+        ReviewType     string                `json:"review_type"`
+    }
+    
+    type ManualReviewResult struct {
+        Approved bool   `json:"approved"`
+        Reason   string `json:"reason"`
+        ReviewedBy string `json:"reviewed_by"`
+        ReviewedAt time.Time `json:"reviewed_at"`
+    }
+    
+    type CustomerRejectionRequest struct {
+        CustomerID string `json:"customer_id"`
+        Reason     string `json:"reason"`
+    }
+    
+    type CustomerApprovalRequest struct {
+        CustomerID     string            `json:"customer_id"`
+        RiskLevel      string            `json:"risk_level"`
+        ApprovedLimits map[string]float64 `json:"approved_limits"`
+    }
+    
+    type WelcomePackageRequest struct {
+        CustomerID    string                `json:"customer_id"`
+        CustomerData  CustomerOnboardingData `json:"customer_data"`
+        AccountInfo   AccountSetupResult    `json:"account_info"`
+        ContactMethod string                `json:"contact_method"`
+    }
+    
+    type FollowUpRequest struct {
+        CustomerID string    `json:"customer_id"`
+        Type       string    `json:"type"`
+        DueDate    time.Time `json:"due_date"`
+    }
+    
+    type NotificationRequest struct {
+        CustomerID string `json:"customer_id"`
+        Type       string `json:"type"`
+        Message    string `json:"message"`
+        Channel    string `json:"channel"`
+    }
+
+  sales-opportunity-workflow.go: |
+    package workflows
+    
+    import (
+        "context"
+        "fmt"
+        "time"
+        
+        "go.temporal.io/sdk/workflow"
+    )
+    
+    // SalesOpportunityWorkflow manages the complete sales opportunity lifecycle
+    func SalesOpportunityWorkflow(ctx workflow.Context, input OpportunityWorkflowInput) error {
+        logger := workflow.GetLogger(ctx)
+        logger.Info("Starting sales opportunity workflow", "opportunity_id", input.OpportunityID)
+        
+        // Set workflow options
+        ao := workflow.ActivityOptions{
+            StartToCloseTimeout: 5 * time.Minute,
+            RetryPolicy: &temporal.RetryPolicy{
+                InitialInterval:    time.Second,
+                BackoffCoefficient: 2.0,
+                MaximumInterval:    60 * time.Second,
+                MaximumAttempts:    3,
+            },
+        }
+        ctx = workflow.WithActivityOptions(ctx, ao)
+        
+        // Step 1: Qualify the opportunity
+        var qualificationResult QualificationResult
+        err := workflow.ExecuteActivity(ctx, QualifyOpportunityActivity, input).Get(ctx, &qualificationResult)
+        if err != nil {
+            logger.Error("Opportunity qualification failed", "error", err)
+            return err
+        }
+        
+        if !qualificationResult.IsQualified {
+            logger.Info("Opportunity not qualified", "opportunity_id", input.OpportunityID)
+            // Mark as disqualified and end workflow
+            workflow.ExecuteActivity(ctx, UpdateOpportunityStageActivity, StageUpdateRequest{
+                OpportunityID: input.OpportunityID,
+                NewStage:      "disqualified",
+                Reason:        qualificationResult.DisqualificationReason,
+            })
+            return nil
+        }
+        
+        // Step 2: Assign sales representative if not already assigned
+        if input.AssignedSalesRep == "" {
+            var assignmentResult SalesRepAssignmentResult
+            err = workflow.ExecuteActivity(ctx, AssignSalesRepresentativeActivity, SalesRepAssignmentRequest{
+                OpportunityID: input.OpportunityID,
+                Territory:     input.Territory,
+                ProductType:   input.ProductType,
+                DealSize:      input.EstimatedValue,
+            }).Get(ctx, &assignmentResult)
+            if err != nil {
+                logger.Error("Failed to assign sales representative", "error", err)
+                return err
+            }
+            input.AssignedSalesRep = assignmentResult.SalesRepID
+        }
+        
+        // Step 3: Create initial sales activities
+        err = workflow.ExecuteActivity(ctx, CreateInitialSalesActivitiesActivity, InitialActivitiesRequest{
+            OpportunityID:   input.OpportunityID,
+            SalesRepID:      input.AssignedSalesRep,
+            CustomerProfile: input.CustomerProfile,
+        }).Get(ctx, nil)
+        if err != nil {
+            logger.Error("Failed to create initial sales activities", "error", err)
+            return err
+        }
+        
+        // Step 4: Start the sales process with stage-based progression
+        currentStage := "prospecting"
+        stageDeadlines := map[string]time.Duration{
+            "prospecting":    7 * 24 * time.Hour,   // 7 days
+            "qualification":  14 * 24 * time.Hour,  // 14 days
+            "needs_analysis": 21 * 24 * time.Hour,  // 21 days
+            "proposal":       14 * 24 * time.Hour,  // 14 days
+            "negotiation":    21 * 24 * time.Hour,  // 21 days
+            "closing":        7 * 24 * time.Hour,   // 7 days
+        }
+        
+        for currentStage != "won" && currentStage != "lost" {
+            logger.Info("Processing stage", "stage", currentStage, "opportunity_id", input.OpportunityID)
+            
+            // Set up stage timeout
+            stageTimeout := stageDeadlines[currentStage]
+            if stageTimeout == 0 {
+                stageTimeout = 30 * 24 * time.Hour // Default 30 days
+            }
+            
+            // Create selector for stage events
+            selector := workflow.NewSelector(ctx)
+            
+            // Stage completion signal
+            var stageResult StageCompletionResult
+            stageChannel := workflow.GetSignalChannel(ctx, fmt.Sprintf("stage_%s_completed", currentStage))
+            selector.AddReceive(stageChannel, func(c workflow.ReceiveChannel, more bool) {
+                c.Receive(ctx, &stageResult)
+            })
+            
+            // Stage timeout
+            stageTimer := workflow.NewTimer(ctx, stageTimeout)
+            selector.AddFuture(stageTimer, func(f workflow.Future) {
+                stageResult = StageCompletionResult{
+                    Success:    false,
+                    NextStage:  "stalled",
+                    Reason:     "Stage timeout",
+                }
+            })
+            
+            // Opportunity lost signal
+            lostChannel := workflow.GetSignalChannel(ctx, "opportunity_lost")
+            selector.AddReceive(lostChannel, func(c workflow.ReceiveChannel, more bool) {
+                var lostReason string
+                c.Receive(ctx, &lostReason)
+                stageResult = StageCompletionResult{
+                    Success:   false,
+                    NextStage: "lost",
+                    Reason:    lostReason,
+                }
+            })
+            
+            // Wait for stage event
+            selector.Select(ctx)
+            
+            // Process stage result
+            if stageResult.Success {
+                currentStage = stageResult.NextStage
+                
+                // Update opportunity stage
+                err = workflow.ExecuteActivity(ctx, UpdateOpportunityStageActivity, StageUpdateRequest{
+                    OpportunityID: input.OpportunityID,
+                    NewStage:      currentStage,
+                    Reason:        stageResult.Reason,
+                    UpdatedBy:     input.AssignedSalesRep,
+                }).Get(ctx, nil)
+                if err != nil {
+                    logger.Error("Failed to update opportunity stage", "error", err)
+                    return err
+                }
+                
+                // Execute stage-specific activities
+                err = workflow.ExecuteActivity(ctx, ExecuteStageActivitiesActivity, StageActivitiesRequest{
+                    OpportunityID: input.OpportunityID,
+                    Stage:         currentStage,
+                    SalesRepID:    input.AssignedSalesRep,
+                }).Get(ctx, nil)
+                if err != nil {
+                    logger.Error("Failed to execute stage activities", "error", err)
+                    // Don't fail the workflow for this
+                }
+                
+                // Send stage progression notification
+                workflow.ExecuteActivity(ctx, SendStageNotificationActivity, StageNotificationRequest{
+                    OpportunityID: input.OpportunityID,
+                    Stage:         currentStage,
+                    SalesRepID:    input.AssignedSalesRep,
+                    CustomerID:    input.CustomerID,
+                })
+                
+            } else {
+                // Handle stage failure
+                currentStage = stageResult.NextStage
+                
+                if currentStage == "stalled" {
+                    // Handle stalled opportunity
+                    err = workflow.ExecuteActivity(ctx, HandleStalledOpportunityActivity, StalledOpportunityRequest{
+                        OpportunityID: input.OpportunityID,
+                        StalledReason: stageResult.Reason,
+                        SalesRepID:    input.AssignedSalesRep,
+                    }).Get(ctx, nil)
+                    if err != nil {
+                        logger.Error("Failed to handle stalled opportunity", "error", err)
+                    }
+                    
+                    // Wait for reactivation or mark as lost after 30 days
+                    reactivationSelector := workflow.NewSelector(ctx)
+                    
+                    reactivationChannel := workflow.GetSignalChannel(ctx, "opportunity_reactivated")
+                    reactivationSelector.AddReceive(reactivationChannel, func(c workflow.ReceiveChannel, more bool) {
+                        var reactivationStage string
+                        c.Receive(ctx, &reactivationStage)
+                        currentStage = reactivationStage
+                    })
+                    
+                    stalledTimer := workflow.NewTimer(ctx, 30*24*time.Hour)
+                    reactivationSelector.AddFuture(stalledTimer, func(f workflow.Future) {
+                        currentStage = "lost"
+                    })
+                    
+                    reactivationSelector.Select(ctx)
+                }
+                
+                if currentStage == "lost" {
+                    // Handle lost opportunity
+                    err = workflow.ExecuteActivity(ctx, HandleLostOpportunityActivity, LostOpportunityRequest{
+                        OpportunityID: input.OpportunityID,
+                        LostReason:    stageResult.Reason,
+                        SalesRepID:    input.AssignedSalesRep,
+                    }).Get(ctx, nil)
+                    if err != nil {
+                        logger.Error("Failed to handle lost opportunity", "error", err)
+                    }
+                    break
+                }
+            }
+        }
+        
+        // Step 5: Handle won opportunity
+        if currentStage == "won" {
+            err = workflow.ExecuteActivity(ctx, HandleWonOpportunityActivity, WonOpportunityRequest{
+                OpportunityID: input.OpportunityID,
+                FinalValue:    input.EstimatedValue, // This would be updated during the process
+                SalesRepID:    input.AssignedSalesRep,
+                WonDate:       time.Now(),
+            }).Get(ctx, nil)
+            if err != nil {
+                logger.Error("Failed to handle won opportunity", "error", err)
+                return err
+            }
+            
+            // Start customer success workflow
+            workflow.ExecuteChildWorkflow(ctx, CustomerSuccessWorkflow, CustomerSuccessInput{
+                CustomerID:    input.CustomerID,
+                OpportunityID: input.OpportunityID,
+                SalesRepID:    input.AssignedSalesRep,
+                ContractValue: input.EstimatedValue,
+            })
+        }
+        
+        logger.Info("Sales opportunity workflow completed", "opportunity_id", input.OpportunityID, "final_stage", currentStage)
+        return nil
+    }
+    
+    // Supporting types for sales opportunity workflow
+    type OpportunityWorkflowInput struct {
+        OpportunityID    string          `json:"opportunity_id"`
+        CustomerID       string          `json:"customer_id"`
+        AssignedSalesRep string          `json:"assigned_sales_rep"`
+        Territory        string          `json:"territory"`
+        ProductType      string          `json:"product_type"`
+        EstimatedValue   float64         `json:"estimated_value"`
+        CustomerProfile  CustomerProfile `json:"customer_profile"`
+    }
+    
+    type CustomerProfile struct {
+        CompanySize     string  `json:"company_size"`
+        Industry        string  `json:"industry"`
+        Budget          float64 `json:"budget"`
+        DecisionMakers  []string `json:"decision_makers"`
+        PainPoints      []string `json:"pain_points"`
+        CurrentSolution string  `json:"current_solution"`
+    }
+    
+    type QualificationResult struct {
+        IsQualified             bool     `json:"is_qualified"`
+        QualificationScore      float64  `json:"qualification_score"`
+        DisqualificationReason  string   `json:"disqualification_reason,omitempty"`
+        RecommendedNextSteps    []string `json:"recommended_next_steps"`
+    }
+    
+    type SalesRepAssignmentRequest struct {
+        OpportunityID string  `json:"opportunity_id"`
+        Territory     string  `json:"territory"`
+        ProductType   string  `json:"product_type"`
+        DealSize      float64 `json:"deal_size"`
+    }
+    
+    type SalesRepAssignmentResult struct {
+        SalesRepID   string `json:"sales_rep_id"`
+        SalesRepName string `json:"sales_rep_name"`
+        AssignedAt   time.Time `json:"assigned_at"`
+    }
+    
+    type InitialActivitiesRequest struct {
+        OpportunityID   string          `json:"opportunity_id"`
+        SalesRepID      string          `json:"sales_rep_id"`
+        CustomerProfile CustomerProfile `json:"customer_profile"`
+    }
+    
+    type StageCompletionResult struct {
+        Success   bool   `json:"success"`
+        NextStage string `json:"next_stage"`
+        Reason    string `json:"reason"`
+        UpdatedBy string `json:"updated_by"`
+    }
+    
+    type StageUpdateRequest struct {
+        OpportunityID string `json:"opportunity_id"`
+        NewStage      string `json:"new_stage"`
+        Reason        string `json:"reason"`
+        UpdatedBy     string `json:"updated_by"`
+    }
+    
+    type StageActivitiesRequest struct {
+        OpportunityID string `json:"opportunity_id"`
+        Stage         string `json:"stage"`
+        SalesRepID    string `json:"sales_rep_id"`
+    }
+    
+    type StageNotificationRequest struct {
+        OpportunityID string `json:"opportunity_id"`
+        Stage         string `json:"stage"`
+        SalesRepID    string `json:"sales_rep_id"`
+        CustomerID    string `json:"customer_id"`
+    }
+    
+    type StalledOpportunityRequest struct {
+        OpportunityID string `json:"opportunity_id"`
+        StalledReason string `json:"stalled_reason"`
+        SalesRepID    string `json:"sales_rep_id"`
+    }
+    
+    type LostOpportunityRequest struct {
+        OpportunityID string `json:"opportunity_id"`
+        LostReason    string `json:"lost_reason"`
+        SalesRepID    string `json:"sales_rep_id"`
+    }
+    
+    type WonOpportunityRequest struct {
+        OpportunityID string    `json:"opportunity_id"`
+        FinalValue    float64   `json:"final_value"`
+        SalesRepID    string    `json:"sales_rep_id"`
+        WonDate       time.Time `json:"won_date"`
+    }
+    
+    type CustomerSuccessInput struct {
+        CustomerID    string  `json:"customer_id"`
+        OpportunityID string  `json:"opportunity_id"`
+        SalesRepID    string  `json:"sales_rep_id"`
+        ContractValue float64 `json:"contract_value"`
+    }
+
+  inventory-replenishment-workflow.go: |
+    package workflows
+    
+    import (
+        "context"
+        "fmt"
+        "time"
+        
+        "go.temporal.io/sdk/workflow"
+    )
+    
+    // InventoryReplenishmentWorkflow manages automated inventory replenishment
+    func InventoryReplenishmentWorkflow(ctx workflow.Context, input ReplenishmentWorkflowInput) error {
+        logger := workflow.GetLogger(ctx)
+        logger.Info("Starting inventory replenishment workflow", "product_id", input.ProductID, "warehouse_id", input.WarehouseID)
+        
+        // Set workflow options
+        ao := workflow.ActivityOptions{
+            StartToCloseTimeout: 10 * time.Minute,
+            RetryPolicy: &temporal.RetryPolicy{
+                InitialInterval:    time.Second,
+                BackoffCoefficient: 2.0,
+                MaximumInterval:    100 * time.Second,
+                MaximumAttempts:    5,
+            },
+        }
+        ctx = workflow.WithActivityOptions(ctx, ao)
+        
+        // Step 1: Analyze current inventory levels and demand
+        var inventoryAnalysis InventoryAnalysisResult
+        err := workflow.ExecuteActivity(ctx, AnalyzeInventoryLevelsActivity, InventoryAnalysisRequest{
+            ProductID:   input.ProductID,
+            WarehouseID: input.WarehouseID,
+            AnalysisPeriod: 90, // 90 days
+        }).Get(ctx, &inventoryAnalysis)
+        if err != nil {
+            logger.Error("Inventory analysis failed", "error", err)
+            return err
+        }
+        
+        // Step 2: Calculate optimal replenishment quantity
+        var replenishmentCalc ReplenishmentCalculationResult
+        err = workflow.ExecuteActivity(ctx, CalculateReplenishmentQuantityActivity, ReplenishmentCalculationRequest{
+            ProductID:         input.ProductID,
+            WarehouseID:       input.WarehouseID,
+            CurrentStock:      inventoryAnalysis.CurrentStock,
+            ReorderLevel:      inventoryAnalysis.ReorderLevel,
+            MaxStock:          inventoryAnalysis.MaxStock,
+            AverageDemand:     inventoryAnalysis.AverageDailyDemand,
+            LeadTime:          inventoryAnalysis.SupplierLeadTime,
+            SeasonalityFactor: inventoryAnalysis.SeasonalityFactor,
+        }).Get(ctx, &replenishmentCalc)
+        if err != nil {
+            logger.Error("Replenishment calculation failed", "error", err)
+            return err
+        }
+        
+        // Step 3: Find best supplier for the product
+        var supplierSelection SupplierSelectionResult
+        err = workflow.ExecuteActivity(ctx, SelectOptimalSupplierActivity, SupplierSelectionRequest{
+            ProductID:        input.ProductID,
+            RequiredQuantity: replenishmentCalc.RecommendedQuantity,
+            MaxPrice:         replenishmentCalc.MaxAcceptablePrice,
+            RequiredDelivery: time.Now().Add(time.Duration(inventoryAnalysis.SupplierLeadTime) * 24 * time.Hour),
+            QualityRequirements: input.QualityRequirements,
+        }).Get(ctx, &supplierSelection)
+        if err != nil {
+            logger.Error("Supplier selection failed", "error", err)
+            return err
+        }
+        
+        // Step 4: Check budget approval if required
+        if replenishmentCalc.TotalCost > input.AutoApprovalLimit {
+            logger.Info("Purchase requires approval", "cost", replenishmentCalc.TotalCost, "limit", input.AutoApprovalLimit)
+            
+            // Request approval
+            err = workflow.ExecuteActivity(ctx, RequestPurchaseApprovalActivity, PurchaseApprovalRequest{
+                ProductID:       input.ProductID,
+                SupplierID:      supplierSelection.SupplierID,
+                Quantity:        replenishmentCalc.RecommendedQuantity,
+                UnitPrice:       supplierSelection.UnitPrice,
+                TotalCost:       replenishmentCalc.TotalCost,
+                Justification:   replenishmentCalc.Justification,
+                RequestedBy:     "inventory_system",
+                UrgencyLevel:    inventoryAnalysis.UrgencyLevel,
+            }).Get(ctx, nil)
+            if err != nil {
+                logger.Error("Failed to request purchase approval", "error", err)
+                return err
+            }
+            
+            // Wait for approval
+            selector := workflow.NewSelector(ctx)
+            
+            var approvalResult ApprovalResult
+            approvalChannel := workflow.GetSignalChannel(ctx, "purchase_approval_result")
+            selector.AddReceive(approvalChannel, func(c workflow.ReceiveChannel, more bool) {
+                c.Receive(ctx, &approvalResult)
+            })
+            
+            // Timeout after 48 hours for urgent, 7 days for normal
+            approvalTimeout := 7 * 24 * time.Hour
+            if inventoryAnalysis.UrgencyLevel == "urgent" {
+                approvalTimeout = 48 * time.Hour
+            }
+            
+            approvalTimer := workflow.NewTimer(ctx, approvalTimeout)
+            selector.AddFuture(approvalTimer, func(f workflow.Future) {
+                approvalResult = ApprovalResult{
+                    Approved: false,
+                    Reason:   "Approval timeout",
+                }
+            })
+            
+            selector.Select(ctx)
+            
+            if !approvalResult.Approved {
+                logger.Info("Purchase not approved", "reason", approvalResult.Reason)
+                
+                // Send notification about rejection
+                workflow.ExecuteActivity(ctx, SendPurchaseNotificationActivity, PurchaseNotificationRequest{
+                    Type:        "approval_rejected",
+                    ProductID:   input.ProductID,
+                    WarehouseID: input.WarehouseID,
+                    Reason:      approvalResult.Reason,
+                    Recipients:  []string{"inventory_manager", "purchasing_manager"},
+                })
+                
+                return fmt.Errorf("purchase approval rejected: %s", approvalResult.Reason)
+            }
+            
+            logger.Info("Purchase approved", "approved_by", approvalResult.ApprovedBy)
+        }
+        
+        // Step 5: Create purchase order
+        var purchaseOrder PurchaseOrderResult
+        err = workflow.ExecuteActivity(ctx, CreatePurchaseOrderActivity, PurchaseOrderRequest{
+            ProductID:        input.ProductID,
+            SupplierID:       supplierSelection.SupplierID,
+            WarehouseID:      input.WarehouseID,
+            Quantity:         replenishmentCalc.RecommendedQuantity,
+            UnitPrice:        supplierSelection.UnitPrice,
+            TotalAmount:      replenishmentCalc.TotalCost,
+            RequestedDelivery: time.Now().Add(time.Duration(inventoryAnalysis.SupplierLeadTime) * 24 * time.Hour),
+            Terms:           supplierSelection.Terms,
+            SpecialInstructions: input.SpecialInstructions,
+        }).Get(ctx, &purchaseOrder)
+        if err != nil {
+            logger.Error("Failed to create purchase order", "error", err)
+            return err
+        }
+        
+        logger.Info("Purchase order created", "po_number", purchaseOrder.PONumber)
+        
+        // Step 6: Send purchase order to supplier
+        err = workflow.ExecuteActivity(ctx, SendPurchaseOrderToSupplierActivity, SupplierPORequest{
+            PONumber:         purchaseOrder.PONumber,
+            SupplierID:       supplierSelection.SupplierID,
+            SupplierEmail:    supplierSelection.ContactEmail,
+            DeliveryMethod:   supplierSelection.PreferredDeliveryMethod,
+        }).Get(ctx, nil)
+        if err != nil {
+            logger.Error("Failed to send purchase order to supplier", "error", err)
+            // Don't fail the workflow, but log the issue
+        }
+        
+        // Step 7: Track purchase order status
+        expectedDelivery := time.Now().Add(time.Duration(inventoryAnalysis.SupplierLeadTime) * 24 * time.Hour)
+        
+        for {
+            // Wait for status updates or timeout
+            selector := workflow.NewSelector(ctx)
+            
+            var statusUpdate POStatusUpdate
+            statusChannel := workflow.GetSignalChannel(ctx, "po_status_update")
+            selector.AddReceive(statusChannel, func(c workflow.ReceiveChannel, more bool) {
+                c.Receive(ctx, &statusUpdate)
+            })
+            
+            // Check for overdue delivery (add 3 days grace period)
+            overdueTimer := workflow.NewTimer(ctx, expectedDelivery.Add(3*24*time.Hour).Sub(time.Now()))
+            selector.AddFuture(overdueTimer, func(f workflow.Future) {
+                statusUpdate = POStatusUpdate{
+                    PONumber: purchaseOrder.PONumber,
+                    Status:   "overdue",
+                    Message:  "Delivery is overdue",
+                }
+            })
+            
+            selector.Select(ctx)
+            
+            // Process status update
+            err = workflow.ExecuteActivity(ctx, ProcessPOStatusUpdateActivity, statusUpdate).Get(ctx, nil)
+            if err != nil {
+                logger.Error("Failed to process PO status update", "error", err)
+            }
+            
+            // Handle different statuses
+            switch statusUpdate.Status {
+            case "confirmed":
+                logger.Info("Purchase order confirmed by supplier", "po_number", purchaseOrder.PONumber)
+                
+            case "shipped":
+                logger.Info("Purchase order shipped", "po_number", purchaseOrder.PONumber)
+                
+                // Update expected delivery if tracking info available
+                if statusUpdate.TrackingNumber != "" {
+                    workflow.ExecuteActivity(ctx, UpdateDeliveryTrackingActivity, DeliveryTrackingRequest{
+                        PONumber:       purchaseOrder.PONumber,
+                        TrackingNumber: statusUpdate.TrackingNumber,
+                        Carrier:        statusUpdate.Carrier,
+                    })
+                }
+                
+            case "delivered":
+                logger.Info("Purchase order delivered", "po_number", purchaseOrder.PONumber)
+                
+                // Start goods receipt process
+                err = workflow.ExecuteActivity(ctx, ProcessGoodsReceiptActivity, GoodsReceiptRequest{
+                    PONumber:         purchaseOrder.PONumber,
+                    ProductID:        input.ProductID,
+                    WarehouseID:      input.WarehouseID,
+                    ExpectedQuantity: replenishmentCalc.RecommendedQuantity,
+                    DeliveredDate:    statusUpdate.UpdatedAt,
+                }).Get(ctx, nil)
+                if err != nil {
+                    logger.Error("Failed to process goods receipt", "error", err)
+                    return err
+                }
+                
+                // Workflow completed successfully
+                logger.Info("Inventory replenishment workflow completed successfully", "po_number", purchaseOrder.PONumber)
+                return nil
+                
+            case "cancelled":
+                logger.Info("Purchase order cancelled", "po_number", purchaseOrder.PONumber, "reason", statusUpdate.Message)
+                
+                // Handle cancellation
+                workflow.ExecuteActivity(ctx, HandlePOCancellationActivity, POCancellationRequest{
+                    PONumber:    purchaseOrder.PONumber,
+                    Reason:      statusUpdate.Message,
+                    CancelledBy: statusUpdate.UpdatedBy,
+                })
+                
+                return fmt.Errorf("purchase order cancelled: %s", statusUpdate.Message)
+                
+            case "overdue":
+                logger.Warn("Purchase order is overdue", "po_number", purchaseOrder.PONumber)
+                
+                // Send overdue notification
+                workflow.ExecuteActivity(ctx, SendOverdueNotificationActivity, OverdueNotificationRequest{
+                    PONumber:         purchaseOrder.PONumber,
+                    SupplierID:       supplierSelection.SupplierID,
+                    ExpectedDelivery: expectedDelivery,
+                    DaysOverdue:      int(time.Since(expectedDelivery).Hours() / 24),
+                })
+                
+                // Continue monitoring
+                continue
+                
+            default:
+                logger.Info("Purchase order status update", "status", statusUpdate.Status, "message", statusUpdate.Message)
+            }
+        }
+    }
+    
+    // Supporting types for inventory replenishment workflow
+    type ReplenishmentWorkflowInput struct {
+        ProductID            string   `json:"product_id"`
+        WarehouseID          string   `json:"warehouse_id"`
+        AutoApprovalLimit    float64  `json:"auto_approval_limit"`
+        QualityRequirements  []string `json:"quality_requirements"`
+        SpecialInstructions  string   `json:"special_instructions"`
+    }
+    
+    type InventoryAnalysisRequest struct {
+        ProductID      string `json:"product_id"`
+        WarehouseID    string `json:"warehouse_id"`
+        AnalysisPeriod int    `json:"analysis_period"`
+    }
+    
+    type InventoryAnalysisResult struct {
+        CurrentStock        float64 `json:"current_stock"`
+        ReorderLevel        float64 `json:"reorder_level"`
+        MaxStock           float64 `json:"max_stock"`
+        AverageDailyDemand float64 `json:"average_daily_demand"`
+        SupplierLeadTime   int     `json:"supplier_lead_time"`
+        SeasonalityFactor  float64 `json:"seasonality_factor"`
+        UrgencyLevel       string  `json:"urgency_level"`
+    }
+    
+    type ReplenishmentCalculationRequest struct {
+        ProductID         string  `json:"product_id"`
+        WarehouseID       string  `json:"warehouse_id"`
+        CurrentStock      float64 `json:"current_stock"`
+        ReorderLevel      float64 `json:"reorder_level"`
+        MaxStock          float64 `json:"max_stock"`
+        AverageDemand     float64 `json:"average_demand"`
+        LeadTime          int     `json:"lead_time"`
+        SeasonalityFactor float64 `json:"seasonality_factor"`
+    }
+    
+    type ReplenishmentCalculationResult struct {
+        RecommendedQuantity float64 `json:"recommended_quantity"`
+        TotalCost          float64 `json:"total_cost"`
+        MaxAcceptablePrice float64 `json:"max_acceptable_price"`
+        Justification      string  `json:"justification"`
+    }
+    
+    type SupplierSelectionRequest struct {
+        ProductID           string    `json:"product_id"`
+        RequiredQuantity    float64   `json:"required_quantity"`
+        MaxPrice           float64   `json:"max_price"`
+        RequiredDelivery   time.Time `json:"required_delivery"`
+        QualityRequirements []string  `json:"quality_requirements"`
+    }
+    
+    type SupplierSelectionResult struct {
+        SupplierID              string            `json:"supplier_id"`
+        SupplierName            string            `json:"supplier_name"`
+        UnitPrice              float64           `json:"unit_price"`
+        ContactEmail           string            `json:"contact_email"`
+        Terms                  map[string]string `json:"terms"`
+        PreferredDeliveryMethod string            `json:"preferred_delivery_method"`
+    }
+    
+    type PurchaseApprovalRequest struct {
+        ProductID     string  `json:"product_id"`
+        SupplierID    string  `json:"supplier_id"`
+        Quantity      float64 `json:"quantity"`
+        UnitPrice     float64 `json:"unit_price"`
+        TotalCost     float64 `json:"total_cost"`
+        Justification string  `json:"justification"`
+        RequestedBy   string  `json:"requested_by"`
+        UrgencyLevel  string  `json:"urgency_level"`
+    }
+    
+    type ApprovalResult struct {
+        Approved   bool      `json:"approved"`
+        ApprovedBy string    `json:"approved_by"`
+        ApprovedAt time.Time `json:"approved_at"`
+        Reason     string    `json:"reason"`
+    }
+    
+    type PurchaseOrderRequest struct {
+        ProductID           string            `json:"product_id"`
+        SupplierID          string            `json:"supplier_id"`
+        WarehouseID         string            `json:"warehouse_id"`
+        Quantity            float64           `json:"quantity"`
+        UnitPrice           float64           `json:"unit_price"`
+        TotalAmount         float64           `json:"total_amount"`
+        RequestedDelivery   time.Time         `json:"requested_delivery"`
+        Terms               map[string]string `json:"terms"`
+        SpecialInstructions string            `json:"special_instructions"`
+    }
+    
+    type PurchaseOrderResult struct {
+        PONumber    string    `json:"po_number"`
+        CreatedAt   time.Time `json:"created_at"`
+        Status      string    `json:"status"`
+    }
+    
+    type SupplierPORequest struct {
+        PONumber         string `json:"po_number"`
+        SupplierID       string `json:"supplier_id"`
+        SupplierEmail    string `json:"supplier_email"`
+        DeliveryMethod   string `json:"delivery_method"`
+    }
+    
+    type POStatusUpdate struct {
+        PONumber       string    `json:"po_number"`
+        Status         string    `json:"status"`
+        Message        string    `json:"message"`
+        UpdatedBy      string    `json:"updated_by"`
+        UpdatedAt      time.Time `json:"updated_at"`
+        TrackingNumber string    `json:"tracking_number,omitempty"`
+        Carrier        string    `json:"carrier,omitempty"`
+    }
+    
+    type DeliveryTrackingRequest struct {
+        PONumber       string `json:"po_number"`
+        TrackingNumber string `json:"tracking_number"`
+        Carrier        string `json:"carrier"`
+    }
+    
+    type GoodsReceiptRequest struct {
+        PONumber         string    `json:"po_number"`
+        ProductID        string    `json:"product_id"`
+        WarehouseID      string    `json:"warehouse_id"`
+        ExpectedQuantity float64   `json:"expected_quantity"`
+        DeliveredDate    time.Time `json:"delivered_date"`
+    }
+    
+    type POCancellationRequest struct {
+        PONumber    string `json:"po_number"`
+        Reason      string `json:"reason"`
+        CancelledBy string `json:"cancelled_by"`
+    }
+    
+    type OverdueNotificationRequest struct {
+        PONumber         string    `json:"po_number"`
+        SupplierID       string    `json:"supplier_id"`
+        ExpectedDelivery time.Time `json:"expected_delivery"`
+        DaysOverdue      int       `json:"days_overdue"`
+    }
+    
+    type PurchaseNotificationRequest struct {
+        Type        string   `json:"type"`
+        ProductID   string   `json:"product_id"`
+        WarehouseID string   `json:"warehouse_id"`
+        Reason      string   `json:"reason"`
+        Recipients  []string `json:"recipients"`
+    }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: temporal-workflow-worker
+  namespace: enterprise-crm
+  labels:
+    app: temporal-workflow-worker
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: temporal-workflow-worker
+  template:
+    metadata:
+      labels:
+        app: temporal-workflow-worker
+    spec:
+      initContainers:
+      - name: wait-for-temporal
+        image: temporalio/admin-tools:1.22.0
+        command:
+        - sh
+        - -c
+        - |
+          echo "Waiting for Temporal server..."
+          until tctl --address temporal-frontend:7233 cluster health; do
+            echo "Temporal not ready, waiting..."
+            sleep 5
+          done
+          echo "Temporal is ready!"
+      containers:
+      - name: workflow-worker
+        image: golang:1.21-alpine
+        command:
+        - /bin/sh
+        - -c
+        - |
+          # Install dependencies
+          go mod init temporal-workflows
+          go get go.temporal.io/sdk@latest
+          go get github.com/google/uuid@latest
+          
+          # Build and run the worker
+          go run /workflows/*.go
+        env:
+        - name: TEMPORAL_HOST
+          value: "temporal-frontend:7233"
+        - name: TEMPORAL_NAMESPACE
+          value: "enterprise-crm"
+        - name: WORKER_TASK_QUEUE
+          value: "enterprise-crm-workflows"
+        - name: KAFKA_BOOTSTRAP_SERVERS
+          value: "kafka:9092"
+        - name: POSTGRES_HOST
+          value: "postgresql"
+        - name: POSTGRES_PORT
+          value: "5432"
+        - name: POSTGRES_DB
+          value: "enterprise_crm"
+        - name: POSTGRES_USER
+          valueFrom:
+            secretKeyRef:
+              name: postgresql-secret
+              key: username
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: postgresql-secret
+              key: password
+        - name: REDIS_HOST
+          value: "redis:6379"
+        volumeMounts:
+        - name: workflows
+          mountPath: /workflows
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+        livenessProbe:
+          exec:
+            command:
+            - /bin/sh
+            - -c
+            - "ps aux | grep -v grep | grep 'go run'"
+          initialDelaySeconds: 60
+          periodSeconds: 30
+        readinessProbe:
+          exec:
+            command:
+            - /bin/sh
+            - -c
+            - "ps aux | grep -v grep | grep 'go run'"
+          initialDelaySeconds: 30
+          periodSeconds: 10
+      volumes:
+      - name: workflows
+        configMap:
+          name: temporal-workflows-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: temporal-workflow-worker
+  namespace: enterprise-crm
+  labels:
+    app: temporal-workflow-worker
+spec:
+  ports:
+  - port: 8080
+    targetPort: 8080
+    name: metrics
+  selector:
+    app: temporal-workflow-worker
+  type: ClusterIP
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: temporal-workflow-worker-pdb
+  namespace: enterprise-crm
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: temporal-workflow-worker
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: temporal-workflow-worker-hpa
+  namespace: enterprise-crm
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: temporal-workflow-worker
+  minReplicas: 3
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+

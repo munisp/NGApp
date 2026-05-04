@@ -1,0 +1,81 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: enterprise-crm
+  labels:
+    name: enterprise-crm
+    environment: production
+    app.kubernetes.io/name: enterprise-crm
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/managed-by: kubernetes
+  annotations:
+    description: "Enterprise CRM system namespace"
+    contact: "platform-team@company.com"
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: enterprise-crm-dev
+  labels:
+    name: enterprise-crm-dev
+    environment: development
+    app.kubernetes.io/name: enterprise-crm
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/managed-by: kubernetes
+  annotations:
+    description: "Enterprise CRM system development namespace"
+    contact: "platform-team@company.com"
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: enterprise-crm-staging
+  labels:
+    name: enterprise-crm-staging
+    environment: staging
+    app.kubernetes.io/name: enterprise-crm
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/managed-by: kubernetes
+  annotations:
+    description: "Enterprise CRM system staging namespace"
+    contact: "platform-team@company.com"
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: monitoring
+  labels:
+    name: monitoring
+    environment: production
+    app.kubernetes.io/name: monitoring
+    app.kubernetes.io/managed-by: kubernetes
+  annotations:
+    description: "Monitoring and observability namespace"
+    contact: "platform-team@company.com"
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: security
+  labels:
+    name: security
+    environment: production
+    app.kubernetes.io/name: security
+    app.kubernetes.io/managed-by: kubernetes
+  annotations:
+    description: "Security tools and services namespace"
+    contact: "security-team@company.com"
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: data-platform
+  labels:
+    name: data-platform
+    environment: production
+    app.kubernetes.io/name: data-platform
+    app.kubernetes.io/managed-by: kubernetes
+  annotations:
+    description: "Data platform and analytics namespace"
+    contact: "data-team@company.com"
+

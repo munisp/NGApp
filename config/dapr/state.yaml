@@ -1,0 +1,37 @@
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: banking-statestore
+  namespace: banking-crm
+spec:
+  type: state.redis
+  version: v1
+  metadata:
+  - name: redisHost
+    value: "redis-master:6379"
+  - name: redisPassword
+    secretKeyRef:
+      name: redis-secrets
+      key: redis-password
+  - name: enableTLS
+    value: "true"
+  - name: maxRetries
+    value: "5"
+  - name: maxRetryBackoff
+    value: "5s"
+  - name: failover
+    value: "true"
+  - name: sentinelMasterName
+    value: "mymaster"
+  - name: keyPrefix
+    value: "banking-crm:"
+  - name: actorStateStore
+    value: "true"
+scopes:
+  - banking-service
+  - crm-service
+  - customer-service
+  - transaction-service
+  - fraud-service
+  - notification-service
+

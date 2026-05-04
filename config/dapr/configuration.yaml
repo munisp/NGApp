@@ -1,0 +1,49 @@
+apiVersion: dapr.io/v1alpha1
+kind: Configuration
+metadata:
+  name: banking-config
+  namespace: banking-crm
+spec:
+  tracing:
+    samplingRate: "1"
+    zipkin:
+      endpointAddress: "http://zipkin:9411/api/v2/spans"
+  metric:
+    enabled: true
+  mtls:
+    enabled: true
+    workloadCertTTL: "24h"
+    allowedClockSkew: "15m"
+  secrets:
+    scopes:
+      - storeName: "banking-secretstore"
+        defaultAccess: "allow"
+  accessControl:
+    defaultAction: "deny"
+    trustDomain: "banking.local"
+    policies:
+      - appId: "banking-service"
+        defaultAction: "allow"
+        trustDomain: "banking.local"
+        namespace: "banking-crm"
+      - appId: "crm-service"
+        defaultAction: "allow"
+        trustDomain: "banking.local"
+        namespace: "banking-crm"
+      - appId: "customer-service"
+        defaultAction: "allow"
+        trustDomain: "banking.local"
+        namespace: "banking-crm"
+      - appId: "transaction-service"
+        defaultAction: "allow"
+        trustDomain: "banking.local"
+        namespace: "banking-crm"
+      - appId: "fraud-service"
+        defaultAction: "allow"
+        trustDomain: "banking.local"
+        namespace: "banking-crm"
+      - appId: "notification-service"
+        defaultAction: "allow"
+        trustDomain: "banking.local"
+        namespace: "banking-crm"
+

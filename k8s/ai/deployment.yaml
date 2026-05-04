@@ -1,0 +1,366 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ai-service
+  namespace: banking-crm
+  labels:
+    app: ai-service
+    app.kubernetes.io/name: ai-service
+    app.kubernetes.io/part-of: banking-crm-integration
+    app.kubernetes.io/component: backend
+    app.kubernetes.io/version: "1.0.0"
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: ai-service
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: ai-service
+      annotations:
+        dapr.io/enabled: "true"
+        dapr.io/app-id: "ai-service"
+        dapr.io/app-port: "8080"
+        dapr.io/config: "banking-config"
+        dapr.io/log-level: "info"
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9090"
+        prometheus.io/path: "/metrics"
+    spec:
+      serviceAccountName: ai-service-account
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+      containers:
+      - name: ai-service
+        image: banking-crm/ai-service:1.0.0
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8080
+          name: http
+        - containerPort: 9090
+          name: metrics
+        env:
+        - name: SERVICE_NAME
+          value: "ai-service"
+        - name: SERVICE_PORT
+          value: "8080"
+        - name: LOG_LEVEL
+          value: "info"
+        - name: ENVIRONMENT
+          value: "production"
+        - name: FALKORDB_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: ai-service-config
+              key: falkordb_host
+        - name: FALKORDB_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: ai-service-config
+              key: falkordb_port
+        - name: FALKORDB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: ai-service-secrets
+              key: falkordb_password
+        - name: OLLAMA_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: ai-service-config
+              key: ollama_host
+        - name: OLLAMA_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: ai-service-config
+              key: ollama_port
+        - name: EPRKGQA_URL
+          valueFrom:
+            configMapKeyRef:
+              name: ai-service-config
+              key: eprkgqa_url
+        - name: EPRKGQA_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: ai-service-secrets
+              key: eprkgqa_api_key
+        - name: LAKEHOUSE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: ai-service-config
+              key: lakehouse_url
+        - name: LAKEHOUSE_USER
+          valueFrom:
+            secretKeyRef:
+              name: ai-service-secrets
+              key: lakehouse_user
+        - name: LAKEHOUSE_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: ai-service-secrets
+              key: lakehouse_password
+        - name: KAFKA_BROKERS
+          valueFrom:
+            configMapKeyRef:
+              name: ai-service-config
+              key: kafka_brokers
+        - name: REDIS_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: ai-service-config
+              key: redis_host
+        - name: REDIS_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: ai-service-config
+              key: redis_port
+        - name: REDIS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: ai-service-secrets
+              key: redis_password
+        - name: KEYCLOAK_URL
+          valueFrom:
+            configMapKeyRef:
+              name: ai-service-config
+              key: keycloak_url
+        - name: KEYCLOAK_REALM
+          valueFrom:
+            configMapKeyRef:
+              name: ai-service-config
+              key: keycloak_realm
+        - name: KEYCLOAK_CLIENT_ID
+          valueFrom:
+            configMapKeyRef:
+              name: ai-service-config
+              key: keycloak_client_id
+        - name: KEYCLOAK_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: ai-service-secrets
+              key: keycloak_client_secret
+        resources:
+          limits:
+            cpu: "2"
+            memory: "4Gi"
+            nvidia.com/gpu: "1"
+          requests:
+            cpu: "1"
+            memory: "2Gi"
+        livenessProbe:
+          httpGet:
+            path: /health/live
+            port: 8080
+          initialDelaySeconds: 60
+          periodSeconds: 20
+          timeoutSeconds: 10
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health/ready
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        volumeMounts:
+        - name: config-volume
+          mountPath: /app/config
+        - name: models-volume
+          mountPath: /app/models
+        - name: tmp-volume
+          mountPath: /tmp
+        - name: logs-volume
+          mountPath: /app/logs
+      volumes:
+      - name: config-volume
+        configMap:
+          name: ai-service-config
+      - name: models-volume
+        persistentVolumeClaim:
+          claimName: ai-service-models-pvc
+      - name: tmp-volume
+        emptyDir: {}
+      - name: logs-volume
+        emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ai-service
+  namespace: banking-crm
+  labels:
+    app: ai-service
+    app.kubernetes.io/name: ai-service
+    app.kubernetes.io/part-of: banking-crm-integration
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "9090"
+    prometheus.io/path: "/metrics"
+spec:
+  type: ClusterIP
+  ports:
+  - port: 8080
+    targetPort: 8080
+    protocol: TCP
+    name: http
+  - port: 9090
+    targetPort: 9090
+    protocol: TCP
+    name: metrics
+  selector:
+    app: ai-service
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: ai-service-account
+  namespace: banking-crm
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ai-service-config
+  namespace: banking-crm
+data:
+  falkordb_host: "falkordb"
+  falkordb_port: "6379"
+  ollama_host: "ollama"
+  ollama_port: "11434"
+  eprkgqa_url: "http://eprkgqa-service:8080"
+  lakehouse_url: "jdbc:delta://lakehouse:8080"
+  kafka_brokers: "kafka-broker:9092"
+  redis_host: "redis-master"
+  redis_port: "6379"
+  keycloak_url: "https://keycloak.banking-domain.com/auth"
+  keycloak_realm: "banking"
+  keycloak_client_id: "ai-service"
+  config.yaml: |
+    service:
+      name: ai-service
+      version: 1.0.0
+      port: 8080
+      metrics_port: 9090
+      log_level: info
+      environment: production
+    
+    models:
+      gnn:
+        path: /app/models/fraud_detection_gnn.pt
+        embedding_dim: 128
+        hidden_dim: 256
+        num_layers: 3
+        dropout: 0.2
+        device: cuda
+        max_hops: 2
+        batch_size: 32
+        threshold: 0.5
+      
+      ollama:
+        model: llama3:8b
+        temperature: 0.7
+        top_p: 0.9
+        max_tokens: 1024
+        timeout: 30
+    
+    falkordb:
+      database: 0
+      pool_size: 10
+      timeout: 5.0
+    
+    eprkgqa:
+      timeout: 30
+      max_retries: 3
+      retry_delay: 1
+    
+    lakehouse:
+      batch_size: 1000
+      sync_interval: 300
+    
+    kafka:
+      consumer_group: ai-service
+      topics:
+        transaction_events: banking.transactions
+        customer_events: banking.customers
+        fraud_events: banking.fraud
+    
+    redis:
+      database: 0
+      pool_size: 10
+      min_idle_connections: 5
+      idle_timeout: 5m
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: ai-service-models-pvc
+  namespace: banking-crm
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+  storageClassName: standard
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: ai-service-pdb
+  namespace: banking-crm
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: ai-service
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: ai-service-hpa
+  namespace: banking-crm
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: ai-service
+  minReplicas: 2
+  maxReplicas: 5
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+      - type: Percent
+        value: 10
+        periodSeconds: 60
+    scaleUp:
+      stabilizationWindowSeconds: 60
+      policies:
+      - type: Percent
+        value: 20
+        periodSeconds: 60
+      - type: Pods
+        value: 1
+        periodSeconds: 60
+      selectPolicy: Max
+

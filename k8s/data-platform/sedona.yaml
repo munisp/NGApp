@@ -1,0 +1,893 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: sedona-config
+  namespace: enterprise-crm
+data:
+  sedona-spark-config.conf: |
+    # Apache Sedona Configuration for Enterprise CRM Geospatial Analytics
+    
+    # Spark Configuration with Sedona Extensions
+    spark.sql.extensions=org.apache.sedona.sql.SedonaSqlExtensions
+    spark.sql.catalog.spark_catalog=org.apache.sedona.sql.SedonaCatalog
+    spark.serializer=org.apache.spark.serializer.KryoSerializer
+    spark.kryo.registrator=org.apache.sedona.core.serde.SedonaKryoRegistrator
+    
+    # Sedona Configuration
+    sedona.global.index=true
+    sedona.global.indextype=rtree
+    sedona.join.gridtype=kdbtree
+    sedona.join.numpartition=8
+    sedona.join.approximatepartitioncount=true
+    
+    # Geospatial Indexing
+    sedona.spatial.index.enabled=true
+    sedona.spatial.index.type=rtree
+    sedona.spatial.index.resolution=8
+    
+    # Performance Tuning
+    sedona.join.spatialpartitioning=true
+    sedona.join.indexbuildside=left
+    sedona.join.spatialpartitioningtype=kdbtree
+    
+    # Memory Configuration
+    spark.executor.memory=4g
+    spark.executor.cores=2
+    spark.sql.adaptive.enabled=true
+    spark.sql.adaptive.coalescePartitions.enabled=true
+
+  geospatial-analytics-service.py: |
+    import os
+    import time
+    import logging
+    from typing import Dict, List, Any, Optional, Tuple
+    import json
+    import pandas as pd
+    import geopandas as gpd
+    from shapely.geometry import Point, Polygon, LineString
+    from shapely.ops import unary_union
+    import numpy as np
+    
+    from pyspark.sql import SparkSession
+    from pyspark.sql.functions import *
+    from pyspark.sql.types import *
+    from sedona.register import SedonaRegistrator
+    from sedona.utils import SedonaKryoRegistrator, KryoSerializer
+    from sedona.core.spatialOperator import *
+    from sedona.core.formatMapper import *
+    from sedona.core.geom.envelope import Envelope
+    
+    from fastapi import FastAPI, HTTPException
+    from pydantic import BaseModel
+    import uvicorn
+    
+    # Configure logging
+    logging.basicConfig(level=logging.INFO)
+    logger = logging.getLogger(__name__)
+    
+    class GeospatialAnalyticsService:
+        def __init__(self):
+            self.spark = self._initialize_spark_with_sedona()
+            self._register_geospatial_functions()
+            self._create_geospatial_views()
+        
+        def _initialize_spark_with_sedona(self) -> SparkSession:
+            """Initialize Spark session with Sedona extensions"""
+            spark = SparkSession.builder \
+                .appName("Enterprise CRM Geospatial Analytics") \
+                .config("spark.serializer", KryoSerializer.getName) \
+                .config("spark.kryo.registrator", SedonaKryoRegistrator.getName) \
+                .config("spark.sql.extensions", "org.apache.sedona.sql.SedonaSqlExtensions") \
+                .config("spark.sql.catalog.spark_catalog", "org.apache.sedona.sql.SedonaCatalog") \
+                .config("spark.executor.memory", "4g") \
+                .config("spark.executor.cores", "2") \
+                .config("spark.sql.adaptive.enabled", "true") \
+                .config("spark.sql.adaptive.coalescePartitions.enabled", "true") \
+                .getOrCreate()
+            
+            # Register Sedona functions
+            SedonaRegistrator.registerAll(spark)
+            
+            logger.info("Spark session with Sedona initialized successfully")
+            return spark
+        
+        def _register_geospatial_functions(self):
+            """Register custom geospatial functions for CRM analytics"""
+            
+            # Customer territory analysis functions
+            self.spark.sql("""
+                CREATE OR REPLACE FUNCTION calculate_territory_coverage(
+                    customer_points ARRAY<STRUCT<lat: DOUBLE, lon: DOUBLE>>,
+                    territory_polygon STRING
+                ) RETURNS DOUBLE
+                LANGUAGE SQL
+                AS $$
+                    SELECT COUNT(*) * 1.0 / SIZE(customer_points)
+                    FROM (
+                        SELECT explode(customer_points) as point
+                    ) t
+                    WHERE ST_Contains(ST_GeomFromWKT(territory_polygon), ST_Point(point.lon, point.lat))
+                $$
+            """)
+            
+            # Distance-based customer analysis
+            self.spark.sql("""
+                CREATE OR REPLACE FUNCTION calculate_customer_density(
+                    center_lat DOUBLE,
+                    center_lon DOUBLE,
+                    radius_km DOUBLE,
+                    customer_locations ARRAY<STRUCT<lat: DOUBLE, lon: DOUBLE>>
+                ) RETURNS INT
+                LANGUAGE SQL
+                AS $$
+                    SELECT COUNT(*)
+                    FROM (
+                        SELECT explode(customer_locations) as location
+                    ) t
+                    WHERE ST_Distance_Sphere(
+                        ST_Point(center_lon, center_lat),
+                        ST_Point(location.lon, location.lat)
+                    ) <= radius_km * 1000
+                $$
+            """)
+            
+            # Supply chain optimization functions
+            self.spark.sql("""
+                CREATE OR REPLACE FUNCTION calculate_optimal_warehouse_location(
+                    customer_locations ARRAY<STRUCT<lat: DOUBLE, lon: DOUBLE, weight: DOUBLE>>
+                ) RETURNS STRUCT<lat: DOUBLE, lon: DOUBLE>
+                LANGUAGE SQL
+                AS $$
+                    SELECT STRUCT(
+                        SUM(location.lat * location.weight) / SUM(location.weight) as lat,
+                        SUM(location.lon * location.weight) / SUM(location.weight) as lon
+                    )
+                    FROM (
+                        SELECT explode(customer_locations) as location
+                    ) t
+                $$
+            """)
+            
+            logger.info("Custom geospatial functions registered successfully")
+        
+        def _create_geospatial_views(self):
+            """Create geospatial views for CRM data"""
+            
+            # Customer geospatial view
+            self.spark.sql("""
+                CREATE OR REPLACE TEMPORARY VIEW customer_geospatial AS
+                SELECT 
+                    customer_id,
+                    customer_name,
+                    ST_Point(CAST(longitude AS DOUBLE), CAST(latitude AS DOUBLE)) as location,
+                    latitude,
+                    longitude,
+                    address,
+                    city,
+                    state,
+                    country,
+                    postal_code,
+                    customer_segment,
+                    total_spent,
+                    last_purchase_date,
+                    created_at
+                FROM delta.`s3a://lakehouse/customers`
+                WHERE latitude IS NOT NULL AND longitude IS NOT NULL
+            """)
+            
+            # Warehouse geospatial view
+            self.spark.sql("""
+                CREATE OR REPLACE TEMPORARY VIEW warehouse_geospatial AS
+                SELECT 
+                    warehouse_id,
+                    warehouse_name,
+                    ST_Point(CAST(longitude AS DOUBLE), CAST(latitude AS DOUBLE)) as location,
+                    latitude,
+                    longitude,
+                    address,
+                    city,
+                    state,
+                    country,
+                    capacity_total,
+                    capacity_used,
+                    warehouse_type,
+                    status
+                FROM delta.`s3a://lakehouse/warehouses`
+                WHERE latitude IS NOT NULL AND longitude IS NOT NULL
+            """)
+            
+            # Sales territory view
+            self.spark.sql("""
+                CREATE OR REPLACE TEMPORARY VIEW sales_territories AS
+                SELECT 
+                    territory_id,
+                    territory_name,
+                    ST_GeomFromWKT(territory_polygon) as territory_geom,
+                    sales_rep_id,
+                    sales_rep_name,
+                    target_revenue,
+                    actual_revenue,
+                    customer_count,
+                    created_at
+                FROM delta.`s3a://lakehouse/sales_territories`
+                WHERE territory_polygon IS NOT NULL
+            """)
+            
+            # Opportunity geospatial view
+            self.spark.sql("""
+                CREATE OR REPLACE TEMPORARY VIEW opportunity_geospatial AS
+                SELECT 
+                    o.opportunity_id,
+                    o.opportunity_name,
+                    o.value,
+                    o.probability,
+                    o.stage,
+                    o.close_date,
+                    c.location as customer_location,
+                    c.latitude as customer_lat,
+                    c.longitude as customer_lon,
+                    c.city as customer_city,
+                    c.state as customer_state,
+                    c.country as customer_country
+                FROM delta.`s3a://lakehouse/opportunities` o
+                JOIN customer_geospatial c ON o.customer_id = c.customer_id
+            """)
+            
+            logger.info("Geospatial views created successfully")
+        
+        def analyze_customer_distribution(self, region: Optional[str] = None) -> Dict[str, Any]:
+            """Analyze customer distribution across geographic regions"""
+            
+            base_query = """
+                SELECT 
+                    country,
+                    state,
+                    city,
+                    COUNT(*) as customer_count,
+                    SUM(total_spent) as total_revenue,
+                    AVG(total_spent) as avg_customer_value,
+                    ST_Centroid(ST_Union_Agg(location)) as region_center
+                FROM customer_geospatial
+            """
+            
+            if region:
+                base_query += f" WHERE country = '{region}' OR state = '{region}'"
+            
+            base_query += """
+                GROUP BY country, state, city
+                ORDER BY customer_count DESC
+            """
+            
+            result = self.spark.sql(base_query).collect()
+            
+            distribution_data = []
+            for row in result:
+                center_point = row['region_center']
+                distribution_data.append({
+                    'country': row['country'],
+                    'state': row['state'],
+                    'city': row['city'],
+                    'customer_count': row['customer_count'],
+                    'total_revenue': float(row['total_revenue']) if row['total_revenue'] else 0,
+                    'avg_customer_value': float(row['avg_customer_value']) if row['avg_customer_value'] else 0,
+                    'center_lat': center_point.y if center_point else None,
+                    'center_lon': center_point.x if center_point else None
+                })
+            
+            return {
+                'distribution': distribution_data,
+                'total_regions': len(distribution_data),
+                'analysis_timestamp': time.time()
+            }
+        
+        def analyze_territory_performance(self) -> Dict[str, Any]:
+            """Analyze sales territory performance with geospatial metrics"""
+            
+            query = """
+                SELECT 
+                    t.territory_id,
+                    t.territory_name,
+                    t.sales_rep_name,
+                    t.target_revenue,
+                    t.actual_revenue,
+                    t.customer_count,
+                    (t.actual_revenue / t.target_revenue * 100) as achievement_percentage,
+                    COUNT(c.customer_id) as customers_in_territory,
+                    SUM(c.total_spent) as territory_revenue,
+                    AVG(c.total_spent) as avg_customer_value_in_territory,
+                    ST_Area(t.territory_geom) as territory_area_sq_degrees,
+                    (COUNT(c.customer_id) / ST_Area(t.territory_geom)) as customer_density
+                FROM sales_territories t
+                LEFT JOIN customer_geospatial c ON ST_Contains(t.territory_geom, c.location)
+                GROUP BY t.territory_id, t.territory_name, t.sales_rep_name, 
+                         t.target_revenue, t.actual_revenue, t.customer_count, t.territory_geom
+                ORDER BY achievement_percentage DESC
+            """
+            
+            result = self.spark.sql(query).collect()
+            
+            territory_performance = []
+            for row in result:
+                territory_performance.append({
+                    'territory_id': row['territory_id'],
+                    'territory_name': row['territory_name'],
+                    'sales_rep_name': row['sales_rep_name'],
+                    'target_revenue': float(row['target_revenue']) if row['target_revenue'] else 0,
+                    'actual_revenue': float(row['actual_revenue']) if row['actual_revenue'] else 0,
+                    'achievement_percentage': float(row['achievement_percentage']) if row['achievement_percentage'] else 0,
+                    'customers_in_territory': row['customers_in_territory'],
+                    'territory_revenue': float(row['territory_revenue']) if row['territory_revenue'] else 0,
+                    'avg_customer_value': float(row['avg_customer_value_in_territory']) if row['avg_customer_value_in_territory'] else 0,
+                    'territory_area': float(row['territory_area_sq_degrees']) if row['territory_area_sq_degrees'] else 0,
+                    'customer_density': float(row['customer_density']) if row['customer_density'] else 0
+                })
+            
+            return {
+                'territory_performance': territory_performance,
+                'total_territories': len(territory_performance),
+                'analysis_timestamp': time.time()
+            }
+        
+        def optimize_warehouse_locations(self, max_warehouses: int = 5) -> Dict[str, Any]:
+            """Optimize warehouse locations based on customer distribution"""
+            
+            # Get customer locations with weights (total spent)
+            customer_query = """
+                SELECT 
+                    latitude,
+                    longitude,
+                    total_spent as weight,
+                    customer_id
+                FROM customer_geospatial
+                WHERE total_spent > 0
+            """
+            
+            customers_df = self.spark.sql(customer_query).toPandas()
+            
+            if customers_df.empty:
+                return {'error': 'No customer data available for optimization'}
+            
+            # Convert to GeoDataFrame
+            geometry = [Point(xy) for xy in zip(customers_df.longitude, customers_df.latitude)]
+            customers_gdf = gpd.GeoDataFrame(customers_df, geometry=geometry)
+            
+            # K-means clustering for warehouse locations
+            from sklearn.cluster import KMeans
+            
+            # Prepare data for clustering (weighted by customer value)
+            coords = customers_df[['latitude', 'longitude']].values
+            weights = customers_df['weight'].values
+            
+            # Normalize weights
+            weights = weights / weights.max()
+            
+            # Apply K-means clustering
+            kmeans = KMeans(n_clusters=min(max_warehouses, len(customers_df)), random_state=42)
+            clusters = kmeans.fit(coords, sample_weight=weights)
+            
+            # Calculate optimal warehouse locations
+            optimal_locations = []
+            for i, center in enumerate(clusters.cluster_centers_):
+                # Get customers in this cluster
+                cluster_customers = customers_df[kmeans.labels_ == i]
+                
+                # Calculate weighted centroid
+                total_weight = cluster_customers['weight'].sum()
+                weighted_lat = (cluster_customers['latitude'] * cluster_customers['weight']).sum() / total_weight
+                weighted_lon = (cluster_customers['longitude'] * cluster_customers['weight']).sum() / total_weight
+                
+                # Calculate coverage metrics
+                coverage_radius_km = self._calculate_coverage_radius(cluster_customers)
+                
+                optimal_locations.append({
+                    'warehouse_id': f'OPT_WH_{i+1:03d}',
+                    'latitude': float(weighted_lat),
+                    'longitude': float(weighted_lon),
+                    'customers_served': len(cluster_customers),
+                    'total_customer_value': float(cluster_customers['weight'].sum()),
+                    'avg_customer_value': float(cluster_customers['weight'].mean()),
+                    'coverage_radius_km': coverage_radius_km,
+                    'cluster_id': i
+                })
+            
+            return {
+                'optimal_locations': optimal_locations,
+                'total_customers_analyzed': len(customers_df),
+                'optimization_method': 'weighted_kmeans',
+                'analysis_timestamp': time.time()
+            }
+        
+        def _calculate_coverage_radius(self, customers_df: pd.DataFrame) -> float:
+            """Calculate coverage radius for a group of customers"""
+            if len(customers_df) < 2:
+                return 0.0
+            
+            # Calculate centroid
+            center_lat = customers_df['latitude'].mean()
+            center_lon = customers_df['longitude'].mean()
+            
+            # Calculate distances from centroid
+            distances = []
+            for _, customer in customers_df.iterrows():
+                # Haversine distance calculation
+                lat1, lon1 = np.radians(center_lat), np.radians(center_lon)
+                lat2, lon2 = np.radians(customer['latitude']), np.radians(customer['longitude'])
+                
+                dlat = lat2 - lat1
+                dlon = lon2 - lon1
+                
+                a = np.sin(dlat/2)**2 + np.cos(lat1) * np.cos(lat2) * np.sin(dlon/2)**2
+                c = 2 * np.arcsin(np.sqrt(a))
+                distance_km = 6371 * c  # Earth's radius in km
+                
+                distances.append(distance_km)
+            
+            # Return 95th percentile distance as coverage radius
+            return float(np.percentile(distances, 95))
+        
+        def analyze_opportunity_heatmap(self, region: Optional[str] = None) -> Dict[str, Any]:
+            """Generate opportunity heatmap data for geographic visualization"""
+            
+            base_query = """
+                SELECT 
+                    customer_lat,
+                    customer_lon,
+                    customer_city,
+                    customer_state,
+                    customer_country,
+                    COUNT(*) as opportunity_count,
+                    SUM(value) as total_opportunity_value,
+                    AVG(value) as avg_opportunity_value,
+                    AVG(probability) as avg_probability,
+                    SUM(value * probability / 100.0) as weighted_value
+                FROM opportunity_geospatial
+                WHERE customer_lat IS NOT NULL AND customer_lon IS NOT NULL
+            """
+            
+            if region:
+                base_query += f" AND (customer_country = '{region}' OR customer_state = '{region}')"
+            
+            base_query += """
+                GROUP BY customer_lat, customer_lon, customer_city, customer_state, customer_country
+                HAVING opportunity_count > 0
+                ORDER BY total_opportunity_value DESC
+            """
+            
+            result = self.spark.sql(base_query).collect()
+            
+            heatmap_data = []
+            for row in result:
+                heatmap_data.append({
+                    'latitude': float(row['customer_lat']),
+                    'longitude': float(row['customer_lon']),
+                    'city': row['customer_city'],
+                    'state': row['customer_state'],
+                    'country': row['customer_country'],
+                    'opportunity_count': row['opportunity_count'],
+                    'total_value': float(row['total_opportunity_value']) if row['total_opportunity_value'] else 0,
+                    'avg_value': float(row['avg_opportunity_value']) if row['avg_opportunity_value'] else 0,
+                    'avg_probability': float(row['avg_probability']) if row['avg_probability'] else 0,
+                    'weighted_value': float(row['weighted_value']) if row['weighted_value'] else 0,
+                    'intensity': float(row['total_opportunity_value']) if row['total_opportunity_value'] else 0
+                })
+            
+            # Normalize intensity for heatmap visualization
+            if heatmap_data:
+                max_value = max(point['intensity'] for point in heatmap_data)
+                for point in heatmap_data:
+                    point['normalized_intensity'] = point['intensity'] / max_value if max_value > 0 else 0
+            
+            return {
+                'heatmap_data': heatmap_data,
+                'total_locations': len(heatmap_data),
+                'analysis_timestamp': time.time()
+            }
+        
+        def calculate_travel_optimization(self, sales_rep_id: str, max_locations: int = 10) -> Dict[str, Any]:
+            """Calculate optimal travel route for sales representatives"""
+            
+            # Get sales rep's territory and customer locations
+            query = f"""
+                SELECT DISTINCT
+                    c.customer_id,
+                    c.customer_name,
+                    c.latitude,
+                    c.longitude,
+                    c.city,
+                    c.state,
+                    o.opportunity_id,
+                    o.value as opportunity_value,
+                    o.probability,
+                    o.stage
+                FROM customer_geospatial c
+                JOIN opportunity_geospatial o ON c.customer_id = o.customer_id
+                JOIN sales_territories t ON ST_Contains(t.territory_geom, c.location)
+                WHERE t.sales_rep_id = '{sales_rep_id}'
+                    AND o.stage IN ('Qualification', 'Proposal', 'Negotiation')
+                ORDER BY (o.value * o.probability / 100.0) DESC
+                LIMIT {max_locations}
+            """
+            
+            result = self.spark.sql(query).collect()
+            
+            if not result:
+                return {'error': f'No active opportunities found for sales rep {sales_rep_id}'}
+            
+            # Convert to list of locations
+            locations = []
+            for row in result:
+                locations.append({
+                    'customer_id': row['customer_id'],
+                    'customer_name': row['customer_name'],
+                    'latitude': float(row['latitude']),
+                    'longitude': float(row['longitude']),
+                    'city': row['city'],
+                    'state': row['state'],
+                    'opportunity_id': row['opportunity_id'],
+                    'opportunity_value': float(row['opportunity_value']) if row['opportunity_value'] else 0,
+                    'probability': row['probability'],
+                    'stage': row['stage'],
+                    'priority_score': float(row['opportunity_value'] * row['probability'] / 100.0) if row['opportunity_value'] and row['probability'] else 0
+                })
+            
+            # Simple nearest neighbor optimization for travel route
+            if len(locations) > 1:
+                optimized_route = self._optimize_travel_route(locations)
+            else:
+                optimized_route = locations
+            
+            # Calculate total travel distance
+            total_distance = self._calculate_total_distance(optimized_route)
+            
+            return {
+                'sales_rep_id': sales_rep_id,
+                'optimized_route': optimized_route,
+                'total_locations': len(optimized_route),
+                'estimated_travel_distance_km': total_distance,
+                'total_opportunity_value': sum(loc['opportunity_value'] for loc in optimized_route),
+                'weighted_opportunity_value': sum(loc['priority_score'] for loc in optimized_route),
+                'analysis_timestamp': time.time()
+            }
+        
+        def _optimize_travel_route(self, locations: List[Dict]) -> List[Dict]:
+            """Optimize travel route using nearest neighbor algorithm"""
+            if len(locations) <= 1:
+                return locations
+            
+            # Start with highest priority location
+            locations_sorted = sorted(locations, key=lambda x: x['priority_score'], reverse=True)
+            route = [locations_sorted[0]]
+            remaining = locations_sorted[1:]
+            
+            # Nearest neighbor algorithm
+            while remaining:
+                current_location = route[-1]
+                nearest_idx = 0
+                min_distance = float('inf')
+                
+                for i, location in enumerate(remaining):
+                    distance = self._calculate_distance(
+                        current_location['latitude'], current_location['longitude'],
+                        location['latitude'], location['longitude']
+                    )
+                    if distance < min_distance:
+                        min_distance = distance
+                        nearest_idx = i
+                
+                route.append(remaining.pop(nearest_idx))
+            
+            return route
+        
+        def _calculate_distance(self, lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+            """Calculate Haversine distance between two points"""
+            lat1, lon1, lat2, lon2 = map(np.radians, [lat1, lon1, lat2, lon2])
+            
+            dlat = lat2 - lat1
+            dlon = lon2 - lon1
+            
+            a = np.sin(dlat/2)**2 + np.cos(lat1) * np.cos(lat2) * np.sin(dlon/2)**2
+            c = 2 * np.arcsin(np.sqrt(a))
+            distance_km = 6371 * c  # Earth's radius in km
+            
+            return distance_km
+        
+        def _calculate_total_distance(self, route: List[Dict]) -> float:
+            """Calculate total distance for a route"""
+            if len(route) < 2:
+                return 0.0
+            
+            total_distance = 0.0
+            for i in range(len(route) - 1):
+                distance = self._calculate_distance(
+                    route[i]['latitude'], route[i]['longitude'],
+                    route[i+1]['latitude'], route[i+1]['longitude']
+                )
+                total_distance += distance
+            
+            return total_distance
+        
+        def get_geospatial_insights(self) -> Dict[str, Any]:
+            """Get comprehensive geospatial insights for the CRM system"""
+            
+            # Customer distribution insights
+            customer_insights = self.analyze_customer_distribution()
+            
+            # Territory performance insights
+            territory_insights = self.analyze_territory_performance()
+            
+            # Opportunity heatmap insights
+            opportunity_insights = self.analyze_opportunity_heatmap()
+            
+            # Warehouse optimization insights
+            warehouse_insights = self.optimize_warehouse_locations()
+            
+            return {
+                'customer_distribution': customer_insights,
+                'territory_performance': territory_insights,
+                'opportunity_heatmap': opportunity_insights,
+                'warehouse_optimization': warehouse_insights,
+                'analysis_timestamp': time.time()
+            }
+    
+    # FastAPI application
+    app = FastAPI(title="Apache Sedona Geospatial Analytics Service", version="1.0.0")
+    
+    # Initialize geospatial analytics service
+    geo_service = GeospatialAnalyticsService()
+    
+    class GeospatialAnalysisRequest(BaseModel):
+        analysis_type: str
+        region: Optional[str] = None
+        parameters: Optional[Dict[str, Any]] = None
+    
+    class TravelOptimizationRequest(BaseModel):
+        sales_rep_id: str
+        max_locations: int = 10
+    
+    @app.post("/analyze")
+    async def analyze_geospatial_data(request: GeospatialAnalysisRequest):
+        """Perform geospatial analysis"""
+        try:
+            if request.analysis_type == 'customer_distribution':
+                result = geo_service.analyze_customer_distribution(request.region)
+            elif request.analysis_type == 'territory_performance':
+                result = geo_service.analyze_territory_performance()
+            elif request.analysis_type == 'opportunity_heatmap':
+                result = geo_service.analyze_opportunity_heatmap(request.region)
+            elif request.analysis_type == 'warehouse_optimization':
+                max_warehouses = request.parameters.get('max_warehouses', 5) if request.parameters else 5
+                result = geo_service.optimize_warehouse_locations(max_warehouses)
+            elif request.analysis_type == 'comprehensive_insights':
+                result = geo_service.get_geospatial_insights()
+            else:
+                raise HTTPException(status_code=400, detail=f"Unknown analysis type: {request.analysis_type}")
+            
+            return result
+            
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+    
+    @app.post("/optimize-travel")
+    async def optimize_travel_route(request: TravelOptimizationRequest):
+        """Optimize travel route for sales representative"""
+        try:
+            result = geo_service.calculate_travel_optimization(
+                request.sales_rep_id, 
+                request.max_locations
+            )
+            return result
+            
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+    
+    @app.get("/insights")
+    async def get_comprehensive_insights():
+        """Get comprehensive geospatial insights"""
+        try:
+            result = geo_service.get_geospatial_insights()
+            return result
+            
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+    
+    @app.get("/health")
+    async def health_check():
+        return {"status": "healthy", "timestamp": time.time()}
+    
+    if __name__ == "__main__":
+        uvicorn.run(app, host="0.0.0.0", port=8080)
+
+  requirements.txt: |
+    pyspark==3.5.0
+    apache-sedona==1.5.0
+    geopandas==0.14.0
+    shapely==2.0.0
+    pandas==2.1.0
+    numpy==1.24.0
+    scikit-learn==1.3.0
+    fastapi==0.104.0
+    uvicorn==0.24.0
+    pydantic==2.4.0
+
+---
+# Apache Sedona Geospatial Analytics Service
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sedona-geospatial-analytics
+  namespace: enterprise-crm
+  labels:
+    app: sedona-geospatial-analytics
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: sedona-geospatial-analytics
+  template:
+    metadata:
+      labels:
+        app: sedona-geospatial-analytics
+    spec:
+      containers:
+      - name: sedona-analytics
+        image: apache/spark:v3.5.0
+        command:
+        - /bin/bash
+        - -c
+        - |
+          # Install Python dependencies
+          pip install --upgrade pip
+          pip install -r /config/requirements.txt
+          
+          # Download Sedona JARs
+          cd /opt/spark/jars
+          wget -q https://repo1.maven.org/maven2/org/apache/sedona/sedona-spark-shaded-3.4_2.12/1.5.0/sedona-spark-shaded-3.4_2.12-1.5.0.jar
+          wget -q https://repo1.maven.org/maven2/org/datasyslab/geotools-wrapper/1.5.0-28.2/geotools-wrapper-1.5.0-28.2.jar
+          
+          # Set Spark configuration
+          export SPARK_CONF_DIR=/config
+          
+          # Wait for Spark cluster to be ready
+          until curl -s http://spark-master:8080 > /dev/null; do
+            echo "Waiting for Spark cluster..."
+            sleep 5
+          done
+          
+          # Run geospatial analytics service
+          python /config/geospatial-analytics-service.py
+        env:
+        - name: SPARK_MASTER_URL
+          value: "spark://spark-master:7077"
+        - name: PYSPARK_PYTHON
+          value: "python3"
+        - name: PYSPARK_DRIVER_PYTHON
+          value: "python3"
+        - name: SPARK_CONF_DIR
+          value: "/config"
+        volumeMounts:
+        - name: config
+          mountPath: /config
+        ports:
+        - containerPort: 8080
+          name: http
+        - containerPort: 4040
+          name: spark-ui
+        resources:
+          requests:
+            memory: "4Gi"
+            cpu: "2000m"
+          limits:
+            memory: "8Gi"
+            cpu: "4000m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 120
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 60
+          periodSeconds: 10
+      volumes:
+      - name: config
+        configMap:
+          name: sedona-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: sedona-geospatial-analytics
+  namespace: enterprise-crm
+  labels:
+    app: sedona-geospatial-analytics
+spec:
+  ports:
+  - port: 8080
+    targetPort: 8080
+    name: http
+  - port: 4040
+    targetPort: 4040
+    name: spark-ui
+  selector:
+    app: sedona-geospatial-analytics
+  type: ClusterIP
+---
+# Geospatial Data Processing Job
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: geospatial-data-processing
+  namespace: enterprise-crm
+spec:
+  schedule: "0 2 * * *"  # Daily at 2 AM
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: geospatial-processor
+            image: apache/spark:v3.5.0
+            command:
+            - /bin/bash
+            - -c
+            - |
+              # Install dependencies
+              pip install --upgrade pip
+              pip install pyspark apache-sedona geopandas pandas
+              
+              # Download Sedona JARs
+              cd /opt/spark/jars
+              wget -q https://repo1.maven.org/maven2/org/apache/sedona/sedona-spark-shaded-3.4_2.12/1.5.0/sedona-spark-shaded-3.4_2.12-1.5.0.jar
+              wget -q https://repo1.maven.org/maven2/org/datasyslab/geotools-wrapper/1.5.0-28.2/geotools-wrapper-1.5.0-28.2.jar
+              
+              # Run geospatial data processing
+              python /scripts/process-geospatial-data.py
+            env:
+            - name: SPARK_MASTER_URL
+              value: "spark://spark-master:7077"
+            volumeMounts:
+            - name: scripts
+              mountPath: /scripts
+            resources:
+              requests:
+                memory: "2Gi"
+                cpu: "1000m"
+              limits:
+                memory: "4Gi"
+                cpu: "2000m"
+          volumes:
+          - name: scripts
+            configMap:
+              name: sedona-config
+          restartPolicy: OnFailure
+---
+# HPA for Sedona Analytics Service
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: sedona-analytics-hpa
+  namespace: enterprise-crm
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: sedona-geospatial-analytics
+  minReplicas: 2
+  maxReplicas: 6
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+

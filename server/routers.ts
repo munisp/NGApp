@@ -56,6 +56,12 @@ import { cardProcessingRouter } from './routers/cardProcessingRouter';
 import { governmentPaymentsRouter } from './routers/governmentPaymentsRouter';
 import { openBankingRouter } from './routers/openBankingRouter';
 import { middlewareRouter } from './routers/middlewareRouter';
+import { agentCashRouter } from './routers/agentCashRouter';
+import { billPaymentRouter } from './routers/billPaymentRouter';
+import { mobileMoneyRouter } from './routers/mobileMoneyRouter';
+import { reconciliationRouter } from './routers/reconciliationRouter';
+import { fxRiskRouter } from './routers/fxRiskRouter';
+import { crmRouter } from './routers/crmRouter';
 import { startRateAlertMonitor, getRateAlertMonitorStatus } from './jobs/rateAlertMonitor';
 import { exportToCSV, exportToExcel, exportToPDF, formatRemittanceForExport, getRemittanceExportColumns, formatRateAlertsForExport, getRateAlertExportColumns } from './services/exportService';
 
@@ -131,6 +137,12 @@ export const appRouter = router({
     governmentPayments: governmentPaymentsRouter,
     openBanking: openBankingRouter,
     middleware: middlewareRouter,
+    agentCash: agentCashRouter,
+    billPayment: billPaymentRouter,
+    mobileMoney: mobileMoneyRouter,
+    reconciliation: reconciliationRouter,
+    fxRisk: fxRiskRouter,
+    crm: crmRouter,
   
     // Rate Alerts
   rateAlerts: router({

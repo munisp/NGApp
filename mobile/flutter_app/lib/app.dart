@@ -17,6 +17,22 @@ import 'screens/fees_screen.dart';
 import 'screens/audit_log_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/outbound_remittance_screen.dart';
+import 'screens/bill_payment_screen.dart';
+import 'screens/mobile_money_screen.dart';
+import 'screens/agent_cash_screen.dart';
+import 'screens/card_processing_screen.dart';
+import 'screens/domestic_payments_screen.dart';
+import 'screens/government_payments_screen.dart';
+import 'screens/trade_payments_screen.dart';
+import 'screens/open_banking_screen.dart';
+import 'screens/crm_screen.dart';
+import 'screens/analytics_screen.dart';
+import 'screens/rate_alerts_screen.dart';
+import 'screens/sanctions_screening_screen.dart';
+import 'screens/reconciliation_screen.dart';
+import 'screens/fx_risk_screen.dart';
+import 'screens/notifications_screen.dart';
+import 'screens/inbound_remittance_screen.dart';
 
 final GoRouter _router = GoRouter(
   initialLocation: '/login',
@@ -40,6 +56,22 @@ final GoRouter _router = GoRouter(
         GoRoute(path: '/audit-log', builder: (_, __) => const AuditLogScreen()),
         GoRoute(path: '/settings', builder: (_, __) => const SettingsScreen()),
         GoRoute(path: '/outbound', builder: (_, __) => const OutboundRemittanceScreen()),
+        GoRoute(path: '/inbound', builder: (_, __) => const InboundRemittanceScreen()),
+        GoRoute(path: '/bill-payments', builder: (_, __) => const BillPaymentScreen()),
+        GoRoute(path: '/mobile-money', builder: (_, __) => const MobileMoneyScreen()),
+        GoRoute(path: '/agent-cash', builder: (_, __) => const AgentCashScreen()),
+        GoRoute(path: '/card-processing', builder: (_, __) => const CardProcessingScreen()),
+        GoRoute(path: '/domestic-payments', builder: (_, __) => const DomesticPaymentsScreen()),
+        GoRoute(path: '/government-payments', builder: (_, __) => const GovernmentPaymentsScreen()),
+        GoRoute(path: '/trade-payments', builder: (_, __) => const TradePaymentsScreen()),
+        GoRoute(path: '/open-banking', builder: (_, __) => const OpenBankingScreen()),
+        GoRoute(path: '/crm', builder: (_, __) => const CrmScreen()),
+        GoRoute(path: '/analytics', builder: (_, __) => const AnalyticsScreen()),
+        GoRoute(path: '/rate-alerts', builder: (_, __) => const RateAlertsScreen()),
+        GoRoute(path: '/sanctions', builder: (_, __) => const SanctionsScreeningScreen()),
+        GoRoute(path: '/reconciliation', builder: (_, __) => const ReconciliationScreen()),
+        GoRoute(path: '/fx-risk', builder: (_, __) => const FxRiskScreen()),
+        GoRoute(path: '/notifications', builder: (_, __) => const NotificationsScreen()),
       ],
     ),
   ],

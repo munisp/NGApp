@@ -1,0 +1,85 @@
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: banking-mqtt
+  namespace: banking-crm
+spec:
+  type: bindings.mqtt
+  version: v1
+  metadata:
+  - name: url
+    value: "tcp://mqtt-broker:1883"
+  - name: qos
+    value: "1"
+  - name: retain
+    value: "false"
+  - name: cleanSession
+    value: "true"
+  - name: clientID
+    value: "banking-crm-mqtt-client"
+  - name: username
+    secretKeyRef:
+      name: mqtt-secrets
+      key: username
+  - name: password
+    secretKeyRef:
+      name: mqtt-secrets
+      key: password
+  - name: topic
+    value: "banking/pos/transactions"
+scopes:
+  - banking-service
+  - transaction-service
+---
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: banking-email
+  namespace: banking-crm
+spec:
+  type: bindings.smtp
+  version: v1
+  metadata:
+  - name: host
+    value: "smtp.banking-domain.com"
+  - name: port
+    value: "587"
+  - name: user
+    secretKeyRef:
+      name: smtp-secrets
+      key: username
+  - name: password
+    secretKeyRef:
+      name: smtp-secrets
+      key: password
+  - name: skipTLSVerify
+    value: "false"
+  - name: emailFrom
+    value: "notifications@banking-domain.com"
+  - name: emailFromName
+    value: "Banking Notifications"
+scopes:
+  - notification-service
+---
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: banking-sms
+  namespace: banking-crm
+spec:
+  type: bindings.twilio.sms
+  version: v1
+  metadata:
+  - name: accountSid
+    secretKeyRef:
+      name: twilio-secrets
+      key: account-sid
+  - name: authToken
+    secretKeyRef:
+      name: twilio-secrets
+      key: auth-token
+  - name: fromNumber
+    value: "+1234567890"
+scopes:
+  - notification-service
+

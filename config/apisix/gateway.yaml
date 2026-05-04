@@ -1,0 +1,599 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: apisix-gateway
+  namespace: enterprise-crm
+  labels:
+    app.kubernetes.io/name: apisix
+    app.kubernetes.io/component: gateway
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: apisix
+      app.kubernetes.io/component: gateway
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: apisix
+        app.kubernetes.io/component: gateway
+    spec:
+      containers:
+        - name: apisix
+          image: apache/apisix:3.6.0-debian
+          ports:
+            - containerPort: 9080
+              name: http
+            - containerPort: 9443
+              name: https
+            - containerPort: 9091
+              name: admin
+            - containerPort: 9092
+              name: prometheus
+          env:
+            - name: APISIX_STAND_ALONE
+              value: "true"
+          volumeMounts:
+            - name: apisix-config
+              mountPath: /usr/local/apisix/conf/config.yaml
+              subPath: config.yaml
+            - name: apisix-apisix
+              mountPath: /usr/local/apisix/conf/apisix.yaml
+              subPath: apisix.yaml
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "250m"
+            limits:
+              memory: "1Gi"
+              cpu: "500m"
+          livenessProbe:
+            httpGet:
+              path: /apisix/status
+              port: 9091
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /apisix/status
+              port: 9091
+            initialDelaySeconds: 10
+            periodSeconds: 5
+      volumes:
+        - name: apisix-config
+          configMap:
+            name: apisix-config
+        - name: apisix-apisix
+          configMap:
+            name: apisix-apisix
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: apisix-gateway
+  namespace: enterprise-crm
+  labels:
+    app.kubernetes.io/name: apisix
+    app.kubernetes.io/component: gateway
+spec:
+  type: LoadBalancer
+  ports:
+    - name: http
+      port: 80
+      targetPort: 9080
+      protocol: TCP
+    - name: https
+      port: 443
+      targetPort: 9443
+      protocol: TCP
+    - name: admin
+      port: 9091
+      targetPort: 9091
+      protocol: TCP
+  selector:
+    app.kubernetes.io/name: apisix
+    app.kubernetes.io/component: gateway
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: apisix-config
+  namespace: enterprise-crm
+  labels:
+    app.kubernetes.io/name: apisix
+    app.kubernetes.io/component: config
+data:
+  config.yaml: |
+    apisix:
+      node_listen: 9080
+      enable_ipv6: false
+      enable_control: true
+      control:
+        ip: "0.0.0.0"
+        port: 9092
+      
+      proxy_cache:
+        cache_ttl: 10s
+        zones:
+          - name: "disk_cache_one"
+            memory_size: 50m
+            disk_size: 1G
+            disk_path: "/tmp/disk_cache_one"
+            cache_levels: "1:2"
+      
+      router:
+        http: 'radixtree_uri'
+        ssl: 'radixtree_sni'
+      
+      stream_proxy:
+        tcp:
+          - addr: 9100
+        udp:
+          - addr: 9200
+      
+      dns_resolver:
+        - 127.0.0.1
+        - 8.8.8.8
+      dns_resolver_valid: 30
+      resolver_timeout: 5
+      
+      ssl:
+        enable: true
+        listen:
+          - port: 9443
+            enable_http2: true
+        ssl_protocols: "TLSv1.2 TLSv1.3"
+        ssl_ciphers: "ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384"
+        ssl_session_tickets: false
+        
+      allow_admin:
+        - 127.0.0.0/24
+        - 0.0.0.0/0
+      
+      port_admin: 9091
+      
+      real_ip_header: "X-Real-IP"
+      real_ip_from:
+        - 127.0.0.1
+        - 'unix:'
+      
+      delete_uri_tail_slash: false
+    
+    nginx_config:
+      error_log: "/dev/stderr"
+      error_log_level: "warn"
+      worker_processes: "auto"
+      enable_cpu_affinity: true
+      worker_rlimit_nofile: 20480
+      worker_shutdown_timeout: "240s"
+      
+      event:
+        worker_connections: 10620
+        use: epoll
+        multi_accept: on
+        accept_mutex: off
+      
+      http:
+        access_log: "/dev/stdout"
+        keepalive_timeout: "60s"
+        client_header_timeout: "60s"
+        client_body_timeout: "60s"
+        send_timeout: "10s"
+        underscores_in_headers: "on"
+        real_ip_header: "X-Real-IP"
+        real_ip_from:
+          - 127.0.0.1
+          - 'unix:'
+        real_ip_recursive: "off"
+        
+        lua_shared_dict:
+          internal-status: 10m
+          plugin-limit-req: 10m
+          plugin-limit-count: 10m
+          prometheus-metrics: 10m
+          plugin-limit-conn: 10m
+          upstream-healthcheck: 10m
+          worker-events: 10m
+          lrucache-lock: 10m
+          balancer-ewma: 10m
+          balancer-ewma-locks: 10m
+          balancer-ewma-last-touched-at: 10m
+          plugin-limit-count-redis-cluster-slot-lock: 1m
+          tracing_buffer: 10m
+          plugin-api-breaker: 10m
+          etcd-cluster-health-check: 10m
+          discovery: 1m
+          jwks: 1m
+          introspection: 10m
+          access-tokens: 1m
+          ext-plugin: 1m
+    
+    etcd:
+      host:
+        - "http://etcd:2379"
+      prefix: "/apisix"
+      timeout: 30
+      
+    plugins:
+      - real-ip
+      - ai
+      - client-control
+      - proxy-control
+      - request-id
+      - zipkin
+      - request-validation
+      - chaitin-waf
+      - multi-auth
+      - key-auth
+      - jwt-auth
+      - basic-auth
+      - authz-keycloak
+      - wolf-rbac
+      - ldap-auth
+      - hmac-auth
+      - authz-casbin
+      - authz-casdoor
+      - consumer-restriction
+      - cors
+      - uri-blocker
+      - ip-restriction
+      - ua-restriction
+      - referer-restriction
+      - csrf
+      - public-api
+      - gm
+      - server-info
+      - control
+      - batch-requests
+      - redirect
+      - response-rewrite
+      - degraphql
+      - kafka-logger
+      - rocketmq-logger
+      - tcp-logger
+      - kafka-proxy
+      - prometheus
+      - node-status
+      - datadog
+      - echo
+      - loggly
+      - http-logger
+      - splunk-hec-logging
+      - skywalking-logger
+      - google-cloud-logging
+      - sls-logger
+      - file-logger
+      - clickhouse-logger
+      - syslog
+      - fault-injection
+      - mocking
+      - limit-req
+      - limit-count
+      - limit-conn
+      - proxy-cache
+      - request-mirror
+      - api-breaker
+      - traffic-split
+      - workflow
+      - proxy-rewrite
+      - body-transformer
+      - openid-connect
+      - cas-auth
+      - forward-auth
+      - opa
+      - authz-keycloak
+      - wolf-rbac
+      - ldap-auth
+      - hmac-auth
+      - authz-casbin
+      - authz-casdoor
+      - ext-plugin-pre-req
+      - ext-plugin-post-req
+      - ext-plugin-post-resp
+    
+    stream_plugins:
+      - mqtt-proxy
+      - ip-restriction
+      - limit-conn
+    
+    plugin_attr:
+      log-rotate:
+        interval: 3600
+        max_kept: 168
+        enable_compression: false
+      
+      skywalking:
+        service_name: APISIX
+        service_instance_name: "APISIX Instance Name"
+        endpoint_addr: http://127.0.0.1:12800
+      
+      prometheus:
+        export_addr:
+          ip: "0.0.0.0"
+          port: 9091
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: apisix-apisix
+  namespace: enterprise-crm
+  labels:
+    app.kubernetes.io/name: apisix
+    app.kubernetes.io/component: config
+data:
+  apisix.yaml: |
+    routes:
+      - id: customer-service-route
+        name: "Customer Service API"
+        desc: "Routes for customer management service"
+        uri: "/api/customers/*"
+        methods:
+          - GET
+          - POST
+          - PUT
+          - DELETE
+        upstream:
+          type: roundrobin
+          nodes:
+            "customer-service.enterprise-crm.svc.cluster.local:8080": 1
+        plugins:
+          cors:
+            allow_origins: "**"
+            allow_methods: "**"
+            allow_headers: "**"
+            expose_headers: "**"
+            max_age: 5
+            allow_credential: false
+          key-auth: {}
+          prometheus:
+            prefer_name: true
+          request-id:
+            include_in_response: true
+          limit-req:
+            rate: 500
+            burst: 1000
+            rejected_code: 429
+            nodelay: false
+          api-breaker:
+            break_response_code: 502
+            max_breaker_sec: 300
+            unhealthy:
+              http_statuses:
+                - 500
+                - 502
+                - 503
+              failures: 3
+            healthy:
+              http_statuses:
+                - 200
+              successes: 3
+      
+      - id: crm-core-service-route
+        name: "CRM Core Service API"
+        desc: "Routes for CRM core functionality"
+        uri: "/api/crm/*"
+        methods:
+          - GET
+          - POST
+          - PUT
+          - DELETE
+        upstream:
+          type: roundrobin
+          nodes:
+            "crm-core-service.enterprise-crm.svc.cluster.local:8080": 1
+        plugins:
+          cors:
+            allow_origins: "**"
+            allow_methods: "**"
+            allow_headers: "**"
+            expose_headers: "**"
+            max_age: 5
+            allow_credential: false
+          key-auth: {}
+          prometheus:
+            prefer_name: true
+          request-id:
+            include_in_response: true
+          limit-req:
+            rate: 300
+            burst: 600
+            rejected_code: 429
+            nodelay: false
+      
+      - id: inventory-service-route
+        name: "Inventory Service API"
+        desc: "Routes for inventory management"
+        uri: "/api/inventory/*"
+        methods:
+          - GET
+          - POST
+          - PUT
+          - DELETE
+        upstream:
+          type: roundrobin
+          nodes:
+            "inventory-service.enterprise-crm.svc.cluster.local:8080": 1
+        plugins:
+          cors:
+            allow_origins: "**"
+            allow_methods: "**"
+            allow_headers: "**"
+            expose_headers: "**"
+            max_age: 5
+            allow_credential: false
+          key-auth: {}
+          prometheus:
+            prefer_name: true
+          request-id:
+            include_in_response: true
+      
+      - id: analytics-service-route
+        name: "Analytics Service API"
+        desc: "Routes for analytics and reporting"
+        uri: "/api/analytics/*"
+        methods:
+          - GET
+          - POST
+        upstream:
+          type: roundrobin
+          nodes:
+            "analytics-service.enterprise-crm.svc.cluster.local:8080": 1
+        plugins:
+          cors:
+            allow_origins: "**"
+            allow_methods: "**"
+            allow_headers: "**"
+            expose_headers: "**"
+            max_age: 5
+            allow_credential: false
+          key-auth: {}
+          prometheus:
+            prefer_name: true
+          request-id:
+            include_in_response: true
+          limit-req:
+            rate: 100
+            burst: 200
+            rejected_code: 429
+            nodelay: false
+      
+      - id: ai-services-route
+        name: "AI/ML Services API"
+        desc: "Routes for AI and machine learning services"
+        uri: "/api/ai/*"
+        methods:
+          - GET
+          - POST
+        upstream:
+          type: roundrobin
+          nodes:
+            "customer-intelligence-service.enterprise-crm.svc.cluster.local:8000": 1
+            "data-quality-service.enterprise-crm.svc.cluster.local:8000": 1
+            "recommendation-service.enterprise-crm.svc.cluster.local:8000": 1
+            "geospatial-service.enterprise-crm.svc.cluster.local:8000": 1
+        plugins:
+          cors:
+            allow_origins: "**"
+            allow_methods: "**"
+            allow_headers: "**"
+            expose_headers: "**"
+            max_age: 5
+            allow_credential: false
+          key-auth: {}
+          prometheus:
+            prefer_name: true
+          request-id:
+            include_in_response: true
+          limit-req:
+            rate: 50
+            burst: 100
+            rejected_code: 429
+            nodelay: false
+    
+    upstreams:
+      - id: customer-service-upstream
+        name: "Customer Service Upstream"
+        desc: "Load balancer for customer service"
+        type: roundrobin
+        scheme: http
+        discovery_type: dns
+        pass_host: pass
+        nodes:
+          "customer-service.enterprise-crm.svc.cluster.local:8080": 1
+        timeout:
+          connect: 6
+          send: 6
+          read: 6
+        keepalive_pool:
+          size: 320
+          idle_timeout: 60
+          requests: 1000
+        checks:
+          active:
+            timeout: 5
+            http_path: "/health"
+            healthy:
+              interval: 2
+              successes: 1
+            unhealthy:
+              interval: 1
+              http_failures: 2
+          passive:
+            healthy:
+              http_statuses:
+                - 200
+                - 201
+                - 202
+                - 203
+                - 204
+                - 205
+                - 206
+                - 300
+                - 301
+                - 302
+                - 303
+                - 304
+                - 307
+                - 308
+              successes: 3
+            unhealthy:
+              http_statuses:
+                - 429
+                - 500
+                - 502
+                - 503
+                - 504
+                - 505
+              http_failures: 3
+              tcp_failures: 3
+              timeout: 7
+    
+    consumers:
+      - username: api-client
+        desc: "API client for external integrations"
+        plugins:
+          key-auth:
+            key: "enterprise-crm-api-key-2024"
+          limit-req:
+            rate: 1000
+            burst: 2000
+            rejected_code: 429
+          limit-count:
+            count: 10000
+            time_window: 3600
+            rejected_code: 429
+    
+    global_rules:
+      - id: global-limit
+        plugins:
+          limit-req:
+            rate: 2000
+            burst: 4000
+            rejected_code: 429
+            nodelay: false
+          prometheus:
+            prefer_name: true
+          zipkin:
+            endpoint: "http://jaeger-collector.monitoring.svc.cluster.local:9411/api/v2/spans"
+            sample_ratio: 0.001
+            service_name: "APISIX-Gateway"
+            server_addr: "apisix-gateway.enterprise-crm.svc.cluster.local:9080"
+    
+    plugin_metadata:
+      - id: file-logger
+        log_format:
+          host: "$host"
+          "@timestamp": "$time_iso8601"
+          client_ip: "$remote_addr"
+          client_user_agent: "$http_user_agent"
+          request_method: "$request_method"
+          request_uri: "$request_uri"
+          request_length: "$request_length"
+          response_status: "$status"
+          response_length: "$body_bytes_sent"
+          response_time: "$request_time"
+          upstream_addr: "$upstream_addr"
+          upstream_status: "$upstream_status"
+          upstream_response_time: "$upstream_response_time"
+          upstream_header_time: "$upstream_header_time"
+
