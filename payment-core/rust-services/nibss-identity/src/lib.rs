@@ -1,5 +1,3 @@
-pub mod middleware_integration;
-
 //! NIBSS Identity & Transaction Services
 //!
 //! High-performance Rust implementation for:
@@ -11,6 +9,8 @@ pub mod middleware_integration;
 //!
 //! All operations are designed for sub-millisecond response times using
 //! lock-free concurrent data structures.
+
+pub mod middleware_integration;
 
 use dashmap::DashMap;
 use serde::{Deserialize, Serialize};
