@@ -18,7 +18,7 @@ function getPool(): InstanceType<typeof Pool> {
     _pool = new Pool({
       connectionString:
         process.env.NDSEP_PG_URL ??
-        process.env.LOCAL_DATABASE_URL ?? process.env.NDSEP_PG_URL ?? "postgresql://ndsep_user:changeme@127.0.0.1:5432/ndsep_db",
+        process.env.LOCAL_DATABASE_URL ?? process.env.NDSEP_PG_URL ?? "postgresql://ndsep_user:ndsep_secure_2026@127.0.0.1:5432/ndsep_db",
       ssl: process.env.DATABASE_URL?.includes('sslmode=require') || process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
     });
   }
@@ -26,7 +26,12 @@ function getPool(): InstanceType<typeof Pool> {
 }
 async function query(sql: string, params: unknown[] = []): Promise<any[]> {
   const pool = getPool();
-  const { rows } = await pool.query(sql, params);
+  // Convert MySQL-style ? placeholders to PostgreSQL $1, $2, ...
+  let idx = 0;
+  const pgSql = sql.replace(/\?/g, () => `$${++idx}`);
+  // Convert LIKE to ILIKE for case-insensitive search in PostgreSQL
+  const finalSql = pgSql.replace(/\bLIKE\b/g, 'ILIKE');
+  const { rows } = await pool.query(finalSql, params);
   return rows;
 }
 
