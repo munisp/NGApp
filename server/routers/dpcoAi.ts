@@ -125,6 +125,7 @@ Assess compliance against all 15 NDPA 2023 controls. Return a JSON object with a
         [input.engagementId, result.overallScore, result.executiveSummary, JSON.stringify(result.ratings)]
       );
 
+      emitMutationEvent("ndsep.ai.mutation", { action: "dpcoAi", ts: new Date().toISOString() }).catch(() => {});
       return {
         success: true,
         overallScore: result.overallScore,
@@ -170,6 +171,7 @@ Assess compliance against all 15 NDPA 2023 controls. Return a JSON object with a
     .mutation(async ({ input }) => {
       const ratingsText = input.controlRatings.map(r => {
         const control = NDPA_CONTROLS.find(c => c.id === r.controlId);
+        emitMutationEvent("ndsep.ai.mutation", { action: "dpcoAi", ts: new Date().toISOString() }).catch(() => {});
         return `${r.controlId} (${control?.name || r.controlId}): ${r.rating}${r.notes ? ` — ${r.notes}` : ""}`;
       }).join("\n");
 
@@ -251,6 +253,7 @@ Return as JSON with these section keys.`;
         ]
       );
 
+      emitMutationEvent("ndsep.ai.mutation", { action: "dpcoAi", ts: new Date().toISOString() }).catch(() => {});
       return { success: true, narrative };
     }),
 
@@ -368,6 +371,7 @@ Provide a risk score (0-100), risk level, primary risk factors, and recommended 
         ]
       );
 
+      emitMutationEvent("ndsep.ai.mutation", { action: "dpcoAi", ts: new Date().toISOString() }).catch(() => {});
       return { success: true, prediction };
     }),
 

@@ -190,6 +190,7 @@ export const securityAuditRouter = router({
       ]
     );
 
+    emitMutationEvent("ndsep.security.mutation", { action: "production9Features", ts: new Date().toISOString() }).catch(() => {});
     return {
       ...score,
       scannedAt: new Date().toISOString(),
@@ -322,6 +323,7 @@ export const anomalyAlertsRouter = router({
       });
     }
 
+    emitMutationEvent("ndsep.security.mutation", { action: "production9Features", ts: new Date().toISOString() }).catch(() => {});
     return { detected: alerts.length, alerts };
   }),
 
@@ -500,6 +502,7 @@ export const dsarLifecycleRouter = router({
       });
     }
 
+    emitMutationEvent("ndsep.security.mutation", { action: "production9Features", ts: new Date().toISOString() }).catch(() => {});
     return { escalated: overdue.length };
   }),
 
@@ -907,6 +910,7 @@ export const userManagementRouter = router({
           JSON.stringify({ newRole: input.role }),
         ]
       );
+      emitMutationEvent("ndsep.security.mutation", { action: "production9Features", ts: new Date().toISOString() }).catch(() => {});
       return { ok: true };
     }),
 
@@ -923,6 +927,7 @@ export const userManagementRouter = router({
          VALUES ('deactivate_user', 'user', $1, $2, $3, NOW())`,
         [String(input.userId), ctx.user.id, JSON.stringify({ action: "deactivate" })]
       );
+      emitMutationEvent("ndsep.security.mutation", { action: "production9Features", ts: new Date().toISOString() }).catch(() => {});
       return { ok: true };
     }),
 
@@ -1136,6 +1141,7 @@ export const nipReconciliationRouter = router({
         [targetDate, input.thresholdAmount]
       );
 
+      emitMutationEvent("ndsep.security.mutation", { action: "production9Features", ts: new Date().toISOString() }).catch(() => {});
       return { flagged: flagged.length, transactions: flagged };
     }),
 });
@@ -1187,6 +1193,7 @@ export const transferAutoApprovalRouter = router({
           input.autoApprove,
         ]
       );
+      emitMutationEvent("ndsep.security.mutation", { action: "production9Features", ts: new Date().toISOString() }).catch(() => {});
       return { ok: true };
     }),
 
@@ -1224,6 +1231,7 @@ export const transferAutoApprovalRouter = router({
       }
     }
 
+    emitMutationEvent("ndsep.security.mutation", { action: "production9Features", ts: new Date().toISOString() }).catch(() => {});
     return { autoApproved, autoRejected, totalProcessed: pending.length };
   }),
 });
@@ -1338,6 +1346,7 @@ export const transferApprovalRulesRouter = router({
          VALUES ($1, $2, $3, $4, $5) RETURNING *`,
         [input.destinationCountry, input.requiresDpa ?? true, input.requiresAdequacyDecision ?? false, input.autoApprove ?? false, input.maxVolumeGb ?? null]
       ).catch(() => []);
+      emitMutationEvent("ndsep.security.mutation", { action: "production9Features", ts: new Date().toISOString() }).catch(() => {});
       return rows[0];
     }),
   update: adminProcedure
@@ -1362,12 +1371,14 @@ export const transferApprovalRulesRouter = router({
         `UPDATE transfer_approval_rules SET ${sets.join(', ')}, updated_at = NOW() WHERE id = $${vals.length} RETURNING *`,
         vals
       ).catch(() => []);
+      emitMutationEvent("ndsep.security.mutation", { action: "production9Features", ts: new Date().toISOString() }).catch(() => {});
       return rows[0];
     }),
   delete: adminProcedure
     .input(z.object({ id: z.number().int().positive() }))
     .mutation(async ({ input }) => {
       await exec(`DELETE FROM transfer_approval_rules WHERE id = $1`, [input.id]).catch(() => null);
+      emitMutationEvent("ndsep.security.mutation", { action: "production9Features", ts: new Date().toISOString() }).catch(() => {});
       return { success: true };
     }),
 });

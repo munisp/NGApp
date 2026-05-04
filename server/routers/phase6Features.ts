@@ -137,6 +137,7 @@ export const emailDigestRouter = router({
          ON DUPLICATE KEY UPDATE active = 1, email = ?, updated_at = ?`,
         [ctx.user.id, email, now, now + 7 * 24 * 60 * 60 * 1000, email, now]
       );
+      emitMutationEvent("ndsep.compliance.mutation", { action: "phase6Features", ts: new Date().toISOString() }).catch(() => {});
       return { success: true, email, nextSendAt: now + 7 * 24 * 60 * 60 * 1000 };
     }),
 
@@ -146,6 +147,7 @@ export const emailDigestRouter = router({
       `UPDATE email_digest_subscriptions SET active = 0, updated_at = ? WHERE user_id = ?`,
       [Date.now(), ctx.user.id]
     );
+    emitMutationEvent("ndsep.compliance.mutation", { action: "phase6Features", ts: new Date().toISOString() }).catch(() => {});
     return { success: true };
   }),
 
@@ -171,6 +173,7 @@ export const emailDigestRouter = router({
       [ctx.user.id]
     );
     if (subs.length === 0) {
+      emitMutationEvent("ndsep.compliance.mutation", { action: "phase6Features", ts: new Date().toISOString() }).catch(() => {});
       return { success: false, message: "Not subscribed to digest. Please subscribe first." };
     }
     const content = await buildDigestContent(ctx.user.id);
@@ -180,6 +183,7 @@ export const emailDigestRouter = router({
       `UPDATE email_digest_subscriptions SET last_sent_at = ?, next_send_at = ?, updated_at = ? WHERE user_id = ?`,
       [now, now + 7 * 24 * 60 * 60 * 1000, now, ctx.user.id]
     );
+    emitMutationEvent("ndsep.compliance.mutation", { action: "phase6Features", ts: new Date().toISOString() }).catch(() => {});
     return { success: true, sent, email: subs[0].email, previewContent: content.slice(0, 500) };
   }),
 
@@ -200,6 +204,7 @@ export const emailDigestRouter = router({
         [now, now + 7 * 24 * 60 * 60 * 1000, now, sub.id]
       );
     }
+    emitMutationEvent("ndsep.compliance.mutation", { action: "phase6Features", ts: new Date().toISOString() }).catch(() => {});
     return { success: true, sent, failed, total: subs.length };
   }),
 });
@@ -246,6 +251,7 @@ export const onboardingChecklistRouter = router({
           content: `User ${ctx.user.name ?? ctx.user.id} (ID: ${ctx.user.id}) has completed all ${ONBOARDING_STEPS.length} onboarding steps on NDSEP.`,
         }).catch(() => {});
       }
+      emitMutationEvent("ndsep.compliance.mutation", { action: "phase6Features", ts: new Date().toISOString() }).catch(() => {});
       return { success: true, stepId: input.stepId, allComplete: allDone };
     }),
 
@@ -260,6 +266,7 @@ export const onboardingChecklistRouter = router({
         [ctx.user.id, stepId, now, now]
       );
     }
+    emitMutationEvent("ndsep.compliance.mutation", { action: "phase6Features", ts: new Date().toISOString() }).catch(() => {});
     return { success: true, autoCompletedSteps: ["profile", "assets"], nextStep: "dpo" };
   }),
 
@@ -270,6 +277,7 @@ export const onboardingChecklistRouter = router({
        ON DUPLICATE KEY UPDATE completed_at = ?`,
       [ctx.user.id, Date.now(), Date.now()]
     );
+    emitMutationEvent("ndsep.compliance.mutation", { action: "phase6Features", ts: new Date().toISOString() }).catch(() => {});
     return { success: true };
   }),
 

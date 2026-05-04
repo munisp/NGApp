@@ -82,6 +82,7 @@ export const widgetDashboardRouter = router({
           [ctx.user.id, JSON.stringify(input.layout), JSON.stringify(input.widgets), input.theme, now, now]
         );
       }
+      emitMutationEvent("ndsep.compliance.mutation", { action: "phase5Features", ts: new Date().toISOString() }).catch(() => {});
       return { success: true };
     }),
 
@@ -156,6 +157,7 @@ export const chatSupportRouter = router({
       );
       if (existing.length > 0) {
         const s = existing[0] as any;
+        emitMutationEvent("ndsep.compliance.mutation", { action: "phase5Features", ts: new Date().toISOString() }).catch(() => {});
         return { sessionId: s.id, sessionToken: s.session_token, ticketNumber: s.ticket_number, isNew: false };
       }
       // Create new session
@@ -173,6 +175,7 @@ export const chatSupportRouter = router({
         [sessionId, 'assistant', `Welcome to NDSEP Support! I am your AI compliance assistant. I can help you with:\n\n• **NDPA compliance** — breach notifications, consent management, DSAR requests\n• **DPCO certification** — application process, renewal, requirements\n• **CBN/NCC/NHIA regulations** — sector-specific guidance\n• **Platform navigation** — finding features, submitting reports\n\nYour ticket number is **${ticketNum}**. How can I assist you today?`, now]
       );
 
+      emitMutationEvent("ndsep.compliance.mutation", { action: "phase5Features", ts: new Date().toISOString() }).catch(() => {});
       return { sessionId, sessionToken: token, ticketNumber: ticketNum, isNew: true };
     }),
 
@@ -306,6 +309,7 @@ Always be helpful, accurate, and cite specific sections of Nigerian law when rel
         [input.sessionId, 'assistant', aiContent, metadata, Date.now()]
       );
 
+      emitMutationEvent("ndsep.compliance.mutation", { action: "phase5Features", ts: new Date().toISOString() }).catch(() => {});
       return {
         messageId: (insertResult as any).insertId,
         content: aiContent,
@@ -329,6 +333,7 @@ Always be helpful, accurate, and cite specific sections of Nigerian law when rel
         `INSERT INTO support_chat_messages (session_id, role, content, created_at) VALUES (?,?,?,?)`,
         [input.sessionId, 'system', `This session has been escalated to a human agent. ${input.reason ? `Reason: ${input.reason}. ` : ''}A support agent will respond within 2 business hours. Your ticket number is preserved for reference.`, now]
       );
+      emitMutationEvent("ndsep.compliance.mutation", { action: "phase5Features", ts: new Date().toISOString() }).catch(() => {});
       return { success: true, message: "Session escalated to human agent" };
     }),
 
@@ -341,6 +346,7 @@ Always be helpful, accurate, and cite specific sections of Nigerian law when rel
         `UPDATE support_chat_sessions SET status='resolved', resolved_at=?, updated_at=? WHERE id=? AND user_id=?`,
         [now, now, input.sessionId, ctx.user.id]
       );
+      emitMutationEvent("ndsep.compliance.mutation", { action: "phase5Features", ts: new Date().toISOString() }).catch(() => {});
       return { success: true };
     }),
 
@@ -397,6 +403,7 @@ export const tutorialRouter = router({
          ON DUPLICATE KEY UPDATE completed=1, completed_at=?`,
         [ctx.user.id, input.tutorialId, input.stepId, now, now, now]
       );
+      emitMutationEvent("ndsep.compliance.mutation", { action: "phase5Features", ts: new Date().toISOString() }).catch(() => {});
       return { success: true };
     }),
 
@@ -408,6 +415,7 @@ export const tutorialRouter = router({
         `UPDATE tutorial_progress SET completed=0, completed_at=NULL WHERE user_id=? AND tutorial_id=?`,
         [ctx.user.id, input.tutorialId]
       );
+      emitMutationEvent("ndsep.compliance.mutation", { action: "phase5Features", ts: new Date().toISOString() }).catch(() => {});
       return { success: true };
     }),
 
@@ -419,6 +427,7 @@ export const tutorialRouter = router({
         `INSERT INTO help_article_views (user_id, article_id, viewed_at) VALUES (?,?,?)`,
         [ctx.user.id, input.articleId, Date.now()]
       );
+      emitMutationEvent("ndsep.compliance.mutation", { action: "phase5Features", ts: new Date().toISOString() }).catch(() => {});
       return { success: true };
     }),
 

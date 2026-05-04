@@ -84,6 +84,7 @@ export const breachIncidentRouter = router({
     .mutation(async ({ input, ctx }) => {
       const deadline = new Date(Date.now() + 72 * 60 * 60 * 1000);
       const [result] = await exec(sql`INSERT INTO breach_incidents (organization_id, title, description, breach_incident_severity, detected_at, ndpc_notification_deadline, affected_individuals_count, data_types_affected, breach_cause, reported_by) VALUES (${input.organizationId}, ${input.title}, ${input.description ?? null}, ${input.severity}, NOW(), ${deadline.toISOString()}, ${input.affectedIndividualsCount}, ${JSON.stringify(input.dataTypesAffected)}, ${input.breachCause ?? null}, ${ctx.user.id}) RETURNING *`);
+      emitMutationEvent("ndsep.compliance.mutation", { action: "newFeatures", ts: new Date().toISOString() }).catch(() => {});
       return (result as any[])[0];
     }),
   updateStatus: protectedProcedure
@@ -100,6 +101,7 @@ export const breachIncidentRouter = router({
       if (input.remediationActions) { params.push(input.remediationActions); sets.push(`remediation_actions = $${params.length}`); }
       params.push(input.id);
       await execRaw(`UPDATE breach_incidents SET ${sets.join(', ')} WHERE id = $${params.length}`, params);
+      emitMutationEvent("ndsep.compliance.mutation", { action: "newFeatures", ts: new Date().toISOString() }).catch(() => {});
       return { success: true };
     }),
   stats: protectedProcedure.query(async () => {
@@ -128,10 +130,12 @@ export const consentRecordRouter = router({
     .input(z.object({ organizationId: z.number().int(), dataSubjectName: z.string().min(1), dataSubjectEmail: z.string().email(), dataSubjectNin: z.string().optional(), purpose: z.string().min(1), lawfulBasis: z.enum(['consent','contract','legal_obligation','vital_interests','public_task','legitimate_interests']), dataCategories: z.array(z.string()).default([]), processingActivities: z.array(z.string()).default([]), thirdPartySharing: z.boolean().default(false), crossBorderTransfer: z.boolean().default(false), expiresAt: z.string().optional() }))
     .mutation(async ({ input }) => {
       const [result] = await exec(sql`INSERT INTO consent_records (organization_id, data_subject_name, data_subject_email, data_subject_nin, purpose, lawful_basis, consent_status, data_categories, processing_activities, third_party_sharing, cross_border_transfer, expires_at) VALUES (${input.organizationId}, ${input.dataSubjectName}, ${input.dataSubjectEmail}, ${input.dataSubjectNin ?? null}, ${input.purpose}, ${input.lawfulBasis}, 'active', ${JSON.stringify(input.dataCategories)}, ${JSON.stringify(input.processingActivities)}, ${input.thirdPartySharing}, ${input.crossBorderTransfer}, ${input.expiresAt ?? null}) RETURNING *`);
+      emitMutationEvent("ndsep.compliance.mutation", { action: "newFeatures", ts: new Date().toISOString() }).catch(() => {});
       return (result as any[])[0];
     }),
   withdraw: protectedProcedure.input(z.object({ id: z.number().int() })).mutation(async ({ input }) => {
     await exec(sql`UPDATE consent_records SET consent_status = 'withdrawn', consent_withdrawn_at = NOW(), updated_at = NOW() WHERE id = ${input.id}`);
+    emitMutationEvent("ndsep.compliance.mutation", { action: "newFeatures", ts: new Date().toISOString() }).catch(() => {});
     return { success: true };
   }),
   stats: protectedProcedure.query(async () => {
@@ -159,10 +163,12 @@ export const dpoAppointmentRouter = router({
     .input(z.object({ organizationId: z.number().int(), dpoName: z.string().min(1), dpoEmail: z.string().email(), dpoPhone: z.string().optional(), dpcoId: z.string().optional(), dpcoName: z.string().optional(), certificationExpiresAt: z.string().optional(), trainingHoursCompleted: z.number().int().default(0), notes: z.string().optional() }))
     .mutation(async ({ input }) => {
       const [result] = await exec(sql`INSERT INTO dpo_appointments (organization_id, dpo_name, dpo_email, dpo_phone, dpco_id, dpco_name, certification_expires_at, training_hours_completed, notes) VALUES (${input.organizationId}, ${input.dpoName}, ${input.dpoEmail}, ${input.dpoPhone ?? null}, ${input.dpcoId ?? null}, ${input.dpcoName ?? null}, ${input.certificationExpiresAt ?? null}, ${input.trainingHoursCompleted}, ${input.notes ?? null}) RETURNING *`);
+      emitMutationEvent("ndsep.compliance.mutation", { action: "newFeatures", ts: new Date().toISOString() }).catch(() => {});
       return (result as any[])[0];
     }),
   verify: protectedProcedure.input(z.object({ id: z.number().int(), independenceVerified: z.boolean() })).mutation(async ({ input }) => {
     await exec(sql`UPDATE dpo_appointments SET credential_status = 'verified', independence_verified = ${input.independenceVerified}, updated_at = NOW() WHERE id = ${input.id}`);
+    emitMutationEvent("ndsep.compliance.mutation", { action: "newFeatures", ts: new Date().toISOString() }).catch(() => {});
     return { success: true };
   }),
   stats: protectedProcedure.query(async () => {
@@ -227,6 +233,7 @@ export const penaltyCalculatorRouter = router({
       multiplier = Math.max(0.5, multiplier);
       const calculatedPenalty = Math.round(basePenalty * multiplier);
       const finalPenalty = revenueCap ? Math.min(calculatedPenalty, revenueCap) : calculatedPenalty;
+      emitMutationEvent("ndsep.compliance.mutation", { action: "newFeatures", ts: new Date().toISOString() }).catch(() => {});
       return { basePenalty, multiplier, calculatedPenalty, revenueCap, finalPenalty, regulatoryBasis: 'NDPA 2023 Section 48 - Administrative Fines', appealPeriod: '30 days from penalty notice' };
     }),
   history: protectedProcedure.input(z.object({ limit: z.number().int().min(1).max(50).default(20) })).query(async ({ input }) => {
@@ -321,6 +328,7 @@ export const complianceCalendarRouter = router({
     .input(z.object({ title: z.string().min(1), description: z.string().optional(), eventType: z.string().default('deadline'), priority: z.enum(['critical','warning','info']).default('info'), eventDate: z.string(), endDate: z.string().optional(), organizationId: z.number().int().optional(), sector: z.string().optional(), assignedTo: z.string().optional(), status: z.string().default('upcoming'), recurrence: z.string().optional(), reminderDays: z.number().int().default(7), notes: z.string().optional() }))
     .mutation(async ({ input, ctx }) => {
       const [result] = await exec(sql`INSERT INTO compliance_calendar_events (title, description, event_type, priority, event_date, end_date, organization_id, sector, assigned_to, status, recurrence, reminder_days, notes, created_by) VALUES (${input.title}, ${input.description ?? null}, ${input.eventType}, ${input.priority}, ${input.eventDate}::timestamptz, ${input.endDate ?? null}, ${input.organizationId ?? null}, ${input.sector ?? null}, ${input.assignedTo ?? null}, ${input.status}, ${input.recurrence ?? null}, ${input.reminderDays}, ${input.notes ?? null}, ${ctx.user.id}) RETURNING *`);
+      emitMutationEvent("ndsep.compliance.mutation", { action: "newFeatures", ts: new Date().toISOString() }).catch(() => {});
       return (result as any[])[0];
     }),
   updateEvent: protectedProcedure
@@ -340,12 +348,14 @@ export const complianceCalendarRouter = router({
       sets.push(`updated_at = NOW()`);
       params.push(id);
       const [result] = await execRaw(`UPDATE compliance_calendar_events SET ${sets.join(', ')} WHERE id = $${params.length} RETURNING *`, params);
+      emitMutationEvent("ndsep.compliance.mutation", { action: "newFeatures", ts: new Date().toISOString() }).catch(() => {});
       return (result as any[])[0];
     }),
   deleteEvent: deleteProcedure
     .input(z.object({ id: z.number().int() }))
     .mutation(async ({ input }) => {
       await exec(sql`DELETE FROM compliance_calendar_events WHERE id = ${input.id}`);
+      emitMutationEvent("ndsep.compliance.mutation", { action: "newFeatures", ts: new Date().toISOString() }).catch(() => {});
       return { success: true };
     }),
 });
@@ -368,16 +378,19 @@ export const notificationCenterRouter = router({
     }),
   markRead: protectedProcedure.input(z.object({ id: z.number().int() })).mutation(async ({ input }) => {
     await exec(sql`UPDATE in_app_notifications SET is_read = true WHERE id = ${input.id}`);
+    emitMutationEvent("ndsep.compliance.mutation", { action: "newFeatures", ts: new Date().toISOString() }).catch(() => {});
     return { success: true };
   }),
   markAllRead: protectedProcedure.mutation(async ({ ctx }) => {
     await exec(sql`UPDATE in_app_notifications SET is_read = true WHERE user_id = ${ctx.user.id} OR user_id IS NULL`);
+    emitMutationEvent("ndsep.compliance.mutation", { action: "newFeatures", ts: new Date().toISOString() }).catch(() => {});
     return { success: true };
   }),
   create: protectedProcedure
     .input(z.object({ title: z.string().min(1), message: z.string().min(1), severity: z.enum(['info','warning','error','success']).default('info'), category: z.string().default('system'), organizationId: z.number().int().optional(), userId: z.number().int().optional(), actionUrl: z.string().optional() }))
     .mutation(async ({ input }) => {
       const [result] = await exec(sql`INSERT INTO in_app_notifications (title, message, severity, category, organization_id, user_id, action_url) VALUES (${input.title}, ${input.message}, ${input.severity}, ${input.category}, ${input.organizationId ?? null}, ${input.userId ?? null}, ${input.actionUrl ?? null}) RETURNING *`);
+      emitMutationEvent("ndsep.compliance.mutation", { action: "newFeatures", ts: new Date().toISOString() }).catch(() => {});
       return (result as any[])[0];
     }),
   unreadCount: protectedProcedure.query(async ({ ctx }) => {
@@ -432,6 +445,7 @@ export const article40TrackerRouter = router({
     .mutation(async ({ input }) => {
       const ref = input.ndpcReferenceNumber ?? `NDPC/BR/${new Date().getFullYear()}/${String(input.breachId).padStart(4, '0')}`;
       await exec(sql`UPDATE breach_incidents SET ndpc_notified_at = NOW(), ndpc_reference_number = ${ref}, breach_incident_status = 'ndpc_notified', updated_at = NOW() WHERE id = ${input.breachId}`);
+      emitMutationEvent("ndsep.compliance.mutation", { action: "newFeatures", ts: new Date().toISOString() }).catch(() => {});
       return { success: true, referenceNumber: ref };
     }),
   slaMetrics: protectedProcedure.query(async () => {
@@ -465,6 +479,7 @@ export const ndpaSnapshotsRouter = router({
     const dd = (dsars as any[])[0];
     const overallScore = Math.max(0, 100 - parseInt(vd?.critical ?? '0') * 10 - parseInt(vd?.total ?? '0') * 2 - parseInt(bd?.total ?? '0') * 5);
     const [result] = await exec(sql`INSERT INTO ndpa_compliance_snapshots (overall_score, open_violations, critical_violations, pending_dsars, active_breaches) VALUES (${overallScore}, ${parseInt(vd?.total ?? '0')}, ${parseInt(vd?.critical ?? '0')}, ${parseInt(dd?.total ?? '0')}, ${parseInt(bd?.total ?? '0')}) RETURNING *`);
+    emitMutationEvent("ndsep.compliance.mutation", { action: "newFeatures", ts: new Date().toISOString() }).catch(() => {});
     return (result as any[])[0];
   }),
 });

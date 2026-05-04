@@ -236,6 +236,7 @@ export const billingRouter = router({
         `SELECT * FROM dpco_invoices WHERE id = ?`,
         [result.id]
       );
+      emitMutationEvent("ndsep.billing.mutation", { action: "billing", ts: new Date().toISOString() }).catch(() => {});
       return invoice;
     }),
 
@@ -255,6 +256,7 @@ export const billingRouter = router({
         `SELECT * FROM dpco_invoices WHERE id = ?`,
         [input.id]
       );
+      emitMutationEvent("ndsep.billing.mutation", { action: "billing", ts: new Date().toISOString() }).catch(() => {});
       return invoice;
     }),
 
@@ -359,6 +361,7 @@ export const billingRouter = router({
           `SELECT * FROM dpco_payments WHERE id = ?`,
           [paymentId]
         );
+        emitMutationEvent("ndsep.billing.mutation", { action: "billing", ts: new Date().toISOString() }).catch(() => {});
         return {
           payment,
           platformFeeAmount,
@@ -675,6 +678,7 @@ export const billingRouter = router({
         `SELECT * FROM dpco_subscriptions WHERE dpco_org_id = ?`,
         [input.dpcoOrgId]
       );
+      emitMutationEvent("ndsep.billing.mutation", { action: "billing", ts: new Date().toISOString() }).catch(() => {});
       return sub;
     }),
 
@@ -747,6 +751,7 @@ export const billingRouter = router({
         `UPDATE platform_revenue_splits SET dpco_paid_out = TRUE, dpco_paid_out_at = NOW() WHERE id IN (${placeholders})`,
         input.splitIds
       );
+      emitMutationEvent("ndsep.billing.mutation", { action: "billing", ts: new Date().toISOString() }).catch(() => {});
       return { success: true, count: input.splitIds.length };
     }),
 
@@ -791,6 +796,7 @@ export const billingRouter = router({
         [session.sessionId, input.invoiceId]
       );
 
+       emitMutationEvent("ndsep.billing.mutation", { action: "billing", ts: new Date().toISOString() }).catch(() => {});
        return { sessionId: session.sessionId, url: session.url };
     }),
 
@@ -840,6 +846,7 @@ export const billingRouter = router({
         [session.sessionId, input.dpcoOrgId]
       );
 
+      emitMutationEvent("ndsep.billing.mutation", { action: "billing", ts: new Date().toISOString() }).catch(() => {});
       return { sessionId: session.sessionId, url: session.url };
     }),
 
@@ -910,6 +917,7 @@ export const billingRouter = router({
         [toEmail, input.invoiceId]
       );
 
+      emitMutationEvent("ndsep.billing.mutation", { action: "billing", ts: new Date().toISOString() }).catch(() => {});
       return {
         success: true,
         sentTo: toEmail,

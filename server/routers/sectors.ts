@@ -90,6 +90,7 @@ export const healthcareRouter = router({
          input.lga ?? null, input.nhiaAccreditationNumber ?? null, input.fmohLicenceNumber ?? null,
          input.bedCapacity ?? null, input.emrSystem ?? null, input.dataLocalisationCompliant, input.ndpcRegistered]
       );
+      emitMutationEvent("ndsep.sector.mutation", { action: "sectors", ts: new Date().toISOString() }).catch(() => {});
       return rows[0];
     }),
 
@@ -364,6 +365,7 @@ export const insuranceRouter = router({
          WHERE id=$1 RETURNING *`,
         [input.id, input.status, input.approvedAmountNgn ?? null, input.notes ?? null]
       );
+      emitMutationEvent("ndsep.sector.mutation", { action: "sectors", ts: new Date().toISOString() }).catch(() => {});
       return rows[0];
     }),
 
@@ -472,6 +474,7 @@ export const fintechRouter = router({
         `UPDATE open_banking_consents SET consent_status='revoked', revoked_at=NOW(), updated_at=NOW() WHERE id=$1 RETURNING *`,
         [input.id]
       );
+      emitMutationEvent("ndsep.sector.mutation", { action: "sectors", ts: new Date().toISOString() }).catch(() => {});
       return rows[0];
     }),
 

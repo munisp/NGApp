@@ -64,6 +64,7 @@ export const changelogRouter = router({
          ON CONFLICT (user_id) DO UPDATE
            SET last_seen_changelog_version = '${version}', updated_at = NOW()`
       );
+      emitMutationEvent("ndsep.compliance.mutation", { action: "phase7Features", ts: new Date().toISOString() }).catch(() => {});
       return { ok: true };
     }),
 });
@@ -181,6 +182,7 @@ export const themePrefsRouter = router({
       } catch {
         // Silently ignore if table doesn't exist yet
       }
+      emitMutationEvent("ndsep.compliance.mutation", { action: "phase7Features", ts: new Date().toISOString() }).catch(() => {});
       return { ok: true };
     }),
 });

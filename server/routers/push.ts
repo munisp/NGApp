@@ -110,6 +110,7 @@ export const pushRouter = router({
         [ctx.user.id, input.endpoint, input.p256dh, input.auth, input.userAgent ?? null, Date.now()]
       );
 
+      emitMutationEvent("ndsep.compliance.mutation", { action: "push", ts: new Date().toISOString() }).catch(() => {});
       return { success: true };
     }),
 
@@ -125,6 +126,7 @@ export const pushRouter = router({
         [ctx.user.id, input.endpoint]
       );
 
+      emitMutationEvent("ndsep.compliance.mutation", { action: "push", ts: new Date().toISOString() }).catch(() => {});
       return { removed: rowCount ?? 0 };
     }),
 
@@ -155,6 +157,7 @@ export const pushRouter = router({
       body: "You will now receive alerts for overdue invoices and audit deadlines.",
       url: "/dpco-app/dashboard",
     });
+    emitMutationEvent("ndsep.compliance.mutation", { action: "push", ts: new Date().toISOString() }).catch(() => {});
     return result;
   }),
 
@@ -181,6 +184,7 @@ export const pushRouter = router({
           ? `Invoice ${invoices[0].invoice_number} for ${invoices[0].client_name} is overdue.`
           : `${invoices.length} invoices are overdue. Oldest: ${invoices[0].invoice_number} (${invoices[0].client_name}).`;
 
+      emitMutationEvent("ndsep.compliance.mutation", { action: "push", ts: new Date().toISOString() }).catch(() => {});
       return sendPushToUser(ctx.user.id, {
         title: `⚠️ ${invoices.length} Overdue Invoice${invoices.length > 1 ? "s" : ""}`,
         body,

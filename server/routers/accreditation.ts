@@ -108,6 +108,7 @@ export const accreditationRouter = router({
         applicationId: app?.id, orgName: input.orgName, type: input.applicationType,
         referenceToken: token, fee,
       }).catch(() => {});
+      emitMutationEvent("ndsep.accreditation.mutation", { action: "accreditation", ts: new Date().toISOString() }).catch(() => {});
       return { application: app, referenceToken: token, applicationFee: fee };
     }),
   // ── Get application status by reference token (public) ─────────────────────
@@ -178,6 +179,7 @@ export const accreditationRouter = router({
          WHERE id=? RETURNING *`,
         [reviewer, input.id]
       );
+      emitMutationEvent("ndsep.accreditation.mutation", { action: "accreditation", ts: new Date().toISOString() }).catch(() => {});
       return updated;
     }),
 
@@ -191,6 +193,7 @@ export const accreditationRouter = router({
          WHERE id=? RETURNING *`,
         [JSON.stringify(input.checklist), input.id]
       );
+      emitMutationEvent("ndsep.accreditation.mutation", { action: "accreditation", ts: new Date().toISOString() }).catch(() => {});
       return updated;
     }),
 
@@ -204,6 +207,7 @@ export const accreditationRouter = router({
          WHERE id=? RETURNING *`,
         [input.note, input.id]
       );
+      emitMutationEvent("ndsep.accreditation.mutation", { action: "accreditation", ts: new Date().toISOString() }).catch(() => {});
       return updated;
     }),
 
@@ -217,6 +221,7 @@ export const accreditationRouter = router({
          WHERE id=? RETURNING *`,
         [new Date(input.scheduledAt), input.id]
       );
+      emitMutationEvent("ndsep.accreditation.mutation", { action: "accreditation", ts: new Date().toISOString() }).catch(() => {});
       return updated;
     }),
 
@@ -294,6 +299,7 @@ export const accreditationRouter = router({
           content: `The NDPC has made a decision on the DPCO accreditation application.\n\n**Organisation:** ${updated?.org_name ?? ''}\n**Decision:** ${decisionLabel}\n**Licence Number:** ${licenceNumber ?? 'N/A'}\n**Reason:** ${input.reason ?? 'None provided'}\n\nThe applicant can check their status at: /accreditation/status`,
         });
       } catch { /* notification failure is non-blocking */ }
+      emitMutationEvent("ndsep.accreditation.mutation", { action: "accreditation", ts: new Date().toISOString() }).catch(() => {});
       return { application: updated, licenceNumber, dpcoOrgId };
     }),
 
@@ -319,6 +325,7 @@ export const accreditationRouter = router({
           content: `The DPCO accreditation for **${updated?.org_name ?? ''}** has been suspended.\n\n**Reason:** ${input.reason}\n\nThe DPCO cannot file new CARs until the suspension is lifted. Review at: /admin/accreditation`,
         });
       } catch { /* non-blocking */ }
+      emitMutationEvent("ndsep.accreditation.mutation", { action: "accreditation", ts: new Date().toISOString() }).catch(() => {});
       return updated;
     }),
 
@@ -344,6 +351,7 @@ export const accreditationRouter = router({
           content: `The DPCO accreditation for **${updated?.org_name ?? ''}** has been permanently revoked.\n\n**Reason:** ${input.reason}\n\nThis DPCO has been removed from the active registry and cannot file CARs. Review at: /admin/accreditation`,
         });
       } catch { /* non-blocking */ }
+      emitMutationEvent("ndsep.accreditation.mutation", { action: "accreditation", ts: new Date().toISOString() }).catch(() => {});
       return updated;
     }),
 
@@ -420,6 +428,7 @@ export const accreditationRouter = router({
           existing.existing_dpco_org_id,
         ]
       );
+      emitMutationEvent("ndsep.accreditation.mutation", { action: "accreditation", ts: new Date().toISOString() }).catch(() => {});
       return { referenceToken: token };
     }),
 
@@ -502,6 +511,7 @@ export const accreditationRouter = router({
         ? new Date(app.licence_expires_at).toLocaleDateString("en-NG", { day: "2-digit", month: "long", year: "numeric" })
         : "N/A";
       const certNumber = `NDPC/DPCO/${app.licence_number ?? app.reference_token.slice(0, 8).toUpperCase()}`;
+      emitMutationEvent("ndsep.accreditation.mutation", { action: "accreditation", ts: new Date().toISOString() }).catch(() => {});
       return {
         certNumber,
         dpcoName: app.dpco_name ?? app.org_name,

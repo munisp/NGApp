@@ -141,6 +141,7 @@ export const qdrantRouter = router({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(input),
       }, 30000);
+      emitMutationEvent("ndsep.ai.mutation", { action: "aimlRouter", ts: new Date().toISOString() }).catch(() => {});
       return {
         status: result.error ? "failed" : "ingested",
         id: result.id,
@@ -160,6 +161,7 @@ export const knowledgeGraphRouter = router({
   }),
 
   rebuild: protectedProcedure.mutation(async () => {
+    emitMutationEvent("ndsep.ai.mutation", { action: "aimlRouter", ts: new Date().toISOString() }).catch(() => {});
     return await safeFetch(`${FALKORDB_WORKER_URL}/graph/build`, {
       method: "POST",
     }, 60000);
@@ -296,6 +298,7 @@ export const ollamaRouter = router({
         if (input.system) messages.push({ role: "system", content: input.system });
         messages.push({ role: "user", content: input.prompt });
         const llmResp = await invokeLLM({ messages });
+        emitMutationEvent("ndsep.ai.mutation", { action: "aimlRouter", ts: new Date().toISOString() }).catch(() => {});
         return {
           response: llmResp.choices?.[0]?.message?.content || "",
           model: "built-in",
@@ -304,6 +307,7 @@ export const ollamaRouter = router({
         };
       }
 
+      emitMutationEvent("ndsep.ai.mutation", { action: "aimlRouter", ts: new Date().toISOString() }).catch(() => {});
       return {
         response: ollamaResult.response || "",
         model: ollamaResult.model || input.model,
@@ -385,6 +389,7 @@ export const artRouter = router({
         // Deterministic fallback based on model name hash (no Math.random)
         const modelHash = input.modelName.split('').reduce((a: number, c: string) => a + c.charCodeAt(0), 0);
         const epsilonFactor = Math.min(input.epsilon * 10, 1);
+        emitMutationEvent("ndsep.ai.mutation", { action: "aimlRouter", ts: new Date().toISOString() }).catch(() => {});
         return {
           model_name: input.modelName,
           attack_type: input.attackType,
@@ -398,6 +403,7 @@ export const artRouter = router({
           note: "ART worker unavailable — showing deterministic estimates based on epsilon",
         };
       }
+      emitMutationEvent("ndsep.ai.mutation", { action: "aimlRouter", ts: new Date().toISOString() }).catch(() => {});
       return result;
     }),
 
@@ -497,6 +503,7 @@ export const featureStoreRouter = router({
          VALUES ($1, $2, $3, NOW()) RETURNING id::text, feature_name, feature_type`,
         [input.featureName, input.featureType, input.description ?? null]
       );
+      emitMutationEvent("ndsep.ai.mutation", { action: "aimlRouter", ts: new Date().toISOString() }).catch(() => {});
       return rows[0] ?? null;
     }),
   logPrediction: protectedProcedure
@@ -512,6 +519,7 @@ export const featureStoreRouter = router({
          VALUES ($1, $2::jsonb, $3, $4, NOW()) RETURNING id::text`,
         [input.modelName, JSON.stringify(input.inputFeatures), input.prediction, input.confidence ?? null]
       );
+      emitMutationEvent("ndsep.ai.mutation", { action: "aimlRouter", ts: new Date().toISOString() }).catch(() => {});
       return rows[0] ?? null;
     }),
 });
@@ -581,18 +589,21 @@ export const modelRegistryRouter = router({
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'staging', NOW()) RETURNING id::text, name, version, status`,
         [input.name, input.version, input.algorithm, input.framework ?? null, input.accuracy ?? null, input.f1Score ?? null, input.aucRoc ?? null, input.description ?? null]
       );
+      emitMutationEvent("ndsep.ai.mutation", { action: "aimlRouter", ts: new Date().toISOString() }).catch(() => {});
       return rows[0] ?? null;
     }),
   deploy: protectedProcedure
     .input(z.object({ modelId: z.string() }))
     .mutation(async ({ input }) => {
       await exec(`UPDATE ml_model_registry SET status = 'deployed', deployed_at = NOW() WHERE id = $1::uuid`, [input.modelId]);
+      emitMutationEvent("ndsep.ai.mutation", { action: "aimlRouter", ts: new Date().toISOString() }).catch(() => {});
       return { success: true };
     }),
   retire: protectedProcedure
     .input(z.object({ modelId: z.string() }))
     .mutation(async ({ input }) => {
       await exec(`UPDATE ml_model_registry SET status = 'retired' WHERE id = $1::uuid`, [input.modelId]);
+      emitMutationEvent("ndsep.ai.mutation", { action: "aimlRouter", ts: new Date().toISOString() }).catch(() => {});
       return { success: true };
     }),
 });
@@ -620,6 +631,7 @@ export const anomalyAlertsRouter = router({
   }),
 
   triggerScan: protectedProcedure.mutation(async () => {
+    emitMutationEvent("ndsep.ai.mutation", { action: "aimlRouter", ts: new Date().toISOString() }).catch(() => {});
     return await safeFetch(`${ANOMALY_DISPATCHER_URL}/scan`, {
       method: "POST",
     });
@@ -633,6 +645,7 @@ export const anomalyAlertsRouter = router({
          WHERE id = $1::uuid`,
         [input.alertId],
       );
+      emitMutationEvent("ndsep.ai.mutation", { action: "aimlRouter", ts: new Date().toISOString() }).catch(() => {});
       return { status: "acknowledged", alertId: input.alertId };
     }),
 });
@@ -658,6 +671,7 @@ export const cocoIndexRouter = router({
   }),
 
   triggerRun: protectedProcedure.mutation(async () => {
+    emitMutationEvent("ndsep.ai.mutation", { action: "aimlRouter", ts: new Date().toISOString() }).catch(() => {});
     return await safeFetch(`${PYTHON_WORKER_URL}/cocoindex/run`, {
       method: "POST",
     }, 30000);
@@ -677,6 +691,7 @@ export const rssFeedRouter = router({
       secret: z.string().optional(),
     }))
     .mutation(async ({ input }) => {
+      emitMutationEvent("ndsep.ai.mutation", { action: "aimlRouter", ts: new Date().toISOString() }).catch(() => {});
       return await safeFetch(`${RSS_SERVER_URL}/api/webhooks/subscribe`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -690,6 +705,7 @@ export const rssFeedRouter = router({
       payload: z.record(z.string(), z.unknown()),
     }))
     .mutation(async ({ input }) => {
+      emitMutationEvent("ndsep.ai.mutation", { action: "aimlRouter", ts: new Date().toISOString() }).catch(() => {});
       return await safeFetch(`${RSS_SERVER_URL}/api/webhooks/trigger`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },

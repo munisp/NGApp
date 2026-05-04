@@ -78,6 +78,7 @@ export const dsarRouter = router({
           input.supportingDocKey ?? null,
         ]
       );
+      emitMutationEvent("ndsep.compliance.mutation", { action: "enhancements", ts: new Date().toISOString() }).catch(() => {});
       return { id, referenceNumber, responseDeadline };
     }),
 
@@ -162,6 +163,7 @@ export const dsarRouter = router({
          WHERE id = $2`,
         [input.reason, input.id]
       );
+      emitMutationEvent("ndsep.compliance.mutation", { action: "enhancements", ts: new Date().toISOString() }).catch(() => {});
       return { success: true };
     }),
 });
@@ -224,6 +226,7 @@ export const dpiaRouter = router({
           ctx.user.id,
         ]
       );
+      emitMutationEvent("ndsep.compliance.mutation", { action: "enhancements", ts: new Date().toISOString() }).catch(() => {});
       return rows[0];
     }),
 
@@ -265,6 +268,7 @@ export const dpiaRouter = router({
         `UPDATE dpia_assessments SET ${setClauses.join(", ")} WHERE id = $${idx} RETURNING *`,
         params
       );
+      emitMutationEvent("ndsep.compliance.mutation", { action: "enhancements", ts: new Date().toISOString() }).catch(() => {});
       return rows[0];
     }),
 
@@ -313,6 +317,7 @@ export const dpiaRouter = router({
         },
       });
       const content = response.choices[0].message.content;
+      emitMutationEvent("ndsep.compliance.mutation", { action: "enhancements", ts: new Date().toISOString() }).catch(() => {});
       return typeof content === "string" ? JSON.parse(content) : content;
     }),
 });
@@ -415,6 +420,7 @@ export const aiGovernanceRouter = router({
           ctx.user.id, nextReview,
         ]
       );
+      emitMutationEvent("ndsep.compliance.mutation", { action: "enhancements", ts: new Date().toISOString() }).catch(() => {});
       return rows[0];
     }),
 });
@@ -509,6 +515,7 @@ export const webhookRouter = router({
          VALUES ($1,$2,$3,$4,$5,NOW(),NOW()) RETURNING id, url, events, is_active`,
         [input.orgId ?? null, input.dpcoOrgId ?? null, input.url, secret, input.events]
       );
+      emitMutationEvent("ndsep.compliance.mutation", { action: "enhancements", ts: new Date().toISOString() }).catch(() => {});
       return { ...rows[0], secret }; // Return secret only on creation
     }),
 
@@ -517,6 +524,7 @@ export const webhookRouter = router({
     .mutation(async ({ input }) => {
       const pool = getPool();
       await pool.query(`DELETE FROM webhook_subscriptions WHERE id = $1`, [input.id]);
+      emitMutationEvent("ndsep.compliance.mutation", { action: "enhancements", ts: new Date().toISOString() }).catch(() => {});
       return { success: true };
     }),
 
@@ -664,6 +672,7 @@ export const i18nRouter = router({
          ON CONFLICT (locale, namespace, key) DO UPDATE SET value = EXCLUDED.value, updated_at = NOW()`,
         [input.locale, input.namespace, input.key, input.value]
       );
+      emitMutationEvent("ndsep.compliance.mutation", { action: "enhancements", ts: new Date().toISOString() }).catch(() => {});
       return { success: true };
     }),
 
@@ -703,6 +712,7 @@ export const i18nRouter = router({
           [locale, input.namespace, input.key, value]
         );
       }
+      emitMutationEvent("ndsep.compliance.mutation", { action: "enhancements", ts: new Date().toISOString() }).catch(() => {});
       return translations;
     }),
 });
@@ -752,6 +762,7 @@ export const carAutomationRouter = router({
          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,'draft',NOW(),NOW(),NOW()) RETURNING *`,
         [input.orgId, input.year, `Compliance Audit Return ${input.year} — ${org.name}`, complianceScore, openViolations, breachesReported, dsarsResolved, JSON.stringify(sections)]
       );
+      emitMutationEvent("ndsep.compliance.mutation", { action: "enhancements", ts: new Date().toISOString() }).catch(() => {});
       return { ...rows[0], organisation: org.name, reportingYear: input.year, complianceScore, openViolations, breachesReported, dsarsResolved, sections };
     }),
   /** Submit a CAR to NITDA */
@@ -764,6 +775,7 @@ export const carAutomationRouter = router({
         [input.id]
       );
       if (!rows[0]) throw new TRPCError({ code: 'NOT_FOUND', message: 'CAR not found' });
+      emitMutationEvent("ndsep.compliance.mutation", { action: "enhancements", ts: new Date().toISOString() }).catch(() => {});
       return rows[0];
     }),
   /** AI-generate a CAR narrative from enforcement case data */
@@ -814,6 +826,7 @@ export const carAutomationRouter = router({
         },
       });
       const content = response.choices[0].message.content;
+      emitMutationEvent("ndsep.compliance.mutation", { action: "enhancements", ts: new Date().toISOString() }).catch(() => {});
       return typeof content === "string" ? JSON.parse(content) : content;
     }),
 });
@@ -844,6 +857,7 @@ export const openApiRouter = router({
       `INSERT INTO api_keys (user_id, key_hash, key_prefix, is_active, created_at, updated_at) VALUES ($1,$2,$3,TRUE,NOW(),NOW())`,
       [ctx.user.id, keyHash, keyPrefix]
     );
+    emitMutationEvent("ndsep.compliance.mutation", { action: "enhancements", ts: new Date().toISOString() }).catch(() => {});
     return { key: rawKey, prefix: keyPrefix };
   }),
 
@@ -910,6 +924,7 @@ export const auditLogsRouter = router({
   create: protectedProcedure.input(z.object({ actor_id: z.number().optional(), action: z.string(), resource_type: z.string().optional(), resource_id: z.string().optional(), details: z.record(z.string(), z.any()).optional(), ip_address: z.string().optional() })).mutation(async ({ input }) => {
     const rows = await query(`INSERT INTO audit_logs (actor_id,action,resource_type,resource_id,details,ip_address,created_at) VALUES ($1,$2,$3,$4,$5,$6,NOW()) RETURNING *`,
       [input.actor_id??null,input.action,input.resource_type??null,input.resource_id??null,JSON.stringify(input.details??{}),input.ip_address??null]);
+    emitMutationEvent("ndsep.compliance.mutation", { action: "enhancements", ts: new Date().toISOString() }).catch(() => {});
     return rows[0];
   }),
 });
@@ -1061,6 +1076,7 @@ export const policyTemplatesRouter = router({
     const t = tmpl[0] as any;
     const r = await query(`INSERT INTO compliance_policies (name,framework,description,policy_text,status,created_at) VALUES ($1,$2,$3,$4,'active',NOW()) RETURNING *`,[`${t.name} (Org ${input.orgId})`,t.framework??'NDPR',t.category??null,t.template_text??null]);
     await query("UPDATE policy_templates SET instantiated_count=COALESCE(instantiated_count,0)+1 WHERE id=$1",[input.templateId]);
+    emitMutationEvent("ndsep.compliance.mutation", { action: "enhancements", ts: new Date().toISOString() }).catch(() => {});
     return r[0];
   }),
 });
