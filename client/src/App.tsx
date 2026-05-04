@@ -282,6 +282,7 @@ function Router() {
         <Route path="/retention" component={RetentionPolicies} />
         <Route path="/dpo-reports" component={DpoReports} />
         <Route path="/car" component={ComplianceAuditReturns} />
+        <Route path="/audit-returns" component={ComplianceAuditReturns} />
         <Route path="/adequacy" component={AdequacyRegistry} />
         <Route path="/dpa" component={DataProcessingAgreements} />
         <Route path="/privacy-notices" component={PrivacyNotices} />
