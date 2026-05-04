@@ -1,6 +1,6 @@
 import { eq, and, desc } from "drizzle-orm";
-import { drizzle } from "drizzle-orm/mysql2";
-import mysql from "mysql2/promise";
+import { drizzle } from "drizzle-orm/node-postgres";
+import pg from "pg";
 import { 
   InsertUser, users, 
   merchants, InsertMerchant, Merchant,
@@ -13,20 +13,17 @@ import {
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
-let _pool: mysql.Pool | null = null;
+let _pool: pg.Pool | null = null;
 
 // Lazily create a connection-pooled drizzle instance.
 export async function getDb() {
   if (!_db && process.env.DATABASE_URL) {
     try {
-      _pool = mysql.createPool({
-        uri: process.env.DATABASE_URL,
-        connectionLimit: 25,
-        maxIdle: 10,
-        waitForConnections: true,
-        queueLimit: 50,
-        enableKeepAlive: true,
-        keepAliveInitialDelay: 10_000,
+      _pool = new pg.Pool({
+        connectionString: process.env.DATABASE_URL,
+        max: 25,
+        idleTimeoutMillis: 30_000,
+        connectionTimeoutMillis: 5_000,
       });
       _db = drizzle(_pool);
     } catch (error) {
@@ -38,8 +35,8 @@ export async function getDb() {
 }
 
 export async function upsertUser(user: InsertUser): Promise<void> {
-  if (!user.openId) {
-    throw new Error("User openId is required for upsert");
+  if (!user.sub) {
+    throw new Error("User sub is required for upsert");
   }
 
   const db = await getDb();
@@ -50,7 +47,7 @@ export async function upsertUser(user: InsertUser): Promise<void> {
 
   try {
     const values: InsertUser = {
-      openId: user.openId,
+      sub: user.sub,
     };
     const updateSet: Record<string, unknown> = {};
 
@@ -74,7 +71,7 @@ export async function upsertUser(user: InsertUser): Promise<void> {
     if (user.role !== undefined) {
       values.role = user.role;
       updateSet.role = user.role;
-    } else if (user.openId === ENV.ownerOpenId) {
+    } else if (user.sub === ENV.ownerOpenId) {
       values.role = 'admin';
       updateSet.role = 'admin';
     }
@@ -87,7 +84,8 @@ export async function upsertUser(user: InsertUser): Promise<void> {
       updateSet.lastSignedIn = new Date();
     }
 
-    await db.insert(users).values(values).onDuplicateKeyUpdate({
+    await db.insert(users).values(values).onConflictDoUpdate({
+      target: users.sub,
       set: updateSet,
     });
   } catch (error) {
@@ -103,7 +101,7 @@ export async function getUserByOpenId(openId: string) {
     return undefined;
   }
 
-  const result = await db.select().from(users).where(eq(users.openId, openId)).limit(1);
+  const result = await db.select().from(users).where(eq(users.sub, openId)).limit(1);
 
   return result.length > 0 ? result[0] : undefined;
 }
@@ -114,11 +112,8 @@ export async function createMerchant(merchant: InsertMerchant): Promise<Merchant
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  const result = await db.insert(merchants).values(merchant);
-  const merchantId = Number(result[0].insertId);
-  
-  const created = await db.select().from(merchants).where(eq(merchants.id, merchantId)).limit(1);
-  return created[0]!;
+  const result = await db.insert(merchants).values(merchant).returning();
+  return result[0]!;
 }
 
 export async function getMerchantById(id: number): Promise<Merchant | undefined> {
@@ -157,11 +152,8 @@ export async function createPaymentSession(session: InsertPaymentSession): Promi
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  const result = await db.insert(paymentSessions).values(session);
-  const sessionId = Number(result[0].insertId);
-  
-  const created = await db.select().from(paymentSessions).where(eq(paymentSessions.id, sessionId)).limit(1);
-  return created[0]!;
+  const result = await db.insert(paymentSessions).values(session).returning();
+  return result[0]!;
 }
 
 export async function getPaymentSessionBySessionId(sessionId: string): Promise<PaymentSession | undefined> {
@@ -195,11 +187,8 @@ export async function createTransaction(transaction: InsertTransaction): Promise
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  const result = await db.insert(transactions).values(transaction);
-  const transactionId = Number(result[0].insertId);
-  
-  const created = await db.select().from(transactions).where(eq(transactions.id, transactionId)).limit(1);
-  return created[0]!;
+  const result = await db.insert(transactions).values(transaction).returning();
+  return result[0]!;
 }
 
 export async function getTransactionByTransactionId(transactionId: string): Promise<Transaction | undefined> {
@@ -242,11 +231,8 @@ export async function createRefund(refund: InsertRefund): Promise<Refund> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  const result = await db.insert(refunds).values(refund);
-  const refundId = Number(result[0].insertId);
-  
-  const created = await db.select().from(refunds).where(eq(refunds.id, refundId)).limit(1);
-  return created[0]!;
+  const result = await db.insert(refunds).values(refund).returning();
+  return result[0]!;
 }
 
 export async function getRefundsByTransaction(transactionId: string): Promise<Refund[]> {
@@ -271,11 +257,8 @@ export async function createWebhookLog(log: InsertWebhookLog): Promise<WebhookLo
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  const result = await db.insert(webhookLogs).values(log);
-  const logId = Number(result[0].insertId);
-  
-  const created = await db.select().from(webhookLogs).where(eq(webhookLogs.id, logId)).limit(1);
-  return created[0]!;
+  const result = await db.insert(webhookLogs).values(log).returning();
+  return result[0]!;
 }
 
 export async function getWebhookLogsByMerchant(merchantId: number, limit = 100): Promise<WebhookLog[]> {

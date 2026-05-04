@@ -99,7 +99,7 @@ spec:
         - containerPort: 3001
         env:
         - name: CLEDG_DATABASE_URI
-          value: "mysql://central_ledger:password@mysql:3306/central_ledger"
+          value: "postgresql://central_ledger:password@mojaloop-postgres:5432/central_ledger"
         - name: CLEDG_KAFKA_HOST
           value: "kafka"
         - name: CLEDG_KAFKA_PORT
@@ -155,7 +155,7 @@ spec:
         - containerPort: 4002
         env:
         - name: ALS_DATABASE_URI
-          value: "mysql://account_lookup:password@mysql:3306/account_lookup"
+          value: "postgresql://account_lookup:password@mojaloop-postgres:5432/account_lookup"
         - name: ALS_KAFKA_HOST
           value: "kafka"
         - name: ALS_KAFKA_PORT
@@ -211,7 +211,7 @@ spec:
         - containerPort: 3002
         env:
         - name: QS_DATABASE_URI
-          value: "mysql://quoting_service:password@mysql:3306/quoting_service"
+          value: "postgresql://quoting_service:password@mojaloop-postgres:5432/quoting_service"
         - name: QS_KAFKA_HOST
           value: "kafka"
         - name: QS_KAFKA_PORT
@@ -227,44 +227,46 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: mysql
+  name: mojaloop-postgres
   namespace: payment-switch
 spec:
   ports:
-  - port: 3306
-    targetPort: 3306
+  - port: 5432
+    targetPort: 5432
   selector:
-    app: mysql
+    app: mojaloop-postgres
 ---
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: mysql
+  name: mojaloop-postgres
   namespace: payment-switch
 spec:
-  serviceName: mysql
+  serviceName: mojaloop-postgres
   replicas: 1
   selector:
     matchLabels:
-      app: mysql
+      app: mojaloop-postgres
   template:
     metadata:
       labels:
-        app: mysql
+        app: mojaloop-postgres
     spec:
       containers:
-      - name: mysql
-        image: mysql:8.0
+      - name: postgres
+        image: postgres:15-alpine
         ports:
-        - containerPort: 3306
+        - containerPort: 5432
         env:
-        - name: MYSQL_ROOT_PASSWORD
+        - name: POSTGRES_PASSWORD
           value: "rootpassword"
-        - name: MYSQL_DATABASE
+        - name: POSTGRES_DB
           value: "central_ledger"
+        - name: POSTGRES_USER
+          value: "mojaloop"
         volumeMounts:
-        - name: mysql-data
-          mountPath: /var/lib/mysql
+        - name: postgres-data
+          mountPath: /var/lib/postgresql/data
         resources:
           requests:
             memory: "2Gi"
@@ -274,7 +276,7 @@ spec:
             cpu: "2000m"
   volumeClaimTemplates:
   - metadata:
-      name: mysql-data
+      name: postgres-data
     spec:
       accessModes: [ "ReadWriteOnce" ]
       storageClassName: "standard"

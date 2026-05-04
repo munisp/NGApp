@@ -10,7 +10,8 @@ from datetime import datetime, timedelta
 from typing import Dict, Any, Optional
 
 from flask import Flask, request, jsonify
-import mysql.connector
+import psycopg2
+import psycopg2.extras
 import redis
 
 app = Flask(__name__)
@@ -23,12 +24,13 @@ redis_client = redis.Redis(
     decode_responses=True
 )
 
-# Database configuration
+# Database configuration (PostgreSQL)
 DB_CONFIG = {
     "host": os.getenv("DB_HOST", "localhost"),
-    "user": os.getenv("DB_USER", "root"),
+    "port": int(os.getenv("DB_PORT", "5432")),
+    "user": os.getenv("DB_USER", "payment_user"),
     "password": os.getenv("DB_PASSWORD", ""),
-    "database": os.getenv("DB_NAME", "payment_switch"),
+    "dbname": os.getenv("DB_NAME", "payment_switch"),
 }
 
 
@@ -345,7 +347,7 @@ def send_verification_email(email: str, verification_url: str):
 def mark_email_verified(email: str, user_id: Optional[int], merchant_id: Optional[int]):
     """Mark email as verified in database"""
     try:
-        conn = mysql.connector.connect(**DB_CONFIG)
+        conn = psycopg2.connect(**DB_CONFIG)
         cursor = conn.cursor()
         
         if user_id:
@@ -368,7 +370,7 @@ def mark_email_verified(email: str, user_id: Optional[int], merchant_id: Optiona
 def is_email_verified(email: str) -> bool:
     """Check if email is already verified"""
     try:
-        conn = mysql.connector.connect(**DB_CONFIG)
+        conn = psycopg2.connect(**DB_CONFIG)
         cursor = conn.cursor()
         
         query = """
@@ -393,13 +395,14 @@ def store_document_metadata(merchant_id: int, document_type: str, filename: str,
                             file_url: str, file_size: int) -> int:
     """Store document metadata in database"""
     try:
-        conn = mysql.connector.connect(**DB_CONFIG)
+        conn = psycopg2.connect(**DB_CONFIG)
         cursor = conn.cursor()
         
         query = """
             INSERT INTO kyc_documents 
             (merchant_id, document_type, filename, file_url, file_size, uploaded_at)
             VALUES (%s, %s, %s, %s, %s, %s)
+            RETURNING id
         """
         
         cursor.execute(query, (
@@ -411,7 +414,7 @@ def store_document_metadata(merchant_id: int, document_type: str, filename: str,
             datetime.now()
         ))
         
-        document_id = cursor.lastrowid
+        document_id = cursor.fetchone()[0]
         
         conn.commit()
         cursor.close()
@@ -427,8 +430,8 @@ def store_document_metadata(merchant_id: int, document_type: str, filename: str,
 def get_merchant_documents(merchant_id: int) -> list:
     """Get all documents for a merchant"""
     try:
-        conn = mysql.connector.connect(**DB_CONFIG)
-        cursor = conn.cursor(dictionary=True)
+        conn = psycopg2.connect(**DB_CONFIG)
+        cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
         
         query = """
             SELECT 

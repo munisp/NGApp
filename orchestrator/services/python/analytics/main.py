@@ -9,7 +9,8 @@ from typing import Dict, Any, List
 
 from flask import Flask, request, jsonify
 from flask_socketio import SocketIO, emit
-import mysql.connector
+import psycopg2
+import psycopg2.extras
 import redis
 import json
 
@@ -25,12 +26,13 @@ redis_client = redis.Redis(
     decode_responses=True
 )
 
-# Database configuration
+# Database configuration (PostgreSQL)
 DB_CONFIG = {
     "host": os.getenv("DB_HOST", "localhost"),
-    "user": os.getenv("DB_USER", "root"),
+    "port": int(os.getenv("DB_PORT", "5432")),
+    "user": os.getenv("DB_USER", "payment_user"),
     "password": os.getenv("DB_PASSWORD", ""),
-    "database": os.getenv("DB_NAME", "payment_switch"),
+    "dbname": os.getenv("DB_NAME", "payment_switch"),
 }
 
 
@@ -201,8 +203,8 @@ def get_system_health() -> Dict[str, Any]:
 def get_overview_metrics(merchant_id: Optional[int], period: str) -> Dict[str, Any]:
     """Get overview metrics"""
     try:
-        conn = mysql.connector.connect(**DB_CONFIG)
-        cursor = conn.cursor(dictionary=True)
+        conn = psycopg2.connect(**DB_CONFIG)
+        cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
         
         date_filter = get_date_filter(period)
         merchant_filter = f"AND merchant_id = {merchant_id}" if merchant_id else ""

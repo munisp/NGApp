@@ -1,20 +1,21 @@
 import { getDb } from "./db";
-import { mysqlTable, int, varchar, text, timestamp, mysqlEnum } from "drizzle-orm/mysql-core";
+import { pgTable, serial, integer, varchar, text, timestamp } from "drizzle-orm/pg-core";
+import { auditStatusEnum } from "../drizzle/schema";
 
 /**
  * Audit log table for compliance and security
  */
-export const auditLogs = mysqlTable("auditLogs", {
-  id: int("id").autoincrement().primaryKey(),
-  userId: int("userId"),
-  merchantId: int("merchantId"),
+export const auditLogs = pgTable("auditLogs", {
+  id: serial("id").primaryKey(),
+  userId: integer("userId"),
+  merchantId: integer("merchantId"),
   action: varchar("action", { length: 64 }).notNull(),
   resource: varchar("resource", { length: 64 }).notNull(),
   resourceId: varchar("resourceId", { length: 128 }),
   details: text("details"),
   ipAddress: varchar("ipAddress", { length: 45 }),
   userAgent: text("userAgent"),
-  status: mysqlEnum("status", ["success", "failure"]).notNull(),
+  status: auditStatusEnum("status").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 

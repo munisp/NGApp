@@ -1,25 +1,24 @@
 version: '3.8'
 
 services:
-  # MySQL Database
+  # PostgreSQL Database
   db:
-    image: mysql:8.0
+    image: postgres:15-alpine
     container_name: remittance-db
     restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-rootpassword}
-      MYSQL_DATABASE: ${DB_NAME:-remittance}
-      MYSQL_USER: ${DB_USER:-remittance_user}
-      MYSQL_PASSWORD: ${DB_PASSWORD:-remittance_pass}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-remittance_pass}
+      POSTGRES_DB: ${DB_NAME:-remittance}
+      POSTGRES_USER: ${DB_USER:-remittance_user}
     ports:
-      - "${DB_PORT:-3306}:3306"
+      - "${DB_PORT:-5432}:5432"
     volumes:
-      - db_data:/var/lib/mysql
+      - db_data:/var/lib/postgresql/data
       - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init.sql
     networks:
       - remittance-network
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-remittance_user} -d ${DB_NAME:-remittance}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -56,7 +55,7 @@ services:
     environment:
       NODE_ENV: ${NODE_ENV:-production}
       PORT: ${PORT:-3000}
-      DATABASE_URL: mysql://${DB_USER:-remittance_user}:${DB_PASSWORD:-remittance_pass}@db:3306/${DB_NAME:-remittance}
+      DATABASE_URL: postgresql://${DB_USER:-remittance_user}:${DB_PASSWORD:-remittance_pass}@db:5432/${DB_NAME:-remittance}
       REDIS_URL: redis://redis:6379
       
       # JWT & Auth

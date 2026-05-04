@@ -62,15 +62,16 @@ jobs:
     runs-on: ubuntu-latest
     
     services:
-      mysql:
-        image: mysql:8.0
+      postgres:
+        image: postgres:15-alpine
         env:
-          MYSQL_ROOT_PASSWORD: test_password
-          MYSQL_DATABASE: test_db
+          POSTGRES_PASSWORD: test_password
+          POSTGRES_DB: test_db
+          POSTGRES_USER: postgres
         ports:
-          - 3306:3306
+          - 5432:5432
         options: >-
-          --health-cmd="mysqladmin ping"
+          --health-cmd="pg_isready -U postgres"
           --health-interval=10s
           --health-timeout=5s
           --health-retries=3
@@ -119,24 +120,24 @@ jobs:
       - name: Setup test environment
         run: |
           cp .env.example .env.test
-          echo "DATABASE_URL=mysql://root:test_password@localhost:3306/test_db" >> .env.test
+          echo "DATABASE_URL=postgresql://postgres:test_password@localhost:5432/test_db" >> .env.test
           echo "REDIS_URL=redis://localhost:6379" >> .env.test
       
       - name: Run database migrations
         run: pnpm db:push
         env:
-          DATABASE_URL: mysql://root:test_password@localhost:3306/test_db
+          DATABASE_URL: postgresql://postgres:test_password@localhost:5432/test_db
       
       - name: Run unit tests
         run: pnpm test:unit
         env:
-          DATABASE_URL: mysql://root:test_password@localhost:3306/test_db
+          DATABASE_URL: postgresql://postgres:test_password@localhost:5432/test_db
           REDIS_URL: redis://localhost:6379
       
       - name: Run integration tests
         run: pnpm test:integration
         env:
-          DATABASE_URL: mysql://root:test_password@localhost:3306/test_db
+          DATABASE_URL: postgresql://postgres:test_password@localhost:5432/test_db
           REDIS_URL: redis://localhost:6379
       
       - name: Upload coverage reports

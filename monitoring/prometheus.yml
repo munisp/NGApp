@@ -50,10 +50,10 @@ scrape_configs:
   #   static_configs:
   #     - targets: ['postgres-exporter:9187']
 
-  # MySQL Exporter (optional)
-  # - job_name: 'mysql'
+  # PostgreSQL Exporter (optional)
+  # - job_name: 'postgres'
   #   static_configs:
-  #     - targets: ['mysql-exporter:9104']
+  #     - targets: ['postgres-exporter:9187']
 
   # Redis Exporter (optional)
   # - job_name: 'redis'

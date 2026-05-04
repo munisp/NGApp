@@ -20,7 +20,7 @@ volumes:
   grafana_data:
   
   # Mojaloop volumes
-  mojaloop_mysql_data:
+  mojaloop_postgres_data:
 
 services:
   # ============================================================================
@@ -527,23 +527,22 @@ services:
   # MOJALOOP SERVICES (Minimal deployment for participant registration)
   # ============================================================================
   
-  # MySQL for Mojaloop (central-ledger requires MySQL)
-  mojaloop-mysql:
-    image: mysql:8.0
-    container_name: mojaloop-mysql
+  # PostgreSQL for Mojaloop
+  mojaloop-postgres:
+    image: postgres:15-alpine
+    container_name: mojaloop-postgres
     environment:
-      MYSQL_ROOT_PASSWORD: mojaloop_root_2024
-      MYSQL_DATABASE: central_ledger
-      MYSQL_USER: mojaloop
-      MYSQL_PASSWORD: mojaloop_pass_2024
+      POSTGRES_PASSWORD: mojaloop_pass_2024
+      POSTGRES_DB: central_ledger
+      POSTGRES_USER: mojaloop
     ports:
-      - "3307:3306"
+      - "5433:5432"
     volumes:
-      - mojaloop_mysql_data:/var/lib/mysql
+      - mojaloop_postgres_data:/var/lib/postgresql/data
     networks:
       - payment-switch-network
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-pmojaloop_root_2024"]
+      test: ["CMD-SHELL", "pg_isready -U mojaloop -d central_ledger"]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -554,8 +553,8 @@ services:
     image: mojaloop/central-ledger:v17.3.0
     container_name: central-ledger
     environment:
-      CLEDG_DATABASE__HOST: mojaloop-mysql
-      CLEDG_DATABASE__PORT: 3306
+      CLEDG_DATABASE__HOST: mojaloop-postgres
+      CLEDG_DATABASE__PORT: 5432
       CLEDG_DATABASE__USER: mojaloop
       CLEDG_DATABASE__PASSWORD: mojaloop_pass_2024
       CLEDG_DATABASE__SCHEMA: central_ledger
@@ -565,7 +564,7 @@ services:
     ports:
       - "3000:3001"  # Admin API
     depends_on:
-      mojaloop-mysql:
+      mojaloop-postgres:
         condition: service_healthy
       kafka:
         condition: service_healthy
@@ -583,8 +582,8 @@ services:
     image: mojaloop/account-lookup-service:v15.1.0
     container_name: account-lookup-service
     environment:
-      ALS_DATABASE__HOST: mojaloop-mysql
-      ALS_DATABASE__PORT: 3306
+      ALS_DATABASE__HOST: mojaloop-postgres
+      ALS_DATABASE__PORT: 5432
       ALS_DATABASE__USER: mojaloop
       ALS_DATABASE__PASSWORD: mojaloop_pass_2024
       ALS_DATABASE__SCHEMA: account_lookup
@@ -593,7 +592,7 @@ services:
       - "4001:4001"  # Admin API
       - "4002:4002"  # FSPIOP API
     depends_on:
-      mojaloop-mysql:
+      mojaloop-postgres:
         condition: service_healthy
     networks:
       - payment-switch-network

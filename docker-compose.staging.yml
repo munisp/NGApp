@@ -23,9 +23,6 @@ services:
       - ./storage:/app/storage
       - ./logs:/app/logs
       - ./certs:/app/certs:ro
-      # Mount source for hot reload in staging (optional)
-      # - ./server:/app/server:ro
-      # - ./client:/app/client:ro
     depends_on:
       db:
         condition: service_healthy
@@ -44,29 +41,29 @@ services:
       - "com.payment-switch.service=app"
 
   db:
-    image: mysql:8.0
+    image: postgres:15-alpine
     container_name: payment-switch-staging-db
     restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-staging_root_password}
-      MYSQL_DATABASE: payment_switch_staging
-      MYSQL_USER: ${DB_USER:-staging_user}
-      MYSQL_PASSWORD: ${DB_PASSWORD:-staging_password}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-staging_password}
+      POSTGRES_DB: payment_switch_staging
+      POSTGRES_USER: ${DB_USER:-staging_user}
     volumes:
-      - staging-db-data:/var/lib/mysql
+      - staging-db-data:/var/lib/postgresql/data
       - ./backups:/backups
       - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init.sql:ro
     ports:
-      - "3307:3306"  # Different port to avoid conflicts
+      - "5433:5432"  # Different port to avoid conflicts
     networks:
       - staging-network
-    command: 
-      - --default-authentication-plugin=mysql_native_password
-      - --max_connections=200
-      - --character-set-server=utf8mb4
-      - --collation-server=utf8mb4_unicode_ci
+    command:
+      - "postgres"
+      - "-c"
+      - "max_connections=200"
+      - "-c"
+      - "shared_buffers=256MB"
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${DB_ROOT_PASSWORD:-staging_root_password}"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-staging_user} -d payment_switch_staging"]
       interval: 10s
       timeout: 5s
       retries: 5

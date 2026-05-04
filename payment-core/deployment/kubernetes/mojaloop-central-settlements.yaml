@@ -159,7 +159,7 @@ metadata:
   namespace: payment-switch
 type: Opaque
 stringData:
-  central-settlements-uri: "mysql://central_settlements:PLACEHOLDER_INJECT_FROM_VAULT@mysql-primary.payment-switch.svc.cluster.local:3306/central_settlements"
-  central-ledger-uri: "mysql://central_ledger:PLACEHOLDER_INJECT_FROM_VAULT@mysql-primary.payment-switch.svc.cluster.local:3306/central_ledger"
-  account-lookup-uri: "mysql://account_lookup:PLACEHOLDER_INJECT_FROM_VAULT@mysql-primary.payment-switch.svc.cluster.local:3306/account_lookup"
-  quoting-service-uri: "mysql://quoting_service:PLACEHOLDER_INJECT_FROM_VAULT@mysql-primary.payment-switch.svc.cluster.local:3306/quoting_service"
+  central-settlements-uri: "postgresql://central_settlements:PLACEHOLDER_INJECT_FROM_VAULT@mojaloop-postgres.payment-switch.svc.cluster.local:5432/central_settlements"
+  central-ledger-uri: "postgresql://central_ledger:PLACEHOLDER_INJECT_FROM_VAULT@mojaloop-postgres.payment-switch.svc.cluster.local:5432/central_ledger"
+  account-lookup-uri: "postgresql://account_lookup:PLACEHOLDER_INJECT_FROM_VAULT@mojaloop-postgres.payment-switch.svc.cluster.local:5432/account_lookup"
+  quoting-service-uri: "postgresql://quoting_service:PLACEHOLDER_INJECT_FROM_VAULT@mojaloop-postgres.payment-switch.svc.cluster.local:5432/quoting_service"

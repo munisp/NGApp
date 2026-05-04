@@ -54,8 +54,8 @@ services:
       retries: 3
       start_period: 40s
 
-  mysql-db:
-    image: mysql:8.0
+  postgres-db:
+    image: postgres:15-alpine
     deploy:
       replicas: 1
       placement:
@@ -69,14 +69,15 @@ services:
           cpus: '0.5'
           memory: 2G
     environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER:-payment_user}
     volumes:
-      - mysql-data:/var/lib/mysql
+      - postgres-data:/var/lib/postgresql/data
     networks:
       - payment-switch-network
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-payment_user}"]
       interval: 10s
       timeout: 5s
       retries: 3
@@ -192,7 +193,7 @@ networks:
     attachable: true
 
 volumes:
-  mysql-data:
+  postgres-data:
   redis-data:
   traefik-certs:
   prometheus-data:

@@ -395,7 +395,7 @@ export const SecretPaths = {
   SENDGRID_API_KEY: 'communication/sendgrid/api-key',
   
   // Database credentials
-  DB_CREDENTIALS: 'database/mysql/credentials',
+  DB_CREDENTIALS: 'database/postgres/credentials',
   REDIS_PASSWORD: 'database/redis/password',
   
   // Encryption keys

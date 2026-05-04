@@ -89,11 +89,6 @@ jobs:
             # Create backup directory
             mkdir -p backups/$(date +%Y%m%d)
             
-            # Backup MySQL database
-            docker-compose -f docker-compose.unified.yml exec -T mysql-db \
-              mysqldump -u root -p$MYSQL_ROOT_PASSWORD --all-databases \
-              > backups/$(date +%Y%m%d)/mysql-backup-$(date +%H%M%S).sql
-            
             # Backup PostgreSQL database
             docker-compose -f docker-compose.unified.yml exec -T postgres-db \
               pg_dumpall -U postgres \
@@ -387,10 +382,6 @@ jobs:
             
             # Extract backup
             tar -xzf $LATEST_BACKUP -C /tmp/
-            
-            # Restore MySQL
-            docker-compose -f docker-compose.unified.yml exec -T mysql-db \
-              mysql -u root -p$MYSQL_ROOT_PASSWORD < /tmp/mysql-backup-*.sql
             
             # Restore PostgreSQL
             docker-compose -f docker-compose.unified.yml exec -T postgres-db \

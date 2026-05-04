@@ -11,7 +11,8 @@ from datetime import datetime
 from typing import Dict, Any, Optional
 
 from flask import Flask, request, jsonify
-import mysql.connector
+import psycopg2
+import psycopg2.extras
 from jinja2 import Template
 
 app = Flask(__name__)
@@ -23,12 +24,13 @@ SMTP_USERNAME = os.getenv("SMTP_USERNAME", "")
 SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "")
 SMTP_FROM = os.getenv("SMTP_FROM", "noreply@payment-switch.com")
 
-# Database configuration
+# Database configuration (PostgreSQL)
 DB_CONFIG = {
     "host": os.getenv("DB_HOST", "localhost"),
-    "user": os.getenv("DB_USER", "root"),
+    "port": int(os.getenv("DB_PORT", "5432")),
+    "user": os.getenv("DB_USER", "payment_user"),
     "password": os.getenv("DB_PASSWORD", ""),
-    "database": os.getenv("DB_NAME", "payment_switch"),
+    "dbname": os.getenv("DB_NAME", "payment_switch"),
 }
 
 
@@ -151,8 +153,8 @@ def preview_receipt():
 def get_transaction(transaction_id: str) -> Optional[Dict[str, Any]]:
     """Retrieve transaction details from database"""
     try:
-        conn = mysql.connector.connect(**DB_CONFIG)
-        cursor = conn.cursor(dictionary=True)
+        conn = psycopg2.connect(**DB_CONFIG)
+        cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
         
         query = """
             SELECT 

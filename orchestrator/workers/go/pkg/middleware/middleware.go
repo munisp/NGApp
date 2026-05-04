@@ -5,7 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 
-	_ "github.com/go-sql-driver/mysql"
+	_ "github.com/lib/pq"
 	"github.com/redis/go-redis/v9"
 	"github.com/segmentio/kafka-go"
 
@@ -29,9 +29,9 @@ type Middleware struct {
 func NewMiddleware(cfg *config.Config) (*Middleware, error) {
 	mw := &Middleware{}
 
-	// Initialize MySQL database
+	// Initialize PostgreSQL database
 	if cfg.DatabaseURL != "" {
-		db, err := sql.Open("mysql", cfg.DatabaseURL)
+		db, err := sql.Open("postgres", cfg.DatabaseURL)
 		if err != nil {
 			return nil, fmt.Errorf("failed to connect to database: %w", err)
 		}

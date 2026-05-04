@@ -10,7 +10,7 @@ import (
 	"os"
 	"time"
 
-	_ "github.com/go-sql-driver/mysql"
+	_ "github.com/lib/pq"
 	"github.com/xuri/excelize/v2"
 )
 
@@ -39,7 +39,7 @@ func main() {
 	var err error
 	dbURL := os.Getenv("DATABASE_URL")
 	if dbURL != "" {
-		db, err = sql.Open("mysql", dbURL)
+		db, err = sql.Open("postgres", dbURL)
 		if err != nil {
 			log.Printf("Failed to connect to database: %v", err)
 		} else {
