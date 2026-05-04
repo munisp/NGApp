@@ -161,7 +161,8 @@ fn main() {
 
         let mut s = bg_state.lock().unwrap();
         let batch_size = s.bandwidth_profile.batch_size;
-        let to_process: Vec<QueueEntry> = s.queue.drain(..batch_size.min(s.queue.len())).collect();
+        let drain_end = batch_size.min(s.queue.len());
+        let to_process: Vec<QueueEntry> = s.queue.drain(..drain_end).collect();
         drop(s);
 
         for entry in &to_process {
