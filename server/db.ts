@@ -2942,8 +2942,8 @@ export async function listStaffTraining(orgId?: number, status?: string, limit =
   let q = `SELECT st.*, o.name AS org_name FROM staff_training_records st LEFT JOIN organizations o ON o.id = st.organization_id WHERE 1=1`;
   const params: unknown[] = [];
   if (orgId) { params.push(orgId); q += ` AND st.organization_id = $${params.length}`; }
-  if (status) { params.push(status); q += ` AND st.training_status = $${params.length}`; }
-  params.push(limit); q += ` ORDER BY st.scheduled_date DESC LIMIT $${params.length}`;
+  if (status && status !== 'all') { params.push(status); q += ` AND st.training_type = $${params.length}`; }
+  params.push(limit); q += ` ORDER BY st.created_at DESC LIMIT $${params.length}`;
   const result = await pool.query(q, params);
   return result.rows;
 }

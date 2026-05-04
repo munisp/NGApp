@@ -273,7 +273,7 @@ export const enforcementTimelineRouter = router({
       const enfParams: unknown[] = [enfDays.toString()];
       const enfOrgFilter = input.orgId ? `AND ea.organization_id = $${enfParams.push(input.orgId)}` : '';
       enfParams.push(input.limit);
-      const [rows] = await execRaw(`SELECT ea.*, o.name as org_name, o.sector, cv.violation_type, cv.severity as violation_severity FROM enforcement_actions ea LEFT JOIN organizations o ON ea.organization_id = o.id LEFT JOIN compliance_violations cv ON ea.violation_id = cv.id WHERE ea.created_at >= NOW() - ($1 || ' days')::interval ${enfOrgFilter} ORDER BY ea.created_at DESC LIMIT $${enfParams.length}`, enfParams);
+      const [rows] = await execRaw(`SELECT ea.*, o.name as org_name, o.sector, cv.title as violation_type, cv.severity as violation_severity FROM enforcement_actions ea LEFT JOIN organizations o ON ea.organization_id = o.id LEFT JOIN compliance_violations cv ON ea.violation_id = cv.id WHERE ea.created_at >= NOW() - ($1 || ' days')::interval ${enfOrgFilter} ORDER BY ea.created_at DESC LIMIT $${enfParams.length}`, enfParams);
       return rows as any[];
     }),
   milestones: protectedProcedure.input(z.object({ caseId: z.number().int() })).query(async ({ input }) => {

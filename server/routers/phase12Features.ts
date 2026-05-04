@@ -92,7 +92,7 @@ export const dataPipelineRouter = router({
   getDbtModels: protectedProcedure.query(async () => {
     const p = pool();
     try {
-      const q = await p.query("SELECT * FROM dbt_models ORDER BY schema, model_name");
+      const q = await p.query("SELECT * FROM dbt_models ORDER BY schema_name, model_name");
       return q.rows;
     } finally { await p.end(); }
   }),
@@ -100,7 +100,7 @@ export const dataPipelineRouter = router({
   getAirflowDags: protectedProcedure.query(async () => {
     const p = pool();
     try {
-      const q = await p.query("SELECT * FROM airflow_dags ORDER BY dag_name");
+      const q = await p.query("SELECT * FROM airflow_dags ORDER BY dag_id");
       return q.rows;
     } finally { await p.end(); }
   }),
@@ -122,8 +122,8 @@ export const dataPipelineRouter = router({
     const p = pool();
     try {
       const flows = await p.query("SELECT COUNT(*) as total, SUM(CASE WHEN status='running' THEN 1 ELSE 0 END) as running, SUM(records_processed) as total_records FROM data_pipeline_flows");
-      const dbt = await p.query("SELECT COUNT(*) as total, SUM(CASE WHEN status='success' THEN 1 ELSE 0 END) as success FROM dbt_models");
-      const airflow = await p.query("SELECT COUNT(*) as total, SUM(CASE WHEN is_active AND NOT is_paused THEN 1 ELSE 0 END) as active FROM airflow_dags");
+      const dbt = await p.query("SELECT COUNT(*) as total, SUM(CASE WHEN last_run_status='success' THEN 1 ELSE 0 END) as success FROM dbt_models");
+      const airflow = await p.query("SELECT COUNT(*) as total, SUM(CASE WHEN is_active THEN 1 ELSE 0 END) as active FROM airflow_dags");
       return {
         flows: flows.rows[0],
         dbt: dbt.rows[0],
@@ -217,7 +217,7 @@ export const consentLifecycleRouter = router({
         const params: unknown[] = [];
         if (input.orgId) { params.push(input.orgId); q += ` AND cle.org_id = $${params.length}`; }
         if (input.eventType) { params.push(input.eventType); q += ` AND cle.event_type = $${params.length}`; }
-        q += ` ORDER BY cle.occurred_at DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
+        q += ` ORDER BY cle.created_at DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
         params.push(input.limit, offset);
         const result = await p.query(q, params);
         const count = await p.query("SELECT COUNT(*) FROM consent_lifecycle_events");
@@ -285,7 +285,7 @@ export const regulatoryIntelligenceRouter = router({
         if (input.impactLevel) { params.push(input.impactLevel); q += ` AND impact_level = $${params.length}`; }
         if (input.actionRequired !== undefined) { params.push(input.actionRequired); q += ` AND action_required = $${params.length}`; }
         if (input.search) { params.push(`%${input.search}%`); q += ` AND (title ILIKE $${params.length} OR summary ILIKE $${params.length})`; }
-        q += " ORDER BY published_at DESC";
+        q += " ORDER BY created_at DESC";
         const result = await p.query(q, params);
         return result.rows;
       } finally { await p.end(); }
@@ -343,14 +343,14 @@ export const incidentResponseRouter = router({
     .query(async ({ input }) => {
       const p = pool();
       try {
-        let q = `SELECT ira.*, ip.title as playbook_title, ip.incident_type, o.name as org_name
+        let q = `SELECT ira.*, ip.title as playbook_title, ip.category as incident_type, o.name as org_name
                  FROM incident_response_activations ira
                  LEFT JOIN incident_playbooks ip ON ira.playbook_id = ip.id
                  LEFT JOIN organizations o ON ira.org_id = o.id
                  WHERE 1=1`;
         const params: unknown[] = [];
         if (input.status) { params.push(input.status); q += ` AND ira.status = $${params.length}`; }
-        q += " ORDER BY ira.activated_at DESC";
+        q += " ORDER BY ira.created_at DESC";
         const result = await p.query(q, params);
         return result.rows;
       } finally { await p.end(); }
@@ -423,7 +423,7 @@ export const complianceGapRouter = router({
                  LEFT JOIN organizations o ON cga.org_id = o.id WHERE 1=1`;
         const params: unknown[] = [];
         if (input.orgId) { params.push(input.orgId); q += ` AND cga.org_id = $${params.length}`; }
-        q += " ORDER BY cga.assessed_at DESC";
+        q += " ORDER BY cga.created_at DESC";
         const result = await p.query(q, params);
         return result.rows;
       } finally { await p.end(); }
@@ -555,7 +555,7 @@ export const vendorRiskRouter = router({
           SUM(CASE WHEN risk_level = 'low' THEN 1 ELSE 0 END) as low_risk,
           SUM(CASE WHEN dpa_executed = FALSE THEN 1 ELSE 0 END) as missing_dpa,
           SUM(CASE WHEN dpia_required AND NOT dpa_executed THEN 1 ELSE 0 END) as dpia_required
-        FROM vendor_risk_profiles WHERE contract_status = 'active'
+        FROM vendor_risk_profiles WHERE status = 'active'
       `);
       return q.rows[0];
     } finally { await p.end(); }
@@ -596,7 +596,7 @@ export const whistleblowerRouter = router({
                  LEFT JOIN organizations o ON wr.org_id = o.id WHERE 1=1`;
         const params: unknown[] = [];
         if (input.status) { params.push(input.status); q += ` AND wr.status = $${params.length}`; }
-        q += " ORDER BY wr.submitted_at DESC";
+        q += " ORDER BY wr.created_at DESC";
         const result = await p.query(q, params);
         return result.rows;
       } finally { await p.end(); }
@@ -750,11 +750,11 @@ export const aiEthicsRouter = router({
       const q = await p.query(`
         SELECT 
           COUNT(*) as total,
-          AVG(overall_ethics_score) as avg_score,
-          SUM(CASE WHEN review_status = 'approved' THEN 1 ELSE 0 END) as approved,
-          SUM(CASE WHEN review_status = 'rejected' THEN 1 ELSE 0 END) as rejected,
-          SUM(CASE WHEN review_status = 'pending' THEN 1 ELSE 0 END) as pending,
-          SUM(CASE WHEN ndpa_article_24_compliant = FALSE THEN 1 ELSE 0 END) as non_compliant
+          AVG(overall_score) as avg_score,
+          SUM(CASE WHEN status = 'approved' THEN 1 ELSE 0 END) as approved,
+          SUM(CASE WHEN status = 'rejected' THEN 1 ELSE 0 END) as rejected,
+          SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending,
+          SUM(CASE WHEN status = 'under_review' THEN 1 ELSE 0 END) as non_compliant
         FROM ai_ethics_reviews
       `);
       return q.rows[0];
@@ -895,7 +895,7 @@ export const crossAgencyRouter = router({
       const q = await p.query(`
         SELECT
           COUNT(*) as total,
-          SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END) as active,
+          SUM(CASE WHEN status = 'approved' THEN 1 ELSE 0 END) as active,
           SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending,
           COALESCE(SUM(records_shared), 0) as transfers_30d
         FROM cross_agency_data_shares
@@ -1197,18 +1197,16 @@ export const finesRouter = router({
       const p = pool();
       try {
         let q = `SELECT ef.*, o.name as org_name,
-          COALESCE(ec.case_ref, '') as case_ref,
-          COALESCE(ec.violation_type, '') as violation_type,
+          ef.violation_description as violation_type,
           ef.amount as fine_amount_ngn,
           ef.status as payment_status,
-          CONCAT('NDPA-FINE-', LPAD(ef.id::text, 6, '0')) as fine_ref,
-          CONCAT('NDPC/DEC/', EXTRACT(YEAR FROM ef.issued_at), '/', LPAD(ef.id::text, 4, '0')) as ndpc_ref
+          COALESCE(ef.fine_reference, CONCAT('NDPA-FINE-', LPAD(ef.id::text, 6, '0'))) as fine_ref,
+          COALESCE(ef.ndpc_reference, CONCAT('NDPC/DEC/', EXTRACT(YEAR FROM ef.issued_at), '/', LPAD(ef.id::text, 4, '0'))) as ndpc_ref
           FROM enforcement_fines ef
-          LEFT JOIN organizations o ON ef.org_id = o.id
-          LEFT JOIN enforcement_cases ec ON ef.case_id = ec.id
+          LEFT JOIN organizations o ON ef.organization_id = o.id
           WHERE 1=1`;
         const params: unknown[] = [];
-        if (input.orgId) { params.push(input.orgId); q += ` AND ef.org_id = $${params.length}`; }
+        if (input.orgId) { params.push(input.orgId); q += ` AND ef.organization_id = $${params.length}`; }
         if (input.status) { params.push(input.status); q += ` AND ef.status = $${params.length}`; }
         q += " ORDER BY ef.issued_at DESC";
         const result = await p.query(q, params);
@@ -1221,8 +1219,8 @@ export const finesRouter = router({
       const q = await p.query(`
         SELECT 
           COUNT(*) as total,
-          SUM(CASE WHEN status IN ('pending','overdue') THEN amount ELSE 0 END) as total_outstanding,
-          SUM(CASE WHEN status = 'paid' THEN amount_paid ELSE 0 END) as total_collected,
+          SUM(CASE WHEN status IN ('outstanding','overdue') THEN amount ELSE 0 END) as total_outstanding,
+          SUM(CASE WHEN status = 'paid' THEN amount ELSE 0 END) as total_collected,
           SUM(CASE WHEN status = 'overdue' THEN 1 ELSE 0 END) as overdue
         FROM enforcement_fines
       `);
@@ -1249,7 +1247,7 @@ export const finesRouter = router({
         const dueDate = new Date();
         dueDate.setDate(dueDate.getDate() + 30);
         const q = await p.query(
-          `INSERT INTO enforcement_fines (org_id, amount, currency, status, due_date)
+          `INSERT INTO enforcement_fines (organization_id, amount, currency, status, due_date)
            VALUES ($1, $2, 'NGN', 'pending', $3) RETURNING *`,
           [input.orgId, input.fineAmountNgn, dueDate]
         );
@@ -1261,7 +1259,7 @@ export const finesRouter = router({
     .mutation(async ({ input, ctx }) => {
       const p = pool();
       try {
-        const fine = await p.query(`SELECT ef.*, o.name as org_name FROM enforcement_fines ef LEFT JOIN organizations o ON ef.org_id = o.id WHERE ef.id = $1`, [input.fineId]);
+        const fine = await p.query(`SELECT ef.*, o.name as org_name FROM enforcement_fines ef LEFT JOIN organizations o ON ef.organization_id = o.id WHERE ef.id = $1`, [input.fineId]);
         if (!fine.rows[0]) throw new Error("Fine not found");
         const f = fine.rows[0];
         // Create Stripe checkout session
