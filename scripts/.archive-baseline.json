@@ -1,0 +1,166 @@
+{
+  "generated": "2026-05-04T12:21:49Z",
+  "total_files": 192064,
+  "directories": [
+    {
+      "path": ".github",
+      "file_count": 6,
+      "size_kb": 64
+    },
+    {
+      "path": ".manus",
+      "file_count": 33,
+      "size_kb": 156
+    },
+    {
+      "path": "admin-dashboard",
+      "file_count": 29944,
+      "size_kb": 680532
+    },
+    {
+      "path": "client",
+      "file_count": 160,
+      "size_kb": 2408
+    },
+    {
+      "path": "compliance",
+      "file_count": 3,
+      "size_kb": 48
+    },
+    {
+      "path": "config",
+      "file_count": 8,
+      "size_kb": 80
+    },
+    {
+      "path": "deploy",
+      "file_count": 15,
+      "size_kb": 152
+    },
+    {
+      "path": "dist",
+      "file_count": 153,
+      "size_kb": 5344
+    },
+    {
+      "path": "docs",
+      "file_count": 95,
+      "size_kb": 1384
+    },
+    {
+      "path": "drizzle",
+      "file_count": 84,
+      "size_kb": 3892
+    },
+    {
+      "path": "infra",
+      "file_count": 1,
+      "size_kb": 12
+    },
+    {
+      "path": "k8s",
+      "file_count": 13,
+      "size_kb": 120
+    },
+    {
+      "path": "kubernetes",
+      "file_count": 3,
+      "size_kb": 24
+    },
+    {
+      "path": "load-testing",
+      "file_count": 6,
+      "size_kb": 48
+    },
+    {
+      "path": "load-tests",
+      "file_count": 6,
+      "size_kb": 76
+    },
+    {
+      "path": "middleware",
+      "file_count": 14,
+      "size_kb": 200
+    },
+    {
+      "path": "mobile",
+      "file_count": 23,
+      "size_kb": 216
+    },
+    {
+      "path": "mobile-app",
+      "file_count": 6,
+      "size_kb": 68
+    },
+    {
+      "path": "monitoring",
+      "file_count": 11,
+      "size_kb": 108
+    },
+    {
+      "path": "nginx",
+      "file_count": 3,
+      "size_kb": 28
+    },
+    {
+      "path": "node_modules",
+      "file_count": 62683,
+      "size_kb": 725512
+    },
+    {
+      "path": "orchestrator",
+      "file_count": 36,
+      "size_kb": 608
+    },
+    {
+      "path": "patches",
+      "file_count": 1,
+      "size_kb": 8
+    },
+    {
+      "path": "payment-core",
+      "file_count": 3545,
+      "size_kb": 828768
+    },
+    {
+      "path": "payment-switch",
+      "file_count": 94981,
+      "size_kb": 1702284
+    },
+    {
+      "path": "public",
+      "file_count": 1,
+      "size_kb": 16
+    },
+    {
+      "path": "scripts",
+      "file_count": 9,
+      "size_kb": 80
+    },
+    {
+      "path": "sdks",
+      "file_count": 19,
+      "size_kb": 208
+    },
+    {
+      "path": "security",
+      "file_count": 1,
+      "size_kb": 20
+    },
+    {
+      "path": "server",
+      "file_count": 147,
+      "size_kb": 1848
+    },
+    {
+      "path": "shared",
+      "file_count": 3,
+      "size_kb": 20
+    },
+    {
+      "path": "tests",
+      "file_count": 1,
+      "size_kb": 12
+    }
+  ]
+}
