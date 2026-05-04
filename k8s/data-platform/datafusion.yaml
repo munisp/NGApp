@@ -1,0 +1,596 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: datafusion-config
+  namespace: enterprise-crm
+data:
+  datafusion-config.toml: |
+    # DataFusion Configuration for Enterprise CRM
+    
+    [query_engine]
+    # Query execution settings
+    target_partitions = 8
+    max_memory_per_partition = "256MB"
+    batch_size = 8192
+    coalesce_batches = true
+    
+    # Optimization settings
+    enable_optimizer = true
+    enable_predicate_pushdown = true
+    enable_projection_pushdown = true
+    enable_filter_pushdown = true
+    enable_limit_pushdown = true
+    enable_join_reorder = true
+    
+    # Parallelism settings
+    max_parallel_tasks = 16
+    enable_parallel_execution = true
+    
+    [storage]
+    # Object store configuration
+    object_store_type = "s3"
+    s3_endpoint = "http://minio:9000"
+    s3_region = "us-east-1"
+    s3_bucket = "lakehouse"
+    s3_path_style_access = true
+    s3_ssl_enabled = false
+    
+    # Cache settings
+    enable_object_store_cache = true
+    cache_size = "1GB"
+    cache_ttl = "1h"
+    
+    [formats]
+    # File format settings
+    default_format = "parquet"
+    enable_parquet_predicate_pushdown = true
+    enable_parquet_bloom_filter = true
+    parquet_row_group_size = 1048576
+    
+    # Delta Lake integration
+    enable_delta_lake = true
+    delta_log_retention = "7d"
+    
+    [metrics]
+    # Metrics and monitoring
+    enable_metrics = true
+    metrics_port = 9090
+    enable_query_profiling = true
+    
+  datafusion-service.rs: |
+    use std::collections::HashMap;
+    use std::sync::Arc;
+    use std::time::Instant;
+    
+    use arrow::array::*;
+    use arrow::datatypes::*;
+    use arrow::record_batch::RecordBatch;
+    use datafusion::prelude::*;
+    use datafusion::execution::context::SessionContext;
+    use datafusion::execution::runtime_env::{RuntimeConfig, RuntimeEnv};
+    use datafusion::datasource::object_store::ObjectStoreUrl;
+    use datafusion_common::{DataFusionError, Result};
+    use object_store::aws::AmazonS3Builder;
+    use object_store::ObjectStore;
+    
+    use tokio::net::TcpListener;
+    use warp::Filter;
+    use serde::{Deserialize, Serialize};
+    use serde_json::Value;
+    
+    #[derive(Debug, Serialize, Deserialize)]
+    struct QueryRequest {
+        sql: String,
+        format: Option<String>,
+        limit: Option<usize>,
+        timeout_seconds: Option<u64>,
+    }
+    
+    #[derive(Debug, Serialize, Deserialize)]
+    struct QueryResponse {
+        success: bool,
+        data: Option<Vec<HashMap<String, Value>>>,
+        schema: Option<Vec<Field>>,
+        execution_time_ms: u64,
+        rows_returned: usize,
+        error: Option<String>,
+        query_plan: Option<String>,
+    }
+    
+    #[derive(Debug, Serialize, Deserialize)]
+    struct QueryStats {
+        query_id: String,
+        sql: String,
+        execution_time_ms: u64,
+        rows_returned: usize,
+        bytes_scanned: u64,
+        partitions_scanned: usize,
+        timestamp: chrono::DateTime<chrono::Utc>,
+    }
+    
+    pub struct DataFusionQueryEngine {
+        ctx: SessionContext,
+        query_stats: Arc<tokio::sync::Mutex<Vec<QueryStats>>>,
+    }
+    
+    impl DataFusionQueryEngine {
+        pub async fn new() -> Result<Self> {
+            // Configure runtime environment
+            let runtime_config = RuntimeConfig::new()
+                .with_memory_limit(2_147_483_648, 1.0) // 2GB memory limit
+                .with_disk_manager_os()
+                .with_fair_spill_pool(2_147_483_648);
+            
+            let runtime = Arc::new(RuntimeEnv::new(runtime_config)?);
+            let ctx = SessionContext::with_runtime_env(runtime);
+            
+            // Configure object store (S3/MinIO)
+            let s3_store = AmazonS3Builder::new()
+                .with_endpoint("http://minio:9000")
+                .with_region("us-east-1")
+                .with_bucket_name("lakehouse")
+                .with_access_key_id("minioadmin")
+                .with_secret_access_key("minioadmin")
+                .with_allow_http(true)
+                .build()?;
+            
+            let object_store_url = ObjectStoreUrl::parse("s3://lakehouse")?;
+            ctx.runtime_env()
+                .register_object_store(&object_store_url, Arc::new(s3_store));
+            
+            // Register Delta Lake tables
+            Self::register_delta_tables(&ctx).await?;
+            
+            // Register custom functions
+            Self::register_custom_functions(&ctx).await?;
+            
+            Ok(Self {
+                ctx,
+                query_stats: Arc::new(tokio::sync::Mutex::new(Vec::new())),
+            })
+        }
+        
+        async fn register_delta_tables(ctx: &SessionContext) -> Result<()> {
+            // Register customer table
+            ctx.sql("CREATE EXTERNAL TABLE customers STORED AS DELTATABLE LOCATION 's3://lakehouse/customers'").await?;
+            
+            // Register product table
+            ctx.sql("CREATE EXTERNAL TABLE products STORED AS DELTATABLE LOCATION 's3://lakehouse/products'").await?;
+            
+            // Register opportunities table
+            ctx.sql("CREATE EXTERNAL TABLE opportunities STORED AS DELTATABLE LOCATION 's3://lakehouse/opportunities'").await?;
+            
+            // Register inventory table
+            ctx.sql("CREATE EXTERNAL TABLE inventory STORED AS DELTATABLE LOCATION 's3://lakehouse/inventory'").await?;
+            
+            // Register interactions table
+            ctx.sql("CREATE EXTERNAL TABLE interactions STORED AS DELTATABLE LOCATION 's3://lakehouse/interactions'").await?;
+            
+            // Register analytics aggregations table
+            ctx.sql("CREATE EXTERNAL TABLE analytics_aggregations STORED AS DELTATABLE LOCATION 's3://lakehouse/analytics_aggregations'").await?;
+            
+            println!("Registered Delta Lake tables successfully");
+            Ok(())
+        }
+        
+        async fn register_custom_functions(ctx: &SessionContext) -> Result<()> {
+            // Register geospatial functions
+            // This would integrate with Apache Sedona for geospatial operations
+            
+            // Register business logic functions
+            ctx.sql(r#"
+                CREATE OR REPLACE FUNCTION customer_lifetime_value(
+                    total_purchases DOUBLE,
+                    avg_order_value DOUBLE,
+                    purchase_frequency DOUBLE,
+                    customer_lifespan DOUBLE
+                ) RETURNS DOUBLE AS
+                total_purchases * avg_order_value * purchase_frequency * customer_lifespan
+            "#).await?;
+            
+            ctx.sql(r#"
+                CREATE OR REPLACE FUNCTION opportunity_score(
+                    value DOUBLE,
+                    probability INT,
+                    days_in_stage INT
+                ) RETURNS DOUBLE AS
+                (value * probability / 100.0) * (1.0 / (1.0 + days_in_stage * 0.01))
+            "#).await?;
+            
+            println!("Registered custom functions successfully");
+            Ok(())
+        }
+        
+        pub async fn execute_query(&self, request: QueryRequest) -> QueryResponse {
+            let start_time = Instant::now();
+            let query_id = uuid::Uuid::new_v4().to_string();
+            
+            match self.execute_sql(&request.sql, request.limit).await {
+                Ok((batches, plan)) => {
+                    let execution_time = start_time.elapsed().as_millis() as u64;
+                    
+                    // Convert to JSON
+                    let (data, schema, rows_returned) = self.batches_to_json(batches).await;
+                    
+                    // Store query statistics
+                    let stats = QueryStats {
+                        query_id: query_id.clone(),
+                        sql: request.sql.clone(),
+                        execution_time_ms: execution_time,
+                        rows_returned,
+                        bytes_scanned: 0, // Would be calculated from metrics
+                        partitions_scanned: 0, // Would be calculated from metrics
+                        timestamp: chrono::Utc::now(),
+                    };
+                    
+                    {
+                        let mut stats_guard = self.query_stats.lock().await;
+                        stats_guard.push(stats);
+                        
+                        // Keep only last 1000 queries
+                        if stats_guard.len() > 1000 {
+                            stats_guard.remove(0);
+                        }
+                    }
+                    
+                    QueryResponse {
+                        success: true,
+                        data: Some(data),
+                        schema: Some(schema),
+                        execution_time_ms: execution_time,
+                        rows_returned,
+                        error: None,
+                        query_plan: Some(plan),
+                    }
+                }
+                Err(e) => {
+                    let execution_time = start_time.elapsed().as_millis() as u64;
+                    
+                    QueryResponse {
+                        success: false,
+                        data: None,
+                        schema: None,
+                        execution_time_ms: execution_time,
+                        rows_returned: 0,
+                        error: Some(e.to_string()),
+                        query_plan: None,
+                    }
+                }
+            }
+        }
+        
+        async fn execute_sql(&self, sql: &str, limit: Option<usize>) -> Result<(Vec<RecordBatch>, String)> {
+            // Create logical plan
+            let logical_plan = self.ctx.sql(sql).await?.into_optimized_plan()?;
+            let plan_string = format!("{:?}", logical_plan);
+            
+            // Execute query
+            let mut df = self.ctx.sql(sql).await?;
+            
+            // Apply limit if specified
+            if let Some(limit_val) = limit {
+                df = df.limit(0, Some(limit_val))?;
+            }
+            
+            // Collect results
+            let batches = df.collect().await?;
+            
+            Ok((batches, plan_string))
+        }
+        
+        async fn batches_to_json(&self, batches: Vec<RecordBatch>) -> (Vec<HashMap<String, Value>>, Vec<Field>, usize) {
+            let mut data = Vec::new();
+            let mut total_rows = 0;
+            let schema = if !batches.is_empty() {
+                batches[0].schema().fields().clone()
+            } else {
+                Vec::new()
+            };
+            
+            for batch in batches {
+                total_rows += batch.num_rows();
+                
+                for row_idx in 0..batch.num_rows() {
+                    let mut row = HashMap::new();
+                    
+                    for (col_idx, field) in batch.schema().fields().iter().enumerate() {
+                        let column = batch.column(col_idx);
+                        let value = self.array_value_to_json(column, row_idx);
+                        row.insert(field.name().clone(), value);
+                    }
+                    
+                    data.push(row);
+                }
+            }
+            
+            (data, schema, total_rows)
+        }
+        
+        fn array_value_to_json(&self, array: &dyn Array, row_idx: usize) -> Value {
+            if array.is_null(row_idx) {
+                return Value::Null;
+            }
+            
+            match array.data_type() {
+                DataType::Boolean => {
+                    let arr = array.as_any().downcast_ref::<BooleanArray>().unwrap();
+                    Value::Bool(arr.value(row_idx))
+                }
+                DataType::Int32 => {
+                    let arr = array.as_any().downcast_ref::<Int32Array>().unwrap();
+                    Value::Number(serde_json::Number::from(arr.value(row_idx)))
+                }
+                DataType::Int64 => {
+                    let arr = array.as_any().downcast_ref::<Int64Array>().unwrap();
+                    Value::Number(serde_json::Number::from(arr.value(row_idx)))
+                }
+                DataType::Float64 => {
+                    let arr = array.as_any().downcast_ref::<Float64Array>().unwrap();
+                    Value::Number(serde_json::Number::from_f64(arr.value(row_idx)).unwrap_or(serde_json::Number::from(0)))
+                }
+                DataType::Utf8 => {
+                    let arr = array.as_any().downcast_ref::<StringArray>().unwrap();
+                    Value::String(arr.value(row_idx).to_string())
+                }
+                DataType::Timestamp(_, _) => {
+                    let arr = array.as_any().downcast_ref::<TimestampNanosecondArray>().unwrap();
+                    let timestamp = arr.value(row_idx);
+                    Value::String(chrono::DateTime::from_timestamp_nanos(timestamp).to_rfc3339())
+                }
+                _ => Value::String(format!("{:?}", array.slice(row_idx, 1)))
+            }
+        }
+        
+        pub async fn get_query_stats(&self) -> Vec<QueryStats> {
+            let stats_guard = self.query_stats.lock().await;
+            stats_guard.clone()
+        }
+        
+        pub async fn get_table_info(&self, table_name: &str) -> Result<QueryResponse> {
+            let sql = format!("DESCRIBE {}", table_name);
+            let request = QueryRequest {
+                sql,
+                format: None,
+                limit: None,
+                timeout_seconds: None,
+            };
+            
+            Ok(self.execute_query(request).await)
+        }
+        
+        pub async fn optimize_table(&self, table_name: &str) -> Result<String> {
+            let sql = format!("OPTIMIZE TABLE {}", table_name);
+            self.ctx.sql(&sql).await?;
+            Ok(format!("Table {} optimized successfully", table_name))
+        }
+    }
+    
+    #[tokio::main]
+    async fn main() -> Result<(), Box<dyn std::error::Error>> {
+        // Initialize DataFusion query engine
+        let engine = Arc::new(DataFusionQueryEngine::new().await?);
+        
+        // Clone for use in handlers
+        let engine_clone = engine.clone();
+        
+        // Query execution endpoint
+        let query_route = warp::path("query")
+            .and(warp::post())
+            .and(warp::body::json())
+            .and_then(move |request: QueryRequest| {
+                let engine = engine_clone.clone();
+                async move {
+                    let response = engine.execute_query(request).await;
+                    Ok::<_, warp::Rejection>(warp::reply::json(&response))
+                }
+            });
+        
+        // Query statistics endpoint
+        let engine_stats = engine.clone();
+        let stats_route = warp::path("stats")
+            .and(warp::get())
+            .and_then(move || {
+                let engine = engine_stats.clone();
+                async move {
+                    let stats = engine.get_query_stats().await;
+                    Ok::<_, warp::Rejection>(warp::reply::json(&stats))
+                }
+            });
+        
+        // Table information endpoint
+        let engine_table = engine.clone();
+        let table_route = warp::path!("table" / String)
+            .and(warp::get())
+            .and_then(move |table_name: String| {
+                let engine = engine_table.clone();
+                async move {
+                    match engine.get_table_info(&table_name).await {
+                        Ok(response) => Ok(warp::reply::json(&response)),
+                        Err(e) => {
+                            let error_response = QueryResponse {
+                                success: false,
+                                data: None,
+                                schema: None,
+                                execution_time_ms: 0,
+                                rows_returned: 0,
+                                error: Some(e.to_string()),
+                                query_plan: None,
+                            };
+                            Ok(warp::reply::json(&error_response))
+                        }
+                    }
+                }
+            });
+        
+        // Health check endpoint
+        let health_route = warp::path("health")
+            .and(warp::get())
+            .map(|| {
+                warp::reply::json(&serde_json::json!({
+                    "status": "healthy",
+                    "timestamp": chrono::Utc::now().to_rfc3339()
+                }))
+            });
+        
+        // Combine all routes
+        let routes = query_route
+            .or(stats_route)
+            .or(table_route)
+            .or(health_route)
+            .with(warp::cors().allow_any_origin());
+        
+        println!("DataFusion Query Engine starting on port 8080");
+        
+        // Start server
+        warp::serve(routes)
+            .run(([0, 0, 0, 0], 8080))
+            .await;
+        
+        Ok(())
+    }
+
+  Cargo.toml: |
+    [package]
+    name = "datafusion-query-engine"
+    version = "0.1.0"
+    edition = "2021"
+    
+    [dependencies]
+    datafusion = "34.0"
+    datafusion-common = "34.0"
+    arrow = "49.0"
+    object_store = "0.8"
+    tokio = { version = "1.0", features = ["full"] }
+    warp = "0.3"
+    serde = { version = "1.0", features = ["derive"] }
+    serde_json = "1.0"
+    uuid = { version = "1.0", features = ["v4"] }
+    chrono = { version = "0.4", features = ["serde"] }
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: datafusion-query-engine
+  namespace: enterprise-crm
+  labels:
+    app: datafusion-query-engine
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: datafusion-query-engine
+  template:
+    metadata:
+      labels:
+        app: datafusion-query-engine
+    spec:
+      containers:
+      - name: datafusion-query-engine
+        image: rust:1.75-slim
+        command:
+        - /bin/bash
+        - -c
+        - |
+          # Install system dependencies
+          apt-get update && apt-get install -y pkg-config libssl-dev
+          
+          # Copy source code
+          cp -r /config/* /app/
+          cd /app
+          
+          # Build and run
+          cargo build --release
+          ./target/release/datafusion-query-engine
+        env:
+        - name: RUST_LOG
+          value: "info"
+        - name: MINIO_ENDPOINT
+          value: "http://minio:9000"
+        - name: MINIO_ACCESS_KEY
+          valueFrom:
+            secretKeyRef:
+              name: minio-secret
+              key: access-key
+        - name: MINIO_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: minio-secret
+              key: secret-key
+        volumeMounts:
+        - name: config
+          mountPath: /config
+        ports:
+        - containerPort: 8080
+          name: http
+        - containerPort: 9090
+          name: metrics
+        resources:
+          requests:
+            memory: "2Gi"
+            cpu: "1000m"
+          limits:
+            memory: "4Gi"
+            cpu: "2000m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 60
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+      volumes:
+      - name: config
+        configMap:
+          name: datafusion-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: datafusion-query-engine
+  namespace: enterprise-crm
+  labels:
+    app: datafusion-query-engine
+spec:
+  ports:
+  - port: 8080
+    targetPort: 8080
+    name: http
+  - port: 9090
+    targetPort: 9090
+    name: metrics
+  selector:
+    app: datafusion-query-engine
+  type: ClusterIP
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: datafusion-query-engine-hpa
+  namespace: enterprise-crm
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: datafusion-query-engine
+  minReplicas: 2
+  maxReplicas: 8
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+

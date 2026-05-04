@@ -1,0 +1,850 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-config
+  namespace: enterprise-crm
+  labels:
+    app: prometheus
+data:
+  prometheus.yml: |
+    # Prometheus Configuration for Enterprise CRM
+    global:
+      scrape_interval: 15s
+      scrape_timeout: 10s
+      evaluation_interval: 15s
+      external_labels:
+        cluster: 'enterprise-crm-cluster'
+        environment: 'production'
+        region: 'us-west-2'
+    
+    # Rule files for recording and alerting rules
+    rule_files:
+      - "/etc/prometheus/rules/*.yml"
+    
+    # Alertmanager configuration
+    alerting:
+      alertmanagers:
+        - static_configs:
+            - targets:
+              - alertmanager:9093
+          scheme: http
+          timeout: 10s
+          api_version: v2
+    
+    # Scrape configurations
+    scrape_configs:
+    
+    # Prometheus self-monitoring
+    - job_name: 'prometheus'
+      static_configs:
+        - targets: ['localhost:9090']
+      scrape_interval: 15s
+      metrics_path: /metrics
+    
+    # Enterprise CRM Microservices
+    - job_name: 'customer-service'
+      kubernetes_sd_configs:
+        - role: endpoints
+          namespaces:
+            names: ['enterprise-crm']
+      relabel_configs:
+        - source_labels: [__meta_kubernetes_service_name]
+          action: keep
+          regex: customer-service
+        - source_labels: [__meta_kubernetes_endpoint_port_name]
+          action: keep
+          regex: metrics
+        - source_labels: [__meta_kubernetes_pod_name]
+          target_label: pod
+        - source_labels: [__meta_kubernetes_service_name]
+          target_label: service
+        - source_labels: [__meta_kubernetes_namespace]
+          target_label: namespace
+      scrape_interval: 15s
+      metrics_path: /metrics
+    
+    - job_name: 'crm-core-service'
+      kubernetes_sd_configs:
+        - role: endpoints
+          namespaces:
+            names: ['enterprise-crm']
+      relabel_configs:
+        - source_labels: [__meta_kubernetes_service_name]
+          action: keep
+          regex: crm-core-service
+        - source_labels: [__meta_kubernetes_endpoint_port_name]
+          action: keep
+          regex: metrics
+        - source_labels: [__meta_kubernetes_pod_name]
+          target_label: pod
+        - source_labels: [__meta_kubernetes_service_name]
+          target_label: service
+        - source_labels: [__meta_kubernetes_namespace]
+          target_label: namespace
+      scrape_interval: 15s
+      metrics_path: /metrics
+    
+    - job_name: 'inventory-service'
+      kubernetes_sd_configs:
+        - role: endpoints
+          namespaces:
+            names: ['enterprise-crm']
+      relabel_configs:
+        - source_labels: [__meta_kubernetes_service_name]
+          action: keep
+          regex: inventory-service
+        - source_labels: [__meta_kubernetes_endpoint_port_name]
+          action: keep
+          regex: metrics
+        - source_labels: [__meta_kubernetes_pod_name]
+          target_label: pod
+        - source_labels: [__meta_kubernetes_service_name]
+          target_label: service
+        - source_labels: [__meta_kubernetes_namespace]
+          target_label: namespace
+      scrape_interval: 15s
+      metrics_path: /metrics
+    
+    - job_name: 'analytics-service'
+      kubernetes_sd_configs:
+        - role: endpoints
+          namespaces:
+            names: ['enterprise-crm']
+      relabel_configs:
+        - source_labels: [__meta_kubernetes_service_name]
+          action: keep
+          regex: analytics-service
+        - source_labels: [__meta_kubernetes_endpoint_port_name]
+          action: keep
+          regex: metrics
+        - source_labels: [__meta_kubernetes_pod_name]
+          target_label: pod
+        - source_labels: [__meta_kubernetes_service_name]
+          target_label: service
+        - source_labels: [__meta_kubernetes_namespace]
+          target_label: namespace
+      scrape_interval: 15s
+      metrics_path: /metrics
+    
+    # APISIX API Gateway
+    - job_name: 'apisix-gateway'
+      kubernetes_sd_configs:
+        - role: endpoints
+          namespaces:
+            names: ['enterprise-crm']
+      relabel_configs:
+        - source_labels: [__meta_kubernetes_service_name]
+          action: keep
+          regex: apisix-gateway
+        - source_labels: [__meta_kubernetes_endpoint_port_name]
+          action: keep
+          regex: prometheus
+        - source_labels: [__meta_kubernetes_pod_name]
+          target_label: pod
+        - source_labels: [__meta_kubernetes_service_name]
+          target_label: service
+      scrape_interval: 15s
+      metrics_path: /apisix/prometheus/metrics
+    
+    # Dapr Sidecars
+    - job_name: 'dapr-sidecars'
+      kubernetes_sd_configs:
+        - role: pod
+          namespaces:
+            names: ['enterprise-crm']
+      relabel_configs:
+        - source_labels: [__meta_kubernetes_pod_annotation_dapr_io_enabled]
+          action: keep
+          regex: true
+        - source_labels: [__meta_kubernetes_pod_annotation_dapr_io_app_id]
+          target_label: dapr_app_id
+        - source_labels: [__meta_kubernetes_pod_name]
+          target_label: pod
+        - source_labels: [__meta_kubernetes_namespace]
+          target_label: namespace
+        - source_labels: [__address__]
+          target_label: __address__
+          regex: ([^:]+)(?::\d+)?
+          replacement: ${1}:9090
+      scrape_interval: 15s
+      metrics_path: /
+    
+    # Kafka Cluster
+    - job_name: 'kafka-cluster'
+      kubernetes_sd_configs:
+        - role: endpoints
+          namespaces:
+            names: ['enterprise-crm']
+      relabel_configs:
+        - source_labels: [__meta_kubernetes_service_name]
+          action: keep
+          regex: kafka-cluster
+        - source_labels: [__meta_kubernetes_endpoint_port_name]
+          action: keep
+          regex: metrics
+        - source_labels: [__meta_kubernetes_pod_name]
+          target_label: pod
+        - source_labels: [__meta_kubernetes_service_name]
+          target_label: service
+      scrape_interval: 30s
+      metrics_path: /metrics
+    
+    # Apache Flink
+    - job_name: 'flink-cluster'
+      kubernetes_sd_configs:
+        - role: endpoints
+          namespaces:
+            names: ['enterprise-crm']
+      relabel_configs:
+        - source_labels: [__meta_kubernetes_service_name]
+          action: keep
+          regex: flink-jobmanager|flink-taskmanager
+        - source_labels: [__meta_kubernetes_endpoint_port_name]
+          action: keep
+          regex: metrics
+        - source_labels: [__meta_kubernetes_pod_name]
+          target_label: pod
+        - source_labels: [__meta_kubernetes_service_name]
+          target_label: service
+      scrape_interval: 30s
+      metrics_path: /metrics
+    
+    # Temporal Workflow Engine
+    - job_name: 'temporal-cluster'
+      kubernetes_sd_configs:
+        - role: endpoints
+          namespaces:
+            names: ['enterprise-crm']
+      relabel_configs:
+        - source_labels: [__meta_kubernetes_service_name]
+          action: keep
+          regex: temporal-frontend|temporal-worker
+        - source_labels: [__meta_kubernetes_endpoint_port_name]
+          action: keep
+          regex: metrics
+        - source_labels: [__meta_kubernetes_pod_name]
+          target_label: pod
+        - source_labels: [__meta_kubernetes_service_name]
+          target_label: service
+      scrape_interval: 30s
+      metrics_path: /metrics
+    
+    # Redis Cache
+    - job_name: 'redis-cluster'
+      kubernetes_sd_configs:
+        - role: endpoints
+          namespaces:
+            names: ['enterprise-crm']
+      relabel_configs:
+        - source_labels: [__meta_kubernetes_service_name]
+          action: keep
+          regex: redis-cluster
+        - source_labels: [__meta_kubernetes_endpoint_port_name]
+          action: keep
+          regex: metrics
+        - source_labels: [__meta_kubernetes_pod_name]
+          target_label: pod
+        - source_labels: [__meta_kubernetes_service_name]
+          target_label: service
+      scrape_interval: 30s
+      metrics_path: /metrics
+    
+    # PostgreSQL Databases
+    - job_name: 'postgresql-databases'
+      kubernetes_sd_configs:
+        - role: endpoints
+          namespaces:
+            names: ['enterprise-crm']
+      relabel_configs:
+        - source_labels: [__meta_kubernetes_service_name]
+          action: keep
+          regex: postgresql-.*
+        - source_labels: [__meta_kubernetes_endpoint_port_name]
+          action: keep
+          regex: metrics
+        - source_labels: [__meta_kubernetes_pod_name]
+          target_label: pod
+        - source_labels: [__meta_kubernetes_service_name]
+          target_label: service
+      scrape_interval: 30s
+      metrics_path: /metrics
+    
+    # Kubernetes API Server
+    - job_name: 'kubernetes-apiservers'
+      kubernetes_sd_configs:
+        - role: endpoints
+      scheme: https
+      tls_config:
+        ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+        insecure_skip_verify: true
+      bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+      relabel_configs:
+        - source_labels: [__meta_kubernetes_namespace, __meta_kubernetes_service_name, __meta_kubernetes_endpoint_port_name]
+          action: keep
+          regex: default;kubernetes;https
+      scrape_interval: 30s
+    
+    # Kubernetes Nodes
+    - job_name: 'kubernetes-nodes'
+      kubernetes_sd_configs:
+        - role: node
+      scheme: https
+      tls_config:
+        ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+        insecure_skip_verify: true
+      bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+      relabel_configs:
+        - action: labelmap
+          regex: __meta_kubernetes_node_label_(.+)
+        - target_label: __address__
+          replacement: kubernetes.default.svc:443
+        - source_labels: [__meta_kubernetes_node_name]
+          regex: (.+)
+          target_label: __metrics_path__
+          replacement: /api/v1/nodes/${1}/proxy/metrics
+      scrape_interval: 30s
+    
+    # Kubernetes Pods
+    - job_name: 'kubernetes-pods'
+      kubernetes_sd_configs:
+        - role: pod
+          namespaces:
+            names: ['enterprise-crm', 'kubecost']
+      relabel_configs:
+        - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+          action: keep
+          regex: true
+        - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
+          action: replace
+          target_label: __metrics_path__
+          regex: (.+)
+        - source_labels: [__address__, __meta_kubernetes_pod_annotation_prometheus_io_port]
+          action: replace
+          regex: ([^:]+)(?::\d+)?;(\d+)
+          replacement: $1:$2
+          target_label: __address__
+        - action: labelmap
+          regex: __meta_kubernetes_pod_label_(.+)
+        - source_labels: [__meta_kubernetes_namespace]
+          action: replace
+          target_label: kubernetes_namespace
+        - source_labels: [__meta_kubernetes_pod_name]
+          action: replace
+          target_label: kubernetes_pod_name
+      scrape_interval: 15s
+    
+    # cAdvisor for container metrics
+    - job_name: 'kubernetes-cadvisor'
+      kubernetes_sd_configs:
+        - role: node
+      scheme: https
+      tls_config:
+        ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+        insecure_skip_verify: true
+      bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+      relabel_configs:
+        - action: labelmap
+          regex: __meta_kubernetes_node_label_(.+)
+        - target_label: __address__
+          replacement: kubernetes.default.svc:443
+        - source_labels: [__meta_kubernetes_node_name]
+          regex: (.+)
+          target_label: __metrics_path__
+          replacement: /api/v1/nodes/${1}/proxy/metrics/cadvisor
+      scrape_interval: 30s
+      metric_relabel_configs:
+        - source_labels: [__name__]
+          regex: 'container_(network_receive_bytes_total|network_transmit_bytes_total|cpu_usage_seconds_total|memory_usage_bytes|fs_usage_bytes|fs_limit_bytes)'
+          action: keep
+    
+    # Kubecost
+    - job_name: 'kubecost'
+      kubernetes_sd_configs:
+        - role: endpoints
+          namespaces:
+            names: ['kubecost']
+      relabel_configs:
+        - source_labels: [__meta_kubernetes_service_name]
+          action: keep
+          regex: kubecost-cost-analyzer
+        - source_labels: [__meta_kubernetes_endpoint_port_name]
+          action: keep
+          regex: http-server
+        - source_labels: [__meta_kubernetes_pod_name]
+          target_label: pod
+        - source_labels: [__meta_kubernetes_service_name]
+          target_label: service
+      scrape_interval: 30s
+      metrics_path: /metrics
+    
+    # OpenTelemetry Collector
+    - job_name: 'otel-collector'
+      kubernetes_sd_configs:
+        - role: endpoints
+          namespaces:
+            names: ['enterprise-crm']
+      relabel_configs:
+        - source_labels: [__meta_kubernetes_service_name]
+          action: keep
+          regex: otel-collector
+        - source_labels: [__meta_kubernetes_endpoint_port_name]
+          action: keep
+          regex: prometheus
+        - source_labels: [__meta_kubernetes_pod_name]
+          target_label: pod
+        - source_labels: [__meta_kubernetes_service_name]
+          target_label: service
+      scrape_interval: 15s
+      metrics_path: /metrics
+    
+    # Jaeger
+    - job_name: 'jaeger'
+      kubernetes_sd_configs:
+        - role: endpoints
+          namespaces:
+            names: ['enterprise-crm']
+      relabel_configs:
+        - source_labels: [__meta_kubernetes_service_name]
+          action: keep
+          regex: jaeger-.*
+        - source_labels: [__meta_kubernetes_endpoint_port_name]
+          action: keep
+          regex: admin
+        - source_labels: [__meta_kubernetes_pod_name]
+          target_label: pod
+        - source_labels: [__meta_kubernetes_service_name]
+          target_label: service
+      scrape_interval: 30s
+      metrics_path: /metrics
+    
+    # Security Services
+    - job_name: 'keycloak'
+      kubernetes_sd_configs:
+        - role: endpoints
+          namespaces:
+            names: ['enterprise-crm']
+      relabel_configs:
+        - source_labels: [__meta_kubernetes_service_name]
+          action: keep
+          regex: keycloak
+        - source_labels: [__meta_kubernetes_endpoint_port_name]
+          action: keep
+          regex: metrics
+        - source_labels: [__meta_kubernetes_pod_name]
+          target_label: pod
+        - source_labels: [__meta_kubernetes_service_name]
+          target_label: service
+      scrape_interval: 30s
+      metrics_path: /auth/realms/master/metrics
+    
+    - job_name: 'permify'
+      kubernetes_sd_configs:
+        - role: endpoints
+          namespaces:
+            names: ['enterprise-crm']
+      relabel_configs:
+        - source_labels: [__meta_kubernetes_service_name]
+          action: keep
+          regex: permify
+        - source_labels: [__meta_kubernetes_endpoint_port_name]
+          action: keep
+          regex: metrics
+        - source_labels: [__meta_kubernetes_pod_name]
+          target_label: pod
+        - source_labels: [__meta_kubernetes_service_name]
+          target_label: service
+      scrape_interval: 30s
+      metrics_path: /metrics
+    
+    # Lakehouse Components
+    - job_name: 'spark-cluster'
+      kubernetes_sd_configs:
+        - role: endpoints
+          namespaces:
+            names: ['enterprise-crm']
+      relabel_configs:
+        - source_labels: [__meta_kubernetes_service_name]
+          action: keep
+          regex: spark-.*
+        - source_labels: [__meta_kubernetes_endpoint_port_name]
+          action: keep
+          regex: metrics
+        - source_labels: [__meta_kubernetes_pod_name]
+          target_label: pod
+        - source_labels: [__meta_kubernetes_service_name]
+          target_label: service
+      scrape_interval: 30s
+      metrics_path: /metrics
+    
+    - job_name: 'ray-cluster'
+      kubernetes_sd_configs:
+        - role: endpoints
+          namespaces:
+            names: ['enterprise-crm']
+      relabel_configs:
+        - source_labels: [__meta_kubernetes_service_name]
+          action: keep
+          regex: ray-.*
+        - source_labels: [__meta_kubernetes_endpoint_port_name]
+          action: keep
+          regex: metrics
+        - source_labels: [__meta_kubernetes_pod_name]
+          target_label: pod
+        - source_labels: [__meta_kubernetes_service_name]
+          target_label: service
+      scrape_interval: 30s
+      metrics_path: /metrics
+    
+    # External Services (if applicable)
+    - job_name: 'external-apis'
+      static_configs:
+        - targets: []  # Add external API endpoints if needed
+      scrape_interval: 60s
+      metrics_path: /metrics
+      params:
+        format: ['prometheus']
+
+  recording_rules.yml: |
+    # Recording Rules for Enterprise CRM
+    groups:
+    - name: enterprise_crm_sli_slo
+      interval: 30s
+      rules:
+      
+      # Service Level Indicators (SLIs)
+      - record: enterprise_crm:request_rate
+        expr: sum(rate(http_requests_total{job=~".*-service"}[5m])) by (service)
+      
+      - record: enterprise_crm:error_rate
+        expr: sum(rate(http_requests_total{job=~".*-service",status=~"5.."}[5m])) by (service) / sum(rate(http_requests_total{job=~".*-service"}[5m])) by (service)
+      
+      - record: enterprise_crm:latency_p50
+        expr: histogram_quantile(0.50, sum(rate(http_request_duration_seconds_bucket{job=~".*-service"}[5m])) by (service, le))
+      
+      - record: enterprise_crm:latency_p95
+        expr: histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{job=~".*-service"}[5m])) by (service, le))
+      
+      - record: enterprise_crm:latency_p99
+        expr: histogram_quantile(0.99, sum(rate(http_request_duration_seconds_bucket{job=~".*-service"}[5m])) by (service, le))
+      
+      # Availability SLI
+      - record: enterprise_crm:availability
+        expr: avg(up{job=~".*-service"}) by (service)
+      
+      # Database Performance
+      - record: enterprise_crm:db_connection_utilization
+        expr: database_connections_active{job=~".*-service"} / database_connections_max{job=~".*-service"}
+      
+      - record: enterprise_crm:db_query_duration_p95
+        expr: histogram_quantile(0.95, sum(rate(database_query_duration_seconds_bucket{job=~".*-service"}[5m])) by (service, le))
+      
+      # Cache Performance
+      - record: enterprise_crm:cache_hit_rate
+        expr: cache_hits_total{job=~".*-service"} / (cache_hits_total{job=~".*-service"} + cache_misses_total{job=~".*-service"})
+      
+      # Resource Utilization
+      - record: enterprise_crm:cpu_utilization
+        expr: rate(container_cpu_usage_seconds_total{namespace="enterprise-crm"}[5m])
+      
+      - record: enterprise_crm:memory_utilization
+        expr: container_memory_usage_bytes{namespace="enterprise-crm"} / container_spec_memory_limit_bytes{namespace="enterprise-crm"}
+      
+      # Business Metrics
+      - record: enterprise_crm:customer_creation_rate
+        expr: sum(rate(customer_created_total[5m]))
+      
+      - record: enterprise_crm:opportunity_conversion_rate
+        expr: sum(rate(opportunity_won_total[5m])) / sum(rate(opportunity_created_total[5m]))
+      
+      - record: enterprise_crm:inventory_turnover_rate
+        expr: sum(rate(inventory_sold_total[5m])) / avg(inventory_stock_level)
+    
+    - name: enterprise_crm_aggregations
+      interval: 60s
+      rules:
+      
+      # Service-level aggregations
+      - record: enterprise_crm:service_request_rate_5m
+        expr: sum(rate(http_requests_total{job=~".*-service"}[5m])) by (service, method, status)
+      
+      - record: enterprise_crm:service_error_rate_5m
+        expr: sum(rate(http_requests_total{job=~".*-service",status=~"5.."}[5m])) by (service)
+      
+      # Infrastructure aggregations
+      - record: enterprise_crm:node_cpu_utilization
+        expr: 1 - avg(rate(node_cpu_seconds_total{mode="idle"}[5m])) by (instance)
+      
+      - record: enterprise_crm:node_memory_utilization
+        expr: 1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)
+      
+      # Kafka metrics
+      - record: enterprise_crm:kafka_message_rate
+        expr: sum(rate(kafka_server_brokertopicmetrics_messagesin_total[5m])) by (topic)
+      
+      - record: enterprise_crm:kafka_consumer_lag
+        expr: sum(kafka_consumer_lag_sum) by (consumergroup, topic)
+      
+      # Dapr metrics
+      - record: enterprise_crm:dapr_service_invocation_rate
+        expr: sum(rate(dapr_service_invocation_req_sent_total[5m])) by (app_id, target)
+      
+      - record: enterprise_crm:dapr_pubsub_message_rate
+        expr: sum(rate(dapr_pubsub_published_total[5m])) by (app_id, topic)
+
+  alert_rules.yml: |
+    # Alert Rules for Enterprise CRM
+    groups:
+    - name: enterprise_crm_slo_alerts
+      rules:
+      
+      # SLO Violations
+      - alert: ServiceAvailabilitySLOViolation
+        expr: enterprise_crm:availability < 0.999
+        for: 5m
+        labels:
+          severity: critical
+          slo: availability
+        annotations:
+          summary: "Service availability SLO violation"
+          description: "Service {{ $labels.service }} availability is {{ $value | humanizePercentage }}, below 99.9% SLO"
+      
+      - alert: ServiceLatencySLOViolation
+        expr: enterprise_crm:latency_p95 > 2
+        for: 5m
+        labels:
+          severity: warning
+          slo: latency
+        annotations:
+          summary: "Service latency SLO violation"
+          description: "Service {{ $labels.service }} P95 latency is {{ $value }}s, above 2s SLO"
+      
+      - alert: ServiceErrorRateSLOViolation
+        expr: enterprise_crm:error_rate > 0.01
+        for: 5m
+        labels:
+          severity: critical
+          slo: error_rate
+        annotations:
+          summary: "Service error rate SLO violation"
+          description: "Service {{ $labels.service }} error rate is {{ $value | humanizePercentage }}, above 1% SLO"
+      
+      # Resource Alerts
+      - alert: HighCPUUtilization
+        expr: enterprise_crm:cpu_utilization > 0.8
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High CPU utilization"
+          description: "Container {{ $labels.container }} in pod {{ $labels.pod }} has CPU utilization > 80%"
+      
+      - alert: HighMemoryUtilization
+        expr: enterprise_crm:memory_utilization > 0.9
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High memory utilization"
+          description: "Container {{ $labels.container }} in pod {{ $labels.pod }} has memory utilization > 90%"
+      
+      # Database Alerts
+      - alert: DatabaseConnectionPoolExhausted
+        expr: enterprise_crm:db_connection_utilization > 0.9
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Database connection pool nearly exhausted"
+          description: "Service {{ $labels.service }} database connection pool utilization is {{ $value | humanizePercentage }}"
+      
+      - alert: SlowDatabaseQueries
+        expr: enterprise_crm:db_query_duration_p95 > 5
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Slow database queries detected"
+          description: "Service {{ $labels.service }} P95 database query duration is {{ $value }}s"
+      
+      # Cache Alerts
+      - alert: LowCacheHitRate
+        expr: enterprise_crm:cache_hit_rate < 0.8
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Low cache hit rate"
+          description: "Service {{ $labels.service }} cache hit rate is {{ $value | humanizePercentage }}"
+      
+      # Business Logic Alerts
+      - alert: LowCustomerCreationRate
+        expr: enterprise_crm:customer_creation_rate < 0.1
+        for: 30m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Low customer creation rate"
+          description: "Customer creation rate is {{ $value }} customers/second, below expected threshold"
+      
+      - alert: LowOpportunityConversionRate
+        expr: enterprise_crm:opportunity_conversion_rate < 0.2
+        for: 1h
+        labels:
+          severity: warning
+        annotations:
+          summary: "Low opportunity conversion rate"
+          description: "Opportunity conversion rate is {{ $value | humanizePercentage }}, below 20% threshold"
+
+---
+# Prometheus Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prometheus-server
+  namespace: enterprise-crm
+  labels:
+    app: prometheus
+    component: server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: prometheus
+      component: server
+  template:
+    metadata:
+      labels:
+        app: prometheus
+        component: server
+    spec:
+      serviceAccountName: prometheus-server
+      containers:
+      - name: prometheus
+        image: prom/prometheus:v2.47.0
+        ports:
+        - containerPort: 9090
+          name: http
+        args:
+          - '--config.file=/etc/prometheus/prometheus.yml'
+          - '--storage.tsdb.path=/prometheus/'
+          - '--storage.tsdb.retention.time=30d'
+          - '--storage.tsdb.retention.size=50GB'
+          - '--web.console.libraries=/etc/prometheus/console_libraries'
+          - '--web.console.templates=/etc/prometheus/consoles'
+          - '--web.enable-lifecycle'
+          - '--web.enable-admin-api'
+          - '--log.level=info'
+        resources:
+          requests:
+            memory: "2Gi"
+            cpu: "500m"
+          limits:
+            memory: "4Gi"
+            cpu: "1000m"
+        volumeMounts:
+        - name: config
+          mountPath: /etc/prometheus
+        - name: storage
+          mountPath: /prometheus
+        livenessProbe:
+          httpGet:
+            path: /-/healthy
+            port: 9090
+          initialDelaySeconds: 30
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /-/ready
+            port: 9090
+          initialDelaySeconds: 10
+          periodSeconds: 10
+      volumes:
+      - name: config
+        configMap:
+          name: prometheus-config
+      - name: storage
+        persistentVolumeClaim:
+          claimName: prometheus-storage
+
+---
+# Prometheus Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: prometheus-server
+  namespace: enterprise-crm
+  labels:
+    app: prometheus
+    component: server
+spec:
+  ports:
+  - port: 80
+    targetPort: 9090
+    name: http
+  selector:
+    app: prometheus
+    component: server
+  type: ClusterIP
+
+---
+# Prometheus ServiceAccount
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: prometheus-server
+  namespace: enterprise-crm
+  labels:
+    app: prometheus
+
+---
+# Prometheus ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: prometheus-server
+  labels:
+    app: prometheus
+rules:
+- apiGroups: [""]
+  resources: ["nodes", "nodes/proxy", "services", "endpoints", "pods"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["extensions"]
+  resources: ["ingresses"]
+  verbs: ["get", "list", "watch"]
+- nonResourceURLs: ["/metrics"]
+  verbs: ["get"]
+
+---
+# Prometheus ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: prometheus-server
+  labels:
+    app: prometheus
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: prometheus-server
+subjects:
+- kind: ServiceAccount
+  name: prometheus-server
+  namespace: enterprise-crm
+
+---
+# Prometheus PersistentVolumeClaim
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: prometheus-storage
+  namespace: enterprise-crm
+  labels:
+    app: prometheus
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Gi
+  storageClassName: fast-ssd
+

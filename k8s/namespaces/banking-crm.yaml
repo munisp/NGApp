@@ -1,0 +1,83 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: banking-crm
+  labels:
+    name: banking-crm
+    environment: production
+    app.kubernetes.io/part-of: banking-crm-integration
+    istio-injection: enabled
+---
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: banking-crm-quota
+  namespace: banking-crm
+spec:
+  hard:
+    requests.cpu: "20"
+    requests.memory: 40Gi
+    limits.cpu: "40"
+    limits.memory: 80Gi
+    pods: "100"
+    services: "50"
+    persistentvolumeclaims: "30"
+    secrets: "100"
+    configmaps: "100"
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: banking-crm-network-policy
+  namespace: banking-crm
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: banking-crm
+    - namespaceSelector:
+        matchLabels:
+          name: monitoring
+    - namespaceSelector:
+        matchLabels:
+          name: logging
+    - namespaceSelector:
+        matchLabels:
+          name: ingress-nginx
+    ports:
+    - protocol: TCP
+      port: 8080
+    - protocol: TCP
+      port: 9090
+    - protocol: TCP
+      port: 9411
+  egress:
+  - to:
+    - ipBlock:
+        cidr: 0.0.0.0/0
+        except:
+        - 169.254.0.0/16
+        - 172.16.0.0/12
+    ports:
+    - protocol: TCP
+      port: 443
+    - protocol: TCP
+      port: 80
+    - protocol: TCP
+      port: 9092  # Kafka
+    - protocol: TCP
+      port: 6379  # Redis
+    - protocol: TCP
+      port: 5432  # PostgreSQL
+    - protocol: TCP
+      port: 8080  # HTTP services
+    - protocol: TCP
+      port: 9090  # Prometheus
+    - protocol: TCP
+      port: 9411  # Zipkin
+

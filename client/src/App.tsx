@@ -44,6 +44,12 @@ const MiddlewareMonitoring = lazy(() => import("@/pages/MiddlewareMonitoring"));
 const SecurityDashboard = lazy(() => import("@/pages/SecurityDashboard"));
 const Settlements = lazy(() => import("@/pages/Settlements"));
 const SanctionsScreening = lazy(() => import("@/pages/SanctionsScreening"));
+const BillPayments = lazy(() => import("@/pages/BillPayments"));
+const MobileMoney = lazy(() => import("@/pages/MobileMoney"));
+const AgentCash = lazy(() => import("@/pages/AgentCash"));
+const CRM = lazy(() => import("@/pages/CRM"));
+const Reconciliation = lazy(() => import("@/pages/Reconciliation"));
+const FxRisk = lazy(() => import("@/pages/FxRisk"));
 const NotFound = lazy(() => import("@/pages/NotFound"));
 
 function PageLoader() {
@@ -98,6 +104,12 @@ function Router() {
         <Route path="/security" component={SecurityDashboard} />
         <Route path="/settlements" component={Settlements} />
         <Route path="/sanctions" component={SanctionsScreening} />
+        <Route path="/bill-payments" component={BillPayments} />
+        <Route path="/mobile-money" component={MobileMoney} />
+        <Route path="/agent-cash" component={AgentCash} />
+        <Route path="/crm" component={CRM} />
+        <Route path="/reconciliation" component={Reconciliation} />
+        <Route path="/fx-risk" component={FxRisk} />
         <Route path={"/404"} component={NotFound} />
         {/* Final fallback route */}
         <Route component={NotFound} />

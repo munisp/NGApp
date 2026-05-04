@@ -1,0 +1,1005 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: wazuh-indexer-pvc
+  namespace: security
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Gi
+  storageClassName: fast-ssd
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: wazuh-manager-pvc
+  namespace: security
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 50Gi
+  storageClassName: fast-ssd
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: wazuh-secrets
+  namespace: security
+type: Opaque
+data:
+  # Base64 encoded values - replace with actual values
+  wazuh-admin-password: d2F6dWhfYWRtaW5fcGFzc3dvcmQ=  # wazuh_admin_password
+  wazuh-api-password: d2F6dWhfYXBpX3Bhc3N3b3Jk  # wazuh_api_password
+  indexer-admin-password: aW5kZXhlcl9hZG1pbl9wYXNzd29yZA==  # indexer_admin_password
+  dashboard-password: ZGFzaGJvYXJkX3Bhc3N3b3Jk  # dashboard_password
+  ssl-cert: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0t  # SSL certificate
+  ssl-key: LS0tLS1CRUdJTiBQUklWQVRFIEtFWS0tLS0t  # SSL private key
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: wazuh-manager-config
+  namespace: security
+data:
+  ossec.conf: |
+    <ossec_config>
+      <global>
+        <jsonout_output>yes</jsonout_output>
+        <alerts_log>yes</alerts_log>
+        <logall>no</logall>
+        <logall_json>no</logall_json>
+        <email_notification>yes</email_notification>
+        <smtp_server>smtp.enterprise-crm.com</smtp_server>
+        <email_from>wazuh@enterprise-crm.com</email_from>
+        <email_to>security-team@enterprise-crm.com</email_to>
+        <hostname>wazuh-manager</hostname>
+        <email_maxperhour>12</email_maxperhour>
+        <email_log_source>alerts.log</email_log_source>
+        <agents_disconnection_time>10m</agents_disconnection_time>
+        <agents_disconnection_alert_time>0</agents_disconnection_alert_time>
+      </global>
+
+      <alerts>
+        <log_alert_level>3</log_alert_level>
+        <email_alert_level>12</email_alert_level>
+      </alerts>
+
+      <!-- Configuration for logcollector -->
+      <localfile>
+        <log_format>apache</log_format>
+        <location>/var/log/apache2/access.log</location>
+      </localfile>
+
+      <localfile>
+        <log_format>apache</log_format>
+        <location>/var/log/apache2/error.log</location>
+      </localfile>
+
+      <localfile>
+        <log_format>syslog</log_format>
+        <location>/var/log/auth.log</location>
+      </localfile>
+
+      <localfile>
+        <log_format>syslog</log_format>
+        <location>/var/log/syslog</location>
+      </localfile>
+
+      <localfile>
+        <log_format>command</log_format>
+        <command>df -P</command>
+        <alias>df -P</alias>
+        <frequency>360</frequency>
+      </localfile>
+
+      <localfile>
+        <log_format>full_command</log_format>
+        <command>netstat -tulpn | sed 's/\([[:alnum:]]\+\)\ \+[[:digit:]]\+\ \+[[:digit:]]\+\ \+\(.*\):\([[:digit:]]*\)\ \+\(.*\):\([[:digit:]]*\)\ \+\([[:digit:]]*\/[[:alnum:]\-]*\).*/\1 \2 \3 \4 \5 \6/' | sort -k 6 -g | sed 's/.*\/.*/#&/' | sort -u</command>
+        <alias>netstat listening ports</alias>
+        <frequency>360</frequency>
+      </localfile>
+
+      <localfile>
+        <log_format>full_command</log_format>
+        <command>last -n 20</command>
+        <frequency>360</frequency>
+      </localfile>
+
+      <!-- Configuration for rootcheck -->
+      <rootcheck>
+        <disabled>no</disabled>
+        <check_files>yes</check_files>
+        <check_trojans>yes</check_trojans>
+        <check_dev>yes</check_dev>
+        <check_sys>yes</check_sys>
+        <check_pids>yes</check_pids>
+        <check_ports>yes</check_ports>
+        <check_if>yes</check_if>
+        <frequency>43200</frequency>
+        <rootkit_files>/var/ossec/etc/rootcheck/rootkit_files.txt</rootkit_files>
+        <rootkit_trojans>/var/ossec/etc/rootcheck/rootkit_trojans.txt</rootkit_trojans>
+        <system_audit>/var/ossec/etc/rootcheck/system_audit_rcl.txt</system_audit>
+        <system_audit>/var/ossec/etc/rootcheck/system_audit_ssh.txt</system_audit>
+        <system_audit>/var/ossec/etc/rootcheck/cis_debian_linux_rcl.txt</system_audit>
+        <skip_nfs>yes</skip_nfs>
+      </rootcheck>
+
+      <!-- Configuration for wodle:openscap -->
+      <wodle name="open-scap">
+        <disabled>no</disabled>
+        <timeout>1800</timeout>
+        <interval>1d</interval>
+        <scan-on-start>yes</scan-on-start>
+      </wodle>
+
+      <!-- Configuration for wodle:cis-cat -->
+      <wodle name="cis-cat">
+        <disabled>no</disabled>
+        <timeout>1800</timeout>
+        <interval>1d</interval>
+        <scan-on-start>yes</scan-on-start>
+        <java_path>wodles/java</java_path>
+        <ciscat_path>wodles/ciscat</ciscat_path>
+      </wodle>
+
+      <!-- Configuration for wodle:osquery -->
+      <wodle name="osquery">
+        <disabled>no</disabled>
+        <run_daemon>yes</run_daemon>
+        <log_path>/var/log/osquery/osqueryd.results.log</log_path>
+        <config_path>/etc/osquery/osquery.conf</config_path>
+        <add_labels>yes</add_labels>
+      </wodle>
+
+      <!-- Configuration for wodle:syscollector -->
+      <wodle name="syscollector">
+        <disabled>no</disabled>
+        <interval>1h</interval>
+        <scan_on_start>yes</scan_on_start>
+        <hardware>yes</hardware>
+        <os>yes</os>
+        <network>yes</network>
+        <packages>yes</packages>
+        <ports all="no">yes</ports>
+        <processes>yes</processes>
+        <hotfixes>yes</hotfixes>
+      </wodle>
+
+      <!-- Configuration for wodle:vulnerability-detector -->
+      <wodle name="vulnerability-detector">
+        <disabled>no</disabled>
+        <interval>5m</interval>
+        <ignore_time>6h</ignore_time>
+        <run_on_start>yes</run_on_start>
+        <provider name="canonical">
+          <enabled>yes</enabled>
+          <os>trusty</os>
+          <os>xenial</os>
+          <os>bionic</os>
+          <os>focal</os>
+          <os>jammy</os>
+          <update_interval>1h</update_interval>
+        </provider>
+        <provider name="debian">
+          <enabled>yes</enabled>
+          <os_version>7</os_version>
+          <os_version>8</os_version>
+          <os_version>9</os_version>
+          <os_version>10</os_version>
+          <os_version>11</os_version>
+          <update_interval>1h</update_interval>
+        </provider>
+        <provider name="redhat">
+          <enabled>yes</enabled>
+          <os_version>5</os_version>
+          <os_version>6</os_version>
+          <os_version>7</os_version>
+          <os_version>8</os_version>
+          <os_version>9</os_version>
+          <update_interval>1h</update_interval>
+        </provider>
+        <provider name="nvd">
+          <enabled>yes</enabled>
+          <update_interval>1h</update_interval>
+        </provider>
+      </wodle>
+
+      <!-- Configuration for sca -->
+      <sca>
+        <enabled>yes</enabled>
+        <scan_on_start>yes</scan_on_start>
+        <interval>12h</interval>
+        <skip_nfs>yes</skip_nfs>
+        <policies>
+          <policy>cis_debian_linux_rcl.yml</policy>
+          <policy>cis_rhel7_linux_rcl.yml</policy>
+          <policy>cis_rhel8_linux_rcl.yml</policy>
+          <policy>sca_unix_audit.yml</policy>
+        </policies>
+      </sca>
+
+      <!-- Configuration for syscheck -->
+      <syscheck>
+        <disabled>no</disabled>
+        <frequency>43200</frequency>
+        <scan_on_start>yes</scan_on_start>
+        <auto_ignore frequency="10" timeframe="3600">no</auto_ignore>
+        <directories>/etc,/usr/bin,/usr/sbin</directories>
+        <directories>/bin,/sbin,/boot</directories>
+        <ignore>/etc/mtab</ignore>
+        <ignore>/etc/hosts.deny</ignore>
+        <ignore>/etc/mail/statistics</ignore>
+        <ignore>/etc/random-seed</ignore>
+        <ignore>/etc/random.seed</ignore>
+        <ignore>/etc/adjtime</ignore>
+        <ignore>/etc/httpd/logs</ignore>
+        <ignore>/etc/utmpx</ignore>
+        <ignore>/etc/wtmpx</ignore>
+        <ignore>/etc/cups/certs</ignore>
+        <ignore>/etc/dumpdates</ignore>
+        <ignore>/etc/svc/volatile</ignore>
+        <ignore type="sregex">.log$|.swp$</ignore>
+        <nodiff>/etc/ssl/private.key</nodiff>
+        <skip_nfs>yes</skip_nfs>
+        <skip_dev>yes</skip_dev>
+        <skip_proc>yes</skip_proc>
+        <skip_sys>yes</skip_sys>
+        <process_priority>10</process_priority>
+        <max_eps>200</max_eps>
+        <synchronization>
+          <enabled>yes</enabled>
+          <interval>5m</interval>
+          <max_interval>1h</max_interval>
+          <max_eps>10</max_eps>
+        </synchronization>
+      </syscheck>
+
+      <!-- Active response -->
+      <global>
+        <white_list>127.0.0.1</white_list>
+        <white_list>^localhost.localdomain$</white_list>
+        <white_list>10.0.0.0/8</white_list>
+        <white_list>172.16.0.0/12</white_list>
+        <white_list>192.168.0.0/16</white_list>
+      </global>
+
+      <command>
+        <name>disable-account</name>
+        <executable>disable-account</executable>
+        <timeout_allowed>yes</timeout_allowed>
+      </command>
+
+      <command>
+        <name>restart-ossec</name>
+        <executable>restart-ossec</executable>
+      </command>
+
+      <command>
+        <name>firewall-drop</name>
+        <executable>firewall-drop</executable>
+        <timeout_allowed>yes</timeout_allowed>
+      </command>
+
+      <command>
+        <name>host-deny</name>
+        <executable>host-deny</executable>
+        <timeout_allowed>yes</timeout_allowed>
+      </command>
+
+      <command>
+        <name>route-null</name>
+        <executable>route-null</executable>
+        <timeout_allowed>yes</timeout_allowed>
+      </command>
+
+      <command>
+        <name>win_route-null</name>
+        <executable>route-null.exe</executable>
+        <timeout_allowed>yes</timeout_allowed>
+      </command>
+
+      <command>
+        <name>netsh</name>
+        <executable>netsh.exe</executable>
+        <timeout_allowed>yes</timeout_allowed>
+      </command>
+
+      <!-- Active response for SSH brute force attacks -->
+      <active-response>
+        <disabled>no</disabled>
+        <command>firewall-drop</command>
+        <location>local</location>
+        <rules_id>5720</rules_id>
+        <timeout>600</timeout>
+      </active-response>
+
+      <!-- Active response for multiple authentication failures -->
+      <active-response>
+        <disabled>no</disabled>
+        <command>host-deny</command>
+        <location>local</location>
+        <rules_id>5712</rules_id>
+        <timeout>600</timeout>
+      </active-response>
+
+      <!-- Configuration for remote connection -->
+      <remote>
+        <connection>secure</connection>
+        <port>1514</port>
+        <protocol>tcp</protocol>
+        <queue_size>131072</queue_size>
+      </remote>
+
+      <!-- Configuration for authd -->
+      <auth>
+        <disabled>no</disabled>
+        <port>1515</port>
+        <use_source_ip>no</use_source_ip>
+        <purge>yes</purge>
+        <use_password>no</use_password>
+        <ciphers>HIGH:!ADH:!EXP:!MD5:!RC4:!3DES:!CAMELLIA:@STRENGTH</ciphers>
+        <ssl_agent_ca>/var/ossec/etc/sslmanager.cert</ssl_agent_ca>
+        <ssl_verify_host>no</ssl_verify_host>
+        <ssl_manager_cert>/var/ossec/etc/sslmanager.cert</ssl_manager_cert>
+        <ssl_manager_key>/var/ossec/etc/sslmanager.key</ssl_manager_key>
+        <ssl_auto_negotiate>no</ssl_auto_negotiate>
+      </auth>
+
+      <!-- Configuration for cluster -->
+      <cluster>
+        <name>wazuh</name>
+        <node_name>wazuh-manager</node_name>
+        <node_type>master</node_type>
+        <key>c98b62a9b6169ac5f67dae55ae4a9088</key>
+        <port>1516</port>
+        <bind_addr>0.0.0.0</bind_addr>
+        <nodes>
+          <node>wazuh-manager</node>
+        </nodes>
+        <hidden>no</hidden>
+        <disabled>no</disabled>
+      </cluster>
+
+      <!-- Configuration for API -->
+      <api>
+        <host>0.0.0.0</host>
+        <port>55000</port>
+        <use_only_authd>false</use_only_authd>
+        <drop_privileges>true</drop_privileges>
+        <experimental_features>false</experimental_features>
+        <max_upload_size>10485760</max_upload_size>
+        <https>
+          <enabled>true</enabled>
+          <key>/var/ossec/api/configuration/ssl/server.key</key>
+          <cert>/var/ossec/api/configuration/ssl/server.crt</cert>
+          <use_ca>False</use_ca>
+          <ciphers></ciphers>
+          <ssl_protocol>auto</ssl_protocol>
+        </https>
+        <logs>
+          <level>info</level>
+          <path>logs/api.log</path>
+        </logs>
+        <cors>
+          <enabled>false</enabled>
+          <source_route>*</source_route>
+          <expose_headers>*</expose_headers>
+          <allow_headers>*</allow_headers>
+          <allow_credentials>false</allow_credentials>
+        </cors>
+        <cache>
+          <enabled>true</enabled>
+          <time>0.750</time>
+        </cache>
+        <access>
+          <max_login_attempts>50</max_login_attempts>
+          <block_time>300</block_time>
+          <max_request_per_minute>300</max_request_per_minute>
+        </access>
+        <remote_commands>
+          <localfile>
+            <enabled>true</enabled>
+            <exceptions></exceptions>
+          </localfile>
+          <wodle_command>
+            <enabled>true</enabled>
+            <exceptions></exceptions>
+          </wodle_command>
+        </remote_commands>
+      </api>
+
+      <!-- Configuration for integrations -->
+      <integration>
+        <name>slack</name>
+        <hook_url>https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK</hook_url>
+        <alert_format>json</alert_format>
+        <level>10</level>
+      </integration>
+
+      <integration>
+        <name>virustotal</name>
+        <api_key>YOUR_VIRUS_TOTAL_API_KEY</api_key>
+        <group>syscheck,</group>
+        <alert_format>json</alert_format>
+      </integration>
+
+      <!-- Configuration for labels -->
+      <labels>
+        <label key="aws.instance-id">i-052a1838c</label>
+        <label key="aws.sec-group">sg-1103</label>
+        <label key="network.ip">10.0.0.0/8</label>
+        <label key="network.dns">enterprise-crm.com</label>
+        <label key="aws.region">us-east-1</label>
+      </labels>
+
+    </ossec_config>
+
+  local_rules.xml: |
+    <group name="local,syslog,sshd,">
+      <!-- Custom rules for Enterprise CRM -->
+      
+      <!-- SSH brute force detection -->
+      <rule id="100001" level="10">
+        <if_matched_sid>5720</if_matched_sid>
+        <same_source_ip />
+        <description>SSH brute force attack detected from same source IP</description>
+        <group>authentication_failed,pci_dss_10.2.4,pci_dss_10.2.5,</group>
+      </rule>
+
+      <!-- Multiple authentication failures -->
+      <rule id="100002" level="10">
+        <if_matched_sid>5503</if_matched_sid>
+        <same_source_ip />
+        <description>Multiple authentication failures from same source IP</description>
+        <group>authentication_failed,pci_dss_10.2.4,pci_dss_10.2.5,</group>
+      </rule>
+
+      <!-- Successful login after multiple failures -->
+      <rule id="100003" level="12">
+        <if_matched_sid>5501</if_matched_sid>
+        <same_source_ip />
+        <description>Successful login after multiple authentication failures</description>
+        <group>authentication_success,pci_dss_10.2.5,</group>
+      </rule>
+
+      <!-- File integrity monitoring for critical files -->
+      <rule id="100004" level="12">
+        <if_matched_sid>550</if_matched_sid>
+        <field name="file">/etc/passwd|/etc/shadow|/etc/group|/etc/sudoers</field>
+        <description>Critical system file modified</description>
+        <group>syscheck,pci_dss_11.5,</group>
+      </rule>
+
+      <!-- Privilege escalation detection -->
+      <rule id="100005" level="12">
+        <if_matched_sid>5401</if_matched_sid>
+        <field name="uid">0</field>
+        <description>Process executed with root privileges</description>
+        <group>privilege_escalation,pci_dss_10.2.2,</group>
+      </rule>
+
+      <!-- Network connection monitoring -->
+      <rule id="100006" level="8">
+        <if_matched_sid>2501</if_matched_sid>
+        <field name="dstport">22|3389|5985|5986</field>
+        <description>Connection to administrative port detected</description>
+        <group>network,pci_dss_1.3.7,</group>
+      </rule>
+
+      <!-- Malware detection -->
+      <rule id="100007" level="15">
+        <if_matched_sid>554</if_matched_sid>
+        <field name="file">\.exe$|\.bat$|\.cmd$|\.scr$|\.pif$</field>
+        <description>Potential malware file detected</description>
+        <group>malware,pci_dss_5.1,</group>
+      </rule>
+
+      <!-- Data exfiltration detection -->
+      <rule id="100008" level="12">
+        <if_matched_sid>31101</if_matched_sid>
+        <field name="size">^[5-9][0-9]{7,}|^[1-9][0-9]{8,}</field>
+        <description>Large file transfer detected - potential data exfiltration</description>
+        <group>data_exfiltration,pci_dss_10.5.2,</group>
+      </rule>
+
+      <!-- Vulnerability scanner detection -->
+      <rule id="100009" level="10">
+        <if_matched_sid>31106</if_matched_sid>
+        <field name="url">nmap|nikto|sqlmap|dirb|gobuster|wpscan</field>
+        <description>Vulnerability scanner detected</description>
+        <group>web_scan,pci_dss_6.5.10,</group>
+      </rule>
+
+      <!-- Compliance monitoring -->
+      <rule id="100010" level="8">
+        <if_matched_sid>87901</if_matched_sid>
+        <field name="cis.rule_title">.*failed.*</field>
+        <description>CIS compliance check failed</description>
+        <group>compliance,pci_dss_2.2,</group>
+      </rule>
+
+    </group>
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: wazuh-indexer
+  namespace: security
+  labels:
+    app: wazuh-indexer
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: wazuh-indexer
+  template:
+    metadata:
+      labels:
+        app: wazuh-indexer
+    spec:
+      containers:
+      - name: wazuh-indexer
+        image: wazuh/wazuh-indexer:4.7.0
+        ports:
+        - containerPort: 9200
+        - containerPort: 9300
+        env:
+        - name: OPENSEARCH_JAVA_OPTS
+          value: "-Xms2g -Xmx2g"
+        - name: bootstrap.memory_lock
+          value: "true"
+        - name: discovery.type
+          value: "single-node"
+        - name: network.host
+          value: "0.0.0.0"
+        - name: DISABLE_INSTALL_DEMO_CONFIG
+          value: "true"
+        volumeMounts:
+        - name: indexer-storage
+          mountPath: /var/lib/wazuh-indexer
+        - name: ssl-certs
+          mountPath: /usr/share/wazuh-indexer/certs
+          readOnly: true
+        resources:
+          requests:
+            memory: "4Gi"
+            cpu: "1000m"
+          limits:
+            memory: "8Gi"
+            cpu: "2000m"
+        livenessProbe:
+          httpGet:
+            path: /_cluster/health
+            port: 9200
+            scheme: HTTPS
+          initialDelaySeconds: 60
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /_cluster/health
+            port: 9200
+            scheme: HTTPS
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        securityContext:
+          capabilities:
+            add:
+            - IPC_LOCK
+      volumes:
+      - name: indexer-storage
+        persistentVolumeClaim:
+          claimName: wazuh-indexer-pvc
+      - name: ssl-certs
+        secret:
+          secretName: wazuh-secrets
+          items:
+          - key: ssl-cert
+            path: indexer.pem
+          - key: ssl-key
+            path: indexer-key.pem
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: wazuh-indexer
+  namespace: security
+  labels:
+    app: wazuh-indexer
+spec:
+  ports:
+  - port: 9200
+    targetPort: 9200
+    name: http
+  - port: 9300
+    targetPort: 9300
+    name: transport
+  selector:
+    app: wazuh-indexer
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: wazuh-manager
+  namespace: security
+  labels:
+    app: wazuh-manager
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: wazuh-manager
+  template:
+    metadata:
+      labels:
+        app: wazuh-manager
+    spec:
+      initContainers:
+      - name: wait-for-indexer
+        image: busybox:1.35
+        command:
+        - sh
+        - -c
+        - |
+          echo "Waiting for Wazuh Indexer..."
+          until nc -z wazuh-indexer 9200; do sleep 5; done
+          echo "Wazuh Indexer is ready!"
+      containers:
+      - name: wazuh-manager
+        image: wazuh/wazuh-manager:4.7.0
+        ports:
+        - containerPort: 1514
+          name: agents
+        - containerPort: 1515
+          name: authd
+        - containerPort: 1516
+          name: cluster
+        - containerPort: 55000
+          name: api
+        env:
+        - name: INDEXER_URL
+          value: "https://wazuh-indexer:9200"
+        - name: INDEXER_USERNAME
+          value: "admin"
+        - name: INDEXER_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: wazuh-secrets
+              key: indexer-admin-password
+        - name: FILEBEAT_SSL_VERIFICATION_MODE
+          value: "none"
+        - name: SSL_CERTIFICATE_AUTHORITIES
+          value: "/etc/ssl/root-ca.pem"
+        - name: SSL_CERTIFICATE
+          value: "/etc/ssl/filebeat.pem"
+        - name: SSL_KEY
+          value: "/etc/ssl/filebeat.key"
+        - name: API_USERNAME
+          value: "wazuh-wui"
+        - name: API_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: wazuh-secrets
+              key: wazuh-api-password
+        volumeMounts:
+        - name: manager-storage
+          mountPath: /var/ossec/data
+        - name: config
+          mountPath: /wazuh-config-mount/etc/ossec.conf
+          subPath: ossec.conf
+        - name: config
+          mountPath: /wazuh-config-mount/etc/rules/local_rules.xml
+          subPath: local_rules.xml
+        - name: ssl-certs
+          mountPath: /etc/ssl
+          readOnly: true
+        resources:
+          requests:
+            memory: "2Gi"
+            cpu: "1000m"
+          limits:
+            memory: "4Gi"
+            cpu: "2000m"
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 55000
+            scheme: HTTPS
+          initialDelaySeconds: 60
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 55000
+            scheme: HTTPS
+          initialDelaySeconds: 30
+          periodSeconds: 10
+      volumes:
+      - name: manager-storage
+        persistentVolumeClaim:
+          claimName: wazuh-manager-pvc
+      - name: config
+        configMap:
+          name: wazuh-manager-config
+      - name: ssl-certs
+        secret:
+          secretName: wazuh-secrets
+          items:
+          - key: ssl-cert
+            path: filebeat.pem
+          - key: ssl-key
+            path: filebeat.key
+          - key: ssl-cert
+            path: root-ca.pem
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: wazuh-manager
+  namespace: security
+  labels:
+    app: wazuh-manager
+spec:
+  ports:
+  - port: 1514
+    targetPort: 1514
+    name: agents
+    protocol: TCP
+  - port: 1515
+    targetPort: 1515
+    name: authd
+    protocol: TCP
+  - port: 1516
+    targetPort: 1516
+    name: cluster
+    protocol: TCP
+  - port: 55000
+    targetPort: 55000
+    name: api
+    protocol: TCP
+  selector:
+    app: wazuh-manager
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: wazuh-dashboard
+  namespace: security
+  labels:
+    app: wazuh-dashboard
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: wazuh-dashboard
+  template:
+    metadata:
+      labels:
+        app: wazuh-dashboard
+    spec:
+      initContainers:
+      - name: wait-for-manager
+        image: busybox:1.35
+        command:
+        - sh
+        - -c
+        - |
+          echo "Waiting for Wazuh Manager..."
+          until nc -z wazuh-manager 55000; do sleep 5; done
+          echo "Wazuh Manager is ready!"
+      containers:
+      - name: wazuh-dashboard
+        image: wazuh/wazuh-dashboard:4.7.0
+        ports:
+        - containerPort: 5601
+        env:
+        - name: INDEXER_USERNAME
+          value: "admin"
+        - name: INDEXER_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: wazuh-secrets
+              key: indexer-admin-password
+        - name: WAZUH_API_URL
+          value: "https://wazuh-manager:55000"
+        - name: API_USERNAME
+          value: "wazuh-wui"
+        - name: API_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: wazuh-secrets
+              key: wazuh-api-password
+        - name: DASHBOARD_USERNAME
+          value: "kibanaserver"
+        - name: DASHBOARD_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: wazuh-secrets
+              key: dashboard-password
+        resources:
+          requests:
+            memory: "1Gi"
+            cpu: "500m"
+          limits:
+            memory: "2Gi"
+            cpu: "1000m"
+        livenessProbe:
+          httpGet:
+            path: /app/wazuh
+            port: 5601
+          initialDelaySeconds: 120
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /app/wazuh
+            port: 5601
+          initialDelaySeconds: 60
+          periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: wazuh-dashboard
+  namespace: security
+  labels:
+    app: wazuh-dashboard
+spec:
+  ports:
+  - port: 5601
+    targetPort: 5601
+  selector:
+    app: wazuh-dashboard
+  type: ClusterIP
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: wazuh-dashboard-ingress
+  namespace: security
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "300"
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      more_set_headers "X-Frame-Options: SAMEORIGIN";
+      more_set_headers "X-Content-Type-Options: nosniff";
+      more_set_headers "X-XSS-Protection: 1; mode=block";
+      more_set_headers "Strict-Transport-Security: max-age=31536000; includeSubDomains";
+spec:
+  tls:
+  - hosts:
+    - siem.enterprise-crm.com
+    secretName: wazuh-dashboard-tls
+  rules:
+  - host: siem.enterprise-crm.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: wazuh-dashboard
+            port:
+              number: 5601
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: wazuh-agent
+  namespace: security
+  labels:
+    app: wazuh-agent
+spec:
+  selector:
+    matchLabels:
+      app: wazuh-agent
+  template:
+    metadata:
+      labels:
+        app: wazuh-agent
+    spec:
+      hostNetwork: true
+      hostPID: true
+      containers:
+      - name: wazuh-agent
+        image: wazuh/wazuh-agent:4.7.0
+        env:
+        - name: WAZUH_MANAGER
+          value: "wazuh-manager.security.svc.cluster.local"
+        - name: WAZUH_REGISTRATION_SERVER
+          value: "wazuh-manager.security.svc.cluster.local"
+        - name: WAZUH_AGENT_GROUP
+          value: "kubernetes"
+        - name: WAZUH_AGENT_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+        volumeMounts:
+        - name: rootfs
+          mountPath: /rootfs
+          readOnly: true
+        - name: proc
+          mountPath: /host/proc
+          readOnly: true
+        - name: sys
+          mountPath: /host/sys
+          readOnly: true
+        - name: var-log
+          mountPath: /var/log
+          readOnly: true
+        - name: var-lib-docker
+          mountPath: /var/lib/docker
+          readOnly: true
+        - name: dev
+          mountPath: /host/dev
+          readOnly: true
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "200m"
+        securityContext:
+          privileged: true
+      volumes:
+      - name: rootfs
+        hostPath:
+          path: /
+      - name: proc
+        hostPath:
+          path: /proc
+      - name: sys
+        hostPath:
+          path: /sys
+      - name: var-log
+        hostPath:
+          path: /var/log
+      - name: var-lib-docker
+        hostPath:
+          path: /var/lib/docker
+      - name: dev
+        hostPath:
+          path: /dev
+      tolerations:
+      - effect: NoSchedule
+        operator: Exists
+      - effect: NoExecute
+        operator: Exists
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: wazuh-manager-pdb
+  namespace: security
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: wazuh-manager
+---
+apiVersion: v1
+kind: ServiceMonitor
+metadata:
+  name: wazuh-metrics
+  namespace: security
+  labels:
+    app: wazuh-manager
+spec:
+  selector:
+    matchLabels:
+      app: wazuh-manager
+  endpoints:
+  - port: api
+    interval: 30s
+    path: /metrics
+

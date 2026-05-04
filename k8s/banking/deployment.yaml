@@ -1,0 +1,295 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: banking-service
+  namespace: banking-crm
+  labels:
+    app: banking-service
+    app.kubernetes.io/name: banking-service
+    app.kubernetes.io/part-of: banking-crm-integration
+    app.kubernetes.io/component: backend
+    app.kubernetes.io/version: "1.0.0"
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: banking-service
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: banking-service
+      annotations:
+        dapr.io/enabled: "true"
+        dapr.io/app-id: "banking-service"
+        dapr.io/app-port: "8080"
+        dapr.io/config: "banking-config"
+        dapr.io/log-level: "info"
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9090"
+        prometheus.io/path: "/metrics"
+    spec:
+      serviceAccountName: banking-service-account
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+      containers:
+      - name: banking-service
+        image: banking-crm/banking-service:1.0.0
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8080
+          name: http
+        - containerPort: 9090
+          name: metrics
+        env:
+        - name: SERVICE_NAME
+          value: "banking-service"
+        - name: SERVICE_PORT
+          value: "8080"
+        - name: LOG_LEVEL
+          value: "info"
+        - name: ENVIRONMENT
+          value: "production"
+        - name: DB_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: banking-service-config
+              key: db_host
+        - name: DB_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: banking-service-config
+              key: db_port
+        - name: DB_NAME
+          valueFrom:
+            configMapKeyRef:
+              name: banking-service-config
+              key: db_name
+        - name: DB_USER
+          valueFrom:
+            secretKeyRef:
+              name: banking-service-secrets
+              key: db_user
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: banking-service-secrets
+              key: db_password
+        - name: KAFKA_BROKERS
+          valueFrom:
+            configMapKeyRef:
+              name: banking-service-config
+              key: kafka_brokers
+        - name: REDIS_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: banking-service-config
+              key: redis_host
+        - name: REDIS_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: banking-service-config
+              key: redis_port
+        - name: REDIS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: banking-service-secrets
+              key: redis_password
+        - name: KEYCLOAK_URL
+          valueFrom:
+            configMapKeyRef:
+              name: banking-service-config
+              key: keycloak_url
+        - name: KEYCLOAK_REALM
+          valueFrom:
+            configMapKeyRef:
+              name: banking-service-config
+              key: keycloak_realm
+        - name: KEYCLOAK_CLIENT_ID
+          valueFrom:
+            configMapKeyRef:
+              name: banking-service-config
+              key: keycloak_client_id
+        - name: KEYCLOAK_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: banking-service-secrets
+              key: keycloak_client_secret
+        resources:
+          limits:
+            cpu: "1"
+            memory: "2Gi"
+          requests:
+            cpu: "500m"
+            memory: "1Gi"
+        livenessProbe:
+          httpGet:
+            path: /health/live
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health/ready
+            port: 8080
+          initialDelaySeconds: 15
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+        volumeMounts:
+        - name: config-volume
+          mountPath: /app/config
+        - name: tmp-volume
+          mountPath: /tmp
+        - name: logs-volume
+          mountPath: /app/logs
+      volumes:
+      - name: config-volume
+        configMap:
+          name: banking-service-config
+      - name: tmp-volume
+        emptyDir: {}
+      - name: logs-volume
+        emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: banking-service
+  namespace: banking-crm
+  labels:
+    app: banking-service
+    app.kubernetes.io/name: banking-service
+    app.kubernetes.io/part-of: banking-crm-integration
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "9090"
+    prometheus.io/path: "/metrics"
+spec:
+  type: ClusterIP
+  ports:
+  - port: 8080
+    targetPort: 8080
+    protocol: TCP
+    name: http
+  - port: 9090
+    targetPort: 9090
+    protocol: TCP
+    name: metrics
+  selector:
+    app: banking-service
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: banking-service-account
+  namespace: banking-crm
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: banking-service-config
+  namespace: banking-crm
+data:
+  db_host: "postgres-banking"
+  db_port: "5432"
+  db_name: "banking_db"
+  kafka_brokers: "kafka-broker:9092"
+  redis_host: "redis-master"
+  redis_port: "6379"
+  keycloak_url: "https://keycloak.banking-domain.com/auth"
+  keycloak_realm: "banking"
+  keycloak_client_id: "banking-service"
+  config.yaml: |
+    service:
+      name: banking-service
+      version: 1.0.0
+      port: 8080
+      metrics_port: 9090
+      log_level: info
+      environment: production
+    
+    database:
+      max_open_connections: 20
+      max_idle_connections: 5
+      connection_max_lifetime: 1h
+    
+    kafka:
+      consumer_group: banking-service
+      topics:
+        customer_events: banking.customers
+        transaction_events: banking.transactions
+        fraud_events: banking.fraud
+    
+    redis:
+      database: 0
+      pool_size: 10
+      min_idle_connections: 5
+      idle_timeout: 5m
+    
+    security:
+      jwt_expiration: 1h
+      refresh_token_expiration: 24h
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: banking-service-pdb
+  namespace: banking-crm
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: banking-service
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: banking-service-hpa
+  namespace: banking-crm
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: banking-service
+  minReplicas: 3
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+      - type: Percent
+        value: 10
+        periodSeconds: 60
+    scaleUp:
+      stabilizationWindowSeconds: 60
+      policies:
+      - type: Percent
+        value: 20
+        periodSeconds: 60
+      - type: Pods
+        value: 2
+        periodSeconds: 60
+      selectPolicy: Max
+

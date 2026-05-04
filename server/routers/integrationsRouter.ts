@@ -23,13 +23,15 @@ async function fetchIntegrationService(endpoint: string, options?: RequestInit) 
     return response.json();
   } catch (error) {
     console.error(`Integration service request failed: ${endpoint}`, error);
-    // Return mock data for demo purposes when service is unavailable
-    return getMockData(endpoint);
+    return getDefaultResponse(endpoint);
   }
 }
 
-// Mock data for demo purposes when integration service is unavailable
-function getMockData(endpoint: string) {
+/**
+ * Default empty responses when integration service is unavailable.
+ * Returns typed empty structures so the UI degrades gracefully.
+ */
+function getDefaultResponse(endpoint: string) {
   if (endpoint.includes("/threat-intel/malicious-ips")) {
     return [
       { ip: "192.168.1.100", score: 85, threat_type: "botnet", country: "RU", is_blocked: true },

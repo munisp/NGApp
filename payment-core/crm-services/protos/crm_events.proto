@@ -1,0 +1,693 @@
+syntax = "proto3";
+
+package crm.integration;
+
+option go_package = "github.com/banking-crm-integration/proto/crm";
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/struct.proto";
+
+// Customer Profile Service - CRM to Banking Platform
+service CustomerProfileService {
+  // Stream customer profile updates in real-time
+  rpc StreamCustomerProfileUpdates(ProfileUpdateRequest) returns (stream CustomerProfileUpdate);
+  
+  // Send batch of customer profile updates
+  rpc BatchCustomerProfileUpdates(BatchProfileUpdateRequest) returns (BatchProfileUpdateResponse);
+  
+  // Acknowledge receipt of updates
+  rpc AcknowledgeUpdate(UpdateAcknowledgement) returns (AcknowledgementResponse);
+  
+  // Get customer profile by ID
+  rpc GetCustomerProfile(CustomerProfileRequest) returns (CustomerProfile);
+}
+
+// Customer Risk Service - CRM to Banking Platform
+service CustomerRiskService {
+  // Stream risk profile updates in real-time
+  rpc StreamRiskProfileUpdates(RiskUpdateRequest) returns (stream CustomerRiskUpdate);
+  
+  // Get customer risk profile by ID
+  rpc GetCustomerRiskProfile(CustomerRiskRequest) returns (CustomerRiskProfile);
+  
+  // Update customer risk score
+  rpc UpdateCustomerRiskScore(RiskScoreUpdate) returns (RiskScoreUpdateResponse);
+}
+
+// Marketing Campaign Service - CRM to Banking Platform
+service MarketingCampaignService {
+  // Stream campaign eligibility updates in real-time
+  rpc StreamCampaignEligibilityUpdates(CampaignRequest) returns (stream CampaignEligibilityUpdate);
+  
+  // Get campaigns for a customer
+  rpc GetCustomerCampaigns(CustomerCampaignRequest) returns (CustomerCampaignResponse);
+  
+  // Track campaign interaction
+  rpc TrackCampaignInteraction(CampaignInteraction) returns (CampaignInteractionResponse);
+}
+
+// Profile Update Request
+message ProfileUpdateRequest {
+  // CRM system identifier
+  string crm_id = 1;
+  
+  // Update types to filter (empty means all)
+  repeated string update_types = 2;
+  
+  // Customer IDs to filter (empty means all)
+  repeated string customer_ids = 3;
+  
+  // Start timestamp for updates
+  google.protobuf.Timestamp start_time = 4;
+  
+  // Authentication token
+  string auth_token = 5;
+}
+
+// Customer Profile Update
+message CustomerProfileUpdate {
+  // Unique update ID
+  string update_id = 1;
+  
+  // Customer ID
+  string customer_id = 2;
+  
+  // Update type
+  string update_type = 3;
+  
+  // Update timestamp
+  google.protobuf.Timestamp timestamp = 4;
+  
+  // Updated fields
+  map<string, string> updated_fields = 5;
+  
+  // Full customer profile
+  CustomerProfile profile = 6;
+  
+  // Source CRM
+  string crm_id = 7;
+  
+  // Update version
+  string version = 8;
+  
+  // Correlation ID for tracing
+  string correlation_id = 9;
+}
+
+// Customer Profile
+message CustomerProfile {
+  // Customer ID
+  string customer_id = 1;
+  
+  // Personal information
+  PersonalInfo personal_info = 2;
+  
+  // Contact information
+  ContactInfo contact_info = 3;
+  
+  // Preferences
+  CustomerPreferences preferences = 4;
+  
+  // KYC status
+  string kyc_status = 5;
+  
+  // Customer segment
+  string segment = 6;
+  
+  // Customer lifetime value
+  double lifetime_value = 7;
+  
+  // Customer since date
+  google.protobuf.Timestamp customer_since = 8;
+  
+  // Last updated timestamp
+  google.protobuf.Timestamp last_updated = 9;
+  
+  // Additional profile data
+  google.protobuf.Struct data = 10;
+}
+
+// Personal Information
+message PersonalInfo {
+  // First name
+  string first_name = 1;
+  
+  // Last name
+  string last_name = 2;
+  
+  // Date of birth
+  string date_of_birth = 3;
+  
+  // Gender
+  string gender = 4;
+  
+  // Nationality
+  string nationality = 5;
+  
+  // Identification documents
+  repeated IdentificationDocument documents = 6;
+}
+
+// Identification Document
+message IdentificationDocument {
+  // Document type
+  string type = 1;
+  
+  // Document number
+  string number = 2;
+  
+  // Issuing country
+  string issuing_country = 3;
+  
+  // Issue date
+  string issue_date = 4;
+  
+  // Expiry date
+  string expiry_date = 5;
+  
+  // Verification status
+  string verification_status = 6;
+}
+
+// Contact Information
+message ContactInfo {
+  // Email address
+  string email = 1;
+  
+  // Phone number
+  string phone = 2;
+  
+  // Address
+  Address address = 3;
+  
+  // Preferred contact method
+  string preferred_contact_method = 4;
+  
+  // Contact time preference
+  string contact_time_preference = 5;
+}
+
+// Address
+message Address {
+  // Street address
+  string street = 1;
+  
+  // City
+  string city = 2;
+  
+  // State/Province
+  string state = 3;
+  
+  // Postal code
+  string postal_code = 4;
+  
+  // Country
+  string country = 5;
+  
+  // Address type (home, work, etc.)
+  string type = 6;
+  
+  // Verification status
+  string verification_status = 7;
+}
+
+// Customer Preferences
+message CustomerPreferences {
+  // Language preference
+  string language = 1;
+  
+  // Communication preferences
+  CommunicationPreferences communication = 2;
+  
+  // Product preferences
+  repeated string product_interests = 3;
+  
+  // Channel preferences
+  map<string, bool> channel_preferences = 4;
+  
+  // Marketing consent
+  bool marketing_consent = 5;
+  
+  // Data sharing consent
+  bool data_sharing_consent = 6;
+}
+
+// Communication Preferences
+message CommunicationPreferences {
+  // Email communications
+  bool email_enabled = 1;
+  
+  // SMS communications
+  bool sms_enabled = 2;
+  
+  // Push notifications
+  bool push_enabled = 3;
+  
+  // Phone calls
+  bool phone_enabled = 4;
+  
+  // Direct mail
+  bool mail_enabled = 5;
+  
+  // Frequency preference
+  string frequency = 6;
+}
+
+// Batch Profile Update Request
+message BatchProfileUpdateRequest {
+  // CRM system identifier
+  string crm_id = 1;
+  
+  // List of updates
+  repeated CustomerProfileUpdate updates = 2;
+  
+  // Authentication token
+  string auth_token = 3;
+  
+  // Request ID
+  string request_id = 4;
+}
+
+// Batch Profile Update Response
+message BatchProfileUpdateResponse {
+  // Success status
+  bool success = 1;
+  
+  // Error message if any
+  string error_message = 2;
+  
+  // Number of updates processed
+  int32 processed_count = 3;
+  
+  // Number of updates failed
+  int32 failed_count = 4;
+  
+  // Failed update IDs with reasons
+  map<string, string> failed_updates = 5;
+  
+  // Request ID (echoed back)
+  string request_id = 6;
+}
+
+// Customer Profile Request
+message CustomerProfileRequest {
+  // Customer ID
+  string customer_id = 1;
+  
+  // CRM system identifier
+  string crm_id = 2;
+  
+  // Authentication token
+  string auth_token = 3;
+  
+  // Request ID
+  string request_id = 4;
+}
+
+// Risk Update Request
+message RiskUpdateRequest {
+  // CRM system identifier
+  string crm_id = 1;
+  
+  // Risk types to filter (empty means all)
+  repeated string risk_types = 2;
+  
+  // Customer IDs to filter (empty means all)
+  repeated string customer_ids = 3;
+  
+  // Start timestamp for updates
+  google.protobuf.Timestamp start_time = 4;
+  
+  // Authentication token
+  string auth_token = 5;
+}
+
+// Customer Risk Update
+message CustomerRiskUpdate {
+  // Unique update ID
+  string update_id = 1;
+  
+  // Customer ID
+  string customer_id = 2;
+  
+  // Risk type
+  string risk_type = 3;
+  
+  // Update timestamp
+  google.protobuf.Timestamp timestamp = 4;
+  
+  // Previous risk score
+  double previous_score = 5;
+  
+  // New risk score
+  double new_score = 6;
+  
+  // Risk factors
+  repeated RiskFactor risk_factors = 7;
+  
+  // Source CRM
+  string crm_id = 8;
+  
+  // Update version
+  string version = 9;
+  
+  // Correlation ID for tracing
+  string correlation_id = 10;
+}
+
+// Risk Factor
+message RiskFactor {
+  // Factor type
+  string type = 1;
+  
+  // Factor description
+  string description = 2;
+  
+  // Factor weight
+  double weight = 3;
+  
+  // Factor score
+  double score = 4;
+}
+
+// Customer Risk Request
+message CustomerRiskRequest {
+  // Customer ID
+  string customer_id = 1;
+  
+  // CRM system identifier
+  string crm_id = 2;
+  
+  // Authentication token
+  string auth_token = 3;
+  
+  // Request ID
+  string request_id = 4;
+}
+
+// Customer Risk Profile
+message CustomerRiskProfile {
+  // Customer ID
+  string customer_id = 1;
+  
+  // Overall risk score
+  double risk_score = 2;
+  
+  // Risk category
+  string risk_category = 3;
+  
+  // Risk factors
+  repeated RiskFactor risk_factors = 4;
+  
+  // Last updated timestamp
+  google.protobuf.Timestamp last_updated = 5;
+  
+  // Risk assessment history
+  repeated RiskAssessment history = 6;
+  
+  // Additional risk data
+  google.protobuf.Struct data = 7;
+}
+
+// Risk Assessment
+message RiskAssessment {
+  // Assessment timestamp
+  google.protobuf.Timestamp timestamp = 1;
+  
+  // Risk score
+  double risk_score = 2;
+  
+  // Risk category
+  string risk_category = 3;
+  
+  // Assessment reason
+  string reason = 4;
+}
+
+// Risk Score Update
+message RiskScoreUpdate {
+  // Customer ID
+  string customer_id = 1;
+  
+  // New risk score
+  double risk_score = 2;
+  
+  // Risk factors
+  repeated RiskFactor risk_factors = 3;
+  
+  // Update reason
+  string reason = 4;
+  
+  // CRM system identifier
+  string crm_id = 5;
+  
+  // Authentication token
+  string auth_token = 6;
+  
+  // Request ID
+  string request_id = 7;
+}
+
+// Risk Score Update Response
+message RiskScoreUpdateResponse {
+  // Success status
+  bool success = 1;
+  
+  // Error message if any
+  string error_message = 2;
+  
+  // Updated risk profile
+  CustomerRiskProfile updated_profile = 3;
+  
+  // Request ID (echoed back)
+  string request_id = 4;
+}
+
+// Campaign Request
+message CampaignRequest {
+  // CRM system identifier
+  string crm_id = 1;
+  
+  // Campaign types to filter (empty means all)
+  repeated string campaign_types = 2;
+  
+  // Customer IDs to filter (empty means all)
+  repeated string customer_ids = 3;
+  
+  // Start timestamp for updates
+  google.protobuf.Timestamp start_time = 4;
+  
+  // Authentication token
+  string auth_token = 5;
+}
+
+// Campaign Eligibility Update
+message CampaignEligibilityUpdate {
+  // Unique update ID
+  string update_id = 1;
+  
+  // Customer ID
+  string customer_id = 2;
+  
+  // Campaign ID
+  string campaign_id = 3;
+  
+  // Update timestamp
+  google.protobuf.Timestamp timestamp = 4;
+  
+  // Eligibility status
+  bool eligible = 5;
+  
+  // Eligibility reason
+  string reason = 6;
+  
+  // Campaign details
+  Campaign campaign = 7;
+  
+  // Source CRM
+  string crm_id = 8;
+  
+  // Update version
+  string version = 9;
+  
+  // Correlation ID for tracing
+  string correlation_id = 10;
+}
+
+// Campaign
+message Campaign {
+  // Campaign ID
+  string campaign_id = 1;
+  
+  // Campaign name
+  string name = 2;
+  
+  // Campaign type
+  string type = 3;
+  
+  // Campaign description
+  string description = 4;
+  
+  // Start date
+  google.protobuf.Timestamp start_date = 5;
+  
+  // End date
+  google.protobuf.Timestamp end_date = 6;
+  
+  // Campaign status
+  string status = 7;
+  
+  // Campaign priority
+  int32 priority = 8;
+  
+  // Campaign offers
+  repeated Offer offers = 9;
+  
+  // Additional campaign data
+  google.protobuf.Struct data = 10;
+}
+
+// Offer
+message Offer {
+  // Offer ID
+  string offer_id = 1;
+  
+  // Offer name
+  string name = 2;
+  
+  // Offer description
+  string description = 3;
+  
+  // Offer type
+  string type = 4;
+  
+  // Offer value
+  string value = 5;
+  
+  // Expiry date
+  google.protobuf.Timestamp expiry_date = 6;
+  
+  // Terms and conditions
+  string terms = 7;
+  
+  // Redemption code
+  string redemption_code = 8;
+}
+
+// Customer Campaign Request
+message CustomerCampaignRequest {
+  // Customer ID
+  string customer_id = 1;
+  
+  // Campaign types to filter (empty means all)
+  repeated string campaign_types = 2;
+  
+  // CRM system identifier
+  string crm_id = 3;
+  
+  // Authentication token
+  string auth_token = 4;
+  
+  // Request ID
+  string request_id = 5;
+}
+
+// Customer Campaign Response
+message CustomerCampaignResponse {
+  // Success status
+  bool success = 1;
+  
+  // Error message if any
+  string error_message = 2;
+  
+  // Customer ID
+  string customer_id = 3;
+  
+  // Eligible campaigns
+  repeated Campaign campaigns = 4;
+  
+  // Request ID (echoed back)
+  string request_id = 5;
+}
+
+// Campaign Interaction
+message CampaignInteraction {
+  // Customer ID
+  string customer_id = 1;
+  
+  // Campaign ID
+  string campaign_id = 2;
+  
+  // Offer ID
+  string offer_id = 3;
+  
+  // Interaction type
+  string interaction_type = 4;
+  
+  // Interaction timestamp
+  google.protobuf.Timestamp timestamp = 5;
+  
+  // Interaction channel
+  string channel = 6;
+  
+  // Interaction result
+  string result = 7;
+  
+  // Additional interaction data
+  google.protobuf.Struct data = 8;
+  
+  // CRM system identifier
+  string crm_id = 9;
+  
+  // Authentication token
+  string auth_token = 10;
+  
+  // Request ID
+  string request_id = 11;
+}
+
+// Campaign Interaction Response
+message CampaignInteractionResponse {
+  // Success status
+  bool success = 1;
+  
+  // Error message if any
+  string error_message = 2;
+  
+  // Interaction ID
+  string interaction_id = 3;
+  
+  // Next best action
+  string next_best_action = 4;
+  
+  // Request ID (echoed back)
+  string request_id = 5;
+}
+
+// Update Acknowledgement
+message UpdateAcknowledgement {
+  // Update ID
+  string update_id = 1;
+  
+  // Status (success/failure)
+  bool success = 2;
+  
+  // Error message if any
+  string error_message = 3;
+  
+  // Processing timestamp
+  google.protobuf.Timestamp timestamp = 4;
+  
+  // Consumer ID
+  string consumer_id = 5;
+}
+
+// Acknowledgement Response
+message AcknowledgementResponse {
+  // Success status
+  bool success = 1;
+  
+  // Error message if any
+  string error_message = 2;
+}
+

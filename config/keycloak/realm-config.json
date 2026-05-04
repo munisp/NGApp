@@ -1,0 +1,659 @@
+{
+  "realm": "enterprise-crm",
+  "displayName": "Enterprise CRM",
+  "displayNameHtml": "<div class=\"kc-logo-text\"><span>Enterprise CRM</span></div>",
+  "enabled": true,
+  "sslRequired": "external",
+  "registrationAllowed": false,
+  "registrationEmailAsUsername": true,
+  "rememberMe": true,
+  "verifyEmail": true,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "resetPasswordAllowed": true,
+  "editUsernameAllowed": false,
+  "bruteForceProtected": true,
+  "permanentLockout": false,
+  "maxFailureWaitSeconds": 900,
+  "minimumQuickLoginWaitSeconds": 60,
+  "waitIncrementSeconds": 60,
+  "quickLoginCheckMilliSeconds": 1000,
+  "maxDeltaTimeSeconds": 43200,
+  "failureFactor": 30,
+  "defaultRoles": ["default-roles-enterprise-crm", "offline_access", "uma_authorization"],
+  "requiredCredentials": ["password"],
+  "passwordPolicy": "length(8) and digits(1) and lowerCase(1) and upperCase(1) and specialChars(1) and notUsername and notEmail and passwordHistory(5)",
+  "otpPolicyType": "totp",
+  "otpPolicyAlgorithm": "HmacSHA1",
+  "otpPolicyInitialCounter": 0,
+  "otpPolicyDigits": 6,
+  "otpPolicyLookAheadWindow": 1,
+  "otpPolicyPeriod": 30,
+  "otpSupportedApplications": ["FreeOTP", "Google Authenticator"],
+  "webAuthnPolicyRpEntityName": "Enterprise CRM",
+  "webAuthnPolicySignatureAlgorithms": ["ES256", "RS256"],
+  "webAuthnPolicyRpId": "enterprise-crm.com",
+  "webAuthnPolicyAttestationConveyancePreference": "not specified",
+  "webAuthnPolicyAuthenticatorAttachment": "not specified",
+  "webAuthnPolicyRequireResidentKey": "not specified",
+  "webAuthnPolicyUserVerificationRequirement": "not specified",
+  "webAuthnPolicyCreateTimeout": 0,
+  "webAuthnPolicyAvoidSameAuthenticatorRegister": false,
+  "webAuthnPolicyAcceptableAaguids": [],
+  "attributes": {
+    "frontendUrl": "https://auth.enterprise-crm.com",
+    "acr.loa.map": "{\"silver\":1,\"gold\":2,\"platinum\":3}",
+    "webAuthnPolicyPasswordlessRpEntityName": "Enterprise CRM",
+    "webAuthnPolicyPasswordlessSignatureAlgorithms": "[\"ES256\",\"RS256\"]",
+    "webAuthnPolicyPasswordlessRpId": "enterprise-crm.com",
+    "webAuthnPolicyPasswordlessAttestationConveyancePreference": "not specified",
+    "webAuthnPolicyPasswordlessAuthenticatorAttachment": "not specified",
+    "webAuthnPolicyPasswordlessRequireResidentKey": "not specified",
+    "webAuthnPolicyPasswordlessUserVerificationRequirement": "not specified",
+    "webAuthnPolicyPasswordlessCreateTimeout": "0",
+    "webAuthnPolicyPasswordlessAvoidSameAuthenticatorRegister": "false"
+  },
+  "keycloakVersion": "22.0.0",
+  "userManagedAccessAllowed": false,
+  "clientProfiles": {
+    "profiles": []
+  },
+  "clientPolicies": {
+    "policies": []
+  },
+  "clients": [
+    {
+      "clientId": "enterprise-crm-frontend",
+      "name": "Enterprise CRM Frontend",
+      "description": "Frontend application for Enterprise CRM",
+      "enabled": true,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "frontend-client-secret",
+      "redirectUris": [
+        "https://app.enterprise-crm.com/*",
+        "https://admin.enterprise-crm.com/*",
+        "http://localhost:3000/*",
+        "http://localhost:8080/*"
+      ],
+      "webOrigins": [
+        "https://app.enterprise-crm.com",
+        "https://admin.enterprise-crm.com",
+        "http://localhost:3000",
+        "http://localhost:8080"
+      ],
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "bearerOnly": false,
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": true,
+      "serviceAccountsEnabled": false,
+      "authorizationServicesEnabled": false,
+      "fullScopeAllowed": true,
+      "nodeReRegistrationTimeout": -1,
+      "defaultClientScopes": [
+        "web-origins",
+        "acr",
+        "profile",
+        "roles",
+        "email"
+      ],
+      "optionalClientScopes": [
+        "address",
+        "phone",
+        "offline_access",
+        "microprofile-jwt"
+      ],
+      "attributes": {
+        "saml.assertion.signature": "false",
+        "saml.force.post.binding": "false",
+        "saml.multivalued.roles": "false",
+        "saml.encrypt": "false",
+        "saml.server.signature": "false",
+        "saml.server.signature.keyinfo.ext": "false",
+        "exclude.session.state.from.auth.response": "false",
+        "oidc.ciba.grant.enabled": "false",
+        "saml.artifact.binding": "false",
+        "backchannel.logout.session.required": "true",
+        "client_credentials.use_refresh_token": "false",
+        "saml_force_name_id_format": "false",
+        "require.pushed.authorization.requests": "false",
+        "saml.client.signature": "false",
+        "tls.client.certificate.bound.access.tokens": "false",
+        "saml.authnstatement": "false",
+        "display.on.consent.screen": "false",
+        "saml.onetimeuse.condition": "false"
+      }
+    },
+    {
+      "clientId": "enterprise-crm-api",
+      "name": "Enterprise CRM API",
+      "description": "Backend API services for Enterprise CRM",
+      "enabled": true,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "api-client-secret",
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "bearerOnly": true,
+      "standardFlowEnabled": false,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": true,
+      "authorizationServicesEnabled": true,
+      "fullScopeAllowed": false,
+      "nodeReRegistrationTimeout": -1,
+      "defaultClientScopes": [
+        "web-origins",
+        "acr",
+        "profile",
+        "roles",
+        "email"
+      ],
+      "optionalClientScopes": [
+        "address",
+        "phone",
+        "offline_access",
+        "microprofile-jwt"
+      ]
+    },
+    {
+      "clientId": "superset",
+      "name": "Apache Superset",
+      "description": "Analytics dashboard integration",
+      "enabled": true,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "superset-client-secret",
+      "redirectUris": [
+        "https://analytics.enterprise-crm.com/*"
+      ],
+      "webOrigins": [
+        "https://analytics.enterprise-crm.com"
+      ],
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "bearerOnly": false,
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": true,
+      "serviceAccountsEnabled": false,
+      "authorizationServicesEnabled": false,
+      "fullScopeAllowed": true,
+      "nodeReRegistrationTimeout": -1
+    }
+  ],
+  "clientScopes": [
+    {
+      "name": "crm-admin",
+      "description": "CRM Administrator access",
+      "protocol": "openid-connect",
+      "attributes": {
+        "include.in.token.scope": "true",
+        "display.on.consent.screen": "true",
+        "consent.screen.text": "CRM Administrator access"
+      },
+      "protocolMappers": [
+        {
+          "name": "crm-admin-role",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-realm-role-mapper",
+          "consentRequired": false,
+          "config": {
+            "usermodel.realmRoleMapping.rolePrefix": "crm-",
+            "multivalued": "true",
+            "user.attribute": "foo",
+            "access.token.claim": "true",
+            "claim.name": "crm_roles",
+            "jsonType.label": "String"
+          }
+        }
+      ]
+    },
+    {
+      "name": "crm-user",
+      "description": "CRM User access",
+      "protocol": "openid-connect",
+      "attributes": {
+        "include.in.token.scope": "true",
+        "display.on.consent.screen": "true",
+        "consent.screen.text": "CRM User access"
+      }
+    }
+  ],
+  "roles": {
+    "realm": [
+      {
+        "name": "crm-admin",
+        "description": "CRM Administrator with full access",
+        "composite": true,
+        "composites": {
+          "realm": ["crm-manager", "crm-user"]
+        }
+      },
+      {
+        "name": "crm-manager",
+        "description": "CRM Manager with management access",
+        "composite": true,
+        "composites": {
+          "realm": ["crm-user"]
+        }
+      },
+      {
+        "name": "crm-user",
+        "description": "CRM User with basic access",
+        "composite": false
+      },
+      {
+        "name": "sales-manager",
+        "description": "Sales Manager role",
+        "composite": true,
+        "composites": {
+          "realm": ["crm-user"]
+        }
+      },
+      {
+        "name": "sales-rep",
+        "description": "Sales Representative role",
+        "composite": true,
+        "composites": {
+          "realm": ["crm-user"]
+        }
+      },
+      {
+        "name": "marketing-manager",
+        "description": "Marketing Manager role",
+        "composite": true,
+        "composites": {
+          "realm": ["crm-user"]
+        }
+      },
+      {
+        "name": "customer-service",
+        "description": "Customer Service role",
+        "composite": true,
+        "composites": {
+          "realm": ["crm-user"]
+        }
+      },
+      {
+        "name": "inventory-manager",
+        "description": "Inventory Manager role",
+        "composite": true,
+        "composites": {
+          "realm": ["crm-user"]
+        }
+      },
+      {
+        "name": "analytics-viewer",
+        "description": "Analytics Viewer role",
+        "composite": true,
+        "composites": {
+          "realm": ["crm-user"]
+        }
+      }
+    ]
+  },
+  "groups": [
+    {
+      "name": "Administrators",
+      "path": "/Administrators",
+      "realmRoles": ["crm-admin"],
+      "subGroups": []
+    },
+    {
+      "name": "Sales Team",
+      "path": "/Sales Team",
+      "realmRoles": ["sales-rep"],
+      "subGroups": [
+        {
+          "name": "Sales Managers",
+          "path": "/Sales Team/Sales Managers",
+          "realmRoles": ["sales-manager"]
+        }
+      ]
+    },
+    {
+      "name": "Marketing Team",
+      "path": "/Marketing Team",
+      "realmRoles": ["crm-user"],
+      "subGroups": [
+        {
+          "name": "Marketing Managers",
+          "path": "/Marketing Team/Marketing Managers",
+          "realmRoles": ["marketing-manager"]
+        }
+      ]
+    },
+    {
+      "name": "Customer Service",
+      "path": "/Customer Service",
+      "realmRoles": ["customer-service"],
+      "subGroups": []
+    },
+    {
+      "name": "Inventory Team",
+      "path": "/Inventory Team",
+      "realmRoles": ["crm-user"],
+      "subGroups": [
+        {
+          "name": "Inventory Managers",
+          "path": "/Inventory Team/Inventory Managers",
+          "realmRoles": ["inventory-manager"]
+        }
+      ]
+    }
+  ],
+  "users": [
+    {
+      "username": "admin",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "System",
+      "lastName": "Administrator",
+      "email": "admin@enterprise-crm.com",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "admin123!",
+          "temporary": true
+        }
+      ],
+      "realmRoles": ["crm-admin"],
+      "groups": ["/Administrators"],
+      "attributes": {
+        "department": ["IT"],
+        "employee_id": ["EMP001"],
+        "phone": ["+1-555-0001"]
+      }
+    },
+    {
+      "username": "sales.manager",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Sales",
+      "lastName": "Manager",
+      "email": "sales.manager@enterprise-crm.com",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "sales123!",
+          "temporary": true
+        }
+      ],
+      "realmRoles": ["sales-manager"],
+      "groups": ["/Sales Team/Sales Managers"],
+      "attributes": {
+        "department": ["Sales"],
+        "employee_id": ["EMP002"],
+        "phone": ["+1-555-0002"]
+      }
+    },
+    {
+      "username": "marketing.manager",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Marketing",
+      "lastName": "Manager",
+      "email": "marketing.manager@enterprise-crm.com",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "marketing123!",
+          "temporary": true
+        }
+      ],
+      "realmRoles": ["marketing-manager"],
+      "groups": ["/Marketing Team/Marketing Managers"],
+      "attributes": {
+        "department": ["Marketing"],
+        "employee_id": ["EMP003"],
+        "phone": ["+1-555-0003"]
+      }
+    }
+  ],
+  "identityProviders": [],
+  "identityProviderMappers": [],
+  "components": {
+    "org.keycloak.services.clientregistration.policy.ClientRegistrationPolicy": [
+      {
+        "name": "Trusted Hosts",
+        "providerId": "trusted-hosts",
+        "subType": "anonymous",
+        "config": {
+          "host-sending-registration-request-must-match": ["true"],
+          "client-uris-must-be-non-wildcard": ["true"]
+        }
+      },
+      {
+        "name": "Consent Required",
+        "providerId": "consent-required",
+        "subType": "anonymous",
+        "config": {}
+      },
+      {
+        "name": "Full Scope Disabled",
+        "providerId": "scope",
+        "subType": "anonymous",
+        "config": {}
+      },
+      {
+        "name": "Max Clients Limit",
+        "providerId": "max-clients",
+        "subType": "anonymous",
+        "config": {
+          "max-clients": ["200"]
+        }
+      },
+      {
+        "name": "Allowed Protocol Mapper Types",
+        "providerId": "allowed-protocol-mappers",
+        "subType": "anonymous",
+        "config": {
+          "allowed-protocol-mapper-types": [
+            "oidc-full-name-mapper",
+            "oidc-sha256-pairwise-sub-mapper",
+            "oidc-address-mapper",
+            "saml-user-property-mapper",
+            "oidc-usermodel-property-mapper",
+            "saml-role-list-mapper",
+            "saml-user-attribute-mapper",
+            "oidc-usermodel-attribute-mapper"
+          ]
+        }
+      },
+      {
+        "name": "Allowed Client Scopes",
+        "providerId": "allowed-client-templates",
+        "subType": "anonymous",
+        "config": {
+          "allow-default-scopes": ["true"]
+        }
+      }
+    ]
+  },
+  "internationalizationEnabled": true,
+  "supportedLocales": ["en", "es", "fr", "de", "it", "pt", "ja", "zh-CN"],
+  "defaultLocale": "en",
+  "authenticationFlows": [
+    {
+      "alias": "Enterprise CRM Browser Flow",
+      "description": "Browser based authentication with MFA support",
+      "providerId": "basic-flow",
+      "topLevel": true,
+      "builtIn": false,
+      "authenticationExecutions": [
+        {
+          "authenticator": "auth-cookie",
+          "requirement": "ALTERNATIVE",
+          "priority": 10,
+          "userSetupAllowed": false,
+          "autheticatorFlow": false
+        },
+        {
+          "authenticator": "auth-spnego",
+          "requirement": "DISABLED",
+          "priority": 20,
+          "userSetupAllowed": false,
+          "autheticatorFlow": false
+        },
+        {
+          "authenticator": "identity-provider-redirector",
+          "requirement": "ALTERNATIVE",
+          "priority": 25,
+          "userSetupAllowed": false,
+          "autheticatorFlow": false
+        },
+        {
+          "flowAlias": "Enterprise CRM Forms",
+          "requirement": "ALTERNATIVE",
+          "priority": 30,
+          "userSetupAllowed": false,
+          "autheticatorFlow": true
+        }
+      ]
+    },
+    {
+      "alias": "Enterprise CRM Forms",
+      "description": "Username, password, otp and other auth forms.",
+      "providerId": "basic-flow",
+      "topLevel": false,
+      "builtIn": false,
+      "authenticationExecutions": [
+        {
+          "authenticator": "auth-username-password-form",
+          "requirement": "REQUIRED",
+          "priority": 10,
+          "userSetupAllowed": false,
+          "autheticatorFlow": false
+        },
+        {
+          "flowAlias": "Enterprise CRM Browser - Conditional OTP",
+          "requirement": "CONDITIONAL",
+          "priority": 20,
+          "userSetupAllowed": false,
+          "autheticatorFlow": true
+        }
+      ]
+    },
+    {
+      "alias": "Enterprise CRM Browser - Conditional OTP",
+      "description": "Flow to determine if the OTP is required for the authentication",
+      "providerId": "basic-flow",
+      "topLevel": false,
+      "builtIn": false,
+      "authenticationExecutions": [
+        {
+          "authenticator": "conditional-user-configured",
+          "requirement": "REQUIRED",
+          "priority": 10,
+          "userSetupAllowed": false,
+          "autheticatorFlow": false
+        },
+        {
+          "authenticator": "auth-otp-form",
+          "requirement": "REQUIRED",
+          "priority": 20,
+          "userSetupAllowed": false,
+          "autheticatorFlow": false
+        }
+      ]
+    }
+  ],
+  "browserFlow": "Enterprise CRM Browser Flow",
+  "registrationFlow": "registration",
+  "directGrantFlow": "direct grant",
+  "resetCredentialsFlow": "reset credentials",
+  "clientAuthenticationFlow": "clients",
+  "dockerAuthenticationFlow": "docker auth",
+  "smtpServer": {
+    "password": "",
+    "starttls": "true",
+    "port": "587",
+    "auth": "true",
+    "host": "smtp.enterprise-crm.com",
+    "replyToDisplayName": "Enterprise CRM",
+    "replyTo": "noreply@enterprise-crm.com",
+    "fromDisplayName": "Enterprise CRM",
+    "from": "noreply@enterprise-crm.com",
+    "envelopeFrom": "",
+    "ssl": "false",
+    "user": "noreply@enterprise-crm.com"
+  },
+  "eventsEnabled": true,
+  "eventsListeners": ["jboss-logging"],
+  "enabledEventTypes": [
+    "SEND_RESET_PASSWORD",
+    "UPDATE_CONSENT_ERROR",
+    "GRANT_CONSENT",
+    "VERIFY_PROFILE_ERROR",
+    "REMOVE_TOTP",
+    "REVOKE_GRANT",
+    "UPDATE_TOTP",
+    "LOGIN_ERROR",
+    "CLIENT_LOGIN",
+    "RESET_PASSWORD_ERROR",
+    "IMPERSONATE_ERROR",
+    "CODE_TO_TOKEN_ERROR",
+    "CUSTOM_REQUIRED_ACTION",
+    "RESTART_AUTHENTICATION",
+    "IMPERSONATE",
+    "UPDATE_PROFILE_ERROR",
+    "LOGIN",
+    "UPDATE_PASSWORD_ERROR",
+    "CLIENT_INITIATED_ACCOUNT_LINKING",
+    "TOKEN_EXCHANGE",
+    "LOGOUT",
+    "REGISTER",
+    "CLIENT_REGISTER",
+    "IDENTITY_PROVIDER_LINK_ACCOUNT",
+    "UPDATE_PASSWORD",
+    "CLIENT_DELETE",
+    "FEDERATED_IDENTITY_LINK_ERROR",
+    "IDENTITY_PROVIDER_FIRST_LOGIN",
+    "CLIENT_DELETE_ERROR",
+    "VERIFY_EMAIL",
+    "CLIENT_LOGIN_ERROR",
+    "RESTART_AUTHENTICATION_ERROR",
+    "EXECUTE_ACTIONS",
+    "REMOVE_FEDERATED_IDENTITY_ERROR",
+    "TOKEN_EXCHANGE_ERROR",
+    "PERMISSION_TOKEN",
+    "SEND_IDENTITY_PROVIDER_LINK_ERROR",
+    "SEND_VERIFY_EMAIL",
+    "RESET_PASSWORD",
+    "CLIENT_INITIATED_ACCOUNT_LINKING_ERROR",
+    "OAUTH2_DEVICE_VERIFY_USER_CODE",
+    "UPDATE_CONSENT",
+    "REMOVE_FEDERATED_IDENTITY",
+    "SEND_IDENTITY_PROVIDER_LINK",
+    "SEND_VERIFY_EMAIL_ERROR",
+    "EXECUTE_ACTIONS_ERROR",
+    "REMOVE_TOTP_ERROR",
+    "VERIFY_EMAIL_ERROR",
+    "VERIFY_PROFILE",
+    "FEDERATED_IDENTITY_LINK",
+    "CLIENT_UPDATE",
+    "CLIENT_REGISTER_ERROR",
+    "UPDATE_PROFILE",
+    "AUTHREQID_TO_TOKEN",
+    "AUTHREQID_TO_TOKEN_ERROR",
+    "UPDATE_EMAIL",
+    "UPDATE_EMAIL_ERROR",
+    "CLIENT_UPDATE_ERROR",
+    "CODE_TO_TOKEN",
+    "OAUTH2_DEVICE_CODE_TO_TOKEN_ERROR",
+    "OAUTH2_DEVICE_VERIFY_USER_CODE_ERROR",
+    "OAUTH2_DEVICE_CODE_TO_TOKEN",
+    "IDENTITY_PROVIDER_LINK_ACCOUNT_ERROR",
+    "IDENTITY_PROVIDER_FIRST_LOGIN_ERROR",
+    "REGISTER_ERROR",
+    "REVOKE_GRANT_ERROR",
+    "LOGOUT_ERROR"
+  ],
+  "adminEventsEnabled": true,
+  "adminEventsDetailsEnabled": true,
+  "adminTheme": "keycloak",
+  "accountTheme": "keycloak",
+  "loginTheme": "keycloak",
+  "emailTheme": "keycloak"
+}
+

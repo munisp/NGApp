@@ -1,0 +1,911 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: lakehouse-catalog-config
+  namespace: enterprise-crm
+data:
+  catalog-service.py: |
+    import os
+    import time
+    import logging
+    import json
+    from typing import Dict, List, Any, Optional
+    from datetime import datetime, timedelta
+    import pandas as pd
+    
+    from pyspark.sql import SparkSession
+    from pyspark.sql.functions import *
+    from pyspark.sql.types import *
+    from delta.tables import DeltaTable
+    
+    from fastapi import FastAPI, HTTPException
+    from pydantic import BaseModel
+    import uvicorn
+    
+    # Configure logging
+    logging.basicConfig(level=logging.INFO)
+    logger = logging.getLogger(__name__)
+    
+    class LakehouseDataCatalog:
+        def __init__(self):
+            self.spark = self._initialize_spark()
+            self._create_catalog_tables()
+            self._register_data_sources()
+        
+        def _initialize_spark(self) -> SparkSession:
+            """Initialize Spark session with Delta Lake support"""
+            spark = SparkSession.builder \
+                .appName("Lakehouse Data Catalog") \
+                .config("spark.sql.extensions", "io.delta.sql.DeltaSparkSessionExtension") \
+                .config("spark.sql.catalog.spark_catalog", "org.apache.spark.sql.delta.catalog.DeltaCatalog") \
+                .config("spark.sql.adaptive.enabled", "true") \
+                .config("spark.sql.adaptive.coalescePartitions.enabled", "true") \
+                .getOrCreate()
+            
+            logger.info("Spark session initialized for data catalog")
+            return spark
+        
+        def _create_catalog_tables(self):
+            """Create catalog metadata tables"""
+            
+            # Data sources catalog
+            self.spark.sql("""
+                CREATE TABLE IF NOT EXISTS catalog.data_sources (
+                    source_id STRING,
+                    source_name STRING,
+                    source_type STRING,
+                    connection_string STRING,
+                    schema_registry STRING,
+                    created_at TIMESTAMP,
+                    updated_at TIMESTAMP,
+                    status STRING,
+                    metadata MAP<STRING, STRING>
+                ) USING DELTA
+                LOCATION 's3a://lakehouse/catalog/data_sources'
+            """)
+            
+            # Tables catalog
+            self.spark.sql("""
+                CREATE TABLE IF NOT EXISTS catalog.tables (
+                    table_id STRING,
+                    database_name STRING,
+                    table_name STRING,
+                    table_type STRING,
+                    location STRING,
+                    format STRING,
+                    schema_json STRING,
+                    partition_columns ARRAY<STRING>,
+                    row_count BIGINT,
+                    size_bytes BIGINT,
+                    created_at TIMESTAMP,
+                    updated_at TIMESTAMP,
+                    last_accessed TIMESTAMP,
+                    owner STRING,
+                    description STRING,
+                    tags ARRAY<STRING>,
+                    properties MAP<STRING, STRING>
+                ) USING DELTA
+                LOCATION 's3a://lakehouse/catalog/tables'
+            """)
+            
+            # Columns catalog
+            self.spark.sql("""
+                CREATE TABLE IF NOT EXISTS catalog.columns (
+                    column_id STRING,
+                    table_id STRING,
+                    column_name STRING,
+                    data_type STRING,
+                    is_nullable BOOLEAN,
+                    is_partition_key BOOLEAN,
+                    is_primary_key BOOLEAN,
+                    default_value STRING,
+                    description STRING,
+                    tags ARRAY<STRING>,
+                    statistics MAP<STRING, STRING>,
+                    created_at TIMESTAMP,
+                    updated_at TIMESTAMP
+                ) USING DELTA
+                LOCATION 's3a://lakehouse/catalog/columns'
+            """)
+            
+            # Data lineage
+            self.spark.sql("""
+                CREATE TABLE IF NOT EXISTS catalog.data_lineage (
+                    lineage_id STRING,
+                    source_table_id STRING,
+                    target_table_id STRING,
+                    transformation_type STRING,
+                    transformation_logic STRING,
+                    job_id STRING,
+                    job_name STRING,
+                    created_at TIMESTAMP,
+                    created_by STRING,
+                    metadata MAP<STRING, STRING>
+                ) USING DELTA
+                LOCATION 's3a://lakehouse/catalog/data_lineage'
+            """)
+            
+            # Data quality metrics
+            self.spark.sql("""
+                CREATE TABLE IF NOT EXISTS catalog.data_quality (
+                    quality_id STRING,
+                    table_id STRING,
+                    column_name STRING,
+                    metric_name STRING,
+                    metric_value DOUBLE,
+                    threshold_value DOUBLE,
+                    status STRING,
+                    measured_at TIMESTAMP,
+                    job_id STRING,
+                    details MAP<STRING, STRING>
+                ) USING DELTA
+                LOCATION 's3a://lakehouse/catalog/data_quality'
+            """)
+            
+            # Usage analytics
+            self.spark.sql("""
+                CREATE TABLE IF NOT EXISTS catalog.usage_analytics (
+                    usage_id STRING,
+                    table_id STRING,
+                    user_id STRING,
+                    query_type STRING,
+                    query_text STRING,
+                    execution_time_ms BIGINT,
+                    rows_scanned BIGINT,
+                    bytes_scanned BIGINT,
+                    accessed_at TIMESTAMP,
+                    session_id STRING,
+                    application_name STRING
+                ) USING DELTA
+                LOCATION 's3a://lakehouse/catalog/usage_analytics'
+            """)
+            
+            logger.info("Catalog tables created successfully")
+        
+        def _register_data_sources(self):
+            """Register enterprise CRM data sources"""
+            
+            data_sources = [
+                {
+                    'source_id': 'customer_service_db',
+                    'source_name': 'Customer Management Database',
+                    'source_type': 'postgresql',
+                    'connection_string': 'postgresql://customer-service-db:5432/customer_db',
+                    'schema_registry': 'customer_schema',
+                    'status': 'active',
+                    'metadata': {'service': 'customer-management', 'version': '1.0'}
+                },
+                {
+                    'source_id': 'crm_core_db',
+                    'source_name': 'CRM Core Database',
+                    'source_type': 'postgresql',
+                    'connection_string': 'postgresql://crm-core-db:5432/crm_db',
+                    'schema_registry': 'crm_schema',
+                    'status': 'active',
+                    'metadata': {'service': 'crm-core', 'version': '1.0'}
+                },
+                {
+                    'source_id': 'inventory_service_db',
+                    'source_name': 'Inventory Management Database',
+                    'source_type': 'postgresql',
+                    'connection_string': 'postgresql://inventory-service-db:5432/inventory_db',
+                    'schema_registry': 'inventory_schema',
+                    'status': 'active',
+                    'metadata': {'service': 'inventory-management', 'version': '1.0'}
+                },
+                {
+                    'source_id': 'kafka_events',
+                    'source_name': 'Kafka Event Streams',
+                    'source_type': 'kafka',
+                    'connection_string': 'kafka-cluster:9092',
+                    'schema_registry': 'kafka_schema_registry',
+                    'status': 'active',
+                    'metadata': {'topics': '70+', 'partitions': 'auto', 'replication': '3'}
+                },
+                {
+                    'source_id': 'iot_mqtt',
+                    'source_name': 'IoT/POS MQTT Streams',
+                    'source_type': 'mqtt',
+                    'connection_string': 'fluvio-mqtt:1883',
+                    'schema_registry': 'iot_schema',
+                    'status': 'active',
+                    'metadata': {'protocol': 'mqtt', 'qos': '2', 'retain': 'true'}
+                }
+            ]
+            
+            for source in data_sources:
+                self.register_data_source(source)
+        
+        def register_data_source(self, source_config: Dict[str, Any]):
+            """Register a new data source in the catalog"""
+            
+            current_time = datetime.now()
+            
+            # Insert or update data source
+            self.spark.sql(f"""
+                MERGE INTO catalog.data_sources AS target
+                USING (
+                    SELECT 
+                        '{source_config['source_id']}' as source_id,
+                        '{source_config['source_name']}' as source_name,
+                        '{source_config['source_type']}' as source_type,
+                        '{source_config['connection_string']}' as connection_string,
+                        '{source_config['schema_registry']}' as schema_registry,
+                        '{current_time}' as created_at,
+                        '{current_time}' as updated_at,
+                        '{source_config['status']}' as status,
+                        map({', '.join([f"'{k}', '{v}'" for k, v in source_config['metadata'].items()])}) as metadata
+                ) AS source
+                ON target.source_id = source.source_id
+                WHEN MATCHED THEN UPDATE SET *
+                WHEN NOT MATCHED THEN INSERT *
+            """)
+            
+            logger.info(f"Registered data source: {source_config['source_name']}")
+        
+        def discover_and_catalog_tables(self, source_id: str):
+            """Discover and catalog tables from a data source"""
+            
+            # Get source configuration
+            source_df = self.spark.sql(f"""
+                SELECT * FROM catalog.data_sources WHERE source_id = '{source_id}'
+            """).collect()
+            
+            if not source_df:
+                raise ValueError(f"Data source {source_id} not found")
+            
+            source = source_df[0]
+            
+            if source['source_type'] == 'postgresql':
+                self._catalog_postgresql_tables(source)
+            elif source['source_type'] == 'kafka':
+                self._catalog_kafka_topics(source)
+            elif source['source_type'] == 'delta':
+                self._catalog_delta_tables(source)
+            
+            logger.info(f"Cataloged tables for source: {source_id}")
+        
+        def _catalog_postgresql_tables(self, source):
+            """Catalog PostgreSQL tables"""
+            
+            # Connect to PostgreSQL and get table metadata
+            connection_string = source['connection_string']
+            
+            # This would typically use a PostgreSQL connection
+            # For demo purposes, we'll simulate the table discovery
+            
+            tables = [
+                {
+                    'table_name': 'customers',
+                    'schema': 'public',
+                    'columns': [
+                        {'name': 'customer_id', 'type': 'UUID', 'nullable': False},
+                        {'name': 'customer_name', 'type': 'VARCHAR', 'nullable': False},
+                        {'name': 'email', 'type': 'VARCHAR', 'nullable': True},
+                        {'name': 'phone', 'type': 'VARCHAR', 'nullable': True},
+                        {'name': 'created_at', 'type': 'TIMESTAMP', 'nullable': False}
+                    ]
+                },
+                {
+                    'table_name': 'customer_profiles',
+                    'schema': 'public',
+                    'columns': [
+                        {'name': 'profile_id', 'type': 'UUID', 'nullable': False},
+                        {'name': 'customer_id', 'type': 'UUID', 'nullable': False},
+                        {'name': 'profile_data', 'type': 'JSONB', 'nullable': True}
+                    ]
+                }
+            ]
+            
+            for table in tables:
+                self._register_table(source, table)
+        
+        def _catalog_kafka_topics(self, source):
+            """Catalog Kafka topics"""
+            
+            # This would typically connect to Kafka and get topic metadata
+            # For demo purposes, we'll simulate the topic discovery
+            
+            topics = [
+                {
+                    'table_name': 'customer_events',
+                    'schema': 'kafka',
+                    'partitions': 6,
+                    'replication_factor': 3,
+                    'columns': [
+                        {'name': 'event_id', 'type': 'STRING', 'nullable': False},
+                        {'name': 'customer_id', 'type': 'STRING', 'nullable': False},
+                        {'name': 'event_type', 'type': 'STRING', 'nullable': False},
+                        {'name': 'event_data', 'type': 'STRING', 'nullable': True},
+                        {'name': 'timestamp', 'type': 'TIMESTAMP', 'nullable': False}
+                    ]
+                }
+            ]
+            
+            for topic in topics:
+                self._register_table(source, topic)
+        
+        def _catalog_delta_tables(self, source):
+            """Catalog Delta Lake tables"""
+            
+            # Discover Delta tables in the lakehouse
+            delta_tables = [
+                's3a://lakehouse/customers',
+                's3a://lakehouse/products',
+                's3a://lakehouse/opportunities',
+                's3a://lakehouse/inventory',
+                's3a://lakehouse/interactions'
+            ]
+            
+            for table_path in delta_tables:
+                try:
+                    # Get Delta table metadata
+                    delta_table = DeltaTable.forPath(self.spark, table_path)
+                    table_df = delta_table.toDF()
+                    
+                    # Get schema information
+                    schema = table_df.schema
+                    
+                    table_info = {
+                        'table_name': table_path.split('/')[-1],
+                        'schema': 'lakehouse',
+                        'location': table_path,
+                        'format': 'delta',
+                        'columns': [
+                            {
+                                'name': field.name,
+                                'type': str(field.dataType),
+                                'nullable': field.nullable
+                            }
+                            for field in schema.fields
+                        ]
+                    }
+                    
+                    self._register_table(source, table_info)
+                    
+                except Exception as e:
+                    logger.warning(f"Could not catalog Delta table {table_path}: {e}")
+        
+        def _register_table(self, source, table_info):
+            """Register a table in the catalog"""
+            
+            current_time = datetime.now()
+            table_id = f"{source['source_id']}_{table_info['table_name']}"
+            
+            # Register table
+            schema_json = json.dumps([
+                {
+                    'name': col['name'],
+                    'type': col['type'],
+                    'nullable': col['nullable']
+                }
+                for col in table_info['columns']
+            ])
+            
+            self.spark.sql(f"""
+                MERGE INTO catalog.tables AS target
+                USING (
+                    SELECT 
+                        '{table_id}' as table_id,
+                        '{table_info.get('schema', 'default')}' as database_name,
+                        '{table_info['table_name']}' as table_name,
+                        'table' as table_type,
+                        '{table_info.get('location', '')}' as location,
+                        '{table_info.get('format', 'unknown')}' as format,
+                        '{schema_json}' as schema_json,
+                        array() as partition_columns,
+                        0L as row_count,
+                        0L as size_bytes,
+                        '{current_time}' as created_at,
+                        '{current_time}' as updated_at,
+                        '{current_time}' as last_accessed,
+                        'system' as owner,
+                        'Auto-discovered table' as description,
+                        array('auto-discovered') as tags,
+                        map() as properties
+                ) AS source
+                ON target.table_id = source.table_id
+                WHEN MATCHED THEN UPDATE SET *
+                WHEN NOT MATCHED THEN INSERT *
+            """)
+            
+            # Register columns
+            for col in table_info['columns']:
+                column_id = f"{table_id}_{col['name']}"
+                
+                self.spark.sql(f"""
+                    MERGE INTO catalog.columns AS target
+                    USING (
+                        SELECT 
+                            '{column_id}' as column_id,
+                            '{table_id}' as table_id,
+                            '{col['name']}' as column_name,
+                            '{col['type']}' as data_type,
+                            {col['nullable']} as is_nullable,
+                            false as is_partition_key,
+                            false as is_primary_key,
+                            null as default_value,
+                            'Auto-discovered column' as description,
+                            array('auto-discovered') as tags,
+                            map() as statistics,
+                            '{current_time}' as created_at,
+                            '{current_time}' as updated_at
+                    ) AS source
+                    ON target.column_id = source.column_id
+                    WHEN MATCHED THEN UPDATE SET *
+                    WHEN NOT MATCHED THEN INSERT *
+                """)
+        
+        def get_catalog_overview(self) -> Dict[str, Any]:
+            """Get overview of the data catalog"""
+            
+            # Data sources summary
+            sources_df = self.spark.sql("""
+                SELECT 
+                    source_type,
+                    COUNT(*) as count,
+                    COUNT(CASE WHEN status = 'active' THEN 1 END) as active_count
+                FROM catalog.data_sources
+                GROUP BY source_type
+            """).collect()
+            
+            # Tables summary
+            tables_df = self.spark.sql("""
+                SELECT 
+                    database_name,
+                    format,
+                    COUNT(*) as table_count,
+                    SUM(row_count) as total_rows,
+                    SUM(size_bytes) as total_size_bytes
+                FROM catalog.tables
+                GROUP BY database_name, format
+            """).collect()
+            
+            # Recent activity
+            recent_activity_df = self.spark.sql("""
+                SELECT 
+                    table_name,
+                    last_accessed,
+                    owner
+                FROM catalog.tables
+                ORDER BY last_accessed DESC
+                LIMIT 10
+            """).collect()
+            
+            return {
+                'data_sources': [
+                    {
+                        'source_type': row['source_type'],
+                        'total_count': row['count'],
+                        'active_count': row['active_count']
+                    }
+                    for row in sources_df
+                ],
+                'tables': [
+                    {
+                        'database': row['database_name'],
+                        'format': row['format'],
+                        'table_count': row['table_count'],
+                        'total_rows': row['total_rows'],
+                        'total_size_gb': round(row['total_size_bytes'] / (1024**3), 2) if row['total_size_bytes'] else 0
+                    }
+                    for row in tables_df
+                ],
+                'recent_activity': [
+                    {
+                        'table_name': row['table_name'],
+                        'last_accessed': row['last_accessed'].isoformat() if row['last_accessed'] else None,
+                        'owner': row['owner']
+                    }
+                    for row in recent_activity_df
+                ],
+                'catalog_timestamp': datetime.now().isoformat()
+            }
+        
+        def search_catalog(self, query: str, entity_type: str = 'all') -> Dict[str, Any]:
+            """Search the data catalog"""
+            
+            results = {}
+            
+            if entity_type in ['all', 'tables']:
+                # Search tables
+                tables_df = self.spark.sql(f"""
+                    SELECT 
+                        table_id,
+                        database_name,
+                        table_name,
+                        description,
+                        tags,
+                        owner,
+                        created_at
+                    FROM catalog.tables
+                    WHERE LOWER(table_name) LIKE LOWER('%{query}%')
+                        OR LOWER(description) LIKE LOWER('%{query}%')
+                        OR array_contains(tags, '{query.lower()}')
+                    ORDER BY table_name
+                    LIMIT 50
+                """).collect()
+                
+                results['tables'] = [
+                    {
+                        'table_id': row['table_id'],
+                        'database_name': row['database_name'],
+                        'table_name': row['table_name'],
+                        'description': row['description'],
+                        'tags': row['tags'],
+                        'owner': row['owner'],
+                        'created_at': row['created_at'].isoformat() if row['created_at'] else None
+                    }
+                    for row in tables_df
+                ]
+            
+            if entity_type in ['all', 'columns']:
+                # Search columns
+                columns_df = self.spark.sql(f"""
+                    SELECT 
+                        c.column_id,
+                        c.table_id,
+                        t.table_name,
+                        c.column_name,
+                        c.data_type,
+                        c.description,
+                        c.tags
+                    FROM catalog.columns c
+                    JOIN catalog.tables t ON c.table_id = t.table_id
+                    WHERE LOWER(c.column_name) LIKE LOWER('%{query}%')
+                        OR LOWER(c.description) LIKE LOWER('%{query}%')
+                        OR array_contains(c.tags, '{query.lower()}')
+                    ORDER BY t.table_name, c.column_name
+                    LIMIT 50
+                """).collect()
+                
+                results['columns'] = [
+                    {
+                        'column_id': row['column_id'],
+                        'table_id': row['table_id'],
+                        'table_name': row['table_name'],
+                        'column_name': row['column_name'],
+                        'data_type': row['data_type'],
+                        'description': row['description'],
+                        'tags': row['tags']
+                    }
+                    for row in columns_df
+                ]
+            
+            return {
+                'query': query,
+                'entity_type': entity_type,
+                'results': results,
+                'search_timestamp': datetime.now().isoformat()
+            }
+        
+        def get_table_lineage(self, table_id: str) -> Dict[str, Any]:
+            """Get data lineage for a table"""
+            
+            # Upstream lineage (sources)
+            upstream_df = self.spark.sql(f"""
+                SELECT 
+                    l.source_table_id,
+                    st.table_name as source_table_name,
+                    l.transformation_type,
+                    l.job_name,
+                    l.created_at
+                FROM catalog.data_lineage l
+                JOIN catalog.tables st ON l.source_table_id = st.table_id
+                WHERE l.target_table_id = '{table_id}'
+                ORDER BY l.created_at DESC
+            """).collect()
+            
+            # Downstream lineage (targets)
+            downstream_df = self.spark.sql(f"""
+                SELECT 
+                    l.target_table_id,
+                    tt.table_name as target_table_name,
+                    l.transformation_type,
+                    l.job_name,
+                    l.created_at
+                FROM catalog.data_lineage l
+                JOIN catalog.tables tt ON l.target_table_id = tt.table_id
+                WHERE l.source_table_id = '{table_id}'
+                ORDER BY l.created_at DESC
+            """).collect()
+            
+            return {
+                'table_id': table_id,
+                'upstream': [
+                    {
+                        'source_table_id': row['source_table_id'],
+                        'source_table_name': row['source_table_name'],
+                        'transformation_type': row['transformation_type'],
+                        'job_name': row['job_name'],
+                        'created_at': row['created_at'].isoformat() if row['created_at'] else None
+                    }
+                    for row in upstream_df
+                ],
+                'downstream': [
+                    {
+                        'target_table_id': row['target_table_id'],
+                        'target_table_name': row['target_table_name'],
+                        'transformation_type': row['transformation_type'],
+                        'job_name': row['job_name'],
+                        'created_at': row['created_at'].isoformat() if row['created_at'] else None
+                    }
+                    for row in downstream_df
+                ],
+                'lineage_timestamp': datetime.now().isoformat()
+            }
+        
+        def get_data_quality_report(self, table_id: Optional[str] = None) -> Dict[str, Any]:
+            """Get data quality report"""
+            
+            base_query = """
+                SELECT 
+                    dq.table_id,
+                    t.table_name,
+                    dq.column_name,
+                    dq.metric_name,
+                    dq.metric_value,
+                    dq.threshold_value,
+                    dq.status,
+                    dq.measured_at
+                FROM catalog.data_quality dq
+                JOIN catalog.tables t ON dq.table_id = t.table_id
+            """
+            
+            if table_id:
+                base_query += f" WHERE dq.table_id = '{table_id}'"
+            
+            base_query += " ORDER BY dq.measured_at DESC LIMIT 100"
+            
+            quality_df = self.spark.sql(base_query).collect()
+            
+            # Summary statistics
+            summary_df = self.spark.sql(f"""
+                SELECT 
+                    status,
+                    COUNT(*) as count,
+                    COUNT(DISTINCT table_id) as affected_tables
+                FROM catalog.data_quality
+                {f"WHERE table_id = '{table_id}'" if table_id else ""}
+                GROUP BY status
+            """).collect()
+            
+            return {
+                'table_id': table_id,
+                'quality_checks': [
+                    {
+                        'table_id': row['table_id'],
+                        'table_name': row['table_name'],
+                        'column_name': row['column_name'],
+                        'metric_name': row['metric_name'],
+                        'metric_value': float(row['metric_value']) if row['metric_value'] else None,
+                        'threshold_value': float(row['threshold_value']) if row['threshold_value'] else None,
+                        'status': row['status'],
+                        'measured_at': row['measured_at'].isoformat() if row['measured_at'] else None
+                    }
+                    for row in quality_df
+                ],
+                'summary': [
+                    {
+                        'status': row['status'],
+                        'count': row['count'],
+                        'affected_tables': row['affected_tables']
+                    }
+                    for row in summary_df
+                ],
+                'report_timestamp': datetime.now().isoformat()
+            }
+    
+    # FastAPI application
+    app = FastAPI(title="Lakehouse Data Catalog Service", version="1.0.0")
+    
+    # Initialize data catalog
+    catalog = LakehouseDataCatalog()
+    
+    class CatalogSearchRequest(BaseModel):
+        query: str
+        entity_type: str = 'all'
+    
+    @app.get("/overview")
+    async def get_catalog_overview():
+        """Get catalog overview"""
+        try:
+            result = catalog.get_catalog_overview()
+            return result
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+    
+    @app.post("/search")
+    async def search_catalog(request: CatalogSearchRequest):
+        """Search the data catalog"""
+        try:
+            result = catalog.search_catalog(request.query, request.entity_type)
+            return result
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+    
+    @app.get("/lineage/{table_id}")
+    async def get_table_lineage(table_id: str):
+        """Get data lineage for a table"""
+        try:
+            result = catalog.get_table_lineage(table_id)
+            return result
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+    
+    @app.get("/quality")
+    async def get_data_quality_report(table_id: Optional[str] = None):
+        """Get data quality report"""
+        try:
+            result = catalog.get_data_quality_report(table_id)
+            return result
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+    
+    @app.post("/discover/{source_id}")
+    async def discover_tables(source_id: str):
+        """Discover and catalog tables from a data source"""
+        try:
+            catalog.discover_and_catalog_tables(source_id)
+            return {"message": f"Tables discovered and cataloged for source: {source_id}"}
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+    
+    @app.get("/health")
+    async def health_check():
+        return {"status": "healthy", "timestamp": time.time()}
+    
+    if __name__ == "__main__":
+        uvicorn.run(app, host="0.0.0.0", port=8080)
+
+  requirements.txt: |
+    pyspark==3.5.0
+    delta-spark==3.0.0
+    pandas==2.1.0
+    fastapi==0.104.0
+    uvicorn==0.24.0
+    pydantic==2.4.0
+
+---
+# Data Catalog Service
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: lakehouse-data-catalog
+  namespace: enterprise-crm
+  labels:
+    app: lakehouse-data-catalog
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: lakehouse-data-catalog
+  template:
+    metadata:
+      labels:
+        app: lakehouse-data-catalog
+    spec:
+      containers:
+      - name: catalog-service
+        image: apache/spark:v3.5.0
+        command:
+        - /bin/bash
+        - -c
+        - |
+          # Install Python dependencies
+          pip install --upgrade pip
+          pip install -r /config/requirements.txt
+          
+          # Download Delta Lake JARs
+          cd /opt/spark/jars
+          wget -q https://repo1.maven.org/maven2/io/delta/delta-spark_2.12/3.0.0/delta-spark_2.12-3.0.0.jar
+          
+          # Wait for Spark cluster to be ready
+          until curl -s http://spark-master:8080 > /dev/null; do
+            echo "Waiting for Spark cluster..."
+            sleep 5
+          done
+          
+          # Run data catalog service
+          python /config/catalog-service.py
+        env:
+        - name: SPARK_MASTER_URL
+          value: "spark://spark-master:7077"
+        - name: PYSPARK_PYTHON
+          value: "python3"
+        - name: PYSPARK_DRIVER_PYTHON
+          value: "python3"
+        volumeMounts:
+        - name: config
+          mountPath: /config
+        ports:
+        - containerPort: 8080
+          name: http
+        resources:
+          requests:
+            memory: "2Gi"
+            cpu: "1000m"
+          limits:
+            memory: "4Gi"
+            cpu: "2000m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 60
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+      volumes:
+      - name: config
+        configMap:
+          name: lakehouse-catalog-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: lakehouse-data-catalog
+  namespace: enterprise-crm
+  labels:
+    app: lakehouse-data-catalog
+spec:
+  ports:
+  - port: 8080
+    targetPort: 8080
+    name: http
+  selector:
+    app: lakehouse-data-catalog
+  type: ClusterIP
+---
+# Data Discovery CronJob
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: data-discovery-job
+  namespace: enterprise-crm
+spec:
+  schedule: "0 6 * * *"  # Daily at 6 AM
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: data-discovery
+            image: apache/spark:v3.5.0
+            command:
+            - /bin/bash
+            - -c
+            - |
+              # Install dependencies
+              pip install --upgrade pip
+              pip install pyspark delta-spark pandas requests
+              
+              # Run data discovery for all sources
+              python -c "
+              import requests
+              import time
+              
+              catalog_url = 'http://lakehouse-data-catalog:8080'
+              sources = ['customer_service_db', 'crm_core_db', 'inventory_service_db', 'kafka_events']
+              
+              for source in sources:
+                  try:
+                      response = requests.post(f'{catalog_url}/discover/{source}')
+                      print(f'Discovered tables for {source}: {response.status_code}')
+                      time.sleep(5)
+                  except Exception as e:
+                      print(f'Error discovering {source}: {e}')
+              "
+            resources:
+              requests:
+                memory: "1Gi"
+                cpu: "500m"
+              limits:
+                memory: "2Gi"
+                cpu: "1000m"
+          restartPolicy: OnFailure
+

@@ -1,0 +1,18 @@
+plugins:
+  - name: openid-connect
+    attrs:
+      client_id: banking_crm_client
+      client_secret: ${OIDC_CLIENT_SECRET}
+      discovery: https://keycloak.banking-domain.com/auth/realms/banking/.well-known/openid-configuration
+      redirect_uri: https://api.banking-domain.com/callback
+      ssl_verify: true
+      timeout: 10
+      bearer_only: true
+      realm: banking
+      introspection_endpoint_auth_method: client_secret_basic
+      introspection_endpoint: https://keycloak.banking-domain.com/auth/realms/banking/protocol/openid-connect/token/introspect
+      set_access_token_header: true
+      access_token_in_authorization_header: true
+      set_id_token_header: true
+      set_userinfo_header: true
+

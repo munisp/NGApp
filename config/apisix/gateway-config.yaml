@@ -1,0 +1,750 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: apisix-gateway-config
+  namespace: enterprise-crm
+data:
+  config.yaml: |
+    # APISIX Configuration for Enterprise CRM
+    apisix:
+      node_listen: 9080
+      enable_ipv6: false
+      enable_control: true
+      control:
+        ip: "0.0.0.0"
+        port: 9092
+      
+      # SSL Configuration
+      ssl:
+        enable: true
+        listen_port: 9443
+        ssl_protocols: "TLSv1.2 TLSv1.3"
+        ssl_ciphers: "ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256"
+        ssl_session_tickets: false
+        
+      # Router Configuration
+      router:
+        http: 'radixtree_uri'
+        ssl: 'radixtree_sni'
+      
+      # Stream Proxy
+      stream_proxy:
+        tcp:
+          - 9100
+        udp:
+          - 9200
+      
+      # DNS Configuration
+      dns_resolver:
+        - "8.8.8.8"
+        - "1.1.1.1"
+      dns_resolver_valid: 30
+      
+      # Proxy Configuration
+      proxy_cache:
+        cache_ttl: 10s
+        zones:
+          - name: "disk_cache_one"
+            memory_size: 50m
+            disk_size: 1G
+            disk_path: "/tmp/disk_cache_one"
+            cache_levels: "1:2"
+    
+    # Nginx Configuration
+    nginx_config:
+      error_log: "/dev/stderr"
+      error_log_level: "warn"
+      worker_processes: "auto"
+      enable_cpu_affinity: true
+      worker_rlimit_nofile: 20480
+      worker_shutdown_timeout: "240s"
+      
+      event:
+        worker_connections: 10620
+        use: epoll
+        multi_accept: on
+        accept_mutex: off
+      
+      http:
+        access_log: "/dev/stdout"
+        keepalive_timeout: "60s"
+        client_header_timeout: "60s"
+        client_body_timeout: "60s"
+        send_timeout: "10s"
+        underscores_in_headers: "on"
+        real_ip_header: "X-Real-IP"
+        real_ip_from:
+          - "127.0.0.1"
+          - "unix:"
+        
+        # Security Headers
+        server_tokens: off
+        more_set_headers:
+          - "Server: APISIX"
+          - "X-Frame-Options: DENY"
+          - "X-Content-Type-Options: nosniff"
+          - "X-XSS-Protection: 1; mode=block"
+          - "Referrer-Policy: strict-origin-when-cross-origin"
+    
+    # Plugin Configuration
+    plugins:
+      # Authentication
+      - jwt-auth
+      - key-auth
+      - basic-auth
+      - authz-keycloak
+      - openid-connect
+      
+      # Security
+      - cors
+      - csrf
+      - ip-restriction
+      - ua-restriction
+      - referer-restriction
+      - consumer-restriction
+      
+      # Traffic Control
+      - limit-req
+      - limit-conn
+      - limit-count
+      - proxy-cache
+      - request-validation
+      
+      # Observability
+      - prometheus
+      - zipkin
+      - skywalking
+      - opentelemetry
+      - http-logger
+      - tcp-logger
+      - kafka-logger
+      
+      # Transformation
+      - response-rewrite
+      - proxy-rewrite
+      - redirect
+      - grpc-transcode
+      - grpc-web
+      
+      # Load Balancing
+      - traffic-split
+      - fault-injection
+      - mocking
+      
+      # Integration
+      - serverless-pre-function
+      - serverless-post-function
+      - ext-plugin-pre-req
+      - ext-plugin-post-req
+    
+    # Deployment Configuration
+    deployment:
+      role: traditional
+      role_traditional:
+        config_provider: etcd
+      
+      etcd:
+        host:
+          - "http://apisix-etcd:2379"
+        prefix: "/apisix"
+        timeout: 30
+        startup_retry: 2
+        user: ""
+        password: ""
+        tls:
+          verify: true
+          cert: ""
+          key: ""
+
+  routes.yaml: |
+    # Enterprise CRM API Routes Configuration
+    routes:
+      # Customer Management Service Routes
+      - id: customer-service-api
+        name: "Customer Management API"
+        uri: "/api/v1/customers/*"
+        methods: ["GET", "POST", "PUT", "DELETE", "PATCH"]
+        upstream:
+          type: roundrobin
+          nodes:
+            "customer-service:8080": 1
+          timeout:
+            connect: 6
+            send: 6
+            read: 6
+          keepalive_pool:
+            size: 320
+            idle_timeout: 60
+            requests: 1000
+        plugins:
+          jwt-auth:
+            header: "Authorization"
+            query: "jwt"
+            cookie: "jwt"
+          cors:
+            allow_origins: "*"
+            allow_methods: "GET,POST,PUT,DELETE,PATCH,HEAD,OPTIONS"
+            allow_headers: "DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization"
+            expose_headers: "Content-Length,Content-Range"
+            max_age: 5
+            allow_credential: false
+          limit-req:
+            rate: 200
+            burst: 100
+            rejected_code: 429
+            nodelay: false
+          prometheus:
+            prefer_name: true
+          response-rewrite:
+            headers:
+              set:
+                "X-Service": "customer-management"
+                "X-Version": "1.0.0"
+      
+      # CRM Core Service Routes
+      - id: crm-core-api
+        name: "CRM Core API"
+        uri: "/api/v1/crm/*"
+        methods: ["GET", "POST", "PUT", "DELETE", "PATCH"]
+        upstream:
+          type: roundrobin
+          nodes:
+            "crm-core-service:8080": 1
+          timeout:
+            connect: 6
+            send: 6
+            read: 6
+        plugins:
+          jwt-auth:
+            header: "Authorization"
+          cors:
+            allow_origins: "*"
+            allow_methods: "GET,POST,PUT,DELETE,PATCH,HEAD,OPTIONS"
+            allow_headers: "DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization"
+          limit-req:
+            rate: 200
+            burst: 100
+          prometheus:
+            prefer_name: true
+          response-rewrite:
+            headers:
+              set:
+                "X-Service": "crm-core"
+                "X-Version": "1.0.0"
+      
+      # Inventory Management Service Routes
+      - id: inventory-service-api
+        name: "Inventory Management API"
+        uri: "/api/v1/inventory/*"
+        methods: ["GET", "POST", "PUT", "DELETE", "PATCH"]
+        upstream:
+          type: roundrobin
+          nodes:
+            "inventory-service:8080": 1
+          timeout:
+            connect: 6
+            send: 6
+            read: 6
+        plugins:
+          jwt-auth:
+            header: "Authorization"
+          cors:
+            allow_origins: "*"
+            allow_methods: "GET,POST,PUT,DELETE,PATCH,HEAD,OPTIONS"
+            allow_headers: "DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization"
+          limit-req:
+            rate: 200
+            burst: 100
+          prometheus:
+            prefer_name: true
+          response-rewrite:
+            headers:
+              set:
+                "X-Service": "inventory-management"
+                "X-Version": "1.0.0"
+      
+      # Analytics Service Routes
+      - id: analytics-service-api
+        name: "Analytics Service API"
+        uri: "/api/v1/analytics/*"
+        methods: ["GET", "POST"]
+        upstream:
+          type: roundrobin
+          nodes:
+            "analytics-service:8080": 1
+          timeout:
+            connect: 10
+            send: 10
+            read: 30
+        plugins:
+          jwt-auth:
+            header: "Authorization"
+          cors:
+            allow_origins: "*"
+            allow_methods: "GET,POST,HEAD,OPTIONS"
+            allow_headers: "DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization"
+          limit-req:
+            rate: 100
+            burst: 50
+          proxy-cache:
+            cache_zone: "disk_cache_one"
+            cache_key: ["$host", "$request_uri"]
+            cache_bypass: ["$arg_bypass"]
+            cache_method: ["GET"]
+            cache_http_status: [200, 301, 404]
+            hide_cache_headers: true
+            cache_control: false
+            no_cache: ["$arg_no_cache"]
+          prometheus:
+            prefer_name: true
+          response-rewrite:
+            headers:
+              set:
+                "X-Service": "analytics"
+                "X-Version": "1.0.0"
+      
+      # Geospatial Analytics Routes
+      - id: geospatial-analytics-api
+        name: "Geospatial Analytics API"
+        uri: "/api/v1/geospatial/*"
+        methods: ["GET", "POST"]
+        upstream:
+          type: roundrobin
+          nodes:
+            "sedona-geospatial-analytics:8080": 1
+          timeout:
+            connect: 10
+            send: 10
+            read: 60
+        plugins:
+          jwt-auth:
+            header: "Authorization"
+          cors:
+            allow_origins: "*"
+            allow_methods: "GET,POST,HEAD,OPTIONS"
+            allow_headers: "DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization"
+          limit-req:
+            rate: 50
+            burst: 25
+          proxy-cache:
+            cache_zone: "disk_cache_one"
+            cache_key: ["$host", "$request_uri"]
+            cache_method: ["GET"]
+            cache_http_status: [200]
+            cache_ttl: 300
+          prometheus:
+            prefer_name: true
+          response-rewrite:
+            headers:
+              set:
+                "X-Service": "geospatial-analytics"
+                "X-Version": "1.0.0"
+      
+      # Data Catalog Routes
+      - id: data-catalog-api
+        name: "Data Catalog API"
+        uri: "/api/v1/catalog/*"
+        methods: ["GET", "POST"]
+        upstream:
+          type: roundrobin
+          nodes:
+            "lakehouse-data-catalog:8080": 1
+          timeout:
+            connect: 6
+            send: 6
+            read: 10
+        plugins:
+          jwt-auth:
+            header: "Authorization"
+          cors:
+            allow_origins: "*"
+            allow_methods: "GET,POST,HEAD,OPTIONS"
+            allow_headers: "DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization"
+          limit-req:
+            rate: 100
+            burst: 50
+          proxy-cache:
+            cache_zone: "disk_cache_one"
+            cache_key: ["$host", "$request_uri"]
+            cache_method: ["GET"]
+            cache_http_status: [200]
+            cache_ttl: 600
+          prometheus:
+            prefer_name: true
+          response-rewrite:
+            headers:
+              set:
+                "X-Service": "data-catalog"
+                "X-Version": "1.0.0"
+      
+      # Security Services Routes
+      - id: keycloak-auth
+        name: "KeyCloak Authentication"
+        uri: "/auth/*"
+        methods: ["GET", "POST", "PUT", "DELETE"]
+        upstream:
+          type: roundrobin
+          nodes:
+            "keycloak:8080": 1
+          timeout:
+            connect: 6
+            send: 6
+            read: 10
+        plugins:
+          cors:
+            allow_origins: "*"
+            allow_methods: "GET,POST,PUT,DELETE,HEAD,OPTIONS"
+            allow_headers: "DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization"
+          limit-req:
+            rate: 100
+            burst: 50
+          prometheus:
+            prefer_name: true
+          response-rewrite:
+            headers:
+              set:
+                "X-Service": "keycloak"
+                "X-Version": "1.0.0"
+      
+      # Superset Dashboard Routes
+      - id: superset-dashboard
+        name: "Superset Dashboard"
+        uri: "/superset/*"
+        methods: ["GET", "POST", "PUT", "DELETE"]
+        upstream:
+          type: roundrobin
+          nodes:
+            "superset:8088": 1
+          timeout:
+            connect: 10
+            send: 10
+            read: 30
+        plugins:
+          cors:
+            allow_origins: "*"
+            allow_methods: "GET,POST,PUT,DELETE,HEAD,OPTIONS"
+            allow_headers: "DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization,X-CSRFToken"
+          limit-req:
+            rate: 100
+            burst: 50
+          prometheus:
+            prefer_name: true
+          response-rewrite:
+            headers:
+              set:
+                "X-Service": "superset"
+                "X-Version": "1.0.0"
+      
+      # Health Check Routes
+      - id: health-checks
+        name: "Health Check Endpoints"
+        uri: "/health/*"
+        methods: ["GET"]
+        upstream:
+          type: roundrobin
+          nodes:
+            "customer-service:8080": 1
+            "crm-core-service:8080": 1
+            "inventory-service:8080": 1
+            "analytics-service:8080": 1
+        plugins:
+          cors:
+            allow_origins: "*"
+            allow_methods: "GET,HEAD,OPTIONS"
+          limit-req:
+            rate: 1000
+            burst: 500
+          prometheus:
+            prefer_name: true
+          response-rewrite:
+            headers:
+              set:
+                "X-Service": "health-check"
+                "Cache-Control": "no-cache, no-store, must-revalidate"
+
+  consumers.yaml: |
+    # API Consumers Configuration
+    consumers:
+      # Frontend Application Consumer
+      - username: "frontend-app"
+        desc: "Enterprise CRM Frontend Application"
+        plugins:
+          jwt-auth:
+            key: "frontend-app-key"
+            secret: "frontend-app-secret-key-2024"
+            algorithm: "HS256"
+            exp: 86400
+          key-auth:
+            key: "frontend-api-key-2024"
+          limit-req:
+            rate: 1000
+            burst: 500
+            rejected_code: 429
+          limit-conn:
+            conn: 100
+            burst: 50
+            default_conn_delay: 0.1
+      
+      # Mobile Application Consumer
+      - username: "mobile-app"
+        desc: "Enterprise CRM Mobile Application"
+        plugins:
+          jwt-auth:
+            key: "mobile-app-key"
+            secret: "mobile-app-secret-key-2024"
+            algorithm: "HS256"
+            exp: 86400
+          key-auth:
+            key: "mobile-api-key-2024"
+          limit-req:
+            rate: 500
+            burst: 250
+            rejected_code: 429
+          limit-conn:
+            conn: 50
+            burst: 25
+            default_conn_delay: 0.1
+      
+      # Third-party Integration Consumer
+      - username: "third-party-integration"
+        desc: "Third-party System Integration"
+        plugins:
+          jwt-auth:
+            key: "integration-key"
+            secret: "integration-secret-key-2024"
+            algorithm: "HS256"
+            exp: 3600
+          key-auth:
+            key: "integration-api-key-2024"
+          limit-req:
+            rate: 200
+            burst: 100
+            rejected_code: 429
+          limit-conn:
+            conn: 20
+            burst: 10
+            default_conn_delay: 0.2
+          ip-restriction:
+            whitelist:
+              - "10.0.0.0/8"
+              - "172.16.0.0/12"
+              - "192.168.0.0/16"
+      
+      # Analytics Dashboard Consumer
+      - username: "analytics-dashboard"
+        desc: "Analytics Dashboard and Reporting"
+        plugins:
+          jwt-auth:
+            key: "analytics-key"
+            secret: "analytics-secret-key-2024"
+            algorithm: "HS256"
+            exp: 28800
+          key-auth:
+            key: "analytics-api-key-2024"
+          limit-req:
+            rate: 100
+            burst: 50
+            rejected_code: 429
+          limit-conn:
+            conn: 10
+            burst: 5
+            default_conn_delay: 0.5
+      
+      # Admin Console Consumer
+      - username: "admin-console"
+        desc: "Administrative Console Access"
+        plugins:
+          jwt-auth:
+            key: "admin-key"
+            secret: "admin-secret-key-2024"
+            algorithm: "HS256"
+            exp: 14400
+          key-auth:
+            key: "admin-api-key-2024"
+          limit-req:
+            rate: 200
+            burst: 100
+            rejected_code: 429
+          limit-conn:
+            conn: 20
+            burst: 10
+            default_conn_delay: 0.1
+          ip-restriction:
+            whitelist:
+              - "10.0.0.0/8"
+              - "172.16.0.0/12"
+              - "192.168.0.0/16"
+
+  global-rules.yaml: |
+    # Global Rules Configuration
+    global_rules:
+      # Global Rate Limiting
+      limit-req:
+        rate: 10000
+        burst: 5000
+        rejected_code: 429
+        rejected_msg: "Too many requests"
+        nodelay: false
+      
+      # Global Connection Limiting
+      limit-conn:
+        conn: 1000
+        burst: 500
+        default_conn_delay: 0.1
+        rejected_code: 503
+        rejected_msg: "Too many connections"
+      
+      # Global CORS Policy
+      cors:
+        allow_origins: "*"
+        allow_methods: "GET,POST,PUT,DELETE,PATCH,HEAD,OPTIONS"
+        allow_headers: "DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization,X-CSRFToken"
+        expose_headers: "Content-Length,Content-Range,X-Service,X-Version"
+        max_age: 5
+        allow_credential: false
+      
+      # Global Security Headers
+      response-rewrite:
+        headers:
+          set:
+            "X-Frame-Options": "DENY"
+            "X-Content-Type-Options": "nosniff"
+            "X-XSS-Protection": "1; mode=block"
+            "Referrer-Policy": "strict-origin-when-cross-origin"
+            "Content-Security-Policy": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' wss: https:; frame-ancestors 'none';"
+            "Strict-Transport-Security": "max-age=31536000; includeSubDomains"
+      
+      # Global Prometheus Metrics
+      prometheus:
+        prefer_name: true
+        export_uri: "/apisix/prometheus/metrics"
+      
+      # Global Request Validation
+      request-validation:
+        header_schema:
+          type: "object"
+          properties:
+            "User-Agent":
+              type: "string"
+              minLength: 1
+            "Content-Type":
+              type: "string"
+              enum: ["application/json", "application/x-www-form-urlencoded", "multipart/form-data", "text/plain"]
+        rejected_code: 400
+        rejected_msg: "Invalid request format"
+
+---
+# APISIX Gateway Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: apisix-gateway
+  namespace: enterprise-crm
+  labels:
+    app: apisix-gateway
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: apisix-gateway
+  template:
+    metadata:
+      labels:
+        app: apisix-gateway
+    spec:
+      containers:
+      - name: apisix
+        image: apache/apisix:3.7.0-debian
+        ports:
+        - containerPort: 9080
+          name: http
+        - containerPort: 9443
+          name: https
+        - containerPort: 9092
+          name: control
+        env:
+        - name: APISIX_STAND_ALONE
+          value: "true"
+        volumeMounts:
+        - name: config
+          mountPath: /usr/local/apisix/conf/config.yaml
+          subPath: config.yaml
+        - name: routes
+          mountPath: /usr/local/apisix/conf/apisix.yaml
+          subPath: routes.yaml
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "500m"
+          limits:
+            memory: "1Gi"
+            cpu: "1000m"
+        livenessProbe:
+          httpGet:
+            path: /apisix/status
+            port: 9092
+          initialDelaySeconds: 30
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /apisix/status
+            port: 9092
+          initialDelaySeconds: 10
+          periodSeconds: 10
+      volumes:
+      - name: config
+        configMap:
+          name: apisix-gateway-config
+      - name: routes
+        configMap:
+          name: apisix-gateway-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: apisix-gateway
+  namespace: enterprise-crm
+  labels:
+    app: apisix-gateway
+spec:
+  ports:
+  - port: 80
+    targetPort: 9080
+    name: http
+  - port: 443
+    targetPort: 9443
+    name: https
+  - port: 9092
+    targetPort: 9092
+    name: control
+  selector:
+    app: apisix-gateway
+  type: LoadBalancer
+---
+# HPA for APISIX Gateway
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: apisix-gateway-hpa
+  namespace: enterprise-crm
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: apisix-gateway
+  minReplicas: 3
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+

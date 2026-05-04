@@ -79,6 +79,30 @@ async function startServer() {
     console.log(`Port ${preferredPort} is busy, using port ${port} instead`);
   }
 
+  // API versioning header middleware
+  app.use('/api', (req, res, next) => {
+    const requestedVersion = req.headers['accept-version'] || req.headers['x-api-version'] || 'v1';
+    res.setHeader('X-API-Version', 'v1');
+    res.setHeader('X-Supported-Versions', 'v1');
+    (req as any).apiVersion = requestedVersion;
+    next();
+  });
+
+  // Health check endpoint
+  app.get('/health', (_req, res) => {
+    res.json({
+      status: 'healthy',
+      version: process.env.APP_VERSION || '2.0.0',
+      uptime: process.uptime(),
+      timestamp: new Date().toISOString(),
+    });
+  });
+
+  // Readiness probe
+  app.get('/ready', (_req, res) => {
+    res.json({ status: 'ready' });
+  });
+
   server.listen(port, () => {
     console.log(`Server running on http://localhost:${port}/`);
     
@@ -94,6 +118,38 @@ async function startServer() {
     // Start cleanup job
     startCleanupJob();
   });
+
+  // Graceful shutdown — wait for in-flight requests
+  let shuttingDown = false;
+  const connections = new Set<import('net').Socket>();
+
+  server.on('connection', (conn) => {
+    connections.add(conn);
+    conn.on('close', () => connections.delete(conn));
+  });
+
+  function gracefulShutdown(signal: string) {
+    if (shuttingDown) return;
+    shuttingDown = true;
+    console.log(`[shutdown] Received ${signal}, draining connections...`);
+
+    // Stop accepting new connections
+    server.close(() => {
+      console.log('[shutdown] All connections drained, exiting.');
+      process.exit(0);
+    });
+
+    // Give in-flight requests time to complete
+    const SHUTDOWN_TIMEOUT = parseInt(process.env.SHUTDOWN_TIMEOUT || '30000');
+    setTimeout(() => {
+      console.warn('[shutdown] Timeout reached, forcing shutdown.');
+      for (const conn of connections) conn.destroy();
+      process.exit(1);
+    }, SHUTDOWN_TIMEOUT);
+  }
+
+  process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+  process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 }
 
 startServer().catch(console.error);

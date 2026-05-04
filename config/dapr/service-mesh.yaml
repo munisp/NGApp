@@ -1,0 +1,729 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: dapr-config
+  namespace: enterprise-crm
+data:
+  config.yaml: |
+    apiVersion: dapr.io/v1alpha1
+    kind: Configuration
+    metadata:
+      name: enterprise-crm-config
+      namespace: enterprise-crm
+    spec:
+      # Tracing Configuration
+      tracing:
+        samplingRate: "1"
+        zipkin:
+          endpointAddress: "http://zipkin:9411/api/v2/spans"
+        otel:
+          endpointAddress: "http://jaeger-collector:14268/api/traces"
+          isSecure: false
+          protocol: "http"
+      
+      # Metrics Configuration
+      metric:
+        enabled: true
+        rules:
+          - name: "http_requests_total"
+            labels:
+              - name: "method"
+                regex:
+                  "GET|POST|PUT|DELETE": "http_method"
+              - name: "status_code"
+                regex:
+                  "2[0-9][0-9]": "2xx"
+                  "4[0-9][0-9]": "4xx"
+                  "5[0-9][0-9]": "5xx"
+          - name: "service_invocation_req_sent_total"
+            labels:
+              - name: "app_id"
+                regex:
+                  "customer-service|crm-core-service|inventory-service|analytics-service": "crm_service"
+      
+      # Access Control Configuration
+      accessControl:
+        defaultAction: "allow"
+        trustDomain: "enterprise-crm"
+        policies:
+          - appId: "customer-service"
+            defaultAction: "allow"
+            trustDomain: "enterprise-crm"
+            namespace: "enterprise-crm"
+            operations:
+              - name: "/api/v1/customers"
+                httpVerb: ["GET", "POST"]
+                action: "allow"
+              - name: "/api/v1/customers/*"
+                httpVerb: ["GET", "PUT", "DELETE"]
+                action: "allow"
+          - appId: "crm-core-service"
+            defaultAction: "allow"
+            trustDomain: "enterprise-crm"
+            namespace: "enterprise-crm"
+            operations:
+              - name: "/api/v1/crm"
+                httpVerb: ["GET", "POST"]
+                action: "allow"
+              - name: "/api/v1/crm/*"
+                httpVerb: ["GET", "PUT", "DELETE"]
+                action: "allow"
+          - appId: "inventory-service"
+            defaultAction: "allow"
+            trustDomain: "enterprise-crm"
+            namespace: "enterprise-crm"
+            operations:
+              - name: "/api/v1/inventory"
+                httpVerb: ["GET", "POST"]
+                action: "allow"
+              - name: "/api/v1/inventory/*"
+                httpVerb: ["GET", "PUT", "DELETE"]
+                action: "allow"
+      
+      # API Configuration
+      api:
+        allowed:
+          - name: "state"
+            version: "v1"
+            protocol: "http"
+          - name: "pubsub"
+            version: "v1"
+            protocol: "http"
+          - name: "bindings"
+            version: "v1"
+            protocol: "http"
+          - name: "secrets"
+            version: "v1"
+            protocol: "http"
+          - name: "invoke"
+            version: "v1"
+            protocol: "http"
+          - name: "actors"
+            version: "v1"
+            protocol: "http"
+      
+      # Component Deny List
+      components:
+        deny:
+          - "bindings.kubernetes"
+          - "secretstores.kubernetes"
+      
+      # Middleware Configuration
+      httpPipeline:
+        handlers:
+          - name: "oauth2"
+            type: "middleware.http.oauth2"
+          - name: "ratelimit"
+            type: "middleware.http.ratelimit"
+          - name: "cors"
+            type: "middleware.http.cors"
+
+---
+# State Store Configuration
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: statestore
+  namespace: enterprise-crm
+spec:
+  type: state.redis
+  version: v1
+  metadata:
+  - name: redisHost
+    value: "redis-cluster:6379"
+  - name: redisPassword
+    secretKeyRef:
+      name: redis-secret
+      key: password
+  - name: enableTLS
+    value: "false"
+  - name: maxRetries
+    value: "3"
+  - name: maxRetryBackoff
+    value: "2s"
+  - name: ttlInSeconds
+    value: "3600"
+  - name: queryIndexes
+    value: |
+      [
+        {
+          "name": "customer_index",
+          "indexes": [
+            {"key": "customer_id", "type": "TEXT"},
+            {"key": "email", "type": "TEXT"},
+            {"key": "segment", "type": "TAG"}
+          ]
+        },
+        {
+          "name": "product_index", 
+          "indexes": [
+            {"key": "product_id", "type": "TEXT"},
+            {"key": "sku", "type": "TEXT"},
+            {"key": "category", "type": "TAG"}
+          ]
+        }
+      ]
+auth:
+  secretStore: kubernetes
+
+---
+# Pub/Sub Configuration
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: pubsub
+  namespace: enterprise-crm
+spec:
+  type: pubsub.kafka
+  version: v1
+  metadata:
+  - name: brokers
+    value: "kafka-cluster:9092"
+  - name: consumerGroup
+    value: "enterprise-crm"
+  - name: clientID
+    value: "dapr-pubsub"
+  - name: authType
+    value: "none"
+  - name: maxMessageBytes
+    value: "1024000"
+  - name: version
+    value: "2.8.0"
+  - name: disableTls
+    value: "true"
+  - name: saslMechanism
+    value: "PLAIN"
+  - name: initialOffset
+    value: "newest"
+  - name: processingTimeout
+    value: "15s"
+  - name: autoCommitInterval
+    value: "1s"
+scopes:
+- customer-service
+- crm-core-service
+- inventory-service
+- analytics-service
+
+---
+# Secret Store Configuration
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: secretstore
+  namespace: enterprise-crm
+spec:
+  type: secretstores.kubernetes
+  version: v1
+  metadata:
+  - name: vaultKubernetesMountPath
+    value: "kubernetes"
+  - name: vaultServerURL
+    value: "https://vault:8200"
+  - name: vaultKubernetesRole
+    value: "enterprise-crm"
+  - name: vaultTokenMountPath
+    value: "/var/run/secrets/dapr.io/vault"
+  - name: vaultTokenFile
+    value: "vault-token"
+auth:
+  secretStore: kubernetes
+
+---
+# Service Invocation Resiliency
+apiVersion: dapr.io/v1alpha1
+kind: Resiliency
+metadata:
+  name: enterprise-crm-resiliency
+  namespace: enterprise-crm
+spec:
+  policies:
+    # Retry Policies
+    retries:
+      DefaultRetryPolicy:
+        policy: constant
+        duration: 5s
+        maxRetries: 3
+      
+      ServiceRetryPolicy:
+        policy: exponential
+        maxInterval: 15s
+        initialInterval: 1s
+        maxRetries: 5
+        multiplier: 2.0
+        randomizationFactor: 0.1
+      
+      DatabaseRetryPolicy:
+        policy: exponential
+        maxInterval: 30s
+        initialInterval: 2s
+        maxRetries: 10
+        multiplier: 1.5
+    
+    # Circuit Breaker Policies
+    circuitBreakers:
+      DefaultCircuitBreakerPolicy:
+        maxRequests: 5
+        interval: 60s
+        timeout: 30s
+        trip:
+          consecutiveFailures: 5
+          failureRate: 0.6
+          slowCallRate: 0.8
+          slowCallDuration: 2s
+      
+      ServiceCircuitBreakerPolicy:
+        maxRequests: 10
+        interval: 30s
+        timeout: 15s
+        trip:
+          consecutiveFailures: 3
+          failureRate: 0.5
+          slowCallRate: 0.7
+          slowCallDuration: 5s
+      
+      DatabaseCircuitBreakerPolicy:
+        maxRequests: 3
+        interval: 120s
+        timeout: 60s
+        trip:
+          consecutiveFailures: 2
+          failureRate: 0.3
+          slowCallRate: 0.5
+          slowCallDuration: 10s
+    
+    # Timeout Policies
+    timeouts:
+      DefaultTimeoutPolicy: 30s
+      ServiceTimeoutPolicy: 15s
+      DatabaseTimeoutPolicy: 60s
+      AnalyticsTimeoutPolicy: 120s
+  
+  targets:
+    # Service-to-Service Communication
+    apps:
+      customer-service:
+        retry: ServiceRetryPolicy
+        circuitBreaker: ServiceCircuitBreakerPolicy
+        timeout: ServiceTimeoutPolicy
+      
+      crm-core-service:
+        retry: ServiceRetryPolicy
+        circuitBreaker: ServiceCircuitBreakerPolicy
+        timeout: ServiceTimeoutPolicy
+      
+      inventory-service:
+        retry: ServiceRetryPolicy
+        circuitBreaker: ServiceCircuitBreakerPolicy
+        timeout: ServiceTimeoutPolicy
+      
+      analytics-service:
+        retry: DefaultRetryPolicy
+        circuitBreaker: DefaultCircuitBreakerPolicy
+        timeout: AnalyticsTimeoutPolicy
+    
+    # Component Communication
+    components:
+      statestore:
+        outbound:
+          retry: DatabaseRetryPolicy
+          circuitBreaker: DatabaseCircuitBreakerPolicy
+          timeout: DatabaseTimeoutPolicy
+      
+      pubsub:
+        outbound:
+          retry: DefaultRetryPolicy
+          circuitBreaker: DefaultCircuitBreakerPolicy
+          timeout: DefaultTimeoutPolicy
+      
+      secretstore:
+        outbound:
+          retry: DefaultRetryPolicy
+          circuitBreaker: DefaultCircuitBreakerPolicy
+          timeout: DefaultTimeoutPolicy
+    
+    # Actor Communication
+    actors:
+      CustomerActor:
+        retry: ServiceRetryPolicy
+        circuitBreaker: ServiceCircuitBreakerPolicy
+        timeout: ServiceTimeoutPolicy
+      
+      InventoryActor:
+        retry: ServiceRetryPolicy
+        circuitBreaker: ServiceCircuitBreakerPolicy
+        timeout: ServiceTimeoutPolicy
+
+---
+# HTTP Middleware - OAuth2
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: oauth2-middleware
+  namespace: enterprise-crm
+spec:
+  type: middleware.http.oauth2
+  version: v1
+  metadata:
+  - name: clientId
+    value: "enterprise-crm-client"
+  - name: clientSecret
+    secretKeyRef:
+      name: oauth2-secret
+      key: client-secret
+  - name: scopes
+    value: "openid,profile,email,crm:read,crm:write"
+  - name: authURL
+    value: "http://keycloak:8080/auth/realms/enterprise-crm/protocol/openid-connect/auth"
+  - name: tokenURL
+    value: "http://keycloak:8080/auth/realms/enterprise-crm/protocol/openid-connect/token"
+  - name: redirectURL
+    value: "http://apisix-gateway/callback"
+  - name: authStyle
+    value: "1"
+
+---
+# HTTP Middleware - Rate Limiting
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: ratelimit-middleware
+  namespace: enterprise-crm
+spec:
+  type: middleware.http.ratelimit
+  version: v1
+  metadata:
+  - name: maxRequestsPerSecond
+    value: "100"
+  - name: burstSize
+    value: "50"
+  - name: clientRateLimitHeader
+    value: "X-RateLimit-Limit"
+  - name: clientRateLimitRemainingHeader
+    value: "X-RateLimit-Remaining"
+  - name: clientRateLimitResetHeader
+    value: "X-RateLimit-Reset"
+  - name: statusCode
+    value: "429"
+  - name: statusMessage
+    value: "Rate limit exceeded"
+
+---
+# HTTP Middleware - CORS
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: cors-middleware
+  namespace: enterprise-crm
+spec:
+  type: middleware.http.cors
+  version: v1
+  metadata:
+  - name: allowOrigins
+    value: "*"
+  - name: allowMethods
+    value: "GET,POST,PUT,DELETE,PATCH,OPTIONS"
+  - name: allowHeaders
+    value: "Origin,Content-Type,Accept,Authorization,X-Requested-With,X-CSRF-Token"
+  - name: exposeHeaders
+    value: "Content-Length,Content-Range,X-Service,X-Version"
+  - name: maxAge
+    value: "5"
+  - name: allowCredentials
+    value: "false"
+
+---
+# Subscription Configuration
+apiVersion: dapr.io/v2alpha1
+kind: Subscription
+metadata:
+  name: customer-events-subscription
+  namespace: enterprise-crm
+spec:
+  pubsubname: pubsub
+  topic: customer_events
+  routes:
+    rules:
+      - match: event.type == "customer.created"
+        path: /events/customer/created
+      - match: event.type == "customer.updated"
+        path: /events/customer/updated
+      - match: event.type == "customer.deleted"
+        path: /events/customer/deleted
+    default: /events/customer/default
+  metadata:
+    rawPayload: "false"
+    maxInFlightMessages: "100"
+    autoAck: "false"
+    ackWaitTime: "30s"
+  deadLetterTopic: customer_events_deadletter
+scopes:
+- customer-service
+- crm-core-service
+- analytics-service
+
+---
+apiVersion: dapr.io/v2alpha1
+kind: Subscription
+metadata:
+  name: inventory-events-subscription
+  namespace: enterprise-crm
+spec:
+  pubsubname: pubsub
+  topic: inventory_events
+  routes:
+    rules:
+      - match: event.type == "product.created"
+        path: /events/product/created
+      - match: event.type == "product.updated"
+        path: /events/product/updated
+      - match: event.type == "stock.updated"
+        path: /events/stock/updated
+      - match: event.type == "stock.low"
+        path: /events/stock/low
+    default: /events/inventory/default
+  metadata:
+    rawPayload: "false"
+    maxInFlightMessages: "50"
+    autoAck: "false"
+    ackWaitTime: "30s"
+  deadLetterTopic: inventory_events_deadletter
+scopes:
+- inventory-service
+- analytics-service
+
+---
+apiVersion: dapr.io/v2alpha1
+kind: Subscription
+metadata:
+  name: crm-events-subscription
+  namespace: enterprise-crm
+spec:
+  pubsubname: pubsub
+  topic: crm_events
+  routes:
+    rules:
+      - match: event.type == "lead.created"
+        path: /events/lead/created
+      - match: event.type == "lead.qualified"
+        path: /events/lead/qualified
+      - match: event.type == "opportunity.created"
+        path: /events/opportunity/created
+      - match: event.type == "opportunity.won"
+        path: /events/opportunity/won
+      - match: event.type == "opportunity.lost"
+        path: /events/opportunity/lost
+    default: /events/crm/default
+  metadata:
+    rawPayload: "false"
+    maxInFlightMessages: "75"
+    autoAck: "false"
+    ackWaitTime: "30s"
+  deadLetterTopic: crm_events_deadletter
+scopes:
+- crm-core-service
+- customer-service
+- analytics-service
+
+---
+# Service Discovery Configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: dapr-service-discovery
+  namespace: enterprise-crm
+data:
+  service-discovery.yaml: |
+    # Service Discovery Configuration for Enterprise CRM
+    services:
+      customer-service:
+        endpoints:
+          - "customer-service:8080"
+        metadata:
+          version: "1.0.0"
+          protocol: "http"
+          healthCheck: "/health"
+          metrics: "/metrics"
+          tags: ["crm", "customer", "core-service"]
+        loadBalancing:
+          strategy: "round_robin"
+          healthCheck:
+            enabled: true
+            interval: "30s"
+            timeout: "5s"
+            path: "/health"
+      
+      crm-core-service:
+        endpoints:
+          - "crm-core-service:8080"
+        metadata:
+          version: "1.0.0"
+          protocol: "http"
+          healthCheck: "/health"
+          metrics: "/metrics"
+          tags: ["crm", "sales", "core-service"]
+        loadBalancing:
+          strategy: "round_robin"
+          healthCheck:
+            enabled: true
+            interval: "30s"
+            timeout: "5s"
+            path: "/health"
+      
+      inventory-service:
+        endpoints:
+          - "inventory-service:8080"
+        metadata:
+          version: "1.0.0"
+          protocol: "http"
+          healthCheck: "/health"
+          metrics: "/metrics"
+          tags: ["crm", "inventory", "core-service"]
+        loadBalancing:
+          strategy: "round_robin"
+          healthCheck:
+            enabled: true
+            interval: "30s"
+            timeout: "5s"
+            path: "/health"
+      
+      analytics-service:
+        endpoints:
+          - "analytics-service:8080"
+        metadata:
+          version: "1.0.0"
+          protocol: "http"
+          healthCheck: "/health"
+          metrics: "/metrics"
+          tags: ["crm", "analytics", "reporting"]
+        loadBalancing:
+          strategy: "least_connections"
+          healthCheck:
+            enabled: true
+            interval: "30s"
+            timeout: "10s"
+            path: "/health"
+      
+      geospatial-analytics:
+        endpoints:
+          - "sedona-geospatial-analytics:8080"
+        metadata:
+          version: "1.0.0"
+          protocol: "http"
+          healthCheck: "/health"
+          metrics: "/metrics"
+          tags: ["analytics", "geospatial", "sedona"]
+        loadBalancing:
+          strategy: "least_connections"
+          healthCheck:
+            enabled: true
+            interval: "60s"
+            timeout: "15s"
+            path: "/health"
+      
+      data-catalog:
+        endpoints:
+          - "lakehouse-data-catalog:8080"
+        metadata:
+          version: "1.0.0"
+          protocol: "http"
+          healthCheck: "/health"
+          metrics: "/metrics"
+          tags: ["data", "catalog", "governance"]
+        loadBalancing:
+          strategy: "round_robin"
+          healthCheck:
+            enabled: true
+            interval: "60s"
+            timeout: "10s"
+            path: "/health"
+
+---
+# Dapr Sidecar Injector Configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: dapr-sidecar-config
+  namespace: enterprise-crm
+data:
+  sidecar-config.yaml: |
+    # Dapr Sidecar Configuration
+    sidecar:
+      # Resource Configuration
+      resources:
+        requests:
+          memory: "64Mi"
+          cpu: "50m"
+        limits:
+          memory: "256Mi"
+          cpu: "200m"
+      
+      # Logging Configuration
+      logging:
+        level: "info"
+        format: "json"
+        enableMetrics: true
+        metricsPort: 9090
+      
+      # HTTP Configuration
+      http:
+        port: 3500
+        maxRequestSize: "4Mi"
+        readBufferSize: "4Ki"
+        enableProfiling: false
+        enableMetrics: true
+      
+      # gRPC Configuration
+      grpc:
+        port: 50001
+        maxRequestSize: "4Mi"
+        maxConnectionIdle: "5m"
+        maxConnectionAge: "30m"
+        maxConnectionAgeGrace: "5m"
+        time: "2h"
+        timeout: "20s"
+      
+      # Internal gRPC Configuration
+      internalGrpc:
+        port: 50002
+        maxRequestSize: "4Mi"
+      
+      # Metrics Configuration
+      metrics:
+        port: 9090
+        enabled: true
+        path: "/metrics"
+        labels:
+          - name: "app_id"
+          - name: "method"
+          - name: "status_code"
+      
+      # Health Configuration
+      health:
+        port: 8080
+        path: "/v1.0/healthz"
+        interval: "5s"
+        timeout: "3s"
+        threshold: 3
+      
+      # Security Configuration
+      security:
+        enableNamespaceDefaultAppPolicy: true
+        allowedOrigins: "*"
+        allowedMethods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"]
+        allowedHeaders: ["*"]
+      
+      # Component Configuration
+      components:
+        denyList:
+          - "bindings.kubernetes"
+          - "secretstores.local.file"
+        
+      # API Configuration
+      api:
+        enableProfiling: false
+        enableMetrics: true
+        enableHealthCheck: true
+        healthCheckPath: "/v1.0/healthz"
+        metricsPath: "/v1.0/metrics"
+

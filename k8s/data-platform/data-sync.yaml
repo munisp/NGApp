@@ -1,0 +1,831 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: data-sync-config
+  namespace: enterprise-crm
+data:
+  sync-config.yaml: |
+    sync_jobs:
+      # Customer data synchronization
+      - name: "customer_sync"
+        source_service: "customer-service"
+        target_services: ["crm-core-service", "analytics-service"]
+        sync_type: "real_time"
+        batch_size: 100
+        sync_interval: "30s"
+        conflict_resolution: "source_wins"
+        fields:
+          - "customer_id"
+          - "first_name"
+          - "last_name"
+          - "email"
+          - "phone"
+          - "status"
+          - "created_at"
+          - "updated_at"
+        transformations:
+          - field: "phone"
+            type: "format"
+            format: "international"
+          - field: "email"
+            type: "lowercase"
+        filters:
+          - field: "status"
+            operator: "in"
+            values: ["active", "pending"]
+
+      # Product inventory synchronization
+      - name: "inventory_sync"
+        source_service: "inventory-service"
+        target_services: ["crm-core-service", "analytics-service"]
+        sync_type: "real_time"
+        batch_size: 50
+        sync_interval: "10s"
+        conflict_resolution: "timestamp_wins"
+        fields:
+          - "product_id"
+          - "sku"
+          - "name"
+          - "category"
+          - "price"
+          - "stock_quantity"
+          - "warehouse_id"
+          - "updated_at"
+        transformations:
+          - field: "price"
+            type: "currency"
+            format: "USD"
+        filters:
+          - field: "stock_quantity"
+            operator: ">="
+            value: 0
+
+      # Sales opportunity synchronization
+      - name: "opportunity_sync"
+        source_service: "crm-core-service"
+        target_services: ["customer-service", "analytics-service"]
+        sync_type: "event_driven"
+        batch_size: 25
+        sync_interval: "60s"
+        conflict_resolution: "manual_review"
+        fields:
+          - "opportunity_id"
+          - "customer_id"
+          - "stage"
+          - "value"
+          - "probability"
+          - "close_date"
+          - "sales_rep_id"
+          - "updated_at"
+        transformations:
+          - field: "value"
+            type: "currency"
+            format: "USD"
+        filters:
+          - field: "stage"
+            operator: "not_in"
+            values: ["lost", "cancelled"]
+
+      # Analytics data aggregation
+      - name: "analytics_aggregation"
+        source_service: "multiple"
+        target_services: ["analytics-service"]
+        sync_type: "scheduled"
+        batch_size: 1000
+        sync_interval: "5m"
+        conflict_resolution: "merge"
+        aggregation_rules:
+          - metric: "total_customers"
+            source: "customer-service"
+            aggregation: "count"
+            filters:
+              - field: "status"
+                operator: "="
+                value: "active"
+          - metric: "total_revenue"
+            source: "crm-core-service"
+            aggregation: "sum"
+            field: "value"
+            filters:
+              - field: "stage"
+                operator: "="
+                value: "won"
+          - metric: "inventory_value"
+            source: "inventory-service"
+            aggregation: "sum"
+            field: "total_value"
+
+    conflict_resolution_strategies:
+      source_wins:
+        description: "Source service data always takes precedence"
+        implementation: "overwrite"
+      
+      timestamp_wins:
+        description: "Most recently updated record wins"
+        implementation: "compare_timestamps"
+        
+      manual_review:
+        description: "Conflicts require manual intervention"
+        implementation: "queue_for_review"
+        
+      merge:
+        description: "Merge non-conflicting fields"
+        implementation: "field_level_merge"
+
+    retry_policies:
+      default:
+        max_retries: 3
+        backoff_strategy: "exponential"
+        initial_delay: "1s"
+        max_delay: "60s"
+        
+      critical:
+        max_retries: 5
+        backoff_strategy: "exponential"
+        initial_delay: "500ms"
+        max_delay: "30s"
+
+    monitoring:
+      metrics_enabled: true
+      health_check_interval: "30s"
+      alert_thresholds:
+        sync_lag_seconds: 300
+        error_rate_percent: 5
+        queue_size: 1000
+
+  data-sync-service.go: |
+    package main
+    
+    import (
+        "context"
+        "encoding/json"
+        "fmt"
+        "log"
+        "net/http"
+        "os"
+        "os/signal"
+        "sync"
+        "syscall"
+        "time"
+        
+        "github.com/gin-gonic/gin"
+        "github.com/google/uuid"
+        "github.com/segmentio/kafka-go"
+        "gorm.io/driver/postgres"
+        "gorm.io/gorm"
+        "gopkg.in/yaml.v2"
+    )
+    
+    // SyncJob represents a data synchronization job configuration
+    type SyncJob struct {
+        Name               string                 `yaml:"name" json:"name"`
+        SourceService      string                 `yaml:"source_service" json:"source_service"`
+        TargetServices     []string               `yaml:"target_services" json:"target_services"`
+        SyncType           string                 `yaml:"sync_type" json:"sync_type"`
+        BatchSize          int                    `yaml:"batch_size" json:"batch_size"`
+        SyncInterval       string                 `yaml:"sync_interval" json:"sync_interval"`
+        ConflictResolution string                 `yaml:"conflict_resolution" json:"conflict_resolution"`
+        Fields             []string               `yaml:"fields" json:"fields"`
+        Transformations    []FieldTransformation  `yaml:"transformations" json:"transformations"`
+        Filters            []DataFilter           `yaml:"filters" json:"filters"`
+        AggregationRules   []AggregationRule      `yaml:"aggregation_rules" json:"aggregation_rules"`
+    }
+    
+    type FieldTransformation struct {
+        Field  string `yaml:"field" json:"field"`
+        Type   string `yaml:"type" json:"type"`
+        Format string `yaml:"format" json:"format"`
+    }
+    
+    type DataFilter struct {
+        Field    string      `yaml:"field" json:"field"`
+        Operator string      `yaml:"operator" json:"operator"`
+        Value    interface{} `yaml:"value" json:"value"`
+        Values   []string    `yaml:"values" json:"values"`
+    }
+    
+    type AggregationRule struct {
+        Metric      string       `yaml:"metric" json:"metric"`
+        Source      string       `yaml:"source" json:"source"`
+        Aggregation string       `yaml:"aggregation" json:"aggregation"`
+        Field       string       `yaml:"field" json:"field"`
+        Filters     []DataFilter `yaml:"filters" json:"filters"`
+    }
+    
+    // SyncRecord represents a data synchronization record
+    type SyncRecord struct {
+        ID              uuid.UUID              `json:"id" gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
+        JobName         string                 `json:"job_name" gorm:"not null;index"`
+        SourceService   string                 `json:"source_service" gorm:"not null"`
+        TargetService   string                 `json:"target_service" gorm:"not null"`
+        RecordID        string                 `json:"record_id" gorm:"not null;index"`
+        RecordType      string                 `json:"record_type" gorm:"not null"`
+        SourceData      map[string]interface{} `json:"source_data" gorm:"type:jsonb"`
+        TargetData      map[string]interface{} `json:"target_data" gorm:"type:jsonb"`
+        Status          string                 `json:"status" gorm:"not null;index"`
+        SyncedAt        *time.Time             `json:"synced_at,omitempty"`
+        ErrorMessage    string                 `json:"error_message,omitempty"`
+        RetryCount      int                    `json:"retry_count" gorm:"default:0"`
+        LastRetryAt     *time.Time             `json:"last_retry_at,omitempty"`
+        CreatedAt       time.Time              `json:"created_at" gorm:"autoCreateTime"`
+        UpdatedAt       time.Time              `json:"updated_at" gorm:"autoUpdateTime"`
+    }
+    
+    // ConflictRecord represents a data conflict that requires resolution
+    type ConflictRecord struct {
+        ID            uuid.UUID              `json:"id" gorm:"type:uuid;primary_key;default:gen_random_uuid()"`
+        JobName       string                 `json:"job_name" gorm:"not null;index"`
+        RecordID      string                 `json:"record_id" gorm:"not null;index"`
+        RecordType    string                 `json:"record_type" gorm:"not null"`
+        SourceData    map[string]interface{} `json:"source_data" gorm:"type:jsonb"`
+        TargetData    map[string]interface{} `json:"target_data" gorm:"type:jsonb"`
+        ConflictType  string                 `json:"conflict_type" gorm:"not null"`
+        Status        string                 `json:"status" gorm:"not null;index"`
+        ResolvedBy    string                 `json:"resolved_by,omitempty"`
+        ResolvedAt    *time.Time             `json:"resolved_at,omitempty"`
+        Resolution    map[string]interface{} `json:"resolution,omitempty" gorm:"type:jsonb"`
+        CreatedAt     time.Time              `json:"created_at" gorm:"autoCreateTime"`
+        UpdatedAt     time.Time              `json:"updated_at" gorm:"autoUpdateTime"`
+    }
+    
+    // DataSyncService manages data synchronization between services
+    type DataSyncService struct {
+        db          *gorm.DB
+        kafkaReader *kafka.Reader
+        kafkaWriter *kafka.Writer
+        syncJobs    map[string]SyncJob
+        workers     map[string]*SyncWorker
+        mutex       sync.RWMutex
+    }
+    
+    // SyncWorker handles synchronization for a specific job
+    type SyncWorker struct {
+        job         SyncJob
+        service     *DataSyncService
+        stopChan    chan bool
+        ticker      *time.Ticker
+    }
+    
+    // NewDataSyncService creates a new data synchronization service
+    func NewDataSyncService(databaseURL, kafkaBootstrap string) (*DataSyncService, error) {
+        // Connect to PostgreSQL
+        db, err := gorm.Open(postgres.Open(databaseURL), &gorm.Config{})
+        if err != nil {
+            return nil, fmt.Errorf("failed to connect to database: %w", err)
+        }
+        
+        // Auto-migrate tables
+        err = db.AutoMigrate(&SyncRecord{}, &ConflictRecord{})
+        if err != nil {
+            return nil, fmt.Errorf("failed to migrate database: %w", err)
+        }
+        
+        // Setup Kafka reader
+        kafkaReader := kafka.NewReader(kafka.ReaderConfig{
+            Brokers: []string{kafkaBootstrap},
+            Topic:   "enterprise-crm.data-changes",
+            GroupID: "data-sync-service",
+        })
+        
+        // Setup Kafka writer
+        kafkaWriter := &kafka.Writer{
+            Addr:     kafka.TCP(kafkaBootstrap),
+            Topic:    "enterprise-crm.sync-events",
+            Balancer: &kafka.LeastBytes{},
+        }
+        
+        return &DataSyncService{
+            db:          db,
+            kafkaReader: kafkaReader,
+            kafkaWriter: kafkaWriter,
+            syncJobs:    make(map[string]SyncJob),
+            workers:     make(map[string]*SyncWorker),
+        }, nil
+    }
+    
+    // LoadSyncJobs loads synchronization job configurations
+    func (s *DataSyncService) LoadSyncJobs(configData []byte) error {
+        var config struct {
+            SyncJobs []SyncJob `yaml:"sync_jobs"`
+        }
+        
+        err := yaml.Unmarshal(configData, &config)
+        if err != nil {
+            return fmt.Errorf("failed to parse sync configuration: %w", err)
+        }
+        
+        s.mutex.Lock()
+        defer s.mutex.Unlock()
+        
+        for _, job := range config.SyncJobs {
+            s.syncJobs[job.Name] = job
+            
+            // Create and start worker for the job
+            worker := &SyncWorker{
+                job:      job,
+                service:  s,
+                stopChan: make(chan bool),
+            }
+            
+            s.workers[job.Name] = worker
+            go worker.Start()
+        }
+        
+        return nil
+    }
+    
+    // Start starts the data synchronization service
+    func (s *DataSyncService) Start() {
+        // Start Kafka consumer for real-time sync
+        go s.consumeDataChanges()
+        
+        log.Println("Data Synchronization Service started")
+    }
+    
+    // Stop stops the data synchronization service
+    func (s *DataSyncService) Stop() {
+        s.mutex.Lock()
+        defer s.mutex.Unlock()
+        
+        // Stop all workers
+        for _, worker := range s.workers {
+            worker.Stop()
+        }
+        
+        // Close Kafka connections
+        s.kafkaReader.Close()
+        s.kafkaWriter.Close()
+        
+        log.Println("Data Synchronization Service stopped")
+    }
+    
+    // consumeDataChanges consumes data change events from Kafka
+    func (s *DataSyncService) consumeDataChanges() {
+        for {
+            message, err := s.kafkaReader.ReadMessage(context.Background())
+            if err != nil {
+                log.Printf("Error reading Kafka message: %v", err)
+                continue
+            }
+            
+            var changeEvent map[string]interface{}
+            err = json.Unmarshal(message.Value, &changeEvent)
+            if err != nil {
+                log.Printf("Error unmarshaling change event: %v", err)
+                continue
+            }
+            
+            // Process the change event
+            s.processChangeEvent(changeEvent)
+        }
+    }
+    
+    // processChangeEvent processes a data change event
+    func (s *DataSyncService) processChangeEvent(event map[string]interface{}) {
+        serviceType, ok := event["service_type"].(string)
+        if !ok {
+            log.Printf("Invalid change event: missing service_type")
+            return
+        }
+        
+        recordType, ok := event["record_type"].(string)
+        if !ok {
+            log.Printf("Invalid change event: missing record_type")
+            return
+        }
+        
+        // Find relevant sync jobs
+        s.mutex.RLock()
+        relevantJobs := make([]SyncJob, 0)
+        for _, job := range s.syncJobs {
+            if job.SourceService == serviceType && job.SyncType == "real_time" {
+                relevantJobs = append(relevantJobs, job)
+            }
+        }
+        s.mutex.RUnlock()
+        
+        // Process each relevant job
+        for _, job := range relevantJobs {
+            go s.processSyncJob(job, event)
+        }
+    }
+    
+    // processSyncJob processes a synchronization job for a specific event
+    func (s *DataSyncService) processSyncJob(job SyncJob, event map[string]interface{}) {
+        recordID, ok := event["record_id"].(string)
+        if !ok {
+            log.Printf("Invalid event: missing record_id")
+            return
+        }
+        
+        recordType, ok := event["record_type"].(string)
+        if !ok {
+            log.Printf("Invalid event: missing record_type")
+            return
+        }
+        
+        // Apply filters
+        if !s.applyFilters(job.Filters, event) {
+            return
+        }
+        
+        // Extract and transform data
+        transformedData := s.transformData(job.Fields, job.Transformations, event)
+        
+        // Sync to target services
+        for _, targetService := range job.TargetServices {
+            syncRecord := SyncRecord{
+                JobName:       job.Name,
+                SourceService: job.SourceService,
+                TargetService: targetService,
+                RecordID:      recordID,
+                RecordType:    recordType,
+                SourceData:    transformedData,
+                Status:        "pending",
+            }
+            
+            // Save sync record
+            err := s.db.Create(&syncRecord).Error
+            if err != nil {
+                log.Printf("Failed to create sync record: %v", err)
+                continue
+            }
+            
+            // Perform synchronization
+            err = s.performSync(syncRecord)
+            if err != nil {
+                log.Printf("Sync failed for job %s: %v", job.Name, err)
+                s.handleSyncError(syncRecord, err)
+            } else {
+                s.markSyncComplete(syncRecord)
+            }
+        }
+    }
+    
+    // applyFilters applies data filters to determine if record should be synced
+    func (s *DataSyncService) applyFilters(filters []DataFilter, data map[string]interface{}) bool {
+        for _, filter := range filters {
+            value, exists := data[filter.Field]
+            if !exists {
+                return false
+            }
+            
+            switch filter.Operator {
+            case "=":
+                if value != filter.Value {
+                    return false
+                }
+            case "!=":
+                if value == filter.Value {
+                    return false
+                }
+            case "in":
+                found := false
+                for _, v := range filter.Values {
+                    if value == v {
+                        found = true
+                        break
+                    }
+                }
+                if !found {
+                    return false
+                }
+            case "not_in":
+                for _, v := range filter.Values {
+                    if value == v {
+                        return false
+                    }
+                }
+            case ">=":
+                if numValue, ok := value.(float64); ok {
+                    if filterValue, ok := filter.Value.(float64); ok {
+                        if numValue < filterValue {
+                            return false
+                        }
+                    }
+                }
+            case ">":
+                if numValue, ok := value.(float64); ok {
+                    if filterValue, ok := filter.Value.(float64); ok {
+                        if numValue <= filterValue {
+                            return false
+                        }
+                    }
+                }
+            }
+        }
+        
+        return true
+    }
+    
+    // transformData applies field transformations to the data
+    func (s *DataSyncService) transformData(fields []string, transformations []FieldTransformation, data map[string]interface{}) map[string]interface{} {
+        result := make(map[string]interface{})
+        
+        // Extract specified fields
+        for _, field := range fields {
+            if value, exists := data[field]; exists {
+                result[field] = value
+            }
+        }
+        
+        // Apply transformations
+        for _, transform := range transformations {
+            if value, exists := result[transform.Field]; exists {
+                switch transform.Type {
+                case "lowercase":
+                    if strValue, ok := value.(string); ok {
+                        result[transform.Field] = strings.ToLower(strValue)
+                    }
+                case "uppercase":
+                    if strValue, ok := value.(string); ok {
+                        result[transform.Field] = strings.ToUpper(strValue)
+                    }
+                case "format":
+                    // Apply specific formatting based on format type
+                    result[transform.Field] = s.applyFormat(value, transform.Format)
+                case "currency":
+                    if numValue, ok := value.(float64); ok {
+                        result[transform.Field] = fmt.Sprintf("%.2f %s", numValue, transform.Format)
+                    }
+                }
+            }
+        }
+        
+        return result
+    }
+    
+    // applyFormat applies specific formatting to a value
+    func (s *DataSyncService) applyFormat(value interface{}, format string) interface{} {
+        switch format {
+        case "international":
+            if strValue, ok := value.(string); ok {
+                // Simple phone number formatting (would use proper library in production)
+                return "+1" + strValue
+            }
+        }
+        return value
+    }
+    
+    // performSync performs the actual data synchronization
+    func (s *DataSyncService) performSync(record SyncRecord) error {
+        // This would make HTTP calls to target services
+        // For now, we'll simulate the sync
+        time.Sleep(100 * time.Millisecond)
+        
+        // Simulate occasional failures for testing
+        if record.RetryCount > 0 && record.RetryCount%3 == 0 {
+            return fmt.Errorf("simulated sync failure")
+        }
+        
+        return nil
+    }
+    
+    // markSyncComplete marks a sync record as completed
+    func (s *DataSyncService) markSyncComplete(record SyncRecord) {
+        now := time.Now()
+        record.Status = "completed"
+        record.SyncedAt = &now
+        
+        s.db.Save(&record)
+        
+        // Publish sync completion event
+        s.publishSyncEvent("sync.completed", record)
+    }
+    
+    // handleSyncError handles synchronization errors
+    func (s *DataSyncService) handleSyncError(record SyncRecord, err error) {
+        record.Status = "failed"
+        record.ErrorMessage = err.Error()
+        record.RetryCount++
+        now := time.Now()
+        record.LastRetryAt = &now
+        
+        s.db.Save(&record)
+        
+        // Schedule retry if under retry limit
+        if record.RetryCount < 3 {
+            go s.scheduleRetry(record)
+        } else {
+            // Publish sync failure event
+            s.publishSyncEvent("sync.failed", record)
+        }
+    }
+    
+    // scheduleRetry schedules a retry for a failed sync
+    func (s *DataSyncService) scheduleRetry(record SyncRecord) {
+        // Exponential backoff
+        delay := time.Duration(record.RetryCount*record.RetryCount) * time.Second
+        time.Sleep(delay)
+        
+        err := s.performSync(record)
+        if err != nil {
+            s.handleSyncError(record, err)
+        } else {
+            s.markSyncComplete(record)
+        }
+    }
+    
+    // publishSyncEvent publishes a sync event to Kafka
+    func (s *DataSyncService) publishSyncEvent(eventType string, record SyncRecord) {
+        event := map[string]interface{}{
+            "event_type":     eventType,
+            "job_name":       record.JobName,
+            "source_service": record.SourceService,
+            "target_service": record.TargetService,
+            "record_id":      record.RecordID,
+            "record_type":    record.RecordType,
+            "status":         record.Status,
+            "timestamp":      time.Now(),
+        }
+        
+        eventData, err := json.Marshal(event)
+        if err != nil {
+            log.Printf("Failed to marshal sync event: %v", err)
+            return
+        }
+        
+        message := kafka.Message{
+            Key:   []byte(record.RecordID),
+            Value: eventData,
+        }
+        
+        ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+        defer cancel()
+        
+        err = s.kafkaWriter.WriteMessages(ctx, message)
+        if err != nil {
+            log.Printf("Failed to publish sync event: %v", err)
+        }
+    }
+    
+    // Start starts the sync worker
+    func (w *SyncWorker) Start() {
+        if w.job.SyncType == "scheduled" {
+            interval, err := time.ParseDuration(w.job.SyncInterval)
+            if err != nil {
+                log.Printf("Invalid sync interval for job %s: %v", w.job.Name, err)
+                return
+            }
+            
+            w.ticker = time.NewTicker(interval)
+            
+            for {
+                select {
+                case <-w.ticker.C:
+                    w.performScheduledSync()
+                case <-w.stopChan:
+                    w.ticker.Stop()
+                    return
+                }
+            }
+        }
+    }
+    
+    // Stop stops the sync worker
+    func (w *SyncWorker) Stop() {
+        close(w.stopChan)
+    }
+    
+    // performScheduledSync performs scheduled synchronization
+    func (w *SyncWorker) performScheduledSync() {
+        log.Printf("Performing scheduled sync for job: %s", w.job.Name)
+        
+        // This would fetch data from source service and sync to targets
+        // Implementation would depend on specific job requirements
+        
+        // For aggregation jobs, calculate metrics
+        if len(w.job.AggregationRules) > 0 {
+            w.performAggregation()
+        }
+    }
+    
+    // performAggregation performs data aggregation
+    func (w *SyncWorker) performAggregation() {
+        for _, rule := range w.job.AggregationRules {
+            // This would calculate aggregated metrics
+            // Implementation would depend on specific aggregation requirements
+            log.Printf("Calculating metric: %s", rule.Metric)
+        }
+    }
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: data-sync-service
+  namespace: enterprise-crm
+  labels:
+    app: data-sync-service
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: data-sync-service
+  template:
+    metadata:
+      labels:
+        app: data-sync-service
+    spec:
+      containers:
+      - name: data-sync-service
+        image: golang:1.21-alpine
+        command:
+        - /bin/sh
+        - -c
+        - |
+          # Install dependencies
+          go mod init data-sync-service
+          go get github.com/gin-gonic/gin@latest
+          go get github.com/google/uuid@latest
+          go get github.com/segmentio/kafka-go@latest
+          go get gorm.io/gorm@latest
+          go get gorm.io/driver/postgres@latest
+          go get gopkg.in/yaml.v2@latest
+          
+          # Build and run the service
+          go run /config/data-sync-service.go
+        env:
+        - name: DATABASE_URL
+          value: "postgres://postgres:$(POSTGRES_PASSWORD)@postgresql:5432/enterprise_crm?sslmode=disable"
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: postgresql-secret
+              key: password
+        - name: KAFKA_BOOTSTRAP_SERVERS
+          value: "kafka:9092"
+        - name: CONFIG_PATH
+          value: "/config/sync-config.yaml"
+        volumeMounts:
+        - name: config
+          mountPath: /config
+        ports:
+        - containerPort: 8080
+          name: http
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "250m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 10
+      volumes:
+      - name: config
+        configMap:
+          name: data-sync-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: data-sync-service
+  namespace: enterprise-crm
+  labels:
+    app: data-sync-service
+spec:
+  ports:
+  - port: 8080
+    targetPort: 8080
+    name: http
+  selector:
+    app: data-sync-service
+  type: ClusterIP
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: data-sync-service-hpa
+  namespace: enterprise-crm
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: data-sync-service
+  minReplicas: 2
+  maxReplicas: 8
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+

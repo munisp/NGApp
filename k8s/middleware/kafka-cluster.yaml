@@ -1,0 +1,203 @@
+apiVersion: kafka.strimzi.io/v1beta2
+kind: Kafka
+metadata:
+  name: enterprise-kafka-cluster
+  namespace: data-platform
+  labels:
+    app.kubernetes.io/name: kafka
+    app.kubernetes.io/component: kafka-cluster
+spec:
+  kafka:
+    version: 3.6.0
+    replicas: 3
+    listeners:
+      - name: plain
+        port: 9092
+        type: internal
+        tls: false
+      - name: tls
+        port: 9093
+        type: internal
+        tls: true
+        authentication:
+          type: tls
+      - name: external
+        port: 9094
+        type: nodeport
+        tls: true
+        authentication:
+          type: tls
+    authorization:
+      type: simple
+    config:
+      offsets.topic.replication.factor: 3
+      transaction.state.log.replication.factor: 3
+      transaction.state.log.min.isr: 2
+      default.replication.factor: 3
+      min.insync.replicas: 2
+      inter.broker.protocol.version: "3.6"
+      log.message.format.version: "3.6"
+      log.retention.hours: 168
+      log.segment.bytes: 1073741824
+      log.retention.check.interval.ms: 300000
+      num.network.threads: 8
+      num.io.threads: 16
+      socket.send.buffer.bytes: 102400
+      socket.receive.buffer.bytes: 102400
+      socket.request.max.bytes: 104857600
+      num.partitions: 12
+      num.recovery.threads.per.data.dir: 1
+      log.flush.interval.messages: 10000
+      log.flush.interval.ms: 1000
+      auto.create.topics.enable: false
+    storage:
+      type: persistent-claim
+      size: 500Gi
+      class: fast-ssd
+    resources:
+      requests:
+        memory: 4Gi
+        cpu: 2000m
+      limits:
+        memory: 8Gi
+        cpu: 4000m
+    jvmOptions:
+      -Xms: 2g
+      -Xmx: 4g
+    metricsConfig:
+      type: jmxPrometheusExporter
+      valueFrom:
+        configMapKeyRef:
+          name: kafka-metrics
+          key: kafka-metrics-config.yml
+    logging:
+      type: inline
+      loggers:
+        kafka.root.logger.level: INFO
+        log4j.logger.org.I0Itec.zkclient.ZkClient: INFO
+        log4j.logger.org.apache.zookeeper: INFO
+        log4j.logger.kafka: INFO
+        log4j.logger.org.apache.kafka: INFO
+        log4j.logger.kafka.request.logger: WARN
+        log4j.logger.kafka.network.Processor: OFF
+        log4j.logger.kafka.server.KafkaApis: OFF
+        log4j.logger.kafka.network.RequestChannel$: WARN
+        log4j.logger.kafka.controller: TRACE
+        log4j.logger.kafka.log.LogCleaner: INFO
+        log4j.logger.state.change.logger: TRACE
+        log4j.logger.kafka.authorizer.logger: WARN
+  zookeeper:
+    replicas: 3
+    storage:
+      type: persistent-claim
+      size: 100Gi
+      class: fast-ssd
+    resources:
+      requests:
+        memory: 1Gi
+        cpu: 500m
+      limits:
+        memory: 2Gi
+        cpu: 1000m
+    jvmOptions:
+      -Xms: 512m
+      -Xmx: 1g
+    metricsConfig:
+      type: jmxPrometheusExporter
+      valueFrom:
+        configMapKeyRef:
+          name: kafka-metrics
+          key: zookeeper-metrics-config.yml
+    logging:
+      type: inline
+      loggers:
+        zookeeper.root.logger: INFO
+        log4j.logger.org.apache.zookeeper.audit.Log4jAuditLogger: WARN
+        log4j.logger.org.apache.zookeeper.jmx.ManagedUtil: INFO
+  entityOperator:
+    topicOperator:
+      resources:
+        requests:
+          memory: 512Mi
+          cpu: 200m
+        limits:
+          memory: 1Gi
+          cpu: 500m
+    userOperator:
+      resources:
+        requests:
+          memory: 512Mi
+          cpu: 200m
+        limits:
+          memory: 1Gi
+          cpu: 500m
+  kafkaExporter:
+    topicRegex: ".*"
+    groupRegex: ".*"
+    resources:
+      requests:
+        memory: 64Mi
+        cpu: 100m
+      limits:
+        memory: 128Mi
+        cpu: 200m
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kafka-metrics
+  namespace: data-platform
+  labels:
+    app.kubernetes.io/name: kafka
+    app.kubernetes.io/component: metrics
+data:
+  kafka-metrics-config.yml: |
+    rules:
+      - pattern: kafka.server<type=(.+), name=(.+)PerSec, topic=(.+)><>Count
+        name: kafka_server_$1_$2_per_sec
+        type: GAUGE
+        labels:
+          topic: "$3"
+      - pattern: kafka.server<type=(.+), name=(.+)PerSec><>Count
+        name: kafka_server_$1_$2_per_sec
+        type: GAUGE
+      - pattern: kafka.server<type=(.+), name=(.+), topic=(.+), partition=(.+)><>Value
+        name: kafka_server_$1_$2
+        type: GAUGE
+        labels:
+          topic: "$3"
+          partition: "$4"
+      - pattern: kafka.server<type=(.+), name=(.+)><>Value
+        name: kafka_server_$1_$2
+        type: GAUGE
+      - pattern: kafka.controller<type=(.+), name=(.+)><>Value
+        name: kafka_controller_$1_$2
+        type: GAUGE
+      - pattern: kafka.network<type=(.+), name=(.+)><>Value
+        name: kafka_network_$1_$2
+        type: GAUGE
+      - pattern: kafka.log<type=(.+), name=(.+), topic=(.+), partition=(.+)><>Value
+        name: kafka_log_$1_$2
+        type: GAUGE
+        labels:
+          topic: "$3"
+          partition: "$4"
+  zookeeper-metrics-config.yml: |
+    rules:
+      - pattern: "org.apache.ZooKeeperService<name0=ReplicatedServer_id(\\d+)><>(\\w+)"
+        name: "zookeeper_$2"
+        type: GAUGE
+        labels:
+          replicaId: "$1"
+      - pattern: "org.apache.ZooKeeperService<name0=ReplicatedServer_id(\\d+), name1=replica.(\\d+)><>(\\w+)"
+        name: "zookeeper_$3"
+        type: GAUGE
+        labels:
+          replicaId: "$2"
+      - pattern: "org.apache.ZooKeeperService<name0=ReplicatedServer_id(\\d+), name1=replica.(\\d+), name2=(\\w+)><>(\\w+)"
+        name: "zookeeper_$4"
+        type: GAUGE
+        labels:
+          replicaId: "$2"
+          memberType: "$3"
+

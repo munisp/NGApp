@@ -1,0 +1,416 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: temporal-server
+  namespace: enterprise-crm
+  labels:
+    app.kubernetes.io/name: temporal
+    app.kubernetes.io/component: server
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: temporal
+      app.kubernetes.io/component: server
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: temporal
+        app.kubernetes.io/component: server
+    spec:
+      containers:
+        - name: temporal-server
+          image: temporalio/server:1.22.0
+          ports:
+            - containerPort: 7233
+              name: rpc
+            - containerPort: 7234
+              name: membership
+            - containerPort: 7235
+              name: history
+            - containerPort: 7239
+              name: worker
+          env:
+            - name: TEMPORAL_CLI_ADDRESS
+              value: "temporal-server:7233"
+            - name: TEMPORAL_BROADCAST_ADDRESS
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+            - name: DYNAMIC_CONFIG_FILE_PATH
+              value: "/etc/temporal/config/dynamicconfig/development.yaml"
+            - name: SERVICES
+              value: "history,matching,frontend,worker"
+            - name: LOG_LEVEL
+              value: "info"
+            - name: NUM_HISTORY_SHARDS
+              value: "512"
+            - name: TEMPORAL_STORE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: temporal-secrets
+                  key: postgres-password
+          volumeMounts:
+            - name: temporal-config
+              mountPath: /etc/temporal/config
+            - name: temporal-dynamic-config
+              mountPath: /etc/temporal/config/dynamicconfig
+          resources:
+            requests:
+              memory: "1Gi"
+              cpu: "500m"
+            limits:
+              memory: "2Gi"
+              cpu: "1000m"
+          livenessProbe:
+            tcpSocket:
+              port: 7233
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            tcpSocket:
+              port: 7233
+            initialDelaySeconds: 10
+            periodSeconds: 5
+      volumes:
+        - name: temporal-config
+          configMap:
+            name: temporal-config
+        - name: temporal-dynamic-config
+          configMap:
+            name: temporal-dynamic-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: temporal-server
+  namespace: enterprise-crm
+  labels:
+    app.kubernetes.io/name: temporal
+    app.kubernetes.io/component: server
+spec:
+  type: ClusterIP
+  ports:
+    - name: rpc
+      port: 7233
+      targetPort: 7233
+      protocol: TCP
+    - name: membership
+      port: 7234
+      targetPort: 7234
+      protocol: TCP
+    - name: history
+      port: 7235
+      targetPort: 7235
+      protocol: TCP
+    - name: worker
+      port: 7239
+      targetPort: 7239
+      protocol: TCP
+  selector:
+    app.kubernetes.io/name: temporal
+    app.kubernetes.io/component: server
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: temporal-config
+  namespace: enterprise-crm
+  labels:
+    app.kubernetes.io/name: temporal
+    app.kubernetes.io/component: config
+data:
+  config.yaml: |
+    log:
+      stdout: true
+      level: info
+    
+    persistence:
+      defaultStore: default
+      visibilityStore: visibility
+      numHistoryShards: 512
+      datastores:
+        default:
+          sql:
+            pluginName: "postgres"
+            databaseName: "temporal"
+            connectAddr: "postgresql:5432"
+            connectProtocol: "tcp"
+            user: "temporal"
+            password: "${TEMPORAL_STORE_PASSWORD}"
+            maxConns: 20
+            maxIdleConns: 20
+            maxConnLifetime: "1h"
+        visibility:
+          sql:
+            pluginName: "postgres"
+            databaseName: "temporal_visibility"
+            connectAddr: "postgresql:5432"
+            connectProtocol: "tcp"
+            user: "temporal"
+            password: "${TEMPORAL_STORE_PASSWORD}"
+            maxConns: 10
+            maxIdleConns: 10
+            maxConnLifetime: "1h"
+    
+    global:
+      membership:
+        maxJoinDuration: 30s
+        broadcastAddress: "${TEMPORAL_BROADCAST_ADDRESS}"
+      pprof:
+        port: 7936
+      metrics:
+        prometheus:
+          timerType: "histogram"
+          listenAddress: "0.0.0.0:9090"
+    
+    services:
+      frontend:
+        rpc:
+          grpcPort: 7233
+          membershipPort: 7234
+          bindOnLocalHost: false
+        metrics:
+          statsd:
+            hostPort: "127.0.0.1:8125"
+            prefix: "temporal"
+        pprof:
+          port: 7936
+      
+      matching:
+        rpc:
+          grpcPort: 7235
+          membershipPort: 7234
+          bindOnLocalHost: false
+        metrics:
+          statsd:
+            hostPort: "127.0.0.1:8125"
+            prefix: "temporal"
+        pprof:
+          port: 7936
+      
+      history:
+        rpc:
+          grpcPort: 7234
+          membershipPort: 7234
+          bindOnLocalHost: false
+        metrics:
+          statsd:
+            hostPort: "127.0.0.1:8125"
+            prefix: "temporal"
+        pprof:
+          port: 7936
+      
+      worker:
+        rpc:
+          grpcPort: 7239
+          membershipPort: 7234
+          bindOnLocalHost: false
+        metrics:
+          statsd:
+            hostPort: "127.0.0.1:8125"
+            prefix: "temporal"
+        pprof:
+          port: 7936
+    
+    clusterMetadata:
+      enableGlobalNamespace: false
+      failoverVersionIncrement: 10
+      masterClusterName: "active"
+      currentClusterName: "active"
+      clusterInformation:
+        active:
+          enabled: true
+          initialFailoverVersion: 1
+          rpcName: "frontend"
+          rpcAddress: "127.0.0.1:7233"
+    
+    dcRedirectionPolicy:
+      policy: "noop"
+    
+    archival:
+      history:
+        state: "enabled"
+        enableRead: true
+        provider:
+          filestore:
+            fileMode: "0666"
+            dirMode: "0766"
+      visibility:
+        state: "enabled"
+        enableRead: true
+        provider:
+          filestore:
+            fileMode: "0666"
+            dirMode: "0766"
+    
+    namespaceDefaults:
+      archival:
+        history:
+          state: "disabled"
+          URI: "file:///tmp/temporal_archival/development"
+        visibility:
+          state: "disabled"
+          URI: "file:///tmp/temporal_vis_archival/development"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: temporal-dynamic-config
+  namespace: enterprise-crm
+  labels:
+    app.kubernetes.io/name: temporal
+    app.kubernetes.io/component: config
+data:
+  development.yaml: |
+    system.forceSearchAttributesCacheRefreshOnRead:
+      - value: true
+        constraints: {}
+    system.searchAttributesNumberOfKeysLimit:
+      - value: 100
+        constraints: {}
+    system.searchAttributesSizeOfValueLimit:
+      - value: 40000
+        constraints: {}
+    system.searchAttributesTotalSizeLimit:
+      - value: 40000
+        constraints: {}
+    system.blobSizeLimitError:
+      - value: 2097152
+        constraints: {}
+    system.blobSizeLimitWarn:
+      - value: 262144
+        constraints: {}
+    system.historyCountLimitError:
+      - value: 200000
+        constraints: {}
+    system.historyCountLimitWarn:
+      - value: 50000
+        constraints: {}
+    system.historySizeLimitError:
+      - value: 209715200
+        constraints: {}
+    system.historySizeLimitWarn:
+      - value: 52428800
+        constraints: {}
+    system.hostedNamespaceCountLimit:
+      - value: 1000
+        constraints: {}
+    system.maxIDLengthLimit:
+      - value: 1000
+        constraints: {}
+    system.deleteNamespaceDeleteActivityRPS:
+      - value: 100
+        constraints: {}
+    system.deleteNamespaceConcurrentDeleteExecutionsActivities:
+      - value: 10
+        constraints: {}
+    frontend.keepAliveMinTime:
+      - value: "10s"
+        constraints: {}
+    frontend.keepAlivePermitWithoutStream:
+      - value: true
+        constraints: {}
+    frontend.enableClientVersionCheck:
+      - value: false
+        constraints: {}
+    history.maxAutoResetPoints:
+      - value: 20
+        constraints: {}
+    history.defaultActivityRetryPolicy:
+      - value:
+          InitialIntervalInSeconds: 1
+          MaximumIntervalInSeconds: 100
+          BackoffCoefficient: 2.0
+          MaximumAttempts: 0
+        constraints: {}
+    history.defaultWorkflowRetryPolicy:
+      - value:
+          InitialIntervalInSeconds: 1
+          MaximumIntervalInSeconds: 100
+          BackoffCoefficient: 2.0
+          MaximumAttempts: 0
+        constraints: {}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: temporal-web
+  namespace: enterprise-crm
+  labels:
+    app.kubernetes.io/name: temporal
+    app.kubernetes.io/component: web
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: temporal
+      app.kubernetes.io/component: web
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: temporal
+        app.kubernetes.io/component: web
+    spec:
+      containers:
+        - name: temporal-web
+          image: temporalio/web:2.18.0
+          ports:
+            - containerPort: 8080
+              name: http
+          env:
+            - name: TEMPORAL_ADDRESS
+              value: "temporal-server:7233"
+            - name: TEMPORAL_CORS_ORIGINS
+              value: "http://localhost:3000"
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "200m"
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 5
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: temporal-web
+  namespace: enterprise-crm
+  labels:
+    app.kubernetes.io/name: temporal
+    app.kubernetes.io/component: web
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+      protocol: TCP
+  selector:
+    app.kubernetes.io/name: temporal
+    app.kubernetes.io/component: web
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: temporal-secrets
+  namespace: enterprise-crm
+  labels:
+    app.kubernetes.io/name: temporal
+    app.kubernetes.io/component: secrets
+type: Opaque
+data:
+  postgres-password: dGVtcG9yYWxfcGFzcw== # temporal_pass
+

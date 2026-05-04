@@ -1,0 +1,819 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: opencti-elasticsearch-pvc
+  namespace: security
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 50Gi
+  storageClassName: fast-ssd
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: opencti-redis-pvc
+  namespace: security
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+  storageClassName: fast-ssd
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: opencti-minio-pvc
+  namespace: security
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Gi
+  storageClassName: fast-ssd
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: opencti-secrets
+  namespace: security
+type: Opaque
+data:
+  # Base64 encoded values - replace with actual values
+  opencti-admin-email: YWRtaW5Ab3BlbmN0aS5jb20=  # admin@opencti.com
+  opencti-admin-password: b3BlbmN0aV9hZG1pbl9wYXNzd29yZA==  # opencti_admin_password
+  opencti-admin-token: b3BlbmN0aV9hZG1pbl90b2tlbl8xMjM=  # opencti_admin_token_123
+  elasticsearch-password: ZWxhc3RpY19wYXNzd29yZA==  # elastic_password
+  redis-password: cmVkaXNfcGFzc3dvcmQ=  # redis_password
+  minio-access-key: bWluaW9fYWNjZXNzX2tleQ==  # minio_access_key
+  minio-secret-key: bWluaW9fc2VjcmV0X2tleQ==  # minio_secret_key
+  rabbitmq-password: cmFiYml0bXFfcGFzc3dvcmQ=  # rabbitmq_password
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: opencti-config
+  namespace: security
+data:
+  production.json: |
+    {
+      "app": {
+        "port": 4000,
+        "base_path": "",
+        "base_url": "https://threat-intel.enterprise-crm.com",
+        "request_timeout": 1200000,
+        "session_timeout": 1200000,
+        "session_cookie": false,
+        "session_manager": "shared",
+        "admin": {
+          "email": "admin@opencti.com",
+          "password": "opencti_admin_password",
+          "token": "opencti_admin_token_123"
+        },
+        "health_access_key": "health_access_key_123"
+      },
+      "https_cert": {
+        "cookie_secure": true,
+        "use_ssl": false
+      },
+      "elasticsearch": {
+        "url": "http://opencti-elasticsearch:9200",
+        "username": "elastic",
+        "password": "elastic_password",
+        "index_prefix": "opencti",
+        "ssl": {
+          "reject_unauthorized": false
+        }
+      },
+      "redis": {
+        "hostname": "opencti-redis",
+        "port": 6379,
+        "password": "redis_password",
+        "use_ssl": false,
+        "ca": [],
+        "trimming": 2000000
+      },
+      "minio": {
+        "endpoint": "opencti-minio",
+        "port": 9000,
+        "use_ssl": false,
+        "access_key": "minio_access_key",
+        "secret_key": "minio_secret_key",
+        "bucket_name": "opencti-bucket",
+        "bucket_region": "us-east-1"
+      },
+      "rabbitmq": {
+        "hostname": "opencti-rabbitmq",
+        "port": 5672,
+        "port_management": 15672,
+        "management_ssl": false,
+        "username": "guest",
+        "password": "rabbitmq_password",
+        "queue_type": "classic"
+      },
+      "smtp": {
+        "hostname": "smtp.enterprise-crm.com",
+        "port": 587,
+        "use_ssl": false,
+        "use_tls": true,
+        "username": "opencti@enterprise-crm.com",
+        "password": "smtp_password",
+        "from_email": "opencti@enterprise-crm.com"
+      },
+      "providers": {
+        "local": {
+          "strategy": "LocalStrategy"
+        }
+      },
+      "map_tile_server_dark": "https://map.opencti.io/styles/luatix-dark/{z}/{x}/{y}.png",
+      "map_tile_server_light": "https://map.opencti.io/styles/luatix-light/{z}/{x}/{y}.png",
+      "reference_attachment": false,
+      "python_execution": false,
+      "expiration_scheduler": {
+        "lock_key": "scheduler_lock",
+        "interval": 300000
+      },
+      "task_scheduler": {
+        "lock_key": "task_manager_lock",
+        "interval": 10000
+      },
+      "ingestion_scheduler": {
+        "lock_key": "ingestion_manager_lock",
+        "interval": 300000
+      },
+      "rule_engine": {
+        "lock_key": "rule_engine_lock",
+        "interval": 10000
+      },
+      "history_manager": {
+        "lock_key": "history_manager_lock",
+        "interval": 10000
+      },
+      "activity_manager": {
+        "lock_key": "activity_manager_lock",
+        "interval": 10000
+      },
+      "expiration_manager": {
+        "lock_key": "expiration_manager_lock",
+        "interval": 300000
+      },
+      "retention_manager": {
+        "lock_key": "retention_manager_lock",
+        "interval": 60000
+      },
+      "notification_manager": {
+        "lock_key": "notification_manager_lock",
+        "interval": 10000
+      }
+    }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: opencti-elasticsearch
+  namespace: security
+  labels:
+    app: opencti-elasticsearch
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: opencti-elasticsearch
+  template:
+    metadata:
+      labels:
+        app: opencti-elasticsearch
+    spec:
+      containers:
+      - name: elasticsearch
+        image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
+        ports:
+        - containerPort: 9200
+        - containerPort: 9300
+        env:
+        - name: discovery.type
+          value: "single-node"
+        - name: xpack.ml.enabled
+          value: "false"
+        - name: xpack.security.enabled
+          value: "true"
+        - name: ELASTIC_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: opencti-secrets
+              key: elasticsearch-password
+        - name: ES_JAVA_OPTS
+          value: "-Xms2g -Xmx2g"
+        volumeMounts:
+        - name: elasticsearch-storage
+          mountPath: /usr/share/elasticsearch/data
+        resources:
+          requests:
+            memory: "4Gi"
+            cpu: "1000m"
+          limits:
+            memory: "8Gi"
+            cpu: "2000m"
+        livenessProbe:
+          httpGet:
+            path: /_cluster/health
+            port: 9200
+            httpHeaders:
+            - name: Authorization
+              value: "Basic ZWxhc3RpYzplbGFzdGljX3Bhc3N3b3Jk"
+          initialDelaySeconds: 60
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /_cluster/health
+            port: 9200
+            httpHeaders:
+            - name: Authorization
+              value: "Basic ZWxhc3RpYzplbGFzdGljX3Bhc3N3b3Jk"
+          initialDelaySeconds: 30
+          periodSeconds: 10
+      volumes:
+      - name: elasticsearch-storage
+        persistentVolumeClaim:
+          claimName: opencti-elasticsearch-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: opencti-elasticsearch
+  namespace: security
+  labels:
+    app: opencti-elasticsearch
+spec:
+  ports:
+  - port: 9200
+    targetPort: 9200
+    name: http
+  - port: 9300
+    targetPort: 9300
+    name: transport
+  selector:
+    app: opencti-elasticsearch
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: opencti-redis
+  namespace: security
+  labels:
+    app: opencti-redis
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: opencti-redis
+  template:
+    metadata:
+      labels:
+        app: opencti-redis
+    spec:
+      containers:
+      - name: redis
+        image: redis:7.2-alpine
+        ports:
+        - containerPort: 6379
+        command:
+        - redis-server
+        - --requirepass
+        - $(REDIS_PASSWORD)
+        - --appendonly
+        - "yes"
+        env:
+        - name: REDIS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: opencti-secrets
+              key: redis-password
+        volumeMounts:
+        - name: redis-storage
+          mountPath: /data
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+        livenessProbe:
+          exec:
+            command:
+            - redis-cli
+            - ping
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          exec:
+            command:
+            - redis-cli
+            - ping
+          initialDelaySeconds: 5
+          periodSeconds: 5
+      volumes:
+      - name: redis-storage
+        persistentVolumeClaim:
+          claimName: opencti-redis-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: opencti-redis
+  namespace: security
+  labels:
+    app: opencti-redis
+spec:
+  ports:
+  - port: 6379
+    targetPort: 6379
+  selector:
+    app: opencti-redis
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: opencti-minio
+  namespace: security
+  labels:
+    app: opencti-minio
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: opencti-minio
+  template:
+    metadata:
+      labels:
+        app: opencti-minio
+    spec:
+      containers:
+      - name: minio
+        image: minio/minio:latest
+        ports:
+        - containerPort: 9000
+        - containerPort: 9001
+        command:
+        - minio
+        - server
+        - /data
+        - --console-address
+        - ":9001"
+        env:
+        - name: MINIO_ROOT_USER
+          valueFrom:
+            secretKeyRef:
+              name: opencti-secrets
+              key: minio-access-key
+        - name: MINIO_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: opencti-secrets
+              key: minio-secret-key
+        volumeMounts:
+        - name: minio-storage
+          mountPath: /data
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /minio/health/live
+            port: 9000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /minio/health/ready
+            port: 9000
+          initialDelaySeconds: 10
+          periodSeconds: 5
+      volumes:
+      - name: minio-storage
+        persistentVolumeClaim:
+          claimName: opencti-minio-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: opencti-minio
+  namespace: security
+  labels:
+    app: opencti-minio
+spec:
+  ports:
+  - port: 9000
+    targetPort: 9000
+    name: api
+  - port: 9001
+    targetPort: 9001
+    name: console
+  selector:
+    app: opencti-minio
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: opencti-rabbitmq
+  namespace: security
+  labels:
+    app: opencti-rabbitmq
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: opencti-rabbitmq
+  template:
+    metadata:
+      labels:
+        app: opencti-rabbitmq
+    spec:
+      containers:
+      - name: rabbitmq
+        image: rabbitmq:3.12-management
+        ports:
+        - containerPort: 5672
+        - containerPort: 15672
+        env:
+        - name: RABBITMQ_DEFAULT_USER
+          value: "guest"
+        - name: RABBITMQ_DEFAULT_PASS
+          valueFrom:
+            secretKeyRef:
+              name: opencti-secrets
+              key: rabbitmq-password
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+        livenessProbe:
+          exec:
+            command:
+            - rabbitmq-diagnostics
+            - ping
+          initialDelaySeconds: 60
+          periodSeconds: 30
+        readinessProbe:
+          exec:
+            command:
+            - rabbitmq-diagnostics
+            - check_port_connectivity
+          initialDelaySeconds: 20
+          periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: opencti-rabbitmq
+  namespace: security
+  labels:
+    app: opencti-rabbitmq
+spec:
+  ports:
+  - port: 5672
+    targetPort: 5672
+    name: amqp
+  - port: 15672
+    targetPort: 15672
+    name: management
+  selector:
+    app: opencti-rabbitmq
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: opencti-platform
+  namespace: security
+  labels:
+    app: opencti-platform
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: opencti-platform
+  template:
+    metadata:
+      labels:
+        app: opencti-platform
+    spec:
+      initContainers:
+      - name: wait-for-dependencies
+        image: busybox:1.35
+        command:
+        - sh
+        - -c
+        - |
+          echo "Waiting for Elasticsearch..."
+          until nc -z opencti-elasticsearch 9200; do sleep 5; done
+          echo "Waiting for Redis..."
+          until nc -z opencti-redis 6379; do sleep 5; done
+          echo "Waiting for MinIO..."
+          until nc -z opencti-minio 9000; do sleep 5; done
+          echo "Waiting for RabbitMQ..."
+          until nc -z opencti-rabbitmq 5672; do sleep 5; done
+          echo "All dependencies are ready!"
+      containers:
+      - name: opencti
+        image: opencti/platform:5.12.17
+        ports:
+        - containerPort: 4000
+        env:
+        - name: NODE_OPTIONS
+          value: "--max-old-space-size=8096"
+        - name: APP__PORT
+          value: "4000"
+        - name: APP__BASE_URL
+          value: "https://threat-intel.enterprise-crm.com"
+        - name: APP__ADMIN__EMAIL
+          valueFrom:
+            secretKeyRef:
+              name: opencti-secrets
+              key: opencti-admin-email
+        - name: APP__ADMIN__PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: opencti-secrets
+              key: opencti-admin-password
+        - name: APP__ADMIN__TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: opencti-secrets
+              key: opencti-admin-token
+        - name: APP__APP_LOGS__LOGS_LEVEL
+          value: "info"
+        - name: REDIS__HOSTNAME
+          value: "opencti-redis"
+        - name: REDIS__PORT
+          value: "6379"
+        - name: REDIS__PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: opencti-secrets
+              key: redis-password
+        - name: ELASTICSEARCH__URL
+          value: "http://opencti-elasticsearch:9200"
+        - name: ELASTICSEARCH__USERNAME
+          value: "elastic"
+        - name: ELASTICSEARCH__PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: opencti-secrets
+              key: elasticsearch-password
+        - name: MINIO__ENDPOINT
+          value: "opencti-minio"
+        - name: MINIO__PORT
+          value: "9000"
+        - name: MINIO__USE_SSL
+          value: "false"
+        - name: MINIO__ACCESS_KEY
+          valueFrom:
+            secretKeyRef:
+              name: opencti-secrets
+              key: minio-access-key
+        - name: MINIO__SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: opencti-secrets
+              key: minio-secret-key
+        - name: RABBITMQ__HOSTNAME
+          value: "opencti-rabbitmq"
+        - name: RABBITMQ__PORT
+          value: "5672"
+        - name: RABBITMQ__USERNAME
+          value: "guest"
+        - name: RABBITMQ__PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: opencti-secrets
+              key: rabbitmq-password
+        volumeMounts:
+        - name: config
+          mountPath: /opt/opencti/config
+        resources:
+          requests:
+            memory: "4Gi"
+            cpu: "1000m"
+          limits:
+            memory: "8Gi"
+            cpu: "2000m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 4000
+          initialDelaySeconds: 180
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 4000
+          initialDelaySeconds: 60
+          periodSeconds: 10
+        startupProbe:
+          httpGet:
+            path: /health
+            port: 4000
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          failureThreshold: 20
+      volumes:
+      - name: config
+        configMap:
+          name: opencti-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: opencti-platform
+  namespace: security
+  labels:
+    app: opencti-platform
+spec:
+  ports:
+  - port: 4000
+    targetPort: 4000
+  selector:
+    app: opencti-platform
+  type: ClusterIP
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: opencti-ingress
+  namespace: security
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "300"
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      more_set_headers "X-Frame-Options: SAMEORIGIN";
+      more_set_headers "X-Content-Type-Options: nosniff";
+      more_set_headers "X-XSS-Protection: 1; mode=block";
+      more_set_headers "Strict-Transport-Security: max-age=31536000; includeSubDomains";
+spec:
+  tls:
+  - hosts:
+    - threat-intel.enterprise-crm.com
+    secretName: opencti-tls
+  rules:
+  - host: threat-intel.enterprise-crm.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: opencti-platform
+            port:
+              number: 4000
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: opencti-worker
+  namespace: security
+  labels:
+    app: opencti-worker
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: opencti-worker
+  template:
+    metadata:
+      labels:
+        app: opencti-worker
+    spec:
+      containers:
+      - name: worker
+        image: opencti/worker:5.12.17
+        env:
+        - name: OPENCTI_URL
+          value: "http://opencti-platform:4000"
+        - name: OPENCTI_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: opencti-secrets
+              key: opencti-admin-token
+        - name: WORKER_LOG_LEVEL
+          value: "info"
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: opencti-connector-mitre
+  namespace: security
+  labels:
+    app: opencti-connector-mitre
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: opencti-connector-mitre
+  template:
+    metadata:
+      labels:
+        app: opencti-connector-mitre
+    spec:
+      containers:
+      - name: connector
+        image: opencti/connector-mitre:5.12.17
+        env:
+        - name: OPENCTI_URL
+          value: "http://opencti-platform:4000"
+        - name: OPENCTI_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: opencti-secrets
+              key: opencti-admin-token
+        - name: CONNECTOR_ID
+          value: "mitre-attack"
+        - name: CONNECTOR_TYPE
+          value: "EXTERNAL_IMPORT"
+        - name: CONNECTOR_NAME
+          value: "MITRE ATT&CK"
+        - name: CONNECTOR_SCOPE
+          value: "attack-pattern,course-of-action,intrusion-set,malware,tool"
+        - name: CONNECTOR_AUTO
+          value: "true"
+        - name: CONNECTOR_CONFIDENCE_LEVEL
+          value: "75"
+        - name: CONNECTOR_UPDATE_EXISTING_DATA
+          value: "true"
+        - name: CONNECTOR_LOG_LEVEL
+          value: "info"
+        - name: MITRE_ATTACK_INTERVAL
+          value: "7"
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "200m"
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: opencti-platform-pdb
+  namespace: security
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: opencti-platform
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: opencti-platform-hpa
+  namespace: security
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: opencti-platform
+  minReplicas: 2
+  maxReplicas: 5
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+

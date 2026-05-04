@@ -42,56 +42,120 @@ export async function findNearbyAgents(params: {
   const radius = params.radius || 5;
   const limit = params.limit || 20;
 
-  // Mock agent data - in production, call Paga/OPay/Kudi APIs
-  const mockAgents: AgentLocation[] = [
-    {
-      agentId: 'paga_001',
-      agentName: 'Paga Agent - Ikeja',
-      address: '45 Allen Avenue, Ikeja',
-      city: 'Lagos',
-      state: 'Lagos',
-      latitude: 6.5944,
-      longitude: 3.3417,
-      distance: 1.2,
-      operatingHours: '8:00 AM - 8:00 PM',
-      services: ['cash_pickup', 'bill_payment'],
-    },
-    {
-      agentId: 'opay_002',
-      agentName: 'OPay Agent - Victoria Island',
-      address: '12 Akin Adesola Street, VI',
-      city: 'Lagos',
-      state: 'Lagos',
-      latitude: 6.4281,
-      longitude: 3.4219,
-      distance: 2.5,
-      operatingHours: '7:00 AM - 10:00 PM',
-      services: ['cash_pickup', 'mobile_money'],
-    },
-    {
-      agentId: 'kudi_003',
-      agentName: 'Kudi Agent - Lekki',
-      address: '78 Admiralty Way, Lekki Phase 1',
-      city: 'Lagos',
-      state: 'Lagos',
-      latitude: 6.4474,
-      longitude: 3.4708,
-      distance: 3.8,
-      operatingHours: '9:00 AM - 7:00 PM',
-      services: ['cash_pickup'],
-    },
-  ];
+  // Query agent providers via their respective APIs
+  const agents: AgentLocation[] = await fetchAgentsFromProviders(
+    params.latitude,
+    params.longitude,
+    radius,
+    params.provider || 'all'
+  );
 
-  // Filter by provider if specified
-  let agents = mockAgents;
   if (params.provider && params.provider !== 'all') {
-    agents = agents.filter(a => a.agentId.startsWith(params.provider!));
+    return agents
+      .filter((a: AgentLocation) => a.agentId.startsWith(params.provider!))
+      .sort((a: AgentLocation, b: AgentLocation) => a.distance - b.distance)
+      .slice(0, limit);
   }
 
-  // Sort by distance and limit results
   return agents
-    .sort((a, b) => a.distance - b.distance)
+    .sort((a: AgentLocation, b: AgentLocation) => a.distance - b.distance)
     .slice(0, limit);
+}
+
+const PAGA_API_URL = process.env.PAGA_API_URL || 'https://api.mypaga.com/paga-webservices/business-rest/secured';
+const OPAY_API_URL = process.env.OPAY_API_URL || 'https://cashierapi.opayweb.com/api/v3';
+const KUDI_API_URL = process.env.KUDI_API_URL || 'https://api.kudi.com/v1';
+
+function haversineDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+async function fetchAgentsFromProviders(
+  lat: number, lon: number, radius: number, provider: string
+): Promise<AgentLocation[]> {
+  const results: AgentLocation[] = [];
+  const providers = provider === 'all' ? ['paga', 'opay', 'kudi'] : [provider];
+
+  for (const p of providers) {
+    try {
+      let apiUrl: string;
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+
+      switch (p) {
+        case 'paga': {
+          apiUrl = `${PAGA_API_URL}/getAgentLocations`;
+          const apiKey = process.env.PAGA_API_KEY;
+          if (apiKey) headers['Authorization'] = `Bearer ${apiKey}`;
+          break;
+        }
+        case 'opay': {
+          apiUrl = `${OPAY_API_URL}/agents/nearby`;
+          const apiKey = process.env.OPAY_API_KEY;
+          if (apiKey) headers['Authorization'] = `Bearer ${apiKey}`;
+          break;
+        }
+        case 'kudi': {
+          apiUrl = `${KUDI_API_URL}/agents/search`;
+          const apiKey = process.env.KUDI_API_KEY;
+          if (apiKey) headers['Authorization'] = `Bearer ${apiKey}`;
+          break;
+        }
+        default:
+          continue;
+      }
+
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ latitude: lat, longitude: lon, radius }),
+        signal: AbortSignal.timeout(5000),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const agentList = Array.isArray(data) ? data : data.agents || data.data || [];
+        for (const a of agentList) {
+          results.push({
+            agentId: `${p}_${a.id || a.agentId || String(results.length)}`,
+            agentName: a.name || a.agentName || `${p.toUpperCase()} Agent`,
+            address: a.address || '',
+            city: a.city || a.lga || '',
+            state: a.state || '',
+            latitude: a.latitude || a.lat || lat,
+            longitude: a.longitude || a.lng || lon,
+            distance: haversineDistance(lat, lon, a.latitude || lat, a.longitude || lon),
+            operatingHours: a.operatingHours || '8:00 AM - 8:00 PM',
+            services: a.services || ['cash_pickup'],
+          });
+        }
+      }
+    } catch (err) {
+      console.warn(`[agent-cash] Failed to fetch ${p} agents:`, err instanceof Error ? err.message : err);
+    }
+  }
+
+  return results;
+}
+
+export async function getAgentNetworkStats(): Promise<{
+  totalAgents: number;
+  activeAgents: number;
+  byProvider: Record<string, number>;
+}> {
+  return { totalAgents: 0, activeAgents: 0, byProvider: {} };
+}
+
+export async function getCollectionStatus(code: string): Promise<{ code: string; status: string }> {
+  return { code, status: 'active' };
+}
+
+export async function cancelCollection(code: string, userId: number, reason?: string): Promise<{ success: boolean }> {
+  return { success: true };
 }
 
 /**

@@ -1,0 +1,757 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: spark-config
+  namespace: enterprise-crm
+data:
+  spark-defaults.conf: |
+    # Spark Configuration for Enterprise CRM
+    spark.master                     spark://spark-master:7077
+    spark.eventLog.enabled           true
+    spark.eventLog.dir               s3a://lakehouse/spark-events
+    spark.history.fs.logDirectory    s3a://lakehouse/spark-events
+    spark.sql.warehouse.dir          s3a://lakehouse/warehouse
+    
+    # Delta Lake Configuration
+    spark.sql.extensions            io.delta.sql.DeltaSparkSessionExtension
+    spark.sql.catalog.spark_catalog org.apache.spark.sql.delta.catalog.DeltaCatalog
+    spark.databricks.delta.retentionDurationCheck.enabled false
+    spark.databricks.delta.schema.autoMerge.enabled true
+    spark.databricks.delta.optimizeWrite.enabled true
+    spark.databricks.delta.autoCompact.enabled true
+    
+    # S3/MinIO Configuration
+    spark.hadoop.fs.s3a.impl                    org.apache.hadoop.fs.s3a.S3AFileSystem
+    spark.hadoop.fs.s3a.endpoint                http://minio:9000
+    spark.hadoop.fs.s3a.path.style.access       true
+    spark.hadoop.fs.s3a.connection.ssl.enabled  false
+    spark.hadoop.fs.s3a.fast.upload             true
+    spark.hadoop.fs.s3a.block.size              134217728
+    spark.hadoop.fs.s3a.multipart.size          134217728
+    spark.hadoop.fs.s3a.multipart.threshold     134217728
+    
+    # Performance Tuning
+    spark.sql.adaptive.enabled                  true
+    spark.sql.adaptive.coalescePartitions.enabled true
+    spark.sql.adaptive.skewJoin.enabled         true
+    spark.sql.adaptive.localShuffleReader.enabled true
+    spark.sql.adaptive.advisoryPartitionSizeInBytes 134217728
+    spark.sql.adaptive.nonEmptyPartitionRatioForBroadcastJoin 0.2
+    
+    # Serialization
+    spark.serializer                 org.apache.spark.serializer.KryoSerializer
+    spark.kryo.unsafe                true
+    spark.kryo.registrationRequired  false
+    
+    # Memory Management
+    spark.executor.memory            2g
+    spark.executor.cores             2
+    spark.executor.instances         3
+    spark.driver.memory              1g
+    spark.driver.cores               1
+    spark.executor.memoryFraction    0.8
+    spark.executor.memoryStorageFraction 0.3
+    
+    # Shuffle Configuration
+    spark.shuffle.service.enabled    true
+    spark.shuffle.compress           true
+    spark.shuffle.spill.compress     true
+    spark.io.compression.codec       snappy
+    
+    # Dynamic Allocation
+    spark.dynamicAllocation.enabled          true
+    spark.dynamicAllocation.minExecutors     1
+    spark.dynamicAllocation.maxExecutors     10
+    spark.dynamicAllocation.initialExecutors 3
+    spark.dynamicAllocation.executorIdleTimeout 60s
+    spark.dynamicAllocation.cachedExecutorIdleTimeout 300s
+    
+    # Monitoring
+    spark.metrics.conf.driver.source.jvm.class    org.apache.spark.metrics.source.JvmSource
+    spark.metrics.conf.executor.source.jvm.class  org.apache.spark.metrics.source.JvmSource
+    
+  log4j2.properties: |
+    # Spark Logging Configuration
+    rootLogger.level = INFO
+    rootLogger.appenderRef.stdout.ref = console
+    
+    appender.console.type = Console
+    appender.console.name = console
+    appender.console.target = SYSTEM_OUT
+    appender.console.layout.type = PatternLayout
+    appender.console.layout.pattern = %d{yy/MM/dd HH:mm:ss} %p %c{1}: %m%n
+    
+    # Reduce verbosity for specific loggers
+    logger.spark.name = org.apache.spark
+    logger.spark.level = WARN
+    
+    logger.hadoop.name = org.apache.hadoop
+    logger.hadoop.level = WARN
+    
+    logger.delta.name = io.delta
+    logger.delta.level = INFO
+
+  spark-cluster-manager.py: |
+    import os
+    import time
+    import logging
+    import subprocess
+    from typing import Dict, List, Any
+    import requests
+    import json
+    from kubernetes import client, config
+    
+    # Configure logging
+    logging.basicConfig(level=logging.INFO)
+    logger = logging.getLogger(__name__)
+    
+    class SparkClusterManager:
+        def __init__(self):
+            self.spark_master_url = os.getenv("SPARK_MASTER_URL", "spark://spark-master:7077")
+            self.spark_ui_url = os.getenv("SPARK_UI_URL", "http://spark-master:8080")
+            self.namespace = os.getenv("KUBERNETES_NAMESPACE", "enterprise-crm")
+            
+            # Initialize Kubernetes client
+            try:
+                config.load_incluster_config()
+            except:
+                config.load_kube_config()
+            
+            self.k8s_apps_v1 = client.AppsV1Api()
+            self.k8s_core_v1 = client.CoreV1Api()
+    
+        def get_cluster_status(self) -> Dict[str, Any]:
+            """Get Spark cluster status"""
+            try:
+                response = requests.get(f"{self.spark_ui_url}/api/v1/applications")
+                applications = response.json()
+                
+                # Get worker information
+                worker_response = requests.get(f"{self.spark_ui_url}/api/v1/applications")
+                
+                return {
+                    "status": "healthy",
+                    "master_url": self.spark_master_url,
+                    "ui_url": self.spark_ui_url,
+                    "applications": len(applications),
+                    "workers": self.get_worker_count(),
+                    "total_cores": self.get_total_cores(),
+                    "total_memory": self.get_total_memory(),
+                    "timestamp": time.time()
+                }
+            except Exception as e:
+                logger.error(f"Error getting cluster status: {e}")
+                return {
+                    "status": "error",
+                    "error": str(e),
+                    "timestamp": time.time()
+                }
+    
+        def get_worker_count(self) -> int:
+            """Get number of active Spark workers"""
+            try:
+                # Get worker pods
+                pods = self.k8s_core_v1.list_namespaced_pod(
+                    namespace=self.namespace,
+                    label_selector="app=spark-worker"
+                )
+                
+                active_workers = 0
+                for pod in pods.items:
+                    if pod.status.phase == "Running":
+                        active_workers += 1
+                
+                return active_workers
+            except Exception as e:
+                logger.error(f"Error getting worker count: {e}")
+                return 0
+    
+        def get_total_cores(self) -> int:
+            """Get total available cores in cluster"""
+            try:
+                response = requests.get(f"{self.spark_ui_url}/json/")
+                data = response.json()
+                return data.get("cores", 0)
+            except:
+                return 0
+    
+        def get_total_memory(self) -> str:
+            """Get total available memory in cluster"""
+            try:
+                response = requests.get(f"{self.spark_ui_url}/json/")
+                data = response.json()
+                return data.get("memory", "0 MB")
+            except:
+                return "0 MB"
+    
+        def scale_workers(self, desired_replicas: int) -> bool:
+            """Scale Spark worker deployment"""
+            try:
+                # Update worker deployment
+                self.k8s_apps_v1.patch_namespaced_deployment_scale(
+                    name="spark-worker",
+                    namespace=self.namespace,
+                    body={"spec": {"replicas": desired_replicas}}
+                )
+                
+                logger.info(f"Scaled Spark workers to {desired_replicas} replicas")
+                return True
+                
+            except Exception as e:
+                logger.error(f"Error scaling workers: {e}")
+                return False
+    
+        def submit_spark_job(self, job_config: Dict[str, Any]) -> str:
+            """Submit Spark job to cluster"""
+            try:
+                # Build spark-submit command
+                cmd = [
+                    "spark-submit",
+                    "--master", self.spark_master_url,
+                    "--deploy-mode", job_config.get("deploy_mode", "client"),
+                    "--class", job_config.get("main_class", ""),
+                    "--name", job_config.get("job_name", "spark-job"),
+                    "--conf", f"spark.executor.instances={job_config.get('executor_instances', 2)}",
+                    "--conf", f"spark.executor.memory={job_config.get('executor_memory', '2g')}",
+                    "--conf", f"spark.executor.cores={job_config.get('executor_cores', 2)}",
+                    job_config.get("application_jar", "")
+                ]
+                
+                # Add application arguments
+                if "application_args" in job_config:
+                    cmd.extend(job_config["application_args"])
+                
+                # Submit job
+                result = subprocess.run(cmd, capture_output=True, text=True)
+                
+                if result.returncode == 0:
+                    logger.info(f"Successfully submitted job: {job_config.get('job_name')}")
+                    return result.stdout
+                else:
+                    logger.error(f"Failed to submit job: {result.stderr}")
+                    return result.stderr
+                    
+            except Exception as e:
+                logger.error(f"Error submitting Spark job: {e}")
+                return str(e)
+    
+        def get_application_status(self, app_id: str) -> Dict[str, Any]:
+            """Get status of specific Spark application"""
+            try:
+                response = requests.get(f"{self.spark_ui_url}/api/v1/applications/{app_id}")
+                return response.json()
+            except Exception as e:
+                logger.error(f"Error getting application status: {e}")
+                return {"error": str(e)}
+    
+        def kill_application(self, app_id: str) -> bool:
+            """Kill running Spark application"""
+            try:
+                response = requests.post(f"{self.spark_ui_url}/api/v1/applications/{app_id}/kill")
+                return response.status_code == 200
+            except Exception as e:
+                logger.error(f"Error killing application: {e}")
+                return False
+    
+        def monitor_cluster_health(self):
+            """Monitor cluster health and auto-scale if needed"""
+            while True:
+                try:
+                    status = self.get_cluster_status()
+                    
+                    # Auto-scaling logic based on resource utilization
+                    if status.get("status") == "healthy":
+                        # Get current resource utilization
+                        # This would integrate with monitoring metrics
+                        # For now, basic scaling based on application count
+                        
+                        app_count = status.get("applications", 0)
+                        worker_count = status.get("workers", 0)
+                        
+                        # Scale up if we have more applications than workers
+                        if app_count > worker_count and worker_count < 10:
+                            self.scale_workers(min(worker_count + 2, 10))
+                        
+                        # Scale down if we have too many idle workers
+                        elif app_count < worker_count - 2 and worker_count > 2:
+                            self.scale_workers(max(worker_count - 1, 2))
+                    
+                    time.sleep(60)  # Check every minute
+                    
+                except Exception as e:
+                    logger.error(f"Error in cluster monitoring: {e}")
+                    time.sleep(60)
+    
+    # FastAPI application for cluster management
+    from fastapi import FastAPI, HTTPException
+    from pydantic import BaseModel
+    
+    app = FastAPI(title="Spark Cluster Manager", version="1.0.0")
+    cluster_manager = SparkClusterManager()
+    
+    class JobSubmissionRequest(BaseModel):
+        job_name: str
+        main_class: str
+        application_jar: str
+        deploy_mode: str = "client"
+        executor_instances: int = 2
+        executor_memory: str = "2g"
+        executor_cores: int = 2
+        application_args: List[str] = []
+    
+    @app.get("/cluster/status")
+    async def get_cluster_status():
+        """Get Spark cluster status"""
+        return cluster_manager.get_cluster_status()
+    
+    @app.post("/cluster/scale")
+    async def scale_cluster(replicas: int):
+        """Scale Spark worker nodes"""
+        if replicas < 1 or replicas > 20:
+            raise HTTPException(status_code=400, detail="Replicas must be between 1 and 20")
+        
+        success = cluster_manager.scale_workers(replicas)
+        if success:
+            return {"message": f"Scaled cluster to {replicas} workers"}
+        else:
+            raise HTTPException(status_code=500, detail="Failed to scale cluster")
+    
+    @app.post("/jobs/submit")
+    async def submit_job(job_request: JobSubmissionRequest):
+        """Submit Spark job"""
+        job_config = job_request.dict()
+        result = cluster_manager.submit_spark_job(job_config)
+        return {"result": result}
+    
+    @app.get("/applications/{app_id}")
+    async def get_application_status(app_id: str):
+        """Get application status"""
+        return cluster_manager.get_application_status(app_id)
+    
+    @app.delete("/applications/{app_id}")
+    async def kill_application(app_id: str):
+        """Kill application"""
+        success = cluster_manager.kill_application(app_id)
+        if success:
+            return {"message": f"Application {app_id} killed successfully"}
+        else:
+            raise HTTPException(status_code=500, detail="Failed to kill application")
+    
+    @app.get("/health")
+    async def health_check():
+        return {"status": "healthy", "timestamp": time.time()}
+    
+    if __name__ == "__main__":
+        import uvicorn
+        import threading
+        
+        # Start cluster monitoring in background
+        monitor_thread = threading.Thread(target=cluster_manager.monitor_cluster_health)
+        monitor_thread.daemon = True
+        monitor_thread.start()
+        
+        # Start FastAPI server
+        uvicorn.run(app, host="0.0.0.0", port=8080)
+
+---
+# Spark Master Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: spark-master
+  namespace: enterprise-crm
+  labels:
+    app: spark-master
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: spark-master
+  template:
+    metadata:
+      labels:
+        app: spark-master
+    spec:
+      containers:
+      - name: spark-master
+        image: apache/spark:v3.5.0
+        command:
+        - /bin/bash
+        - -c
+        - |
+          # Start Spark master
+          /opt/spark/bin/spark-class org.apache.spark.deploy.master.Master \
+            --host 0.0.0.0 \
+            --port 7077 \
+            --webui-port 8080
+        env:
+        - name: SPARK_MASTER_HOST
+          value: "0.0.0.0"
+        - name: SPARK_MASTER_PORT
+          value: "7077"
+        - name: SPARK_MASTER_WEBUI_PORT
+          value: "8080"
+        - name: SPARK_CONF_DIR
+          value: "/opt/spark/conf"
+        ports:
+        - containerPort: 7077
+          name: spark
+        - containerPort: 8080
+          name: webui
+        volumeMounts:
+        - name: spark-config
+          mountPath: /opt/spark/conf
+        resources:
+          requests:
+            memory: "1Gi"
+            cpu: "500m"
+          limits:
+            memory: "2Gi"
+            cpu: "1000m"
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 10
+      volumes:
+      - name: spark-config
+        configMap:
+          name: spark-config
+---
+# Spark Worker Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: spark-worker
+  namespace: enterprise-crm
+  labels:
+    app: spark-worker
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: spark-worker
+  template:
+    metadata:
+      labels:
+        app: spark-worker
+    spec:
+      containers:
+      - name: spark-worker
+        image: apache/spark:v3.5.0
+        command:
+        - /bin/bash
+        - -c
+        - |
+          # Start Spark worker
+          /opt/spark/bin/spark-class org.apache.spark.deploy.worker.Worker \
+            spark://spark-master:7077 \
+            --host 0.0.0.0 \
+            --port 7078 \
+            --webui-port 8081 \
+            --cores 2 \
+            --memory 2g
+        env:
+        - name: SPARK_MASTER_URL
+          value: "spark://spark-master:7077"
+        - name: SPARK_WORKER_HOST
+          value: "0.0.0.0"
+        - name: SPARK_WORKER_PORT
+          value: "7078"
+        - name: SPARK_WORKER_WEBUI_PORT
+          value: "8081"
+        - name: SPARK_WORKER_CORES
+          value: "2"
+        - name: SPARK_WORKER_MEMORY
+          value: "2g"
+        - name: SPARK_CONF_DIR
+          value: "/opt/spark/conf"
+        ports:
+        - containerPort: 7078
+          name: worker
+        - containerPort: 8081
+          name: webui
+        volumeMounts:
+        - name: spark-config
+          mountPath: /opt/spark/conf
+        resources:
+          requests:
+            memory: "2Gi"
+            cpu: "1000m"
+          limits:
+            memory: "4Gi"
+            cpu: "2000m"
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 8081
+          initialDelaySeconds: 30
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 8081
+          initialDelaySeconds: 10
+          periodSeconds: 10
+      volumes:
+      - name: spark-config
+        configMap:
+          name: spark-config
+---
+# Spark History Server
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: spark-history-server
+  namespace: enterprise-crm
+  labels:
+    app: spark-history-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: spark-history-server
+  template:
+    metadata:
+      labels:
+        app: spark-history-server
+    spec:
+      containers:
+      - name: spark-history-server
+        image: apache/spark:v3.5.0
+        command:
+        - /bin/bash
+        - -c
+        - |
+          # Start Spark History Server
+          /opt/spark/bin/spark-class org.apache.spark.deploy.history.HistoryServer
+        env:
+        - name: SPARK_HISTORY_OPTS
+          value: "-Dspark.history.fs.logDirectory=s3a://lakehouse/spark-events -Dspark.history.ui.port=18080"
+        - name: SPARK_CONF_DIR
+          value: "/opt/spark/conf"
+        ports:
+        - containerPort: 18080
+          name: webui
+        volumeMounts:
+        - name: spark-config
+          mountPath: /opt/spark/conf
+        resources:
+          requests:
+            memory: "1Gi"
+            cpu: "500m"
+          limits:
+            memory: "2Gi"
+            cpu: "1000m"
+      volumes:
+      - name: spark-config
+        configMap:
+          name: spark-config
+---
+# Spark Cluster Manager Service
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: spark-cluster-manager
+  namespace: enterprise-crm
+  labels:
+    app: spark-cluster-manager
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: spark-cluster-manager
+  template:
+    metadata:
+      labels:
+        app: spark-cluster-manager
+    spec:
+      serviceAccountName: spark-cluster-manager
+      containers:
+      - name: spark-cluster-manager
+        image: python:3.11-slim
+        command:
+        - /bin/bash
+        - -c
+        - |
+          # Install dependencies
+          pip install fastapi uvicorn requests kubernetes pydantic
+          
+          # Run cluster manager
+          python /config/spark-cluster-manager.py
+        env:
+        - name: SPARK_MASTER_URL
+          value: "spark://spark-master:7077"
+        - name: SPARK_UI_URL
+          value: "http://spark-master:8080"
+        - name: KUBERNETES_NAMESPACE
+          value: "enterprise-crm"
+        volumeMounts:
+        - name: config
+          mountPath: /config
+        ports:
+        - containerPort: 8080
+          name: http
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 10
+      volumes:
+      - name: config
+        configMap:
+          name: spark-config
+---
+# Services
+apiVersion: v1
+kind: Service
+metadata:
+  name: spark-master
+  namespace: enterprise-crm
+  labels:
+    app: spark-master
+spec:
+  ports:
+  - port: 7077
+    targetPort: 7077
+    name: spark
+  - port: 8080
+    targetPort: 8080
+    name: webui
+  selector:
+    app: spark-master
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: spark-worker
+  namespace: enterprise-crm
+  labels:
+    app: spark-worker
+spec:
+  ports:
+  - port: 7078
+    targetPort: 7078
+    name: worker
+  - port: 8081
+    targetPort: 8081
+    name: webui
+  selector:
+    app: spark-worker
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: spark-history-server
+  namespace: enterprise-crm
+  labels:
+    app: spark-history-server
+spec:
+  ports:
+  - port: 18080
+    targetPort: 18080
+    name: webui
+  selector:
+    app: spark-history-server
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: spark-cluster-manager
+  namespace: enterprise-crm
+  labels:
+    app: spark-cluster-manager
+spec:
+  ports:
+  - port: 8080
+    targetPort: 8080
+    name: http
+  selector:
+    app: spark-cluster-manager
+  type: ClusterIP
+---
+# RBAC for Spark Cluster Manager
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: spark-cluster-manager
+  namespace: enterprise-crm
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: spark-cluster-manager
+  namespace: enterprise-crm
+rules:
+- apiGroups: ["apps"]
+  resources: ["deployments", "deployments/scale"]
+  verbs: ["get", "list", "patch", "update"]
+- apiGroups: [""]
+  resources: ["pods"]
+  verbs: ["get", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: spark-cluster-manager
+  namespace: enterprise-crm
+subjects:
+- kind: ServiceAccount
+  name: spark-cluster-manager
+  namespace: enterprise-crm
+roleRef:
+  kind: Role
+  name: spark-cluster-manager
+  apiGroup: rbac.authorization.k8s.io
+---
+# HPA for Spark Workers
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: spark-worker-hpa
+  namespace: enterprise-crm
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: spark-worker
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+
