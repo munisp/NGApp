@@ -116,3 +116,6 @@ client/dev-dist/
 .manus-logs/
 .manus/db/
 __pycache__/
+workers/python/vendor/
+workers/go/bin/
+workers/rust/target/
