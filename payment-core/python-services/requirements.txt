@@ -26,11 +26,11 @@ networkx>=3.2.0
 # CocoIndex Data Pipeline
 cocoindex>=0.1.0
 
-# GNN (Graph Neural Networks)
-torch>=2.1.0
-torch-geometric>=2.4.0
-torch-scatter>=2.1.0
-torch-sparse>=0.6.0
+# GNN (Graph Neural Networks) — optional, install separately:
+#   pip install torch --index-url https://download.pytorch.org/whl/cpu
+#   pip install torch-geometric torch-scatter torch-sparse
+# torch-scatter and torch-sparse require torch to be installed first (build dep)
+# The service gracefully falls back to sklearn GBM when these are unavailable
 
 # Observability
 opentelemetry-api>=1.21.0
