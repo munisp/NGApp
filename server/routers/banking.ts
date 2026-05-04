@@ -8,6 +8,7 @@ import { z } from "zod";
 import { router, protectedProcedure, adminProcedure, exportProcedure, deleteProcedure, approveProcedure} from "../_core/trpc";
 import { emitEvent, logAuditEvent, broadcastEvent, broadcastUpdate, cacheGetJson, cacheSetJson, cacheDel, recordFinancialTransaction, triggerWorkflow } from "../middlewareHelpers";
 import { emitComplianceEvent, opensearchIndex, lakehouseIngest, daprPublish, fluvioPublish, permifyCheck } from "../middlewareExtensions";
+import { emitMutationEvent, EVENTS } from "../middlewareIntegration";
 import { TRPCError } from "@trpc/server";
 import pg from "pg";
 const { Pool } = pg;
@@ -107,6 +108,7 @@ const bankingRouter = router({
           input.ceoName ?? null, input.totalAssets ?? null, input.capitalAdequacyRatio ?? null,
           input.nonPerformingLoanRatio ?? null, input.dataProtectionOfficer ?? null, input.dpcoOrgId ?? null]);
       await broadcastUpdate("banking_institution_created", { name: input.name, licenseType: input.licenseType });
+      emitMutationEvent(EVENTS.CORRESPONDENT_BANK, { action: "institution_created", name: input.name, licenseType: input.licenseType, cbnCode: input.cbnCode }).catch(() => {});
       return { success: true };
     }),
 

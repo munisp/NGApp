@@ -6,6 +6,7 @@ import { createInvoiceCheckoutSession, createSubscriptionCheckoutSession, getStr
 import type { Request, Response } from "express";
 import { emitEvent, logAuditEvent, broadcastEvent, cacheGetJson, cacheSetJson, cacheDel, triggerWorkflow } from "../middlewareHelpers";
 import { emitComplianceEvent, opensearchIndex, lakehouseIngest, daprPublish, fluvioPublish, permifyCheck } from "../middlewareExtensions";
+import { emitMutationEvent, EVENTS } from "../middlewareIntegration";
 
 const { Pool } = pg;
 let _pool: InstanceType<typeof Pool> | null = null;

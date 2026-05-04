@@ -4,6 +4,7 @@ import { getDb, getSharedPool } from "../db";
 import { sql } from "drizzle-orm";
 import { emitEvent, logAuditEvent, broadcastEvent, cacheGetJson, cacheSetJson, cacheDel, triggerWorkflow } from "../middlewareHelpers";
 import { emitComplianceEvent, opensearchIndex, lakehouseIngest, daprPublish, fluvioPublish, permifyCheck } from "../middlewareExtensions";
+import { emitMutationEvent, EVENTS } from "../middlewareIntegration";
 
 async function exec(query: any): Promise<[any[], any]> {
   const db = await getDb();

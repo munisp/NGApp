@@ -247,12 +247,12 @@ export default function Dashboard() {
       </div>
 
       {/* BGP Hijack Alert Strip — hidden for demo presentation */}
-      {false && !bgpDismissed && hijackedRoutes && hijackedRoutes.length > 0 && (
+      {false && !bgpDismissed && hijackedRoutes && (hijackedRoutes?.length ?? 0) > 0 && (
         <div className="rounded-lg border border-red-500/40 bg-red-950/20 px-4 py-2.5">
           <div className="flex items-center gap-2 mb-2">
             <Network className="h-4 w-4 text-red-400" />
             <span className="text-xs font-bold text-red-400 mono">BGP ROUTE ANOMALIES DETECTED</span>
-            <span className="text-xs text-red-400/70 mono">&middot; {hijackedRoutes.length} active</span>
+            <span className="text-xs text-red-400/70 mono">&middot; {hijackedRoutes?.length ?? 0} active</span>
             <Link href="/bgp-routes" className="text-xs text-red-400 hover:text-red-300 mono underline">View all &rarr;</Link>
             <button
               onClick={() => setBgpDismissed(true)}

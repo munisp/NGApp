@@ -10,6 +10,7 @@ import { notifyOwner } from "../_core/notification";
 import { ENV } from "../_core/env";
 import { emitEvent, logAuditEvent, broadcastEvent, cacheGetJson, cacheSetJson, cacheDel, triggerWorkflow } from "../middlewareHelpers";
 import { emitComplianceEvent, opensearchIndex, lakehouseIngest, daprPublish, fluvioPublish, permifyCheck } from "../middlewareExtensions";
+import { emitMutationEvent, EVENTS } from "../middlewareIntegration";
 
 async function exec(sql: string, params: any[] = []): Promise<any[]> {
   const db = await getDb();

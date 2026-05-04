@@ -1,3 +1,4 @@
+import crypto from "crypto";
 import { z } from "zod";
 import { generateRopaPdf } from "./ropaPdf";
 import { storagePut } from "./storage";
@@ -1755,7 +1756,7 @@ export const appRouter = router({
       }))
       .mutation(async ({ input, ctx }) => {
         const now = new Date();
-        const reportId = `RPT-${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${Math.random().toString(36).substr(2, 8).toUpperCase()}`;
+        const reportId = `RPT-${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${crypto.randomBytes(4).toString("hex").toUpperCase()}`;
         await createAuditLog({ userId: ctx.user.id, action: "generate_report", resourceType: "report", details: JSON.stringify({ reportType: input.reportType, format: input.format }) });
         return {
           reportId,
@@ -1779,7 +1780,7 @@ export const appRouter = router({
       .mutation(async ({ input, ctx }) => {
         await createAuditLog({ userId: ctx.user.id, action: "schedule_report", resourceType: "report", details: JSON.stringify({ reportType: input.reportType, frequency: input.frequency }) });
         return {
-          scheduleId: `SCH-${Math.random().toString(36).substr(2, 8).toUpperCase()}`,
+          scheduleId: `SCH-${crypto.randomBytes(4).toString("hex").toUpperCase()}`,
           reportType: input.reportType,
           frequency: input.frequency,
           recipients: input.recipients,

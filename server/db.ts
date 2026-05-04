@@ -1,3 +1,4 @@
+import crypto from "crypto";
 import { and, desc, eq, gte, ilike, isNotNull, lt, lte, or, sql, SQL } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
 import pg from "pg";
@@ -518,7 +519,7 @@ export async function createEnforcementAction(data: {
 }) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const workflowId = `wf-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`;
+  const workflowId = `wf-${Date.now()}-${crypto.randomBytes(3).toString("hex")}`;
   const result = await db.insert(enforcementActions).values({
     organizationId: data.organizationId,
     violationId: data.violationId,
@@ -552,8 +553,8 @@ export async function createFinancialPenalty(data: {
 }) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const tigerBeetleId = `TB-${Date.now()}-${Math.random().toString(36).substr(2, 8).toUpperCase()}`;
-  const mojaloopId = `ML-${Math.random().toString(36).substr(2, 12).toUpperCase()}`;
+  const tigerBeetleId = `TB-${Date.now()}-${crypto.randomBytes(4).toString("hex").toUpperCase()}`;
+  const mojaloopId = `ML-${crypto.randomBytes(6).toString("hex").toUpperCase()}`;
   const result = await db.insert(financialPenalties).values({
     organizationId: data.organizationId,
     violationId: data.violationId ?? null,
@@ -765,7 +766,7 @@ export async function createPortalSubmission(data: {
 }) {
   const pool = getSharedPool();
   try {
-    const token = `NDSEP-${Date.now()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+    const token = `NDSEP-${Date.now()}-${crypto.randomBytes(3).toString("hex").toUpperCase()}`;
     const result = await pool.query(
       `INSERT INTO portal_submissions
         (submission_token, org_name, org_sector, org_country, regulatory_id, contact_name, contact_email, contact_phone,
@@ -844,7 +845,7 @@ export async function createTransferApproval(data: {
   transferMethod?: string; encryptionMethod?: string;
 }) {
   const pool = getSharedPool();
-  const refId = `XFER-${Date.now()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+  const refId = `XFER-${Date.now()}-${crypto.randomBytes(2).toString("hex").toUpperCase()}`;
   const riskScore = Math.min(100, (data.volumeGb / 10) * 20 +
     (data.dataClassification === "tier1_pii" ? 40 : data.dataClassification === "tier3_health" ? 30 : 10));
   const r = await pool.query(

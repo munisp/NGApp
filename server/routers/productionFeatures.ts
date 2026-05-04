@@ -7,6 +7,7 @@ import { ENV } from "../_core/env";
 import { notifyOwner } from "../_core/notification";
 import { emitEvent, logAuditEvent, broadcastEvent, cacheGetJson, cacheSetJson, cacheDel, triggerWorkflow } from "../middlewareHelpers";
 import { emitComplianceEvent, opensearchIndex, lakehouseIngest, daprPublish, fluvioPublish, permifyCheck } from "../middlewareExtensions";
+import { emitMutationEvent, EVENTS } from "../middlewareIntegration";
 
 // ── Helper: execute raw SQL ───────────────────────────────────────────────────
 async function exec(rawSql: string, params?: unknown[]): Promise<Record<string, unknown>[]> {

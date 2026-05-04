@@ -3,6 +3,7 @@ import { router, protectedProcedure, publicProcedure, exportProcedure, deletePro
 import { getPool } from "../db";
 import { logger } from "../logger";
 import { emitComplianceEvent, opensearchIndex, lakehouseIngest, daprPublish, fluvioPublish, permifyCheck } from "../middlewareExtensions";
+import { emitMutationEvent, EVENTS } from "../middlewareIntegration";
 
 async function exec(query: string, params: unknown[] = []): Promise<any[]> {
   const pool = getPool();

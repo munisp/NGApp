@@ -8,6 +8,7 @@ import { z } from "zod";
 import { router, protectedProcedure } from "../_core/trpc";
 import { getAvailableActions, executeTransition, WorkflowState } from "../workflows/complianceLifecycle";
 import { calculatePenalty, calculateComplianceScore, calculateRiskScore, checkSlaBreach, checkRenewalEligibility, checkCrossBorderAdequacy } from "../workflows/businessRules";
+import { emitMutationEvent, EVENTS } from "../middlewareIntegration";
 
 export const workflowRouter = router({
   // Get available workflow actions for an entity
@@ -33,13 +34,18 @@ export const workflowRouter = router({
     .mutation(async ({ input, ctx }) => {
       const userId = (ctx as any).user?.id ?? 0;
       const userRole = (ctx as any).user?.role ?? "user";
-      return executeTransition({
+      const result = executeTransition({
         entityType: input.entityType,
         entityId: input.entityId,
         userId,
         userRole,
         metadata: input.metadata,
       }, input.action);
+      emitMutationEvent(EVENTS.WORKFLOW_TRANSITION, {
+        entityType: input.entityType, entityId: input.entityId,
+        action: input.action, userId, userRole,
+      }).catch(() => {});
+      return result;
     }),
 
   // Calculate penalty amount

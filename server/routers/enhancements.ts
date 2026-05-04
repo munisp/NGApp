@@ -10,6 +10,7 @@ import pg from "pg";
 import { invokeLLM } from "../_core/llm";
 import crypto from "crypto";
 import { emitComplianceEvent, opensearchIndex, lakehouseIngest, daprPublish, fluvioPublish, permifyCheck } from "../middlewareExtensions";
+import { emitMutationEvent, EVENTS } from "../middlewareIntegration";
 
 const { Pool } = pg;
 let _pool: InstanceType<typeof Pool> | null = null;

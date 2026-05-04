@@ -11,6 +11,7 @@ import { getDb } from "../db";
 import { invokeLLM, type MessageContent } from "../_core/llm";
 import { emitEvent, logAuditEvent, broadcastEvent, cacheGetJson, cacheSetJson, cacheDel, triggerWorkflow } from "../middlewareHelpers";
 import { emitComplianceEvent, opensearchIndex, lakehouseIngest, daprPublish, fluvioPublish, permifyCheck } from "../middlewareExtensions";
+import { emitMutationEvent, EVENTS } from "../middlewareIntegration";
 
 // ── Helper: raw SQL exec ──────────────────────────────────────────────────────
 async function exec(sql: string, params: unknown[] = []): Promise<Record<string, unknown>[]> {

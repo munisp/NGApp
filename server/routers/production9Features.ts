@@ -17,6 +17,7 @@ import { calculateSecurityScore, type SecurityFinding } from "../security";
 import { notifyOwner } from "../_core/notification";
 import { logger } from "../logger";
 import { emitComplianceEvent, opensearchIndex, lakehouseIngest, daprPublish, fluvioPublish, permifyCheck } from "../middlewareExtensions";
+import { emitMutationEvent, EVENTS } from "../middlewareIntegration";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 async function exec(query: string, params: unknown[] = []): Promise<any[]> {

@@ -594,7 +594,7 @@ async function startServer() {
       const file = req.file;
       if (!file) return res.status(400).json({ error: "No file provided" });
       const category = req.body?.category ?? "other";
-      const randomSuffix = () => Math.random().toString(36).slice(2, 10);
+      const randomSuffix = () => require("crypto").randomBytes(5).toString("hex");
       const fileKey = `evidence/${userId}/${Date.now()}-${randomSuffix()}-${file.originalname}`;
       const { url: fileUrl } = await storagePut(fileKey, file.buffer, file.mimetype);
       logger.info({ userId, fileKey, size: file.size, category }, "[evidence-upload] File uploaded to S3");

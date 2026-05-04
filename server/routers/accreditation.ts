@@ -6,6 +6,7 @@ import crypto from "crypto";
 import pg from "pg";
 import { emitEvent, logAuditEvent, broadcastEvent, cacheGetJson, cacheSetJson, cacheDel, triggerWorkflow } from "../middlewareHelpers";
 import { emitComplianceEvent, opensearchIndex, lakehouseIngest, daprPublish, fluvioPublish, permifyCheck } from "../middlewareExtensions";
+import { emitMutationEvent, EVENTS } from "../middlewareIntegration";
 const { Pool } = pg;
 let _pool: InstanceType<typeof Pool> | null = null;
 function getPool() {
@@ -103,6 +104,10 @@ export const accreditationRouter = router({
           content: `A new ${input.applicationType === 'new' ? 'initial' : 'renewal'} DPCO accreditation application has been submitted.\n\n**Organisation:** ${input.orgName}\n**RC Number:** ${input.rcNumber}\n**Email:** ${input.email}\n**Reference:** ${token}\n\nReview at: /admin/accreditation`,
         });
       } catch { /* notification failure is non-blocking */ }
+      emitMutationEvent(EVENTS.ACCREDITATION_SUBMITTED, {
+        applicationId: app?.id, orgName: input.orgName, type: input.applicationType,
+        referenceToken: token, fee,
+      }).catch(() => {});
       return { application: app, referenceToken: token, applicationFee: fee };
     }),
   // ── Get application status by reference token (public) ─────────────────────

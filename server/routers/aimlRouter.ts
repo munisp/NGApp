@@ -20,6 +20,7 @@ import { invokeLLM } from "../_core/llm";
 import { getPool } from "../db";
 import { emitEvent, logAuditEvent, broadcastEvent, cacheGetJson, cacheSetJson, cacheDel, triggerWorkflow } from "../middlewareHelpers";
 import { emitComplianceEvent, opensearchIndex, lakehouseIngest, daprPublish, fluvioPublish, permifyCheck } from "../middlewareExtensions";
+import { emitMutationEvent, EVENTS } from "../middlewareIntegration";
 
 // ── Helper: raw SQL query ─────────────────────────────────────────────────────
 async function exec(query: string, params: unknown[] = []): Promise<any[]> {

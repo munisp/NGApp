@@ -17,6 +17,7 @@ import webPush from "web-push";
 import { router, protectedProcedure, publicProcedure } from "../_core/trpc";
 import { getPool } from "../db";
 import { emitComplianceEvent, opensearchIndex, lakehouseIngest, daprPublish, fluvioPublish, permifyCheck } from "../middlewareExtensions";
+import { emitMutationEvent, EVENTS } from "../middlewareIntegration";
 
 // ─── VAPID Configuration ─────────────────────────────────────────────────────
 // Keys are set from env vars; fall back to the generated defaults for dev.

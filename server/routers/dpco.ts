@@ -4,6 +4,7 @@ import { TRPCError } from "@trpc/server";
 import pg from "pg";
 import { emitEvent, logAuditEvent, broadcastEvent, cacheGetJson, cacheSetJson, cacheDel, triggerWorkflow } from "../middlewareHelpers";
 import { emitComplianceEvent, opensearchIndex, lakehouseIngest, daprPublish, fluvioPublish, permifyCheck } from "../middlewareExtensions";
+import { emitMutationEvent, EVENTS } from "../middlewareIntegration";
 
 const { Pool } = pg;
 let _dpcoPool: InstanceType<typeof Pool> | null = null;

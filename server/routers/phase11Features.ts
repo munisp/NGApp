@@ -10,6 +10,7 @@ import { z } from "zod";
 import { router, protectedProcedure, publicProcedure, deleteProcedure } from "../_core/trpc";import { getPool } from "../db";
 import { TRPCError } from "@trpc/server";
 import { emitComplianceEvent, opensearchIndex, lakehouseIngest, daprPublish, fluvioPublish, permifyCheck } from "../middlewareExtensions";
+import { emitMutationEvent, EVENTS } from "../middlewareIntegration";
 
 const rawQuery = async (sql: string, params: unknown[] = []): Promise<any[]> => {
   const pool = getPool();
