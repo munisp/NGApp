@@ -425,7 +425,27 @@ export const complianceGapRouter = router({
         if (input.orgId) { params.push(input.orgId); q += ` AND cga.org_id = $${params.length}`; }
         q += " ORDER BY cga.created_at DESC";
         const result = await p.query(q, params);
-        return result.rows;
+        // Flatten: expand each assessment's JSONB gaps array into individual rows
+        const flattened: any[] = [];
+        for (const row of result.rows) {
+          const gapItems = Array.isArray(row.gaps) ? row.gaps : [];
+          if (gapItems.length === 0) {
+            flattened.push({ ...row, priority: null, framework: null, control_id: null, remediation_effort: null });
+          } else {
+            for (const g of gapItems) {
+              flattened.push({
+                ...row,
+                description: g.description ?? g.area ?? null,
+                framework: g.framework ?? null,
+                control_id: g.control_id ?? null,
+                priority: g.priority ?? g.severity ?? null,
+                remediation_effort: g.remediation_effort ?? null,
+                gap_status: g.status ?? row.status,
+              });
+            }
+          }
+        }
+        return flattened;
       } finally { await p.end(); }
     }),
 
@@ -475,7 +495,7 @@ export const vendorRiskRouter = router({
     .query(async ({ input }) => {
       const p = pool();
       try {
-        let q = "SELECT * FROM vendor_risk_profiles WHERE 1=1";
+        let q = "SELECT *, dpa_executed as dpa_signed FROM vendor_risk_profiles WHERE 1=1";
         const params: unknown[] = [];
         if (input.orgId) { params.push(input.orgId); q += ` AND org_id = $${params.length}`; }
         if (input.riskLevel) { params.push(input.riskLevel); q += ` AND risk_level = $${params.length}`; }
@@ -549,12 +569,10 @@ export const vendorRiskRouter = router({
     try {
       const q = await p.query(`
         SELECT 
-          COUNT(*) as total,
-          SUM(CASE WHEN risk_level = 'high' THEN 1 ELSE 0 END) as high_risk,
-          SUM(CASE WHEN risk_level = 'medium' THEN 1 ELSE 0 END) as medium_risk,
-          SUM(CASE WHEN risk_level = 'low' THEN 1 ELSE 0 END) as low_risk,
-          SUM(CASE WHEN dpa_executed = FALSE THEN 1 ELSE 0 END) as missing_dpa,
-          SUM(CASE WHEN dpia_required AND NOT dpa_executed THEN 1 ELSE 0 END) as dpia_required
+          COUNT(*)::int as total,
+          SUM(CASE WHEN risk_level IN ('high','critical') THEN 1 ELSE 0 END)::int as "highRisk",
+          SUM(CASE WHEN dpa_executed = TRUE THEN 1 ELSE 0 END)::int as "dpaSigned",
+          ROUND(AVG(risk_score))::int as "avgScore"
         FROM vendor_risk_profiles WHERE status = 'active'
       `);
       return q.rows[0];
