@@ -1,0 +1,43 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential curl && \
+    rm -rf /var/lib/apt/lists/*
+
+COPY requirements.txt .
+
+# Install core dependencies first (these rarely change)
+RUN pip install --no-cache-dir \
+    fastapi>=0.104.0 "uvicorn[standard]>=0.24.0" httpx>=0.25.0 pydantic>=2.0.0 \
+    numpy>=1.24.0 pandas>=2.1.0 scikit-learn>=1.3.0 \
+    structlog>=23.2.0 uvloop httptools \
+    opentelemetry-api>=1.21.0 opentelemetry-sdk>=1.21.0
+
+# Install ML libraries (larger, change less frequently)
+RUN pip install --no-cache-dir \
+    prophet>=1.1.5 pymc>=5.10.0 arviz>=0.17.0 \
+    adversarial-robustness-toolbox>=1.16.0 \
+    networkx>=3.2.0
+
+# Install graph database drivers
+RUN pip install --no-cache-dir \
+    falkordb>=1.0.0 neo4j>=5.15.0 redis>=5.0.0
+
+# Install CocoIndex (optional, may not be available yet)
+RUN pip install --no-cache-dir cocoindex>=0.1.0 || true
+
+# Install PyTorch + PyG (optional, for real GNN support)
+RUN pip install --no-cache-dir \
+    torch --index-url https://download.pytorch.org/whl/cpu || true
+RUN pip install --no-cache-dir torch-geometric || true
+
+COPY . .
+
+EXPOSE 8100
+
+HEALTHCHECK --interval=30s --timeout=10s --retries=3 \
+    CMD curl -f http://localhost:8100/health || exit 1
+
+CMD ["uvicorn", "nibss_analytics.real_ai_ml_service:app", "--host", "0.0.0.0", "--port", "8100", "--workers", "4", "--loop", "uvloop", "--http", "httptools"]
