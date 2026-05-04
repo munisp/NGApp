@@ -277,23 +277,27 @@ async function upsertPolicyDraft(data: any) {
 // ─── DPCO Dashboard Stats ─────────────────────────────────────────────────────
 async function getDpcoDashboardStats(dpcoOrgId?: number) {
   const filter = dpcoOrgId ? "WHERE dpco_org_id = ?" : "";
+  // Note: q() converts ? to $N placeholders for PostgreSQL
   const params = dpcoOrgId ? [dpcoOrgId] : [];
 
   const [totalDpcos] = await q<{ c: number }>("SELECT COUNT(*) as c FROM dpco_organisations");
   const [activeDpcos] = await q<{ c: number }>("SELECT COUNT(*) as c FROM dpco_organisations WHERE status = 'active'");
   const [expiredDpcos] = await q<{ c: number }>("SELECT COUNT(*) as c FROM dpco_organisations WHERE status = 'expired'");
-  const [expiringDpcos] = await q<{ c: number }>("SELECT COUNT(*) as c FROM dpco_organisations WHERE status = 'active' AND licence_expires_at BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 90 DAY)");
-  const [activeClients] = await q<{ c: number }>(`SELECT COUNT(*) as c FROM dpco_clients ${filter} AND status = 'active'`.replace("WHERE AND", "WHERE"), params);
-  const [pendingCars] = await q<{ c: number }>(`SELECT COUNT(*) as c FROM dpco_audit_engagements ${filter} AND status NOT IN ('car_filed','closed')`.replace("WHERE AND", "WHERE"), params);
-  const [trainingSessions] = await q<{ c: number }>(`SELECT COUNT(*) as c FROM dpco_training_sessions ${filter}`.replace("WHERE AND", "WHERE"), params);
-  const [verificationStatements] = await q<{ c: number }>(`SELECT COUNT(*) as c FROM dpco_verification_statements ${filter}`.replace("WHERE AND", "WHERE"), params);
-  const [policyDrafts] = await q<{ c: number }>(`SELECT COUNT(*) as c FROM dpco_policy_drafts ${filter}`.replace("WHERE AND", "WHERE"), params);
+  const [expiringDpcos] = await q<{ c: number }>("SELECT COUNT(*) as c FROM dpco_organisations WHERE status = 'active' AND licence_expires_at BETWEEN CURRENT_DATE AND CURRENT_DATE + INTERVAL '90 days'");
+  const clientFilter = dpcoOrgId ? `WHERE dpco_org_id = ? AND status = 'active'` : `WHERE status = 'active'`;
+  const [activeClients] = await q<{ c: number }>(`SELECT COUNT(*) as c FROM dpco_clients ${clientFilter}`, params);
+  const engFilter = dpcoOrgId ? `WHERE dpco_org_id = ? AND current_stage NOT IN ('car_filed','report_issued')` : `WHERE current_stage NOT IN ('car_filed','report_issued')`;
+  const [pendingCars] = await q<{ c: number }>(`SELECT COUNT(*) as c FROM dpco_audit_engagements ${engFilter}`, params);
+  const genFilter = dpcoOrgId ? `WHERE dpco_org_id = ?` : ``;
+  const [trainingSessions] = await q<{ c: number }>(`SELECT COUNT(*) as c FROM dpco_training_sessions ${genFilter}`, params);
+  const [verificationStatements] = await q<{ c: number }>(`SELECT COUNT(*) as c FROM dpco_verification_statements ${genFilter}`, params);
+  const [policyDrafts] = await q<{ c: number }>(`SELECT COUNT(*) as c FROM dpco_policy_drafts ${genFilter}`, params);
 
-  const stateBreakdown = await q<{ state: string; c: number }>(
-    "SELECT state, COUNT(*) as c FROM dpco_organisations WHERE status = 'active' GROUP BY state ORDER BY c DESC LIMIT 10"
+  const stateBreakdown = await q<{ tier: string; c: number }>(
+    "SELECT tier::text as tier, COUNT(*) as c FROM dpco_organisations WHERE status = 'active' GROUP BY tier ORDER BY c DESC LIMIT 10"
   );
-  const typeBreakdown = await q<{ organisation_type: string; c: number }>(
-    "SELECT organisation_type, COUNT(*) as c FROM dpco_organisations GROUP BY organisation_type"
+  const typeBreakdown = await q<{ tier: string; c: number }>(
+    "SELECT tier::text as tier, COUNT(*) as c FROM dpco_organisations GROUP BY tier"
   );
 
   return {
