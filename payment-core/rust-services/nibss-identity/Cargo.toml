@@ -16,6 +16,13 @@ rand = "0.8"
 [dev-dependencies]
 criterion = "0.5"
 
+[profile.release]
+lto = true
+codegen-units = 1
+opt-level = 3
+strip = true
+panic = "abort"
+
 [[bench]]
 name = "identity_bench"
 harness = false

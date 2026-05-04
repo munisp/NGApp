@@ -1,48 +1,59 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
+import dynamic from 'next/dynamic';
 import { Layout } from '@/components/layout/Layout';
-import { NOCDashboard } from '@/components/dashboard/NOCDashboard';
-import { SettlementConsole } from '@/components/settlement/SettlementConsole';
-import { ParticipantPortal } from '@/components/participants/ParticipantPortal';
-import { FraudDashboard } from '@/components/fraud/FraudDashboard';
-import { ReportsInterface } from '@/components/reports/ReportsInterface';
-import { DeveloperPortal } from '@/components/developer/DeveloperPortal';
-import { 
-  OnboardingPortal, 
-  ApplicantPortal, 
-  BulkOnboarding, 
-  IntegrationTestingPortal, 
-  SLADashboard, 
-  TemplateCloning, 
-  ReviewerAssignmentRules 
-} from '@/components/onboarding';
-import { KYCVerificationPortal, ApplicantKYCPortal } from '@/components/kyc';
-import { KYBVerificationPortal } from '@/components/kyb';
 import { LoginPage } from '@/components/auth';
-import { UserManagement } from '@/components/users';
-import { JourneyDashboard, JourneyAnalytics } from '@/components/journeys';
-import { ProvisioningAdmin } from '@/components/provisioning/ProvisioningAdmin';
-import { DisputesDashboard } from '@/components/disputes/DisputesDashboard';
-import { RecurringRemittances } from '@/components/remittances/RecurringRemittances';
-import { BatchTransfers } from '@/components/batch/BatchTransfers';
-import { ComplianceReports } from '@/components/compliance/ComplianceReports';
-import { SupportCenter } from '@/components/support/SupportCenter';
-import { SecurityDashboard } from '@/components/security/SecurityDashboard';
-import { FeeManagement } from '@/components/fees/FeeManagement';
-import { AuditLog } from '@/components/audit/AuditLog';
-import { TransactionLimits } from '@/components/limits/TransactionLimits';
-import { ReferralProgram } from '@/components/referrals/ReferralProgram';
-import { WebhookConfig } from '@/components/webhooks/WebhookConfig';
-import { MaintenanceDashboard } from '@/components/maintenance-mode/MaintenanceDashboard';
-import { RustServices } from '@/components/infrastructure/RustServices';
-import OutboundRemittanceDashboard from '@/components/outbound/OutboundRemittanceDashboard';
-import { GoServices } from '@/components/infrastructure/GoServices';
-import { MiddlewareDashboard } from '@/components/infrastructure/MiddlewareDashboard';
-import { DashboardHub } from '@/components/hub/DashboardHub';
 import { ROLE_DEFAULT_PAGES } from '@/components/layout/Sidebar';
 import { useAuth } from '@/lib/auth';
 import { Loader2 } from 'lucide-react';
+
+// Dynamic imports — each component is a separate chunk
+const NOCDashboard = dynamic(() => import('@/components/dashboard/NOCDashboard').then(m => ({ default: m.NOCDashboard })), { loading: () => <PageSpinner /> });
+const SettlementConsole = dynamic(() => import('@/components/settlement/SettlementConsole').then(m => ({ default: m.SettlementConsole })), { loading: () => <PageSpinner /> });
+const ParticipantPortal = dynamic(() => import('@/components/participants/ParticipantPortal').then(m => ({ default: m.ParticipantPortal })), { loading: () => <PageSpinner /> });
+const FraudDashboard = dynamic(() => import('@/components/fraud/FraudDashboard').then(m => ({ default: m.FraudDashboard })), { loading: () => <PageSpinner /> });
+const ReportsInterface = dynamic(() => import('@/components/reports/ReportsInterface').then(m => ({ default: m.ReportsInterface })), { loading: () => <PageSpinner /> });
+const DeveloperPortal = dynamic(() => import('@/components/developer/DeveloperPortal').then(m => ({ default: m.DeveloperPortal })), { loading: () => <PageSpinner /> });
+const OnboardingPortal = dynamic(() => import('@/components/onboarding').then(m => ({ default: m.OnboardingPortal })), { loading: () => <PageSpinner /> });
+const ApplicantPortal = dynamic(() => import('@/components/onboarding').then(m => ({ default: m.ApplicantPortal })), { loading: () => <PageSpinner /> });
+const BulkOnboarding = dynamic(() => import('@/components/onboarding').then(m => ({ default: m.BulkOnboarding })), { loading: () => <PageSpinner /> });
+const IntegrationTestingPortal = dynamic(() => import('@/components/onboarding').then(m => ({ default: m.IntegrationTestingPortal })), { loading: () => <PageSpinner /> });
+const SLADashboard = dynamic(() => import('@/components/onboarding').then(m => ({ default: m.SLADashboard })), { loading: () => <PageSpinner /> });
+const TemplateCloning = dynamic(() => import('@/components/onboarding').then(m => ({ default: m.TemplateCloning })), { loading: () => <PageSpinner /> });
+const ReviewerAssignmentRules = dynamic(() => import('@/components/onboarding').then(m => ({ default: m.ReviewerAssignmentRules })), { loading: () => <PageSpinner /> });
+const KYCVerificationPortal = dynamic(() => import('@/components/kyc').then(m => ({ default: m.KYCVerificationPortal })), { loading: () => <PageSpinner /> });
+const ApplicantKYCPortal = dynamic(() => import('@/components/kyc').then(m => ({ default: m.ApplicantKYCPortal })), { loading: () => <PageSpinner /> });
+const KYBVerificationPortal = dynamic(() => import('@/components/kyb').then(m => ({ default: m.KYBVerificationPortal })), { loading: () => <PageSpinner /> });
+const UserManagement = dynamic(() => import('@/components/users').then(m => ({ default: m.UserManagement })), { loading: () => <PageSpinner /> });
+const JourneyDashboard = dynamic(() => import('@/components/journeys').then(m => ({ default: m.JourneyDashboard })), { loading: () => <PageSpinner /> });
+const JourneyAnalytics = dynamic(() => import('@/components/journeys').then(m => ({ default: m.JourneyAnalytics })), { loading: () => <PageSpinner /> });
+const ProvisioningAdmin = dynamic(() => import('@/components/provisioning/ProvisioningAdmin').then(m => ({ default: m.ProvisioningAdmin })), { loading: () => <PageSpinner /> });
+const DisputesDashboard = dynamic(() => import('@/components/disputes/DisputesDashboard').then(m => ({ default: m.DisputesDashboard })), { loading: () => <PageSpinner /> });
+const RecurringRemittances = dynamic(() => import('@/components/remittances/RecurringRemittances').then(m => ({ default: m.RecurringRemittances })), { loading: () => <PageSpinner /> });
+const BatchTransfers = dynamic(() => import('@/components/batch/BatchTransfers').then(m => ({ default: m.BatchTransfers })), { loading: () => <PageSpinner /> });
+const ComplianceReports = dynamic(() => import('@/components/compliance/ComplianceReports').then(m => ({ default: m.ComplianceReports })), { loading: () => <PageSpinner /> });
+const SupportCenter = dynamic(() => import('@/components/support/SupportCenter').then(m => ({ default: m.SupportCenter })), { loading: () => <PageSpinner /> });
+const SecurityDashboard = dynamic(() => import('@/components/security/SecurityDashboard').then(m => ({ default: m.SecurityDashboard })), { loading: () => <PageSpinner /> });
+const FeeManagement = dynamic(() => import('@/components/fees/FeeManagement').then(m => ({ default: m.FeeManagement })), { loading: () => <PageSpinner /> });
+const AuditLog = dynamic(() => import('@/components/audit/AuditLog').then(m => ({ default: m.AuditLog })), { loading: () => <PageSpinner /> });
+const TransactionLimits = dynamic(() => import('@/components/limits/TransactionLimits').then(m => ({ default: m.TransactionLimits })), { loading: () => <PageSpinner /> });
+const ReferralProgram = dynamic(() => import('@/components/referrals/ReferralProgram').then(m => ({ default: m.ReferralProgram })), { loading: () => <PageSpinner /> });
+const WebhookConfig = dynamic(() => import('@/components/webhooks/WebhookConfig').then(m => ({ default: m.WebhookConfig })), { loading: () => <PageSpinner /> });
+const MaintenanceDashboard = dynamic(() => import('@/components/maintenance-mode/MaintenanceDashboard').then(m => ({ default: m.MaintenanceDashboard })), { loading: () => <PageSpinner /> });
+const RustServices = dynamic(() => import('@/components/infrastructure/RustServices').then(m => ({ default: m.RustServices })), { loading: () => <PageSpinner /> });
+const OutboundRemittanceDashboard = dynamic(() => import('@/components/outbound/OutboundRemittanceDashboard'), { loading: () => <PageSpinner /> });
+const GoServices = dynamic(() => import('@/components/infrastructure/GoServices').then(m => ({ default: m.GoServices })), { loading: () => <PageSpinner /> });
+const MiddlewareDashboard = dynamic(() => import('@/components/infrastructure/MiddlewareDashboard').then(m => ({ default: m.MiddlewareDashboard })), { loading: () => <PageSpinner /> });
+const DashboardHub = dynamic(() => import('@/components/hub/DashboardHub').then(m => ({ default: m.DashboardHub })), { loading: () => <PageSpinner /> });
+
+function PageSpinner() {
+  return (
+    <div className="flex items-center justify-center py-20">
+      <Loader2 className="h-8 w-8 text-blue-600 animate-spin" />
+    </div>
+  );
+}
 
 export default function Home() {
   const { isAuthenticated, isLoading, user, hasRole } = useAuth();

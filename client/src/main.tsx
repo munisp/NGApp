@@ -8,7 +8,16 @@ import App from "./App";
 import { getLoginUrl } from "./const";
 import "./index.css";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 30_000,
+      gcTime: 5 * 60_000,
+      retry: 2,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 const redirectToLoginIfUnauthorized = (error: unknown) => {
   // Skip redirect in development mode - we use mock admin user
@@ -45,6 +54,11 @@ const trpcClient = trpc.createClient({
     httpBatchLink({
       url: "/api/trpc",
       transformer: superjson,
+      headers() {
+        const params = new URLSearchParams(window.location.search);
+        const role = params.get('role') || 'participant';
+        return { 'x-dev-role': role };
+      },
       fetch(input, init) {
         return globalThis.fetch(input, {
           ...(init ?? {}),

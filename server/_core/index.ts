@@ -1,5 +1,6 @@
 import "dotenv/config";
 import express from "express";
+import compression from "compression";
 import { createServer } from "http";
 import net from "net";
 import { startRetryProcessor } from "../onboarding/retryScheduler";
@@ -42,6 +43,9 @@ async function startServer() {
   const trustProxy = process.env.TRUST_PROXY || '1';
   app.set('trust proxy', trustProxy === 'true' ? true : trustProxy === 'false' ? false : trustProxy);
   
+  // Gzip/deflate compression for all responses
+  app.use(compression({ level: 6, threshold: 1024 }));
+
   // Configure body parser with larger size limit for file uploads
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ limit: "50mb", extended: true }));

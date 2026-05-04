@@ -32,11 +32,24 @@ services:
       KAFKA_LOG_CLEANER_MIN_COMPACTION_LAG_MS: 0
       # (#5) Consumer lag monitoring
       KAFKA_GROUP_MAX_SESSION_TIMEOUT_MS: 300000
+      # Performance tuning
+      KAFKA_NUM_IO_THREADS: 8
+      KAFKA_NUM_NETWORK_THREADS: 3
+      KAFKA_COMPRESSION_TYPE: lz4
+      KAFKA_NUM_PARTITIONS: 6
+      KAFKA_SOCKET_SEND_BUFFER_BYTES: 1048576
+      KAFKA_SOCKET_RECEIVE_BUFFER_BYTES: 1048576
+      KAFKA_SOCKET_REQUEST_MAX_BYTES: 104857600
     healthcheck:
       test: ["CMD", "kafka-broker-api-versions", "--bootstrap-server", "localhost:9092"]
       interval: 10s
       timeout: 5s
       retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: "2.0"
     volumes:
       - kafka_data:/var/lib/kafka/data
 
@@ -95,6 +108,11 @@ services:
       --lazyfree-lazy-expire yes
       --lazyfree-lazy-server-del yes
       --lazyfree-lazy-user-del yes
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: "1.0"
     volumes:
       - redis_data:/data
     healthcheck:
@@ -172,6 +190,16 @@ services:
       -c effective_cache_size=2GB
       -c work_mem=64MB
       -c maintenance_work_mem=256MB
+      -c shared_buffers=512MB
+      -c max_connections=200
+      -c random_page_cost=1.1
+      -c effective_io_concurrency=200
+      -c checkpoint_completion_target=0.9
+    deploy:
+      resources:
+        limits:
+          memory: 3G
+          cpus: "2.0"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -197,6 +225,15 @@ services:
       plugins.index_state_management.history.enabled: "true"
       # (#46) Anomaly detection
       plugins.anomaly_detection.enabled: "true"
+      # Performance tuning
+      indices.query.bool.max_clause_count: 4096
+      thread_pool.search.queue_size: 2000
+      thread_pool.write.queue_size: 1000
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: "2.0"
     volumes:
       - opensearch_data:/usr/share/opensearch/data
     healthcheck:
@@ -328,7 +365,7 @@ services:
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'
-      - '--storage.tsdb.retention.time=15d'
+      - '--storage.tsdb.retention.time=30d'
       - '--storage.tsdb.min-block-duration=2h'
       - '--storage.tsdb.max-block-duration=2h'
       - '--web.enable-remote-write-receiver'
