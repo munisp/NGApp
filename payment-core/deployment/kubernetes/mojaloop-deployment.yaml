@@ -98,6 +98,8 @@ spec:
         ports:
         - containerPort: 3001
         env:
+        - name: CLEDG_DATABASE__DIALECT
+          value: "pg"
         - name: CLEDG_DATABASE_URI
           value: "postgresql://central_ledger:password@mojaloop-postgres:5432/central_ledger"
         - name: CLEDG_KAFKA_HOST
@@ -154,6 +156,8 @@ spec:
         ports:
         - containerPort: 4002
         env:
+        - name: ALS_DATABASE__DIALECT
+          value: "pg"
         - name: ALS_DATABASE_URI
           value: "postgresql://account_lookup:password@mojaloop-postgres:5432/account_lookup"
         - name: ALS_KAFKA_HOST
@@ -210,6 +214,8 @@ spec:
         ports:
         - containerPort: 3002
         env:
+        - name: QS_DATABASE__DIALECT
+          value: "pg"
         - name: QS_DATABASE_URI
           value: "postgresql://quoting_service:password@mojaloop-postgres:5432/quoting_service"
         - name: QS_KAFKA_HOST
