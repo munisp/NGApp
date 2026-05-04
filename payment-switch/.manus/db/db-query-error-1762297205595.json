@@ -1,0 +1,8 @@
+{
+  "query": "ALTER TABLE saved_comparisons \nADD COLUMN shareToken VARCHAR(64) UNIQUE,\nADD COLUMN isPublic ENUM('0', '1') NOT NULL DEFAULT '0',\nADD COLUMN sharedAt TIMESTAMP;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user NzNswwN3cq6gauf.f2a830aed91f --database QvP5TNHY6Ni4vrN3ohqE9a --execute ALTER TABLE saved_comparisons \nADD COLUMN shareToken VARCHAR(64) UNIQUE,\nADD COLUMN isPublic ENUM('0', '1') NOT NULL DEFAULT '0',\nADD COLUMN sharedAt TIMESTAMP;",
+  "returncode": 1,
+  "logs": [
+    "ERROR 8200 (HY000) at line 1: unsupported add column 'sharetoken' constraint UNIQUE KEY when altering 'QvP5TNHY6Ni4vrN3ohqE9a.saved_comparisons'"
+  ]
+}

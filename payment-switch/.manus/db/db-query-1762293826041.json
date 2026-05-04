@@ -1,0 +1,9 @@
+{
+  "query": "CREATE TABLE IF NOT EXISTS retry_attempt_logs (\n  id INT AUTO_INCREMENT PRIMARY KEY,\n  delivery_log_id INT NOT NULL,\n  attempt_number INT NOT NULL,\n  timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,\n  status_code INT NULL,\n  error_message TEXT NULL,\n  response_body TEXT NULL,\n  duration_ms INT NULL,\n  success BOOLEAN NOT NULL,\n  INDEX idx_delivery_log_id (delivery_log_id)\n);",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user NzNswwN3cq6gauf.f2a830aed91f --database QvP5TNHY6Ni4vrN3ohqE9a --execute CREATE TABLE IF NOT EXISTS retry_attempt_logs (\n  id INT AUTO_INCREMENT PRIMARY KEY,\n  delivery_log_id INT NOT NULL,\n  attempt_number INT NOT NULL,\n  timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,\n  status_code INT NULL,\n  error_message TEXT NULL,\n  response_body TEXT NULL,\n  duration_ms INT NULL,\n  success BOOLEAN NOT NULL,\n  INDEX idx_delivery_log_id (delivery_log_id)\n);",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 168
+}

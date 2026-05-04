@@ -1,0 +1,31 @@
+sequenceDiagram
+    participant Customer as Customer
+    participant POS as POS Terminal
+    participant Gateway as Payment Gateway
+    participant Fraud as Fraud Detection
+    participant Bio as Biometric Auth
+    participant VPA as VPA Service
+    participant Workflow as Workflow Orchestrator
+    participant Settlement as Settlement Service
+    participant Notify as Notification Service
+    participant Merchant as Merchant
+    
+    Customer->>POS: Scan QR Code
+    POS->>Gateway: POST /api/v1/payments/initiate
+    Gateway->>Fraud: Check Fraud Score
+    Fraud-->>Gateway: Score: 0.08 (LOW RISK)
+    Gateway->>Bio: Request Biometric Auth
+    Bio->>Customer: Fingerprint Prompt
+    Customer-->>Bio: Provide Fingerprint
+    Bio-->>Gateway: Auth Successful
+    Gateway->>VPA: Resolve VPA
+    VPA-->>Gateway: Account Details
+    Gateway->>Workflow: Start Payment Workflow
+    Workflow->>Settlement: Record for Settlement
+    Settlement-->>Workflow: Recorded
+    Workflow-->>Gateway: Payment Completed
+    Gateway->>Notify: Send Notifications
+    Notify->>Customer: SMS: Payment Successful
+    Notify->>Merchant: Email: Payment Received
+    Gateway-->>POS: Success Response
+    POS-->>Customer: Print Receipt

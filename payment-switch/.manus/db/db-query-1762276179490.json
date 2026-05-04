@@ -1,0 +1,9 @@
+{
+  "query": "INSERT INTO ocr_correction_settings (setting_key, setting_value, description) VALUES \n('global_min_confidence', '80', 'Minimum confidence score (0-100) required to automatically apply corrections'),\n('suggestion_threshold', '50', 'Confidence score below which corrections are shown as suggestions only'),\n('auto_apply_enabled', 'true', 'Whether to automatically apply corrections above threshold')\nON DUPLICATE KEY UPDATE setting_value=VALUES(setting_value)",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user NzNswwN3cq6gauf.f2a830aed91f --database QvP5TNHY6Ni4vrN3ohqE9a --execute INSERT INTO ocr_correction_settings (setting_key, setting_value, description) VALUES \n('global_min_confidence', '80', 'Minimum confidence score (0-100) required to automatically apply corrections'),\n('suggestion_threshold', '50', 'Confidence score below which corrections are shown as suggestions only'),\n('auto_apply_enabled', 'true', 'Whether to automatically apply corrections above threshold')\nON DUPLICATE KEY UPDATE setting_value=VALUES(setting_value)",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 60
+}

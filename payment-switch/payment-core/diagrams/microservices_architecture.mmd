@@ -1,0 +1,103 @@
+graph TB
+    subgraph "Client Layer"
+        P2P[P2P App<br/>Venmo, Zelle]
+        P2M[P2M App<br/>Apple Pay, Alipay]
+        P2B[P2B Portal<br/>Bill Payment]
+        B2P[B2P System<br/>Payroll]
+        B2B[B2B Portal<br/>ERP Integration]
+    end
+    
+    subgraph "API Gateway Layer"
+        UAPI[Unified API Gateway]
+    end
+    
+    subgraph "Core Services"
+        PG[Payment Gateway]
+        FDS[Fraud Detection<br/>Service]
+        WO[Workflow<br/>Orchestrator]
+        SS[Settlement<br/>Service]
+        NS[Notification<br/>Service]
+    end
+    
+    subgraph "Transaction-Specific Services"
+        SGS[Social Graph<br/>Service]
+        POSS[POS Service]
+        QRS[QR Code<br/>Service]
+        BAS[Biometric Auth<br/>Service]
+        VPAS[VPA Service]
+        SUBS[Subscription<br/>Service]
+        INV[Invoicing<br/>Service]
+        ISS[Instant Settlement<br/>Service]
+        BPS[Batch Processing<br/>Service]
+        PS[Payroll<br/>Service]
+        COS[Corporate<br/>Onboarding]
+        ERPS[ERP Integration<br/>Service]
+        AWS[Approval Workflow<br/>Service]
+    end
+    
+    subgraph "Data Layer"
+        DB[(PostgreSQL)]
+        REDIS[(Redis Cache)]
+        TB[(TigerBeetle<br/>Ledger)]
+    end
+    
+    P2P --> UAPI
+    P2M --> UAPI
+    P2B --> UAPI
+    B2P --> UAPI
+    B2B --> UAPI
+    
+    UAPI --> PG
+    
+    PG --> FDS
+    PG --> WO
+    PG --> NS
+    
+    WO --> SS
+    WO --> ISS
+    
+    P2P -.-> SGS
+    P2M -.-> POSS
+    P2M -.-> QRS
+    P2M -.-> BAS
+    P2M -.-> VPAS
+    P2B -.-> SUBS
+    P2B -.-> INV
+    B2P -.-> BPS
+    B2P -.-> PS
+    B2B -.-> COS
+    B2B -.-> ERPS
+    B2B -.-> AWS
+    
+    PG --> DB
+    FDS --> DB
+    SS --> DB
+    WO --> DB
+    
+    PG --> REDIS
+    FDS --> REDIS
+    
+    SS --> TB
+    ISS --> TB
+    
+    style P2P fill:#e1f5ff
+    style P2M fill:#e1f5ff
+    style P2B fill:#e1f5ff
+    style B2P fill:#e1f5ff
+    style B2B fill:#e1f5ff
+    style UAPI fill:#fff4e6
+    style PG fill:#e8f5e9
+    style FDS fill:#e8f5e9
+    style WO fill:#e8f5e9
+    style SS fill:#e8f5e9
+    style NS fill:#ffebee
+    style SGS fill:#ffebee
+    style POSS fill:#ffebee
+    style QRS fill:#ffebee
+    style SUBS fill:#ffebee
+    style INV fill:#ffebee
+    style BPS fill:#ffebee
+    style PS fill:#ffebee
+    style COS fill:#ffebee
+    style ERPS fill:#ffebee
+    style AWS fill:#ffebee

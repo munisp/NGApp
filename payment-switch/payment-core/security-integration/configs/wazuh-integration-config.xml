@@ -1,0 +1,12 @@
+<!--
+  Wazuh Integration Configuration for OpenCTI
+  Add this to /var/ossec/etc/ossec.conf on the Wazuh manager
+-->
+
+<integration>
+  <name>custom-opencti</name>
+  <hook_url>/var/ossec/integrations/wazuh_opencti_integration.py</hook_url>
+  <level>12</level>
+  <group>opencti_integration</group>
+  <alert_format>json</alert_format>
+</integration>

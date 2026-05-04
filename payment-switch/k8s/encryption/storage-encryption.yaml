@@ -1,0 +1,250 @@
+# Storage Encryption Configuration for PayGate
+# Configures encrypted StorageClasses for all persistent volumes
+
+---
+# Encrypted StorageClass for PostgreSQL
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: paygate-postgres-encrypted
+  labels:
+    app.kubernetes.io/part-of: paygate
+    encryption: enabled
+provisioner: kubernetes.io/aws-ebs  # Change based on cloud provider
+parameters:
+  type: gp3
+  encrypted: "true"
+  kmsKeyId: ${KMS_KEY_ARN}  # AWS KMS key ARN
+  fsType: ext4
+reclaimPolicy: Retain
+allowVolumeExpansion: true
+volumeBindingMode: WaitForFirstConsumer
+
+---
+# Encrypted StorageClass for TigerBeetle
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: paygate-tigerbeetle-encrypted
+  labels:
+    app.kubernetes.io/part-of: paygate
+    encryption: enabled
+provisioner: kubernetes.io/aws-ebs
+parameters:
+  type: io2
+  iopsPerGB: "50"
+  encrypted: "true"
+  kmsKeyId: ${KMS_KEY_ARN}
+  fsType: ext4
+reclaimPolicy: Retain
+allowVolumeExpansion: true
+volumeBindingMode: WaitForFirstConsumer
+
+---
+# Encrypted StorageClass for Kafka
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: paygate-kafka-encrypted
+  labels:
+    app.kubernetes.io/part-of: paygate
+    encryption: enabled
+provisioner: kubernetes.io/aws-ebs
+parameters:
+  type: gp3
+  throughput: "250"
+  encrypted: "true"
+  kmsKeyId: ${KMS_KEY_ARN}
+  fsType: ext4
+reclaimPolicy: Retain
+allowVolumeExpansion: true
+volumeBindingMode: WaitForFirstConsumer
+
+---
+# Encrypted StorageClass for Redis (if persistence enabled)
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: paygate-redis-encrypted
+  labels:
+    app.kubernetes.io/part-of: paygate
+    encryption: enabled
+provisioner: kubernetes.io/aws-ebs
+parameters:
+  type: gp3
+  encrypted: "true"
+  kmsKeyId: ${KMS_KEY_ARN}
+  fsType: ext4
+reclaimPolicy: Delete
+allowVolumeExpansion: true
+volumeBindingMode: WaitForFirstConsumer
+
+---
+# Encrypted StorageClass for RustFS
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: paygate-rustfs-encrypted
+  labels:
+    app.kubernetes.io/part-of: paygate
+    encryption: enabled
+provisioner: kubernetes.io/aws-ebs
+parameters:
+  type: gp3
+  throughput: "500"
+  encrypted: "true"
+  kmsKeyId: ${KMS_KEY_ARN}
+  fsType: ext4
+reclaimPolicy: Retain
+allowVolumeExpansion: true
+volumeBindingMode: WaitForFirstConsumer
+
+---
+# Encrypted StorageClass for Vault
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: paygate-vault-encrypted
+  labels:
+    app.kubernetes.io/part-of: paygate
+    encryption: enabled
+provisioner: kubernetes.io/aws-ebs
+parameters:
+  type: gp3
+  encrypted: "true"
+  kmsKeyId: ${KMS_KEY_ARN}
+  fsType: ext4
+reclaimPolicy: Retain
+allowVolumeExpansion: true
+volumeBindingMode: WaitForFirstConsumer
+
+---
+# GCP Alternative: Encrypted StorageClass using CMEK
+# Uncomment if using GKE
+# apiVersion: storage.k8s.io/v1
+# kind: StorageClass
+# metadata:
+#   name: paygate-encrypted-gcp
+#   labels:
+#     app.kubernetes.io/part-of: paygate
+#     encryption: enabled
+# provisioner: pd.csi.storage.gke.io
+# parameters:
+#   type: pd-ssd
+#   disk-encryption-kms-key: projects/${PROJECT_ID}/locations/${REGION}/keyRings/${KEY_RING}/cryptoKeys/${KEY_NAME}
+# reclaimPolicy: Retain
+# allowVolumeExpansion: true
+# volumeBindingMode: WaitForFirstConsumer
+
+---
+# Azure Alternative: Encrypted StorageClass using CMK
+# Uncomment if using AKS
+# apiVersion: storage.k8s.io/v1
+# kind: StorageClass
+# metadata:
+#   name: paygate-encrypted-azure
+#   labels:
+#     app.kubernetes.io/part-of: paygate
+#     encryption: enabled
+# provisioner: disk.csi.azure.com
+# parameters:
+#   skuName: Premium_LRS
+#   diskEncryptionSetID: /subscriptions/${SUBSCRIPTION_ID}/resourceGroups/${RG}/providers/Microsoft.Compute/diskEncryptionSets/${DES_NAME}
+# reclaimPolicy: Retain
+# allowVolumeExpansion: true
+# volumeBindingMode: WaitForFirstConsumer
+
+---
+# PersistentVolumeClaim for PostgreSQL with encryption
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgres-data-encrypted
+  namespace: data
+  labels:
+    app: postgres
+    app.kubernetes.io/part-of: paygate
+    encryption: enabled
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: paygate-postgres-encrypted
+  resources:
+    requests:
+      storage: 100Gi
+
+---
+# PersistentVolumeClaim for TigerBeetle with encryption
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: tigerbeetle-data-encrypted
+  namespace: data
+  labels:
+    app: tigerbeetle
+    app.kubernetes.io/part-of: paygate
+    encryption: enabled
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: paygate-tigerbeetle-encrypted
+  resources:
+    requests:
+      storage: 50Gi
+
+---
+# PersistentVolumeClaim for Kafka with encryption
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: kafka-data-encrypted
+  namespace: data
+  labels:
+    app: kafka
+    app.kubernetes.io/part-of: paygate
+    encryption: enabled
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: paygate-kafka-encrypted
+  resources:
+    requests:
+      storage: 200Gi
+
+---
+# PersistentVolumeClaim for RustFS with encryption
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: rustfs-data-encrypted
+  namespace: data
+  labels:
+    app: rustfs
+    app.kubernetes.io/part-of: paygate
+    encryption: enabled
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: paygate-rustfs-encrypted
+  resources:
+    requests:
+      storage: 500Gi
+
+---
+# PersistentVolumeClaim for Vault with encryption
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: vault-data-encrypted
+  namespace: security
+  labels:
+    app: vault
+    app.kubernetes.io/part-of: paygate
+    encryption: enabled
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: paygate-vault-encrypted
+  resources:
+    requests:
+      storage: 10Gi

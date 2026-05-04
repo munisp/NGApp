@@ -1,0 +1,1 @@
+-- Migration 0002: Already applied

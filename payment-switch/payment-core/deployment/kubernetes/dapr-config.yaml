@@ -1,0 +1,139 @@
+apiVersion: dapr.io/v1alpha1
+kind: Configuration
+metadata:
+  name: dapr-config
+  namespace: payment-switch
+spec:
+  tracing:
+    samplingRate: "1"
+    zipkin:
+      endpointAddress: "http://zipkin.payment-switch-monitoring:9411/api/v2/spans"
+  metric:
+    enabled: true
+  mtls:
+    enabled: true
+    workloadCertTTL: "24h"
+    allowedClockSkew: "15m"
+---
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: statestore
+  namespace: payment-switch
+spec:
+  type: state.redis
+  version: v1
+  metadata:
+  - name: redisHost
+    value: redis-master.payment-switch:6379
+  - name: redisPassword
+    secretKeyRef:
+      name: redis-secret
+      key: password
+  - name: enableTLS
+    value: "true"
+---
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: pubsub
+  namespace: payment-switch
+spec:
+  type: pubsub.kafka
+  version: v1
+  metadata:
+  - name: brokers
+    value: "kafka-0.kafka.payment-switch:9092,kafka-1.kafka.payment-switch:9092,kafka-2.kafka.payment-switch:9092"
+  - name: authType
+    value: "none"
+  - name: consumerGroup
+    value: "payment-switch-group"
+---
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: secretstore
+  namespace: payment-switch
+spec:
+  type: secretstores.kubernetes
+  version: v1
+  metadata:
+  - name: vaultName
+    value: "payment-switch-vault"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-master
+  namespace: payment-switch
+spec:
+  ports:
+  - port: 6379
+    targetPort: 6379
+  selector:
+    app: redis
+    role: master
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: redis
+  namespace: payment-switch
+spec:
+  serviceName: redis
+  replicas: 3
+  selector:
+    matchLabels:
+      app: redis
+  template:
+    metadata:
+      labels:
+        app: redis
+        role: master
+    spec:
+      containers:
+      - name: redis
+        image: redis:7.2-alpine
+        ports:
+        - containerPort: 6379
+          name: redis
+        command:
+        - redis-server
+        - --requirepass
+        - $(REDIS_PASSWORD)
+        - --appendonly
+        - "yes"
+        env:
+        - name: REDIS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: redis-secret
+              key: password
+        volumeMounts:
+        - name: redis-data
+          mountPath: /data
+        resources:
+          requests:
+            memory: "2Gi"
+            cpu: "1000m"
+          limits:
+            memory: "4Gi"
+            cpu: "2000m"
+  volumeClaimTemplates:
+  - metadata:
+      name: redis-data
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      storageClassName: "fast-ssd"
+      resources:
+        requests:
+          storage: 20Gi
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: redis-secret
+  namespace: payment-switch
+type: Opaque
+data:
+  password: cGF5bWVudC1zd2l0Y2gtcmVkaXMtcGFzc3dvcmQ=  # base64 encoded password

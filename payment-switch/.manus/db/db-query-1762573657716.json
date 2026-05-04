@@ -1,0 +1,9 @@
+{
+  "query": "CREATE TABLE IF NOT EXISTS `rate_alert_history` (\n  `id` int AUTO_INCREMENT PRIMARY KEY,\n  `alert_id` int NOT NULL,\n  `user_id` int NOT NULL,\n  `from_currency` varchar(10) NOT NULL,\n  `to_currency` varchar(10) NOT NULL,\n  `target_rate` decimal(20,8) NOT NULL,\n  `triggered_rate` decimal(20,8) NOT NULL,\n  `condition` varchar(20) NOT NULL,\n  `notifications_sent` text,\n  `notification_status` enum('sent','failed','pending') NOT NULL,\n  `triggered_at` timestamp DEFAULT CURRENT_TIMESTAMP NOT NULL,\n  FOREIGN KEY (`alert_id`) REFERENCES `rate_alerts`(`id`),\n  FOREIGN KEY (`user_id`) REFERENCES `users`(`id`)\n)",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user NzNswwN3cq6gauf.f2a830aed91f --database QvP5TNHY6Ni4vrN3ohqE9a --execute CREATE TABLE IF NOT EXISTS `rate_alert_history` (\n  `id` int AUTO_INCREMENT PRIMARY KEY,\n  `alert_id` int NOT NULL,\n  `user_id` int NOT NULL,\n  `from_currency` varchar(10) NOT NULL,\n  `to_currency` varchar(10) NOT NULL,\n  `target_rate` decimal(20,8) NOT NULL,\n  `triggered_rate` decimal(20,8) NOT NULL,\n  `condition` varchar(20) NOT NULL,\n  `notifications_sent` text,\n  `notification_status` enum('sent','failed','pending') NOT NULL,\n  `triggered_at` timestamp DEFAULT CURRENT_TIMESTAMP NOT NULL,\n  FOREIGN KEY (`alert_id`) REFERENCES `rate_alerts`(`id`),\n  FOREIGN KEY (`user_id`) REFERENCES `users`(`id`)\n)",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 283
+}

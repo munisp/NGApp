@@ -1,0 +1,399 @@
+---
+# Prometheus Alerting Rules for Lakehouse Components
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-rules
+  namespace: monitoring
+  labels:
+    app: prometheus
+data:
+  lakehouse-alerts.yml: |
+    groups:
+      - name: flink_alerts
+        interval: 30s
+        rules:
+          - alert: FlinkJobDown
+            expr: flink_jobmanager_numRunningJobs == 0
+            for: 5m
+            labels:
+              severity: critical
+              component: flink
+            annotations:
+              summary: "Flink job is down"
+              description: "No Flink jobs are running for more than 5 minutes"
+          
+          - alert: FlinkHighCheckpointDuration
+            expr: flink_jobmanager_job_lastCheckpointDuration > 60000
+            for: 10m
+            labels:
+              severity: warning
+              component: flink
+            annotations:
+              summary: "Flink checkpoint duration is high"
+              description: "Checkpoint duration is {{ $value }}ms, which is above 60s threshold"
+          
+          - alert: FlinkTaskManagerDown
+            expr: flink_jobmanager_numRegisteredTaskManagers < 3
+            for: 5m
+            labels:
+              severity: critical
+              component: flink
+            annotations:
+              summary: "Flink TaskManager count is low"
+              description: "Only {{ $value }} TaskManagers are registered, expected at least 3"
+      
+      - name: spark_alerts
+        interval: 30s
+        rules:
+          - alert: SparkExecutorFailure
+            expr: rate(spark_executor_failedTasks_total[5m]) > 0.1
+            for: 5m
+            labels:
+              severity: warning
+              component: spark
+            annotations:
+              summary: "Spark executor failures detected"
+              description: "Executor failure rate is {{ $value }} per second"
+          
+          - alert: SparkHighMemoryUsage
+            expr: (spark_executor_memoryUsed_bytes / spark_executor_memoryMax_bytes) > 0.9
+            for: 10m
+            labels:
+              severity: warning
+              component: spark
+            annotations:
+              summary: "Spark executor memory usage is high"
+              description: "Memory usage is {{ $value | humanizePercentage }}"
+      
+      - name: ray_alerts
+        interval: 30s
+        rules:
+          - alert: RayNodeDown
+            expr: ray_cluster_active_nodes < 5
+            for: 5m
+            labels:
+              severity: critical
+              component: ray
+            annotations:
+              summary: "Ray cluster nodes are down"
+              description: "Only {{ $value }} nodes are active, expected at least 5"
+          
+          - alert: RayHighCPUUsage
+            expr: ray_node_cpu_utilization > 0.9
+            for: 10m
+            labels:
+              severity: warning
+              component: ray
+            annotations:
+              summary: "Ray node CPU usage is high"
+              description: "CPU utilization is {{ $value | humanizePercentage }}"
+      
+      - name: rustfs_alerts
+        interval: 30s
+        rules:
+          - alert: MinIOHighDiskUsage
+            expr: (rustfs_disk_storage_used_bytes / rustfs_disk_storage_total_bytes) > 0.85
+            for: 10m
+            labels:
+              severity: warning
+              component: rustfs
+            annotations:
+              summary: "MinIO disk usage is high"
+              description: "Disk usage is {{ $value | humanizePercentage }}"
+          
+          - alert: MinIONodeDown
+            expr: up{job="rustfs"} == 0
+            for: 5m
+            labels:
+              severity: critical
+              component: rustfs
+            annotations:
+              summary: "MinIO node is down"
+              description: "MinIO node {{ $labels.instance }} has been down for more than 5 minutes"
+      
+      - name: kubernetes_alerts
+        interval: 30s
+        rules:
+          - alert: PodCrashLooping
+            expr: rate(kube_pod_container_status_restarts_total[15m]) > 0
+            for: 5m
+            labels:
+              severity: warning
+              component: kubernetes
+            annotations:
+              summary: "Pod is crash looping"
+              description: "Pod {{ $labels.namespace }}/{{ $labels.pod }} is restarting frequently"
+          
+          - alert: NodeNotReady
+            expr: kube_node_status_condition{condition="Ready",status="true"} == 0
+            for: 5m
+            labels:
+              severity: critical
+              component: kubernetes
+            annotations:
+              summary: "Node is not ready"
+              description: "Node {{ $labels.node }} has been not ready for more than 5 minutes"
+          
+          - alert: HighMemoryUsage
+            expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) > 0.9
+            for: 10m
+            labels:
+              severity: warning
+              component: kubernetes
+            annotations:
+              summary: "Node memory usage is high"
+              description: "Memory usage on {{ $labels.instance }} is {{ $value | humanizePercentage }}"
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: alertmanager-config
+  namespace: monitoring
+  labels:
+    app: alertmanager
+data:
+  alertmanager.yml: |
+    global:
+      resolve_timeout: 5m
+      
+      # Slack configuration
+      slack_api_url: 'https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK'
+      
+      # PagerDuty configuration
+      pagerduty_url: 'https://events.pagerduty.com/v2/enqueue'
+    
+    # Templates
+    templates:
+      - '/etc/alertmanager/templates/*.tmpl'
+    
+    # Route tree
+    route:
+      receiver: 'default'
+      group_by: ['alertname', 'cluster', 'service']
+      group_wait: 10s
+      group_interval: 10s
+      repeat_interval: 12h
+      
+      routes:
+        # Critical alerts go to PagerDuty
+        - match:
+            severity: critical
+          receiver: pagerduty
+          continue: true
+        
+        # Warning alerts go to Slack
+        - match:
+            severity: warning
+          receiver: slack
+        
+        # Component-specific routes
+        - match:
+            component: flink
+          receiver: flink-team
+        
+        - match:
+            component: spark
+          receiver: spark-team
+        
+        - match:
+            component: ray
+          receiver: ray-team
+    
+    # Inhibition rules
+    inhibit_rules:
+      - source_match:
+          severity: 'critical'
+        target_match:
+          severity: 'warning'
+        equal: ['alertname', 'cluster', 'service']
+    
+    # Receivers
+    receivers:
+      - name: 'default'
+        email_configs:
+          - to: 'ops-team@example.com'
+            from: 'alertmanager@example.com'
+            smarthost: 'smtp.example.com:587'
+            auth_username: 'alertmanager@example.com'
+            auth_password: 'PLACEHOLDER_INJECT_FROM_VAULT'
+      
+      - name: 'slack'
+        slack_configs:
+          - channel: '#lakehouse-alerts'
+            title: 'Lakehouse Alert'
+            text: '{{ range .Alerts }}{{ .Annotations.description }}{{ end }}'
+      
+      - name: 'pagerduty'
+        pagerduty_configs:
+          - service_key: 'YOUR_PAGERDUTY_SERVICE_KEY'
+      
+      - name: 'flink-team'
+        slack_configs:
+          - channel: '#flink-alerts'
+            title: 'Flink Alert'
+            text: '{{ range .Alerts }}{{ .Annotations.description }}{{ end }}'
+      
+      - name: 'spark-team'
+        slack_configs:
+          - channel: '#spark-alerts'
+            title: 'Spark Alert'
+            text: '{{ range .Alerts }}{{ .Annotations.description }}{{ end }}'
+      
+      - name: 'ray-team'
+        slack_configs:
+          - channel: '#ray-alerts'
+            title: 'Ray Alert'
+            text: '{{ range .Alerts }}{{ .Annotations.description }}{{ end }}'
+
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: alertmanager
+  namespace: monitoring
+  labels:
+    app: alertmanager
+spec:
+  serviceName: alertmanager
+  replicas: 3
+  selector:
+    matchLabels:
+      app: alertmanager
+  template:
+    metadata:
+      labels:
+        app: alertmanager
+    spec:
+      securityContext:
+        runAsUser: 65534
+        runAsGroup: 65534
+        fsGroup: 65534
+      
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchLabels:
+                  app: alertmanager
+              topologyKey: kubernetes.io/hostname
+      
+      containers:
+        - name: alertmanager
+          image: prom/alertmanager:v0.26.0
+          imagePullPolicy: IfNotPresent
+          
+          args:
+            - '--config.file=/etc/alertmanager/alertmanager.yml'
+            - '--storage.path=/alertmanager'
+            - '--cluster.listen-address=0.0.0.0:9094'
+            - '--cluster.peer=alertmanager-0.alertmanager.monitoring.svc:9094'
+            - '--cluster.peer=alertmanager-1.alertmanager.monitoring.svc:9094'
+            - '--cluster.peer=alertmanager-2.alertmanager.monitoring.svc:9094'
+          
+          ports:
+            - name: web
+              containerPort: 9093
+            - name: cluster
+              containerPort: 9094
+          
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 200m
+              memory: 512Mi
+          
+          livenessProbe:
+            httpGet:
+              path: /-/healthy
+              port: 9093
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          
+          readinessProbe:
+            httpGet:
+              path: /-/ready
+              port: 9093
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 2
+          
+          volumeMounts:
+            - name: config
+              mountPath: /etc/alertmanager
+            - name: data
+              mountPath: /alertmanager
+      
+      volumes:
+        - name: config
+          configMap:
+            name: alertmanager-config
+  
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: fast-ssd
+        resources:
+          requests:
+            storage: 10Gi
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: alertmanager
+  namespace: monitoring
+  labels:
+    app: alertmanager
+spec:
+  type: ClusterIP
+  clusterIP: None
+  selector:
+    app: alertmanager
+  ports:
+    - name: web
+      port: 9093
+      targetPort: 9093
+    - name: cluster
+      port: 9094
+      targetPort: 9094
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: alertmanager-external
+  namespace: monitoring
+  labels:
+    app: alertmanager
+spec:
+  type: LoadBalancer
+  selector:
+    app: alertmanager
+  ports:
+    - name: web
+      port: 9093
+      targetPort: 9093
+
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: alertmanager-pdb
+  namespace: monitoring
+  labels:
+    app: alertmanager
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: alertmanager

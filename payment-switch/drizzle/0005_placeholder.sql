@@ -1,0 +1,1 @@
+-- Migration 0005: Already applied

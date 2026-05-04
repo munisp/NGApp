@@ -1,0 +1,179 @@
+syntax = "proto3";
+
+package account;
+
+option go_package = "github.com/payment-switch/go-services/pkg/grpc/account";
+
+import "google/protobuf/timestamp.proto";
+
+// Account Service - High-performance gRPC service for account management
+service AccountService {
+  // GetAccount retrieves account information
+  rpc GetAccount(GetAccountRequest) returns (GetAccountResponse);
+  
+  // GetAccounts retrieves multiple accounts in a batch
+  rpc GetAccounts(GetAccountsRequest) returns (GetAccountsResponse);
+  
+  // CreateQuote creates a payment quote
+  rpc CreateQuote(CreateQuoteRequest) returns (CreateQuoteResponse);
+  
+  // GetQuote retrieves a quote by ID
+  rpc GetQuote(GetQuoteRequest) returns (GetQuoteResponse);
+  
+  // RecordTransaction records a transaction in the database
+  rpc RecordTransaction(RecordTransactionRequest) returns (RecordTransactionResponse);
+  
+  // UpdateTransactionStatus updates the status of a transaction
+  rpc UpdateTransactionStatus(UpdateTransactionStatusRequest) returns (UpdateTransactionStatusResponse);
+  
+  // GetTransaction retrieves a transaction by ID
+  rpc GetTransaction(GetTransactionRequest) returns (GetTransactionResponse);
+}
+
+// AccountInfo represents account information
+message AccountInfo {
+  string account_id = 1;
+  string participant_id = 2;
+  string currency = 3;
+  string available_balance = 4;
+  string pending_balance = 5;
+  string total_balance = 6;
+  google.protobuf.Timestamp last_synced_at = 7;
+}
+
+// Quote represents a payment quote
+message Quote {
+  string quote_id = 1;
+  string transaction_id = 2;
+  string payer_participant_id = 3;
+  string payee_participant_id = 4;
+  string amount = 5;
+  string currency = 6;
+  string payee_receive_amount = 7;
+  string payee_fee_amount = 8;
+  string payee_commission = 9;
+  google.protobuf.Timestamp expiration = 10;
+  string status = 11;
+}
+
+// Transaction represents a transaction record
+message Transaction {
+  string transaction_id = 1;
+  string tigerbeetle_transfer_id = 2;
+  string payer_id = 3;
+  string payer_participant_id = 4;
+  string payee_id = 5;
+  string payee_participant_id = 6;
+  string amount = 7;
+  string currency = 8;
+  string transaction_type = 9;
+  string channel = 10;
+  string status = 11;
+  string error_code = 12;
+  string error_description = 13;
+  google.protobuf.Timestamp initiated_at = 14;
+  google.protobuf.Timestamp completed_at = 15;
+  map<string, string> metadata = 16;
+}
+
+// GetAccountRequest
+message GetAccountRequest {
+  string account_id = 1;
+}
+
+// GetAccountResponse
+message GetAccountResponse {
+  bool success = 1;
+  string message = 2;
+  AccountInfo account = 3;
+}
+
+// GetAccountsRequest
+message GetAccountsRequest {
+  repeated string account_ids = 1;
+}
+
+// GetAccountsResponse
+message GetAccountsResponse {
+  bool success = 1;
+  string message = 2;
+  repeated AccountInfo accounts = 3;
+}
+
+// CreateQuoteRequest
+message CreateQuoteRequest {
+  string quote_id = 1;
+  string transaction_id = 2;
+  string payer_participant_id = 3;
+  string payee_participant_id = 4;
+  string amount = 5;
+  string currency = 6;
+  int32 expiration_minutes = 7;  // Quote expiration in minutes
+}
+
+// CreateQuoteResponse
+message CreateQuoteResponse {
+  bool success = 1;
+  string message = 2;
+  Quote quote = 3;
+}
+
+// GetQuoteRequest
+message GetQuoteRequest {
+  string quote_id = 1;
+}
+
+// GetQuoteResponse
+message GetQuoteResponse {
+  bool success = 1;
+  string message = 2;
+  Quote quote = 3;
+}
+
+// RecordTransactionRequest
+message RecordTransactionRequest {
+  string transaction_id = 1;
+  string payer_id = 2;
+  string payer_participant_id = 3;
+  string payee_id = 4;
+  string payee_participant_id = 5;
+  string amount = 6;
+  string currency = 7;
+  string transaction_type = 8;
+  string channel = 9;
+  string status = 10;
+  map<string, string> metadata = 11;
+}
+
+// RecordTransactionResponse
+message RecordTransactionResponse {
+  bool success = 1;
+  string message = 2;
+  google.protobuf.Timestamp initiated_at = 3;
+}
+
+// UpdateTransactionStatusRequest
+message UpdateTransactionStatusRequest {
+  string transaction_id = 1;
+  string status = 2;
+  string error_code = 3;
+  string error_description = 4;
+}
+
+// UpdateTransactionStatusResponse
+message UpdateTransactionStatusResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+// GetTransactionRequest
+message GetTransactionRequest {
+  string transaction_id = 1;
+}
+
+// GetTransactionResponse
+message GetTransactionResponse {
+  bool success = 1;
+  string message = 2;
+  Transaction transaction = 3;
+}
