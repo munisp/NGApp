@@ -50,198 +50,219 @@ import ThemeToggle from "@/components/ThemeToggle";
 import { WhatsNewModal } from "@/components/WhatsNewModal";
 import GlobalSearchWidget from "@/components/GlobalSearch";
 
-const menuItems = [
-  { icon: LayoutDashboard, label: "Gov Dashboard", path: "/", layer: "L6" },
-  { icon: Search, label: "Discovery Engine", path: "/discovery", layer: "L1" },
-  { icon: Database, label: "Data Catalog", path: "/catalog", layer: "L2" },
-  { icon: Scale, label: "Compliance Engine", path: "/compliance", layer: "L3" },
-  { icon: Shield, label: "SIEM & Audit", path: "/siem", layer: "L4" },
-  { icon: Network, label: "Network DPI", path: "/network", layer: "L5" },
-  { icon: Wallet, label: "Financial Enforcement", path: "/financial", layer: "FIN" },
-  { icon: Gavel, label: "Enforcement Cases", path: "/enforcement-cases", layer: "ENF" },
-  { icon: Waves, label: "Streaming Events", path: "/streaming", layer: "STR" },
-  { icon: Zap, label: "Event Bus Monitor", path: "/event-bus", layer: "EVT" },
-  { icon: Database, label: "Ledger Explorer", path: "/ledger", layer: "TB" },
-  { icon: Bot, label: "AI Advisor", path: "/ai-assistant", layer: "AI" },
-  { icon: Building2, label: "Organizations", path: "/organizations", layer: "ORG" },
-  { icon: Users, label: "Role Management", path: "/roles", layer: "IAM" },
-  { icon: Cpu, label: "Worker Processes", path: "/workers", layer: "SYS" },
-  { icon: GitBranch, label: "BGP Routes", path: "/bgp", layer: "L1" },
-  { icon: Activity, label: "Temporal Workflows", path: "/temporal", layer: "WF" },
-  { icon: BarChart3, label: "Prometheus Metrics", path: "/metrics", layer: "OBS" },
-  { icon: HardDrive, label: "Arkime PCAP", path: "/pcap", layer: "L5" },
-  { icon: Globe, label: "Org Portal", path: "/portal", layer: "PRT" },
-  { icon: ClipboardCheck, label: "Portal Review", path: "/portal-review", layer: "REV" },
-  { icon: HandMetal, label: "Consent Mgmt", path: "/consent", layer: "CPL" },
-  { icon: AlertTriangle, label: "Breach Notification", path: "/breach-notification", layer: "CPL" },
-  { icon: UserCheck, label: "DPO Registry", path: "/dpo-registry", layer: "CPL" },
-  { icon: ShieldCheck, label: "DPO Workbench", path: "/dpo-dashboard", layer: "CPL" },
-  { icon: ClipboardType, label: "DPIA", path: "/dpia", layer: "CPL" },
-  { icon: ScrollText, label: "ROPA Records", path: "/ropa", layer: "CPL" },
-  { icon: Timer, label: "Retention Policies", path: "/retention", layer: "CPL" },
-  { icon: FileBarChart, label: "DPO Reports", path: "/dpo-reports", layer: "CPL" },
-  { icon: Landmark, label: "Audit Returns", path: "/car", layer: "CPL" },
-  { icon: Globe, label: "Adequacy Registry", path: "/adequacy", layer: "CPL" },
-  { icon: FileKey, label: "Privacy Notices", path: "/privacy-notices", layer: "CPL" },
-  { icon: Cookie, label: "Cookie Consent", path: "/cookie-consent", layer: "CPL" },
-  { icon: Fingerprint, label: "Automated Decisions", path: "/automated-decisions", layer: "CPL" },
-  { icon: Baby, label: "Parental Consent", path: "/parental-consent", layer: "CPL" },
-  { icon: GraduationCap, label: "Staff Training", path: "/staff-training", layer: "CPL" },
-  { icon: ArrowLeftRight, label: "Transfer Instruments", path: "/transfer-instruments", layer: "CPL" },
-  { icon: Download, label: "Data Export", path: "/data-export", layer: "CPL" },
-  { icon: FileLock2, label: "Data Processing Agrmts", path: "/dpa", layer: "CPL" },
-  { icon: Gauge, label: "DCPMI Thresholds", path: "/dcpmi", layer: "CPL" },
-  { icon: CheckSquare, label: "Transfer Approvals", path: "/transfers", layer: "GOV" },
-  { icon: Radio, label: "Continuous Monitoring", path: "/monitoring", layer: "MON" },
-  { icon: Layers, label: "Orchestration Layer", path: "/orchestration", layer: "ORC" },
-  { icon: Trophy, label: "Compliance Leaderboard", path: "/leaderboard", layer: "LDR" },
-  { icon: BadgeCheck, label: "Verify Certificate", path: "/verify", layer: "VRF" },
-  { icon: BookOpen, label: "API Documentation", path: "/api-docs", layer: "API" },
-  { icon: FileText, label: "Regulatory Reports", path: "/reports", layer: "RPT" },
-  { icon: Search, label: "Status Tracker", path: "/status", layer: "STS" },
-  { icon: ClipboardList, label: "Audit Log", path: "/audit-log", layer: "LOG" },
-  { icon: FileCode2, label: "Policy Templates", path: "/policy-templates", layer: "POL" },
-  { icon: BrainCircuit, label: "AI Governance", path: "/ai-governance", layer: "AIG" },
-  { icon: PackageCheck, label: "Evidence Packages", path: "/evidence", layer: "EVD" },
-  { icon: FolderTree, label: "Sector Management", path: "/sectors", layer: "SEC" },
-  { icon: UserRound, label: "Citizen Rights", path: "/citizen-rights", layer: "CIT" },
-  { icon: GitMerge, label: "GitOps Config", path: "/gitops", layer: "GIT" },
-  { icon: ArrowLeftRight, label: "Data Flow Map", path: "/data-flows", layer: "FLW" },
-  { icon: Globe, label: "TIA Assessments", path: "/tia", layer: "TIA" },
-  { icon: Wrench, label: "Remediation", path: "/remediation", layer: "REM" },
-  { icon: Network, label: "Asset Graph", path: "/asset-graph", layer: "GRF" },
-  { icon: Layers, label: "Framework Dashboard", path: "/frameworks", layer: "FWK" },
-  { icon: Building2, label: "My Organization", path: "/my-org", layer: "ORG" },
-  { icon: Settings, label: "Notification Settings", path: "/settings/notifications", layer: "CFG" },
-  { icon: Bell, label: "Alerting Settings", path: "/settings/alerting", layer: "ALT" },
-  { icon: ShieldCheck, label: "Cert Rotation", path: "/settings/cert-rotation", layer: "SEC" },
-  { icon: BarChart3, label: "Sector Benchmark", path: "/sector-benchmark", layer: "BMK" },
-  { icon: Activity, label: "Sector Compliance", path: "/sector-compliance", layer: "SCM" },
-  // ── DPCO Stakeholder Portal ──────────────────────────────────────────────────
-  { icon: Award,              label: "DPCO Portal",        path: "/dpco",             layer: "DPCO" },
-  { icon: ClipboardSignature, label: "DPCO Registry",      path: "/dpco/registry",    layer: "DPCO" },
-  { icon: Users,              label: "DPCO Clients",       path: "/dpco/clients",     layer: "DPCO" },
-  { icon: ShieldCheck,        label: "Verification Stmts", path: "/dpco/verification", layer: "DPCO" },
-  { icon: ClipboardCheck,     label: "Audit Workspace",    path: "/dpco/audit",       layer: "DPCO" },
-  { icon: BarChart2,          label: "DPCO Scorecard",     path: "/dpco/scorecard",   layer: "DPCO" },
-  { icon: UserPlus,           label: "DPCO Onboarding",    path: "/dpco/onboard",    layer: "DPCO" },
-  { icon: Vault,              label: "Evidence Vault",     path: "/dpco/evidence",   layer: "DPCO" },
-  { icon: Receipt,            label: "Billing & Earnings", path: "/dpco/billing",    layer: "DPCO" },
-  { icon: CreditCard,         label: "Subscription Plan",  path: "/dpco/subscription", layer: "DPCO" },
-  { icon: RefreshCw,           label: "Licence Renewal",    path: "/dpco/renewal",    layer: "DPCO" },
-  { icon: BrainCircuit,        label: "AI Audit Tools",     path: "/dpco/ai-tools",   layer: "DPCO" },
-  { icon: TrendingUp,         label: "Platform Revenue",   path: "/admin/revenue",   layer: "ADMIN" },
-  { icon: ClipboardList,       label: "DPCO Registrations", path: "/admin/registrations", layer: "ADMIN" },
-  { icon: ShieldCheck,         label: "DPCO Accreditation", path: "/admin/accreditation", layer: "ADMIN" },
-  { icon: Settings,            label: "Platform Settings",  path: "/admin/settings",  layer: "ADMIN" },
-  // ── Enhancement Features ─────────────────────────────────────────────────────
-  { icon: MessageSquare,  label: "DSAR Portal",          path: "/dsar",               layer: "ENH" },
-  { icon: Wand2,          label: "DPIA Wizard",           path: "/dpia-wizard",        layer: "ENH" },
-  { icon: BrainCircuit,   label: "AI Gov. Scoring",       path: "/ai-governance-scoring", layer: "ENH" },
-  { icon: TrendUp,        label: "Sector Benchmarking",   path: "/sector-benchmarking", layer: "ENH" },
-  { icon: Webhook,        label: "Webhook Management",    path: "/webhooks",           layer: "ENH" },
-  { icon: SearchCode,     label: "Global Search",         path: "/search",             layer: "ENH" },
-  { icon: FileCheck2,     label: "CAR Automation",        path: "/car-automation",     layer: "ENH" },
-  { icon: Code2,          label: "Developer Portal",      path: "/developer",          layer: "ENH" },
-  // ── Banking & Financial Services ─────────────────────────────────────────────
-  { icon: Banknote,        label: "Banking Overview",      path: "/banking",              layer: "BNK" },
-  { icon: ScanFace,        label: "KYC Management",        path: "/banking/kyc",          layer: "BNK" },
-  { icon: ShieldAlert,     label: "AML Cases",             path: "/banking/aml",          layer: "BNK" },
-  { icon: AlertOctagon,    label: "Watchlist Screening",   path: "/banking/watchlist",    layer: "BNK" },
-  { icon: Shuffle,         label: "Payments Monitor",      path: "/banking/payments",     layer: "BNK" },
-  { icon: Globe,           label: "SWIFT Transactions",    path: "/banking/swift",        layer: "BNK" },
-  { icon: FileWarning,     label: "Fraud Alerts",          path: "/banking/fraud",        layer: "BNK" },
-  { icon: FileSpreadsheet, label: "CBN Reports",           path: "/banking/cbn-reports",  layer: "BNK" },
-  { icon: Building,        label: "Correspondent Banks",   path: "/banking/correspondents", layer: "BNK" },
-  // ── Sector Modules ────────────────────────────────────────────────────────────
-  { icon: Radio,           label: "Telecom (NCC)",         path: "/telecom",              layer: "SCT" },
-  { icon: Heart,           label: "Healthcare (NHIA)",     path: "/healthcare",           layer: "SCT" },
-  { icon: ZapIcon,         label: "Energy (NERC/NUPRC)",   path: "/energy",               layer: "SCT" },
-  { icon: Shield,          label: "Insurance (NAICOM)",    path: "/insurance",            layer: "SCT" },
-  { icon: CreditCard,      label: "Fintech (CBN)",         path: "/fintech",              layer: "SCT" },
-  // ── Operations & Admin ────────────────────────────────────────────────────────
-  { icon: AlertCircle,     label: "Cross-Sector Alerts",   path: "/cross-sector-alerts",  layer: "OPS" },
-  { icon: Clock,           label: "SLA Timers",            path: "/sla-timers",           layer: "OPS" },
-  { icon: UserCog,         label: "User Management",       path: "/admin/users",          layer: "OPS" },
-  { icon: MonitorDot,      label: "System Health",         path: "/admin/system-health",  layer: "OPS" },
-  // ── New Production Features ───────────────────────────────────────────────────
-  { icon: AlertTriangle,   label: "Breach Incidents",       path: "/breach-incidents",     layer: "BRH" },
-  { icon: Clock,           label: "Article 40 Tracker",     path: "/article-40-tracker",   layer: "BRH" },
-  { icon: UserCheck,       label: "DPO Appointments",       path: "/dpo-appointment-registry", layer: "BRH" },
-  { icon: Globe,           label: "Public Registry",        path: "/public-registry",      layer: "BRH" },
-  { icon: Calculator,      label: "Penalty Calculator",     path: "/penalty-calculator",   layer: "ENF" },
-  { icon: Shield,          label: "Risk Scorecard",         path: "/risk-scorecard",       layer: "ENF" },
-  { icon: BarChart2,       label: "Advanced Analytics",     path: "/advanced-analytics",   layer: "ANA" },
-  { icon: Bell,            label: "Notifications",          path: "/notifications",        layer: "ANA" },
-  { icon: CalendarDays,    label: "Compliance Calendar",    path: "/compliance-calendar",  layer: "ANA" },
-  // ── Phase 3 — Production Features ─────────────────────────────────────────────
-  { icon: Vault,           label: "Document Vault",         path: "/document-vault",       layer: "PROD" },
-  { icon: FileKey,         label: "API Keys",               path: "/api-keys",             layer: "PROD" },
-  { icon: Webhook,         label: "Webhook Delivery",       path: "/webhook-delivery",     layer: "PROD" },
-  { icon: Shuffle,         label: "Cross-Sector Sharing",   path: "/cross-sector-sharing", layer: "PROD" },
-  { icon: Timer,           label: "Retention Enforcement",  path: "/retention-enforcement",layer: "PROD" },
-  { icon: BadgeCheck,      label: "Cert Verification",      path: "/cert-verification",    layer: "PROD" },
-  { icon: Gavel,           label: "Enforcement Timeline",   path: "/enforcement-timeline", layer: "PROD" },
-  { icon: BrainCircuit,    label: "AI Risk Engine",         path: "/ai-risk-engine",       layer: "PROD" },
-  { icon: RefreshCw,       label: "Compliance Rescoring",   path: "/compliance-rescoring", layer: "PROD" },
-  { icon: MessageSquare,   label: "SMS Alerts",             path: "/sms-alerts",           layer: "PROD" },
-  { icon: FileText,        label: "PDF Export Center",      path: "/pdf-export",           layer: "PROD" },
-  // ── Phase 5 — Customisable Dashboard, Chat Support, User Guide ────────────────────────────
-  { icon: LayoutDashboard, label: "My Dashboard",           path: "/my-dashboard",         layer: "PROD" },
-  { icon: MessageSquare,   label: "Support Chat",           path: "/support-chat",         layer: "PROD" },
-  { icon: BookOpen,        label: "User Guide & Tutorials", path: "/user-guide",           layer: "PROD" },
-  { icon: CheckCircle2,    label: "Onboarding Checklist",   path: "/onboarding-checklist", layer: "PROD" },
-  { icon: Mail,            label: "Email Digest Settings",  path: "/email-digest",         layer: "PROD" },
-  { icon: TrendUp,         label: "Compliance Trends",      path: "/trends",               layer: "PROD" },
-  { icon: Wand2,           label: "Changelog Admin",        path: "/admin/changelog",      layer: "OPS" },
-  // ── Phase 9 — Security Audit, Multi-Org Trends, DSAR Lifecycle, NIP, Platform Stats ────────────────
-  { icon: ShieldAlert,     label: "Security Audit",         path: "/security-audit",       layer: "OPS" },
-  { icon: BarChart3,       label: "Multi-Org Trend Compare",path: "/trend-compare",        layer: "ANA" },
-  { icon: UserCheck,       label: "DSAR Lifecycle",         path: "/dsar-lifecycle",       layer: "BRH" },
-  { icon: Download,        label: "Audit Export",           path: "/audit-export",         layer: "OPS" },
-  { icon: Banknote,        label: "NIP Reconciliation",     path: "/nip-reconciliation",   layer: "OPS" },
-  { icon: Activity,        label: "Platform Stats",         path: "/platform-stats",       layer: "OPS" },
-  // ── Phase 10 — AI/ML Intelligence Hub ────────────────────────────────────────────
-  { icon: BrainCircuit,    label: "AI/ML Hub",               path: "/ai/hub",               layer: "AI" },
-  { icon: Layers,          label: "Model Registry",          path: "/ai/model-registry",    layer: "AI" },
-  { icon: ShieldAlert,     label: "ART Robustness",          path: "/ai/art-dashboard",     layer: "AI" },
-  { icon: HardDrive,       label: "Feature Store",           path: "/ai/feature-store",     layer: "AI" },
-  { icon: Network,          label: "Knowledge Graph",         path: "/ai/knowledge-graph",   layer: "AI" },
-  { icon: Brain,            label: "RAG Advisor",             path: "/ai/rag-advisor",       layer: "AI" },
-  // ── Phase 12 — Advanced Governance & Compliance ──────────────────────────────
-  { icon: Workflow,          label: "Data Pipeline",           path: "/data-pipeline",        layer: "P12" },
-  { icon: GitBranch,         label: "Data Lineage",            path: "/data-lineage",         layer: "P12" },
-  { icon: Globe,             label: "Regulatory Intel",        path: "/regulatory-intelligence", layer: "P12" },
-  { icon: AlertTriangle,     label: "Incident Response",       path: "/incident-response",    layer: "P12" },
-  { icon: Microscope,        label: "Compliance Gap",          path: "/compliance-gap",       layer: "P12" },
-  { icon: ShieldAlert,       label: "Vendor Risk",             path: "/vendor-risk",          layer: "P12" },
-  { icon: Eye,               label: "Whistleblower",           path: "/whistleblower",        layer: "P12" },
-  { icon: Landmark,          label: "Reg Sandbox",             path: "/regulatory-sandbox",   layer: "P12" },
-  { icon: Brain,             label: "AI Ethics Board",         path: "/ai-ethics",            layer: "P12" },
-  { icon: Fingerprint,       label: "National ID Verify",      path: "/national-id",          layer: "P12" },
-  { icon: Share2,            label: "Cross-Agency Sharing",    path: "/cross-agency",         layer: "P12" },
-  { icon: FileSearch,        label: "PIA Assessments",         path: "/pia",                  layer: "P12" },
-  { icon: Banknote,          label: "NDPA Fines",              path: "/ndpa-fines",           layer: "P12" },
-  // ── Phase 13 — Consent, DPO, Notifications, Penalty, Public Registry, Risk, Residency, Rate Limit, Bulk DSAR, Whistleblower, Cross-Border, Reporting ──
-  { icon: ShieldCheck,        label: "Consent Records",         path: "/consent-records",      layer: "P13" },
-  { icon: UserCheck,          label: "DPO Registry (P13)",      path: "/dpo-registry",         layer: "P13" },
-  { icon: Bell,               label: "Notification Center",     path: "/notification-center",  layer: "P13" },
-  { icon: Calculator,         label: "Penalty Calc (P13)",      path: "/penalty-calculator",   layer: "P13" },
-  { icon: BarChart2,           label: "Penalty Dashboard",       path: "/penalty-dashboard",    layer: "P13" },
-  { icon: Globe,              label: "Public Registry (P13)",   path: "/public-registry",      layer: "P13" },
-  { icon: ShieldAlert,        label: "Risk Scorecard (P13)",    path: "/risk-scorecard",       layer: "P13" },
-  { icon: MapPin,             label: "Data Residency",          path: "/data-residency",       layer: "P13" },
-  { icon: Activity,           label: "Rate Limit Dashboard",    path: "/rate-limit-dashboard", layer: "P13" },
-  { icon: Users,              label: "Bulk DSAR",               path: "/bulk-dsar",            layer: "P13" },
-  { icon: Eye,                label: "Whistleblower Cases",     path: "/whistleblower-cases",  layer: "P13" },
-  { icon: ArrowRightLeft,     label: "Cross-Border Monitor",    path: "/cross-border-monitor", layer: "P13" },
-  { icon: FileBarChart,       label: "Regulatory Reporting",    path: "/regulatory-reporting", layer: "P13" },
-  // ── Phase 25 — Middleware Health & Accreditation Workflow ───────────────────────────────────────
-  { icon: HeartPulse,          label: "Middleware Health",        path: "/middleware-health",     layer: "P25" },
-  { icon: Workflow,            label: "Accreditation Workflow",   path: "/accreditation-workflow", layer: "P25" },
-  // ── Security & Infrastructure ─────────────────────────────────────────────────────────────────
-  { icon: ShieldAlert,         label: "Security Dashboard",      path: "/security-dashboard",    layer: "OPS" },
+// ── Grouped sidebar menu ──────────────────────────────────────────────────────
+type MenuItem = { icon: any; label: string; path: string };
+type MenuSection = { title: string; color: string; items: MenuItem[] };
+
+const menuSections: MenuSection[] = [
+  {
+    title: "Core Platform",
+    color: "#6366f1",
+    items: [
+      { icon: LayoutDashboard, label: "Gov Dashboard", path: "/" },
+      { icon: Search, label: "Discovery Engine", path: "/discovery" },
+      { icon: Database, label: "Data Catalog", path: "/catalog" },
+      { icon: Scale, label: "Compliance Engine", path: "/compliance" },
+      { icon: Shield, label: "SIEM & Audit", path: "/siem" },
+      { icon: Network, label: "Network DPI", path: "/network" },
+      { icon: GitBranch, label: "BGP Routes", path: "/bgp" },
+      { icon: HardDrive, label: "Arkime PCAP", path: "/pcap" },
+    ],
+  },
+  {
+    title: "Enforcement & Finance",
+    color: "#ef4444",
+    items: [
+      { icon: Gavel, label: "Enforcement Cases", path: "/enforcement-cases" },
+      { icon: Wallet, label: "Financial Enforcement", path: "/financial" },
+      { icon: Calculator, label: "Penalty Calculator", path: "/penalty-calculator" },
+      { icon: Shield, label: "Risk Scorecard", path: "/risk-scorecard" },
+      { icon: Gavel, label: "Enforcement Timeline", path: "/enforcement-timeline" },
+      { icon: Banknote, label: "NDPA Fines", path: "/ndpa-fines" },
+    ],
+  },
+  {
+    title: "Compliance Management",
+    color: "#0ea5e9",
+    items: [
+      { icon: HandMetal, label: "Consent Management", path: "/consent" },
+      { icon: AlertTriangle, label: "Breach Notification", path: "/breach-notification" },
+      { icon: UserCheck, label: "DPO Registry", path: "/dpo-registry" },
+      { icon: ShieldCheck, label: "DPO Workbench", path: "/dpo-dashboard" },
+      { icon: ClipboardType, label: "DPIA", path: "/dpia" },
+      { icon: ScrollText, label: "ROPA Records", path: "/ropa" },
+      { icon: Timer, label: "Retention Policies", path: "/retention" },
+      { icon: FileBarChart, label: "DPO Reports", path: "/dpo-reports" },
+      { icon: Landmark, label: "Audit Returns", path: "/car" },
+      { icon: Globe, label: "Adequacy Registry", path: "/adequacy" },
+      { icon: FileKey, label: "Privacy Notices", path: "/privacy-notices" },
+      { icon: Cookie, label: "Cookie Consent", path: "/cookie-consent" },
+      { icon: Fingerprint, label: "Automated Decisions", path: "/automated-decisions" },
+      { icon: Baby, label: "Parental Consent", path: "/parental-consent" },
+      { icon: GraduationCap, label: "Staff Training", path: "/staff-training" },
+      { icon: ArrowLeftRight, label: "Transfer Instruments", path: "/transfer-instruments" },
+      { icon: Download, label: "Data Export", path: "/data-export" },
+      { icon: FileLock2, label: "Data Processing Agrmts", path: "/dpa" },
+      { icon: Gauge, label: "DCPMI Thresholds", path: "/dcpmi" },
+      { icon: CalendarDays, label: "Compliance Calendar", path: "/compliance-calendar" },
+      { icon: Trophy, label: "Compliance Leaderboard", path: "/leaderboard" },
+      { icon: TrendUp, label: "Compliance Trends", path: "/trends" },
+    ],
+  },
+  {
+    title: "DPCO Portal",
+    color: "#7c3aed",
+    items: [
+      { icon: Award, label: "DPCO Portal", path: "/dpco" },
+      { icon: ClipboardSignature, label: "DPCO Registry", path: "/dpco/registry" },
+      { icon: Users, label: "DPCO Clients", path: "/dpco/clients" },
+      { icon: ShieldCheck, label: "Verification Stmts", path: "/dpco/verification" },
+      { icon: ClipboardCheck, label: "Audit Workspace", path: "/dpco/audit" },
+      { icon: BarChart2, label: "DPCO Scorecard", path: "/dpco/scorecard" },
+      { icon: UserPlus, label: "DPCO Onboarding", path: "/dpco/onboard" },
+      { icon: Vault, label: "Evidence Vault", path: "/dpco/evidence" },
+      { icon: Receipt, label: "Billing & Earnings", path: "/dpco/billing" },
+      { icon: CreditCard, label: "Subscription Plan", path: "/dpco/subscription" },
+      { icon: RefreshCw, label: "Licence Renewal", path: "/dpco/renewal" },
+      { icon: BrainCircuit, label: "AI Audit Tools", path: "/dpco/ai-tools" },
+    ],
+  },
+  {
+    title: "Organizations & IAM",
+    color: "#10b981",
+    items: [
+      { icon: Building2, label: "Organizations", path: "/organizations" },
+      { icon: Users, label: "Role Management", path: "/roles" },
+      { icon: Globe, label: "Org Portal", path: "/portal" },
+      { icon: ClipboardCheck, label: "Portal Review", path: "/portal-review" },
+      { icon: Building2, label: "My Organization", path: "/my-org" },
+      { icon: UserRound, label: "Citizen Rights", path: "/citizen-rights" },
+      { icon: FolderTree, label: "Sector Management", path: "/sectors" },
+    ],
+  },
+  {
+    title: "AI & Intelligence",
+    color: "#8b5cf6",
+    items: [
+      { icon: Bot, label: "AI Advisor", path: "/ai-assistant" },
+      { icon: BrainCircuit, label: "AI Governance", path: "/ai-governance" },
+      { icon: BrainCircuit, label: "AI/ML Hub", path: "/ai/hub" },
+      { icon: Layers, label: "Model Registry", path: "/ai/model-registry" },
+      { icon: ShieldAlert, label: "ART Robustness", path: "/ai/art-dashboard" },
+      { icon: HardDrive, label: "Feature Store", path: "/ai/feature-store" },
+      { icon: Network, label: "Knowledge Graph", path: "/ai/knowledge-graph" },
+      { icon: Brain, label: "RAG Advisor", path: "/ai/rag-advisor" },
+      { icon: BrainCircuit, label: "AI Risk Engine", path: "/ai-risk-engine" },
+      { icon: Brain, label: "AI Ethics Board", path: "/ai-ethics" },
+      { icon: BrainCircuit, label: "AI Gov. Scoring", path: "/ai-governance-scoring" },
+    ],
+  },
+  {
+    title: "Operations & Infrastructure",
+    color: "#f59e0b",
+    items: [
+      { icon: Waves, label: "Streaming Events", path: "/streaming" },
+      { icon: Zap, label: "Event Bus Monitor", path: "/event-bus" },
+      { icon: Database, label: "Ledger Explorer", path: "/ledger" },
+      { icon: Cpu, label: "Worker Processes", path: "/workers" },
+      { icon: Activity, label: "Temporal Workflows", path: "/temporal" },
+      { icon: BarChart3, label: "Prometheus Metrics", path: "/metrics" },
+      { icon: HeartPulse, label: "Middleware Health", path: "/middleware-health" },
+      { icon: ShieldAlert, label: "Security Dashboard", path: "/security-dashboard" },
+      { icon: Radio, label: "Continuous Monitoring", path: "/monitoring" },
+      { icon: Layers, label: "Orchestration Layer", path: "/orchestration" },
+      { icon: MonitorDot, label: "System Health", path: "/admin/system-health" },
+      { icon: Activity, label: "Platform Stats", path: "/platform-stats" },
+    ],
+  },
+  {
+    title: "Banking & Sectors",
+    color: "#0284c7",
+    items: [
+      { icon: Banknote, label: "Banking Overview", path: "/banking" },
+      { icon: ScanFace, label: "KYC Management", path: "/banking/kyc" },
+      { icon: ShieldAlert, label: "AML Cases", path: "/banking/aml" },
+      { icon: AlertOctagon, label: "Watchlist Screening", path: "/banking/watchlist" },
+      { icon: Shuffle, label: "Payments Monitor", path: "/banking/payments" },
+      { icon: Globe, label: "SWIFT Transactions", path: "/banking/swift" },
+      { icon: FileWarning, label: "Fraud Alerts", path: "/banking/fraud" },
+      { icon: FileSpreadsheet, label: "CBN Reports", path: "/banking/cbn-reports" },
+      { icon: Building, label: "Correspondent Banks", path: "/banking/correspondents" },
+      { icon: Radio, label: "Telecom (NCC)", path: "/telecom" },
+      { icon: Heart, label: "Healthcare (NHIA)", path: "/healthcare" },
+      { icon: ZapIcon, label: "Energy (NERC/NUPRC)", path: "/energy" },
+      { icon: Shield, label: "Insurance (NAICOM)", path: "/insurance" },
+      { icon: CreditCard, label: "Fintech (CBN)", path: "/fintech" },
+      { icon: BarChart3, label: "Sector Benchmark", path: "/sector-benchmark" },
+      { icon: Activity, label: "Sector Compliance", path: "/sector-compliance" },
+    ],
+  },
+  {
+    title: "Governance & Reporting",
+    color: "#64748b",
+    items: [
+      { icon: CheckSquare, label: "Transfer Approvals", path: "/transfers" },
+      { icon: BadgeCheck, label: "Verify Certificate", path: "/verify" },
+      { icon: BookOpen, label: "API Documentation", path: "/api-docs" },
+      { icon: FileText, label: "Regulatory Reports", path: "/reports" },
+      { icon: Search, label: "Status Tracker", path: "/status" },
+      { icon: ClipboardList, label: "Audit Log", path: "/audit-log" },
+      { icon: FileCode2, label: "Policy Templates", path: "/policy-templates" },
+      { icon: PackageCheck, label: "Evidence Packages", path: "/evidence" },
+      { icon: Layers, label: "Framework Dashboard", path: "/frameworks" },
+      { icon: GitMerge, label: "GitOps Config", path: "/gitops" },
+      { icon: ArrowLeftRight, label: "Data Flow Map", path: "/data-flows" },
+      { icon: Globe, label: "TIA Assessments", path: "/tia" },
+      { icon: Wrench, label: "Remediation", path: "/remediation" },
+      { icon: Network, label: "Asset Graph", path: "/asset-graph" },
+    ],
+  },
+  {
+    title: "Advanced Features",
+    color: "#d97706",
+    items: [
+      { icon: MessageSquare, label: "DSAR Portal", path: "/dsar" },
+      { icon: Wand2, label: "DPIA Wizard", path: "/dpia-wizard" },
+      { icon: Webhook, label: "Webhook Management", path: "/webhooks" },
+      { icon: SearchCode, label: "Global Search", path: "/search" },
+      { icon: FileCheck2, label: "CAR Automation", path: "/car-automation" },
+      { icon: Code2, label: "Developer Portal", path: "/developer" },
+      { icon: Workflow, label: "Data Pipeline", path: "/data-pipeline" },
+      { icon: GitBranch, label: "Data Lineage", path: "/data-lineage" },
+      { icon: Globe, label: "Regulatory Intel", path: "/regulatory-intelligence" },
+      { icon: AlertTriangle, label: "Incident Response", path: "/incident-response" },
+      { icon: Microscope, label: "Compliance Gap", path: "/compliance-gap" },
+      { icon: ShieldAlert, label: "Vendor Risk", path: "/vendor-risk" },
+      { icon: Eye, label: "Whistleblower", path: "/whistleblower" },
+      { icon: Landmark, label: "Reg Sandbox", path: "/regulatory-sandbox" },
+      { icon: Fingerprint, label: "National ID Verify", path: "/national-id" },
+      { icon: Share2, label: "Cross-Agency Sharing", path: "/cross-agency" },
+      { icon: Shuffle, label: "Cross-Sector Sharing", path: "/cross-sector-sharing" },
+      { icon: AlertCircle, label: "Cross-Sector Alerts", path: "/cross-sector-alerts" },
+      { icon: Vault, label: "Document Vault", path: "/document-vault" },
+    ],
+  },
+  {
+    title: "Admin & Settings",
+    color: "#dc2626",
+    items: [
+      { icon: TrendingUp, label: "Platform Revenue", path: "/admin/revenue" },
+      { icon: ClipboardList, label: "DPCO Registrations", path: "/admin/registrations" },
+      { icon: ShieldCheck, label: "DPCO Accreditation", path: "/admin/accreditation" },
+      { icon: Settings, label: "Platform Settings", path: "/admin/settings" },
+      { icon: UserCog, label: "User Management", path: "/admin/users" },
+      { icon: Settings, label: "Notification Settings", path: "/settings/notifications" },
+      { icon: Bell, label: "Alerting Settings", path: "/settings/alerting" },
+      { icon: ShieldCheck, label: "Cert Rotation", path: "/settings/cert-rotation" },
+      { icon: Mail, label: "Email Digest Settings", path: "/email-digest" },
+      { icon: Wand2, label: "Changelog Admin", path: "/admin/changelog" },
+      { icon: Clock, label: "SLA Timers", path: "/sla-timers" },
+    ],
+  },
 ];
+
+// Flat menuItems for backward compat (route matching, etc.)
+const menuItems = menuSections.flatMap(s => s.items);
 
 const SIDEBAR_WIDTH_KEY = "sidebar-width";
 const DEFAULT_WIDTH = 280;
@@ -588,26 +609,7 @@ type DashboardLayoutContentProps = {
   setSidebarWidth: (width: number) => void;
 };
 
-// Layer group definitions for the sidebar filter
-const LAYER_GROUPS: Array<{ key: string; label: string; layers: string[]; color: string }> = [
-  { key: "CORE", label: "Core", layers: ["L6","L1","L2","L3","L4","L5"], color: "#6366f1" },
-  { key: "ENF",  label: "Enf",  layers: ["FIN","ENF"],                    color: "#ef4444" },
-  { key: "OPS",  label: "Ops",  layers: ["STR","EVT","TB","WF","OBS","SYS"], color: "#f59e0b" },
-  { key: "AI",   label: "AI",   layers: ["AI","AIG"],                     color: "#8b5cf6" },
-  { key: "ORG",  label: "Org",  layers: ["ORG","IAM","PRT","REV","CIT"], color: "#10b981" },
-  { key: "CPL",  label: "CPL",  layers: ["CPL"],                          color: "#0ea5e9" },
-  { key: "DPCO", label: "DPCO", layers: ["DPCO"],                         color: "#7c3aed" },
-  { key: "ADMIN",label: "Admin",layers: ["ADMIN"],                        color: "#dc2626" },
-  { key: "BNK",  label: "Bank", layers: ["BNK"],                          color: "#0284c7" },
-  { key: "SCT",  label: "Sect", layers: ["SCT"],                          color: "#16a34a" },
-  { key: "ENH",  label: "Enh",  layers: ["ENH"],                          color: "#d97706" },
-  { key: "XOPS", label: "XOps", layers: ["OPS"],                          color: "#db2777" },
-  { key: "GOV",  label: "Gov",  layers: ["GOV","MON","ORC","LDR","VRF","API","RPT","STS","LOG","POL","EVD","SEC","GIT","FLW","TIA","REM","GRF","FWK","CFG","ALT","BMK"], color: "#64748b" },
-  { key: "BRH",  label: "Breach",layers: ["BRH"],                          color: "#dc2626" },
-  { key: "ANA",  label: "Analytics",layers: ["ANA"],                      color: "#0891b2" },
-  { key: "PROD", label: "Prod",  layers: ["PROD"],                         color: "#7c3aed" },
-  { key: "P12",  label: "Phase12",layers: ["P12"],                          color: "#0d9488" },
-];
+// No longer needed — sidebar uses grouped sections now
 
 function DashboardLayoutContent({
   children,
@@ -619,13 +621,12 @@ function DashboardLayoutContent({
   const isCollapsed = state === "collapsed";
   const [isResizing, setIsResizing] = useState(false);
   const sidebarRef = useRef<HTMLDivElement>(null);
-  const [activeLayerGroup, setActiveLayerGroup] = useState<string | null>(null);
-  const filteredMenuItems = activeLayerGroup
-    ? menuItems.filter(item => {
-        const grp = LAYER_GROUPS.find(g => g.key === activeLayerGroup);
-        return grp ? grp.layers.includes((item as any).layer) : true;
-      })
-    : menuItems;
+  const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
+  const toggleSection = (title: string) => setCollapsedSections(prev => {
+    const next = new Set(prev);
+    next.has(title) ? next.delete(title) : next.add(title);
+    return next;
+  });
   const activeMenuItem = menuItems.find(item => item.path === location);
   const isMobile = useIsMobile();
   const { data: openCasesData } = trpc.enforcementCases.openCount.useQuery(undefined, {
@@ -699,63 +700,54 @@ function DashboardLayoutContent({
           </SidebarHeader>
 
           <SidebarContent className="gap-0">
-            {/* Layer filter bar — hidden when sidebar is collapsed */}
-            {!isCollapsed && (
-              <div className="px-2 pt-2 pb-1 flex flex-wrap gap-1 group-data-[collapsible=icon]:hidden">
-                <button
-                  onClick={() => setActiveLayerGroup(null)}
-                  className={`mono text-[9px] font-semibold px-1.5 py-0.5 rounded transition-colors ${
-                    activeLayerGroup === null
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-muted text-muted-foreground hover:bg-accent"
-                  }`}
-                >
-                  ALL
-                </button>
-                {LAYER_GROUPS.map(grp => (
-                  <button
-                    key={grp.key}
-                    onClick={() => setActiveLayerGroup(prev => prev === grp.key ? null : grp.key)}
-                    className={`mono text-[9px] font-semibold px-1.5 py-0.5 rounded transition-colors`}
-                    style={{
-                      background: activeLayerGroup === grp.key ? grp.color : undefined,
-                      color: activeLayerGroup === grp.key ? "#fff" : grp.color,
-                      border: `1px solid ${grp.color}60`,
-                    }}
-                  >
-                    {grp.label}
-                  </button>
-                ))}
-              </div>
-            )}
             <SidebarMenu className="px-2 py-1">
-              {filteredMenuItems.map(item => {
-                const isActive = location === item.path;
+              {menuSections.map(section => {
+                const isSectionCollapsed = collapsedSections.has(section.title);
+                const hasActiveItem = section.items.some(item => item.path === location);
                 return (
-                  <SidebarMenuItem key={item.path}>
-                    <SidebarMenuButton
-                      isActive={isActive}
-                      onClick={() => setLocation(item.path)}
-                      tooltip={item.label}
-                      className={`h-9 transition-all font-normal`}
-                      data-tour={
-                        item.path === "/dpco/billing" ? "dpco-nav-billing" :
-                        item.path === "/dpco/audit" ? "dpco-nav-audit" :
-                        item.path === "/dpco/subscription" ? "dpco-nav-subscription" :
-                        undefined
-                      }
-                    >
-                      <item.icon
-                        className={`h-4 w-4 shrink-0 ${isActive ? "text-primary" : ""}`}
-                      />
-                      <span className="flex-1 truncate text-sm">{item.label}</span>
-                      {item.path === "/enforcement-cases" && openCaseCount > 0 ? (
-                        <span className="mono text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-red-500 text-white group-data-[collapsible=icon]:hidden">{openCaseCount}</span>
-                      ) : (
-                        <span className="mono text-[9px] font-semibold tracking-widest px-1 py-0.5 rounded bg-primary/10 text-primary/70 group-data-[collapsible=icon]:hidden">{(item as any).layer}</span>
-                      )}
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
+                  <div key={section.title} className="mb-1">
+                    {!isCollapsed && (
+                      <button
+                        onClick={() => toggleSection(section.title)}
+                        className="flex items-center gap-2 w-full px-2 py-1.5 text-left group/header hover:bg-accent/30 rounded-md transition-colors"
+                      >
+                        <span
+                          className="inline-block w-2 h-2 rounded-full shrink-0"
+                          style={{ background: section.color }}
+                        />
+                        <span className="mono text-[10px] font-semibold uppercase tracking-wider flex-1" style={{ color: section.color }}>
+                          {section.title}
+                        </span>
+                        <span className="mono text-[9px] text-muted-foreground">{section.items.length}</span>
+                        <svg className={`h-3 w-3 text-muted-foreground transition-transform ${isSectionCollapsed ? "-rotate-90" : ""}`} viewBox="0 0 12 12"><path d="M3 4.5L6 7.5L9 4.5" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                      </button>
+                    )}
+                    {(!isSectionCollapsed || isCollapsed) && section.items.map(item => {
+                      const isActive = location === item.path;
+                      return (
+                        <SidebarMenuItem key={item.path}>
+                          <SidebarMenuButton
+                            isActive={isActive}
+                            onClick={() => setLocation(item.path)}
+                            tooltip={item.label}
+                            className="h-8 transition-all font-normal"
+                            data-tour={
+                              item.path === "/dpco/billing" ? "dpco-nav-billing" :
+                              item.path === "/dpco/audit" ? "dpco-nav-audit" :
+                              item.path === "/dpco/subscription" ? "dpco-nav-subscription" :
+                              undefined
+                            }
+                          >
+                            <item.icon className={`h-4 w-4 shrink-0 ${isActive ? "text-primary" : ""}`} />
+                            <span className="flex-1 truncate text-sm">{item.label}</span>
+                            {item.path === "/enforcement-cases" && openCaseCount > 0 && (
+                              <span className="mono text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-red-500 text-white group-data-[collapsible=icon]:hidden">{openCaseCount}</span>
+                            )}
+                          </SidebarMenuButton>
+                        </SidebarMenuItem>
+                      );
+                    })}
+                  </div>
                 );
               })}
             </SidebarMenu>
