@@ -11,20 +11,12 @@ COPY . .
 
 RUN npm run build 2>/dev/null || echo "Build step skipped"
 
-# Production image — only copy built assets and production deps
+# Production image
 FROM node:20-alpine
 
 WORKDIR /app
 
-COPY --from=builder /app/.next/standalone ./
-COPY --from=builder /app/.next/static ./.next/static
-COPY --from=builder /app/public ./public
-COPY --from=builder /app/package.json ./
-
-# Fallback: if standalone output isn't available, copy full build
-RUN if [ ! -f server.js ]; then echo "Standalone not available, using full copy"; fi
-COPY --from=builder /app/.next ./.next
-COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app /app
 
 RUN addgroup -g 1001 -S nodejs && \
     adduser -S nodejs -u 1001
