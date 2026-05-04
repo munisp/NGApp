@@ -12,7 +12,7 @@ import { UserCheck, Plus, Search, CheckCircle, XCircle, Clock } from "lucide-rea
 
 export default function Phase13DpoRegistry() {
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({
     organization_id: "", dpo_name: "", dpo_email: "", dpo_phone: "", dpco_name: "", notes: ""
@@ -21,7 +21,7 @@ export default function Phase13DpoRegistry() {
   const utils = trpc.useUtils();
   const { data: records, isLoading } = trpc.phase13.dpoRegistry.list.useQuery({
     search: search || undefined,
-    status: statusFilter || undefined,
+    status: statusFilter === "all" ? undefined : statusFilter || undefined,
   });
   const { data: stats } = trpc.phase13.dpoRegistry.getStats.useQuery();
   const create = trpc.phase13.dpoRegistry.create.useMutation({
@@ -107,7 +107,7 @@ export default function Phase13DpoRegistry() {
           <Select value={statusFilter} onValueChange={setStatusFilter}>
             <SelectTrigger className="w-40"><SelectValue placeholder="All Statuses" /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All</SelectItem>
+              <SelectItem value="all">All</SelectItem>
               <SelectItem value="verified">Verified</SelectItem>
               <SelectItem value="pending">Pending</SelectItem>
               <SelectItem value="rejected">Rejected</SelectItem>

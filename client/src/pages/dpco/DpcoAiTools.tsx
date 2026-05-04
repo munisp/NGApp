@@ -11,17 +11,17 @@ import { Brain, FileText, TrendingUp, Loader2, CheckCircle, AlertTriangle, XCirc
 import { SubscriptionGate } from "@/components/SubscriptionGate";
 
 const RATING_CONFIG: Record<string, { label: string; color: string; icon: any; iconColor: string }> = {
-  compliant: { label: "Compliant", color: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30", icon: CheckCircle, iconColor: "text-emerald-400" },
+  compliant: { label: "Compliant", color: "bg-emerald-100 text-emerald-700 border-emerald-300", icon: CheckCircle, iconColor: "text-emerald-600" },
   partially_compliant: { label: "Partial", color: "bg-amber-500/20 text-amber-300 border-amber-500/30", icon: AlertTriangle, iconColor: "text-amber-400" },
-  non_compliant: { label: "Non-Compliant", color: "bg-red-500/20 text-red-300 border-red-500/30", icon: XCircle, iconColor: "text-red-400" },
-  not_applicable: { label: "N/A", color: "bg-slate-500/20 text-slate-400 border-slate-500/30", icon: Minus, iconColor: "text-slate-500" },
+  non_compliant: { label: "Non-Compliant", color: "bg-red-100 text-red-700 border-red-300", icon: XCircle, iconColor: "text-red-600" },
+  not_applicable: { label: "N/A", color: "bg-muted-foreground/20 text-muted-foreground border-slate-500/30", icon: Minus, iconColor: "text-muted-foreground" },
 };
 
 const RISK_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
-  low: { label: "Low Risk", color: "text-emerald-400", bg: "bg-emerald-500/10 border-emerald-500/20" },
+  low: { label: "Low Risk", color: "text-emerald-600", bg: "bg-emerald-500/10 border-emerald-500/20" },
   medium: { label: "Medium Risk", color: "text-amber-400", bg: "bg-amber-500/10 border-amber-500/20" },
-  high: { label: "High Risk", color: "text-orange-400", bg: "bg-orange-500/10 border-orange-500/20" },
-  critical: { label: "Critical Risk", color: "text-red-400", bg: "bg-red-500/10 border-red-500/20" },
+  high: { label: "High Risk", color: "text-orange-600", bg: "bg-orange-500/10 border-orange-500/20" },
+  critical: { label: "Critical Risk", color: "text-red-600", bg: "bg-red-500/10 border-red-500/20" },
 };
 
 const ALL_CONTROLS = ["C01","C02","C03","C04","C05","C06","C07","C08","C09","C10","C11","C12","C13","C14","C15"];
@@ -65,14 +65,14 @@ function DpcoAiToolsInner() {
   const copyToClipboard = (text: string) => { navigator.clipboard.writeText(text); toast.success("Copied"); };
 
   return (
-    <div className="flex flex-col h-full min-h-0 bg-slate-950">
-      <div className="flex items-center gap-3 px-6 py-4 border-b border-slate-800 bg-slate-900/60">
+    <div className="flex flex-col h-full min-h-0 bg-background">
+      <div className="flex items-center gap-3 px-6 py-4 border-b border-border bg-background/60">
         <div className="w-8 h-8 rounded-lg bg-violet-500/20 border border-violet-500/30 flex items-center justify-center">
           <Brain className="w-4 h-4 text-violet-400" />
         </div>
         <div>
-          <h1 className="text-sm font-semibold text-slate-100">AI Audit Tools</h1>
-          <p className="text-xs text-slate-500">NDPA 2023 · Powered by NDSEP Intelligence Engine</p>
+          <h1 className="text-sm font-semibold text-foreground">AI Audit Tools</h1>
+          <p className="text-xs text-muted-foreground">NDPA 2023 · Powered by NDSEP Intelligence Engine</p>
         </div>
         <Badge className="ml-auto bg-violet-500/20 text-violet-300 border-violet-500/30 text-xs">
           <Sparkles className="w-3 h-3 mr-1" /> AI-Powered
@@ -81,7 +81,7 @@ function DpcoAiToolsInner() {
 
       <div className="flex-1 min-h-0 overflow-y-auto">
         <Tabs defaultValue="gap" className="h-full">
-          <TabsList className="w-full rounded-none border-b border-slate-800 bg-slate-900/40 h-10 px-4 justify-start gap-1">
+          <TabsList className="w-full rounded-none border-b border-border bg-muted/30 h-10 px-4 justify-start gap-1">
             <TabsTrigger value="gap" className="text-xs data-[state=active]:bg-violet-500/20 data-[state=active]:text-violet-300">
               <Brain className="w-3 h-3 mr-1.5" /> Gap Analysis
             </TabsTrigger>
@@ -94,31 +94,31 @@ function DpcoAiToolsInner() {
           </TabsList>
 
           <TabsContent value="gap" className="p-6 space-y-5 mt-0">
-            <div className="bg-slate-900/60 border border-slate-800 rounded-lg p-5 space-y-4">
-              <h2 className="text-sm font-medium text-slate-200 flex items-center gap-2">
+            <div className="bg-background/60 border border-border rounded-lg p-5 space-y-4">
+              <h2 className="text-sm font-medium text-foreground flex items-center gap-2">
                 <Brain className="w-4 h-4 text-violet-400" /> AI-Powered Gap Analysis
               </h2>
-              <p className="text-xs text-slate-500">Paste evidence document text. The AI assesses all 15 NDPA 2023 controls and generates a pre-filled rating sheet.</p>
+              <p className="text-xs text-muted-foreground">Paste evidence document text. The AI assesses all 15 NDPA 2023 controls and generates a pre-filled rating sheet.</p>
               <div className="grid grid-cols-3 gap-3">
                 <div className="space-y-1.5">
-                  <Label className="text-xs text-slate-400">Engagement ID</Label>
-                  <Input value={gapEngagementId} onChange={e => setGapEngagementId(e.target.value)} placeholder="e.g. 42" className="h-8 text-xs bg-slate-800 border-slate-700" />
+                  <Label className="text-xs text-muted-foreground">Engagement ID</Label>
+                  <Input value={gapEngagementId} onChange={e => setGapEngagementId(e.target.value)} placeholder="e.g. 42" className="h-8 text-xs bg-card border-border" />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-xs text-slate-400">Organisation Name</Label>
-                  <Input value={gapOrgName} onChange={e => setGapOrgName(e.target.value)} placeholder="e.g. MTN Nigeria" className="h-8 text-xs bg-slate-800 border-slate-700" />
+                  <Label className="text-xs text-muted-foreground">Organisation Name</Label>
+                  <Input value={gapOrgName} onChange={e => setGapOrgName(e.target.value)} placeholder="e.g. MTN Nigeria" className="h-8 text-xs bg-card border-border" />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-xs text-slate-400">Sector</Label>
-                  <Input value={gapSector} onChange={e => setGapSector(e.target.value)} placeholder="e.g. Telecommunications" className="h-8 text-xs bg-slate-800 border-slate-700" />
+                  <Label className="text-xs text-muted-foreground">Sector</Label>
+                  <Input value={gapSector} onChange={e => setGapSector(e.target.value)} placeholder="e.g. Telecommunications" className="h-8 text-xs bg-card border-border" />
                 </div>
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs text-slate-400">Evidence Text</Label>
+                <Label className="text-xs text-muted-foreground">Evidence Text</Label>
                 <Textarea value={gapEvidenceText} onChange={e => setGapEvidenceText(e.target.value)}
                   placeholder="Paste privacy policy, ROPA, training records, DPA agreements, breach procedures..."
-                  className="min-h-[140px] text-xs bg-slate-800 border-slate-700 resize-none" />
-                <p className="text-xs text-slate-600">{gapEvidenceText.length.toLocaleString()} / 50,000 chars</p>
+                  className="min-h-[140px] text-xs bg-card border-border resize-none" />
+                <p className="text-xs text-muted-foreground">{gapEvidenceText.length.toLocaleString()} / 50,000 chars</p>
               </div>
               <Button onClick={() => gapMutation.mutate({ engagementId: parseInt(gapEngagementId)||0, organisationName: gapOrgName, sector: gapSector, evidenceText: gapEvidenceText })}
                 disabled={gapMutation.isPending || !gapEvidenceText || !gapOrgName}
@@ -128,29 +128,29 @@ function DpcoAiToolsInner() {
             </div>
             {gapMutation.data && (
               <div className="space-y-3">
-                <div className="bg-slate-900/60 border border-violet-500/20 rounded-lg p-4 flex items-center justify-between">
+                <div className="bg-background/60 border border-violet-500/20 rounded-lg p-4 flex items-center justify-between">
                   <div>
-                    <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">Overall Score</p>
-                    <p className={`text-3xl font-bold ${gapMutation.data.overallScore >= 70 ? "text-emerald-400" : gapMutation.data.overallScore >= 50 ? "text-amber-400" : "text-red-400"}`}>
-                      {gapMutation.data.overallScore.toFixed(0)}<span className="text-sm text-slate-500">/100</span>
+                    <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Overall Score</p>
+                    <p className={`text-3xl font-bold ${gapMutation.data.overallScore >= 70 ? "text-emerald-600" : gapMutation.data.overallScore >= 50 ? "text-amber-400" : "text-red-600"}`}>
+                      {gapMutation.data.overallScore.toFixed(0)}<span className="text-sm text-muted-foreground">/100</span>
                     </p>
                   </div>
-                  <p className="text-xs text-slate-400 max-w-md">{gapMutation.data.executiveSummary}</p>
+                  <p className="text-xs text-muted-foreground max-w-md">{gapMutation.data.executiveSummary}</p>
                 </div>
                 <div className="space-y-2">
                   {gapMutation.data.ratings.map((r: any) => {
                     const cfg = RATING_CONFIG[r.rating] || RATING_CONFIG.not_applicable;
                     const Icon = cfg.icon;
                     return (
-                      <div key={r.controlId} className="bg-slate-900/60 border border-slate-800 rounded-lg p-3 flex gap-3">
+                      <div key={r.controlId} className="bg-background/60 border border-border rounded-lg p-3 flex gap-3">
                         <Icon className={`w-4 h-4 mt-0.5 shrink-0 ${cfg.iconColor}`} />
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1">
-                            <span className="text-xs font-mono text-slate-500">{r.controlId}</span>
+                            <span className="text-xs font-mono text-muted-foreground">{r.controlId}</span>
                             <Badge className={`text-[10px] px-1.5 py-0 border ${cfg.color}`}>{cfg.label}</Badge>
-                            <span className="text-xs text-slate-500 ml-auto">Confidence: {(r.confidence*100).toFixed(0)}%</span>
+                            <span className="text-xs text-muted-foreground ml-auto">Confidence: {(r.confidence*100).toFixed(0)}%</span>
                           </div>
-                          <p className="text-xs text-slate-400">{r.rationale}</p>
+                          <p className="text-xs text-muted-foreground">{r.rationale}</p>
                         </div>
                       </div>
                     );
@@ -161,11 +161,11 @@ function DpcoAiToolsInner() {
           </TabsContent>
 
           <TabsContent value="car" className="p-6 space-y-5 mt-0">
-            <div className="bg-slate-900/60 border border-slate-800 rounded-lg p-5 space-y-4">
-              <h2 className="text-sm font-medium text-slate-200 flex items-center gap-2">
+            <div className="bg-background/60 border border-border rounded-lg p-5 space-y-4">
+              <h2 className="text-sm font-medium text-foreground flex items-center gap-2">
                 <FileText className="w-4 h-4 text-violet-400" /> CAR Narrative Generator
               </h2>
-              <p className="text-xs text-slate-500">Generate a complete NDPC-ready Compliance Audit Return narrative from control ratings.</p>
+              <p className="text-xs text-muted-foreground">Generate a complete NDPC-ready Compliance Audit Return narrative from control ratings.</p>
               <div className="grid grid-cols-2 gap-3">
                 {[
                   { label: "Engagement ID", val: carEngagementId, set: setCarEngagementId, ph: "e.g. 42" },
@@ -177,14 +177,14 @@ function DpcoAiToolsInner() {
                   { label: "Compliance Score (0–100)", val: carScore, set: setCarScore, ph: "75" },
                 ].map(f => (
                   <div key={f.label} className="space-y-1.5">
-                    <Label className="text-xs text-slate-400">{f.label}</Label>
-                    <Input value={f.val} onChange={e => f.set(e.target.value)} placeholder={f.ph} className="h-8 text-xs bg-slate-800 border-slate-700" />
+                    <Label className="text-xs text-muted-foreground">{f.label}</Label>
+                    <Input value={f.val} onChange={e => f.set(e.target.value)} placeholder={f.ph} className="h-8 text-xs bg-card border-border" />
                   </div>
                 ))}
               </div>
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <Label className="text-xs text-slate-400">Control Ratings ({carRatings.length}/15)</Label>
+                  <Label className="text-xs text-muted-foreground">Control Ratings ({carRatings.length}/15)</Label>
                   <Button variant="ghost" size="sm" onClick={() => setCarRatings(ALL_CONTROLS.map(id => ({ controlId: id, rating: "not_applicable", notes: "" })))}
                     className="text-xs h-6 text-violet-400 hover:text-violet-300">
                     <RefreshCw className="w-3 h-3 mr-1" /> Load All 15
@@ -193,17 +193,17 @@ function DpcoAiToolsInner() {
                 {carRatings.length > 0 && (
                   <div className="space-y-1 max-h-48 overflow-y-auto pr-1">
                     {carRatings.map((r, i) => (
-                      <div key={r.controlId} className="flex items-center gap-2 bg-slate-800/60 rounded px-2 py-1">
-                        <span className="text-xs font-mono text-slate-500 w-8">{r.controlId}</span>
+                      <div key={r.controlId} className="flex items-center gap-2 bg-card rounded px-2 py-1">
+                        <span className="text-xs font-mono text-muted-foreground w-8">{r.controlId}</span>
                         <select value={r.rating} onChange={e => { const u=[...carRatings]; u[i]={...u[i],rating:e.target.value}; setCarRatings(u); }}
-                          className="text-xs bg-slate-700 border border-slate-600 rounded px-1 py-0.5 text-slate-200 flex-1">
+                          className="text-xs bg-muted border border-input rounded px-1 py-0.5 text-foreground flex-1">
                           <option value="compliant">Compliant</option>
                           <option value="partially_compliant">Partially Compliant</option>
                           <option value="non_compliant">Non-Compliant</option>
                           <option value="not_applicable">Not Applicable</option>
                         </select>
                         <input value={r.notes||""} onChange={e => { const u=[...carRatings]; u[i]={...u[i],notes:e.target.value}; setCarRatings(u); }}
-                          placeholder="Notes..." className="text-xs bg-slate-700 border border-slate-600 rounded px-1.5 py-0.5 text-slate-300 w-36" />
+                          placeholder="Notes..." className="text-xs bg-muted border border-input rounded px-1.5 py-0.5 text-foreground w-36" />
                       </div>
                     ))}
                   </div>
@@ -218,12 +218,12 @@ function DpcoAiToolsInner() {
             {carMutation.data && (
               <div className="space-y-3">
                 {Object.entries({ "Executive Summary": carMutation.data.narrative.executiveSummary, "Scope & Methodology": carMutation.data.narrative.scopeAndMethodology, "Key Findings": carMutation.data.narrative.keyFindings, "Recommendations": carMutation.data.narrative.recommendations, "Auditor's Declaration": carMutation.data.narrative.auditorDeclaration }).map(([section, content]) => (
-                  <div key={section} className="bg-slate-900/60 border border-slate-800 rounded-lg p-4">
+                  <div key={section} className="bg-background/60 border border-border rounded-lg p-4">
                     <div className="flex items-center justify-between mb-2">
-                      <h3 className="text-xs font-semibold text-slate-200">{section}</h3>
-                      <Button variant="ghost" size="sm" onClick={() => copyToClipboard(content as string)} className="h-6 w-6 p-0 text-slate-500 hover:text-slate-300"><Copy className="w-3 h-3" /></Button>
+                      <h3 className="text-xs font-semibold text-foreground">{section}</h3>
+                      <Button variant="ghost" size="sm" onClick={() => copyToClipboard(content as string)} className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground"><Copy className="w-3 h-3" /></Button>
                     </div>
-                    <p className="text-xs text-slate-400 whitespace-pre-wrap leading-relaxed">{content as string}</p>
+                    <p className="text-xs text-muted-foreground whitespace-pre-wrap leading-relaxed">{content as string}</p>
                   </div>
                 ))}
               </div>
@@ -231,11 +231,11 @@ function DpcoAiToolsInner() {
           </TabsContent>
 
           <TabsContent value="risk" className="p-6 space-y-5 mt-0">
-            <div className="bg-slate-900/60 border border-slate-800 rounded-lg p-5 space-y-4">
-              <h2 className="text-sm font-medium text-slate-200 flex items-center gap-2">
+            <div className="bg-background/60 border border-border rounded-lg p-5 space-y-4">
+              <h2 className="text-sm font-medium text-foreground flex items-center gap-2">
                 <TrendingUp className="w-4 h-4 text-violet-400" /> Client Risk Prediction
               </h2>
-              <p className="text-xs text-slate-500">Generate an AI-powered DCPMI risk score, audit priority, and estimated regulatory exposure for any client.</p>
+              <p className="text-xs text-muted-foreground">Generate an AI-powered DCPMI risk score, audit priority, and estimated regulatory exposure for any client.</p>
               <div className="grid grid-cols-3 gap-3">
                 {[
                   { label: "Organisation ID", val: riskOrgId, set: setRiskOrgId, ph: "e.g. 12" },
@@ -247,8 +247,8 @@ function DpcoAiToolsInner() {
                   { label: "Breach Count (12m)", val: riskBreachCount, set: setRiskBreachCount, ph: "e.g. 1" },
                 ].map(f => (
                   <div key={f.label} className="space-y-1.5">
-                    <Label className="text-xs text-slate-400">{f.label}</Label>
-                    <Input value={f.val} onChange={e => f.set(e.target.value)} placeholder={f.ph} className="h-8 text-xs bg-slate-800 border-slate-700" />
+                    <Label className="text-xs text-muted-foreground">{f.label}</Label>
+                    <Input value={f.val} onChange={e => f.set(e.target.value)} placeholder={f.ph} className="h-8 text-xs bg-card border-border" />
                   </div>
                 ))}
               </div>
@@ -265,27 +265,27 @@ function DpcoAiToolsInner() {
                 <div className={`border rounded-lg p-5 ${cfg.bg}`}>
                   <div className="flex items-center justify-between mb-4">
                     <div>
-                      <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">DCPMI Risk Score</p>
-                      <p className={`text-4xl font-bold ${cfg.color}`}>{p.riskScore.toFixed(0)}<span className="text-sm text-slate-500">/100</span></p>
+                      <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">DCPMI Risk Score</p>
+                      <p className={`text-4xl font-bold ${cfg.color}`}>{p.riskScore.toFixed(0)}<span className="text-sm text-muted-foreground">/100</span></p>
                     </div>
                     <div className="text-right">
                       <Badge className={`text-sm px-3 py-1 border ${cfg.bg} ${cfg.color}`}>{cfg.label}</Badge>
-                      <p className="text-xs text-slate-500 mt-1">Priority: <span className="text-slate-300 font-medium capitalize">{p.auditPriority}</span></p>
+                      <p className="text-xs text-muted-foreground mt-1">Priority: <span className="text-foreground font-medium capitalize">{p.auditPriority}</span></p>
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <p className="text-xs text-slate-500 mb-1">Primary Risk Factors</p>
-                      <ul className="space-y-1">{p.primaryRiskFactors.map((f: string, i: number) => <li key={i} className="text-xs text-slate-300 flex gap-1.5"><span className="text-slate-600">▸</span>{f}</li>)}</ul>
+                      <p className="text-xs text-muted-foreground mb-1">Primary Risk Factors</p>
+                      <ul className="space-y-1">{p.primaryRiskFactors.map((f: string, i: number) => <li key={i} className="text-xs text-foreground flex gap-1.5"><span className="text-muted-foreground">▸</span>{f}</li>)}</ul>
                     </div>
                     <div>
-                      <p className="text-xs text-slate-500 mb-1">Mitigation Actions</p>
-                      <ul className="space-y-1">{p.mitigationActions.map((a: string, i: number) => <li key={i} className="text-xs text-slate-300 flex gap-1.5"><span className="text-emerald-600">✓</span>{a}</li>)}</ul>
+                      <p className="text-xs text-muted-foreground mb-1">Mitigation Actions</p>
+                      <ul className="space-y-1">{p.mitigationActions.map((a: string, i: number) => <li key={i} className="text-xs text-foreground flex gap-1.5"><span className="text-emerald-600">✓</span>{a}</li>)}</ul>
                     </div>
                   </div>
-                  <div className="mt-4 pt-4 border-t border-slate-700/50 grid grid-cols-2 gap-4">
-                    <div><p className="text-xs text-slate-500">Recommended Frequency</p><p className="text-xs text-slate-200 font-medium">{p.recommendedAuditFrequency}</p></div>
-                    <div><p className="text-xs text-slate-500">DCPMI Exposure Estimate</p><p className="text-xs text-slate-200 font-medium">{p.dcpmiExposureEstimate}</p></div>
+                  <div className="mt-4 pt-4 border-t border-border/50 grid grid-cols-2 gap-4">
+                    <div><p className="text-xs text-muted-foreground">Recommended Frequency</p><p className="text-xs text-foreground font-medium">{p.recommendedAuditFrequency}</p></div>
+                    <div><p className="text-xs text-muted-foreground">DCPMI Exposure Estimate</p><p className="text-xs text-foreground font-medium">{p.dcpmiExposureEstimate}</p></div>
                   </div>
                 </div>
               );

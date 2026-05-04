@@ -12,11 +12,11 @@ import { toast } from "sonner";
 import { Search, Plus, ExternalLink, AlertTriangle, CheckCircle, XCircle, Clock, Building2, RefreshCw , Trash2 } from "lucide-react";
 
 const STATUS_COLORS: Record<string, string> = {
-  active: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30",
-  expired: "bg-red-500/20 text-red-300 border-red-500/30",
-  suspended: "bg-yellow-500/20 text-yellow-300 border-yellow-500/30",
-  revoked: "bg-red-700/20 text-red-400 border-red-700/30",
-  pending: "bg-blue-500/20 text-blue-300 border-blue-500/30",
+  active: "bg-emerald-100 text-emerald-700 border-emerald-300",
+  expired: "bg-red-100 text-red-700 border-red-300",
+  suspended: "bg-yellow-100 text-yellow-700 border-yellow-300",
+  revoked: "bg-red-700/20 text-red-600 border-red-700/30",
+  pending: "bg-blue-100 text-blue-700 border-blue-300",
 };
 
 const TYPE_LABELS: Record<string, string> = {
@@ -80,24 +80,24 @@ export default function DpcoRegistry() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-cyan-300 font-mono">DPCO Licence Registry</h1>
-          <p className="text-slate-400 text-sm mt-1">
+          <h1 className="text-2xl font-bold text-primary font-mono">DPCO Licence Registry</h1>
+          <p className="text-muted-foreground text-sm mt-1">
             Data Protection Compliance Organisations licensed under NDPA 2023 §33 &mdash; NDPC Repository
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={() => refetch()} className="border-slate-600 text-slate-300">
+          <Button variant="outline" size="sm" onClick={() => refetch()} className="border-input text-foreground">
             <RefreshCw className="w-4 h-4 mr-2" /> Refresh
           </Button>
           <Dialog open={showAdd} onOpenChange={setShowAdd}>
             <DialogTrigger asChild>
-              <Button size="sm" className="bg-cyan-600 hover:bg-cyan-700 text-white">
+              <Button size="sm" className="bg-primary hover:bg-primary/90 text-white">
                 <Plus className="w-4 h-4 mr-2" /> Register DPCO
               </Button>
             </DialogTrigger>
-            <DialogContent className="bg-slate-900 border-slate-700 max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogContent className="bg-background border-border max-w-2xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
-                <DialogTitle className="text-cyan-300">Register New DPCO</DialogTitle>
+                <DialogTitle className="text-primary">Register New DPCO</DialogTitle>
               </DialogHeader>
               <div className="grid grid-cols-2 gap-4 mt-4">
                 {[
@@ -113,59 +113,59 @@ export default function DpcoRegistry() {
                   { label: "Address", key: "address", col: 2 },
                 ].map(({ label, key, type: t, col }) => (
                   <div key={key} className={col === 2 ? "col-span-2" : ""}>
-                    <Label className="text-slate-300 text-xs">{label}</Label>
+                    <Label className="text-foreground text-xs">{label}</Label>
                     <Input
                       type={t ?? "text"}
                       value={(form as any)[key]}
                       onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))}
-                      className="bg-slate-800 border-slate-600 text-slate-200 mt-1"
+                      className="bg-card border-input text-foreground mt-1"
                     />
                   </div>
                 ))}
                 <div>
-                  <Label className="text-slate-300 text-xs">Status</Label>
+                  <Label className="text-foreground text-xs">Status</Label>
                   <Select value={form.status} onValueChange={v => setForm(f => ({ ...f, status: v }))}>
-                    <SelectTrigger className="bg-slate-800 border-slate-600 text-slate-200 mt-1">
+                    <SelectTrigger className="bg-card border-input text-foreground mt-1">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent className="bg-slate-800 border-slate-700">
+                    <SelectContent className="bg-card border-border">
                       {["active","pending","suspended","expired","revoked"].map(s => (
-                        <SelectItem key={s} value={s} className="text-slate-200">{s}</SelectItem>
+                        <SelectItem key={s} value={s} className="text-foreground">{s}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
                 <div>
-                  <Label className="text-slate-300 text-xs">Organisation Type</Label>
+                  <Label className="text-foreground text-xs">Organisation Type</Label>
                   <Select value={form.organisationType} onValueChange={v => setForm(f => ({ ...f, organisationType: v }))}>
-                    <SelectTrigger className="bg-slate-800 border-slate-600 text-slate-200 mt-1">
+                    <SelectTrigger className="bg-card border-input text-foreground mt-1">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent className="bg-slate-800 border-slate-700">
+                    <SelectContent className="bg-card border-border">
                       {Object.entries(TYPE_LABELS).map(([k, v]) => (
-                        <SelectItem key={k} value={k} className="text-slate-200">{v}</SelectItem>
+                        <SelectItem key={k} value={k} className="text-foreground">{v}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
                 <div>
-                  <Label className="text-slate-300 text-xs">State</Label>
+                  <Label className="text-foreground text-xs">State</Label>
                   <Select value={form.state} onValueChange={v => setForm(f => ({ ...f, state: v }))}>
-                    <SelectTrigger className="bg-slate-800 border-slate-600 text-slate-200 mt-1">
+                    <SelectTrigger className="bg-card border-input text-foreground mt-1">
                       <SelectValue placeholder="Select state" />
                     </SelectTrigger>
-                    <SelectContent className="bg-slate-800 border-slate-700 max-h-48">
+                    <SelectContent className="bg-card border-border max-h-48">
                       {nigerianStates.map(s => (
-                        <SelectItem key={s} value={s} className="text-slate-200">{s}</SelectItem>
+                        <SelectItem key={s} value={s} className="text-foreground">{s}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
               </div>
               <div className="flex justify-end gap-2 mt-4">
-                <Button variant="outline" onClick={() => setShowAdd(false)} className="border-slate-600 text-slate-300">Cancel</Button>
+                <Button variant="outline" onClick={() => setShowAdd(false)} className="border-input text-foreground">Cancel</Button>
                 <Button
-                  className="bg-cyan-600 hover:bg-cyan-700 text-white"
+                  className="bg-primary hover:bg-primary/90 text-white"
                   onClick={() => upsert.mutate(form as any)}
                   disabled={!form.name || upsert.isPending}
                 >
@@ -180,16 +180,16 @@ export default function DpcoRegistry() {
       {/* Stats bar */}
       <div className="grid grid-cols-4 gap-4">
         {[
-          { label: "Total Licensed", value: total, icon: Building2, color: "text-cyan-300" },
-          { label: "Active", value: rows.filter((r: any) => r.status === "active").length, icon: CheckCircle, color: "text-emerald-400" },
-          { label: "Expired", value: rows.filter((r: any) => r.status === "expired").length, icon: XCircle, color: "text-red-400" },
-          { label: "Expiring <90d", value: rows.filter((r: any) => { const d = daysUntil(r.licence_expires_at); return d !== null && d >= 0 && d <= 90; }).length, icon: AlertTriangle, color: "text-yellow-400" },
+          { label: "Total Licensed", value: total, icon: Building2, color: "text-primary" },
+          { label: "Active", value: rows.filter((r: any) => r.status === "active").length, icon: CheckCircle, color: "text-emerald-600" },
+          { label: "Expired", value: rows.filter((r: any) => r.status === "expired").length, icon: XCircle, color: "text-red-600" },
+          { label: "Expiring <90d", value: rows.filter((r: any) => { const d = daysUntil(r.licence_expires_at); return d !== null && d >= 0 && d <= 90; }).length, icon: AlertTriangle, color: "text-yellow-600" },
         ].map(({ label, value, icon: Icon, color }) => (
-          <div key={label} className="bg-slate-800/60 border border-slate-700 rounded-lg p-4 flex items-center gap-3">
+          <div key={label} className="bg-card border border-border rounded-lg p-4 flex items-center gap-3">
             <Icon className={`w-8 h-8 ${color}`} />
             <div>
               <div className={`text-2xl font-bold font-mono ${color}`}>{value}</div>
-              <div className="text-slate-400 text-xs">{label}</div>
+              <div className="text-muted-foreground text-xs">{label}</div>
             </div>
           </div>
         ))}
@@ -198,12 +198,12 @@ export default function DpcoRegistry() {
       {/* Filters */}
       <div className="flex gap-3 flex-wrap">
         <div className="relative flex-1 min-w-48">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
             placeholder="Search by name, email, licence number..."
             value={search}
             onChange={e => setSearch(e.target.value)}
-            className="pl-9 bg-slate-800 border-slate-600 text-slate-200"
+            className="pl-9 bg-card border-input text-foreground"
           />
         </div>
         {[
@@ -212,12 +212,12 @@ export default function DpcoRegistry() {
           { label: "State", value: state, onChange: setState, options: [["all","All States"],["LAGOS","Lagos"],["FEDERAL CAPITAL TERRITORY","FCT"],["RIVERS","Rivers"],["OYO","Oyo"],["KANO","Kano"]] },
         ].map(({ label, value, onChange, options }) => (
           <Select key={label} value={value} onValueChange={onChange}>
-            <SelectTrigger className="w-40 bg-slate-800 border-slate-600 text-slate-200">
+            <SelectTrigger className="w-40 bg-card border-input text-foreground">
               <SelectValue placeholder={label} />
             </SelectTrigger>
-            <SelectContent className="bg-slate-800 border-slate-700">
+            <SelectContent className="bg-card border-border">
               {options.map(([v, l]) => (
-                <SelectItem key={v} value={v} className="text-slate-200">{l}</SelectItem>
+                <SelectItem key={v} value={v} className="text-foreground">{l}</SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -225,53 +225,53 @@ export default function DpcoRegistry() {
       </div>
 
       {/* Table */}
-      <div className="bg-slate-800/60 border border-slate-700 rounded-lg overflow-hidden">
+      <div className="bg-card border border-border rounded-lg overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-slate-700 bg-slate-900/50">
+              <tr className="border-b border-border bg-muted/50">
                 {["Licence No.", "Organisation", "Type", "State", "Email", "Licence Expires", "Clients", "Status", ""].map(h => (
-                  <th key={h} className="text-left px-4 py-3 text-slate-400 font-mono text-xs font-medium">{h}</th>
+                  <th key={h} className="text-left px-4 py-3 text-muted-foreground font-mono text-xs font-medium">{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {isLoading ? (
-                <tr><td colSpan={9} className="text-center py-12 text-slate-500">Loading DPCO registry...</td></tr>
+                <tr><td colSpan={9} className="text-center py-12 text-muted-foreground">Loading DPCO registry...</td></tr>
               ) : rows.length === 0 ? (
-                <tr><td colSpan={9} className="text-center py-12 text-slate-500">No DPCOs found matching filters</td></tr>
+                <tr><td colSpan={9} className="text-center py-12 text-muted-foreground">No DPCOs found matching filters</td></tr>
               ) : rows.map((dpco: any) => {
                 const days = daysUntil(dpco.licence_expires_at);
                 const expiring = days !== null && days >= 0 && days <= 90;
                 return (
-                  <tr key={dpco.id} className="border-b border-slate-700/50 hover:bg-slate-700/30 transition-colors">
-                    <td className="px-4 py-3 font-mono text-cyan-400 text-xs">{dpco.licence_number ?? "—"}</td>
+                  <tr key={dpco.id} className="border-b border-border/50 hover:bg-muted/50 transition-colors">
+                    <td className="px-4 py-3 font-mono text-primary text-xs">{dpco.licence_number ?? "—"}</td>
                     <td className="px-4 py-3">
-                      <div className="text-slate-200 font-medium text-xs">{dpco.name}</div>
-                      {dpco.ndpc_reference && <div className="text-slate-500 text-xs">NDPC: {dpco.ndpc_reference}</div>}
+                      <div className="text-foreground font-medium text-xs">{dpco.name}</div>
+                      {dpco.ndpc_reference && <div className="text-muted-foreground text-xs">NDPC: {dpco.ndpc_reference}</div>}
                     </td>
-                    <td className="px-4 py-3 text-slate-400 text-xs">{TYPE_LABELS[dpco.organisation_type] ?? dpco.organisation_type}</td>
-                    <td className="px-4 py-3 text-slate-400 text-xs">{dpco.state ?? "—"}</td>
-                    <td className="px-4 py-3 text-slate-400 text-xs">{dpco.email ?? "—"}</td>
+                    <td className="px-4 py-3 text-muted-foreground text-xs">{TYPE_LABELS[dpco.organisation_type] ?? dpco.organisation_type}</td>
+                    <td className="px-4 py-3 text-muted-foreground text-xs">{dpco.state ?? "—"}</td>
+                    <td className="px-4 py-3 text-muted-foreground text-xs">{dpco.email ?? "—"}</td>
                     <td className="px-4 py-3">
-                      <div className={`text-xs ${expiring ? "text-yellow-400" : "text-slate-400"}`}>
+                      <div className={`text-xs ${expiring ? "text-yellow-600" : "text-muted-foreground"}`}>
                         {dpco.licence_expires_at ? new Date(dpco.licence_expires_at).toLocaleDateString() : "—"}
                       </div>
-                      {expiring && <div className="text-yellow-500 text-xs flex items-center gap-1"><AlertTriangle className="w-3 h-3" />{days}d left</div>}
+                      {expiring && <div className="text-yellow-600 text-xs flex items-center gap-1"><AlertTriangle className="w-3 h-3" />{days}d left</div>}
                     </td>
-                    <td className="px-4 py-3 text-slate-300 text-xs font-mono">{dpco.active_clients ?? 0}</td>
+                    <td className="px-4 py-3 text-foreground text-xs font-mono">{dpco.active_clients ?? 0}</td>
                     <td className="px-4 py-3">
-                      <Badge className={`text-xs border ${STATUS_COLORS[dpco.status] ?? "bg-slate-700 text-slate-300"}`}>
+                      <Badge className={`text-xs border ${STATUS_COLORS[dpco.status] ?? "bg-muted text-foreground"}`}>
                         {dpco.status}
                       </Badge>
                     </td>
                     <td className="px-4 py-3 flex items-center gap-2">
                       {dpco.website && (
-                        <a href={dpco.website} target="_blank" rel="noopener noreferrer" className="text-slate-500 hover:text-cyan-400">
+                        <a href={dpco.website} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary">
                           <ExternalLink className="w-4 h-4" />
                         </a>
                       )}
-                      <Button size="sm" variant="outline" className="text-xs border-red-800 text-red-400 hover:bg-red-900/30 h-7 w-7 p-0" onClick={() => setDeleteId(dpco.id)}><Trash2 className="w-3 h-3" /></Button>
+                      <Button size="sm" variant="outline" className="text-xs border-red-300 text-red-600 hover:bg-red-100 h-7 w-7 p-0" onClick={() => setDeleteId(dpco.id)}><Trash2 className="w-3 h-3" /></Button>
                     </td>
                   </tr>
                 );
@@ -279,18 +279,18 @@ export default function DpcoRegistry() {
             </tbody>
           </table>
         </div>
-        <div className="px-4 py-3 border-t border-slate-700 text-slate-500 text-xs">
+        <div className="px-4 py-3 border-t border-border text-muted-foreground text-xs">
           Showing {rows.length} of {total} registered DPCOs &mdash; Source: NDPC DPCO Repository (services.ndpc.gov.ng)
         </div>
       </div>
     <AlertDialog open={deleteId !== null} onOpenChange={() => setDeleteId(null)}>
-      <AlertDialogContent className="bg-slate-900 border-slate-700 text-slate-200">
+      <AlertDialogContent className="bg-background border-border text-foreground">
         <AlertDialogHeader>
           <AlertDialogTitle>Delete DPCO Organisation</AlertDialogTitle>
-          <AlertDialogDescription className="text-slate-400">This will permanently delete this DPCO organisation from the registry. This action cannot be undone.</AlertDialogDescription>
+          <AlertDialogDescription className="text-muted-foreground">This will permanently delete this DPCO organisation from the registry. This action cannot be undone.</AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel className="border-slate-600 text-slate-300">Cancel</AlertDialogCancel>
+          <AlertDialogCancel className="border-input text-foreground">Cancel</AlertDialogCancel>
           <AlertDialogAction className="bg-red-600 hover:bg-red-700" onClick={() => deleteId && deleteMutation.mutate({ id: deleteId })} disabled={deleteMutation.isPending}>
             {deleteMutation.isPending ? "Deleting..." : "Delete"}
           </AlertDialogAction>

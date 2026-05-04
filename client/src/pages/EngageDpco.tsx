@@ -40,7 +40,7 @@ const PROCESSING_ACTIVITIES = [
 ];
 
 const TIER_COLORS: Record<string, string> = {
-  starter: "bg-slate-700/50 text-slate-300 border-slate-600",
+  starter: "bg-muted/50 text-muted-foreground border-border",
   professional: "bg-cyan-900/40 text-cyan-300 border-cyan-700",
   enterprise: "bg-violet-900/40 text-violet-300 border-violet-700",
 };
@@ -49,7 +49,7 @@ const STATUS_CONFIG: Record<string, { label: string; icon: any; color: string }>
   pending:   { label: "Awaiting Response", icon: Clock,        color: "text-amber-400" },
   accepted:  { label: "Accepted",          icon: CheckCircle2, color: "text-emerald-400" },
   declined:  { label: "Declined",          icon: XCircle,      color: "text-red-400" },
-  withdrawn: { label: "Withdrawn",         icon: XCircle,      color: "text-slate-400" },
+  withdrawn: { label: "Withdrawn",         icon: XCircle,      color: "text-muted-foreground" },
   converted: { label: "Audit Started",     icon: BadgeCheck,   color: "text-cyan-400" },
 };
 
@@ -135,16 +135,16 @@ export default function EngageDpco() {
   // ── Render ─────────────────────────────────────────────────────────────────
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100">
+    <div className="min-h-screen bg-slate-950 text-foreground">
       {/* Header */}
-      <div className="border-b border-slate-800 bg-slate-900/80 backdrop-blur-sm sticky top-0 z-10">
+      <div className="border-b border-border bg-background/80 backdrop-blur-sm sticky top-0 z-10">
         <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="h-8 w-8 rounded-lg bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center">
               <Shield className="h-4 w-4 text-cyan-400" />
             </div>
             <div>
-              <h1 className="text-sm font-semibold text-slate-100">Engage a DPCO</h1>
+              <h1 className="text-sm font-semibold text-foreground">Engage a DPCO</h1>
               <p className="text-xs text-slate-500">Find and request a licensed Data Protection Compliance Organisation</p>
             </div>
           </div>
@@ -153,7 +153,7 @@ export default function EngageDpco() {
               <Button
                 variant="ghost"
                 size="sm"
-                className="text-xs text-slate-400 hover:text-slate-200"
+                className="text-xs text-muted-foreground hover:text-foreground"
                 onClick={() => setStep("track")}
               >
                 <Search className="h-3.5 w-3.5 mr-1.5" />
@@ -164,7 +164,7 @@ export default function EngageDpco() {
               <Button
                 variant="ghost"
                 size="sm"
-                className="text-xs text-slate-400 hover:text-slate-200"
+                className="text-xs text-muted-foreground hover:text-foreground"
                 onClick={() => { setStep("browse"); setSelectedDpco(null); }}
               >
                 <ChevronLeft className="h-3.5 w-3.5 mr-1" />
@@ -186,7 +186,7 @@ export default function EngageDpco() {
               const isDone = (step === "request" && idx === 0) || (step === "submitted" && idx < 2);
               return (
                 <div key={s.id} className="flex items-center gap-2">
-                  <span className={`text-xs font-medium transition-colors ${isActive ? "text-cyan-400" : isDone ? "text-slate-400" : "text-slate-600"}`}>
+                  <span className={`text-xs font-medium transition-colors ${isActive ? "text-cyan-400" : isDone ? "text-muted-foreground" : "text-slate-600"}`}>
                     {s.label}
                   </span>
                   {idx < 2 && <ChevronRight className={`h-3 w-3 ${isDone || isActive ? "text-slate-500" : "text-slate-700"}`} />}
@@ -203,8 +203,8 @@ export default function EngageDpco() {
         {step === "browse" && (
           <div className="space-y-6">
             <div>
-              <h2 className="text-xl font-semibold text-slate-100 mb-1">NDPC-Accredited DPCO Registry</h2>
-              <p className="text-sm text-slate-400">
+              <h2 className="text-xl font-semibold text-foreground mb-1">NDPC-Accredited DPCO Registry</h2>
+              <p className="text-sm text-muted-foreground">
                 All organisations listed below are licensed by the NDPC under NDPA 2023 §33 to conduct statutory data protection audits.
               </p>
             </div>
@@ -217,17 +217,17 @@ export default function EngageDpco() {
                   placeholder="Search by name, email, or licence number…"
                   value={search}
                   onChange={e => setSearch(e.target.value)}
-                  className="pl-9 bg-slate-900 border-slate-700 text-slate-200 placeholder:text-slate-600 focus:border-cyan-500/50"
+                  className="pl-9 bg-background border-border text-foreground placeholder:text-slate-600 focus:border-cyan-500/50"
                 />
               </div>
               <Select value={sectorFilter} onValueChange={setSectorFilter}>
-                <SelectTrigger className="w-full sm:w-48 bg-slate-900 border-slate-700 text-slate-300">
+                <SelectTrigger className="w-full sm:w-48 bg-background border-border text-muted-foreground">
                   <SelectValue placeholder="All sectors" />
                 </SelectTrigger>
-                <SelectContent className="bg-slate-800 border-slate-700">
-                  <SelectItem value="">All sectors</SelectItem>
+                <SelectContent className="bg-card border-border">
+                  <SelectItem value="all">All sectors</SelectItem>
                   {SECTORS.map(s => (
-                    <SelectItem key={s.value} value={s.value} className="text-slate-200">{s.label}</SelectItem>
+                    <SelectItem key={s.value} value={s.value} className="text-foreground">{s.label}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -255,16 +255,16 @@ export default function EngageDpco() {
                   {dpcosQuery.data?.rows.map((dpco: any) => (
                     <div
                       key={dpco.id}
-                      className="group border border-slate-800 rounded-xl bg-slate-900/50 hover:border-cyan-500/40 hover:bg-slate-900 transition-all cursor-pointer p-5"
+                      className="group border border-border rounded-xl bg-background/50 hover:border-cyan-500/40 hover:bg-background transition-all cursor-pointer p-5"
                       onClick={() => { setSelectedDpco(dpco); setStep("request"); }}
                     >
                       <div className="flex items-start justify-between mb-3">
                         <div className="flex items-center gap-3">
-                          <div className="h-10 w-10 rounded-lg bg-slate-800 border border-slate-700 flex items-center justify-center shrink-0">
-                            <Building2 className="h-5 w-5 text-slate-400" />
+                          <div className="h-10 w-10 rounded-lg bg-card border border-border flex items-center justify-center shrink-0">
+                            <Building2 className="h-5 w-5 text-muted-foreground" />
                           </div>
                           <div>
-                            <h3 className="text-sm font-semibold text-slate-100 group-hover:text-cyan-300 transition-colors">{dpco.name}</h3>
+                            <h3 className="text-sm font-semibold text-foreground group-hover:text-cyan-300 transition-colors">{dpco.name}</h3>
                             <p className="text-xs text-slate-500 font-mono">{dpco.licence_number}</p>
                           </div>
                         </div>
@@ -276,10 +276,10 @@ export default function EngageDpco() {
                       {dpco.sectors?.length > 0 && (
                         <div className="flex flex-wrap gap-1.5 mb-3">
                           {(dpco.sectors as string[]).slice(0, 4).map((s: string) => (
-                            <span key={s} className="text-xs px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700">{s}</span>
+                            <span key={s} className="text-xs px-2 py-0.5 rounded-full bg-card text-muted-foreground border border-border">{s}</span>
                           ))}
                           {dpco.sectors.length > 4 && (
-                            <span className="text-xs px-2 py-0.5 rounded-full bg-slate-800 text-slate-500">+{dpco.sectors.length - 4}</span>
+                            <span className="text-xs px-2 py-0.5 rounded-full bg-card text-slate-500">+{dpco.sectors.length - 4}</span>
                           )}
                         </div>
                       )}
@@ -318,18 +318,18 @@ export default function EngageDpco() {
           <div className="space-y-6">
             {/* Selected DPCO summary */}
             <div className="flex items-center gap-4 p-4 rounded-xl border border-cyan-500/30 bg-cyan-500/5">
-              <div className="h-12 w-12 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center shrink-0">
+              <div className="h-12 w-12 rounded-xl bg-card border border-border flex items-center justify-center shrink-0">
                 <Building2 className="h-6 w-6 text-cyan-400" />
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-xs text-slate-500 mb-0.5">Requesting audit from</p>
-                <h3 className="text-base font-semibold text-slate-100">{selectedDpco.name}</h3>
+                <h3 className="text-base font-semibold text-foreground">{selectedDpco.name}</h3>
                 <p className="text-xs text-slate-500 font-mono">{selectedDpco.licence_number}</p>
               </div>
               <Button
                 variant="ghost"
                 size="sm"
-                className="text-xs text-slate-400 shrink-0"
+                className="text-xs text-muted-foreground shrink-0"
                 onClick={() => { setSelectedDpco(null); setStep("browse"); }}
               >
                 Change
@@ -339,82 +339,82 @@ export default function EngageDpco() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Organisation Details */}
               <div className="space-y-4">
-                <h3 className="text-sm font-semibold text-slate-300 flex items-center gap-2">
+                <h3 className="text-sm font-semibold text-muted-foreground flex items-center gap-2">
                   <Building2 className="h-4 w-4 text-cyan-400" /> Your Organisation
                 </h3>
                 <div>
-                  <Label className="text-xs text-slate-400">Organisation Name *</Label>
+                  <Label className="text-xs text-muted-foreground">Organisation Name *</Label>
                   <Input
                     placeholder="e.g. First National Bank of Nigeria"
                     value={form.orgName}
                     onChange={e => setForm(f => ({ ...f, orgName: e.target.value }))}
-                    className="mt-1 bg-slate-900 border-slate-700 text-slate-200 focus:border-cyan-500/50"
+                    className="mt-1 bg-background border-border text-foreground focus:border-cyan-500/50"
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <Label className="text-xs text-slate-400">Sector</Label>
+                    <Label className="text-xs text-muted-foreground">Sector</Label>
                     <Select value={form.orgSector} onValueChange={v => setForm(f => ({ ...f, orgSector: v }))}>
-                      <SelectTrigger className="mt-1 bg-slate-900 border-slate-700 text-slate-300 text-xs">
+                      <SelectTrigger className="mt-1 bg-background border-border text-muted-foreground text-xs">
                         <SelectValue placeholder="Select…" />
                       </SelectTrigger>
-                      <SelectContent className="bg-slate-800 border-slate-700">
-                        {SECTORS.map(s => <SelectItem key={s.value} value={s.value} className="text-slate-200 text-xs">{s.label}</SelectItem>)}
+                      <SelectContent className="bg-card border-border">
+                        {SECTORS.map(s => <SelectItem key={s.value} value={s.value} className="text-foreground text-xs">{s.label}</SelectItem>)}
                       </SelectContent>
                     </Select>
                   </div>
                   <div>
-                    <Label className="text-xs text-slate-400">Country</Label>
+                    <Label className="text-xs text-muted-foreground">Country</Label>
                     <Input
                       placeholder="Nigeria"
                       value={form.orgCountry}
                       onChange={e => setForm(f => ({ ...f, orgCountry: e.target.value }))}
-                      className="mt-1 bg-slate-900 border-slate-700 text-slate-200 text-xs focus:border-cyan-500/50"
+                      className="mt-1 bg-background border-border text-foreground text-xs focus:border-cyan-500/50"
                     />
                   </div>
                 </div>
                 <div>
-                  <Label className="text-xs text-slate-400">Registration / Licence Number</Label>
+                  <Label className="text-xs text-muted-foreground">Registration / Licence Number</Label>
                   <Input
                     placeholder="e.g. CBN/FIN/2024/001"
                     value={form.orgRegistrationNumber}
                     onChange={e => setForm(f => ({ ...f, orgRegistrationNumber: e.target.value }))}
-                    className="mt-1 bg-slate-900 border-slate-700 text-slate-200 text-xs focus:border-cyan-500/50"
+                    className="mt-1 bg-background border-border text-foreground text-xs focus:border-cyan-500/50"
                   />
                 </div>
               </div>
 
               {/* Contact Details */}
               <div className="space-y-4">
-                <h3 className="text-sm font-semibold text-slate-300 flex items-center gap-2">
+                <h3 className="text-sm font-semibold text-muted-foreground flex items-center gap-2">
                   <Mail className="h-4 w-4 text-cyan-400" /> Contact Person
                 </h3>
                 <div>
-                  <Label className="text-xs text-slate-400">Compliance Officer / DPO Name *</Label>
+                  <Label className="text-xs text-muted-foreground">Compliance Officer / DPO Name *</Label>
                   <Input
                     placeholder="Full name"
                     value={form.contactName}
                     onChange={e => setForm(f => ({ ...f, contactName: e.target.value }))}
-                    className="mt-1 bg-slate-900 border-slate-700 text-slate-200 focus:border-cyan-500/50"
+                    className="mt-1 bg-background border-border text-foreground focus:border-cyan-500/50"
                   />
                 </div>
                 <div>
-                  <Label className="text-xs text-slate-400">Email Address *</Label>
+                  <Label className="text-xs text-muted-foreground">Email Address *</Label>
                   <Input
                     type="email"
                     placeholder="compliance@organisation.com"
                     value={form.contactEmail}
                     onChange={e => setForm(f => ({ ...f, contactEmail: e.target.value }))}
-                    className="mt-1 bg-slate-900 border-slate-700 text-slate-200 focus:border-cyan-500/50"
+                    className="mt-1 bg-background border-border text-foreground focus:border-cyan-500/50"
                   />
                 </div>
                 <div>
-                  <Label className="text-xs text-slate-400">Phone Number</Label>
+                  <Label className="text-xs text-muted-foreground">Phone Number</Label>
                   <Input
                     placeholder="+234 800 000 0000"
                     value={form.contactPhone}
                     onChange={e => setForm(f => ({ ...f, contactPhone: e.target.value }))}
-                    className="mt-1 bg-slate-900 border-slate-700 text-slate-200 text-xs focus:border-cyan-500/50"
+                    className="mt-1 bg-background border-border text-foreground text-xs focus:border-cyan-500/50"
                   />
                 </div>
               </div>
@@ -422,42 +422,42 @@ export default function EngageDpco() {
 
             {/* Audit Scope */}
             <div className="space-y-4">
-              <h3 className="text-sm font-semibold text-slate-300 flex items-center gap-2">
+              <h3 className="text-sm font-semibold text-muted-foreground flex items-center gap-2">
                 <FileText className="h-4 w-4 text-cyan-400" /> Audit Scope
               </h3>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-xs text-slate-400">Scope Description</Label>
+                  <Label className="text-xs text-muted-foreground">Scope Description</Label>
                   <Textarea
                     placeholder="Describe what you need audited — e.g. full NDPA compliance audit covering all 15 controls, or a targeted gap assessment for cross-border transfers…"
                     value={form.auditScope}
                     onChange={e => setForm(f => ({ ...f, auditScope: e.target.value }))}
-                    className="mt-1 bg-slate-900 border-slate-700 text-slate-200 text-xs focus:border-cyan-500/50 min-h-[100px]"
+                    className="mt-1 bg-background border-border text-foreground text-xs focus:border-cyan-500/50 min-h-[100px]"
                   />
                 </div>
                 <div className="space-y-3">
                   <div>
-                    <Label className="text-xs text-slate-400 flex items-center gap-1.5">
+                    <Label className="text-xs text-muted-foreground flex items-center gap-1.5">
                       <Calendar className="h-3 w-3" /> Preferred Start Date
                     </Label>
                     <Input
                       type="date"
                       value={form.preferredStartDate}
                       onChange={e => setForm(f => ({ ...f, preferredStartDate: e.target.value }))}
-                      className="mt-1 bg-slate-900 border-slate-700 text-slate-200 text-xs focus:border-cyan-500/50"
+                      className="mt-1 bg-background border-border text-foreground text-xs focus:border-cyan-500/50"
                     />
                   </div>
                   <div>
-                    <Label className="text-xs text-slate-400 flex items-center gap-1.5">
+                    <Label className="text-xs text-muted-foreground flex items-center gap-1.5">
                       <Users className="h-3 w-3" /> Estimated Data Subjects
                     </Label>
                     <Select value={form.estimatedDataSubjects} onValueChange={v => setForm(f => ({ ...f, estimatedDataSubjects: v }))}>
-                      <SelectTrigger className="mt-1 bg-slate-900 border-slate-700 text-slate-300 text-xs">
+                      <SelectTrigger className="mt-1 bg-background border-border text-muted-foreground text-xs">
                         <SelectValue placeholder="Select range…" />
                       </SelectTrigger>
-                      <SelectContent className="bg-slate-800 border-slate-700">
+                      <SelectContent className="bg-card border-border">
                         {["Under 1,000", "1,000 – 10,000", "10,000 – 100,000", "100,000 – 1M", "Over 1M"].map(v => (
-                          <SelectItem key={v} value={v} className="text-slate-200 text-xs">{v}</SelectItem>
+                          <SelectItem key={v} value={v} className="text-foreground text-xs">{v}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -467,7 +467,7 @@ export default function EngageDpco() {
 
               {/* Processing Activities */}
               <div>
-                <Label className="text-xs text-slate-400 mb-2 block">Processing Activities (select all that apply)</Label>
+                <Label className="text-xs text-muted-foreground mb-2 block">Processing Activities (select all that apply)</Label>
                 <div className="flex flex-wrap gap-2">
                   {PROCESSING_ACTIVITIES.map(activity => {
                     const selected = form.processingActivities.includes(activity);
@@ -478,7 +478,7 @@ export default function EngageDpco() {
                         className={`text-xs px-3 py-1.5 rounded-full border transition-all ${
                           selected
                             ? "bg-cyan-500/15 border-cyan-500/50 text-cyan-300"
-                            : "bg-slate-900 border-slate-700 text-slate-400 hover:border-slate-500 hover:text-slate-300"
+                            : "bg-background border-border text-muted-foreground hover:border-slate-500 hover:text-muted-foreground"
                         }`}
                       >
                         {selected && <span className="mr-1">✓</span>}{activity}
@@ -490,15 +490,15 @@ export default function EngageDpco() {
             </div>
 
             {/* Submit */}
-            <div className="flex items-center justify-between pt-4 border-t border-slate-800">
+            <div className="flex items-center justify-between pt-4 border-t border-border">
               <p className="text-xs text-slate-500">
-                Your request will be sent to <span className="text-slate-300">{selectedDpco.name}</span> for review.
+                Your request will be sent to <span className="text-muted-foreground">{selectedDpco.name}</span> for review.
                 You will receive a reference token to track the status.
               </p>
               <Button
                 onClick={handleSubmit}
                 disabled={!canSubmit || submitMutation.isPending}
-                className="bg-cyan-600 hover:bg-cyan-500 text-white text-sm px-6"
+                className="bg-cyan-600 hover:bg-cyan-500 text-foreground text-sm px-6"
               >
                 {submitMutation.isPending ? (
                   <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Submitting…</>
@@ -517,23 +517,23 @@ export default function EngageDpco() {
               <CheckCircle2 className="h-10 w-10 text-emerald-400" />
             </div>
             <div>
-              <h2 className="text-2xl font-bold text-slate-100 mb-2">Request Submitted</h2>
-              <p className="text-sm text-slate-400">
-                Your engagement request has been sent to <span className="text-slate-200">{selectedDpco?.name}</span>.
+              <h2 className="text-2xl font-bold text-foreground mb-2">Request Submitted</h2>
+              <p className="text-sm text-muted-foreground">
+                Your engagement request has been sent to <span className="text-foreground">{selectedDpco?.name}</span>.
                 They will review your request and respond within 5 business days.
               </p>
             </div>
 
-            <div className="w-full bg-slate-900 border border-slate-700 rounded-xl p-5 text-left space-y-3">
+            <div className="w-full bg-background border border-border rounded-xl p-5 text-left space-y-3">
               <p className="text-xs text-slate-500 uppercase tracking-wider font-semibold">Reference Token</p>
               <div className="flex items-center gap-2">
-                <code className="flex-1 text-sm font-mono text-cyan-300 bg-slate-800 px-3 py-2 rounded-lg border border-slate-700">
+                <code className="flex-1 text-sm font-mono text-cyan-300 bg-card px-3 py-2 rounded-lg border border-border">
                   {submittedToken}
                 </code>
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="text-slate-400 hover:text-slate-200"
+                  className="text-muted-foreground hover:text-foreground"
                   onClick={() => { navigator.clipboard.writeText(submittedToken); toast.success("Copied to clipboard"); }}
                 >
                   <Copy className="h-4 w-4" />
@@ -544,8 +544,8 @@ export default function EngageDpco() {
               </p>
             </div>
 
-            <div className="w-full bg-slate-900 border border-slate-800 rounded-xl p-4 text-left">
-              <p className="text-xs font-semibold text-slate-400 mb-3">What happens next?</p>
+            <div className="w-full bg-background border border-border rounded-xl p-4 text-left">
+              <p className="text-xs font-semibold text-muted-foreground mb-3">What happens next?</p>
               <div className="space-y-2.5">
                 {[
                   { icon: Clock, text: "The DPCO reviews your request and confirms capacity (typically 1–3 business days)" },
@@ -555,7 +555,7 @@ export default function EngageDpco() {
                 ].map((item, idx) => (
                   <div key={idx} className="flex items-start gap-2.5">
                     <item.icon className="h-3.5 w-3.5 text-cyan-400 shrink-0 mt-0.5" />
-                    <p className="text-xs text-slate-400">{item.text}</p>
+                    <p className="text-xs text-muted-foreground">{item.text}</p>
                   </div>
                 ))}
               </div>
@@ -565,7 +565,7 @@ export default function EngageDpco() {
               <Button
                 variant="outline"
                 size="sm"
-                className="text-xs border-slate-700 text-slate-300"
+                className="text-xs border-border text-muted-foreground"
                 onClick={() => { setStep("track"); setTrackToken(submittedToken); }}
               >
                 <Search className="h-3.5 w-3.5 mr-1.5" /> Track This Request
@@ -573,7 +573,7 @@ export default function EngageDpco() {
               <Button
                 variant="ghost"
                 size="sm"
-                className="text-xs text-slate-400"
+                className="text-xs text-muted-foreground"
                 onClick={() => { setStep("browse"); setSelectedDpco(null); setSubmittedToken(null); }}
               >
                 Submit Another Request
@@ -586,8 +586,8 @@ export default function EngageDpco() {
         {step === "track" && (
           <div className="max-w-xl mx-auto space-y-6">
             <div>
-              <h2 className="text-xl font-semibold text-slate-100 mb-1">Track Engagement Request</h2>
-              <p className="text-sm text-slate-400">
+              <h2 className="text-xl font-semibold text-foreground mb-1">Track Engagement Request</h2>
+              <p className="text-sm text-muted-foreground">
                 Enter your reference token to check the status of your DPCO engagement request.
               </p>
             </div>
@@ -597,13 +597,13 @@ export default function EngageDpco() {
                 placeholder="e.g. ENG-M5X9K2-AB3C"
                 value={trackToken}
                 onChange={e => setTrackToken(e.target.value.toUpperCase())}
-                className="bg-slate-900 border-slate-700 text-slate-200 font-mono focus:border-cyan-500/50"
+                className="bg-background border-border text-foreground font-mono focus:border-cyan-500/50"
                 onKeyDown={e => e.key === "Enter" && handleTrack()}
               />
               <Button
                 onClick={handleTrack}
                 disabled={!trackToken.trim() || trackQuery.isFetching}
-                className="bg-cyan-600 hover:bg-cyan-500 text-white shrink-0"
+                className="bg-cyan-600 hover:bg-cyan-500 text-foreground shrink-0"
               >
                 {trackQuery.isFetching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
               </Button>
@@ -621,8 +621,8 @@ export default function EngageDpco() {
               const statusCfg = STATUS_CONFIG[req.status] ?? STATUS_CONFIG.pending;
               const StatusIcon = statusCfg.icon;
               return (
-                <div className="border border-slate-800 rounded-xl bg-slate-900/50 overflow-hidden">
-                  <div className="p-5 border-b border-slate-800 flex items-center justify-between">
+                <div className="border border-border rounded-xl bg-background/50 overflow-hidden">
+                  <div className="p-5 border-b border-border flex items-center justify-between">
                     <div>
                       <p className="text-xs text-slate-500 mb-1">Reference</p>
                       <code className="text-sm font-mono text-cyan-300">{req.reference_token}</code>
@@ -635,31 +635,31 @@ export default function EngageDpco() {
                   <div className="p-5 grid grid-cols-2 gap-4 text-sm">
                     <div>
                       <p className="text-xs text-slate-500 mb-1">Organisation</p>
-                      <p className="text-slate-200 font-medium">{req.org_name}</p>
+                      <p className="text-foreground font-medium">{req.org_name}</p>
                     </div>
                     <div>
                       <p className="text-xs text-slate-500 mb-1">DPCO</p>
-                      <p className="text-slate-200 font-medium">{req.dpco_name}</p>
+                      <p className="text-foreground font-medium">{req.dpco_name}</p>
                     </div>
                     <div>
                       <p className="text-xs text-slate-500 mb-1">Contact</p>
-                      <p className="text-slate-300 text-xs">{req.contact_name}</p>
-                      <p className="text-slate-400 text-xs">{req.contact_email}</p>
+                      <p className="text-muted-foreground text-xs">{req.contact_name}</p>
+                      <p className="text-muted-foreground text-xs">{req.contact_email}</p>
                     </div>
                     <div>
                       <p className="text-xs text-slate-500 mb-1">Submitted</p>
-                      <p className="text-slate-300 text-xs">{new Date(req.created_at).toLocaleDateString()}</p>
+                      <p className="text-muted-foreground text-xs">{new Date(req.created_at).toLocaleDateString()}</p>
                     </div>
                     {req.dpco_response_note && (
                       <div className="col-span-2">
                         <p className="text-xs text-slate-500 mb-1">DPCO Response</p>
-                        <p className="text-slate-300 text-xs bg-slate-800 rounded-lg p-3 border border-slate-700">{req.dpco_response_note}</p>
+                        <p className="text-muted-foreground text-xs bg-card rounded-lg p-3 border border-border">{req.dpco_response_note}</p>
                       </div>
                     )}
                     {req.audit_scope && (
                       <div className="col-span-2">
                         <p className="text-xs text-slate-500 mb-1">Audit Scope</p>
-                        <p className="text-slate-400 text-xs">{req.audit_scope}</p>
+                        <p className="text-muted-foreground text-xs">{req.audit_scope}</p>
                       </div>
                     )}
                   </div>
@@ -667,7 +667,7 @@ export default function EngageDpco() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="text-xs text-slate-400"
+                      className="text-xs text-muted-foreground"
                       onClick={handleTrack}
                     >
                       <RefreshCw className="h-3.5 w-3.5 mr-1.5" /> Refresh

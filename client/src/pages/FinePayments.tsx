@@ -15,7 +15,7 @@ const statusColors: Record<string, string> = {
   pending: "bg-yellow-500/20 text-yellow-400",
   paid: "bg-green-500/20 text-green-400",
   overdue: "bg-red-500/20 text-red-400",
-  waived: "bg-slate-500/20 text-slate-400",
+  waived: "bg-slate-500/20 text-muted-foreground",
   appealing: "bg-blue-500/20 text-blue-400",
 };
 
@@ -59,10 +59,10 @@ export default function FinePayments() {
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white flex items-center gap-2">
+          <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
             <CreditCard className="w-6 h-6 text-emerald-400" /> NDPA Fine Payments
           </h1>
-          <p className="text-slate-400 text-sm mt-1">Regulatory fines under NDPA Section 48 — Max ₦10M or 2% of annual turnover</p>
+          <p className="text-muted-foreground text-sm mt-1">Regulatory fines under NDPA Section 48 — Max ₦10M or 2% of annual turnover</p>
         </div>
         <Button onClick={() => setShowIssue(true)} className="bg-emerald-600 hover:bg-emerald-700">
           <Plus className="w-4 h-4 mr-2" /> Issue Fine
@@ -71,10 +71,10 @@ export default function FinePayments() {
 
       {/* Stats */}
       <div className="grid grid-cols-4 gap-4">
-        <Card className="bg-slate-800/50 border-slate-700">
+        <Card className="bg-card/50 border-border">
           <CardContent className="p-4">
-            <p className="text-slate-400 text-xs">Total Fines Issued</p>
-            <p className="text-2xl font-bold text-white">{stats?.total ?? 0}</p>
+            <p className="text-muted-foreground text-xs">Total Fines Issued</p>
+            <p className="text-2xl font-bold text-foreground">{stats?.total ?? 0}</p>
           </CardContent>
         </Card>
         <Card className="bg-red-900/20 border-red-700/40">
@@ -98,35 +98,35 @@ export default function FinePayments() {
       </div>
 
       {/* Fines Table */}
-      <Card className="bg-slate-800/50 border-slate-700">
-        <CardHeader><CardTitle className="text-white text-base">Fine Register</CardTitle></CardHeader>
+      <Card className="bg-card/50 border-border">
+        <CardHeader><CardTitle className="text-foreground text-base">Fine Register</CardTitle></CardHeader>
         <CardContent className="p-0">
           <Table>
             <TableHeader>
-              <TableRow className="border-slate-700">
-                <TableHead className="text-slate-400">Fine Ref</TableHead>
-                <TableHead className="text-slate-400">Organisation</TableHead>
-                <TableHead className="text-slate-400">Violation</TableHead>
-                <TableHead className="text-slate-400">Amount</TableHead>
-                <TableHead className="text-slate-400">NDPC Ref</TableHead>
-                <TableHead className="text-slate-400">Due Date</TableHead>
-                <TableHead className="text-slate-400">Status</TableHead>
-                <TableHead className="text-slate-400">Actions</TableHead>
+              <TableRow className="border-border">
+                <TableHead className="text-muted-foreground">Fine Ref</TableHead>
+                <TableHead className="text-muted-foreground">Organisation</TableHead>
+                <TableHead className="text-muted-foreground">Violation</TableHead>
+                <TableHead className="text-muted-foreground">Amount</TableHead>
+                <TableHead className="text-muted-foreground">NDPC Ref</TableHead>
+                <TableHead className="text-muted-foreground">Due Date</TableHead>
+                <TableHead className="text-muted-foreground">Status</TableHead>
+                <TableHead className="text-muted-foreground">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {fines?.map((f: any) => (
-                <TableRow key={f.id} className="border-slate-700">
-                  <TableCell className="text-white font-mono text-xs">{f.fine_ref}</TableCell>
-                  <TableCell className="text-slate-300 text-sm">{f.org_name ?? `Org #${f.org_id}`}</TableCell>
+                <TableRow key={f.id} className="border-border">
+                  <TableCell className="text-foreground font-mono text-xs">{f.fine_ref}</TableCell>
+                  <TableCell className="text-muted-foreground text-sm">{f.org_name ?? `Org #${f.org_id}`}</TableCell>
                   <TableCell>
-                    <Badge variant="outline" className="border-slate-600 text-slate-400 capitalize text-xs">
+                    <Badge variant="outline" className="border-border text-muted-foreground capitalize text-xs">
                       {String(f.violation_type ?? "").replace(/_/g, " ")}
                     </Badge>
                   </TableCell>
-                  <TableCell className="text-white font-medium">{formatNGN(f.fine_amount_ngn ?? 0)}</TableCell>
-                  <TableCell className="text-slate-400 text-xs font-mono">{f.ndpc_ref ?? "—"}</TableCell>
-                  <TableCell className="text-slate-400 text-xs">
+                  <TableCell className="text-foreground font-medium">{formatNGN(f.fine_amount_ngn ?? 0)}</TableCell>
+                  <TableCell className="text-muted-foreground text-xs font-mono">{f.ndpc_ref ?? "—"}</TableCell>
+                  <TableCell className="text-muted-foreground text-xs">
                     {f.due_date ? new Date(f.due_date).toLocaleDateString() : "—"}
                   </TableCell>
                   <TableCell>
@@ -142,7 +142,7 @@ export default function FinePayments() {
                         </Button>
                       ) : null}
                       {f.payment_status === "pending" && (
-                        <Button size="sm" variant="ghost" className="h-7 px-2 text-slate-400"
+                        <Button size="sm" variant="ghost" className="h-7 px-2 text-muted-foreground"
                           title="Waive fine"
                           onClick={() => waiveFine.mutate({ fineId: f.id, reason: "Regulatory discretion" })}>
                           <CheckCircle className="w-3 h-3" />
@@ -159,14 +159,14 @@ export default function FinePayments() {
 
       {/* Issue Fine Dialog */}
       <Dialog open={showIssue} onOpenChange={setShowIssue}>
-        <DialogContent className="bg-slate-800 border-slate-700 text-white max-w-lg">
+        <DialogContent className="bg-card border-border text-foreground max-w-lg">
           <DialogHeader><DialogTitle>Issue NDPA Fine</DialogTitle></DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label className="text-slate-300 text-sm">Organisation</Label>
+              <Label className="text-muted-foreground text-sm">Organisation</Label>
               <Select value={form.orgId} onValueChange={v => setForm(f => ({ ...f, orgId: v }))}>
-                <SelectTrigger className="mt-1 bg-slate-700 border-slate-600 text-white"><SelectValue placeholder="Select organisation" /></SelectTrigger>
-                <SelectContent className="bg-slate-800 border-slate-700">
+                <SelectTrigger className="mt-1 bg-muted border-border text-foreground"><SelectValue placeholder="Select organisation" /></SelectTrigger>
+                <SelectContent className="bg-card border-border">
                   {orgs?.map((o: any) => (
                     <SelectItem key={o.id} value={String(o.id)}>{o.name}</SelectItem>
                   ))}
@@ -174,10 +174,10 @@ export default function FinePayments() {
               </Select>
             </div>
             <div>
-              <Label className="text-slate-300 text-sm">Violation Type</Label>
+              <Label className="text-muted-foreground text-sm">Violation Type</Label>
               <Select value={form.violationType} onValueChange={v => setForm(f => ({ ...f, violationType: v }))}>
-                <SelectTrigger className="mt-1 bg-slate-700 border-slate-600 text-white"><SelectValue /></SelectTrigger>
-                <SelectContent className="bg-slate-800 border-slate-700">
+                <SelectTrigger className="mt-1 bg-muted border-border text-foreground"><SelectValue /></SelectTrigger>
+                <SelectContent className="bg-card border-border">
                   <SelectItem value="data_breach">Data Breach (Section 40)</SelectItem>
                   <SelectItem value="unlawful_processing">Unlawful Processing (Section 25)</SelectItem>
                   <SelectItem value="cross_border_violation">Cross-Border Violation (Section 43)</SelectItem>
@@ -188,26 +188,26 @@ export default function FinePayments() {
               </Select>
             </div>
             <div>
-              <Label className="text-slate-300 text-sm">Fine Amount (₦)</Label>
-              <Input type="number" className="mt-1 bg-slate-700 border-slate-600 text-white"
+              <Label className="text-muted-foreground text-sm">Fine Amount (₦)</Label>
+              <Input type="number" className="mt-1 bg-muted border-border text-foreground"
                 value={form.fineAmountNgn}
                 onChange={e => setForm(f => ({ ...f, fineAmountNgn: parseInt(e.target.value) || 0 }))} />
               <p className="text-slate-500 text-xs mt-1">Max: ₦10,000,000 or 2% of annual turnover</p>
             </div>
             <div>
-              <Label className="text-slate-300 text-sm">NDPC Decision Reference</Label>
-              <Input className="mt-1 bg-slate-700 border-slate-600 text-white font-mono" value={form.ndpcRef}
+              <Label className="text-muted-foreground text-sm">NDPC Decision Reference</Label>
+              <Input className="mt-1 bg-muted border-border text-foreground font-mono" value={form.ndpcRef}
                 placeholder="NDPC/DEC/2026/XXXX"
                 onChange={e => setForm(f => ({ ...f, ndpcRef: e.target.value }))} />
             </div>
             <div>
-              <Label className="text-slate-300 text-sm">Description</Label>
-              <Input className="mt-1 bg-slate-700 border-slate-600 text-white" value={form.description}
+              <Label className="text-muted-foreground text-sm">Description</Label>
+              <Input className="mt-1 bg-muted border-border text-foreground" value={form.description}
                 onChange={e => setForm(f => ({ ...f, description: e.target.value }))} />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" className="border-slate-600 text-slate-300" onClick={() => setShowIssue(false)}>Cancel</Button>
+            <Button variant="outline" className="border-border text-muted-foreground" onClick={() => setShowIssue(false)}>Cancel</Button>
             <Button className="bg-emerald-600 hover:bg-emerald-700"
               disabled={!form.orgId || !form.fineAmountNgn || issueFine.isPending}
               onClick={() => issueFine.mutate({

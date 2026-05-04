@@ -19,10 +19,10 @@ function ScoreBar({ label, value, color }: { label: string; value: number; color
   return (
     <div>
       <div className="flex justify-between text-xs mb-1">
-        <span className="text-gray-400">{label}</span>
+        <span className="text-muted-foreground">{label}</span>
         <span className={`font-bold ${color}`}>{value}%</span>
       </div>
-      <div className="h-2 bg-gray-800 rounded-full overflow-hidden">
+      <div className="h-2 bg-card rounded-full overflow-hidden">
         <div className={`h-full rounded-full transition-all ${value >= 70 ? "bg-green-500" : value >= 50 ? "bg-yellow-500" : "bg-red-500"}`} style={{ width: `${value}%` }} />
       </div>
     </div>
@@ -85,8 +85,8 @@ export default function AiGovernanceScoring() {
           <div className="flex items-center gap-3">
             <Brain className="w-7 h-7 text-purple-400" />
             <div>
-              <h1 className="text-xl font-bold text-white">AI Governance Scoring</h1>
-              <p className="text-sm text-gray-400">NDPA 2023 Article 24 — Automated Decision-Making Compliance</p>
+              <h1 className="text-xl font-bold text-foreground">AI Governance Scoring</h1>
+              <p className="text-sm text-muted-foreground">NDPA 2023 Article 24 — Automated Decision-Making Compliance</p>
             </div>
           </div>
           <Button onClick={() => setShowForm(!showForm)} className="bg-purple-600 hover:bg-purple-700">
@@ -95,54 +95,54 @@ export default function AiGovernanceScoring() {
         </div>
 
         {showForm && (
-          <form onSubmit={handleSubmit} className="bg-gray-900 border border-gray-800 rounded-xl p-6 mb-6 space-y-5">
-            <h2 className="font-semibold text-white text-lg">New AI System Assessment</h2>
+          <form onSubmit={handleSubmit} className="bg-background border border-border rounded-xl p-6 mb-6 space-y-5">
+            <h2 className="font-semibold text-foreground text-lg">New AI System Assessment</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label className="text-gray-300 mb-1.5 block">System Name *</Label>
-                <Input value={form.systemName} onChange={e => setForm(p => ({ ...p, systemName: e.target.value }))} className="bg-gray-800 border-gray-700 text-white" placeholder="e.g. Credit Scoring Engine" />
+                <Label className="text-muted-foreground mb-1.5 block">System Name *</Label>
+                <Input value={form.systemName} onChange={e => setForm(p => ({ ...p, systemName: e.target.value }))} className="bg-card border-border text-foreground" placeholder="e.g. Credit Scoring Engine" />
               </div>
               <div>
-                <Label className="text-gray-300 mb-1.5 block">System Type</Label>
-                <select value={form.systemType} onChange={e => setForm(p => ({ ...p, systemType: e.target.value }))} className="w-full bg-gray-800 border border-gray-700 text-white rounded-md px-3 py-2 text-sm">
+                <Label className="text-muted-foreground mb-1.5 block">System Type</Label>
+                <select value={form.systemType} onChange={e => setForm(p => ({ ...p, systemType: e.target.value }))} className="w-full bg-card border border-border text-foreground rounded-md px-3 py-2 text-sm">
                   {["classification", "recommendation", "prediction", "generation", "detection", "nlp", "computer_vision", "other"].map(t => <option key={t} value={t}>{t.replace("_", " ")}</option>)}
                 </select>
               </div>
             </div>
             <div>
-              <Label className="text-gray-300 mb-1.5 block">Organisation</Label>
-              <select value={form.orgId} onChange={e => setForm(p => ({ ...p, orgId: Number(e.target.value) }))} className="w-full bg-gray-800 border border-gray-700 text-white rounded-md px-3 py-2 text-sm">
+              <Label className="text-muted-foreground mb-1.5 block">Organisation</Label>
+              <select value={form.orgId} onChange={e => setForm(p => ({ ...p, orgId: Number(e.target.value) }))} className="w-full bg-card border border-border text-foreground rounded-md px-3 py-2 text-sm">
                 {(orgs as any[]).map((o: any) => <option key={o.id} value={o.id}>{o.name}</option>)}
               </select>
             </div>
             <div>
-              <Label className="text-gray-300 mb-1.5 block">System Description *</Label>
-              <Textarea value={form.systemDescription} onChange={e => setForm(p => ({ ...p, systemDescription: e.target.value }))} className="bg-gray-800 border-gray-700 text-white" rows={3} placeholder="Describe what this AI system does and how it makes decisions..." />
+              <Label className="text-muted-foreground mb-1.5 block">System Description *</Label>
+              <Textarea value={form.systemDescription} onChange={e => setForm(p => ({ ...p, systemDescription: e.target.value }))} className="bg-card border-border text-foreground" rows={3} placeholder="Describe what this AI system does and how it makes decisions..." />
             </div>
             <div>
-              <Label className="text-gray-300 mb-2 block">Use Cases *</Label>
+              <Label className="text-muted-foreground mb-2 block">Use Cases *</Label>
               <div className="flex flex-wrap gap-2 mb-2">
                 {form.useCases.map((uc, i) => (
-                  <span key={i} className="bg-gray-800 border border-gray-700 text-gray-300 text-xs px-2 py-1 rounded-full flex items-center gap-1">
+                  <span key={i} className="bg-card border border-border text-muted-foreground text-xs px-2 py-1 rounded-full flex items-center gap-1">
                     {uc}
                     <button type="button" onClick={() => setForm(p => ({ ...p, useCases: p.useCases.filter((_, j) => j !== i) }))} className="text-gray-500 hover:text-red-400"><XCircle className="w-3 h-3" /></button>
                   </span>
                 ))}
               </div>
               <div className="flex gap-2">
-                <Input value={newUseCase} onChange={e => setNewUseCase(e.target.value)} className="bg-gray-800 border-gray-700 text-white text-sm" placeholder="Add a use case..." onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); if (newUseCase.trim()) { setForm(p => ({ ...p, useCases: [...p.useCases, newUseCase.trim()] })); setNewUseCase(""); } } }} />
-                <Button type="button" size="sm" onClick={() => { if (newUseCase.trim()) { setForm(p => ({ ...p, useCases: [...p.useCases, newUseCase.trim()] })); setNewUseCase(""); } }} className="bg-gray-700 hover:bg-gray-600"><Plus className="w-4 h-4" /></Button>
+                <Input value={newUseCase} onChange={e => setNewUseCase(e.target.value)} className="bg-card border-border text-foreground text-sm" placeholder="Add a use case..." onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); if (newUseCase.trim()) { setForm(p => ({ ...p, useCases: [...p.useCases, newUseCase.trim()] })); setNewUseCase(""); } } }} />
+                <Button type="button" size="sm" onClick={() => { if (newUseCase.trim()) { setForm(p => ({ ...p, useCases: [...p.useCases, newUseCase.trim()] })); setNewUseCase(""); } }} className="bg-muted hover:bg-gray-600"><Plus className="w-4 h-4" /></Button>
               </div>
             </div>
             <div>
-              <Label className="text-gray-300 mb-3 block">Governance Checklist</Label>
+              <Label className="text-muted-foreground mb-3 block">Governance Checklist</Label>
               <div className="space-y-2">
                 {checks.map(({ key, label }) => (
                   <label key={key} className="flex items-center gap-3 cursor-pointer group">
-                    <div onClick={() => toggleCheck(key as any)} className={`w-5 h-5 rounded border flex items-center justify-center transition-all ${(form as any)[key] ? "bg-green-600 border-green-500" : "bg-gray-800 border-gray-600 group-hover:border-green-500"}`}>
-                      {(form as any)[key] && <CheckCircle2 className="w-3.5 h-3.5 text-white" />}
+                    <div onClick={() => toggleCheck(key as any)} className={`w-5 h-5 rounded border flex items-center justify-center transition-all ${(form as any)[key] ? "bg-green-600 border-green-500" : "bg-card border-border group-hover:border-green-500"}`}>
+                      {(form as any)[key] && <CheckCircle2 className="w-3.5 h-3.5 text-foreground" />}
                     </div>
-                    <span className="text-gray-300 text-sm">{label}</span>
+                    <span className="text-muted-foreground text-sm">{label}</span>
                   </label>
                 ))}
               </div>
@@ -151,7 +151,7 @@ export default function AiGovernanceScoring() {
               <Button type="submit" disabled={scoreMutation.isPending} className="bg-purple-600 hover:bg-purple-700">
                 {scoreMutation.isPending ? "Scoring..." : "Run Assessment"}
               </Button>
-              <Button type="button" variant="outline" onClick={() => setShowForm(false)} className="border-gray-600 text-gray-300">Cancel</Button>
+              <Button type="button" variant="outline" onClick={() => setShowForm(false)} className="border-border text-muted-foreground">Cancel</Button>
             </div>
           </form>
         )}
@@ -165,19 +165,19 @@ export default function AiGovernanceScoring() {
             </div>
           )}
           {(scores as any[]).map((s: any) => (
-            <div key={s.id} className="bg-gray-900 border border-gray-800 rounded-xl p-5">
+            <div key={s.id} className="bg-background border border-border rounded-xl p-5">
               <div className="flex items-start justify-between mb-4">
                 <div>
-                  <div className="font-semibold text-white text-lg">{s.system_name}</div>
-                  <div className="text-gray-400 text-sm">{s.system_type} · Assessed {new Date(s.assessed_at ?? s.created_at).toLocaleDateString()}</div>
+                  <div className="font-semibold text-foreground text-lg">{s.system_name}</div>
+                  <div className="text-muted-foreground text-sm">{s.system_type} · Assessed {new Date(s.assessed_at ?? s.created_at).toLocaleDateString()}</div>
                 </div>
                 <div className="flex items-center gap-3">
-                  <span className={`px-3 py-1 rounded-full text-xs font-semibold ${RISK_COLORS[s.risk_category] ?? "text-gray-400 bg-gray-800"}`}>
+                  <span className={`px-3 py-1 rounded-full text-xs font-semibold ${RISK_COLORS[s.risk_category] ?? "text-muted-foreground bg-card"}`}>
                     {s.risk_category?.toUpperCase()} RISK
                   </span>
                   <div className="text-right">
-                    <div className="text-2xl font-bold text-white">{s.overall_score}</div>
-                    <div className="text-xs text-gray-400">Overall Score</div>
+                    <div className="text-2xl font-bold text-foreground">{s.overall_score}</div>
+                    <div className="text-xs text-muted-foreground">Overall Score</div>
                   </div>
                 </div>
               </div>
@@ -197,11 +197,11 @@ export default function AiGovernanceScoring() {
                 )}
               </div>
               {(s.findings as any[])?.length > 0 && (
-                <div className="mt-3 pt-3 border-t border-gray-800">
-                  <div className="text-xs text-gray-400 mb-2">Top Findings</div>
+                <div className="mt-3 pt-3 border-t border-border">
+                  <div className="text-xs text-muted-foreground mb-2">Top Findings</div>
                   <div className="space-y-1">
                     {(s.findings as any[]).slice(0, 2).map((f: any, i: number) => (
-                      <div key={i} className="flex items-start gap-2 text-xs text-gray-300">
+                      <div key={i} className="flex items-start gap-2 text-xs text-muted-foreground">
                         <AlertTriangle className="w-3 h-3 text-orange-400 mt-0.5 flex-shrink-0" />
                         {f.issue} <span className="text-gray-500 ml-1">({f.ndpaArticle})</span>
                       </div>

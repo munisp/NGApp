@@ -80,7 +80,7 @@ const STATUS_COLORS: Record<string, string> = {
   COMPLETED: "bg-green-500/20 text-green-400 border-green-500/30",
   FAILED: "bg-red-500/20 text-red-400 border-red-500/30",
   TIMED_OUT: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
-  CANCELLED: "bg-gray-500/20 text-gray-400 border-gray-500/30",
+  CANCELLED: "bg-gray-500/20 text-muted-foreground border-gray-500/30",
 };
 
 const STATUS_ICONS: Record<string, React.ElementType> = {
@@ -165,11 +165,11 @@ export default function TemporalWorkflows() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white flex items-center gap-2">
+          <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
             <GitBranch className="w-6 h-6 text-purple-400" />
             Temporal Workflow Engine
           </h1>
-          <p className="text-gray-400 text-sm mt-1">
+          <p className="text-muted-foreground text-sm mt-1">
             Durable execution engine for enforcement, discovery, and compliance workflows
           </p>
         </div>
@@ -180,7 +180,7 @@ export default function TemporalWorkflows() {
           <select
             value={triggerType}
             onChange={e => setTriggerType(e.target.value)}
-            className="text-xs bg-gray-800 border border-gray-700 rounded px-2 py-1 text-gray-300"
+            className="text-xs bg-card border border-border rounded px-2 py-1 text-muted-foreground"
           >
             {WORKFLOW_TYPES.map(wt => (
               <option key={wt.id} value={wt.id}>{wt.name}</option>
@@ -192,7 +192,7 @@ export default function TemporalWorkflows() {
             value={triggerOrgId}
             onChange={e => setTriggerOrgId(e.target.value)}
             placeholder="Org ID"
-            className="text-xs bg-gray-800 border border-gray-700 rounded px-2 py-1 text-gray-300 w-20"
+            className="text-xs bg-card border border-border rounded px-2 py-1 text-muted-foreground w-20"
           />
           <Button
             size="sm"
@@ -202,7 +202,7 @@ export default function TemporalWorkflows() {
               input: { organizationId: Number(triggerOrgId) },
             })}
             disabled={triggerWorkflowMutation.isPending}
-            className="gap-2 bg-purple-600 hover:bg-purple-700 text-white"
+            className="gap-2 bg-purple-600 hover:bg-purple-700 text-foreground"
           >
             <Zap className="w-3 h-3" />
             {triggerWorkflowMutation.isPending ? "Triggering..." : "Trigger"}
@@ -222,12 +222,12 @@ export default function TemporalWorkflows() {
           { label: "Failed / Timed Out", value: failedCount, color: "text-red-400", icon: XCircle },
           { label: "Success Rate", value: `${successRate}%`, color: "text-yellow-400", icon: Zap },
         ].map(({ label, value, color, icon: Icon }) => (
-          <Card key={label} className="bg-gray-800/50 border-gray-700">
+          <Card key={label} className="bg-card/50 border-border">
             <CardContent className="p-4 flex items-center gap-3">
               <Icon className={`w-8 h-8 ${color}`} />
               <div>
                 <div className={`text-2xl font-bold ${color}`}>{value}</div>
-                <div className="text-xs text-gray-400">{label}</div>
+                <div className="text-xs text-muted-foreground">{label}</div>
               </div>
             </CardContent>
           </Card>
@@ -235,19 +235,19 @@ export default function TemporalWorkflows() {
       </div>
 
       {/* Workflow Type Summary */}
-      <Card className="bg-gray-800/50 border-gray-700">
+      <Card className="bg-card/50 border-border">
         <CardHeader className="pb-3">
-          <CardTitle className="text-white text-base">Workflow Types</CardTitle>
+          <CardTitle className="text-foreground text-base">Workflow Types</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {typeSummary.map(wt => {
               const Icon = wt.icon;
               return (
-                <div key={wt.id} className="bg-gray-900/50 rounded-lg p-3 border border-gray-700">
+                <div key={wt.id} className="bg-background/50 rounded-lg p-3 border border-border">
                   <div className="flex items-center gap-2 mb-2">
                     <Icon className={`w-4 h-4 ${wt.color}`} />
-                    <span className="text-sm font-medium text-white">{wt.name}</span>
+                    <span className="text-sm font-medium text-foreground">{wt.name}</span>
                   </div>
                   <p className="text-xs text-gray-500 mb-3">{wt.description}</p>
                   <div className="flex gap-2 text-xs">
@@ -269,9 +269,9 @@ export default function TemporalWorkflows() {
       </Card>
 
       {/* Active Workflow Runs */}
-      <Card className="bg-gray-800/50 border-gray-700">
+      <Card className="bg-card/50 border-border">
         <CardHeader className="pb-3">
-          <CardTitle className="text-white text-base flex items-center gap-2">
+          <CardTitle className="text-foreground text-base flex items-center gap-2">
             <Activity className="w-4 h-4 text-blue-400" />
             Workflow Execution Log
             <Badge className="ml-2 bg-blue-500/20 text-blue-400 border-blue-500/30 text-xs">
@@ -288,7 +288,7 @@ export default function TemporalWorkflows() {
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-gray-700 text-gray-400 text-xs">
+                  <tr className="border-b border-border text-muted-foreground text-xs">
                     <th className="text-left px-4 py-2">Workflow ID</th>
                     <th className="text-left px-4 py-2">Type</th>
                     <th className="text-left px-4 py-2">Organization</th>
@@ -305,17 +305,17 @@ export default function TemporalWorkflows() {
                       ? Math.round((run.stepsCompleted / run.totalSteps) * 100)
                       : 0;
                     return (
-                      <tr key={run.workflowId ?? idx} className="border-b border-gray-700/50 hover:bg-gray-700/20">
-                        <td className="px-4 py-2 font-mono text-xs text-gray-400">
+                      <tr key={run.workflowId ?? idx} className="border-b border-border/50 hover:bg-muted/20">
+                        <td className="px-4 py-2 font-mono text-xs text-muted-foreground">
                           {String(run.workflowId ?? "").substring(0, 20)}...
                         </td>
                         <td className="px-4 py-2">
                           <div className="flex items-center gap-1">
                             {run.type?.icon && <run.type.icon className={`w-3 h-3 ${run.type.color}`} />}
-                            <span className="text-white text-xs">{run.type?.name ?? "Workflow"}</span>
+                            <span className="text-foreground text-xs">{run.type?.name ?? "Workflow"}</span>
                           </div>
                         </td>
-                        <td className="px-4 py-2 text-xs text-gray-300">{run.orgName ?? "—"}</td>
+                        <td className="px-4 py-2 text-xs text-muted-foreground">{run.orgName ?? "—"}</td>
                         <td className="px-4 py-2">
                           <Badge className={`text-xs border ${STATUS_COLORS[run.status] ?? STATUS_COLORS.RUNNING} gap-1`}>
                             <StatusIcon className="w-3 h-3" />
@@ -325,10 +325,10 @@ export default function TemporalWorkflows() {
                         <td className="px-4 py-2">
                           <div className="flex items-center gap-2">
                             <Progress value={progress} className="w-16 h-1.5" />
-                            <span className="text-xs text-gray-400">{run.stepsCompleted}/{run.totalSteps}</span>
+                            <span className="text-xs text-muted-foreground">{run.stepsCompleted}/{run.totalSteps}</span>
                           </div>
                         </td>
-                        <td className="px-4 py-2 font-mono text-xs text-gray-400">{run.currentStep ?? "—"}</td>
+                        <td className="px-4 py-2 font-mono text-xs text-muted-foreground">{run.currentStep ?? "—"}</td>
                         <td className="px-4 py-2 text-xs text-gray-500">
                           {run.startedAt ? new Date(run.startedAt).toLocaleString() : "—"}
                         </td>
@@ -344,9 +344,9 @@ export default function TemporalWorkflows() {
 
       {/* Pending Enforcement Workflows */}
       {complianceViolations && complianceViolations.length > 0 && (
-        <Card className="bg-gray-800/50 border-gray-700">
+        <Card className="bg-card/50 border-border">
           <CardHeader className="pb-3">
-            <CardTitle className="text-white text-base flex items-center gap-2">
+            <CardTitle className="text-foreground text-base flex items-center gap-2">
               <AlertTriangle className="w-4 h-4 text-red-400" />
               Critical Violations Awaiting Enforcement Workflow
             </CardTitle>
@@ -356,8 +356,8 @@ export default function TemporalWorkflows() {
               {complianceViolations.map((v: any) => (
                 <div key={v.id} className="flex items-center justify-between bg-red-500/5 border border-red-500/20 rounded p-3">
                   <div>
-                    <div className="text-sm text-white font-medium">{v.title}</div>
-                    <div className="text-xs text-gray-400">{v.description?.substring(0, 100)}</div>
+                    <div className="text-sm text-foreground font-medium">{v.title}</div>
+                    <div className="text-xs text-muted-foreground">{v.description?.substring(0, 100)}</div>
                   </div>
                   <Button
                     size="sm"

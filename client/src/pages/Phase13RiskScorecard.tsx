@@ -12,7 +12,7 @@ import { ShieldAlert, Plus, Search, Edit } from "lucide-react";
 
 export default function Phase13RiskScorecard() {
   const [search, setSearch] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("");
   const [open, setOpen] = useState(false);
   const [editId, setEditId] = useState<number | null>(null);
@@ -25,7 +25,7 @@ export default function Phase13RiskScorecard() {
   const utils = trpc.useUtils();
   const { data: records, isLoading } = trpc.phase13.riskScorecard.list.useQuery({
     search: search || undefined,
-    risk_category: categoryFilter || undefined,
+    risk_category: categoryFilter === "all" ? undefined : categoryFilter || undefined,
     status: statusFilter || undefined,
   });
   const { data: matrix } = trpc.phase13.riskScorecard.getMatrix.useQuery();
@@ -149,14 +149,14 @@ export default function Phase13RiskScorecard() {
           <Select value={categoryFilter} onValueChange={setCategoryFilter}>
             <SelectTrigger className="w-44"><SelectValue placeholder="All Categories" /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All Categories</SelectItem>
+              <SelectItem value="all">All Categories</SelectItem>
               {RISK_CATEGORIES.map(c => <SelectItem key={c} value={c}>{c.replace(/_/g, " ")}</SelectItem>)}
             </SelectContent>
           </Select>
           <Select value={statusFilter} onValueChange={setStatusFilter}>
             <SelectTrigger className="w-36"><SelectValue placeholder="All Statuses" /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All</SelectItem>
+              <SelectItem value="all">All</SelectItem>
               <SelectItem value="open">Open</SelectItem>
               <SelectItem value="mitigated">Mitigated</SelectItem>
               <SelectItem value="accepted">Accepted</SelectItem>

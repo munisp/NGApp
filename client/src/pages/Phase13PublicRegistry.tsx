@@ -14,8 +14,8 @@ type ComplianceStatus = "compliant" | "partially_compliant" | "non_compliant" | 
 
 export default function Phase13PublicRegistry() {
   const [search, setSearch] = useState("");
-  const [sector, setSector] = useState("");
-  const [statusFilter, setStatusFilter] = useState("");
+  const [sector, setSector] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({
     org_id: "", org_name: "", registration_number: "", sector: "",
@@ -25,8 +25,8 @@ export default function Phase13PublicRegistry() {
   const utils = trpc.useUtils();
   const { data: records, isLoading } = trpc.phase13.publicRegistry.list.useQuery({
     search: search || undefined,
-    sector: sector || undefined,
-    status: statusFilter || undefined,
+    sector: sector === "all" ? undefined : sector || undefined,
+    status: statusFilter === "all" ? undefined : statusFilter || undefined,
   });
   const { data: stats } = trpc.phase13.publicRegistry.getStats.useQuery();
   const upsert = trpc.phase13.publicRegistry.upsert.useMutation({
@@ -142,7 +142,7 @@ export default function Phase13PublicRegistry() {
           <Select value={sector} onValueChange={setSector}>
             <SelectTrigger className="w-40"><SelectValue placeholder="All Sectors" /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All Sectors</SelectItem>
+              <SelectItem value="all">All Sectors</SelectItem>
               <SelectItem value="banking">Banking</SelectItem>
               <SelectItem value="telecom">Telecom</SelectItem>
               <SelectItem value="healthcare">Healthcare</SelectItem>
@@ -152,7 +152,7 @@ export default function Phase13PublicRegistry() {
           <Select value={statusFilter} onValueChange={setStatusFilter}>
             <SelectTrigger className="w-44"><SelectValue placeholder="All Statuses" /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All</SelectItem>
+              <SelectItem value="all">All</SelectItem>
               <SelectItem value="compliant">Compliant</SelectItem>
               <SelectItem value="partially_compliant">Partially Compliant</SelectItem>
               <SelectItem value="non_compliant">Non-Compliant</SelectItem>

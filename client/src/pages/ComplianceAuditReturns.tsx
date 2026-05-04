@@ -85,7 +85,7 @@ export default function ComplianceAuditReturns() {
           : filtered.map((r: any) => (
             <div key={r.id} className="bg-card border border-border rounded-xl p-4">
               <div className="flex items-start justify-between mb-2">
-                <div><div className="font-medium text-foreground">{r.org_name ?? `Org #${r.organization_id}`}</div><div className="text-xs text-muted-foreground/70 mt-1">Period: {r.audit_period_start} to {r.audit_period_end} &middot; DPCO: {r.dpco_name || "N/A"}</div></div>
+                <div><div className="font-medium text-foreground">{r.org_name ?? `Org #${r.organization_id}`}</div><div className="text-xs text-muted-foreground/70 mt-1">Period: {r.audit_period_start instanceof Date ? r.audit_period_start.toLocaleDateString() : String(r.audit_period_start ?? "")} to {r.audit_period_end instanceof Date ? r.audit_period_end.toLocaleDateString() : String(r.audit_period_end ?? "")} &middot; DPCO: {r.dpco_name || "N/A"}</div></div>
                 <div className="flex gap-2">
                   {r.compliance_score != null && <Badge className={`text-xs ${r.compliance_score >= 80 ? "bg-green-500/20 text-green-400" : r.compliance_score >= 60 ? "bg-yellow-500/20 text-yellow-400" : "bg-red-500/20 text-red-400"}`}>{r.compliance_score}%</Badge>}
                   <Badge className={`text-xs border ${STATUS_COLORS[r.car_status] ?? ""}`}>{r.car_status?.replace(/_/g," ")}</Badge>

@@ -31,30 +31,30 @@ export default function SectorManagement() {
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">Sector Management</h1>
-          <p className="text-gray-400 text-sm mt-1">Multi-tenant sector hierarchy for regulatory jurisdiction management</p>
+          <h1 className="text-2xl font-bold text-foreground">Sector Management</h1>
+          <p className="text-muted-foreground text-sm mt-1">Multi-tenant sector hierarchy for regulatory jurisdiction management</p>
         </div>
         <Button onClick={() => setShowCreate(true)} className="bg-indigo-600 hover:bg-indigo-700"><Plus className="w-4 h-4 mr-2" /> Add Sector</Button>
       </div>
       <div className="grid grid-cols-2 gap-4">
-        <div className="bg-gray-800 rounded-xl border border-gray-700 p-4"><div className="text-gray-400 text-sm">Total Sectors</div><div className="text-2xl font-bold text-white">{stats?.total || 0}</div></div>
-        <div className="bg-gray-800 rounded-xl border border-gray-700 p-4"><div className="text-gray-400 text-sm">Top-Level Sectors</div><div className="text-2xl font-bold text-white">{stats?.topLevel || 0}</div></div>
+        <div className="bg-card rounded-xl border border-border p-4"><div className="text-muted-foreground text-sm">Total Sectors</div><div className="text-2xl font-bold text-foreground">{stats?.total || 0}</div></div>
+        <div className="bg-card rounded-xl border border-border p-4"><div className="text-muted-foreground text-sm">Top-Level Sectors</div><div className="text-2xl font-bold text-foreground">{stats?.topLevel || 0}</div></div>
       </div>
-      <div className="bg-gray-800 rounded-xl border border-gray-700 overflow-hidden">
+      <div className="bg-card rounded-xl border border-border overflow-hidden">
         <table className="w-full text-sm">
-          <thead className="border-b border-gray-700 bg-gray-900/50">
-            <tr>{["Sector Name", "Code", "Description", "Regulatory Framework", "Parent", ""].map(h => <th key={h} className="text-left px-4 py-3 text-gray-400 font-medium">{h}</th>)}</tr>
+          <thead className="border-b border-border bg-background/50">
+            <tr>{["Sector Name", "Code", "Description", "Regulatory Framework", "Parent", ""].map(h => <th key={h} className="text-left px-4 py-3 text-muted-foreground font-medium">{h}</th>)}</tr>
           </thead>
           <tbody>
             {(sectors as any[]).length === 0 ? (
               <tr><td colSpan={6} className="text-center py-12 text-gray-500"><Building2 className="w-8 h-8 mx-auto mb-2 opacity-30" /><p>No sectors defined yet</p></td></tr>
             ) : (sectors as any[]).map((s: any) => (
-              <tr key={s.id} className="border-b border-gray-700/50 hover:bg-gray-700/30">
-                <td className="px-4 py-3 text-white font-medium flex items-center gap-2"><Building2 className="w-4 h-4 text-indigo-400" />{s.name}</td>
+              <tr key={s.id} className="border-b border-border/50 hover:bg-muted/30">
+                <td className="px-4 py-3 text-foreground font-medium flex items-center gap-2"><Building2 className="w-4 h-4 text-indigo-400" />{s.name}</td>
                 <td className="px-4 py-3 font-mono text-xs text-indigo-400">{s.code}</td>
-                <td className="px-4 py-3 text-gray-400 text-xs max-w-xs truncate">{s.description || "—"}</td>
-                <td className="px-4 py-3 text-gray-400 text-xs">{s.regulatoryFramework || "—"}</td>
-                <td className="px-4 py-3 text-gray-400 text-xs">{s.parentId ? <span className="flex items-center gap-1"><ChevronRight className="w-3 h-3" />Sub-sector</span> : "Root"}</td>
+                <td className="px-4 py-3 text-muted-foreground text-xs max-w-xs truncate">{s.description || "—"}</td>
+                <td className="px-4 py-3 text-muted-foreground text-xs">{s.regulatoryFramework || "—"}</td>
+                <td className="px-4 py-3 text-muted-foreground text-xs">{s.parentId ? <span className="flex items-center gap-1"><ChevronRight className="w-3 h-3" />Sub-sector</span> : "Root"}</td>
                 <td className="px-4 py-3">
                   <Button variant="ghost" size="sm" className="text-red-400 hover:text-red-300 hover:bg-red-900/20 h-7 w-7 p-0" onClick={() => setDeleteId(s.id)} disabled={deleteMutation.isPending}>
                     <Trash2 className="w-3.5 h-3.5" />
@@ -66,17 +66,17 @@ export default function SectorManagement() {
         </table>
       </div>
       <Dialog open={showCreate} onOpenChange={setShowCreate}>
-        <DialogContent className="bg-gray-900 border-gray-700 text-white">
+        <DialogContent className="bg-background border-border text-foreground">
           <DialogHeader><DialogTitle>Add Sector</DialogTitle></DialogHeader>
           <div className="space-y-3">
-            <div><Label>Name</Label><Input value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} className="bg-gray-800 border-gray-700 mt-1" placeholder="e.g. Financial Services" /></div>
-            <div><Label>Code</Label><Input value={form.code} onChange={e => setForm(p => ({ ...p, code: e.target.value }))} className="bg-gray-800 border-gray-700 mt-1 font-mono" placeholder="e.g. FIN" /></div>
-            <div><Label>Description</Label><Input value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} className="bg-gray-800 border-gray-700 mt-1" /></div>
-            <div><Label>Regulatory Framework</Label><Input value={form.regulatoryFramework} onChange={e => setForm(p => ({ ...p, regulatoryFramework: e.target.value }))} className="bg-gray-800 border-gray-700 mt-1" placeholder="e.g. NDPR, BOFIA" /></div>
+            <div><Label>Name</Label><Input value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} className="bg-card border-border mt-1" placeholder="e.g. Financial Services" /></div>
+            <div><Label>Code</Label><Input value={form.code} onChange={e => setForm(p => ({ ...p, code: e.target.value }))} className="bg-card border-border mt-1 font-mono" placeholder="e.g. FIN" /></div>
+            <div><Label>Description</Label><Input value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} className="bg-card border-border mt-1" /></div>
+            <div><Label>Regulatory Framework</Label><Input value={form.regulatoryFramework} onChange={e => setForm(p => ({ ...p, regulatoryFramework: e.target.value }))} className="bg-card border-border mt-1" placeholder="e.g. NDPR, BOFIA" /></div>
             <div><Label>Parent Sector (optional)</Label>
               <Select value={form.parentId} onValueChange={v => setForm(p => ({ ...p, parentId: v }))}>
-                <SelectTrigger className="bg-gray-800 border-gray-700 mt-1"><SelectValue placeholder="None (top-level)" /></SelectTrigger>
-                <SelectContent><SelectItem value="">None (top-level)</SelectItem>{(sectors as any[]).map((s: any) => <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>)}</SelectContent>
+                <SelectTrigger className="bg-card border-border mt-1"><SelectValue placeholder="None (top-level)" /></SelectTrigger>
+                <SelectContent><SelectItem value="all">None (top-level)</SelectItem>{(sectors as any[]).map((s: any) => <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>)}</SelectContent>
               </Select>
             </div>
           </div>
@@ -88,9 +88,9 @@ export default function SectorManagement() {
       </Dialog>
       {/* Delete Confirmation */}
       <AlertDialog open={deleteId !== null} onOpenChange={() => setDeleteId(null)}>
-        <AlertDialogContent className="bg-gray-900 border-gray-700">
+        <AlertDialogContent className="bg-background border-border">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-white">Delete Sector</AlertDialogTitle>
+            <AlertDialogTitle className="text-foreground">Delete Sector</AlertDialogTitle>
             <AlertDialogDescription>This will permanently delete this sector. This action cannot be undone.</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

@@ -13,7 +13,7 @@ import { Users, Plus, Play, XCircle, ChevronLeft, ChevronRight } from "lucide-re
 type JobType = "data_export" | "erasure" | "portability" | "consent_withdrawal" | "rectification";
 
 export default function Phase13BulkDsar() {
-  const [statusFilter, setStatusFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [open, setOpen] = useState(false);
@@ -23,7 +23,7 @@ export default function Phase13BulkDsar() {
 
   const utils = trpc.useUtils();
   const { data: jobsData, isLoading } = trpc.phase13.bulkDsar.list.useQuery({
-    status: statusFilter || undefined,
+    status: statusFilter === "all" ? undefined : statusFilter || undefined,
     search: searchQuery || undefined,
     page: currentPage,
     limit: 20,
@@ -147,7 +147,7 @@ export default function Phase13BulkDsar() {
           <Select value={statusFilter} onValueChange={v => { setStatusFilter(v); setCurrentPage(1); }}>
             <SelectTrigger className="w-40"><SelectValue placeholder="All Statuses" /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All</SelectItem>
+              <SelectItem value="all">All</SelectItem>
               <SelectItem value="pending">Pending</SelectItem>
               <SelectItem value="in_progress">In Progress</SelectItem>
               <SelectItem value="completed">Completed</SelectItem>

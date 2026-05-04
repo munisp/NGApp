@@ -48,8 +48,8 @@ export default function EvidencePackages() {
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">Evidence Packages</h1>
-          <p className="text-gray-400 text-sm mt-1">Tamper-evident, HMAC-SHA256 signed audit evidence packages for regulatory proceedings</p>
+          <h1 className="text-2xl font-bold text-foreground">Evidence Packages</h1>
+          <p className="text-muted-foreground text-sm mt-1">Tamper-evident, HMAC-SHA256 signed audit evidence packages for regulatory proceedings</p>
         </div>
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-1.5 text-xs text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 rounded-lg px-3 py-1.5">
@@ -63,46 +63,46 @@ export default function EvidencePackages() {
       </div>
 
       <div className="grid grid-cols-3 gap-4">
-        <div className="bg-gray-800 rounded-xl border border-gray-700 p-4">
-          <div className="text-gray-400 text-sm">Total Packages</div>
-          <div className="text-2xl font-bold text-white">{(packages as any[]).length}</div>
+        <div className="bg-card rounded-xl border border-border p-4">
+          <div className="text-muted-foreground text-sm">Total Packages</div>
+          <div className="text-2xl font-bold text-foreground">{(packages as any[]).length}</div>
         </div>
-        <div className="bg-gray-800 rounded-xl border border-gray-700 p-4">
-          <div className="text-gray-400 text-sm">Ready</div>
+        <div className="bg-card rounded-xl border border-border p-4">
+          <div className="text-muted-foreground text-sm">Ready</div>
           <div className="text-2xl font-bold text-green-400">{(packages as any[]).filter((p: any) => p.status === "ready").length}</div>
         </div>
-        <div className="bg-gray-800 rounded-xl border border-gray-700 p-4">
-          <div className="text-gray-400 text-sm">Expired</div>
+        <div className="bg-card rounded-xl border border-border p-4">
+          <div className="text-muted-foreground text-sm">Expired</div>
           <div className="text-2xl font-bold text-red-400">{(packages as any[]).filter((p: any) => p.status === "expired").length}</div>
         </div>
       </div>
 
       {verifyTarget && (
-        <div className={`rounded-xl border p-4 flex items-center gap-3 ${isVerifying ? "border-gray-600 bg-gray-800" : verifyResult?.valid ? "border-emerald-500/40 bg-emerald-500/10" : "border-red-500/40 bg-red-500/10"}`}>
+        <div className={`rounded-xl border p-4 flex items-center gap-3 ${isVerifying ? "border-border bg-card" : verifyResult?.valid ? "border-emerald-500/40 bg-emerald-500/10" : "border-red-500/40 bg-red-500/10"}`}>
           {isVerifying ? (
-            <Shield className="w-5 h-5 text-gray-400 animate-pulse" />
+            <Shield className="w-5 h-5 text-muted-foreground animate-pulse" />
           ) : verifyResult?.valid ? (
             <ShieldCheck className="w-5 h-5 text-emerald-400" />
           ) : (
             <ShieldAlert className="w-5 h-5 text-red-400" />
           )}
           <div className="flex-1">
-            <p className={`text-sm font-medium ${isVerifying ? "text-gray-300" : verifyResult?.valid ? "text-emerald-300" : "text-red-300"}`}>
+            <p className={`text-sm font-medium ${isVerifying ? "text-muted-foreground" : verifyResult?.valid ? "text-emerald-300" : "text-red-300"}`}>
               {isVerifying ? "Verifying signature..." : verifyResult?.valid ? "Signature verified — package is authentic and untampered" : "Signature verification failed — package may be tampered"}
             </p>
             {verifyResult && !isVerifying && (
               <p className="text-xs text-gray-500 font-mono mt-0.5">Hash: {verifyTarget.contentHash.slice(0, 32)}...</p>
             )}
           </div>
-          <Button size="sm" variant="ghost" className="text-xs text-gray-400" onClick={() => setVerifyTarget(null)}>Dismiss</Button>
+          <Button size="sm" variant="ghost" className="text-xs text-muted-foreground" onClick={() => setVerifyTarget(null)}>Dismiss</Button>
         </div>
       )}
 
-      <div className="bg-gray-800 rounded-xl border border-gray-700 overflow-hidden">
+      <div className="bg-card rounded-xl border border-border overflow-hidden">
         <table className="w-full text-sm">
-          <thead className="border-b border-gray-700 bg-gray-900/50">
+          <thead className="border-b border-border bg-background/50">
             <tr>{["Package ID", "Type", "Reference", "HMAC Signature", "Status", "Expires", "Actions"].map(h => (
-              <th key={h} className="text-left px-4 py-3 text-gray-400 font-medium">{h}</th>
+              <th key={h} className="text-left px-4 py-3 text-muted-foreground font-medium">{h}</th>
             ))}</tr>
           </thead>
           <tbody>
@@ -114,22 +114,22 @@ export default function EvidencePackages() {
                 </td>
               </tr>
             ) : (packages as any[]).map((p: any) => (
-              <tr key={p.id} className="border-b border-gray-700/50 hover:bg-gray-700/30">
+              <tr key={p.id} className="border-b border-border/50 hover:bg-muted/30">
                 <td className="px-4 py-3 font-mono text-xs text-blue-400">EP-{String(p.id).padStart(6, "0")}</td>
                 <td className="px-4 py-3">
-                  <Badge variant="outline" className="text-xs border-gray-600 text-gray-300">{p.packageType}</Badge>
+                  <Badge variant="outline" className="text-xs border-border text-muted-foreground">{p.packageType}</Badge>
                 </td>
-                <td className="px-4 py-3 text-gray-400 text-xs">{p.referenceType || "—"} #{p.referenceId || "—"}</td>
+                <td className="px-4 py-3 text-muted-foreground text-xs">{p.referenceType || "—"} #{p.referenceId || "—"}</td>
                 <td className="px-4 py-3 font-mono text-xs text-gray-500 max-w-xs truncate">{p.hmacSignature?.slice(0, 20)}...</td>
                 <td className="px-4 py-3">
                   <Badge className={`text-xs ${p.status === "ready" ? "bg-green-500/20 text-green-400" : "bg-red-500/20 text-red-400"}`}>{p.status}</Badge>
                 </td>
-                <td className="px-4 py-3 text-gray-400 text-xs">{p.expiresAt ? new Date(p.expiresAt).toLocaleDateString() : "—"}</td>
+                <td className="px-4 py-3 text-muted-foreground text-xs">{p.expiresAt ? new Date(p.expiresAt).toLocaleDateString() : "—"}</td>
                 <td className="px-4 py-3 flex items-center gap-2">
                   <Button
                     size="sm"
                     variant="outline"
-                    className="text-xs border-gray-600"
+                    className="text-xs border-border"
                     onClick={() => {
                       const payload = {
                         evidence_package_id: `EP-${String(p.id).padStart(6, "0")}`,
@@ -174,13 +174,13 @@ export default function EvidencePackages() {
       </div>
 
       <Dialog open={showGenerate} onOpenChange={setShowGenerate}>
-        <DialogContent className="bg-gray-900 border-gray-700 text-white">
+        <DialogContent className="bg-background border-border text-foreground">
           <DialogHeader><DialogTitle>Generate Evidence Package</DialogTitle></DialogHeader>
           <div className="space-y-3">
             <div>
               <Label>Organization</Label>
               <Select value={form.organizationId} onValueChange={v => setForm(p => ({ ...p, organizationId: v }))}>
-                <SelectTrigger className="bg-gray-800 border-gray-700 mt-1"><SelectValue placeholder="Select org..." /></SelectTrigger>
+                <SelectTrigger className="bg-card border-border mt-1"><SelectValue placeholder="Select org..." /></SelectTrigger>
                 <SelectContent>
                   {(orgs as any[]).map((o: any) => <SelectItem key={o.id} value={String(o.id)}>{o.name}</SelectItem>)}
                 </SelectContent>
@@ -189,7 +189,7 @@ export default function EvidencePackages() {
             <div>
               <Label>Package Type</Label>
               <Select value={form.packageType} onValueChange={v => setForm(p => ({ ...p, packageType: v }))}>
-                <SelectTrigger className="bg-gray-800 border-gray-700 mt-1"><SelectValue /></SelectTrigger>
+                <SelectTrigger className="bg-card border-border mt-1"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {PACKAGE_TYPES.map(t => <SelectItem key={t} value={t}>{t.replace(/_/g, " ")}</SelectItem>)}
                 </SelectContent>

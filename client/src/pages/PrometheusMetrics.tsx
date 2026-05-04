@@ -128,11 +128,11 @@ export default function PrometheusMetrics() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white flex items-center gap-2">
+          <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
             <BarChart3 className="w-6 h-6 text-orange-400" />
             Prometheus Metrics
           </h1>
-          <p className="text-gray-400 text-sm mt-1">
+          <p className="text-muted-foreground text-sm mt-1">
             Real-time platform metrics scraped from all 18 NDSEP workers · Grafana-compatible PromQL
           </p>
         </div>
@@ -152,10 +152,10 @@ export default function PrometheusMetrics() {
       </div>
 
       {/* Platform Health Bar */}
-      <Card className="bg-gray-800/50 border-gray-700">
+      <Card className="bg-card/50 border-border">
         <CardContent className="p-4">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm text-gray-300 font-medium">Platform Health</span>
+            <span className="text-sm text-muted-foreground font-medium">Platform Health</span>
             <span className="text-sm text-green-400 font-bold">
               {Math.round((healthyWorkers / Math.max(totalWorkers, 1)) * 100)}%
             </span>
@@ -180,9 +180,9 @@ export default function PrometheusMetrics() {
       {METRIC_GROUPS.map((group, gi) => {
         const Icon = group.icon;
         return (
-          <Card key={group.name} className="bg-gray-800/50 border-gray-700">
+          <Card key={group.name} className="bg-card/50 border-border">
             <CardHeader className="pb-3">
-              <CardTitle className="text-white text-base flex items-center gap-2">
+              <CardTitle className="text-foreground text-base flex items-center gap-2">
                 <Icon className={`w-4 h-4 ${group.color}`} />
                 {group.name}
               </CardTitle>
@@ -200,9 +200,9 @@ export default function PrometheusMetrics() {
                   const pct = Math.round(((value - metric.min) / (metric.max - metric.min)) * 100);
 
                   return (
-                    <div key={metric.key} className="bg-gray-900/50 rounded-lg p-3 border border-gray-700">
+                    <div key={metric.key} className="bg-background/50 rounded-lg p-3 border border-border">
                       <div className="flex items-center justify-between mb-1">
-                        <span className="text-xs text-gray-400 truncate">{metric.label}</span>
+                        <span className="text-xs text-muted-foreground truncate">{metric.label}</span>
                         {trend === "up" ? (
                           <TrendingUp className="w-3 h-3 text-green-400 flex-shrink-0" />
                         ) : trend === "down" ? (
@@ -228,9 +228,9 @@ export default function PrometheusMetrics() {
       })}
 
       {/* Worker Scrape Targets */}
-      <Card className="bg-gray-800/50 border-gray-700">
+      <Card className="bg-card/50 border-border">
         <CardHeader className="pb-3">
-          <CardTitle className="text-white text-base flex items-center gap-2">
+          <CardTitle className="text-foreground text-base flex items-center gap-2">
             <Activity className="w-4 h-4 text-blue-400" />
             Prometheus Scrape Targets
           </CardTitle>
@@ -239,7 +239,7 @@ export default function PrometheusMetrics() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-gray-700 text-gray-400 text-xs">
+                <tr className="border-b border-border text-muted-foreground text-xs">
                   <th className="text-left px-4 py-2">Target</th>
                   <th className="text-left px-4 py-2">Endpoint</th>
                   <th className="text-left px-4 py-2">Layer</th>
@@ -250,13 +250,13 @@ export default function PrometheusMetrics() {
               </thead>
               <tbody>
                 {(workerStatus as any[] ?? []).map((w: any) => (
-                  <tr key={w.id} className="border-b border-gray-700/50 hover:bg-gray-700/20">
-                    <td className="px-4 py-2 text-white text-xs font-medium">{w.name}</td>
-                    <td className="px-4 py-2 font-mono text-xs text-gray-400">
+                  <tr key={w.id} className="border-b border-border/50 hover:bg-muted/20">
+                    <td className="px-4 py-2 text-foreground text-xs font-medium">{w.name}</td>
+                    <td className="px-4 py-2 font-mono text-xs text-muted-foreground">
                       localhost:{w.port}/metrics
                     </td>
                     <td className="px-4 py-2">
-                      <Badge className="bg-gray-700 text-gray-300 text-xs border-0">{w.layer}</Badge>
+                      <Badge className="bg-muted text-muted-foreground text-xs border-0">{w.layer}</Badge>
                     </td>
                     <td className="px-4 py-2">
                       <Badge className={`text-xs border-0 ${

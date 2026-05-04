@@ -53,7 +53,7 @@ export default function PenaltyCalculator() {
               <td className="py-2 pr-3 font-medium">{p.org_name??'—'}</td>
               <td className="py-2 pr-3 text-xs">{p.sector??'—'}</td>
               <td className="py-2 pr-3 font-mono text-sm">{fmtNGN(parseFloat(p.amount??'0'))}</td>
-              <td className="py-2 pr-3 text-xs">{p.status}</td>
+              <td className="py-2 pr-3 text-xs">{p.payment_status??p.status??'—'}</td>
               <td className="py-2 text-xs">{p.created_at?new Date(p.created_at).toLocaleDateString():''}</td>
             </tr>
           ))}</tbody>

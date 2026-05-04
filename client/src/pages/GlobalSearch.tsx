@@ -71,10 +71,10 @@ export default function GlobalSearch() {
     <DashboardLayout>
       <div className="p-6 max-w-4xl mx-auto">
         <div className="flex items-center gap-3 mb-6">
-          <Search className="w-7 h-7 text-gray-400" />
+          <Search className="w-7 h-7 text-muted-foreground" />
           <div>
-            <h1 className="text-xl font-bold text-white">Global Search</h1>
-            <p className="text-sm text-gray-400">Search across organisations, violations, enforcement cases, DPCOs, and citizen requests</p>
+            <h1 className="text-xl font-bold text-foreground">Global Search</h1>
+            <p className="text-sm text-muted-foreground">Search across organisations, violations, enforcement cases, DPCOs, and citizen requests</p>
           </div>
         </div>
 
@@ -83,7 +83,7 @@ export default function GlobalSearch() {
           <Input
             value={query}
             onChange={handleChange}
-            className="bg-gray-900 border-gray-700 text-white pl-12 h-12 text-base"
+            className="bg-background border-border text-foreground pl-12 h-12 text-base"
             placeholder="Search anything... (min 2 characters)"
             autoFocus
           />
@@ -95,7 +95,7 @@ export default function GlobalSearch() {
         {debouncedQuery.length >= 2 && !isLoading && (results as any[] ?? []).length === 0 && (
           <div className="text-center py-16 text-gray-500">
             <Search className="w-12 h-12 mx-auto mb-3 opacity-30" />
-            <p>No results found for "<span className="text-gray-400">{debouncedQuery}</span>"</p>
+            <p>No results found for "<span className="text-muted-foreground">{debouncedQuery}</span>"</p>
           </div>
         )}
 
@@ -110,36 +110,36 @@ export default function GlobalSearch() {
           <div key={type} className="mb-6">
             <div className="flex items-center gap-2 mb-3">
               {TYPE_ICONS[type]}
-              <span className="text-sm font-medium text-gray-400">{TYPE_LABELS[type] ?? type} ({items.length})</span>
+              <span className="text-sm font-medium text-muted-foreground">{TYPE_LABELS[type] ?? type} ({items.length})</span>
             </div>
             <div className="space-y-2">
               {items.map((item: any) => (
                 <button
                   key={`${type}-${item.id}`}
                   onClick={() => navigate(`${TYPE_ROUTES[type] ?? "/"}/${item.id}`)}
-                  className="w-full bg-gray-900 border border-gray-800 hover:border-gray-600 rounded-xl px-4 py-3 text-left flex items-center justify-between transition-all group"
+                  className="w-full bg-background border border-border hover:border-border rounded-xl px-4 py-3 text-left flex items-center justify-between transition-all group"
                 >
                   <div className="flex items-start gap-3">
                     <div className="mt-0.5">{TYPE_ICONS[type]}</div>
                     <div>
                       {/* XSS-safe: DOMPurify strips all dangerous tags/attributes */}
                       <div
-                        className="font-medium text-white text-sm group-hover:text-blue-300 transition-colors"
+                        className="font-medium text-foreground text-sm group-hover:text-blue-300 transition-colors"
                         dangerouslySetInnerHTML={sanitizeHtml(item.headline ?? item.title ?? item.name ?? `#${item.id}`)}
                       />
                       {item.snippet && (
                         <div
-                          className="text-gray-400 text-xs mt-0.5 line-clamp-2"
+                          className="text-muted-foreground text-xs mt-0.5 line-clamp-2"
                           dangerouslySetInnerHTML={sanitizeHtml(item.snippet)}
                         />
                       )}
                     </div>
                   </div>
                   <div className="flex items-center gap-2 flex-shrink-0 ml-3">
-                    <span className={`px-2 py-0.5 rounded text-xs font-medium ${TYPE_COLORS[type] ?? "bg-gray-800 text-gray-400"}`}>
+                    <span className={`px-2 py-0.5 rounded text-xs font-medium ${TYPE_COLORS[type] ?? "bg-card text-muted-foreground"}`}>
                       {TYPE_LABELS[type] ?? type}
                     </span>
-                    <ArrowRight className="w-3.5 h-3.5 text-gray-600 group-hover:text-gray-400 transition-colors" />
+                    <ArrowRight className="w-3.5 h-3.5 text-gray-600 group-hover:text-muted-foreground transition-colors" />
                   </div>
                 </button>
               ))}

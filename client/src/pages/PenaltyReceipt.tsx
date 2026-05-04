@@ -23,7 +23,7 @@ export default function PenaltyReceipt() {
       <div className="min-h-screen bg-gray-950 flex items-center justify-center">
         <div className="text-center">
           <div className="w-10 h-10 border-2 border-green-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-gray-400">Loading receipt…</p>
+          <p className="text-muted-foreground">Loading receipt…</p>
         </div>
       </div>
     );
@@ -36,10 +36,10 @@ export default function PenaltyReceipt() {
           <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
             <Shield className="w-8 h-8 text-red-400" />
           </div>
-          <h2 className="text-xl font-semibold text-white mb-2">Receipt Not Found</h2>
-          <p className="text-gray-400 mb-6">Penalty #{id} does not exist or has no payment record.</p>
+          <h2 className="text-xl font-semibold text-foreground mb-2">Receipt Not Found</h2>
+          <p className="text-muted-foreground mb-6">Penalty #{id} does not exist or has no payment record.</p>
           <Link href="/portal">
-            <Button variant="outline" className="border-gray-700 text-gray-300">
+            <Button variant="outline" className="border-border text-muted-foreground">
               <ArrowLeft className="w-4 h-4 mr-2" /> Back to Portal
             </Button>
           </Link>
@@ -62,20 +62,20 @@ export default function PenaltyReceipt() {
         {/* Header actions */}
         <div className="flex items-center justify-between mb-8 print:hidden">
           <Link href="/portal">
-            <Button variant="ghost" className="text-gray-400 hover:text-white">
+            <Button variant="ghost" className="text-muted-foreground hover:text-foreground">
               <ArrowLeft className="w-4 h-4 mr-2" /> Back to Portal
             </Button>
           </Link>
           <Button
             onClick={() => window.print()}
-            className="bg-green-600 hover:bg-green-700 text-white"
+            className="bg-green-600 hover:bg-green-700 text-foreground"
           >
             <Printer className="w-4 h-4 mr-2" /> Print Receipt
           </Button>
         </div>
 
         {/* Receipt card */}
-        <div className="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden print:border-gray-300 print:bg-white print:text-black">
+        <div className="bg-background border border-border rounded-2xl overflow-hidden print:border-gray-300 print:bg-white print:text-black">
           {/* Header */}
           <div className="bg-gradient-to-r from-green-900 to-emerald-900 px-8 py-6 print:bg-green-700">
             <div className="flex items-center justify-between">
@@ -84,7 +84,7 @@ export default function PenaltyReceipt() {
                   <Shield className="w-6 h-6 text-green-300" />
                   <span className="text-green-300 text-sm font-medium tracking-widest uppercase">NDSEP</span>
                 </div>
-                <h1 className="text-2xl font-bold text-white">Payment Receipt</h1>
+                <h1 className="text-2xl font-bold text-foreground">Payment Receipt</h1>
                 <p className="text-green-200 text-sm mt-1">National Data Sovereignty Enforcement Platform</p>
               </div>
               <div className="text-right">
@@ -112,20 +112,20 @@ export default function PenaltyReceipt() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <p className="text-xs text-gray-500">Name</p>
-                  <p className="text-white font-medium">{receipt.orgName ?? "—"}</p>
+                  <p className="text-foreground font-medium">{receipt.orgName ?? "—"}</p>
                 </div>
                 <div>
                   <p className="text-xs text-gray-500">Sector</p>
-                  <p className="text-white font-medium capitalize">{receipt.orgSector ?? "—"}</p>
+                  <p className="text-foreground font-medium capitalize">{receipt.orgSector ?? "—"}</p>
                 </div>
                 <div>
                   <p className="text-xs text-gray-500">Country</p>
-                  <p className="text-white font-medium">{receipt.orgCountry ?? "—"}</p>
+                  <p className="text-foreground font-medium">{receipt.orgCountry ?? "—"}</p>
                 </div>
               </div>
             </div>
 
-            <div className="border-t border-gray-800" />
+            <div className="border-t border-border" />
 
             {/* Penalty details */}
             <div>
@@ -133,7 +133,7 @@ export default function PenaltyReceipt() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <p className="text-xs text-gray-500">Penalty ID</p>
-                  <p className="text-white font-mono font-medium">#{receipt.id}</p>
+                  <p className="text-foreground font-mono font-medium">#{receipt.id}</p>
                 </div>
                 <div>
                   <p className="text-xs text-gray-500">Amount</p>
@@ -141,39 +141,39 @@ export default function PenaltyReceipt() {
                 </div>
                 <div className="col-span-2">
                   <p className="text-xs text-gray-500">Description</p>
-                  <p className="text-white">{receipt.description ?? "Compliance penalty"}</p>
+                  <p className="text-foreground">{receipt.description ?? "Compliance penalty"}</p>
                 </div>
                 <div>
                   <p className="text-xs text-gray-500">Due Date</p>
-                  <p className="text-white">{receipt.dueDate ? new Date(receipt.dueDate).toLocaleDateString() : "—"}</p>
+                  <p className="text-foreground">{receipt.dueDate ? new Date(receipt.dueDate).toLocaleDateString() : "—"}</p>
                 </div>
                 <div>
                   <p className="text-xs text-gray-500">Paid At</p>
-                  <p className="text-white">{receipt.paidAt ? new Date(receipt.paidAt).toLocaleString() : "—"}</p>
+                  <p className="text-foreground">{receipt.paidAt ? new Date(receipt.paidAt).toLocaleString() : "—"}</p>
                 </div>
                 <div>
                   <p className="text-xs text-gray-500">Issued At</p>
-                  <p className="text-white">{receipt.createdAt ? new Date(receipt.createdAt).toLocaleString() : "—"}</p>
+                  <p className="text-foreground">{receipt.createdAt ? new Date(receipt.createdAt).toLocaleString() : "—"}</p>
                 </div>
               </div>
             </div>
 
-            <div className="border-t border-gray-800" />
+            <div className="border-t border-border" />
 
             {/* Transaction references */}
             <div>
               <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-3">Transaction References</h2>
               <div className="space-y-2">
                 {receipt.tigerBeetleTransferId && (
-                  <div className="flex items-center justify-between bg-gray-800/50 rounded-lg px-4 py-2">
-                    <span className="text-xs text-gray-400">TigerBeetle Transfer ID</span>
-                    <span className="text-white font-mono text-sm">{receipt.tigerBeetleTransferId}</span>
+                  <div className="flex items-center justify-between bg-card/50 rounded-lg px-4 py-2">
+                    <span className="text-xs text-muted-foreground">TigerBeetle Transfer ID</span>
+                    <span className="text-foreground font-mono text-sm">{receipt.tigerBeetleTransferId}</span>
                   </div>
                 )}
                 {receipt.mojaloopTransferId && (
-                  <div className="flex items-center justify-between bg-gray-800/50 rounded-lg px-4 py-2">
-                    <span className="text-xs text-gray-400">Mojaloop Transfer ID</span>
-                    <span className="text-white font-mono text-sm">{receipt.mojaloopTransferId}</span>
+                  <div className="flex items-center justify-between bg-card/50 rounded-lg px-4 py-2">
+                    <span className="text-xs text-muted-foreground">Mojaloop Transfer ID</span>
+                    <span className="text-foreground font-mono text-sm">{receipt.mojaloopTransferId}</span>
                   </div>
                 )}
                 {!receipt.tigerBeetleTransferId && !receipt.mojaloopTransferId && (
@@ -182,7 +182,7 @@ export default function PenaltyReceipt() {
               </div>
             </div>
 
-            <div className="border-t border-gray-800" />
+            <div className="border-t border-border" />
 
             {/* QR + verification */}
             <div className="flex items-start gap-6">
@@ -190,12 +190,12 @@ export default function PenaltyReceipt() {
                 <img
                   src={qrDataUrl(verifyUrl)}
                   alt="Verification QR Code"
-                  className="w-24 h-24 rounded-lg border border-gray-700"
+                  className="w-24 h-24 rounded-lg border border-border"
                 />
               </div>
               <div className="flex-1">
                 <p className="text-xs text-gray-500 uppercase tracking-widest mb-1">Verification</p>
-                <p className="text-sm text-gray-300 mb-2">
+                <p className="text-sm text-muted-foreground mb-2">
                   Scan the QR code or visit the link below to verify this payment record on the NDSEP public registry.
                 </p>
                 <a
@@ -211,7 +211,7 @@ export default function PenaltyReceipt() {
           </div>
 
           {/* Footer */}
-          <div className="bg-gray-800/50 px-8 py-4 text-center print:bg-gray-100">
+          <div className="bg-card/50 px-8 py-4 text-center print:bg-gray-100">
             <p className="text-xs text-gray-500">
               This is an official NDSEP enforcement receipt. For disputes, visit{" "}
               <Link href="/portal" className="text-green-400 hover:underline">the Organisation Portal</Link>.

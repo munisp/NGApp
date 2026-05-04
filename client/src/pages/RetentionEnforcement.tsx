@@ -29,11 +29,11 @@ export default function RetentionEnforcement() {
       <div className="p-6 space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-white flex items-center gap-2"><Clock className="w-6 h-6 text-orange-400" /> Data Retention Enforcement</h1>
-            <p className="text-slate-400 text-sm mt-1">NDPA Section 26 — Automated retention policy monitoring and enforcement</p>
+            <h1 className="text-2xl font-bold text-foreground flex items-center gap-2"><Clock className="w-6 h-6 text-orange-400" /> Data Retention Enforcement</h1>
+            <p className="text-muted-foreground text-sm mt-1">NDPA Section 26 — Automated retention policy monitoring and enforcement</p>
           </div>
           <div className="flex items-center gap-3">
-            <label className="flex items-center gap-2 text-sm text-slate-300 cursor-pointer">
+            <label className="flex items-center gap-2 text-sm text-muted-foreground cursor-pointer">
               <input type="checkbox" checked={dryRun} onChange={e => setDryRun(e.target.checked)} className="accent-orange-500" />
               Dry Run
             </label>
@@ -52,37 +52,37 @@ export default function RetentionEnforcement() {
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {statCards.map(s => (
-            <Card key={s.label} className="bg-slate-800 border-slate-700">
+            <Card key={s.label} className="bg-card border-border">
               <CardContent className="p-4 flex items-center gap-3">
                 <s.icon className={`w-8 h-8 ${s.color}`} />
-                <div><p className={`text-2xl font-bold ${s.color}`}>{s.value}</p><p className="text-xs text-slate-400">{s.label}</p></div>
+                <div><p className={`text-2xl font-bold ${s.color}`}>{s.value}</p><p className="text-xs text-muted-foreground">{s.label}</p></div>
               </CardContent>
             </Card>
           ))}
         </div>
 
-        <Card className="bg-slate-800 border-slate-700">
-          <CardHeader><CardTitle className="text-white">Retention Policy Schedule</CardTitle></CardHeader>
+        <Card className="bg-card border-border">
+          <CardHeader><CardTitle className="text-foreground">Retention Policy Schedule</CardTitle></CardHeader>
           <CardContent>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
-                <thead><tr className="border-b border-slate-700 text-slate-400">
+                <thead><tr className="border-b border-border text-muted-foreground">
                   <th className="text-left py-2 px-3">Organization</th><th className="text-left py-2 px-3">Data Category</th>
                   <th className="text-left py-2 px-3">Retention Period</th><th className="text-left py-2 px-3">Next Review</th>
                   <th className="text-left py-2 px-3">Status</th>
                 </tr></thead>
                 <tbody>
                   {(schedule as any[]).length === 0 ? (
-                    <tr><td colSpan={5} className="text-center py-8 text-slate-400">No retention policies found</td></tr>
+                    <tr><td colSpan={5} className="text-center py-8 text-muted-foreground">No retention policies found</td></tr>
                   ) : (schedule as any[]).map((p: any) => {
                     const isOverdue = p.next_review_date && new Date(String(p.next_review_date)) < new Date();
                     const daysOverdue = isOverdue ? Math.floor((Date.now() - new Date(String(p.next_review_date)).getTime()) / 86400000) : 0;
                     return (
-                      <tr key={p.id} className="border-b border-slate-700/50 hover:bg-slate-700/30">
-                        <td className="py-2 px-3 text-white font-medium">{p.org_name ?? "—"}</td>
-                        <td className="py-2 px-3 text-slate-300">{p.data_category ?? p.data_type ?? "—"}</td>
-                        <td className="py-2 px-3 text-slate-300">{p.retention_period_days ?? p.retention_months ?? "—"} {p.retention_period_days ? "days" : "months"}</td>
-                        <td className="py-2 px-3 text-slate-400">{p.next_review_date ? new Date(String(p.next_review_date)).toLocaleDateString("en-NG") : "—"}</td>
+                      <tr key={p.id} className="border-b border-border/50 hover:bg-muted/30">
+                        <td className="py-2 px-3 text-foreground font-medium">{p.org_name ?? "—"}</td>
+                        <td className="py-2 px-3 text-muted-foreground">{p.data_category ?? p.data_type ?? "—"}</td>
+                        <td className="py-2 px-3 text-muted-foreground">{p.retention_period_days ?? p.retention_months ?? "—"} {p.retention_period_days ? "days" : "months"}</td>
+                        <td className="py-2 px-3 text-muted-foreground">{p.next_review_date ? new Date(String(p.next_review_date)).toLocaleDateString("en-NG") : "—"}</td>
                         <td className="py-2 px-3">
                           {isOverdue ? (
                             <Badge className="bg-red-500/20 text-red-400 border-red-500/30 flex items-center gap-1 w-fit">

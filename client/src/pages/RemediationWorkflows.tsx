@@ -15,7 +15,7 @@ const STATUS_COLORS: Record<string, string> = {
   open: "bg-red-500/20 text-red-400",
   in_progress: "bg-yellow-500/20 text-yellow-400",
   resolved: "bg-green-500/20 text-green-400",
-  closed: "bg-gray-500/20 text-gray-400",
+  closed: "bg-gray-500/20 text-muted-foreground",
 };
 
 const STATUS_ICONS: Record<string, React.ReactElement> = {
@@ -26,14 +26,14 @@ const STATUS_ICONS: Record<string, React.ReactElement> = {
 };
 
 export default function RemediationWorkflows() {
-  const [filterStatus, setFilterStatus] = useState<string>("");
+  const [filterStatus, setFilterStatus] = useState<string>("all");
   const [updateTarget, setUpdateTarget] = useState<{ id: number; currentStatus: string } | null>(null);
   const [updateForm, setUpdateForm] = useState({ status: "", notes: "" });
   const [showCreate, setShowCreate] = useState(false);
   const [createForm, setCreateForm] = useState({ orgId: "", actionType: "", priority: "medium", description: "", notes: "" });
   const [deleteId, setDeleteId] = useState<number | null>(null);
 
-  const { data: workflows = [], refetch } = trpc.remediation.list.useQuery({ status: filterStatus || undefined });
+  const { data: workflows = [], refetch } = trpc.remediation.list.useQuery({ status: filterStatus === "all" ? undefined : filterStatus || undefined });
   const { data: stats } = trpc.remediation.stats.useQuery();
   const utils = trpc.useUtils();
 
@@ -73,21 +73,21 @@ export default function RemediationWorkflows() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">Remediation Workflows</h1>
-          <p className="text-gray-400 text-sm mt-1">
+          <h1 className="text-2xl font-bold text-foreground">Remediation Workflows</h1>
+          <p className="text-muted-foreground text-sm mt-1">
             Track and manage automated remediation actions triggered by compliance violations
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button size="sm" className="bg-blue-600 hover:bg-blue-700 text-white" onClick={() => setShowCreate(true)}>
+          <Button size="sm" className="bg-blue-600 hover:bg-blue-700 text-foreground" onClick={() => setShowCreate(true)}>
             <Plus className="w-4 h-4 mr-1" />New Workflow
           </Button>
           <Select value={filterStatus} onValueChange={setFilterStatus}>
-            <SelectTrigger className="w-40 bg-gray-800 border-gray-700 text-sm">
+            <SelectTrigger className="w-40 bg-card border-border text-sm">
               <SelectValue placeholder="All statuses" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All statuses</SelectItem>
+              <SelectItem value="all">All statuses</SelectItem>
               <SelectItem value="open">Open</SelectItem>
               <SelectItem value="in_progress">In Progress</SelectItem>
               <SelectItem value="resolved">Resolved</SelectItem>
@@ -99,31 +99,31 @@ export default function RemediationWorkflows() {
 
       {/* Stats */}
       <div className="grid grid-cols-4 gap-4">
-        <div className="bg-gray-800 rounded-xl border border-gray-700 p-4">
-          <div className="text-gray-400 text-sm">Total</div>
-          <div className="text-2xl font-bold text-white">{(stats as any)?.total ?? 0}</div>
+        <div className="bg-card rounded-xl border border-border p-4">
+          <div className="text-muted-foreground text-sm">Total</div>
+          <div className="text-2xl font-bold text-foreground">{(stats as any)?.total ?? 0}</div>
         </div>
-        <div className="bg-gray-800 rounded-xl border border-gray-700 p-4">
-          <div className="text-gray-400 text-sm">Open</div>
+        <div className="bg-card rounded-xl border border-border p-4">
+          <div className="text-muted-foreground text-sm">Open</div>
           <div className="text-2xl font-bold text-red-400">{(stats as any)?.open ?? 0}</div>
         </div>
-        <div className="bg-gray-800 rounded-xl border border-gray-700 p-4">
-          <div className="text-gray-400 text-sm">In Progress</div>
+        <div className="bg-card rounded-xl border border-border p-4">
+          <div className="text-muted-foreground text-sm">In Progress</div>
           <div className="text-2xl font-bold text-yellow-400">{(stats as any)?.in_progress ?? 0}</div>
         </div>
-        <div className="bg-gray-800 rounded-xl border border-gray-700 p-4">
-          <div className="text-gray-400 text-sm">Resolved</div>
+        <div className="bg-card rounded-xl border border-border p-4">
+          <div className="text-muted-foreground text-sm">Resolved</div>
           <div className="text-2xl font-bold text-green-400">{(stats as any)?.resolved ?? 0}</div>
         </div>
       </div>
 
       {/* Workflows Table */}
-      <div className="bg-gray-800 rounded-xl border border-gray-700 overflow-hidden">
+      <div className="bg-card rounded-xl border border-border overflow-hidden">
         <table className="w-full text-sm">
-          <thead className="border-b border-gray-700 bg-gray-900/50">
+          <thead className="border-b border-border bg-background/50">
             <tr>
               {["ID", "Organization", "Violation", "Action Type", "Status", "Notes", "Created", "Actions"].map(h => (
-                <th key={h} className="text-left px-4 py-3 text-gray-400 font-medium">{h}</th>
+                <th key={h} className="text-left px-4 py-3 text-muted-foreground font-medium">{h}</th>
               ))}
             </tr>
           </thead>
@@ -136,17 +136,17 @@ export default function RemediationWorkflows() {
                 </td>
               </tr>
             ) : (workflows as any[]).map((w: any) => (
-              <tr key={w.id} className="border-b border-gray-700/50 hover:bg-gray-700/30">
+              <tr key={w.id} className="border-b border-border/50 hover:bg-muted/30">
                 <td className="px-4 py-3 font-mono text-xs text-blue-400">RW-{String(w.id).padStart(5, "0")}</td>
-                <td className="px-4 py-3 text-gray-300 text-xs">{w.orgId ?? "—"}</td>
-                <td className="px-4 py-3 text-gray-400 text-xs font-mono">#{w.violationId ?? "—"}</td>
+                <td className="px-4 py-3 text-muted-foreground text-xs">{w.orgId ?? "—"}</td>
+                <td className="px-4 py-3 text-muted-foreground text-xs font-mono">#{w.violationId ?? "—"}</td>
                 <td className="px-4 py-3">
-                  <Badge variant="outline" className="text-xs border-gray-600 text-gray-300">
+                  <Badge variant="outline" className="text-xs border-border text-muted-foreground">
                     {w.actionType?.replace(/_/g, " ") ?? "—"}
                   </Badge>
                 </td>
                 <td className="px-4 py-3">
-                  <Badge className={`text-xs flex items-center gap-1 w-fit ${STATUS_COLORS[w.status] ?? "bg-gray-500/20 text-gray-400"}`}>
+                  <Badge className={`text-xs flex items-center gap-1 w-fit ${STATUS_COLORS[w.status] ?? "bg-gray-500/20 text-muted-foreground"}`}>
                     {STATUS_ICONS[w.status]}
                     {w.status?.replace("_", " ")}
                   </Badge>
@@ -160,7 +160,7 @@ export default function RemediationWorkflows() {
                     <Button
                       size="sm"
                       variant="outline"
-                      className="text-xs border-gray-600 h-7"
+                      className="text-xs border-border h-7"
                       onClick={() => {
                         setUpdateTarget({ id: w.id, currentStatus: w.status });
                         setUpdateForm({ status: w.status === "open" ? "in_progress" : "resolved", notes: "" });
@@ -181,21 +181,21 @@ export default function RemediationWorkflows() {
 
       {/* Create Dialog */}
       <Dialog open={showCreate} onOpenChange={setShowCreate}>
-        <DialogContent className="bg-gray-900 border-gray-700 text-white">
+        <DialogContent className="bg-background border-border text-foreground">
           <DialogHeader><DialogTitle>Create Remediation Workflow</DialogTitle></DialogHeader>
           <div className="space-y-3">
             <div>
               <Label>Organization ID *</Label>
-              <Input type="number" className="bg-gray-800 border-gray-700 mt-1" value={createForm.orgId} onChange={e => setCreateForm(p => ({ ...p, orgId: e.target.value }))} placeholder="Organization ID" />
+              <Input type="number" className="bg-card border-border mt-1" value={createForm.orgId} onChange={e => setCreateForm(p => ({ ...p, orgId: e.target.value }))} placeholder="Organization ID" />
             </div>
             <div>
               <Label>Action Type *</Label>
-              <Input className="bg-gray-800 border-gray-700 mt-1" value={createForm.actionType} onChange={e => setCreateForm(p => ({ ...p, actionType: e.target.value }))} placeholder="e.g. data_breach_response, policy_update" />
+              <Input className="bg-card border-border mt-1" value={createForm.actionType} onChange={e => setCreateForm(p => ({ ...p, actionType: e.target.value }))} placeholder="e.g. data_breach_response, policy_update" />
             </div>
             <div>
               <Label>Priority</Label>
               <Select value={createForm.priority} onValueChange={v => setCreateForm(p => ({ ...p, priority: v }))}>
-                <SelectTrigger className="bg-gray-800 border-gray-700 mt-1"><SelectValue /></SelectTrigger>
+                <SelectTrigger className="bg-card border-border mt-1"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="low">Low</SelectItem>
                   <SelectItem value="medium">Medium</SelectItem>
@@ -206,11 +206,11 @@ export default function RemediationWorkflows() {
             </div>
             <div>
               <Label>Description</Label>
-              <Textarea className="bg-gray-800 border-gray-700 mt-1 text-sm" rows={2} value={createForm.description} onChange={e => setCreateForm(p => ({ ...p, description: e.target.value }))} placeholder="Describe the remediation action..." />
+              <Textarea className="bg-card border-border mt-1 text-sm" rows={2} value={createForm.description} onChange={e => setCreateForm(p => ({ ...p, description: e.target.value }))} placeholder="Describe the remediation action..." />
             </div>
             <div>
               <Label>Notes</Label>
-              <Textarea className="bg-gray-800 border-gray-700 mt-1 text-sm" rows={2} value={createForm.notes} onChange={e => setCreateForm(p => ({ ...p, notes: e.target.value }))} placeholder="Additional notes..." />
+              <Textarea className="bg-card border-border mt-1 text-sm" rows={2} value={createForm.notes} onChange={e => setCreateForm(p => ({ ...p, notes: e.target.value }))} placeholder="Additional notes..." />
             </div>
           </div>
           <DialogFooter>
@@ -227,13 +227,13 @@ export default function RemediationWorkflows() {
 
       {/* Update Dialog */}
       <Dialog open={!!updateTarget} onOpenChange={() => setUpdateTarget(null)}>
-        <DialogContent className="bg-gray-900 border-gray-700 text-white">
+        <DialogContent className="bg-background border-border text-foreground">
           <DialogHeader><DialogTitle>Update Remediation Workflow RW-{String(updateTarget?.id ?? 0).padStart(5, "0")}</DialogTitle></DialogHeader>
           <div className="space-y-4">
             <div>
               <Label>New Status</Label>
               <Select value={updateForm.status} onValueChange={v => setUpdateForm(p => ({ ...p, status: v }))}>
-                <SelectTrigger className="bg-gray-800 border-gray-700 mt-1"><SelectValue /></SelectTrigger>
+                <SelectTrigger className="bg-card border-border mt-1"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="in_progress">In Progress</SelectItem>
                   <SelectItem value="resolved">Resolved</SelectItem>
@@ -244,7 +244,7 @@ export default function RemediationWorkflows() {
             <div>
               <Label>Notes</Label>
               <Textarea
-                className="bg-gray-800 border-gray-700 mt-1 text-sm"
+                className="bg-card border-border mt-1 text-sm"
                 rows={3}
                 placeholder="Describe the remediation actions taken..."
                 value={updateForm.notes}
@@ -266,13 +266,13 @@ export default function RemediationWorkflows() {
 
       {/* Delete Confirmation */}
       <AlertDialog open={deleteId !== null} onOpenChange={() => setDeleteId(null)}>
-        <AlertDialogContent className="bg-gray-900 border-gray-700 text-white">
+        <AlertDialogContent className="bg-background border-border text-foreground">
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Remediation Workflow</AlertDialogTitle>
-            <AlertDialogDescription className="text-gray-400">This will permanently delete this remediation workflow. This action cannot be undone.</AlertDialogDescription>
+            <AlertDialogDescription className="text-muted-foreground">This will permanently delete this remediation workflow. This action cannot be undone.</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel className="border-gray-600 text-gray-300">Cancel</AlertDialogCancel>
+            <AlertDialogCancel className="border-border text-muted-foreground">Cancel</AlertDialogCancel>
             <AlertDialogAction className="bg-red-600 hover:bg-red-700" onClick={() => deleteId && deleteMutation.mutate({ id: deleteId })} disabled={deleteMutation.isPending}>
               {deleteMutation.isPending ? "Deleting..." : "Delete"}
             </AlertDialogAction>

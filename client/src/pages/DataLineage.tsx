@@ -31,21 +31,21 @@ export default function DataLineage() {
   return (
     <div className="p-6 space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-white">Data Lineage & Provenance</h1>
-        <p className="text-slate-400 text-sm mt-1">NDPA Article 19 — Track data flows from source to consumption for full audit compliance</p>
+        <h1 className="text-2xl font-bold text-foreground">Data Lineage & Provenance</h1>
+        <p className="text-muted-foreground text-sm mt-1">NDPA Article 19 — Track data flows from source to consumption for full audit compliance</p>
       </div>
 
       <div className="grid grid-cols-4 gap-4">
-        <Card className="bg-slate-800/50 border-slate-700">
+        <Card className="bg-card/50 border-border">
           <CardContent className="p-4">
-            <p className="text-slate-400 text-xs">Total Nodes</p>
-            <p className="text-2xl font-bold text-white">{nodes.length}</p>
+            <p className="text-muted-foreground text-xs">Total Nodes</p>
+            <p className="text-2xl font-bold text-foreground">{nodes.length}</p>
           </CardContent>
         </Card>
-        <Card className="bg-slate-800/50 border-slate-700">
+        <Card className="bg-card/50 border-border">
           <CardContent className="p-4">
-            <p className="text-slate-400 text-xs">Data Flows</p>
-            <p className="text-2xl font-bold text-white">{edges.length}</p>
+            <p className="text-muted-foreground text-xs">Data Flows</p>
+            <p className="text-2xl font-bold text-foreground">{edges.length}</p>
           </CardContent>
         </Card>
         <Card className="bg-red-900/20 border-red-700/40">
@@ -63,14 +63,14 @@ export default function DataLineage() {
       </div>
 
       {/* Visual Flow Diagram */}
-      <Card className="bg-slate-800/50 border-slate-700">
+      <Card className="bg-card/50 border-border">
         <CardHeader>
-          <CardTitle className="text-white text-base flex items-center gap-2">
+          <CardTitle className="text-foreground text-base flex items-center gap-2">
             <GitBranch className="w-4 h-4 text-blue-400" /> Data Flow Graph
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="bg-slate-900/50 rounded-lg p-6 overflow-x-auto">
+          <div className="bg-background/50 rounded-lg p-6 overflow-x-auto">
             <div className="flex items-center gap-4 flex-wrap min-w-max">
               {/* Source Systems */}
               <div className="flex flex-col gap-3">
@@ -83,7 +83,7 @@ export default function DataLineage() {
                       <span className="text-blue-300 text-xs font-medium">{n.name}</span>
                     </div>
                     {n.pii_contained && <Badge className="bg-red-500/20 text-red-400 text-[10px]">PII</Badge>}
-                    <Badge className="ml-1 bg-slate-700 text-slate-400 text-[10px]">{n.classification_level}</Badge>
+                    <Badge className="ml-1 bg-muted text-muted-foreground text-[10px]">{n.classification_level}</Badge>
                   </button>
                 ))}
               </div>
@@ -144,19 +144,19 @@ export default function DataLineage() {
       </Card>
 
       {/* Edges Table */}
-      <Card className="bg-slate-800/50 border-slate-700">
+      <Card className="bg-card/50 border-border">
         <CardHeader>
-          <CardTitle className="text-white text-base">Data Flow Edges</CardTitle>
+          <CardTitle className="text-foreground text-base">Data Flow Edges</CardTitle>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
-              <TableRow className="border-slate-700">
-                <TableHead className="text-slate-400">Source</TableHead>
-                <TableHead className="text-slate-400"></TableHead>
-                <TableHead className="text-slate-400">Target</TableHead>
-                <TableHead className="text-slate-400">Transformation</TableHead>
-                <TableHead className="text-slate-400">Logic</TableHead>
+              <TableRow className="border-border">
+                <TableHead className="text-muted-foreground">Source</TableHead>
+                <TableHead className="text-muted-foreground"></TableHead>
+                <TableHead className="text-muted-foreground">Target</TableHead>
+                <TableHead className="text-muted-foreground">Transformation</TableHead>
+                <TableHead className="text-muted-foreground">Logic</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -164,12 +164,12 @@ export default function DataLineage() {
                 const sourceNode = nodes.find(n => n.node_id === edge.source_node_id);
                 const targetNode = nodes.find(n => n.node_id === edge.target_node_id);
                 return (
-                  <TableRow key={edge.id} className="border-slate-700">
+                  <TableRow key={edge.id} className="border-border">
                     <TableCell className="text-blue-400 text-sm">{sourceNode?.name ?? edge.source_node_id}</TableCell>
                     <TableCell><ArrowRight className="w-4 h-4 text-slate-500" /></TableCell>
                     <TableCell className="text-green-400 text-sm">{targetNode?.name ?? edge.target_node_id}</TableCell>
-                    <TableCell><Badge variant="outline" className="border-slate-600 text-slate-400">{edge.transformation_type}</Badge></TableCell>
-                    <TableCell className="text-slate-400 text-xs max-w-xs truncate">{edge.transformation_logic}</TableCell>
+                    <TableCell><Badge variant="outline" className="border-border text-muted-foreground">{edge.transformation_type}</Badge></TableCell>
+                    <TableCell className="text-muted-foreground text-xs max-w-xs truncate">{edge.transformation_logic}</TableCell>
                   </TableRow>
                 );
               })}
@@ -180,24 +180,24 @@ export default function DataLineage() {
 
       {/* Node Detail Dialog */}
       <Dialog open={!!selectedNode} onOpenChange={() => setSelectedNode(null)}>
-        <DialogContent className="bg-slate-800 border-slate-700 text-white max-w-lg">
+        <DialogContent className="bg-card border-border text-foreground max-w-lg">
           <DialogHeader>
             <DialogTitle>{nodeDetail?.node?.name}</DialogTitle>
           </DialogHeader>
           {nodeDetail && (
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-3 text-sm">
-                <div><span className="text-slate-400">Type:</span> <Badge className={nodeTypeColors[nodeDetail.node.node_type] ?? ""}>{nodeDetail.node.node_type}</Badge></div>
-                <div><span className="text-slate-400">System:</span> <span className="text-white">{nodeDetail.node.system_name}</span></div>
-                <div><span className="text-slate-400">Classification:</span> <span className="text-white capitalize">{nodeDetail.node.classification_level}</span></div>
-                <div><span className="text-slate-400">PII:</span> {nodeDetail.node.pii_contained ? <Badge className="bg-red-500/20 text-red-400">Yes</Badge> : <Badge className="bg-green-500/20 text-green-400">No</Badge>}</div>
+                <div><span className="text-muted-foreground">Type:</span> <Badge className={nodeTypeColors[nodeDetail.node.node_type] ?? ""}>{nodeDetail.node.node_type}</Badge></div>
+                <div><span className="text-muted-foreground">System:</span> <span className="text-foreground">{nodeDetail.node.system_name}</span></div>
+                <div><span className="text-muted-foreground">Classification:</span> <span className="text-foreground capitalize">{nodeDetail.node.classification_level}</span></div>
+                <div><span className="text-muted-foreground">PII:</span> {nodeDetail.node.pii_contained ? <Badge className="bg-red-500/20 text-red-400">Yes</Badge> : <Badge className="bg-green-500/20 text-green-400">No</Badge>}</div>
               </div>
               <div>
-                <p className="text-slate-400 text-xs mb-2">Upstream Sources ({nodeDetail.upstream.length})</p>
+                <p className="text-muted-foreground text-xs mb-2">Upstream Sources ({nodeDetail.upstream.length})</p>
                 {nodeDetail.upstream.map(e => <p key={e.id} className="text-blue-400 text-sm">← {e.source_node_id}</p>)}
               </div>
               <div>
-                <p className="text-slate-400 text-xs mb-2">Downstream Targets ({nodeDetail.downstream.length})</p>
+                <p className="text-muted-foreground text-xs mb-2">Downstream Targets ({nodeDetail.downstream.length})</p>
                 {nodeDetail.downstream.map(e => <p key={e.id} className="text-green-400 text-sm">→ {e.target_node_id}</p>)}
               </div>
             </div>

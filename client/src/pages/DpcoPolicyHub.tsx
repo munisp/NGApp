@@ -36,7 +36,7 @@ const POLICY_TEMPLATES: PolicyTemplate[] = [
     ndpaRef: "NDPA §43",
     description: "Comprehensive privacy notice covering data categories, purposes, legal bases, retention periods, and data subject rights. Suitable for websites, apps, and service providers.",
     icon: Globe,
-    color: "text-cyan-400",
+    color: "text-primary",
     pages: 8,
     lastUpdated: "2024-01-15",
     tags: ["mandatory", "public-facing", "website"],
@@ -99,7 +99,7 @@ To lodge a complaint: Nigeria Data Protection Commission (NDPC) — ndpc.gov.ng`
     ndpaRef: "NDPA §45",
     description: "Standard DPA for use between Data Controllers and Data Processors. Covers processing instructions, security obligations, sub-processor management, and breach notification.",
     icon: FileText,
-    color: "text-blue-400",
+    color: "text-blue-600",
     pages: 14,
     lastUpdated: "2024-02-01",
     tags: ["mandatory", "b2b", "processor"],
@@ -158,7 +158,7 @@ Upon termination, the Processor shall delete or return all Personal Data as inst
     ndpaRef: "NDPA §41",
     description: "Structured ROPA template for documenting all processing activities. Includes data flows, retention schedules, and legal basis mapping for each processing activity.",
     icon: Database,
-    color: "text-emerald-400",
+    color: "text-emerald-600",
     pages: 6,
     lastUpdated: "2024-01-20",
     tags: ["mandatory", "internal", "documentation"],
@@ -547,7 +547,7 @@ If a request is refused or complex, escalate to the DPO and Legal team. Document
     ndpaRef: "NDPA §46",
     description: "Comprehensive retention schedule covering all data categories with statutory retention periods under Nigerian law. Includes secure disposal procedures for physical and digital records.",
     icon: Lock,
-    color: "text-slate-400",
+    color: "text-muted-foreground",
     pages: 9,
     lastUpdated: "2024-01-30",
     tags: ["mandatory", "internal", "lifecycle"],
@@ -773,13 +773,13 @@ export default function DpcoPolicyHub() {
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-cyan-300 font-mono">DPCO Policy Hub</h1>
-          <p className="text-slate-400 text-sm mt-1">
+          <h1 className="text-2xl font-bold text-primary font-mono">DPCO Policy Hub</h1>
+          <p className="text-muted-foreground text-sm mt-1">
             NDPA 2023-compliant policy templates for Data Protection Compliance Organisations
           </p>
         </div>
-        <div className="flex items-center gap-2 text-xs text-slate-500">
-          <CheckCircle className="w-4 h-4 text-emerald-400" />
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <CheckCircle className="w-4 h-4 text-emerald-600" />
           <span>{POLICY_TEMPLATES.length} templates · Updated Q1 2024</span>
         </div>
       </div>
@@ -787,12 +787,12 @@ export default function DpcoPolicyHub() {
       {/* Search + Filter */}
       <div className="flex gap-3 flex-wrap">
         <div className="relative flex-1 min-w-48">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
             value={search}
             onChange={e => setSearch(e.target.value)}
             placeholder="Search templates..."
-            className="pl-9 bg-slate-800 border-slate-600 text-slate-200 placeholder-slate-500"
+            className="pl-9 bg-card border-input text-foreground placeholder-slate-500"
           />
         </div>
         <div className="flex gap-2 flex-wrap">
@@ -802,7 +802,7 @@ export default function DpcoPolicyHub() {
               size="sm"
               variant={category === cat ? "default" : "outline"}
               onClick={() => setCategory(cat)}
-              className={category === cat ? "bg-cyan-600 text-white" : "border-slate-600 text-slate-300 text-xs"}
+              className={category === cat ? "bg-primary text-white" : "border-input text-foreground text-xs"}
             >
               {cat}
             </Button>
@@ -815,18 +815,18 @@ export default function DpcoPolicyHub() {
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <Button variant="outline" size="sm" onClick={() => setPreviewTemplate(null)} className="border-slate-600 text-slate-300">
+              <Button variant="outline" size="sm" onClick={() => setPreviewTemplate(null)} className="border-input text-foreground">
                 ← Back to Library
               </Button>
-              <h2 className="text-slate-200 font-semibold">{previewTemplate.title}</h2>
-              <Badge className="text-xs bg-slate-700 text-slate-300 border-slate-600">{previewTemplate.ndpaRef}</Badge>
+              <h2 className="text-foreground font-semibold">{previewTemplate.title}</h2>
+              <Badge className="text-xs bg-muted text-foreground border-input">{previewTemplate.ndpaRef}</Badge>
             </div>
             <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={() => handleDownload(previewTemplate)}>
               <Download className="w-4 h-4 mr-2" /> Download .md
             </Button>
           </div>
-          <div className="bg-slate-900 border border-slate-700 rounded-lg p-6 max-h-[70vh] overflow-y-auto">
-            <pre className="text-slate-300 text-sm font-mono whitespace-pre-wrap leading-relaxed">{previewTemplate.content}</pre>
+          <div className="bg-background border border-border rounded-lg p-6 max-h-[70vh] overflow-y-auto">
+            <pre className="text-foreground text-sm font-mono whitespace-pre-wrap leading-relaxed">{previewTemplate.content}</pre>
           </div>
         </div>
       ) : (
@@ -834,27 +834,27 @@ export default function DpcoPolicyHub() {
           {filtered.map(template => {
             const Icon = template.icon;
             return (
-              <div key={template.id} className="bg-slate-800/60 border border-slate-700 rounded-lg p-5 hover:border-slate-500 transition-all flex flex-col gap-3">
+              <div key={template.id} className="bg-card border border-border rounded-lg p-5 hover:border-slate-500 transition-all flex flex-col gap-3">
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-lg bg-slate-700/60 flex items-center justify-center shrink-0">
+                    <div className="w-10 h-10 rounded-lg bg-muted/60 flex items-center justify-center shrink-0">
                       <Icon className={`w-5 h-5 ${template.color}`} />
                     </div>
                     <div>
-                      <div className="text-slate-200 font-medium text-sm leading-tight">{template.title}</div>
+                      <div className="text-foreground font-medium text-sm leading-tight">{template.title}</div>
                       <div className="flex items-center gap-1.5 mt-1">
-                        <Badge className="text-xs bg-slate-700/50 text-slate-400 border-slate-600 font-mono">{template.ndpaRef}</Badge>
-                        <span className="text-slate-600 text-xs">{template.pages} pages</span>
+                        <Badge className="text-xs bg-muted/50 text-muted-foreground border-input font-mono">{template.ndpaRef}</Badge>
+                        <span className="text-muted-foreground text-xs">{template.pages} pages</span>
                       </div>
                     </div>
                   </div>
                 </div>
 
-                <p className="text-slate-500 text-xs leading-relaxed flex-1">{template.description}</p>
+                <p className="text-muted-foreground text-xs leading-relaxed flex-1">{template.description}</p>
 
                 <div className="flex flex-wrap gap-1">
                   {template.tags.map(tag => (
-                    <span key={tag} className={`text-xs px-2 py-0.5 rounded-full font-medium ${tag === "mandatory" ? "bg-rose-500/20 text-rose-400" : "bg-slate-700/60 text-slate-400"}`}>
+                    <span key={tag} className={`text-xs px-2 py-0.5 rounded-full font-medium ${tag === "mandatory" ? "bg-rose-500/20 text-rose-400" : "bg-muted/60 text-muted-foreground"}`}>
                       {tag}
                     </span>
                   ))}
@@ -864,7 +864,7 @@ export default function DpcoPolicyHub() {
                   <Button
                     size="sm"
                     variant="outline"
-                    className="flex-1 border-slate-600 text-slate-300 text-xs h-8"
+                    className="flex-1 border-input text-foreground text-xs h-8"
                     onClick={() => setPreviewTemplate(template)}
                   >
                     <BookOpen className="w-3 h-3 mr-1.5" /> Preview
@@ -879,7 +879,7 @@ export default function DpcoPolicyHub() {
                   <Button
                     size="sm"
                     variant="outline"
-                    className="w-full border-cyan-700 text-cyan-400 text-xs h-8 mt-0.5"
+                    className="w-full border-cyan-700 text-primary text-xs h-8 mt-0.5"
                     onClick={() => { setAssignTemplate(template); setAssignClientId(""); setAssignNotes(""); }}
                   >
                     <UserPlus className="w-3 h-3 mr-1.5" /> Assign to Client
@@ -889,7 +889,7 @@ export default function DpcoPolicyHub() {
             );
           })}
           {filtered.length === 0 && (
-            <div className="col-span-3 text-center py-16 text-slate-500">
+            <div className="col-span-3 text-center py-16 text-muted-foreground">
               No templates match your search. Try a different keyword or category.
             </div>
           )}
@@ -898,44 +898,44 @@ export default function DpcoPolicyHub() {
 
       {/* Assign to Client Dialog */}
       <Dialog open={!!assignTemplate} onOpenChange={open => { if (!open) setAssignTemplate(null); }}>
-        <DialogContent className="bg-slate-900 border-slate-700 text-slate-200">
+        <DialogContent className="bg-background border-border text-foreground">
           <DialogHeader>
-            <DialogTitle className="text-cyan-300">Assign Policy Template to Client</DialogTitle>
+            <DialogTitle className="text-primary">Assign Policy Template to Client</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div>
-              <Label className="text-slate-400 text-sm">Template</Label>
-              <div className="mt-1 text-slate-200 font-medium">{assignTemplate?.title}</div>
-              <div className="text-xs text-slate-500 mt-0.5">{assignTemplate?.ndpaRef}</div>
+              <Label className="text-muted-foreground text-sm">Template</Label>
+              <div className="mt-1 text-foreground font-medium">{assignTemplate?.title}</div>
+              <div className="text-xs text-muted-foreground mt-0.5">{assignTemplate?.ndpaRef}</div>
             </div>
             <div>
-              <Label className="text-slate-400 text-sm">Client *</Label>
+              <Label className="text-muted-foreground text-sm">Client *</Label>
               <Select value={assignClientId} onValueChange={setAssignClientId}>
-                <SelectTrigger className="mt-1 bg-slate-800 border-slate-600 text-slate-200">
+                <SelectTrigger className="mt-1 bg-card border-input text-foreground">
                   <SelectValue placeholder="Select a client..." />
                 </SelectTrigger>
-                <SelectContent className="bg-slate-800 border-slate-600">
+                <SelectContent className="bg-card border-input">
                   {((clientsQuery.data as any)?.clients ?? []).map((c: any) => (
-                    <SelectItem key={c.id} value={String(c.id)} className="text-slate-200">{c.org_name}</SelectItem>
+                    <SelectItem key={c.id} value={String(c.id)} className="text-foreground">{c.org_name}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
             <div>
-              <Label className="text-slate-400 text-sm">Notes (optional)</Label>
+              <Label className="text-muted-foreground text-sm">Notes (optional)</Label>
               <Textarea
                 value={assignNotes}
                 onChange={e => setAssignNotes(e.target.value)}
                 placeholder="Customisation instructions or delivery notes..."
-                className="mt-1 bg-slate-800 border-slate-600 text-slate-200 placeholder-slate-500 resize-none"
+                className="mt-1 bg-card border-input text-foreground placeholder-slate-500 resize-none"
                 rows={3}
               />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" className="border-slate-600 text-slate-300" onClick={() => setAssignTemplate(null)}>Cancel</Button>
+            <Button variant="outline" className="border-input text-foreground" onClick={() => setAssignTemplate(null)}>Cancel</Button>
             <Button
-              className="bg-cyan-600 hover:bg-cyan-700 text-white"
+              className="bg-primary hover:bg-primary/90 text-white"
               onClick={handleAssign}
               disabled={!assignClientId || assignMutation.isPending}
             >
@@ -947,12 +947,12 @@ export default function DpcoPolicyHub() {
 
       {/* Footer note */}
       {!previewTemplate && (
-        <div className="bg-slate-800/40 border border-slate-700/50 rounded-lg p-4 flex items-start gap-3">
-          <ExternalLink className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5" />
-          <p className="text-slate-500 text-xs leading-relaxed">
+        <div className="bg-muted/30 border border-border/50 rounded-lg p-4 flex items-start gap-3">
+          <ExternalLink className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+          <p className="text-muted-foreground text-xs leading-relaxed">
             These templates are based on the Nigeria Data Protection Act 2023 (NDPA) and Nigeria Data Protection Regulation 2019 (NDPR).
             They are provided as starting points and should be reviewed by qualified legal counsel before use.
-            For official NDPC guidance, visit <span className="text-cyan-400">ndpc.gov.ng</span>.
+            For official NDPC guidance, visit <span className="text-primary">ndpc.gov.ng</span>.
           </p>
         </div>
       )}

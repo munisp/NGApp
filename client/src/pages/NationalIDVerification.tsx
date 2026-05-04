@@ -15,7 +15,7 @@ const statusColors: Record<string, string> = {
   verified: "bg-green-500/20 text-green-400",
   failed: "bg-red-500/20 text-red-400",
   pending: "bg-yellow-500/20 text-yellow-400",
-  expired: "bg-slate-500/20 text-slate-400",
+  expired: "bg-slate-500/20 text-muted-foreground",
 };
 
 const EMPTY_FORM = {
@@ -52,10 +52,10 @@ export default function NationalIDVerification() {
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white flex items-center gap-2">
+          <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
             <CreditCard className="w-6 h-6 text-cyan-400" /> National ID Verification
           </h1>
-          <p className="text-slate-400 text-sm mt-1">NIMC NIN · BVN · CAC · Passport — Real-time identity verification via NIMC API</p>
+          <p className="text-muted-foreground text-sm mt-1">NIMC NIN · BVN · CAC · Passport — Real-time identity verification via NIMC API</p>
         </div>
         <Button onClick={() => setShowVerify(true)} className="bg-cyan-600 hover:bg-cyan-700">
           <Shield className="w-4 h-4 mr-2" /> Verify Identity
@@ -64,10 +64,10 @@ export default function NationalIDVerification() {
 
       {/* Stats */}
       <div className="grid grid-cols-4 gap-4">
-        <Card className="bg-slate-800/50 border-slate-700">
+        <Card className="bg-card/50 border-border">
           <CardContent className="p-4">
-            <p className="text-slate-400 text-xs">Total Verifications</p>
-            <p className="text-2xl font-bold text-white">{stats?.total ?? 0}</p>
+            <p className="text-muted-foreground text-xs">Total Verifications</p>
+            <p className="text-2xl font-bold text-foreground">{stats?.total ?? 0}</p>
           </CardContent>
         </Card>
         <Card className="bg-green-900/20 border-green-700/40">
@@ -93,8 +93,8 @@ export default function NationalIDVerification() {
       {/* Search */}
       <div className="flex gap-3">
         <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-          <Input className="pl-9 bg-slate-800 border-slate-600 text-white"
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input className="pl-9 bg-card border-border text-foreground"
             placeholder="Search by name or ID number..."
             value={searchTerm}
             onChange={e => setSearchTerm(e.target.value)} />
@@ -102,33 +102,33 @@ export default function NationalIDVerification() {
       </div>
 
       {/* Verifications Table */}
-      <Card className="bg-slate-800/50 border-slate-700">
-        <CardHeader><CardTitle className="text-white text-base">Verification Log</CardTitle></CardHeader>
+      <Card className="bg-card/50 border-border">
+        <CardHeader><CardTitle className="text-foreground text-base">Verification Log</CardTitle></CardHeader>
         <CardContent className="p-0">
           <Table>
             <TableHeader>
-              <TableRow className="border-slate-700">
-                <TableHead className="text-slate-400">Reference</TableHead>
-                <TableHead className="text-slate-400">ID Type</TableHead>
-                <TableHead className="text-slate-400">Full Name</TableHead>
-                <TableHead className="text-slate-400">Purpose</TableHead>
-                <TableHead className="text-slate-400">Requested By</TableHead>
-                <TableHead className="text-slate-400">Date</TableHead>
-                <TableHead className="text-slate-400">Status</TableHead>
-                <TableHead className="text-slate-400">Confidence</TableHead>
+              <TableRow className="border-border">
+                <TableHead className="text-muted-foreground">Reference</TableHead>
+                <TableHead className="text-muted-foreground">ID Type</TableHead>
+                <TableHead className="text-muted-foreground">Full Name</TableHead>
+                <TableHead className="text-muted-foreground">Purpose</TableHead>
+                <TableHead className="text-muted-foreground">Requested By</TableHead>
+                <TableHead className="text-muted-foreground">Date</TableHead>
+                <TableHead className="text-muted-foreground">Status</TableHead>
+                <TableHead className="text-muted-foreground">Confidence</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {verifications?.map((v: any) => (
-                <TableRow key={v.id} className="border-slate-700">
-                  <TableCell className="text-white font-mono text-xs">{v.verification_ref}</TableCell>
+                <TableRow key={v.id} className="border-border">
+                  <TableCell className="text-foreground font-mono text-xs">{v.verification_ref}</TableCell>
                   <TableCell>
-                    <Badge variant="outline" className="border-slate-600 text-slate-400 uppercase">{v.id_type}</Badge>
+                    <Badge variant="outline" className="border-border text-muted-foreground uppercase">{v.id_type}</Badge>
                   </TableCell>
-                  <TableCell className="text-slate-300 text-sm">{v.full_name ?? "—"}</TableCell>
-                  <TableCell className="text-slate-400 text-xs capitalize">{String(v.purpose ?? "").replace(/_/g, " ")}</TableCell>
-                  <TableCell className="text-slate-400 text-xs">{v.requested_by_org ?? "—"}</TableCell>
-                  <TableCell className="text-slate-400 text-xs">
+                  <TableCell className="text-muted-foreground text-sm">{v.full_name ?? "—"}</TableCell>
+                  <TableCell className="text-muted-foreground text-xs capitalize">{String(v.purpose ?? "").replace(/_/g, " ")}</TableCell>
+                  <TableCell className="text-muted-foreground text-xs">{v.requested_by_org ?? "—"}</TableCell>
+                  <TableCell className="text-muted-foreground text-xs">
                     {v.created_at ? new Date(v.created_at).toLocaleString() : "—"}
                   </TableCell>
                   <TableCell>
@@ -142,11 +142,11 @@ export default function NationalIDVerification() {
                   <TableCell>
                     {v.confidence_score != null ? (
                       <div className="flex items-center gap-2">
-                        <div className="w-12 bg-slate-700 rounded-full h-1.5">
+                        <div className="w-12 bg-muted rounded-full h-1.5">
                           <div className="h-1.5 rounded-full bg-cyan-500"
                             style={{ width: `${v.confidence_score}%` }} />
                         </div>
-                        <span className="text-white text-xs">{v.confidence_score}%</span>
+                        <span className="text-foreground text-xs">{v.confidence_score}%</span>
                       </div>
                     ) : <span className="text-slate-500 text-xs">—</span>}
                   </TableCell>
@@ -159,15 +159,15 @@ export default function NationalIDVerification() {
 
       {/* Verify Dialog */}
       <Dialog open={showVerify} onOpenChange={setShowVerify}>
-        <DialogContent className="bg-slate-800 border-slate-700 text-white">
+        <DialogContent className="bg-card border-border text-foreground">
           <DialogHeader><DialogTitle>Verify National Identity</DialogTitle></DialogHeader>
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label className="text-slate-300 text-sm">ID Type</Label>
+                <Label className="text-muted-foreground text-sm">ID Type</Label>
                 <Select value={form.idType} onValueChange={v => setForm(f => ({ ...f, idType: v }))}>
-                  <SelectTrigger className="mt-1 bg-slate-700 border-slate-600 text-white"><SelectValue /></SelectTrigger>
-                  <SelectContent className="bg-slate-800 border-slate-700">
+                  <SelectTrigger className="mt-1 bg-muted border-border text-foreground"><SelectValue /></SelectTrigger>
+                  <SelectContent className="bg-card border-border">
                     <SelectItem value="nin">NIN (NIMC)</SelectItem>
                     <SelectItem value="bvn">BVN (CBN)</SelectItem>
                     <SelectItem value="passport">International Passport</SelectItem>
@@ -178,10 +178,10 @@ export default function NationalIDVerification() {
                 </Select>
               </div>
               <div>
-                <Label className="text-slate-300 text-sm">Purpose</Label>
+                <Label className="text-muted-foreground text-sm">Purpose</Label>
                 <Select value={form.purpose} onValueChange={v => setForm(f => ({ ...f, purpose: v }))}>
-                  <SelectTrigger className="mt-1 bg-slate-700 border-slate-600 text-white"><SelectValue /></SelectTrigger>
-                  <SelectContent className="bg-slate-800 border-slate-700">
+                  <SelectTrigger className="mt-1 bg-muted border-border text-foreground"><SelectValue /></SelectTrigger>
+                  <SelectContent className="bg-card border-border">
                     <SelectItem value="kyc">KYC/AML</SelectItem>
                     <SelectItem value="employment">Employment Verification</SelectItem>
                     <SelectItem value="financial_services">Financial Services</SelectItem>
@@ -192,25 +192,25 @@ export default function NationalIDVerification() {
               </div>
             </div>
             <div>
-              <Label className="text-slate-300 text-sm">ID Number</Label>
-              <Input className="mt-1 bg-slate-700 border-slate-600 text-white font-mono"
+              <Label className="text-muted-foreground text-sm">ID Number</Label>
+              <Input className="mt-1 bg-muted border-border text-foreground font-mono"
                 placeholder="Enter ID number..."
                 value={form.idNumber}
                 onChange={e => setForm(f => ({ ...f, idNumber: e.target.value }))} />
             </div>
             <div>
-              <Label className="text-slate-300 text-sm">Full Name (for cross-check)</Label>
-              <Input className="mt-1 bg-slate-700 border-slate-600 text-white" value={form.fullName}
+              <Label className="text-muted-foreground text-sm">Full Name (for cross-check)</Label>
+              <Input className="mt-1 bg-muted border-border text-foreground" value={form.fullName}
                 onChange={e => setForm(f => ({ ...f, fullName: e.target.value }))} />
             </div>
             <div>
-              <Label className="text-slate-300 text-sm">Date of Birth</Label>
-              <Input type="date" className="mt-1 bg-slate-700 border-slate-600 text-white" value={form.dateOfBirth}
+              <Label className="text-muted-foreground text-sm">Date of Birth</Label>
+              <Input type="date" className="mt-1 bg-muted border-border text-foreground" value={form.dateOfBirth}
                 onChange={e => setForm(f => ({ ...f, dateOfBirth: e.target.value }))} />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" className="border-slate-600 text-slate-300" onClick={() => setShowVerify(false)}>Cancel</Button>
+            <Button variant="outline" className="border-border text-muted-foreground" onClick={() => setShowVerify(false)}>Cancel</Button>
             <Button className="bg-cyan-600 hover:bg-cyan-700"
               disabled={!form.idNumber || verify.isPending}
               onClick={() => verify.mutate({ orgId: 1, idType: form.idType as "bvn" | "nin" | "passport" | "drivers_license" | "voter_card", idValue: form.idNumber, purpose: form.purpose })}>

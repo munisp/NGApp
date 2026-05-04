@@ -10,13 +10,13 @@ import { Bell, CheckCheck, Trash2, Circle } from "lucide-react";
 
 export default function Phase13NotificationCenter() {
   const [isReadFilter, setIsReadFilter] = useState<boolean | undefined>(undefined);
-  const [priorityFilter, setPriorityFilter] = useState("");
+  const [priorityFilter, setPriorityFilter] = useState("all");
   const [page, setPage] = useState(1);
 
   const utils = trpc.useUtils();
   const { data: notifications, isLoading } = trpc.phase13.notificationCenter.list.useQuery({
     is_read: isReadFilter,
-    priority: priorityFilter || undefined,
+    priority: priorityFilter === "all" ? undefined : priorityFilter || undefined,
     page,
     limit: 20,
   });
@@ -71,7 +71,7 @@ export default function Phase13NotificationCenter() {
           >
             <SelectTrigger className="w-40"><SelectValue placeholder="All Notifications" /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All</SelectItem>
+              <SelectItem value="all">All</SelectItem>
               <SelectItem value="unread">Unread</SelectItem>
               <SelectItem value="read">Read</SelectItem>
             </SelectContent>
@@ -79,7 +79,7 @@ export default function Phase13NotificationCenter() {
           <Select value={priorityFilter} onValueChange={setPriorityFilter}>
             <SelectTrigger className="w-36"><SelectValue placeholder="All Priorities" /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All Priorities</SelectItem>
+              <SelectItem value="all">All Priorities</SelectItem>
               <SelectItem value="critical">Critical</SelectItem>
               <SelectItem value="high">High</SelectItem>
               <SelectItem value="medium">Medium</SelectItem>

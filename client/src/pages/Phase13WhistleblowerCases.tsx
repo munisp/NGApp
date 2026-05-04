@@ -14,16 +14,16 @@ type WBStatus = "new" | "under_investigation" | "resolved" | "closed" | "escalat
 
 export default function Phase13WhistleblowerCases() {
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("");
-  const [severityFilter, setSeverityFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [severityFilter, setSeverityFilter] = useState("all");
   const [selectedCase, setSelectedCase] = useState<any>(null);
   const [updateForm, setUpdateForm] = useState({ status: "" as WBStatus | "", assigned_to: "", investigation_notes: "", resolution: "" });
 
   const utils = trpc.useUtils();
   const { data: cases, isLoading } = trpc.phase13.whistleblowerCases.list.useQuery({
     search: search || undefined,
-    status: statusFilter || undefined,
-    severity: severityFilter || undefined,
+    status: statusFilter === "all" ? undefined : statusFilter || undefined,
+    severity: severityFilter === "all" ? undefined : severityFilter || undefined,
   });
   const { data: stats } = trpc.phase13.whistleblowerCases.getStats.useQuery();
   const updateStatus = trpc.phase13.whistleblowerCases.updateStatus.useMutation({
@@ -90,7 +90,7 @@ export default function Phase13WhistleblowerCases() {
           <Select value={statusFilter} onValueChange={setStatusFilter}>
             <SelectTrigger className="w-44"><SelectValue placeholder="All Statuses" /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All</SelectItem>
+              <SelectItem value="all">All</SelectItem>
               <SelectItem value="new">New</SelectItem>
               <SelectItem value="under_investigation">Under Investigation</SelectItem>
               <SelectItem value="escalated">Escalated</SelectItem>
@@ -101,7 +101,7 @@ export default function Phase13WhistleblowerCases() {
           <Select value={severityFilter} onValueChange={setSeverityFilter}>
             <SelectTrigger className="w-36"><SelectValue placeholder="All Severities" /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All</SelectItem>
+              <SelectItem value="all">All</SelectItem>
               <SelectItem value="critical">Critical</SelectItem>
               <SelectItem value="high">High</SelectItem>
               <SelectItem value="medium">Medium</SelectItem>

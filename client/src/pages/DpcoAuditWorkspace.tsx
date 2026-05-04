@@ -27,14 +27,14 @@ const AUDIT_STAGES = [
 ];
 
 const STAGE_BADGE: Record<string, { bg: string; text: string; dot: string }> = {
-  initiated:           { bg: "bg-slate-500/15",   text: "text-slate-300",  dot: "bg-slate-400" },
-  data_mapping:        { bg: "bg-blue-500/15",    text: "text-blue-300",   dot: "bg-blue-400" },
+  initiated:           { bg: "bg-muted/30",   text: "text-foreground",  dot: "bg-muted-foreground" },
+  data_mapping:        { bg: "bg-blue-500/15",    text: "text-blue-600",   dot: "bg-blue-400" },
   gap_assessment:      { bg: "bg-indigo-500/15",  text: "text-indigo-300", dot: "bg-indigo-400" },
   fieldwork:           { bg: "bg-amber-500/15",   text: "text-amber-300",  dot: "bg-amber-400" },
-  findings_review:     { bg: "bg-orange-500/15",  text: "text-orange-300", dot: "bg-orange-400" },
-  management_response: { bg: "bg-purple-500/15",  text: "text-purple-300", dot: "bg-purple-400" },
-  report_issued:       { bg: "bg-cyan-500/15",    text: "text-cyan-300",   dot: "bg-cyan-400" },
-  car_filed:           { bg: "bg-emerald-500/15", text: "text-emerald-300",dot: "bg-emerald-400" },
+  findings_review:     { bg: "bg-orange-500/15",  text: "text-orange-600", dot: "bg-orange-400" },
+  management_response: { bg: "bg-purple-500/15",  text: "text-purple-600", dot: "bg-purple-400" },
+  report_issued:       { bg: "bg-cyan-500/15",    text: "text-primary",   dot: "bg-cyan-400" },
+  car_filed:           { bg: "bg-emerald-500/15", text: "text-emerald-600",dot: "bg-emerald-400" },
 };
 
 const NDPA_CONTROLS = [
@@ -56,17 +56,17 @@ const NDPA_CONTROLS = [
 ];
 
 const RATING_OPTIONS: [string, string, string][] = [
-  ["compliant",     "Compliant",     "text-emerald-400"],
+  ["compliant",     "Compliant",     "text-emerald-600"],
   ["partial",       "Partial",       "text-amber-400"],
   ["non_compliant", "Non-Compliant", "text-rose-400"],
-  ["not_assessed",  "Not Assessed",  "text-slate-500"],
+  ["not_assessed",  "Not Assessed",  "text-muted-foreground"],
 ];
 
 const RATING_PILL: Record<string, string> = {
-  compliant:     "bg-emerald-500/15 text-emerald-300 border border-emerald-500/30",
+  compliant:     "bg-emerald-500/15 text-emerald-600 border border-emerald-500/30",
   partial:       "bg-amber-500/15   text-amber-300   border border-amber-500/30",
   non_compliant: "bg-rose-500/15    text-rose-300    border border-rose-500/30",
-  not_assessed:  "bg-slate-700/50   text-slate-500   border border-slate-600/30",
+  not_assessed:  "bg-muted/50   text-muted-foreground   border border-input/30",
 };
 
 const DEMO_DPCO_ORG_ID = 1;
@@ -193,74 +193,74 @@ export default function DpcoAuditWorkspace() {
     ? AUDIT_STAGES[currentStageIdx + 1] : null;
 
   return (
-    <div className="flex flex-col h-full min-h-0 bg-slate-950">
+    <div className="flex flex-col h-full min-h-0 bg-background">
       {/* ── Page Header ─────────────────────────────────────────────── */}
-      <div className="px-6 pt-6 pb-4 border-b border-slate-800 flex items-center justify-between shrink-0">
+      <div className="px-6 pt-6 pb-4 border-b border-border flex items-center justify-between shrink-0">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-lg bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center">
-            <ClipboardList className="w-5 h-5 text-cyan-400" />
+            <ClipboardList className="w-5 h-5 text-primary" />
           </div>
           <div>
-            <h1 className="text-lg font-semibold text-slate-100 tracking-tight">Audit Workspace</h1>
-            <p className="text-xs text-slate-500 mt-0.5">NDPA 2023 §33 &amp; §44 — End-to-end compliance audit pipeline</p>
+            <h1 className="text-lg font-semibold text-foreground tracking-tight">Audit Workspace</h1>
+            <p className="text-xs text-muted-foreground mt-0.5">NDPA 2023 §33 &amp; §44 — End-to-end compliance audit pipeline</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm" onClick={() => refetch()} className="text-slate-400 hover:text-slate-200 hover:bg-slate-800 h-8 px-3">
+          <Button variant="ghost" size="sm" onClick={() => refetch()} className="text-muted-foreground hover:text-foreground hover:bg-card h-8 px-3">
             <RefreshCw className="w-3.5 h-3.5 mr-1.5" /> Refresh
           </Button>
           <Dialog open={showCreate} onOpenChange={setShowCreate}>
             <DialogTrigger asChild>
-              <Button size="sm" className="bg-cyan-600 hover:bg-cyan-500 text-white h-8 px-4 text-xs font-medium">
+              <Button size="sm" className="bg-primary hover:bg-cyan-500 text-white h-8 px-4 text-xs font-medium">
                 <Plus className="w-3.5 h-3.5 mr-1.5" /> New Audit
               </Button>
             </DialogTrigger>
-            <DialogContent className="bg-slate-900 border-slate-700/60 max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogContent className="bg-background border-border/60 max-w-2xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
-                <DialogTitle className="text-slate-100 flex items-center gap-2">
-                  <FileCheck className="w-5 h-5 text-cyan-400" /> Initiate Compliance Audit
+                <DialogTitle className="text-foreground flex items-center gap-2">
+                  <FileCheck className="w-5 h-5 text-primary" /> Initiate Compliance Audit
                 </DialogTitle>
               </DialogHeader>
               <div className="grid grid-cols-2 gap-4 mt-4">
                 <div>
-                  <Label className="text-slate-400 text-xs font-medium uppercase tracking-wide">Conducting DPCO *</Label>
+                  <Label className="text-muted-foreground text-xs font-medium uppercase tracking-wide">Conducting DPCO *</Label>
                   <Select value={form.dpcoOrganisationId} onValueChange={v => setForm(f => ({ ...f, dpcoOrganisationId: v }))}>
-                    <SelectTrigger className="bg-slate-800 border-slate-700 text-slate-200 mt-1.5 h-9">
+                    <SelectTrigger className="bg-card border-border text-foreground mt-1.5 h-9">
                       <SelectValue placeholder="Select DPCO" />
                     </SelectTrigger>
-                    <SelectContent className="bg-slate-800 border-slate-700 max-h-48">
+                    <SelectContent className="bg-card border-border max-h-48">
                       {(dpcoList?.rows ?? []).map((d: any) => (
-                        <SelectItem key={d.id} value={String(d.id)} className="text-slate-200">{d.name}</SelectItem>
+                        <SelectItem key={d.id} value={String(d.id)} className="text-foreground">{d.name}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
                 <div>
-                  <Label className="text-slate-400 text-xs font-medium uppercase tracking-wide">Client Organisation *</Label>
+                  <Label className="text-muted-foreground text-xs font-medium uppercase tracking-wide">Client Organisation *</Label>
                   <Select value={form.organisationId} onValueChange={v => setForm(f => ({ ...f, organisationId: v }))}>
-                    <SelectTrigger className="bg-slate-800 border-slate-700 text-slate-200 mt-1.5 h-9">
+                    <SelectTrigger className="bg-card border-border text-foreground mt-1.5 h-9">
                       <SelectValue placeholder="Select organisation" />
                     </SelectTrigger>
-                    <SelectContent className="bg-slate-800 border-slate-700 max-h-48">
+                    <SelectContent className="bg-card border-border max-h-48">
                       {((orgList as any)?.organizations ?? []).map((o: any) => (
-                        <SelectItem key={o.id} value={String(o.id)} className="text-slate-200">{o.name}</SelectItem>
+                        <SelectItem key={o.id} value={String(o.id)} className="text-foreground">{o.name}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
                 <div>
-                  <Label className="text-slate-400 text-xs font-medium uppercase tracking-wide">Audit Year</Label>
-                  <Input type="number" value={form.auditYear} onChange={e => setForm(f => ({ ...f, auditYear: e.target.value }))} className="bg-slate-800 border-slate-700 text-slate-200 mt-1.5 h-9" />
+                  <Label className="text-muted-foreground text-xs font-medium uppercase tracking-wide">Audit Year</Label>
+                  <Input type="number" value={form.auditYear} onChange={e => setForm(f => ({ ...f, auditYear: e.target.value }))} className="bg-card border-border text-foreground mt-1.5 h-9" />
                 </div>
                 <div>
-                  <Label className="text-slate-400 text-xs font-medium uppercase tracking-wide">Audit Type</Label>
+                  <Label className="text-muted-foreground text-xs font-medium uppercase tracking-wide">Audit Type</Label>
                   <Select value={form.auditType} onValueChange={v => setForm(f => ({ ...f, auditType: v }))}>
-                    <SelectTrigger className="bg-slate-800 border-slate-700 text-slate-200 mt-1.5 h-9">
+                    <SelectTrigger className="bg-card border-border text-foreground mt-1.5 h-9">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent className="bg-slate-800 border-slate-700">
+                    <SelectContent className="bg-card border-border">
                       {[["annual_car","Annual CAR"],["ad_hoc","Ad-hoc"],["initial","Initial Assessment"],["follow_up","Follow-up"]].map(([k,v]) => (
-                        <SelectItem key={k} value={k} className="text-slate-200">{v}</SelectItem>
+                        <SelectItem key={k} value={k} className="text-foreground">{v}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -271,18 +271,18 @@ export default function DpcoAuditWorkspace() {
                   { label: "Lead Auditor",  key: "leadAuditor" },
                 ].map(({ label, key, type: t }) => (
                   <div key={key}>
-                    <Label className="text-slate-400 text-xs font-medium uppercase tracking-wide">{label}</Label>
-                    <Input type={t ?? "text"} value={(form as any)[key]} onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))} className="bg-slate-800 border-slate-700 text-slate-200 mt-1.5 h-9" />
+                    <Label className="text-muted-foreground text-xs font-medium uppercase tracking-wide">{label}</Label>
+                    <Input type={t ?? "text"} value={(form as any)[key]} onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))} className="bg-card border-border text-foreground mt-1.5 h-9" />
                   </div>
                 ))}
                 <div className="col-span-2">
-                  <Label className="text-slate-400 text-xs font-medium uppercase tracking-wide">Audit Scope</Label>
-                  <textarea value={form.scope} onChange={e => setForm(f => ({ ...f, scope: e.target.value }))} className="w-full bg-slate-800 border border-slate-700 text-slate-200 rounded-md px-3 py-2 text-sm mt-1.5 h-20 resize-none focus:outline-none focus:ring-1 focus:ring-cyan-500" placeholder="Describe audit scope..." />
+                  <Label className="text-muted-foreground text-xs font-medium uppercase tracking-wide">Audit Scope</Label>
+                  <textarea value={form.scope} onChange={e => setForm(f => ({ ...f, scope: e.target.value }))} className="w-full bg-card border border-border text-foreground rounded-md px-3 py-2 text-sm mt-1.5 h-20 resize-none focus:outline-none focus:ring-1 focus:ring-cyan-500" placeholder="Describe audit scope..." />
                 </div>
               </div>
-              <div className="flex justify-end gap-2 mt-6 pt-4 border-t border-slate-700/60">
-                <Button variant="outline" onClick={() => setShowCreate(false)} className="border-slate-600 text-slate-300 hover:bg-slate-800">Cancel</Button>
-                <Button className="bg-cyan-600 hover:bg-cyan-500 text-white" onClick={() => create.mutate({ ...form, dpcoOrganisationId: Number(form.dpcoOrganisationId), organisationId: Number(form.organisationId), auditYear: Number(form.auditYear) } as any)} disabled={!form.dpcoOrganisationId || !form.organisationId || create.isPending}>
+              <div className="flex justify-end gap-2 mt-6 pt-4 border-t border-border/60">
+                <Button variant="outline" onClick={() => setShowCreate(false)} className="border-input text-foreground hover:bg-card">Cancel</Button>
+                <Button className="bg-primary hover:bg-cyan-500 text-white" onClick={() => create.mutate({ ...form, dpcoOrganisationId: Number(form.dpcoOrganisationId), organisationId: Number(form.organisationId), auditYear: Number(form.auditYear) } as any)} disabled={!form.dpcoOrganisationId || !form.organisationId || create.isPending}>
                   {create.isPending ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Creating...</> : "Initiate Audit"}
                 </Button>
               </div>
@@ -292,15 +292,15 @@ export default function DpcoAuditWorkspace() {
       </div>
 
       {/* ── Stage Filter Pills ───────────────────────────────────────── */}
-      <div className="px-6 py-3 border-b border-slate-800/60 flex items-center gap-1.5 flex-wrap shrink-0">
+      <div className="px-6 py-3 border-b border-border flex items-center gap-1.5 flex-wrap shrink-0">
         {[{ key: "all", label: "All Stages" }, ...AUDIT_STAGES].map(s => (
           <button
             key={s.key}
             onClick={() => setFilterStage(s.key)}
             className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${
               filterStage === s.key
-                ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/40"
-                : "text-slate-500 hover:text-slate-300 hover:bg-slate-800 border border-transparent"
+                ? "bg-cyan-500/20 text-primary border border-cyan-500/40"
+                : "text-muted-foreground hover:text-foreground hover:bg-card border border-transparent"
             }`}
           >
             {s.label}
@@ -309,24 +309,24 @@ export default function DpcoAuditWorkspace() {
       </div>
 
       {/* ── Tab Bar ─────────────────────────────────────────────────── */}
-      <div className="px-6 flex items-center gap-1 border-b border-slate-800/60 shrink-0 bg-slate-950">
+      <div className="px-6 flex items-center gap-1 border-b border-border shrink-0 bg-background">
         <button
           onClick={() => setActiveTab("engagements")}
           className={`flex items-center gap-1.5 px-3 py-2.5 text-xs font-medium border-b-2 transition-colors ${
             activeTab === "engagements"
-              ? "border-cyan-500 text-cyan-400"
-              : "border-transparent text-slate-500 hover:text-slate-300"
+              ? "border-cyan-500 text-primary"
+              : "border-transparent text-muted-foreground hover:text-foreground"
           }`}
         >
           <ClipboardList className="w-3.5 h-3.5" /> Engagements
-          <span className="ml-1 px-1.5 py-0.5 rounded-full bg-slate-800 text-slate-400 text-xs">{rows.length}</span>
+          <span className="ml-1 px-1.5 py-0.5 rounded-full bg-card text-muted-foreground text-xs">{rows.length}</span>
         </button>
         <button
           onClick={() => setActiveTab("requests")}
           className={`flex items-center gap-1.5 px-3 py-2.5 text-xs font-medium border-b-2 transition-colors ${
             activeTab === "requests"
-              ? "border-cyan-500 text-cyan-400"
-              : "border-transparent text-slate-500 hover:text-slate-300"
+              ? "border-cyan-500 text-primary"
+              : "border-transparent text-muted-foreground hover:text-foreground"
           }`}
         >
           <Inbox className="w-3.5 h-3.5" /> Incoming Requests
@@ -344,21 +344,21 @@ export default function DpcoAuditWorkspace() {
           <div className="max-w-3xl mx-auto space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-base font-semibold text-slate-100">Engagement Requests</h2>
-                <p className="text-xs text-slate-500 mt-0.5">Organisations requesting your DPCO audit services via the NDSEP Org Portal</p>
+                <h2 className="text-base font-semibold text-foreground">Engagement Requests</h2>
+                <p className="text-xs text-muted-foreground mt-0.5">Organisations requesting your DPCO audit services via the NDSEP Org Portal</p>
               </div>
-              <Button variant="ghost" size="sm" onClick={() => refetchRequests()} className="text-slate-400 hover:text-slate-200 text-xs">
+              <Button variant="ghost" size="sm" onClick={() => refetchRequests()} className="text-muted-foreground hover:text-foreground text-xs">
                 <RefreshCw className="w-3.5 h-3.5 mr-1.5" /> Refresh
               </Button>
             </div>
 
             {(incomingRequests?.rows ?? []).length === 0 ? (
               <div className="flex flex-col items-center justify-center py-20 text-center">
-                <div className="w-16 h-16 rounded-2xl bg-slate-800/60 border border-slate-700 flex items-center justify-center mb-4">
-                  <Inbox className="w-7 h-7 text-slate-600" />
+                <div className="w-16 h-16 rounded-2xl bg-card border border-border flex items-center justify-center mb-4">
+                  <Inbox className="w-7 h-7 text-muted-foreground" />
                 </div>
-                <p className="text-slate-400 font-medium">No engagement requests yet</p>
-                <p className="text-slate-600 text-sm mt-1 max-w-xs">When regulated organisations submit requests via the Org Portal, they will appear here for your review.</p>
+                <p className="text-muted-foreground font-medium">No engagement requests yet</p>
+                <p className="text-muted-foreground text-sm mt-1 max-w-xs">When regulated organisations submit requests via the Org Portal, they will appear here for your review.</p>
               </div>
             ) : (
               (incomingRequests?.rows ?? []).map((req: any) => {
@@ -369,77 +369,77 @@ export default function DpcoAuditWorkspace() {
                   <div key={req.id} className={`rounded-xl border p-5 transition-all ${
                     isPending ? "border-amber-500/30 bg-amber-500/5" :
                     isAccepted ? "border-emerald-500/20 bg-emerald-500/5" :
-                    "border-slate-800 bg-slate-900/40"
+                    "border-border bg-muted/30"
                   }`}>
                     <div className="flex items-start justify-between gap-4 mb-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-lg bg-slate-800 border border-slate-700 flex items-center justify-center shrink-0">
-                          <Building2 className="w-5 h-5 text-slate-400" />
+                        <div className="w-10 h-10 rounded-lg bg-card border border-border flex items-center justify-center shrink-0">
+                          <Building2 className="w-5 h-5 text-muted-foreground" />
                         </div>
                         <div>
-                          <h3 className="text-sm font-semibold text-slate-100">{req.org_name}</h3>
-                          <p className="text-xs text-slate-500">{req.org_sector} · {req.org_country}</p>
+                          <h3 className="text-sm font-semibold text-foreground">{req.org_name}</h3>
+                          <p className="text-xs text-muted-foreground">{req.org_sector} · {req.org_country}</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
                         <span className={`flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full border ${
                           isPending ? "bg-amber-500/10 text-amber-300 border-amber-500/30" :
-                          isAccepted ? "bg-emerald-500/10 text-emerald-300 border-emerald-500/30" :
-                          "bg-slate-700/40 text-slate-400 border-slate-600/40"
+                          isAccepted ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/30" :
+                          "bg-muted/40 text-muted-foreground border-input/40"
                         }`}>
                           {isPending && <Clock className="w-3 h-3" />}
                           {isAccepted && <CheckCheck className="w-3 h-3" />}
                           {isDeclined && <XCircle className="w-3 h-3" />}
                           {isPending ? "Pending" : isAccepted ? "Accepted" : isDeclined ? "Declined" : req.status}
                         </span>
-                        <span className="text-xs text-slate-600 font-mono">{req.reference_token}</span>
+                        <span className="text-xs text-muted-foreground font-mono">{req.reference_token}</span>
                       </div>
                     </div>
 
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-4 text-xs">
                       <div>
-                        <p className="text-slate-500 mb-0.5">Contact</p>
-                        <p className="text-slate-300 font-medium">{req.contact_name}</p>
-                        <p className="text-slate-400 flex items-center gap-1"><Mail className="w-3 h-3" />{req.contact_email}</p>
-                        {req.contact_phone && <p className="text-slate-400 flex items-center gap-1"><Phone className="w-3 h-3" />{req.contact_phone}</p>}
+                        <p className="text-muted-foreground mb-0.5">Contact</p>
+                        <p className="text-foreground font-medium">{req.contact_name}</p>
+                        <p className="text-muted-foreground flex items-center gap-1"><Mail className="w-3 h-3" />{req.contact_email}</p>
+                        {req.contact_phone && <p className="text-muted-foreground flex items-center gap-1"><Phone className="w-3 h-3" />{req.contact_phone}</p>}
                       </div>
                       <div>
-                        <p className="text-slate-500 mb-0.5">Submitted</p>
-                        <p className="text-slate-300">{new Date(req.created_at).toLocaleDateString()}</p>
+                        <p className="text-muted-foreground mb-0.5">Submitted</p>
+                        <p className="text-foreground">{new Date(req.created_at).toLocaleDateString()}</p>
                         {req.preferred_start_date && (
-                          <p className="text-slate-400">Preferred start: {new Date(req.preferred_start_date).toLocaleDateString()}</p>
+                          <p className="text-muted-foreground">Preferred start: {new Date(req.preferred_start_date).toLocaleDateString()}</p>
                         )}
                       </div>
                       {req.estimated_data_subjects && (
                         <div>
-                          <p className="text-slate-500 mb-0.5">Data Subjects</p>
-                          <p className="text-slate-300">{req.estimated_data_subjects}</p>
+                          <p className="text-muted-foreground mb-0.5">Data Subjects</p>
+                          <p className="text-foreground">{req.estimated_data_subjects}</p>
                         </div>
                       )}
                     </div>
 
                     {req.audit_scope && (
-                      <div className="mb-4 p-3 rounded-lg bg-slate-800/60 border border-slate-700/40">
-                        <p className="text-xs text-slate-500 mb-1">Audit Scope</p>
-                        <p className="text-xs text-slate-300">{req.audit_scope}</p>
+                      <div className="mb-4 p-3 rounded-lg bg-card border border-border/40">
+                        <p className="text-xs text-muted-foreground mb-1">Audit Scope</p>
+                        <p className="text-xs text-foreground">{req.audit_scope}</p>
                       </div>
                     )}
 
                     {req.dpco_response_note && (
-                      <div className="mb-4 p-3 rounded-lg bg-slate-800/40 border border-slate-700/30">
-                        <p className="text-xs text-slate-500 mb-1">Your Response</p>
-                        <p className="text-xs text-slate-400">{req.dpco_response_note}</p>
+                      <div className="mb-4 p-3 rounded-lg bg-muted/30 border border-border/30">
+                        <p className="text-xs text-muted-foreground mb-1">Your Response</p>
+                        <p className="text-xs text-muted-foreground">{req.dpco_response_note}</p>
                       </div>
                     )}
 
                     {isPending && (
                       respondingTo?.id === req.id ? (
-                        <div className="space-y-3 pt-3 border-t border-slate-700/40">
+                        <div className="space-y-3 pt-3 border-t border-border/40">
                           <Textarea
                             placeholder="Optional message to the organisation (e.g. capacity confirmation, scheduling note, or reason for declining)…"
                             value={responseNote}
                             onChange={e => setResponseNote(e.target.value)}
-                            className="bg-slate-900 border-slate-700 text-slate-200 text-xs min-h-[80px]"
+                            className="bg-background border-border text-foreground text-xs min-h-[80px]"
                           />
                           <div className="flex items-center gap-2">
                             <Button
@@ -462,7 +462,7 @@ export default function DpcoAuditWorkspace() {
                             <Button
                               size="sm"
                               variant="ghost"
-                              className="text-slate-400 text-xs"
+                              className="text-muted-foreground text-xs"
                               onClick={() => { setRespondingTo(null); setResponseNote(""); }}
                             >
                               Cancel
@@ -470,7 +470,7 @@ export default function DpcoAuditWorkspace() {
                           </div>
                         </div>
                       ) : (
-                        <div className="pt-3 border-t border-slate-700/40 flex gap-2">
+                        <div className="pt-3 border-t border-border/40 flex gap-2">
                           <Button
                             size="sm"
                             className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs"
@@ -491,26 +491,26 @@ export default function DpcoAuditWorkspace() {
 
       {activeTab === "engagements" && <div className="flex flex-1 min-h-0 overflow-hidden">
         {/* Left: Audit List */}
-        <div className="w-[340px] shrink-0 border-r border-slate-800 flex flex-col min-h-0">
-          <div className="px-4 py-3 border-b border-slate-800/60 flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Engagements</span>
-            <span className="text-xs text-slate-600">{rows.length} total</span>
+        <div className="w-[340px] shrink-0 border-r border-border flex flex-col min-h-0">
+          <div className="px-4 py-3 border-b border-border flex items-center justify-between">
+            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Engagements</span>
+            <span className="text-xs text-muted-foreground">{rows.length} total</span>
           </div>
           <div className="flex-1 overflow-y-auto p-3 space-y-2">
             {isLoading ? (
-              <div className="flex items-center justify-center py-16 text-slate-600 text-sm">
+              <div className="flex items-center justify-center py-16 text-muted-foreground text-sm">
                 <Loader2 className="w-5 h-5 mr-2 animate-spin" /> Loading audits…
               </div>
             ) : rows.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-16 text-center">
-                <FileCheck className="w-10 h-10 text-slate-700 mb-3" />
-                <p className="text-slate-500 text-sm font-medium">No audit engagements</p>
-                <p className="text-slate-600 text-xs mt-1">Initiate your first audit above</p>
+                <FileCheck className="w-10 h-10 text-muted-foreground mb-3" />
+                <p className="text-muted-foreground text-sm font-medium">No audit engagements</p>
+                <p className="text-muted-foreground text-xs mt-1">Initiate your first audit above</p>
               </div>
             ) : rows.map((audit: any) => {
               const idx = stageIdx(audit.current_stage ?? audit.status);
               const stage = audit.current_stage ?? audit.status;
-              const badge = STAGE_BADGE[stage] ?? { bg: "bg-slate-700/40", text: "text-slate-400", dot: "bg-slate-500" };
+              const badge = STAGE_BADGE[stage] ?? { bg: "bg-muted/40", text: "text-muted-foreground", dot: "bg-muted-foreground" };
               const isSelected = selectedAudit?.id === audit.id;
               return (
                 <div
@@ -519,20 +519,20 @@ export default function DpcoAuditWorkspace() {
                   className={`group rounded-xl border p-4 cursor-pointer transition-all ${
                     isSelected
                       ? "bg-cyan-500/5 border-cyan-500/40 shadow-[0_0_0_1px_rgba(6,182,212,0.15)]"
-                      : "bg-slate-900/60 border-slate-800 hover:border-slate-700 hover:bg-slate-900"
+                      : "bg-background/60 border-border hover:border-border hover:bg-background"
                   }`}
                 >
                   {/* Top row */}
                   <div className="flex items-start justify-between gap-2 mb-3">
                     <div className="flex items-center gap-2.5 min-w-0">
-                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${isSelected ? "bg-cyan-500/15" : "bg-slate-800"}`}>
-                        <Building2 className={`w-4 h-4 ${isSelected ? "text-cyan-400" : "text-slate-500"}`} />
+                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${isSelected ? "bg-cyan-500/15" : "bg-card"}`}>
+                        <Building2 className={`w-4 h-4 ${isSelected ? "text-primary" : "text-muted-foreground"}`} />
                       </div>
                       <div className="min-w-0">
-                        <div className="text-slate-100 font-medium text-sm truncate">
+                        <div className="text-foreground font-medium text-sm truncate">
                           {audit.client_name ?? audit.org_name ?? `Org #${audit.client_organisation_id ?? audit.organisation_id}`}
                         </div>
-                        <div className="text-slate-500 text-xs mt-0.5 truncate">
+                        <div className="text-muted-foreground text-xs mt-0.5 truncate">
                           {audit.dpco_name ?? `DPCO #${audit.dpco_organisation_id}`} · {audit.audit_year}
                         </div>
                       </div>
@@ -549,15 +549,15 @@ export default function DpcoAuditWorkspace() {
                         key={s.key}
                         title={s.label}
                         className={`h-1 flex-1 rounded-full transition-all ${
-                          i < idx ? "bg-emerald-500" : i === idx ? "bg-cyan-400" : "bg-slate-700/60"
+                          i < idx ? "bg-emerald-500" : i === idx ? "bg-cyan-400" : "bg-muted/60"
                         }`}
                       />
                     ))}
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-slate-600 text-xs">Stage {idx + 1} of {AUDIT_STAGES.length}</span>
+                    <span className="text-muted-foreground text-xs">Stage {idx + 1} of {AUDIT_STAGES.length}</span>
                     {audit.lead_auditor && (
-                      <span className="text-slate-600 text-xs flex items-center gap-1">
+                      <span className="text-muted-foreground text-xs flex items-center gap-1">
                         <User className="w-3 h-3" /> {audit.lead_auditor}
                       </span>
                     )}
@@ -573,21 +573,21 @@ export default function DpcoAuditWorkspace() {
           {selectedAudit ? (
             <div className="flex flex-col h-full min-h-0">
               {/* Detail header */}
-              <div className="px-6 py-4 border-b border-slate-800 shrink-0">
+              <div className="px-6 py-4 border-b border-border shrink-0">
                 <div className="flex items-start justify-between">
                   <div>
-                    <h2 className="text-slate-100 font-semibold text-base">
+                    <h2 className="text-foreground font-semibold text-base">
                       {selectedAudit.client_name ?? selectedAudit.org_name}
                     </h2>
                     <div className="flex items-center gap-3 mt-1">
-                      <span className="text-slate-500 text-xs flex items-center gap-1">
+                      <span className="text-muted-foreground text-xs flex items-center gap-1">
                         <Building2 className="w-3 h-3" /> {selectedAudit.dpco_name ?? "DataGuard Ltd"}
                       </span>
-                      <span className="text-slate-500 text-xs flex items-center gap-1">
+                      <span className="text-muted-foreground text-xs flex items-center gap-1">
                         <Calendar className="w-3 h-3" /> {selectedAudit.audit_year}
                       </span>
                       {selectedAudit.lead_auditor && (
-                        <span className="text-slate-500 text-xs flex items-center gap-1">
+                        <span className="text-muted-foreground text-xs flex items-center gap-1">
                           <User className="w-3 h-3" /> {selectedAudit.lead_auditor}
                         </span>
                       )}
@@ -597,7 +597,7 @@ export default function DpcoAuditWorkspace() {
                     {nextStage && (
                       <div className="flex flex-col items-end gap-1">
                         {nextStage.key === "car_filed" && carFilingBlocked && (
-                          <div className="flex items-center gap-1.5 text-xs text-red-400 bg-red-500/10 border border-red-500/20 rounded px-2 py-1">
+                          <div className="flex items-center gap-1.5 text-xs text-red-600 bg-red-500/10 border border-red-500/20 rounded px-2 py-1">
                             <AlertCircle className="w-3 h-3" />
                             {licenceExpired ? "Licence expired — renew to file CAR" : `Licence expires in ${daysUntilExpiry}d — renew before filing`}
                           </div>
@@ -605,8 +605,8 @@ export default function DpcoAuditWorkspace() {
                         <Button
                           size="sm"
                           className={nextStage.key === "car_filed" && carFilingBlocked
-                            ? "bg-slate-700 text-slate-400 cursor-not-allowed h-8 px-4 text-xs"
-                            : "bg-cyan-600 hover:bg-cyan-500 text-white h-8 px-4 text-xs"}
+                            ? "bg-muted text-muted-foreground cursor-not-allowed h-8 px-4 text-xs"
+                            : "bg-primary hover:bg-cyan-500 text-white h-8 px-4 text-xs"}
                           onClick={() => {
                             if (nextStage.key === "car_filed" && carFilingBlocked) {
                               toast.error(licenceExpired
@@ -639,11 +639,11 @@ export default function DpcoAuditWorkspace() {
               {/* Two-column body */}
               <div className="flex flex-1 min-h-0 overflow-hidden">
                 {/* Stage timeline */}
-                <div className="w-44 shrink-0 border-r border-slate-800 overflow-y-auto p-4">
-                  <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Pipeline</p>
+                <div className="w-44 shrink-0 border-r border-border overflow-y-auto p-4">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Pipeline</p>
                   <div className="relative">
                     {/* Vertical connector line */}
-                    <div className="absolute left-[15px] top-4 bottom-4 w-px bg-slate-800" />
+                    <div className="absolute left-[15px] top-4 bottom-4 w-px bg-card" />
                     <div className="space-y-1">
                       {AUDIT_STAGES.map((s, i) => {
                         const done = i < currentStageIdx;
@@ -652,20 +652,20 @@ export default function DpcoAuditWorkspace() {
                           <div key={s.key} className={`flex items-start gap-3 px-1 py-2 rounded-lg transition-colors ${current ? "bg-cyan-500/8" : ""}`}>
                             <div className="relative z-10 shrink-0 mt-0.5">
                               {done ? (
-                                <CheckCircle2 className="w-[18px] h-[18px] text-emerald-400" />
+                                <CheckCircle2 className="w-[18px] h-[18px] text-emerald-600" />
                               ) : current ? (
                                 <div className="w-[18px] h-[18px] rounded-full border-2 border-cyan-400 bg-cyan-400/20 flex items-center justify-center">
                                   <div className="w-2 h-2 rounded-full bg-cyan-400" />
                                 </div>
                               ) : (
-                                <Circle className="w-[18px] h-[18px] text-slate-700" />
+                                <Circle className="w-[18px] h-[18px] text-muted-foreground" />
                               )}
                             </div>
                             <div className="min-w-0 pt-0.5">
                               <div className={`text-xs font-medium leading-tight ${
-                                done ? "text-slate-400" : current ? "text-cyan-300" : "text-slate-600"
+                                done ? "text-muted-foreground" : current ? "text-primary" : "text-muted-foreground"
                               }`}>{s.label}</div>
-                              <div className={`text-xs mt-0.5 leading-tight ${done ? "text-slate-600" : current ? "text-slate-400" : "text-slate-700"}`}>
+                              <div className={`text-xs mt-0.5 leading-tight ${done ? "text-muted-foreground" : current ? "text-muted-foreground" : "text-muted-foreground"}`}>
                                 {s.desc}
                               </div>
                             </div>
@@ -679,17 +679,17 @@ export default function DpcoAuditWorkspace() {
                 {/* Controls Assessment */}
                 <div className="flex-1 min-w-0 flex flex-col min-h-0 overflow-hidden">
                   {/* Controls header */}
-                  <div className="px-5 py-3 border-b border-slate-800 flex items-center justify-between shrink-0">
+                  <div className="px-5 py-3 border-b border-border flex items-center justify-between shrink-0">
                     <div className="flex items-center gap-2">
-                      <Shield className="w-4 h-4 text-slate-400" />
-                      <span className="text-xs font-semibold text-slate-300 uppercase tracking-wider">NDPA Controls Assessment</span>
+                      <Shield className="w-4 h-4 text-muted-foreground" />
+                      <span className="text-xs font-semibold text-foreground uppercase tracking-wider">NDPA Controls Assessment</span>
                     </div>
                     <div className="flex items-center gap-3">
                       {/* Score badge */}
                       {complianceScore !== null && (
                         <div className="flex items-center gap-1.5">
-                          <TrendingUp className="w-3.5 h-3.5 text-cyan-400" />
-                          <span className={`text-sm font-bold ${complianceScore >= 70 ? "text-emerald-400" : complianceScore >= 40 ? "text-amber-400" : "text-rose-400"}`}>
+                          <TrendingUp className="w-3.5 h-3.5 text-primary" />
+                          <span className={`text-sm font-bold ${complianceScore >= 70 ? "text-emerald-600" : complianceScore >= 40 ? "text-amber-400" : "text-rose-400"}`}>
                             {complianceScore}%
                           </span>
                         </div>
@@ -705,23 +705,23 @@ export default function DpcoAuditWorkspace() {
 
                   {/* Score summary strip */}
                   {ratedCount > 0 && (
-                    <div className="px-5 py-2.5 border-b border-slate-800/60 flex items-center gap-4 bg-slate-900/40 shrink-0">
+                    <div className="px-5 py-2.5 border-b border-border flex items-center gap-4 bg-muted/30 shrink-0">
                       <div className="flex items-center gap-1.5 text-xs">
                         <span className="w-2 h-2 rounded-full bg-emerald-400" />
-                        <span className="text-emerald-400 font-medium">{compliantCount}</span>
-                        <span className="text-slate-500">Compliant</span>
+                        <span className="text-emerald-600 font-medium">{compliantCount}</span>
+                        <span className="text-muted-foreground">Compliant</span>
                       </div>
                       <div className="flex items-center gap-1.5 text-xs">
                         <span className="w-2 h-2 rounded-full bg-amber-400" />
                         <span className="text-amber-400 font-medium">{partialCount}</span>
-                        <span className="text-slate-500">Partial</span>
+                        <span className="text-muted-foreground">Partial</span>
                       </div>
                       <div className="flex items-center gap-1.5 text-xs">
                         <span className="w-2 h-2 rounded-full bg-rose-400" />
                         <span className="text-rose-400 font-medium">{nonCompliantCount}</span>
-                        <span className="text-slate-500">Non-Compliant</span>
+                        <span className="text-muted-foreground">Non-Compliant</span>
                       </div>
-                      <div className="ml-auto flex items-center gap-1.5 text-xs text-slate-500">
+                      <div className="ml-auto flex items-center gap-1.5 text-xs text-muted-foreground">
                         {ratedCount}/{NDPA_CONTROLS.length} assessed
                         {isDirty && <span className="ml-2 text-amber-400 flex items-center gap-1"><AlertCircle className="w-3 h-3" /> Unsaved</span>}
                       </div>
@@ -731,7 +731,7 @@ export default function DpcoAuditWorkspace() {
                   {/* Controls table */}
                   <div className="flex-1 overflow-y-auto">
                     {ratingsLoading ? (
-                      <div className="flex items-center justify-center py-12 text-slate-600 text-sm">
+                      <div className="flex items-center justify-center py-12 text-muted-foreground text-sm">
                         <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Loading ratings…
                       </div>
                     ) : (
@@ -742,35 +742,35 @@ export default function DpcoAuditWorkspace() {
                           <col className="w-16" />
                           <col className="w-36" />
                         </colgroup>
-                        <thead className="sticky top-0 z-10 bg-slate-900/95 backdrop-blur-sm">
-                          <tr className="border-b border-slate-800">
-                            <th className="text-left px-2 py-2.5 text-xs font-semibold text-slate-500 uppercase tracking-wider">ID</th>
-                            <th className="text-left px-2 py-2.5 text-xs font-semibold text-slate-500 uppercase tracking-wider">Control</th>
-                            <th className="text-left px-2 py-2.5 text-xs font-semibold text-slate-500 uppercase tracking-wider">Ref</th>
-                            <th className="text-left px-2 py-2.5 text-xs font-semibold text-slate-500 uppercase tracking-wider">Rating</th>
+                        <thead className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm">
+                          <tr className="border-b border-border">
+                            <th className="text-left px-2 py-2.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">ID</th>
+                            <th className="text-left px-2 py-2.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Control</th>
+                            <th className="text-left px-2 py-2.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Ref</th>
+                            <th className="text-left px-2 py-2.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Rating</th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-slate-800/50">
+                        <tbody className="divide-y divide-border/50">
                           {NDPA_CONTROLS.map((ctrl, idx) => {
                             const rating = controlRatings[ctrl.id] ?? "not_assessed";
                             return (
-                              <tr key={ctrl.id} className={`transition-colors ${idx % 2 === 0 ? "bg-slate-900/20" : ""} hover:bg-slate-800/30`}>
+                              <tr key={ctrl.id} className={`transition-colors ${idx % 2 === 0 ? "bg-background/20" : ""} hover:bg-muted/20`}>
                                 <td className="px-2 py-2.5">
-                                  <span className="text-xs font-mono font-semibold text-slate-500">{ctrl.id}</span>
+                                  <span className="text-xs font-mono font-semibold text-muted-foreground">{ctrl.id}</span>
                                 </td>
                                 <td className="px-2 py-2.5">
-                                  <div className="text-slate-200 text-xs font-medium leading-snug">{ctrl.title}</div>
-                                  <div className="text-slate-600 text-xs">{ctrl.category}</div>
+                                  <div className="text-foreground text-xs font-medium leading-snug">{ctrl.title}</div>
+                                  <div className="text-muted-foreground text-xs">{ctrl.category}</div>
                                 </td>
                                 <td className="px-2 py-2.5">
-                                  <span className="text-xs text-slate-500 font-mono">NDPA {ctrl.ref}</span>
+                                  <span className="text-xs text-muted-foreground font-mono">NDPA {ctrl.ref}</span>
                                 </td>
                                 <td className="px-2 py-2.5">
                                   <Select value={rating} onValueChange={v => handleRatingChange(ctrl.id, v)}>
                                     <SelectTrigger className={`h-7 w-full text-xs border-0 rounded-full px-2 font-medium focus:ring-1 focus:ring-cyan-500 ${RATING_PILL[rating]}`}>
                                       <SelectValue />
                                     </SelectTrigger>
-                                    <SelectContent className="bg-slate-800 border-slate-700">
+                                    <SelectContent className="bg-card border-border">
                                       {RATING_OPTIONS.map(([k, v, cls]) => (
                                         <SelectItem key={k} value={k} className={`text-xs ${cls}`}>{v}</SelectItem>
                                       ))}
@@ -789,11 +789,11 @@ export default function DpcoAuditWorkspace() {
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center h-full text-center p-8">
-              <div className="w-16 h-16 rounded-2xl bg-slate-800/60 border border-slate-700 flex items-center justify-center mb-4">
-                <ArrowRight className="w-7 h-7 text-slate-600" />
+              <div className="w-16 h-16 rounded-2xl bg-card border border-border flex items-center justify-center mb-4">
+                <ArrowRight className="w-7 h-7 text-muted-foreground" />
               </div>
-              <p className="text-slate-400 font-medium">Select an engagement</p>
-              <p className="text-slate-600 text-sm mt-1 max-w-xs">Choose an audit from the list to view its pipeline, assess NDPA controls, and advance stages</p>
+              <p className="text-muted-foreground font-medium">Select an engagement</p>
+              <p className="text-muted-foreground text-sm mt-1 max-w-xs">Choose an audit from the list to view its pipeline, assess NDPA controls, and advance stages</p>
             </div>
           )}
         </div>

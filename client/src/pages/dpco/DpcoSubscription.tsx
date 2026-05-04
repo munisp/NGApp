@@ -41,11 +41,11 @@ const TIER_META: Record<
   }
 > = {
   starter: {
-    color: "text-slate-600",
+    color: "text-muted-foreground",
     border: "border-slate-200",
     bg: "bg-slate-50",
     icon: Shield,
-    badge: "bg-slate-100 text-slate-700",
+    badge: "bg-slate-100 text-muted-foreground",
     highlight: false,
   },
   professional: {
@@ -355,7 +355,7 @@ export default function DpcoSubscription() {
                           {included ? (
                             <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
                           ) : (
-                            <XCircle className="h-4 w-4 text-slate-300 shrink-0" />
+                            <XCircle className="h-4 w-4 text-foreground shrink-0" />
                           )}
                           <span
                             className={

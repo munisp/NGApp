@@ -12,12 +12,12 @@ import { Calendar, Plus, CheckCircle, Bell, Trash2 } from "lucide-react";
 
 export default function Phase13ComplianceCalendar() {
   const [open, setOpen] = useState(false);
-  const [statusFilter, setStatusFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
   const [form, setForm] = useState({ title: "", event_type: "deadline", due_date: "", description: "", priority: "medium" as "low" | "medium" | "high" | "critical", reminder_days: 14 });
 
   const utils = trpc.useUtils();
   const { data: upcoming } = trpc.phase13.complianceCalendar.getUpcoming.useQuery({ days: 30 });
-  const { data: events, isLoading } = trpc.phase13.complianceCalendar.list.useQuery({ status: statusFilter || undefined });
+  const { data: events, isLoading } = trpc.phase13.complianceCalendar.list.useQuery({ status: statusFilter === "all" ? undefined : statusFilter || undefined });
   const create = trpc.phase13.complianceCalendar.create.useMutation({
     onSuccess: () => {
       utils.phase13.complianceCalendar.list.invalidate();
@@ -122,7 +122,7 @@ export default function Phase13ComplianceCalendar() {
           <Select value={statusFilter} onValueChange={setStatusFilter}>
             <SelectTrigger className="w-48"><SelectValue placeholder="All Statuses" /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All Statuses</SelectItem>
+              <SelectItem value="all">All Statuses</SelectItem>
               <SelectItem value="pending">Pending</SelectItem>
               <SelectItem value="completed">Completed</SelectItem>
               <SelectItem value="overdue">Overdue</SelectItem>

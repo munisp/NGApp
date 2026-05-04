@@ -27,7 +27,7 @@ const REVIEW_CHECKLIST = [
 ];
 
 const STATUS_BADGE: Record<string, string> = {
-  draft: "bg-slate-700 text-slate-300",
+  draft: "bg-muted text-muted-foreground",
   submitted: "bg-blue-500/20 text-blue-300 border-blue-500/30",
   info_requested: "bg-amber-500/20 text-amber-300 border-amber-500/30",
   under_review: "bg-purple-500/20 text-purple-300 border-purple-500/30",
@@ -210,19 +210,19 @@ export default function AdminAccreditation() {
   const rows = listData?.rows ?? [];
 
   return (
-    <div className="flex h-full min-h-0 bg-slate-950 text-white">
+    <div className="flex h-full min-h-0 bg-slate-950 text-foreground">
       {/* Left panel — application list */}
-      <div className="w-80 shrink-0 border-r border-slate-800 flex flex-col">
-        <div className="p-4 border-b border-slate-800">
-          <h2 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
+      <div className="w-80 shrink-0 border-r border-border flex flex-col">
+        <div className="p-4 border-b border-border">
+          <h2 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
             <ShieldCheck className="w-4 h-4 text-emerald-400" />
             Accreditation Applications
           </h2>
           {/* Stats */}
           {stats && (
             <div className="grid grid-cols-3 gap-2 mb-3">
-              <div className="bg-slate-800 rounded p-2 text-center">
-                <p className="text-lg font-bold text-white">{stats.total}</p>
+              <div className="bg-card rounded p-2 text-center">
+                <p className="text-lg font-bold text-foreground">{stats.total}</p>
                 <p className="text-xs text-slate-500">Total</p>
               </div>
               <div className="bg-blue-500/10 rounded p-2 text-center">
@@ -239,10 +239,10 @@ export default function AdminAccreditation() {
             <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-500" />
             <Input value={search} onChange={e => setSearch(e.target.value)}
               placeholder="Search applications..."
-              className="pl-8 h-8 text-xs bg-slate-800 border-slate-700 text-white placeholder:text-slate-500" />
+              className="pl-8 h-8 text-xs bg-card border-border text-foreground placeholder:text-slate-500" />
           </div>
           <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}
-            className="w-full h-8 text-xs bg-slate-800 border border-slate-700 rounded px-2 text-slate-300">
+            className="w-full h-8 text-xs bg-card border border-border rounded px-2 text-muted-foreground">
             <option value="">All statuses</option>
             {Object.entries(STATUS_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
           </select>
@@ -253,13 +253,13 @@ export default function AdminAccreditation() {
           )}
           {rows.map((row: any) => (
             <button key={row.id} onClick={() => setSelectedId(row.id)}
-              className={`w-full text-left p-3 border-b border-slate-800 hover:bg-slate-800/50 transition-colors ${selectedId === row.id ? "bg-slate-800" : ""}`}>
+              className={`w-full text-left p-3 border-b border-border hover:bg-card/50 transition-colors ${selectedId === row.id ? "bg-card" : ""}`}>
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
-                  <p className="text-sm font-medium text-white truncate">{row.org_name}</p>
+                  <p className="text-sm font-medium text-foreground truncate">{row.org_name}</p>
                   <p className="text-xs text-slate-500 font-mono">{row.reference_token}</p>
                 </div>
-                <Badge className={`text-xs shrink-0 border ${STATUS_BADGE[row.status] ?? "bg-slate-700 text-slate-300"}`}>
+                <Badge className={`text-xs shrink-0 border ${STATUS_BADGE[row.status] ?? "bg-muted text-muted-foreground"}`}>
                   {STATUS_LABELS[row.status] ?? row.status}
                 </Badge>
               </div>
@@ -287,7 +287,7 @@ export default function AdminAccreditation() {
             {/* Header */}
             <div className="flex items-start justify-between">
               <div>
-                <h2 className="text-lg font-semibold text-white">{(detail as any).org_name}</h2>
+                <h2 className="text-lg font-semibold text-foreground">{(detail as any).org_name}</h2>
                 <p className="text-xs font-mono text-slate-500">{(detail as any).reference_token}</p>
               </div>
               <div className="flex items-center gap-2">
@@ -297,7 +297,7 @@ export default function AdminAccreditation() {
                 {(detail as any).status === "submitted" && (
                   <Button size="sm" onClick={() => startReview.mutate({ id: detail.id })}
                     disabled={startReview.isPending}
-                    className="bg-purple-600 hover:bg-purple-700 text-white h-7 text-xs gap-1">
+                    className="bg-purple-600 hover:bg-purple-700 text-foreground h-7 text-xs gap-1">
                     <Eye className="w-3 h-3" /> Start Review
                   </Button>
                 )}
@@ -305,8 +305,8 @@ export default function AdminAccreditation() {
             </div>
 
             {/* Entity info */}
-            <div className="bg-slate-900 border border-slate-800 rounded-lg p-4">
-              <h3 className="text-xs font-medium text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+            <div className="bg-background border border-border rounded-lg p-4">
+              <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-1.5">
                 <Building2 className="w-3.5 h-3.5" /> Entity Details
               </h3>
               <div className="grid grid-cols-3 gap-3 text-sm">
@@ -323,27 +323,27 @@ export default function AdminAccreditation() {
                 ].map(([k, v]) => (
                   <div key={k}>
                     <p className="text-slate-500 text-xs">{k}</p>
-                    <p className="text-white text-sm truncate">{v}</p>
+                    <p className="text-foreground text-sm truncate">{v}</p>
                   </div>
                 ))}
               </div>
-              <div className="mt-3 pt-3 border-t border-slate-800">
+              <div className="mt-3 pt-3 border-t border-border">
                 <p className="text-slate-500 text-xs mb-1">Address</p>
-                <p className="text-white text-sm">{(detail as any).address}</p>
+                <p className="text-foreground text-sm">{(detail as any).address}</p>
               </div>
             </div>
 
             {/* Lead auditors */}
-            <div className="bg-slate-900 border border-slate-800 rounded-lg p-4">
-              <h3 className="text-xs font-medium text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+            <div className="bg-background border border-border rounded-lg p-4">
+              <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-1.5">
                 <Users className="w-3.5 h-3.5" /> Lead Auditors
               </h3>
               <div className="space-y-2">
                 {((detail as any).lead_auditors ?? []).map((a: any, i: number) => (
-                  <div key={i} className="flex items-start justify-between bg-slate-800 rounded p-2.5">
+                  <div key={i} className="flex items-start justify-between bg-card rounded p-2.5">
                     <div>
-                      <p className="text-sm font-medium text-white">{a.name}</p>
-                      <p className="text-xs text-slate-400">{a.email}</p>
+                      <p className="text-sm font-medium text-foreground">{a.name}</p>
+                      <p className="text-xs text-muted-foreground">{a.email}</p>
                     </div>
                     <div className="flex flex-wrap gap-1 justify-end max-w-48">
                       {(a.certifications ?? []).map((c: string) => (
@@ -356,8 +356,8 @@ export default function AdminAccreditation() {
             </div>
 
             {/* Documents */}
-            <div className="bg-slate-900 border border-slate-800 rounded-lg p-4">
-              <h3 className="text-xs font-medium text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+            <div className="bg-background border border-border rounded-lg p-4">
+              <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-1.5">
                 <FileText className="w-3.5 h-3.5" /> Submitted Documents
               </h3>
               <div className="space-y-2">
@@ -367,8 +367,8 @@ export default function AdminAccreditation() {
                   ["Indemnity Insurance", (detail as any).indemnity_insurance_url],
                   ["Audit Methodology", (detail as any).audit_methodology_url],
                 ].map(([label, url]) => (
-                  <div key={label} className="flex items-center justify-between py-1.5 border-b border-slate-800 last:border-0">
-                    <span className="text-sm text-slate-300">{label}</span>
+                  <div key={label} className="flex items-center justify-between py-1.5 border-b border-border last:border-0">
+                    <span className="text-sm text-muted-foreground">{label}</span>
                     {url ? (
                       <a href={url} target="_blank" rel="noopener noreferrer">
                         <Button variant="ghost" size="sm" className="text-emerald-400 hover:text-emerald-300 h-6 gap-1 text-xs">
@@ -385,14 +385,14 @@ export default function AdminAccreditation() {
 
             {/* Review checklist */}
             {["under_review", "competency_scheduled", "info_requested"].includes((detail as any).status) && (
-              <div className="bg-slate-900 border border-slate-800 rounded-lg p-4">
+              <div className="bg-background border border-border rounded-lg p-4">
                 <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-xs font-medium text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                  <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
                     <CheckCircle className="w-3.5 h-3.5" /> Review Checklist
                   </h3>
                   <span className="text-xs text-slate-500">{checklistProgress}/{REVIEW_CHECKLIST.length} complete</span>
                 </div>
-                <div className="w-full bg-slate-800 rounded-full h-1.5 mb-3">
+                <div className="w-full bg-card rounded-full h-1.5 mb-3">
                   <div className="bg-emerald-500 h-1.5 rounded-full transition-all"
                     style={{ width: `${(checklistProgress / REVIEW_CHECKLIST.length) * 100}%` }} />
                 </div>
@@ -400,8 +400,8 @@ export default function AdminAccreditation() {
                   {REVIEW_CHECKLIST.map(item => (
                     <div key={item.key} className="flex items-center gap-2.5 cursor-pointer"
                       onClick={() => handleChecklistToggle(item.key)}>
-                      <Checkbox checked={!!checklist[item.key]} className="border-slate-600 shrink-0" />
-                      <span className={`text-sm ${checklist[item.key] ? "text-slate-300" : "text-slate-400"}`}>{item.label}</span>
+                      <Checkbox checked={!!checklist[item.key]} className="border-border shrink-0" />
+                      <span className={`text-sm ${checklist[item.key] ? "text-muted-foreground" : "text-muted-foreground"}`}>{item.label}</span>
                     </div>
                   ))}
                 </div>
@@ -417,33 +417,33 @@ export default function AdminAccreditation() {
               }`}>
                 <div className="flex items-center gap-2 mb-2">
                   <Award className="w-4 h-4 text-emerald-400" />
-                  <h3 className="text-sm font-medium text-white">Decision: {STATUS_LABELS[(detail as any).decision]}</h3>
+                  <h3 className="text-sm font-medium text-foreground">Decision: {STATUS_LABELS[(detail as any).decision]}</h3>
                   <span className="text-xs text-slate-500 ml-auto">
                     {(detail as any).decision_at ? new Date((detail as any).decision_at).toLocaleDateString("en-NG") : ""}
                   </span>
                 </div>
                 {(detail as any).issued_licence_number && (
-                  <p className="text-sm text-white mb-1">Licence: <span className="font-mono font-bold text-emerald-400">{(detail as any).issued_licence_number}</span></p>
+                  <p className="text-sm text-foreground mb-1">Licence: <span className="font-mono font-bold text-emerald-400">{(detail as any).issued_licence_number}</span></p>
                 )}
-                {(detail as any).decision_reason && <p className="text-sm text-slate-300">{(detail as any).decision_reason}</p>}
+                {(detail as any).decision_reason && <p className="text-sm text-muted-foreground">{(detail as any).decision_reason}</p>}
                 {(detail as any).conditions && <p className="text-sm text-amber-300 mt-1">Conditions: {(detail as any).conditions}</p>}
               </div>
             )}
 
             {/* Action buttons */}
-            <div className="flex flex-wrap gap-2 pt-2 border-t border-slate-800">
+            <div className="flex flex-wrap gap-2 pt-2 border-t border-border">
               {["under_review", "info_requested", "competency_scheduled"].includes((detail as any).status) && (
                 <>
                   <Button size="sm" onClick={() => { setDecisionType("approved"); setShowDecision(true); }}
-                    className="bg-emerald-600 hover:bg-emerald-700 text-white gap-1 text-xs">
+                    className="bg-emerald-600 hover:bg-emerald-700 text-foreground gap-1 text-xs">
                     <CheckCircle className="w-3.5 h-3.5" /> Approve
                   </Button>
                   <Button size="sm" onClick={() => { setDecisionType("conditionally_approved"); setShowDecision(true); }}
-                    className="bg-teal-600 hover:bg-teal-700 text-white gap-1 text-xs">
+                    className="bg-teal-600 hover:bg-teal-700 text-foreground gap-1 text-xs">
                     <CheckCircle className="w-3.5 h-3.5" /> Conditional Approval
                   </Button>
                   <Button size="sm" onClick={() => { setDecisionType("rejected"); setShowDecision(true); }}
-                    className="bg-red-700 hover:bg-red-800 text-white gap-1 text-xs">
+                    className="bg-red-700 hover:bg-red-800 text-foreground gap-1 text-xs">
                     <XCircle className="w-3.5 h-3.5" /> Reject
                   </Button>
                   <Button size="sm" variant="outline" onClick={() => setShowInfoRequest(true)}
@@ -483,33 +483,33 @@ export default function AdminAccreditation() {
       {/* Decision modal */}
       {showDecision && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-          <div className="bg-slate-900 border border-slate-700 rounded-xl p-6 w-full max-w-md">
-            <h3 className="text-base font-semibold text-white mb-1">
+          <div className="bg-background border border-border rounded-xl p-6 w-full max-w-md">
+            <h3 className="text-base font-semibold text-foreground mb-1">
               {decisionType === "approved" ? "Approve Application" :
                decisionType === "conditionally_approved" ? "Conditional Approval" : "Reject Application"}
             </h3>
-            <p className="text-xs text-slate-400 mb-4">This action will be recorded and the applicant will be notified.</p>
+            <p className="text-xs text-muted-foreground mb-4">This action will be recorded and the applicant will be notified.</p>
             <div className="space-y-3">
               <div>
-                <Label className="text-slate-300 text-xs mb-1 block">Decision Reason <span className="text-red-400">*</span></Label>
+                <Label className="text-muted-foreground text-xs mb-1 block">Decision Reason <span className="text-red-400">*</span></Label>
                 <Textarea value={decisionReason} onChange={e => setDecisionReason(e.target.value)}
                   placeholder="Provide a clear reason for this decision..."
-                  className="bg-slate-800 border-slate-600 text-white placeholder:text-slate-500 resize-none text-sm" rows={3} />
+                  className="bg-card border-border text-foreground placeholder:text-slate-500 resize-none text-sm" rows={3} />
               </div>
               {decisionType === "conditionally_approved" && (
                 <div>
-                  <Label className="text-slate-300 text-xs mb-1 block">Conditions</Label>
+                  <Label className="text-muted-foreground text-xs mb-1 block">Conditions</Label>
                   <Textarea value={decisionConditions} onChange={e => setDecisionConditions(e.target.value)}
                     placeholder="Specify conditions that must be met..."
-                    className="bg-slate-800 border-slate-600 text-white placeholder:text-slate-500 resize-none text-sm" rows={2} />
+                    className="bg-card border-border text-foreground placeholder:text-slate-500 resize-none text-sm" rows={2} />
                 </div>
               )}
             </div>
             <div className="flex gap-2 mt-4">
-              <Button variant="ghost" onClick={() => setShowDecision(false)} className="flex-1 text-slate-400">Cancel</Button>
+              <Button variant="ghost" onClick={() => setShowDecision(false)} className="flex-1 text-muted-foreground">Cancel</Button>
               <Button onClick={() => makeDecision.mutate({ id: selectedId!, decision: decisionType, reason: decisionReason, conditions: decisionConditions || undefined })}
                 disabled={!decisionReason || makeDecision.isPending}
-                className={`flex-1 text-white ${decisionType === "rejected" ? "bg-red-700 hover:bg-red-800" : "bg-emerald-600 hover:bg-emerald-700"}`}>
+                className={`flex-1 text-foreground ${decisionType === "rejected" ? "bg-red-700 hover:bg-red-800" : "bg-emerald-600 hover:bg-emerald-700"}`}>
                 {makeDecision.isPending ? "Processing..." : "Confirm"}
               </Button>
             </div>
@@ -520,16 +520,16 @@ export default function AdminAccreditation() {
       {/* Info request modal */}
       {showInfoRequest && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-          <div className="bg-slate-900 border border-slate-700 rounded-xl p-6 w-full max-w-md">
-            <h3 className="text-base font-semibold text-white mb-4">Request Additional Information</h3>
+          <div className="bg-background border border-border rounded-xl p-6 w-full max-w-md">
+            <h3 className="text-base font-semibold text-foreground mb-4">Request Additional Information</h3>
             <Textarea value={infoNote} onChange={e => setInfoNote(e.target.value)}
               placeholder="Describe what additional information or documents are required..."
-              className="bg-slate-800 border-slate-600 text-white placeholder:text-slate-500 resize-none text-sm" rows={4} />
+              className="bg-card border-border text-foreground placeholder:text-slate-500 resize-none text-sm" rows={4} />
             <div className="flex gap-2 mt-4">
-              <Button variant="ghost" onClick={() => setShowInfoRequest(false)} className="flex-1 text-slate-400">Cancel</Button>
+              <Button variant="ghost" onClick={() => setShowInfoRequest(false)} className="flex-1 text-muted-foreground">Cancel</Button>
               <Button onClick={() => requestInfo.mutate({ id: selectedId!, note: infoNote })}
                 disabled={infoNote.length < 10 || requestInfo.isPending}
-                className="flex-1 bg-amber-600 hover:bg-amber-700 text-white">
+                className="flex-1 bg-amber-600 hover:bg-amber-700 text-foreground">
                 {requestInfo.isPending ? "Sending..." : "Send Request"}
               </Button>
             </div>
@@ -540,15 +540,15 @@ export default function AdminAccreditation() {
       {/* Competency scheduling modal */}
       {showCompetency && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-          <div className="bg-slate-900 border border-slate-700 rounded-xl p-6 w-full max-w-sm">
-            <h3 className="text-base font-semibold text-white mb-4">Schedule Competency Assessment</h3>
+          <div className="bg-background border border-border rounded-xl p-6 w-full max-w-sm">
+            <h3 className="text-base font-semibold text-foreground mb-4">Schedule Competency Assessment</h3>
             <Input type="datetime-local" value={competencyDate} onChange={e => setCompetencyDate(e.target.value)}
-              className="bg-slate-800 border-slate-600 text-white" />
+              className="bg-card border-border text-foreground" />
             <div className="flex gap-2 mt-4">
-              <Button variant="ghost" onClick={() => setShowCompetency(false)} className="flex-1 text-slate-400">Cancel</Button>
+              <Button variant="ghost" onClick={() => setShowCompetency(false)} className="flex-1 text-muted-foreground">Cancel</Button>
               <Button onClick={() => scheduleCompetency.mutate({ id: selectedId!, scheduledAt: competencyDate })}
                 disabled={!competencyDate || scheduleCompetency.isPending}
-                className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white">
+                className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-foreground">
                 Schedule
               </Button>
             </div>
@@ -559,17 +559,17 @@ export default function AdminAccreditation() {
       {/* Suspend modal */}
       {showSuspend && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-          <div className="bg-slate-900 border border-slate-700 rounded-xl p-6 w-full max-w-md">
-            <h3 className="text-base font-semibold text-white mb-1">Suspend DPCO Accreditation</h3>
+          <div className="bg-background border border-border rounded-xl p-6 w-full max-w-md">
+            <h3 className="text-base font-semibold text-foreground mb-1">Suspend DPCO Accreditation</h3>
             <p className="text-xs text-amber-400 mb-4">This will prevent the DPCO from filing new CARs until the suspension is lifted.</p>
             <Textarea value={sanctionReason} onChange={e => setSanctionReason(e.target.value)}
               placeholder="State the grounds for suspension..."
-              className="bg-slate-800 border-slate-600 text-white placeholder:text-slate-500 resize-none text-sm" rows={3} />
+              className="bg-card border-border text-foreground placeholder:text-slate-500 resize-none text-sm" rows={3} />
             <div className="flex gap-2 mt-4">
-              <Button variant="ghost" onClick={() => setShowSuspend(false)} className="flex-1 text-slate-400">Cancel</Button>
+              <Button variant="ghost" onClick={() => setShowSuspend(false)} className="flex-1 text-muted-foreground">Cancel</Button>
               <Button onClick={() => suspend.mutate({ id: selectedId!, reason: sanctionReason })}
                 disabled={sanctionReason.length < 5 || suspend.isPending}
-                className="flex-1 bg-orange-600 hover:bg-orange-700 text-white">
+                className="flex-1 bg-orange-600 hover:bg-orange-700 text-foreground">
                 {suspend.isPending ? "Processing..." : "Suspend"}
               </Button>
             </div>
@@ -580,17 +580,17 @@ export default function AdminAccreditation() {
       {/* Revoke modal */}
       {showRevoke && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-          <div className="bg-slate-900 border border-slate-700 rounded-xl p-6 w-full max-w-md">
-            <h3 className="text-base font-semibold text-white mb-1">Revoke DPCO Accreditation</h3>
+          <div className="bg-background border border-border rounded-xl p-6 w-full max-w-md">
+            <h3 className="text-base font-semibold text-foreground mb-1">Revoke DPCO Accreditation</h3>
             <p className="text-xs text-red-400 mb-4">This is irreversible. The DPCO will be removed from the public registry immediately.</p>
             <Textarea value={sanctionReason} onChange={e => setSanctionReason(e.target.value)}
               placeholder="State the grounds for revocation..."
-              className="bg-slate-800 border-slate-600 text-white placeholder:text-slate-500 resize-none text-sm" rows={3} />
+              className="bg-card border-border text-foreground placeholder:text-slate-500 resize-none text-sm" rows={3} />
             <div className="flex gap-2 mt-4">
-              <Button variant="ghost" onClick={() => setShowRevoke(false)} className="flex-1 text-slate-400">Cancel</Button>
+              <Button variant="ghost" onClick={() => setShowRevoke(false)} className="flex-1 text-muted-foreground">Cancel</Button>
               <Button onClick={() => revoke.mutate({ id: selectedId!, reason: sanctionReason })}
                 disabled={sanctionReason.length < 5 || revoke.isPending}
-                className="flex-1 bg-red-700 hover:bg-red-800 text-white">
+                className="flex-1 bg-red-700 hover:bg-red-800 text-foreground">
                 {revoke.isPending ? "Processing..." : "Revoke Accreditation"}
               </Button>
             </div>

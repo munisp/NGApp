@@ -154,7 +154,7 @@ export default function RegulatoryReports() {
     pending: "bg-yellow-500/20 text-yellow-400",
     overdue: "bg-red-500/20 text-red-400",
     processing: "bg-blue-500/20 text-blue-400",
-    failed: "bg-gray-500/20 text-gray-400",
+    failed: "bg-gray-500/20 text-muted-foreground",
   };
 
   return (
@@ -163,20 +163,20 @@ export default function RegulatoryReports() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-white">Regulatory Reports</h1>
-            <p className="text-gray-400 text-sm mt-1">Generate and export compliance data for NITDA/NCC periodic submissions</p>
+            <h1 className="text-2xl font-bold text-foreground">Regulatory Reports</h1>
+            <p className="text-muted-foreground text-sm mt-1">Generate and export compliance data for NITDA/NCC periodic submissions</p>
           </div>
           <div className="flex gap-2">
-            <Button onClick={handleGenerateReport} size="sm" disabled={generateMutation.isPending} className="bg-blue-600 hover:bg-blue-700 text-white">
+            <Button onClick={handleGenerateReport} size="sm" disabled={generateMutation.isPending} className="bg-blue-600 hover:bg-blue-700 text-foreground">
               <BarChart3 className="w-4 h-4 mr-2" /> {generateMutation.isPending ? "Generating..." : "Generate Report"}
             </Button>
             <Button onClick={() => scheduleMutation.mutate({ reportType: reportType === "scores" ? "compliance_scores" : reportType as "violations" | "penalties", frequency: "monthly", recipients: [] })} size="sm" variant="outline" disabled={scheduleMutation.isPending} className="border-purple-700 text-purple-400 hover:bg-purple-900/20">
               <Archive className="w-4 h-4 mr-2" /> Schedule Monthly
             </Button>
-            <Button onClick={handleDownloadCSV} variant="outline" size="sm" disabled={!rows.length} className="border-gray-700 text-gray-300 hover:bg-gray-800">
+            <Button onClick={handleDownloadCSV} variant="outline" size="sm" disabled={!rows.length} className="border-border text-muted-foreground hover:bg-card">
               <FileDown className="w-4 h-4 mr-2" /> Export CSV
             </Button>
-            <Button onClick={handleDownloadJSON} variant="outline" size="sm" disabled={!rows.length} className="border-gray-700 text-gray-300 hover:bg-gray-800">
+            <Button onClick={handleDownloadJSON} variant="outline" size="sm" disabled={!rows.length} className="border-border text-muted-foreground hover:bg-card">
               <FileDown className="w-4 h-4 mr-2" /> Export JSON
             </Button>
             <Button onClick={() => {
@@ -203,8 +203,8 @@ export default function RegulatoryReports() {
               onClick={() => { setReportType(key); setQueryEnabled(false); }}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                 reportType === key
-                  ? "bg-emerald-600 text-white"
-                  : "bg-gray-800 text-gray-400 hover:bg-gray-700"
+                  ? "bg-emerald-600 text-foreground"
+                  : "bg-card text-muted-foreground hover:bg-muted"
               }`}
             >
               <Icon className="w-4 h-4" />
@@ -214,41 +214,41 @@ export default function RegulatoryReports() {
         </div>
 
         {/* Filters */}
-        <div className="bg-gray-900 border border-gray-800 rounded-xl p-4">
+        <div className="bg-background border border-border rounded-xl p-4">
           <div className="flex items-center gap-2 mb-4">
             <Filter className="w-4 h-4 text-emerald-400" />
-            <span className="text-sm font-medium text-white">Filters</span>
+            <span className="text-sm font-medium text-foreground">Filters</span>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {reportType !== "scores" && (
               <>
                 <div className="space-y-1">
-                  <Label className="text-xs text-gray-400">From Date</Label>
+                  <Label className="text-xs text-muted-foreground">From Date</Label>
                   <Input
                     type="date"
                     value={fromDate}
                     onChange={e => setFromDate(e.target.value)}
-                    className="bg-gray-800 border-gray-700 text-white text-sm h-9"
+                    className="bg-card border-border text-foreground text-sm h-9"
                   />
                 </div>
                 <div className="space-y-1">
-                  <Label className="text-xs text-gray-400">To Date</Label>
+                  <Label className="text-xs text-muted-foreground">To Date</Label>
                   <Input
                     type="date"
                     value={toDate}
                     onChange={e => setToDate(e.target.value)}
-                    className="bg-gray-800 border-gray-700 text-white text-sm h-9"
+                    className="bg-card border-border text-foreground text-sm h-9"
                   />
                 </div>
               </>
             )}
             <div className="space-y-1">
-              <Label className="text-xs text-gray-400">Sector</Label>
+              <Label className="text-xs text-muted-foreground">Sector</Label>
               <Select value={sector} onValueChange={setSector}>
-                <SelectTrigger className="bg-gray-800 border-gray-700 text-white text-sm h-9">
+                <SelectTrigger className="bg-card border-border text-foreground text-sm h-9">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="bg-gray-800 border-gray-700">
+                <SelectContent className="bg-card border-border">
                   <SelectItem value="all">All Sectors</SelectItem>
                   {SECTORS.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
                 </SelectContent>
@@ -256,12 +256,12 @@ export default function RegulatoryReports() {
             </div>
             {reportType === "violations" && (
               <div className="space-y-1">
-                <Label className="text-xs text-gray-400">Severity</Label>
+                <Label className="text-xs text-muted-foreground">Severity</Label>
                 <Select value={severity} onValueChange={setSeverity}>
-                  <SelectTrigger className="bg-gray-800 border-gray-700 text-white text-sm h-9">
+                  <SelectTrigger className="bg-card border-border text-foreground text-sm h-9">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent className="bg-gray-800 border-gray-700">
+                  <SelectContent className="bg-card border-border">
                     <SelectItem value="all">All Severities</SelectItem>
                     {SEVERITIES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
                   </SelectContent>
@@ -270,12 +270,12 @@ export default function RegulatoryReports() {
             )}
             {reportType === "penalties" && (
               <div className="space-y-1">
-                <Label className="text-xs text-gray-400">Payment Status</Label>
+                <Label className="text-xs text-muted-foreground">Payment Status</Label>
                 <Select value={paymentStatus} onValueChange={setPaymentStatus}>
-                  <SelectTrigger className="bg-gray-800 border-gray-700 text-white text-sm h-9">
+                  <SelectTrigger className="bg-card border-border text-foreground text-sm h-9">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent className="bg-gray-800 border-gray-700">
+                  <SelectContent className="bg-card border-border">
                     <SelectItem value="all">All Statuses</SelectItem>
                     {PAYMENT_STATUSES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
                   </SelectContent>
@@ -283,23 +283,23 @@ export default function RegulatoryReports() {
               </div>
             )}
             <div className="space-y-1">
-              <Label className="text-xs text-gray-400">Max Rows</Label>
+              <Label className="text-xs text-muted-foreground">Max Rows</Label>
               <Select value={String(limit)} onValueChange={v => setLimit(Number(v))}>
-                <SelectTrigger className="bg-gray-800 border-gray-700 text-white text-sm h-9">
+                <SelectTrigger className="bg-card border-border text-foreground text-sm h-9">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="bg-gray-800 border-gray-700">
+                <SelectContent className="bg-card border-border">
                   {[100, 250, 500, 1000].map(n => <SelectItem key={n} value={String(n)}>{n} rows</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
           </div>
           <div className="mt-4 flex gap-2">
-            <Button onClick={handleGenerate} className="bg-emerald-600 hover:bg-emerald-700 text-white" size="sm">
+            <Button onClick={handleGenerate} className="bg-emerald-600 hover:bg-emerald-700 text-foreground" size="sm">
               <BarChart3 className="w-4 h-4 mr-2" /> Generate Report
             </Button>
             {queryEnabled && (
-              <Button onClick={() => activeQuery.refetch()} variant="outline" size="sm" className="border-gray-700 text-gray-300 hover:bg-gray-800">
+              <Button onClick={() => activeQuery.refetch()} variant="outline" size="sm" className="border-border text-muted-foreground hover:bg-card">
                 <RefreshCw className="w-4 h-4 mr-2" /> Refresh
               </Button>
             )}
@@ -308,20 +308,20 @@ export default function RegulatoryReports() {
 
         {/* Results */}
         {activeQuery.isLoading && (
-          <div className="flex items-center justify-center py-16 text-gray-400">
+          <div className="flex items-center justify-center py-16 text-muted-foreground">
             <RefreshCw className="w-5 h-5 animate-spin mr-2" /> Generating report…
           </div>
         )}
 
         {rows.length > 0 && (
-          <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
-            <div className="px-4 py-3 border-b border-gray-800 flex items-center justify-between">
-              <span className="text-sm text-gray-300 font-medium">{rows.length} records</span>
+          <div className="bg-background border border-border rounded-xl overflow-hidden">
+            <div className="px-4 py-3 border-b border-border flex items-center justify-between">
+              <span className="text-sm text-muted-foreground font-medium">{rows.length} records</span>
               <div className="flex gap-2">
-                <Button onClick={handleDownloadCSV} size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white h-7 text-xs">
+                <Button onClick={handleDownloadCSV} size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-foreground h-7 text-xs">
                   <FileDown className="w-3 h-3 mr-1" /> CSV
                 </Button>
-                <Button onClick={handleDownloadJSON} size="sm" variant="outline" className="border-gray-700 text-gray-300 hover:bg-gray-800 h-7 text-xs">
+                <Button onClick={handleDownloadJSON} size="sm" variant="outline" className="border-border text-muted-foreground hover:bg-card h-7 text-xs">
                   <FileDown className="w-3 h-3 mr-1" /> JSON
                 </Button>
               </div>
@@ -331,7 +331,7 @@ export default function RegulatoryReports() {
                 <thead className="sticky top-0 bg-gray-950">
                   <tr>
                     {Object.keys(rows[0]).map(col => (
-                      <th key={col} className="px-3 py-2 text-left text-gray-400 font-medium whitespace-nowrap border-b border-gray-800">
+                      <th key={col} className="px-3 py-2 text-left text-muted-foreground font-medium whitespace-nowrap border-b border-border">
                         {col.replace(/([A-Z])/g, " $1").replace(/^./, s => s.toUpperCase())}
                       </th>
                     ))}
@@ -339,19 +339,19 @@ export default function RegulatoryReports() {
                 </thead>
                 <tbody>
                   {rows.map((row, i) => (
-                    <tr key={i} className="border-b border-gray-800/50 hover:bg-gray-800/30">
+                    <tr key={i} className="border-b border-border/50 hover:bg-card/30">
                       {Object.entries(row).map(([col, val]) => (
-                        <td key={col} className="px-3 py-2 text-gray-300 whitespace-nowrap">
+                        <td key={col} className="px-3 py-2 text-muted-foreground whitespace-nowrap">
                           {col === "severity" && typeof val === "string" ? (
-                            <Badge className={`${severityColor[val] ?? "bg-gray-500/20 text-gray-400"} text-xs border-0`}>{val}</Badge>
+                            <Badge className={`${severityColor[val] ?? "bg-gray-500/20 text-muted-foreground"} text-xs border-0`}>{val}</Badge>
                           ) : col === "paymentStatus" && typeof val === "string" ? (
-                            <Badge className={`${paymentColor[val] ?? "bg-gray-500/20 text-gray-400"} text-xs border-0`}>{val}</Badge>
+                            <Badge className={`${paymentColor[val] ?? "bg-gray-500/20 text-muted-foreground"} text-xs border-0`}>{val}</Badge>
                           ) : col === "amount" && typeof val === "number" ? (
                             <span className="text-yellow-400 font-mono">${val.toLocaleString()}</span>
                           ) : col === "complianceScore" && typeof val === "number" ? (
                             <span className={val >= 80 ? "text-green-400" : val >= 60 ? "text-yellow-400" : "text-red-400"}>{val.toFixed(1)}</span>
                           ) : val instanceof Date || (typeof val === "string" && val.includes("T")) ? (
-                            <span className="text-gray-400">{new Date(val as string).toLocaleDateString()}</span>
+                            <span className="text-muted-foreground">{new Date(val as string).toLocaleDateString()}</span>
                           ) : val === null || val === undefined ? (
                             <span className="text-gray-600">—</span>
                           ) : (
@@ -376,7 +376,7 @@ export default function RegulatoryReports() {
         {!queryEnabled && (
           <div className="text-center py-16 text-gray-600">
             <BarChart3 className="w-10 h-10 mx-auto mb-3 opacity-40" />
-            <p>Select filters and click <strong className="text-gray-400">Generate Report</strong> to load data.</p>
+            <p>Select filters and click <strong className="text-muted-foreground">Generate Report</strong> to load data.</p>
           </div>
         )}
       </div>

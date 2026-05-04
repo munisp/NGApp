@@ -133,24 +133,24 @@ export default function OpenApiPortal() {
         <div className="flex items-center gap-3 mb-6">
           <BookOpen className="w-7 h-7 text-indigo-400" />
           <div>
-            <h1 className="text-xl font-bold text-white">Developer API Portal</h1>
-            <p className="text-sm text-gray-400">NDSEP tRPC API reference and interactive explorer</p>
+            <h1 className="text-xl font-bold text-foreground">Developer API Portal</h1>
+            <p className="text-sm text-muted-foreground">NDSEP tRPC API reference and interactive explorer</p>
           </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
           {/* API Key */}
-          <div className="lg:col-span-2 bg-gray-900 border border-gray-800 rounded-xl p-5">
+          <div className="lg:col-span-2 bg-background border border-border rounded-xl p-5">
             <div className="flex items-center gap-2 mb-3">
               <Key className="w-4 h-4 text-yellow-400" />
-              <span className="font-medium text-white">Your API Key</span>
+              <span className="font-medium text-foreground">Your API Key</span>
             </div>
             <div className="flex items-center gap-2">
-              <code className="flex-1 bg-gray-800 text-green-400 px-3 py-2 rounded-lg text-sm font-mono truncate">
+              <code className="flex-1 bg-card text-green-400 px-3 py-2 rounded-lg text-sm font-mono truncate">
                 {(apiKey as any)?.key ?? "No API key generated yet"}
               </code>
               {(apiKey as any)?.key && (
-                <Button size="sm" variant="outline" onClick={() => copyToClipboard((apiKey as any).key)} className="border-gray-700 text-gray-400">
+                <Button size="sm" variant="outline" onClick={() => copyToClipboard((apiKey as any).key)} className="border-border text-muted-foreground">
                   <Copy className="w-3.5 h-3.5" />
                 </Button>
               )}
@@ -158,36 +158,36 @@ export default function OpenApiPortal() {
                 {generateKeyMutation.isPending ? "..." : (apiKey as any)?.key ? "Rotate" : "Generate"}
               </Button>
             </div>
-            <p className="text-xs text-gray-500 mt-2">Pass as <code className="text-gray-400">Authorization: Bearer &lt;key&gt;</code> header on all authenticated requests.</p>
+            <p className="text-xs text-gray-500 mt-2">Pass as <code className="text-muted-foreground">Authorization: Bearer &lt;key&gt;</code> header on all authenticated requests.</p>
           </div>
           {/* Base URL */}
-          <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
+          <div className="bg-background border border-border rounded-xl p-5">
             <div className="flex items-center gap-2 mb-3">
               <Globe className="w-4 h-4 text-blue-400" />
-              <span className="font-medium text-white">Base URL</span>
+              <span className="font-medium text-foreground">Base URL</span>
             </div>
-            <code className="block bg-gray-800 text-blue-400 px-3 py-2 rounded-lg text-xs font-mono break-all">{BASE_URL}</code>
-            <p className="text-xs text-gray-500 mt-2">All tRPC endpoints are under <code className="text-gray-400">/api/trpc/</code></p>
+            <code className="block bg-card text-blue-400 px-3 py-2 rounded-lg text-xs font-mono break-all">{BASE_URL}</code>
+            <p className="text-xs text-gray-500 mt-2">All tRPC endpoints are under <code className="text-muted-foreground">/api/trpc/</code></p>
           </div>
         </div>
 
         {/* Interactive tester */}
-        <div className="bg-gray-900 border border-gray-800 rounded-xl p-5 mb-6">
+        <div className="bg-background border border-border rounded-xl p-5 mb-6">
           <div className="flex items-center gap-2 mb-4">
             <Code2 className="w-4 h-4 text-green-400" />
-            <span className="font-medium text-white">Interactive Explorer</span>
+            <span className="font-medium text-foreground">Interactive Explorer</span>
           </div>
           <div className="flex gap-2 mb-3">
-            <Input value={tryUrl} onChange={e => setTryUrl(e.target.value)} className="bg-gray-800 border-gray-700 text-white font-mono text-sm flex-1" placeholder="/api/trpc/accreditation.publicListDpcos" />
+            <Input value={tryUrl} onChange={e => setTryUrl(e.target.value)} className="bg-card border-border text-foreground font-mono text-sm flex-1" placeholder="/api/trpc/accreditation.publicListDpcos" />
             <Button onClick={tryEndpoint} disabled={tryLoading || !tryUrl} className="bg-green-600 hover:bg-green-700">
               {tryLoading ? "..." : "Send"}
             </Button>
           </div>
-          <Input value={tryBody} onChange={e => setTryBody(e.target.value)} className="bg-gray-800 border-gray-700 text-white font-mono text-sm mb-3" placeholder='POST body or GET ?input= e.g. {"json":{"limit":5}}' />
+          <Input value={tryBody} onChange={e => setTryBody(e.target.value)} className="bg-card border-border text-foreground font-mono text-sm mb-3" placeholder='POST body or GET ?input= e.g. {"json":{"limit":5}}' />
           {tryResult && (
             <div className="relative">
               <pre className="bg-gray-950 text-green-300 text-xs p-4 rounded-lg overflow-x-auto max-h-64 font-mono">{tryResult}</pre>
-              <Button size="sm" variant="outline" onClick={() => copyToClipboard(tryResult)} className="absolute top-2 right-2 border-gray-700 text-gray-400 text-xs h-6">
+              <Button size="sm" variant="outline" onClick={() => copyToClipboard(tryResult)} className="absolute top-2 right-2 border-border text-muted-foreground text-xs h-6">
                 <Copy className="w-3 h-3" />
               </Button>
             </div>
@@ -197,38 +197,38 @@ export default function OpenApiPortal() {
         {/* Endpoint reference */}
         <div className="space-y-3">
           {ENDPOINTS.map((group) => (
-            <div key={group.group} className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+            <div key={group.group} className="bg-background border border-border rounded-xl overflow-hidden">
               <button
-                className="w-full px-5 py-4 flex items-center justify-between hover:bg-gray-800/50 transition-all"
+                className="w-full px-5 py-4 flex items-center justify-between hover:bg-card/50 transition-all"
                 onClick={() => setExpanded(expanded === group.group ? null : group.group)}
               >
                 <div className="flex items-center gap-2">
-                  {expanded === group.group ? <ChevronDown className="w-4 h-4 text-gray-400" /> : <ChevronRight className="w-4 h-4 text-gray-400" />}
+                  {expanded === group.group ? <ChevronDown className="w-4 h-4 text-muted-foreground" /> : <ChevronRight className="w-4 h-4 text-muted-foreground" />}
                   <span className={`font-medium ${group.color}`}>{group.group}</span>
                   <span className="text-xs text-gray-500">{group.endpoints.length} endpoints</span>
                 </div>
               </button>
               {expanded === group.group && (
-                <div className="divide-y divide-gray-800 border-t border-gray-800">
+                <div className="divide-y divide-gray-800 border-t border-border">
                   {group.endpoints.map((ep, i) => (
                     <div key={i} className="px-5 py-4">
                       <div className="flex items-start justify-between gap-3 mb-2">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className={`px-2 py-0.5 rounded text-xs font-bold font-mono ${METHOD_COLORS[ep.method] ?? "bg-gray-800 text-gray-400"}`}>{ep.method}</span>
-                          <code className="text-gray-300 text-sm font-mono">{ep.path}</code>
-                          {!ep.auth && <span className="px-1.5 py-0.5 rounded text-xs bg-gray-800 text-gray-500">Public</span>}
+                          <span className={`px-2 py-0.5 rounded text-xs font-bold font-mono ${METHOD_COLORS[ep.method] ?? "bg-card text-muted-foreground"}`}>{ep.method}</span>
+                          <code className="text-muted-foreground text-sm font-mono">{ep.path}</code>
+                          {!ep.auth && <span className="px-1.5 py-0.5 rounded text-xs bg-card text-gray-500">Public</span>}
                           {ep.auth && <span className="px-1.5 py-0.5 rounded text-xs bg-yellow-900/30 text-yellow-400">Auth required</span>}
                         </div>
                         <div className="flex gap-1.5 flex-shrink-0">
-                          <Button size="sm" variant="outline" onClick={() => { setTryUrl(ep.path); setTryBody(ep.body ?? ep.params ?? ""); }} className="border-gray-700 text-gray-400 text-xs h-6 px-2">Try</Button>
-                          <Button size="sm" variant="outline" onClick={() => copyToClipboard(`${BASE_URL}${ep.path}${ep.params ? `?input=${encodeURIComponent(ep.params)}` : ""}`)} className="border-gray-700 text-gray-400 text-xs h-6 px-2">
+                          <Button size="sm" variant="outline" onClick={() => { setTryUrl(ep.path); setTryBody(ep.body ?? ep.params ?? ""); }} className="border-border text-muted-foreground text-xs h-6 px-2">Try</Button>
+                          <Button size="sm" variant="outline" onClick={() => copyToClipboard(`${BASE_URL}${ep.path}${ep.params ? `?input=${encodeURIComponent(ep.params)}` : ""}`)} className="border-border text-muted-foreground text-xs h-6 px-2">
                             <Copy className="w-3 h-3" />
                           </Button>
                         </div>
                       </div>
-                      <p className="text-gray-400 text-sm">{ep.desc}</p>
+                      <p className="text-muted-foreground text-sm">{ep.desc}</p>
                       {(ep.params || ep.body) && (
-                        <pre className="mt-2 bg-gray-950 text-gray-400 text-xs p-2 rounded font-mono overflow-x-auto">{ep.params ?? ep.body}</pre>
+                        <pre className="mt-2 bg-gray-950 text-muted-foreground text-xs p-2 rounded font-mono overflow-x-auto">{ep.params ?? ep.body}</pre>
                       )}
                     </div>
                   ))}

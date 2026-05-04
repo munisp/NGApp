@@ -205,7 +205,7 @@ export default function SIEMAudit() {
             <div className="flex items-center gap-2">
               <span className="layer-badge">WAZUH · OPENSEARCH</span>
               <span className="data-label">{alerts?.length ?? 0} alerts</span>
-              <Button size="sm" className="gap-1 h-7 text-xs bg-red-600 hover:bg-red-700 text-white" onClick={() => setShowCreateAlert(true)}><Plus className="h-3 w-3" /> Create Alert</Button>
+              <Button size="sm" className="gap-1 h-7 text-xs bg-red-600 hover:bg-red-700 text-foreground" onClick={() => setShowCreateAlert(true)}><Plus className="h-3 w-3" /> Create Alert</Button>
               <Button size="sm" variant="outline" className="gap-1 h-7 text-xs" onClick={() => {
                 const headers = ["ID","Severity","Title","Source","Organization","MITRE Tactic","Detected At","Resolved"];
                 const rows = (alerts ?? []).map((a: any) => [a.id,a.severity,`"${(a.title ?? "").replace(/"/g, "'")}"`,a.source ?? "",a.organizationId ?? "",a.mitreTactic ?? "",a.detectedAt ? new Date(a.detectedAt).toISOString() : "",a.isResolved ? "yes" : "no"].join(","));
@@ -434,19 +434,19 @@ export default function SIEMAudit() {
 
     {/* Create Alert Dialog */}
     <Dialog open={showCreateAlert} onOpenChange={setShowCreateAlert}>
-      <DialogContent className="bg-gray-900 border-gray-700 text-white">
+      <DialogContent className="bg-background border-border text-foreground">
         <DialogHeader><DialogTitle>Create Security Alert</DialogTitle></DialogHeader>
         <div className="space-y-3">
-          <div><Label className="text-gray-400 text-xs">Organization ID</Label><Input type="number" value={alertForm.organizationId} onChange={e => setAlertForm(p => ({ ...p, organizationId: e.target.value }))} className="bg-gray-800 border-gray-700 mt-1" placeholder="e.g. 1" /></div>
-          <div><Label className="text-gray-400 text-xs">Alert Title</Label><Input value={alertForm.title} onChange={e => setAlertForm(p => ({ ...p, title: e.target.value }))} className="bg-gray-800 border-gray-700 mt-1" placeholder="e.g. Suspicious data exfiltration detected" /></div>
-          <div><Label className="text-gray-400 text-xs">Alert Type</Label><Input value={alertForm.alertType} onChange={e => setAlertForm(p => ({ ...p, alertType: e.target.value }))} className="bg-gray-800 border-gray-700 mt-1" placeholder="e.g. data_exfiltration" /></div>
-          <div><Label className="text-gray-400 text-xs">Severity</Label>
+          <div><Label className="text-muted-foreground text-xs">Organization ID</Label><Input type="number" value={alertForm.organizationId} onChange={e => setAlertForm(p => ({ ...p, organizationId: e.target.value }))} className="bg-card border-border mt-1" placeholder="e.g. 1" /></div>
+          <div><Label className="text-muted-foreground text-xs">Alert Title</Label><Input value={alertForm.title} onChange={e => setAlertForm(p => ({ ...p, title: e.target.value }))} className="bg-card border-border mt-1" placeholder="e.g. Suspicious data exfiltration detected" /></div>
+          <div><Label className="text-muted-foreground text-xs">Alert Type</Label><Input value={alertForm.alertType} onChange={e => setAlertForm(p => ({ ...p, alertType: e.target.value }))} className="bg-card border-border mt-1" placeholder="e.g. data_exfiltration" /></div>
+          <div><Label className="text-muted-foreground text-xs">Severity</Label>
             <Select value={alertForm.severity} onValueChange={v => setAlertForm(p => ({ ...p, severity: v }))}>
-              <SelectTrigger className="bg-gray-800 border-gray-700 mt-1"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="bg-card border-border mt-1"><SelectValue /></SelectTrigger>
               <SelectContent>{["low","medium","high","critical"].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
             </Select>
           </div>
-          <div><Label className="text-gray-400 text-xs">Description (optional)</Label><Textarea value={alertForm.description} onChange={e => setAlertForm(p => ({ ...p, description: e.target.value }))} className="bg-gray-800 border-gray-700 mt-1" rows={3} /></div>
+          <div><Label className="text-muted-foreground text-xs">Description (optional)</Label><Textarea value={alertForm.description} onChange={e => setAlertForm(p => ({ ...p, description: e.target.value }))} className="bg-card border-border mt-1" rows={3} /></div>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => setShowCreateAlert(false)}>Cancel</Button>

@@ -21,7 +21,7 @@ const RISK_COLORS: Record<string, string> = {
 };
 
 const STATUS_COLORS: Record<string, string> = {
-  draft: "bg-gray-500/20 text-gray-400",
+  draft: "bg-gray-500/20 text-muted-foreground",
   under_review: "bg-blue-500/20 text-blue-400",
   approved: "bg-green-500/20 text-green-400",
   rejected: "bg-red-500/20 text-red-400",
@@ -123,8 +123,8 @@ export default function TiaAssessments() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">Transfer Impact Assessments</h1>
-          <p className="text-gray-400 text-sm mt-1">
+          <h1 className="text-2xl font-bold text-foreground">Transfer Impact Assessments</h1>
+          <p className="text-muted-foreground text-sm mt-1">
             Evaluate cross-border data transfer risks and legal compliance before approving transfers
           </p>
         </div>
@@ -135,20 +135,20 @@ export default function TiaAssessments() {
 
       {/* Stats */}
       <div className="grid grid-cols-4 gap-4">
-        <div className="bg-gray-800 rounded-xl border border-gray-700 p-4">
-          <div className="text-gray-400 text-sm">Total Assessments</div>
-          <div className="text-2xl font-bold text-white">{(stats as any)?.total ?? 0}</div>
+        <div className="bg-card rounded-xl border border-border p-4">
+          <div className="text-muted-foreground text-sm">Total Assessments</div>
+          <div className="text-2xl font-bold text-foreground">{(stats as any)?.total ?? 0}</div>
         </div>
-        <div className="bg-gray-800 rounded-xl border border-gray-700 p-4">
-          <div className="text-gray-400 text-sm">High / Critical Risk</div>
+        <div className="bg-card rounded-xl border border-border p-4">
+          <div className="text-muted-foreground text-sm">High / Critical Risk</div>
           <div className="text-2xl font-bold text-red-400">{(stats as any)?.high_risk ?? 0}</div>
         </div>
-        <div className="bg-gray-800 rounded-xl border border-gray-700 p-4">
-          <div className="text-gray-400 text-sm">Approved</div>
+        <div className="bg-card rounded-xl border border-border p-4">
+          <div className="text-muted-foreground text-sm">Approved</div>
           <div className="text-2xl font-bold text-green-400">{(stats as any)?.approved ?? 0}</div>
         </div>
-        <div className="bg-gray-800 rounded-xl border border-gray-700 p-4">
-          <div className="text-gray-400 text-sm">Pending Review</div>
+        <div className="bg-card rounded-xl border border-border p-4">
+          <div className="text-muted-foreground text-sm">Pending Review</div>
           <div className="text-2xl font-bold text-yellow-400">{(stats as any)?.pending ?? 0}</div>
         </div>
       </div>
@@ -160,7 +160,7 @@ export default function TiaAssessments() {
         const approvedList = allList.filter((a: any) => a.status === "approved");
         const rejectedList = allList.filter((a: any) => a.status === "rejected");
         const tabs: { key: TabKey; label: string; count: number; color: string }[] = [
-          { key: "all", label: "All Assessments", count: allList.length, color: "text-gray-300" },
+          { key: "all", label: "All Assessments", count: allList.length, color: "text-muted-foreground" },
           { key: "pending", label: "Pending Review", count: pendingList.length, color: "text-yellow-400" },
           { key: "approved", label: "Approved", count: approvedList.length, color: "text-green-400" },
           { key: "rejected", label: "Rejected", count: rejectedList.length, color: "text-red-400" },
@@ -169,7 +169,7 @@ export default function TiaAssessments() {
         return (
           <>
             {/* Tabs */}
-            <div className="flex items-center gap-1 border-b border-gray-700">
+            <div className="flex items-center gap-1 border-b border-border">
               {tabs.map(tab => (
                 <button
                   key={tab.key}
@@ -177,14 +177,14 @@ export default function TiaAssessments() {
                   className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
                     activeTab === tab.key
                       ? `border-blue-500 ${tab.color}`
-                      : "border-transparent text-gray-500 hover:text-gray-300"
+                      : "border-transparent text-gray-500 hover:text-muted-foreground"
                   }`}
                 >
                   {tab.key === "pending" && <ListChecks className="w-3.5 h-3.5" />}
                   {tab.label}
                   {tab.count > 0 && (
                     <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${
-                      activeTab === tab.key ? "bg-blue-500/20 text-blue-300" : "bg-gray-700 text-gray-400"
+                      activeTab === tab.key ? "bg-blue-500/20 text-blue-300" : "bg-muted text-muted-foreground"
                     }`}>{tab.count}</span>
                   )}
                 </button>
@@ -209,12 +209,12 @@ export default function TiaAssessments() {
             </div>
 
             {/* TIA Table */}
-            <div className="bg-gray-800 rounded-xl border border-gray-700 overflow-hidden">
+            <div className="bg-card rounded-xl border border-border overflow-hidden">
               <table className="w-full text-sm">
-                <thead className="border-b border-gray-700 bg-gray-900/50">
+                <thead className="border-b border-border bg-background/50">
                   <tr>
                     {["ID", "Organization", "Destination", "Data Categories", "Legal Basis", "Risk Level", "Status", "Created", "Actions"].map(h => (
-                      <th key={h} className="text-left px-4 py-3 text-gray-400 font-medium">{h}</th>
+                      <th key={h} className="text-left px-4 py-3 text-muted-foreground font-medium">{h}</th>
                     ))}
                   </tr>
                 </thead>
@@ -227,10 +227,10 @@ export default function TiaAssessments() {
                       </td>
                     </tr>
                   ) : visibleList.map((a: any) => (
-              <tr key={a.id} className="border-b border-gray-700/50 hover:bg-gray-700/30">
+              <tr key={a.id} className="border-b border-border/50 hover:bg-muted/30">
                 <td className="px-4 py-3 font-mono text-xs text-blue-400">TIA-{String(a.id).padStart(5, "0")}</td>
-                <td className="px-4 py-3 text-gray-300 text-xs">{a.organizationId ?? "—"}</td>
-                <td className="px-4 py-3 text-gray-300 text-xs">
+                <td className="px-4 py-3 text-muted-foreground text-xs">{a.organizationId ?? "—"}</td>
+                <td className="px-4 py-3 text-muted-foreground text-xs">
                   <div className="flex items-center gap-1">
                     <Globe className="w-3 h-3 text-gray-500" />
                     {a.destinationCountry}
@@ -239,21 +239,21 @@ export default function TiaAssessments() {
                 <td className="px-4 py-3 text-xs">
                   <div className="flex flex-wrap gap-1">
                     {(a.dataCategories ?? []).slice(0, 2).map((c: string) => (
-                      <Badge key={c} variant="outline" className="text-[9px] border-gray-600 text-gray-400">{c}</Badge>
+                      <Badge key={c} variant="outline" className="text-[9px] border-border text-muted-foreground">{c}</Badge>
                     ))}
                     {(a.dataCategories ?? []).length > 2 && (
-                      <Badge variant="outline" className="text-[9px] border-gray-600 text-gray-500">+{(a.dataCategories ?? []).length - 2}</Badge>
+                      <Badge variant="outline" className="text-[9px] border-border text-gray-500">+{(a.dataCategories ?? []).length - 2}</Badge>
                     )}
                   </div>
                 </td>
-                <td className="px-4 py-3 text-gray-400 text-xs max-w-xs truncate">{a.legalBasis}</td>
+                <td className="px-4 py-3 text-muted-foreground text-xs max-w-xs truncate">{a.legalBasis}</td>
                 <td className="px-4 py-3">
-                  <Badge className={`text-xs ${RISK_COLORS[a.riskLevel] ?? "bg-gray-500/20 text-gray-400"}`}>
+                  <Badge className={`text-xs ${RISK_COLORS[a.riskLevel] ?? "bg-gray-500/20 text-muted-foreground"}`}>
                     {a.riskLevel}
                   </Badge>
                 </td>
                 <td className="px-4 py-3">
-                  <Badge className={`text-xs ${STATUS_COLORS[a.status] ?? "bg-gray-500/20 text-gray-400"}`}>
+                  <Badge className={`text-xs ${STATUS_COLORS[a.status] ?? "bg-gray-500/20 text-muted-foreground"}`}>
                     {a.status?.replace("_", " ")}
                   </Badge>
                 </td>
@@ -306,14 +306,14 @@ export default function TiaAssessments() {
 
       {/* Review Dialog */}
       <Dialog open={!!reviewTarget} onOpenChange={() => setReviewTarget(null)}>
-        <DialogContent className="bg-gray-900 border-gray-700 text-white">
+        <DialogContent className="bg-background border-border text-foreground">
           <DialogHeader>
             <DialogTitle className={reviewTarget?.action === "approve" ? "text-green-400" : "text-red-400"}>
               {reviewTarget?.action === "approve" ? "Approve" : "Reject"} TIA-{String(reviewTarget?.id ?? 0).padStart(5, "0")}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
-            <p className="text-sm text-gray-400">
+            <p className="text-sm text-muted-foreground">
               {reviewTarget?.action === "approve"
                 ? "Approving this TIA will authorize the cross-border data transfer and notify the organization by email."
                 : "Rejecting this TIA will block the transfer and notify the organization with your reason."}
@@ -321,7 +321,7 @@ export default function TiaAssessments() {
             <div>
               <Label>{reviewTarget?.action === "approve" ? "Approval Notes (optional)" : "Rejection Reason (required)"}</Label>
               <Textarea
-                className="bg-gray-800 border-gray-700 mt-1 text-sm"
+                className="bg-card border-border mt-1 text-sm"
                 rows={3}
                 placeholder={reviewTarget?.action === "approve" ? "Any conditions or notes for the organization..." : "Explain why this transfer is not approved..."}
                 value={reviewNote}
@@ -351,34 +351,34 @@ export default function TiaAssessments() {
 
       {/* Create Dialog */}
       <Dialog open={showCreate} onOpenChange={setShowCreate}>
-        <DialogContent className="bg-gray-900 border-gray-700 text-white max-w-lg">
+        <DialogContent className="bg-background border-border text-foreground max-w-lg">
           <DialogHeader><DialogTitle>New Transfer Impact Assessment</DialogTitle></DialogHeader>
           <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-1">
             <div>
               <Label>Organization</Label>
               <Select value={form.organizationId} onValueChange={v => setForm(p => ({ ...p, organizationId: v }))}>
-                <SelectTrigger className="bg-gray-800 border-gray-700 mt-1"><SelectValue placeholder="Select organization..." /></SelectTrigger>
+                <SelectTrigger className="bg-card border-border mt-1"><SelectValue placeholder="Select organization..." /></SelectTrigger>
                 <SelectContent>{(orgs as any[]).map((o: any) => <SelectItem key={o.id} value={String(o.id)}>{o.name}</SelectItem>)}</SelectContent>
               </Select>
             </div>
             <div>
               <Label>Destination Country</Label>
               <Select value={form.destinationCountry} onValueChange={v => setForm(p => ({ ...p, destinationCountry: v }))}>
-                <SelectTrigger className="bg-gray-800 border-gray-700 mt-1"><SelectValue placeholder="Select destination..." /></SelectTrigger>
+                <SelectTrigger className="bg-card border-border mt-1"><SelectValue placeholder="Select destination..." /></SelectTrigger>
                 <SelectContent>{COUNTRIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
               </Select>
             </div>
             <div>
               <Label>Legal Basis for Transfer</Label>
               <Select value={form.legalBasis} onValueChange={v => setForm(p => ({ ...p, legalBasis: v }))}>
-                <SelectTrigger className="bg-gray-800 border-gray-700 mt-1"><SelectValue placeholder="Select legal basis..." /></SelectTrigger>
+                <SelectTrigger className="bg-card border-border mt-1"><SelectValue placeholder="Select legal basis..." /></SelectTrigger>
                 <SelectContent>{LEGAL_BASES.map(b => <SelectItem key={b} value={b}>{b}</SelectItem>)}</SelectContent>
               </Select>
             </div>
             <div>
               <Label>Risk Level</Label>
               <Select value={form.riskLevel} onValueChange={v => setForm(p => ({ ...p, riskLevel: v as any }))}>
-                <SelectTrigger className="bg-gray-800 border-gray-700 mt-1"><SelectValue /></SelectTrigger>
+                <SelectTrigger className="bg-card border-border mt-1"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {["low", "medium", "high", "critical"].map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
                 </SelectContent>
@@ -395,7 +395,7 @@ export default function TiaAssessments() {
                     className={`text-xs px-2 py-1 rounded border transition-colors ${
                       selectedCategories.includes(cat)
                         ? "border-blue-500 bg-blue-500/20 text-blue-300"
-                        : "border-gray-600 text-gray-400 hover:border-gray-500"
+                        : "border-border text-muted-foreground hover:border-gray-500"
                     }`}
                   >
                     {cat}
@@ -406,7 +406,7 @@ export default function TiaAssessments() {
             <div>
               <Label>Safeguards Applied</Label>
               <Textarea
-                className="bg-gray-800 border-gray-700 mt-1 text-sm"
+                className="bg-card border-border mt-1 text-sm"
                 rows={2}
                 placeholder="Describe technical and organizational safeguards (encryption, pseudonymization, access controls)..."
                 value={form.safeguards}
@@ -416,7 +416,7 @@ export default function TiaAssessments() {
             <div>
               <Label>TIA Document / Notes</Label>
               <Textarea
-                className="bg-gray-800 border-gray-700 mt-1 text-sm"
+                className="bg-card border-border mt-1 text-sm"
                 rows={3}
                 placeholder="Document the assessment findings, risks identified, and mitigation measures..."
                 value={form.tiaDocument}

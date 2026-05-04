@@ -103,11 +103,11 @@ export default function AdminRegistrations() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white flex items-center gap-2">
+          <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
             <Shield className="w-6 h-6 text-cyan-400" />
             DPCO Registration Queue
           </h1>
-          <p className="text-slate-400 text-sm mt-1">
+          <p className="text-muted-foreground text-sm mt-1">
             Review and process DPCO accreditation applications
           </p>
         </div>
@@ -120,7 +120,7 @@ export default function AdminRegistrations() {
           <Button
             variant="outline"
             size="sm"
-            className="border-slate-600 text-slate-300"
+            className="border-border text-muted-foreground"
             onClick={() => refetch()}
           >
             <RefreshCw className="w-4 h-4 mr-1" /> Refresh
@@ -136,14 +136,14 @@ export default function AdminRegistrations() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search by name, email, CAC..."
-            className="pl-9 bg-slate-800/60 border-slate-600 text-white"
+            className="pl-9 bg-card/60 border-border text-foreground"
           />
         </div>
         <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as StatusFilter)}>
-          <SelectTrigger className="w-40 bg-slate-800/60 border-slate-600 text-white">
+          <SelectTrigger className="w-40 bg-card/60 border-border text-foreground">
             <SelectValue />
           </SelectTrigger>
-          <SelectContent className="bg-slate-800 border-slate-600">
+          <SelectContent className="bg-card border-border">
             <SelectItem value="pending">Pending</SelectItem>
             <SelectItem value="active">Active</SelectItem>
             <SelectItem value="suspended">Suspended</SelectItem>
@@ -154,17 +154,17 @@ export default function AdminRegistrations() {
       </div>
 
       {/* Table */}
-      <div className="bg-[#0d1220] border border-slate-700/50 rounded-xl overflow-hidden">
+      <div className="bg-[#0d1220] border border-border/50 rounded-xl overflow-hidden">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-slate-700 bg-slate-800/40">
-              <th className="text-left px-4 py-3 text-slate-400 font-medium">Organisation</th>
-              <th className="text-left px-4 py-3 text-slate-400 font-medium">Contact</th>
-              <th className="text-left px-4 py-3 text-slate-400 font-medium">State</th>
-              <th className="text-left px-4 py-3 text-slate-400 font-medium">CAC</th>
-              <th className="text-left px-4 py-3 text-slate-400 font-medium">Status</th>
-              <th className="text-left px-4 py-3 text-slate-400 font-medium">Submitted</th>
-              <th className="text-right px-4 py-3 text-slate-400 font-medium">Actions</th>
+            <tr className="border-b border-border bg-card/40">
+              <th className="text-left px-4 py-3 text-muted-foreground font-medium">Organisation</th>
+              <th className="text-left px-4 py-3 text-muted-foreground font-medium">Contact</th>
+              <th className="text-left px-4 py-3 text-muted-foreground font-medium">State</th>
+              <th className="text-left px-4 py-3 text-muted-foreground font-medium">CAC</th>
+              <th className="text-left px-4 py-3 text-muted-foreground font-medium">Status</th>
+              <th className="text-left px-4 py-3 text-muted-foreground font-medium">Submitted</th>
+              <th className="text-right px-4 py-3 text-muted-foreground font-medium">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -181,33 +181,33 @@ export default function AdminRegistrations() {
               </tr>
             )}
             {rows.map((org: any) => (
-              <tr key={org.id} className="border-b border-slate-800 hover:bg-slate-800/30 transition-colors">
+              <tr key={org.id} className="border-b border-border hover:bg-card/30 transition-colors">
                 <td className="px-4 py-3">
-                  <div className="font-medium text-white">{org.name}</div>
+                  <div className="font-medium text-foreground">{org.name}</div>
                   <div className="text-xs text-slate-500 font-mono">{org.licence_number}</div>
                 </td>
                 <td className="px-4 py-3">
-                  <div className="flex items-center gap-1 text-slate-300">
+                  <div className="flex items-center gap-1 text-muted-foreground">
                     <Mail className="w-3 h-3 text-slate-500" />
                     <span className="text-xs">{org.email}</span>
                   </div>
                   {org.phone && (
-                    <div className="flex items-center gap-1 text-slate-400 mt-0.5">
+                    <div className="flex items-center gap-1 text-muted-foreground mt-0.5">
                       <Phone className="w-3 h-3 text-slate-500" />
                       <span className="text-xs">{org.phone}</span>
                     </div>
                   )}
                 </td>
                 <td className="px-4 py-3">
-                  <div className="flex items-center gap-1 text-slate-300 text-xs">
+                  <div className="flex items-center gap-1 text-muted-foreground text-xs">
                     <MapPin className="w-3 h-3 text-slate-500" />
                     {org.state ?? "—"}
                   </div>
                 </td>
-                <td className="px-4 py-3 text-xs font-mono text-slate-400">{org.cac_number ?? "—"}</td>
+                <td className="px-4 py-3 text-xs font-mono text-muted-foreground">{org.cac_number ?? "—"}</td>
                 <td className="px-4 py-3">
                   <Badge
-                    className={`text-xs border ${STATUS_COLORS[org.status] ?? "bg-slate-700 text-slate-300"}`}
+                    className={`text-xs border ${STATUS_COLORS[org.status] ?? "bg-muted text-muted-foreground"}`}
                   >
                     {org.status === "pending" && <Clock className="w-3 h-3 mr-1" />}
                     {org.status === "active" && <CheckCircle2 className="w-3 h-3 mr-1" />}
@@ -223,7 +223,7 @@ export default function AdminRegistrations() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="text-slate-400 hover:text-white h-7 px-2 text-xs"
+                      className="text-muted-foreground hover:text-foreground h-7 px-2 text-xs"
                       onClick={() => setSelectedOrg(org)}
                     >
                       <FileText className="w-3.5 h-3.5 mr-1" /> View
@@ -232,7 +232,7 @@ export default function AdminRegistrations() {
                       <>
                         <Button
                           size="sm"
-                          className="bg-green-600/80 hover:bg-green-600 text-white h-7 px-2 text-xs"
+                          className="bg-green-600/80 hover:bg-green-600 text-foreground h-7 px-2 text-xs"
                           onClick={() => {
                             setSelectedOrg(org);
                             setApproveOpen(true);
@@ -260,7 +260,7 @@ export default function AdminRegistrations() {
           </tbody>
         </table>
         {data && (
-          <div className="px-4 py-3 border-t border-slate-800 text-xs text-slate-500">
+          <div className="px-4 py-3 border-t border-border text-xs text-slate-500">
             Showing {rows.length} of {data.total} records
           </div>
         )}
@@ -269,7 +269,7 @@ export default function AdminRegistrations() {
       {/* View Detail Dialog */}
       {selectedOrg && !approveOpen && !rejectOpen && (
         <Dialog open={!!selectedOrg} onOpenChange={() => setSelectedOrg(null)}>
-          <DialogContent className="bg-[#0d1220] border-slate-700 text-white max-w-lg">
+          <DialogContent className="bg-[#0d1220] border-border text-foreground max-w-lg">
             <DialogHeader>
               <DialogTitle className="text-cyan-300 flex items-center gap-2">
                 <Building2 className="w-5 h-5" /> {selectedOrg.name}
@@ -294,18 +294,18 @@ export default function AdminRegistrations() {
               ].map(([k, v]) => (
                 <div key={k} className="flex gap-3">
                   <span className="text-slate-500 w-32 shrink-0">{k}:</span>
-                  <span className="text-slate-200">{v}</span>
+                  <span className="text-foreground">{v}</span>
                 </div>
               ))}
             </div>
             <DialogFooter>
-              <Button variant="ghost" className="text-slate-400" onClick={() => setSelectedOrg(null)}>
+              <Button variant="ghost" className="text-muted-foreground" onClick={() => setSelectedOrg(null)}>
                 Close
               </Button>
               {selectedOrg.status === "pending" && (
                 <>
                   <Button
-                    className="bg-green-600/80 hover:bg-green-600 text-white"
+                    className="bg-green-600/80 hover:bg-green-600 text-foreground"
                     onClick={() => { setApproveOpen(true); }}
                   >
                     Approve
@@ -326,53 +326,53 @@ export default function AdminRegistrations() {
 
       {/* Approve Dialog */}
       <Dialog open={approveOpen} onOpenChange={setApproveOpen}>
-        <DialogContent className="bg-[#0d1220] border-slate-700 text-white max-w-md">
+        <DialogContent className="bg-[#0d1220] border-border text-foreground max-w-md">
           <DialogHeader>
             <DialogTitle className="text-green-300 flex items-center gap-2">
               <CheckCircle2 className="w-5 h-5" /> Approve Registration
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 text-sm">
-            <p className="text-slate-400">
-              Approving <span className="text-white font-medium">{selectedOrg?.name}</span>.
+            <p className="text-muted-foreground">
+              Approving <span className="text-foreground font-medium">{selectedOrg?.name}</span>.
               A formal licence number will be issued.
             </p>
             <div className="space-y-1.5">
-              <Label className="text-slate-300">Licence Number (auto-generated if blank)</Label>
+              <Label className="text-muted-foreground">Licence Number (auto-generated if blank)</Label>
               <Input
                 value={approveForm.licenceNumber}
                 onChange={(e) => setApproveForm((f) => ({ ...f, licenceNumber: e.target.value }))}
                 placeholder="e.g. NDPC-DPCO-2026-00123"
-                className="bg-slate-800/60 border-slate-600 text-white"
+                className="bg-card/60 border-border text-foreground"
               />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label className="text-slate-300">Issue Date</Label>
+                <Label className="text-muted-foreground">Issue Date</Label>
                 <Input
                   type="date"
                   value={approveForm.licenceDate}
                   onChange={(e) => setApproveForm((f) => ({ ...f, licenceDate: e.target.value }))}
-                  className="bg-slate-800/60 border-slate-600 text-white"
+                  className="bg-card/60 border-border text-foreground"
                 />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-slate-300">Expiry Date</Label>
+                <Label className="text-muted-foreground">Expiry Date</Label>
                 <Input
                   type="date"
                   value={approveForm.licenceExpiresAt}
                   onChange={(e) => setApproveForm((f) => ({ ...f, licenceExpiresAt: e.target.value }))}
-                  className="bg-slate-800/60 border-slate-600 text-white"
+                  className="bg-card/60 border-border text-foreground"
                 />
               </div>
             </div>
           </div>
           <DialogFooter>
-            <Button variant="ghost" className="text-slate-400" onClick={() => setApproveOpen(false)}>
+            <Button variant="ghost" className="text-muted-foreground" onClick={() => setApproveOpen(false)}>
               Cancel
             </Button>
             <Button
-              className="bg-green-600 hover:bg-green-500 text-white"
+              className="bg-green-600 hover:bg-green-500 text-foreground"
               disabled={approveMutation.isPending}
               onClick={() => {
                 if (!selectedOrg) return;
@@ -392,30 +392,30 @@ export default function AdminRegistrations() {
 
       {/* Reject Dialog */}
       <Dialog open={rejectOpen} onOpenChange={setRejectOpen}>
-        <DialogContent className="bg-[#0d1220] border-slate-700 text-white max-w-md">
+        <DialogContent className="bg-[#0d1220] border-border text-foreground max-w-md">
           <DialogHeader>
             <DialogTitle className="text-red-300 flex items-center gap-2">
               <XCircle className="w-5 h-5" /> Reject Application
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 text-sm">
-            <p className="text-slate-400">
-              Rejecting <span className="text-white font-medium">{selectedOrg?.name}</span>.
+            <p className="text-muted-foreground">
+              Rejecting <span className="text-foreground font-medium">{selectedOrg?.name}</span>.
               Please provide a reason.
             </p>
             <div className="space-y-1.5">
-              <Label className="text-slate-300">Reason for Rejection *</Label>
+              <Label className="text-muted-foreground">Reason for Rejection *</Label>
               <Textarea
                 value={rejectReason}
                 onChange={(e) => setRejectReason(e.target.value)}
                 placeholder="e.g. Insufficient documentation, CAC number unverifiable..."
                 rows={3}
-                className="bg-slate-800/60 border-slate-600 text-white resize-none"
+                className="bg-card/60 border-border text-foreground resize-none"
               />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="ghost" className="text-slate-400" onClick={() => setRejectOpen(false)}>
+            <Button variant="ghost" className="text-muted-foreground" onClick={() => setRejectOpen(false)}>
               Cancel
             </Button>
             <Button

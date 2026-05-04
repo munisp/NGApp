@@ -51,10 +51,10 @@ export default function IncidentResponse() {
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">Incident Response Playbooks</h1>
-          <p className="text-slate-400 text-sm mt-1">NDPA Section 40 — 72-hour NDPC breach notification workflows</p>
+          <h1 className="text-2xl font-bold text-foreground">Incident Response Playbooks</h1>
+          <p className="text-muted-foreground text-sm mt-1">NDPA Section 40 — 72-hour NDPC breach notification workflows</p>
         </div>
-        <Button onClick={() => setShowActivate(true)} className="bg-red-600 hover:bg-red-700 text-white">
+        <Button onClick={() => setShowActivate(true)} className="bg-red-600 hover:bg-red-700 text-foreground">
           <AlertTriangle className="w-4 h-4 mr-2" /> Activate Incident
         </Button>
       </div>
@@ -66,10 +66,10 @@ export default function IncidentResponse() {
             <p className="text-2xl font-bold text-red-300">{activeCount}</p>
           </CardContent>
         </Card>
-        <Card className="bg-slate-800/50 border-slate-700">
+        <Card className="bg-card/50 border-border">
           <CardContent className="p-4">
-            <p className="text-slate-400 text-xs">Total Activations</p>
-            <p className="text-2xl font-bold text-white">{activations?.length ?? 0}</p>
+            <p className="text-muted-foreground text-xs">Total Activations</p>
+            <p className="text-2xl font-bold text-foreground">{activations?.length ?? 0}</p>
           </CardContent>
         </Card>
         <Card className="bg-green-900/20 border-green-700/40">
@@ -78,30 +78,30 @@ export default function IncidentResponse() {
             <p className="text-2xl font-bold text-green-300">{ndpcNotified}</p>
           </CardContent>
         </Card>
-        <Card className="bg-slate-800/50 border-slate-700">
+        <Card className="bg-card/50 border-border">
           <CardContent className="p-4">
-            <p className="text-slate-400 text-xs">Playbooks Available</p>
-            <p className="text-2xl font-bold text-white">{playbooks?.length ?? 0}</p>
+            <p className="text-muted-foreground text-xs">Playbooks Available</p>
+            <p className="text-2xl font-bold text-foreground">{playbooks?.length ?? 0}</p>
           </CardContent>
         </Card>
       </div>
 
       {/* Playbooks */}
       <div>
-        <h2 className="text-white font-semibold mb-3">Available Playbooks</h2>
+        <h2 className="text-foreground font-semibold mb-3">Available Playbooks</h2>
         <div className="grid grid-cols-2 gap-4">
           {playbooks?.map(pb => (
-            <Card key={pb.id} className="bg-slate-800/50 border-slate-700 hover:border-slate-500 cursor-pointer"
+            <Card key={pb.id} className="bg-card/50 border-border hover:border-slate-500 cursor-pointer"
               onClick={() => { setSelectedPlaybook(pb); setShowActivate(true); }}>
               <CardContent className="p-4">
                 <div className="flex items-start justify-between mb-2">
                   <div>
-                    <p className="text-white font-medium">{pb.title}</p>
+                    <p className="text-foreground font-medium">{pb.title}</p>
                     <p className="text-slate-500 text-xs">{pb.playbook_code}</p>
                   </div>
                   <Badge className={severityColors[pb.severity ?? "high"]}>{pb.severity}</Badge>
                 </div>
-                <div className="flex items-center gap-3 text-xs text-slate-400">
+                <div className="flex items-center gap-3 text-xs text-muted-foreground">
                   <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> SLA: {pb.sla_hours}h</span>
                   <span>{(pb.steps as any[])?.length ?? 0} steps</span>
                 </div>
@@ -116,32 +116,32 @@ export default function IncidentResponse() {
 
       {/* Active Incidents */}
       <div>
-        <h2 className="text-white font-semibold mb-3">Incident Activations</h2>
-        <Card className="bg-slate-800/50 border-slate-700">
+        <h2 className="text-foreground font-semibold mb-3">Incident Activations</h2>
+        <Card className="bg-card/50 border-border">
           <CardContent className="p-0">
             <Table>
               <TableHeader>
-                <TableRow className="border-slate-700">
-                  <TableHead className="text-slate-400">Ref</TableHead>
-                  <TableHead className="text-slate-400">Incident</TableHead>
-                  <TableHead className="text-slate-400">Organisation</TableHead>
-                  <TableHead className="text-slate-400">Step</TableHead>
-                  <TableHead className="text-slate-400">NDPC</TableHead>
-                  <TableHead className="text-slate-400">Status</TableHead>
-                  <TableHead className="text-slate-400">Actions</TableHead>
+                <TableRow className="border-border">
+                  <TableHead className="text-muted-foreground">Ref</TableHead>
+                  <TableHead className="text-muted-foreground">Incident</TableHead>
+                  <TableHead className="text-muted-foreground">Organisation</TableHead>
+                  <TableHead className="text-muted-foreground">Step</TableHead>
+                  <TableHead className="text-muted-foreground">NDPC</TableHead>
+                  <TableHead className="text-muted-foreground">Status</TableHead>
+                  <TableHead className="text-muted-foreground">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {activations?.map(a => (
-                  <TableRow key={a.id} className="border-slate-700">
-                    <TableCell className="text-slate-400 font-mono text-xs">{a.activation_ref}</TableCell>
+                  <TableRow key={a.id} className="border-border">
+                    <TableCell className="text-muted-foreground font-mono text-xs">{a.activation_ref}</TableCell>
                     <TableCell>
-                      <p className="text-white text-sm">{a.incident_title}</p>
+                      <p className="text-foreground text-sm">{a.incident_title}</p>
                       <p className="text-slate-500 text-xs">{a.incident_type}</p>
                     </TableCell>
-                    <TableCell className="text-slate-400 text-sm">{a.org_name ?? "—"}</TableCell>
+                    <TableCell className="text-muted-foreground text-sm">{a.org_name ?? "—"}</TableCell>
                     <TableCell>
-                      <span className="text-white">Step {a.current_step}</span>
+                      <span className="text-foreground">Step {a.current_step}</span>
                       <span className="text-slate-500"> of {(a.steps as any[])?.length ?? "?"}</span>
                     </TableCell>
                     <TableCell>
@@ -184,15 +184,15 @@ export default function IncidentResponse() {
 
       {/* Activate Dialog */}
       <Dialog open={showActivate} onOpenChange={setShowActivate}>
-        <DialogContent className="bg-slate-800 border-slate-700 text-white">
+        <DialogContent className="bg-card border-border text-foreground">
           <DialogHeader>
             <DialogTitle>Activate Incident Response</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label className="text-slate-300 text-sm">Playbook</Label>
+              <Label className="text-muted-foreground text-sm">Playbook</Label>
               <select
-                className="w-full mt-1 bg-slate-700 border border-slate-600 rounded-md p-2 text-white text-sm"
+                className="w-full mt-1 bg-muted border border-border rounded-md p-2 text-foreground text-sm"
                 value={selectedPlaybook?.id ?? ""}
                 onChange={e => setSelectedPlaybook(playbooks?.find(p => p.id === parseInt(e.target.value)))}
               >
@@ -203,28 +203,28 @@ export default function IncidentResponse() {
               </select>
             </div>
             <div>
-              <Label className="text-slate-300 text-sm">Incident Title</Label>
-              <Input className="mt-1 bg-slate-700 border-slate-600 text-white"
+              <Label className="text-muted-foreground text-sm">Incident Title</Label>
+              <Input className="mt-1 bg-muted border-border text-foreground"
                 placeholder="Brief description of the incident"
                 value={activationForm.incidentTitle}
                 onChange={e => setActivationForm(f => ({ ...f, incidentTitle: e.target.value }))} />
             </div>
             <div>
-              <Label className="text-slate-300 text-sm">Assigned To (DPO/CISO)</Label>
-              <Input className="mt-1 bg-slate-700 border-slate-600 text-white"
+              <Label className="text-muted-foreground text-sm">Assigned To (DPO/CISO)</Label>
+              <Input className="mt-1 bg-muted border-border text-foreground"
                 placeholder="Name or email"
                 value={activationForm.assignedTo}
                 onChange={e => setActivationForm(f => ({ ...f, assignedTo: e.target.value }))} />
             </div>
             <div>
-              <Label className="text-slate-300 text-sm">Estimated Affected Records</Label>
-              <Input type="number" className="mt-1 bg-slate-700 border-slate-600 text-white"
+              <Label className="text-muted-foreground text-sm">Estimated Affected Records</Label>
+              <Input type="number" className="mt-1 bg-muted border-border text-foreground"
                 value={activationForm.affectedRecords}
                 onChange={e => setActivationForm(f => ({ ...f, affectedRecords: parseInt(e.target.value) || 0 }))} />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" className="border-slate-600 text-slate-300" onClick={() => setShowActivate(false)}>Cancel</Button>
+            <Button variant="outline" className="border-border text-muted-foreground" onClick={() => setShowActivate(false)}>Cancel</Button>
             <Button className="bg-red-600 hover:bg-red-700"
               disabled={!selectedPlaybook || !activationForm.incidentTitle}
               onClick={() => activate.mutate({

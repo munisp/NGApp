@@ -87,7 +87,7 @@ function ComplianceRing({ score, size = 140 }: { score: number; size?: number })
       </ResponsiveContainer>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
         <span className={`font-black ${color}`} style={{ fontSize: size * 0.17 }}>{score}%</span>
-        <span className="text-[10px] text-slate-400 font-medium">{label}</span>
+        <span className="text-[10px] text-muted-foreground font-medium">{label}</span>
       </div>
     </div>
   );
@@ -97,8 +97,8 @@ function ComplianceRing({ score, size = 140 }: { score: number; size?: number })
 function ChartTooltip({ active, payload, label }: any) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="bg-slate-800 border border-slate-600/50 rounded-lg px-3 py-2 shadow-xl text-xs">
-      <p className="text-slate-300 font-medium mb-1">{label}</p>
+    <div className="bg-card border border-border/50 rounded-lg px-3 py-2 shadow-xl text-xs">
+      <p className="text-muted-foreground font-medium mb-1">{label}</p>
       {payload.map((p: any) => (
         <p key={p.dataKey} style={{ color: p.color }} className="font-semibold">
           {p.name}: {typeof p.value === "number" && p.value > 1000 ? formatNGN(p.value) : p.value}
@@ -114,18 +114,18 @@ function StatusBadge({ status }: { status: string }) {
     paid: "bg-emerald-500/20 text-emerald-400",
     overdue: "bg-amber-500/20 text-amber-400",
     sent: "bg-cyan-500/20 text-cyan-400",
-    draft: "bg-slate-600/40 text-slate-400",
+    draft: "bg-slate-600/40 text-muted-foreground",
     active: "bg-emerald-500/20 text-emerald-400",
     pending: "bg-amber-500/20 text-amber-400",
     completed: "bg-cyan-500/20 text-cyan-400",
     "in-progress": "bg-violet-500/20 text-violet-400",
-    open: "bg-slate-600/40 text-slate-400",
+    open: "bg-slate-600/40 text-muted-foreground",
     low: "bg-emerald-500/20 text-emerald-400",
     medium: "bg-amber-500/20 text-amber-400",
     high: "bg-rose-500/20 text-rose-400",
   };
   return (
-    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${map[status] ?? "bg-slate-600/40 text-slate-400"}`}>
+    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${map[status] ?? "bg-slate-600/40 text-muted-foreground"}`}>
       {status}
     </span>
   );
@@ -167,7 +167,7 @@ function HomeTab() {
   const kpis = [
     { label: "Net Earned", value: earnings ? formatNGN(earnings.summary.totalEarned) : "—", sub: `Last ${period}`, icon: Wallet, color: "text-emerald-400", bg: "bg-emerald-500/10", trend: "+12%", up: true },
     { label: "Active Clients", value: stats ? String(stats.activeClients) : "—", sub: `${stats?.totalDpcos ?? 0} total`, icon: Users, color: "text-cyan-400", bg: "bg-cyan-500/10", trend: "+3", up: true },
-    { label: "Outstanding", value: earnings ? formatNGN(earnings.summary.outstandingAmount) : "—", sub: `${earnings?.summary.overdueInvoices ?? 0} overdue`, icon: AlertTriangle, color: overdueInvoices.length > 0 ? "text-amber-400" : "text-slate-400", bg: overdueInvoices.length > 0 ? "bg-amber-500/10" : "bg-slate-700/20", trend: overdueInvoices.length > 0 ? `${overdueInvoices.length} overdue` : "All clear", up: false },
+    { label: "Outstanding", value: earnings ? formatNGN(earnings.summary.outstandingAmount) : "—", sub: `${earnings?.summary.overdueInvoices ?? 0} overdue`, icon: AlertTriangle, color: overdueInvoices.length > 0 ? "text-amber-400" : "text-muted-foreground", bg: overdueInvoices.length > 0 ? "bg-amber-500/10" : "bg-muted/20", trend: overdueInvoices.length > 0 ? `${overdueInvoices.length} overdue` : "All clear", up: false },
     { label: "Platform Fees", value: earnings ? formatNGN(earnings.summary.totalPlatformFees) : "—", sub: "Remitted to NDPC", icon: BarChart2, color: "text-violet-400", bg: "bg-violet-500/10", trend: `${earnings?.summary.paidInvoices ?? 0} paid`, up: true },
   ];
 
@@ -176,31 +176,31 @@ function HomeTab() {
       {/* Header row */}
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-xs text-slate-400 uppercase tracking-wider font-semibold">DPCO Portal</p>
-          <h2 className="text-2xl font-black text-white mt-0.5">Good day 👋</h2>
-          <p className="text-sm text-slate-400 mt-0.5">DataGuard Ltd · NDPC-DPCO-2024-0042 · Professional</p>
+          <p className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">DPCO Portal</p>
+          <h2 className="text-2xl font-black text-foreground mt-0.5">Good day 👋</h2>
+          <p className="text-sm text-muted-foreground mt-0.5">DataGuard Ltd · NDPC-DPCO-2024-0042 · Professional</p>
         </div>
         <div className="flex items-center gap-2">
           <button
             onClick={() => { earningsQuery.refetch(); invoicesQuery.refetch(); statsQuery.refetch(); }}
-            className="p-2 rounded-lg text-slate-400 hover:text-cyan-400 hover:bg-slate-800 transition-colors"
+            className="p-2 rounded-lg text-muted-foreground hover:text-cyan-400 hover:bg-card transition-colors"
           >
             <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
           </button>
           <div className="relative">
-            <Bell className="h-5 w-5 text-slate-400" />
+            <Bell className="h-5 w-5 text-muted-foreground" />
             {overdueInvoices.length > 0 && (
-              <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-amber-500 text-[9px] font-bold text-white flex items-center justify-center">{overdueInvoices.length}</span>
+              <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-amber-500 text-[9px] font-bold text-foreground flex items-center justify-center">{overdueInvoices.length}</span>
             )}
           </div>
         </div>
       </div>
 
       {/* Period selector */}
-      <div className="flex gap-1.5 bg-slate-900/60 p-1 rounded-xl border border-slate-800/60 max-w-xs">
+      <div className="flex gap-1.5 bg-background/60 p-1 rounded-xl border border-border/60 max-w-xs">
         {(["7d", "30d", "90d", "12m"] as const).map((p) => (
           <button key={p} onClick={() => setPeriod(p)}
-            className={`flex-1 text-xs font-semibold py-1.5 rounded-lg transition-all ${period === p ? "bg-cyan-500 text-slate-900 shadow-md" : "text-slate-400 hover:text-white"}`}>
+            className={`flex-1 text-xs font-semibold py-1.5 rounded-lg transition-all ${period === p ? "bg-cyan-500 text-slate-900 shadow-md" : "text-muted-foreground hover:text-foreground"}`}>
             {p === "12m" ? "1Y" : p.toUpperCase()}
           </button>
         ))}
@@ -209,8 +209,8 @@ function HomeTab() {
       {/* Main grid: compliance ring + KPIs + chart */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Compliance ring */}
-        <div className="bg-slate-900/60 border border-slate-800/50 rounded-2xl p-5 flex flex-col items-center justify-center gap-3">
-          <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Compliance Health</p>
+        <div className="bg-background/60 border border-border/50 rounded-2xl p-5 flex flex-col items-center justify-center gap-3">
+          <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Compliance Health</p>
           <button onClick={() => setShowScoreSheet(true)} className="focus:outline-none hover:opacity-90 transition-opacity">
             <ComplianceRing score={complianceScore} size={160} />
           </button>
@@ -222,7 +222,7 @@ function HomeTab() {
               { label: "Audits", value: `${stats?.pendingCars !== undefined ? Math.max(0, 5 - stats.pendingCars) : "—"}/5` },
             ].map(({ label, value }) => (
               <div key={label} className="text-center">
-                <p className="text-sm font-bold text-white">{value}</p>
+                <p className="text-sm font-bold text-foreground">{value}</p>
                 <p className="text-[10px] text-slate-500">{label}</p>
               </div>
             ))}
@@ -232,12 +232,12 @@ function HomeTab() {
         {/* KPI cards */}
         <div className="grid grid-cols-2 gap-3 content-start">
           {kpis.map(({ label, value, sub, icon: Icon, color, bg, trend, up }) => (
-            <div key={label} className="bg-slate-900/60 border border-slate-800/50 rounded-2xl p-4">
+            <div key={label} className="bg-background/60 border border-border/50 rounded-2xl p-4">
               <div className={`w-9 h-9 rounded-xl ${bg} flex items-center justify-center mb-3`}>
                 <Icon className={`h-4.5 w-4.5 ${color}`} />
               </div>
-              <p className="text-xl font-black text-white leading-none">{value}</p>
-              <p className="text-xs text-slate-400 mt-1">{label}</p>
+              <p className="text-xl font-black text-foreground leading-none">{value}</p>
+              <p className="text-xs text-muted-foreground mt-1">{label}</p>
               <p className="text-[10px] text-slate-500">{sub}</p>
               <div className={`flex items-center gap-0.5 mt-2 text-[10px] font-semibold ${up ? "text-emerald-400" : "text-amber-400"}`}>
                 {up ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
@@ -248,8 +248,8 @@ function HomeTab() {
         </div>
 
         {/* Earnings chart */}
-        <div className="bg-slate-900/60 border border-slate-800/50 rounded-2xl p-5">
-          <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">Monthly Earnings (NGN)</p>
+        <div className="bg-background/60 border border-border/50 rounded-2xl p-5">
+          <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-4">Monthly Earnings (NGN)</p>
           {monthlyTrend.length > 0 ? (
             <ResponsiveContainer width="100%" height={200}>
               <AreaChart data={monthlyTrend} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
@@ -279,8 +279,8 @@ function HomeTab() {
       {/* Service breakdown + overdue alerts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Service type pie */}
-        <div className="bg-slate-900/60 border border-slate-800/50 rounded-2xl p-5">
-          <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">Revenue by Service Type</p>
+        <div className="bg-background/60 border border-border/50 rounded-2xl p-5">
+          <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-4">Revenue by Service Type</p>
           {byService.length > 0 ? (
             <div className="flex items-center gap-4">
               <ResponsiveContainer width={160} height={160}>
@@ -298,9 +298,9 @@ function HomeTab() {
                   <div key={s.name} className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: Object.values(CHART_COLORS)[i % 5] }} />
-                      <span className="text-xs text-slate-300 capitalize">{s.name}</span>
+                      <span className="text-xs text-muted-foreground capitalize">{s.name}</span>
                     </div>
-                    <span className="text-xs font-semibold text-white">{formatNGN(s.value)}</span>
+                    <span className="text-xs font-semibold text-foreground">{formatNGN(s.value)}</span>
                   </div>
                 ))}
               </div>
@@ -311,9 +311,9 @@ function HomeTab() {
         </div>
 
         {/* Overdue alerts or recent invoices */}
-        <div className="bg-slate-900/60 border border-slate-800/50 rounded-2xl p-5">
+        <div className="bg-background/60 border border-border/50 rounded-2xl p-5">
           <div className="flex items-center justify-between mb-4">
-            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+            <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
               {overdueInvoices.length > 0 ? `⚠ ${overdueInvoices.length} Overdue Invoice${overdueInvoices.length > 1 ? "s" : ""}` : "Recent Invoices"}
             </p>
             <Link href="/dpco/billing">
@@ -323,14 +323,14 @@ function HomeTab() {
           <div className="space-y-2">
             {invoices.slice(0, 5).map((inv) => (
               <div key={inv.id}
-                className="flex items-center justify-between bg-slate-800/50 rounded-xl px-3.5 py-2.5 cursor-pointer hover:bg-slate-700/50 transition-colors"
+                className="flex items-center justify-between bg-card/50 rounded-xl px-3.5 py-2.5 cursor-pointer hover:bg-muted/50 transition-colors"
                 onClick={() => setSelectedInvoice(inv as unknown as InvoiceRow)}>
                 <div className="min-w-0">
-                  <p className="text-sm font-semibold text-white truncate">{inv.client_name}</p>
-                  <p className="text-xs text-slate-400">{inv.invoice_number}</p>
+                  <p className="text-sm font-semibold text-foreground truncate">{inv.client_name}</p>
+                  <p className="text-xs text-muted-foreground">{inv.invoice_number}</p>
                 </div>
                 <div className="text-right flex-shrink-0 ml-3">
-                  <p className="text-sm font-bold text-white">{formatNGN(Number(inv.total_amount))}</p>
+                  <p className="text-sm font-bold text-foreground">{formatNGN(Number(inv.total_amount))}</p>
                   <StatusBadge status={inv.status} />
                 </div>
               </div>
@@ -341,8 +341,8 @@ function HomeTab() {
       </div>
 
       {/* Quick actions */}
-      <div className="bg-slate-900/60 border border-slate-800/50 rounded-2xl p-5">
-        <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-2">
+      <div className="bg-background/60 border border-border/50 rounded-2xl p-5">
+        <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
           <Zap className="h-4 w-4 text-cyan-400" /> Quick Actions
         </p>
         <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
@@ -355,11 +355,11 @@ function HomeTab() {
             { label: "Scorecard", icon: Star, href: "/dpco/scorecard", color: "text-cyan-400", bg: "bg-cyan-500/10" },
           ].map(({ label, icon: Icon, href, color, bg }) => (
             <Link key={label} href={href}>
-              <div className="bg-slate-800/60 border border-slate-700/40 rounded-xl p-3 flex flex-col items-center gap-2 cursor-pointer hover:border-cyan-500/40 hover:bg-slate-700/60 transition-all">
+              <div className="bg-card/60 border border-border/40 rounded-xl p-3 flex flex-col items-center gap-2 cursor-pointer hover:border-cyan-500/40 hover:bg-muted/60 transition-all">
                 <div className={`w-9 h-9 rounded-xl ${bg} flex items-center justify-center`}>
                   <Icon className={`h-4.5 w-4.5 ${color}`} />
                 </div>
-                <span className="text-xs text-slate-300 text-center leading-tight font-medium">{label}</span>
+                <span className="text-xs text-muted-foreground text-center leading-tight font-medium">{label}</span>
               </div>
             </Link>
           ))}
@@ -374,12 +374,12 @@ function HomeTab() {
             { label: "Verifications", value: stats.verificationStatements, icon: ShieldCheck, color: "text-cyan-400", bg: "bg-cyan-500/10" },
             { label: "Policy Drafts", value: stats.policyDrafts, icon: FileText, color: "text-violet-400", bg: "bg-violet-500/10" },
           ].map(({ label, value, icon: Icon, color, bg }) => (
-            <div key={label} className="bg-slate-900/60 border border-slate-800/50 rounded-2xl p-4 text-center">
+            <div key={label} className="bg-background/60 border border-border/50 rounded-2xl p-4 text-center">
               <div className={`w-10 h-10 rounded-xl ${bg} flex items-center justify-center mx-auto mb-2`}>
                 <Icon className={`h-5 w-5 ${color}`} />
               </div>
-              <p className="text-2xl font-black text-white">{value}</p>
-              <p className="text-xs text-slate-400 mt-1">{label}</p>
+              <p className="text-2xl font-black text-foreground">{value}</p>
+              <p className="text-xs text-muted-foreground mt-1">{label}</p>
             </div>
           ))}
         </div>
@@ -419,8 +419,8 @@ function ClientsTab() {
     <div className="space-y-5">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-black text-white">Clients</h2>
-          <p className="text-sm text-slate-400 mt-0.5">{clients.length} total organisations</p>
+          <h2 className="text-2xl font-black text-foreground">Clients</h2>
+          <p className="text-sm text-muted-foreground mt-0.5">{clients.length} total organisations</p>
         </div>
         <Link href="/dpco/clients">
           <Button size="sm" className="bg-cyan-500 hover:bg-cyan-400 text-slate-900 font-semibold gap-1.5">
@@ -436,19 +436,19 @@ function ClientsTab() {
           placeholder="Search clients or sectors…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full bg-slate-900/60 border border-slate-700/60 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500/50"
+          className="w-full bg-background/60 border border-border/60 rounded-xl px-4 py-2.5 text-sm text-foreground placeholder-slate-500 focus:outline-none focus:border-cyan-500/50"
         />
       </div>
 
       {/* Sector chips */}
       {sectors.length > 0 && (
         <div className="flex flex-wrap gap-2">
-          <button onClick={() => setSearch("")} className={`text-xs px-3 py-1 rounded-full font-medium transition-colors ${!search ? "bg-cyan-500 text-slate-900" : "bg-slate-800 text-slate-400 hover:text-white"}`}>
+          <button onClick={() => setSearch("")} className={`text-xs px-3 py-1 rounded-full font-medium transition-colors ${!search ? "bg-cyan-500 text-slate-900" : "bg-card text-muted-foreground hover:text-foreground"}`}>
             All ({clients.length})
           </button>
           {sectors.map((s: any) => (
             <button key={s} onClick={() => setSearch(s)}
-              className={`text-xs px-3 py-1 rounded-full font-medium transition-colors ${search === s ? "bg-cyan-500 text-slate-900" : "bg-slate-800 text-slate-400 hover:text-white"}`}>
+              className={`text-xs px-3 py-1 rounded-full font-medium transition-colors ${search === s ? "bg-cyan-500 text-slate-900" : "bg-card text-muted-foreground hover:text-foreground"}`}>
               {s} ({clients.filter((c: any) => c.org_sector === s).length})
             </button>
           ))}
@@ -458,44 +458,44 @@ function ClientsTab() {
       {/* Client table / cards */}
       {clientsQuery.isLoading ? (
         <div className="space-y-3">
-          {[1, 2, 3].map((i) => <div key={i} className="h-20 bg-slate-800/40 rounded-xl animate-pulse" />)}
+          {[1, 2, 3].map((i) => <div key={i} className="h-20 bg-card/40 rounded-xl animate-pulse" />)}
         </div>
       ) : filtered.length === 0 ? (
         <div className="text-center py-12">
           <Users className="h-12 w-12 text-slate-600 mx-auto mb-3" />
-          <p className="text-slate-400">No clients found</p>
+          <p className="text-muted-foreground">No clients found</p>
         </div>
       ) : (
         <>
           {/* Desktop table */}
-          <div className="hidden lg:block bg-slate-900/60 border border-slate-800/50 rounded-2xl overflow-hidden">
+          <div className="hidden lg:block bg-background/60 border border-border/50 rounded-2xl overflow-hidden">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-slate-800/60">
-                  <th className="text-left px-5 py-3 text-xs font-bold text-slate-400 uppercase tracking-wider">Organisation</th>
-                  <th className="text-left px-5 py-3 text-xs font-bold text-slate-400 uppercase tracking-wider">Sector</th>
-                  <th className="text-left px-5 py-3 text-xs font-bold text-slate-400 uppercase tracking-wider">Location</th>
-                  <th className="text-left px-5 py-3 text-xs font-bold text-slate-400 uppercase tracking-wider">Status</th>
-                  <th className="text-left px-5 py-3 text-xs font-bold text-slate-400 uppercase tracking-wider">Risk</th>
-                  <th className="text-left px-5 py-3 text-xs font-bold text-slate-400 uppercase tracking-wider">Contact</th>
+                <tr className="border-b border-border/60">
+                  <th className="text-left px-5 py-3 text-xs font-bold text-muted-foreground uppercase tracking-wider">Organisation</th>
+                  <th className="text-left px-5 py-3 text-xs font-bold text-muted-foreground uppercase tracking-wider">Sector</th>
+                  <th className="text-left px-5 py-3 text-xs font-bold text-muted-foreground uppercase tracking-wider">Location</th>
+                  <th className="text-left px-5 py-3 text-xs font-bold text-muted-foreground uppercase tracking-wider">Status</th>
+                  <th className="text-left px-5 py-3 text-xs font-bold text-muted-foreground uppercase tracking-wider">Risk</th>
+                  <th className="text-left px-5 py-3 text-xs font-bold text-muted-foreground uppercase tracking-wider">Contact</th>
                 </tr>
               </thead>
               <tbody>
                 {filtered.map((c: any, i: number) => (
-                  <tr key={c.id} className={`border-b border-slate-800/30 hover:bg-slate-800/30 transition-colors ${i === filtered.length - 1 ? "border-0" : ""}`}>
+                  <tr key={c.id} className={`border-b border-border/30 hover:bg-card/30 transition-colors ${i === filtered.length - 1 ? "border-0" : ""}`}>
                     <td className="px-5 py-3.5">
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 rounded-lg bg-cyan-500/20 flex items-center justify-center flex-shrink-0">
                           <Building2 className="h-4 w-4 text-cyan-400" />
                         </div>
-                    <p className="font-semibold text-white">{c.org_name}</p>
+                    <p className="font-semibold text-foreground">{c.org_name}</p>
                     </div>
                     </td>
-                    <td className="px-5 py-3.5 text-slate-300">{c.org_sector}</td>
-                    <td className="px-5 py-3.5 text-slate-400">{c.location ?? c.state ?? "—"}</td>
+                    <td className="px-5 py-3.5 text-muted-foreground">{c.org_sector}</td>
+                    <td className="px-5 py-3.5 text-muted-foreground">{c.location ?? c.state ?? "—"}</td>
                     <td className="px-5 py-3.5"><StatusBadge status={c.status ?? "active"} /></td>
                     <td className="px-5 py-3.5"><StatusBadge status={c.risk_level ?? c.engagement_type ?? "audit"} /></td>
-                    <td className="px-5 py-3.5 text-slate-400 text-xs">{c.contract_reference ?? c.engagement_type ?? "—"}</td>
+                    <td className="px-5 py-3.5 text-muted-foreground text-xs">{c.contract_reference ?? c.engagement_type ?? "—"}</td>
                   </tr>
                 ))}
               </tbody>
@@ -505,15 +505,15 @@ function ClientsTab() {
           {/* Mobile cards */}
           <div className="lg:hidden space-y-3">
             {filtered.map((c: any) => (
-              <div key={c.id} className="bg-slate-900/60 border border-slate-800/50 rounded-2xl p-4">
+              <div key={c.id} className="bg-background/60 border border-border/50 rounded-2xl p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-center gap-3">
                     <div className="w-9 h-9 rounded-xl bg-cyan-500/20 flex items-center justify-center flex-shrink-0">
                       <Building2 className="h-4.5 w-4.5 text-cyan-400" />
                     </div>
                     <div>
-                      <p className="font-semibold text-white">{c.org_name}</p>
-                      <p className="text-xs text-slate-400">{c.org_sector} · {c.location ?? c.state ?? "—"}</p>
+                      <p className="font-semibold text-foreground">{c.org_name}</p>
+                      <p className="text-xs text-muted-foreground">{c.org_sector} · {c.location ?? c.state ?? "—"}</p>
                     </div>
                   </div>
                   <div className="flex flex-col items-end gap-1">
@@ -530,7 +530,7 @@ function ClientsTab() {
 
       <div className="text-center">
         <Link href="/dpco/clients">
-          <Button variant="outline" size="sm" className="border-slate-700 text-slate-300 hover:text-white gap-1.5">
+          <Button variant="outline" size="sm" className="border-border text-muted-foreground hover:text-foreground gap-1.5">
             <ExternalLink className="h-4 w-4" /> Full Client Management Portal
           </Button>
         </Link>
@@ -548,7 +548,7 @@ function BillingTab() {
   const [selectedInvoice, setSelectedInvoice] = useState<InvoiceRow | null>(null);
 
   const summary = [
-    { label: "Total Billed", value: earnings ? formatNGNFull(earnings.summary.totalBilled) : "—", color: "text-white" },
+    { label: "Total Billed", value: earnings ? formatNGNFull(earnings.summary.totalBilled) : "—", color: "text-foreground" },
     { label: "Collected", value: earnings ? formatNGNFull(earnings.summary.totalEarned + earnings.summary.totalPlatformFees) : "—", color: "text-emerald-400" },
     { label: "Overdue", value: earnings ? formatNGNFull(earnings.summary.outstandingAmount) : "—", color: "text-amber-400" },
     { label: "Platform Fee", value: earnings ? formatNGNFull(earnings.summary.totalPlatformFees) : "—", color: "text-violet-400" },
@@ -558,8 +558,8 @@ function BillingTab() {
     <div className="space-y-5">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-black text-white">Billing</h2>
-          <p className="text-sm text-slate-400 mt-0.5">{invoices.length} invoices</p>
+          <h2 className="text-2xl font-black text-foreground">Billing</h2>
+          <p className="text-sm text-muted-foreground mt-0.5">{invoices.length} invoices</p>
         </div>
         <Link href="/dpco/billing">
           <Button size="sm" className="bg-cyan-500 hover:bg-cyan-400 text-slate-900 font-semibold gap-1.5">
@@ -571,26 +571,26 @@ function BillingTab() {
       {/* Summary cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {summary.map(({ label, value, color }) => (
-          <div key={label} className="bg-slate-900/60 border border-slate-800/50 rounded-2xl p-4">
-            <p className="text-xs text-slate-400 font-medium uppercase tracking-wider mb-1">{label}</p>
+          <div key={label} className="bg-background/60 border border-border/50 rounded-2xl p-4">
+            <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider mb-1">{label}</p>
             <p className={`text-lg font-black ${color}`}>{value}</p>
           </div>
         ))}
       </div>
 
       {/* Invoice list */}
-      <div className="bg-slate-900/60 border border-slate-800/50 rounded-2xl overflow-hidden">
+      <div className="bg-background/60 border border-border/50 rounded-2xl overflow-hidden">
         {/* Desktop table */}
         <div className="hidden lg:block">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-slate-800/60">
-                <th className="text-left px-5 py-3 text-xs font-bold text-slate-400 uppercase tracking-wider">Invoice</th>
-                <th className="text-left px-5 py-3 text-xs font-bold text-slate-400 uppercase tracking-wider">Client</th>
-                <th className="text-left px-5 py-3 text-xs font-bold text-slate-400 uppercase tracking-wider">Service</th>
-                <th className="text-left px-5 py-3 text-xs font-bold text-slate-400 uppercase tracking-wider">Due Date</th>
-                <th className="text-right px-5 py-3 text-xs font-bold text-slate-400 uppercase tracking-wider">Amount</th>
-                <th className="text-left px-5 py-3 text-xs font-bold text-slate-400 uppercase tracking-wider">Status</th>
+              <tr className="border-b border-border/60">
+                <th className="text-left px-5 py-3 text-xs font-bold text-muted-foreground uppercase tracking-wider">Invoice</th>
+                <th className="text-left px-5 py-3 text-xs font-bold text-muted-foreground uppercase tracking-wider">Client</th>
+                <th className="text-left px-5 py-3 text-xs font-bold text-muted-foreground uppercase tracking-wider">Service</th>
+                <th className="text-left px-5 py-3 text-xs font-bold text-muted-foreground uppercase tracking-wider">Due Date</th>
+                <th className="text-right px-5 py-3 text-xs font-bold text-muted-foreground uppercase tracking-wider">Amount</th>
+                <th className="text-left px-5 py-3 text-xs font-bold text-muted-foreground uppercase tracking-wider">Status</th>
                 <th className="px-5 py-3" />
               </tr>
             </thead>
@@ -600,14 +600,14 @@ function BillingTab() {
               )}
               {invoices.map((inv, i) => (
                   <tr key={inv.id}
-                  className={`border-b border-slate-800/30 hover:bg-slate-800/30 transition-colors cursor-pointer ${i === invoices.length - 1 ? "border-0" : ""}`}
+                  className={`border-b border-border/30 hover:bg-card/30 transition-colors cursor-pointer ${i === invoices.length - 1 ? "border-0" : ""}`}
                   onClick={() => setSelectedInvoice(inv as unknown as InvoiceRow)}
                   title="Click to view invoice details">
-                  <td className="px-5 py-3.5 font-mono text-xs text-slate-300">{inv.invoice_number}</td>
-                  <td className="px-5 py-3.5 font-semibold text-white">{inv.client_name}</td>
-                  <td className="px-5 py-3.5 text-slate-400 capitalize">{inv.service_type?.replace(/_/g, " ")}</td>
-                  <td className="px-5 py-3.5 text-slate-400">{formatDate(inv.due_date)}</td>
-                  <td className="px-5 py-3.5 text-right font-bold text-white">{formatNGN(Number(inv.total_amount))}</td>
+                  <td className="px-5 py-3.5 font-mono text-xs text-muted-foreground">{inv.invoice_number}</td>
+                  <td className="px-5 py-3.5 font-semibold text-foreground">{inv.client_name}</td>
+                  <td className="px-5 py-3.5 text-muted-foreground capitalize">{inv.service_type?.replace(/_/g, " ")}</td>
+                  <td className="px-5 py-3.5 text-muted-foreground">{formatDate(inv.due_date)}</td>
+                  <td className="px-5 py-3.5 text-right font-bold text-foreground">{formatNGN(Number(inv.total_amount))}</td>
                   <td className="px-5 py-3.5"><StatusBadge status={inv.status} /></td>
                   <td className="px-5 py-3.5">
                     <button onClick={(e) => { e.stopPropagation(); window.open(`/api/invoices/${inv.id}/invoice.pdf`, "_blank"); }}
@@ -625,16 +625,16 @@ function BillingTab() {
         <div className="lg:hidden divide-y divide-slate-800/40">
           {invoices.length === 0 && <p className="text-center text-slate-500 py-10">No invoices found</p>}
           {invoices.map((inv) => (
-            <div key={inv.id} className="px-4 py-3.5 cursor-pointer hover:bg-slate-800/30 transition-colors"
+            <div key={inv.id} className="px-4 py-3.5 cursor-pointer hover:bg-card/30 transition-colors"
               onClick={() => setSelectedInvoice(inv as unknown as InvoiceRow)}
               title="Tap to view invoice details">
               <div className="flex items-start justify-between gap-2">
                 <div>
-                  <p className="font-semibold text-white">{inv.client_name}</p>
-                  <p className="text-xs text-slate-400 mt-0.5">{inv.invoice_number} · Due {formatDate(inv.due_date)}</p>
+                  <p className="font-semibold text-foreground">{inv.client_name}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">{inv.invoice_number} · Due {formatDate(inv.due_date)}</p>
                 </div>
                 <div className="text-right">
-                  <p className="font-bold text-white">{formatNGN(Number(inv.total_amount))}</p>
+                  <p className="font-bold text-foreground">{formatNGN(Number(inv.total_amount))}</p>
                   <StatusBadge status={inv.status} />
                 </div>
               </div>
@@ -663,8 +663,8 @@ function AuditTab() {
     <div className="space-y-5">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-black text-white">Audit Workspace</h2>
-          <p className="text-sm text-slate-400 mt-0.5">{audits.length} audit engagements</p>
+          <h2 className="text-2xl font-black text-foreground">Audit Workspace</h2>
+          <p className="text-sm text-muted-foreground mt-0.5">{audits.length} audit engagements</p>
         </div>
         <Link href="/dpco/audit">
           <Button size="sm" className="bg-cyan-500 hover:bg-cyan-400 text-slate-900 font-semibold gap-1.5">
@@ -678,22 +678,22 @@ function AuditTab() {
         {[
           { label: "In Progress", count: statusCounts["in-progress"], color: "text-violet-400", bg: "bg-violet-500/10", border: "border-violet-500/20" },
           { label: "Completed", count: statusCounts.completed, color: "text-emerald-400", bg: "bg-emerald-500/10", border: "border-emerald-500/20" },
-          { label: "Open", count: statusCounts.open, color: "text-slate-400", bg: "bg-slate-700/20", border: "border-slate-700/40" },
+          { label: "Open", count: statusCounts.open, color: "text-muted-foreground", bg: "bg-muted/20", border: "border-border/40" },
         ].map(({ label, count, color, bg, border }) => (
-          <div key={label} className={`bg-slate-900/60 border ${border} rounded-2xl p-4 text-center`}>
+          <div key={label} className={`bg-background/60 border ${border} rounded-2xl p-4 text-center`}>
             <p className={`text-3xl font-black ${color}`}>{count}</p>
-            <p className="text-xs text-slate-400 mt-1">{label}</p>
+            <p className="text-xs text-muted-foreground mt-1">{label}</p>
           </div>
         ))}
       </div>
 
       {/* Audit list */}
       {auditsQuery.isLoading ? (
-        <div className="space-y-3">{[1, 2, 3].map((i) => <div key={i} className="h-24 bg-slate-800/40 rounded-xl animate-pulse" />)}</div>
+        <div className="space-y-3">{[1, 2, 3].map((i) => <div key={i} className="h-24 bg-card/40 rounded-xl animate-pulse" />)}</div>
       ) : audits.length === 0 ? (
-        <div className="bg-slate-900/60 border border-slate-800/50 rounded-2xl p-8 text-center">
+        <div className="bg-background/60 border border-border/50 rounded-2xl p-8 text-center">
           <ClipboardCheck className="h-12 w-12 text-slate-600 mx-auto mb-3" />
-          <p className="text-slate-400 mb-4">No audit engagements yet</p>
+          <p className="text-muted-foreground mb-4">No audit engagements yet</p>
           <Link href="/dpco/audit">
             <Button size="sm" className="bg-cyan-500 hover:bg-cyan-400 text-slate-900 font-semibold gap-1.5">
               <ExternalLink className="h-4 w-4" /> Open Audit Workspace
@@ -706,21 +706,21 @@ function AuditTab() {
             const status = a.status ?? a.audit_status ?? "open";
             const progress = a.progress ?? (status === "completed" ? 100 : status === "in-progress" ? 65 : 10);
             return (
-              <div key={a.id} className="bg-slate-900/60 border border-slate-800/50 rounded-2xl p-5">
+              <div key={a.id} className="bg-background/60 border border-border/50 rounded-2xl p-5">
                 <div className="flex items-start justify-between gap-3 mb-3">
                   <div>
-                    <p className="font-semibold text-white">{a.client_name ?? a.organisation_name ?? "Client"}</p>
-                    <p className="text-sm text-slate-400 mt-0.5">{a.audit_type ?? a.title ?? "NDPA Compliance Audit"}</p>
+                    <p className="font-semibold text-foreground">{a.client_name ?? a.organisation_name ?? "Client"}</p>
+                    <p className="text-sm text-muted-foreground mt-0.5">{a.audit_type ?? a.title ?? "NDPA Compliance Audit"}</p>
                   </div>
                   <StatusBadge status={status} />
                 </div>
                 {/* Progress bar */}
                 <div className="space-y-1">
-                  <div className="flex justify-between text-xs text-slate-400">
+                  <div className="flex justify-between text-xs text-muted-foreground">
                     <span>Progress</span>
-                    <span className="font-semibold text-white">{progress}%</span>
+                    <span className="font-semibold text-foreground">{progress}%</span>
                   </div>
-                  <div className="h-2 bg-slate-800 rounded-full overflow-hidden">
+                  <div className="h-2 bg-card rounded-full overflow-hidden">
                     <div
                       className={`h-full rounded-full transition-all ${status === "completed" ? "bg-emerald-500" : status === "in-progress" ? "bg-violet-500" : "bg-slate-600"}`}
                       style={{ width: `${progress}%` }}
@@ -728,7 +728,7 @@ function AuditTab() {
                   </div>
                 </div>
                 {a.compliance_score && (
-                  <p className="text-xs text-slate-400 mt-2">Score: <span className="font-bold text-white">{a.compliance_score}/100</span></p>
+                  <p className="text-xs text-muted-foreground mt-2">Score: <span className="font-bold text-foreground">{a.compliance_score}/100</span></p>
                 )}
               </div>
             );
@@ -738,7 +738,7 @@ function AuditTab() {
 
       <div className="text-center">
         <Link href="/dpco/audit">
-          <Button variant="outline" size="sm" className="border-slate-700 text-slate-300 hover:text-white gap-1.5">
+          <Button variant="outline" size="sm" className="border-border text-muted-foreground hover:text-foreground gap-1.5">
             <ExternalLink className="h-4 w-4" /> Full Audit Workspace with Evidence Upload
           </Button>
         </Link>
@@ -763,8 +763,8 @@ function SettingsTab({ lock }: { lock: ReturnType<typeof usePwaLock> }) {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-black text-white">Settings</h2>
-        <p className="text-sm text-slate-400 mt-0.5">DataGuard Ltd · Professional Plan · Active</p>
+        <h2 className="text-2xl font-black text-foreground">Settings</h2>
+        <p className="text-sm text-muted-foreground mt-0.5">DataGuard Ltd · Professional Plan · Active</p>
       </div>
 
       {/* Install card */}
@@ -775,8 +775,8 @@ function SettingsTab({ lock }: { lock: ReturnType<typeof usePwaLock> }) {
               <Smartphone className="h-6 w-6 text-cyan-400" />
             </div>
             <div>
-              <p className="font-bold text-white">Install as App</p>
-              <p className="text-sm text-slate-400">Works offline · Fast launch · Home screen icon</p>
+              <p className="font-bold text-foreground">Install as App</p>
+              <p className="text-sm text-muted-foreground">Works offline · Fast launch · Home screen icon</p>
             </div>
           </div>
           {isInstallable ? (
@@ -784,7 +784,7 @@ function SettingsTab({ lock }: { lock: ReturnType<typeof usePwaLock> }) {
               <Download className="h-4 w-4" /> Install DPCO Portal
             </Button>
           ) : (
-            <p className="text-sm text-slate-400 text-center">Use your browser's "Add to Home Screen" option to install.</p>
+            <p className="text-sm text-muted-foreground text-center">Use your browser's "Add to Home Screen" option to install.</p>
           )}
         </div>
       )}
@@ -800,13 +800,13 @@ function SettingsTab({ lock }: { lock: ReturnType<typeof usePwaLock> }) {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
         {settingsLinks.map(({ label, icon: Icon, href, desc }) => (
           <Link key={label} href={href}>
-            <div className="bg-slate-900/60 border border-slate-800/50 rounded-2xl px-4 py-3.5 flex items-center gap-4 cursor-pointer hover:border-cyan-500/30 hover:bg-slate-800/40 transition-all">
-              <div className="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center flex-shrink-0">
+            <div className="bg-background/60 border border-border/50 rounded-2xl px-4 py-3.5 flex items-center gap-4 cursor-pointer hover:border-cyan-500/30 hover:bg-card/40 transition-all">
+              <div className="w-10 h-10 rounded-xl bg-card flex items-center justify-center flex-shrink-0">
                 <Icon className="h-5 w-5 text-cyan-400" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="font-semibold text-white">{label}</p>
-                <p className="text-xs text-slate-400 mt-0.5">{desc}</p>
+                <p className="font-semibold text-foreground">{label}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">{desc}</p>
               </div>
               <ChevronRight className="h-4 w-4 text-slate-500 flex-shrink-0" />
             </div>
@@ -815,20 +815,20 @@ function SettingsTab({ lock }: { lock: ReturnType<typeof usePwaLock> }) {
       </div>
 
       {/* Push Notifications */}
-      <div className="bg-slate-900/60 border border-slate-800/50 rounded-2xl p-5">
-        <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">Notifications</p>
+      <div className="bg-background/60 border border-border/50 rounded-2xl p-5">
+        <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-4">Notifications</p>
         <PushNotificationSettings />
       </div>
 
       {/* Security */}
-      <div className="bg-slate-900/60 border border-slate-800/50 rounded-2xl p-5">
-        <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">Security</p>
+      <div className="bg-background/60 border border-border/50 rounded-2xl p-5">
+        <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-4">Security</p>
         <PwaSecuritySettings lock={lock} />
       </div>
 
       {/* App info */}
-      <div className="bg-slate-900/60 border border-slate-800/50 rounded-2xl p-4 text-center space-y-1">
-        <p className="text-sm font-semibold text-slate-300">NDSEP DPCO Portal</p>
+      <div className="bg-background/60 border border-border/50 rounded-2xl p-4 text-center space-y-1">
+        <p className="text-sm font-semibold text-muted-foreground">NDSEP DPCO Portal</p>
         <p className="text-xs text-slate-500">Version 1.0.0 · PWA enabled</p>
         <p className="text-xs text-slate-500">© 2026 National Data Protection Commission</p>
       </div>
@@ -839,25 +839,25 @@ function SettingsTab({ lock }: { lock: ReturnType<typeof usePwaLock> }) {
 // ─── SIDEBAR NAV (desktop) ────────────────────────────────────────────────────
 function SidebarNav({ active, onChange }: { active: Tab; onChange: (t: Tab) => void }) {
   return (
-    <aside className="hidden lg:flex flex-col w-60 bg-slate-950 border-r border-slate-800/60 h-screen sticky top-0 overflow-y-auto">
+    <aside className="hidden lg:flex flex-col w-60 bg-slate-950 border-r border-border/60 h-screen sticky top-0 overflow-y-auto">
       {/* Logo */}
-      <div className="px-5 py-5 border-b border-slate-800/60">
+      <div className="px-5 py-5 border-b border-border/60">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-xl bg-cyan-500 flex items-center justify-center shadow-lg shadow-cyan-500/30">
             <span className="text-slate-900 font-black text-base">N</span>
           </div>
           <div>
-            <p className="font-bold text-white leading-none text-sm">DPCO Portal</p>
-            <p className="text-[10px] text-slate-400 leading-none mt-0.5">NDSEP Platform</p>
+            <p className="font-bold text-foreground leading-none text-sm">DPCO Portal</p>
+            <p className="text-[10px] text-muted-foreground leading-none mt-0.5">NDSEP Platform</p>
           </div>
         </div>
       </div>
 
       {/* Org info */}
-      <div className="px-5 py-4 border-b border-slate-800/60">
-        <div className="bg-slate-900/60 rounded-xl p-3">
-          <p className="text-sm font-bold text-white">DataGuard Ltd</p>
-          <p className="text-[10px] text-slate-400 mt-0.5">NDPC-DPCO-2024-0042</p>
+      <div className="px-5 py-4 border-b border-border/60">
+        <div className="bg-background/60 rounded-xl p-3">
+          <p className="text-sm font-bold text-foreground">DataGuard Ltd</p>
+          <p className="text-[10px] text-muted-foreground mt-0.5">NDPC-DPCO-2024-0042</p>
           <div className="flex items-center gap-2 mt-2">
             <span className="text-[10px] bg-cyan-500/20 text-cyan-400 px-2 py-0.5 rounded-full font-semibold">Professional</span>
             <span className="text-[10px] bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded-full font-semibold">Active</span>
@@ -875,7 +875,7 @@ function SidebarNav({ active, onChange }: { active: Tab; onChange: (t: Tab) => v
             className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
               active === id
                 ? "bg-cyan-500/15 text-cyan-400 border border-cyan-500/30"
-                : "text-slate-400 hover:text-white hover:bg-slate-800/60"
+                : "text-muted-foreground hover:text-foreground hover:bg-card/60"
             }`}
           >
             <Icon className="h-4.5 w-4.5 flex-shrink-0" />
@@ -886,15 +886,15 @@ function SidebarNav({ active, onChange }: { active: Tab; onChange: (t: Tab) => v
       </nav>
 
       {/* Bottom links */}
-      <div className="px-3 py-4 border-t border-slate-800/60 space-y-1">
+      <div className="px-3 py-4 border-t border-border/60 space-y-1">
         <Link href="/dpco">
-          <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-slate-400 hover:text-white hover:bg-slate-800/60 transition-all cursor-pointer">
+          <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-muted-foreground hover:text-foreground hover:bg-card/60 transition-all cursor-pointer">
             <ExternalLink className="h-4 w-4" />
             Full Desktop Portal
           </div>
         </Link>
         <Link href="/">
-          <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-slate-400 hover:text-white hover:bg-slate-800/60 transition-all cursor-pointer">
+          <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-muted-foreground hover:text-foreground hover:bg-card/60 transition-all cursor-pointer">
             <LayoutDashboard className="h-4 w-4" />
             NDPC Admin
           </div>
@@ -907,14 +907,14 @@ function SidebarNav({ active, onChange }: { active: Tab; onChange: (t: Tab) => v
 // ─── BOTTOM NAV (mobile) ──────────────────────────────────────────────────────
 function BottomNav({ active, onChange }: { active: Tab; onChange: (t: Tab) => void }) {
   return (
-    <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-slate-950/95 backdrop-blur border-t border-slate-800/60">
+    <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-slate-950/95 backdrop-blur border-t border-border/60">
       <div className="flex items-stretch">
         {NAV_ITEMS.map(({ id, label, icon: Icon }) => (
           <button
             key={id}
             onClick={() => onChange(id)}
             className={`flex-1 flex flex-col items-center justify-center py-2.5 gap-0.5 transition-colors ${
-              active === id ? "text-cyan-400" : "text-slate-500 hover:text-slate-300"
+              active === id ? "text-cyan-400" : "text-slate-500 hover:text-muted-foreground"
             }`}
           >
             <Icon className="h-5 w-5" />
@@ -945,14 +945,14 @@ export default function DpcoApp() {
 
   return (
     <DpcoOrgContext.Provider value={dpcoOrgId}>
-    <div className="min-h-screen bg-slate-950 text-white flex">
+    <div className="min-h-screen bg-slate-950 text-foreground flex">
       {/* Desktop sidebar */}
       <SidebarNav active={activeTab} onChange={setActiveTab} />
 
       {/* Main area */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Top header */}
-        <header className="sticky top-0 z-30 bg-slate-950/95 backdrop-blur border-b border-slate-800/60 px-4 lg:px-6 py-3 flex items-center justify-between">
+        <header className="sticky top-0 z-30 bg-slate-950/95 backdrop-blur border-b border-border/60 px-4 lg:px-6 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
             {/* Mobile logo */}
             <div className="lg:hidden flex items-center gap-2.5">
@@ -960,20 +960,20 @@ export default function DpcoApp() {
                 <span className="text-slate-900 font-black text-sm">N</span>
               </div>
               <div>
-                <p className="text-sm font-bold text-white leading-none">DPCO Portal</p>
-                <p className="text-[10px] text-slate-400 leading-none mt-0.5">NDSEP Platform</p>
+                <p className="text-sm font-bold text-foreground leading-none">DPCO Portal</p>
+                <p className="text-[10px] text-muted-foreground leading-none mt-0.5">NDSEP Platform</p>
               </div>
             </div>
             {/* Desktop breadcrumb */}
             <div className="hidden lg:flex items-center gap-2">
               <activeItem.icon className="h-5 w-5 text-cyan-400" />
-              <h1 className="text-lg font-bold text-white">{activeItem.label}</h1>
+              <h1 className="text-lg font-bold text-foreground">{activeItem.label}</h1>
             </div>
           </div>
 
           <div className="flex items-center gap-2">
             <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            <span className="text-xs text-slate-400 hidden sm:inline">Live</span>
+            <span className="text-xs text-muted-foreground hidden sm:inline">Live</span>
           </div>
         </header>
 

@@ -229,7 +229,7 @@ export const penaltyCalculatorRouter = router({
       return { basePenalty, multiplier, calculatedPenalty, revenueCap, finalPenalty, regulatoryBasis: 'NDPA 2023 Section 48 - Administrative Fines', appealPeriod: '30 days from penalty notice' };
     }),
   history: protectedProcedure.input(z.object({ limit: z.number().int().min(1).max(50).default(20) })).query(async ({ input }) => {
-    const [rows] = await execRaw(`SELECT fp.*, o.name as org_name, o.sector FROM financial_penalties fp LEFT JOIN organizations o ON fp.organization_id = o.id ORDER BY fp.created_at DESC LIMIT ${input.limit}`);
+    const [rows] = await execRaw(`SELECT fp.*, o.name as org_name, o.sector FROM financial_penalties fp LEFT JOIN organizations o ON fp.organization_id = o.id ORDER BY fp.created_at DESC LIMIT $1`, [input.limit]);
     return rows as any[];
   }),
 });

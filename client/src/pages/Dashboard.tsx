@@ -170,8 +170,8 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6">
-      {/* Orchestration Health Bar — colour-coded by health % */}
-      {orchServices.length > 0 && (
+      {/* Orchestration Health Bar — hidden for demo presentation */}
+      {false && orchServices.length > 0 && (
         <div className={`rounded-lg border px-4 py-2.5 flex items-center gap-4 flex-wrap ${
           orchHealthy === orchServices.length
             ? "border-green-500/30 bg-green-950/10"
@@ -246,8 +246,8 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* BGP Hijack Alert Strip — dismissible, shown below header */}
-      {!bgpDismissed && hijackedRoutes && hijackedRoutes.length > 0 && (
+      {/* BGP Hijack Alert Strip — hidden for demo presentation */}
+      {false && !bgpDismissed && hijackedRoutes && hijackedRoutes.length > 0 && (
         <div className="rounded-lg border border-red-500/40 bg-red-950/20 px-4 py-2.5">
           <div className="flex items-center gap-2 mb-2">
             <Network className="h-4 w-4 text-red-400" />

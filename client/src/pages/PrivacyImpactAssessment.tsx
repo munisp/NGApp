@@ -20,7 +20,7 @@ const riskColors: Record<string, string> = {
 };
 
 const statusColors: Record<string, string> = {
-  draft: "bg-slate-500/20 text-slate-400",
+  draft: "bg-slate-500/20 text-muted-foreground",
   in_progress: "bg-blue-500/20 text-blue-400",
   review: "bg-yellow-500/20 text-yellow-400",
   approved: "bg-green-500/20 text-green-400",
@@ -58,10 +58,10 @@ export default function PrivacyImpactAssessment() {
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white flex items-center gap-2">
+          <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
             <FileSearch className="w-6 h-6 text-amber-400" /> Privacy Impact Assessments
           </h1>
-          <p className="text-slate-400 text-sm mt-1">DPIA/PIA under NDPA Section 30 — Mandatory for high-risk processing activities</p>
+          <p className="text-muted-foreground text-sm mt-1">DPIA/PIA under NDPA Section 30 — Mandatory for high-risk processing activities</p>
         </div>
         <Button onClick={() => setShowCreate(true)} className="bg-amber-600 hover:bg-amber-700">
           <Plus className="w-4 h-4 mr-2" /> New PIA
@@ -70,10 +70,10 @@ export default function PrivacyImpactAssessment() {
 
       {/* Stats */}
       <div className="grid grid-cols-4 gap-4">
-        <Card className="bg-slate-800/50 border-slate-700">
+        <Card className="bg-card/50 border-border">
           <CardContent className="p-4">
-            <p className="text-slate-400 text-xs">Total PIAs</p>
-            <p className="text-2xl font-bold text-white">{totalCount}</p>
+            <p className="text-muted-foreground text-xs">Total PIAs</p>
+            <p className="text-2xl font-bold text-foreground">{totalCount}</p>
           </CardContent>
         </Card>
         <Card className="bg-red-900/20 border-red-700/40">
@@ -97,30 +97,30 @@ export default function PrivacyImpactAssessment() {
       </div>
 
       {/* PIAs Table */}
-      <Card className="bg-slate-800/50 border-slate-700">
-        <CardHeader><CardTitle className="text-white text-base">PIA Registry</CardTitle></CardHeader>
+      <Card className="bg-card/50 border-border">
+        <CardHeader><CardTitle className="text-foreground text-base">PIA Registry</CardTitle></CardHeader>
         <CardContent className="p-0">
           <Table>
             <TableHeader>
-              <TableRow className="border-slate-700">
-                <TableHead className="text-slate-400">Reference</TableHead>
-                <TableHead className="text-slate-400">Title</TableHead>
-                <TableHead className="text-slate-400">Organisation</TableHead>
-                <TableHead className="text-slate-400">Processing Purpose</TableHead>
-                <TableHead className="text-slate-400">Risk Level</TableHead>
-                <TableHead className="text-slate-400">Status</TableHead>
-                <TableHead className="text-slate-400">Actions</TableHead>
+              <TableRow className="border-border">
+                <TableHead className="text-muted-foreground">Reference</TableHead>
+                <TableHead className="text-muted-foreground">Title</TableHead>
+                <TableHead className="text-muted-foreground">Organisation</TableHead>
+                <TableHead className="text-muted-foreground">Processing Purpose</TableHead>
+                <TableHead className="text-muted-foreground">Risk Level</TableHead>
+                <TableHead className="text-muted-foreground">Status</TableHead>
+                <TableHead className="text-muted-foreground">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {pias?.map((p: any) => (
-                <TableRow key={p.id} className="border-slate-700">
-                  <TableCell className="text-white font-mono text-xs">{p.pia_ref}</TableCell>
-                  <TableCell className="text-slate-300 text-sm max-w-[200px]">
+                <TableRow key={p.id} className="border-border">
+                  <TableCell className="text-foreground font-mono text-xs">{p.pia_ref}</TableCell>
+                  <TableCell className="text-muted-foreground text-sm max-w-[200px]">
                     <p className="truncate">{p.project_name}</p>
                   </TableCell>
-                  <TableCell className="text-slate-400 text-sm">{p.org_name ?? "—"}</TableCell>
-                  <TableCell className="text-slate-400 text-sm max-w-[150px]">
+                  <TableCell className="text-muted-foreground text-sm">{p.org_name ?? "—"}</TableCell>
+                  <TableCell className="text-muted-foreground text-sm max-w-[150px]">
                     <p className="truncate">{p.processing_purpose}</p>
                   </TableCell>
                   <TableCell>
@@ -146,36 +146,36 @@ export default function PrivacyImpactAssessment() {
 
       {/* Create Dialog */}
       <Dialog open={showCreate} onOpenChange={setShowCreate}>
-        <DialogContent className="bg-slate-800 border-slate-700 text-white max-w-lg">
+        <DialogContent className="bg-card border-border text-foreground max-w-lg">
           <DialogHeader><DialogTitle>New Privacy Impact Assessment</DialogTitle></DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label className="text-slate-300 text-sm">PIA Title</Label>
-              <Input className="mt-1 bg-slate-700 border-slate-600 text-white" value={form.title}
+              <Label className="text-muted-foreground text-sm">PIA Title</Label>
+              <Input className="mt-1 bg-muted border-border text-foreground" value={form.title}
                 onChange={e => setForm(f => ({ ...f, title: e.target.value }))} />
             </div>
             <div>
-              <Label className="text-slate-300 text-sm">Processing Activity</Label>
-              <Input className="mt-1 bg-slate-700 border-slate-600 text-white" value={form.processingActivity}
+              <Label className="text-muted-foreground text-sm">Processing Activity</Label>
+              <Input className="mt-1 bg-muted border-border text-foreground" value={form.processingActivity}
                 placeholder="e.g. Customer credit scoring using ML"
                 onChange={e => setForm(f => ({ ...f, processingActivity: e.target.value }))} />
             </div>
             <div>
-              <Label className="text-slate-300 text-sm">Data Categories</Label>
-              <Input className="mt-1 bg-slate-700 border-slate-600 text-white" value={form.dataCategories}
+              <Label className="text-muted-foreground text-sm">Data Categories</Label>
+              <Input className="mt-1 bg-muted border-border text-foreground" value={form.dataCategories}
                 placeholder="e.g. financial_data, biometric_data"
                 onChange={e => setForm(f => ({ ...f, dataCategories: e.target.value }))} />
             </div>
             <div>
-              <Label className="text-slate-300 text-sm">Processing Purpose</Label>
-              <Textarea className="mt-1 bg-slate-700 border-slate-600 text-white" value={form.processingPurpose}
+              <Label className="text-muted-foreground text-sm">Processing Purpose</Label>
+              <Textarea className="mt-1 bg-muted border-border text-foreground" value={form.processingPurpose}
                 onChange={e => setForm(f => ({ ...f, processingPurpose: e.target.value }))} />
             </div>
             <div>
-              <Label className="text-slate-300 text-sm">Initial Risk Level</Label>
+              <Label className="text-muted-foreground text-sm">Initial Risk Level</Label>
               <Select value={form.riskLevel} onValueChange={v => setForm(f => ({ ...f, riskLevel: v }))}>
-                <SelectTrigger className="mt-1 bg-slate-700 border-slate-600 text-white"><SelectValue /></SelectTrigger>
-                <SelectContent className="bg-slate-800 border-slate-700">
+                <SelectTrigger className="mt-1 bg-muted border-border text-foreground"><SelectValue /></SelectTrigger>
+                <SelectContent className="bg-card border-border">
                   <SelectItem value="low">Low</SelectItem>
                   <SelectItem value="medium">Medium</SelectItem>
                   <SelectItem value="high">High</SelectItem>
@@ -185,7 +185,7 @@ export default function PrivacyImpactAssessment() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" className="border-slate-600 text-slate-300" onClick={() => setShowCreate(false)}>Cancel</Button>
+            <Button variant="outline" className="border-border text-muted-foreground" onClick={() => setShowCreate(false)}>Cancel</Button>
             <Button className="bg-amber-600 hover:bg-amber-700"
               disabled={!form.title || !form.processingActivity || create.isPending}
               onClick={() => create.mutate({

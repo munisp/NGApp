@@ -71,7 +71,7 @@ export default function DpoReports() {
           : filtered.map((r: any) => (
             <div key={r.id} className="bg-card border border-border rounded-xl p-4">
               <div className="flex items-start justify-between mb-2">
-                <div><div className="font-medium text-foreground">{r.org_name ?? `Org #${r.organization_id}`}</div><div className="text-xs text-muted-foreground/70 mt-1">Period: {r.report_period_start} to {r.report_period_end}</div></div>
+                <div><div className="font-medium text-foreground">{r.org_name ?? `Org #${r.organization_id}`}</div><div className="text-xs text-muted-foreground/70 mt-1">Period: {r.report_period_start instanceof Date ? r.report_period_start.toLocaleDateString() : String(r.report_period_start ?? "")} to {r.report_period_end instanceof Date ? r.report_period_end.toLocaleDateString() : String(r.report_period_end ?? "")}</div></div>
                 <Badge className={`text-xs border ${STATUS_COLORS[r.dpo_report_status] ?? ""}`}>{r.dpo_report_status?.replace("_"," ")}</Badge>
               </div>
               {r.recommendations && <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{r.recommendations}</p>}

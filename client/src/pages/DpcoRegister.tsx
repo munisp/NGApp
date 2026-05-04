@@ -164,7 +164,7 @@ export default function DpcoRegister() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0a0e1a] text-white">
+    <div className="min-h-screen bg-[#0a0e1a] text-foreground">
       {/* Header */}
       <header className="border-b border-cyan-900/40 bg-[#0d1220]/80 backdrop-blur-sm">
         <div className="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">
@@ -174,13 +174,13 @@ export default function DpcoRegister() {
             </div>
             <div>
               <p className="text-xs text-cyan-400 font-mono uppercase tracking-widest">NDPC / NDSEP</p>
-              <p className="text-sm font-semibold text-white">DPCO Registration Portal</p>
+              <p className="text-sm font-semibold text-foreground">DPCO Registration Portal</p>
             </div>
           </div>
           <Button
             variant="ghost"
             size="sm"
-            className="text-slate-400 hover:text-white"
+            className="text-muted-foreground hover:text-foreground"
             onClick={() => navigate("/")}
           >
             ← Back to Platform
@@ -191,10 +191,10 @@ export default function DpcoRegister() {
       <div className="max-w-4xl mx-auto px-6 py-10">
         {/* Title */}
         <div className="text-center mb-10">
-          <h1 className="text-3xl font-bold text-white mb-2">
+          <h1 className="text-3xl font-bold text-foreground mb-2">
             Data Protection Compliance Organisation
           </h1>
-          <p className="text-slate-400 max-w-xl mx-auto">
+          <p className="text-muted-foreground max-w-xl mx-auto">
             Apply for NDPC accreditation as a licensed DPCO under the Nigeria Data Protection Act 2023.
             Complete the form below to submit your application for review.
           </p>
@@ -214,7 +214,7 @@ export default function DpcoRegister() {
                       ? "bg-cyan-500/20 border border-cyan-500/60 text-cyan-300"
                       : isDone
                       ? "bg-green-500/20 border border-green-500/40 text-green-400"
-                      : "bg-slate-800/60 border border-slate-700 text-slate-500"
+                      : "bg-card/60 border border-border text-slate-500"
                   }`}
                 >
                   <Icon className="w-3.5 h-3.5" />
@@ -229,7 +229,7 @@ export default function DpcoRegister() {
         </div>
 
         {/* Form card */}
-        <div className="bg-[#0d1220] border border-slate-700/50 rounded-xl p-8">
+        <div className="bg-[#0d1220] border border-border/50 rounded-xl p-8">
           {/* Step 1: Organisation Details */}
           {step === 1 && (
             <div className="space-y-6">
@@ -238,21 +238,21 @@ export default function DpcoRegister() {
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div className="md:col-span-2 space-y-1.5">
-                  <Label className="text-slate-300">Organisation Name *</Label>
+                  <Label className="text-muted-foreground">Organisation Name *</Label>
                   <Input
                     value={form.name}
                     onChange={(e) => set("name", e.target.value)}
                     placeholder="e.g. DataGuard Nigeria Limited"
-                    className="bg-slate-800/60 border-slate-600 text-white"
+                    className="bg-card/60 border-border text-foreground"
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-slate-300">Organisation Type *</Label>
+                  <Label className="text-muted-foreground">Organisation Type *</Label>
                   <Select value={form.organisationType} onValueChange={(v) => set("organisationType", v)}>
-                    <SelectTrigger className="bg-slate-800/60 border-slate-600 text-white">
+                    <SelectTrigger className="bg-card/60 border-border text-foreground">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent className="bg-slate-800 border-slate-600">
+                    <SelectContent className="bg-card border-border">
                       <SelectItem value="private">Private Company</SelectItem>
                       <SelectItem value="public">Public Institution</SelectItem>
                       <SelectItem value="ngo">NGO / Non-Profit</SelectItem>
@@ -262,49 +262,49 @@ export default function DpcoRegister() {
                   </Select>
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-slate-300">CAC Registration Number *</Label>
+                  <Label className="text-muted-foreground">CAC Registration Number *</Label>
                   <Input
                     value={form.cacNumber}
                     onChange={(e) => set("cacNumber", e.target.value)}
                     placeholder="e.g. RC-1234567"
-                    className="bg-slate-800/60 border-slate-600 text-white"
+                    className="bg-card/60 border-border text-foreground"
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-slate-300">Email Address *</Label>
+                  <Label className="text-muted-foreground">Email Address *</Label>
                   <Input
                     type="email"
                     value={form.email}
                     onChange={(e) => set("email", e.target.value)}
                     placeholder="info@organisation.ng"
-                    className="bg-slate-800/60 border-slate-600 text-white"
+                    className="bg-card/60 border-border text-foreground"
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-slate-300">Phone Number *</Label>
+                  <Label className="text-muted-foreground">Phone Number *</Label>
                   <Input
                     value={form.phone}
                     onChange={(e) => set("phone", e.target.value)}
                     placeholder="+234 800 000 0000"
-                    className="bg-slate-800/60 border-slate-600 text-white"
+                    className="bg-card/60 border-border text-foreground"
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-slate-300">Website</Label>
+                  <Label className="text-muted-foreground">Website</Label>
                   <Input
                     value={form.website}
                     onChange={(e) => set("website", e.target.value)}
                     placeholder="https://www.organisation.ng"
-                    className="bg-slate-800/60 border-slate-600 text-white"
+                    className="bg-card/60 border-border text-foreground"
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-slate-300">State *</Label>
+                  <Label className="text-muted-foreground">State *</Label>
                   <Select value={form.state} onValueChange={(v) => set("state", v)}>
-                    <SelectTrigger className="bg-slate-800/60 border-slate-600 text-white">
+                    <SelectTrigger className="bg-card/60 border-border text-foreground">
                       <SelectValue placeholder="Select state" />
                     </SelectTrigger>
-                    <SelectContent className="bg-slate-800 border-slate-600 max-h-60">
+                    <SelectContent className="bg-card border-border max-h-60">
                       {NIGERIAN_STATES.map((s) => (
                         <SelectItem key={s} value={s}>{s}</SelectItem>
                       ))}
@@ -312,33 +312,33 @@ export default function DpcoRegister() {
                   </Select>
                 </div>
                 <div className="md:col-span-2 space-y-1.5">
-                  <Label className="text-slate-300">Registered Address *</Label>
+                  <Label className="text-muted-foreground">Registered Address *</Label>
                   <Textarea
                     value={form.address}
                     onChange={(e) => set("address", e.target.value)}
                     placeholder="Full registered office address"
                     rows={2}
-                    className="bg-slate-800/60 border-slate-600 text-white resize-none"
+                    className="bg-card/60 border-border text-foreground resize-none"
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-slate-300">NDPC Reference (if any)</Label>
+                  <Label className="text-muted-foreground">NDPC Reference (if any)</Label>
                   <Input
                     value={form.ndpcReference}
                     onChange={(e) => set("ndpcReference", e.target.value)}
                     placeholder="e.g. NDPC/REF/2024/001"
-                    className="bg-slate-800/60 border-slate-600 text-white"
+                    className="bg-card/60 border-border text-foreground"
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-slate-300">Number of Staff</Label>
+                  <Label className="text-muted-foreground">Number of Staff</Label>
                   <Input
                     type="number"
                     value={form.staffCount}
                     onChange={(e) => set("staffCount", e.target.value)}
                     placeholder="e.g. 25"
                     min={1}
-                    className="bg-slate-800/60 border-slate-600 text-white"
+                    className="bg-card/60 border-border text-foreground"
                   />
                 </div>
               </div>
@@ -352,7 +352,7 @@ export default function DpcoRegister() {
                 <Shield className="w-5 h-5" /> Services & Contact Person
               </h2>
               <div>
-                <Label className="text-slate-300 mb-3 block">
+                <Label className="text-muted-foreground mb-3 block">
                   Services Offered * <span className="text-slate-500 text-xs">(select all that apply)</span>
                 </Label>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -362,7 +362,7 @@ export default function DpcoRegister() {
                       className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
                         form.services.includes(svc.id)
                           ? "border-cyan-500/60 bg-cyan-500/10 text-cyan-300"
-                          : "border-slate-700 bg-slate-800/40 text-slate-400 hover:border-slate-500"
+                          : "border-border bg-card/40 text-muted-foreground hover:border-slate-500"
                       }`}
                     >
                       <Checkbox
@@ -375,27 +375,27 @@ export default function DpcoRegister() {
                   ))}
                 </div>
               </div>
-              <div className="border-t border-slate-700 pt-6">
-                <h3 className="text-sm font-semibold text-slate-300 flex items-center gap-2 mb-4">
+              <div className="border-t border-border pt-6">
+                <h3 className="text-sm font-semibold text-muted-foreground flex items-center gap-2 mb-4">
                   <Users className="w-4 h-4" /> Primary Contact Person
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                   <div className="space-y-1.5">
-                    <Label className="text-slate-300">Full Name *</Label>
+                    <Label className="text-muted-foreground">Full Name *</Label>
                     <Input
                       value={form.contactPersonName}
                       onChange={(e) => set("contactPersonName", e.target.value)}
                       placeholder="e.g. Amaka Okonkwo"
-                      className="bg-slate-800/60 border-slate-600 text-white"
+                      className="bg-card/60 border-border text-foreground"
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <Label className="text-slate-300">Role / Title *</Label>
+                    <Label className="text-muted-foreground">Role / Title *</Label>
                     <Input
                       value={form.contactPersonRole}
                       onChange={(e) => set("contactPersonRole", e.target.value)}
                       placeholder="e.g. Data Protection Officer"
-                      className="bg-slate-800/60 border-slate-600 text-white"
+                      className="bg-card/60 border-border text-foreground"
                     />
                   </div>
                 </div>
@@ -409,8 +409,8 @@ export default function DpcoRegister() {
               <h2 className="text-lg font-semibold text-cyan-300 flex items-center gap-2">
                 <FileText className="w-5 h-5" /> Declaration & Submission
               </h2>
-              <div className="bg-slate-800/40 border border-slate-700 rounded-lg p-5 space-y-3 text-sm text-slate-300 leading-relaxed">
-                <p className="font-semibold text-white">Application Summary</p>
+              <div className="bg-card/40 border border-border rounded-lg p-5 space-y-3 text-sm text-muted-foreground leading-relaxed">
+                <p className="font-semibold text-foreground">Application Summary</p>
                 <div className="grid grid-cols-2 gap-2 text-xs">
                   <span className="text-slate-500">Organisation:</span>
                   <span>{form.name}</span>
@@ -446,7 +446,7 @@ export default function DpcoRegister() {
                   onCheckedChange={(v) => set("declarationAccepted", !!v)}
                   className="mt-0.5 border-slate-500"
                 />
-                <span className="text-sm text-slate-300">
+                <span className="text-sm text-muted-foreground">
                   I accept the above declaration and confirm that all information provided is accurate and
                   complete. I authorise NDPC to verify the details provided.
                 </span>
@@ -461,10 +461,10 @@ export default function DpcoRegister() {
                 <CheckCircle2 className="w-8 h-8 text-green-400" />
               </div>
               <div>
-                <h2 className="text-2xl font-bold text-white mb-2">Application Submitted</h2>
-                <p className="text-slate-400 max-w-md mx-auto">{result.message}</p>
+                <h2 className="text-2xl font-bold text-foreground mb-2">Application Submitted</h2>
+                <p className="text-muted-foreground max-w-md mx-auto">{result.message}</p>
               </div>
-              <div className="bg-slate-800/60 border border-slate-700 rounded-lg p-5 inline-block text-left">
+              <div className="bg-card/60 border border-border rounded-lg p-5 inline-block text-left">
                 <p className="text-xs text-slate-500 mb-1">Provisional Licence Reference</p>
                 <p className="font-mono text-cyan-300 text-lg font-bold">{result.provisionalLicence}</p>
                 <p className="text-xs text-slate-500 mt-2">Keep this reference for your records</p>
@@ -472,13 +472,13 @@ export default function DpcoRegister() {
               <div className="flex items-center justify-center gap-3 pt-2">
                 <Button
                   variant="outline"
-                  className="border-slate-600 text-slate-300"
+                  className="border-border text-muted-foreground"
                   onClick={() => { setForm(INITIAL_FORM); setStep(1); setResult(null); }}
                 >
                   Submit Another Application
                 </Button>
                 <Button
-                  className="bg-cyan-600 hover:bg-cyan-500 text-white"
+                  className="bg-cyan-600 hover:bg-cyan-500 text-foreground"
                   onClick={() => navigate("/")}
                 >
                   Return to Platform
@@ -489,17 +489,17 @@ export default function DpcoRegister() {
 
           {/* Navigation buttons */}
           {step < 4 && (
-            <div className="flex items-center justify-between mt-8 pt-6 border-t border-slate-700">
+            <div className="flex items-center justify-between mt-8 pt-6 border-t border-border">
               <Button
                 variant="ghost"
-                className="text-slate-400 hover:text-white"
+                className="text-muted-foreground hover:text-foreground"
                 onClick={() => setStep((s) => s - 1)}
                 disabled={step === 1}
               >
                 <ChevronLeft className="w-4 h-4 mr-1" /> Back
               </Button>
               <Button
-                className="bg-cyan-600 hover:bg-cyan-500 text-white min-w-[140px]"
+                className="bg-cyan-600 hover:bg-cyan-500 text-foreground min-w-[140px]"
                 onClick={next}
                 disabled={registerMutation.isPending}
               >

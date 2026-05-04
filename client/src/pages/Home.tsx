@@ -29,9 +29,9 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white flex flex-col">
+    <div className="min-h-screen bg-gray-950 text-foreground flex flex-col">
       {/* Header */}
-      <header className="border-b border-gray-800 px-6 py-4 flex items-center justify-between">
+      <header className="border-b border-border px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-lg bg-emerald-500/20 flex items-center justify-center">
             <Shield className="w-5 h-5 text-emerald-400" />
@@ -42,7 +42,7 @@ export default function Home() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Button onClick={() => window.location.href = getLoginUrl()} className="bg-emerald-600 hover:bg-emerald-500 text-white text-sm">
+          <Button onClick={() => window.location.href = getLoginUrl()} className="bg-emerald-600 hover:bg-emerald-500 text-foreground text-sm">
             Sign In <ChevronRight className="w-4 h-4 ml-1" />
           </Button>
           <Button variant="outline" onClick={() => {
@@ -51,7 +51,7 @@ export default function Home() {
             const base = (import.meta as any).env?.VITE_KEYCLOAK_URL ?? "http://localhost:8080";
             const redirect = encodeURIComponent(window.location.origin + "/");
             window.location.href = `${base}/realms/${realm}/protocol/openid-connect/auth?client_id=${clientId}&redirect_uri=${redirect}&response_type=code&scope=openid+profile+email`;
-          }} className="border-gray-700 text-gray-300 hover:bg-gray-800 text-sm">
+          }} className="border-border text-muted-foreground hover:bg-card text-sm">
             SSO
           </Button>
         </div>
@@ -68,11 +68,11 @@ export default function Home() {
           <span className="text-emerald-400">Data Sovereignty</span><br />
           Enforcement Platform
         </h1>
-        <p className="text-gray-400 text-lg max-w-2xl mb-10 leading-relaxed">
+        <p className="text-muted-foreground text-lg max-w-2xl mb-10 leading-relaxed">
           Real-time compliance monitoring, cross-border data flow enforcement, and automated regulatory action under NDPR, GDPR, ISO 27001, and SOC 2.
         </p>
         <div className="flex gap-4 flex-wrap justify-center">
-          <Button size="lg" onClick={() => window.location.href = getLoginUrl()} className="bg-emerald-600 hover:bg-emerald-500 text-white px-8">
+          <Button size="lg" onClick={() => window.location.href = getLoginUrl()} className="bg-emerald-600 hover:bg-emerald-500 text-foreground px-8">
             Access Platform <ChevronRight className="w-5 h-5 ml-1" />
           </Button>
           <Button size="lg" variant="outline" onClick={() => {
@@ -81,17 +81,17 @@ export default function Home() {
             const base = (import.meta as any).env?.VITE_KEYCLOAK_URL ?? "http://localhost:8080";
             const redirect = encodeURIComponent(window.location.origin + "/");
             window.location.href = `${base}/realms/${realm}/protocol/openid-connect/auth?client_id=${clientId}&redirect_uri=${redirect}&response_type=code&scope=openid+profile+email`;
-          }} className="border-gray-700 text-gray-300 hover:bg-gray-800 px-8">
+          }} className="border-border text-muted-foreground hover:bg-card px-8">
             Enterprise SSO (Keycloak)
           </Button>
-          <Button size="lg" variant="outline" onClick={() => window.location.href = "/status"} className="border-gray-700 text-gray-300 hover:bg-gray-800 px-8">
+          <Button size="lg" variant="outline" onClick={() => window.location.href = "/status"} className="border-border text-muted-foreground hover:bg-card px-8">
             Check Org Status
           </Button>
         </div>
 
         {/* ── Demo Access Panel ─────────────────────────────────────────────── */}
         <div className="mt-12 w-full max-w-2xl">
-          <div className="border border-dashed border-gray-700 rounded-2xl p-6 bg-gray-900/50">
+          <div className="border border-dashed border-border rounded-2xl p-6 bg-background/50">
             <div className="flex items-center gap-2 mb-4 justify-center">
               <Play className="w-4 h-4 text-amber-400" />
               <span className="text-sm font-semibold text-amber-400 uppercase tracking-widest">Live Demo — No Login Required</span>
@@ -103,7 +103,7 @@ export default function Home() {
               <Button
                 size="sm"
                 onClick={() => window.location.href = "/api/demo-login?role=admin&returnTo=/admin/revenue"}
-                className="bg-blue-600 hover:bg-blue-500 text-white gap-2"
+                className="bg-blue-600 hover:bg-blue-500 text-foreground gap-2"
               >
                 <Shield className="w-4 h-4" />
                 Preview as NDPC Admin
@@ -111,7 +111,7 @@ export default function Home() {
               <Button
                 size="sm"
                 onClick={() => window.location.href = "/api/demo-login?returnTo=/dpco"}
-                className="bg-purple-600 hover:bg-purple-500 text-white gap-2"
+                className="bg-purple-600 hover:bg-purple-500 text-foreground gap-2"
               >
                 <Globe className="w-4 h-4" />
                 Preview as DPCO Portal
@@ -124,7 +124,7 @@ export default function Home() {
                     window.location.href = "/api/demo-reset?returnTo=/admin/revenue";
                   }
                 }}
-                className="border-gray-600 text-gray-400 hover:bg-gray-800 gap-2"
+                className="border-border text-muted-foreground hover:bg-card gap-2"
               >
                 <RefreshCw className="w-4 h-4" />
                 Reset Demo Data
@@ -174,7 +174,7 @@ export default function Home() {
           ))}
         </div>
       </main>
-      <footer className="border-t border-gray-800 px-6 py-4 text-center text-xs text-gray-600">
+      <footer className="border-t border-border px-6 py-4 text-center text-xs text-gray-600">
         NDSEP · National Information Technology Development Agency (NITDA) · Nigeria Data Protection Regulation
       </footer>
     </div>

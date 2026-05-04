@@ -114,7 +114,7 @@ function DpcoSearchWidget() {
         <div className="bg-slate-50 rounded-xl border border-slate-200 p-5 mb-5">
           <div className="flex items-start gap-3">
             <div className="w-10 h-10 rounded-lg bg-emerald-700 flex items-center justify-center shrink-0">
-              <Building2 className="w-5 h-5 text-white" />
+              <Building2 className="w-5 h-5 text-foreground" />
             </div>
             <div>
               <h3 className="font-semibold text-slate-900 text-sm">{selectedDpco.name}</h3>
@@ -133,10 +133,10 @@ function DpcoSearchWidget() {
             value={message}
             onChange={e => setMessage(e.target.value)}
             rows={3}
-            className="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-none"
+            className="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-none"
           />
           <Button
-            className="w-full bg-emerald-700 hover:bg-emerald-800 text-white text-sm h-9"
+            className="w-full bg-emerald-700 hover:bg-emerald-800 text-foreground text-sm h-9"
             disabled={!orgName || !contactEmail || sendRequest.isPending}
             onClick={() => sendRequest.mutate({
               dpcoOrgId: selectedDpco.id,
@@ -159,7 +159,7 @@ function DpcoSearchWidget() {
     <div>
       <div className="flex gap-3 mb-6 max-w-2xl mx-auto">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
             placeholder="Search by DPCO name..."
             value={search}
@@ -175,13 +175,13 @@ function DpcoSearchWidget() {
         >
           {SECTORS.map(s => <option key={s} value={s === "All Sectors" ? "" : s}>{s}</option>)}
         </select>
-        <Button onClick={handleSearch} className="bg-emerald-700 hover:bg-emerald-800 text-white text-sm h-10 px-5">
+        <Button onClick={handleSearch} className="bg-emerald-700 hover:bg-emerald-800 text-foreground text-sm h-10 px-5">
           Search
         </Button>
       </div>
 
       {query === null && (
-        <div className="text-center py-10 text-slate-400">
+        <div className="text-center py-10 text-muted-foreground">
           <Search className="w-8 h-8 mx-auto mb-3 opacity-40" />
           <p className="text-sm">Search for an accredited DPCO by name or sector</p>
         </div>
@@ -194,7 +194,7 @@ function DpcoSearchWidget() {
       )}
 
       {results && results.length === 0 && (
-        <div className="text-center py-10 text-slate-400">
+        <div className="text-center py-10 text-muted-foreground">
           <p className="text-sm">No accredited DPCOs found matching your search.</p>
         </div>
       )}
@@ -205,7 +205,7 @@ function DpcoSearchWidget() {
             <div key={dpco.id} className="bg-white rounded-xl border border-slate-200 p-5 hover:shadow-md transition-shadow">
               <div className="flex items-start justify-between mb-3">
                 <div className="w-9 h-9 rounded-lg bg-emerald-700 flex items-center justify-center">
-                  <Building2 className="w-4.5 h-4.5 text-white" />
+                  <Building2 className="w-4.5 h-4.5 text-foreground" />
                 </div>
                 <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-medium capitalize">{dpco.tier}</span>
               </div>
@@ -215,10 +215,10 @@ function DpcoSearchWidget() {
                   <MapPin className="w-3 h-3" /> {dpco.sectors.split(",").slice(0, 2).join(", ")}
                 </p>
               )}
-              <p className="text-xs text-slate-400 mb-4">Licence: {dpco.licenceNumber ?? "Active"}</p>
+              <p className="text-xs text-muted-foreground mb-4">Licence: {dpco.licenceNumber ?? "Active"}</p>
               <Button
                 size="sm"
-                className="w-full bg-emerald-700 hover:bg-emerald-800 text-white text-xs h-8"
+                className="w-full bg-emerald-700 hover:bg-emerald-800 text-foreground text-xs h-8"
                 onClick={() => setSelectedDpco(dpco)}
               >
                 Send Engagement Request
@@ -239,10 +239,10 @@ export default function DpcoLanding() {
         <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="w-7 h-7 rounded-lg bg-emerald-700 flex items-center justify-center">
-              <ShieldCheck className="w-4 h-4 text-white" />
+              <ShieldCheck className="w-4 h-4 text-foreground" />
             </div>
             <span className="font-bold text-slate-900 text-sm">NDSEP</span>
-            <span className="text-slate-300 text-sm mx-1">|</span>
+            <span className="text-muted-foreground text-sm mx-1">|</span>
             <span className="text-slate-500 text-sm">DPCO Platform</span>
           </div>
           <div className="flex items-center gap-4">
@@ -250,7 +250,7 @@ export default function DpcoLanding() {
             <a href="#ai" className="text-sm text-slate-600 hover:text-slate-900 transition-colors">AI Tools</a>
             <a href="#pricing" className="text-sm text-slate-600 hover:text-slate-900 transition-colors">Pricing</a>
             <Link href="/dpco/apply">
-              <Button size="sm" className="bg-emerald-700 hover:bg-emerald-800 text-white text-xs h-8">
+              <Button size="sm" className="bg-emerald-700 hover:bg-emerald-800 text-foreground text-xs h-8">
                 Apply for Accreditation
               </Button>
             </Link>
@@ -259,7 +259,7 @@ export default function DpcoLanding() {
       </nav>
 
       {/* Hero */}
-      <section className="pt-28 pb-20 bg-gradient-to-br from-slate-900 via-emerald-950 to-slate-900 text-white relative overflow-hidden">
+      <section className="pt-28 pb-20 bg-gradient-to-br from-slate-900 via-emerald-950 to-slate-900 text-foreground relative overflow-hidden">
         <div className="absolute inset-0 opacity-10" style={{ backgroundImage: "radial-gradient(circle at 30% 50%, #10b981 0%, transparent 60%), radial-gradient(circle at 70% 20%, #d97706 0%, transparent 50%)" }} />
         <div className="max-w-5xl mx-auto px-6 relative z-10">
           <div className="inline-flex items-center gap-2 bg-emerald-900/50 border border-emerald-700/50 rounded-full px-3 py-1 text-xs text-emerald-300 mb-6">
@@ -270,29 +270,29 @@ export default function DpcoLanding() {
             Your Entire DPCO Business.<br />
             <span className="text-emerald-400">One Platform.</span>
           </h1>
-          <p className="text-lg text-slate-300 max-w-2xl mb-8 leading-relaxed">
+          <p className="text-lg text-muted-foreground max-w-2xl mb-8 leading-relaxed">
             NDSEP is the only platform purpose-built for Nigeria Data Protection Compliance Organisations.
             From NDPC accreditation to CAR filing — with AI that does the heavy lifting.
           </p>
           <div className="flex items-center gap-4 flex-wrap">
             <Link href="/dpco/apply">
-              <Button className="bg-emerald-500 hover:bg-emerald-400 text-white font-semibold px-6 h-11 text-sm">
+              <Button className="bg-emerald-500 hover:bg-emerald-400 text-foreground font-semibold px-6 h-11 text-sm">
                 Apply for Accreditation <ArrowRight className="w-4 h-4 ml-1" />
               </Button>
             </Link>
             <Link href="/dpco-brochure">
-              <Button variant="outline" className="border-slate-600 text-slate-300 hover:bg-slate-800 h-11 text-sm">
+              <Button variant="outline" className="border-border text-muted-foreground hover:bg-card h-11 text-sm">
                 View Full Brochure
               </Button>
             </Link>
           </div>
 
           {/* Stats */}
-          <div className="grid grid-cols-4 gap-6 mt-14 pt-10 border-t border-slate-700/50">
+          <div className="grid grid-cols-4 gap-6 mt-14 pt-10 border-t border-border/50">
             {STATS.map(s => (
               <div key={s.label}>
                 <p className="text-3xl font-bold text-emerald-400">{s.value}</p>
-                <p className="text-xs text-slate-400 mt-1">{s.label}</p>
+                <p className="text-xs text-muted-foreground mt-1">{s.label}</p>
               </div>
             ))}
           </div>
@@ -323,7 +323,7 @@ export default function DpcoLanding() {
       </section>
 
       {/* AI Section */}
-      <section id="ai" className="py-20 bg-gradient-to-br from-slate-900 to-emerald-950 text-white">
+      <section id="ai" className="py-20 bg-gradient-to-br from-slate-900 to-emerald-950 text-foreground">
         <div className="max-w-6xl mx-auto px-6">
           <div className="grid grid-cols-2 gap-16 items-center">
             <div>
@@ -331,25 +331,25 @@ export default function DpcoLanding() {
                 <Zap className="w-3 h-3" /> AI-Powered Compliance
               </div>
               <h2 className="text-3xl font-bold mb-4">Automation & AI That Actually Works</h2>
-              <p className="text-slate-300 text-sm leading-relaxed mb-6">
+              <p className="text-muted-foreground text-sm leading-relaxed mb-6">
                 NDSEP's AI engine is trained on the NDPA 2023 framework and NDPC guidance notes.
                 It doesn't just assist — it accelerates every stage of the audit lifecycle.
               </p>
               <Link href="/dpco/ai-tools">
-                <Button className="bg-emerald-500 hover:bg-emerald-400 text-white text-sm h-9">
+                <Button className="bg-emerald-500 hover:bg-emerald-400 text-foreground text-sm h-9">
                   Explore AI Tools <ChevronRight className="w-4 h-4 ml-1" />
                 </Button>
               </Link>
             </div>
             <div className="space-y-4">
               {AI_FEATURES.map(f => (
-                <div key={f.title} className="flex gap-4 bg-slate-800/50 border border-slate-700/50 rounded-xl p-4">
+                <div key={f.title} className="flex gap-4 bg-card/50 border border-border/50 rounded-xl p-4">
                   <div className="w-8 h-8 rounded-lg bg-emerald-700/30 flex items-center justify-center shrink-0 mt-0.5">
                     <Brain className="w-4 h-4 text-emerald-400" />
                   </div>
                   <div>
-                    <h4 className="text-sm font-semibold text-white mb-1">{f.title}</h4>
-                    <p className="text-xs text-slate-400 leading-relaxed">{f.desc}</p>
+                    <h4 className="text-sm font-semibold text-foreground mb-1">{f.title}</h4>
+                    <p className="text-xs text-muted-foreground leading-relaxed">{f.desc}</p>
                   </div>
                 </div>
               ))}
@@ -404,12 +404,12 @@ export default function DpcoLanding() {
           </div>
           <div className="grid grid-cols-3 gap-6">
             {TIERS.map(t => (
-              <div key={t.name} className={`rounded-2xl border p-6 flex flex-col ${t.highlight ? "border-emerald-500 bg-emerald-700 text-white shadow-xl shadow-emerald-900/20" : "border-slate-200 bg-white"}`}>
+              <div key={t.name} className={`rounded-2xl border p-6 flex flex-col ${t.highlight ? "border-emerald-500 bg-emerald-700 text-foreground shadow-xl shadow-emerald-900/20" : "border-slate-200 bg-white"}`}>
                 <div className="mb-4">
                   <p className={`text-xs font-semibold uppercase tracking-widest mb-1 ${t.highlight ? "text-emerald-200" : "text-emerald-600"}`}>{t.name}</p>
                   <div className="flex items-end gap-1">
                     <span className="text-3xl font-black">{t.price}</span>
-                    <span className={`text-sm mb-1 ${t.highlight ? "text-emerald-200" : "text-slate-400"}`}>{t.period}</span>
+                    <span className={`text-sm mb-1 ${t.highlight ? "text-emerald-200" : "text-muted-foreground"}`}>{t.period}</span>
                   </div>
                   <p className={`text-xs mt-1 ${t.highlight ? "text-emerald-200" : "text-slate-500"}`}>{t.desc}</p>
                 </div>
@@ -422,7 +422,7 @@ export default function DpcoLanding() {
                   ))}
                 </ul>
                 <Link href="/dpco/apply">
-                  <Button className={`w-full text-sm h-9 ${t.highlight ? "bg-white text-emerald-700 hover:bg-emerald-50" : "bg-emerald-700 hover:bg-emerald-800 text-white"}`}>
+                  <Button className={`w-full text-sm h-9 ${t.highlight ? "bg-white text-emerald-700 hover:bg-emerald-50" : "bg-emerald-700 hover:bg-emerald-800 text-foreground"}`}>
                     {t.cta}
                   </Button>
                 </Link>
@@ -433,7 +433,7 @@ export default function DpcoLanding() {
       </section>
 
       {/* CTA */}
-      <section className="py-20 bg-emerald-700 text-white text-center">
+      <section className="py-20 bg-emerald-700 text-foreground text-center">
         <div className="max-w-2xl mx-auto px-6">
           <h2 className="text-3xl font-bold mb-4">Ready to Manage Your DPCO Practice on NDSEP?</h2>
           <p className="text-emerald-100 text-sm mb-8 leading-relaxed">
@@ -447,7 +447,7 @@ export default function DpcoLanding() {
               </Button>
             </Link>
             <Link href="/accreditation/status">
-              <Button variant="outline" className="border-emerald-400 text-white hover:bg-emerald-600 h-11 text-sm">
+              <Button variant="outline" className="border-emerald-400 text-foreground hover:bg-emerald-600 h-11 text-sm">
                 Check Application Status
               </Button>
             </Link>
@@ -456,7 +456,7 @@ export default function DpcoLanding() {
       </section>
 
       {/* Footer */}
-      <footer className="bg-slate-900 text-slate-400 py-8 text-center text-xs">
+      <footer className="bg-background text-muted-foreground py-8 text-center text-xs">
         <p>© 2026 Nigeria Data Protection Commission (NDPC) · National Data Sovereignty Enforcement Platform (NDSEP)</p>
         <p className="mt-1">Regulated under the Nigeria Data Protection Act 2023 · All DPCO accreditations are subject to NDPC approval</p>
       </footer>

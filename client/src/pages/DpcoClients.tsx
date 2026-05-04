@@ -12,10 +12,10 @@ import { toast } from "sonner";
 import { Users, Plus, Calendar, TrendingUp, FileCheck, AlertTriangle, RefreshCw, Building2 , Trash2 } from "lucide-react";
 
 const STATUS_COLORS: Record<string, string> = {
-  active: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30",
-  completed: "bg-blue-500/20 text-blue-300 border-blue-500/30",
-  suspended: "bg-yellow-500/20 text-yellow-300 border-yellow-500/30",
-  terminated: "bg-red-500/20 text-red-300 border-red-500/30",
+  active: "bg-emerald-100 text-emerald-700 border-emerald-300",
+  completed: "bg-blue-100 text-blue-700 border-blue-300",
+  suspended: "bg-yellow-100 text-yellow-700 border-yellow-300",
+  terminated: "bg-red-100 text-red-700 border-red-300",
 };
 
 const ENGAGEMENT_LABELS: Record<string, string> = {
@@ -66,72 +66,72 @@ export default function DpcoClients() {
     <div className="px-6 py-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-cyan-300 font-mono">DPCO Client Portfolio</h1>
-          <p className="text-slate-400 text-sm mt-1">Manage client engagements, audit schedules, and SLA compliance rates</p>
+          <h1 className="text-2xl font-bold text-primary font-mono">DPCO Client Portfolio</h1>
+          <p className="text-muted-foreground text-sm mt-1">Manage client engagements, audit schedules, and SLA compliance rates</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={() => refetch()} className="border-slate-600 text-slate-300">
+          <Button variant="outline" size="sm" onClick={() => refetch()} className="border-input text-foreground">
             <RefreshCw className="w-4 h-4 mr-2" /> Refresh
           </Button>
           <Dialog open={showAdd} onOpenChange={setShowAdd}>
             <DialogTrigger asChild>
-              <Button size="sm" className="bg-cyan-600 hover:bg-cyan-700 text-white">
+              <Button size="sm" className="bg-primary hover:bg-primary/90 text-white">
                 <Plus className="w-4 h-4 mr-2" /> Add Client
               </Button>
             </DialogTrigger>
-            <DialogContent className="bg-slate-900 border-slate-700 max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogContent className="bg-background border-border max-w-2xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
-                <DialogTitle className="text-cyan-300">Add Client Engagement</DialogTitle>
+                <DialogTitle className="text-primary">Add Client Engagement</DialogTitle>
               </DialogHeader>
               <div className="grid grid-cols-2 gap-4 mt-4">
                 <div>
-                  <Label className="text-slate-300 text-xs">DPCO Organisation *</Label>
+                  <Label className="text-foreground text-xs">DPCO Organisation *</Label>
                   <Select value={form.dpcoOrganisationId} onValueChange={v => setForm(f => ({ ...f, dpcoOrganisationId: v }))}>
-                    <SelectTrigger className="bg-slate-800 border-slate-600 text-slate-200 mt-1">
+                    <SelectTrigger className="bg-card border-input text-foreground mt-1">
                       <SelectValue placeholder="Select DPCO" />
                     </SelectTrigger>
-                    <SelectContent className="bg-slate-800 border-slate-700 max-h-48">
+                    <SelectContent className="bg-card border-border max-h-48">
                       {(dpcoList?.rows ?? []).map((d: any) => (
-                        <SelectItem key={d.id} value={String(d.id)} className="text-slate-200">{d.name}</SelectItem>
+                        <SelectItem key={d.id} value={String(d.id)} className="text-foreground">{d.name}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
                 <div>
-                  <Label className="text-slate-300 text-xs">Client Organisation *</Label>
+                  <Label className="text-foreground text-xs">Client Organisation *</Label>
                   <Select value={form.organisationId} onValueChange={v => setForm(f => ({ ...f, organisationId: v }))}>
-                    <SelectTrigger className="bg-slate-800 border-slate-600 text-slate-200 mt-1">
+                    <SelectTrigger className="bg-card border-input text-foreground mt-1">
                       <SelectValue placeholder="Select organisation" />
                     </SelectTrigger>
-                    <SelectContent className="bg-slate-800 border-slate-700 max-h-48">
+                    <SelectContent className="bg-card border-border max-h-48">
                       {((orgList as any)?.organizations ?? []).map((o: any) => (
-                        <SelectItem key={o.id} value={String(o.id)} className="text-slate-200">{o.name}</SelectItem>
+                        <SelectItem key={o.id} value={String(o.id)} className="text-foreground">{o.name}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
                 <div>
-                  <Label className="text-slate-300 text-xs">Engagement Type</Label>
+                  <Label className="text-foreground text-xs">Engagement Type</Label>
                   <Select value={form.engagementType} onValueChange={v => setForm(f => ({ ...f, engagementType: v }))}>
-                    <SelectTrigger className="bg-slate-800 border-slate-600 text-slate-200 mt-1">
+                    <SelectTrigger className="bg-card border-input text-foreground mt-1">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent className="bg-slate-800 border-slate-700">
+                    <SelectContent className="bg-card border-border">
                       {Object.entries(ENGAGEMENT_LABELS).map(([k, v]) => (
-                        <SelectItem key={k} value={k} className="text-slate-200">{v}</SelectItem>
+                        <SelectItem key={k} value={k} className="text-foreground">{v}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
                 <div>
-                  <Label className="text-slate-300 text-xs">Status</Label>
+                  <Label className="text-foreground text-xs">Status</Label>
                   <Select value={form.status} onValueChange={v => setForm(f => ({ ...f, status: v }))}>
-                    <SelectTrigger className="bg-slate-800 border-slate-600 text-slate-200 mt-1">
+                    <SelectTrigger className="bg-card border-input text-foreground mt-1">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent className="bg-slate-800 border-slate-700">
+                    <SelectContent className="bg-card border-border">
                       {["active","completed","suspended","terminated"].map(s => (
-                        <SelectItem key={s} value={s} className="text-slate-200">{s}</SelectItem>
+                        <SelectItem key={s} value={s} className="text-foreground">{s}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -144,29 +144,29 @@ export default function DpcoClients() {
                   { label: "Next Audit Due", key: "nextAuditDue", type: "date" },
                 ].map(({ label, key, type: t }) => (
                   <div key={key}>
-                    <Label className="text-slate-300 text-xs">{label}</Label>
+                    <Label className="text-foreground text-xs">{label}</Label>
                     <Input
                       type={t ?? "text"}
                       value={(form as any)[key]}
                       onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))}
-                      className="bg-slate-800 border-slate-600 text-slate-200 mt-1"
+                      className="bg-card border-input text-foreground mt-1"
                     />
                   </div>
                 ))}
                 <div className="col-span-2">
-                  <Label className="text-slate-300 text-xs">Scope</Label>
+                  <Label className="text-foreground text-xs">Scope</Label>
                   <textarea
                     value={form.scope}
                     onChange={e => setForm(f => ({ ...f, scope: e.target.value }))}
-                    className="w-full bg-slate-800 border border-slate-600 text-slate-200 rounded-md px-3 py-2 text-sm mt-1 h-20 resize-none"
+                    className="w-full bg-card border border-input text-foreground rounded-md px-3 py-2 text-sm mt-1 h-20 resize-none"
                     placeholder="Describe the engagement scope..."
                   />
                 </div>
               </div>
               <div className="flex justify-end gap-2 mt-4">
-                <Button variant="outline" onClick={() => setShowAdd(false)} className="border-slate-600 text-slate-300">Cancel</Button>
+                <Button variant="outline" onClick={() => setShowAdd(false)} className="border-input text-foreground">Cancel</Button>
                 <Button
-                  className="bg-cyan-600 hover:bg-cyan-700 text-white"
+                  className="bg-primary hover:bg-primary/90 text-white"
                   onClick={() => upsert.mutate({ ...form, dpcoOrganisationId: Number(form.dpcoOrganisationId), organisationId: Number(form.organisationId), retainerFee: form.retainerFee ? Number(form.retainerFee) : undefined } as any)}
                   disabled={!form.dpcoOrganisationId || !form.organisationId || upsert.isPending}
                 >
@@ -181,16 +181,16 @@ export default function DpcoClients() {
       {/* Stats */}
       <div className="grid grid-cols-4 gap-4">
         {[
-          { label: "Total Engagements", value: rows.length, icon: Users, color: "text-cyan-400" },
-          { label: "Active", value: activeCount, icon: TrendingUp, color: "text-emerald-400" },
-          { label: "Overdue Audits", value: overdueAudits, icon: AlertTriangle, color: "text-red-400" },
-          { label: "Avg SLA Rate", value: rows.length ? `${Math.round(rows.reduce((a: number, r: any) => a + (r.sla_compliance_rate ?? 100), 0) / rows.length)}%` : "—", icon: FileCheck, color: "text-blue-400" },
+          { label: "Total Engagements", value: rows.length, icon: Users, color: "text-primary" },
+          { label: "Active", value: activeCount, icon: TrendingUp, color: "text-emerald-600" },
+          { label: "Overdue Audits", value: overdueAudits, icon: AlertTriangle, color: "text-red-600" },
+          { label: "Avg SLA Rate", value: rows.length ? `${Math.round(rows.reduce((a: number, r: any) => a + (r.sla_compliance_rate ?? 100), 0) / rows.length)}%` : "—", icon: FileCheck, color: "text-blue-600" },
         ].map(({ label, value, icon: Icon, color }) => (
-          <div key={label} className="bg-slate-800/60 border border-slate-700 rounded-lg p-4 flex items-center gap-3">
+          <div key={label} className="bg-card border border-border rounded-lg p-4 flex items-center gap-3">
             <Icon className={`w-8 h-8 ${color}`} />
             <div>
               <div className={`text-2xl font-bold font-mono ${color}`}>{value}</div>
-              <div className="text-slate-400 text-xs">{label}</div>
+              <div className="text-muted-foreground text-xs">{label}</div>
             </div>
           </div>
         ))}
@@ -199,57 +199,57 @@ export default function DpcoClients() {
       {/* Filters */}
       <div className="flex gap-3">
         <Select value={filterDpco} onValueChange={setFilterDpco}>
-          <SelectTrigger className="w-56 bg-slate-800 border-slate-600 text-slate-200">
+          <SelectTrigger className="w-56 bg-card border-input text-foreground">
             <SelectValue placeholder="All DPCOs" />
           </SelectTrigger>
-          <SelectContent className="bg-slate-800 border-slate-700 max-h-48">
-            <SelectItem value="all" className="text-slate-200">All DPCOs</SelectItem>
+          <SelectContent className="bg-card border-border max-h-48">
+            <SelectItem value="all" className="text-foreground">All DPCOs</SelectItem>
             {(dpcoList?.rows ?? []).map((d: any) => (
-              <SelectItem key={d.id} value={String(d.id)} className="text-slate-200">{d.name}</SelectItem>
+              <SelectItem key={d.id} value={String(d.id)} className="text-foreground">{d.name}</SelectItem>
             ))}
           </SelectContent>
         </Select>
         <Select value={filterStatus} onValueChange={setFilterStatus}>
-          <SelectTrigger className="w-40 bg-slate-800 border-slate-600 text-slate-200">
+          <SelectTrigger className="w-40 bg-card border-input text-foreground">
             <SelectValue placeholder="All Status" />
           </SelectTrigger>
-          <SelectContent className="bg-slate-800 border-slate-700">
+          <SelectContent className="bg-card border-border">
             {["all","active","completed","suspended","terminated"].map(s => (
-              <SelectItem key={s} value={s} className="text-slate-200">{s === "all" ? "All Status" : s}</SelectItem>
+              <SelectItem key={s} value={s} className="text-foreground">{s === "all" ? "All Status" : s}</SelectItem>
             ))}
           </SelectContent>
         </Select>
       </div>
 
       {/* Table */}
-      <div className="bg-slate-800/60 border border-slate-700 rounded-lg overflow-hidden">
+      <div className="bg-card border border-border rounded-lg overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-slate-700 bg-slate-900/50">
+              <tr className="border-b border-border bg-muted/50">
                 {["Client Organisation", "DPCO", "Engagement Type", "Contract Ref", "Next Audit Due", "SLA Rate", "CARs", "Status"].map(h => (
-                  <th key={h} className="text-left px-4 py-3 text-slate-400 font-mono text-xs font-medium">{h}</th>
+                  <th key={h} className="text-left px-4 py-3 text-muted-foreground font-mono text-xs font-medium">{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {isLoading ? (
-                <tr><td colSpan={8} className="text-center py-12 text-slate-500">Loading client portfolio...</td></tr>
+                <tr><td colSpan={8} className="text-center py-12 text-muted-foreground">Loading client portfolio...</td></tr>
               ) : rows.length === 0 ? (
-                <tr><td colSpan={8} className="text-center py-12 text-slate-500">No client engagements found. Add your first client above.</td></tr>
+                <tr><td colSpan={8} className="text-center py-12 text-muted-foreground">No client engagements found. Add your first client above.</td></tr>
               ) : rows.map((c: any) => {
                 const overdue = c.next_audit_due && new Date(c.next_audit_due) < new Date();
                 return (
-                  <tr key={c.id} className="border-b border-slate-700/50 hover:bg-slate-700/30 transition-colors">
+                  <tr key={c.id} className="border-b border-border/50 hover:bg-muted/50 transition-colors">
                     <td className="px-4 py-3">
-                      <div className="text-slate-200 font-medium text-xs">{c.org_name ?? `Org #${c.organisation_id}`}</div>
-                      <div className="text-slate-500 text-xs">{c.org_sector ?? ""}</div>
+                      <div className="text-foreground font-medium text-xs">{c.org_name ?? `Org #${c.organisation_id}`}</div>
+                      <div className="text-muted-foreground text-xs">{c.org_sector ?? ""}</div>
                     </td>
-                    <td className="px-4 py-3 text-slate-400 text-xs">{c.dpco_name ?? `DPCO #${c.dpco_organisation_id}`}</td>
-                    <td className="px-4 py-3 text-slate-300 text-xs">{ENGAGEMENT_LABELS[c.engagement_type] ?? c.engagement_type}</td>
-                    <td className="px-4 py-3 text-slate-400 text-xs font-mono">{c.contract_reference ?? "—"}</td>
+                    <td className="px-4 py-3 text-muted-foreground text-xs">{c.dpco_name ?? `DPCO #${c.dpco_organisation_id}`}</td>
+                    <td className="px-4 py-3 text-foreground text-xs">{ENGAGEMENT_LABELS[c.engagement_type] ?? c.engagement_type}</td>
+                    <td className="px-4 py-3 text-muted-foreground text-xs font-mono">{c.contract_reference ?? "—"}</td>
                     <td className="px-4 py-3">
-                      <div className={`text-xs ${overdue ? "text-red-400" : "text-slate-400"}`}>
+                      <div className={`text-xs ${overdue ? "text-red-600" : "text-muted-foreground"}`}>
                         {c.next_audit_due ? new Date(c.next_audit_due).toLocaleDateString() : "—"}
                       </div>
                       {overdue && <div className="text-red-500 text-xs flex items-center gap-1"><AlertTriangle className="w-3 h-3" />Overdue</div>}
@@ -257,16 +257,16 @@ export default function DpcoClients() {
                     <td className="px-4 py-3">
                       {c.sla_compliance_rate != null ? (
                         <div className="flex items-center gap-2">
-                          <div className="w-16 bg-slate-700 rounded-full h-1.5">
+                          <div className="w-16 bg-muted rounded-full h-1.5">
                             <div className={`h-1.5 rounded-full ${c.sla_compliance_rate >= 90 ? "bg-emerald-500" : c.sla_compliance_rate >= 70 ? "bg-yellow-500" : "bg-red-500"}`} style={{ width: `${c.sla_compliance_rate}%` }} />
                           </div>
-                          <span className="text-xs text-slate-300">{Math.round(c.sla_compliance_rate)}%</span>
+                          <span className="text-xs text-foreground">{Math.round(c.sla_compliance_rate)}%</span>
                         </div>
-                      ) : <span className="text-slate-500 text-xs">—</span>}
+                      ) : <span className="text-muted-foreground text-xs">—</span>}
                     </td>
-                    <td className="px-4 py-3 text-slate-300 text-xs font-mono">{c.cars_completed ?? 0}/{(c.cars_completed ?? 0) + (c.cars_pending ?? 0)}</td>
+                    <td className="px-4 py-3 text-foreground text-xs font-mono">{c.cars_completed ?? 0}/{(c.cars_completed ?? 0) + (c.cars_pending ?? 0)}</td>
                     <td className="px-4 py-3">
-                      <Badge className={`text-xs border ${STATUS_COLORS[c.status] ?? "bg-slate-700 text-slate-300"}`}>{c.status}</Badge>
+                      <Badge className={`text-xs border ${STATUS_COLORS[c.status] ?? "bg-muted text-foreground"}`}>{c.status}</Badge>
                     </td>
                   </tr>
                 );
@@ -274,7 +274,7 @@ export default function DpcoClients() {
             </tbody>
           </table>
         </div>
-        <div className="px-4 py-3 border-t border-slate-700 text-slate-500 text-xs">
+        <div className="px-4 py-3 border-t border-border text-muted-foreground text-xs">
           {rows.length} client engagement{rows.length !== 1 ? "s" : ""}
         </div>
       </div>

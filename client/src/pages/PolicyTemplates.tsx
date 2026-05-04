@@ -22,7 +22,7 @@ const FRAMEWORK_COLORS: Record<string, string> = {
   SOC2: "bg-cyan-500/20 text-cyan-400 border-cyan-500/30",
   ISO27001: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
   DOJ_EO_14117: "bg-pink-500/20 text-pink-400 border-pink-500/30",
-  CUSTOM: "bg-gray-500/20 text-gray-400 border-gray-500/30",
+  CUSTOM: "bg-gray-500/20 text-muted-foreground border-gray-500/30",
 };
 
 export default function PolicyTemplates() {
@@ -61,18 +61,18 @@ export default function PolicyTemplates() {
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">Policy Templates Library</h1>
-          <p className="text-gray-400 text-sm mt-1">Pre-built regulation-specific policy templates for instant deployment</p>
+          <h1 className="text-2xl font-bold text-foreground">Policy Templates Library</h1>
+          <p className="text-muted-foreground text-sm mt-1">Pre-built regulation-specific policy templates for instant deployment</p>
         </div>
         <Button onClick={() => setShowCreate(true)} className="bg-blue-600 hover:bg-blue-700"><Plus className="w-4 h-4 mr-2" /> New Template</Button>
       </div>
       <div className="flex gap-3">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search templates..." className="pl-9 bg-gray-800 border-gray-700 text-white" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search templates..." className="pl-9 bg-card border-border text-foreground" />
         </div>
         <Select value={framework} onValueChange={setFramework}>
-          <SelectTrigger className="w-48 bg-gray-800 border-gray-700 text-white"><Filter className="w-4 h-4 mr-2" /><SelectValue /></SelectTrigger>
+          <SelectTrigger className="w-48 bg-card border-border text-foreground"><Filter className="w-4 h-4 mr-2" /><SelectValue /></SelectTrigger>
           <SelectContent>{FRAMEWORKS.map(fw => <SelectItem key={fw} value={fw}>{fw}</SelectItem>)}</SelectContent>
         </Select>
       </div>
@@ -80,12 +80,12 @@ export default function PolicyTemplates() {
         {filtered.length === 0 ? (
           <div className="col-span-3 text-center py-16 text-gray-500"><FileText className="w-12 h-12 mx-auto mb-3 opacity-30" /><p>No templates found. Create one to get started.</p></div>
         ) : filtered.map((t: any) => (
-          <div key={t.id} className="bg-gray-800 rounded-xl border border-gray-700 p-5 space-y-3 hover:border-blue-500/50 transition-colors">
+          <div key={t.id} className="bg-card rounded-xl border border-border p-5 space-y-3 hover:border-blue-500/50 transition-colors">
             <div className="flex items-start justify-between">
-              <div className="flex items-center gap-2"><FileText className="w-5 h-5 text-blue-400 shrink-0" /><span className="font-semibold text-white text-sm">{t.name}</span></div>
-              <Badge className={`text-xs border ${FRAMEWORK_COLORS[t.framework] || "bg-gray-700 text-gray-300"}`}>{t.framework}</Badge>
+              <div className="flex items-center gap-2"><FileText className="w-5 h-5 text-blue-400 shrink-0" /><span className="font-semibold text-foreground text-sm">{t.name}</span></div>
+              <Badge className={`text-xs border ${FRAMEWORK_COLORS[t.framework] || "bg-muted text-muted-foreground"}`}>{t.framework}</Badge>
             </div>
-            {t.description && <p className="text-gray-400 text-xs line-clamp-2">{t.description}</p>}
+            {t.description && <p className="text-muted-foreground text-xs line-clamp-2">{t.description}</p>}
             <div className="flex items-center justify-between text-xs text-gray-500">
               <span>v{t.version || "1.0"} · Used {t.instantiatedCount || 0}x</span>
               <Badge variant="outline" className={`text-xs ${t.status === "active" ? "border-green-500/50 text-green-400" : "border-yellow-500/50 text-yellow-400"}`}>{t.status}</Badge>
@@ -97,18 +97,18 @@ export default function PolicyTemplates() {
         ))}
       </div>
       <Dialog open={showCreate} onOpenChange={setShowCreate}>
-        <DialogContent className="bg-gray-900 border-gray-700 text-white max-w-lg">
+        <DialogContent className="bg-background border-border text-foreground max-w-lg">
           <DialogHeader><DialogTitle>Create Policy Template</DialogTitle></DialogHeader>
           <div className="space-y-4">
-            <div><Label>Name</Label><Input value={newTemplate.name} onChange={e => setNewTemplate(p => ({ ...p, name: e.target.value }))} className="bg-gray-800 border-gray-700 mt-1" /></div>
+            <div><Label>Name</Label><Input value={newTemplate.name} onChange={e => setNewTemplate(p => ({ ...p, name: e.target.value }))} className="bg-card border-border mt-1" /></div>
             <div><Label>Framework</Label>
               <Select value={newTemplate.framework} onValueChange={v => setNewTemplate(p => ({ ...p, framework: v }))}>
-                <SelectTrigger className="bg-gray-800 border-gray-700 mt-1"><SelectValue /></SelectTrigger>
+                <SelectTrigger className="bg-card border-border mt-1"><SelectValue /></SelectTrigger>
                 <SelectContent>{FRAMEWORKS.slice(1).map(fw => <SelectItem key={fw} value={fw}>{fw}</SelectItem>)}</SelectContent>
               </Select>
             </div>
-            <div><Label>Description</Label><Input value={newTemplate.description} onChange={e => setNewTemplate(p => ({ ...p, description: e.target.value }))} className="bg-gray-800 border-gray-700 mt-1" /></div>
-            <div><Label>Policy Definition (OPA Rego / JSON)</Label><Textarea value={newTemplate.policyDefinition} onChange={e => setNewTemplate(p => ({ ...p, policyDefinition: e.target.value }))} className="bg-gray-800 border-gray-700 mt-1 font-mono text-xs" rows={5} /></div>
+            <div><Label>Description</Label><Input value={newTemplate.description} onChange={e => setNewTemplate(p => ({ ...p, description: e.target.value }))} className="bg-card border-border mt-1" /></div>
+            <div><Label>Policy Definition (OPA Rego / JSON)</Label><Textarea value={newTemplate.policyDefinition} onChange={e => setNewTemplate(p => ({ ...p, policyDefinition: e.target.value }))} className="bg-card border-border mt-1 font-mono text-xs" rows={5} /></div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowCreate(false)}>Cancel</Button>
@@ -117,12 +117,12 @@ export default function PolicyTemplates() {
         </DialogContent>
       </Dialog>
       <Dialog open={showInstantiate !== null} onOpenChange={() => setShowInstantiate(null)}>
-        <DialogContent className="bg-gray-900 border-gray-700 text-white">
+        <DialogContent className="bg-background border-border text-foreground">
           <DialogHeader><DialogTitle>Instantiate Policy for Organization</DialogTitle></DialogHeader>
           <div className="space-y-3">
             <Label>Select Organization</Label>
             <Select value={orgId} onValueChange={setOrgId}>
-              <SelectTrigger className="bg-gray-800 border-gray-700"><SelectValue placeholder="Choose organization..." /></SelectTrigger>
+              <SelectTrigger className="bg-card border-border"><SelectValue placeholder="Choose organization..." /></SelectTrigger>
               <SelectContent>{(orgs as any[]).map((o: any) => <SelectItem key={o.id} value={String(o.id)}>{o.name}</SelectItem>)}</SelectContent>
             </Select>
           </div>

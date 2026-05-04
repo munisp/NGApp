@@ -19,12 +19,12 @@ const STATUS_COLORS: Record<string, "default" | "secondary" | "destructive"> = {
 
 export default function Phase13Article40() {
   const [search, setSearch] = useState("");
-  const [sector, setSector] = useState("");
+  const [sector, setSector] = useState("all");
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({ code_name: "", sector: "", description: "", submitted_by: "", document_url: "" });
 
   const utils = trpc.useUtils();
-  const { data: records, isLoading } = trpc.phase13.article40.list.useQuery({ search, sector: sector || undefined });
+  const { data: records, isLoading } = trpc.phase13.article40.list.useQuery({ search, sector: sector === "all" ? undefined : sector || undefined });
   const create = trpc.phase13.article40.create.useMutation({
     onSuccess: () => {
       utils.phase13.article40.list.invalidate();
@@ -95,7 +95,7 @@ export default function Phase13Article40() {
           <Select value={sector} onValueChange={setSector}>
             <SelectTrigger className="w-48"><SelectValue placeholder="All Sectors" /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All Sectors</SelectItem>
+              <SelectItem value="all">All Sectors</SelectItem>
               <SelectItem value="banking">Banking</SelectItem>
               <SelectItem value="telecom">Telecom</SelectItem>
               <SelectItem value="healthcare">Healthcare</SelectItem>

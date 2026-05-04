@@ -117,27 +117,27 @@ export default function DpcoApply() {
     return (
       <div className="min-h-screen bg-slate-950 flex items-center justify-center p-6">
         <div className="max-w-lg w-full">
-          <div className="bg-slate-900 border border-slate-700 rounded-xl p-8 text-center">
+          <div className="bg-background border border-border rounded-xl p-8 text-center">
             <div className="w-16 h-16 bg-emerald-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
               <CheckCircle className="w-8 h-8 text-emerald-400" />
             </div>
-            <h2 className="text-xl font-semibold text-white mb-2">Application Submitted</h2>
-            <p className="text-slate-400 text-sm mb-6">
-              Your DPCO accreditation application has been received by the NDPC. You will be contacted at <span className="text-white">{email}</span> within 30 working days.
+            <h2 className="text-xl font-semibold text-foreground mb-2">Application Submitted</h2>
+            <p className="text-muted-foreground text-sm mb-6">
+              Your DPCO accreditation application has been received by the NDPC. You will be contacted at <span className="text-foreground">{email}</span> within 30 working days.
             </p>
-            <div className="bg-slate-800 rounded-lg p-4 mb-6">
+            <div className="bg-card rounded-lg p-4 mb-6">
               <p className="text-xs text-slate-500 mb-1">Reference Token</p>
               <p className="text-lg font-mono font-bold text-emerald-400">{referenceToken}</p>
               <p className="text-xs text-slate-500 mt-1">Keep this token to track your application status</p>
             </div>
             <div className="space-y-2">
               <Link href="/accreditation/status">
-                <Button className="w-full bg-emerald-600 hover:bg-emerald-700 text-white">
+                <Button className="w-full bg-emerald-600 hover:bg-emerald-700 text-foreground">
                   Track Application Status
                 </Button>
               </Link>
               <Link href="/">
-                <Button variant="ghost" className="w-full text-slate-400 hover:text-white">
+                <Button variant="ghost" className="w-full text-muted-foreground hover:text-foreground">
                   Return to Home
                 </Button>
               </Link>
@@ -149,20 +149,20 @@ export default function DpcoApply() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white">
+    <div className="min-h-screen bg-slate-950 text-foreground">
       {/* Header */}
-      <div className="border-b border-slate-800 bg-slate-900/50">
+      <div className="border-b border-border bg-background/50">
         <div className="max-w-4xl mx-auto px-6 py-4 flex items-center gap-4">
           <Link href="/">
-            <Button variant="ghost" size="sm" className="text-slate-400 hover:text-white gap-1">
+            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground gap-1">
               <ArrowLeft className="w-4 h-4" /> Back
             </Button>
           </Link>
           <div className="flex items-center gap-2">
             <ShieldCheck className="w-5 h-5 text-emerald-400" />
-            <span className="font-semibold text-white">DPCO Accreditation Application</span>
+            <span className="font-semibold text-foreground">DPCO Accreditation Application</span>
           </div>
-          <Badge variant="outline" className="ml-auto border-slate-600 text-slate-400 text-xs">
+          <Badge variant="outline" className="ml-auto border-border text-muted-foreground text-xs">
             NDPA 2023 §33
           </Badge>
         </div>
@@ -180,11 +180,11 @@ export default function DpcoApply() {
                 <div className="flex flex-col items-center gap-1">
                   <div className={`w-9 h-9 rounded-full flex items-center justify-center border-2 transition-all ${
                     isDone ? "bg-emerald-500 border-emerald-500" :
-                    isActive ? "bg-slate-800 border-emerald-400" :
-                    "bg-slate-900 border-slate-700"
+                    isActive ? "bg-card border-emerald-400" :
+                    "bg-background border-border"
                   }`}>
                     {isDone
-                      ? <CheckCircle className="w-4 h-4 text-white" />
+                      ? <CheckCircle className="w-4 h-4 text-foreground" />
                       : <Icon className={`w-4 h-4 ${isActive ? "text-emerald-400" : "text-slate-500"}`} />
                     }
                   </div>
@@ -193,7 +193,7 @@ export default function DpcoApply() {
                   </span>
                 </div>
                 {idx < STEPS.length - 1 && (
-                  <div className={`flex-1 h-0.5 mx-2 mt-[-14px] ${isDone ? "bg-emerald-500" : "bg-slate-700"}`} />
+                  <div className={`flex-1 h-0.5 mx-2 mt-[-14px] ${isDone ? "bg-emerald-500" : "bg-muted"}`} />
                 )}
               </div>
             );
@@ -204,62 +204,62 @@ export default function DpcoApply() {
         {step === 1 && (
           <div className="space-y-6">
             <div>
-              <h2 className="text-lg font-semibold text-white mb-1">Entity Details</h2>
-              <p className="text-sm text-slate-400">Provide the legal details of your organisation applying for DPCO accreditation.</p>
+              <h2 className="text-lg font-semibold text-foreground mb-1">Entity Details</h2>
+              <p className="text-sm text-muted-foreground">Provide the legal details of your organisation applying for DPCO accreditation.</p>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="col-span-2">
-                <Label className="text-slate-300 text-sm mb-1.5 block">Organisation Name <span className="text-red-400">*</span></Label>
+                <Label className="text-muted-foreground text-sm mb-1.5 block">Organisation Name <span className="text-red-400">*</span></Label>
                 <Input value={orgName} onChange={e => setOrgName(e.target.value)}
                   placeholder="e.g. DataGuard Consulting Ltd"
-                  className="bg-slate-800 border-slate-600 text-white placeholder:text-slate-500" />
+                  className="bg-card border-border text-foreground placeholder:text-slate-500" />
               </div>
               <div>
-                <Label className="text-slate-300 text-sm mb-1.5 block">RC Number <span className="text-red-400">*</span></Label>
+                <Label className="text-muted-foreground text-sm mb-1.5 block">RC Number <span className="text-red-400">*</span></Label>
                 <Input value={rcNumber} onChange={e => setRcNumber(e.target.value)}
                   placeholder="e.g. RC1234567"
-                  className="bg-slate-800 border-slate-600 text-white placeholder:text-slate-500" />
+                  className="bg-card border-border text-foreground placeholder:text-slate-500" />
               </div>
               <div>
-                <Label className="text-slate-300 text-sm mb-1.5 block">CAC Number</Label>
+                <Label className="text-muted-foreground text-sm mb-1.5 block">CAC Number</Label>
                 <Input value={cacNumber} onChange={e => setCacNumber(e.target.value)}
                   placeholder="Optional"
-                  className="bg-slate-800 border-slate-600 text-white placeholder:text-slate-500" />
+                  className="bg-card border-border text-foreground placeholder:text-slate-500" />
               </div>
               <div>
-                <Label className="text-slate-300 text-sm mb-1.5 block">Tax ID (TIN)</Label>
+                <Label className="text-muted-foreground text-sm mb-1.5 block">Tax ID (TIN)</Label>
                 <Input value={taxId} onChange={e => setTaxId(e.target.value)}
                   placeholder="Optional"
-                  className="bg-slate-800 border-slate-600 text-white placeholder:text-slate-500" />
+                  className="bg-card border-border text-foreground placeholder:text-slate-500" />
               </div>
               <div>
-                <Label className="text-slate-300 text-sm mb-1.5 block">Website</Label>
+                <Label className="text-muted-foreground text-sm mb-1.5 block">Website</Label>
                 <Input value={website} onChange={e => setWebsite(e.target.value)}
                   placeholder="https://example.com"
-                  className="bg-slate-800 border-slate-600 text-white placeholder:text-slate-500" />
+                  className="bg-card border-border text-foreground placeholder:text-slate-500" />
               </div>
               <div>
-                <Label className="text-slate-300 text-sm mb-1.5 block">Contact Email <span className="text-red-400">*</span></Label>
+                <Label className="text-muted-foreground text-sm mb-1.5 block">Contact Email <span className="text-red-400">*</span></Label>
                 <Input value={email} onChange={e => setEmail(e.target.value)}
                   type="email" placeholder="accreditation@example.com"
-                  className="bg-slate-800 border-slate-600 text-white placeholder:text-slate-500" />
+                  className="bg-card border-border text-foreground placeholder:text-slate-500" />
               </div>
               <div>
-                <Label className="text-slate-300 text-sm mb-1.5 block">Phone</Label>
+                <Label className="text-muted-foreground text-sm mb-1.5 block">Phone</Label>
                 <Input value={phone} onChange={e => setPhone(e.target.value)}
                   placeholder="+234 800 000 0000"
-                  className="bg-slate-800 border-slate-600 text-white placeholder:text-slate-500" />
+                  className="bg-card border-border text-foreground placeholder:text-slate-500" />
               </div>
               <div className="col-span-2">
-                <Label className="text-slate-300 text-sm mb-1.5 block">Registered Address <span className="text-red-400">*</span></Label>
+                <Label className="text-muted-foreground text-sm mb-1.5 block">Registered Address <span className="text-red-400">*</span></Label>
                 <Textarea value={address} onChange={e => setAddress(e.target.value)}
                   placeholder="Full registered address including state and LGA"
-                  className="bg-slate-800 border-slate-600 text-white placeholder:text-slate-500 resize-none" rows={2} />
+                  className="bg-card border-border text-foreground placeholder:text-slate-500 resize-none" rows={2} />
               </div>
             </div>
 
             <div>
-              <Label className="text-slate-300 text-sm mb-2 block">Sector Specialisations <span className="text-red-400">*</span></Label>
+              <Label className="text-muted-foreground text-sm mb-2 block">Sector Specialisations <span className="text-red-400">*</span></Label>
               <p className="text-xs text-slate-500 mb-3">Select all sectors your organisation has expertise in auditing</p>
               <div className="flex flex-wrap gap-2">
                 {SECTORS.map(s => (
@@ -267,7 +267,7 @@ export default function DpcoApply() {
                     className={`px-3 py-1.5 rounded-full text-xs border transition-all ${
                       selectedSectors.includes(s)
                         ? "bg-emerald-500/20 border-emerald-500 text-emerald-300"
-                        : "bg-slate-800 border-slate-600 text-slate-400 hover:border-slate-500"
+                        : "bg-card border-border text-muted-foreground hover:border-slate-500"
                     }`}>
                     {s}
                   </button>
@@ -281,14 +281,14 @@ export default function DpcoApply() {
         {step === 2 && (
           <div className="space-y-6">
             <div>
-              <h2 className="text-lg font-semibold text-white mb-1">Lead Auditors</h2>
-              <p className="text-sm text-slate-400">Provide details of at least two principals holding recognised data protection certifications.</p>
+              <h2 className="text-lg font-semibold text-foreground mb-1">Lead Auditors</h2>
+              <p className="text-sm text-muted-foreground">Provide details of at least two principals holding recognised data protection certifications.</p>
             </div>
             <div className="space-y-4">
               {auditors.map((auditor, i) => (
-                <div key={i} className="bg-slate-800/50 border border-slate-700 rounded-lg p-4 space-y-3">
+                <div key={i} className="bg-card/50 border border-border rounded-lg p-4 space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-slate-300">Auditor {i + 1}</span>
+                    <span className="text-sm font-medium text-muted-foreground">Auditor {i + 1}</span>
                     {auditors.length > 1 && (
                       <Button variant="ghost" size="sm" onClick={() => removeAuditor(i)}
                         className="text-red-400 hover:text-red-300 hover:bg-red-500/10 h-7 px-2">
@@ -298,27 +298,27 @@ export default function DpcoApply() {
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <Label className="text-slate-400 text-xs mb-1 block">Full Name <span className="text-red-400">*</span></Label>
+                      <Label className="text-muted-foreground text-xs mb-1 block">Full Name <span className="text-red-400">*</span></Label>
                       <Input value={auditor.name} onChange={e => updateAuditor(i, "name", e.target.value)}
                         placeholder="Dr. Amina Okonkwo"
-                        className="bg-slate-900 border-slate-600 text-white placeholder:text-slate-500 h-8 text-sm" />
+                        className="bg-background border-border text-foreground placeholder:text-slate-500 h-8 text-sm" />
                     </div>
                     <div>
-                      <Label className="text-slate-400 text-xs mb-1 block">Email <span className="text-red-400">*</span></Label>
+                      <Label className="text-muted-foreground text-xs mb-1 block">Email <span className="text-red-400">*</span></Label>
                       <Input value={auditor.email} onChange={e => updateAuditor(i, "email", e.target.value)}
                         type="email" placeholder="auditor@example.com"
-                        className="bg-slate-900 border-slate-600 text-white placeholder:text-slate-500 h-8 text-sm" />
+                        className="bg-background border-border text-foreground placeholder:text-slate-500 h-8 text-sm" />
                     </div>
                   </div>
                   <div>
-                    <Label className="text-slate-400 text-xs mb-2 block">Certifications <span className="text-red-400">*</span></Label>
+                    <Label className="text-muted-foreground text-xs mb-2 block">Certifications <span className="text-red-400">*</span></Label>
                     <div className="flex flex-wrap gap-2">
                       {CERTIFICATIONS.map(cert => (
                         <button key={cert} onClick={() => toggleCert(i, cert)}
                           className={`px-2.5 py-1 rounded text-xs border transition-all ${
                             auditor.certifications.includes(cert)
                               ? "bg-blue-500/20 border-blue-500 text-blue-300"
-                              : "bg-slate-900 border-slate-600 text-slate-400 hover:border-slate-500"
+                              : "bg-background border-border text-muted-foreground hover:border-slate-500"
                           }`}>
                           {cert}
                         </button>
@@ -328,7 +328,7 @@ export default function DpcoApply() {
                 </div>
               ))}
               <Button variant="outline" onClick={addAuditor}
-                className="border-slate-600 text-slate-300 hover:bg-slate-800 gap-2 w-full">
+                className="border-border text-muted-foreground hover:bg-card gap-2 w-full">
                 <Plus className="w-4 h-4" /> Add Another Auditor
               </Button>
             </div>
@@ -345,8 +345,8 @@ export default function DpcoApply() {
         {step === 3 && (
           <div className="space-y-6">
             <div>
-              <h2 className="text-lg font-semibold text-white mb-1">Supporting Documents</h2>
-              <p className="text-sm text-slate-400">Upload your documents to a file hosting service and paste the public URL below. Accepted formats: PDF.</p>
+              <h2 className="text-lg font-semibold text-foreground mb-1">Supporting Documents</h2>
+              <p className="text-sm text-muted-foreground">Upload your documents to a file hosting service and paste the public URL below. Accepted formats: PDF.</p>
             </div>
             <div className="space-y-4">
               {[
@@ -355,10 +355,10 @@ export default function DpcoApply() {
                 { label: "Professional Indemnity Insurance", sublabel: "Current certificate with minimum ₦50M cover", value: indemnityInsuranceUrl, setter: setIndemnityInsuranceUrl, required: true },
                 { label: "Audit Methodology Document", sublabel: "Demonstrating competence across all 15 NDPA control domains", value: auditMethodologyUrl, setter: setAuditMethodologyUrl, required: true },
               ].map(doc => (
-                <div key={doc.label} className="bg-slate-800/50 border border-slate-700 rounded-lg p-4">
+                <div key={doc.label} className="bg-card/50 border border-border rounded-lg p-4">
                   <div className="flex items-start justify-between mb-2">
                     <div>
-                      <p className="text-sm font-medium text-white">{doc.label} {doc.required && <span className="text-red-400">*</span>}</p>
+                      <p className="text-sm font-medium text-foreground">{doc.label} {doc.required && <span className="text-red-400">*</span>}</p>
                       <p className="text-xs text-slate-500">{doc.sublabel}</p>
                     </div>
                     {doc.value && (
@@ -371,7 +371,7 @@ export default function DpcoApply() {
                   </div>
                   <Input value={doc.value} onChange={e => doc.setter(e.target.value)}
                     placeholder="https://drive.google.com/... or https://dropbox.com/..."
-                    className="bg-slate-900 border-slate-600 text-white placeholder:text-slate-500 text-sm" />
+                    className="bg-background border-border text-foreground placeholder:text-slate-500 text-sm" />
                 </div>
               ))}
             </div>
@@ -388,55 +388,55 @@ export default function DpcoApply() {
         {step === 4 && (
           <div className="space-y-6">
             <div>
-              <h2 className="text-lg font-semibold text-white mb-1">Declaration & Application Fee</h2>
-              <p className="text-sm text-slate-400">Review the declarations and confirm the application fee before submitting.</p>
+              <h2 className="text-lg font-semibold text-foreground mb-1">Declaration & Application Fee</h2>
+              <p className="text-sm text-muted-foreground">Review the declarations and confirm the application fee before submitting.</p>
             </div>
 
             {/* Summary */}
-            <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-4 space-y-2">
-              <h3 className="text-sm font-medium text-slate-300 mb-3">Application Summary</h3>
+            <div className="bg-card/50 border border-border rounded-lg p-4 space-y-2">
+              <h3 className="text-sm font-medium text-muted-foreground mb-3">Application Summary</h3>
               <div className="grid grid-cols-2 gap-x-6 gap-y-1.5 text-sm">
-                <span className="text-slate-500">Organisation</span><span className="text-white">{orgName}</span>
-                <span className="text-slate-500">RC Number</span><span className="text-white">{rcNumber}</span>
-                <span className="text-slate-500">Email</span><span className="text-white">{email}</span>
-                <span className="text-slate-500">Lead Auditors</span><span className="text-white">{auditors.length} named</span>
-                <span className="text-slate-500">Sectors</span><span className="text-white">{selectedSectors.length} selected</span>
-                <span className="text-slate-500">Application Type</span><span className="text-white">New Accreditation</span>
+                <span className="text-slate-500">Organisation</span><span className="text-foreground">{orgName}</span>
+                <span className="text-slate-500">RC Number</span><span className="text-foreground">{rcNumber}</span>
+                <span className="text-slate-500">Email</span><span className="text-foreground">{email}</span>
+                <span className="text-slate-500">Lead Auditors</span><span className="text-foreground">{auditors.length} named</span>
+                <span className="text-slate-500">Sectors</span><span className="text-foreground">{selectedSectors.length} selected</span>
+                <span className="text-slate-500">Application Type</span><span className="text-foreground">New Accreditation</span>
               </div>
             </div>
 
             {/* Fee */}
-            <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-4">
+            <div className="bg-card/50 border border-border rounded-lg p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-white">Application Fee</p>
+                  <p className="text-sm font-medium text-foreground">Application Fee</p>
                   <p className="text-xs text-slate-500">Non-refundable NDPC processing fee (NDPA §33)</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-xl font-bold text-white">₦150,000</p>
+                  <p className="text-xl font-bold text-foreground">₦150,000</p>
                   <p className="text-xs text-slate-500">Payable on submission</p>
                 </div>
               </div>
-              <div className="mt-3 pt-3 border-t border-slate-700">
-                <p className="text-xs text-slate-400">Payment will be processed via the NDPC payment portal after submission. Your application will be queued for review upon payment confirmation.</p>
+              <div className="mt-3 pt-3 border-t border-border">
+                <p className="text-xs text-muted-foreground">Payment will be processed via the NDPC payment portal after submission. Your application will be queued for review upon payment confirmation.</p>
               </div>
             </div>
 
             {/* Declarations */}
             <div className="space-y-3">
-              <div className="flex items-start gap-3 bg-slate-800/50 border border-slate-700 rounded-lg p-4">
+              <div className="flex items-start gap-3 bg-card/50 border border-border rounded-lg p-4">
                 <Checkbox id="conflict" checked={conflictDeclaration}
                   onCheckedChange={(v) => setConflictDeclaration(v === true)}
                   className="mt-0.5 border-slate-500" />
-                <label htmlFor="conflict" className="text-sm text-slate-300 cursor-pointer leading-relaxed">
+                <label htmlFor="conflict" className="text-sm text-muted-foreground cursor-pointer leading-relaxed">
                   I declare that this organisation has no material conflict of interest with any prospective audit client, and that all named lead auditors are independent of any organisation they may audit under this accreditation.
                 </label>
               </div>
-              <div className="flex items-start gap-3 bg-slate-800/50 border border-slate-700 rounded-lg p-4">
+              <div className="flex items-start gap-3 bg-card/50 border border-border rounded-lg p-4">
                 <Checkbox id="accuracy" checked={accuracyDeclaration}
                   onCheckedChange={(v) => setAccuracyDeclaration(v === true)}
                   className="mt-0.5 border-slate-500" />
-                <label htmlFor="accuracy" className="text-sm text-slate-300 cursor-pointer leading-relaxed">
+                <label htmlFor="accuracy" className="text-sm text-muted-foreground cursor-pointer leading-relaxed">
                   I declare that all information provided in this application is true, accurate, and complete to the best of my knowledge. I understand that providing false information is grounds for rejection and may constitute an offence under applicable law.
                 </label>
               </div>
@@ -445,9 +445,9 @@ export default function DpcoApply() {
         )}
 
         {/* Navigation */}
-        <div className="flex items-center justify-between mt-8 pt-6 border-t border-slate-800">
+        <div className="flex items-center justify-between mt-8 pt-6 border-t border-border">
           <Button variant="ghost" onClick={() => setStep(s => s - 1)} disabled={step === 1}
-            className="text-slate-400 hover:text-white gap-2">
+            className="text-muted-foreground hover:text-foreground gap-2">
             <ChevronLeft className="w-4 h-4" /> Previous
           </Button>
           <span className="text-xs text-slate-500">Step {step} of {STEPS.length}</span>
@@ -457,12 +457,12 @@ export default function DpcoApply() {
                 (step === 1 && !canProceedStep1) ||
                 (step === 2 && !canProceedStep2)
               }
-              className="bg-emerald-600 hover:bg-emerald-700 text-white gap-2">
+              className="bg-emerald-600 hover:bg-emerald-700 text-foreground gap-2">
               Next <ChevronRight className="w-4 h-4" />
             </Button>
           ) : (
             <Button onClick={handleSubmit} disabled={!canSubmit || submitMutation.isPending}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white gap-2 min-w-32">
+              className="bg-emerald-600 hover:bg-emerald-700 text-foreground gap-2 min-w-32">
               {submitMutation.isPending ? "Submitting..." : "Submit Application"}
             </Button>
           )}

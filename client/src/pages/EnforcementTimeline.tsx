@@ -25,7 +25,7 @@ const ACTION_ICONS: Record<string, any> = {
 };
 
 export default function EnforcementTimeline() {
-  const [sector, setSector] = useState<string>("");
+  const [sector, setSector] = useState<string>("all");
   const [limit, setLimit] = useState(50);
 
   const { data: timeline = [] } = trpc.enforcementTimeline.timeline.useQuery({ limit });
@@ -33,7 +33,7 @@ export default function EnforcementTimeline() {
   const stats = { total: (timeline as any[]).length, warnings: (timeline as any[]).filter((a:any) => a.action_type === 'warning').length, fines: (timeline as any[]).filter((a:any) => a.action_type === 'fine').length, suspensions: (timeline as any[]).filter((a:any) => a.action_type === 'suspension').length, cleared: (timeline as any[]).filter((a:any) => a.action_type === 'clearance').length, total_fine_amount: (timeline as any[]).reduce((s:number, a:any) => s + Number(a.fine_amount ?? 0), 0) };
 
   const statCards = [
-    { label: "Total Actions", value: String(stats?.total ?? 0), color: "text-white" },
+    { label: "Total Actions", value: String(stats?.total ?? 0), color: "text-foreground" },
     { label: "Warnings", value: String(stats?.warnings ?? 0), color: "text-yellow-400" },
     { label: "Fines Issued", value: String(stats?.fines ?? 0), color: "text-red-400" },
     { label: "Suspensions", value: String(stats?.suspensions ?? 0), color: "text-orange-400" },
@@ -46,15 +46,15 @@ export default function EnforcementTimeline() {
       <div className="p-6 space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-white flex items-center gap-2"><Gavel className="w-6 h-6 text-red-400" /> Enforcement Timeline</h1>
-            <p className="text-slate-400 text-sm mt-1">Chronological record of all regulatory enforcement actions across sectors</p>
+            <h1 className="text-2xl font-bold text-foreground flex items-center gap-2"><Gavel className="w-6 h-6 text-red-400" /> Enforcement Timeline</h1>
+            <p className="text-muted-foreground text-sm mt-1">Chronological record of all regulatory enforcement actions across sectors</p>
           </div>
           <div className="flex items-center gap-3">
-            <Filter className="w-4 h-4 text-slate-400" />
+            <Filter className="w-4 h-4 text-muted-foreground" />
             <Select value={sector} onValueChange={setSector}>
-              <SelectTrigger className="w-40 bg-slate-700 border-slate-600 text-white"><SelectValue placeholder="All Sectors" /></SelectTrigger>
-              <SelectContent className="bg-slate-700 border-slate-600">
-                <SelectItem value="">All Sectors</SelectItem>
+              <SelectTrigger className="w-40 bg-muted border-border text-foreground"><SelectValue placeholder="All Sectors" /></SelectTrigger>
+              <SelectContent className="bg-muted border-border">
+                <SelectItem value="all">All Sectors</SelectItem>
                 {Object.keys(SECTOR_COLORS).map(s => <SelectItem key={s} value={s}>{s.toUpperCase()}</SelectItem>)}
               </SelectContent>
             </Select>
@@ -63,54 +63,54 @@ export default function EnforcementTimeline() {
 
         <div className="grid grid-cols-3 md:grid-cols-6 gap-3">
           {statCards.map(s => (
-            <Card key={s.label} className="bg-slate-800 border-slate-700">
+            <Card key={s.label} className="bg-card border-border">
               <CardContent className="p-3 text-center">
                 <p className={`text-xl font-bold ${s.color}`}>{s.value}</p>
-                <p className="text-xs text-slate-400 mt-1">{s.label}</p>
+                <p className="text-xs text-muted-foreground mt-1">{s.label}</p>
               </CardContent>
             </Card>
           ))}
         </div>
 
-        <Card className="bg-slate-800 border-slate-700">
+        <Card className="bg-card border-border">
           <CardHeader>
             <div className="flex items-center justify-between">
-              <CardTitle className="text-white flex items-center gap-2"><TrendingUp className="w-5 h-5 text-red-400" /> Enforcement Actions</CardTitle>
-              <span className="text-xs text-slate-400">{(timeline as any[]).length} records</span>
+              <CardTitle className="text-foreground flex items-center gap-2"><TrendingUp className="w-5 h-5 text-red-400" /> Enforcement Actions</CardTitle>
+              <span className="text-xs text-muted-foreground">{(timeline as any[]).length} records</span>
             </div>
           </CardHeader>
           <CardContent>
             <div className="relative">
-              <div className="absolute left-6 top-0 bottom-0 w-px bg-slate-700" />
+              <div className="absolute left-6 top-0 bottom-0 w-px bg-muted" />
               <div className="space-y-4 pl-14">
                 {(timeline as any[]).length === 0 ? (
-                  <div className="text-center py-8 text-slate-400">No enforcement actions found</div>
+                  <div className="text-center py-8 text-muted-foreground">No enforcement actions found</div>
                 ) : (timeline as any[]).map((action: any, i: number) => {
                   const Icon = ACTION_ICONS[String(action.action_type ?? "warning")] ?? AlertCircle;
                   const sectorColor = SECTOR_COLORS[String(action.sector ?? "banking")] ?? SECTOR_COLORS.banking;
                   return (
                     <div key={i} className="relative">
-                      <div className="absolute -left-8 top-1 w-4 h-4 rounded-full bg-slate-700 border-2 border-slate-500 flex items-center justify-center">
+                      <div className="absolute -left-8 top-1 w-4 h-4 rounded-full bg-muted border-2 border-slate-500 flex items-center justify-center">
                         <div className="w-2 h-2 rounded-full bg-red-400" />
                       </div>
-                      <div className="bg-slate-700/50 rounded-lg p-4 border border-slate-600 hover:border-slate-500 transition-colors">
+                      <div className="bg-muted/50 rounded-lg p-4 border border-border hover:border-slate-500 transition-colors">
                         <div className="flex items-start justify-between">
                           <div className="flex items-start gap-3">
                             <Icon className="w-5 h-5 text-red-400 mt-0.5" />
                             <div>
                               <div className="flex items-center gap-2 mb-1">
-                                <span className="text-white font-medium">{action.org_name ?? "Unknown Organization"}</span>
+                                <span className="text-foreground font-medium">{action.org_name ?? "Unknown Organization"}</span>
                                 <Badge className={`text-xs border ${sectorColor}`}>{String(action.sector ?? "").toUpperCase()}</Badge>
                               </div>
-                              <p className="text-slate-300 text-sm">{action.description ?? action.violation_type ?? "Enforcement action"}</p>
+                              <p className="text-muted-foreground text-sm">{action.description ?? action.violation_type ?? "Enforcement action"}</p>
                               {action.fine_amount && Number(action.fine_amount) > 0 && (
                                 <p className="text-red-400 text-sm font-medium mt-1">Fine: ₦{Number(action.fine_amount).toLocaleString()}</p>
                               )}
                             </div>
                           </div>
                           <div className="text-right">
-                            <Badge variant="outline" className="text-xs border-slate-600 text-slate-300 mb-1">{String(action.action_type ?? "warning").replace(/_/g, " ").toUpperCase()}</Badge>
-                            <p className="text-xs text-slate-400">{action.created_at ? new Date(String(action.created_at)).toLocaleDateString("en-NG") : "—"}</p>
+                            <Badge variant="outline" className="text-xs border-border text-muted-foreground mb-1">{String(action.action_type ?? "warning").replace(/_/g, " ").toUpperCase()}</Badge>
+                            <p className="text-xs text-muted-foreground">{action.created_at ? new Date(String(action.created_at)).toLocaleDateString("en-NG") : "—"}</p>
                           </div>
                         </div>
                       </div>
@@ -121,7 +121,7 @@ export default function EnforcementTimeline() {
             </div>
             {(timeline as any[]).length >= limit && (
               <div className="text-center mt-4">
-                <Button variant="outline" className="border-slate-600 text-slate-300" onClick={() => setLimit(l => l + 50)}>Load More</Button>
+                <Button variant="outline" className="border-border text-muted-foreground" onClick={() => setLimit(l => l + 50)}>Load More</Button>
               </div>
             )}
           </CardContent>

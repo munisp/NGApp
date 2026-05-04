@@ -18,7 +18,7 @@ const engineColors: Record<string, string> = {
 
 const statusColors: Record<string, string> = {
   running: "bg-emerald-500/20 text-emerald-400",
-  stopped: "bg-slate-500/20 text-slate-400",
+  stopped: "bg-slate-500/20 text-muted-foreground",
   error: "bg-red-500/20 text-red-400",
   paused: "bg-yellow-500/20 text-yellow-400",
   success: "bg-emerald-500/20 text-emerald-400",
@@ -47,59 +47,59 @@ export default function DataPipeline() {
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">Data Pipeline Orchestration</h1>
-          <p className="text-slate-400 text-sm mt-1">Apache NiFi · dbt · Apache Airflow — NDPA-compliant data flows</p>
+          <h1 className="text-2xl font-bold text-foreground">Data Pipeline Orchestration</h1>
+          <p className="text-muted-foreground text-sm mt-1">Apache NiFi · dbt · Apache Airflow — NDPA-compliant data flows</p>
         </div>
-        <Button onClick={() => refetchFlows()} variant="outline" size="sm" className="border-slate-600 text-slate-300">
+        <Button onClick={() => refetchFlows()} variant="outline" size="sm" className="border-border text-muted-foreground">
           <RefreshCw className="w-4 h-4 mr-2" /> Refresh
         </Button>
       </div>
 
       {/* Stats Row */}
       <div className="grid grid-cols-4 gap-4">
-        <Card className="bg-slate-800/50 border-slate-700">
+        <Card className="bg-card/50 border-border">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
               <Activity className="w-8 h-8 text-blue-400" />
               <div>
-                <p className="text-slate-400 text-xs">Active Flows</p>
-                <p className="text-2xl font-bold text-white">{stats?.flows?.running ?? 0}</p>
+                <p className="text-muted-foreground text-xs">Active Flows</p>
+                <p className="text-2xl font-bold text-foreground">{stats?.flows?.running ?? 0}</p>
                 <p className="text-slate-500 text-xs">of {stats?.flows?.total ?? 0} total</p>
               </div>
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-slate-800/50 border-slate-700">
+        <Card className="bg-card/50 border-border">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
               <Database className="w-8 h-8 text-orange-400" />
               <div>
-                <p className="text-slate-400 text-xs">dbt Models</p>
-                <p className="text-2xl font-bold text-white">{stats?.dbt?.success ?? 0}</p>
+                <p className="text-muted-foreground text-xs">dbt Models</p>
+                <p className="text-2xl font-bold text-foreground">{stats?.dbt?.success ?? 0}</p>
                 <p className="text-slate-500 text-xs">passing of {stats?.dbt?.total ?? 0}</p>
               </div>
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-slate-800/50 border-slate-700">
+        <Card className="bg-card/50 border-border">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
               <GitBranch className="w-8 h-8 text-green-400" />
               <div>
-                <p className="text-slate-400 text-xs">Airflow DAGs</p>
-                <p className="text-2xl font-bold text-white">{stats?.airflow?.active ?? 0}</p>
+                <p className="text-muted-foreground text-xs">Airflow DAGs</p>
+                <p className="text-2xl font-bold text-foreground">{stats?.airflow?.active ?? 0}</p>
                 <p className="text-slate-500 text-xs">active of {stats?.airflow?.total ?? 0}</p>
               </div>
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-slate-800/50 border-slate-700">
+        <Card className="bg-card/50 border-border">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
               <TrendingUp className="w-8 h-8 text-purple-400" />
               <div>
-                <p className="text-slate-400 text-xs">Records Processed</p>
-                <p className="text-2xl font-bold text-white">
+                <p className="text-muted-foreground text-xs">Records Processed</p>
+                <p className="text-2xl font-bold text-foreground">
                   {stats?.flows?.total_records ? (parseInt(stats.flows.total_records) / 1000).toFixed(0) + "K" : "0"}
                 </p>
                 <p className="text-slate-500 text-xs">total across all flows</p>
@@ -118,67 +118,67 @@ export default function DataPipeline() {
                 <span className="w-3 h-3 rounded-full bg-blue-400"></span>
                 <span className="font-semibold text-blue-300">Apache NiFi</span>
               </div>
-              <p className="text-slate-400">Real-time data ingestion from NIMC, CBN, NCC, NHIS APIs. Handles 500K+ records/hour with built-in provenance tracking for NDPA audit trails. Ensures data lineage from source to compliance database.</p>
+              <p className="text-muted-foreground">Real-time data ingestion from NIMC, CBN, NCC, NHIS APIs. Handles 500K+ records/hour with built-in provenance tracking for NDPA audit trails. Ensures data lineage from source to compliance database.</p>
             </div>
             <div>
               <div className="flex items-center gap-2 mb-2">
                 <span className="w-3 h-3 rounded-full bg-orange-400"></span>
                 <span className="font-semibold text-orange-300">dbt (data build tool)</span>
               </div>
-              <p className="text-slate-400">Transforms raw compliance events into analytics-ready marts. Compliance score aggregation, DSAR SLA metrics, breach analytics, and vendor risk scoring — all with version-controlled SQL and automated testing.</p>
+              <p className="text-muted-foreground">Transforms raw compliance events into analytics-ready marts. Compliance score aggregation, DSAR SLA metrics, breach analytics, and vendor risk scoring — all with version-controlled SQL and automated testing.</p>
             </div>
             <div>
               <div className="flex items-center gap-2 mb-2">
                 <span className="w-3 h-3 rounded-full bg-green-400"></span>
                 <span className="font-semibold text-green-300">Apache Airflow</span>
               </div>
-              <p className="text-slate-400">Orchestrates complex multi-step workflows: daily compliance refreshes, weekly NDPC report generation, monthly penalty reconciliation with CBN, and ML model retraining pipelines.</p>
+              <p className="text-muted-foreground">Orchestrates complex multi-step workflows: daily compliance refreshes, weekly NDPC report generation, monthly penalty reconciliation with CBN, and ML model retraining pipelines.</p>
             </div>
           </div>
         </CardContent>
       </Card>
 
       <Tabs defaultValue="nifi">
-        <TabsList className="bg-slate-800 border border-slate-700">
+        <TabsList className="bg-card border border-border">
           <TabsTrigger value="nifi" className="data-[state=active]:bg-blue-600">NiFi Flows</TabsTrigger>
           <TabsTrigger value="dbt" className="data-[state=active]:bg-orange-600">dbt Models</TabsTrigger>
           <TabsTrigger value="airflow" className="data-[state=active]:bg-green-700">Airflow DAGs</TabsTrigger>
         </TabsList>
 
         <TabsContent value="nifi">
-          <Card className="bg-slate-800/50 border-slate-700">
+          <Card className="bg-card/50 border-border">
             <CardHeader>
-              <CardTitle className="text-white text-base">Apache NiFi Data Flows</CardTitle>
+              <CardTitle className="text-foreground text-base">Apache NiFi Data Flows</CardTitle>
             </CardHeader>
             <CardContent>
               <Table>
                 <TableHeader>
-                  <TableRow className="border-slate-700">
-                    <TableHead className="text-slate-400">Flow Name</TableHead>
-                    <TableHead className="text-slate-400">Source → Target</TableHead>
-                    <TableHead className="text-slate-400">Records</TableHead>
-                    <TableHead className="text-slate-400">Errors</TableHead>
-                    <TableHead className="text-slate-400">Schedule</TableHead>
-                    <TableHead className="text-slate-400">Status</TableHead>
-                    <TableHead className="text-slate-400">Actions</TableHead>
+                  <TableRow className="border-border">
+                    <TableHead className="text-muted-foreground">Flow Name</TableHead>
+                    <TableHead className="text-muted-foreground">Source → Target</TableHead>
+                    <TableHead className="text-muted-foreground">Records</TableHead>
+                    <TableHead className="text-muted-foreground">Errors</TableHead>
+                    <TableHead className="text-muted-foreground">Schedule</TableHead>
+                    <TableHead className="text-muted-foreground">Status</TableHead>
+                    <TableHead className="text-muted-foreground">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {nifiFlows.map(flow => (
-                    <TableRow key={flow.id} className="border-slate-700">
-                      <TableCell className="text-white font-medium">{flow.flow_name}</TableCell>
-                      <TableCell className="text-slate-400 text-xs">
+                    <TableRow key={flow.id} className="border-border">
+                      <TableCell className="text-foreground font-medium">{flow.flow_name}</TableCell>
+                      <TableCell className="text-muted-foreground text-xs">
                         <span className="text-blue-400">{flow.source_system}</span>
                         <span className="mx-1">→</span>
                         <span className="text-green-400">{flow.target_system}</span>
                       </TableCell>
-                      <TableCell className="text-slate-300">{(flow.records_processed / 1000).toFixed(1)}K</TableCell>
+                      <TableCell className="text-muted-foreground">{(flow.records_processed / 1000).toFixed(1)}K</TableCell>
                       <TableCell>
                         <span className={flow.error_count > 0 ? "text-red-400" : "text-emerald-400"}>
                           {flow.error_count}
                         </span>
                       </TableCell>
-                      <TableCell className="text-slate-400 text-xs font-mono">{flow.schedule_expression}</TableCell>
+                      <TableCell className="text-muted-foreground text-xs font-mono">{flow.schedule_expression}</TableCell>
                       <TableCell>
                         <Badge className={statusColors[flow.status] ?? ""}>{flow.status}</Badge>
                       </TableCell>
@@ -203,32 +203,32 @@ export default function DataPipeline() {
         </TabsContent>
 
         <TabsContent value="dbt">
-          <Card className="bg-slate-800/50 border-slate-700">
+          <Card className="bg-card/50 border-border">
             <CardHeader>
-              <CardTitle className="text-white text-base">dbt Transformation Models</CardTitle>
+              <CardTitle className="text-foreground text-base">dbt Transformation Models</CardTitle>
             </CardHeader>
             <CardContent>
               <Table>
                 <TableHeader>
-                  <TableRow className="border-slate-700">
-                    <TableHead className="text-slate-400">Model Name</TableHead>
-                    <TableHead className="text-slate-400">Schema</TableHead>
-                    <TableHead className="text-slate-400">Materialisation</TableHead>
-                    <TableHead className="text-slate-400">Rows Affected</TableHead>
-                    <TableHead className="text-slate-400">Exec Time</TableHead>
-                    <TableHead className="text-slate-400">Last Run</TableHead>
-                    <TableHead className="text-slate-400">Status</TableHead>
+                  <TableRow className="border-border">
+                    <TableHead className="text-muted-foreground">Model Name</TableHead>
+                    <TableHead className="text-muted-foreground">Schema</TableHead>
+                    <TableHead className="text-muted-foreground">Materialisation</TableHead>
+                    <TableHead className="text-muted-foreground">Rows Affected</TableHead>
+                    <TableHead className="text-muted-foreground">Exec Time</TableHead>
+                    <TableHead className="text-muted-foreground">Last Run</TableHead>
+                    <TableHead className="text-muted-foreground">Status</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {dbtModels?.map(m => (
-                    <TableRow key={m.id} className="border-slate-700">
-                      <TableCell className="text-white font-mono text-sm">{m.model_name}</TableCell>
+                    <TableRow key={m.id} className="border-border">
+                      <TableCell className="text-foreground font-mono text-sm">{m.model_name}</TableCell>
                       <TableCell><Badge variant="outline" className="border-orange-500/40 text-orange-400">{m.schema}</Badge></TableCell>
-                      <TableCell className="text-slate-400 capitalize">{m.materialisation}</TableCell>
-                      <TableCell className="text-slate-300">{(m.rows_affected / 1000).toFixed(0)}K</TableCell>
-                      <TableCell className="text-slate-400">{(m.execution_time_ms / 1000).toFixed(1)}s</TableCell>
-                      <TableCell className="text-slate-400 text-xs">
+                      <TableCell className="text-muted-foreground capitalize">{m.materialisation}</TableCell>
+                      <TableCell className="text-muted-foreground">{(m.rows_affected / 1000).toFixed(0)}K</TableCell>
+                      <TableCell className="text-muted-foreground">{(m.execution_time_ms / 1000).toFixed(1)}s</TableCell>
+                      <TableCell className="text-muted-foreground text-xs">
                         {m.last_run_at ? new Date(m.last_run_at).toLocaleString() : "—"}
                       </TableCell>
                       <TableCell>
@@ -243,40 +243,40 @@ export default function DataPipeline() {
         </TabsContent>
 
         <TabsContent value="airflow">
-          <Card className="bg-slate-800/50 border-slate-700">
+          <Card className="bg-card/50 border-border">
             <CardHeader>
-              <CardTitle className="text-white text-base">Apache Airflow DAGs</CardTitle>
+              <CardTitle className="text-foreground text-base">Apache Airflow DAGs</CardTitle>
             </CardHeader>
             <CardContent>
               <Table>
                 <TableHeader>
-                  <TableRow className="border-slate-700">
-                    <TableHead className="text-slate-400">DAG Name</TableHead>
-                    <TableHead className="text-slate-400">Schedule</TableHead>
-                    <TableHead className="text-slate-400">Tasks</TableHead>
-                    <TableHead className="text-slate-400">Success / Fail</TableHead>
-                    <TableHead className="text-slate-400">Last Run</TableHead>
-                    <TableHead className="text-slate-400">Status</TableHead>
-                    <TableHead className="text-slate-400">Actions</TableHead>
+                  <TableRow className="border-border">
+                    <TableHead className="text-muted-foreground">DAG Name</TableHead>
+                    <TableHead className="text-muted-foreground">Schedule</TableHead>
+                    <TableHead className="text-muted-foreground">Tasks</TableHead>
+                    <TableHead className="text-muted-foreground">Success / Fail</TableHead>
+                    <TableHead className="text-muted-foreground">Last Run</TableHead>
+                    <TableHead className="text-muted-foreground">Status</TableHead>
+                    <TableHead className="text-muted-foreground">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {airflowDags?.map(dag => (
-                    <TableRow key={dag.id} className="border-slate-700">
+                    <TableRow key={dag.id} className="border-border">
                       <TableCell>
                         <div>
-                          <p className="text-white font-medium">{dag.dag_name}</p>
+                          <p className="text-foreground font-medium">{dag.dag_name}</p>
                           <p className="text-slate-500 text-xs">{dag.dag_id}</p>
                         </div>
                       </TableCell>
-                      <TableCell className="text-slate-400 font-mono text-xs">{dag.schedule}</TableCell>
-                      <TableCell className="text-slate-300">{dag.task_count}</TableCell>
+                      <TableCell className="text-muted-foreground font-mono text-xs">{dag.schedule}</TableCell>
+                      <TableCell className="text-muted-foreground">{dag.task_count}</TableCell>
                       <TableCell>
                         <span className="text-emerald-400">{dag.success_count}</span>
                         <span className="text-slate-500 mx-1">/</span>
                         <span className="text-red-400">{dag.failure_count}</span>
                       </TableCell>
-                      <TableCell className="text-slate-400 text-xs">
+                      <TableCell className="text-muted-foreground text-xs">
                         {dag.last_run_at ? new Date(dag.last_run_at).toLocaleString() : "—"}
                       </TableCell>
                       <TableCell>

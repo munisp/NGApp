@@ -106,8 +106,8 @@ export default function DataFlowVisualization() {
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">Cross-Border Data Flow Visualization</h1>
-          <p className="text-gray-400 text-sm mt-1">Real-time visualization of data transfer flows across jurisdictions</p>
+          <h1 className="text-2xl font-bold text-foreground">Cross-Border Data Flow Visualization</h1>
+          <p className="text-muted-foreground text-sm mt-1">Real-time visualization of data transfer flows across jurisdictions</p>
         </div>
         <div className="flex gap-2">
           <Dialog open={logOpen} onOpenChange={setLogOpen}>
@@ -161,17 +161,17 @@ export default function DataFlowVisualization() {
               </div>
             </DialogContent>
           </Dialog>
-          <Button variant="outline" className="border-gray-600" onClick={() => refetch()}><RefreshCw className="w-4 h-4 mr-2" /> Refresh</Button>
+          <Button variant="outline" className="border-border" onClick={() => refetch()}><RefreshCw className="w-4 h-4 mr-2" /> Refresh</Button>
         </div>
       </div>
       <div className="grid grid-cols-4 gap-4">
-        {[{ label: "Total Flows", value: stats.total, color: "text-white" }, { label: "Approved", value: stats.approved, color: "text-green-400" }, { label: "Blocked", value: stats.blocked, color: "text-red-400" }, { label: "Pending Review", value: stats.pending, color: "text-yellow-400" }].map(({ label, value, color }) => (
-          <div key={label} className="bg-gray-800 rounded-xl border border-gray-700 p-4"><div className="text-gray-400 text-sm">{label}</div><div className={`text-2xl font-bold ${color}`}>{value}</div></div>
+        {[{ label: "Total Flows", value: stats.total, color: "text-foreground" }, { label: "Approved", value: stats.approved, color: "text-green-400" }, { label: "Blocked", value: stats.blocked, color: "text-red-400" }, { label: "Pending Review", value: stats.pending, color: "text-yellow-400" }].map(({ label, value, color }) => (
+          <div key={label} className="bg-card rounded-xl border border-border p-4"><div className="text-muted-foreground text-sm">{label}</div><div className={`text-2xl font-bold ${color}`}>{value}</div></div>
         ))}
       </div>
       <div className="grid grid-cols-2 gap-6">
-        <div className="bg-gray-800 rounded-xl border border-gray-700 p-6">
-          <h2 className="text-white font-semibold mb-4 flex items-center gap-2"><Globe className="w-5 h-5 text-blue-400" /> Jurisdiction Flow Map</h2>
+        <div className="bg-card rounded-xl border border-border p-6">
+          <h2 className="text-foreground font-semibold mb-4 flex items-center gap-2"><Globe className="w-5 h-5 text-blue-400" /> Jurisdiction Flow Map</h2>
           {isLoading ? <div className="h-64 flex items-center justify-center text-gray-500">Loading flows...</div> : <ChordDiagram flows={flows} />}
           <div className="flex gap-3 mt-4 justify-center text-xs">
             <span className="flex items-center gap-1"><span className="w-3 h-0.5 bg-blue-500 inline-block" /> Approved</span>
@@ -179,39 +179,39 @@ export default function DataFlowVisualization() {
           </div>
         </div>
         <div className="space-y-4">
-          <div className="bg-gray-800 rounded-xl border border-gray-700 p-5">
-            <h2 className="text-white font-semibold mb-4 flex items-center gap-2"><Activity className="w-5 h-5 text-green-400" /> Top Transfer Routes</h2>
+          <div className="bg-card rounded-xl border border-border p-5">
+            <h2 className="text-foreground font-semibold mb-4 flex items-center gap-2"><Activity className="w-5 h-5 text-green-400" /> Top Transfer Routes</h2>
             <div className="space-y-2">
               {topRoutes.length === 0 ? <p className="text-gray-500 text-sm">No transfer data available</p> : topRoutes.map(([route, count]) => (
                 <div key={route} className="flex items-center justify-between">
-                  <span className="text-sm text-gray-300">{route}</span>
+                  <span className="text-sm text-muted-foreground">{route}</span>
                   <div className="flex items-center gap-2">
-                    <div className="w-24 h-1.5 bg-gray-700 rounded-full overflow-hidden">
+                    <div className="w-24 h-1.5 bg-muted rounded-full overflow-hidden">
                       <div className="h-full bg-blue-500 rounded-full" style={{ width: `${Math.min(100, (count / (topRoutes[0]?.[1] || 1)) * 100)}%` }} />
                     </div>
-                    <span className="text-xs text-gray-400 w-6 text-right">{count}</span>
+                    <span className="text-xs text-muted-foreground w-6 text-right">{count}</span>
                   </div>
                 </div>
               ))}
             </div>
           </div>
-          <div className="bg-gray-800 rounded-xl border border-gray-700 p-5">
-            <h2 className="text-white font-semibold mb-4 flex items-center gap-2"><AlertTriangle className="w-5 h-5 text-red-400" /> Recent Blocked Flows</h2>
+          <div className="bg-card rounded-xl border border-border p-5">
+            <h2 className="text-foreground font-semibold mb-4 flex items-center gap-2"><AlertTriangle className="w-5 h-5 text-red-400" /> Recent Blocked Flows</h2>
             <div className="space-y-2">
               {(transfers as any[]).filter((t: any) => t.status === "rejected").slice(0, 5).length === 0 ? (
                 <p className="text-gray-500 text-sm">No blocked flows</p>
               ) : (transfers as any[]).filter((t: any) => t.status === "rejected").slice(0, 5).map((t: any) => (
                 <div key={t.id} className="flex items-center justify-between text-sm">
-                  <span className="text-gray-300">{t.sourceJurisdiction || "NG"} → {t.destinationJurisdiction || "???"}</span>
+                  <span className="text-muted-foreground">{t.sourceJurisdiction || "NG"} → {t.destinationJurisdiction || "???"}</span>
                   <Badge className="text-xs bg-red-500/20 text-red-400">{t.dataCategory || "Unknown"}</Badge>
                 </div>
               ))}
             </div>
           </div>
-          <div className="bg-gray-800 rounded-xl border border-gray-700 p-4">
-            <div className="flex items-center gap-2 mb-3"><h2 className="text-white font-semibold text-sm">Filter Flows</h2></div>
+          <div className="bg-card rounded-xl border border-border p-4">
+            <div className="flex items-center gap-2 mb-3"><h2 className="text-foreground font-semibold text-sm">Filter Flows</h2></div>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="bg-gray-900 border-gray-700 text-white text-sm"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="bg-background border-border text-foreground text-sm"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Flows</SelectItem>
                 <SelectItem value="approved">Approved Only</SelectItem>

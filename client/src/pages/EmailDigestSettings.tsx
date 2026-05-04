@@ -53,9 +53,9 @@ export default function EmailDigestSettings() {
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-2">
             <Mail className="h-7 w-7 text-cyan-400" />
-            <h1 className="text-2xl font-bold text-slate-100">Email Digest Settings</h1>
+            <h1 className="text-2xl font-bold text-foreground">Email Digest Settings</h1>
           </div>
-          <p className="text-slate-400 text-sm">
+          <p className="text-muted-foreground text-sm">
             Receive a weekly summary of upcoming compliance deadlines, active SLA timers, breach incidents, and sector scores directly in your inbox.
           </p>
         </div>
@@ -69,15 +69,15 @@ export default function EmailDigestSettings() {
                   <Bell className="h-5 w-5 text-emerald-400" />
                 </div>
               ) : (
-                <div className="w-10 h-10 rounded-full bg-slate-700/50 flex items-center justify-center">
-                  <BellOff className="h-5 w-5 text-slate-400" />
+                <div className="w-10 h-10 rounded-full bg-muted/50 flex items-center justify-center">
+                  <BellOff className="h-5 w-5 text-muted-foreground" />
                 </div>
               )}
               <div>
-                <div className="font-semibold text-slate-100">
+                <div className="font-semibold text-foreground">
                   {isSubscribed ? "Weekly Digest Active" : "Not Subscribed"}
                 </div>
-                <div className="text-xs text-slate-400">
+                <div className="text-xs text-muted-foreground">
                   {isSubscribed
                     ? `Sending to: ${status?.email ?? user?.email ?? "your email"}`
                     : "Subscribe to receive weekly compliance summaries"}
@@ -86,14 +86,14 @@ export default function EmailDigestSettings() {
             </div>
             <Badge
               variant="outline"
-              className={isSubscribed ? "border-emerald-500/30 text-emerald-400" : "border-slate-600 text-slate-400"}
+              className={isSubscribed ? "border-emerald-500/30 text-emerald-400" : "border-border text-muted-foreground"}
             >
               {isSubscribed ? "Active" : "Inactive"}
             </Badge>
           </div>
 
           {isSubscribed && status?.next_send_at && (
-            <div className="mt-4 flex items-center gap-2 text-xs text-slate-400 border-t border-slate-700/50 pt-4">
+            <div className="mt-4 flex items-center gap-2 text-xs text-muted-foreground border-t border-border/50 pt-4">
               <Calendar className="h-3.5 w-3.5" />
               <span>Next digest: {new Date(status.next_send_at).toLocaleDateString("en-NG", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}</span>
               {status?.last_sent_at && (
@@ -117,7 +117,7 @@ export default function EmailDigestSettings() {
           ) : (
             <>
               <Button
-                className="bg-emerald-600 hover:bg-emerald-500 text-white gap-2"
+                className="bg-emerald-600 hover:bg-emerald-500 text-foreground gap-2"
                 onClick={() => sendNow.mutate()}
                 disabled={sendNow.isPending}
               >
@@ -126,7 +126,7 @@ export default function EmailDigestSettings() {
               </Button>
               <Button
                 variant="outline"
-                className="border-slate-600 text-slate-300 hover:text-slate-100 gap-2"
+                className="border-border text-muted-foreground hover:text-foreground gap-2"
                 onClick={() => setShowPreview((p) => !p)}
               >
                 <Eye className="h-4 w-4" />
@@ -147,16 +147,16 @@ export default function EmailDigestSettings() {
 
         {/* Preview */}
         {showPreview && (
-          <div className="bg-[#0a1628] border border-slate-700/50 rounded-xl p-5 mb-6">
+          <div className="bg-[#0a1628] border border-border/50 rounded-xl p-5 mb-6">
             <h3 className="text-sm font-semibold text-cyan-300 mb-3 flex items-center gap-2">
               <Eye className="h-4 w-4" /> Digest Preview
             </h3>
             {previewLoading ? (
-              <div className="flex items-center gap-2 text-slate-400 text-sm">
+              <div className="flex items-center gap-2 text-muted-foreground text-sm">
                 <RefreshCw className="h-4 w-4 animate-spin" /> Generating preview…
               </div>
             ) : (
-              <pre className="text-xs text-slate-300 whitespace-pre-wrap font-mono leading-relaxed max-h-96 overflow-y-auto">
+              <pre className="text-xs text-muted-foreground whitespace-pre-wrap font-mono leading-relaxed max-h-96 overflow-y-auto">
                 {preview?.content ?? "No content available."}
               </pre>
             )}
@@ -164,8 +164,8 @@ export default function EmailDigestSettings() {
         )}
 
         {/* What's included */}
-        <div className="bg-[#0d1f3c] border border-slate-700/30 rounded-xl p-5">
-          <h3 className="text-sm font-semibold text-slate-200 mb-3">What's included in each digest</h3>
+        <div className="bg-[#0d1f3c] border border-border/30 rounded-xl p-5">
+          <h3 className="text-sm font-semibold text-foreground mb-3">What's included in each digest</h3>
           <div className="grid grid-cols-2 gap-3">
             {[
               { icon: "⏰", label: "Upcoming deadlines", desc: "Compliance deadlines in the next 14 days" },
@@ -173,10 +173,10 @@ export default function EmailDigestSettings() {
               { icon: "🔴", label: "Breach incidents", desc: "New breach incidents from the last 7 days" },
               { icon: "📊", label: "Sector scores", desc: "Latest compliance scores across all sectors" },
             ].map((item) => (
-              <div key={item.label} className="flex items-start gap-2 p-3 rounded-lg bg-slate-800/30">
+              <div key={item.label} className="flex items-start gap-2 p-3 rounded-lg bg-card/30">
                 <span className="text-lg">{item.icon}</span>
                 <div>
-                  <div className="text-xs font-medium text-slate-200">{item.label}</div>
+                  <div className="text-xs font-medium text-foreground">{item.label}</div>
                   <div className="text-[11px] text-slate-500">{item.desc}</div>
                 </div>
               </div>

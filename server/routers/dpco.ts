@@ -116,13 +116,13 @@ async function listVerificationStatements(opts: { dpcoOrgId?: number; orgId?: nu
   const conditions: string[] = [];
   const params: any[] = [];
   if (opts.dpcoOrgId) { conditions.push("v.dpco_org_id = ?"); params.push(opts.dpcoOrgId); }
-  if (opts.orgId) { conditions.push("v.organisation_id = ?"); params.push(opts.orgId); }
+  if (opts.orgId) { conditions.push("v.org_id = ?"); params.push(opts.orgId); }
   if (opts.status) { conditions.push("v.status = ?"); params.push(opts.status); }
   const where = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
   return q(`
     SELECT v.*, o.name as org_name, d.name as dpco_name, d.licence_number as dpco_licence
     FROM dpco_verification_statements v
-    LEFT JOIN organizations o ON o.id = v.organisation_id
+    LEFT JOIN organizations o ON o.id = v.org_id
     LEFT JOIN dpco_organisations d ON d.id = v.dpco_org_id
     ${where}
     ORDER BY v.created_at DESC

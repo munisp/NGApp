@@ -102,7 +102,7 @@ function ComplianceRing({ score }: { score: number }) {
       </ResponsiveContainer>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
         <span className={`text-2xl font-black ${color}`}>{score}%</span>
-        <span className="text-[10px] text-slate-400 font-medium">{label}</span>
+        <span className="text-[10px] text-muted-foreground font-medium">{label}</span>
       </div>
     </div>
   );
@@ -112,8 +112,8 @@ function ComplianceRing({ score }: { score: number }) {
 function ChartTooltip({ active, payload, label }: any) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="bg-slate-800 border border-slate-600/50 rounded-lg px-3 py-2 shadow-xl text-xs">
-      <p className="text-slate-300 font-medium mb-1">{label}</p>
+    <div className="bg-card border border-border/50 rounded-lg px-3 py-2 shadow-xl text-xs">
+      <p className="text-muted-foreground font-medium mb-1">{label}</p>
       {payload.map((p: any) => (
         <p key={p.dataKey} style={{ color: p.color }} className="font-semibold">
           {p.name}: {typeof p.value === "number" && p.value > 1000 ? formatNGN(p.value) : p.value}
@@ -129,7 +129,7 @@ function SectionHeader({ title, href, icon: Icon }: { title: string; href?: stri
     <div className="flex items-center justify-between mb-3">
       <div className="flex items-center gap-2">
         <Icon className="h-4 w-4 text-cyan-400" />
-        <span className="text-xs font-bold text-slate-300 uppercase tracking-wider">{title}</span>
+        <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">{title}</span>
       </div>
       {href && (
         <Link href={href}>
@@ -226,8 +226,8 @@ export default function DpcoPwaDashboard() {
       value: earnings ? formatNGN(earnings.summary.outstandingAmount) : "—",
       sub: `${earnings?.summary.overdueInvoices ?? 0} overdue`,
       icon: AlertTriangle,
-      color: earnings?.summary.overdueInvoices ? "text-amber-400" : "text-slate-400",
-      bg: earnings?.summary.overdueInvoices ? "bg-amber-500/10" : "bg-slate-700/20",
+      color: earnings?.summary.overdueInvoices ? "text-amber-400" : "text-muted-foreground",
+      bg: earnings?.summary.overdueInvoices ? "bg-amber-500/10" : "bg-muted/20",
       trend: overdueInvoices.length > 0 ? `${overdueInvoices.length} overdue` : "All clear",
       up: false,
     },
@@ -244,33 +244,33 @@ export default function DpcoPwaDashboard() {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white">
+    <div className="min-h-screen bg-slate-950 text-foreground">
       <OfflineIndicator />
 
       {/* ── Header ── */}
-      <header className="sticky top-0 z-30 bg-slate-950/95 backdrop-blur border-b border-slate-800/60">
+      <header className="sticky top-0 z-30 bg-slate-950/95 backdrop-blur border-b border-border/60">
         <div className="max-w-lg mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-lg bg-cyan-500 flex items-center justify-center shadow-lg shadow-cyan-500/30">
               <span className="text-slate-900 font-black text-sm">N</span>
             </div>
             <div>
-              <p className="text-sm font-bold text-white leading-none">DPCO Dashboard</p>
-              <p className="text-[10px] text-slate-400 leading-none mt-0.5">NDSEP Platform</p>
+              <p className="text-sm font-bold text-foreground leading-none">DPCO Dashboard</p>
+              <p className="text-[10px] text-muted-foreground leading-none mt-0.5">NDSEP Platform</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
             <button
               onClick={() => { earningsQuery.refetch(); invoicesQuery.refetch(); statsQuery.refetch(); }}
-              className="p-1.5 rounded-lg text-slate-400 hover:text-cyan-400 hover:bg-slate-800 transition-colors"
+              className="p-1.5 rounded-lg text-muted-foreground hover:text-cyan-400 hover:bg-card transition-colors"
             >
               <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
             </button>
             <Link href="/dpco/billing">
-              <button className="p-1.5 rounded-lg text-slate-400 hover:text-cyan-400 hover:bg-slate-800 transition-colors relative">
+              <button className="p-1.5 rounded-lg text-muted-foreground hover:text-cyan-400 hover:bg-card transition-colors relative">
                 <Bell className="h-4 w-4" />
                 {overdueInvoices.length > 0 && (
-                  <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-amber-500 text-[8px] font-bold text-white flex items-center justify-center">
+                  <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-amber-500 text-[8px] font-bold text-foreground flex items-center justify-center">
                     {overdueInvoices.length}
                   </span>
                 )}
@@ -284,7 +284,7 @@ export default function DpcoPwaDashboard() {
       <main className="max-w-lg mx-auto px-4 pt-5 pb-8 space-y-6">
 
         {/* ── Period selector ── */}
-        <div className="flex gap-1.5 bg-slate-900/60 p-1 rounded-xl border border-slate-800/60">
+        <div className="flex gap-1.5 bg-background/60 p-1 rounded-xl border border-border/60">
           {(["7d", "30d", "90d", "12m"] as const).map((p) => (
             <button
               key={p}
@@ -292,7 +292,7 @@ export default function DpcoPwaDashboard() {
               className={`flex-1 text-xs font-semibold py-1.5 rounded-lg transition-all ${
                 period === p
                   ? "bg-cyan-500 text-slate-900 shadow-md shadow-cyan-500/20"
-                  : "text-slate-400 hover:text-white"
+                  : "text-muted-foreground hover:text-foreground"
               }`}
             >
               {p === "12m" ? "1Y" : p.toUpperCase()}
@@ -301,19 +301,19 @@ export default function DpcoPwaDashboard() {
         </div>
 
         {/* ── Compliance + KPIs row ── */}
-        <div className="bg-slate-900/60 border border-slate-800/50 rounded-2xl p-4">
+        <div className="bg-background/60 border border-border/50 rounded-2xl p-4">
           <div className="flex items-center gap-4">
             <button onClick={() => setShowScoreSheet(true)} className="focus:outline-none" title="Tap to see score breakdown" data-tour="dpco-compliance-ring">
               <ComplianceRing score={complianceScore} />
             </button>
             <div className="flex-1 grid grid-cols-2 gap-2">
               {kpis.slice(0, 2).map(({ label, value, sub, icon: Icon, color, bg, trend, up }) => (
-                <div key={label} className="bg-slate-800/60 rounded-xl p-2.5">
+                <div key={label} className="bg-card/60 rounded-xl p-2.5">
                   <div className={`w-7 h-7 rounded-lg ${bg} flex items-center justify-center mb-1.5`}>
                     <Icon className={`h-3.5 w-3.5 ${color}`} />
                   </div>
-                  <p className="text-base font-black text-white leading-none">{value}</p>
-                  <p className="text-[10px] text-slate-400 mt-0.5 leading-tight">{label}</p>
+                  <p className="text-base font-black text-foreground leading-none">{value}</p>
+                  <p className="text-[10px] text-muted-foreground mt-0.5 leading-tight">{label}</p>
                   <div className={`flex items-center gap-0.5 mt-1 text-[10px] font-medium ${up ? "text-emerald-400" : "text-amber-400"}`}>
                     {up ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
                     {trend}
@@ -330,12 +330,12 @@ export default function DpcoPwaDashboard() {
         {/* ── KPI row 2 ── */}
         <div className="grid grid-cols-2 gap-3">
           {kpis.slice(2).map(({ label, value, sub, icon: Icon, color, bg, trend, up }) => (
-            <div key={label} className="bg-slate-900/60 border border-slate-800/50 rounded-2xl p-3.5">
+            <div key={label} className="bg-background/60 border border-border/50 rounded-2xl p-3.5">
               <div className={`w-8 h-8 rounded-lg ${bg} flex items-center justify-center mb-2`}>
                 <Icon className={`h-4 w-4 ${color}`} />
               </div>
-              <p className="text-xl font-black text-white leading-none">{value}</p>
-              <p className="text-[11px] text-slate-400 mt-1">{label}</p>
+              <p className="text-xl font-black text-foreground leading-none">{value}</p>
+              <p className="text-[11px] text-muted-foreground mt-1">{label}</p>
               <p className="text-[10px] text-slate-500">{sub}</p>
             </div>
           ))}
@@ -346,7 +346,7 @@ export default function DpcoPwaDashboard() {
           <div className="flex items-center justify-between bg-cyan-950/60 border border-cyan-500/30 rounded-xl px-4 py-2">
             <p className="text-xs text-cyan-300 font-semibold">Drag widgets to reorder</p>
             <div className="flex gap-2">
-              <button onClick={drag.resetOrder} className="text-[11px] text-slate-400 hover:text-white">Reset</button>
+              <button onClick={drag.resetOrder} className="text-[11px] text-muted-foreground hover:text-foreground">Reset</button>
               <button onClick={drag.deactivateDragMode} className="text-[11px] text-cyan-400 font-bold hover:text-cyan-300">Done</button>
             </div>
           </div>
@@ -378,7 +378,7 @@ export default function DpcoPwaDashboard() {
                       className="flex items-center justify-between bg-amber-900/20 rounded-xl px-3 py-2 cursor-pointer hover:bg-amber-900/40 transition-colors"
                       onClick={() => !drag.dragMode && setSelectedInvoice(inv as unknown as InvoiceRow)}>
                       <div className="min-w-0">
-                        <p className="text-xs font-semibold text-white truncate">{inv.client_name}</p>
+                        <p className="text-xs font-semibold text-foreground truncate">{inv.client_name}</p>
                         <p className="text-[10px] text-amber-400/70">Due {formatDate(inv.due_date)} · tap for details</p>
                       </div>
                       <div className="text-right flex-shrink-0 ml-2">
@@ -403,7 +403,7 @@ export default function DpcoPwaDashboard() {
           if (widgetId === "earnings") return (
             <div key="earnings" className={wrapperClass} {...lp}
               onPointerEnter={() => drag.dragMode && drag.onDragOver("earnings")}>
-              <div className="bg-slate-900/60 border border-slate-800/50 rounded-2xl p-4">
+              <div className="bg-background/60 border border-border/50 rounded-2xl p-4">
                 {drag.dragMode && <p className="text-[10px] text-slate-500 text-right mb-1">☰ hold &amp; drag</p>}
                 <SectionHeader title="Monthly Earnings" href="/dpco/billing" icon={TrendingUp} />
                 {monthlyTrend.length === 0 ? (
@@ -438,7 +438,7 @@ export default function DpcoPwaDashboard() {
           if (widgetId === "service") return byService.length > 0 ? (
             <div key="service" className={wrapperClass} {...lp}
               onPointerEnter={() => drag.dragMode && drag.onDragOver("service")}>
-              <div className="bg-slate-900/60 border border-slate-800/50 rounded-2xl p-4">
+              <div className="bg-background/60 border border-border/50 rounded-2xl p-4">
                 {drag.dragMode && <p className="text-[10px] text-slate-500 text-right mb-1">☰ hold &amp; drag</p>}
                 <SectionHeader title="Revenue by Service" icon={Activity} />
                 <div className="flex items-center gap-4">
@@ -458,9 +458,9 @@ export default function DpcoPwaDashboard() {
                         <div className="flex items-center gap-1.5 min-w-0">
                           <div className="w-2 h-2 rounded-full flex-shrink-0"
                             style={{ background: Object.values(CHART_COLORS)[i % Object.values(CHART_COLORS).length] }} />
-                          <span className="text-[11px] text-slate-300 truncate capitalize">{s.name}</span>
+                          <span className="text-[11px] text-muted-foreground truncate capitalize">{s.name}</span>
                         </div>
-                        <span className="text-[11px] font-semibold text-white flex-shrink-0">{formatNGN(s.value)}</span>
+                        <span className="text-[11px] font-semibold text-foreground flex-shrink-0">{formatNGN(s.value)}</span>
                       </div>
                     ))}
                   </div>
@@ -472,7 +472,7 @@ export default function DpcoPwaDashboard() {
           if (widgetId === "payments") return (
             <div key="payments" className={wrapperClass} {...lp}
               onPointerEnter={() => drag.dragMode && drag.onDragOver("payments")}>
-              <div className="bg-slate-900/60 border border-slate-800/50 rounded-2xl p-4">
+              <div className="bg-background/60 border border-border/50 rounded-2xl p-4">
                 {drag.dragMode && <p className="text-[10px] text-slate-500 text-right mb-1">☰ hold &amp; drag</p>}
                 <SectionHeader title="Recent Payments" href="/dpco/billing" icon={Zap} />
                 {recentPayments.length === 0 ? (
@@ -485,8 +485,8 @@ export default function DpcoPwaDashboard() {
                           <CheckCircle2 className="h-4 w-4 text-emerald-400" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-xs font-semibold text-white truncate">{p.client_name ?? "Client"}</p>
-                          <p className="text-[10px] text-slate-400">{p.invoice_number} · {p.service_type?.replace(/_/g, " ")}</p>
+                          <p className="text-xs font-semibold text-foreground truncate">{p.client_name ?? "Client"}</p>
+                          <p className="text-[10px] text-muted-foreground">{p.invoice_number} · {p.service_type?.replace(/_/g, " ")}</p>
                         </div>
                         <div className="text-right flex-shrink-0">
                           <p className="text-xs font-bold text-emerald-400">+{formatNGN(Number(p.amount))}</p>
@@ -510,10 +510,10 @@ export default function DpcoPwaDashboard() {
                   { label: "Verifications", value: stats.verificationStatements, icon: ShieldCheck, color: "text-cyan-400" },
                   { label: "Policy Drafts", value: stats.policyDrafts, icon: FileText, color: "text-violet-400" },
                 ].map(({ label, value, icon: Icon, color }) => (
-                  <div key={label} className="bg-slate-900/60 border border-slate-800/50 rounded-xl p-3 text-center">
+                  <div key={label} className="bg-background/60 border border-border/50 rounded-xl p-3 text-center">
                     <Icon className={`h-5 w-5 ${color} mx-auto mb-1`} />
-                    <p className="text-lg font-black text-white">{value}</p>
-                    <p className="text-[10px] text-slate-400">{label}</p>
+                    <p className="text-lg font-black text-foreground">{value}</p>
+                    <p className="text-[10px] text-muted-foreground">{label}</p>
                   </div>
                 ))}
               </div>
@@ -524,7 +524,7 @@ export default function DpcoPwaDashboard() {
         })}
 
         {/* ── Quick Actions ── */}
-        <div className="bg-slate-900/60 border border-slate-800/50 rounded-2xl p-4">
+        <div className="bg-background/60 border border-border/50 rounded-2xl p-4">
           <SectionHeader title="Quick Actions" icon={Zap} />
           <div className="grid grid-cols-3 gap-2">
             {[
@@ -536,11 +536,11 @@ export default function DpcoPwaDashboard() {
               { label: "Scorecard", icon: Star, href: "/dpco/scorecard", color: "text-cyan-400", bg: "bg-cyan-500/10" },
             ].map(({ label, icon: Icon, href, color, bg }) => (
               <Link key={label} href={href}>
-                <div className="bg-slate-800/60 border border-slate-700/40 rounded-xl p-3 flex flex-col items-center gap-1.5 cursor-pointer hover:border-cyan-500/40 hover:bg-slate-700/60 transition-all">
+                <div className="bg-card/60 border border-border/40 rounded-xl p-3 flex flex-col items-center gap-1.5 cursor-pointer hover:border-cyan-500/40 hover:bg-muted/60 transition-all">
                   <div className={`w-8 h-8 rounded-lg ${bg} flex items-center justify-center`}>
                     <Icon className={`h-4 w-4 ${color}`} />
                   </div>
-                  <span className="text-[11px] text-slate-300 text-center leading-tight">{label}</span>
+                  <span className="text-[11px] text-muted-foreground text-center leading-tight">{label}</span>
                 </div>
               </Link>
             ))}
@@ -550,12 +550,12 @@ export default function DpcoPwaDashboard() {
         {/* ── Navigation links ── */}
         <div className="flex gap-2">
           <Link href="/dpco-app" className="flex-1">
-            <Button variant="outline" size="sm" className="w-full text-xs border-slate-700 text-slate-300 hover:text-white gap-1.5">
+            <Button variant="outline" size="sm" className="w-full text-xs border-border text-muted-foreground hover:text-foreground gap-1.5">
               ← PWA Home
             </Button>
           </Link>
           <Link href="/" className="flex-1">
-            <Button variant="outline" size="sm" className="w-full text-xs border-slate-700 text-slate-300 hover:text-white gap-1.5">
+            <Button variant="outline" size="sm" className="w-full text-xs border-border text-muted-foreground hover:text-foreground gap-1.5">
               Desktop Portal →
             </Button>
           </Link>

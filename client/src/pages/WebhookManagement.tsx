@@ -19,7 +19,7 @@ const EVENT_TYPES = [
 
 const STATUS_COLORS: Record<string, string> = {
   active: "text-green-400 bg-green-900/30",
-  inactive: "text-gray-400 bg-gray-800",
+  inactive: "text-muted-foreground bg-card",
   failed: "text-red-400 bg-red-900/30",
 };
 
@@ -79,8 +79,8 @@ export default function WebhookManagement() {
           <div className="flex items-center gap-3">
             <Webhook className="w-7 h-7 text-orange-400" />
             <div>
-              <h1 className="text-xl font-bold text-white">Webhook Management</h1>
-              <p className="text-sm text-gray-400">Real-time event delivery to external systems</p>
+              <h1 className="text-xl font-bold text-foreground">Webhook Management</h1>
+              <p className="text-sm text-muted-foreground">Real-time event delivery to external systems</p>
             </div>
           </div>
           <Button onClick={() => setShowForm(!showForm)} className="bg-orange-600 hover:bg-orange-700">
@@ -89,26 +89,26 @@ export default function WebhookManagement() {
         </div>
 
         {showForm && (
-          <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 mb-6 space-y-5">
-            <h2 className="font-semibold text-white text-lg">New Webhook Subscription</h2>
+          <div className="bg-background border border-border rounded-xl p-6 mb-6 space-y-5">
+            <h2 className="font-semibold text-foreground text-lg">New Webhook Subscription</h2>
             <div>
-              <Label className="text-gray-300 mb-1.5 block">Endpoint URL *</Label>
-              <Input value={form.url} onChange={e => setForm(p => ({ ...p, url: e.target.value }))} className="bg-gray-800 border-gray-700 text-white font-mono" placeholder="https://your-system.example.com/webhook" />
+              <Label className="text-muted-foreground mb-1.5 block">Endpoint URL *</Label>
+              <Input value={form.url} onChange={e => setForm(p => ({ ...p, url: e.target.value }))} className="bg-card border-border text-foreground font-mono" placeholder="https://your-system.example.com/webhook" />
             </div>
             <div>
-              <Label className="text-gray-300 mb-1.5 block">Signing Secret (optional)</Label>
-              <Input value={form.secret} onChange={e => setForm(p => ({ ...p, secret: e.target.value }))} className="bg-gray-800 border-gray-700 text-white font-mono" placeholder="Used to verify HMAC-SHA256 signature" type="password" />
+              <Label className="text-muted-foreground mb-1.5 block">Signing Secret (optional)</Label>
+              <Input value={form.secret} onChange={e => setForm(p => ({ ...p, secret: e.target.value }))} className="bg-card border-border text-foreground font-mono" placeholder="Used to verify HMAC-SHA256 signature" type="password" />
             </div>
             <div>
-              <Label className="text-gray-300 mb-1.5 block">Description</Label>
-              <Input value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} className="bg-gray-800 border-gray-700 text-white" placeholder="e.g. Compliance monitoring system" />
+              <Label className="text-muted-foreground mb-1.5 block">Description</Label>
+              <Input value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} className="bg-card border-border text-foreground" placeholder="e.g. Compliance monitoring system" />
             </div>
             <div>
-              <Label className="text-gray-300 mb-3 block">Event Types *</Label>
+              <Label className="text-muted-foreground mb-3 block">Event Types *</Label>
               <div className="flex flex-wrap gap-2">
                 {EVENT_TYPES.map(ev => (
                   <button key={ev} type="button" onClick={() => toggleEvent(ev)}
-                    className={`px-2.5 py-1 rounded-full text-xs font-mono border transition-all ${form.eventTypes.includes(ev) ? "bg-orange-600 border-orange-500 text-white" : "bg-gray-800 border-gray-700 text-gray-400 hover:border-orange-500"}`}>
+                    className={`px-2.5 py-1 rounded-full text-xs font-mono border transition-all ${form.eventTypes.includes(ev) ? "bg-orange-600 border-orange-500 text-foreground" : "bg-card border-border text-muted-foreground hover:border-orange-500"}`}>
                     {ev}
                   </button>
                 ))}
@@ -118,7 +118,7 @@ export default function WebhookManagement() {
               <Button onClick={() => { if (!form.url || form.eventTypes.length === 0) { toast.error("URL and at least one event type required"); return; } createMutation.mutate({ url: form.url, events: form.eventTypes, orgId: undefined, dpcoOrgId: undefined }); }} disabled={createMutation.isPending} className="bg-orange-600 hover:bg-orange-700">
                 {createMutation.isPending ? "Creating..." : "Create Subscription"}
               </Button>
-              <Button variant="outline" onClick={() => setShowForm(false)} className="border-gray-600 text-gray-300">Cancel</Button>
+              <Button variant="outline" onClick={() => setShowForm(false)} className="border-border text-muted-foreground">Cancel</Button>
             </div>
           </div>
         )}
@@ -132,28 +132,28 @@ export default function WebhookManagement() {
             </div>
           )}
           {(subscriptions as any[]).map((sub: any) => (
-            <div key={sub.id} className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+            <div key={sub.id} className="bg-background border border-border rounded-xl overflow-hidden">
               <div className="p-5">
                 <div className="flex items-start justify-between mb-3">
                   <div>
-                    <div className="font-mono text-white text-sm mb-1">{sub.url}</div>
-                    {sub.description && <div className="text-gray-400 text-xs">{sub.description}</div>}
+                    <div className="font-mono text-foreground text-sm mb-1">{sub.url}</div>
+                    {sub.description && <div className="text-muted-foreground text-xs">{sub.description}</div>}
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${STATUS_COLORS[sub.status] ?? "text-gray-400 bg-gray-800"}`}>
+                    <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${STATUS_COLORS[sub.status] ?? "text-muted-foreground bg-card"}`}>
                       {sub.status?.toUpperCase()}
                     </span>
-                    <Button size="sm" variant="outline" onClick={() => setShowDeliveries(showDeliveries === sub.id ? null : sub.id)} className="border-gray-700 text-gray-400 text-xs h-7">
+                    <Button size="sm" variant="outline" onClick={() => setShowDeliveries(showDeliveries === sub.id ? null : sub.id)} className="border-border text-muted-foreground text-xs h-7">
                       <Eye className="w-3 h-3 mr-1" /> Deliveries
                     </Button>
-                    <Button size="sm" variant="outline" onClick={() => { if (confirm("Delete this webhook?")) deleteMutation.mutate({ id: sub.id }); }} className="border-gray-700 text-red-400 text-xs h-7 hover:border-red-700">
+                    <Button size="sm" variant="outline" onClick={() => { if (confirm("Delete this webhook?")) deleteMutation.mutate({ id: sub.id }); }} className="border-border text-red-400 text-xs h-7 hover:border-red-700">
                       <Trash2 className="w-3 h-3" />
                     </Button>
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-1.5">
                   {(sub.event_types as string[] ?? []).map((ev: string) => (
-                    <span key={ev} className="bg-gray-800 text-gray-400 text-xs font-mono px-2 py-0.5 rounded">{ev}</span>
+                    <span key={ev} className="bg-card text-muted-foreground text-xs font-mono px-2 py-0.5 rounded">{ev}</span>
                   ))}
                 </div>
                 <div className="flex gap-4 mt-3 text-xs text-gray-500">
@@ -163,8 +163,8 @@ export default function WebhookManagement() {
                 </div>
               </div>
               {showDeliveries === sub.id && (
-                <div className="border-t border-gray-800 bg-gray-950">
-                  <div className="px-5 py-3 text-xs text-gray-400 font-medium uppercase tracking-wide">Recent Deliveries</div>
+                <div className="border-t border-border bg-gray-950">
+                  <div className="px-5 py-3 text-xs text-muted-foreground font-medium uppercase tracking-wide">Recent Deliveries</div>
                   {(deliveries as any[]).length === 0 ? (
                     <div className="px-5 pb-4 text-gray-500 text-sm">No deliveries yet.</div>
                   ) : (
@@ -172,17 +172,17 @@ export default function WebhookManagement() {
                       {(deliveries as any[]).slice(0, 10).map((d: any) => (
                         <div key={d.id} className="px-5 py-3 flex items-center justify-between">
                           <div className="flex items-center gap-3">
-                            <span className={`text-xs font-medium ${DELIVERY_COLORS[d.status] ?? "text-gray-400"}`}>
+                            <span className={`text-xs font-medium ${DELIVERY_COLORS[d.status] ?? "text-muted-foreground"}`}>
                               {d.status === "delivered" ? <CheckCircle2 className="w-3.5 h-3.5 inline mr-1" /> : d.status === "failed" ? <XCircle className="w-3.5 h-3.5 inline mr-1" /> : <Clock className="w-3.5 h-3.5 inline mr-1" />}
                               {d.status}
                             </span>
-                            <span className="text-xs font-mono text-gray-400">{d.event_type}</span>
+                            <span className="text-xs font-mono text-muted-foreground">{d.event_type}</span>
                             {d.http_status && <span className={`text-xs ${d.http_status < 300 ? "text-green-400" : "text-red-400"}`}>HTTP {d.http_status}</span>}
                           </div>
                           <div className="flex items-center gap-2">
                             <span className="text-xs text-gray-500">{new Date(d.created_at).toLocaleString()}</span>
                             {d.status === "failed" && (
-                              <Button size="sm" variant="outline" onClick={() => toast.info("Retry queued")} className="border-gray-700 text-gray-400 text-xs h-6 px-2">
+                              <Button size="sm" variant="outline" onClick={() => toast.info("Retry queued")} className="border-border text-muted-foreground text-xs h-6 px-2">
                                 <RefreshCw className="w-3 h-3 mr-1" /> Retry
                               </Button>
                             )}

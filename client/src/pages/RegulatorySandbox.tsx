@@ -16,7 +16,7 @@ const statusColors: Record<string, string> = {
   pending: "bg-yellow-500/20 text-yellow-400",
   approved: "bg-green-500/20 text-green-400",
   active: "bg-blue-500/20 text-blue-400",
-  completed: "bg-slate-500/20 text-slate-400",
+  completed: "bg-slate-500/20 text-muted-foreground",
   rejected: "bg-red-500/20 text-red-400",
 };
 
@@ -50,10 +50,10 @@ export default function RegulatorySandbox() {
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white flex items-center gap-2">
+          <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
             <FlaskConical className="w-6 h-6 text-purple-400" /> Regulatory Sandbox
           </h1>
-          <p className="text-slate-400 text-sm mt-1">NDPC Innovation Sandbox — Test novel data processing approaches with regulatory exemptions</p>
+          <p className="text-muted-foreground text-sm mt-1">NDPC Innovation Sandbox — Test novel data processing approaches with regulatory exemptions</p>
         </div>
         <Button onClick={() => setShowApply(true)} className="bg-purple-600 hover:bg-purple-700">
           <Plus className="w-4 h-4 mr-2" /> Apply for Sandbox
@@ -66,15 +66,15 @@ export default function RegulatorySandbox() {
           <div className="grid grid-cols-3 gap-6 text-sm">
             <div>
               <p className="text-purple-300 font-medium mb-1">What is the Regulatory Sandbox?</p>
-              <p className="text-slate-400">A controlled environment where organisations can test innovative data processing technologies with temporary exemptions from certain NDPA provisions, under NDPC supervision.</p>
+              <p className="text-muted-foreground">A controlled environment where organisations can test innovative data processing technologies with temporary exemptions from certain NDPA provisions, under NDPC supervision.</p>
             </div>
             <div>
               <p className="text-purple-300 font-medium mb-1">Eligibility</p>
-              <p className="text-slate-400">Registered Nigerian entities with novel fintech, healthtech, or AI solutions that require temporary derogations from data minimisation or purpose limitation principles.</p>
+              <p className="text-muted-foreground">Registered Nigerian entities with novel fintech, healthtech, or AI solutions that require temporary derogations from data minimisation or purpose limitation principles.</p>
             </div>
             <div>
               <p className="text-purple-300 font-medium mb-1">Duration & Conditions</p>
-              <p className="text-slate-400">Up to 12 months. Monthly reporting to NDPC. Full NDPA compliance required after sandbox period. Participant data must be pseudonymised.</p>
+              <p className="text-muted-foreground">Up to 12 months. Monthly reporting to NDPC. Full NDPA compliance required after sandbox period. Participant data must be pseudonymised.</p>
             </div>
           </div>
         </CardContent>
@@ -93,10 +93,10 @@ export default function RegulatorySandbox() {
             <p className="text-2xl font-bold text-yellow-300">{pendingCount}</p>
           </CardContent>
         </Card>
-        <Card className="bg-slate-800/50 border-slate-700">
+        <Card className="bg-card/50 border-border">
           <CardContent className="p-4">
-            <p className="text-slate-400 text-xs">Total Applications</p>
-            <p className="text-2xl font-bold text-white">{applications?.length ?? 0}</p>
+            <p className="text-muted-foreground text-xs">Total Applications</p>
+            <p className="text-2xl font-bold text-foreground">{applications?.length ?? 0}</p>
           </CardContent>
         </Card>
         <Card className="bg-green-900/20 border-green-700/40">
@@ -109,34 +109,34 @@ export default function RegulatorySandbox() {
         </Card>
       </div>
 
-      <Card className="bg-slate-800/50 border-slate-700">
-        <CardHeader><CardTitle className="text-white text-base">Sandbox Applications</CardTitle></CardHeader>
+      <Card className="bg-card/50 border-border">
+        <CardHeader><CardTitle className="text-foreground text-base">Sandbox Applications</CardTitle></CardHeader>
         <CardContent className="p-0">
           <Table>
             <TableHeader>
-              <TableRow className="border-slate-700">
-                <TableHead className="text-slate-400">Project</TableHead>
-                <TableHead className="text-slate-400">Organisation</TableHead>
-                <TableHead className="text-slate-400">Duration</TableHead>
-                <TableHead className="text-slate-400">Start Date</TableHead>
-                <TableHead className="text-slate-400">End Date</TableHead>
-                <TableHead className="text-slate-400">Status</TableHead>
-                <TableHead className="text-slate-400">Actions</TableHead>
+              <TableRow className="border-border">
+                <TableHead className="text-muted-foreground">Project</TableHead>
+                <TableHead className="text-muted-foreground">Organisation</TableHead>
+                <TableHead className="text-muted-foreground">Duration</TableHead>
+                <TableHead className="text-muted-foreground">Start Date</TableHead>
+                <TableHead className="text-muted-foreground">End Date</TableHead>
+                <TableHead className="text-muted-foreground">Status</TableHead>
+                <TableHead className="text-muted-foreground">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {applications?.map(a => (
-                <TableRow key={a.id} className="border-slate-700">
+                <TableRow key={a.id} className="border-border">
                   <TableCell>
-                    <p className="text-white font-medium text-sm">{a.project_name}</p>
+                    <p className="text-foreground font-medium text-sm">{a.project_name}</p>
                     <p className="text-slate-500 text-xs line-clamp-1">{a.description}</p>
                   </TableCell>
-                  <TableCell className="text-slate-400 text-sm">{a.org_name ?? "—"}</TableCell>
-                  <TableCell className="text-slate-400">{a.proposed_duration_months}m</TableCell>
-                  <TableCell className="text-slate-400 text-xs">
+                  <TableCell className="text-muted-foreground text-sm">{a.org_name ?? "—"}</TableCell>
+                  <TableCell className="text-muted-foreground">{a.proposed_duration_months}m</TableCell>
+                  <TableCell className="text-muted-foreground text-xs">
                     {a.start_date ? new Date(a.start_date).toLocaleDateString() : "—"}
                   </TableCell>
-                  <TableCell className="text-slate-400 text-xs">
+                  <TableCell className="text-muted-foreground text-xs">
                     {a.end_date ? new Date(a.end_date).toLocaleDateString() : "—"}
                   </TableCell>
                   <TableCell><Badge className={statusColors[a.status ?? "pending"]}>{a.status}</Badge></TableCell>
@@ -162,40 +162,40 @@ export default function RegulatorySandbox() {
       </Card>
 
       <Dialog open={showApply} onOpenChange={setShowApply}>
-        <DialogContent className="bg-slate-800 border-slate-700 text-white max-w-lg">
+        <DialogContent className="bg-card border-border text-foreground max-w-lg">
           <DialogHeader><DialogTitle>Apply for Regulatory Sandbox</DialogTitle></DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label className="text-slate-300 text-sm">Project Name</Label>
-              <Input className="mt-1 bg-slate-700 border-slate-600 text-white" value={form.projectName}
+              <Label className="text-muted-foreground text-sm">Project Name</Label>
+              <Input className="mt-1 bg-muted border-border text-foreground" value={form.projectName}
                 onChange={e => setForm(f => ({ ...f, projectName: e.target.value }))} />
             </div>
             <div>
-              <Label className="text-slate-300 text-sm">Description</Label>
-              <Textarea className="mt-1 bg-slate-700 border-slate-600 text-white" value={form.description}
+              <Label className="text-muted-foreground text-sm">Description</Label>
+              <Textarea className="mt-1 bg-muted border-border text-foreground" value={form.description}
                 onChange={e => setForm(f => ({ ...f, description: e.target.value }))} />
             </div>
             <div>
-              <Label className="text-slate-300 text-sm">Data Categories (comma-separated)</Label>
-              <Input className="mt-1 bg-slate-700 border-slate-600 text-white" value={form.dataCategories}
+              <Label className="text-muted-foreground text-sm">Data Categories (comma-separated)</Label>
+              <Input className="mt-1 bg-muted border-border text-foreground" value={form.dataCategories}
                 placeholder="e.g. health_data, financial_data"
                 onChange={e => setForm(f => ({ ...f, dataCategories: e.target.value }))} />
             </div>
             <div>
-              <Label className="text-slate-300 text-sm">Proposed Duration (months, max 12)</Label>
-              <Input type="number" min={1} max={12} className="mt-1 bg-slate-700 border-slate-600 text-white"
+              <Label className="text-muted-foreground text-sm">Proposed Duration (months, max 12)</Label>
+              <Input type="number" min={1} max={12} className="mt-1 bg-muted border-border text-foreground"
                 value={form.proposedDuration}
                 onChange={e => setForm(f => ({ ...f, proposedDuration: parseInt(e.target.value) || 6 }))} />
             </div>
             <div>
-              <Label className="text-slate-300 text-sm">Benefit Statement</Label>
-              <Textarea className="mt-1 bg-slate-700 border-slate-600 text-white" value={form.benefitStatement}
+              <Label className="text-muted-foreground text-sm">Benefit Statement</Label>
+              <Textarea className="mt-1 bg-muted border-border text-foreground" value={form.benefitStatement}
                 placeholder="How will this benefit Nigerian citizens?"
                 onChange={e => setForm(f => ({ ...f, benefitStatement: e.target.value }))} />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" className="border-slate-600 text-slate-300" onClick={() => setShowApply(false)}>Cancel</Button>
+            <Button variant="outline" className="border-border text-muted-foreground" onClick={() => setShowApply(false)}>Cancel</Button>
             <Button className="bg-purple-600 hover:bg-purple-700"
               disabled={!form.projectName || !form.description || apply.isPending}
               onClick={() => apply.mutate({

@@ -49,8 +49,8 @@ export default function ComplianceGapAnalyzer() {
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">Compliance Gap Analyzer</h1>
-          <p className="text-slate-400 text-sm mt-1">Identify and remediate NDPA, ISO 27001, SOC2, GDPR compliance gaps</p>
+          <h1 className="text-2xl font-bold text-foreground">Compliance Gap Analyzer</h1>
+          <p className="text-muted-foreground text-sm mt-1">Identify and remediate NDPA, ISO 27001, SOC2, GDPR compliance gaps</p>
         </div>
         <Button onClick={() => runAnalysis.mutate({ orgId: 1 })} className="bg-blue-600 hover:bg-blue-700" disabled={runAnalysis.isPending}>
           <RefreshCw className={`w-4 h-4 mr-2 ${runAnalysis.isPending ? "animate-spin" : ""}`} />
@@ -72,10 +72,10 @@ export default function ComplianceGapAnalyzer() {
             <p className="text-2xl font-bold text-orange-300">{openCount}</p>
           </CardContent>
         </Card>
-        <Card className="bg-slate-800/50 border-slate-700">
+        <Card className="bg-card/50 border-border">
           <CardContent className="p-4">
-            <p className="text-slate-400 text-xs">Total Gaps</p>
-            <p className="text-2xl font-bold text-white">{gaps?.length ?? 0}</p>
+            <p className="text-muted-foreground text-xs">Total Gaps</p>
+            <p className="text-2xl font-bold text-foreground">{gaps?.length ?? 0}</p>
           </CardContent>
         </Card>
         <Card className="bg-green-900/20 border-green-700/40">
@@ -90,15 +90,15 @@ export default function ComplianceGapAnalyzer() {
 
       {/* Framework Coverage */}
       {summary && (
-        <Card className="bg-slate-800/50 border-slate-700">
-          <CardHeader><CardTitle className="text-white text-base">Framework Coverage</CardTitle></CardHeader>
+        <Card className="bg-card/50 border-border">
+          <CardHeader><CardTitle className="text-foreground text-base">Framework Coverage</CardTitle></CardHeader>
           <CardContent>
             <div className="grid grid-cols-4 gap-6">
               {Object.entries((summary as any)?.byFramework ?? {}).map(([fw, data]: [string, any]) => (
                 <div key={fw}>
                   <div className="flex justify-between mb-1">
-                    <span className="text-slate-300 text-sm font-medium">{fw}</span>
-                    <span className="text-white text-sm">{data.score ?? 0}%</span>
+                    <span className="text-muted-foreground text-sm font-medium">{fw}</span>
+                    <span className="text-foreground text-sm">{data.score ?? 0}%</span>
                   </div>
                   <Progress value={data.score ?? 0} className="h-2" />
                   <p className="text-slate-500 text-xs mt-1">{data.gaps} gaps remaining</p>
@@ -112,10 +112,10 @@ export default function ComplianceGapAnalyzer() {
       {/* Filters */}
       <div className="flex gap-3">
         <Select value={orgFilter} onValueChange={setOrgFilter}>
-          <SelectTrigger className="bg-slate-800 border-slate-600 text-white w-52">
+          <SelectTrigger className="bg-card border-border text-foreground w-52">
             <SelectValue placeholder="All Organisations" />
           </SelectTrigger>
-          <SelectContent className="bg-slate-800 border-slate-700">
+          <SelectContent className="bg-card border-border">
             <SelectItem value="all">All Organisations</SelectItem>
             {orgs?.map((o: any) => (
               <SelectItem key={o.id} value={String(o.id)}>{o.name}</SelectItem>
@@ -123,10 +123,10 @@ export default function ComplianceGapAnalyzer() {
           </SelectContent>
         </Select>
         <Select value={frameworkFilter} onValueChange={setFrameworkFilter}>
-          <SelectTrigger className="bg-slate-800 border-slate-600 text-white w-44">
+          <SelectTrigger className="bg-card border-border text-foreground w-44">
             <SelectValue placeholder="All Frameworks" />
           </SelectTrigger>
-          <SelectContent className="bg-slate-800 border-slate-700">
+          <SelectContent className="bg-card border-border">
             <SelectItem value="all">All Frameworks</SelectItem>
             <SelectItem value="NDPA">NDPA 2023</SelectItem>
             <SelectItem value="ISO27001">ISO 27001</SelectItem>
@@ -138,32 +138,32 @@ export default function ComplianceGapAnalyzer() {
       </div>
 
       {/* Gaps Table */}
-      <Card className="bg-slate-800/50 border-slate-700">
+      <Card className="bg-card/50 border-border">
         <CardContent className="p-0">
           <Table>
             <TableHeader>
-              <TableRow className="border-slate-700">
-                <TableHead className="text-slate-400">Gap</TableHead>
-                <TableHead className="text-slate-400">Framework</TableHead>
-                <TableHead className="text-slate-400">Control</TableHead>
-                <TableHead className="text-slate-400">Organisation</TableHead>
-                <TableHead className="text-slate-400">Priority</TableHead>
-                <TableHead className="text-slate-400">Effort</TableHead>
-                <TableHead className="text-slate-400">Status</TableHead>
-                <TableHead className="text-slate-400">Actions</TableHead>
+              <TableRow className="border-border">
+                <TableHead className="text-muted-foreground">Gap</TableHead>
+                <TableHead className="text-muted-foreground">Framework</TableHead>
+                <TableHead className="text-muted-foreground">Control</TableHead>
+                <TableHead className="text-muted-foreground">Organisation</TableHead>
+                <TableHead className="text-muted-foreground">Priority</TableHead>
+                <TableHead className="text-muted-foreground">Effort</TableHead>
+                <TableHead className="text-muted-foreground">Status</TableHead>
+                <TableHead className="text-muted-foreground">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {gaps?.map((gap: any) => (
-                <TableRow key={gap.id} className="border-slate-700 cursor-pointer hover:bg-slate-700/30"
+                <TableRow key={gap.id} className="border-border cursor-pointer hover:bg-muted/30"
                   onClick={() => setSelectedGap(gap)}>
                   <TableCell>
-                    <p className="text-white text-sm font-medium">{gap.gap_title}</p>
+                    <p className="text-foreground text-sm font-medium">{gap.gap_title}</p>
                     <p className="text-slate-500 text-xs line-clamp-1">{gap.description}</p>
                   </TableCell>
                   <TableCell><Badge variant="outline" className="border-blue-500/40 text-blue-400">{gap.framework}</Badge></TableCell>
-                  <TableCell className="text-slate-400 text-xs font-mono">{gap.control_id}</TableCell>
-                  <TableCell className="text-slate-400 text-sm">{gap.org_name ?? "Platform-wide"}</TableCell>
+                  <TableCell className="text-muted-foreground text-xs font-mono">{gap.control_id}</TableCell>
+                  <TableCell className="text-muted-foreground text-sm">{gap.org_name ?? "Platform-wide"}</TableCell>
                   <TableCell><Badge className={priorityColors[gap.priority ?? "medium"]}>{gap.priority}</Badge></TableCell>
                   <TableCell>
                     <span className={`text-xs ${gap.remediation_effort === "high" ? "text-red-400" : gap.remediation_effort === "medium" ? "text-yellow-400" : "text-green-400"}`}>
@@ -174,10 +174,10 @@ export default function ComplianceGapAnalyzer() {
                   <TableCell>
                     <Select value={gap.status ?? "open"}
                       onValueChange={(v) => updateStatus.mutate({ orgId: gap.org_id ?? 1 })}>
-                      <SelectTrigger className="h-7 bg-slate-700 border-slate-600 text-white text-xs w-28" onClick={e => e.stopPropagation()}>
+                      <SelectTrigger className="h-7 bg-muted border-border text-foreground text-xs w-28" onClick={e => e.stopPropagation()}>
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent className="bg-slate-800 border-slate-700">
+                      <SelectContent className="bg-card border-border">
                         <SelectItem value="open">Open</SelectItem>
                         <SelectItem value="in_progress">In Progress</SelectItem>
                         <SelectItem value="remediated">Remediated</SelectItem>

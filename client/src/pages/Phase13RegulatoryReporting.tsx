@@ -14,8 +14,8 @@ type ReportType = "quarterly_national" | "annual_breach" | "sector_benchmark" | 
 
 export default function Phase13RegulatoryReporting() {
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("");
-  const [typeFilter, setTypeFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [typeFilter, setTypeFilter] = useState("all");
   const [open, setOpen] = useState(false);
   const [submitOpen, setSubmitOpen] = useState(false);
   const [selectedReport, setSelectedReport] = useState<any>(null);
@@ -28,8 +28,8 @@ export default function Phase13RegulatoryReporting() {
   const utils = trpc.useUtils();
   const { data: reports, isLoading } = trpc.phase13.regulatoryReporting.list.useQuery({
     search: search || undefined,
-    status: statusFilter || undefined,
-    report_type: typeFilter || undefined,
+    status: statusFilter === "all" ? undefined : statusFilter || undefined,
+    report_type: typeFilter === "all" ? undefined : typeFilter || undefined,
   });
   const generate = trpc.phase13.regulatoryReporting.generate.useMutation({
     onSuccess: () => {
@@ -140,14 +140,14 @@ export default function Phase13RegulatoryReporting() {
           <Select value={typeFilter} onValueChange={setTypeFilter}>
             <SelectTrigger className="w-52"><SelectValue placeholder="All Types" /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All Types</SelectItem>
+              <SelectItem value="all">All Types</SelectItem>
               {Object.entries(reportTypeLabels).map(([v, l]) => <SelectItem key={v} value={v}>{l}</SelectItem>)}
             </SelectContent>
           </Select>
           <Select value={statusFilter} onValueChange={setStatusFilter}>
             <SelectTrigger className="w-36"><SelectValue placeholder="All Statuses" /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All</SelectItem>
+              <SelectItem value="all">All</SelectItem>
               <SelectItem value="draft">Draft</SelectItem>
               <SelectItem value="submitted">Submitted</SelectItem>
               <SelectItem value="approved">Approved</SelectItem>

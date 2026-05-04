@@ -12,8 +12,8 @@ import { ArrowRightLeft, Plus, Search, Bell, Globe } from "lucide-react";
 
 export default function Phase13CrossBorderMonitor() {
   const [search, setSearch] = useState("");
-  const [countryFilter, setCountryFilter] = useState("");
-  const [riskFilter, setRiskFilter] = useState("");
+  const [countryFilter, setCountryFilter] = useState("all");
+  const [riskFilter, setRiskFilter] = useState("all");
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({
     org_name: "", destination_country: "", data_category: "",
@@ -23,8 +23,8 @@ export default function Phase13CrossBorderMonitor() {
   const utils = trpc.useUtils();
   const { data: transfers, isLoading } = trpc.phase13.crossBorderMonitor.list.useQuery({
     search: search || undefined,
-    country: countryFilter || undefined,
-    risk_level: riskFilter || undefined,
+    country: countryFilter === "all" ? undefined : countryFilter || undefined,
+    risk_level: riskFilter === "all" ? undefined : riskFilter || undefined,
   });
   const { data: byCountry } = trpc.phase13.crossBorderMonitor.getByCountry.useQuery();
   const create = trpc.phase13.crossBorderMonitor.create.useMutation({
@@ -137,7 +137,7 @@ export default function Phase13CrossBorderMonitor() {
           <Select value={riskFilter} onValueChange={setRiskFilter}>
             <SelectTrigger className="w-36"><SelectValue placeholder="All Risk Levels" /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All</SelectItem>
+              <SelectItem value="all">All</SelectItem>
               <SelectItem value="critical">Critical</SelectItem>
               <SelectItem value="high">High</SelectItem>
               <SelectItem value="medium">Medium</SelectItem>

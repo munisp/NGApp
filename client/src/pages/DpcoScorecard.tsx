@@ -58,7 +58,7 @@ export default function DpcoScorecard() {
 
   const { data, isLoading } = trpc.dpco.listOrganisations.useQuery({
     status: "active",
-    limit: 328,
+    limit: 200,
   });
 
   const scorecardRows = useMemo(() => {

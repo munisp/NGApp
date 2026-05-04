@@ -46,20 +46,20 @@ export default function PdfExportCenter() {
       <div className="p-6 space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-white flex items-center gap-2"><FileText className="w-6 h-6 text-rose-400" /> PDF Export Center</h1>
-            <p className="text-slate-400 text-sm mt-1">Generate official regulatory documents: certificates, audit returns, penalty notices</p>
+            <h1 className="text-2xl font-bold text-foreground flex items-center gap-2"><FileText className="w-6 h-6 text-rose-400" /> PDF Export Center</h1>
+            <p className="text-muted-foreground text-sm mt-1">Generate official regulatory documents: certificates, audit returns, penalty notices</p>
           </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {PDF_TYPES.map(t => (
-            <Card key={t.id} className={`bg-slate-800 border-slate-700 cursor-pointer transition-all ${selectedType === t.id ? "border-rose-500/50 ring-1 ring-rose-500/30" : "hover:border-slate-500"}`} onClick={() => setSelectedType(t.id)}>
+            <Card key={t.id} className={`bg-card border-border cursor-pointer transition-all ${selectedType === t.id ? "border-rose-500/50 ring-1 ring-rose-500/30" : "hover:border-slate-500"}`} onClick={() => setSelectedType(t.id)}>
               <CardContent className="p-5">
                 <div className="flex items-start gap-3">
                   <t.icon className={`w-8 h-8 ${t.color} mt-0.5`} />
                   <div>
-                    <h3 className="text-white font-medium">{t.label}</h3>
-                    <p className="text-slate-400 text-xs mt-1">{t.description}</p>
+                    <h3 className="text-foreground font-medium">{t.label}</h3>
+                    <p className="text-muted-foreground text-xs mt-1">{t.description}</p>
                   </div>
                 </div>
                 {selectedType === t.id && <div className="mt-3 h-0.5 bg-rose-500/50 rounded" />}
@@ -68,26 +68,26 @@ export default function PdfExportCenter() {
           ))}
         </div>
 
-        <Card className="bg-slate-800 border-slate-700">
-          <CardHeader><CardTitle className="text-white flex items-center gap-2">{selectedPdfType && <selectedPdfType.icon className={`w-5 h-5 ${selectedPdfType.color}`} />} Generate {selectedPdfType?.label}</CardTitle></CardHeader>
+        <Card className="bg-card border-border">
+          <CardHeader><CardTitle className="text-foreground flex items-center gap-2">{selectedPdfType && <selectedPdfType.icon className={`w-5 h-5 ${selectedPdfType.color}`} />} Generate {selectedPdfType?.label}</CardTitle></CardHeader>
           <CardContent className="space-y-4">
             <div>
-              <label className="text-sm text-slate-400 mb-2 block">Select Organization</label>
+              <label className="text-sm text-muted-foreground mb-2 block">Select Organization</label>
               <Select value={String(orgId)} onValueChange={v => setOrgId(Number(v))}>
-                <SelectTrigger className="w-full max-w-md bg-slate-700 border-slate-600 text-white"><SelectValue placeholder="Select organization..." /></SelectTrigger>
-                <SelectContent className="bg-slate-700 border-slate-600">
+                <SelectTrigger className="w-full max-w-md bg-muted border-border text-foreground"><SelectValue placeholder="Select organization..." /></SelectTrigger>
+                <SelectContent className="bg-muted border-border">
                   {(orgs as any[]).map((o: any) => <SelectItem key={o.id} value={String(o.id)}>{o.name} ({String(o.sector ?? "").toUpperCase()})</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
 
-            <div className="bg-slate-700/50 rounded-lg p-4 border border-slate-600">
-              <h4 className="text-white text-sm font-medium mb-2">Document Details</h4>
+            <div className="bg-muted/50 rounded-lg p-4 border border-border">
+              <h4 className="text-foreground text-sm font-medium mb-2">Document Details</h4>
               <div className="grid grid-cols-2 gap-2 text-xs">
-                <div><span className="text-slate-400">Type:</span> <span className="text-white">{selectedPdfType?.label}</span></div>
-                <div><span className="text-slate-400">Format:</span> <span className="text-white">PDF/A-1b (archival)</span></div>
-                <div><span className="text-slate-400">Authority:</span> <span className="text-white">NDPC / NDSEP</span></div>
-                <div><span className="text-slate-400">Watermark:</span> <span className="text-white">OFFICIAL DOCUMENT</span></div>
+                <div><span className="text-muted-foreground">Type:</span> <span className="text-foreground">{selectedPdfType?.label}</span></div>
+                <div><span className="text-muted-foreground">Format:</span> <span className="text-foreground">PDF/A-1b (archival)</span></div>
+                <div><span className="text-muted-foreground">Authority:</span> <span className="text-foreground">NDPC / NDSEP</span></div>
+                <div><span className="text-muted-foreground">Watermark:</span> <span className="text-foreground">OFFICIAL DOCUMENT</span></div>
               </div>
             </div>
 
@@ -96,7 +96,7 @@ export default function PdfExportCenter() {
                 <Download className={`w-4 h-4 mr-2 ${generating ? "animate-bounce" : ""}`} />
                 {generating ? "Generating PDF..." : "Generate & Download PDF"}
               </Button>
-              <Button variant="outline" className="border-slate-600 text-slate-300 hover:text-white" onClick={() => window.print()}>
+              <Button variant="outline" className="border-border text-muted-foreground hover:text-foreground" onClick={() => window.print()}>
                 <Printer className="w-4 h-4 mr-2" /> Print Preview
               </Button>
             </div>
@@ -104,8 +104,8 @@ export default function PdfExportCenter() {
         </Card>
 
         {/* Recent exports */}
-        <Card className="bg-slate-800 border-slate-700">
-          <CardHeader><CardTitle className="text-white text-sm">Recent Exports</CardTitle></CardHeader>
+        <Card className="bg-card border-border">
+          <CardHeader><CardTitle className="text-foreground text-sm">Recent Exports</CardTitle></CardHeader>
           <CardContent>
             <div className="space-y-2">
               {[
@@ -114,16 +114,16 @@ export default function PdfExportCenter() {
                 { type: "Penalty Notice", org: "Airtel Nigeria", date: "2026-04-12", status: "ready" },
                 { type: "Compliance Certificate", org: "Zenith Bank", date: "2026-04-11", status: "ready" },
               ].map((e, i) => (
-                <div key={i} className="flex items-center justify-between p-3 bg-slate-700/50 rounded-lg">
+                <div key={i} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
                   <div className="flex items-center gap-3">
                     <FileText className="w-4 h-4 text-rose-400" />
                     <div>
-                      <p className="text-white text-sm">{e.type}</p>
-                      <p className="text-slate-400 text-xs">{e.org}</p>
+                      <p className="text-foreground text-sm">{e.type}</p>
+                      <p className="text-muted-foreground text-xs">{e.org}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
-                    <span className="text-xs text-slate-400">{e.date}</span>
+                    <span className="text-xs text-muted-foreground">{e.date}</span>
                     <Button size="sm" variant="ghost" className="text-rose-400 hover:text-rose-300 h-7 px-2" onClick={() => toast.info("Re-downloading...")}>
                       <Download className="w-3 h-3" />
                     </Button>

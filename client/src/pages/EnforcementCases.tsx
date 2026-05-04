@@ -373,7 +373,7 @@ export default function EnforcementCases() {
           </div>
           <DialogFooter>
             <Button variant="outline" size="sm" onClick={() => { setNitdaConfirmOpen(false); setNitdaConfirmRef(""); setNitdaConfirmSummary(""); setNitdaTargetCase(null); }}>Cancel</Button>
-            <Button size="sm" className="gap-1 bg-purple-600 hover:bg-purple-700 text-white" onClick={handleNitdaConfirm} disabled={!nitdaConfirmRef.trim() || updateCase.isPending}>
+            <Button size="sm" className="gap-1 bg-purple-600 hover:bg-purple-700 text-foreground" onClick={handleNitdaConfirm} disabled={!nitdaConfirmRef.trim() || updateCase.isPending}>
               {updateCase.isPending ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : <ChevronRight className="h-3.5 w-3.5" />}
               Confirm Escalation to NITDA
             </Button>
@@ -521,13 +521,13 @@ export default function EnforcementCases() {
 
       {/* Create Case Dialog */}
       <Dialog open={showCreate} onOpenChange={setShowCreate}>
-        <DialogContent className="bg-gray-900 border-gray-700 text-white">
+        <DialogContent className="bg-background border-border text-foreground">
           <DialogHeader><DialogTitle>Create Enforcement Case</DialogTitle></DialogHeader>
           <div className="space-y-3">
-            <div><Label>Penalty ID *</Label><Input type="number" className="bg-gray-800 border-gray-700 mt-1" value={createForm.penaltyId} onChange={e => setCreateForm(p => ({ ...p, penaltyId: e.target.value }))} placeholder="Financial penalty ID to escalate" /></div>
-            <div><Label>Organization ID *</Label><Input type="number" className="bg-gray-800 border-gray-700 mt-1" value={createForm.organizationId} onChange={e => setCreateForm(p => ({ ...p, organizationId: e.target.value }))} placeholder="Organization ID" /></div>
-            <div><Label>Escalation Reason</Label><Textarea className="bg-gray-800 border-gray-700 mt-1 text-sm" rows={2} value={createForm.escalationReason} onChange={e => setCreateForm(p => ({ ...p, escalationReason: e.target.value }))} placeholder="Reason for escalating to enforcement case..." /></div>
-            <div><Label>Assigned Officer ID</Label><Input type="number" className="bg-gray-800 border-gray-700 mt-1" value={createForm.assignedOfficerId} onChange={e => setCreateForm(p => ({ ...p, assignedOfficerId: e.target.value }))} placeholder="Officer user ID (optional)" /></div>
+            <div><Label>Penalty ID *</Label><Input type="number" className="bg-card border-border mt-1" value={createForm.penaltyId} onChange={e => setCreateForm(p => ({ ...p, penaltyId: e.target.value }))} placeholder="Financial penalty ID to escalate" /></div>
+            <div><Label>Organization ID *</Label><Input type="number" className="bg-card border-border mt-1" value={createForm.organizationId} onChange={e => setCreateForm(p => ({ ...p, organizationId: e.target.value }))} placeholder="Organization ID" /></div>
+            <div><Label>Escalation Reason</Label><Textarea className="bg-card border-border mt-1 text-sm" rows={2} value={createForm.escalationReason} onChange={e => setCreateForm(p => ({ ...p, escalationReason: e.target.value }))} placeholder="Reason for escalating to enforcement case..." /></div>
+            <div><Label>Assigned Officer ID</Label><Input type="number" className="bg-card border-border mt-1" value={createForm.assignedOfficerId} onChange={e => setCreateForm(p => ({ ...p, assignedOfficerId: e.target.value }))} placeholder="Officer user ID (optional)" /></div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowCreate(false)}>Cancel</Button>

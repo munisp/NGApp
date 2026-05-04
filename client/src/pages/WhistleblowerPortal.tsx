@@ -17,7 +17,7 @@ const statusColors: Record<string, string> = {
   under_review: "bg-yellow-500/20 text-yellow-400",
   investigating: "bg-orange-500/20 text-orange-400",
   resolved: "bg-green-500/20 text-green-400",
-  dismissed: "bg-slate-500/20 text-slate-400",
+  dismissed: "bg-slate-500/20 text-muted-foreground",
 };
 
 const EMPTY_FORM = {
@@ -61,13 +61,13 @@ export default function WhistleblowerPortal() {
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white flex items-center gap-2">
+          <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
             <Shield className="w-6 h-6 text-blue-400" /> Whistleblower Portal
           </h1>
-          <p className="text-slate-400 text-sm mt-1">Confidential reporting of NDPA violations — protected under Nigerian Whistleblower Protection Act 2022</p>
+          <p className="text-muted-foreground text-sm mt-1">Confidential reporting of NDPA violations — protected under Nigerian Whistleblower Protection Act 2022</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" className="border-slate-600 text-slate-300" onClick={() => setShowTrack(true)}>
+          <Button variant="outline" className="border-border text-muted-foreground" onClick={() => setShowTrack(true)}>
             <Eye className="w-4 h-4 mr-2" /> Track Report
           </Button>
           <Button className="bg-blue-600 hover:bg-blue-700" onClick={() => setShowSubmit(true)}>
@@ -82,17 +82,17 @@ export default function WhistleblowerPortal() {
             <Lock className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" />
             <div>
               <p className="text-blue-300 font-medium text-sm">Your identity is protected</p>
-              <p className="text-slate-400 text-sm">All reports are encrypted end-to-end. Anonymous submissions are fully supported. Retaliation against whistleblowers is a criminal offence under Section 12 of the Whistleblower Protection Act.</p>
+              <p className="text-muted-foreground text-sm">All reports are encrypted end-to-end. Anonymous submissions are fully supported. Retaliation against whistleblowers is a criminal offence under Section 12 of the Whistleblower Protection Act.</p>
             </div>
           </div>
         </CardContent>
       </Card>
 
       <div className="grid grid-cols-4 gap-4">
-        <Card className="bg-slate-800/50 border-slate-700">
+        <Card className="bg-card/50 border-border">
           <CardContent className="p-4">
-            <p className="text-slate-400 text-xs">Total Reports</p>
-            <p className="text-2xl font-bold text-white">{reports?.length ?? 0}</p>
+            <p className="text-muted-foreground text-xs">Total Reports</p>
+            <p className="text-2xl font-bold text-foreground">{reports?.length ?? 0}</p>
           </CardContent>
         </Card>
         <Card className="bg-yellow-900/20 border-yellow-700/40">
@@ -109,47 +109,47 @@ export default function WhistleblowerPortal() {
             </p>
           </CardContent>
         </Card>
-        <Card className="bg-slate-800/50 border-slate-700">
+        <Card className="bg-card/50 border-border">
           <CardContent className="p-4">
-            <p className="text-slate-400 text-xs">Anonymous</p>
-            <p className="text-2xl font-bold text-white">
+            <p className="text-muted-foreground text-xs">Anonymous</p>
+            <p className="text-2xl font-bold text-foreground">
               {reports?.filter((r: any) => r.is_anonymous).length ?? 0}
             </p>
           </CardContent>
         </Card>
       </div>
 
-      <Card className="bg-slate-800/50 border-slate-700">
-        <CardHeader><CardTitle className="text-white text-base">Reports (Admin View)</CardTitle></CardHeader>
+      <Card className="bg-card/50 border-border">
+        <CardHeader><CardTitle className="text-foreground text-base">Reports (Admin View)</CardTitle></CardHeader>
         <CardContent className="p-0">
           <Table>
             <TableHeader>
-              <TableRow className="border-slate-700">
-                <TableHead className="text-slate-400">Reference</TableHead>
-                <TableHead className="text-slate-400">Category</TableHead>
-                <TableHead className="text-slate-400">Organisation</TableHead>
-                <TableHead className="text-slate-400">Identity</TableHead>
-                <TableHead className="text-slate-400">Submitted</TableHead>
-                <TableHead className="text-slate-400">Status</TableHead>
-                <TableHead className="text-slate-400">Actions</TableHead>
+              <TableRow className="border-border">
+                <TableHead className="text-muted-foreground">Reference</TableHead>
+                <TableHead className="text-muted-foreground">Category</TableHead>
+                <TableHead className="text-muted-foreground">Organisation</TableHead>
+                <TableHead className="text-muted-foreground">Identity</TableHead>
+                <TableHead className="text-muted-foreground">Submitted</TableHead>
+                <TableHead className="text-muted-foreground">Status</TableHead>
+                <TableHead className="text-muted-foreground">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {reports?.map((r: any) => (
-                <TableRow key={r.id} className="border-slate-700">
-                  <TableCell className="text-white font-mono text-sm">{r.report_ref}</TableCell>
+                <TableRow key={r.id} className="border-border">
+                  <TableCell className="text-foreground font-mono text-sm">{r.report_ref}</TableCell>
                   <TableCell>
-                    <Badge variant="outline" className="border-slate-600 text-slate-400 capitalize">
+                    <Badge variant="outline" className="border-border text-muted-foreground capitalize">
                       {String(r.category ?? "").replace(/_/g, " ")}
                     </Badge>
                   </TableCell>
-                  <TableCell className="text-slate-400 text-sm">{r.org_name ?? "—"}</TableCell>
+                  <TableCell className="text-muted-foreground text-sm">{r.org_name ?? "—"}</TableCell>
                   <TableCell>
                     {r.is_anonymous
                       ? <span className="flex items-center gap-1 text-slate-500 text-xs"><EyeOff className="w-3 h-3" /> Anonymous</span>
                       : <span className="flex items-center gap-1 text-blue-400 text-xs"><Eye className="w-3 h-3" /> Identified</span>}
                   </TableCell>
-                  <TableCell className="text-slate-400 text-xs">
+                  <TableCell className="text-muted-foreground text-xs">
                     {r.submitted_at ? new Date(r.submitted_at).toLocaleDateString() : "—"}
                   </TableCell>
                   <TableCell>
@@ -158,10 +158,10 @@ export default function WhistleblowerPortal() {
                   <TableCell>
                     <Select value={r.status ?? "received"}
                       onValueChange={v => updateStatus.mutate({ id: r.id, status: v as any })}>
-                      <SelectTrigger className="h-7 bg-slate-700 border-slate-600 text-white text-xs w-32">
+                      <SelectTrigger className="h-7 bg-muted border-border text-foreground text-xs w-32">
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent className="bg-slate-800 border-slate-700">
+                      <SelectContent className="bg-card border-border">
                         <SelectItem value="received">Received</SelectItem>
                         <SelectItem value="under_review">Under Review</SelectItem>
                         <SelectItem value="investigating">Investigating</SelectItem>
@@ -179,7 +179,7 @@ export default function WhistleblowerPortal() {
 
       {/* Submit Dialog */}
       <Dialog open={showSubmit} onOpenChange={setShowSubmit}>
-        <DialogContent className="bg-slate-800 border-slate-700 text-white max-w-lg">
+        <DialogContent className="bg-card border-border text-foreground max-w-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Lock className="w-4 h-4 text-blue-400" /> Submit Confidential Report
@@ -187,10 +187,10 @@ export default function WhistleblowerPortal() {
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label className="text-slate-300 text-sm">Category</Label>
+              <Label className="text-muted-foreground text-sm">Category</Label>
               <Select value={form.reportType} onValueChange={v => setForm(f => ({ ...f, reportType: v as any }))}>
-                <SelectTrigger className="mt-1 bg-slate-700 border-slate-600 text-white"><SelectValue /></SelectTrigger>
-                <SelectContent className="bg-slate-800 border-slate-700">
+                <SelectTrigger className="mt-1 bg-muted border-border text-foreground"><SelectValue /></SelectTrigger>
+                <SelectContent className="bg-card border-border">
                   <SelectItem value="data_breach">Data Breach</SelectItem>
                   <SelectItem value="unlawful_processing">Unlawful Processing</SelectItem>
                   <SelectItem value="consent_violation">Consent Violation</SelectItem>
@@ -200,8 +200,8 @@ export default function WhistleblowerPortal() {
               </Select>
             </div>
             <div>
-              <Label className="text-slate-300 text-sm">Description (min 50 characters)</Label>
-              <Textarea className="mt-1 bg-slate-700 border-slate-600 text-white min-h-[100px]"
+              <Label className="text-muted-foreground text-sm">Description (min 50 characters)</Label>
+              <Textarea className="mt-1 bg-muted border-border text-foreground min-h-[100px]"
                 placeholder="Describe the violation in detail..."
                 value={form.description}
                 onChange={e => setForm(f => ({ ...f, description: e.target.value }))} />
@@ -210,18 +210,18 @@ export default function WhistleblowerPortal() {
             <div className="flex items-center gap-3">
               <input type="checkbox" id="anon" checked={form.isAnonymous}
                 onChange={e => setForm(f => ({ ...f, isAnonymous: e.target.checked }))} className="w-4 h-4" />
-              <Label htmlFor="anon" className="text-slate-300 text-sm cursor-pointer">Submit anonymously (recommended)</Label>
+              <Label htmlFor="anon" className="text-muted-foreground text-sm cursor-pointer">Submit anonymously (recommended)</Label>
             </div>
             {!form.isAnonymous && (
               <div>
-                <Label className="text-slate-300 text-sm">Contact Email</Label>
-                <Input type="email" className="mt-1 bg-slate-700 border-slate-600 text-white" value={form.contactEmail}
+                <Label className="text-muted-foreground text-sm">Contact Email</Label>
+                <Input type="email" className="mt-1 bg-muted border-border text-foreground" value={form.contactEmail}
                   onChange={e => setForm(f => ({ ...f, contactEmail: e.target.value }))} />
               </div>
             )}
           </div>
           <DialogFooter>
-            <Button variant="outline" className="border-slate-600 text-slate-300" onClick={() => setShowSubmit(false)}>Cancel</Button>
+            <Button variant="outline" className="border-border text-muted-foreground" onClick={() => setShowSubmit(false)}>Cancel</Button>
             <Button className="bg-blue-600 hover:bg-blue-700"
               disabled={form.description.length < 50 || submit.isPending}
               onClick={() => submit.mutate({
@@ -238,30 +238,30 @@ export default function WhistleblowerPortal() {
 
       {/* Track Dialog */}
       <Dialog open={showTrack} onOpenChange={setShowTrack}>
-        <DialogContent className="bg-slate-800 border-slate-700 text-white">
+        <DialogContent className="bg-card border-border text-foreground">
           <DialogHeader><DialogTitle>Track Your Report</DialogTitle></DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label className="text-slate-300 text-sm">Report Reference Number</Label>
-              <Input className="mt-1 bg-slate-700 border-slate-600 text-white font-mono"
+              <Label className="text-muted-foreground text-sm">Report Reference Number</Label>
+              <Input className="mt-1 bg-muted border-border text-foreground font-mono"
                 placeholder="WBR-2026-XXXXXX"
                 value={trackRef}
                 onChange={e => setTrackRef(e.target.value.toUpperCase())} />
             </div>
             {trackedReport && (
-              <div className="bg-slate-700/50 rounded-lg p-4 space-y-2">
+              <div className="bg-muted/50 rounded-lg p-4 space-y-2">
                 <div className="flex justify-between">
-                  <span className="text-slate-400 text-sm">Status</span>
+                  <span className="text-muted-foreground text-sm">Status</span>
                   <Badge className={statusColors[trackedReport.status ?? "received"] ?? ""}>{String(trackedReport.status ?? "").replace(/_/g, " ")}</Badge>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-slate-400 text-sm">Category</span>
-                  <span className="text-white text-sm capitalize">{String(trackedReport.category ?? "").replace(/_/g, " ")}</span>
+                  <span className="text-muted-foreground text-sm">Category</span>
+                  <span className="text-foreground text-sm capitalize">{String(trackedReport.category ?? "").replace(/_/g, " ")}</span>
                 </div>
               </div>
             )}
             {showTrack && trackRef.length > 5 && !trackedReport && (
-              <p className="text-slate-400 text-sm">No report found with reference {trackRef}</p>
+              <p className="text-muted-foreground text-sm">No report found with reference {trackRef}</p>
             )}
           </div>
         </DialogContent>
@@ -273,9 +273,9 @@ export default function WhistleblowerPortal() {
             <CheckCircle className="w-5 h-5 text-green-400" />
             <div>
               <p className="text-green-300 font-medium">Report submitted successfully</p>
-              <p className="text-slate-400 text-sm">Reference: <span className="font-mono text-white">{submittedRef}</span></p>
+              <p className="text-muted-foreground text-sm">Reference: <span className="font-mono text-foreground">{submittedRef}</span></p>
             </div>
-            <Button variant="ghost" className="ml-auto text-slate-400" onClick={() => setSubmittedRef(null)}>×</Button>
+            <Button variant="ghost" className="ml-auto text-muted-foreground" onClick={() => setSubmittedRef(null)}>×</Button>
           </CardContent>
         </Card>
       )}

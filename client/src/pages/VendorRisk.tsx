@@ -44,8 +44,8 @@ export default function VendorRisk() {
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">Vendor Risk Management</h1>
-          <p className="text-slate-400 text-sm mt-1">NDPA Third-Party Processor Due Diligence — Article 44 compliance</p>
+          <h1 className="text-2xl font-bold text-foreground">Vendor Risk Management</h1>
+          <p className="text-muted-foreground text-sm mt-1">NDPA Third-Party Processor Due Diligence — Article 44 compliance</p>
         </div>
         <Button onClick={() => setShowAdd(true)} className="bg-blue-600 hover:bg-blue-700">
           <Plus className="w-4 h-4 mr-2" /> Add Vendor
@@ -59,10 +59,10 @@ export default function VendorRisk() {
             <p className="text-2xl font-bold text-red-300">{stats?.highRisk ?? 0}</p>
           </CardContent>
         </Card>
-        <Card className="bg-slate-800/50 border-slate-700">
+        <Card className="bg-card/50 border-border">
           <CardContent className="p-4">
-            <p className="text-slate-400 text-xs">Total Vendors</p>
-            <p className="text-2xl font-bold text-white">{stats?.total ?? 0}</p>
+            <p className="text-muted-foreground text-xs">Total Vendors</p>
+            <p className="text-2xl font-bold text-foreground">{stats?.total ?? 0}</p>
           </CardContent>
         </Card>
         <Card className="bg-green-900/20 border-green-700/40">
@@ -81,10 +81,10 @@ export default function VendorRisk() {
 
       <div className="flex gap-3">
         <Select value={riskFilter} onValueChange={setRiskFilter}>
-          <SelectTrigger className="bg-slate-800 border-slate-600 text-white w-44">
+          <SelectTrigger className="bg-card border-border text-foreground w-44">
             <SelectValue placeholder="All Risk Levels" />
           </SelectTrigger>
-          <SelectContent className="bg-slate-800 border-slate-700">
+          <SelectContent className="bg-card border-border">
             <SelectItem value="all">All Risk Levels</SelectItem>
             <SelectItem value="critical">Critical</SelectItem>
             <SelectItem value="high">High</SelectItem>
@@ -94,36 +94,36 @@ export default function VendorRisk() {
         </Select>
       </div>
 
-      <Card className="bg-slate-800/50 border-slate-700">
+      <Card className="bg-card/50 border-border">
         <CardContent className="p-0">
           <Table>
             <TableHeader>
-              <TableRow className="border-slate-700">
-                <TableHead className="text-slate-400">Vendor</TableHead>
-                <TableHead className="text-slate-400">Type</TableHead>
-                <TableHead className="text-slate-400">Country</TableHead>
-                <TableHead className="text-slate-400">Data Access</TableHead>
-                <TableHead className="text-slate-400">DPA</TableHead>
-                <TableHead className="text-slate-400">Risk Score</TableHead>
-                <TableHead className="text-slate-400">Risk Level</TableHead>
-                <TableHead className="text-slate-400">Last Assessed</TableHead>
-                <TableHead className="text-slate-400">Actions</TableHead>
+              <TableRow className="border-border">
+                <TableHead className="text-muted-foreground">Vendor</TableHead>
+                <TableHead className="text-muted-foreground">Type</TableHead>
+                <TableHead className="text-muted-foreground">Country</TableHead>
+                <TableHead className="text-muted-foreground">Data Access</TableHead>
+                <TableHead className="text-muted-foreground">DPA</TableHead>
+                <TableHead className="text-muted-foreground">Risk Score</TableHead>
+                <TableHead className="text-muted-foreground">Risk Level</TableHead>
+                <TableHead className="text-muted-foreground">Last Assessed</TableHead>
+                <TableHead className="text-muted-foreground">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {vendors?.map(v => (
-                <TableRow key={v.id} className="border-slate-700">
+                <TableRow key={v.id} className="border-border">
                   <TableCell>
                     <div className="flex items-center gap-2">
-                      <Building2 className="w-4 h-4 text-slate-400" />
+                      <Building2 className="w-4 h-4 text-muted-foreground" />
                       <div>
-                        <p className="text-white text-sm font-medium">{v.vendor_name}</p>
+                        <p className="text-foreground text-sm font-medium">{v.vendor_name}</p>
                         <p className="text-slate-500 text-xs">{v.contract_ref}</p>
                       </div>
                     </div>
                   </TableCell>
-                  <TableCell><Badge variant="outline" className="border-slate-600 text-slate-400 capitalize">{v.vendor_type}</Badge></TableCell>
-                  <TableCell className="text-slate-400 text-sm">{v.country}</TableCell>
+                  <TableCell><Badge variant="outline" className="border-border text-muted-foreground capitalize">{v.vendor_type}</Badge></TableCell>
+                  <TableCell className="text-muted-foreground text-sm">{v.country}</TableCell>
                   <TableCell>
                     <Badge className={v.data_access_level === "full" ? "bg-red-500/20 text-red-400" : v.data_access_level === "partial" ? "bg-yellow-500/20 text-yellow-400" : "bg-green-500/20 text-green-400"}>
                       {v.data_access_level}
@@ -136,15 +136,15 @@ export default function VendorRisk() {
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
-                      <div className="w-16 bg-slate-700 rounded-full h-1.5">
+                      <div className="w-16 bg-muted rounded-full h-1.5">
                         <div className="h-1.5 rounded-full bg-gradient-to-r from-green-500 to-red-500"
                           style={{ width: `${v.risk_score ?? 0}%` }} />
                       </div>
-                      <span className="text-white text-sm">{v.risk_score ?? 0}</span>
+                      <span className="text-foreground text-sm">{v.risk_score ?? 0}</span>
                     </div>
                   </TableCell>
                   <TableCell><Badge className={riskColors[v.risk_level ?? "medium"]}>{v.risk_level}</Badge></TableCell>
-                  <TableCell className="text-slate-400 text-xs">
+                  <TableCell className="text-muted-foreground text-xs">
                     {v.last_assessed_at ? new Date(v.last_assessed_at).toLocaleDateString() : "Never"}
                   </TableCell>
                   <TableCell>
@@ -161,22 +161,22 @@ export default function VendorRisk() {
       </Card>
 
       <Dialog open={showAdd} onOpenChange={setShowAdd}>
-        <DialogContent className="bg-slate-800 border-slate-700 text-white">
+        <DialogContent className="bg-card border-border text-foreground">
           <DialogHeader><DialogTitle>Add Vendor</DialogTitle></DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label className="text-slate-300 text-sm">Vendor Name</Label>
-              <Input className="mt-1 bg-slate-700 border-slate-600 text-white" value={form.vendorName}
+              <Label className="text-muted-foreground text-sm">Vendor Name</Label>
+              <Input className="mt-1 bg-muted border-border text-foreground" value={form.vendorName}
                 onChange={e => setForm(f => ({ ...f, vendorName: e.target.value }))} />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label className="text-slate-300 text-sm">Type</Label>
+                <Label className="text-muted-foreground text-sm">Type</Label>
                 <Select value={form.vendorType} onValueChange={v => setForm(f => ({ ...f, vendorType: v as VendorType }))}>
-                  <SelectTrigger className="mt-1 bg-slate-700 border-slate-600 text-white">
+                  <SelectTrigger className="mt-1 bg-muted border-border text-foreground">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent className="bg-slate-800 border-slate-700">
+                  <SelectContent className="bg-card border-border">
                     <SelectItem value="saas">SaaS</SelectItem>
                     <SelectItem value="cloud">Cloud Provider</SelectItem>
                     <SelectItem value="consulting">Consulting</SelectItem>
@@ -186,18 +186,18 @@ export default function VendorRisk() {
                 </Select>
               </div>
               <div>
-                <Label className="text-slate-300 text-sm">Country</Label>
-                <Input className="mt-1 bg-slate-700 border-slate-600 text-white" value={form.country}
+                <Label className="text-muted-foreground text-sm">Country</Label>
+                <Input className="mt-1 bg-muted border-border text-foreground" value={form.country}
                   onChange={e => setForm(f => ({ ...f, country: e.target.value }))} />
               </div>
             </div>
             <div>
-              <Label className="text-slate-300 text-sm">Data Access Level</Label>
+              <Label className="text-muted-foreground text-sm">Data Access Level</Label>
               <Select value={form.dataAccess} onValueChange={v => setForm(f => ({ ...f, dataAccess: v }))}>
-                <SelectTrigger className="mt-1 bg-slate-700 border-slate-600 text-white">
+                <SelectTrigger className="mt-1 bg-muted border-border text-foreground">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="bg-slate-800 border-slate-700">
+                <SelectContent className="bg-card border-border">
                   <SelectItem value="none">None</SelectItem>
                   <SelectItem value="metadata">Metadata Only</SelectItem>
                   <SelectItem value="partial">Partial</SelectItem>
@@ -206,14 +206,14 @@ export default function VendorRisk() {
               </Select>
             </div>
             <div>
-              <Label className="text-slate-300 text-sm">Contract Reference</Label>
-              <Input className="mt-1 bg-slate-700 border-slate-600 text-white" value={form.contractRef}
+              <Label className="text-muted-foreground text-sm">Contract Reference</Label>
+              <Input className="mt-1 bg-muted border-border text-foreground" value={form.contractRef}
                 placeholder="e.g. CONTRACT-2024-001"
                 onChange={e => setForm(f => ({ ...f, contractRef: e.target.value }))} />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" className="border-slate-600 text-slate-300" onClick={() => setShowAdd(false)}>Cancel</Button>
+            <Button variant="outline" className="border-border text-muted-foreground" onClick={() => setShowAdd(false)}>Cancel</Button>
             <Button className="bg-blue-600 hover:bg-blue-700" disabled={!form.vendorName}
               onClick={() => addVendor.mutate(form)}>
               Add Vendor

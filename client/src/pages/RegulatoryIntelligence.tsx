@@ -41,8 +41,8 @@ export default function RegulatoryIntelligence() {
   return (
     <div className="p-6 space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-white">Regulatory Intelligence Hub</h1>
-        <p className="text-slate-400 text-sm mt-1">NDPC, CBN, NCC, NITDA — Real-time regulatory updates and compliance obligations</p>
+        <h1 className="text-2xl font-bold text-foreground">Regulatory Intelligence Hub</h1>
+        <p className="text-muted-foreground text-sm mt-1">NDPC, CBN, NCC, NITDA — Real-time regulatory updates and compliance obligations</p>
       </div>
 
       <div className="grid grid-cols-4 gap-4">
@@ -58,16 +58,16 @@ export default function RegulatoryIntelligence() {
             <p className="text-2xl font-bold text-orange-300">{criticalItems.length}</p>
           </CardContent>
         </Card>
-        <Card className="bg-slate-800/50 border-slate-700">
+        <Card className="bg-card/50 border-border">
           <CardContent className="p-4">
-            <p className="text-slate-400 text-xs">Total Items</p>
-            <p className="text-2xl font-bold text-white">{items?.length ?? 0}</p>
+            <p className="text-muted-foreground text-xs">Total Items</p>
+            <p className="text-2xl font-bold text-foreground">{items?.length ?? 0}</p>
           </CardContent>
         </Card>
-        <Card className="bg-slate-800/50 border-slate-700">
+        <Card className="bg-card/50 border-border">
           <CardContent className="p-4">
-            <p className="text-slate-400 text-xs">Upcoming Deadlines</p>
-            <p className="text-2xl font-bold text-white">
+            <p className="text-muted-foreground text-xs">Upcoming Deadlines</p>
+            <p className="text-2xl font-bold text-foreground">
               {items?.filter(i => i.compliance_deadline && new Date(i.compliance_deadline) > new Date()).length ?? 0}
             </p>
           </CardContent>
@@ -80,13 +80,13 @@ export default function RegulatoryIntelligence() {
           placeholder="Search regulatory items..."
           value={search}
           onChange={e => setSearch(e.target.value)}
-          className="bg-slate-800 border-slate-600 text-white max-w-xs"
+          className="bg-card border-border text-foreground max-w-xs"
         />
         <Select value={impactFilter} onValueChange={setImpactFilter}>
-          <SelectTrigger className="bg-slate-800 border-slate-600 text-white w-40">
+          <SelectTrigger className="bg-card border-border text-foreground w-40">
             <SelectValue placeholder="Impact Level" />
           </SelectTrigger>
-          <SelectContent className="bg-slate-800 border-slate-700">
+          <SelectContent className="bg-card border-border">
             <SelectItem value="all">All Impacts</SelectItem>
             <SelectItem value="critical">Critical</SelectItem>
             <SelectItem value="high">High</SelectItem>
@@ -95,10 +95,10 @@ export default function RegulatoryIntelligence() {
           </SelectContent>
         </Select>
         <Select value={typeFilter} onValueChange={setTypeFilter}>
-          <SelectTrigger className="bg-slate-800 border-slate-600 text-white w-44">
+          <SelectTrigger className="bg-card border-border text-foreground w-44">
             <SelectValue placeholder="Type" />
           </SelectTrigger>
-          <SelectContent className="bg-slate-800 border-slate-700">
+          <SelectContent className="bg-card border-border">
             <SelectItem value="all">All Types</SelectItem>
             <SelectItem value="regulation">Regulation</SelectItem>
             <SelectItem value="guidance">Guidance</SelectItem>
@@ -113,22 +113,22 @@ export default function RegulatoryIntelligence() {
       <div className="grid grid-cols-1 gap-4">
         {items?.map(item => (
           <Card key={item.id}
-            className={`border cursor-pointer hover:border-slate-500 transition-colors ${item.action_required ? "bg-slate-800/70 border-orange-700/40" : "bg-slate-800/50 border-slate-700"}`}
+            className={`border cursor-pointer hover:border-slate-500 transition-colors ${item.action_required ? "bg-card/70 border-orange-700/40" : "bg-card/50 border-border"}`}
             onClick={() => setSelected(item)}>
             <CardContent className="p-4">
               <div className="flex items-start justify-between gap-4">
                 <div className="flex items-start gap-3 flex-1">
-                  <div className="mt-0.5">{typeIcons[item.item_type] ?? <BookOpen className="w-4 h-4 text-slate-400" />}</div>
+                  <div className="mt-0.5">{typeIcons[item.item_type] ?? <BookOpen className="w-4 h-4 text-muted-foreground" />}</div>
                   <div className="flex-1">
                     <div className="flex items-center gap-2 flex-wrap mb-1">
-                      <span className="text-white font-medium text-sm">{item.title}</span>
+                      <span className="text-foreground font-medium text-sm">{item.title}</span>
                       {item.action_required && (
                         <Badge className="bg-red-500/20 text-red-400 text-[10px]">ACTION REQUIRED</Badge>
                       )}
                     </div>
-                    <p className="text-slate-400 text-xs line-clamp-2 mb-2">{item.summary}</p>
+                    <p className="text-muted-foreground text-xs line-clamp-2 mb-2">{item.summary}</p>
                     <div className="flex items-center gap-2 flex-wrap">
-                      <Badge variant="outline" className="border-slate-600 text-slate-400 text-[10px]">{item.source_org}</Badge>
+                      <Badge variant="outline" className="border-border text-muted-foreground text-[10px]">{item.source_org}</Badge>
                       <Badge className={impactColors[item.impact_level ?? "medium"] + " text-[10px]"}>{item.impact_level}</Badge>
                       {(item.ndpa_articles as string[])?.map((a: string) => (
                         <Badge key={a} className="bg-blue-500/20 text-blue-400 border-blue-500/30 text-[10px]">{a}</Badge>
@@ -153,34 +153,34 @@ export default function RegulatoryIntelligence() {
 
       {/* Detail Dialog */}
       <Dialog open={!!selected} onOpenChange={() => setSelected(null)}>
-        <DialogContent className="bg-slate-800 border-slate-700 text-white max-w-2xl">
+        <DialogContent className="bg-card border-border text-foreground max-w-2xl">
           <DialogHeader>
-            <DialogTitle className="text-white pr-8">{selected?.title}</DialogTitle>
+            <DialogTitle className="text-foreground pr-8">{selected?.title}</DialogTitle>
           </DialogHeader>
           {selected && (
             <div className="space-y-4">
               <div className="flex gap-2 flex-wrap">
                 <Badge className={impactColors[selected.impact_level ?? "medium"]}>{selected.impact_level} impact</Badge>
-                <Badge variant="outline" className="border-slate-600 text-slate-400">{selected.source_org}</Badge>
-                <Badge variant="outline" className="border-slate-600 text-slate-400 capitalize">{selected.item_type?.replace("_", " ")}</Badge>
+                <Badge variant="outline" className="border-border text-muted-foreground">{selected.source_org}</Badge>
+                <Badge variant="outline" className="border-border text-muted-foreground capitalize">{selected.item_type?.replace("_", " ")}</Badge>
                 {selected.action_required && <Badge className="bg-red-500/20 text-red-400">Action Required</Badge>}
               </div>
-              <p className="text-slate-300 text-sm leading-relaxed">{selected.summary}</p>
+              <p className="text-muted-foreground text-sm leading-relaxed">{selected.summary}</p>
               {selected.compliance_deadline && (
                 <div className="bg-amber-900/20 border border-amber-700/40 rounded-lg p-3">
                   <p className="text-amber-400 text-sm font-medium">Compliance Deadline: {new Date(selected.compliance_deadline).toLocaleDateString()}</p>
                 </div>
               )}
               <div>
-                <p className="text-slate-400 text-xs mb-2">Affected Sectors</p>
+                <p className="text-muted-foreground text-xs mb-2">Affected Sectors</p>
                 <div className="flex flex-wrap gap-1">
                   {(selected.affected_sectors as string[])?.map((s: string) => (
-                    <Badge key={s} className="bg-slate-700 text-slate-300 text-[10px]">{s}</Badge>
+                    <Badge key={s} className="bg-muted text-muted-foreground text-[10px]">{s}</Badge>
                   ))}
                 </div>
               </div>
               <div>
-                <p className="text-slate-400 text-xs mb-2">NDPA Articles</p>
+                <p className="text-muted-foreground text-xs mb-2">NDPA Articles</p>
                 <div className="flex flex-wrap gap-1">
                   {(selected.ndpa_articles as string[])?.map((a: string) => (
                     <Badge key={a} className="bg-blue-500/20 text-blue-400 border-blue-500/30 text-[10px]">{a}</Badge>
@@ -188,7 +188,7 @@ export default function RegulatoryIntelligence() {
                 </div>
               </div>
               {selected.source_url && (
-                <Button variant="outline" size="sm" className="border-slate-600 text-slate-300" asChild>
+                <Button variant="outline" size="sm" className="border-border text-muted-foreground" asChild>
                   <a href={selected.source_url} target="_blank" rel="noopener noreferrer">
                     <ExternalLink className="w-3 h-3 mr-2" /> View Source
                   </a>

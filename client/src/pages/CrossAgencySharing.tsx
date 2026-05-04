@@ -52,10 +52,10 @@ export default function CrossAgencySharing() {
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white flex items-center gap-2">
+          <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
             <Share2 className="w-6 h-6 text-teal-400" /> Cross-Agency Data Sharing
           </h1>
-          <p className="text-slate-400 text-sm mt-1">Inter-agency data sharing agreements — NDPA Section 24 Public Interest Derogation Framework</p>
+          <p className="text-muted-foreground text-sm mt-1">Inter-agency data sharing agreements — NDPA Section 24 Public Interest Derogation Framework</p>
         </div>
         <Button onClick={() => setShowCreate(true)} className="bg-teal-600 hover:bg-teal-700">
           <Plus className="w-4 h-4 mr-2" /> New Agreement
@@ -64,10 +64,10 @@ export default function CrossAgencySharing() {
 
       {/* Stats */}
       <div className="grid grid-cols-4 gap-4">
-        <Card className="bg-slate-800/50 border-slate-700">
+        <Card className="bg-card/50 border-border">
           <CardContent className="p-4">
-            <p className="text-slate-400 text-xs">Total Agreements</p>
-            <p className="text-2xl font-bold text-white">{stats?.total ?? 0}</p>
+            <p className="text-muted-foreground text-xs">Total Agreements</p>
+            <p className="text-2xl font-bold text-foreground">{stats?.total ?? 0}</p>
           </CardContent>
         </Card>
         <Card className="bg-blue-900/20 border-blue-700/40">
@@ -91,41 +91,41 @@ export default function CrossAgencySharing() {
       </div>
 
       {/* Agreements Table */}
-      <Card className="bg-slate-800/50 border-slate-700">
-        <CardHeader><CardTitle className="text-white text-base">Data Sharing Agreements</CardTitle></CardHeader>
+      <Card className="bg-card/50 border-border">
+        <CardHeader><CardTitle className="text-foreground text-base">Data Sharing Agreements</CardTitle></CardHeader>
         <CardContent className="p-0">
           <Table>
             <TableHeader>
-              <TableRow className="border-slate-700">
-                <TableHead className="text-slate-400">Reference</TableHead>
-                <TableHead className="text-slate-400">Flow</TableHead>
-                <TableHead className="text-slate-400">Dataset</TableHead>
-                <TableHead className="text-slate-400">Legal Basis</TableHead>
-                <TableHead className="text-slate-400">Retention</TableHead>
-                <TableHead className="text-slate-400">Transfers</TableHead>
-                <TableHead className="text-slate-400">Status</TableHead>
-                <TableHead className="text-slate-400">Actions</TableHead>
+              <TableRow className="border-border">
+                <TableHead className="text-muted-foreground">Reference</TableHead>
+                <TableHead className="text-muted-foreground">Flow</TableHead>
+                <TableHead className="text-muted-foreground">Dataset</TableHead>
+                <TableHead className="text-muted-foreground">Legal Basis</TableHead>
+                <TableHead className="text-muted-foreground">Retention</TableHead>
+                <TableHead className="text-muted-foreground">Transfers</TableHead>
+                <TableHead className="text-muted-foreground">Status</TableHead>
+                <TableHead className="text-muted-foreground">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {agreements?.map((a: any) => (
-                <TableRow key={a.id} className="border-slate-700">
-                  <TableCell className="text-white font-mono text-xs">{a.share_ref}</TableCell>
+                <TableRow key={a.id} className="border-border">
+                  <TableCell className="text-foreground font-mono text-xs">{a.share_ref}</TableCell>
                   <TableCell>
                     <div className="flex items-center gap-1 text-sm">
-                      <span className="text-slate-300">{a.requesting_agency}</span>
+                      <span className="text-muted-foreground">{a.requesting_agency}</span>
                       <ArrowRight className="w-3 h-3 text-slate-500" />
-                      <span className="text-slate-300">{a.providing_agency}</span>
+                      <span className="text-muted-foreground">{a.providing_agency}</span>
                     </div>
                   </TableCell>
-                  <TableCell className="text-slate-400 text-sm">{a.dataset_name}</TableCell>
+                  <TableCell className="text-muted-foreground text-sm">{a.dataset_name}</TableCell>
                   <TableCell>
-                    <Badge variant="outline" className="border-slate-600 text-slate-400 capitalize text-xs">
+                    <Badge variant="outline" className="border-border text-muted-foreground capitalize text-xs">
                       {String(a.legal_basis ?? "").replace(/_/g, " ")}
                     </Badge>
                   </TableCell>
-                  <TableCell className="text-slate-400 text-sm">{90}d</TableCell>
-                  <TableCell className="text-slate-400 text-sm">{a.records_shared ?? 0}</TableCell>
+                  <TableCell className="text-muted-foreground text-sm">{90}d</TableCell>
+                  <TableCell className="text-muted-foreground text-sm">{a.records_shared ?? 0}</TableCell>
                   <TableCell>
                     <Badge className={statusColors[a.status ?? "pending"] ?? ""}>{a.status}</Badge>
                   </TableCell>
@@ -154,39 +154,39 @@ export default function CrossAgencySharing() {
 
       {/* Create Dialog */}
       <Dialog open={showCreate} onOpenChange={setShowCreate}>
-        <DialogContent className="bg-slate-800 border-slate-700 text-white max-w-lg">
+        <DialogContent className="bg-card border-border text-foreground max-w-lg">
           <DialogHeader><DialogTitle>New Data Sharing Agreement</DialogTitle></DialogHeader>
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label className="text-slate-300 text-sm">Requesting Agency</Label>
-                <Input className="mt-1 bg-slate-700 border-slate-600 text-white" value={form.requestingAgency}
+                <Label className="text-muted-foreground text-sm">Requesting Agency</Label>
+                <Input className="mt-1 bg-muted border-border text-foreground" value={form.requestingAgency}
                   placeholder="e.g. FIRS"
                   onChange={e => setForm(f => ({ ...f, requestingAgency: e.target.value }))} />
               </div>
               <div>
-                <Label className="text-slate-300 text-sm">Providing Agency</Label>
-                <Input className="mt-1 bg-slate-700 border-slate-600 text-white" value={form.providingAgency}
+                <Label className="text-muted-foreground text-sm">Providing Agency</Label>
+                <Input className="mt-1 bg-muted border-border text-foreground" value={form.providingAgency}
                   placeholder="e.g. NIMC"
                   onChange={e => setForm(f => ({ ...f, providingAgency: e.target.value }))} />
               </div>
             </div>
             <div>
-              <Label className="text-slate-300 text-sm">Purpose</Label>
-              <Input className="mt-1 bg-slate-700 border-slate-600 text-white" value={form.datasetName}
+              <Label className="text-muted-foreground text-sm">Purpose</Label>
+              <Input className="mt-1 bg-muted border-border text-foreground" value={form.datasetName}
                 onChange={e => setForm(f => ({ ...f, datasetName: e.target.value }))} />
             </div>
             <div>
-              <Label className="text-slate-300 text-sm">Purpose</Label>
-              <Textarea className="mt-1 bg-slate-700 border-slate-600 text-white" value={form.purpose}
+              <Label className="text-muted-foreground text-sm">Purpose</Label>
+              <Textarea className="mt-1 bg-muted border-border text-foreground" value={form.purpose}
                 onChange={e => setForm(f => ({ ...f, purpose: e.target.value }))} />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label className="text-slate-300 text-sm">Legal Basis</Label>
+                <Label className="text-muted-foreground text-sm">Legal Basis</Label>
                 <Select value={form.legalBasis} onValueChange={v => setForm(f => ({ ...f, legalBasis: v }))}>
-                  <SelectTrigger className="mt-1 bg-slate-700 border-slate-600 text-white"><SelectValue /></SelectTrigger>
-                  <SelectContent className="bg-slate-800 border-slate-700">
+                  <SelectTrigger className="mt-1 bg-muted border-border text-foreground"><SelectValue /></SelectTrigger>
+                  <SelectContent className="bg-card border-border">
                     <SelectItem value="public_interest">Public Interest</SelectItem>
                     <SelectItem value="legal_obligation">Legal Obligation</SelectItem>
                     <SelectItem value="vital_interests">Vital Interests</SelectItem>
@@ -195,15 +195,15 @@ export default function CrossAgencySharing() {
                 </Select>
               </div>
               <div>
-                <Label className="text-slate-300 text-sm">Retention (days)</Label>
-                <Input type="number" className="mt-1 bg-slate-700 border-slate-600 text-white"
+                <Label className="text-muted-foreground text-sm">Retention (days)</Label>
+                <Input type="number" className="mt-1 bg-muted border-border text-foreground"
                   value={form.retentionDays}
                   onChange={e => setForm(f => ({ ...f, retentionDays: parseInt(e.target.value) || 90 }))} />
               </div>
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" className="border-slate-600 text-slate-300" onClick={() => setShowCreate(false)}>Cancel</Button>
+            <Button variant="outline" className="border-border text-muted-foreground" onClick={() => setShowCreate(false)}>Cancel</Button>
             <Button className="bg-teal-600 hover:bg-teal-700"
               disabled={!form.requestingAgency || !form.providingAgency || !form.datasetName || create.isPending}
               onClick={() => create.mutate({

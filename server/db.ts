@@ -2806,7 +2806,7 @@ export async function listCookieConsentRecords(orgId?: number, limit = 100) {
   let q = `SELECT * FROM cookie_consent_records WHERE 1=1`;
   const params: unknown[] = [];
   if (orgId) { params.push(orgId); q += ` AND organization_id = $${params.length}`; }
-  params.push(limit); q += ` ORDER BY consent_timestamp DESC LIMIT $${params.length}`;
+  params.push(limit); q += ` ORDER BY COALESCE(consent_timestamp, created_at) DESC LIMIT $${params.length}`;
   const result = await pool.query(q, params);
   return result.rows;
 }

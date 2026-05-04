@@ -62,7 +62,7 @@ function severityColor(s: string) {
   if (s === "critical") return "text-rose-400";
   if (s === "high") return "text-amber-400";
   if (s === "medium") return "text-yellow-400";
-  return "text-slate-400";
+  return "text-muted-foreground";
 }
 function statusBadge(s: string) {
   const map: Record<string, string> = {
@@ -71,10 +71,10 @@ function statusBadge(s: string) {
     under_review: "bg-amber-500/20 text-amber-300",
     open: "bg-rose-500/20 text-rose-300",
     settled: "bg-emerald-500/20 text-emerald-300",
-    closed: "bg-slate-500/20 text-slate-300",
+    closed: "bg-slate-500/20 text-muted-foreground",
     active: "bg-cyan-500/20 text-cyan-300",
   };
-  return map[s] ?? "bg-slate-500/20 text-slate-300";
+  return map[s] ?? "bg-slate-500/20 text-muted-foreground";
 }
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
@@ -83,7 +83,7 @@ function SectionHeader({ title, href, icon: Icon }: { title: string; href?: stri
     <div className="flex items-center justify-between mb-3">
       <div className="flex items-center gap-2">
         <Icon className="h-4 w-4 text-cyan-400" />
-        <span className="text-xs font-bold text-slate-300 uppercase tracking-wider">{title}</span>
+        <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">{title}</span>
       </div>
       {href && (
         <Link href={href}>
@@ -99,8 +99,8 @@ function SectionHeader({ title, href, icon: Icon }: { title: string; href?: stri
 function ChartTip({ active, payload, label }: any) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="bg-slate-800 border border-slate-600/50 rounded-lg px-3 py-2 text-xs shadow-xl">
-      <p className="text-slate-300 font-medium mb-1">{label}</p>
+    <div className="bg-card border border-border/50 rounded-lg px-3 py-2 text-xs shadow-xl">
+      <p className="text-muted-foreground font-medium mb-1">{label}</p>
       {payload.map((p: any) => (
         <p key={p.dataKey} style={{ color: p.color }} className="font-semibold">
           {p.name}: {p.value}
@@ -124,7 +124,7 @@ function NdpaRing({ score }: { score: number }) {
       </ResponsiveContainer>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
         <span className="text-2xl font-black" style={{ color }}>{score}%</span>
-        <span className="text-[10px] text-slate-400">{label}</span>
+        <span className="text-[10px] text-muted-foreground">{label}</span>
       </div>
     </div>
   );
@@ -192,31 +192,31 @@ export default function PwaDashboard() {
   const leaders = (leaderboard as any[]) ?? [];
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white">
+    <div className="min-h-screen bg-slate-950 text-foreground">
       <OfflineIndicator />
 
       {/* ── Header ── */}
-      <header className="sticky top-0 z-30 bg-slate-950/95 backdrop-blur border-b border-slate-800/60">
+      <header className="sticky top-0 z-30 bg-slate-950/95 backdrop-blur border-b border-border/60">
         <div className="max-w-lg mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center shadow-lg shadow-blue-600/30">
-              <Shield className="h-4 w-4 text-white" />
+              <Shield className="h-4 w-4 text-foreground" />
             </div>
             <div>
-              <p className="text-sm font-bold text-white leading-none">NDSEP Platform</p>
-              <p className="text-[10px] text-slate-400 leading-none mt-0.5">NDPC Enforcement Dashboard</p>
+              <p className="text-sm font-bold text-foreground leading-none">NDSEP Platform</p>
+              <p className="text-[10px] text-muted-foreground leading-none mt-0.5">NDPC Enforcement Dashboard</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
             <button onClick={refetchAll}
-              className="p-1.5 rounded-lg text-slate-400 hover:text-cyan-400 hover:bg-slate-800 transition-colors">
+              className="p-1.5 rounded-lg text-muted-foreground hover:text-cyan-400 hover:bg-card transition-colors">
               <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
             </button>
             <Link href="/alerts">
-              <button className="p-1.5 rounded-lg text-slate-400 hover:text-cyan-400 hover:bg-slate-800 transition-colors relative">
+              <button className="p-1.5 rounded-lg text-muted-foreground hover:text-cyan-400 hover:bg-card transition-colors relative">
                 <Bell className="h-4 w-4" />
                 {Number(alertStats?.critical) > 0 && (
-                  <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-rose-500 text-[8px] font-bold text-white flex items-center justify-center">
+                  <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-rose-500 text-[8px] font-bold text-foreground flex items-center justify-center">
                     {alertStats.critical}
                   </span>
                 )}
@@ -230,7 +230,7 @@ export default function PwaDashboard() {
           {(["overview", "breaches", "enforcement", "sectors"] as const).map((t) => (
             <button key={t} onClick={() => setTab(t)}
               className={`flex-1 text-[11px] font-semibold py-1.5 rounded-lg capitalize transition-all ${
-                tab === t ? "bg-blue-600 text-white shadow-md shadow-blue-600/20" : "text-slate-400 hover:text-white"
+                tab === t ? "bg-blue-600 text-foreground shadow-md shadow-blue-600/20" : "text-muted-foreground hover:text-foreground"
               }`}>
               {t}
             </button>
@@ -244,17 +244,17 @@ export default function PwaDashboard() {
         {tab === "overview" && (
           <>
             {/* NDPA Index + KPIs */}
-            <div className="bg-slate-900/60 border border-slate-800/50 rounded-2xl p-4">
+            <div className="bg-background/60 border border-border/50 rounded-2xl p-4">
               <div className="flex items-center gap-4">
                 <NdpaRing score={ndpaScore} />
                 <div className="flex-1 grid grid-cols-2 gap-2">
                   {kpis.slice(0, 2).map(({ label, value, sub, icon: Icon, color, bg, up }) => (
-                    <div key={label} className="bg-slate-800/60 rounded-xl p-2.5">
+                    <div key={label} className="bg-card/60 rounded-xl p-2.5">
                       <div className={`w-7 h-7 rounded-lg ${bg} flex items-center justify-center mb-1.5`}>
                         <Icon className={`h-3.5 w-3.5 ${color}`} />
                       </div>
-                      <p className="text-base font-black text-white leading-none">{value}</p>
-                      <p className="text-[10px] text-slate-400 mt-0.5">{label}</p>
+                      <p className="text-base font-black text-foreground leading-none">{value}</p>
+                      <p className="text-[10px] text-muted-foreground mt-0.5">{label}</p>
                       <p className="text-[10px] text-slate-500 leading-tight">{sub}</p>
                     </div>
                   ))}
@@ -266,19 +266,19 @@ export default function PwaDashboard() {
             {/* KPI row 2 */}
             <div className="grid grid-cols-2 gap-3">
               {kpis.slice(2).map(({ label, value, sub, icon: Icon, color, bg }) => (
-                <div key={label} className="bg-slate-900/60 border border-slate-800/50 rounded-2xl p-3.5">
+                <div key={label} className="bg-background/60 border border-border/50 rounded-2xl p-3.5">
                   <div className={`w-8 h-8 rounded-lg ${bg} flex items-center justify-center mb-2`}>
                     <Icon className={`h-4 w-4 ${color}`} />
                   </div>
-                  <p className="text-xl font-black text-white leading-none">{value}</p>
-                  <p className="text-[11px] text-slate-400 mt-1">{label}</p>
+                  <p className="text-xl font-black text-foreground leading-none">{value}</p>
+                  <p className="text-[11px] text-muted-foreground mt-1">{label}</p>
                   <p className="text-[10px] text-slate-500">{sub}</p>
                 </div>
               ))}
             </div>
 
             {/* Compliance trend */}
-            <div className="bg-slate-900/60 border border-slate-800/50 rounded-2xl p-4">
+            <div className="bg-background/60 border border-border/50 rounded-2xl p-4">
               <SectionHeader title="Compliance Trend (90d)" icon={TrendingUp} href="/frameworks" />
               {trendData.length === 0 ? (
                 <div className="h-36 flex items-center justify-center">
@@ -304,7 +304,7 @@ export default function PwaDashboard() {
 
             {/* Violation bar chart */}
             {violationData.length > 0 && (
-              <div className="bg-slate-900/60 border border-slate-800/50 rounded-2xl p-4">
+              <div className="bg-background/60 border border-border/50 rounded-2xl p-4">
                 <SectionHeader title="Weekly Violations" icon={AlertTriangle} href="/compliance" />
                 <ResponsiveContainer width="100%" height={130}>
                   <BarChart data={violationData} margin={{ top: 4, right: 4, bottom: 0, left: -24 }}>
@@ -320,7 +320,7 @@ export default function PwaDashboard() {
 
             {/* NDPA gap stats */}
             {gapStats && (
-              <div className="bg-slate-900/60 border border-slate-800/50 rounded-2xl p-4">
+              <div className="bg-background/60 border border-border/50 rounded-2xl p-4">
                 <SectionHeader title="NDPA Gap Closure" icon={Shield} />
                 <div className="grid grid-cols-3 gap-2">
                   {[
@@ -333,10 +333,10 @@ export default function PwaDashboard() {
                   ].map(({ label, val, total, color }) => {
                     const pct = total > 0 ? Math.round((val / total) * 100) : 0;
                     return (
-                      <div key={label} className="bg-slate-800/60 rounded-xl p-2.5 text-center">
-                        <p className="text-base font-black text-white">{pct}%</p>
-                        <p className="text-[10px] text-slate-400">{label}</p>
-                        <div className="mt-1.5 h-1 rounded-full bg-slate-700">
+                      <div key={label} className="bg-card/60 rounded-xl p-2.5 text-center">
+                        <p className="text-base font-black text-foreground">{pct}%</p>
+                        <p className="text-[10px] text-muted-foreground">{label}</p>
+                        <div className="mt-1.5 h-1 rounded-full bg-muted">
                           <div className="h-1 rounded-full" style={{ width: `${pct}%`, background: color }} />
                         </div>
                       </div>
@@ -347,7 +347,7 @@ export default function PwaDashboard() {
             )}
 
             {/* Quick nav */}
-            <div className="bg-slate-900/60 border border-slate-800/50 rounded-2xl p-4">
+            <div className="bg-background/60 border border-border/50 rounded-2xl p-4">
               <SectionHeader title="Quick Navigation" icon={Zap} />
               <div className="grid grid-cols-4 gap-2">
                 {[
@@ -361,11 +361,11 @@ export default function PwaDashboard() {
                   { label: "Reports", icon: TrendingUp, href: "/reports", color: "text-violet-400", bg: "bg-violet-500/10" },
                 ].map(({ label, icon: Icon, href, color, bg }) => (
                   <Link key={label} href={href}>
-                    <div className="bg-slate-800/60 border border-slate-700/40 rounded-xl p-2.5 flex flex-col items-center gap-1.5 cursor-pointer hover:border-blue-500/40 hover:bg-slate-700/60 transition-all">
+                    <div className="bg-card/60 border border-border/40 rounded-xl p-2.5 flex flex-col items-center gap-1.5 cursor-pointer hover:border-blue-500/40 hover:bg-muted/60 transition-all">
                       <div className={`w-7 h-7 rounded-lg ${bg} flex items-center justify-center`}>
                         <Icon className={`h-3.5 w-3.5 ${color}`} />
                       </div>
-                      <span className="text-[10px] text-slate-300 text-center leading-tight">{label}</span>
+                      <span className="text-[10px] text-muted-foreground text-center leading-tight">{label}</span>
                     </div>
                   </Link>
                 ))}
@@ -376,21 +376,21 @@ export default function PwaDashboard() {
 
         {/* ══ BREACHES TAB ══ */}
         {tab === "breaches" && (
-          <div className="bg-slate-900/60 border border-slate-800/50 rounded-2xl p-4">
+          <div className="bg-background/60 border border-border/50 rounded-2xl p-4">
             <SectionHeader title="Breach Incident Timeline" icon={ShieldAlert} href="/breach-notification" />
             {breaches.length === 0 ? (
               <p className="text-xs text-slate-500 text-center py-8">No breach incidents recorded</p>
             ) : (
               <div className="space-y-3">
                 {breaches.map((b: any, i: number) => (
-                  <div key={b.id ?? i} className="flex items-start gap-3 pb-3 border-b border-slate-800/60 last:border-0">
+                  <div key={b.id ?? i} className="flex items-start gap-3 pb-3 border-b border-border/60 last:border-0">
                     <div className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${
                       b.breach_incident_severity === "critical" ? "bg-rose-500" :
                       b.breach_incident_severity === "high" ? "bg-amber-500" : "bg-yellow-500"
                     }`} />
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs font-semibold text-white truncate">{b.organisation_name ?? b.organization_name ?? "Unknown Org"}</p>
-                      <p className="text-[10px] text-slate-400 mt-0.5 line-clamp-2">{b.breach_description ?? b.description ?? "Data breach incident"}</p>
+                      <p className="text-xs font-semibold text-foreground truncate">{b.organisation_name ?? b.organization_name ?? "Unknown Org"}</p>
+                      <p className="text-[10px] text-muted-foreground mt-0.5 line-clamp-2">{b.breach_description ?? b.description ?? "Data breach incident"}</p>
                       <div className="flex items-center gap-2 mt-1">
                         <span className={`text-[10px] font-semibold ${severityColor(b.breach_incident_severity ?? "medium")}`}>
                           {(b.breach_incident_severity ?? "medium").toUpperCase()}
@@ -411,14 +411,14 @@ export default function PwaDashboard() {
         {/* ══ ENFORCEMENT TAB ══ */}
         {tab === "enforcement" && (
           <div className="space-y-4">
-            <div className="bg-slate-900/60 border border-slate-800/50 rounded-2xl p-4">
+            <div className="bg-background/60 border border-border/50 rounded-2xl p-4">
               <SectionHeader title="Enforcement Cases" icon={Gavel} href="/enforcement-cases" />
               {cases.length === 0 ? (
                 <p className="text-xs text-slate-500 text-center py-8">No enforcement cases found</p>
               ) : (
                 <div className="space-y-3">
                   {cases.map((c: any, i: number) => (
-                    <div key={c.id ?? i} className="flex items-start gap-3 pb-3 border-b border-slate-800/60 last:border-0">
+                    <div key={c.id ?? i} className="flex items-start gap-3 pb-3 border-b border-border/60 last:border-0">
                       <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
                         ["settled", "closed"].includes(c.status) ? "bg-emerald-500/15" : "bg-rose-500/15"
                       }`}>
@@ -427,8 +427,8 @@ export default function PwaDashboard() {
                           : <XCircle className="h-4 w-4 text-rose-400" />}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-xs font-semibold text-white truncate">{c.organisation_name ?? c.organization_name ?? `Case #${c.id}`}</p>
-                        <p className="text-[10px] text-slate-400 mt-0.5 truncate">{c.case_description ?? c.description ?? "Enforcement action"}</p>
+                        <p className="text-xs font-semibold text-foreground truncate">{c.organisation_name ?? c.organization_name ?? `Case #${c.id}`}</p>
+                        <p className="text-[10px] text-muted-foreground mt-0.5 truncate">{c.case_description ?? c.description ?? "Enforcement action"}</p>
                         <div className="flex items-center gap-2 mt-1">
                           <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${statusBadge(c.status)}`}>{c.status}</span>
                           {c.penalty_amount && <span className="text-[10px] text-amber-400 font-semibold">{fmtNGN(Number(c.penalty_amount))}</span>}
@@ -443,7 +443,7 @@ export default function PwaDashboard() {
 
             {/* Penalty summary */}
             {penaltyStats && (
-              <div className="bg-slate-900/60 border border-slate-800/50 rounded-2xl p-4">
+              <div className="bg-background/60 border border-border/50 rounded-2xl p-4">
                 <SectionHeader title="Penalty Summary" icon={Gavel} />
                 <div className="grid grid-cols-2 gap-3">
                   {[
@@ -452,9 +452,9 @@ export default function PwaDashboard() {
                     { label: "Overdue", value: fmtNGN(Number(penaltyStats.overdueAmount ?? 0)), color: "text-rose-400" },
                     { label: "Cases", value: fmt(penaltyStats.total), color: "text-cyan-400" },
                   ].map(({ label, value, color }) => (
-                    <div key={label} className="bg-slate-800/60 rounded-xl p-3">
+                    <div key={label} className="bg-card/60 rounded-xl p-3">
                       <p className={`text-lg font-black ${color}`}>{value}</p>
-                      <p className="text-[11px] text-slate-400">{label}</p>
+                      <p className="text-[11px] text-muted-foreground">{label}</p>
                     </div>
                   ))}
                 </div>
@@ -467,7 +467,7 @@ export default function PwaDashboard() {
         {tab === "sectors" && (
           <div className="space-y-4">
             {/* Leaderboard */}
-            <div className="bg-slate-900/60 border border-slate-800/50 rounded-2xl p-4">
+            <div className="bg-background/60 border border-border/50 rounded-2xl p-4">
               <SectionHeader title="Compliance Leaderboard" icon={TrendingUp} href="/leaderboard" />
               {leaders.length === 0 ? (
                 <p className="text-xs text-slate-500 text-center py-8">No leaderboard data</p>
@@ -481,10 +481,10 @@ export default function PwaDashboard() {
                         <span className="text-[11px] font-bold text-slate-500 w-4 flex-shrink-0">{i + 1}</span>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between mb-1">
-                            <p className="text-xs font-semibold text-white truncate">{org.name ?? org.organisation_name ?? `Org #${org.id}`}</p>
+                            <p className="text-xs font-semibold text-foreground truncate">{org.name ?? org.organisation_name ?? `Org #${org.id}`}</p>
                             <span className="text-xs font-bold ml-2 flex-shrink-0" style={{ color: barColor }}>{score}%</span>
                           </div>
-                          <div className="h-1.5 rounded-full bg-slate-700">
+                          <div className="h-1.5 rounded-full bg-muted">
                             <div className="h-1.5 rounded-full transition-all" style={{ width: `${score}%`, background: barColor }} />
                           </div>
                         </div>
@@ -497,7 +497,7 @@ export default function PwaDashboard() {
 
             {/* Sector stats */}
             {sectorStats && (
-              <div className="bg-slate-900/60 border border-slate-800/50 rounded-2xl p-4">
+              <div className="bg-background/60 border border-border/50 rounded-2xl p-4">
                 <SectionHeader title="Sector Overview" icon={BarChart2} href="/sectors" />
                 <div className="space-y-2">
                   {((sectorStats as unknown) as any[]).slice(0, 6).map((s: any, i: number) => {
@@ -506,10 +506,10 @@ export default function PwaDashboard() {
                       <div key={s.sector ?? i} className="flex items-center gap-3">
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between mb-1">
-                            <p className="text-xs text-slate-300 truncate capitalize">{s.sector ?? s.name ?? `Sector ${i + 1}`}</p>
-                            <span className="text-xs font-semibold text-slate-300 ml-2 flex-shrink-0">{avg}%</span>
+                            <p className="text-xs text-muted-foreground truncate capitalize">{s.sector ?? s.name ?? `Sector ${i + 1}`}</p>
+                            <span className="text-xs font-semibold text-muted-foreground ml-2 flex-shrink-0">{avg}%</span>
                           </div>
-                          <div className="h-1 rounded-full bg-slate-700">
+                          <div className="h-1 rounded-full bg-muted">
                             <div className="h-1 rounded-full" style={{ width: `${avg}%`, background: Object.values(C)[i % Object.values(C).length] }} />
                           </div>
                         </div>
@@ -526,12 +526,12 @@ export default function PwaDashboard() {
         {/* ── Footer nav ── */}
         <div className="flex gap-2 pt-2">
           <Link href="/dpco-app" className="flex-1">
-            <Button variant="outline" size="sm" className="w-full text-xs border-slate-700 text-slate-300 hover:text-white">
+            <Button variant="outline" size="sm" className="w-full text-xs border-border text-muted-foreground hover:text-foreground">
               DPCO App
             </Button>
           </Link>
           <Link href="/" className="flex-1">
-            <Button variant="outline" size="sm" className="w-full text-xs border-slate-700 text-slate-300 hover:text-white">
+            <Button variant="outline" size="sm" className="w-full text-xs border-border text-muted-foreground hover:text-foreground">
               Desktop →
             </Button>
           </Link>

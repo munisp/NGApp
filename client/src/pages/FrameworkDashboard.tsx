@@ -86,7 +86,7 @@ function scoreFromCompliance(rate: number, framework: string): number {
 
 function ScoreBar({ score, color }: { score: number; color: string }) {
   return (
-    <div className="w-full bg-gray-700 rounded-full h-2 overflow-hidden">
+    <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
       <div
         className="h-2 rounded-full transition-all"
         style={{ width: `${score}%`, backgroundColor: color }}
@@ -132,8 +132,8 @@ export default function FrameworkDashboard() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">Framework Compliance Dashboard</h1>
-          <p className="text-gray-400 text-sm mt-1">
+          <h1 className="text-2xl font-bold text-foreground">Framework Compliance Dashboard</h1>
+          <p className="text-muted-foreground text-sm mt-1">
             Multi-framework compliance posture — NDPR · GDPR · ISO 27001 · SOC 2
           </p>
         </div>
@@ -142,7 +142,7 @@ export default function FrameworkDashboard() {
             <TrendingUp className="w-3 h-3 mr-1" /> {overallRate}% Overall
           </Badge>
           <Select value={exportFramework} onValueChange={setExportFramework}>
-            <SelectTrigger className="w-32 bg-gray-800 border-gray-700 text-sm h-8">
+            <SelectTrigger className="w-32 bg-card border-border text-sm h-8">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -210,20 +210,20 @@ export default function FrameworkDashboard() {
 
       {/* Summary KPIs */}
       <div className="grid grid-cols-4 gap-4">
-        <div className="bg-gray-800 rounded-xl border border-gray-700 p-4">
-          <div className="text-gray-400 text-sm">Frameworks Monitored</div>
-          <div className="text-2xl font-bold text-white">4</div>
+        <div className="bg-card rounded-xl border border-border p-4">
+          <div className="text-muted-foreground text-sm">Frameworks Monitored</div>
+          <div className="text-2xl font-bold text-foreground">4</div>
         </div>
-        <div className="bg-gray-800 rounded-xl border border-gray-700 p-4">
-          <div className="text-gray-400 text-sm">Overall Compliance</div>
+        <div className="bg-card rounded-xl border border-border p-4">
+          <div className="text-muted-foreground text-sm">Overall Compliance</div>
           <div className="text-2xl font-bold text-emerald-400">{overallRate}%</div>
         </div>
-        <div className="bg-gray-800 rounded-xl border border-gray-700 p-4">
-          <div className="text-gray-400 text-sm">Open Violations</div>
+        <div className="bg-card rounded-xl border border-border p-4">
+          <div className="text-muted-foreground text-sm">Open Violations</div>
           <div className="text-2xl font-bold text-red-400">{totalViolations}</div>
         </div>
-        <div className="bg-gray-800 rounded-xl border border-gray-700 p-4">
-          <div className="text-gray-400 text-sm">Critical Findings</div>
+        <div className="bg-card rounded-xl border border-border p-4">
+          <div className="text-muted-foreground text-sm">Critical Findings</div>
           <div className="text-2xl font-bold text-orange-400">{criticalViolations}</div>
         </div>
       </div>
@@ -233,14 +233,14 @@ export default function FrameworkDashboard() {
         {FRAMEWORKS.map(fw => {
           const score = scoreFromCompliance(overallRate, fw.id);
           return (
-            <div key={fw.id} className="bg-gray-800 rounded-xl border border-gray-700 p-5 space-y-4">
+            <div key={fw.id} className="bg-card rounded-xl border border-border p-5 space-y-4">
               {/* Framework Header */}
               <div className="flex items-start justify-between">
                 <div>
                   <div className="flex items-center gap-2">
                     <Shield className="w-4 h-4" style={{ color: fw.color }} />
-                    <span className="font-bold text-white text-lg">{fw.name}</span>
-                    <Badge variant="outline" className="text-[10px] border-gray-600 text-gray-400">{fw.authority}</Badge>
+                    <span className="font-bold text-foreground text-lg">{fw.name}</span>
+                    <Badge variant="outline" className="text-[10px] border-border text-muted-foreground">{fw.authority}</Badge>
                   </div>
                   <p className="text-gray-500 text-xs mt-0.5">{fw.fullName}</p>
                 </div>
@@ -248,7 +248,7 @@ export default function FrameworkDashboard() {
                   <div className="text-2xl font-bold" style={{ color: fw.color }}>{score}%</div>
                   <div className="flex items-center gap-1 justify-end mt-0.5">
                     <StatusIcon score={score} />
-                    <span className="text-xs text-gray-400">
+                    <span className="text-xs text-muted-foreground">
                       {score >= 80 ? "Compliant" : score >= 60 ? "Partial" : "Non-compliant"}
                     </span>
                   </div>
@@ -267,7 +267,7 @@ export default function FrameworkDashboard() {
                   return (
                     <div key={article.id} className="flex items-center gap-3">
                       <span className="text-[10px] font-mono text-gray-500 w-12 shrink-0">{article.id}</span>
-                      <span className="text-xs text-gray-400 flex-1 truncate">{article.title}</span>
+                      <span className="text-xs text-muted-foreground flex-1 truncate">{article.title}</span>
                       <div className="w-24 shrink-0">
                         <ScoreBar score={articleScore} color={fw.color} />
                       </div>
@@ -278,7 +278,7 @@ export default function FrameworkDashboard() {
               </div>
 
               {/* Footer */}
-              <div className="pt-2 border-t border-gray-700 flex items-center justify-between text-xs text-gray-500">
+              <div className="pt-2 border-t border-border flex items-center justify-between text-xs text-gray-500">
                 <span>Weight: {fw.articles.reduce((s, a) => s + a.weight, 0)} pts</span>
                 <span>{fw.articles.filter(() => score >= 80).length}/{fw.articles.length} controls passing</span>
               </div>
@@ -288,17 +288,17 @@ export default function FrameworkDashboard() {
       </div>
 
       {/* Cross-Framework Comparison Table */}
-      <div className="bg-gray-800 rounded-xl border border-gray-700 overflow-hidden">
-        <div className="px-5 py-3 border-b border-gray-700">
-          <h2 className="text-sm font-semibold text-white">Cross-Framework Control Mapping</h2>
+      <div className="bg-card rounded-xl border border-border overflow-hidden">
+        <div className="px-5 py-3 border-b border-border">
+          <h2 className="text-sm font-semibold text-foreground">Cross-Framework Control Mapping</h2>
           <p className="text-xs text-gray-500 mt-0.5">Common control domains across all 4 frameworks</p>
         </div>
         <table className="w-full text-xs">
-          <thead className="border-b border-gray-700 bg-gray-900/50">
+          <thead className="border-b border-border bg-background/50">
             <tr>
-              <th className="text-left px-4 py-3 text-gray-400 font-medium">Control Domain</th>
+              <th className="text-left px-4 py-3 text-muted-foreground font-medium">Control Domain</th>
               {FRAMEWORKS.map(fw => (
-                <th key={fw.id} className="text-center px-4 py-3 text-gray-400 font-medium">{fw.name}</th>
+                <th key={fw.id} className="text-center px-4 py-3 text-muted-foreground font-medium">{fw.name}</th>
               ))}
             </tr>
           </thead>
@@ -311,8 +311,8 @@ export default function FrameworkDashboard() {
               { domain: "Audit & Logging", refs: ["Art.3.1", "Art.30", "A.12", "CC7"] },
               { domain: "Encryption at Rest", refs: ["Art.2.5", "Art.32", "A.10", "CC6"] },
             ].map(row => (
-              <tr key={row.domain} className="border-b border-gray-700/50 hover:bg-gray-700/30">
-                <td className="px-4 py-3 text-gray-300 font-medium">{row.domain}</td>
+              <tr key={row.domain} className="border-b border-border/50 hover:bg-muted/30">
+                <td className="px-4 py-3 text-muted-foreground font-medium">{row.domain}</td>
                 {row.refs.map((ref, i) => {
                   const score = scoreFromCompliance(overallRate, FRAMEWORKS[i].id);
                   return (

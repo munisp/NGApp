@@ -28,7 +28,7 @@ function EditableText({
         }
         <span className="flex gap-1">
           <button onClick={save} className="text-emerald-400 hover:text-emerald-300 text-xs flex items-center gap-0.5"><Check className="w-3 h-3" />Save</button>
-          <button onClick={cancel} className="text-slate-400 hover:text-slate-300 text-xs flex items-center gap-0.5"><X className="w-3 h-3" />Cancel</button>
+          <button onClick={cancel} className="text-muted-foreground hover:text-muted-foreground text-xs flex items-center gap-0.5"><X className="w-3 h-3" />Cancel</button>
         </span>
       </span>
     );
@@ -113,7 +113,7 @@ export default function DpcoBrochure() {
           <span className="text-sm font-medium text-slate-700">Brochure Editor</span>
           <Badge className="bg-violet-100 text-violet-700 border-violet-200 text-xs">Live Edit Mode</Badge>
         </div>
-        <span className="text-xs text-slate-400 ml-2">Click any text to edit it inline</span>
+        <span className="text-xs text-muted-foreground ml-2">Click any text to edit it inline</span>
         <div className="ml-auto flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={() => { setC(DEFAULT); toast.success("Content reset to defaults"); }} className="text-xs h-7">
             Reset
@@ -129,17 +129,17 @@ export default function DpcoBrochure() {
 
       <div className="max-w-5xl mx-auto">
         {/* ── COVER PAGE ──────────────────────────────────────────────────── */}
-        <section className="bg-gradient-to-br from-slate-900 via-slate-800 to-emerald-950 text-white px-16 py-20 flex flex-col justify-between" style={{minHeight: 480}}>
+        <section className="bg-gradient-to-br from-slate-900 via-slate-800 to-emerald-950 text-foreground px-16 py-20 flex flex-col justify-between" style={{minHeight: 480}}>
           <div className="flex items-center gap-3 mb-12">
             <div className="w-10 h-10 rounded-lg bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center">
               <span className="text-emerald-400 font-bold text-sm">N</span>
             </div>
             <div>
               <p className="text-emerald-400 font-semibold text-sm tracking-wider uppercase">NDSEP</p>
-              <p className="text-slate-400 text-xs">National Data Sovereignty Enforcement Platform</p>
+              <p className="text-muted-foreground text-xs">National Data Sovereignty Enforcement Platform</p>
             </div>
             <div className="ml-auto text-right">
-              <p className="text-slate-400 text-xs">For Licensed DPCOs</p>
+              <p className="text-muted-foreground text-xs">For Licensed DPCOs</p>
               <p className="text-slate-500 text-xs">NDPA 2023 Compliant</p>
             </div>
           </div>
@@ -148,17 +148,17 @@ export default function DpcoBrochure() {
             <h1 className="text-5xl font-bold leading-tight mb-6 whitespace-pre-line">
               <EditableText value={c.headline} onChange={v => setC(p => ({ ...p, headline: v }))} multiline className="text-5xl font-bold" />
             </h1>
-            <p className="text-slate-300 text-lg leading-relaxed max-w-2xl mb-8">
-              <EditableText value={c.subheadline} onChange={v => setC(p => ({ ...p, subheadline: v }))} multiline className="text-slate-300 text-lg" />
+            <p className="text-muted-foreground text-lg leading-relaxed max-w-2xl mb-8">
+              <EditableText value={c.subheadline} onChange={v => setC(p => ({ ...p, subheadline: v }))} multiline className="text-muted-foreground text-lg" />
             </p>
             <span className="text-emerald-400 font-semibold text-xl tracking-wide">
               <EditableText value={c.tagline} onChange={v => setC(p => ({ ...p, tagline: v }))} className="text-emerald-400 font-semibold text-xl" />
             </span>
           </div>
 
-          <div className="mt-12 pt-8 border-t border-slate-700/50 flex items-center gap-6">
+          <div className="mt-12 pt-8 border-t border-border/50 flex items-center gap-6">
             {["NDPC-Integrated", "AI-Powered", "Production-Ready", "NDPA 2023"].map(tag => (
-              <span key={tag} className="text-xs text-slate-400 flex items-center gap-1.5">
+              <span key={tag} className="text-xs text-muted-foreground flex items-center gap-1.5">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />{tag}
               </span>
             ))}
@@ -191,23 +191,23 @@ export default function DpcoBrochure() {
         </section>
 
         {/* ── AI & AUTOMATION ─────────────────────────────────────────────── */}
-        <section className="bg-slate-900 text-white px-16 py-14">
+        <section className="bg-background text-foreground px-16 py-14">
           <h2 className="text-2xl font-bold mb-2">
             <EditableText value={c.aiTitle} onChange={v => setC(p => ({ ...p, aiTitle: v }))} className="text-2xl font-bold" />
           </h2>
-          <p className="text-slate-400 text-sm mb-10">Every AI feature is live, tested, and backed by the NDSEP Intelligence Engine.</p>
+          <p className="text-muted-foreground text-sm mb-10">Every AI feature is live, tested, and backed by the NDSEP Intelligence Engine.</p>
           <div className="space-y-4">
             {c.aiPoints.map((p, i) => (
-              <div key={i} className="flex gap-4 bg-slate-800/60 border border-slate-700/50 rounded-xl p-5">
+              <div key={i} className="flex gap-4 bg-card/60 border border-border/50 rounded-xl p-5">
                 <div className="w-8 h-8 rounded-lg bg-violet-500/20 border border-violet-500/30 flex items-center justify-center shrink-0">
                   <span className="text-violet-400 font-bold text-xs">{String.fromCharCode(65 + i)}</span>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold text-white text-sm mb-1">
-                    <EditableText value={p.label} onChange={v => updateAiPoint(i, "label", v)} className="font-semibold text-white text-sm" />
+                  <h3 className="font-semibold text-foreground text-sm mb-1">
+                    <EditableText value={p.label} onChange={v => updateAiPoint(i, "label", v)} className="font-semibold text-foreground text-sm" />
                   </h3>
-                  <p className="text-slate-400 text-xs leading-relaxed">
-                    <EditableText value={p.detail} onChange={v => updateAiPoint(i, "detail", v)} multiline className="text-slate-400 text-xs" />
+                  <p className="text-muted-foreground text-xs leading-relaxed">
+                    <EditableText value={p.detail} onChange={v => updateAiPoint(i, "detail", v)} multiline className="text-muted-foreground text-xs" />
                   </p>
                 </div>
                 <div className="shrink-0">
@@ -238,7 +238,7 @@ export default function DpcoBrochure() {
                     </span>
                   </div>
                 </div>
-                {tier.highlight && <Badge className="mb-4 w-fit bg-emerald-500 text-white border-0 text-xs">Most Popular</Badge>}
+                {tier.highlight && <Badge className="mb-4 w-fit bg-emerald-500 text-foreground border-0 text-xs">Most Popular</Badge>}
                 <ul className="space-y-2 flex-1 mb-6">
                   {tier.features.map((f, j) => (
                     <li key={j} className="flex items-start gap-2 text-xs text-slate-600">
@@ -249,7 +249,7 @@ export default function DpcoBrochure() {
                 </ul>
                 <button
                   onClick={() => window.open("/dpco/apply", "_blank")}
-                  className={`w-full py-2 rounded-lg text-sm font-semibold transition-colors ${tier.highlight ? "bg-emerald-600 text-white hover:bg-emerald-500" : "bg-slate-900 text-white hover:bg-slate-700"}`}
+                  className={`w-full py-2 rounded-lg text-sm font-semibold transition-colors ${tier.highlight ? "bg-emerald-600 text-foreground hover:bg-emerald-500" : "bg-background text-foreground hover:bg-muted"}`}
                 >
                   {tier.cta}
                 </button>
@@ -259,23 +259,23 @@ export default function DpcoBrochure() {
         </section>
 
         {/* ── CTA ─────────────────────────────────────────────────────────── */}
-        <section className="bg-gradient-to-br from-emerald-900 via-slate-900 to-slate-950 text-white px-16 py-16 text-center">
+        <section className="bg-gradient-to-br from-emerald-900 via-slate-900 to-slate-950 text-foreground px-16 py-16 text-center">
           <h2 className="text-3xl font-bold mb-4">
             <EditableText value={c.ctaTitle} onChange={v => setC(p => ({ ...p, ctaTitle: v }))} className="text-3xl font-bold" />
           </h2>
-          <p className="text-slate-300 text-base max-w-2xl mx-auto mb-8 leading-relaxed">
-            <EditableText value={c.ctaBody} onChange={v => setC(p => ({ ...p, ctaBody: v }))} multiline className="text-slate-300 text-base" />
+          <p className="text-muted-foreground text-base max-w-2xl mx-auto mb-8 leading-relaxed">
+            <EditableText value={c.ctaBody} onChange={v => setC(p => ({ ...p, ctaBody: v }))} multiline className="text-muted-foreground text-base" />
           </p>
           <button
             onClick={() => window.open("/dpco/apply", "_blank")}
-            className="bg-emerald-500 hover:bg-emerald-400 text-white font-semibold px-8 py-3 rounded-xl text-sm transition-colors mb-4 block mx-auto"
+            className="bg-emerald-500 hover:bg-emerald-400 text-foreground font-semibold px-8 py-3 rounded-xl text-sm transition-colors mb-4 block mx-auto"
           >
-            <EditableText value={c.ctaButton} onChange={v => setC(p => ({ ...p, ctaButton: v }))} className="text-white font-semibold" />
+            <EditableText value={c.ctaButton} onChange={v => setC(p => ({ ...p, ctaButton: v }))} className="text-foreground font-semibold" />
           </button>
           <p className="text-slate-500 text-xs">
             <EditableText value={c.ctaContact} onChange={v => setC(p => ({ ...p, ctaContact: v }))} className="text-slate-500 text-xs" />
           </p>
-          <div className="mt-12 pt-8 border-t border-slate-700/50 flex items-center justify-center gap-8">
+          <div className="mt-12 pt-8 border-t border-border/50 flex items-center justify-center gap-8">
             {[
               { num: "15", label: "NDPA Controls" },
               { num: "8", label: "Pipeline Stages" },

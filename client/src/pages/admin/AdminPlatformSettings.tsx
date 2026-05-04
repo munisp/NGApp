@@ -40,9 +40,9 @@ function StatusDot({ ok, label }: { ok: boolean; label: string }) {
 function InfoRow({ label, value, mono = false }: { label: string; value: string | null | undefined; mono?: boolean }) {
   if (!value) return null;
   return (
-    <div className="flex items-center justify-between py-2 border-b border-slate-800 last:border-0">
-      <span className="text-slate-400 text-sm">{label}</span>
-      <span className={`text-slate-200 text-sm ${mono ? "font-mono" : ""}`}>{value}</span>
+    <div className="flex items-center justify-between py-2 border-b border-border last:border-0">
+      <span className="text-muted-foreground text-sm">{label}</span>
+      <span className={`text-foreground text-sm ${mono ? "font-mono" : ""}`}>{value}</span>
     </div>
   );
 }
@@ -79,7 +79,7 @@ function EmailSettingsTab() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center gap-2 text-slate-400 py-8">
+      <div className="flex items-center gap-2 text-muted-foreground py-8">
         <RefreshCw className="h-4 w-4 animate-spin" />
         Loading email configuration...
       </div>
@@ -91,15 +91,15 @@ function EmailSettingsTab() {
   return (
     <div className="space-y-6">
       {/* Active Transport Banner */}
-      <div className="rounded-lg border border-slate-700 bg-slate-800/50 p-4">
+      <div className="rounded-lg border border-border bg-card/50 p-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-lg bg-cyan-500/10">
               <Mail className="h-5 w-5 text-cyan-400" />
             </div>
             <div>
-              <p className="text-sm font-medium text-slate-200">Active Transport</p>
-              <p className="text-xs text-slate-400">{transportLabel[transport]}</p>
+              <p className="text-sm font-medium text-foreground">Active Transport</p>
+              <p className="text-xs text-muted-foreground">{transportLabel[transport]}</p>
             </div>
           </div>
           <Badge
@@ -109,7 +109,7 @@ function EmailSettingsTab() {
                 ? "border-emerald-500 text-emerald-400"
                 : transport === "resend"
                 ? "border-blue-500 text-blue-400"
-                : "border-slate-500 text-slate-400"
+                : "border-slate-500 text-muted-foreground"
             }
           >
             {transport.toUpperCase()}
@@ -120,10 +120,10 @@ function EmailSettingsTab() {
       {/* Transport Priority Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* SMTP */}
-        <Card className="bg-slate-900 border-slate-700">
+        <Card className="bg-background border-border">
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-sm text-slate-200">Priority 1 — SMTP</CardTitle>
+              <CardTitle className="text-sm text-foreground">Priority 1 — SMTP</CardTitle>
               <StatusDot ok={!!emailStatus?.smtp.configured} label={emailStatus?.smtp.configured ? "Configured" : "Not set"} />
             </div>
             <CardDescription className="text-xs">Custom mail server (nitda.gov.ng)</CardDescription>
@@ -134,7 +134,7 @@ function EmailSettingsTab() {
             <InfoRow label="TLS" value={emailStatus?.smtp.secure ? "SSL/TLS (465)" : "STARTTLS (587)"} />
             <InfoRow label="From" value={emailStatus?.smtp.from} />
             {emailStatus?.smtp.testResult && (
-              <div className="mt-2 pt-2 border-t border-slate-800">
+              <div className="mt-2 pt-2 border-t border-border">
                 <StatusDot
                   ok={emailStatus.smtp.testResult.ok}
                   label={emailStatus.smtp.testResult.ok ? "Connection verified" : emailStatus.smtp.testResult.error ?? "Connection failed"}
@@ -150,10 +150,10 @@ function EmailSettingsTab() {
         </Card>
 
         {/* Resend */}
-        <Card className="bg-slate-900 border-slate-700">
+        <Card className="bg-background border-border">
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-sm text-slate-200">Priority 2 — Resend</CardTitle>
+              <CardTitle className="text-sm text-foreground">Priority 2 — Resend</CardTitle>
               <StatusDot ok={!!emailStatus?.resend.configured} label={emailStatus?.resend.configured ? "Configured" : "Not set"} />
             </div>
             <CardDescription className="text-xs">Transactional email SaaS (resend.com)</CardDescription>
@@ -172,16 +172,16 @@ function EmailSettingsTab() {
         </Card>
 
         {/* Forge Relay */}
-        <Card className="bg-slate-900 border-slate-700">
+        <Card className="bg-background border-border">
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-sm text-slate-200">Priority 3 — Forge Relay</CardTitle>
+              <CardTitle className="text-sm text-foreground">Priority 3 — Forge Relay</CardTitle>
               <StatusDot ok label="Always available" />
             </div>
             <CardDescription className="text-xs">Manus built-in notification relay</CardDescription>
           </CardHeader>
           <CardContent>
-            <p className="text-xs text-slate-400">
+            <p className="text-xs text-muted-foreground">
               Zero-config fallback. Always available. Sends to the platform owner's notification feed.
               Suitable for development and staging environments.
             </p>
@@ -189,23 +189,23 @@ function EmailSettingsTab() {
         </Card>
       </div>
 
-      <Separator className="bg-slate-800" />
+      <Separator className="bg-card" />
 
       {/* Test Email */}
       <div>
-        <h3 className="text-sm font-semibold text-slate-200 mb-3">Send Test Email</h3>
+        <h3 className="text-sm font-semibold text-foreground mb-3">Send Test Email</h3>
         <div className="flex gap-2">
           <Input
             type="email"
             placeholder="admin@nitda.gov.ng"
             value={testTo}
             onChange={(e) => setTestTo(e.target.value)}
-            className="bg-slate-800 border-slate-700 text-slate-200 flex-1"
+            className="bg-card border-border text-foreground flex-1"
           />
           <Button
             onClick={handleTestEmail}
             disabled={testEmailMutation.isPending}
-            className="bg-cyan-600 hover:bg-cyan-700 text-white"
+            className="bg-cyan-600 hover:bg-cyan-700 text-foreground"
           >
             {testEmailMutation.isPending ? (
               <RefreshCw className="h-4 w-4 animate-spin mr-2" />
@@ -214,7 +214,7 @@ function EmailSettingsTab() {
             )}
             Send Test
           </Button>
-          <Button variant="outline" onClick={() => refetch()} className="border-slate-700 text-slate-300">
+          <Button variant="outline" onClick={() => refetch()} className="border-border text-muted-foreground">
             <RefreshCw className="h-4 w-4" />
           </Button>
         </div>
@@ -224,15 +224,15 @@ function EmailSettingsTab() {
       </div>
 
       {/* SMTP Configuration Guide */}
-      <div className="rounded-lg border border-slate-700 bg-slate-900/50 p-4">
-        <h4 className="text-sm font-semibold text-slate-200 mb-3 flex items-center gap-2">
+      <div className="rounded-lg border border-border bg-background/50 p-4">
+        <h4 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
           <Server className="h-4 w-4 text-cyan-400" />
           SMTP Configuration Reference
         </h4>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs text-slate-400">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs text-muted-foreground">
           <div>
-            <p className="font-medium text-slate-300 mb-1">NITDA / Government SMTP</p>
-            <code className="block bg-slate-800 rounded p-2 text-cyan-300">
+            <p className="font-medium text-muted-foreground mb-1">NITDA / Government SMTP</p>
+            <code className="block bg-card rounded p-2 text-cyan-300">
               SMTP_HOST=smtp.nitda.gov.ng<br />
               SMTP_PORT=587<br />
               SMTP_SECURE=false<br />
@@ -242,8 +242,8 @@ function EmailSettingsTab() {
             </code>
           </div>
           <div>
-            <p className="font-medium text-slate-300 mb-1">Gmail / Google Workspace</p>
-            <code className="block bg-slate-800 rounded p-2 text-cyan-300">
+            <p className="font-medium text-muted-foreground mb-1">Gmail / Google Workspace</p>
+            <code className="block bg-card rounded p-2 text-cyan-300">
               SMTP_HOST=smtp.gmail.com<br />
               SMTP_PORT=465<br />
               SMTP_SECURE=true<br />
@@ -277,7 +277,7 @@ function StripeSettingsTab() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center gap-2 text-slate-400 py-8">
+      <div className="flex items-center gap-2 text-muted-foreground py-8">
         <RefreshCw className="h-4 w-4 animate-spin" />
         Loading Stripe configuration...
       </div>
@@ -293,15 +293,15 @@ function StripeSettingsTab() {
   return (
     <div className="space-y-6">
       {/* Mode Banner */}
-      <div className="rounded-lg border border-slate-700 bg-slate-800/50 p-4">
+      <div className="rounded-lg border border-border bg-card/50 p-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-lg bg-violet-500/10">
               <CreditCard className="h-5 w-5 text-violet-400" />
             </div>
             <div>
-              <p className="text-sm font-medium text-slate-200">Stripe Payment Mode</p>
-              <p className="text-xs text-slate-400">
+              <p className="text-sm font-medium text-foreground">Stripe Payment Mode</p>
+              <p className="text-xs text-muted-foreground">
                 {stripeStatus?.mode === "live"
                   ? "Processing real payments — live keys active"
                   : stripeStatus?.mode === "test"
@@ -318,9 +318,9 @@ function StripeSettingsTab() {
 
       {/* Status Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="bg-slate-900 border-slate-700">
+        <Card className="bg-background border-border">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-slate-200 flex items-center gap-2">
+            <CardTitle className="text-sm text-foreground flex items-center gap-2">
               <Lock className="h-4 w-4 text-violet-400" />
               Secret Key
             </CardTitle>
@@ -335,9 +335,9 @@ function StripeSettingsTab() {
           </CardContent>
         </Card>
 
-        <Card className="bg-slate-900 border-slate-700">
+        <Card className="bg-background border-border">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-slate-200 flex items-center gap-2">
+            <CardTitle className="text-sm text-foreground flex items-center gap-2">
               <Globe className="h-4 w-4 text-violet-400" />
               Publishable Key
             </CardTitle>
@@ -352,9 +352,9 @@ function StripeSettingsTab() {
           </CardContent>
         </Card>
 
-        <Card className="bg-slate-900 border-slate-700">
+        <Card className="bg-background border-border">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-slate-200 flex items-center gap-2">
+            <CardTitle className="text-sm text-foreground flex items-center gap-2">
               <Zap className="h-4 w-4 text-violet-400" />
               Webhook Secret
             </CardTitle>
@@ -371,20 +371,20 @@ function StripeSettingsTab() {
       </div>
 
       {/* Webhook Endpoint */}
-      <div className="rounded-lg border border-slate-700 bg-slate-900/50 p-4">
-        <h4 className="text-sm font-semibold text-slate-200 mb-3 flex items-center gap-2">
+      <div className="rounded-lg border border-border bg-background/50 p-4">
+        <h4 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
           <Zap className="h-4 w-4 text-violet-400" />
           Webhook Endpoint
         </h4>
         <div className="flex items-center gap-2">
-          <code className="flex-1 bg-slate-800 rounded px-3 py-2 text-sm text-cyan-300 font-mono">
+          <code className="flex-1 bg-card rounded px-3 py-2 text-sm text-cyan-300 font-mono">
             {window.location.origin}/api/stripe/webhook
           </code>
           <Button
             variant="outline"
             size="sm"
             onClick={copyWebhookUrl}
-            className="border-slate-700 text-slate-300"
+            className="border-border text-muted-foreground"
           >
             <Copy className="h-4 w-4 mr-1" />
             {copied ? "Copied!" : "Copy"}
@@ -402,7 +402,7 @@ function StripeSettingsTab() {
           <AlertTriangle className="h-4 w-4" />
           Stripe Go-Live Checklist
         </h4>
-        <ol className="space-y-2 text-sm text-slate-300">
+        <ol className="space-y-2 text-sm text-muted-foreground">
           {[
             { done: stripeStatus?.mode === "test" || stripeStatus?.mode === "live", text: "Claim your Stripe sandbox (expires 2026-06-02)" },
             { done: stripeStatus?.mode === "live", text: "Complete Stripe KYC / business verification" },
@@ -413,15 +413,15 @@ function StripeSettingsTab() {
             <li key={i} className="flex items-start gap-2">
               {item.done
                 ? <CheckCircle2 className="h-4 w-4 text-emerald-400 mt-0.5 shrink-0" />
-                : <div className="h-4 w-4 rounded-full border border-slate-600 mt-0.5 shrink-0" />}
-              <span className={item.done ? "text-slate-400 line-through" : ""}>{item.text}</span>
+                : <div className="h-4 w-4 rounded-full border border-border mt-0.5 shrink-0" />}
+              <span className={item.done ? "text-muted-foreground line-through" : ""}>{item.text}</span>
             </li>
           ))}
         </ol>
         <div className="mt-4 flex gap-2">
           <Button
             size="sm"
-            className="bg-violet-600 hover:bg-violet-700 text-white"
+            className="bg-violet-600 hover:bg-violet-700 text-foreground"
             onClick={() => window.open(stripeStatus?.stripeClaimUrl, "_blank")}
           >
             <ExternalLink className="h-4 w-4 mr-2" />
@@ -430,7 +430,7 @@ function StripeSettingsTab() {
           <Button
             size="sm"
             variant="outline"
-            className="border-slate-700 text-slate-300"
+            className="border-border text-muted-foreground"
             onClick={() => window.open("https://dashboard.stripe.com/developers/webhooks", "_blank")}
           >
             <ExternalLink className="h-4 w-4 mr-2" />
@@ -441,8 +441,8 @@ function StripeSettingsTab() {
 
       {/* Test Card */}
       {stripeStatus?.mode === "test" && (
-        <div className="rounded-lg border border-slate-700 bg-slate-900/50 p-4">
-          <h4 className="text-sm font-semibold text-slate-200 mb-3 flex items-center gap-2">
+        <div className="rounded-lg border border-border bg-background/50 p-4">
+          <h4 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
             <CreditCard className="h-4 w-4 text-amber-400" />
             Test Card Numbers
           </h4>
@@ -453,9 +453,9 @@ function StripeSettingsTab() {
               { card: "4000 0025 0000 3155", label: "Visa — requires 3DS auth" },
               { card: "5555 5555 5555 4444", label: "Mastercard — succeeds" },
             ].map((c) => (
-              <div key={c.card} className="flex items-center justify-between bg-slate-800 rounded px-3 py-2">
+              <div key={c.card} className="flex items-center justify-between bg-card rounded px-3 py-2">
                 <code className="text-cyan-300 font-mono">{c.card}</code>
-                <span className="text-slate-400 ml-2">{c.label}</span>
+                <span className="text-muted-foreground ml-2">{c.label}</span>
               </div>
             ))}
           </div>
@@ -478,31 +478,31 @@ export default function AdminPlatformSettings() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100">
+    <div className="min-h-screen bg-slate-950 text-foreground">
       <div className="max-w-5xl mx-auto px-6 py-8">
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center gap-2 text-slate-500 text-sm mb-2">
             <span>Admin</span>
             <ChevronRight className="h-3 w-3" />
-            <span className="text-slate-300">Platform Settings</span>
+            <span className="text-muted-foreground">Platform Settings</span>
           </div>
-          <h1 className="text-2xl font-bold text-slate-100 flex items-center gap-3">
+          <h1 className="text-2xl font-bold text-foreground flex items-center gap-3">
             <Shield className="h-6 w-6 text-cyan-400" />
             Platform Settings
           </h1>
-          <p className="text-slate-400 mt-1">
+          <p className="text-muted-foreground mt-1">
             Configure email delivery, payment processing, and integration credentials for the NDSEP platform.
           </p>
         </div>
 
         <Tabs defaultValue="email" className="space-y-6">
-          <TabsList className="bg-slate-900 border border-slate-700">
-            <TabsTrigger value="email" className="data-[state=active]:bg-slate-700 data-[state=active]:text-white">
+          <TabsList className="bg-background border border-border">
+            <TabsTrigger value="email" className="data-[state=active]:bg-muted data-[state=active]:text-foreground">
               <Mail className="h-4 w-4 mr-2" />
               Email Delivery
             </TabsTrigger>
-            <TabsTrigger value="stripe" className="data-[state=active]:bg-slate-700 data-[state=active]:text-white">
+            <TabsTrigger value="stripe" className="data-[state=active]:bg-muted data-[state=active]:text-foreground">
               <CreditCard className="h-4 w-4 mr-2" />
               Stripe Payments
             </TabsTrigger>

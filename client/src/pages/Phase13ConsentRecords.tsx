@@ -14,8 +14,8 @@ type LegalBasis = "consent" | "contract" | "legal_obligation" | "vital_interests
 
 export default function Phase13ConsentRecords() {
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("");
-  const [legalBasisFilter, setLegalBasisFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [legalBasisFilter, setLegalBasisFilter] = useState("all");
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({
     data_subject_id: "", data_subject_email: "",
@@ -25,8 +25,8 @@ export default function Phase13ConsentRecords() {
   const utils = trpc.useUtils();
   const { data: result, isLoading } = trpc.phase13.consentRecords.list.useQuery({
     search: search || undefined,
-    status: statusFilter || undefined,
-    legal_basis: legalBasisFilter || undefined,
+    status: statusFilter === "all" ? undefined : statusFilter || undefined,
+    legal_basis: legalBasisFilter === "all" ? undefined : legalBasisFilter || undefined,
   });
   const { data: stats } = trpc.phase13.consentRecords.getStats.useQuery();
   const create = trpc.phase13.consentRecords.create.useMutation({
@@ -123,7 +123,7 @@ export default function Phase13ConsentRecords() {
           <Select value={statusFilter} onValueChange={setStatusFilter}>
             <SelectTrigger className="w-36"><SelectValue placeholder="All Statuses" /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All</SelectItem>
+              <SelectItem value="all">All</SelectItem>
               <SelectItem value="active">Active</SelectItem>
               <SelectItem value="withdrawn">Withdrawn</SelectItem>
               <SelectItem value="expired">Expired</SelectItem>
@@ -132,7 +132,7 @@ export default function Phase13ConsentRecords() {
           <Select value={legalBasisFilter} onValueChange={setLegalBasisFilter}>
             <SelectTrigger className="w-44"><SelectValue placeholder="All Legal Bases" /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All</SelectItem>
+              <SelectItem value="all">All</SelectItem>
               <SelectItem value="consent">Consent</SelectItem>
               <SelectItem value="contract">Contract</SelectItem>
               <SelectItem value="legal_obligation">Legal Obligation</SelectItem>

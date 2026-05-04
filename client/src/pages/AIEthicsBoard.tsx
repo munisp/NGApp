@@ -56,10 +56,10 @@ export default function AIEthicsBoard() {
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white flex items-center gap-2">
+          <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
             <Brain className="w-6 h-6 text-violet-400" /> AI Ethics Board
           </h1>
-          <p className="text-slate-400 text-sm mt-1">AI System Registry & Ethics Review — NDPA Article 37 Automated Decision-Making Compliance</p>
+          <p className="text-muted-foreground text-sm mt-1">AI System Registry & Ethics Review — NDPA Article 37 Automated Decision-Making Compliance</p>
         </div>
         <Button onClick={() => setShowRegister(true)} className="bg-violet-600 hover:bg-violet-700">
           <Plus className="w-4 h-4 mr-2" /> Register AI System
@@ -77,7 +77,7 @@ export default function AIEthicsBoard() {
           <Card key={r.level} className={`bg-${r.color}-900/20 border-${r.color}-700/40`}>
             <CardContent className="p-3">
               <p className={`text-${r.color}-300 text-xs font-medium`}>{r.level}</p>
-              <p className="text-slate-400 text-xs mt-1">{r.desc}</p>
+              <p className="text-muted-foreground text-xs mt-1">{r.desc}</p>
             </CardContent>
           </Card>
         ))}
@@ -85,10 +85,10 @@ export default function AIEthicsBoard() {
 
       {/* Stats */}
       <div className="grid grid-cols-4 gap-4">
-        <Card className="bg-slate-800/50 border-slate-700">
+        <Card className="bg-card/50 border-border">
           <CardContent className="p-4">
-            <p className="text-slate-400 text-xs">Registered Systems</p>
-            <p className="text-2xl font-bold text-white">{stats?.total ?? 0}</p>
+            <p className="text-muted-foreground text-xs">Registered Systems</p>
+            <p className="text-2xl font-bold text-foreground">{stats?.total ?? 0}</p>
           </CardContent>
         </Card>
         <Card className="bg-red-900/20 border-red-700/40">
@@ -112,35 +112,35 @@ export default function AIEthicsBoard() {
       </div>
 
       {/* Systems Table */}
-      <Card className="bg-slate-800/50 border-slate-700">
-        <CardHeader><CardTitle className="text-white text-base">AI System Registry</CardTitle></CardHeader>
+      <Card className="bg-card/50 border-border">
+        <CardHeader><CardTitle className="text-foreground text-base">AI System Registry</CardTitle></CardHeader>
         <CardContent className="p-0">
           <Table>
             <TableHeader>
-              <TableRow className="border-slate-700">
-                <TableHead className="text-slate-400">System</TableHead>
-                <TableHead className="text-slate-400">Type</TableHead>
-                <TableHead className="text-slate-400">Organisation</TableHead>
-                <TableHead className="text-slate-400">Risk Level</TableHead>
-                <TableHead className="text-slate-400">Explainability</TableHead>
-                <TableHead className="text-slate-400">Bias Score</TableHead>
-                <TableHead className="text-slate-400">Status</TableHead>
-                <TableHead className="text-slate-400">Actions</TableHead>
+              <TableRow className="border-border">
+                <TableHead className="text-muted-foreground">System</TableHead>
+                <TableHead className="text-muted-foreground">Type</TableHead>
+                <TableHead className="text-muted-foreground">Organisation</TableHead>
+                <TableHead className="text-muted-foreground">Risk Level</TableHead>
+                <TableHead className="text-muted-foreground">Explainability</TableHead>
+                <TableHead className="text-muted-foreground">Bias Score</TableHead>
+                <TableHead className="text-muted-foreground">Status</TableHead>
+                <TableHead className="text-muted-foreground">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {systems?.map((s: any) => (
-                <TableRow key={s.id} className="border-slate-700">
+                <TableRow key={s.id} className="border-border">
                   <TableCell>
-                    <p className="text-white text-sm font-medium">{s.ai_system_name}</p>
+                    <p className="text-foreground text-sm font-medium">{s.ai_system_name}</p>
                     <p className="text-slate-500 text-xs">{s.review_ref}</p>
                   </TableCell>
                   <TableCell>
-                    <Badge variant="outline" className="border-slate-600 text-slate-400 capitalize">
+                    <Badge variant="outline" className="border-border text-muted-foreground capitalize">
                       {String(s.ai_system_type ?? "").replace(/_/g, " ")}
                     </Badge>
                   </TableCell>
-                  <TableCell className="text-slate-400 text-sm">{s.org_name ?? "—"}</TableCell>
+                  <TableCell className="text-muted-foreground text-sm">{s.org_name ?? "—"}</TableCell>
                   <TableCell>
                     <Badge className={riskColors[s.risk_category ?? "minimal"] ?? ""}>
                       {s.risk_category}
@@ -148,11 +148,11 @@ export default function AIEthicsBoard() {
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
-                      <div className="w-12 bg-slate-700 rounded-full h-1.5">
+                      <div className="w-12 bg-muted rounded-full h-1.5">
                         <div className="h-1.5 rounded-full bg-violet-500"
                           style={{ width: `${s.explainability_score ?? 0}%` }} />
                       </div>
-                      <span className="text-white text-xs">{s.explainability_score ?? 0}%</span>
+                      <span className="text-foreground text-xs">{s.explainability_score ?? 0}%</span>
                     </div>
                   </TableCell>
                   <TableCell>
@@ -188,20 +188,20 @@ export default function AIEthicsBoard() {
 
       {/* Register Dialog */}
       <Dialog open={showRegister} onOpenChange={setShowRegister}>
-        <DialogContent className="bg-slate-800 border-slate-700 text-white max-w-lg">
+        <DialogContent className="bg-card border-border text-foreground max-w-lg">
           <DialogHeader><DialogTitle>Register AI System</DialogTitle></DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label className="text-slate-300 text-sm">System Name</Label>
-              <Input className="mt-1 bg-slate-700 border-slate-600 text-white" value={form.aiSystemName}
+              <Label className="text-muted-foreground text-sm">System Name</Label>
+              <Input className="mt-1 bg-muted border-border text-foreground" value={form.aiSystemName}
                 onChange={e => setForm(f => ({ ...f, aiSystemName: e.target.value }))} />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label className="text-slate-300 text-sm">System Type</Label>
+                <Label className="text-muted-foreground text-sm">System Type</Label>
                 <Select value={form.aiSystemType} onValueChange={v => setForm(f => ({ ...f, aiSystemType: v }))}>
-                  <SelectTrigger className="mt-1 bg-slate-700 border-slate-600 text-white"><SelectValue /></SelectTrigger>
-                  <SelectContent className="bg-slate-800 border-slate-700">
+                  <SelectTrigger className="mt-1 bg-muted border-border text-foreground"><SelectValue /></SelectTrigger>
+                  <SelectContent className="bg-card border-border">
                     <SelectItem value="recommendation">Recommendation</SelectItem>
                     <SelectItem value="credit_scoring">Credit Scoring</SelectItem>
                     <SelectItem value="facial_recognition">Facial Recognition</SelectItem>
@@ -212,10 +212,10 @@ export default function AIEthicsBoard() {
                 </Select>
               </div>
               <div>
-                <Label className="text-slate-300 text-sm">Risk Level</Label>
+                <Label className="text-muted-foreground text-sm">Risk Level</Label>
                 <Select value={form.riskLevel} onValueChange={v => setForm(f => ({ ...f, riskLevel: v }))}>
-                  <SelectTrigger className="mt-1 bg-slate-700 border-slate-600 text-white"><SelectValue /></SelectTrigger>
-                  <SelectContent className="bg-slate-800 border-slate-700">
+                  <SelectTrigger className="mt-1 bg-muted border-border text-foreground"><SelectValue /></SelectTrigger>
+                  <SelectContent className="bg-card border-border">
                     <SelectItem value="minimal">Minimal</SelectItem>
                     <SelectItem value="limited">Limited</SelectItem>
                     <SelectItem value="high">High</SelectItem>
@@ -225,19 +225,19 @@ export default function AIEthicsBoard() {
               </div>
             </div>
             <div>
-              <Label className="text-slate-300 text-sm">Description</Label>
-              <Textarea className="mt-1 bg-slate-700 border-slate-600 text-white" value={form.description}
+              <Label className="text-muted-foreground text-sm">Description</Label>
+              <Textarea className="mt-1 bg-muted border-border text-foreground" value={form.description}
                 onChange={e => setForm(f => ({ ...f, description: e.target.value }))} />
             </div>
             <div>
-              <Label className="text-slate-300 text-sm">Explainability Score (0-100)</Label>
-              <Input type="number" min={0} max={100} className="mt-1 bg-slate-700 border-slate-600 text-white"
+              <Label className="text-muted-foreground text-sm">Explainability Score (0-100)</Label>
+              <Input type="number" min={0} max={100} className="mt-1 bg-muted border-border text-foreground"
                 value={form.explainabilityScore}
                 onChange={e => setForm(f => ({ ...f, explainabilityScore: parseInt(e.target.value) || 0 }))} />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" className="border-slate-600 text-slate-300" onClick={() => setShowRegister(false)}>Cancel</Button>
+            <Button variant="outline" className="border-border text-muted-foreground" onClick={() => setShowRegister(false)}>Cancel</Button>
             <Button className="bg-violet-600 hover:bg-violet-700"
               disabled={!form.aiSystemName || register.isPending}
               onClick={() => register.mutate({
