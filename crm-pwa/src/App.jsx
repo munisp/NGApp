@@ -38,6 +38,13 @@ import RevenueAttribution from './components/RevenueAttribution'
 import AgentGamification from './components/AgentGamification'
 import TenantAdmin from './components/TenantAdmin'
 
+// Developer Portal Components
+import APIKeyManager from './components/APIKeyManager'
+import UsageMetering from './components/UsageMetering'
+import SDKDocs from './components/SDKDocs'
+import WebhookManager from './components/WebhookManager'
+import SandboxManager from './components/SandboxManager'
+
 // Context
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { NotificationProvider } from './contexts/NotificationContext'
@@ -390,6 +397,56 @@ function App() {
                     <ProtectedRoute>
                       <Layout>
                         <TenantAdmin />
+                      </Layout>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/api-keys"
+                  element={
+                    <ProtectedRoute>
+                      <Layout>
+                        <APIKeyManager />
+                      </Layout>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/usage"
+                  element={
+                    <ProtectedRoute>
+                      <Layout>
+                        <UsageMetering />
+                      </Layout>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/sdk-docs"
+                  element={
+                    <ProtectedRoute>
+                      <Layout>
+                        <SDKDocs />
+                      </Layout>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/webhooks"
+                  element={
+                    <ProtectedRoute>
+                      <Layout>
+                        <WebhookManager />
+                      </Layout>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/sandbox"
+                  element={
+                    <ProtectedRoute>
+                      <Layout>
+                        <SandboxManager />
                       </Layout>
                     </ProtectedRoute>
                   }

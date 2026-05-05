@@ -39,6 +39,10 @@ import {
   ChevronDown,
   Check,
   Crown,
+  Key,
+  Code2,
+  Webhook,
+  Gauge,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useTheme } from '@/contexts/ThemeContext'
@@ -52,6 +56,7 @@ const Sidebar = ({ isOpen, onToggle }) => {
     hub: true,
     retention: true,
     banking: true,
+    developer: true,
     main: false,
     analytics: false,
     management: false,
@@ -216,6 +221,42 @@ const Sidebar = ({ isOpen, onToggle }) => {
           href: '/tenant-admin',
           icon: Crown,
           description: 'Manage tenants & product access'
+        },
+      ]
+    },
+    {
+      section: 'developer',
+      title: 'Developer Portal',
+      items: [
+        {
+          name: 'API Keys',
+          href: '/api-keys',
+          icon: Key,
+          description: 'Self-service API key management'
+        },
+        {
+          name: 'Usage & Metering',
+          href: '/usage',
+          icon: Gauge,
+          description: 'API quota, billing & analytics'
+        },
+        {
+          name: 'SDK & Docs',
+          href: '/sdk-docs',
+          icon: Code2,
+          description: 'SDKs, API reference & code examples'
+        },
+        {
+          name: 'Webhooks',
+          href: '/webhooks',
+          icon: Webhook,
+          description: 'Event subscriptions & delivery'
+        },
+        {
+          name: 'Sandbox',
+          href: '/sandbox',
+          icon: FlaskConical,
+          description: 'Test environment & certification'
         },
       ]
     },
