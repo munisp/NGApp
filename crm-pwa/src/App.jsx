@@ -23,6 +23,7 @@ import AgentBankingView from './components/AgentBankingView'
 import RemittanceView from './components/RemittanceView'
 import IntegrationHub from './components/IntegrationHub'
 import CrossSystemAnalytics from './components/CrossSystemAnalytics'
+import CampaignManager from './components/CampaignManager'
 
 // Context
 import { AuthProvider, useAuth } from './contexts/AuthContext'
@@ -244,6 +245,16 @@ function App() {
                     <ProtectedRoute>
                       <Layout>
                         <Analytics />
+                      </Layout>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/campaigns"
+                  element={
+                    <ProtectedRoute>
+                      <Layout>
+                        <CampaignManager />
                       </Layout>
                     </ProtectedRoute>
                   }

@@ -29,6 +29,7 @@ import {
   Target,
   Send,
   MapPin,
+  Megaphone,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useTheme } from '@/contexts/ThemeContext'
@@ -81,6 +82,13 @@ const Sidebar = ({ isOpen, onToggle }) => {
           href: '/integrations',
           icon: Wifi,
           description: 'Middleware, event bus & connectivity'
+        },
+        {
+          name: 'Campaigns',
+          href: '/campaigns',
+          icon: Megaphone,
+          description: 'Outbound campaigns & upsell',
+          badge: '5'
         },
       ]
     },
