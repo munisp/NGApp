@@ -1,108 +1,142 @@
-import { useState, useEffect } from 'react'
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
+import { useState, useEffect, lazy, Suspense } from 'react'
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom'
+import { QueryClientProvider } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
 import './App.css'
 
-// Components
+// Core components (not lazy — needed immediately)
 import Sidebar from './components/Sidebar'
 import Header from './components/Header'
-import Dashboard from './components/Dashboard'
-import CustomerManagement from './components/CustomerManagement'
-import CRMCore from './components/CRMCore'
-import InventoryManagement from './components/InventoryManagement'
-import Analytics from './components/Analytics'
-import Settings from './components/Settings'
 import Login from './components/Login'
 import NotificationCenter from './components/NotificationCenter'
 
-// Unified CRM Hub Components
-import UnifiedDashboard from './components/UnifiedDashboard'
-import Customer360 from './components/Customer360'
-import CoreBankingView from './components/CoreBankingView'
-import AgentBankingView from './components/AgentBankingView'
-import RemittanceView from './components/RemittanceView'
-import IntegrationHub from './components/IntegrationHub'
-import CrossSystemAnalytics from './components/CrossSystemAnalytics'
-import CampaignManager from './components/CampaignManager'
+// UI infrastructure
+import { ErrorBoundary } from './components/ui/ErrorBoundary'
+import { LoadingSpinner } from './components/ui/LoadingSpinner'
+import { ToastProvider } from './components/ui/Toast'
 
-// Enhancement Components
-import RealTimeDashboard from './components/RealTimeDashboard'
-import JourneyOrchestrator from './components/JourneyOrchestrator'
-import ChurnPrevention from './components/ChurnPrevention'
-import ConversationalFlows from './components/ConversationalFlows'
-import GeoTargeting from './components/GeoTargeting'
-import ABTestAutomation from './components/ABTestAutomation'
-import ConsentCompliance from './components/ConsentCompliance'
-import NotificationPreferences from './components/NotificationPreferences'
-import RevenueAttribution from './components/RevenueAttribution'
-import AgentGamification from './components/AgentGamification'
-import TenantAdmin from './components/TenantAdmin'
-
-// Developer Portal Components
-import APIKeyManager from './components/APIKeyManager'
-import UsageMetering from './components/UsageMetering'
-import SDKDocs from './components/SDKDocs'
-import WebhookManager from './components/WebhookManager'
-import SandboxManager from './components/SandboxManager'
-
-// Intelligence & AI Components
-import ChannelValueAnalysis from './components/ChannelValueAnalysis'
-import AcquisitionEngine from './components/AcquisitionEngine'
-import SocialMediaHub from './components/SocialMediaHub'
-import MDMCustomer360 from './components/MDMCustomer360'
-import AgenticAI from './components/AgenticAI'
-
-// AI/ML Stack Components
-import GNNNeo4j from './components/GNNNeo4j'
-import FalkorDBGraph from './components/FalkorDBGraph'
-import MCMCRisk from './components/MCMCRisk'
-import CocoIndexPipeline from './components/CocoIndexPipeline'
-import EPRKGQAChat from './components/EPRKGQAChat'
-import ARTSecurity from './components/ARTSecurity'
-import OllamaInference from './components/OllamaInference'
-
-// Operations & Security Components
-import AuditLog from './components/AuditLog'
-import SecurityDashboard from './components/SecurityDashboard'
-import ComplianceDashboard from './components/ComplianceDashboard'
-import DocumentManager from './components/DocumentManager'
-import TaskManager from './components/TaskManager'
-import SLAMonitor from './components/SLAMonitor'
-import IncidentManager from './components/IncidentManager'
-import DataExport from './components/DataExport'
-import BulkOperations from './components/BulkOperations'
-import AdvancedSearch from './components/AdvancedSearch'
-import CalendarView from './components/CalendarView'
-import DashboardCustomization from './components/DashboardCustomization'
-
-// Context
+// Providers
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { NotificationProvider } from './contexts/NotificationContext'
 import { ThemeProvider } from './contexts/ThemeContext'
 import { TenantProvider } from './contexts/TenantContext'
+import { I18nProvider } from './lib/i18n/useTranslation.jsx'
+import { queryClient } from './lib/queryClient'
 
-// Layout Component
+// Lazy-loaded page components — code-split by section
+// Core CRM
+const Dashboard = lazy(() => import('./components/Dashboard'))
+const CustomerManagement = lazy(() => import('./components/CustomerManagement'))
+const CRMCore = lazy(() => import('./components/CRMCore'))
+const InventoryManagement = lazy(() => import('./components/InventoryManagement'))
+const Analytics = lazy(() => import('./components/Analytics'))
+const Settings = lazy(() => import('./components/Settings'))
+const UnifiedDashboard = lazy(() => import('./components/UnifiedDashboard'))
+const Customer360 = lazy(() => import('./components/Customer360'))
+
+// Banking
+const CoreBankingView = lazy(() => import('./components/CoreBankingView'))
+const AgentBankingView = lazy(() => import('./components/AgentBankingView'))
+const RemittanceView = lazy(() => import('./components/RemittanceView'))
+const IntegrationHub = lazy(() => import('./components/IntegrationHub'))
+const CrossSystemAnalytics = lazy(() => import('./components/CrossSystemAnalytics'))
+
+// Campaign & Engagement
+const CampaignManager = lazy(() => import('./components/CampaignManager'))
+const RealTimeDashboard = lazy(() => import('./components/RealTimeDashboard'))
+const JourneyOrchestrator = lazy(() => import('./components/JourneyOrchestrator'))
+const ChurnPrevention = lazy(() => import('./components/ChurnPrevention'))
+const ConversationalFlows = lazy(() => import('./components/ConversationalFlows'))
+const GeoTargeting = lazy(() => import('./components/GeoTargeting'))
+const ABTestAutomation = lazy(() => import('./components/ABTestAutomation'))
+const ConsentCompliance = lazy(() => import('./components/ConsentCompliance'))
+const NotificationPreferences = lazy(() => import('./components/NotificationPreferences'))
+const RevenueAttribution = lazy(() => import('./components/RevenueAttribution'))
+const AgentGamification = lazy(() => import('./components/AgentGamification'))
+const TenantAdmin = lazy(() => import('./components/TenantAdmin'))
+
+// Developer Portal
+const APIKeyManager = lazy(() => import('./components/APIKeyManager'))
+const UsageMetering = lazy(() => import('./components/UsageMetering'))
+const SDKDocs = lazy(() => import('./components/SDKDocs'))
+const WebhookManager = lazy(() => import('./components/WebhookManager'))
+const SandboxManager = lazy(() => import('./components/SandboxManager'))
+
+// Intelligence & AI
+const ChannelValueAnalysis = lazy(() => import('./components/ChannelValueAnalysis'))
+const AcquisitionEngine = lazy(() => import('./components/AcquisitionEngine'))
+const SocialMediaHub = lazy(() => import('./components/SocialMediaHub'))
+const MDMCustomer360 = lazy(() => import('./components/MDMCustomer360'))
+const AgenticAI = lazy(() => import('./components/AgenticAI'))
+
+// AI/ML Stack
+const GNNNeo4j = lazy(() => import('./components/GNNNeo4j'))
+const FalkorDBGraph = lazy(() => import('./components/FalkorDBGraph'))
+const MCMCRisk = lazy(() => import('./components/MCMCRisk'))
+const CocoIndexPipeline = lazy(() => import('./components/CocoIndexPipeline'))
+const EPRKGQAChat = lazy(() => import('./components/EPRKGQAChat'))
+const ARTSecurity = lazy(() => import('./components/ARTSecurity'))
+const OllamaInference = lazy(() => import('./components/OllamaInference'))
+
+// Operations & Security
+const AuditLog = lazy(() => import('./components/AuditLog'))
+const SecurityDashboard = lazy(() => import('./components/SecurityDashboard'))
+const ComplianceDashboard = lazy(() => import('./components/ComplianceDashboard'))
+const DocumentManager = lazy(() => import('./components/DocumentManager'))
+const TaskManager = lazy(() => import('./components/TaskManager'))
+const SLAMonitor = lazy(() => import('./components/SLAMonitor'))
+const IncidentManager = lazy(() => import('./components/IncidentManager'))
+const DataExport = lazy(() => import('./components/DataExport'))
+const BulkOperations = lazy(() => import('./components/BulkOperations'))
+const AdvancedSearch = lazy(() => import('./components/AdvancedSearch'))
+const CalendarView = lazy(() => import('./components/CalendarView'))
+const DashboardCustomization = lazy(() => import('./components/DashboardCustomization'))
+
+// Skip Navigation for accessibility (WCAG 2.1 AA)
+const SkipNav = () => (
+  <a
+    href="#main-content"
+    className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:bg-blue-600 focus:text-white focus:px-4 focus:py-2 focus:rounded-lg focus:outline-none"
+  >
+    Skip to main content
+  </a>
+)
+
+// Layout Component with accessibility landmarks
 const Layout = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(true)
-  
+  const location = useLocation()
+
   return (
     <div className="flex h-screen bg-background">
-      <Sidebar isOpen={sidebarOpen} onToggle={() => setSidebarOpen(!sidebarOpen)} />
+      <SkipNav />
+      <nav aria-label="Main navigation">
+        <Sidebar isOpen={sidebarOpen} onToggle={() => setSidebarOpen(!sidebarOpen)} />
+      </nav>
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header onMenuClick={() => setSidebarOpen(!sidebarOpen)} />
-        <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 dark:bg-gray-900">
-          <div className="container mx-auto px-6 py-8">
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={location.pathname}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                transition={{ duration: 0.3 }}
-              >
-                {children}
-              </motion.div>
-            </AnimatePresence>
+        <main
+          id="main-content"
+          className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 dark:bg-gray-900"
+          role="main"
+          aria-label="Page content"
+        >
+          <div className="container mx-auto px-4 sm:px-6 py-4 sm:py-8">
+            <ErrorBoundary>
+              <Suspense fallback={<LoadingSpinner message="Loading page..." />}>
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={location.pathname}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    {children}
+                  </motion.div>
+                </AnimatePresence>
+              </Suspense>
+            </ErrorBoundary>
           </div>
         </main>
       </div>
@@ -112,30 +146,39 @@ const Layout = ({ children }) => {
 }
 
 // Protected Route Component
-const ProtectedRoute = ({ children }) => {
-  const { isAuthenticated, loading } = useAuth()
-  
+const ProtectedRoute = ({ children, permission }) => {
+  const { isAuthenticated, loading, hasPermission } = useAuth()
+
   if (loading) {
+    return <LoadingSpinner size="lg" message="Authenticating..." />
+  }
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" />
+  }
+
+  if (permission && !hasPermission(permission)) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
+      <div className="flex flex-col items-center justify-center min-h-[400px]" role="alert">
+        <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">Access Denied</h2>
+        <p className="text-gray-600 dark:text-gray-400">You do not have permission to view this page.</p>
       </div>
     )
   }
-  
-  return isAuthenticated ? children : <Navigate to="/login" />
+
+  return children
 }
 
-// Main App Component
+// Route definition helper
+const P = ({ children, permission }) => (
+  <ProtectedRoute permission={permission}><Layout>{children}</Layout></ProtectedRoute>
+)
+
 function App() {
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    // Simulate app initialization
-    const timer = setTimeout(() => {
-      setIsLoading(false)
-    }, 2000)
-
+    const timer = setTimeout(() => setIsLoading(false), 1500)
     return () => clearTimeout(timer)
   }, [])
 
@@ -156,364 +199,104 @@ function App() {
             />
           </div>
           <h1 className="text-4xl font-bold text-white mb-4">Unified Banking CRM</h1>
-          <p className="text-xl text-blue-100">Connecting Core Banking • Agent Banking • Remittance</p>
+          <p className="text-xl text-blue-100">Connecting Core Banking &bull; Agent Banking &bull; Remittance</p>
         </motion.div>
       </div>
     )
   }
 
   return (
-    <ThemeProvider>
-      <AuthProvider>
-        <TenantProvider>
-        <NotificationProvider>
-          <Router>
-            <div className="App">
-              <Routes>
-                <Route path="/login" element={<Login />} />
-                <Route
-                  path="/"
-                  element={
-                    <ProtectedRoute>
-                      <Layout>
-                        <UnifiedDashboard />
-                      </Layout>
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/hub"
-                  element={
-                    <ProtectedRoute>
-                      <Layout>
-                        <UnifiedDashboard />
-                      </Layout>
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/customer-360"
-                  element={
-                    <ProtectedRoute>
-                      <Layout>
-                        <Customer360 />
-                      </Layout>
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/core-banking"
-                  element={
-                    <ProtectedRoute>
-                      <Layout>
-                        <CoreBankingView />
-                      </Layout>
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/agent-banking"
-                  element={
-                    <ProtectedRoute>
-                      <Layout>
-                        <AgentBankingView />
-                      </Layout>
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/remittance"
-                  element={
-                    <ProtectedRoute>
-                      <Layout>
-                        <RemittanceView />
-                      </Layout>
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/integrations"
-                  element={
-                    <ProtectedRoute>
-                      <Layout>
-                        <IntegrationHub />
-                      </Layout>
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/cross-analytics"
-                  element={
-                    <ProtectedRoute>
-                      <Layout>
-                        <CrossSystemAnalytics />
-                      </Layout>
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/dashboard"
-                  element={
-                    <ProtectedRoute>
-                      <Layout>
-                        <Dashboard />
-                      </Layout>
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/customers"
-                  element={
-                    <ProtectedRoute>
-                      <Layout>
-                        <CustomerManagement />
-                      </Layout>
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/crm"
-                  element={
-                    <ProtectedRoute>
-                      <Layout>
-                        <CRMCore />
-                      </Layout>
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/inventory"
-                  element={
-                    <ProtectedRoute>
-                      <Layout>
-                        <InventoryManagement />
-                      </Layout>
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/analytics"
-                  element={
-                    <ProtectedRoute>
-                      <Layout>
-                        <Analytics />
-                      </Layout>
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/campaigns"
-                  element={
-                    <ProtectedRoute>
-                      <Layout>
-                        <CampaignManager />
-                      </Layout>
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/settings"
-                  element={
-                    <ProtectedRoute>
-                      <Layout>
-                        <Settings />
-                      </Layout>
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/realtime"
-                  element={
-                    <ProtectedRoute>
-                      <Layout>
-                        <RealTimeDashboard />
-                      </Layout>
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/journeys"
-                  element={
-                    <ProtectedRoute>
-                      <Layout>
-                        <JourneyOrchestrator />
-                      </Layout>
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/churn"
-                  element={
-                    <ProtectedRoute>
-                      <Layout>
-                        <ChurnPrevention />
-                      </Layout>
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/conversational"
-                  element={
-                    <ProtectedRoute>
-                      <Layout>
-                        <ConversationalFlows />
-                      </Layout>
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/geo-targeting"
-                  element={
-                    <ProtectedRoute>
-                      <Layout>
-                        <GeoTargeting />
-                      </Layout>
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/ab-testing"
-                  element={
-                    <ProtectedRoute>
-                      <Layout>
-                        <ABTestAutomation />
-                      </Layout>
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/compliance"
-                  element={
-                    <ProtectedRoute>
-                      <Layout>
-                        <ConsentCompliance />
-                      </Layout>
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/preferences"
-                  element={
-                    <ProtectedRoute>
-                      <Layout>
-                        <NotificationPreferences />
-                      </Layout>
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/revenue"
-                  element={
-                    <ProtectedRoute>
-                      <Layout>
-                        <RevenueAttribution />
-                      </Layout>
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/gamification"
-                  element={
-                    <ProtectedRoute>
-                      <Layout>
-                        <AgentGamification />
-                      </Layout>
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/tenant-admin"
-                  element={
-                    <ProtectedRoute>
-                      <Layout>
-                        <TenantAdmin />
-                      </Layout>
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/api-keys"
-                  element={
-                    <ProtectedRoute>
-                      <Layout>
-                        <APIKeyManager />
-                      </Layout>
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/usage"
-                  element={
-                    <ProtectedRoute>
-                      <Layout>
-                        <UsageMetering />
-                      </Layout>
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/sdk-docs"
-                  element={
-                    <ProtectedRoute>
-                      <Layout>
-                        <SDKDocs />
-                      </Layout>
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/webhooks"
-                  element={
-                    <ProtectedRoute>
-                      <Layout>
-                        <WebhookManager />
-                      </Layout>
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/sandbox"
-                  element={
-                    <ProtectedRoute>
-                      <Layout>
-                        <SandboxManager />
-                      </Layout>
-                    </ProtectedRoute>
-                  }
-                />
-                <Route path="/channel-value" element={<ProtectedRoute><Layout><ChannelValueAnalysis /></Layout></ProtectedRoute>} />
-                <Route path="/acquisition" element={<ProtectedRoute><Layout><AcquisitionEngine /></Layout></ProtectedRoute>} />
-                <Route path="/social-media" element={<ProtectedRoute><Layout><SocialMediaHub /></Layout></ProtectedRoute>} />
-                <Route path="/mdm-360" element={<ProtectedRoute><Layout><MDMCustomer360 /></Layout></ProtectedRoute>} />
-                <Route path="/agentic-ai" element={<ProtectedRoute><Layout><AgenticAI /></Layout></ProtectedRoute>} />
-                <Route path="/audit-log" element={<ProtectedRoute><Layout><AuditLog /></Layout></ProtectedRoute>} />
-                <Route path="/security-dashboard" element={<ProtectedRoute><Layout><SecurityDashboard /></Layout></ProtectedRoute>} />
-                <Route path="/compliance-dashboard" element={<ProtectedRoute><Layout><ComplianceDashboard /></Layout></ProtectedRoute>} />
-                <Route path="/documents" element={<ProtectedRoute><Layout><DocumentManager /></Layout></ProtectedRoute>} />
-                <Route path="/tasks" element={<ProtectedRoute><Layout><TaskManager /></Layout></ProtectedRoute>} />
-                <Route path="/sla-monitor" element={<ProtectedRoute><Layout><SLAMonitor /></Layout></ProtectedRoute>} />
-                <Route path="/incidents" element={<ProtectedRoute><Layout><IncidentManager /></Layout></ProtectedRoute>} />
-                <Route path="/data-export" element={<ProtectedRoute><Layout><DataExport /></Layout></ProtectedRoute>} />
-                <Route path="/bulk-operations" element={<ProtectedRoute><Layout><BulkOperations /></Layout></ProtectedRoute>} />
-                <Route path="/search" element={<ProtectedRoute><Layout><AdvancedSearch /></Layout></ProtectedRoute>} />
-                <Route path="/calendar" element={<ProtectedRoute><Layout><CalendarView /></Layout></ProtectedRoute>} />
-                <Route path="/customize-dashboard" element={<ProtectedRoute><Layout><DashboardCustomization /></Layout></ProtectedRoute>} />
-                <Route path="/gnn-neo4j" element={<ProtectedRoute><Layout><GNNNeo4j /></Layout></ProtectedRoute>} />
-                <Route path="/falkordb" element={<ProtectedRoute><Layout><FalkorDBGraph /></Layout></ProtectedRoute>} />
-                <Route path="/mcmc-risk" element={<ProtectedRoute><Layout><MCMCRisk /></Layout></ProtectedRoute>} />
-                <Route path="/cocoindex" element={<ProtectedRoute><Layout><CocoIndexPipeline /></Layout></ProtectedRoute>} />
-                <Route path="/epr-kgqa" element={<ProtectedRoute><Layout><EPRKGQAChat /></Layout></ProtectedRoute>} />
-                <Route path="/art-security" element={<ProtectedRoute><Layout><ARTSecurity /></Layout></ProtectedRoute>} />
-                <Route path="/ollama" element={<ProtectedRoute><Layout><OllamaInference /></Layout></ProtectedRoute>} />
-              </Routes>
-            </div>
-          </Router>
-        </NotificationProvider>
-        </TenantProvider>
-      </AuthProvider>
-    </ThemeProvider>
+    <QueryClientProvider client={queryClient}>
+      <I18nProvider>
+        <ThemeProvider>
+          <AuthProvider>
+            <TenantProvider>
+              <NotificationProvider>
+                <ToastProvider>
+                  <Router>
+                    <div className="App">
+                      <Routes>
+                        <Route path="/login" element={<Login />} />
+
+                        {/* Core CRM */}
+                        <Route path="/" element={<P><UnifiedDashboard /></P>} />
+                        <Route path="/hub" element={<P><UnifiedDashboard /></P>} />
+                        <Route path="/dashboard" element={<P><Dashboard /></P>} />
+                        <Route path="/customers" element={<P permission="customers:read"><CustomerManagement /></P>} />
+                        <Route path="/customer-360" element={<P permission="customers:read"><Customer360 /></P>} />
+                        <Route path="/crm" element={<P><CRMCore /></P>} />
+                        <Route path="/inventory" element={<P><InventoryManagement /></P>} />
+                        <Route path="/analytics" element={<P permission="analytics:read"><Analytics /></P>} />
+                        <Route path="/settings" element={<P><Settings /></P>} />
+
+                        {/* Banking */}
+                        <Route path="/core-banking" element={<P permission="banking:read"><CoreBankingView /></P>} />
+                        <Route path="/agent-banking" element={<P permission="banking:read"><AgentBankingView /></P>} />
+                        <Route path="/remittance" element={<P permission="banking:read"><RemittanceView /></P>} />
+                        <Route path="/integrations" element={<P><IntegrationHub /></P>} />
+                        <Route path="/cross-analytics" element={<P permission="analytics:read"><CrossSystemAnalytics /></P>} />
+
+                        {/* Campaign & Engagement */}
+                        <Route path="/campaigns" element={<P permission="campaigns:read"><CampaignManager /></P>} />
+                        <Route path="/realtime" element={<P><RealTimeDashboard /></P>} />
+                        <Route path="/journeys" element={<P><JourneyOrchestrator /></P>} />
+                        <Route path="/churn" element={<P><ChurnPrevention /></P>} />
+                        <Route path="/conversational" element={<P><ConversationalFlows /></P>} />
+                        <Route path="/geo-targeting" element={<P><GeoTargeting /></P>} />
+                        <Route path="/ab-testing" element={<P><ABTestAutomation /></P>} />
+                        <Route path="/compliance" element={<P><ConsentCompliance /></P>} />
+                        <Route path="/preferences" element={<P><NotificationPreferences /></P>} />
+                        <Route path="/revenue" element={<P permission="analytics:read"><RevenueAttribution /></P>} />
+                        <Route path="/gamification" element={<P><AgentGamification /></P>} />
+                        <Route path="/tenant-admin" element={<P permission="admin:full"><TenantAdmin /></P>} />
+
+                        {/* Developer Portal */}
+                        <Route path="/api-keys" element={<P><APIKeyManager /></P>} />
+                        <Route path="/usage" element={<P><UsageMetering /></P>} />
+                        <Route path="/sdk-docs" element={<P><SDKDocs /></P>} />
+                        <Route path="/webhooks" element={<P><WebhookManager /></P>} />
+                        <Route path="/sandbox" element={<P><SandboxManager /></P>} />
+
+                        {/* Intelligence & AI */}
+                        <Route path="/channel-value" element={<P><ChannelValueAnalysis /></P>} />
+                        <Route path="/acquisition" element={<P><AcquisitionEngine /></P>} />
+                        <Route path="/social-media" element={<P><SocialMediaHub /></P>} />
+                        <Route path="/mdm-360" element={<P><MDMCustomer360 /></P>} />
+                        <Route path="/agentic-ai" element={<P><AgenticAI /></P>} />
+
+                        {/* AI/ML Stack */}
+                        <Route path="/gnn-neo4j" element={<P><GNNNeo4j /></P>} />
+                        <Route path="/falkordb" element={<P><FalkorDBGraph /></P>} />
+                        <Route path="/mcmc-risk" element={<P><MCMCRisk /></P>} />
+                        <Route path="/cocoindex" element={<P><CocoIndexPipeline /></P>} />
+                        <Route path="/epr-kgqa" element={<P><EPRKGQAChat /></P>} />
+                        <Route path="/art-security" element={<P permission="security:read"><ARTSecurity /></P>} />
+                        <Route path="/ollama" element={<P><OllamaInference /></P>} />
+
+                        {/* Operations & Security */}
+                        <Route path="/audit-log" element={<P permission="audit:read"><AuditLog /></P>} />
+                        <Route path="/security-dashboard" element={<P permission="security:read"><SecurityDashboard /></P>} />
+                        <Route path="/compliance-dashboard" element={<P><ComplianceDashboard /></P>} />
+                        <Route path="/documents" element={<P><DocumentManager /></P>} />
+                        <Route path="/tasks" element={<P><TaskManager /></P>} />
+                        <Route path="/sla-monitor" element={<P><SLAMonitor /></P>} />
+                        <Route path="/incidents" element={<P permission="security:read"><IncidentManager /></P>} />
+                        <Route path="/data-export" element={<P><DataExport /></P>} />
+                        <Route path="/bulk-operations" element={<P><BulkOperations /></P>} />
+                        <Route path="/search" element={<P><AdvancedSearch /></P>} />
+                        <Route path="/calendar" element={<P><CalendarView /></P>} />
+                        <Route path="/customize-dashboard" element={<P><DashboardCustomization /></P>} />
+                      </Routes>
+                    </div>
+                  </Router>
+                </ToastProvider>
+              </NotificationProvider>
+            </TenantProvider>
+          </AuthProvider>
+        </ThemeProvider>
+      </I18nProvider>
+    </QueryClientProvider>
   )
 }
 
 export default App
-
