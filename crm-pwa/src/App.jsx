@@ -25,6 +25,18 @@ import IntegrationHub from './components/IntegrationHub'
 import CrossSystemAnalytics from './components/CrossSystemAnalytics'
 import CampaignManager from './components/CampaignManager'
 
+// Enhancement Components
+import RealTimeDashboard from './components/RealTimeDashboard'
+import JourneyOrchestrator from './components/JourneyOrchestrator'
+import ChurnPrevention from './components/ChurnPrevention'
+import ConversationalFlows from './components/ConversationalFlows'
+import GeoTargeting from './components/GeoTargeting'
+import ABTestAutomation from './components/ABTestAutomation'
+import ConsentCompliance from './components/ConsentCompliance'
+import NotificationPreferences from './components/NotificationPreferences'
+import RevenueAttribution from './components/RevenueAttribution'
+import AgentGamification from './components/AgentGamification'
+
 // Context
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { NotificationProvider } from './contexts/NotificationContext'
@@ -265,6 +277,106 @@ function App() {
                     <ProtectedRoute>
                       <Layout>
                         <Settings />
+                      </Layout>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/realtime"
+                  element={
+                    <ProtectedRoute>
+                      <Layout>
+                        <RealTimeDashboard />
+                      </Layout>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/journeys"
+                  element={
+                    <ProtectedRoute>
+                      <Layout>
+                        <JourneyOrchestrator />
+                      </Layout>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/churn"
+                  element={
+                    <ProtectedRoute>
+                      <Layout>
+                        <ChurnPrevention />
+                      </Layout>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/conversational"
+                  element={
+                    <ProtectedRoute>
+                      <Layout>
+                        <ConversationalFlows />
+                      </Layout>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/geo-targeting"
+                  element={
+                    <ProtectedRoute>
+                      <Layout>
+                        <GeoTargeting />
+                      </Layout>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/ab-testing"
+                  element={
+                    <ProtectedRoute>
+                      <Layout>
+                        <ABTestAutomation />
+                      </Layout>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/compliance"
+                  element={
+                    <ProtectedRoute>
+                      <Layout>
+                        <ConsentCompliance />
+                      </Layout>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/preferences"
+                  element={
+                    <ProtectedRoute>
+                      <Layout>
+                        <NotificationPreferences />
+                      </Layout>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/revenue"
+                  element={
+                    <ProtectedRoute>
+                      <Layout>
+                        <RevenueAttribution />
+                      </Layout>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/gamification"
+                  element={
+                    <ProtectedRoute>
+                      <Layout>
+                        <AgentGamification />
                       </Layout>
                     </ProtectedRoute>
                   }

@@ -30,6 +30,12 @@ import {
   Send,
   MapPin,
   Megaphone,
+  GitBranch,
+  Bot,
+  FlaskConical,
+  Trophy,
+  Phone,
+  MessageSquare,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useTheme } from '@/contexts/ThemeContext'
@@ -39,6 +45,7 @@ const Sidebar = ({ isOpen, onToggle }) => {
   const { theme } = useTheme()
   const [expandedSections, setExpandedSections] = useState({
     hub: true,
+    retention: true,
     banking: true,
     main: false,
     analytics: false,
@@ -89,6 +96,75 @@ const Sidebar = ({ isOpen, onToggle }) => {
           icon: Megaphone,
           description: 'Outbound campaigns & upsell',
           badge: '5'
+        },
+        {
+          name: 'Real-Time Dashboard',
+          href: '/realtime',
+          icon: Activity,
+          description: 'Live WebSocket campaign metrics'
+        },
+        {
+          name: 'Journey Orchestrator',
+          href: '/journeys',
+          icon: GitBranch,
+          description: 'Multi-step Temporal workflows',
+          badge: '4'
+        },
+        {
+          name: 'Conversational Flows',
+          href: '/conversational',
+          icon: Bot,
+          description: 'WhatsApp & Telegram self-service'
+        },
+        {
+          name: 'Geo Targeting',
+          href: '/geo-targeting',
+          icon: MapPin,
+          description: 'Region-based campaign targeting'
+        },
+        {
+          name: 'A/B Testing',
+          href: '/ab-testing',
+          icon: FlaskConical,
+          description: 'Auto split testing & promotion'
+        },
+      ]
+    },
+    {
+      section: 'retention',
+      title: 'Retention & Compliance',
+      items: [
+        {
+          name: 'Churn Prevention',
+          href: '/churn',
+          icon: Shield,
+          description: 'ML churn prediction & auto-trigger',
+          badge: '842'
+        },
+        {
+          name: 'Consent & Compliance',
+          href: '/compliance',
+          icon: Lock,
+          description: 'NDPR compliance & suppression lists'
+        },
+        {
+          name: 'Notification Preferences',
+          href: '/preferences',
+          icon: Bell,
+          description: 'Channel & topic preferences'
+        },
+        {
+          name: 'Revenue Attribution',
+          href: '/revenue',
+          icon: DollarSign,
+          description: 'Campaign ROI & multi-touch attribution'
+        },
+        {
+          name: 'Agent Gamification',
+          href: '/gamification',
+          icon: Trophy,
+          description: 'Leaderboards & incentives',
+          badge: 'Top 8'
         },
       ]
     },
