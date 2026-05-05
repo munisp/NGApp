@@ -122,7 +122,7 @@ impl DataQualityEngine {
     }
 
     pub fn score_accuracy(record: &CustomerRecord) -> f64 {
-        let mut score = 70.0;
+        let mut score: f64 = 70.0;
         // BVN/NIN validation (11 digits)
         if let Some(ref bvn) = record.bvn {
             if bvn.len() == 11 && bvn.chars().all(|c| c.is_ascii_digit()) {
