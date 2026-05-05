@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   Key, Plus, Trash2, RotateCw, Copy, Eye, EyeOff, Shield, Clock,
   CheckCircle, XCircle, AlertTriangle, Activity, Server, Smartphone
@@ -39,6 +39,11 @@ const APIKeyManager = () => {
   const [selectedKey, setSelectedKey] = useState(null)
   const [copiedId, setCopiedId] = useState(null)
   const [newKey, setNewKey] = useState({ name: '', env: 'production', permissions: [], rateLimit: 500 })
+
+  useEffect(() => {
+    setKeys(SEED_KEYS[tenantId] || [])
+    setSelectedKey(null)
+  }, [tenantId])
 
   const activeKeys = keys.filter(k => k.status === 'active')
   const totalCalls24h = keys.reduce((sum, k) => sum + k.calls24h, 0)

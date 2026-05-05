@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   Webhook, Plus, Trash2, RotateCw, Copy, CheckCircle, XCircle, Clock,
   AlertTriangle, Activity, Eye, Shield, Zap, RefreshCw
@@ -51,6 +51,10 @@ const WebhookManager = () => {
   const [newUrl, setNewUrl] = useState('')
   const [showSignature, setShowSignature] = useState(false)
   const [copiedId, setCopiedId] = useState(null)
+
+  useEffect(() => {
+    setSubs(SEED_SUBS[tenantId] || [])
+  }, [tenantId])
 
   const totalDeliveries = subs.reduce((sum, s) => sum + s.deliveries, 0)
   const avgSuccess = subs.length > 0 ? subs.reduce((sum, s) => sum + s.successRate, 0) / subs.length : 0
