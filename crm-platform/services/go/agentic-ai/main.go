@@ -4,7 +4,6 @@ package main
 // Multi-agent coordination, planning, reasoning loops, tool execution, and escalation management
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
