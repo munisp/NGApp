@@ -60,11 +60,14 @@ import {
 import { cn } from '@/lib/utils'
 import { useTheme } from '@/contexts/ThemeContext'
 import { useTenant } from '@/contexts/TenantContext'
+import { useTranslation } from '@/lib/i18n/useTranslation'
 
 const Sidebar = ({ isOpen, onToggle }) => {
   const location = useLocation()
   const { theme } = useTheme()
   const { tenant, hasProduct, hasAnyProduct, switchTenant, allTenants, enabledProducts } = useTenant()
+  const { t, locale, changeLocale, languages } = useTranslation()
+  const [showLanguagePicker, setShowLanguagePicker] = useState(false)
   const [expandedSections, setExpandedSections] = useState({
     hub: true,
     retention: true,
@@ -91,409 +94,132 @@ const Sidebar = ({ isOpen, onToggle }) => {
   const navigationItems = [
     {
       section: 'hub',
-      title: 'Unified CRM Hub',
+      titleKey: 'sections.hub',
       items: [
-        {
-          name: 'Unified Dashboard',
-          href: '/hub',
-          icon: Target,
-          description: 'Cross-system metrics & overview'
-        },
-        {
-          name: 'Customer 360°',
-          href: '/customer-360',
-          icon: Users,
-          description: 'Unified customer profiles',
-          badge: '91.2K'
-        },
-        {
-          name: 'Cross-System Analytics',
-          href: '/cross-analytics',
-          icon: BarChart3,
-          description: 'CLV, cross-sell, geographic insights'
-        },
-        {
-          name: 'Integration Hub',
-          href: '/integrations',
-          icon: Wifi,
-          description: 'Middleware, event bus & connectivity'
-        },
-        {
-          name: 'Campaigns',
-          href: '/campaigns',
-          icon: Megaphone,
-          description: 'Outbound campaigns & upsell',
-          badge: '5'
-        },
-        {
-          name: 'Real-Time Dashboard',
-          href: '/realtime',
-          icon: Activity,
-          description: 'Live WebSocket campaign metrics'
-        },
-        {
-          name: 'Journey Orchestrator',
-          href: '/journeys',
-          icon: GitBranch,
-          description: 'Multi-step Temporal workflows',
-          badge: '4'
-        },
-        {
-          name: 'Conversational Flows',
-          href: '/conversational',
-          icon: Bot,
-          description: 'WhatsApp & Telegram self-service'
-        },
-        {
-          name: 'Geo Targeting',
-          href: '/geo-targeting',
-          icon: MapPin,
-          description: 'Region-based campaign targeting',
-          requiredProduct: 'agent_banking',
-        },
-        {
-          name: 'A/B Testing',
-          href: '/ab-testing',
-          icon: FlaskConical,
-          description: 'Auto split testing & promotion'
-        },
+        { i18nKey: 'nav.unifiedDashboard', href: '/hub', icon: Target, description: 'Cross-system metrics & overview' },
+        { i18nKey: 'nav.customer360', href: '/customer-360', icon: Users, description: 'Unified customer profiles', badge: '91.2K' },
+        { i18nKey: 'nav.crossAnalytics', href: '/cross-analytics', icon: BarChart3, description: 'CLV, cross-sell, geographic insights' },
+        { i18nKey: 'nav.integrationHub', href: '/integrations', icon: Wifi, description: 'Middleware, event bus & connectivity' },
+        { i18nKey: 'nav.campaigns', href: '/campaigns', icon: Megaphone, description: 'Outbound campaigns & upsell', badge: '5' },
+        { i18nKey: 'nav.realtime', href: '/realtime', icon: Activity, description: 'Live WebSocket campaign metrics' },
+        { i18nKey: 'nav.journeys', href: '/journeys', icon: GitBranch, description: 'Multi-step Temporal workflows', badge: '4' },
+        { i18nKey: 'nav.conversational', href: '/conversational', icon: Bot, description: 'WhatsApp & Telegram self-service' },
+        { i18nKey: 'nav.geoTargeting', href: '/geo-targeting', icon: MapPin, description: 'Region-based campaign targeting', requiredProduct: 'agent_banking' },
+        { i18nKey: 'nav.abTesting', href: '/ab-testing', icon: FlaskConical, description: 'Auto split testing & promotion' },
       ]
     },
     {
       section: 'retention',
-      title: 'Retention & Compliance',
+      titleKey: 'sections.retention',
       items: [
-        {
-          name: 'Churn Prevention',
-          href: '/churn',
-          icon: Shield,
-          description: 'ML churn prediction & auto-trigger',
-          badge: '842'
-        },
-        {
-          name: 'Consent & Compliance',
-          href: '/compliance',
-          icon: Lock,
-          description: 'NDPR compliance & suppression lists'
-        },
-        {
-          name: 'Notification Preferences',
-          href: '/preferences',
-          icon: Bell,
-          description: 'Channel & topic preferences'
-        },
-        {
-          name: 'Revenue Attribution',
-          href: '/revenue',
-          icon: DollarSign,
-          description: 'Campaign ROI & multi-touch attribution'
-        },
-        {
-          name: 'Agent Gamification',
-          href: '/gamification',
-          icon: Trophy,
-          description: 'Leaderboards & incentives',
-          badge: 'Top 8',
-          requiredProduct: 'agent_banking',
-        },
+        { i18nKey: 'nav.churn', href: '/churn', icon: Shield, description: 'ML churn prediction & auto-trigger', badge: '842' },
+        { i18nKey: 'nav.consent', href: '/compliance', icon: Lock, description: 'NDPR compliance & suppression lists' },
+        { i18nKey: 'nav.preferences', href: '/preferences', icon: Bell, description: 'Channel & topic preferences' },
+        { i18nKey: 'nav.revenue', href: '/revenue', icon: DollarSign, description: 'Campaign ROI & multi-touch attribution' },
+        { i18nKey: 'nav.gamification', href: '/gamification', icon: Trophy, description: 'Leaderboards & incentives', badge: 'Top 8', requiredProduct: 'agent_banking' },
       ]
     },
     {
       section: 'banking',
-      title: 'Banking Channels',
+      titleKey: 'sections.banking',
       items: [
-        {
-          name: 'Core Banking',
-          href: '/core-banking',
-          icon: Landmark,
-          description: 'T24/Finacle customer data',
-          badge: '48.9K',
-          requiredProduct: 'core_banking',
-        },
-        {
-          name: 'Agent Banking',
-          href: '/agent-banking',
-          icon: MapPin,
-          description: 'Field agents & registrations',
-          badge: '1,538',
-          requiredProduct: 'agent_banking',
-        },
-        {
-          name: 'Remittance',
-          href: '/remittance',
-          icon: Globe,
-          description: 'Cross-border transfers',
-          badge: '8 corridors',
-          requiredProduct: 'remittance',
-        },
+        { i18nKey: 'nav.coreBanking', href: '/core-banking', icon: Landmark, description: 'T24/Finacle customer data', badge: '48.9K', requiredProduct: 'core_banking' },
+        { i18nKey: 'nav.agentBanking', href: '/agent-banking', icon: MapPin, description: 'Field agents & registrations', badge: '1,538', requiredProduct: 'agent_banking' },
+        { i18nKey: 'nav.remittance', href: '/remittance', icon: Globe, description: 'Cross-border transfers', badge: '8 corridors', requiredProduct: 'remittance' },
       ]
     },
     {
       section: 'intelligence',
-      title: 'Intelligence & AI',
+      titleKey: 'sections.intelligence',
       items: [
-        {
-          name: 'Channel Value Analysis',
-          href: '/channel-value',
-          icon: BarChart3,
-          description: 'Banking channel ROI & value propositions'
-        },
-        {
-          name: 'Acquisition Engine',
-          href: '/acquisition',
-          icon: UserPlus,
-          description: 'Lead scoring, funnel & conversion'
-        },
-        {
-          name: 'Social Media Hub',
-          href: '/social-media',
-          icon: Share2,
-          description: 'Campaign management & advertising'
-        },
-        {
-          name: 'MDM Customer 360°',
-          href: '/mdm-360',
-          icon: Database,
-          description: 'Golden records & lakehouse analytics'
-        },
-        {
-          name: 'Agentic AI',
-          href: '/agentic-ai',
-          icon: Brain,
-          description: 'Autonomous AI agents platform',
-          badge: '7 agents'
-        },
-        {
-          name: 'GNN + Neo4j',
-          href: '/gnn-neo4j',
-          icon: GitBranch,
-          description: 'Graph neural network fraud & influence'
-        },
-        {
-          name: 'FalkorDB Explorer',
-          href: '/falkordb',
-          icon: Database,
-          description: 'Graph queries & GraphRAG chatbot'
-        },
-        {
-          name: 'MCMC Risk Engine',
-          href: '/mcmc-risk',
-          icon: Activity,
-          description: 'Bayesian credit risk & stress testing'
-        },
-        {
-          name: 'CocoIndex Pipeline',
-          href: '/cocoindex',
-          icon: Layers,
-          description: 'Incremental data indexing for KG'
-        },
-        {
-          name: 'KGQA Chatbot',
-          href: '/epr-kgqa',
-          icon: MessageSquare,
-          description: 'Knowledge graph question answering'
-        },
-        {
-          name: 'ART ML Security',
-          href: '/art-security',
-          icon: ShieldCheck,
-          description: 'Adversarial robustness testing'
-        },
-        {
-          name: 'Ollama LLM',
-          href: '/ollama',
-          icon: Cpu,
-          description: 'Local LLM inference engine'
-        },
+        { i18nKey: 'nav.channelValue', href: '/channel-value', icon: BarChart3, description: 'Banking channel ROI & value propositions' },
+        { i18nKey: 'nav.acquisition', href: '/acquisition', icon: UserPlus, description: 'Lead scoring, funnel & conversion' },
+        { i18nKey: 'nav.socialMedia', href: '/social-media', icon: Share2, description: 'Campaign management & advertising' },
+        { i18nKey: 'nav.mdm360', href: '/mdm-360', icon: Database, description: 'Golden records & lakehouse analytics' },
+        { i18nKey: 'nav.agenticAi', href: '/agentic-ai', icon: Brain, description: 'Autonomous AI agents platform', badge: '7 agents' },
+        { i18nKey: 'nav.gnn', href: '/gnn-neo4j', icon: GitBranch, description: 'Graph neural network fraud & influence' },
+        { i18nKey: 'nav.falkordb', href: '/falkordb', icon: Database, description: 'Graph queries & GraphRAG chatbot' },
+        { i18nKey: 'nav.mcmc', href: '/mcmc-risk', icon: Activity, description: 'Bayesian credit risk & stress testing' },
+        { i18nKey: 'nav.cocoindex', href: '/cocoindex', icon: Layers, description: 'Incremental data indexing for KG' },
+        { i18nKey: 'nav.kgqa', href: '/epr-kgqa', icon: MessageSquare, description: 'Knowledge graph question answering' },
+        { i18nKey: 'nav.artSecurity', href: '/art-security', icon: ShieldCheck, description: 'Adversarial robustness testing' },
+        { i18nKey: 'nav.ollama', href: '/ollama', icon: Cpu, description: 'Local LLM inference engine' },
       ]
     },
     {
       section: 'tenant',
-      title: 'Tenant Admin',
+      titleKey: 'sections.tenant',
       items: [
-        {
-          name: 'Tenant Management',
-          href: '/tenant-admin',
-          icon: Crown,
-          description: 'Manage tenants & product access'
-        },
+        { i18nKey: 'nav.tenantAdmin', href: '/tenant-admin', icon: Crown, description: 'Manage tenants & product access' },
       ]
     },
     {
       section: 'developer',
-      title: 'Developer Portal',
+      titleKey: 'sections.developer',
       items: [
-        {
-          name: 'API Keys',
-          href: '/api-keys',
-          icon: Key,
-          description: 'Self-service API key management'
-        },
-        {
-          name: 'Usage & Metering',
-          href: '/usage',
-          icon: Gauge,
-          description: 'API quota, billing & analytics'
-        },
-        {
-          name: 'SDK & Docs',
-          href: '/sdk-docs',
-          icon: Code2,
-          description: 'SDKs, API reference & code examples'
-        },
-        {
-          name: 'Webhooks',
-          href: '/webhooks',
-          icon: Webhook,
-          description: 'Event subscriptions & delivery'
-        },
-        {
-          name: 'Sandbox',
-          href: '/sandbox',
-          icon: FlaskConical,
-          description: 'Test environment & certification'
-        },
+        { i18nKey: 'nav.apiKeys', href: '/api-keys', icon: Key, description: 'Self-service API key management' },
+        { i18nKey: 'nav.usageMetering', href: '/usage', icon: Gauge, description: 'API quota, billing & analytics' },
+        { i18nKey: 'nav.sdkDocs', href: '/sdk-docs', icon: Code2, description: 'SDKs, API reference & code examples' },
+        { i18nKey: 'nav.webhooks', href: '/webhooks', icon: Webhook, description: 'Event subscriptions & delivery' },
+        { i18nKey: 'nav.sandbox', href: '/sandbox', icon: FlaskConical, description: 'Test environment & certification' },
       ]
     },
     {
       section: 'operations',
-      title: 'Operations & Security',
+      titleKey: 'sections.operations',
       items: [
-        { name: 'Audit Log', href: '/audit-log', icon: ClipboardList, description: 'Tamper-evident audit trail' },
-        { name: 'Security Dashboard', href: '/security-dashboard', icon: ShieldCheck, description: 'Threats, DDoS, WAF status' },
-        { name: 'Compliance Dashboard', href: '/compliance-dashboard', icon: Shield, description: 'NDPR, CBN, PCI-DSS, AML/CFT' },
-        { name: 'Documents', href: '/documents', icon: FolderOpen, description: 'KYC docs, policies, contracts' },
-        { name: 'Tasks', href: '/tasks', icon: ClipboardList, description: 'Task management with SLA' },
-        { name: 'SLA Monitor', href: '/sla-monitor', icon: Timer, description: 'SLA compliance tracking' },
-        { name: 'Incidents', href: '/incidents', icon: AlertTriangle, description: 'Incident management' },
-        { name: 'Data Export', href: '/data-export', icon: Download, description: 'Scheduled reports & exports' },
-        { name: 'Bulk Operations', href: '/bulk-operations', icon: Layers, description: 'Batch import, update, notify' },
-        { name: 'Advanced Search', href: '/search', icon: Search, description: 'Multi-field customer search' },
-        { name: 'Calendar', href: '/calendar', icon: Calendar, description: 'Compliance deadlines & events' },
-        { name: 'Customize Dashboard', href: '/customize-dashboard', icon: LayoutGrid, description: 'Widget layout & role presets' },
+        { i18nKey: 'nav.audit', href: '/audit-log', icon: ClipboardList, description: 'Tamper-evident audit trail' },
+        { i18nKey: 'nav.securityDashboard', href: '/security-dashboard', icon: ShieldCheck, description: 'Threats, DDoS, WAF status' },
+        { i18nKey: 'nav.complianceDashboard', href: '/compliance-dashboard', icon: Shield, description: 'NDPR, CBN, PCI-DSS, AML/CFT' },
+        { i18nKey: 'nav.documents', href: '/documents', icon: FolderOpen, description: 'KYC docs, policies, contracts' },
+        { i18nKey: 'nav.tasks', href: '/tasks', icon: ClipboardList, description: 'Task management with SLA' },
+        { i18nKey: 'nav.slaMonitor', href: '/sla-monitor', icon: Timer, description: 'SLA compliance tracking' },
+        { i18nKey: 'nav.incidents', href: '/incidents', icon: AlertTriangle, description: 'Incident management' },
+        { i18nKey: 'nav.dataExport', href: '/data-export', icon: Download, description: 'Scheduled reports & exports' },
+        { i18nKey: 'nav.bulkOperations', href: '/bulk-operations', icon: Layers, description: 'Batch import, update, notify' },
+        { i18nKey: 'nav.advancedSearch', href: '/search', icon: Search, description: 'Multi-field customer search' },
+        { i18nKey: 'nav.calendar', href: '/calendar', icon: Calendar, description: 'Compliance deadlines & events' },
+        { i18nKey: 'nav.customizeDashboard', href: '/customize-dashboard', icon: LayoutGrid, description: 'Widget layout & role presets' },
       ]
     },
     {
       section: 'main',
-      title: 'CRM Modules',
+      titleKey: 'sections.main',
       items: [
-        {
-          name: 'Dashboard',
-          href: '/dashboard',
-          icon: LayoutDashboard,
-          description: 'Overview and key metrics'
-        },
-        {
-          name: 'Customers',
-          href: '/customers',
-          icon: Users,
-          description: 'Customer management and profiles',
-          badge: '1,234'
-        },
-        {
-          name: 'CRM Core',
-          href: '/crm',
-          icon: Building2,
-          description: 'Leads, opportunities, and sales pipeline',
-          badge: '56'
-        },
-        {
-          name: 'Inventory',
-          href: '/inventory',
-          icon: Package,
-          description: 'Product and stock management',
-          badge: 'Low Stock'
-        }
+        { i18nKey: 'nav.dashboard', href: '/dashboard', icon: LayoutDashboard, description: 'Overview and key metrics' },
+        { i18nKey: 'nav.customers', href: '/customers', icon: Users, description: 'Customer management and profiles', badge: '1,234' },
+        { name: 'CRM Core', href: '/crm', icon: Building2, description: 'Leads, opportunities, and sales pipeline', badge: '56' },
+        { i18nKey: 'nav.inventory', href: '/inventory', icon: Package, description: 'Product and stock management', badge: 'Low Stock' },
       ]
     },
     {
       section: 'analytics',
-      title: 'Analytics & Reports',
+      titleKey: 'sections.analytics',
       items: [
-        {
-          name: 'Analytics',
-          href: '/analytics',
-          icon: BarChart3,
-          description: 'Business intelligence and insights'
-        },
-        {
-          name: 'Sales Reports',
-          href: '/analytics/sales',
-          icon: TrendingUp,
-          description: 'Sales performance and trends'
-        },
-        {
-          name: 'Customer Insights',
-          href: '/analytics/customers',
-          icon: UserCheck,
-          description: 'Customer behavior and segmentation'
-        },
-        {
-          name: 'Inventory Reports',
-          href: '/analytics/inventory',
-          icon: Database,
-          description: 'Stock levels and turnover analysis'
-        }
+        { i18nKey: 'nav.analytics', href: '/analytics', icon: BarChart3, description: 'Business intelligence and insights' },
+        { name: 'Sales Reports', href: '/analytics/sales', icon: TrendingUp, description: 'Sales performance and trends' },
+        { name: 'Customer Insights', href: '/analytics/customers', icon: UserCheck, description: 'Customer behavior and segmentation' },
+        { name: 'Inventory Reports', href: '/analytics/inventory', icon: Database, description: 'Stock levels and turnover analysis' },
       ]
     },
     {
       section: 'management',
-      title: 'Management',
+      titleKey: 'sections.management',
       items: [
-        {
-          name: 'User Management',
-          href: '/management/users',
-          icon: Shield,
-          description: 'User roles and permissions'
-        },
-        {
-          name: 'System Health',
-          href: '/management/health',
-          icon: Activity,
-          description: 'System monitoring and alerts'
-        },
-        {
-          name: 'Cost Management',
-          href: '/management/costs',
-          icon: DollarSign,
-          description: 'Resource costs and optimization'
-        },
-        {
-          name: 'Security Center',
-          href: '/management/security',
-          icon: Lock,
-          description: 'Security monitoring and compliance'
-        }
+        { name: 'User Management', href: '/management/users', icon: Shield, description: 'User roles and permissions' },
+        { name: 'System Health', href: '/management/health', icon: Activity, description: 'System monitoring and alerts' },
+        { name: 'Cost Management', href: '/management/costs', icon: DollarSign, description: 'Resource costs and optimization' },
+        { i18nKey: 'nav.security', href: '/management/security', icon: Lock, description: 'Security monitoring and compliance' },
       ]
     },
     {
       section: 'system',
-      title: 'System',
+      titleKey: 'sections.system',
       items: [
-        {
-          name: 'Settings',
-          href: '/settings',
-          icon: Settings,
-          description: 'Application configuration'
-        },
-        {
-          name: 'API Documentation',
-          href: '/docs/api',
-          icon: FileText,
-          description: 'API reference and guides'
-        },
-        {
-          name: 'System Logs',
-          href: '/system/logs',
-          icon: Monitor,
-          description: 'Application and system logs'
-        },
-        {
-          name: 'Integrations',
-          href: '/system/integrations',
-          icon: Zap,
-          description: 'Third-party integrations'
-        }
+        { i18nKey: 'nav.settings', href: '/settings', icon: Settings, description: 'Application configuration' },
+        { name: 'API Documentation', href: '/docs/api', icon: FileText, description: 'API reference and guides' },
+        { name: 'System Logs', href: '/system/logs', icon: Monitor, description: 'Application and system logs' },
+        { i18nKey: 'nav.integrations', href: '/system/integrations', icon: Zap, description: 'Third-party integrations' },
       ]
     }
   ]
@@ -664,7 +390,7 @@ const Sidebar = ({ isOpen, onToggle }) => {
                     'hover:text-gray-700 dark:hover:text-gray-200 transition-colors uppercase tracking-wider'
                   )}
                 >
-                  {section.title}
+                  {t(section.titleKey, section.title)}
                   <motion.div
                     animate={{ rotate: expandedSections[section.section] ? 90 : 0 }}
                     transition={{ duration: 0.2 }}
@@ -698,7 +424,7 @@ const Sidebar = ({ isOpen, onToggle }) => {
                               ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 border-r-2 border-blue-600'
                               : 'text-gray-700 dark:text-gray-300'
                           )}
-                          title={!isOpen ? item.name : undefined}
+                          title={!isOpen ? (item.i18nKey ? t(item.i18nKey, item.name) : item.name) : undefined}
                         >
                           <Icon
                             className={cn(
@@ -720,7 +446,7 @@ const Sidebar = ({ isOpen, onToggle }) => {
                                 className="ml-3 flex-1 min-w-0"
                               >
                                 <div className="flex items-center justify-between">
-                                  <span className="truncate">{item.name}</span>
+                                  <span className="truncate">{item.i18nKey ? t(item.i18nKey, item.name) : item.name}</span>
                                   {item.badge && (
                                     <span
                                       className={cn(
@@ -769,15 +495,46 @@ const Sidebar = ({ isOpen, onToggle }) => {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-gray-900 dark:text-white">
-                    System Status
+                    {t('footer.systemStatus', 'System Status')}
                   </p>
                   <p className="text-xs text-green-600 dark:text-green-400">
-                    All systems operational
+                    {t('footer.allOperational', 'All systems operational')}
                   </p>
                 </div>
               </div>
               <div className="text-xs text-gray-500 dark:text-gray-400 text-center">
                 Last updated: {new Date().toLocaleTimeString()}
+              </div>
+
+              {/* Language Switcher */}
+              <div className="relative mt-2">
+                <button
+                  onClick={() => setShowLanguagePicker(!showLanguagePicker)}
+                  className="w-full flex items-center justify-between p-2 rounded-lg bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-xs"
+                  aria-label={t('accessibility.selectLanguage', 'Select language')}
+                >
+                  <div className="flex items-center space-x-2">
+                    <Globe className="w-3.5 h-3.5 text-gray-500" />
+                    <span className="text-gray-700 dark:text-gray-300">{t('footer.language', 'Language')}</span>
+                  </div>
+                  <span className="text-gray-500 dark:text-gray-400 font-medium">{languages.find(l => l.code === locale)?.name || locale}</span>
+                </button>
+                {showLanguagePicker && (
+                  <div className="absolute bottom-full left-0 right-0 mb-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50">
+                    {languages.map(lang => (
+                      <button
+                        key={lang.code}
+                        onClick={() => { changeLocale(lang.code); setShowLanguagePicker(false) }}
+                        className={cn(
+                          'w-full text-left px-3 py-2 text-xs hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors',
+                          lang.code === locale && 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300'
+                        )}
+                      >
+                        {lang.name}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             </motion.div>
           ) : (

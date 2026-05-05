@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback, useMemo } from 'react'
+import { createContext, useContext, useState, useCallback, useMemo, useEffect } from 'react'
 import { translations, DEFAULT_LANGUAGE, SUPPORTED_LANGUAGES } from './translations'
 
 const I18nContext = createContext()
@@ -21,6 +21,11 @@ export const I18nProvider = ({ children }) => {
     if (SUPPORTED_LANGUAGES.includes(browserLang)) return browserLang
     return DEFAULT_LANGUAGE
   })
+
+  useEffect(() => {
+    document.documentElement.lang = locale
+    document.documentElement.dir = translations[locale]?.dir || 'ltr'
+  }, [locale])
 
   const changeLocale = useCallback((newLocale) => {
     if (SUPPORTED_LANGUAGES.includes(newLocale)) {

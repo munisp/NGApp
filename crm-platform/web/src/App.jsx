@@ -20,7 +20,7 @@ import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { NotificationProvider } from './contexts/NotificationContext'
 import { ThemeProvider } from './contexts/ThemeContext'
 import { TenantProvider } from './contexts/TenantContext'
-import { I18nProvider } from './lib/i18n/useTranslation.jsx'
+import { I18nProvider, useTranslation } from './lib/i18n/useTranslation.jsx'
 import { queryClient } from './lib/queryClient'
 
 // Lazy-loaded page components — code-split by section
@@ -93,14 +93,17 @@ const CalendarView = lazy(() => import('./components/CalendarView'))
 const DashboardCustomization = lazy(() => import('./components/DashboardCustomization'))
 
 // Skip Navigation for accessibility (WCAG 2.1 AA)
-const SkipNav = () => (
-  <a
-    href="#main-content"
-    className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:bg-blue-600 focus:text-white focus:px-4 focus:py-2 focus:rounded-lg focus:outline-none"
-  >
-    Skip to main content
-  </a>
-)
+const SkipNav = () => {
+  const { t } = useTranslation()
+  return (
+    <a
+      href="#main-content"
+      className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:bg-blue-600 focus:text-white focus:px-4 focus:py-2 focus:rounded-lg focus:outline-none"
+    >
+      {t('accessibility.skipToContent', 'Skip to main content')}
+    </a>
+  )
+}
 
 // Layout Component with accessibility landmarks
 const Layout = ({ children }) => {
