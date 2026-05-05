@@ -43,6 +43,15 @@ import {
   Code2,
   Webhook,
   Gauge,
+  ClipboardList,
+  Calendar,
+  Download,
+  Layers,
+  AlertTriangle,
+  LayoutGrid,
+  ShieldCheck,
+  Timer,
+  FolderOpen,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useTheme } from '@/contexts/ThemeContext'
@@ -258,6 +267,24 @@ const Sidebar = ({ isOpen, onToggle }) => {
           icon: FlaskConical,
           description: 'Test environment & certification'
         },
+      ]
+    },
+    {
+      section: 'operations',
+      title: 'Operations & Security',
+      items: [
+        { name: 'Audit Log', href: '/audit-log', icon: ClipboardList, description: 'Tamper-evident audit trail' },
+        { name: 'Security Dashboard', href: '/security-dashboard', icon: ShieldCheck, description: 'Threats, DDoS, WAF status' },
+        { name: 'Compliance Dashboard', href: '/compliance-dashboard', icon: Shield, description: 'NDPR, CBN, PCI-DSS, AML/CFT' },
+        { name: 'Documents', href: '/documents', icon: FolderOpen, description: 'KYC docs, policies, contracts' },
+        { name: 'Tasks', href: '/tasks', icon: ClipboardList, description: 'Task management with SLA' },
+        { name: 'SLA Monitor', href: '/sla-monitor', icon: Timer, description: 'SLA compliance tracking' },
+        { name: 'Incidents', href: '/incidents', icon: AlertTriangle, description: 'Incident management' },
+        { name: 'Data Export', href: '/data-export', icon: Download, description: 'Scheduled reports & exports' },
+        { name: 'Bulk Operations', href: '/bulk-operations', icon: Layers, description: 'Batch import, update, notify' },
+        { name: 'Advanced Search', href: '/search', icon: Search, description: 'Multi-field customer search' },
+        { name: 'Calendar', href: '/calendar', icon: Calendar, description: 'Compliance deadlines & events' },
+        { name: 'Customize Dashboard', href: '/customize-dashboard', icon: LayoutGrid, description: 'Widget layout & role presets' },
       ]
     },
     {

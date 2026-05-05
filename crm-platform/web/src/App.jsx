@@ -45,6 +45,20 @@ import SDKDocs from './components/SDKDocs'
 import WebhookManager from './components/WebhookManager'
 import SandboxManager from './components/SandboxManager'
 
+// Operations & Security Components
+import AuditLog from './components/AuditLog'
+import SecurityDashboard from './components/SecurityDashboard'
+import ComplianceDashboard from './components/ComplianceDashboard'
+import DocumentManager from './components/DocumentManager'
+import TaskManager from './components/TaskManager'
+import SLAMonitor from './components/SLAMonitor'
+import IncidentManager from './components/IncidentManager'
+import DataExport from './components/DataExport'
+import BulkOperations from './components/BulkOperations'
+import AdvancedSearch from './components/AdvancedSearch'
+import CalendarView from './components/CalendarView'
+import DashboardCustomization from './components/DashboardCustomization'
+
 // Context
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { NotificationProvider } from './contexts/NotificationContext'
@@ -451,6 +465,18 @@ function App() {
                     </ProtectedRoute>
                   }
                 />
+                <Route path="/audit-log" element={<ProtectedRoute><Layout><AuditLog /></Layout></ProtectedRoute>} />
+                <Route path="/security-dashboard" element={<ProtectedRoute><Layout><SecurityDashboard /></Layout></ProtectedRoute>} />
+                <Route path="/compliance-dashboard" element={<ProtectedRoute><Layout><ComplianceDashboard /></Layout></ProtectedRoute>} />
+                <Route path="/documents" element={<ProtectedRoute><Layout><DocumentManager /></Layout></ProtectedRoute>} />
+                <Route path="/tasks" element={<ProtectedRoute><Layout><TaskManager /></Layout></ProtectedRoute>} />
+                <Route path="/sla-monitor" element={<ProtectedRoute><Layout><SLAMonitor /></Layout></ProtectedRoute>} />
+                <Route path="/incidents" element={<ProtectedRoute><Layout><IncidentManager /></Layout></ProtectedRoute>} />
+                <Route path="/data-export" element={<ProtectedRoute><Layout><DataExport /></Layout></ProtectedRoute>} />
+                <Route path="/bulk-operations" element={<ProtectedRoute><Layout><BulkOperations /></Layout></ProtectedRoute>} />
+                <Route path="/search" element={<ProtectedRoute><Layout><AdvancedSearch /></Layout></ProtectedRoute>} />
+                <Route path="/calendar" element={<ProtectedRoute><Layout><CalendarView /></Layout></ProtectedRoute>} />
+                <Route path="/customize-dashboard" element={<ProtectedRoute><Layout><DashboardCustomization /></Layout></ProtectedRoute>} />
               </Routes>
             </div>
           </Router>
