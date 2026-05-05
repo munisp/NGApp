@@ -52,6 +52,10 @@ import {
   ShieldCheck,
   Timer,
   FolderOpen,
+  Share2,
+  UserPlus,
+  Brain,
+  Cpu,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useTheme } from '@/contexts/ThemeContext'
@@ -65,7 +69,10 @@ const Sidebar = ({ isOpen, onToggle }) => {
     hub: true,
     retention: true,
     banking: true,
+    intelligence: true,
     developer: true,
+    operations: true,
+    tenant: true,
     main: false,
     analytics: false,
     management: false,
@@ -218,6 +225,43 @@ const Sidebar = ({ isOpen, onToggle }) => {
           description: 'Cross-border transfers',
           badge: '8 corridors',
           requiredProduct: 'remittance',
+        },
+      ]
+    },
+    {
+      section: 'intelligence',
+      title: 'Intelligence & AI',
+      items: [
+        {
+          name: 'Channel Value Analysis',
+          href: '/channel-value',
+          icon: BarChart3,
+          description: 'Banking channel ROI & value propositions'
+        },
+        {
+          name: 'Acquisition Engine',
+          href: '/acquisition',
+          icon: UserPlus,
+          description: 'Lead scoring, funnel & conversion'
+        },
+        {
+          name: 'Social Media Hub',
+          href: '/social-media',
+          icon: Share2,
+          description: 'Campaign management & advertising'
+        },
+        {
+          name: 'MDM Customer 360°',
+          href: '/mdm-360',
+          icon: Database,
+          description: 'Golden records & lakehouse analytics'
+        },
+        {
+          name: 'Agentic AI',
+          href: '/agentic-ai',
+          icon: Brain,
+          description: 'Autonomous AI agents platform',
+          badge: '7 agents'
         },
       ]
     },

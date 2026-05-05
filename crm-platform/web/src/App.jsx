@@ -45,6 +45,13 @@ import SDKDocs from './components/SDKDocs'
 import WebhookManager from './components/WebhookManager'
 import SandboxManager from './components/SandboxManager'
 
+// Intelligence & AI Components
+import ChannelValueAnalysis from './components/ChannelValueAnalysis'
+import AcquisitionEngine from './components/AcquisitionEngine'
+import SocialMediaHub from './components/SocialMediaHub'
+import MDMCustomer360 from './components/MDMCustomer360'
+import AgenticAI from './components/AgenticAI'
+
 // Operations & Security Components
 import AuditLog from './components/AuditLog'
 import SecurityDashboard from './components/SecurityDashboard'
@@ -465,6 +472,11 @@ function App() {
                     </ProtectedRoute>
                   }
                 />
+                <Route path="/channel-value" element={<ProtectedRoute><Layout><ChannelValueAnalysis /></Layout></ProtectedRoute>} />
+                <Route path="/acquisition" element={<ProtectedRoute><Layout><AcquisitionEngine /></Layout></ProtectedRoute>} />
+                <Route path="/social-media" element={<ProtectedRoute><Layout><SocialMediaHub /></Layout></ProtectedRoute>} />
+                <Route path="/mdm-360" element={<ProtectedRoute><Layout><MDMCustomer360 /></Layout></ProtectedRoute>} />
+                <Route path="/agentic-ai" element={<ProtectedRoute><Layout><AgenticAI /></Layout></ProtectedRoute>} />
                 <Route path="/audit-log" element={<ProtectedRoute><Layout><AuditLog /></Layout></ProtectedRoute>} />
                 <Route path="/security-dashboard" element={<ProtectedRoute><Layout><SecurityDashboard /></Layout></ProtectedRoute>} />
                 <Route path="/compliance-dashboard" element={<ProtectedRoute><Layout><ComplianceDashboard /></Layout></ProtectedRoute>} />
