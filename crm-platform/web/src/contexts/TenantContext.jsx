@@ -189,7 +189,7 @@ const TENANTS = {
   },
 }
 
-const TenantContext = createContext(null)
+export const TenantContext = createContext(null)
 
 export function TenantProvider({ children }) {
   const [currentTenantId, setCurrentTenantId] = useState('tenant-acme-bank')
