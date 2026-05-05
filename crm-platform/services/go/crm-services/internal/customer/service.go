@@ -8,8 +8,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 
-	"github.com/enterprise-crm/customer-service/internal/models"
-	"github.com/enterprise-crm/customer-service/internal/repository"
+	"github.com/munisp/NGApp/crm-platform/services/go/crm-services/internal/models"
+	"github.com/munisp/NGApp/crm-platform/services/go/crm-services/internal/repository"
 )
 
 // CustomerService defines the interface for customer business logic

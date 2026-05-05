@@ -9,8 +9,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 
-	"github.com/enterprise-crm/customer-service/internal/service"
-	"github.com/enterprise-crm/customer-service/internal/repository"
+	"github.com/munisp/NGApp/crm-platform/services/go/crm-services/internal/service"
+	"github.com/munisp/NGApp/crm-platform/services/go/crm-services/internal/repository"
 )
 
 // CustomerHandler handles HTTP requests for customer operations

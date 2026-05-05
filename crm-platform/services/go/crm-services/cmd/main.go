@@ -16,10 +16,10 @@ import (
 	"github.com/swaggo/gin-swagger"
 	"github.com/swaggo/gin-swagger/swaggerFiles"
 
-	"github.com/enterprise-crm/customer-service/internal/config"
-	"github.com/enterprise-crm/customer-service/internal/handlers"
-	"github.com/enterprise-crm/customer-service/internal/repository"
-	"github.com/enterprise-crm/customer-service/internal/service"
+	"github.com/munisp/NGApp/crm-platform/services/go/crm-services/internal/config"
+	"github.com/munisp/NGApp/crm-platform/services/go/crm-services/internal/handlers"
+	"github.com/munisp/NGApp/crm-platform/services/go/crm-services/internal/repository"
+	"github.com/munisp/NGApp/crm-platform/services/go/crm-services/internal/service"
 )
 
 // @title Customer Management Service API

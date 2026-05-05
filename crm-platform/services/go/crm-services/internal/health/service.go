@@ -9,7 +9,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 
-	"github.com/enterprise-crm/customer-service/internal/repository"
+	"github.com/munisp/NGApp/crm-platform/services/go/crm-services/internal/repository"
 )
 
 // HealthService defines the interface for health check operations

@@ -10,8 +10,8 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 
-	"github.com/enterprise-crm/customer-service/internal/config"
-	"github.com/enterprise-crm/customer-service/internal/models"
+	"github.com/munisp/NGApp/crm-platform/services/go/crm-services/internal/config"
+	"github.com/munisp/NGApp/crm-platform/services/go/crm-services/internal/models"
 )
 
 // NewPostgresDB creates a new PostgreSQL database connection

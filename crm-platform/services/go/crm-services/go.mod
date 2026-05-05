@@ -1,4 +1,4 @@
-module github.com/enterprise-crm/customer-service
+module github.com/munisp/NGApp/crm-platform/services/go/crm-services
 
 go 1.21
 

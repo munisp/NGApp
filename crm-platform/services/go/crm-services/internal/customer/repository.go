@@ -11,7 +11,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 
-	"github.com/enterprise-crm/customer-service/internal/models"
+	"github.com/munisp/NGApp/crm-platform/services/go/crm-services/internal/models"
 )
 
 // CustomerRepository defines the interface for customer data operations

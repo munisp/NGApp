@@ -6,7 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
 
-	"github.com/enterprise-crm/customer-service/internal/service"
+	"github.com/munisp/NGApp/crm-platform/services/go/crm-services/internal/service"
 )
 
 // HealthHandler handles HTTP requests for health check operations
