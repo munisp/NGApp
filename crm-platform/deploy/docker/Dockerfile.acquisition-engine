@@ -1,6 +1,6 @@
 FROM golang:1.21-alpine AS builder
 WORKDIR /app
-COPY services/go/acquisition-engine/ .
+COPY crm-platform/services/go/acquisition-engine/ .
 RUN go mod download && go build -o /acquisition-engine .
 
 FROM alpine:3.19

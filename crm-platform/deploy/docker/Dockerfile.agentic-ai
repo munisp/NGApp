@@ -1,6 +1,6 @@
 FROM golang:1.21-alpine AS builder
 WORKDIR /app
-COPY services/go/agentic-ai/ .
+COPY crm-platform/services/go/agentic-ai/ .
 RUN go mod download && go build -o /agentic-ai .
 
 FROM alpine:3.19
