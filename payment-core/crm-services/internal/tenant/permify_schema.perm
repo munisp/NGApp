@@ -1,0 +1,118 @@
+// Permify Authorization Schema for Multi-Tenant Product Entitlements
+// Defines relationships between tenants, products, users, and resources
+
+entity tenant {
+    // Relationships
+    relation admin @user
+    relation member @user
+    relation viewer @user
+    relation product @product
+
+    // Permissions
+    permission manage = admin
+    permission access = admin or member or viewer
+    permission view_dashboard = admin or member or viewer
+    permission manage_users = admin
+    permission manage_products = admin
+    permission manage_settings = admin
+    permission manage_branding = admin
+    permission view_analytics = admin or member
+    permission export_data = admin
+}
+
+entity product {
+    // Relationships
+    relation tenant @tenant
+    relation admin @user
+    relation operator @user
+
+    // Permissions
+    permission access = admin or operator or tenant.admin or tenant.member
+    permission manage = admin or tenant.admin
+    permission view = admin or operator or tenant.admin or tenant.member or tenant.viewer
+}
+
+entity core_banking {
+    // Inherits from product
+    relation tenant @tenant
+    relation manager @user
+    relation teller @user
+
+    // Permissions
+    permission access = manager or teller or tenant.admin or tenant.member
+    permission manage_accounts = manager or tenant.admin
+    permission view_accounts = manager or teller or tenant.admin or tenant.member
+    permission approve_transactions = manager or tenant.admin
+    permission view_transactions = manager or teller or tenant.admin or tenant.member
+    permission manage_branches = manager or tenant.admin
+    permission view_reports = manager or tenant.admin or tenant.member
+}
+
+entity agent_banking {
+    relation tenant @tenant
+    relation supervisor @user
+    relation agent @user
+
+    permission access = supervisor or agent or tenant.admin or tenant.member
+    permission manage_agents = supervisor or tenant.admin
+    permission view_agents = supervisor or agent or tenant.admin or tenant.member
+    permission process_transactions = supervisor or agent
+    permission view_performance = supervisor or tenant.admin or tenant.member
+    permission manage_commissions = supervisor or tenant.admin
+    permission view_gamification = supervisor or agent or tenant.admin or tenant.member
+}
+
+entity remittance {
+    relation tenant @tenant
+    relation compliance_officer @user
+    relation operator @user
+
+    permission access = compliance_officer or operator or tenant.admin or tenant.member
+    permission initiate_transfer = operator or tenant.admin
+    permission approve_transfer = compliance_officer or tenant.admin
+    permission view_corridors = compliance_officer or operator or tenant.admin or tenant.member
+    permission manage_rates = compliance_officer or tenant.admin
+    permission sanctions_screening = compliance_officer or tenant.admin
+    permission view_reports = compliance_officer or operator or tenant.admin or tenant.member
+}
+
+entity payments {
+    relation tenant @tenant
+    relation manager @user
+    relation processor @user
+
+    permission access = manager or processor or tenant.admin or tenant.member
+    permission process_payment = manager or processor or tenant.admin
+    permission view_payments = manager or processor or tenant.admin or tenant.member
+    permission manage_merchants = manager or tenant.admin
+    permission manage_settlements = manager or tenant.admin
+    permission view_reconciliation = manager or tenant.admin or tenant.member
+}
+
+entity campaign {
+    relation tenant @tenant
+    relation creator @user
+    relation reviewer @user
+
+    permission access = creator or reviewer or tenant.admin or tenant.member
+    permission create = creator or tenant.admin
+    permission approve = reviewer or tenant.admin
+    permission view = creator or reviewer or tenant.admin or tenant.member or tenant.viewer
+    permission manage_audiences = creator or tenant.admin
+    permission view_analytics = creator or reviewer or tenant.admin or tenant.member
+}
+
+entity customer_record {
+    relation tenant @tenant
+    relation owner @user
+    relation assigned_agent @user
+
+    permission view = owner or assigned_agent or tenant.admin or tenant.member
+    permission edit = owner or tenant.admin
+    permission delete = tenant.admin
+    permission export = tenant.admin or owner
+}
+
+entity user {
+    relation tenant @tenant
+}

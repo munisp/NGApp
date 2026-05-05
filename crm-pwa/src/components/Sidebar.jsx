@@ -36,13 +36,18 @@ import {
   Trophy,
   Phone,
   MessageSquare,
+  ChevronDown,
+  Check,
+  Crown,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useTheme } from '@/contexts/ThemeContext'
+import { useTenant } from '@/contexts/TenantContext'
 
 const Sidebar = ({ isOpen, onToggle }) => {
   const location = useLocation()
   const { theme } = useTheme()
+  const { tenant, hasProduct, hasAnyProduct, switchTenant, allTenants, enabledProducts } = useTenant()
   const [expandedSections, setExpandedSections] = useState({
     hub: true,
     retention: true,
@@ -52,6 +57,7 @@ const Sidebar = ({ isOpen, onToggle }) => {
     management: false,
     system: false
   })
+  const [showTenantSwitcher, setShowTenantSwitcher] = useState(false)
 
   const toggleSection = (section) => {
     setExpandedSections(prev => ({
@@ -60,6 +66,7 @@ const Sidebar = ({ isOpen, onToggle }) => {
     }))
   }
 
+  // Product-gated navigation: items only show if tenant has the required product
   const navigationItems = [
     {
       section: 'hub',
@@ -120,7 +127,8 @@ const Sidebar = ({ isOpen, onToggle }) => {
           name: 'Geo Targeting',
           href: '/geo-targeting',
           icon: MapPin,
-          description: 'Region-based campaign targeting'
+          description: 'Region-based campaign targeting',
+          requiredProduct: 'agent_banking',
         },
         {
           name: 'A/B Testing',
@@ -164,7 +172,8 @@ const Sidebar = ({ isOpen, onToggle }) => {
           href: '/gamification',
           icon: Trophy,
           description: 'Leaderboards & incentives',
-          badge: 'Top 8'
+          badge: 'Top 8',
+          requiredProduct: 'agent_banking',
         },
       ]
     },
@@ -177,21 +186,36 @@ const Sidebar = ({ isOpen, onToggle }) => {
           href: '/core-banking',
           icon: Landmark,
           description: 'T24/Finacle customer data',
-          badge: '48.9K'
+          badge: '48.9K',
+          requiredProduct: 'core_banking',
         },
         {
           name: 'Agent Banking',
           href: '/agent-banking',
           icon: MapPin,
           description: 'Field agents & registrations',
-          badge: '1,538'
+          badge: '1,538',
+          requiredProduct: 'agent_banking',
         },
         {
           name: 'Remittance',
           href: '/remittance',
           icon: Globe,
           description: 'Cross-border transfers',
-          badge: '8 corridors'
+          badge: '8 corridors',
+          requiredProduct: 'remittance',
+        },
+      ]
+    },
+    {
+      section: 'tenant',
+      title: 'Tenant Admin',
+      items: [
+        {
+          name: 'Tenant Management',
+          href: '/tenant-admin',
+          icon: Crown,
+          description: 'Manage tenants & product access'
         },
       ]
     },
@@ -324,6 +348,24 @@ const Sidebar = ({ isOpen, onToggle }) => {
     return location.pathname === href || location.pathname.startsWith(href + '/')
   }
 
+  // Filter nav items based on tenant product access
+  const filteredNavItems = navigationItems.map(section => {
+    // Filter out sections that have no visible items after product gating
+    const visibleItems = section.items.filter(item => {
+      if (!item.requiredProduct) return true
+      return hasProduct(item.requiredProduct)
+    })
+    // Hide Banking Channels section entirely if no banking products are enabled
+    if (section.section === 'banking' && visibleItems.length === 0) return null
+    return { ...section, items: visibleItems }
+  }).filter(Boolean)
+
+  const tierColors = {
+    enterprise: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300',
+    growth: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
+    trial: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
+  }
+
   return (
     <motion.div
       initial={false}
@@ -389,10 +431,76 @@ const Sidebar = ({ isOpen, onToggle }) => {
         </button>
       </div>
 
+      {/* Tenant Switcher */}
+      {isOpen && (
+        <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+          <div className="relative">
+            <button
+              onClick={() => setShowTenantSwitcher(!showTenantSwitcher)}
+              className="w-full flex items-center justify-between p-2 rounded-lg bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+            >
+              <div className="flex items-center space-x-2 min-w-0">
+                <div
+                  className="w-6 h-6 rounded-md flex items-center justify-center text-white text-xs font-bold flex-shrink-0"
+                  style={{ backgroundColor: tenant?.branding?.primaryColor || '#1E40AF' }}
+                >
+                  {tenant?.name?.charAt(0) || 'T'}
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{tenant?.name || 'Select Tenant'}</p>
+                  <div className="flex items-center gap-1">
+                    <span className={cn('text-[10px] px-1.5 py-0.5 rounded font-medium', tierColors[tenant?.subscriptionTier] || tierColors.trial)}>
+                      {tenant?.subscriptionTier || 'trial'}
+                    </span>
+                    <span className="text-[10px] text-gray-500 dark:text-gray-400">{enabledProducts.length} products</span>
+                  </div>
+                </div>
+              </div>
+              <ChevronDown className={cn('w-4 h-4 text-gray-400 transition-transform', showTenantSwitcher && 'rotate-180')} />
+            </button>
+
+            {showTenantSwitcher && (
+              <motion.div
+                initial={{ opacity: 0, y: -5 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 max-h-64 overflow-y-auto"
+              >
+                {allTenants.map(t => (
+                  <button
+                    key={t.id}
+                    onClick={() => { switchTenant(t.id); setShowTenantSwitcher(false) }}
+                    className={cn(
+                      'w-full flex items-center justify-between px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-left',
+                      t.id === tenant?.id && 'bg-blue-50 dark:bg-blue-900/20'
+                    )}
+                  >
+                    <div className="flex items-center space-x-2 min-w-0">
+                      <div
+                        className="w-5 h-5 rounded flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0"
+                        style={{ backgroundColor: t.branding?.primaryColor || '#666' }}
+                      >
+                        {t.name.charAt(0)}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{t.name}</p>
+                        <p className="text-[10px] text-gray-500 dark:text-gray-400">
+                          {Object.values(t.products).filter(Boolean).length} products · {t.subscriptionTier}
+                        </p>
+                      </div>
+                    </div>
+                    {t.id === tenant?.id && <Check className="w-4 h-4 text-blue-600 flex-shrink-0" />}
+                  </button>
+                ))}
+              </motion.div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Navigation */}
       <div className="flex-1 overflow-y-auto py-4">
         <nav className="space-y-2">
-          {navigationItems.map((section) => (
+          {filteredNavItems.map((section) => (
             <div key={section.section} className="px-3">
               {isOpen && (
                 <button

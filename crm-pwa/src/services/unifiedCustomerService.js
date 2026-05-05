@@ -231,7 +231,44 @@ const unifiedCustomers = [
   }
 ]
 
+// Maps product keys to source names used in customer records
+const productToSource = {
+  core_banking: 'core-banking',
+  agent_banking: 'agent-banking',
+  remittance: 'remittance',
+}
+
 export const unifiedCustomerService = {
+  /**
+   * Fetch customers scoped to a tenant's enabled products.
+   * Only returns customers whose sources overlap with the tenant's products.
+   */
+  async fetchForTenant(enabledProducts = [], filters = {}) {
+    await new Promise(r => setTimeout(r, 300))
+    const allowedSources = enabledProducts
+      .map(p => productToSource[p])
+      .filter(Boolean)
+
+    let customers = [...unifiedCustomers]
+    // Tenant isolation: only show customers from enabled product sources
+    if (allowedSources.length > 0) {
+      customers = customers.filter(c =>
+        c.sources.some(s => allowedSources.includes(s))
+      )
+    }
+    if (filters.source) customers = customers.filter(c => c.sources.includes(filters.source))
+    if (filters.segment) customers = customers.filter(c => c.segment === filters.segment)
+    if (filters.search) {
+      const q = filters.search.toLowerCase()
+      customers = customers.filter(c =>
+        c.fullName.toLowerCase().includes(q) ||
+        c.email?.toLowerCase().includes(q) ||
+        c.phone?.includes(q)
+      )
+    }
+    return customers
+  },
+
   async fetchAllUnified(filters = {}) {
     await new Promise(r => setTimeout(r, 300))
     let customers = [...unifiedCustomers]

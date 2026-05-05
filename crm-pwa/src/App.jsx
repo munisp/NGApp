@@ -36,11 +36,13 @@ import ConsentCompliance from './components/ConsentCompliance'
 import NotificationPreferences from './components/NotificationPreferences'
 import RevenueAttribution from './components/RevenueAttribution'
 import AgentGamification from './components/AgentGamification'
+import TenantAdmin from './components/TenantAdmin'
 
 // Context
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { NotificationProvider } from './contexts/NotificationContext'
 import { ThemeProvider } from './contexts/ThemeContext'
+import { TenantProvider } from './contexts/TenantContext'
 
 // Layout Component
 const Layout = ({ children }) => {
@@ -126,6 +128,7 @@ function App() {
   return (
     <ThemeProvider>
       <AuthProvider>
+        <TenantProvider>
         <NotificationProvider>
           <Router>
             <div className="App">
@@ -381,10 +384,21 @@ function App() {
                     </ProtectedRoute>
                   }
                 />
+                <Route
+                  path="/tenant-admin"
+                  element={
+                    <ProtectedRoute>
+                      <Layout>
+                        <TenantAdmin />
+                      </Layout>
+                    </ProtectedRoute>
+                  }
+                />
               </Routes>
             </div>
           </Router>
         </NotificationProvider>
+        </TenantProvider>
       </AuthProvider>
     </ThemeProvider>
   )
