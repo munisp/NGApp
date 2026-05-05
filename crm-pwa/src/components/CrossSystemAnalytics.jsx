@@ -221,7 +221,7 @@ const CrossSystemAnalytics = () => {
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Top Remittance Corridors by Growth</h3>
           <div className="space-y-3">
-            {corridors.sort((a, b) => b.growth - a.growth).slice(0, 6).map((cor, i) => (
+            {[...corridors].sort((a, b) => b.growth - a.growth).slice(0, 6).map((cor, i) => (
               <div key={i} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/30 rounded-lg">
                 <div>
                   <p className="font-medium text-gray-900 dark:text-white">{cor.corridor}</p>
