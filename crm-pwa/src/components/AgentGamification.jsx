@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Trophy, Star, Award, Medal, Target, Users, TrendingUp,
   MapPin, ArrowUpRight, Crown, Flame, Zap, Gift, BarChart3,
-  Calendar, Clock, CheckCircle2, Smartphone, DollarSign
+  Calendar, Clock, CheckCircle2, Smartphone, DollarSign, Megaphone
 } from 'lucide-react';
 
 const LEADERBOARD = [
@@ -91,8 +91,6 @@ const INCENTIVES = [
   { name: 'Revenue Milestone', threshold: '₦10M generated', reward: '₦100,000 + trophy', claimants: 8, status: 'active' },
   { name: 'Referral Bonus', threshold: '5 agent referrals', reward: '₦15,000 per referral', claimants: 23, status: 'active' },
 ];
-
-const Megaphone = (props) => <Target {...props} />;
 
 export default function AgentGamification() {
   const [activeTab, setActiveTab] = useState('leaderboard');
