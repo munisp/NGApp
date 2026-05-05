@@ -110,7 +110,17 @@ jobs:
     needs: test
     strategy:
       matrix:
-        service: [banking-service, crm-service, ai-service, fluvio-service, temporal-service]
+        include:
+          - service: acquisition-engine
+            dockerfile: crm-platform/deploy/docker/Dockerfile.acquisition-engine
+          - service: agentic-ai
+            dockerfile: crm-platform/deploy/docker/Dockerfile.agentic-ai
+          - service: lakehouse-analytics
+            dockerfile: crm-platform/deploy/docker/Dockerfile.lakehouse-analytics
+          - service: mdm-engine
+            dockerfile: crm-platform/deploy/docker/Dockerfile.mdm-engine
+          - service: social-media
+            dockerfile: crm-platform/deploy/docker/Dockerfile.social-media
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -140,7 +150,7 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           context: .
-          file: ./${{ matrix.service }}/Dockerfile
+          file: ${{ matrix.dockerfile }}
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
