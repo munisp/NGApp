@@ -263,6 +263,48 @@ const Sidebar = ({ isOpen, onToggle }) => {
           description: 'Autonomous AI agents platform',
           badge: '7 agents'
         },
+        {
+          name: 'GNN + Neo4j',
+          href: '/gnn-neo4j',
+          icon: GitBranch,
+          description: 'Graph neural network fraud & influence'
+        },
+        {
+          name: 'FalkorDB Explorer',
+          href: '/falkordb',
+          icon: Database,
+          description: 'Graph queries & GraphRAG chatbot'
+        },
+        {
+          name: 'MCMC Risk Engine',
+          href: '/mcmc-risk',
+          icon: Activity,
+          description: 'Bayesian credit risk & stress testing'
+        },
+        {
+          name: 'CocoIndex Pipeline',
+          href: '/cocoindex',
+          icon: Layers,
+          description: 'Incremental data indexing for KG'
+        },
+        {
+          name: 'KGQA Chatbot',
+          href: '/epr-kgqa',
+          icon: MessageSquare,
+          description: 'Knowledge graph question answering'
+        },
+        {
+          name: 'ART ML Security',
+          href: '/art-security',
+          icon: ShieldCheck,
+          description: 'Adversarial robustness testing'
+        },
+        {
+          name: 'Ollama LLM',
+          href: '/ollama',
+          icon: Cpu,
+          description: 'Local LLM inference engine'
+        },
       ]
     },
     {

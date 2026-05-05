@@ -1,0 +1,9 @@
+FROM golang:1.21-alpine AS builder
+WORKDIR /app
+COPY crm-platform/services/go/falkordb-graph/ .
+RUN go mod download && CGO_ENABLED=0 go build -o /falkordb-graph .
+
+FROM alpine:3.19
+COPY --from=builder /falkordb-graph /falkordb-graph
+EXPOSE 8091
+CMD ["/falkordb-graph"]

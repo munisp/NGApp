@@ -52,6 +52,15 @@ import SocialMediaHub from './components/SocialMediaHub'
 import MDMCustomer360 from './components/MDMCustomer360'
 import AgenticAI from './components/AgenticAI'
 
+// AI/ML Stack Components
+import GNNNeo4j from './components/GNNNeo4j'
+import FalkorDBGraph from './components/FalkorDBGraph'
+import MCMCRisk from './components/MCMCRisk'
+import CocoIndexPipeline from './components/CocoIndexPipeline'
+import EPRKGQAChat from './components/EPRKGQAChat'
+import ARTSecurity from './components/ARTSecurity'
+import OllamaInference from './components/OllamaInference'
+
 // Operations & Security Components
 import AuditLog from './components/AuditLog'
 import SecurityDashboard from './components/SecurityDashboard'
@@ -489,6 +498,13 @@ function App() {
                 <Route path="/search" element={<ProtectedRoute><Layout><AdvancedSearch /></Layout></ProtectedRoute>} />
                 <Route path="/calendar" element={<ProtectedRoute><Layout><CalendarView /></Layout></ProtectedRoute>} />
                 <Route path="/customize-dashboard" element={<ProtectedRoute><Layout><DashboardCustomization /></Layout></ProtectedRoute>} />
+                <Route path="/gnn-neo4j" element={<ProtectedRoute><Layout><GNNNeo4j /></Layout></ProtectedRoute>} />
+                <Route path="/falkordb" element={<ProtectedRoute><Layout><FalkorDBGraph /></Layout></ProtectedRoute>} />
+                <Route path="/mcmc-risk" element={<ProtectedRoute><Layout><MCMCRisk /></Layout></ProtectedRoute>} />
+                <Route path="/cocoindex" element={<ProtectedRoute><Layout><CocoIndexPipeline /></Layout></ProtectedRoute>} />
+                <Route path="/epr-kgqa" element={<ProtectedRoute><Layout><EPRKGQAChat /></Layout></ProtectedRoute>} />
+                <Route path="/art-security" element={<ProtectedRoute><Layout><ARTSecurity /></Layout></ProtectedRoute>} />
+                <Route path="/ollama" element={<ProtectedRoute><Layout><OllamaInference /></Layout></ProtectedRoute>} />
               </Routes>
             </div>
           </Router>

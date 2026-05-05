@@ -1,0 +1,9 @@
+FROM rust:1.85-slim AS builder
+WORKDIR /app
+COPY crm-platform/services/rust/mcmc-engine/ .
+RUN cargo build --release
+
+FROM debian:bookworm-slim
+COPY --from=builder /app/target/release/mcmc-engine /mcmc-engine
+EXPOSE 8092
+CMD ["/mcmc-engine"]
