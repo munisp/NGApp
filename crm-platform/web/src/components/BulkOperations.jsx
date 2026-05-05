@@ -17,7 +17,7 @@ const RECENT_JOBS = [
 ];
 
 export default function BulkOperations() {
-  const { currentTenant } = useContext(TenantContext);
+  const { tenantId } = useContext(TenantContext);
   const [selectedOp, setSelectedOp] = useState(null);
   const [activeTab, setActiveTab] = useState('operations');
   const [uploadFile, setUploadFile] = useState(null);

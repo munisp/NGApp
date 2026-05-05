@@ -34,8 +34,7 @@ const CATEGORY_LABELS = {
 };
 
 export default function AuditLog() {
-  const { currentTenant } = useContext(TenantContext);
-  const tenantId = currentTenant?.id || 'tenant-acme-bank';
+  const { tenantId } = useContext(TenantContext);
   const [events, setEvents] = useState(SEED_EVENTS[tenantId] || []);
   const [searchQuery, setSearchQuery] = useState('');
   const [severityFilter, setSeverityFilter] = useState('all');

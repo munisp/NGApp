@@ -41,7 +41,7 @@ const ROLE_PRESETS = [
 ];
 
 export default function DashboardCustomization() {
-  const { currentTenant } = useContext(TenantContext);
+  const { tenantId } = useContext(TenantContext);
   const [layout, setLayout] = useState(DEFAULT_LAYOUT);
   const [activeTab, setActiveTab] = useState('layout');
   const [hasChanges, setHasChanges] = useState(false);

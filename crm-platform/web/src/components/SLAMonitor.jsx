@@ -24,8 +24,7 @@ const SLA_DATA = {
 };
 
 export default function SLAMonitor() {
-  const { currentTenant } = useContext(TenantContext);
-  const tenantId = currentTenant?.id || 'tenant-acme-bank';
+  const { tenantId } = useContext(TenantContext);
   const [data, setData] = useState(SLA_DATA[tenantId] || SLA_DATA['tenant-acme-bank']);
   const [activeTab, setActiveTab] = useState('dashboard');
 

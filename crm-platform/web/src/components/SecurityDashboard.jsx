@@ -38,8 +38,7 @@ const OWASP_LABELS = {
 };
 
 export default function SecurityDashboard() {
-  const { currentTenant } = useContext(TenantContext);
-  const tenantId = currentTenant?.id || 'tenant-acme-bank';
+  const { tenantId } = useContext(TenantContext);
   const [data, setData] = useState(SEED_SECURITY[tenantId] || SEED_SECURITY['tenant-acme-bank']);
   const [activeTab, setActiveTab] = useState('overview');
 

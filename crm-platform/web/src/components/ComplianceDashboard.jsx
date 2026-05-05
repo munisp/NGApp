@@ -21,7 +21,7 @@ const AML_DATA = {
 };
 
 export default function ComplianceDashboard() {
-  const { currentTenant } = useContext(TenantContext);
+  const { tenantId } = useContext(TenantContext);
   const [activeTab, setActiveTab] = useState('overview');
   const [selectedFramework, setSelectedFramework] = useState(null);
 

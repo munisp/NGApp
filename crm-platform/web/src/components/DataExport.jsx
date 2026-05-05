@@ -24,7 +24,7 @@ const RECENT_EXPORTS = [
 ];
 
 export default function DataExport() {
-  const { currentTenant } = useContext(TenantContext);
+  const { tenantId } = useContext(TenantContext);
   const [selectedType, setSelectedType] = useState(null);
   const [selectedFormat, setSelectedFormat] = useState('csv');
   const [selectedFields, setSelectedFields] = useState([]);

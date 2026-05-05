@@ -32,7 +32,7 @@ const SAVED_SEARCHES = [
 ];
 
 export default function AdvancedSearch() {
-  const { currentTenant } = useContext(TenantContext);
+  const { tenantId } = useContext(TenantContext);
   const [activeFilters, setActiveFilters] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [results, setResults] = useState([]);

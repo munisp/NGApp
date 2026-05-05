@@ -33,8 +33,7 @@ const STATUS_CONFIG = {
 };
 
 export default function DocumentManager() {
-  const { currentTenant } = useContext(TenantContext);
-  const tenantId = currentTenant?.id || 'tenant-acme-bank';
+  const { tenantId } = useContext(TenantContext);
   const [docs, setDocs] = useState(SEED_DOCS[tenantId] || []);
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');

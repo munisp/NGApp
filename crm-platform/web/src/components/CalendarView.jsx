@@ -17,7 +17,7 @@ const SEED_EVENTS = [
 ];
 
 export default function CalendarView() {
-  const { currentTenant } = useContext(TenantContext);
+  const { tenantId } = useContext(TenantContext);
   const [currentDate, setCurrentDate] = useState(new Date(2025, 4, 1)); // May 2025
   const [selectedDate, setSelectedDate] = useState(null);
   const [showCreate, setShowCreate] = useState(false);

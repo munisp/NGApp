@@ -16,8 +16,7 @@ const SEVERITY_COLORS = { critical: 'bg-red-100 text-red-700', high: 'bg-orange-
 const STATUS_COLORS = { open: 'bg-blue-100 text-blue-700', investigating: 'bg-purple-100 text-purple-700', resolved: 'bg-green-100 text-green-700', closed: 'bg-gray-100 text-gray-500' };
 
 export default function IncidentManager() {
-  const { currentTenant } = useContext(TenantContext);
-  const tenantId = currentTenant?.id || 'tenant-acme-bank';
+  const { tenantId } = useContext(TenantContext);
   const [incidents, setIncidents] = useState(SEED_INCIDENTS[tenantId] || []);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');

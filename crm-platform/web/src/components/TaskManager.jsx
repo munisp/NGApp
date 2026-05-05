@@ -22,8 +22,7 @@ const PRIORITY_COLORS = { critical: 'bg-red-100 text-red-700', high: 'bg-orange-
 const STATUS_COLORS = { open: 'bg-blue-50 text-blue-700', in_progress: 'bg-yellow-50 text-yellow-700', review: 'bg-purple-50 text-purple-700', done: 'bg-green-50 text-green-700', blocked: 'bg-red-50 text-red-700', cancelled: 'bg-gray-50 text-gray-400' };
 
 export default function TaskManager() {
-  const { currentTenant } = useContext(TenantContext);
-  const tenantId = currentTenant?.id || 'tenant-acme-bank';
+  const { tenantId } = useContext(TenantContext);
   const [tasks, setTasks] = useState(SEED_TASKS[tenantId] || []);
   const [statusFilter, setStatusFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
