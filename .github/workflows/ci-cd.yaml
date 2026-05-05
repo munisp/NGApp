@@ -12,7 +12,7 @@ env:
   REGISTRY: ghcr.io
   GO_VERSION: '1.21'
   PYTHON_VERSION: '3.11'
-  NODE_VERSION: '18'
+  NODE_VERSION: '22'
 
 jobs:
   lint:
