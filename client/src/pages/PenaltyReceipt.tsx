@@ -20,7 +20,7 @@ export default function PenaltyReceipt() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-950 flex items-center justify-center">
+      <div className="min-h-[400px] flex items-center justify-center">
         <div className="text-center">
           <div className="w-10 h-10 border-2 border-green-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
           <p className="text-muted-foreground">Loading receipt…</p>
@@ -31,7 +31,7 @@ export default function PenaltyReceipt() {
 
   if (error || !receipt) {
     return (
-      <div className="min-h-screen bg-gray-950 flex items-center justify-center">
+      <div className="min-h-[400px] flex items-center justify-center">
         <div className="text-center max-w-md">
           <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
             <Shield className="w-8 h-8 text-red-400" />
@@ -57,7 +57,7 @@ export default function PenaltyReceipt() {
   }).format(Number(receipt.amount ?? 0));
 
   return (
-    <div className="min-h-screen bg-gray-950 py-12 px-4">
+    <div className="py-6 px-4">
       <div className="max-w-2xl mx-auto">
         {/* Header actions */}
         <div className="flex items-center justify-between mb-8 print:hidden">
@@ -211,7 +211,7 @@ export default function PenaltyReceipt() {
           </div>
 
           {/* Footer */}
-          <div className="bg-card/50 px-8 py-4 text-center print:bg-gray-100">
+          <div className="bg-card/50 px-8 py-4 text-center print:bg-muted">
             <p className="text-xs text-muted-foreground">
               This is an official NDSEP enforcement receipt. For disputes, visit{" "}
               <Link href="/portal" className="text-green-400 hover:underline">the Organisation Portal</Link>.

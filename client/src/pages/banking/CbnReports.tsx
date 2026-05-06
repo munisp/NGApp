@@ -11,7 +11,7 @@ import { toast } from "sonner";
 import { Plus, Search, FileText, AlertTriangle, CheckCircle, Clock } from "lucide-react";
 
 const STATUS_COLORS: Record<string, string> = {
-  draft: "bg-gray-100 text-foreground",
+  draft: "bg-muted text-foreground",
   pending_review: "bg-yellow-100 text-yellow-800",
   submitted: "bg-blue-100 text-blue-800",
   acknowledged: "bg-green-100 text-green-800",
@@ -157,7 +157,7 @@ export default function CbnReports() {
 
       <div className="flex gap-3 flex-wrap">
         <div className="relative flex-1 min-w-48">
-          <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+          <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input placeholder="Search report ref, bank name..." className="pl-9"
             value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} />
         </div>
@@ -192,9 +192,9 @@ export default function CbnReports() {
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {isLoading ? (
-                  <tr><td colSpan={9} className="px-4 py-8 text-center text-gray-400">Loading...</td></tr>
+                  <tr><td colSpan={9} className="px-4 py-8 text-center text-muted-foreground">Loading...</td></tr>
                 ) : rows.length === 0 ? (
-                  <tr><td colSpan={9} className="px-4 py-8 text-center text-gray-400">No CBN reports found</td></tr>
+                  <tr><td colSpan={9} className="px-4 py-8 text-center text-muted-foreground">No CBN reports found</td></tr>
                 ) : rows.map((r: any) => {
                   const isOverdue = r.filing_deadline && new Date(r.filing_deadline) < new Date() && !["submitted","acknowledged"].includes(r.status);
                   return (
@@ -213,7 +213,7 @@ export default function CbnReports() {
                         ) : "0"}
                       </td>
                       <td className="px-4 py-3">
-                        <Badge className={STATUS_COLORS[isOverdue ? "overdue" : r.status] || "bg-gray-100 text-foreground"}>
+                        <Badge className={STATUS_COLORS[isOverdue ? "overdue" : r.status] || "bg-muted text-foreground"}>
                           {isOverdue ? "overdue" : r.status?.replace(/_/g, " ")}
                         </Badge>
                       </td>

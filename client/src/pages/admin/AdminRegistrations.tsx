@@ -154,7 +154,7 @@ export default function AdminRegistrations() {
       </div>
 
       {/* Table */}
-      <div className="bg-[#0d1220] border border-border rounded-xl overflow-hidden">
+      <div className="bg-card border border-border rounded-xl overflow-hidden">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border bg-card/40">
@@ -269,7 +269,7 @@ export default function AdminRegistrations() {
       {/* View Detail Dialog */}
       {selectedOrg && !approveOpen && !rejectOpen && (
         <Dialog open={!!selectedOrg} onOpenChange={() => setSelectedOrg(null)}>
-          <DialogContent className="bg-[#0d1220] border-border text-foreground max-w-lg">
+          <DialogContent className="bg-card border-border text-foreground max-w-lg">
             <DialogHeader>
               <DialogTitle className="text-cyan-600 flex items-center gap-2">
                 <Building2 className="w-5 h-5" /> {selectedOrg.name}
@@ -326,7 +326,7 @@ export default function AdminRegistrations() {
 
       {/* Approve Dialog */}
       <Dialog open={approveOpen} onOpenChange={setApproveOpen}>
-        <DialogContent className="bg-[#0d1220] border-border text-foreground max-w-md">
+        <DialogContent className="bg-card border-border text-foreground max-w-md">
           <DialogHeader>
             <DialogTitle className="text-green-300 flex items-center gap-2">
               <CheckCircle2 className="w-5 h-5" /> Approve Registration
@@ -392,7 +392,7 @@ export default function AdminRegistrations() {
 
       {/* Reject Dialog */}
       <Dialog open={rejectOpen} onOpenChange={setRejectOpen}>
-        <DialogContent className="bg-[#0d1220] border-border text-foreground max-w-md">
+        <DialogContent className="bg-card border-border text-foreground max-w-md">
           <DialogHeader>
             <DialogTitle className="text-red-300 flex items-center gap-2">
               <XCircle className="w-5 h-5" /> Reject Application

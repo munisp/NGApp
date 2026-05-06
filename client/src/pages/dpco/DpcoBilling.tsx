@@ -74,15 +74,15 @@ function formatNGN(amount: number) {
 
 function statusBadge(status: string) {
   const map: Record<string, string> = {
-    draft: "bg-slate-100 text-slate-700",
+    draft: "bg-muted text-foreground",
     sent: "bg-blue-100 text-blue-700",
     paid: "bg-green-100 text-green-700",
     overdue: "bg-red-100 text-red-700",
-    cancelled: "bg-gray-100 text-muted-foreground",
+    cancelled: "bg-muted text-muted-foreground",
   };
   return (
     <span
-      className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${map[status] ?? "bg-gray-100 text-muted-foreground"}`}
+      className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${map[status] ?? "bg-muted text-muted-foreground"}`}
     >
       {status.charAt(0).toUpperCase() + status.slice(1)}
     </span>

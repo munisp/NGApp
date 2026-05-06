@@ -14,7 +14,7 @@ const RATING_CONFIG: Record<string, { label: string; color: string; icon: any; i
   compliant: { label: "Compliant", color: "bg-emerald-100 text-emerald-700 border-emerald-300", icon: CheckCircle, iconColor: "text-emerald-600" },
   partially_compliant: { label: "Partial", color: "bg-amber-500/20 text-amber-300 border-amber-500/30", icon: AlertTriangle, iconColor: "text-amber-400" },
   non_compliant: { label: "Non-Compliant", color: "bg-red-100 text-red-700 border-red-300", icon: XCircle, iconColor: "text-red-600" },
-  not_applicable: { label: "N/A", color: "bg-muted-foreground/20 text-muted-foreground border-slate-500/30", icon: Minus, iconColor: "text-muted-foreground" },
+  not_applicable: { label: "N/A", color: "bg-muted-foreground/20 text-muted-foreground border-border", icon: Minus, iconColor: "text-muted-foreground" },
 };
 
 const RISK_CONFIG: Record<string, { label: string; color: string; bg: string }> = {

@@ -136,21 +136,21 @@ export default function CertificateVerify() {
               <p className="text-blue-300 text-sm">National Data Sovereignty Enforcement Platform · Nigeria</p>
             </div>
           </div>
-          <p className="text-slate-400 text-sm max-w-md mx-auto">
+          <p className="text-muted-foreground text-sm max-w-md mx-auto">
             Verify the authenticity of an NDSEP Data Sovereignty Compliance Certificate issued to any organisation operating in Nigeria.
           </p>
         </div>
 
         {/* Search box */}
         <div className="w-full max-w-lg bg-background/5 backdrop-blur border border-white/10 rounded-2xl p-6 mb-6">
-          <label className="block text-sm font-medium text-slate-300 mb-2">Certificate Token</label>
+          <label className="block text-sm font-medium text-foreground mb-2">Certificate Token</label>
           <div className="flex gap-2">
             <Input
               value={inputToken}
               onChange={e => setInputToken(e.target.value)}
               onKeyDown={e => e.key === "Enter" && handleVerify()}
               placeholder="e.g. SUB-1234567890-ABCDEF"
-              className="bg-background/10 border-white/20 text-white placeholder:text-slate-500 focus:border-blue-400"
+              className="bg-background/10 border-white/20 text-white placeholder:text-muted-foreground focus:border-blue-400"
             />
             <Button onClick={handleVerify} disabled={!inputToken.trim() || loading} className="bg-blue-600 hover:bg-blue-700 shrink-0">
               {loading ? (
@@ -160,7 +160,7 @@ export default function CertificateVerify() {
               )}
             </Button>
           </div>
-          <p className="text-xs text-slate-500 mt-2">
+          <p className="text-xs text-muted-foreground mt-2">
             The certificate token can be found on the official NDSEP compliance certificate document.
           </p>
         </div>
@@ -257,7 +257,7 @@ export default function CertificateVerify() {
         )}
 
         {/* Footer */}
-        <div className="mt-10 text-center text-xs text-slate-600 max-w-md">
+        <div className="mt-10 text-center text-xs text-muted-foreground max-w-md">
           <p>This verification service is operated by the Nigerian National Information Technology Development Agency (NITDA) under the Nigeria Data Protection Act 2023.</p>
           <p className="mt-1">For bulk verification or API access, contact the NDSEP Integration Team.</p>
         </div>

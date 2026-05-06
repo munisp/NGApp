@@ -81,7 +81,7 @@ export default function DsarPublicPortal() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-950 text-foreground">
+    <div className="space-y-6">
       {/* Header */}
       <header className="border-b border-border bg-background/80 backdrop-blur sticky top-0 z-10">
         <div className="max-w-4xl mx-auto px-6 py-4 flex items-center gap-3">

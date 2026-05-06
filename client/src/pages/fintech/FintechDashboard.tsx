@@ -29,7 +29,7 @@ function statusBadge(s: string) {
     flagged: "bg-orange-100 text-orange-800", cleared: "bg-green-100 text-green-800",
     under_review: "bg-yellow-100 text-yellow-800",
   };
-  return <Badge className={map[s] ?? "bg-gray-100 text-gray-800"}>{s.replace(/_/g, " ")}</Badge>;
+  return <Badge className={map[s] ?? "bg-muted text-foreground"}>{s.replace(/_/g, " ")}</Badge>;
 }
 
 export default function FintechDashboard() {

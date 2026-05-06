@@ -32,10 +32,10 @@ function statusBadge(s: string) {
   const map: Record<string, string> = {
     compliant: "bg-green-100 text-green-800", violation: "bg-red-100 text-red-800",
     active: "bg-green-100 text-green-800", recruiting: "bg-blue-100 text-blue-800",
-    completed: "bg-gray-100 text-gray-800", ethics_approved: "bg-yellow-100 text-yellow-800",
+    completed: "bg-muted text-foreground", ethics_approved: "bg-yellow-100 text-yellow-800",
     suspended: "bg-red-100 text-red-800", under_review: "bg-orange-100 text-orange-800",
   };
-  return <Badge className={map[s] ?? "bg-gray-100 text-gray-800"}>{s.replace(/_/g, " ")}</Badge>;
+  return <Badge className={map[s] ?? "bg-muted text-foreground"}>{s.replace(/_/g, " ")}</Badge>;
 }
 
 export default function HealthcareDashboard() {

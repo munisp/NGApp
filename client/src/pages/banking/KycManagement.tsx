@@ -20,7 +20,7 @@ const STATUS_COLORS: Record<string, string> = {
   failed: "bg-red-100 text-red-800",
   suspended: "bg-orange-100 text-orange-800",
   edd_required: "bg-orange-100 text-orange-800",
-  expired: "bg-gray-100 text-gray-800",
+  expired: "bg-muted text-foreground",
 };
 
 export default function KycManagement() {
@@ -220,7 +220,7 @@ export default function KycManagement() {
         <CardContent className="pt-0">
           <div className="flex gap-3 flex-wrap">
             <div className="relative flex-1 min-w-48">
-              <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+              <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input placeholder="Search name, BVN, NIN, ref, email..." className="pl-9"
                 value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} />
             </div>
@@ -282,9 +282,9 @@ export default function KycManagement() {
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {isLoading ? (
-                  <tr><td colSpan={11} className="px-4 py-8 text-center text-gray-400">Loading...</td></tr>
+                  <tr><td colSpan={11} className="px-4 py-8 text-center text-muted-foreground">Loading...</td></tr>
                 ) : rows.length === 0 ? (
-                  <tr><td colSpan={11} className="px-4 py-8 text-center text-gray-400">No KYC records found</td></tr>
+                  <tr><td colSpan={11} className="px-4 py-8 text-center text-muted-foreground">No KYC records found</td></tr>
                 ) : rows.map((r: any) => (
                   <tr key={r.id} className="hover:bg-muted">
                     <td className="px-4 py-3 font-mono text-xs">{r.reference_id}</td>
@@ -295,7 +295,7 @@ export default function KycManagement() {
                       <Badge className="bg-blue-100 text-blue-700">{r.tier?.toUpperCase() || "—"}</Badge>
                     </td>
                     <td className="px-4 py-3">
-                      <Badge className={STATUS_COLORS[r.status] || "bg-gray-100 text-foreground"}>
+                      <Badge className={STATUS_COLORS[r.status] || "bg-muted text-foreground"}>
                         {r.status?.replace(/_/g, " ") || "—"}
                       </Badge>
                     </td>
@@ -305,10 +305,10 @@ export default function KycManagement() {
                       </span>
                     </td>
                     <td className="px-4 py-3">
-                      {r.pep_flag ? <Badge className="bg-red-100 text-red-700">PEP</Badge> : <span className="text-gray-400 text-xs">No</span>}
+                      {r.pep_flag ? <Badge className="bg-red-100 text-red-700">PEP</Badge> : <span className="text-muted-foreground text-xs">No</span>}
                     </td>
                     <td className="px-4 py-3">
-                      {r.sanctions_flag ? <Badge className="bg-red-100 text-red-700">MATCH</Badge> : <span className="text-gray-400 text-xs">Clear</span>}
+                      {r.sanctions_flag ? <Badge className="bg-red-100 text-red-700">MATCH</Badge> : <span className="text-muted-foreground text-xs">Clear</span>}
                     </td>
                     <td className="px-4 py-3 text-xs text-muted-foreground">
                       {r.created_at ? new Date(r.created_at).toLocaleDateString() : "—"}

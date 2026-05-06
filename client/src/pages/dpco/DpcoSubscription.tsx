@@ -43,9 +43,9 @@ const TIER_META: Record<
   starter: {
     color: "text-muted-foreground",
     border: "border-border",
-    bg: "bg-slate-50",
+    bg: "bg-muted",
     icon: Shield,
-    badge: "bg-slate-100 text-muted-foreground",
+    badge: "bg-muted text-muted-foreground",
     highlight: false,
   },
   professional: {

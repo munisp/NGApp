@@ -246,7 +246,7 @@ export default function WatchlistScreening() {
 
       <div className="flex gap-3 flex-wrap">
         <div className="relative flex-1 min-w-48">
-          <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+          <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input placeholder="Search name, passport, ID..." className="pl-9"
             value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} />
         </div>
@@ -280,15 +280,15 @@ export default function WatchlistScreening() {
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {isLoading ? (
-                  <tr><td colSpan={9} className="px-4 py-8 text-center text-gray-400">Loading...</td></tr>
+                  <tr><td colSpan={9} className="px-4 py-8 text-center text-muted-foreground">Loading...</td></tr>
                 ) : rows.length === 0 ? (
-                  <tr><td colSpan={9} className="px-4 py-8 text-center text-gray-400">No watchlist entries found</td></tr>
+                  <tr><td colSpan={9} className="px-4 py-8 text-center text-muted-foreground">No watchlist entries found</td></tr>
                 ) : rows.map((r: any) => (
                   <tr key={r.id} className="hover:bg-muted">
                     <td className="px-4 py-3 font-medium">{r.primary_name}</td>
                     <td className="px-4 py-3 text-xs capitalize">{r.entity_type}</td>
                     <td className="px-4 py-3">
-                      <Badge className={CATEGORY_COLORS[r.category] || "bg-gray-100 text-foreground"}>
+                      <Badge className={CATEGORY_COLORS[r.category] || "bg-muted text-foreground"}>
                         {r.category?.replace(/_/g, " ")}
                       </Badge>
                     </td>
@@ -298,7 +298,7 @@ export default function WatchlistScreening() {
                     <td className="px-4 py-3">
                       {r.is_active
                         ? <Badge className="bg-red-100 text-red-700">Listed</Badge>
-                        : <Badge className="bg-gray-100 text-muted-foreground">Delisted</Badge>}
+                        : <Badge className="bg-muted text-muted-foreground">Delisted</Badge>}
                     </td>
                     <td className="px-4 py-3 text-xs text-muted-foreground">
                       {r.listing_date ? new Date(r.listing_date).toLocaleDateString() : "—"}

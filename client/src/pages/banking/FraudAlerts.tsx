@@ -14,7 +14,7 @@ const STATUS_COLORS: Record<string, string> = {
   open: "bg-red-100 text-red-800",
   investigating: "bg-yellow-100 text-yellow-800",
   resolved: "bg-green-100 text-green-800",
-  false_positive: "bg-gray-100 text-foreground",
+  false_positive: "bg-muted text-foreground",
   escalated: "bg-purple-100 text-purple-800",
 };
 
@@ -173,7 +173,7 @@ export default function FraudAlerts() {
 
       <div className="flex gap-3 flex-wrap">
         <div className="relative flex-1 min-w-48">
-          <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+          <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input placeholder="Search alert ref, account, transaction..." className="pl-9"
             value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} />
         </div>
@@ -208,9 +208,9 @@ export default function FraudAlerts() {
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {isLoading ? (
-                  <tr><td colSpan={10} className="px-4 py-8 text-center text-gray-400">Loading...</td></tr>
+                  <tr><td colSpan={10} className="px-4 py-8 text-center text-muted-foreground">Loading...</td></tr>
                 ) : rows.length === 0 ? (
-                  <tr><td colSpan={10} className="px-4 py-8 text-center text-gray-400">No fraud alerts found</td></tr>
+                  <tr><td colSpan={10} className="px-4 py-8 text-center text-muted-foreground">No fraud alerts found</td></tr>
                 ) : rows.map((r: any) => (
                   <tr key={r.id} className="hover:bg-muted">
                     <td className="px-4 py-3 font-mono text-xs">{r.alert_ref}</td>
@@ -224,12 +224,12 @@ export default function FraudAlerts() {
                     </td>
                     <td className="px-4 py-3 text-xs text-muted-foreground">{r.ml_model || "—"}</td>
                     <td className="px-4 py-3">
-                      <Badge className={STATUS_COLORS[r.status] || "bg-gray-100 text-foreground"}>
+                      <Badge className={STATUS_COLORS[r.status] || "bg-muted text-foreground"}>
                         {r.status?.replace(/_/g, " ")}
                       </Badge>
                     </td>
                     <td className="px-4 py-3">
-                      {r.blocked_at ? <Lock className="h-4 w-4 text-red-500" /> : <span className="text-gray-300">—</span>}
+                      {r.blocked_at ? <Lock className="h-4 w-4 text-red-500" /> : <span className="text-muted-foreground">—</span>}
                     </td>
                     <td className="px-4 py-3 text-xs text-muted-foreground">{r.created_at ? new Date(r.created_at).toLocaleDateString() : "—"}</td>
                     <td className="px-4 py-3">

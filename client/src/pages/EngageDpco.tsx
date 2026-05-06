@@ -135,7 +135,7 @@ export default function EngageDpco() {
   // ── Render ─────────────────────────────────────────────────────────────────
 
   return (
-    <div className="min-h-screen bg-slate-950 text-foreground">
+    <div className="space-y-6">
       {/* Header */}
       <div className="border-b border-border bg-background/80 backdrop-blur-sm sticky top-0 z-10">
         <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
@@ -145,7 +145,7 @@ export default function EngageDpco() {
             </div>
             <div>
               <h1 className="text-sm font-semibold text-foreground">Engage a DPCO</h1>
-              <p className="text-xs text-slate-500">Find and request a licensed Data Protection Compliance Organisation</p>
+              <p className="text-xs text-muted-foreground">Find and request a licensed Data Protection Compliance Organisation</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -186,10 +186,10 @@ export default function EngageDpco() {
               const isDone = (step === "request" && idx === 0) || (step === "submitted" && idx < 2);
               return (
                 <div key={s.id} className="flex items-center gap-2">
-                  <span className={`text-xs font-medium transition-colors ${isActive ? "text-cyan-400" : isDone ? "text-muted-foreground" : "text-slate-600"}`}>
+                  <span className={`text-xs font-medium transition-colors ${isActive ? "text-cyan-400" : isDone ? "text-muted-foreground" : "text-muted-foreground"}`}>
                     {s.label}
                   </span>
-                  {idx < 2 && <ChevronRight className={`h-3 w-3 ${isDone || isActive ? "text-slate-500" : "text-slate-700"}`} />}
+                  {idx < 2 && <ChevronRight className={`h-3 w-3 ${isDone || isActive ? "text-muted-foreground" : "text-muted-foreground"}`} />}
                 </div>
               );
             })}
@@ -212,12 +212,12 @@ export default function EngageDpco() {
             {/* Filters */}
             <div className="flex flex-col sm:flex-row gap-3">
               <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   placeholder="Search by name, email, or licence number…"
                   value={search}
                   onChange={e => setSearch(e.target.value)}
-                  className="pl-9 bg-background border-border text-foreground placeholder:text-slate-600 focus:border-cyan-500/50"
+                  className="pl-9 bg-background border-border text-foreground placeholder:text-muted-foreground focus:border-cyan-500/50"
                 />
               </div>
               <Select value={sectorFilter} onValueChange={setSectorFilter}>
@@ -235,11 +235,11 @@ export default function EngageDpco() {
 
             {/* DPCO Cards */}
             {dpcosQuery.isLoading ? (
-              <div className="flex items-center justify-center py-16 text-slate-500">
+              <div className="flex items-center justify-center py-16 text-muted-foreground">
                 <Loader2 className="h-5 w-5 animate-spin mr-2" /> Loading registry…
               </div>
             ) : dpcosQuery.data?.rows.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-16 text-slate-500 gap-3">
+              <div className="flex flex-col items-center justify-center py-16 text-muted-foreground gap-3">
                 <Shield className="h-10 w-10 opacity-30" />
                 <p className="text-sm">No active DPCOs found matching your criteria.</p>
                 {(search || sectorFilter) && (
@@ -250,7 +250,7 @@ export default function EngageDpco() {
               </div>
             ) : (
               <>
-                <p className="text-xs text-slate-500">{dpcosQuery.data?.total ?? 0} accredited DPCOs found</p>
+                <p className="text-xs text-muted-foreground">{dpcosQuery.data?.total ?? 0} accredited DPCOs found</p>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {dpcosQuery.data?.rows.map((dpco: any) => (
                     <div
@@ -265,7 +265,7 @@ export default function EngageDpco() {
                           </div>
                           <div>
                             <h3 className="text-sm font-semibold text-foreground group-hover:text-cyan-300 transition-colors">{dpco.name}</h3>
-                            <p className="text-xs text-slate-500 font-mono">{dpco.licence_number}</p>
+                            <p className="text-xs text-muted-foreground font-mono">{dpco.licence_number}</p>
                           </div>
                         </div>
                         <Badge className={`text-xs border ${TIER_COLORS[dpco.tier] ?? TIER_COLORS.starter} capitalize`}>
@@ -279,13 +279,13 @@ export default function EngageDpco() {
                             <span key={s} className="text-xs px-2 py-0.5 rounded-full bg-card text-muted-foreground border border-border">{s}</span>
                           ))}
                           {dpco.sectors.length > 4 && (
-                            <span className="text-xs px-2 py-0.5 rounded-full bg-card text-slate-500">+{dpco.sectors.length - 4}</span>
+                            <span className="text-xs px-2 py-0.5 rounded-full bg-card text-muted-foreground">+{dpco.sectors.length - 4}</span>
                           )}
                         </div>
                       )}
 
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3 text-xs text-slate-500">
+                        <div className="flex items-center gap-3 text-xs text-muted-foreground">
                           {dpco.email && <span className="flex items-center gap-1"><Mail className="h-3 w-3" />{dpco.email}</span>}
                         </div>
                         <div className="flex items-center gap-1 text-xs text-cyan-500 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -322,9 +322,9 @@ export default function EngageDpco() {
                 <Building2 className="h-6 w-6 text-cyan-400" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-xs text-slate-500 mb-0.5">Requesting audit from</p>
+                <p className="text-xs text-muted-foreground mb-0.5">Requesting audit from</p>
                 <h3 className="text-base font-semibold text-foreground">{selectedDpco.name}</h3>
-                <p className="text-xs text-slate-500 font-mono">{selectedDpco.licence_number}</p>
+                <p className="text-xs text-muted-foreground font-mono">{selectedDpco.licence_number}</p>
               </div>
               <Button
                 variant="ghost"
@@ -491,7 +491,7 @@ export default function EngageDpco() {
 
             {/* Submit */}
             <div className="flex items-center justify-between pt-4 border-t border-border">
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-muted-foreground">
                 Your request will be sent to <span className="text-muted-foreground">{selectedDpco.name}</span> for review.
                 You will receive a reference token to track the status.
               </p>
@@ -525,7 +525,7 @@ export default function EngageDpco() {
             </div>
 
             <div className="w-full bg-background border border-border rounded-xl p-5 text-left space-y-3">
-              <p className="text-xs text-slate-500 uppercase tracking-wider font-semibold">Reference Token</p>
+              <p className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Reference Token</p>
               <div className="flex items-center gap-2">
                 <code className="flex-1 text-sm font-mono text-cyan-300 bg-card px-3 py-2 rounded-lg border border-border">
                   {submittedToken}
@@ -539,7 +539,7 @@ export default function EngageDpco() {
                   <Copy className="h-4 w-4" />
                 </Button>
               </div>
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-muted-foreground">
                 Save this token — you will need it to track the status of your request.
               </p>
             </div>
@@ -624,7 +624,7 @@ export default function EngageDpco() {
                 <div className="border border-border rounded-xl bg-background/50 overflow-hidden">
                   <div className="p-5 border-b border-border flex items-center justify-between">
                     <div>
-                      <p className="text-xs text-slate-500 mb-1">Reference</p>
+                      <p className="text-xs text-muted-foreground mb-1">Reference</p>
                       <code className="text-sm font-mono text-cyan-300">{req.reference_token}</code>
                     </div>
                     <div className={`flex items-center gap-1.5 text-sm font-medium ${statusCfg.color}`}>
@@ -634,31 +634,31 @@ export default function EngageDpco() {
                   </div>
                   <div className="p-5 grid grid-cols-2 gap-4 text-sm">
                     <div>
-                      <p className="text-xs text-slate-500 mb-1">Organisation</p>
+                      <p className="text-xs text-muted-foreground mb-1">Organisation</p>
                       <p className="text-foreground font-medium">{req.org_name}</p>
                     </div>
                     <div>
-                      <p className="text-xs text-slate-500 mb-1">DPCO</p>
+                      <p className="text-xs text-muted-foreground mb-1">DPCO</p>
                       <p className="text-foreground font-medium">{req.dpco_name}</p>
                     </div>
                     <div>
-                      <p className="text-xs text-slate-500 mb-1">Contact</p>
+                      <p className="text-xs text-muted-foreground mb-1">Contact</p>
                       <p className="text-muted-foreground text-xs">{req.contact_name}</p>
                       <p className="text-muted-foreground text-xs">{req.contact_email}</p>
                     </div>
                     <div>
-                      <p className="text-xs text-slate-500 mb-1">Submitted</p>
+                      <p className="text-xs text-muted-foreground mb-1">Submitted</p>
                       <p className="text-muted-foreground text-xs">{new Date(req.created_at).toLocaleDateString()}</p>
                     </div>
                     {req.dpco_response_note && (
                       <div className="col-span-2">
-                        <p className="text-xs text-slate-500 mb-1">DPCO Response</p>
+                        <p className="text-xs text-muted-foreground mb-1">DPCO Response</p>
                         <p className="text-muted-foreground text-xs bg-card rounded-lg p-3 border border-border">{req.dpco_response_note}</p>
                       </div>
                     )}
                     {req.audit_scope && (
                       <div className="col-span-2">
-                        <p className="text-xs text-slate-500 mb-1">Audit Scope</p>
+                        <p className="text-xs text-muted-foreground mb-1">Audit Scope</p>
                         <p className="text-muted-foreground text-xs">{req.audit_scope}</p>
                       </div>
                     )}

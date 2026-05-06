@@ -189,7 +189,7 @@ export default function BankingDashboard() {
                 <div className="grid grid-cols-3 gap-2 mb-3">
                   {mod.stats.map((s) => (
                     <div key={s.label} className="text-center">
-                      <p className={`text-lg font-bold ${s.alert ? "text-red-600" : "text-gray-800"}`}>
+                      <p className={`text-lg font-bold ${s.alert ? "text-red-600" : "text-foreground"}`}>
                         {s.value}
                       </p>
                       <p className="text-xs text-muted-foreground">{s.label}</p>

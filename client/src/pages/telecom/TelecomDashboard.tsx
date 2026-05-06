@@ -30,7 +30,7 @@ function StatCard({ label, value, sub, color }: { label: string; value: string |
 
 function severityBadge(s: string) {
   const map: Record<string, string> = { critical: "bg-red-100 text-red-800", high: "bg-orange-100 text-orange-800", medium: "bg-yellow-100 text-yellow-800", low: "bg-blue-100 text-blue-800" };
-  return <Badge className={map[s] ?? "bg-gray-100 text-gray-800"}>{s}</Badge>;
+  return <Badge className={map[s] ?? "bg-muted text-foreground"}>{s}</Badge>;
 }
 
 function statusBadge(s: string) {
@@ -39,9 +39,9 @@ function statusBadge(s: string) {
     resolved: "bg-green-100 text-green-800", active: "bg-green-100 text-green-800",
     pending_renewal: "bg-orange-100 text-orange-800", suspended: "bg-red-100 text-red-800",
     fulfilled: "bg-green-100 text-green-800", pending: "bg-yellow-100 text-yellow-800",
-    mediation: "bg-blue-100 text-blue-800", filed: "bg-gray-100 text-gray-800",
+    mediation: "bg-blue-100 text-blue-800", filed: "bg-muted text-foreground",
   };
-  return <Badge className={map[s] ?? "bg-gray-100 text-gray-800"}>{s.replace(/_/g, " ")}</Badge>;
+  return <Badge className={map[s] ?? "bg-muted text-foreground"}>{s.replace(/_/g, " ")}</Badge>;
 }
 
 export default function TelecomDashboard() {

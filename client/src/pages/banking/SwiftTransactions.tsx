@@ -180,7 +180,7 @@ export default function SwiftTransactions() {
 
       <div className="flex gap-3 flex-wrap">
         <div className="relative flex-1 min-w-48">
-          <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+          <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input placeholder="Search BIC, reference, UETR..." className="pl-9"
             value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} />
         </div>
@@ -215,9 +215,9 @@ export default function SwiftTransactions() {
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {isLoading ? (
-                  <tr><td colSpan={9} className="px-4 py-8 text-center text-gray-400">Loading...</td></tr>
+                  <tr><td colSpan={9} className="px-4 py-8 text-center text-muted-foreground">Loading...</td></tr>
                 ) : rows.length === 0 ? (
-                  <tr><td colSpan={9} className="px-4 py-8 text-center text-gray-400">No SWIFT messages found</td></tr>
+                  <tr><td colSpan={9} className="px-4 py-8 text-center text-muted-foreground">No SWIFT messages found</td></tr>
                 ) : rows.map((r: any) => (
                   <tr key={r.id} className="hover:bg-muted">
                     <td className="px-4 py-3 font-mono text-xs">{r.transaction_ref}</td>
@@ -227,11 +227,11 @@ export default function SwiftTransactions() {
                     <td className="px-4 py-3 text-xs font-medium">{r.currency}</td>
                     <td className="px-4 py-3 font-medium">{fmt(r.amount, r.currency)}</td>
                     <td className="px-4 py-3">
-                      <Badge className={STATUS_COLORS[r.status] || "bg-gray-100 text-foreground"}>
+                      <Badge className={STATUS_COLORS[r.status] || "bg-muted text-foreground"}>
                         {r.status?.replace(/_/g, " ")}
                       </Badge>
                     </td>
-                    <td className="px-4 py-3 font-mono text-xs text-gray-400">{r.uetr?.substring(0, 12)}...</td>
+                    <td className="px-4 py-3 font-mono text-xs text-muted-foreground">{r.uetr?.substring(0, 12)}...</td>
                     <td className="px-4 py-3 text-xs text-muted-foreground">{r.created_at ? new Date(r.created_at).toLocaleDateString() : "—"}</td>
                   </tr>
                 ))}

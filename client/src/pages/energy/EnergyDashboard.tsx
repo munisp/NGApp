@@ -28,14 +28,14 @@ function statusBadge(s: string) {
   const map: Record<string, string> = {
     active: "bg-green-100 text-green-800", suspended: "bg-red-100 text-red-800",
     revoked: "bg-red-100 text-red-800", pending: "bg-yellow-100 text-yellow-800",
-    submitted: "bg-blue-100 text-blue-800", draft: "bg-gray-100 text-gray-800",
+    submitted: "bg-blue-100 text-blue-800", draft: "bg-muted text-foreground",
   };
-  return <Badge className={map[s] ?? "bg-gray-100 text-gray-800"}>{s.replace(/_/g, " ")}</Badge>;
+  return <Badge className={map[s] ?? "bg-muted text-foreground"}>{s.replace(/_/g, " ")}</Badge>;
 }
 
 function severityBadge(s: string) {
   const map: Record<string, string> = { critical: "bg-red-100 text-red-800", high: "bg-orange-100 text-orange-800", medium: "bg-yellow-100 text-yellow-800", low: "bg-blue-100 text-blue-800" };
-  return <Badge className={map[s] ?? "bg-gray-100 text-gray-800"}>{s}</Badge>;
+  return <Badge className={map[s] ?? "bg-muted text-foreground"}>{s}</Badge>;
 }
 
 export default function EnergyDashboard() {

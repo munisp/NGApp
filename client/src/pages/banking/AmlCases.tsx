@@ -18,7 +18,7 @@ const STATUS_COLORS: Record<string, string> = {
   filed_str: "bg-blue-100 text-blue-800",
   closed_no_action: "bg-green-100 text-green-800",
   closed_action_taken: "bg-emerald-100 text-emerald-800",
-  closed: "bg-gray-100 text-gray-800",
+  closed: "bg-muted text-foreground",
 };
 
 const CASE_TYPES = [
@@ -192,7 +192,7 @@ export default function AmlCases() {
       {/* Real-time Search + Filter Toggle */}
       <div className="flex gap-3 items-center">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+          <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
           {isLoading && debouncedSearch && (
             <Activity className="absolute right-3 top-2.5 h-4 w-4 text-blue-400 animate-pulse" />
           )}
@@ -307,14 +307,14 @@ export default function AmlCases() {
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {isLoading ? (
-                  <tr><td colSpan={10} className="px-4 py-8 text-center text-gray-400">
+                  <tr><td colSpan={10} className="px-4 py-8 text-center text-muted-foreground">
                     <div className="flex items-center justify-center gap-2">
                       <Activity className="h-4 w-4 animate-pulse text-blue-400" />
                       Searching...
                     </div>
                   </td></tr>
                 ) : rows.length === 0 ? (
-                  <tr><td colSpan={10} className="px-4 py-8 text-center text-gray-400">
+                  <tr><td colSpan={10} className="px-4 py-8 text-center text-muted-foreground">
                     No AML cases match your search criteria
                   </td></tr>
                 ) : rows.map((c: any) => (
@@ -338,12 +338,12 @@ export default function AmlCases() {
                       {c.transaction_amount ? `₦${(parseInt(c.transaction_amount) / 100).toLocaleString()}` : "—"}
                     </td>
                     <td className="px-4 py-3">
-                      <Badge className={STATUS_COLORS[c.status] || "bg-gray-100 text-foreground"}>
+                      <Badge className={STATUS_COLORS[c.status] || "bg-muted text-foreground"}>
                         {c.status?.replace(/_/g, " ")}
                       </Badge>
                     </td>
                     <td className="px-4 py-3">
-                      {c.str_reference ? <Badge className="bg-blue-100 text-blue-700">Filed</Badge> : <span className="text-gray-400">—</span>}
+                      {c.str_reference ? <Badge className="bg-blue-100 text-blue-700">Filed</Badge> : <span className="text-muted-foreground">—</span>}
                     </td>
                     <td className="px-4 py-3 text-xs text-muted-foreground">{c.assigned_to || "Unassigned"}</td>
                     <td className="px-4 py-3 text-xs text-muted-foreground">

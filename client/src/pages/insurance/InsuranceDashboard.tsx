@@ -33,9 +33,9 @@ function statusBadge(s: string) {
     active: "bg-green-100 text-green-800", suspended: "bg-red-100 text-red-800",
     settled: "bg-green-100 text-green-800", approved: "bg-blue-100 text-blue-800",
     under_investigation: "bg-yellow-100 text-yellow-800", rejected: "bg-red-100 text-red-800",
-    expired: "bg-gray-100 text-gray-800", pending: "bg-yellow-100 text-yellow-800",
+    expired: "bg-muted text-foreground", pending: "bg-yellow-100 text-yellow-800",
   };
-  return <Badge className={map[s] ?? "bg-gray-100 text-gray-800"}>{s.replace(/_/g, " ")}</Badge>;
+  return <Badge className={map[s] ?? "bg-muted text-foreground"}>{s.replace(/_/g, " ")}</Badge>;
 }
 
 export default function InsuranceDashboard() {

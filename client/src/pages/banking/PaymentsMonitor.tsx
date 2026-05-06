@@ -103,7 +103,7 @@ export default function PaymentsMonitor() {
                   <div>
                     <p className="text-2xl font-bold">{value}</p>
                     <p className="text-xs text-muted-foreground">{label}</p>
-                    <p className="text-xs text-gray-400">{sub}</p>
+                    <p className="text-xs text-muted-foreground">{sub}</p>
                   </div>
                 </div>
               </CardContent>
@@ -121,7 +121,7 @@ export default function PaymentsMonitor() {
         <TabsContent value="nip" className="space-y-4">
           <div className="flex gap-3 flex-wrap items-center">
             <div className="relative flex-1 min-w-48">
-              <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+              <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input placeholder="Search session ID, account, NIBSS ref..." className="pl-9"
                 value={nipSearch} onChange={e => { setNipSearch(e.target.value); setNipPage(1); }} />
             </div>
@@ -211,9 +211,9 @@ export default function PaymentsMonitor() {
                   </thead>
                   <tbody className="divide-y divide-gray-100">
                     {nipLoading ? (
-                      <tr><td colSpan={8} className="px-4 py-8 text-center text-gray-400">Loading...</td></tr>
+                      <tr><td colSpan={8} className="px-4 py-8 text-center text-muted-foreground">Loading...</td></tr>
                     ) : nipRows.length === 0 ? (
-                      <tr><td colSpan={8} className="px-4 py-8 text-center text-gray-400">No NIP transactions found</td></tr>
+                      <tr><td colSpan={8} className="px-4 py-8 text-center text-muted-foreground">No NIP transactions found</td></tr>
                     ) : nipRows.map((r: any) => (
                       <tr key={r.id} className="hover:bg-muted">
                         <td className="px-4 py-3 font-mono text-xs">{r.session_id?.substring(0, 16)}...</td>
@@ -221,10 +221,10 @@ export default function PaymentsMonitor() {
                         <td className="px-4 py-3 text-xs">{r.receiver_bank_code}</td>
                         <td className="px-4 py-3 font-medium">{fmt(r.amount)}</td>
                         <td className="px-4 py-3">
-                          <Badge className={STATUS_COLORS[r.status] || "bg-gray-100 text-foreground"}>{r.status}</Badge>
+                          <Badge className={STATUS_COLORS[r.status] || "bg-muted text-foreground"}>{r.status}</Badge>
                         </td>
                         <td className="px-4 py-3">
-                          {r.aml_flagged ? <Badge className="bg-red-100 text-red-700">Flagged</Badge> : <span className="text-gray-400 text-xs">—</span>}
+                          {r.aml_flagged ? <Badge className="bg-red-100 text-red-700">Flagged</Badge> : <span className="text-muted-foreground text-xs">—</span>}
                         </td>
                         <td className="px-4 py-3 font-mono text-xs">{r.nibss_ref}</td>
                         <td className="px-4 py-3 text-xs text-muted-foreground">{r.created_at ? new Date(r.created_at).toLocaleString() : "—"}</td>
@@ -249,7 +249,7 @@ export default function PaymentsMonitor() {
         <TabsContent value="rtgs" className="space-y-4">
           <div className="flex gap-3 flex-wrap items-center">
             <div className="relative flex-1 min-w-48">
-              <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+              <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input placeholder="Search reference, bank code, CBN ref..." className="pl-9"
                 value={rtgsSearch} onChange={e => { setRtgsSearch(e.target.value); setRtgsPage(1); }} />
             </div>
@@ -337,9 +337,9 @@ export default function PaymentsMonitor() {
                   </thead>
                   <tbody className="divide-y divide-gray-100">
                     {rtgsLoading ? (
-                      <tr><td colSpan={9} className="px-4 py-8 text-center text-gray-400">Loading...</td></tr>
+                      <tr><td colSpan={9} className="px-4 py-8 text-center text-muted-foreground">Loading...</td></tr>
                     ) : rtgsRows.length === 0 ? (
-                      <tr><td colSpan={9} className="px-4 py-8 text-center text-gray-400">No RTGS transactions found</td></tr>
+                      <tr><td colSpan={9} className="px-4 py-8 text-center text-muted-foreground">No RTGS transactions found</td></tr>
                     ) : rtgsRows.map((r: any) => (
                       <tr key={r.id} className="hover:bg-muted">
                         <td className="px-4 py-3 font-mono text-xs">{r.reference}</td>
@@ -347,13 +347,13 @@ export default function PaymentsMonitor() {
                         <td className="px-4 py-3 text-xs">{r.receiver_bank_code}</td>
                         <td className="px-4 py-3 font-medium">{fmt(r.amount)}</td>
                         <td className="px-4 py-3">
-                          <Badge className={r.priority === "critical" ? "bg-red-100 text-red-700" : r.priority === "urgent" ? "bg-orange-100 text-orange-700" : "bg-gray-100 text-foreground"}>
+                          <Badge className={r.priority === "critical" ? "bg-red-100 text-red-700" : r.priority === "urgent" ? "bg-orange-100 text-orange-700" : "bg-muted text-foreground"}>
                             {r.priority}
                           </Badge>
                         </td>
                         <td className="px-4 py-3 text-xs font-medium">{r.settlement_cycle || "—"}</td>
                         <td className="px-4 py-3">
-                          <Badge className={STATUS_COLORS[r.status] || "bg-gray-100 text-foreground"}>{r.status}</Badge>
+                          <Badge className={STATUS_COLORS[r.status] || "bg-muted text-foreground"}>{r.status}</Badge>
                         </td>
                         <td className="px-4 py-3 font-mono text-xs">{r.cbn_ref}</td>
                         <td className="px-4 py-3 text-xs text-muted-foreground">{r.queued_at ? new Date(r.queued_at).toLocaleString() : "—"}</td>
