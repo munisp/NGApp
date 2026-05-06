@@ -215,7 +215,7 @@ export default function CrossSectorAlerts() {
                     </div>
                     <div className="flex flex-wrap gap-1 mt-2">
                       {alert.sectors.map(s => (
-                        <Badge key={s} className={SECTOR_COLORS[s] ?? "bg-gray-100 text-gray-800"}>
+                        <Badge key={s} className={SECTOR_COLORS[s] ?? "bg-muted text-foreground"}>
                           {s.charAt(0).toUpperCase() + s.slice(1)}
                         </Badge>
                       ))}

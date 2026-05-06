@@ -101,7 +101,7 @@ export default function ComplianceGapAnalyzer() {
                     <span className="text-foreground text-sm">{data.score ?? 0}%</span>
                   </div>
                   <Progress value={data.score ?? 0} className="h-2" />
-                  <p className="text-slate-500 text-xs mt-1">{data.gaps} gaps remaining</p>
+                  <p className="text-muted-foreground text-xs mt-1">{data.gaps} gaps remaining</p>
                 </div>
               ))}
             </div>
@@ -159,7 +159,7 @@ export default function ComplianceGapAnalyzer() {
                   onClick={() => setSelectedGap(gap)}>
                   <TableCell>
                     <p className="text-foreground text-sm font-medium">{gap.gap_title}</p>
-                    <p className="text-slate-500 text-xs line-clamp-1">{gap.description}</p>
+                    <p className="text-muted-foreground text-xs line-clamp-1">{gap.description}</p>
                   </TableCell>
                   <TableCell><Badge variant="outline" className="border-blue-500/40 text-blue-400">{gap.framework}</Badge></TableCell>
                   <TableCell className="text-muted-foreground text-xs font-mono">{gap.control_id}</TableCell>

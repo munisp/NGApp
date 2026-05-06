@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { AlertTriangle, Clock, CheckCircle, XCircle, Plus, RefreshCw, Shield } from "lucide-react";
 
-const STATUS_COLORS: Record<string,string> = { detected:"bg-red-100 text-red-800", assessing:"bg-orange-100 text-orange-800", ndpc_notified:"bg-blue-100 text-blue-800", individuals_notified:"bg-purple-100 text-purple-800", contained:"bg-yellow-100 text-yellow-800", resolved:"bg-green-100 text-green-800", closed:"bg-gray-100 text-gray-800" };
+const STATUS_COLORS: Record<string,string> = { detected:"bg-red-100 text-red-800", assessing:"bg-orange-100 text-orange-800", ndpc_notified:"bg-blue-100 text-blue-800", individuals_notified:"bg-purple-100 text-purple-800", contained:"bg-yellow-100 text-yellow-800", resolved:"bg-green-100 text-green-800", closed:"bg-muted text-foreground" };
 const SEV_COLORS: Record<string,string> = { low:"bg-green-100 text-green-800", medium:"bg-yellow-100 text-yellow-800", high:"bg-orange-100 text-orange-800", critical:"bg-red-100 text-red-800" };
 
 export default function BreachIncidentCenter() {

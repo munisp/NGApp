@@ -13,7 +13,7 @@ const ROLE_COLORS: Record<string, string> = {
   admin: "bg-red-100 text-red-800",
   auditor: "bg-orange-100 text-orange-800",
   org_admin: "bg-blue-100 text-blue-800",
-  user: "bg-gray-100 text-gray-800",
+  user: "bg-muted text-foreground",
 };
 
 export default function AdminUserManagement() {
@@ -127,7 +127,7 @@ export default function AdminUserManagement() {
                     <TableCell className="font-medium">{u.name ?? "—"}</TableCell>
                     <TableCell className="text-sm">{u.email ?? "—"}</TableCell>
                     <TableCell>
-                      <Badge className={ROLE_COLORS[u.role ?? "user"] ?? "bg-gray-100 text-gray-800"}>
+                      <Badge className={ROLE_COLORS[u.role ?? "user"] ?? "bg-muted text-foreground"}>
                         {u.role ?? "user"}
                       </Badge>
                     </TableCell>

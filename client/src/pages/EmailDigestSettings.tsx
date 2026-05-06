@@ -5,8 +5,6 @@ import { Badge } from "@/components/ui/badge";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { toast } from "sonner";
-import DashboardLayout from "@/components/DashboardLayout";
-
 export default function EmailDigestSettings() {
   const { user } = useAuth();
   const utils = trpc.useUtils();
@@ -47,12 +45,12 @@ export default function EmailDigestSettings() {
   const isSubscribed = status?.active === 1;
 
   return (
-    <DashboardLayout>
+    <>
       <div className="p-6 max-w-3xl mx-auto">
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-2">
-            <Mail className="h-7 w-7 text-cyan-400" />
+            <Mail className="h-7 w-7 text-cyan-600" />
             <h1 className="text-2xl font-bold text-foreground">Email Digest Settings</h1>
           </div>
           <p className="text-muted-foreground text-sm">
@@ -61,7 +59,7 @@ export default function EmailDigestSettings() {
         </div>
 
         {/* Status card */}
-        <div className="bg-[#0d1f3c] border border-cyan-500/20 rounded-xl p-6 mb-6">
+        <div className="bg-muted border border-border rounded-xl p-6 mb-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               {isSubscribed ? (
@@ -93,7 +91,7 @@ export default function EmailDigestSettings() {
           </div>
 
           {isSubscribed && status?.next_send_at && (
-            <div className="mt-4 flex items-center gap-2 text-xs text-muted-foreground border-t border-border/50 pt-4">
+            <div className="mt-4 flex items-center gap-2 text-xs text-muted-foreground border-t border-border pt-4">
               <Calendar className="h-3.5 w-3.5" />
               <span>Next digest: {new Date(status.next_send_at).toLocaleDateString("en-NG", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}</span>
               {status?.last_sent_at && (
@@ -147,8 +145,8 @@ export default function EmailDigestSettings() {
 
         {/* Preview */}
         {showPreview && (
-          <div className="bg-[#0a1628] border border-border/50 rounded-xl p-5 mb-6">
-            <h3 className="text-sm font-semibold text-cyan-300 mb-3 flex items-center gap-2">
+          <div className="bg-muted border border-border rounded-xl p-5 mb-6">
+            <h3 className="text-sm font-semibold text-cyan-600 mb-3 flex items-center gap-2">
               <Eye className="h-4 w-4" /> Digest Preview
             </h3>
             {previewLoading ? (
@@ -164,7 +162,7 @@ export default function EmailDigestSettings() {
         )}
 
         {/* What's included */}
-        <div className="bg-[#0d1f3c] border border-border/30 rounded-xl p-5">
+        <div className="bg-muted border border-border rounded-xl p-5">
           <h3 className="text-sm font-semibold text-foreground mb-3">What's included in each digest</h3>
           <div className="grid grid-cols-2 gap-3">
             {[
@@ -177,13 +175,13 @@ export default function EmailDigestSettings() {
                 <span className="text-lg">{item.icon}</span>
                 <div>
                   <div className="text-xs font-medium text-foreground">{item.label}</div>
-                  <div className="text-[11px] text-slate-500">{item.desc}</div>
+                  <div className="text-[11px] text-muted-foreground">{item.desc}</div>
                 </div>
               </div>
             ))}
           </div>
         </div>
       </div>
-    </DashboardLayout>
+    </>
   );
 }

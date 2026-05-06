@@ -1,7 +1,6 @@
 import { toast } from "sonner";
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
-import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -84,7 +83,7 @@ export default function AuditExport() {
   };
 
   return (
-    <DashboardLayout>
+    <>
       <div className="p-6 space-y-6">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
@@ -245,6 +244,6 @@ export default function AuditExport() {
           </CardContent>
         </Card>
       </div>
-    </DashboardLayout>
+    </>
   );
 }

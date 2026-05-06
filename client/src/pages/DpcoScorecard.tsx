@@ -15,7 +15,7 @@ import { toast } from "sonner";
 const TIER_COLORS: Record<string, string> = {
   platinum: "bg-purple-100 text-purple-800 border-purple-300",
   gold:     "bg-yellow-100 text-yellow-800 border-yellow-300",
-  silver:   "bg-gray-100 text-foreground border-border",
+  silver:   "bg-muted text-foreground border-border",
   bronze:   "bg-orange-100 text-orange-800 border-orange-300",
   watch:    "bg-red-100 text-red-800 border-red-300",
 };
@@ -39,7 +39,7 @@ function scoreTier(score: number): string {
 function TrendIcon({ trend }: { trend: number }) {
   if (trend > 2) return <TrendingUp className="w-4 h-4 text-green-600" />;
   if (trend < -2) return <TrendingDown className="w-4 h-4 text-red-600" />;
-  return <Minus className="w-4 h-4 text-gray-400" />;
+  return <Minus className="w-4 h-4 text-muted-foreground" />;
 }
 
 function RankBadge({ rank }: { rank: number }) {
@@ -158,7 +158,7 @@ export default function DpcoScorecard() {
               <span className="text-xs text-muted-foreground uppercase tracking-wide">Platinum DPCOs</span>
             </div>
             <div className="text-3xl font-bold text-purple-700">{platinum}</div>
-            <div className="text-xs text-gray-400">Score ≥ 90</div>
+            <div className="text-xs text-muted-foreground">Score ≥ 90</div>
           </CardContent>
         </Card>
         <Card>
@@ -168,7 +168,7 @@ export default function DpcoScorecard() {
               <span className="text-xs text-muted-foreground uppercase tracking-wide">Gold DPCOs</span>
             </div>
             <div className="text-3xl font-bold text-yellow-700">{gold}</div>
-            <div className="text-xs text-gray-400">Score 80–89</div>
+            <div className="text-xs text-muted-foreground">Score 80–89</div>
           </CardContent>
         </Card>
         <Card>
@@ -178,7 +178,7 @@ export default function DpcoScorecard() {
               <span className="text-xs text-muted-foreground uppercase tracking-wide">Under Review</span>
             </div>
             <div className="text-3xl font-bold text-red-700">{watch}</div>
-            <div className="text-xs text-gray-400">Score &lt; 50</div>
+            <div className="text-xs text-muted-foreground">Score &lt; 50</div>
           </CardContent>
         </Card>
         <Card>
@@ -188,7 +188,7 @@ export default function DpcoScorecard() {
               <span className="text-xs text-muted-foreground uppercase tracking-wide">Sector Average</span>
             </div>
             <div className="text-3xl font-bold text-blue-700">{avgComposite}</div>
-            <div className="text-xs text-gray-400">Composite score</div>
+            <div className="text-xs text-muted-foreground">Composite score</div>
           </CardContent>
         </Card>
       </div>
@@ -196,7 +196,7 @@ export default function DpcoScorecard() {
       {/* Filters */}
       <div className="flex flex-wrap gap-3">
         <div className="relative flex-1 min-w-[200px]">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
             placeholder="Search DPCO name or licence number..."
             value={search}
@@ -240,7 +240,7 @@ export default function DpcoScorecard() {
         </CardHeader>
         <CardContent className="p-0">
           {isLoading ? (
-            <div className="p-8 text-center text-gray-400">Loading scorecard data...</div>
+            <div className="p-8 text-center text-muted-foreground">Loading scorecard data...</div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
@@ -267,7 +267,7 @@ export default function DpcoScorecard() {
                         </td>
                         <td className="px-4 py-3">
                           <div className="font-medium text-foreground">{row.name}</div>
-                          <div className="text-xs text-gray-400">{row.licenceNumber} · {row.state}</div>
+                          <div className="text-xs text-muted-foreground">{row.licenceNumber} · {row.state}</div>
                         </td>
                         <td className="px-4 py-3">
                           <Badge variant="outline" className={`text-xs ${TIER_COLORS[row.tier]}`}>
@@ -282,7 +282,7 @@ export default function DpcoScorecard() {
                         </td>
                         <td className="px-4 py-3 text-right">
                           <div className="flex items-center justify-end gap-1">
-                            <Users className="w-3 h-3 text-gray-400" />
+                            <Users className="w-3 h-3 text-muted-foreground" />
                             <span>{row.clientCount}</span>
                           </div>
                         </td>
@@ -305,7 +305,7 @@ export default function DpcoScorecard() {
                         <td className="px-4 py-3">
                           <div className="flex items-center justify-center gap-1">
                             <TrendIcon trend={row.trend} />
-                            <span className={`text-xs ${row.trend > 0 ? "text-green-600" : row.trend < 0 ? "text-red-600" : "text-gray-400"}`}>
+                            <span className={`text-xs ${row.trend > 0 ? "text-green-600" : row.trend < 0 ? "text-red-600" : "text-muted-foreground"}`}>
                               {row.trend > 0 ? "+" : ""}{row.trend}
                             </span>
                           </div>

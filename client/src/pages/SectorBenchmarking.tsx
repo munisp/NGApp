@@ -1,8 +1,6 @@
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { BarChart2, TrendingUp, TrendingDown, Minus, Award, AlertTriangle } from "lucide-react";
-import DashboardLayout from "@/components/DashboardLayout";
-
 const SECTOR_COLORS: Record<string, string> = {
   fintech: "bg-blue-600",
   health: "bg-green-600",
@@ -40,7 +38,7 @@ export default function SectorBenchmarking() {
   const bottomSector = (benchmarks as any[]).reduce((worst: any, curr: any) => (!worst || curr.avg_compliance_score < worst.avg_compliance_score ? curr : worst), null);
 
   return (
-    <DashboardLayout>
+    <>
       <div className="p-6 max-w-6xl mx-auto">
         <div className="flex items-center gap-3 mb-6">
           <BarChart2 className="w-7 h-7 text-blue-400" />
@@ -176,6 +174,6 @@ export default function SectorBenchmarking() {
           </div>
         </div>
       </div>
-    </DashboardLayout>
+    </>
   );
 }

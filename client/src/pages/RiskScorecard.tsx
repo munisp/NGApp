@@ -48,7 +48,7 @@ export default function RiskScorecard() {
             </div>
             <div className="space-y-2">
               {Object.entries(scorecard.dimensions??{}).map(([k,v]:any)=>(
-                <div key={k}><div className="flex justify-between text-xs mb-1"><span className="capitalize">{k.replace(/([A-Z])/g,' $1').trim()}</span><span>{v}</span></div><div className="w-full bg-gray-200 rounded-full h-1.5"><div className="h-1.5 rounded-full bg-primary" style={{width:`${v}%`}}/></div></div>
+                <div key={k}><div className="flex justify-between text-xs mb-1"><span className="capitalize">{k.replace(/([A-Z])/g,' $1').trim()}</span><span>{v}</span></div><div className="w-full bg-muted rounded-full h-1.5"><div className="h-1.5 rounded-full bg-primary" style={{width:`${v}%`}}/></div></div>
               ))}
             </div>
             <div className="text-xs space-y-1 border-t pt-3">

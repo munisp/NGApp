@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
-import DashboardLayout from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -158,7 +157,7 @@ export default function RegulatoryReports() {
   };
 
   return (
-    <DashboardLayout>
+    <>
       <div className="p-6 space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -328,7 +327,7 @@ export default function RegulatoryReports() {
             </div>
             <div className="overflow-x-auto max-h-[500px] overflow-y-auto">
               <table className="w-full text-xs">
-                <thead className="sticky top-0 bg-gray-950">
+                <thead className="sticky top-0 bg-background">
                   <tr>
                     {Object.keys(rows[0]).map(col => (
                       <th key={col} className="px-3 py-2 text-left text-muted-foreground font-medium whitespace-nowrap border-b border-border">
@@ -339,7 +338,7 @@ export default function RegulatoryReports() {
                 </thead>
                 <tbody>
                   {rows.map((row, i) => (
-                    <tr key={i} className="border-b border-border/50 hover:bg-card/30">
+                    <tr key={i} className="border-b border-border hover:bg-card/30">
                       {Object.entries(row).map(([col, val]) => (
                         <td key={col} className="px-3 py-2 text-muted-foreground whitespace-nowrap">
                           {col === "severity" && typeof val === "string" ? (
@@ -380,6 +379,6 @@ export default function RegulatoryReports() {
           </div>
         )}
       </div>
-    </DashboardLayout>
+    </>
   );
 }

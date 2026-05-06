@@ -1,5 +1,4 @@
 import { useState, useRef, useEffect } from "react";
-import DashboardLayout from "@/components/DashboardLayout";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -178,7 +177,7 @@ export default function ChatSupport() {
   const currentSession = sessionData?.session as any;
 
   return (
-    <DashboardLayout>
+    <>
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
@@ -420,6 +419,6 @@ export default function ChatSupport() {
           </div>
         </div>
       </div>
-    </DashboardLayout>
+    </>
   );
 }

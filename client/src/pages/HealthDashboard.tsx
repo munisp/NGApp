@@ -64,7 +64,7 @@ function StatusBadge({ status }: { status: WorkerStatus["status"] }) {
     healthy:  { label: "Healthy",  className: "bg-green-100 text-green-700",  icon: <CheckCircle2 className="h-3 w-3" /> },
     degraded: { label: "Degraded", className: "bg-yellow-100 text-yellow-700", icon: <AlertTriangle className="h-3 w-3" /> },
     down:     { label: "Down",     className: "bg-red-100 text-red-700",      icon: <XCircle className="h-3 w-3" /> },
-    unknown:  { label: "Unknown",  className: "bg-gray-100 text-muted-foreground",    icon: <RefreshCw className="h-3 w-3" /> },
+    unknown:  { label: "Unknown",  className: "bg-muted text-muted-foreground",    icon: <RefreshCw className="h-3 w-3" /> },
   }[status];
 
   return (
@@ -83,7 +83,7 @@ function LanguageBadge({ language }: { language: WorkerStatus["language"] }) {
     Node:   "bg-green-100 text-green-700",
   };
   return (
-    <span className={`rounded px-1.5 py-0.5 text-xs font-mono font-medium ${colors[language] ?? "bg-gray-100 text-muted-foreground"}`}>
+    <span className={`rounded px-1.5 py-0.5 text-xs font-mono font-medium ${colors[language] ?? "bg-muted text-muted-foreground"}`}>
       {language}
     </span>
   );

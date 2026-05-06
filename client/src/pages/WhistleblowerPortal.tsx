@@ -17,7 +17,7 @@ const statusColors: Record<string, string> = {
   under_review: "bg-yellow-500/20 text-yellow-400",
   investigating: "bg-orange-500/20 text-orange-400",
   resolved: "bg-green-500/20 text-green-400",
-  dismissed: "bg-slate-500/20 text-muted-foreground",
+  dismissed: "bg-muted0/20 text-muted-foreground",
 };
 
 const EMPTY_FORM = {
@@ -146,7 +146,7 @@ export default function WhistleblowerPortal() {
                   <TableCell className="text-muted-foreground text-sm">{r.org_name ?? "—"}</TableCell>
                   <TableCell>
                     {r.is_anonymous
-                      ? <span className="flex items-center gap-1 text-slate-500 text-xs"><EyeOff className="w-3 h-3" /> Anonymous</span>
+                      ? <span className="flex items-center gap-1 text-muted-foreground text-xs"><EyeOff className="w-3 h-3" /> Anonymous</span>
                       : <span className="flex items-center gap-1 text-blue-400 text-xs"><Eye className="w-3 h-3" /> Identified</span>}
                   </TableCell>
                   <TableCell className="text-muted-foreground text-xs">
@@ -205,7 +205,7 @@ export default function WhistleblowerPortal() {
                 placeholder="Describe the violation in detail..."
                 value={form.description}
                 onChange={e => setForm(f => ({ ...f, description: e.target.value }))} />
-              <p className="text-slate-500 text-xs mt-1">{form.description.length}/50 minimum</p>
+              <p className="text-muted-foreground text-xs mt-1">{form.description.length}/50 minimum</p>
             </div>
             <div className="flex items-center gap-3">
               <input type="checkbox" id="anon" checked={form.isAnonymous}

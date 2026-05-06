@@ -4,8 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { Code2, Copy, Key, Globe, CheckCircle2, ChevronDown, ChevronRight, BookOpen } from "lucide-react";
-import DashboardLayout from "@/components/DashboardLayout";
-
 const BASE_URL = window.location.origin;
 
 const ENDPOINTS = [
@@ -38,7 +36,7 @@ const ENDPOINTS = [
   },
   {
     group: "DPCO",
-    color: "text-cyan-400",
+    color: "text-cyan-600",
     endpoints: [
       { method: "GET", path: "/api/trpc/accreditation.publicListDpcos", desc: "List all accredited DPCOs (public)", auth: false },
       { method: "GET", path: "/api/trpc/accreditation.verifyDpcoCertificate", desc: "Verify a DPCO certificate by token", auth: false, params: '{"json":{"token":"CERT-TOKEN-HERE"}}' },
@@ -128,7 +126,7 @@ export default function OpenApiPortal() {
   };
 
   return (
-    <DashboardLayout>
+    <>
       <div className="p-6 max-w-5xl mx-auto">
         <div className="flex items-center gap-3 mb-6">
           <BookOpen className="w-7 h-7 text-indigo-400" />
@@ -186,7 +184,7 @@ export default function OpenApiPortal() {
           <Input value={tryBody} onChange={e => setTryBody(e.target.value)} className="bg-card border-border text-foreground font-mono text-sm mb-3" placeholder='POST body or GET ?input= e.g. {"json":{"limit":5}}' />
           {tryResult && (
             <div className="relative">
-              <pre className="bg-gray-950 text-green-300 text-xs p-4 rounded-lg overflow-x-auto max-h-64 font-mono">{tryResult}</pre>
+              <pre className="bg-background text-green-300 text-xs p-4 rounded-lg overflow-x-auto max-h-64 font-mono">{tryResult}</pre>
               <Button size="sm" variant="outline" onClick={() => copyToClipboard(tryResult)} className="absolute top-2 right-2 border-border text-muted-foreground text-xs h-6">
                 <Copy className="w-3 h-3" />
               </Button>
@@ -228,7 +226,7 @@ export default function OpenApiPortal() {
                       </div>
                       <p className="text-muted-foreground text-sm">{ep.desc}</p>
                       {(ep.params || ep.body) && (
-                        <pre className="mt-2 bg-gray-950 text-muted-foreground text-xs p-2 rounded font-mono overflow-x-auto">{ep.params ?? ep.body}</pre>
+                        <pre className="mt-2 bg-background text-muted-foreground text-xs p-2 rounded font-mono overflow-x-auto">{ep.params ?? ep.body}</pre>
                       )}
                     </div>
                   ))}
@@ -238,6 +236,6 @@ export default function OpenApiPortal() {
           ))}
         </div>
       </div>
-    </DashboardLayout>
+    </>
   );
 }

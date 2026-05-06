@@ -18,7 +18,7 @@ export default function AdvancedAnalytics() {
           <div className="space-y-3">{(sectorComp??[]).map((s:any)=>(
             <div key={s.sector} className="flex items-center gap-3">
               <div className="w-24 text-sm capitalize font-medium">{s.sector}</div>
-              <div className="flex-1"><div className="w-full bg-gray-200 rounded-full h-3"><div className="h-3 rounded-full bg-primary" style={{width:`${s.avg_compliance_score??0}%`}}/></div></div>
+              <div className="flex-1"><div className="w-full bg-muted rounded-full h-3"><div className="h-3 rounded-full bg-primary" style={{width:`${s.avg_compliance_score??0}%`}}/></div></div>
               <span className={`text-sm font-bold w-8 text-right ${scoreColor(parseFloat(s.avg_compliance_score??'0'))}`}>{parseFloat(s.avg_compliance_score??'0').toFixed(0)}</span>
               <span className="text-xs text-muted-foreground w-16 text-right">{s.org_count} orgs</span>
             </div>

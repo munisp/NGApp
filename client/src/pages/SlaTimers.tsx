@@ -174,7 +174,7 @@ export default function SlaTimers() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="font-semibold text-sm">{sla.label}</span>
-                    <Badge className={SECTOR_COLORS[sla.sector] ?? "bg-gray-100 text-gray-800"}>
+                    <Badge className={SECTOR_COLORS[sla.sector] ?? "bg-muted text-foreground"}>
                       {sla.sector}
                     </Badge>
                   </div>

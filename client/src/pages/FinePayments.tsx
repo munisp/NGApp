@@ -15,7 +15,7 @@ const statusColors: Record<string, string> = {
   pending: "bg-yellow-500/20 text-yellow-400",
   paid: "bg-green-500/20 text-green-400",
   overdue: "bg-red-500/20 text-red-400",
-  waived: "bg-slate-500/20 text-muted-foreground",
+  waived: "bg-muted0/20 text-muted-foreground",
   appealing: "bg-blue-500/20 text-blue-400",
 };
 
@@ -192,7 +192,7 @@ export default function FinePayments() {
               <Input type="number" className="mt-1 bg-muted border-border text-foreground"
                 value={form.fineAmountNgn}
                 onChange={e => setForm(f => ({ ...f, fineAmountNgn: parseInt(e.target.value) || 0 }))} />
-              <p className="text-slate-500 text-xs mt-1">Max: ₦10,000,000 or 2% of annual turnover</p>
+              <p className="text-muted-foreground text-xs mt-1">Max: ₦10,000,000 or 2% of annual turnover</p>
             </div>
             <div>
               <Label className="text-muted-foreground text-sm">NDPC Decision Reference</Label>

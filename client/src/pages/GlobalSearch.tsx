@@ -3,7 +3,6 @@ import DOMPurify from "dompurify";
 import { trpc } from "@/lib/trpc";
 import { Input } from "@/components/ui/input";
 import { Search, Building2, AlertTriangle, FileText, Shield, User, ArrowRight } from "lucide-react";
-import DashboardLayout from "@/components/DashboardLayout";
 import { useLocation } from "wouter";
 import { useDebouncedCallback } from "use-debounce";
 
@@ -68,7 +67,7 @@ export default function GlobalSearch() {
   }, {});
 
   return (
-    <DashboardLayout>
+    <>
       <div className="p-6 max-w-4xl mx-auto">
         <div className="flex items-center gap-3 mb-6">
           <Search className="w-7 h-7 text-muted-foreground" />
@@ -147,6 +146,6 @@ export default function GlobalSearch() {
           </div>
         ))}
       </div>
-    </DashboardLayout>
+    </>
   );
 }

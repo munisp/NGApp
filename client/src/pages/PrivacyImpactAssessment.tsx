@@ -20,7 +20,7 @@ const riskColors: Record<string, string> = {
 };
 
 const statusColors: Record<string, string> = {
-  draft: "bg-slate-500/20 text-muted-foreground",
+  draft: "bg-muted0/20 text-muted-foreground",
   in_progress: "bg-blue-500/20 text-blue-400",
   review: "bg-yellow-500/20 text-yellow-400",
   approved: "bg-green-500/20 text-green-400",

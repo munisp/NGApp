@@ -95,7 +95,7 @@ function EmailSettingsTab() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-lg bg-cyan-500/10">
-              <Mail className="h-5 w-5 text-cyan-400" />
+              <Mail className="h-5 w-5 text-cyan-600" />
             </div>
             <div>
               <p className="text-sm font-medium text-foreground">Active Transport</p>
@@ -109,7 +109,7 @@ function EmailSettingsTab() {
                 ? "border-emerald-500 text-emerald-400"
                 : transport === "resend"
                 ? "border-blue-500 text-blue-400"
-                : "border-slate-500 text-muted-foreground"
+                : "border-border text-muted-foreground"
             }
           >
             {transport.toUpperCase()}
@@ -142,8 +142,8 @@ function EmailSettingsTab() {
               </div>
             )}
             {!emailStatus?.smtp.configured && (
-              <p className="text-xs text-slate-500 mt-2">
-                Set <code className="text-cyan-400">SMTP_HOST</code>, <code className="text-cyan-400">SMTP_USER</code>, and <code className="text-cyan-400">SMTP_PASS</code> in Settings → Secrets to activate.
+              <p className="text-xs text-muted-foreground mt-2">
+                Set <code className="text-cyan-600">SMTP_HOST</code>, <code className="text-cyan-600">SMTP_USER</code>, and <code className="text-cyan-600">SMTP_PASS</code> in Settings → Secrets to activate.
               </p>
             )}
           </CardContent>
@@ -162,9 +162,9 @@ function EmailSettingsTab() {
             {emailStatus?.resend.configured
               ? <p className="text-xs text-emerald-400">API key is configured and active.</p>
               : (
-                <p className="text-xs text-slate-500">
-                  Set <code className="text-cyan-400">RESEND_API_KEY</code> in Settings → Secrets to activate.
-                  Get a free key at <a href="https://resend.com" target="_blank" rel="noopener noreferrer" className="text-cyan-400 hover:underline">resend.com</a>.
+                <p className="text-xs text-muted-foreground">
+                  Set <code className="text-cyan-600">RESEND_API_KEY</code> in Settings → Secrets to activate.
+                  Get a free key at <a href="https://resend.com" target="_blank" rel="noopener noreferrer" className="text-cyan-600 hover:underline">resend.com</a>.
                 </p>
               )
             }
@@ -218,7 +218,7 @@ function EmailSettingsTab() {
             <RefreshCw className="h-4 w-4" />
           </Button>
         </div>
-        <p className="text-xs text-slate-500 mt-2">
+        <p className="text-xs text-muted-foreground mt-2">
           Sends a test message via the active transport ({transport}). Check your inbox to confirm delivery.
         </p>
       </div>
@@ -226,13 +226,13 @@ function EmailSettingsTab() {
       {/* SMTP Configuration Guide */}
       <div className="rounded-lg border border-border bg-background/50 p-4">
         <h4 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
-          <Server className="h-4 w-4 text-cyan-400" />
+          <Server className="h-4 w-4 text-cyan-600" />
           SMTP Configuration Reference
         </h4>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs text-muted-foreground">
           <div>
             <p className="font-medium text-muted-foreground mb-1">NITDA / Government SMTP</p>
-            <code className="block bg-card rounded p-2 text-cyan-300">
+            <code className="block bg-card rounded p-2 text-cyan-600">
               SMTP_HOST=smtp.nitda.gov.ng<br />
               SMTP_PORT=587<br />
               SMTP_SECURE=false<br />
@@ -243,7 +243,7 @@ function EmailSettingsTab() {
           </div>
           <div>
             <p className="font-medium text-muted-foreground mb-1">Gmail / Google Workspace</p>
-            <code className="block bg-card rounded p-2 text-cyan-300">
+            <code className="block bg-card rounded p-2 text-cyan-600">
               SMTP_HOST=smtp.gmail.com<br />
               SMTP_PORT=465<br />
               SMTP_SECURE=true<br />
@@ -253,7 +253,7 @@ function EmailSettingsTab() {
             </code>
           </div>
         </div>
-        <p className="text-xs text-slate-500 mt-3">
+        <p className="text-xs text-muted-foreground mt-3">
           Add these as secrets in Settings → Secrets. Changes take effect on next server restart.
         </p>
       </div>
@@ -328,8 +328,8 @@ function StripeSettingsTab() {
           <CardContent>
             <StatusDot ok={!!stripeStatus?.configured} label={stripeStatus?.configured ? "Configured" : "Not set"} />
             {!stripeStatus?.configured && (
-              <p className="text-xs text-slate-500 mt-2">
-                Set <code className="text-cyan-400">STRIPE_SECRET_KEY</code> in Settings → Payment.
+              <p className="text-xs text-muted-foreground mt-2">
+                Set <code className="text-cyan-600">STRIPE_SECRET_KEY</code> in Settings → Payment.
               </p>
             )}
           </CardContent>
@@ -345,8 +345,8 @@ function StripeSettingsTab() {
           <CardContent>
             <StatusDot ok={!!stripeStatus?.publishableKeyConfigured} label={stripeStatus?.publishableKeyConfigured ? "Configured" : "Not set"} />
             {!stripeStatus?.publishableKeyConfigured && (
-              <p className="text-xs text-slate-500 mt-2">
-                Set <code className="text-cyan-400">VITE_STRIPE_PUBLISHABLE_KEY</code> in Settings → Payment.
+              <p className="text-xs text-muted-foreground mt-2">
+                Set <code className="text-cyan-600">VITE_STRIPE_PUBLISHABLE_KEY</code> in Settings → Payment.
               </p>
             )}
           </CardContent>
@@ -362,8 +362,8 @@ function StripeSettingsTab() {
           <CardContent>
             <StatusDot ok={!!stripeStatus?.webhookConfigured} label={stripeStatus?.webhookConfigured ? "Configured" : "Not set"} />
             {!stripeStatus?.webhookConfigured && (
-              <p className="text-xs text-slate-500 mt-2">
-                Set <code className="text-cyan-400">STRIPE_WEBHOOK_SECRET</code> in Settings → Payment.
+              <p className="text-xs text-muted-foreground mt-2">
+                Set <code className="text-cyan-600">STRIPE_WEBHOOK_SECRET</code> in Settings → Payment.
               </p>
             )}
           </CardContent>
@@ -377,7 +377,7 @@ function StripeSettingsTab() {
           Webhook Endpoint
         </h4>
         <div className="flex items-center gap-2">
-          <code className="flex-1 bg-card rounded px-3 py-2 text-sm text-cyan-300 font-mono">
+          <code className="flex-1 bg-card rounded px-3 py-2 text-sm text-cyan-600 font-mono">
             {window.location.origin}/api/stripe/webhook
           </code>
           <Button
@@ -390,9 +390,9 @@ function StripeSettingsTab() {
             {copied ? "Copied!" : "Copy"}
           </Button>
         </div>
-        <p className="text-xs text-slate-500 mt-2">
+        <p className="text-xs text-muted-foreground mt-2">
           Register this URL in your Stripe Dashboard → Developers → Webhooks.
-          Events to listen for: <code className="text-cyan-400">checkout.session.completed</code>, <code className="text-cyan-400">invoice.paid</code>, <code className="text-cyan-400">customer.subscription.updated</code>.
+          Events to listen for: <code className="text-cyan-600">checkout.session.completed</code>, <code className="text-cyan-600">invoice.paid</code>, <code className="text-cyan-600">customer.subscription.updated</code>.
         </p>
       </div>
 
@@ -454,12 +454,12 @@ function StripeSettingsTab() {
               { card: "5555 5555 5555 4444", label: "Mastercard — succeeds" },
             ].map((c) => (
               <div key={c.card} className="flex items-center justify-between bg-card rounded px-3 py-2">
-                <code className="text-cyan-300 font-mono">{c.card}</code>
+                <code className="text-cyan-600 font-mono">{c.card}</code>
                 <span className="text-muted-foreground ml-2">{c.label}</span>
               </div>
             ))}
           </div>
-          <p className="text-xs text-slate-500 mt-2">Use any future expiry date, any 3-digit CVC, and any postal code.</p>
+          <p className="text-xs text-muted-foreground mt-2">Use any future expiry date, any 3-digit CVC, and any postal code.</p>
         </div>
       )}
     </div>
@@ -478,17 +478,17 @@ export default function AdminPlatformSettings() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 text-foreground">
+    <div className="min-h-screen bg-background text-foreground">
       <div className="max-w-5xl mx-auto px-6 py-8">
         {/* Header */}
         <div className="mb-8">
-          <div className="flex items-center gap-2 text-slate-500 text-sm mb-2">
+          <div className="flex items-center gap-2 text-muted-foreground text-sm mb-2">
             <span>Admin</span>
             <ChevronRight className="h-3 w-3" />
             <span className="text-muted-foreground">Platform Settings</span>
           </div>
           <h1 className="text-2xl font-bold text-foreground flex items-center gap-3">
-            <Shield className="h-6 w-6 text-cyan-400" />
+            <Shield className="h-6 w-6 text-cyan-600" />
             Platform Settings
           </h1>
           <p className="text-muted-foreground mt-1">

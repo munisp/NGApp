@@ -6,8 +6,6 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { Brain, Shield, AlertTriangle, CheckCircle2, XCircle, Plus } from "lucide-react";
-import DashboardLayout from "@/components/DashboardLayout";
-
 const RISK_COLORS: Record<string, string> = {
   low: "text-green-400 bg-green-900/30",
   medium: "text-yellow-400 bg-yellow-900/30",
@@ -79,7 +77,7 @@ export default function AiGovernanceScoring() {
   ];
 
   return (
-    <DashboardLayout>
+    <>
       <div className="p-6 max-w-5xl mx-auto">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
@@ -131,7 +129,7 @@ export default function AiGovernanceScoring() {
               </div>
               <div className="flex gap-2">
                 <Input value={newUseCase} onChange={e => setNewUseCase(e.target.value)} className="bg-card border-border text-foreground text-sm" placeholder="Add a use case..." onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); if (newUseCase.trim()) { setForm(p => ({ ...p, useCases: [...p.useCases, newUseCase.trim()] })); setNewUseCase(""); } } }} />
-                <Button type="button" size="sm" onClick={() => { if (newUseCase.trim()) { setForm(p => ({ ...p, useCases: [...p.useCases, newUseCase.trim()] })); setNewUseCase(""); } }} className="bg-muted hover:bg-gray-600"><Plus className="w-4 h-4" /></Button>
+                <Button type="button" size="sm" onClick={() => { if (newUseCase.trim()) { setForm(p => ({ ...p, useCases: [...p.useCases, newUseCase.trim()] })); setNewUseCase(""); } }} className="bg-muted hover:bg-muted/50"><Plus className="w-4 h-4" /></Button>
               </div>
             </div>
             <div>
@@ -213,6 +211,6 @@ export default function AiGovernanceScoring() {
           ))}
         </div>
       </div>
-    </DashboardLayout>
+    </>
   );
 }

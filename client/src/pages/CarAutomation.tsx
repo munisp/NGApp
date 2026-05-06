@@ -3,8 +3,6 @@ import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { FileText, Sparkles, Download, CheckCircle2, Clock, AlertTriangle, Plus } from "lucide-react";
-import DashboardLayout from "@/components/DashboardLayout";
-
 const STATUS_COLORS: Record<string, string> = {
   draft: "text-muted-foreground bg-card",
   submitted: "text-blue-400 bg-blue-900/30",
@@ -45,7 +43,7 @@ export default function CarAutomation() {
   const years = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i);
 
   return (
-    <DashboardLayout>
+    <>
       <div className="p-6 max-w-5xl mx-auto">
         <div className="flex items-center gap-3 mb-6">
           <FileText className="w-7 h-7 text-cyan-400" />
@@ -163,6 +161,6 @@ export default function CarAutomation() {
           )}
         </div>
       </div>
-    </DashboardLayout>
+    </>
   );
 }

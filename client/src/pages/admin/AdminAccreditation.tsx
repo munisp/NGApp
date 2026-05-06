@@ -210,7 +210,7 @@ export default function AdminAccreditation() {
   const rows = listData?.rows ?? [];
 
   return (
-    <div className="flex h-full min-h-0 bg-slate-950 text-foreground">
+    <div className="flex h-full min-h-0 bg-background text-foreground">
       {/* Left panel — application list */}
       <div className="w-80 shrink-0 border-r border-border flex flex-col">
         <div className="p-4 border-b border-border">
@@ -223,23 +223,23 @@ export default function AdminAccreditation() {
             <div className="grid grid-cols-3 gap-2 mb-3">
               <div className="bg-card rounded p-2 text-center">
                 <p className="text-lg font-bold text-foreground">{stats.total}</p>
-                <p className="text-xs text-slate-500">Total</p>
+                <p className="text-xs text-muted-foreground">Total</p>
               </div>
               <div className="bg-blue-500/10 rounded p-2 text-center">
                 <p className="text-lg font-bold text-blue-300">{(stats.byStatus["submitted"] ?? 0) + (stats.byStatus["under_review"] ?? 0)}</p>
-                <p className="text-xs text-slate-500">Pending</p>
+                <p className="text-xs text-muted-foreground">Pending</p>
               </div>
               <div className="bg-emerald-500/10 rounded p-2 text-center">
                 <p className="text-lg font-bold text-emerald-300">{stats.activeDpcos}</p>
-                <p className="text-xs text-slate-500">Active</p>
+                <p className="text-xs text-muted-foreground">Active</p>
               </div>
             </div>
           )}
           <div className="relative mb-2">
-            <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-500" />
+            <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
             <Input value={search} onChange={e => setSearch(e.target.value)}
               placeholder="Search applications..."
-              className="pl-8 h-8 text-xs bg-card border-border text-foreground placeholder:text-slate-500" />
+              className="pl-8 h-8 text-xs bg-card border-border text-foreground placeholder:text-muted-foreground" />
           </div>
           <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}
             className="w-full h-8 text-xs bg-card border border-border rounded px-2 text-muted-foreground">
@@ -249,7 +249,7 @@ export default function AdminAccreditation() {
         </div>
         <div className="flex-1 overflow-y-auto">
           {rows.length === 0 && (
-            <div className="p-6 text-center text-slate-500 text-sm">No applications found</div>
+            <div className="p-6 text-center text-muted-foreground text-sm">No applications found</div>
           )}
           {rows.map((row: any) => (
             <button key={row.id} onClick={() => setSelectedId(row.id)}
@@ -257,13 +257,13 @@ export default function AdminAccreditation() {
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
                   <p className="text-sm font-medium text-foreground truncate">{row.org_name}</p>
-                  <p className="text-xs text-slate-500 font-mono">{row.reference_token}</p>
+                  <p className="text-xs text-muted-foreground font-mono">{row.reference_token}</p>
                 </div>
                 <Badge className={`text-xs shrink-0 border ${STATUS_BADGE[row.status] ?? "bg-muted text-muted-foreground"}`}>
                   {STATUS_LABELS[row.status] ?? row.status}
                 </Badge>
               </div>
-              <p className="text-xs text-slate-500 mt-1">
+              <p className="text-xs text-muted-foreground mt-1">
                 {row.submitted_at ? new Date(row.submitted_at).toLocaleDateString("en-NG") : "Draft"}
               </p>
             </button>
@@ -274,7 +274,7 @@ export default function AdminAccreditation() {
       {/* Right panel — detail view */}
       <div className="flex-1 min-w-0 overflow-y-auto">
         {!selectedId && (
-          <div className="flex items-center justify-center h-full text-slate-500">
+          <div className="flex items-center justify-center h-full text-muted-foreground">
             <div className="text-center">
               <ShieldCheck className="w-10 h-10 mx-auto mb-3 opacity-30" />
               <p className="text-sm">Select an application to review</p>
@@ -288,7 +288,7 @@ export default function AdminAccreditation() {
             <div className="flex items-start justify-between">
               <div>
                 <h2 className="text-lg font-semibold text-foreground">{(detail as any).org_name}</h2>
-                <p className="text-xs font-mono text-slate-500">{(detail as any).reference_token}</p>
+                <p className="text-xs font-mono text-muted-foreground">{(detail as any).reference_token}</p>
               </div>
               <div className="flex items-center gap-2">
                 <Badge className={`text-xs border ${STATUS_BADGE[(detail as any).status] ?? ""}`}>
@@ -322,13 +322,13 @@ export default function AdminAccreditation() {
                   ["Sectors", ((detail as any).sectors ?? []).join(", ") || "—"],
                 ].map(([k, v]) => (
                   <div key={k}>
-                    <p className="text-slate-500 text-xs">{k}</p>
+                    <p className="text-muted-foreground text-xs">{k}</p>
                     <p className="text-foreground text-sm truncate">{v}</p>
                   </div>
                 ))}
               </div>
               <div className="mt-3 pt-3 border-t border-border">
-                <p className="text-slate-500 text-xs mb-1">Address</p>
+                <p className="text-muted-foreground text-xs mb-1">Address</p>
                 <p className="text-foreground text-sm">{(detail as any).address}</p>
               </div>
             </div>
@@ -376,7 +376,7 @@ export default function AdminAccreditation() {
                         </Button>
                       </a>
                     ) : (
-                      <span className="text-xs text-slate-600">Not submitted</span>
+                      <span className="text-xs text-muted-foreground">Not submitted</span>
                     )}
                   </div>
                 ))}
@@ -390,7 +390,7 @@ export default function AdminAccreditation() {
                   <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
                     <CheckCircle className="w-3.5 h-3.5" /> Review Checklist
                   </h3>
-                  <span className="text-xs text-slate-500">{checklistProgress}/{REVIEW_CHECKLIST.length} complete</span>
+                  <span className="text-xs text-muted-foreground">{checklistProgress}/{REVIEW_CHECKLIST.length} complete</span>
                 </div>
                 <div className="w-full bg-card rounded-full h-1.5 mb-3">
                   <div className="bg-emerald-500 h-1.5 rounded-full transition-all"
@@ -418,7 +418,7 @@ export default function AdminAccreditation() {
                 <div className="flex items-center gap-2 mb-2">
                   <Award className="w-4 h-4 text-emerald-400" />
                   <h3 className="text-sm font-medium text-foreground">Decision: {STATUS_LABELS[(detail as any).decision]}</h3>
-                  <span className="text-xs text-slate-500 ml-auto">
+                  <span className="text-xs text-muted-foreground ml-auto">
                     {(detail as any).decision_at ? new Date((detail as any).decision_at).toLocaleDateString("en-NG") : ""}
                   </span>
                 </div>
@@ -494,14 +494,14 @@ export default function AdminAccreditation() {
                 <Label className="text-muted-foreground text-xs mb-1 block">Decision Reason <span className="text-red-400">*</span></Label>
                 <Textarea value={decisionReason} onChange={e => setDecisionReason(e.target.value)}
                   placeholder="Provide a clear reason for this decision..."
-                  className="bg-card border-border text-foreground placeholder:text-slate-500 resize-none text-sm" rows={3} />
+                  className="bg-card border-border text-foreground placeholder:text-muted-foreground resize-none text-sm" rows={3} />
               </div>
               {decisionType === "conditionally_approved" && (
                 <div>
                   <Label className="text-muted-foreground text-xs mb-1 block">Conditions</Label>
                   <Textarea value={decisionConditions} onChange={e => setDecisionConditions(e.target.value)}
                     placeholder="Specify conditions that must be met..."
-                    className="bg-card border-border text-foreground placeholder:text-slate-500 resize-none text-sm" rows={2} />
+                    className="bg-card border-border text-foreground placeholder:text-muted-foreground resize-none text-sm" rows={2} />
                 </div>
               )}
             </div>
@@ -524,7 +524,7 @@ export default function AdminAccreditation() {
             <h3 className="text-base font-semibold text-foreground mb-4">Request Additional Information</h3>
             <Textarea value={infoNote} onChange={e => setInfoNote(e.target.value)}
               placeholder="Describe what additional information or documents are required..."
-              className="bg-card border-border text-foreground placeholder:text-slate-500 resize-none text-sm" rows={4} />
+              className="bg-card border-border text-foreground placeholder:text-muted-foreground resize-none text-sm" rows={4} />
             <div className="flex gap-2 mt-4">
               <Button variant="ghost" onClick={() => setShowInfoRequest(false)} className="flex-1 text-muted-foreground">Cancel</Button>
               <Button onClick={() => requestInfo.mutate({ id: selectedId!, note: infoNote })}
@@ -564,7 +564,7 @@ export default function AdminAccreditation() {
             <p className="text-xs text-amber-400 mb-4">This will prevent the DPCO from filing new CARs until the suspension is lifted.</p>
             <Textarea value={sanctionReason} onChange={e => setSanctionReason(e.target.value)}
               placeholder="State the grounds for suspension..."
-              className="bg-card border-border text-foreground placeholder:text-slate-500 resize-none text-sm" rows={3} />
+              className="bg-card border-border text-foreground placeholder:text-muted-foreground resize-none text-sm" rows={3} />
             <div className="flex gap-2 mt-4">
               <Button variant="ghost" onClick={() => setShowSuspend(false)} className="flex-1 text-muted-foreground">Cancel</Button>
               <Button onClick={() => suspend.mutate({ id: selectedId!, reason: sanctionReason })}
@@ -585,7 +585,7 @@ export default function AdminAccreditation() {
             <p className="text-xs text-red-400 mb-4">This is irreversible. The DPCO will be removed from the public registry immediately.</p>
             <Textarea value={sanctionReason} onChange={e => setSanctionReason(e.target.value)}
               placeholder="State the grounds for revocation..."
-              className="bg-card border-border text-foreground placeholder:text-slate-500 resize-none text-sm" rows={3} />
+              className="bg-card border-border text-foreground placeholder:text-muted-foreground resize-none text-sm" rows={3} />
             <div className="flex gap-2 mt-4">
               <Button variant="ghost" onClick={() => setShowRevoke(false)} className="flex-1 text-muted-foreground">Cancel</Button>
               <Button onClick={() => revoke.mutate({ id: selectedId!, reason: sanctionReason })}

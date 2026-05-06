@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
-import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -42,7 +41,7 @@ export default function Phase13ComplianceCalendar() {
   const priorityColor: Record<string, string> = { critical: "text-red-700", high: "text-red-600", medium: "text-orange-500", low: "text-green-600" };
 
   return (
-    <DashboardLayout>
+    <>
       <div className="p-6 space-y-6">
         <div className="flex items-center justify-between">
           <div>
@@ -186,6 +185,6 @@ export default function Phase13ComplianceCalendar() {
           </CardContent>
         </Card>
       </div>
-    </DashboardLayout>
+    </>
   );
 }

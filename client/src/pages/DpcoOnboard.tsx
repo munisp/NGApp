@@ -89,16 +89,16 @@ function StepIndicator({ current }: { current: number }) {
               <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all
                 ${done ? "bg-green-600 border-green-600 text-white" :
                   active ? "bg-blue-600 border-blue-600 text-white" :
-                  "bg-background border-border text-gray-400"}`}>
+                  "bg-background border-border text-muted-foreground"}`}>
                 {done ? <CheckCircle className="w-5 h-5" /> : <Icon className="w-5 h-5" />}
               </div>
               <div className={`text-xs mt-1 font-medium text-center max-w-[80px] leading-tight
-                ${active ? "text-blue-700" : done ? "text-green-700" : "text-gray-400"}`}>
+                ${active ? "text-blue-700" : done ? "text-green-700" : "text-muted-foreground"}`}>
                 {step.title}
               </div>
             </div>
             {i < STEPS.length - 1 && (
-              <div className={`flex-1 h-0.5 mx-1 mb-5 ${done ? "bg-green-400" : "bg-gray-200"}`} />
+              <div className={`flex-1 h-0.5 mx-1 mb-5 ${done ? "bg-green-400" : "bg-muted"}`} />
             )}
           </div>
         );
@@ -443,9 +443,9 @@ export default function DpcoOnboard() {
                 />
               </div>
               <div className="border-2 border-dashed border-border rounded-lg p-6 text-center">
-                <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                <Upload className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
                 <p className="text-sm text-muted-foreground font-medium">Upload Supporting Documents</p>
-                <p className="text-xs text-gray-400 mt-1">CAC Certificate, Insurance Certificate, DPO Qualification Certificates (PDF, max 10MB each)</p>
+                <p className="text-xs text-muted-foreground mt-1">CAC Certificate, Insurance Certificate, DPO Qualification Certificates (PDF, max 10MB each)</p>
                 <Button variant="outline" size="sm" className="mt-3" onClick={() => toast.info("Document upload will be available after account creation")}>
                   Select Files
                 </Button>

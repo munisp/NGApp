@@ -133,7 +133,7 @@ export default function AIEthicsBoard() {
                 <TableRow key={s.id} className="border-border">
                   <TableCell>
                     <p className="text-foreground text-sm font-medium">{s.ai_system_name}</p>
-                    <p className="text-slate-500 text-xs">{s.review_ref}</p>
+                    <p className="text-muted-foreground text-xs">{s.review_ref}</p>
                   </TableCell>
                   <TableCell>
                     <Badge variant="outline" className="border-border text-muted-foreground capitalize">

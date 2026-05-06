@@ -1,6 +1,5 @@
 import { useMemo, useState } from "react";
 import { trpc } from "@/lib/trpc";
-import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -38,7 +37,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
     return (
       <div className="bg-background border border-border rounded-lg p-3 shadow-lg text-sm">
-        <p className="font-semibold text-gray-800 mb-1">{label}</p>
+        <p className="font-semibold text-foreground mb-1">{label}</p>
         {payload.map((p: any) => (
           <p key={p.name} style={{ color: p.color }}>
             {p.name}: {p.name.toLowerCase().includes("amount") || p.name.toLowerCase().includes("penalty")
@@ -162,7 +161,7 @@ export default function PenaltyDashboard() {
   ];
 
   return (
-    <DashboardLayout>
+    <>
       <div className="p-6 space-y-6">
         {/* Header */}
         <div>
@@ -173,7 +172,7 @@ export default function PenaltyDashboard() {
         </div>
 
         {isLoading ? (
-          <div className="flex items-center justify-center py-20 text-gray-400">
+          <div className="flex items-center justify-center py-20 text-muted-foreground">
             <Activity className="h-6 w-6 animate-pulse mr-2" />
             Loading dashboard data...
           </div>
@@ -207,7 +206,7 @@ export default function PenaltyDashboard() {
                 </CardHeader>
                 <CardContent>
                   {lineData.length === 0 ? (
-                    <div className="flex items-center justify-center h-48 text-gray-400 text-sm">No trend data yet</div>
+                    <div className="flex items-center justify-center h-48 text-muted-foreground text-sm">No trend data yet</div>
                   ) : (
                     <ResponsiveContainer width="100%" height={220}>
                       <LineChart data={lineData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
@@ -232,7 +231,7 @@ export default function PenaltyDashboard() {
                 </CardHeader>
                 <CardContent>
                   {pieData.length === 0 ? (
-                    <div className="flex items-center justify-center h-48 text-gray-400 text-sm">No data yet</div>
+                    <div className="flex items-center justify-center h-48 text-muted-foreground text-sm">No data yet</div>
                   ) : (
                     <>
                       <ResponsiveContainer width="100%" height={160}>
@@ -279,7 +278,7 @@ export default function PenaltyDashboard() {
                 </CardHeader>
                 <CardContent>
                   {barData.length === 0 ? (
-                    <div className="flex items-center justify-center h-48 text-gray-400 text-sm">No data yet</div>
+                    <div className="flex items-center justify-center h-48 text-muted-foreground text-sm">No data yet</div>
                   ) : (
                     <ResponsiveContainer width="100%" height={220}>
                       <BarChart data={barData} margin={{ top: 5, right: 10, left: 0, bottom: 40 }}>
@@ -306,7 +305,7 @@ export default function PenaltyDashboard() {
                 </CardHeader>
                 <CardContent>
                   {(topOrgs as any[]).length === 0 ? (
-                    <div className="flex items-center justify-center h-48 text-gray-400 text-sm">No data yet</div>
+                    <div className="flex items-center justify-center h-48 text-muted-foreground text-sm">No data yet</div>
                   ) : (
                     <div className="space-y-2">
                       {(topOrgs as any[]).map((org: any, i: number) => {
@@ -316,13 +315,13 @@ export default function PenaltyDashboard() {
                           <div key={org.org_name} className="space-y-1 cursor-pointer hover:bg-muted/30 rounded p-1 -mx-1" onClick={() => openDrill({ orgName: org.org_name, label: `Org: ${org.org_name}` })}>
                             <div className="flex items-center justify-between text-xs">
                               <div className="flex items-center gap-2">
-                                <span className="text-gray-400 w-4 text-right">{i + 1}.</span>
+                                <span className="text-muted-foreground w-4 text-right">{i + 1}.</span>
                                 <span className="font-medium truncate max-w-32">{org.org_name}</span>
-                                <Badge className="bg-gray-100 text-muted-foreground text-xs">{org.case_count} cases</Badge>
+                                <Badge className="bg-muted text-muted-foreground text-xs">{org.case_count} cases</Badge>
                               </div>
                               <span className="font-semibold text-red-600">{formatNGN(parseFloat(org.total_penalties ?? "0"))}</span>
                             </div>
-                            <div className="w-full bg-gray-100 rounded-full h-1.5">
+                            <div className="w-full bg-muted rounded-full h-1.5">
                               <div
                                 className="h-1.5 rounded-full"
                                 style={{
@@ -347,7 +346,7 @@ export default function PenaltyDashboard() {
               </CardHeader>
               <CardContent>
                 {barData.length === 0 ? (
-                  <div className="flex items-center justify-center h-32 text-gray-400 text-sm">No data yet</div>
+                  <div className="flex items-center justify-center h-32 text-muted-foreground text-sm">No data yet</div>
                 ) : (
                   <ResponsiveContainer width="100%" height={200}>
                     <BarChart data={barData} margin={{ top: 5, right: 10, left: 20, bottom: 40 }}>
@@ -423,6 +422,6 @@ export default function PenaltyDashboard() {
           </div>
         </DialogContent>
       </Dialog>
-    </DashboardLayout>
+    </>
   );
 }

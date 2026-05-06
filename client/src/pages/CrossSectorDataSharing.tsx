@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
-import DashboardLayout from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -34,7 +33,7 @@ export default function CrossSectorDataSharing() {
   });
 
   return (
-    <DashboardLayout>
+    <>
       <div className="p-6 space-y-6">
         <div className="flex items-center justify-between">
           <div>
@@ -111,7 +110,7 @@ export default function CrossSectorDataSharing() {
                       <td className="py-2 px-3">
                         <div className="flex items-center gap-1 text-xs">
                           <span className="text-cyan-400">{String(s.source_sector ?? "").toUpperCase()}</span>
-                          <ArrowRight className="w-3 h-3 text-slate-500" />
+                          <ArrowRight className="w-3 h-3 text-muted-foreground" />
                           <span className="text-purple-400">{String(s.target_sector ?? "").toUpperCase()}</span>
                         </div>
                       </td>
@@ -142,6 +141,6 @@ export default function CrossSectorDataSharing() {
           </CardContent>
         </Card>
       </div>
-    </DashboardLayout>
+    </>
   );
 }

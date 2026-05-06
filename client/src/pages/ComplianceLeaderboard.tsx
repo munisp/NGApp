@@ -27,7 +27,7 @@ function ScoreBar({ score }: { score: number }) {
   const color = score >= 85 ? "#16a34a" : score >= 60 ? "#d97706" : "#dc2626";
   return (
     <div className="flex items-center gap-2 min-w-0">
-      <div className="flex-1 bg-gray-100 rounded-full h-2 min-w-[60px]">
+      <div className="flex-1 bg-muted rounded-full h-2 min-w-[60px]">
         <div className="h-2 rounded-full transition-all" style={{ width: `${Math.min(score, 100)}%`, background: color }} />
       </div>
       <span className="text-sm font-semibold tabular-nums" style={{ color }}>{score}</span>
@@ -79,7 +79,7 @@ function LeaderboardRow({ org, expanded, onToggle }: {
   onToggle: () => void;
 }) {
   return (
-    <div className="border-b border-gray-100 last:border-0">
+    <div className="border-b border-border last:border-0">
       <div
         className="flex items-center gap-4 px-5 py-3 hover:bg-muted transition-colors cursor-pointer"
         onClick={onToggle}
@@ -99,7 +99,7 @@ function LeaderboardRow({ org, expanded, onToggle }: {
               <Badge className="bg-blue-100 text-blue-800 text-[10px] px-1.5 py-0">Agent</Badge>
             )}
           </div>
-          <p className="text-xs text-gray-400 mt-0.5">{org.sector} · {org.country}</p>
+          <p className="text-xs text-muted-foreground mt-0.5">{org.sector} · {org.country}</p>
         </div>
         {/* 30-day sparkline */}
         <div className="w-24 shrink-0 hidden lg:block">
@@ -109,7 +109,7 @@ function LeaderboardRow({ org, expanded, onToggle }: {
           <ScoreBar score={org.complianceScore} />
         </div>
         <div className="w-28 shrink-0 hidden sm:block">
-          <Badge className={`text-[10px] px-2 py-0.5 flex items-center gap-1 w-fit ${statusColor[org.complianceStatus] ?? "bg-gray-100 text-foreground"}`}>
+          <Badge className={`text-[10px] px-2 py-0.5 flex items-center gap-1 w-fit ${statusColor[org.complianceStatus] ?? "bg-muted text-foreground"}`}>
             {statusIcon[org.complianceStatus]}
             {org.complianceStatus?.replace(/_/g, " ")}
           </Badge>
@@ -119,12 +119,12 @@ function LeaderboardRow({ org, expanded, onToggle }: {
             Risk {org.riskScore}
           </span>
         </div>
-        <div className="shrink-0 text-gray-400">
+        <div className="shrink-0 text-muted-foreground">
           {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
         </div>
       </div>
       {expanded && (
-        <div className="px-5 pb-4 bg-muted border-t border-gray-100">
+        <div className="px-5 pb-4 bg-muted border-t border-border">
           <div className="pt-3">
             <p className="text-xs font-semibold text-muted-foreground mb-2">30-Day Compliance Score Trend</p>
             <div className="bg-background border border-border rounded-lg p-3">
@@ -162,7 +162,7 @@ function SparklineExpanded({ orgId, score, sector }: { orgId: number; score: num
     return { date: d.day, score: d.score, sectorAvg: sectorPoint?.avgScore ?? null };
   });
 
-  if (merged.length === 0) return <div className="h-24 flex items-center justify-center text-xs text-gray-400">No trend data yet</div>;
+  if (merged.length === 0) return <div className="h-24 flex items-center justify-center text-xs text-muted-foreground">No trend data yet</div>;
 
   return (
     <div>
@@ -179,7 +179,7 @@ function SparklineExpanded({ orgId, score, sector }: { orgId: number; score: num
       </ResponsiveContainer>
       <div className="flex items-center gap-4 mt-1 text-[10px] text-muted-foreground">
         <span className="flex items-center gap-1"><span className="inline-block w-4 h-0.5" style={{ background: color }} /> This organisation</span>
-        <span className="flex items-center gap-1"><span className="inline-block w-4 h-0.5 border-t border-dashed border-gray-400" /> Sector average</span>
+        <span className="flex items-center gap-1"><span className="inline-block w-4 h-0.5 border-t border-dashed border-muted-foreground" /> Sector average</span>
       </div>
     </div>
   );
@@ -293,17 +293,17 @@ export default function ComplianceLeaderboard() {
 
       {/* Leaderboard table with sparklines */}
       <div className="bg-background border border-border rounded-xl overflow-hidden">
-        <div className="px-5 py-3 border-b border-gray-100 bg-muted flex items-center justify-between">
+        <div className="px-5 py-3 border-b border-border bg-muted flex items-center justify-between">
           <span className="text-sm font-semibold text-foreground">Full Rankings</span>
           <div className="flex items-center gap-4">
-            <span className="text-xs text-gray-400 hidden lg:block">30-Day Trend</span>
-            <span className="text-xs text-gray-400">{rows.length} organisations</span>
+            <span className="text-xs text-muted-foreground hidden lg:block">30-Day Trend</span>
+            <span className="text-xs text-muted-foreground">{rows.length} organisations</span>
           </div>
         </div>
         {isLoading ? (
-          <div className="p-8 text-center text-gray-400 text-sm">Loading rankings…</div>
+          <div className="p-8 text-center text-muted-foreground text-sm">Loading rankings…</div>
         ) : rows.length === 0 ? (
-          <div className="p-8 text-center text-gray-400 text-sm">No organisations found.</div>
+          <div className="p-8 text-center text-muted-foreground text-sm">No organisations found.</div>
         ) : (
           <div>
             {rows.map(org => (
@@ -318,7 +318,7 @@ export default function ComplianceLeaderboard() {
         )}
       </div>
 
-      <p className="text-xs text-gray-400 text-center">
+      <p className="text-xs text-muted-foreground text-center">
         Scores are calculated by the NDSEP Compliance Engine and updated every 15 minutes.
         Organisations with a score ≥ 85 are eligible for the NDSEP Compliance Certificate.
         Click any row to view the 30-day compliance trend sparkline.

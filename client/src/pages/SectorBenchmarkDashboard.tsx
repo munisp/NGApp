@@ -3,7 +3,6 @@
  * Compare compliance scores across sectors with automated benchmarking
  */
 import { useState } from "react";
-import DashboardLayout from "@/components/DashboardLayout";
 import { trpc } from "@/lib/trpc";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from "recharts";
 import { Badge } from "@/components/ui/badge";
@@ -36,7 +35,7 @@ export default function SectorBenchmarkDashboard() {
   });
 
   return (
-    <DashboardLayout>
+    <>
       <div className="p-6 space-y-6">
         <div className="flex items-center justify-between">
           <div>
@@ -131,6 +130,6 @@ export default function SectorBenchmarkDashboard() {
           </div>
         </div>
       </div>
-    </DashboardLayout>
+    </>
   );
 }

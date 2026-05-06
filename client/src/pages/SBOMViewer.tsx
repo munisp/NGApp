@@ -3,7 +3,6 @@
  * Dependency inventory, vulnerability scan results, CVE tracking
  */
 import { useState } from "react";
-import DashboardLayout from "@/components/DashboardLayout";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
@@ -17,7 +16,7 @@ const severityColor: Record<string, string> = {
   high: "bg-orange-100 text-orange-800",
   moderate: "bg-yellow-100 text-yellow-800",
   low: "bg-blue-100 text-blue-800",
-  info: "bg-gray-100 text-foreground",
+  info: "bg-muted text-foreground",
 };
 
 export default function SBOMViewer() {
@@ -50,7 +49,7 @@ export default function SBOMViewer() {
   };
 
   return (
-    <DashboardLayout>
+    <>
       <div className="p-6 space-y-6">
         <div className="flex items-center justify-between">
           <div>
@@ -136,9 +135,9 @@ export default function SBOMViewer() {
                         <a href={`https://nvd.nist.gov/vuln/detail/${v.cve}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline font-mono text-xs">{v.cve}</a>
                       ) : '-'}
                     </td>
-                    <td className="p-3"><Badge className={severityColor[v.severity] ?? "bg-gray-100"}>{v.severity}</Badge></td>
+                    <td className="p-3"><Badge className={severityColor[v.severity] ?? "bg-muted"}>{v.severity}</Badge></td>
                     <td className="p-3 text-xs max-w-xs truncate">{v.description}</td>
-                    <td className="p-3">{v.fix_available ? <Badge className="bg-green-100 text-green-800">Yes</Badge> : <Badge className="bg-gray-100 text-foreground">No</Badge>}</td>
+                    <td className="p-3">{v.fix_available ? <Badge className="bg-green-100 text-green-800">Yes</Badge> : <Badge className="bg-muted text-foreground">No</Badge>}</td>
                   </tr>
                 ))}
               </tbody>
@@ -146,6 +145,6 @@ export default function SBOMViewer() {
           </div>
         </div>
       </div>
-    </DashboardLayout>
+    </>
   );
 }

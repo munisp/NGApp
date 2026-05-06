@@ -22,7 +22,7 @@ const FRAMEWORK_COLORS: Record<string, string> = {
   SOC2: "bg-cyan-500/20 text-cyan-400 border-cyan-500/30",
   ISO27001: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
   DOJ_EO_14117: "bg-pink-500/20 text-pink-400 border-pink-500/30",
-  CUSTOM: "bg-muted0/20 text-muted-foreground border-gray-500/30",
+  CUSTOM: "bg-muted0/20 text-muted-foreground border-border/30",
 };
 
 export default function PolicyTemplates() {

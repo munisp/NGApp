@@ -80,7 +80,7 @@ const STATUS_COLORS: Record<string, string> = {
   COMPLETED: "bg-green-500/20 text-green-400 border-green-500/30",
   FAILED: "bg-red-500/20 text-red-400 border-red-500/30",
   TIMED_OUT: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
-  CANCELLED: "bg-muted0/20 text-muted-foreground border-gray-500/30",
+  CANCELLED: "bg-muted0/20 text-muted-foreground border-border/30",
 };
 
 const STATUS_ICONS: Record<string, React.ElementType> = {

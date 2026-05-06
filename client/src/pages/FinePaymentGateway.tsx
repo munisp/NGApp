@@ -3,7 +3,6 @@
  * NDPC enforcement fine payment processing with Stripe integration
  */
 import { useState } from "react";
-import DashboardLayout from "@/components/DashboardLayout";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
@@ -19,7 +18,7 @@ const statusColor: Record<string, string> = {
   paid: "bg-green-100 text-green-800",
   overdue: "bg-red-100 text-red-800",
   partial: "bg-blue-100 text-blue-800",
-  waived: "bg-gray-100 text-foreground",
+  waived: "bg-muted text-foreground",
 };
 
 export default function FinePaymentGateway() {
@@ -49,7 +48,7 @@ export default function FinePaymentGateway() {
   const formatNGN = (amount: number) => new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN', maximumFractionDigits: 0 }).format(amount);
 
   return (
-    <DashboardLayout>
+    <>
       <div className="p-6 space-y-6">
         <div className="flex items-center justify-between">
           <div>
@@ -119,7 +118,7 @@ export default function FinePaymentGateway() {
                   <td className="p-3 font-mono">{formatNGN(f.amount)}</td>
                   <td className="p-3 font-mono">{formatNGN(f.amount_paid ?? 0)}</td>
                   <td className="p-3">{f.due_date ? new Date(f.due_date).toLocaleDateString() : '-'}</td>
-                  <td className="p-3"><Badge className={statusColor[f.status] ?? "bg-gray-100 text-foreground"}>{f.status}</Badge></td>
+                  <td className="p-3"><Badge className={statusColor[f.status] ?? "bg-muted text-foreground"}>{f.status}</Badge></td>
                   <td className="p-3">
                     {f.status !== 'paid' && (
                       <Button size="sm" onClick={() => { setSelectedFine(f); setPayAmount(String(f.amount - (f.amount_paid ?? 0))); setPayRef(""); setPayOpen(true); }}>
@@ -155,6 +154,6 @@ export default function FinePaymentGateway() {
           </DialogContent>
         </Dialog>
       </div>
-    </DashboardLayout>
+    </>
   );
 }

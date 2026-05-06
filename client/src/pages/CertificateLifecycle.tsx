@@ -3,7 +3,6 @@
  * Full CRUD for NDPA compliance certificates: issue, renew, revoke, search
  */
 import { useState } from "react";
-import DashboardLayout from "@/components/DashboardLayout";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
@@ -18,7 +17,7 @@ import { Award, RefreshCw, XCircle, Search, Plus, AlertTriangle, CheckCircle2, C
 const statusColor: Record<string, string> = {
   active: "bg-green-100 text-green-800",
   expired: "bg-red-100 text-red-800",
-  revoked: "bg-gray-100 text-foreground",
+  revoked: "bg-muted text-foreground",
   expiring_soon: "bg-yellow-100 text-yellow-800",
 };
 
@@ -57,7 +56,7 @@ export default function CertificateLifecycle() {
   const statsData = stats as any;
 
   return (
-    <DashboardLayout>
+    <>
       <div className="p-6 space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -163,7 +162,7 @@ export default function CertificateLifecycle() {
                   <td className="p-3">{c.issued_at ? new Date(c.issued_at).toLocaleDateString() : '-'}</td>
                   <td className="p-3">{c.expires_at ? new Date(c.expires_at).toLocaleDateString() : '-'}</td>
                   <td className="p-3">
-                    <Badge className={statusColor[c.status] ?? "bg-gray-100 text-foreground"}>
+                    <Badge className={statusColor[c.status] ?? "bg-muted text-foreground"}>
                       {c.status?.replace(/_/g, ' ')}
                     </Badge>
                   </td>
@@ -211,6 +210,6 @@ export default function CertificateLifecycle() {
           </DialogContent>
         </Dialog>
       </div>
-    </DashboardLayout>
+    </>
   );
 }

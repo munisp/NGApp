@@ -1,5 +1,4 @@
 import { useState, useRef, useEffect } from "react";
-import DashboardLayout from "@/components/DashboardLayout";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -151,7 +150,7 @@ Section 65: Penalties up to ₦10 million or 2% of annual gross revenue for viol
   };
 
   return (
-    <DashboardLayout>
+    <>
       <div className="p-6 h-[calc(100vh-80px)] flex flex-col gap-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -301,6 +300,6 @@ Section 65: Penalties up to ₦10 million or 2% of annual gross revenue for viol
           </div>
         </div>
       </div>
-    </DashboardLayout>
+    </>
   );
 }

@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
-import DashboardLayout from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -42,7 +41,7 @@ export default function EnforcementTimeline() {
   ];
 
   return (
-    <DashboardLayout>
+    <>
       <div className="p-6 space-y-6">
         <div className="flex items-center justify-between">
           <div>
@@ -90,10 +89,10 @@ export default function EnforcementTimeline() {
                   const sectorColor = SECTOR_COLORS[String(action.sector ?? "banking")] ?? SECTOR_COLORS.banking;
                   return (
                     <div key={i} className="relative">
-                      <div className="absolute -left-8 top-1 w-4 h-4 rounded-full bg-muted border-2 border-slate-500 flex items-center justify-center">
+                      <div className="absolute -left-8 top-1 w-4 h-4 rounded-full bg-muted border-2 border-border flex items-center justify-center">
                         <div className="w-2 h-2 rounded-full bg-red-400" />
                       </div>
-                      <div className="bg-muted/50 rounded-lg p-4 border border-border hover:border-slate-500 transition-colors">
+                      <div className="bg-muted/50 rounded-lg p-4 border border-border hover:border-muted-foreground transition-colors">
                         <div className="flex items-start justify-between">
                           <div className="flex items-start gap-3">
                             <Icon className="w-5 h-5 text-red-400 mt-0.5" />
@@ -127,6 +126,6 @@ export default function EnforcementTimeline() {
           </CardContent>
         </Card>
       </div>
-    </DashboardLayout>
+    </>
   );
 }

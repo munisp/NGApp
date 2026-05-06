@@ -113,7 +113,7 @@ export default function RegulatoryIntelligence() {
       <div className="grid grid-cols-1 gap-4">
         {items?.map(item => (
           <Card key={item.id}
-            className={`border cursor-pointer hover:border-slate-500 transition-colors ${item.action_required ? "bg-card/70 border-orange-700/40" : "bg-card/50 border-border"}`}
+            className={`border cursor-pointer hover:border-muted-foreground transition-colors ${item.action_required ? "bg-card/70 border-orange-700/40" : "bg-card/50 border-border"}`}
             onClick={() => setSelected(item)}>
             <CardContent className="p-4">
               <div className="flex items-start justify-between gap-4">
@@ -143,7 +143,7 @@ export default function RegulatoryIntelligence() {
                       <span>Due: {new Date(item.compliance_deadline).toLocaleDateString()}</span>
                     </div>
                   )}
-                  <p className="text-slate-500 text-xs mt-1">{item.published_at ? new Date(item.published_at).toLocaleDateString() : ""}</p>
+                  <p className="text-muted-foreground text-xs mt-1">{item.published_at ? new Date(item.published_at).toLocaleDateString() : ""}</p>
                 </div>
               </div>
             </CardContent>

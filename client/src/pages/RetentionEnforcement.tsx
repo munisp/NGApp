@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
-import DashboardLayout from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -25,7 +24,7 @@ export default function RetentionEnforcement() {
   ];
 
   return (
-    <DashboardLayout>
+    <>
       <div className="p-6 space-y-6">
         <div className="flex items-center justify-between">
           <div>
@@ -37,7 +36,7 @@ export default function RetentionEnforcement() {
               <input type="checkbox" checked={dryRun} onChange={e => setDryRun(e.target.checked)} className="accent-orange-500" />
               Dry Run
             </label>
-            <Button className={dryRun ? "bg-slate-600 hover:bg-slate-500" : "bg-orange-600 hover:bg-orange-700"} onClick={() => runMut.mutate({ dryRun })} disabled={runMut.isPending}>
+            <Button className={dryRun ? "bg-muted hover:bg-muted0" : "bg-orange-600 hover:bg-orange-700"} onClick={() => runMut.mutate({ dryRun })} disabled={runMut.isPending}>
               <Play className="w-4 h-4 mr-2" /> {runMut.isPending ? "Running..." : dryRun ? "Preview Enforcement" : "Run Enforcement"}
             </Button>
           </div>
@@ -101,6 +100,6 @@ export default function RetentionEnforcement() {
           </CardContent>
         </Card>
       </div>
-    </DashboardLayout>
+    </>
   );
 }

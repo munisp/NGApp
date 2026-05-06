@@ -1,5 +1,4 @@
 import { useState } from "react";
-import DashboardLayout from "@/components/DashboardLayout";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -153,7 +152,7 @@ export default function ChangelogAdmin() {
   // Access guard
   if (user && user.role !== "admin") {
     return (
-      <DashboardLayout>
+      <>
         <div className="flex flex-col items-center justify-center h-full gap-4 text-center p-8">
           <ShieldAlert className="h-16 w-16 text-destructive" />
           <h2 className="text-2xl font-bold">Access Denied</h2>
@@ -162,12 +161,12 @@ export default function ChangelogAdmin() {
             request access.
           </p>
         </div>
-      </DashboardLayout>
+      </>
     );
   }
 
   return (
-    <DashboardLayout>
+    <>
       <div className="p-6 space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -337,7 +336,7 @@ export default function ChangelogAdmin() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </DashboardLayout>
+    </>
   );
 }
 

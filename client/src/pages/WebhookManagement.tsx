@@ -6,8 +6,6 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Webhook, Plus, CheckCircle2, XCircle, Clock, RefreshCw, Trash2, Eye } from "lucide-react";
 import type { inferRouterInputs } from "@trpc/server";
-import DashboardLayout from "@/components/DashboardLayout";
-
 const EVENT_TYPES = [
   "dsar.submitted", "dsar.resolved", "dsar.overdue",
   "breach.reported", "breach.notified",
@@ -73,7 +71,7 @@ export default function WebhookManagement() {
   };
 
   return (
-    <DashboardLayout>
+    <>
       <div className="p-6 max-w-5xl mx-auto">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
@@ -163,7 +161,7 @@ export default function WebhookManagement() {
                 </div>
               </div>
               {showDeliveries === sub.id && (
-                <div className="border-t border-border bg-gray-950">
+                <div className="border-t border-border bg-background">
                   <div className="px-5 py-3 text-xs text-muted-foreground font-medium uppercase tracking-wide">Recent Deliveries</div>
                   {(deliveries as any[]).length === 0 ? (
                     <div className="px-5 pb-4 text-muted-foreground text-sm">No deliveries yet.</div>
@@ -197,6 +195,6 @@ export default function WebhookManagement() {
           ))}
         </div>
       </div>
-    </DashboardLayout>
+    </>
   );
 }

@@ -26,7 +26,7 @@ const STATE_CONFIG: Record<AccreditationState, {
   icon: React.ReactNode;
   description: string;
 }> = {
-  DRAFT:            { label: "Draft",            color: "bg-gray-100 text-foreground",   icon: <FileText className="h-4 w-4" />,       description: "Application being prepared" },
+  DRAFT:            { label: "Draft",            color: "bg-muted text-foreground",   icon: <FileText className="h-4 w-4" />,       description: "Application being prepared" },
   SUBMITTED:        { label: "Submitted",        color: "bg-blue-100 text-blue-700",   icon: <Clock className="h-4 w-4" />,          description: "Awaiting initial review" },
   UNDER_REVIEW:     { label: "Under Review",     color: "bg-yellow-100 text-yellow-700", icon: <RefreshCw className="h-4 w-4" />,    description: "Staff reviewing application" },
   COMMITTEE_REVIEW: { label: "Committee Review", color: "bg-purple-100 text-purple-700", icon: <Shield className="h-4 w-4" />,       description: "Committee deliberating" },

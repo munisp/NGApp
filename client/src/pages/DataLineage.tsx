@@ -74,7 +74,7 @@ export default function DataLineage() {
             <div className="flex items-center gap-4 flex-wrap min-w-max">
               {/* Source Systems */}
               <div className="flex flex-col gap-3">
-                <p className="text-slate-500 text-xs font-semibold uppercase tracking-wider text-center">Source Systems</p>
+                <p className="text-muted-foreground text-xs font-semibold uppercase tracking-wider text-center">Source Systems</p>
                 {nodes.filter(n => n.node_type === "system" && ["node-nimc-001", "node-cbn-001", "node-ncc-001", "node-ndpc-001"].includes(n.node_id)).map(n => (
                   <button key={n.node_id} onClick={() => setSelectedNode(n.node_id)}
                     className="bg-blue-900/40 border border-blue-700/50 rounded-lg p-3 text-left hover:border-blue-500 transition-colors min-w-[160px]">
@@ -88,11 +88,11 @@ export default function DataLineage() {
                 ))}
               </div>
 
-              <ArrowRight className="w-6 h-6 text-slate-500 flex-shrink-0" />
+              <ArrowRight className="w-6 h-6 text-muted-foreground flex-shrink-0" />
 
               {/* Pipeline */}
               <div className="flex flex-col gap-3">
-                <p className="text-slate-500 text-xs font-semibold uppercase tracking-wider text-center">Pipeline</p>
+                <p className="text-muted-foreground text-xs font-semibold uppercase tracking-wider text-center">Pipeline</p>
                 {nodes.filter(n => n.node_type === "pipeline").map(n => (
                   <button key={n.node_id} onClick={() => setSelectedNode(n.node_id)}
                     className="bg-green-900/40 border border-green-700/50 rounded-lg p-3 text-left hover:border-green-500 transition-colors min-w-[160px]">
@@ -105,11 +105,11 @@ export default function DataLineage() {
                 ))}
               </div>
 
-              <ArrowRight className="w-6 h-6 text-slate-500 flex-shrink-0" />
+              <ArrowRight className="w-6 h-6 text-muted-foreground flex-shrink-0" />
 
               {/* Storage */}
               <div className="flex flex-col gap-3">
-                <p className="text-slate-500 text-xs font-semibold uppercase tracking-wider text-center">Storage</p>
+                <p className="text-muted-foreground text-xs font-semibold uppercase tracking-wider text-center">Storage</p>
                 {nodes.filter(n => n.node_type === "dataset").map(n => (
                   <button key={n.node_id} onClick={() => setSelectedNode(n.node_id)}
                     className="bg-purple-900/40 border border-purple-700/50 rounded-lg p-3 text-left hover:border-purple-500 transition-colors min-w-[160px]">
@@ -122,11 +122,11 @@ export default function DataLineage() {
                 ))}
               </div>
 
-              <ArrowRight className="w-6 h-6 text-slate-500 flex-shrink-0" />
+              <ArrowRight className="w-6 h-6 text-muted-foreground flex-shrink-0" />
 
               {/* Transformations */}
               <div className="flex flex-col gap-3">
-                <p className="text-slate-500 text-xs font-semibold uppercase tracking-wider text-center">Transformations</p>
+                <p className="text-muted-foreground text-xs font-semibold uppercase tracking-wider text-center">Transformations</p>
                 {nodes.filter(n => n.node_type === "transformation").map(n => (
                   <button key={n.node_id} onClick={() => setSelectedNode(n.node_id)}
                     className="bg-orange-900/40 border border-orange-700/50 rounded-lg p-3 text-left hover:border-orange-500 transition-colors min-w-[160px]">
@@ -166,7 +166,7 @@ export default function DataLineage() {
                 return (
                   <TableRow key={edge.id} className="border-border">
                     <TableCell className="text-blue-400 text-sm">{sourceNode?.name ?? edge.source_node_id}</TableCell>
-                    <TableCell><ArrowRight className="w-4 h-4 text-slate-500" /></TableCell>
+                    <TableCell><ArrowRight className="w-4 h-4 text-muted-foreground" /></TableCell>
                     <TableCell className="text-green-400 text-sm">{targetNode?.name ?? edge.target_node_id}</TableCell>
                     <TableCell><Badge variant="outline" className="border-border text-muted-foreground">{edge.transformation_type}</Badge></TableCell>
                     <TableCell className="text-muted-foreground text-xs max-w-xs truncate">{edge.transformation_logic}</TableCell>

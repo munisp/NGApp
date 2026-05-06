@@ -1,7 +1,6 @@
 import { toast } from "sonner";
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
-import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -16,7 +15,7 @@ const ROLE_COLORS: Record<string, string> = {
   government_staff: "bg-purple-100 text-purple-700 border-purple-200",
   org_admin: "bg-blue-100 text-blue-700 border-blue-200",
   auditor: "bg-yellow-100 text-yellow-700 border-yellow-200",
-  user: "bg-gray-100 text-foreground border-border",
+  user: "bg-muted text-foreground border-border",
 };
 
 export default function UserManagement() {
@@ -62,7 +61,7 @@ export default function UserManagement() {
   const total = data?.total ?? 0;
 
   return (
-    <DashboardLayout>
+    <>
       <div className="p-6 space-y-6">
         <div className="flex items-center justify-between">
           <div>
@@ -246,6 +245,6 @@ export default function UserManagement() {
           </DialogContent>
         </Dialog>
       </div>
-    </DashboardLayout>
+    </>
   );
 }

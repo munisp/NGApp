@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback } from "react";
-import DashboardLayout from "@/components/DashboardLayout";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -325,7 +324,7 @@ export default function CustomizableDashboard() {
                                          "grid-cols-1 md:grid-cols-2 lg:grid-cols-3";
 
   return (
-    <DashboardLayout>
+    <>
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -448,6 +447,6 @@ export default function CustomizableDashboard() {
           <span>Last updated: {new Date().toLocaleTimeString()}</span>
         </div>
       </div>
-    </DashboardLayout>
+    </>
   );
 }

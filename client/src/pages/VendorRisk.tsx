@@ -118,7 +118,7 @@ export default function VendorRisk() {
                       <Building2 className="w-4 h-4 text-muted-foreground" />
                       <div>
                         <p className="text-foreground text-sm font-medium">{v.vendor_name}</p>
-                        <p className="text-slate-500 text-xs">{v.contract_ref}</p>
+                        <p className="text-muted-foreground text-xs">{v.contract_ref}</p>
                       </div>
                     </div>
                   </TableCell>

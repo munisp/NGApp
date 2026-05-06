@@ -1,5 +1,4 @@
 import { useState } from "react";
-import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -41,7 +40,7 @@ export default function ModelRegistry() {
   const statusColor = (s: string) =>
     s === "deployed" || s === "active" ? "bg-green-500/10 text-green-700 border-green-500/30" :
     s === "staging" ? "bg-yellow-500/10 text-yellow-700 border-yellow-500/30" :
-    s === "retired" ? "bg-muted0/10 text-muted-foreground border-gray-500/30" :
+    s === "retired" ? "bg-muted0/10 text-muted-foreground border-border/30" :
     "bg-blue-500/10 text-blue-700 border-blue-500/30";
 
   const handleRegister = () => {
@@ -59,7 +58,7 @@ export default function ModelRegistry() {
   };
 
   return (
-    <DashboardLayout>
+    <>
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
@@ -244,6 +243,6 @@ export default function ModelRegistry() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </DashboardLayout>
+    </>
   );
 }

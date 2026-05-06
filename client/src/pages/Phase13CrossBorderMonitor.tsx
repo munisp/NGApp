@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
-import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -55,7 +54,7 @@ export default function Phase13CrossBorderMonitor() {
   const TRANSFER_MECHANISMS = ["standard_contractual_clauses", "binding_corporate_rules", "adequacy_decision", "explicit_consent", "vital_interests", "none"];
 
   return (
-    <DashboardLayout>
+    <>
       <div className="p-6 space-y-6">
         <div className="flex items-center justify-between">
           <div>
@@ -208,6 +207,6 @@ export default function Phase13CrossBorderMonitor() {
           </CardContent>
         </Card>
       </div>
-    </DashboardLayout>
+    </>
   );
 }

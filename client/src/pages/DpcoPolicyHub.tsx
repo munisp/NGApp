@@ -834,7 +834,7 @@ export default function DpcoPolicyHub() {
           {filtered.map(template => {
             const Icon = template.icon;
             return (
-              <div key={template.id} className="bg-card border border-border rounded-lg p-5 hover:border-slate-500 transition-all flex flex-col gap-3">
+              <div key={template.id} className="bg-card border border-border rounded-lg p-5 hover:border-muted-foreground transition-all flex flex-col gap-3">
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-lg bg-muted/60 flex items-center justify-center shrink-0">

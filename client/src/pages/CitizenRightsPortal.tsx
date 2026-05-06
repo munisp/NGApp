@@ -91,7 +91,7 @@ export default function CitizenRightsPortal() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-950 text-foreground">
+    <div className="min-h-screen bg-background text-foreground">
       {/* Hero Header */}
       <div className="bg-gradient-to-br from-teal-900/40 via-gray-900 to-gray-950 border-b border-border">
         <div className="px-6 py-8">
@@ -279,7 +279,7 @@ export default function CitizenRightsPortal() {
                   ) : filteredRequests.length === 0 ? (
                     <tr><td colSpan={6} className="text-center py-8 text-muted-foreground"><Users className="w-8 h-8 mx-auto mb-2 opacity-30" /><p>No requests found</p></td></tr>
                   ) : filteredRequests.map((r: any) => (
-                    <tr key={r.id} className="border-b border-border/60 hover:bg-card/30">
+                    <tr key={r.id} className="border-b border-border hover:bg-card/30">
                       <td className="px-4 py-3"><div className="font-medium text-foreground text-sm">{r.citizenName}</div><div className="text-xs text-muted-foreground">{r.citizenEmail}</div></td>
                       <td className="px-4 py-3 text-xs text-muted-foreground capitalize">{r.requestType?.replace("_", " ")}</td>
                       <td className="px-4 py-3"><Badge className={`text-xs border ${STATUS_COLORS[r.status] || ""} flex items-center gap-1 w-fit`}>{STATUS_ICONS[r.status]}{r.status?.replace("_", " ")}</Badge></td>

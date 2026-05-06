@@ -21,7 +21,7 @@ export default function ConsentRecordManager() {
   const orgs = trpc.organizations.list.useQuery({ limit:200 }).data ?? [];
   const createM = trpc.consentRecords.create.useMutation({ onSuccess:()=>{ toast.success("Consent record created"); setOpen(false); refetch(); }, onError:(e)=>toast.error(e.message) });
   const withdrawM = trpc.consentRecords.withdraw.useMutation({ onSuccess:()=>{ toast.success("Consent withdrawn"); refetch(); }, onError:(e)=>toast.error(e.message) });
-  const STATUS_COLORS: Record<string,string> = { active:"bg-green-100 text-green-800", withdrawn:"bg-red-100 text-red-800", expired:"bg-gray-100 text-gray-800", pending:"bg-yellow-100 text-yellow-800" };
+  const STATUS_COLORS: Record<string,string> = { active:"bg-green-100 text-green-800", withdrawn:"bg-red-100 text-red-800", expired:"bg-muted text-foreground", pending:"bg-yellow-100 text-yellow-800" };
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">

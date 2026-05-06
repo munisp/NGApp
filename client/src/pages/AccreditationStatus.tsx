@@ -44,7 +44,7 @@ export default function AccreditationStatus() {
   const StatusIcon = statusCfg?.icon;
 
   return (
-    <div className="min-h-screen bg-slate-950 text-foreground">
+    <div className="min-h-screen bg-background text-foreground">
       <div className="border-b border-border bg-background/50">
         <div className="max-w-2xl mx-auto px-6 py-4 flex items-center gap-4">
           <Link href="/">
@@ -71,7 +71,7 @@ export default function AccreditationStatus() {
             onChange={e => setToken(e.target.value)}
             onKeyDown={e => e.key === "Enter" && handleSearch()}
             placeholder="e.g. NDPC-DPCO-A1B2C3D4E5F6G7H8"
-            className="bg-card border-border text-foreground placeholder:text-slate-500 font-mono"
+            className="bg-card border-border text-foreground placeholder:text-muted-foreground font-mono"
           />
           <Button onClick={handleSearch} disabled={!token.trim() || isLoading}
             className="bg-emerald-600 hover:bg-emerald-700 text-foreground gap-2 shrink-0">
@@ -123,9 +123,9 @@ export default function AccreditationStatus() {
                     <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${item.done ? "bg-emerald-500" : "bg-muted"}`}>
                       {item.done && <CheckCircle className="w-3 h-3 text-foreground" />}
                     </div>
-                    <span className={`text-sm flex-1 ${item.done ? "text-foreground" : "text-slate-500"}`}>{item.label}</span>
+                    <span className={`text-sm flex-1 ${item.done ? "text-foreground" : "text-muted-foreground"}`}>{item.label}</span>
                     {item.date && (
-                      <span className="text-xs text-slate-500">
+                      <span className="text-xs text-muted-foreground">
                         {new Date(item.date).toLocaleDateString("en-NG", { day: "numeric", month: "short", year: "numeric" })}
                       </span>
                     )}
@@ -143,11 +143,11 @@ export default function AccreditationStatus() {
                 </div>
                 <div className="grid grid-cols-2 gap-3 text-sm">
                   <div>
-                    <p className="text-slate-500 text-xs">Licence Number</p>
+                    <p className="text-muted-foreground text-xs">Licence Number</p>
                     <p className="text-foreground font-mono font-semibold">{(data as any).issuedLicenceNumber}</p>
                   </div>
                   <div>
-                    <p className="text-slate-500 text-xs">Expires</p>
+                    <p className="text-muted-foreground text-xs">Expires</p>
                     <p className="text-foreground">{(data as any).licenceExpiresAt ? new Date((data as any).licenceExpiresAt).toLocaleDateString("en-NG", { day: "numeric", month: "long", year: "numeric" }) : "—"}</p>
                   </div>
                 </div>
@@ -182,7 +182,7 @@ export default function AccreditationStatus() {
               <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-5">
                 <h3 className="text-sm font-medium text-red-300 mb-2">Reason for Rejection</h3>
                 <p className="text-sm text-muted-foreground">{(data as any).decisionReason}</p>
-                <p className="text-xs text-slate-500 mt-3">You may reapply after 6 months. Contact the NDPC Compliance Directorate for further guidance.</p>
+                <p className="text-xs text-muted-foreground mt-3">You may reapply after 6 months. Contact the NDPC Compliance Directorate for further guidance.</p>
               </div>
             )}
 
@@ -191,14 +191,14 @@ export default function AccreditationStatus() {
               <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-5">
                 <h3 className="text-sm font-medium text-amber-300 mb-2">Information Requested</h3>
                 <p className="text-sm text-muted-foreground">{(data as any).infoRequestNote}</p>
-                <p className="text-xs text-slate-500 mt-3">Please respond by email to the NDPC Compliance Directorate with the requested information, quoting your reference token.</p>
+                <p className="text-xs text-muted-foreground mt-3">Please respond by email to the NDPC Compliance Directorate with the requested information, quoting your reference token.</p>
               </div>
             )}
           </div>
         )}
 
         <div className="mt-8 text-center">
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-muted-foreground">
             Don't have a reference token?{" "}
             <Link href="/dpco/apply">
               <span className="text-emerald-400 hover:text-emerald-300 cursor-pointer">Apply for DPCO Accreditation</span>

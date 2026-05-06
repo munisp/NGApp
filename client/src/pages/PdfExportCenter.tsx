@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
-import DashboardLayout from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -42,7 +41,7 @@ export default function PdfExportCenter() {
   const selectedPdfType = PDF_TYPES.find(t => t.id === selectedType);
 
   return (
-    <DashboardLayout>
+    <>
       <div className="p-6 space-y-6">
         <div className="flex items-center justify-between">
           <div>
@@ -53,7 +52,7 @@ export default function PdfExportCenter() {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {PDF_TYPES.map(t => (
-            <Card key={t.id} className={`bg-card border-border cursor-pointer transition-all ${selectedType === t.id ? "border-rose-500/50 ring-1 ring-rose-500/30" : "hover:border-slate-500"}`} onClick={() => setSelectedType(t.id)}>
+            <Card key={t.id} className={`bg-card border-border cursor-pointer transition-all ${selectedType === t.id ? "border-rose-500/50 ring-1 ring-rose-500/30" : "hover:border-muted-foreground"}`} onClick={() => setSelectedType(t.id)}>
               <CardContent className="p-5">
                 <div className="flex items-start gap-3">
                   <t.icon className={`w-8 h-8 ${t.color} mt-0.5`} />
@@ -134,6 +133,6 @@ export default function PdfExportCenter() {
           </CardContent>
         </Card>
       </div>
-    </DashboardLayout>
+    </>
   );
 }

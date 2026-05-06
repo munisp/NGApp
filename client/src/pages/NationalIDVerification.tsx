@@ -15,7 +15,7 @@ const statusColors: Record<string, string> = {
   verified: "bg-green-500/20 text-green-400",
   failed: "bg-red-500/20 text-red-400",
   pending: "bg-yellow-500/20 text-yellow-400",
-  expired: "bg-slate-500/20 text-muted-foreground",
+  expired: "bg-muted0/20 text-muted-foreground",
 };
 
 const EMPTY_FORM = {
@@ -148,7 +148,7 @@ export default function NationalIDVerification() {
                         </div>
                         <span className="text-foreground text-xs">{v.confidence_score}%</span>
                       </div>
-                    ) : <span className="text-slate-500 text-xs">—</span>}
+                    ) : <span className="text-muted-foreground text-xs">—</span>}
                   </TableCell>
                 </TableRow>
               ))}

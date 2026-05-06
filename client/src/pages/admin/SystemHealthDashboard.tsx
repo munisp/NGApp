@@ -156,7 +156,7 @@ export default function SystemHealthDashboard() {
                         {w.port && <p className="text-xs text-muted-foreground">Port {w.port}</p>}
                       </div>
                     </div>
-                    <Badge className={STATUS_COLORS[w.status ?? "stopped"] ?? "bg-gray-100 text-gray-800"}>
+                    <Badge className={STATUS_COLORS[w.status ?? "stopped"] ?? "bg-muted text-foreground"}>
                       {w.status ?? "stopped"}
                     </Badge>
                   </div>

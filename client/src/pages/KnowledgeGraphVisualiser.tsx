@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import DashboardLayout from "@/components/DashboardLayout";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -264,10 +263,10 @@ export default function KnowledgeGraphVisualiser() {
   }, {});
 
   return (
-    <DashboardLayout>
+    <>
       <div className="p-6 space-y-4">
         <div className="flex items-center gap-3">
-          <Network className="w-7 h-7 text-cyan-400" />
+          <Network className="w-7 h-7 text-cyan-600" />
           <div>
             <h1 className="text-2xl font-bold text-foreground">Knowledge Graph Visualiser</h1>
             <p className="text-sm text-muted-foreground">FalkorDB + EPR-KGQA — NDPA entity relationship explorer</p>
@@ -341,7 +340,7 @@ export default function KnowledgeGraphVisualiser() {
                   ref={canvasRef}
                   width={900}
                   height={580}
-                  className="w-full rounded-lg bg-slate-950 cursor-grab active:cursor-grabbing"
+                  className="w-full rounded-lg bg-background cursor-grab active:cursor-grabbing"
                   style={{ maxHeight: 580 }}
                   onClick={handleCanvasClick}
                   onMouseDown={handleMouseDown}
@@ -399,7 +398,7 @@ export default function KnowledgeGraphVisualiser() {
               <Card className="border-cyan-500/30">
                 <CardHeader className="pb-2 pt-4">
                   <CardTitle className="text-sm flex items-center gap-2">
-                    <Info className="w-4 h-4 text-cyan-400" />
+                    <Info className="w-4 h-4 text-cyan-600" />
                     Node Details
                   </CardTitle>
                 </CardHeader>
@@ -439,6 +438,6 @@ export default function KnowledgeGraphVisualiser() {
           </div>
         </div>
       </div>
-    </DashboardLayout>
+    </>
   );
 }

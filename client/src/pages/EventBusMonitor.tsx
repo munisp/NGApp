@@ -45,8 +45,8 @@ const LAYER_COLORS: Record<string, string> = {
   L1: "bg-red-500/20 text-red-400",
   L4: "bg-yellow-500/20 text-yellow-400",
   WF: "bg-cyan-500/20 text-cyan-400",
-  LOG: "bg-slate-500/20 text-slate-400",
-  SYS: "bg-muted0/20 text-gray-400",
+  LOG: "bg-muted0/20 text-muted-foreground",
+  SYS: "bg-muted0/20 text-muted-foreground",
 };
 
 function StatusDot({ healthy }: { healthy: boolean }) {

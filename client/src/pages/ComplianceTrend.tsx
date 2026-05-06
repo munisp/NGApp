@@ -1,6 +1,5 @@
 import { useState, useMemo } from "react";
 import { useParams, useLocation } from "wouter";
-import DashboardLayout from "@/components/DashboardLayout";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -158,7 +157,7 @@ export default function ComplianceTrend() {
     (kpi?.delta ?? 0) > 2 ? "text-green-500" : (kpi?.delta ?? 0) < -2 ? "text-red-500" : "text-muted-foreground";
 
   return (
-    <DashboardLayout>
+    <>
       <div className="p-6 space-y-6">
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -407,6 +406,6 @@ export default function ComplianceTrend() {
           </Card>
         )}
       </div>
-    </DashboardLayout>
+    </>
   );
 }

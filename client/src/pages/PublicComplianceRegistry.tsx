@@ -44,7 +44,7 @@ export default function PublicComplianceRegistry() {
               <td className="py-2 pr-3 text-xs font-mono">{o.rc_number??'—'}</td>
               <td className="py-2 pr-3 text-xs">{o.state??'—'}</td>
               <td className="py-2 pr-3"><Badge className={o.ndpc_registration_status==='registered'?"bg-green-100 text-green-800":"bg-yellow-100 text-yellow-800"}>{o.ndpc_registration_status??'unknown'}</Badge></td>
-              <td className="py-2"><div className="flex items-center gap-2"><div className="w-24 bg-gray-200 rounded-full h-2"><div className="h-2 rounded-full bg-primary" style={{width:`${o.compliance_score??0}%`}}/></div><span className={`text-sm font-bold ${scoreColor(o.compliance_score??0)}`}>{o.compliance_score??'—'}</span></div></td>
+              <td className="py-2"><div className="flex items-center gap-2"><div className="w-24 bg-muted rounded-full h-2"><div className="h-2 rounded-full bg-primary" style={{width:`${o.compliance_score??0}%`}}/></div><span className={`text-sm font-bold ${scoreColor(o.compliance_score??0)}`}>{o.compliance_score??'—'}</span></div></td>
             </tr>
           ))}</tbody>
         </table></div>

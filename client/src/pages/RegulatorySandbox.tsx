@@ -16,7 +16,7 @@ const statusColors: Record<string, string> = {
   pending: "bg-yellow-500/20 text-yellow-400",
   approved: "bg-green-500/20 text-green-400",
   active: "bg-blue-500/20 text-blue-400",
-  completed: "bg-slate-500/20 text-muted-foreground",
+  completed: "bg-muted0/20 text-muted-foreground",
   rejected: "bg-red-500/20 text-red-400",
 };
 
@@ -129,7 +129,7 @@ export default function RegulatorySandbox() {
                 <TableRow key={a.id} className="border-border">
                   <TableCell>
                     <p className="text-foreground font-medium text-sm">{a.project_name}</p>
-                    <p className="text-slate-500 text-xs line-clamp-1">{a.description}</p>
+                    <p className="text-muted-foreground text-xs line-clamp-1">{a.description}</p>
                   </TableCell>
                   <TableCell className="text-muted-foreground text-sm">{a.org_name ?? "—"}</TableCell>
                   <TableCell className="text-muted-foreground">{a.proposed_duration_months}m</TableCell>

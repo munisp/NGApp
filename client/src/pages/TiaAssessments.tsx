@@ -395,7 +395,7 @@ export default function TiaAssessments() {
                     className={`text-xs px-2 py-1 rounded border transition-colors ${
                       selectedCategories.includes(cat)
                         ? "border-blue-500 bg-blue-500/20 text-blue-300"
-                        : "border-border text-muted-foreground hover:border-gray-500"
+                        : "border-border text-muted-foreground hover:border-muted-foreground"
                     }`}
                   >
                     {cat}

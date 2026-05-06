@@ -26,7 +26,7 @@ const CATEGORIES = [
   { value: "breach_report",    label: "Breach Report",          color: "bg-red-100 text-red-800" },
   { value: "consent_record",   label: "Consent Record",         color: "bg-teal-100 text-teal-800" },
   { value: "audit_report",     label: "Audit Report",           color: "bg-indigo-100 text-indigo-800" },
-  { value: "other",            label: "Other",                  color: "bg-gray-100 text-foreground" },
+  { value: "other",            label: "Other",                  color: "bg-muted text-foreground" },
 ];
 
 function categoryMeta(value: string) {
@@ -215,7 +215,7 @@ export default function DpcoEvidenceVault() {
                 <Label>Document File <span className="text-red-500">*</span></Label>
                 <input ref={fileRef} type="file" accept=".pdf,.docx,.xlsx,.png,.jpg,.zip"
                   className="block w-full text-sm text-muted-foreground mt-1 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-medium file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer" />
-                <p className="text-xs text-gray-400 mt-1">PDF, DOCX, XLSX, PNG, JPG, ZIP — max 10 MB</p>
+                <p className="text-xs text-muted-foreground mt-1">PDF, DOCX, XLSX, PNG, JPG, ZIP — max 10 MB</p>
               </div>
               <div>
                 <Label>Category</Label>
@@ -280,7 +280,7 @@ export default function DpcoEvidenceVault() {
               <span className="text-xs text-muted-foreground uppercase tracking-wide">Total Documents</span>
             </div>
             <div className="text-3xl font-bold text-indigo-700">{total}</div>
-            <div className="text-xs text-gray-400">{formatBytes(totalSize)} total size</div>
+            <div className="text-xs text-muted-foreground">{formatBytes(totalSize)} total size</div>
           </CardContent>
         </Card>
         <Card>
@@ -290,7 +290,7 @@ export default function DpcoEvidenceVault() {
               <span className="text-xs text-muted-foreground uppercase tracking-wide">Verified</span>
             </div>
             <div className="text-3xl font-bold text-green-700">{verified}</div>
-            <div className="text-xs text-gray-400">Integrity confirmed</div>
+            <div className="text-xs text-muted-foreground">Integrity confirmed</div>
           </CardContent>
         </Card>
         <Card>
@@ -300,7 +300,7 @@ export default function DpcoEvidenceVault() {
               <span className="text-xs text-muted-foreground uppercase tracking-wide">Tamper Alerts</span>
             </div>
             <div className="text-3xl font-bold text-red-700">{tampered}</div>
-            <div className="text-xs text-gray-400">Hash mismatch detected</div>
+            <div className="text-xs text-muted-foreground">Hash mismatch detected</div>
           </CardContent>
         </Card>
         <Card>
@@ -310,7 +310,7 @@ export default function DpcoEvidenceVault() {
               <span className="text-xs text-muted-foreground uppercase tracking-wide">Unverified</span>
             </div>
             <div className="text-3xl font-bold text-foreground">{total - verified}</div>
-            <div className="text-xs text-gray-400">Pending integrity check</div>
+            <div className="text-xs text-muted-foreground">Pending integrity check</div>
           </CardContent>
         </Card>
       </div>
@@ -318,7 +318,7 @@ export default function DpcoEvidenceVault() {
       {/* Filters */}
       <div className="flex flex-wrap gap-3">
         <div className="relative flex-1 min-w-[200px]">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
             placeholder="Search file name, description, finding ref..."
             value={search}
@@ -344,7 +344,7 @@ export default function DpcoEvidenceVault() {
         </CardHeader>
         <CardContent className="p-0">
           {filtered.length === 0 ? (
-            <div className="p-12 text-center text-gray-400">
+            <div className="p-12 text-center text-muted-foreground">
               <Vault className="w-12 h-12 mx-auto mb-3 opacity-30" />
               <p className="font-medium">No evidence documents yet</p>
               <p className="text-sm">Upload your first document to start building the evidence vault</p>
@@ -370,17 +370,17 @@ export default function DpcoEvidenceVault() {
                       <tr key={item.id} className="hover:bg-muted">
                         <td className="px-4 py-3">
                           <div className="flex items-start gap-2">
-                            <FileText className="w-4 h-4 text-gray-400 mt-0.5 shrink-0" />
+                            <FileText className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />
                             <div>
                               <div className="font-medium text-foreground max-w-[200px] truncate">{item.file_name}</div>
                               {item.description && <div className="text-xs text-muted-foreground max-w-[200px] truncate">{item.description}</div>}
                               {item.finding_ref && (
                                 <div className="flex items-center gap-1 mt-0.5">
-                                  <Tag className="w-3 h-3 text-gray-400" />
+                                  <Tag className="w-3 h-3 text-muted-foreground" />
                                   <span className="text-xs text-indigo-600 font-mono">{item.finding_ref}</span>
                                 </div>
                               )}
-                              <div className="text-xs text-gray-400">{formatBytes(item.file_size_bytes ?? 0)}</div>
+                              <div className="text-xs text-muted-foreground">{formatBytes(item.file_size_bytes ?? 0)}</div>
                             </div>
                           </div>
                         </td>
@@ -476,8 +476,8 @@ export default function DpcoEvidenceVault() {
                   rows={2}
                   className="font-mono text-xs"
                 />
-                <p className="text-xs text-gray-400 mt-1">
-                  Compute with: <code className="bg-gray-100 px-1 rounded">sha256sum filename.pdf</code> or <code className="bg-gray-100 px-1 rounded">certutil -hashfile filename.pdf SHA256</code>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Compute with: <code className="bg-muted px-1 rounded">sha256sum filename.pdf</code> or <code className="bg-muted px-1 rounded">certutil -hashfile filename.pdf SHA256</code>
                 </p>
               </div>
               <Button

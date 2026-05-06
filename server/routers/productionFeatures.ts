@@ -359,7 +359,7 @@ export const crossSectorSharingRouter = router({
   getSharedData: protectedProcedure
     .input(z.object({ sourceSector: z.string(), targetSector: z.string(), dataType: z.string(), limit: z.number().int().min(1).max(100).default(20) }))
     .query(async ({ input }) => {
-      const rows = await exec(`SELECT csd.*, o.name as org_name, o.sector FROM cross_sector_data_shares csd LEFT JOIN organizations o ON csd.organization_id = o.id WHERE csd.source_sector = '${input.sourceSector}' AND csd.target_sector = '${input.targetSector}' AND csd.data_type = '${input.dataType}' ORDER BY csd.shared_at DESC LIMIT ${input.limit}`);
+      const rows = await exec(`SELECT csd.*, o.name as org_name, o.sector FROM cross_sector_data_shares csd LEFT JOIN organizations o ON csd.organization_id = o.id WHERE csd.source_sector = '${input.sourceSector}' AND csd.target_sector = '${input.targetSector}' AND csd.data_type = '${input.dataType}' ORDER BY csd.requested_at DESC LIMIT ${input.limit}`);
       return rows;
     }),
 

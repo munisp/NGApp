@@ -27,7 +27,7 @@ const statusColor: Record<string, string> = {
   completed: "bg-green-100 text-green-800",
   pending: "bg-yellow-100 text-yellow-800",
   overdue: "bg-red-100 text-red-800",
-  draft: "bg-gray-100 text-gray-800",
+  draft: "bg-muted text-foreground",
   signed: "bg-blue-100 text-blue-800",
 };
 
@@ -114,7 +114,7 @@ export default function DpcoClientDashboard() {
             &nbsp;·&nbsp; Engagement: {client.engagement_type}
           </p>
         </div>
-        <Badge className={statusColor[client.status] ?? "bg-gray-100 text-gray-800"}>
+        <Badge className={statusColor[client.status] ?? "bg-muted text-foreground"}>
           {client.status}
         </Badge>
       </div>
@@ -208,7 +208,7 @@ export default function DpcoClientDashboard() {
               <div key={ca.id} className="border rounded-lg p-3 space-y-1">
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium">Score: {ca.compliance_score ?? "N/A"}/100</span>
-                  <Badge className={statusColor[ca.status] ?? "bg-gray-100 text-gray-800"} variant="secondary">
+                  <Badge className={statusColor[ca.status] ?? "bg-muted text-foreground"} variant="secondary">
                     {ca.status}
                   </Badge>
                 </div>
@@ -238,7 +238,7 @@ export default function DpcoClientDashboard() {
                     Due: {dpia.review_date ? new Date(dpia.review_date).toLocaleDateString("en-NG") : "N/A"}
                   </p>
                 </div>
-                <Badge className={severityColor[dpia.risk_level] ?? "bg-gray-100 text-gray-800"} variant="secondary">
+                <Badge className={severityColor[dpia.risk_level] ?? "bg-muted text-foreground"} variant="secondary">
                   {dpia.risk_level}
                 </Badge>
               </div>
@@ -289,7 +289,7 @@ export default function DpcoClientDashboard() {
                     }
                   </p>
                 </div>
-                <Badge className={severityColor[b.severity] ?? "bg-gray-100 text-gray-800"} variant="secondary">
+                <Badge className={severityColor[b.severity] ?? "bg-muted text-foreground"} variant="secondary">
                   {b.severity}
                 </Badge>
               </div>

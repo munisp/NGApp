@@ -104,7 +104,7 @@ export default function AdminRegistrations() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-            <Shield className="w-6 h-6 text-cyan-400" />
+            <Shield className="w-6 h-6 text-cyan-600" />
             DPCO Registration Queue
           </h1>
           <p className="text-muted-foreground text-sm mt-1">
@@ -131,7 +131,7 @@ export default function AdminRegistrations() {
       {/* Filters */}
       <div className="flex items-center gap-4">
         <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -154,7 +154,7 @@ export default function AdminRegistrations() {
       </div>
 
       {/* Table */}
-      <div className="bg-[#0d1220] border border-border/50 rounded-xl overflow-hidden">
+      <div className="bg-[#0d1220] border border-border rounded-xl overflow-hidden">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border bg-card/40">
@@ -170,12 +170,12 @@ export default function AdminRegistrations() {
           <tbody>
             {isLoading && (
               <tr>
-                <td colSpan={7} className="text-center py-12 text-slate-500">Loading applications...</td>
+                <td colSpan={7} className="text-center py-12 text-muted-foreground">Loading applications...</td>
               </tr>
             )}
             {!isLoading && rows.length === 0 && (
               <tr>
-                <td colSpan={7} className="text-center py-12 text-slate-500">
+                <td colSpan={7} className="text-center py-12 text-muted-foreground">
                   No {statusFilter === "all" ? "" : statusFilter} applications found
                 </td>
               </tr>
@@ -184,23 +184,23 @@ export default function AdminRegistrations() {
               <tr key={org.id} className="border-b border-border hover:bg-card/30 transition-colors">
                 <td className="px-4 py-3">
                   <div className="font-medium text-foreground">{org.name}</div>
-                  <div className="text-xs text-slate-500 font-mono">{org.licence_number}</div>
+                  <div className="text-xs text-muted-foreground font-mono">{org.licence_number}</div>
                 </td>
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-1 text-muted-foreground">
-                    <Mail className="w-3 h-3 text-slate-500" />
+                    <Mail className="w-3 h-3 text-muted-foreground" />
                     <span className="text-xs">{org.email}</span>
                   </div>
                   {org.phone && (
                     <div className="flex items-center gap-1 text-muted-foreground mt-0.5">
-                      <Phone className="w-3 h-3 text-slate-500" />
+                      <Phone className="w-3 h-3 text-muted-foreground" />
                       <span className="text-xs">{org.phone}</span>
                     </div>
                   )}
                 </td>
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-1 text-muted-foreground text-xs">
-                    <MapPin className="w-3 h-3 text-slate-500" />
+                    <MapPin className="w-3 h-3 text-muted-foreground" />
                     {org.state ?? "—"}
                   </div>
                 </td>
@@ -215,7 +215,7 @@ export default function AdminRegistrations() {
                     {org.status}
                   </Badge>
                 </td>
-                <td className="px-4 py-3 text-xs text-slate-500">
+                <td className="px-4 py-3 text-xs text-muted-foreground">
                   {org.created_at ? new Date(org.created_at).toLocaleDateString("en-NG") : "—"}
                 </td>
                 <td className="px-4 py-3">
@@ -260,7 +260,7 @@ export default function AdminRegistrations() {
           </tbody>
         </table>
         {data && (
-          <div className="px-4 py-3 border-t border-border text-xs text-slate-500">
+          <div className="px-4 py-3 border-t border-border text-xs text-muted-foreground">
             Showing {rows.length} of {data.total} records
           </div>
         )}
@@ -271,7 +271,7 @@ export default function AdminRegistrations() {
         <Dialog open={!!selectedOrg} onOpenChange={() => setSelectedOrg(null)}>
           <DialogContent className="bg-[#0d1220] border-border text-foreground max-w-lg">
             <DialogHeader>
-              <DialogTitle className="text-cyan-300 flex items-center gap-2">
+              <DialogTitle className="text-cyan-600 flex items-center gap-2">
                 <Building2 className="w-5 h-5" /> {selectedOrg.name}
               </DialogTitle>
             </DialogHeader>
@@ -293,7 +293,7 @@ export default function AdminRegistrations() {
                     : "—")],
               ].map(([k, v]) => (
                 <div key={k} className="flex gap-3">
-                  <span className="text-slate-500 w-32 shrink-0">{k}:</span>
+                  <span className="text-muted-foreground w-32 shrink-0">{k}:</span>
                   <span className="text-foreground">{v}</span>
                 </div>
               ))}

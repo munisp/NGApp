@@ -12,7 +12,6 @@ import { useState } from "react";
 import { useParams, Link } from "wouter";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
-import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -280,14 +279,14 @@ export default function SectorComplianceDetail() {
 
   if (!meta) {
     return (
-      <DashboardLayout>
+      <>
         <div className="p-6">
           <p className="text-muted-foreground">Unknown sector: {sector}</p>
           <Link href="/sector-compliance">
             <Button variant="outline" className="mt-4"><ArrowLeft className="w-4 h-4 mr-2" />Back</Button>
           </Link>
         </div>
-      </DashboardLayout>
+      </>
     );
   }
 
@@ -312,7 +311,7 @@ export default function SectorComplianceDetail() {
   };
 
   return (
-    <DashboardLayout>
+    <>
       <div className="p-6 space-y-6">
         {/* Header */}
         <div className="flex items-center gap-4">
@@ -338,7 +337,7 @@ export default function SectorComplianceDetail() {
                 <Activity className="w-3 h-3 mr-1" />Live Monitor
               </Badge>
             ) : (
-              <Badge className="bg-muted0/20 text-gray-400 border-gray-500/30">
+              <Badge className="bg-muted0/20 text-muted-foreground border-border/30">
                 Monitor Stopped
               </Badge>
             )}
@@ -603,6 +602,6 @@ export default function SectorComplianceDetail() {
           </div>
         </div>
       )}
-    </DashboardLayout>
+    </>
   );
 }

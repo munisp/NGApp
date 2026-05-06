@@ -114,7 +114,7 @@ export default function CrossAgencySharing() {
                   <TableCell>
                     <div className="flex items-center gap-1 text-sm">
                       <span className="text-muted-foreground">{a.requesting_agency}</span>
-                      <ArrowRight className="w-3 h-3 text-slate-500" />
+                      <ArrowRight className="w-3 h-3 text-muted-foreground" />
                       <span className="text-muted-foreground">{a.providing_agency}</span>
                     </div>
                   </TableCell>

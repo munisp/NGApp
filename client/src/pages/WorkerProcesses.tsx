@@ -22,7 +22,7 @@ const LAYER_COLORS: Record<string, string> = {
   "L6": "bg-pink-500/10 text-pink-400",
   "FIN": "bg-emerald-500/10 text-emerald-400",
   "Streaming": "bg-indigo-500/10 text-indigo-400",
-  "SYS": "bg-slate-500/10 text-slate-400",
+  "SYS": "bg-muted0/10 text-muted-foreground",
 };
 
 function StatusIcon({ status }: { status: string }) {

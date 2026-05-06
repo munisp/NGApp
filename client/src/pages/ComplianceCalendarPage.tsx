@@ -3,7 +3,6 @@
  * Deadline tracking, SLA monitoring, overdue alerts
  */
 import { useState } from "react";
-import DashboardLayout from "@/components/DashboardLayout";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
@@ -57,7 +56,7 @@ export default function ComplianceCalendarPage() {
   };
 
   return (
-    <DashboardLayout>
+    <>
       <div className="p-6 space-y-6">
         <div className="flex items-center justify-between">
           <div>
@@ -173,7 +172,7 @@ export default function ComplianceCalendarPage() {
                         {days < 0 ? `${Math.abs(days)}d overdue` : `${days}d`}
                       </span>
                     </td>
-                    <td className="p-3"><Badge className={priorityColor[d.priority] ?? "bg-gray-100"}>{d.priority}</Badge></td>
+                    <td className="p-3"><Badge className={priorityColor[d.priority] ?? "bg-muted"}>{d.priority}</Badge></td>
                     <td className="p-3"><Badge className={d.status === 'completed' ? "bg-green-100 text-green-800" : "bg-yellow-100 text-yellow-800"}>{d.status}</Badge></td>
                     <td className="p-3">
                       {d.status !== 'completed' && (
@@ -189,6 +188,6 @@ export default function ComplianceCalendarPage() {
           </table>
         </div>
       </div>
-    </DashboardLayout>
+    </>
   );
 }

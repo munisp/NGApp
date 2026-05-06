@@ -12,7 +12,7 @@ import { toast } from "sonner";
 import { ShieldCheck, Plus, Download, FileText, CheckCircle, Clock, XCircle, RefreshCw, Key , Trash2 } from "lucide-react";
 
 const STATUS_COLORS: Record<string, string> = {
-  draft: "bg-muted-foreground/20 text-foreground border-slate-500/30",
+  draft: "bg-muted-foreground/20 text-foreground border-border/30",
   issued: "bg-emerald-100 text-emerald-700 border-emerald-300",
   submitted: "bg-blue-100 text-blue-700 border-blue-300",
   revoked: "bg-red-100 text-red-700 border-red-300",

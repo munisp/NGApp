@@ -91,13 +91,13 @@ export default function IncidentResponse() {
         <h2 className="text-foreground font-semibold mb-3">Available Playbooks</h2>
         <div className="grid grid-cols-2 gap-4">
           {playbooks?.map(pb => (
-            <Card key={pb.id} className="bg-card/50 border-border hover:border-slate-500 cursor-pointer"
+            <Card key={pb.id} className="bg-card/50 border-border hover:border-muted-foreground cursor-pointer"
               onClick={() => { setSelectedPlaybook(pb); setShowActivate(true); }}>
               <CardContent className="p-4">
                 <div className="flex items-start justify-between mb-2">
                   <div>
                     <p className="text-foreground font-medium">{pb.title}</p>
-                    <p className="text-slate-500 text-xs">{pb.playbook_code}</p>
+                    <p className="text-muted-foreground text-xs">{pb.playbook_code}</p>
                   </div>
                   <Badge className={severityColors[pb.severity ?? "high"]}>{pb.severity}</Badge>
                 </div>
@@ -137,12 +137,12 @@ export default function IncidentResponse() {
                     <TableCell className="text-muted-foreground font-mono text-xs">{a.activation_ref}</TableCell>
                     <TableCell>
                       <p className="text-foreground text-sm">{a.incident_title}</p>
-                      <p className="text-slate-500 text-xs">{a.incident_type}</p>
+                      <p className="text-muted-foreground text-xs">{a.incident_type}</p>
                     </TableCell>
                     <TableCell className="text-muted-foreground text-sm">{a.org_name ?? "—"}</TableCell>
                     <TableCell>
                       <span className="text-foreground">Step {a.current_step}</span>
-                      <span className="text-slate-500"> of {(a.steps as any[])?.length ?? "?"}</span>
+                      <span className="text-muted-foreground"> of {(a.steps as any[])?.length ?? "?"}</span>
                     </TableCell>
                     <TableCell>
                       {a.ndpc_notified

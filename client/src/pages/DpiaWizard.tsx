@@ -6,8 +6,6 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { FileSearch, Sparkles, CheckCircle2, AlertTriangle, XCircle, ChevronRight, ChevronLeft, Plus, X } from "lucide-react";
-import DashboardLayout from "@/components/DashboardLayout";
-
 const DATA_CATEGORIES = ["Personal identifiers", "Financial data", "Health data", "Biometric data", "Location data", "Communications", "Behavioural data", "Children's data", "Criminal records"];
 const DATA_SUBJECTS = ["Employees", "Customers", "Children", "Patients", "Job applicants", "Website visitors", "Third parties", "Public officials"];
 const RISK_LABELS = ["Very Low", "Low", "Moderate", "High", "Very High"];
@@ -103,7 +101,7 @@ export default function DpiaWizard() {
   const steps = ["Basic Info", "Data Scope", "AI Analysis", "Risk & Mitigations", "Complete"];
 
   return (
-    <DashboardLayout>
+    <>
       <div className="p-6 max-w-4xl mx-auto">
         <div className="flex items-center gap-3 mb-6">
           <FileSearch className="w-7 h-7 text-blue-400" />
@@ -245,7 +243,7 @@ export default function DpiaWizard() {
               </div>
               <div className="flex gap-2">
                 <Input value={newRisk} onChange={e => setNewRisk(e.target.value)} className="bg-card border-border text-foreground text-sm" placeholder="Add a risk factor..." onKeyDown={e => { if (e.key === "Enter") { if (newRisk.trim()) { setForm(p => ({ ...p, riskFactors: [...p.riskFactors, { factor: newRisk.trim(), severity: "medium", ndpaArticle: "Art. 28" }] })); setNewRisk(""); } } }} />
-                <Button type="button" size="sm" onClick={() => { if (newRisk.trim()) { setForm(p => ({ ...p, riskFactors: [...p.riskFactors, { factor: newRisk.trim(), severity: "medium", ndpaArticle: "Art. 28" }] })); setNewRisk(""); } }} className="bg-muted hover:bg-gray-600"><Plus className="w-4 h-4" /></Button>
+                <Button type="button" size="sm" onClick={() => { if (newRisk.trim()) { setForm(p => ({ ...p, riskFactors: [...p.riskFactors, { factor: newRisk.trim(), severity: "medium", ndpaArticle: "Art. 28" }] })); setNewRisk(""); } }} className="bg-muted hover:bg-muted/50"><Plus className="w-4 h-4" /></Button>
               </div>
             </div>
             <div>
@@ -261,7 +259,7 @@ export default function DpiaWizard() {
               </div>
               <div className="flex gap-2">
                 <Input value={newMitigation} onChange={e => setNewMitigation(e.target.value)} className="bg-card border-border text-foreground text-sm" placeholder="Add a mitigation action..." onKeyDown={e => { if (e.key === "Enter") { if (newMitigation.trim()) { setForm(p => ({ ...p, mitigations: [...p.mitigations, { action: newMitigation.trim(), priority: "medium" }] })); setNewMitigation(""); } } }} />
-                <Button type="button" size="sm" onClick={() => { if (newMitigation.trim()) { setForm(p => ({ ...p, mitigations: [...p.mitigations, { action: newMitigation.trim(), priority: "medium" }] })); setNewMitigation(""); } }} className="bg-muted hover:bg-gray-600"><Plus className="w-4 h-4" /></Button>
+                <Button type="button" size="sm" onClick={() => { if (newMitigation.trim()) { setForm(p => ({ ...p, mitigations: [...p.mitigations, { action: newMitigation.trim(), priority: "medium" }] })); setNewMitigation(""); } }} className="bg-muted hover:bg-muted/50"><Plus className="w-4 h-4" /></Button>
               </div>
             </div>
             <div className="flex justify-between">
@@ -305,6 +303,6 @@ export default function DpiaWizard() {
           </div>
         )}
       </div>
-    </DashboardLayout>
+    </>
   );
 }

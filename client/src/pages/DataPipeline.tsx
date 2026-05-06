@@ -18,7 +18,7 @@ const engineColors: Record<string, string> = {
 
 const statusColors: Record<string, string> = {
   running: "bg-emerald-500/20 text-emerald-400",
-  stopped: "bg-slate-500/20 text-muted-foreground",
+  stopped: "bg-muted0/20 text-muted-foreground",
   error: "bg-red-500/20 text-red-400",
   paused: "bg-yellow-500/20 text-yellow-400",
   success: "bg-emerald-500/20 text-emerald-400",
@@ -64,7 +64,7 @@ export default function DataPipeline() {
               <div>
                 <p className="text-muted-foreground text-xs">Active Flows</p>
                 <p className="text-2xl font-bold text-foreground">{stats?.flows?.running ?? 0}</p>
-                <p className="text-slate-500 text-xs">of {stats?.flows?.total ?? 0} total</p>
+                <p className="text-muted-foreground text-xs">of {stats?.flows?.total ?? 0} total</p>
               </div>
             </div>
           </CardContent>
@@ -76,7 +76,7 @@ export default function DataPipeline() {
               <div>
                 <p className="text-muted-foreground text-xs">dbt Models</p>
                 <p className="text-2xl font-bold text-foreground">{stats?.dbt?.success ?? 0}</p>
-                <p className="text-slate-500 text-xs">passing of {stats?.dbt?.total ?? 0}</p>
+                <p className="text-muted-foreground text-xs">passing of {stats?.dbt?.total ?? 0}</p>
               </div>
             </div>
           </CardContent>
@@ -88,7 +88,7 @@ export default function DataPipeline() {
               <div>
                 <p className="text-muted-foreground text-xs">Airflow DAGs</p>
                 <p className="text-2xl font-bold text-foreground">{stats?.airflow?.active ?? 0}</p>
-                <p className="text-slate-500 text-xs">active of {stats?.airflow?.total ?? 0}</p>
+                <p className="text-muted-foreground text-xs">active of {stats?.airflow?.total ?? 0}</p>
               </div>
             </div>
           </CardContent>
@@ -102,7 +102,7 @@ export default function DataPipeline() {
                 <p className="text-2xl font-bold text-foreground">
                   {stats?.flows?.total_records ? (parseInt(stats.flows.total_records) / 1000).toFixed(0) + "K" : "0"}
                 </p>
-                <p className="text-slate-500 text-xs">total across all flows</p>
+                <p className="text-muted-foreground text-xs">total across all flows</p>
               </div>
             </div>
           </CardContent>
@@ -266,14 +266,14 @@ export default function DataPipeline() {
                       <TableCell>
                         <div>
                           <p className="text-foreground font-medium">{dag.dag_name}</p>
-                          <p className="text-slate-500 text-xs">{dag.dag_id}</p>
+                          <p className="text-muted-foreground text-xs">{dag.dag_id}</p>
                         </div>
                       </TableCell>
                       <TableCell className="text-muted-foreground font-mono text-xs">{dag.schedule}</TableCell>
                       <TableCell className="text-muted-foreground">{dag.task_count}</TableCell>
                       <TableCell>
                         <span className="text-emerald-400">{dag.success_count}</span>
-                        <span className="text-slate-500 mx-1">/</span>
+                        <span className="text-muted-foreground mx-1">/</span>
                         <span className="text-red-400">{dag.failure_count}</span>
                       </TableCell>
                       <TableCell className="text-muted-foreground text-xs">
