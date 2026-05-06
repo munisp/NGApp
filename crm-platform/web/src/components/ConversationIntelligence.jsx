@@ -38,9 +38,9 @@ const tenantData = {
 }
 
 export default function ConversationIntelligence() {
-  const { tenantId } = useTenant()
+  const { tenant } = useTenant()
   const [activeTab, setActiveTab] = useState('calls')
-  const data = tenantData[tenantId] || tenantData['acme-bank']
+  const data = tenantData[tenant?.slug] || tenantData['acme-bank']
 
   return (
     <div className="space-y-6">

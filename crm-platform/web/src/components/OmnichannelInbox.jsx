@@ -42,11 +42,11 @@ const channelColors = { whatsapp: 'text-green-600 bg-green-100', email: 'text-bl
 const priorityColors = { high: 'bg-red-100 text-red-700', medium: 'bg-amber-100 text-amber-700', low: 'bg-gray-100 text-gray-700' }
 
 export default function OmnichannelInbox() {
-  const { tenantId } = useTenant()
+  const { tenant } = useTenant()
   const [selectedConv, setSelectedConv] = useState('conv-1')
   const [filterChannel, setFilterChannel] = useState('all')
   const [messageInput, setMessageInput] = useState('')
-  const data = tenantInboxData[tenantId] || tenantInboxData['acme-bank']
+  const data = tenantInboxData[tenant?.slug] || tenantInboxData['acme-bank']
 
   const filteredConvs = data.conversations.filter(c => filterChannel === 'all' || c.channel === filterChannel)
   const channels = ['all', ...new Set(data.conversations.map(c => c.channel))]

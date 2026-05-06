@@ -92,9 +92,9 @@ const getScoreBg = (score) => {
 }
 
 export default function CustomerHealthScore() {
-  const { tenantId } = useTenant()
+  const { tenant } = useTenant()
   const [activeTab, setActiveTab] = useState('overview')
-  const data = tenantHealthData[tenantId] || tenantHealthData['acme-bank']
+  const data = tenantHealthData[tenant?.slug] || tenantHealthData['acme-bank']
 
   const tabs = [
     { id: 'overview', label: 'Overview' },

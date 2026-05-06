@@ -33,9 +33,9 @@ const tenantData = {
 }
 const typeIcons = { champion: { icon: Crown, color: 'text-emerald-600 bg-emerald-100' }, influencer: { icon: Star, color: 'text-blue-600 bg-blue-100' }, neutral: { icon: UserCheck, color: 'text-gray-600 bg-gray-100' }, blocker: { icon: Shield, color: 'text-red-600 bg-red-100' } }
 export default function RelationshipMapping() {
-  const { tenantId } = useTenant()
+  const { tenant } = useTenant()
   const [selectedAccount, setSelectedAccount] = useState(0)
-  const data = tenantData[tenantId] || tenantData['acme-bank']
+  const data = tenantData[tenant?.slug] || tenantData['acme-bank']
   const account = data.accounts[selectedAccount]
   return (
     <div className="space-y-6">

@@ -50,9 +50,9 @@ const tenantData = {
 const riskBadge = { none: null, competitor: { label: 'Competitor', color: 'bg-orange-100 text-orange-700' }, slow: { label: 'Slow Moving', color: 'bg-amber-100 text-amber-700' }, stalled: { label: 'Stalled', color: 'bg-red-100 text-red-700' }, dead: { label: 'At Risk', color: 'bg-red-100 text-red-700' } }
 
 export default function DealScoring() {
-  const { tenantId } = useTenant()
+  const { tenant } = useTenant()
   const [activeTab, setActiveTab] = useState('pipeline')
-  const data = tenantData[tenantId] || tenantData['acme-bank']
+  const data = tenantData[tenant?.slug] || tenantData['acme-bank']
 
   return (
     <div className="space-y-6">

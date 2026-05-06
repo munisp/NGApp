@@ -34,9 +34,9 @@ const tenantData = {
   },
 }
 export default function SentimentAnalysis() {
-  const { tenantId } = useTenant()
+  const { tenant } = useTenant()
   const [activeTab, setActiveTab] = useState('overview')
-  const data = tenantData[tenantId] || tenantData['acme-bank']
+  const data = tenantData[tenant?.slug] || tenantData['acme-bank']
   return (
     <div className="space-y-6">
       <div><h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2"><Smile className="w-7 h-7 text-yellow-500" /> Sentiment & Emotion AI</h1><p className="text-gray-500 dark:text-gray-400 mt-1">Real-time customer sentiment across all channels</p></div>
