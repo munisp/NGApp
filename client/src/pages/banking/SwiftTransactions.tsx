@@ -67,8 +67,8 @@ export default function SwiftTransactions() {
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">SWIFT Transactions</h1>
-          <p className="text-sm text-gray-500 mt-1">Cross-border payment messages — MT103 / MT202 / MT940 / MT950</p>
+          <h1 className="text-2xl font-bold text-foreground">SWIFT Transactions</h1>
+          <p className="text-sm text-muted-foreground mt-1">Cross-border payment messages — MT103 / MT202 / MT940 / MT950</p>
         </div>
         <Dialog open={createOpen} onOpenChange={setCreateOpen}>
           <DialogTrigger asChild>
@@ -169,7 +169,7 @@ export default function SwiftTransactions() {
                   <Icon className={`h-8 w-8 ${color}`} />
                   <div>
                     <p className="text-2xl font-bold">{value}</p>
-                    <p className="text-xs text-gray-500">{label}</p>
+                    <p className="text-xs text-muted-foreground">{label}</p>
                   </div>
                 </div>
               </CardContent>
@@ -206,10 +206,10 @@ export default function SwiftTransactions() {
         <CardContent className="p-0">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-gray-50 border-b">
+              <thead className="bg-muted border-b">
                 <tr>
                   {["Ref", "Type", "Sender BIC", "Receiver BIC", "Currency", "Amount", "Status", "UETR", "Created"].map(h => (
-                    <th key={h} className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{h}</th>
+                    <th key={h} className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">{h}</th>
                   ))}
                 </tr>
               </thead>
@@ -219,7 +219,7 @@ export default function SwiftTransactions() {
                 ) : rows.length === 0 ? (
                   <tr><td colSpan={9} className="px-4 py-8 text-center text-gray-400">No SWIFT messages found</td></tr>
                 ) : rows.map((r: any) => (
-                  <tr key={r.id} className="hover:bg-gray-50">
+                  <tr key={r.id} className="hover:bg-muted">
                     <td className="px-4 py-3 font-mono text-xs">{r.transaction_ref}</td>
                     <td className="px-4 py-3"><Badge className="bg-blue-100 text-blue-700">{r.message_type}</Badge></td>
                     <td className="px-4 py-3 font-mono text-xs">{r.sender_bic}</td>
@@ -227,12 +227,12 @@ export default function SwiftTransactions() {
                     <td className="px-4 py-3 text-xs font-medium">{r.currency}</td>
                     <td className="px-4 py-3 font-medium">{fmt(r.amount, r.currency)}</td>
                     <td className="px-4 py-3">
-                      <Badge className={STATUS_COLORS[r.status] || "bg-gray-100 text-gray-700"}>
+                      <Badge className={STATUS_COLORS[r.status] || "bg-gray-100 text-foreground"}>
                         {r.status?.replace(/_/g, " ")}
                       </Badge>
                     </td>
                     <td className="px-4 py-3 font-mono text-xs text-gray-400">{r.uetr?.substring(0, 12)}...</td>
-                    <td className="px-4 py-3 text-xs text-gray-500">{r.created_at ? new Date(r.created_at).toLocaleDateString() : "—"}</td>
+                    <td className="px-4 py-3 text-xs text-muted-foreground">{r.created_at ? new Date(r.created_at).toLocaleDateString() : "—"}</td>
                   </tr>
                 ))}
               </tbody>
@@ -240,7 +240,7 @@ export default function SwiftTransactions() {
           </div>
           {total > 20 && (
             <div className="flex items-center justify-between px-4 py-3 border-t">
-              <span className="text-sm text-gray-500">Showing {((page - 1) * 20) + 1}–{Math.min(page * 20, total)} of {total}</span>
+              <span className="text-sm text-muted-foreground">Showing {((page - 1) * 20) + 1}–{Math.min(page * 20, total)} of {total}</span>
               <div className="flex gap-2">
                 <Button size="sm" variant="outline" disabled={page === 1} onClick={() => setPage(p => p - 1)}>Previous</Button>
                 <Button size="sm" variant="outline" disabled={page * 20 >= total} onClick={() => setPage(p => p + 1)}>Next</Button>

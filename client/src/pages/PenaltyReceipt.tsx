@@ -75,7 +75,7 @@ export default function PenaltyReceipt() {
         </div>
 
         {/* Receipt card */}
-        <div className="bg-background border border-border rounded-2xl overflow-hidden print:border-gray-300 print:bg-white print:text-black">
+        <div className="bg-background border border-border rounded-2xl overflow-hidden print:border-border print:bg-white print:text-black">
           {/* Header */}
           <div className="bg-gradient-to-r from-green-900 to-emerald-900 px-8 py-6 print:bg-green-700">
             <div className="flex items-center justify-between">
@@ -108,18 +108,18 @@ export default function PenaltyReceipt() {
           <div className="px-8 py-6 space-y-6">
             {/* Organisation details */}
             <div>
-              <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-3">Organisation</h2>
+              <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-3">Organisation</h2>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <p className="text-xs text-gray-500">Name</p>
+                  <p className="text-xs text-muted-foreground">Name</p>
                   <p className="text-foreground font-medium">{receipt.orgName ?? "—"}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-gray-500">Sector</p>
+                  <p className="text-xs text-muted-foreground">Sector</p>
                   <p className="text-foreground font-medium capitalize">{receipt.orgSector ?? "—"}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-gray-500">Country</p>
+                  <p className="text-xs text-muted-foreground">Country</p>
                   <p className="text-foreground font-medium">{receipt.orgCountry ?? "—"}</p>
                 </div>
               </div>
@@ -129,30 +129,30 @@ export default function PenaltyReceipt() {
 
             {/* Penalty details */}
             <div>
-              <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-3">Penalty Details</h2>
+              <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-3">Penalty Details</h2>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <p className="text-xs text-gray-500">Penalty ID</p>
+                  <p className="text-xs text-muted-foreground">Penalty ID</p>
                   <p className="text-foreground font-mono font-medium">#{receipt.id}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-gray-500">Amount</p>
+                  <p className="text-xs text-muted-foreground">Amount</p>
                   <p className="text-2xl font-bold text-green-400">{formattedAmount}</p>
                 </div>
                 <div className="col-span-2">
-                  <p className="text-xs text-gray-500">Description</p>
+                  <p className="text-xs text-muted-foreground">Description</p>
                   <p className="text-foreground">{receipt.description ?? "Compliance penalty"}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-gray-500">Due Date</p>
+                  <p className="text-xs text-muted-foreground">Due Date</p>
                   <p className="text-foreground">{receipt.dueDate ? new Date(receipt.dueDate).toLocaleDateString() : "—"}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-gray-500">Paid At</p>
+                  <p className="text-xs text-muted-foreground">Paid At</p>
                   <p className="text-foreground">{receipt.paidAt ? new Date(receipt.paidAt).toLocaleString() : "—"}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-gray-500">Issued At</p>
+                  <p className="text-xs text-muted-foreground">Issued At</p>
                   <p className="text-foreground">{receipt.createdAt ? new Date(receipt.createdAt).toLocaleString() : "—"}</p>
                 </div>
               </div>
@@ -162,7 +162,7 @@ export default function PenaltyReceipt() {
 
             {/* Transaction references */}
             <div>
-              <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-3">Transaction References</h2>
+              <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-3">Transaction References</h2>
               <div className="space-y-2">
                 {receipt.tigerBeetleTransferId && (
                   <div className="flex items-center justify-between bg-card/50 rounded-lg px-4 py-2">
@@ -177,7 +177,7 @@ export default function PenaltyReceipt() {
                   </div>
                 )}
                 {!receipt.tigerBeetleTransferId && !receipt.mojaloopTransferId && (
-                  <p className="text-gray-500 text-sm italic">Transaction references will appear once payment is processed.</p>
+                  <p className="text-muted-foreground text-sm italic">Transaction references will appear once payment is processed.</p>
                 )}
               </div>
             </div>
@@ -194,7 +194,7 @@ export default function PenaltyReceipt() {
                 />
               </div>
               <div className="flex-1">
-                <p className="text-xs text-gray-500 uppercase tracking-widest mb-1">Verification</p>
+                <p className="text-xs text-muted-foreground uppercase tracking-widest mb-1">Verification</p>
                 <p className="text-sm text-muted-foreground mb-2">
                   Scan the QR code or visit the link below to verify this payment record on the NDSEP public registry.
                 </p>
@@ -212,7 +212,7 @@ export default function PenaltyReceipt() {
 
           {/* Footer */}
           <div className="bg-card/50 px-8 py-4 text-center print:bg-gray-100">
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-muted-foreground">
               This is an official NDSEP enforcement receipt. For disputes, visit{" "}
               <Link href="/portal" className="text-green-400 hover:underline">the Organisation Portal</Link>.
             </p>

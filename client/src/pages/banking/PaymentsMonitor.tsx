@@ -83,8 +83,8 @@ export default function PaymentsMonitor() {
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Payment Rails Monitor</h1>
-          <p className="text-sm text-gray-500 mt-1">NIP (NIBSS Instant Payment) & RTGS (Real-Time Gross Settlement)</p>
+          <h1 className="text-2xl font-bold text-foreground">Payment Rails Monitor</h1>
+          <p className="text-sm text-muted-foreground mt-1">NIP (NIBSS Instant Payment) & RTGS (Real-Time Gross Settlement)</p>
         </div>
       </div>
 
@@ -102,7 +102,7 @@ export default function PaymentsMonitor() {
                   <Icon className={`h-8 w-8 ${color}`} />
                   <div>
                     <p className="text-2xl font-bold">{value}</p>
-                    <p className="text-xs text-gray-500">{label}</p>
+                    <p className="text-xs text-muted-foreground">{label}</p>
                     <p className="text-xs text-gray-400">{sub}</p>
                   </div>
                 </div>
@@ -202,10 +202,10 @@ export default function PaymentsMonitor() {
             <CardContent className="p-0">
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
-                  <thead className="bg-gray-50 border-b">
+                  <thead className="bg-muted border-b">
                     <tr>
                       {["Session ID", "Sender Bank", "Receiver Bank", "Amount", "Status", "AML", "NIBSS Ref", "Time"].map(h => (
-                        <th key={h} className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{h}</th>
+                        <th key={h} className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">{h}</th>
                       ))}
                     </tr>
                   </thead>
@@ -215,19 +215,19 @@ export default function PaymentsMonitor() {
                     ) : nipRows.length === 0 ? (
                       <tr><td colSpan={8} className="px-4 py-8 text-center text-gray-400">No NIP transactions found</td></tr>
                     ) : nipRows.map((r: any) => (
-                      <tr key={r.id} className="hover:bg-gray-50">
+                      <tr key={r.id} className="hover:bg-muted">
                         <td className="px-4 py-3 font-mono text-xs">{r.session_id?.substring(0, 16)}...</td>
                         <td className="px-4 py-3 text-xs">{r.sender_bank_code}</td>
                         <td className="px-4 py-3 text-xs">{r.receiver_bank_code}</td>
                         <td className="px-4 py-3 font-medium">{fmt(r.amount)}</td>
                         <td className="px-4 py-3">
-                          <Badge className={STATUS_COLORS[r.status] || "bg-gray-100 text-gray-700"}>{r.status}</Badge>
+                          <Badge className={STATUS_COLORS[r.status] || "bg-gray-100 text-foreground"}>{r.status}</Badge>
                         </td>
                         <td className="px-4 py-3">
                           {r.aml_flagged ? <Badge className="bg-red-100 text-red-700">Flagged</Badge> : <span className="text-gray-400 text-xs">—</span>}
                         </td>
                         <td className="px-4 py-3 font-mono text-xs">{r.nibss_ref}</td>
-                        <td className="px-4 py-3 text-xs text-gray-500">{r.created_at ? new Date(r.created_at).toLocaleString() : "—"}</td>
+                        <td className="px-4 py-3 text-xs text-muted-foreground">{r.created_at ? new Date(r.created_at).toLocaleString() : "—"}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -235,7 +235,7 @@ export default function PaymentsMonitor() {
               </div>
               {(nipData?.total ?? 0) > 20 && (
                 <div className="flex items-center justify-between px-4 py-3 border-t">
-                  <span className="text-sm text-gray-500">Page {nipPage} of {Math.ceil((nipData?.total ?? 0) / 20)}</span>
+                  <span className="text-sm text-muted-foreground">Page {nipPage} of {Math.ceil((nipData?.total ?? 0) / 20)}</span>
                   <div className="flex gap-2">
                     <Button size="sm" variant="outline" disabled={nipPage === 1} onClick={() => setNipPage(p => p - 1)}>Previous</Button>
                     <Button size="sm" variant="outline" disabled={nipPage * 20 >= (nipData?.total ?? 0)} onClick={() => setNipPage(p => p + 1)}>Next</Button>
@@ -328,10 +328,10 @@ export default function PaymentsMonitor() {
             <CardContent className="p-0">
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
-                  <thead className="bg-gray-50 border-b">
+                  <thead className="bg-muted border-b">
                     <tr>
                       {["Reference", "Sender Bank", "Receiver Bank", "Amount", "Priority", "Cycle", "Status", "CBN Ref", "Queued"].map(h => (
-                        <th key={h} className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{h}</th>
+                        <th key={h} className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">{h}</th>
                       ))}
                     </tr>
                   </thead>
@@ -341,22 +341,22 @@ export default function PaymentsMonitor() {
                     ) : rtgsRows.length === 0 ? (
                       <tr><td colSpan={9} className="px-4 py-8 text-center text-gray-400">No RTGS transactions found</td></tr>
                     ) : rtgsRows.map((r: any) => (
-                      <tr key={r.id} className="hover:bg-gray-50">
+                      <tr key={r.id} className="hover:bg-muted">
                         <td className="px-4 py-3 font-mono text-xs">{r.reference}</td>
                         <td className="px-4 py-3 text-xs">{r.sender_bank_code}</td>
                         <td className="px-4 py-3 text-xs">{r.receiver_bank_code}</td>
                         <td className="px-4 py-3 font-medium">{fmt(r.amount)}</td>
                         <td className="px-4 py-3">
-                          <Badge className={r.priority === "critical" ? "bg-red-100 text-red-700" : r.priority === "urgent" ? "bg-orange-100 text-orange-700" : "bg-gray-100 text-gray-700"}>
+                          <Badge className={r.priority === "critical" ? "bg-red-100 text-red-700" : r.priority === "urgent" ? "bg-orange-100 text-orange-700" : "bg-gray-100 text-foreground"}>
                             {r.priority}
                           </Badge>
                         </td>
                         <td className="px-4 py-3 text-xs font-medium">{r.settlement_cycle || "—"}</td>
                         <td className="px-4 py-3">
-                          <Badge className={STATUS_COLORS[r.status] || "bg-gray-100 text-gray-700"}>{r.status}</Badge>
+                          <Badge className={STATUS_COLORS[r.status] || "bg-gray-100 text-foreground"}>{r.status}</Badge>
                         </td>
                         <td className="px-4 py-3 font-mono text-xs">{r.cbn_ref}</td>
-                        <td className="px-4 py-3 text-xs text-gray-500">{r.queued_at ? new Date(r.queued_at).toLocaleString() : "—"}</td>
+                        <td className="px-4 py-3 text-xs text-muted-foreground">{r.queued_at ? new Date(r.queued_at).toLocaleString() : "—"}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -364,7 +364,7 @@ export default function PaymentsMonitor() {
               </div>
               {(rtgsData?.total ?? 0) > 20 && (
                 <div className="flex items-center justify-between px-4 py-3 border-t">
-                  <span className="text-sm text-gray-500">Page {rtgsPage} of {Math.ceil((rtgsData?.total ?? 0) / 20)}</span>
+                  <span className="text-sm text-muted-foreground">Page {rtgsPage} of {Math.ceil((rtgsData?.total ?? 0) / 20)}</span>
                   <div className="flex gap-2">
                     <Button size="sm" variant="outline" disabled={rtgsPage === 1} onClick={() => setRtgsPage(p => p - 1)}>Previous</Button>
                     <Button size="sm" variant="outline" disabled={rtgsPage * 20 >= (rtgsData?.total ?? 0)} onClick={() => setRtgsPage(p => p + 1)}>Next</Button>

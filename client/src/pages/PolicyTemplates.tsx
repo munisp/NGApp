@@ -22,7 +22,7 @@ const FRAMEWORK_COLORS: Record<string, string> = {
   SOC2: "bg-cyan-500/20 text-cyan-400 border-cyan-500/30",
   ISO27001: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
   DOJ_EO_14117: "bg-pink-500/20 text-pink-400 border-pink-500/30",
-  CUSTOM: "bg-gray-500/20 text-muted-foreground border-gray-500/30",
+  CUSTOM: "bg-muted0/20 text-muted-foreground border-gray-500/30",
 };
 
 export default function PolicyTemplates() {
@@ -78,7 +78,7 @@ export default function PolicyTemplates() {
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {filtered.length === 0 ? (
-          <div className="col-span-3 text-center py-16 text-gray-500"><FileText className="w-12 h-12 mx-auto mb-3 opacity-30" /><p>No templates found. Create one to get started.</p></div>
+          <div className="col-span-3 text-center py-16 text-muted-foreground"><FileText className="w-12 h-12 mx-auto mb-3 opacity-30" /><p>No templates found. Create one to get started.</p></div>
         ) : filtered.map((t: any) => (
           <div key={t.id} className="bg-card rounded-xl border border-border p-5 space-y-3 hover:border-blue-500/50 transition-colors">
             <div className="flex items-start justify-between">
@@ -86,7 +86,7 @@ export default function PolicyTemplates() {
               <Badge className={`text-xs border ${FRAMEWORK_COLORS[t.framework] || "bg-muted text-muted-foreground"}`}>{t.framework}</Badge>
             </div>
             {t.description && <p className="text-muted-foreground text-xs line-clamp-2">{t.description}</p>}
-            <div className="flex items-center justify-between text-xs text-gray-500">
+            <div className="flex items-center justify-between text-xs text-muted-foreground">
               <span>v{t.version || "1.0"} · Used {t.instantiatedCount || 0}x</span>
               <Badge variant="outline" className={`text-xs ${t.status === "active" ? "border-green-500/50 text-green-400" : "border-yellow-500/50 text-yellow-400"}`}>{t.status}</Badge>
             </div>

@@ -132,7 +132,7 @@ export default function ComplianceCalendarPage() {
             </h3>
             <div className="space-y-2">
               {overdueData.map((d: any) => (
-                <div key={d.id} className="flex items-center justify-between bg-white rounded p-2 border border-red-100">
+                <div key={d.id} className="flex items-center justify-between bg-background rounded p-2 border border-red-100">
                   <div>
                     <div className="font-medium text-sm">{d.title}</div>
                     <div className="text-xs text-red-600">{Math.abs(daysUntil(d.due_date))} days overdue</div>

@@ -112,8 +112,8 @@ const TUTORIALS = [
     difficulty: "Advanced",
     category: "Administration",
     icon: Settings,
-    color: "text-gray-500",
-    bgColor: "bg-gray-50",
+    color: "text-muted-foreground",
+    bgColor: "bg-muted",
     steps: [
       { title: "User Management", content: "Admin users can manage all platform users at Admin → User Management (/admin/users). You can promote users to admin, deactivate accounts, and view login history.", action: "Open User Management", route: "/admin/users" },
       { title: "API Keys", content: "External systems can integrate with NDSEP via the REST API. Manage API keys at API Key Management (/api-keys). Each key has configurable scopes and rate limits.", action: "Open API Keys", route: "/api-keys" },

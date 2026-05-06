@@ -15,7 +15,7 @@ const STATUS_COLORS: Record<string, string> = {
   open: "bg-red-500/20 text-red-400",
   in_progress: "bg-yellow-500/20 text-yellow-400",
   resolved: "bg-green-500/20 text-green-400",
-  closed: "bg-gray-500/20 text-muted-foreground",
+  closed: "bg-muted0/20 text-muted-foreground",
 };
 
 const STATUS_ICONS: Record<string, React.ReactElement> = {
@@ -130,7 +130,7 @@ export default function RemediationWorkflows() {
           <tbody>
             {(workflows as any[]).length === 0 ? (
               <tr>
-                <td colSpan={8} className="text-center py-12 text-gray-500">
+                <td colSpan={8} className="text-center py-12 text-muted-foreground">
                   <Wrench className="w-8 h-8 mx-auto mb-2 opacity-30" />
                   <p>No remediation workflows found</p>
                 </td>
@@ -146,13 +146,13 @@ export default function RemediationWorkflows() {
                   </Badge>
                 </td>
                 <td className="px-4 py-3">
-                  <Badge className={`text-xs flex items-center gap-1 w-fit ${STATUS_COLORS[w.status] ?? "bg-gray-500/20 text-muted-foreground"}`}>
+                  <Badge className={`text-xs flex items-center gap-1 w-fit ${STATUS_COLORS[w.status] ?? "bg-muted0/20 text-muted-foreground"}`}>
                     {STATUS_ICONS[w.status]}
                     {w.status?.replace("_", " ")}
                   </Badge>
                 </td>
-                <td className="px-4 py-3 text-gray-500 text-xs max-w-xs truncate">{w.notes ?? "—"}</td>
-                <td className="px-4 py-3 text-gray-500 text-xs">
+                <td className="px-4 py-3 text-muted-foreground text-xs max-w-xs truncate">{w.notes ?? "—"}</td>
+                <td className="px-4 py-3 text-muted-foreground text-xs">
                   {w.createdAt ? new Date(w.createdAt).toLocaleDateString() : "—"}
                 </td>
                 <td className="px-4 py-3 flex items-center gap-1">

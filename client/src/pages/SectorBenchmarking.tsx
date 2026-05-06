@@ -65,12 +65,12 @@ export default function SectorBenchmarking() {
           <div className="bg-background border border-border rounded-xl p-4">
             <div className="text-xs text-muted-foreground mb-1 flex items-center gap-1"><Award className="w-3 h-3 text-green-400" /> Top Sector</div>
             <div className="text-lg font-bold text-green-400 capitalize">{topSector?.sector ?? "—"}</div>
-            {topSector && <div className="text-xs text-gray-500">{Math.round(topSector.avg_compliance_score)}% avg</div>}
+            {topSector && <div className="text-xs text-muted-foreground">{Math.round(topSector.avg_compliance_score)}% avg</div>}
           </div>
           <div className="bg-background border border-border rounded-xl p-4">
             <div className="text-xs text-muted-foreground mb-1 flex items-center gap-1"><AlertTriangle className="w-3 h-3 text-red-400" /> Needs Attention</div>
             <div className="text-lg font-bold text-red-400 capitalize">{bottomSector?.sector ?? "—"}</div>
-            {bottomSector && <div className="text-xs text-gray-500">{Math.round(bottomSector.avg_compliance_score)}% avg</div>}
+            {bottomSector && <div className="text-xs text-muted-foreground">{Math.round(bottomSector.avg_compliance_score)}% avg</div>}
           </div>
         </div>
 
@@ -81,9 +81,9 @@ export default function SectorBenchmarking() {
               <h2 className="font-semibold text-foreground">Sector Overview</h2>
             </div>
             {isLoading ? (
-              <div className="p-8 text-center text-gray-500">Loading...</div>
+              <div className="p-8 text-center text-muted-foreground">Loading...</div>
             ) : (benchmarks as any[]).length === 0 ? (
-              <div className="p-8 text-center text-gray-500">No sector data available. Run sector benchmarking to populate.</div>
+              <div className="p-8 text-center text-muted-foreground">No sector data available. Run sector benchmarking to populate.</div>
             ) : (
               <div className="divide-y divide-gray-800">
                 {(benchmarks as any[]).map((b: any) => (
@@ -94,19 +94,19 @@ export default function SectorBenchmarking() {
                   >
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-2">
-                        <div className={`w-2.5 h-2.5 rounded-full ${SECTOR_COLORS[b.sector] ?? "bg-gray-500"}`} />
+                        <div className={`w-2.5 h-2.5 rounded-full ${SECTOR_COLORS[b.sector] ?? "bg-muted0"}`} />
                         <span className="font-medium text-foreground capitalize">{b.sector}</span>
-                        <span className="text-xs text-gray-500">{b.org_count} orgs</span>
+                        <span className="text-xs text-muted-foreground">{b.org_count} orgs</span>
                       </div>
                       <div className="flex items-center gap-2">
-                        {b.trend > 0 ? <TrendingUp className="w-3.5 h-3.5 text-green-400" /> : b.trend < 0 ? <TrendingDown className="w-3.5 h-3.5 text-red-400" /> : <Minus className="w-3.5 h-3.5 text-gray-500" />}
-                        <span className={`text-xs font-medium ${b.trend > 0 ? "text-green-400" : b.trend < 0 ? "text-red-400" : "text-gray-500"}`}>
+                        {b.trend > 0 ? <TrendingUp className="w-3.5 h-3.5 text-green-400" /> : b.trend < 0 ? <TrendingDown className="w-3.5 h-3.5 text-red-400" /> : <Minus className="w-3.5 h-3.5 text-muted-foreground" />}
+                        <span className={`text-xs font-medium ${b.trend > 0 ? "text-green-400" : b.trend < 0 ? "text-red-400" : "text-muted-foreground"}`}>
                           {b.trend > 0 ? "+" : ""}{b.trend?.toFixed(1) ?? "0"}%
                         </span>
                       </div>
                     </div>
                     <ComplianceBar value={Math.round(b.avg_compliance_score ?? 0)} />
-                    <div className="flex gap-4 mt-2 text-xs text-gray-500">
+                    <div className="flex gap-4 mt-2 text-xs text-muted-foreground">
                       <span>{b.open_violations ?? 0} open violations</span>
                       <span>{b.total_penalties_ngn ? `₦${(b.total_penalties_ngn / 1e6).toFixed(1)}M penalties` : "No penalties"}</span>
                     </div>
@@ -122,7 +122,7 @@ export default function SectorBenchmarking() {
               <h2 className="font-semibold text-foreground">{selectedSector ? `${selectedSector.charAt(0).toUpperCase() + selectedSector.slice(1)} Sector Detail` : "Select a Sector"}</h2>
             </div>
             {!selectedSector && (
-              <div className="p-8 text-center text-gray-500">
+              <div className="p-8 text-center text-muted-foreground">
                 <BarChart2 className="w-10 h-10 mx-auto mb-3 opacity-30" />
                 <p>Click a sector to see detailed benchmarks</p>
               </div>
@@ -149,7 +149,7 @@ export default function SectorBenchmarking() {
                       {(detail as any).top_violations.slice(0, 4).map((v: any, i: number) => (
                         <div key={i} className="flex items-center justify-between text-sm">
                           <span className="text-muted-foreground">{v.type}</span>
-                          <span className="text-gray-500">{v.count}x</span>
+                          <span className="text-muted-foreground">{v.count}x</span>
                         </div>
                       ))}
                     </div>
@@ -162,7 +162,7 @@ export default function SectorBenchmarking() {
                       {(detail as any).compliance_leaders.slice(0, 3).map((org: any, i: number) => (
                         <div key={i} className="flex items-center justify-between text-sm">
                           <div className="flex items-center gap-2">
-                            <span className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold ${i === 0 ? "bg-yellow-600 text-foreground" : i === 1 ? "bg-gray-500 text-foreground" : "bg-orange-800 text-foreground"}`}>{i + 1}</span>
+                            <span className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold ${i === 0 ? "bg-yellow-600 text-foreground" : i === 1 ? "bg-muted0 text-foreground" : "bg-orange-800 text-foreground"}`}>{i + 1}</span>
                             <span className="text-muted-foreground">{org.name}</span>
                           </div>
                           <span className="text-green-400 font-medium">{org.score}%</span>

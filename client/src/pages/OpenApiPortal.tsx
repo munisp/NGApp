@@ -158,7 +158,7 @@ export default function OpenApiPortal() {
                 {generateKeyMutation.isPending ? "..." : (apiKey as any)?.key ? "Rotate" : "Generate"}
               </Button>
             </div>
-            <p className="text-xs text-gray-500 mt-2">Pass as <code className="text-muted-foreground">Authorization: Bearer &lt;key&gt;</code> header on all authenticated requests.</p>
+            <p className="text-xs text-muted-foreground mt-2">Pass as <code className="text-muted-foreground">Authorization: Bearer &lt;key&gt;</code> header on all authenticated requests.</p>
           </div>
           {/* Base URL */}
           <div className="bg-background border border-border rounded-xl p-5">
@@ -167,7 +167,7 @@ export default function OpenApiPortal() {
               <span className="font-medium text-foreground">Base URL</span>
             </div>
             <code className="block bg-card text-blue-400 px-3 py-2 rounded-lg text-xs font-mono break-all">{BASE_URL}</code>
-            <p className="text-xs text-gray-500 mt-2">All tRPC endpoints are under <code className="text-muted-foreground">/api/trpc/</code></p>
+            <p className="text-xs text-muted-foreground mt-2">All tRPC endpoints are under <code className="text-muted-foreground">/api/trpc/</code></p>
           </div>
         </div>
 
@@ -205,7 +205,7 @@ export default function OpenApiPortal() {
                 <div className="flex items-center gap-2">
                   {expanded === group.group ? <ChevronDown className="w-4 h-4 text-muted-foreground" /> : <ChevronRight className="w-4 h-4 text-muted-foreground" />}
                   <span className={`font-medium ${group.color}`}>{group.group}</span>
-                  <span className="text-xs text-gray-500">{group.endpoints.length} endpoints</span>
+                  <span className="text-xs text-muted-foreground">{group.endpoints.length} endpoints</span>
                 </div>
               </button>
               {expanded === group.group && (
@@ -216,7 +216,7 @@ export default function OpenApiPortal() {
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className={`px-2 py-0.5 rounded text-xs font-bold font-mono ${METHOD_COLORS[ep.method] ?? "bg-card text-muted-foreground"}`}>{ep.method}</span>
                           <code className="text-muted-foreground text-sm font-mono">{ep.path}</code>
-                          {!ep.auth && <span className="px-1.5 py-0.5 rounded text-xs bg-card text-gray-500">Public</span>}
+                          {!ep.auth && <span className="px-1.5 py-0.5 rounded text-xs bg-card text-muted-foreground">Public</span>}
                           {ep.auth && <span className="px-1.5 py-0.5 rounded text-xs bg-yellow-900/30 text-yellow-400">Auth required</span>}
                         </div>
                         <div className="flex gap-1.5 flex-shrink-0">

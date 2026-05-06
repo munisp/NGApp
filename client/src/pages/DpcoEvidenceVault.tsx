@@ -26,7 +26,7 @@ const CATEGORIES = [
   { value: "breach_report",    label: "Breach Report",          color: "bg-red-100 text-red-800" },
   { value: "consent_record",   label: "Consent Record",         color: "bg-teal-100 text-teal-800" },
   { value: "audit_report",     label: "Audit Report",           color: "bg-indigo-100 text-indigo-800" },
-  { value: "other",            label: "Other",                  color: "bg-gray-100 text-gray-700" },
+  { value: "other",            label: "Other",                  color: "bg-gray-100 text-foreground" },
 ];
 
 function categoryMeta(value: string) {
@@ -46,7 +46,7 @@ async function computeSha256(file: File): Promise<string> {
 }
 
 function TamperBadge({ tampered, verified }: { tampered: boolean; verified: boolean }) {
-  if (!verified) return <Badge variant="outline" className="text-xs text-gray-500">Unverified</Badge>;
+  if (!verified) return <Badge variant="outline" className="text-xs text-muted-foreground">Unverified</Badge>;
   if (tampered) return <Badge variant="destructive" className="text-xs gap-1"><ShieldAlert className="w-3 h-3" /> Tampered</Badge>;
   return <Badge className="text-xs bg-green-600 gap-1"><ShieldCheck className="w-3 h-3" /> Verified</Badge>;
 }
@@ -194,11 +194,11 @@ export default function DpcoEvidenceVault() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+          <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
             <Vault className="w-6 h-6 text-indigo-600" />
             Audit Evidence Vault
           </h1>
-          <p className="text-sm text-gray-500 mt-1">
+          <p className="text-sm text-muted-foreground mt-1">
             Tamper-evident S3-backed evidence repository with SHA-256 integrity verification
           </p>
         </div>
@@ -214,7 +214,7 @@ export default function DpcoEvidenceVault() {
               <div>
                 <Label>Document File <span className="text-red-500">*</span></Label>
                 <input ref={fileRef} type="file" accept=".pdf,.docx,.xlsx,.png,.jpg,.zip"
-                  className="block w-full text-sm text-gray-500 mt-1 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-medium file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer" />
+                  className="block w-full text-sm text-muted-foreground mt-1 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-medium file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer" />
                 <p className="text-xs text-gray-400 mt-1">PDF, DOCX, XLSX, PNG, JPG, ZIP — max 10 MB</p>
               </div>
               <div>
@@ -255,7 +255,7 @@ export default function DpcoEvidenceVault() {
               </div>
               {uploading && (
                 <div>
-                  <div className="text-xs text-gray-500 mb-1">Computing SHA-256 hash and uploading...</div>
+                  <div className="text-xs text-muted-foreground mb-1">Computing SHA-256 hash and uploading...</div>
                   <Progress value={uploadProgress} className="h-2" />
                 </div>
               )}
@@ -277,7 +277,7 @@ export default function DpcoEvidenceVault() {
           <CardContent className="pt-4">
             <div className="flex items-center gap-2 mb-1">
               <FileText className="w-4 h-4 text-indigo-600" />
-              <span className="text-xs text-gray-500 uppercase tracking-wide">Total Documents</span>
+              <span className="text-xs text-muted-foreground uppercase tracking-wide">Total Documents</span>
             </div>
             <div className="text-3xl font-bold text-indigo-700">{total}</div>
             <div className="text-xs text-gray-400">{formatBytes(totalSize)} total size</div>
@@ -287,7 +287,7 @@ export default function DpcoEvidenceVault() {
           <CardContent className="pt-4">
             <div className="flex items-center gap-2 mb-1">
               <ShieldCheck className="w-4 h-4 text-green-600" />
-              <span className="text-xs text-gray-500 uppercase tracking-wide">Verified</span>
+              <span className="text-xs text-muted-foreground uppercase tracking-wide">Verified</span>
             </div>
             <div className="text-3xl font-bold text-green-700">{verified}</div>
             <div className="text-xs text-gray-400">Integrity confirmed</div>
@@ -297,7 +297,7 @@ export default function DpcoEvidenceVault() {
           <CardContent className="pt-4">
             <div className="flex items-center gap-2 mb-1">
               <ShieldAlert className="w-4 h-4 text-red-600" />
-              <span className="text-xs text-gray-500 uppercase tracking-wide">Tamper Alerts</span>
+              <span className="text-xs text-muted-foreground uppercase tracking-wide">Tamper Alerts</span>
             </div>
             <div className="text-3xl font-bold text-red-700">{tampered}</div>
             <div className="text-xs text-gray-400">Hash mismatch detected</div>
@@ -306,10 +306,10 @@ export default function DpcoEvidenceVault() {
         <Card>
           <CardContent className="pt-4">
             <div className="flex items-center gap-2 mb-1">
-              <Shield className="w-4 h-4 text-gray-600" />
-              <span className="text-xs text-gray-500 uppercase tracking-wide">Unverified</span>
+              <Shield className="w-4 h-4 text-muted-foreground" />
+              <span className="text-xs text-muted-foreground uppercase tracking-wide">Unverified</span>
             </div>
-            <div className="text-3xl font-bold text-gray-700">{total - verified}</div>
+            <div className="text-3xl font-bold text-foreground">{total - verified}</div>
             <div className="text-xs text-gray-400">Pending integrity check</div>
           </CardContent>
         </Card>
@@ -352,14 +352,14 @@ export default function DpcoEvidenceVault() {
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
-                <thead className="bg-gray-50 border-b">
+                <thead className="bg-muted border-b">
                   <tr>
-                    <th className="px-4 py-3 text-left font-medium text-gray-600">Document</th>
-                    <th className="px-4 py-3 text-left font-medium text-gray-600">Category</th>
-                    <th className="px-4 py-3 text-left font-medium text-gray-600">SHA-256</th>
-                    <th className="px-4 py-3 text-left font-medium text-gray-600">Integrity</th>
-                    <th className="px-4 py-3 text-left font-medium text-gray-600">Uploaded</th>
-                    <th className="px-4 py-3 text-left font-medium text-gray-600">Actions</th>
+                    <th className="px-4 py-3 text-left font-medium text-muted-foreground">Document</th>
+                    <th className="px-4 py-3 text-left font-medium text-muted-foreground">Category</th>
+                    <th className="px-4 py-3 text-left font-medium text-muted-foreground">SHA-256</th>
+                    <th className="px-4 py-3 text-left font-medium text-muted-foreground">Integrity</th>
+                    <th className="px-4 py-3 text-left font-medium text-muted-foreground">Uploaded</th>
+                    <th className="px-4 py-3 text-left font-medium text-muted-foreground">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
@@ -367,13 +367,13 @@ export default function DpcoEvidenceVault() {
                     const cat = categoryMeta(item.category);
                     const uploadedAt = item.created_at ? new Date(item.created_at).toLocaleDateString("en-NG") : "—";
                     return (
-                      <tr key={item.id} className="hover:bg-gray-50">
+                      <tr key={item.id} className="hover:bg-muted">
                         <td className="px-4 py-3">
                           <div className="flex items-start gap-2">
                             <FileText className="w-4 h-4 text-gray-400 mt-0.5 shrink-0" />
                             <div>
-                              <div className="font-medium text-gray-900 max-w-[200px] truncate">{item.file_name}</div>
-                              {item.description && <div className="text-xs text-gray-500 max-w-[200px] truncate">{item.description}</div>}
+                              <div className="font-medium text-foreground max-w-[200px] truncate">{item.file_name}</div>
+                              {item.description && <div className="text-xs text-muted-foreground max-w-[200px] truncate">{item.description}</div>}
                               {item.finding_ref && (
                                 <div className="flex items-center gap-1 mt-0.5">
                                   <Tag className="w-3 h-3 text-gray-400" />
@@ -388,7 +388,7 @@ export default function DpcoEvidenceVault() {
                           <Badge variant="outline" className={`text-xs ${cat.color}`}>{cat.label}</Badge>
                         </td>
                         <td className="px-4 py-3">
-                          <div className="font-mono text-xs text-gray-500 max-w-[120px] truncate" title={item.sha256_hash}>
+                          <div className="font-mono text-xs text-muted-foreground max-w-[120px] truncate" title={item.sha256_hash}>
                             {item.sha256_hash?.slice(0, 16)}...
                           </div>
                         </td>
@@ -396,7 +396,7 @@ export default function DpcoEvidenceVault() {
                           <TamperBadge tampered={!!item.is_tampered} verified={!!item.verified_at} />
                         </td>
                         <td className="px-4 py-3">
-                          <div className="flex items-center gap-1 text-xs text-gray-500">
+                          <div className="flex items-center gap-1 text-xs text-muted-foreground">
                             <Calendar className="w-3 h-3" />
                             {uploadedAt}
                           </div>
@@ -462,10 +462,10 @@ export default function DpcoEvidenceVault() {
           </DialogHeader>
           {verifyItem && (
             <div className="space-y-4">
-              <div className="bg-gray-50 rounded p-3 text-sm">
-                <div className="font-medium text-gray-900">{verifyItem.file_name}</div>
-                <div className="text-xs text-gray-500 mt-1">Stored SHA-256:</div>
-                <div className="font-mono text-xs text-gray-700 break-all mt-0.5">{verifyItem.sha256_hash}</div>
+              <div className="bg-muted rounded p-3 text-sm">
+                <div className="font-medium text-foreground">{verifyItem.file_name}</div>
+                <div className="text-xs text-muted-foreground mt-1">Stored SHA-256:</div>
+                <div className="font-mono text-xs text-foreground break-all mt-0.5">{verifyItem.sha256_hash}</div>
               </div>
               <div>
                 <Label>Provide SHA-256 Hash to Compare</Label>
@@ -503,8 +503,8 @@ export default function DpcoEvidenceVault() {
           </DialogHeader>
           {tagItem && (
             <div className="space-y-3">
-              <div className="text-sm text-gray-600 font-medium truncate">{tagItem.file_name}</div>
-              <div className="text-xs text-gray-500">Select which NDPA controls this evidence supports:</div>
+              <div className="text-sm text-muted-foreground font-medium truncate">{tagItem.file_name}</div>
+              <div className="text-xs text-muted-foreground">Select which NDPA controls this evidence supports:</div>
               <div className="grid grid-cols-5 gap-2">
                 {NDPA_CONTROLS.map(ctrl => (
                   <button
@@ -515,7 +515,7 @@ export default function DpcoEvidenceVault() {
                     className={`text-xs font-mono py-1.5 rounded border transition-colors ${
                       tagControls.includes(ctrl)
                         ? "bg-purple-600 text-white border-purple-600"
-                        : "bg-gray-50 text-gray-600 border-gray-200 hover:border-purple-400"
+                        : "bg-muted text-muted-foreground border-border hover:border-purple-400"
                     }`}
                   >
                     {ctrl}

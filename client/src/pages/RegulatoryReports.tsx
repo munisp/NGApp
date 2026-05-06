@@ -154,7 +154,7 @@ export default function RegulatoryReports() {
     pending: "bg-yellow-500/20 text-yellow-400",
     overdue: "bg-red-500/20 text-red-400",
     processing: "bg-blue-500/20 text-blue-400",
-    failed: "bg-gray-500/20 text-muted-foreground",
+    failed: "bg-muted0/20 text-muted-foreground",
   };
 
   return (
@@ -343,9 +343,9 @@ export default function RegulatoryReports() {
                       {Object.entries(row).map(([col, val]) => (
                         <td key={col} className="px-3 py-2 text-muted-foreground whitespace-nowrap">
                           {col === "severity" && typeof val === "string" ? (
-                            <Badge className={`${severityColor[val] ?? "bg-gray-500/20 text-muted-foreground"} text-xs border-0`}>{val}</Badge>
+                            <Badge className={`${severityColor[val] ?? "bg-muted0/20 text-muted-foreground"} text-xs border-0`}>{val}</Badge>
                           ) : col === "paymentStatus" && typeof val === "string" ? (
-                            <Badge className={`${paymentColor[val] ?? "bg-gray-500/20 text-muted-foreground"} text-xs border-0`}>{val}</Badge>
+                            <Badge className={`${paymentColor[val] ?? "bg-muted0/20 text-muted-foreground"} text-xs border-0`}>{val}</Badge>
                           ) : col === "amount" && typeof val === "number" ? (
                             <span className="text-yellow-400 font-mono">${val.toLocaleString()}</span>
                           ) : col === "complianceScore" && typeof val === "number" ? (
@@ -353,7 +353,7 @@ export default function RegulatoryReports() {
                           ) : val instanceof Date || (typeof val === "string" && val.includes("T")) ? (
                             <span className="text-muted-foreground">{new Date(val as string).toLocaleDateString()}</span>
                           ) : val === null || val === undefined ? (
-                            <span className="text-gray-600">—</span>
+                            <span className="text-muted-foreground">—</span>
                           ) : (
                             <span>{String(val)}</span>
                           )}
@@ -368,13 +368,13 @@ export default function RegulatoryReports() {
         )}
 
         {queryEnabled && !activeQuery.isLoading && rows.length === 0 && (
-          <div className="text-center py-16 text-gray-500">
+          <div className="text-center py-16 text-muted-foreground">
             No records found for the selected filters.
           </div>
         )}
 
         {!queryEnabled && (
-          <div className="text-center py-16 text-gray-600">
+          <div className="text-center py-16 text-muted-foreground">
             <BarChart3 className="w-10 h-10 mx-auto mb-3 opacity-40" />
             <p>Select filters and click <strong className="text-muted-foreground">Generate Report</strong> to load data.</p>
           </div>

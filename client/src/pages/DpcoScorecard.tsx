@@ -15,7 +15,7 @@ import { toast } from "sonner";
 const TIER_COLORS: Record<string, string> = {
   platinum: "bg-purple-100 text-purple-800 border-purple-300",
   gold:     "bg-yellow-100 text-yellow-800 border-yellow-300",
-  silver:   "bg-gray-100 text-gray-700 border-gray-300",
+  silver:   "bg-gray-100 text-foreground border-border",
   bronze:   "bg-orange-100 text-orange-800 border-orange-300",
   watch:    "bg-red-100 text-red-800 border-red-300",
 };
@@ -46,7 +46,7 @@ function RankBadge({ rank }: { rank: number }) {
   if (rank === 1) return <span className="text-2xl">🥇</span>;
   if (rank === 2) return <span className="text-2xl">🥈</span>;
   if (rank === 3) return <span className="text-2xl">🥉</span>;
-  return <span className="text-sm font-bold text-gray-500 w-8 text-center">#{rank}</span>;
+  return <span className="text-sm font-bold text-muted-foreground w-8 text-center">#{rank}</span>;
 }
 
 export default function DpcoScorecard() {
@@ -136,11 +136,11 @@ export default function DpcoScorecard() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+          <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
             <Trophy className="w-6 h-6 text-yellow-600" />
             DPCO Performance Scorecard
           </h1>
-          <p className="text-sm text-gray-500 mt-1">
+          <p className="text-sm text-muted-foreground mt-1">
             NDPC league table — composite ranking of all licensed Data Protection Compliance Organisations
           </p>
         </div>
@@ -155,7 +155,7 @@ export default function DpcoScorecard() {
           <CardContent className="pt-4">
             <div className="flex items-center gap-2 mb-1">
               <Shield className="w-4 h-4 text-purple-600" />
-              <span className="text-xs text-gray-500 uppercase tracking-wide">Platinum DPCOs</span>
+              <span className="text-xs text-muted-foreground uppercase tracking-wide">Platinum DPCOs</span>
             </div>
             <div className="text-3xl font-bold text-purple-700">{platinum}</div>
             <div className="text-xs text-gray-400">Score ≥ 90</div>
@@ -165,7 +165,7 @@ export default function DpcoScorecard() {
           <CardContent className="pt-4">
             <div className="flex items-center gap-2 mb-1">
               <Trophy className="w-4 h-4 text-yellow-600" />
-              <span className="text-xs text-gray-500 uppercase tracking-wide">Gold DPCOs</span>
+              <span className="text-xs text-muted-foreground uppercase tracking-wide">Gold DPCOs</span>
             </div>
             <div className="text-3xl font-bold text-yellow-700">{gold}</div>
             <div className="text-xs text-gray-400">Score 80–89</div>
@@ -175,7 +175,7 @@ export default function DpcoScorecard() {
           <CardContent className="pt-4">
             <div className="flex items-center gap-2 mb-1">
               <AlertTriangle className="w-4 h-4 text-red-600" />
-              <span className="text-xs text-gray-500 uppercase tracking-wide">Under Review</span>
+              <span className="text-xs text-muted-foreground uppercase tracking-wide">Under Review</span>
             </div>
             <div className="text-3xl font-bold text-red-700">{watch}</div>
             <div className="text-xs text-gray-400">Score &lt; 50</div>
@@ -185,7 +185,7 @@ export default function DpcoScorecard() {
           <CardContent className="pt-4">
             <div className="flex items-center gap-2 mb-1">
               <BarChart3 className="w-4 h-4 text-blue-600" />
-              <span className="text-xs text-gray-500 uppercase tracking-wide">Sector Average</span>
+              <span className="text-xs text-muted-foreground uppercase tracking-wide">Sector Average</span>
             </div>
             <div className="text-3xl font-bold text-blue-700">{avgComposite}</div>
             <div className="text-xs text-gray-400">Composite score</div>
@@ -244,29 +244,29 @@ export default function DpcoScorecard() {
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
-                <thead className="bg-gray-50 border-b">
+                <thead className="bg-muted border-b">
                   <tr>
-                    <th className="px-4 py-3 text-left font-medium text-gray-600 w-12">Rank</th>
-                    <th className="px-4 py-3 text-left font-medium text-gray-600">DPCO Name</th>
-                    <th className="px-4 py-3 text-left font-medium text-gray-600">Tier</th>
-                    <th className="px-4 py-3 text-right font-medium text-gray-600">Score</th>
-                    <th className="px-4 py-3 text-right font-medium text-gray-600">Clients</th>
-                    <th className="px-4 py-3 text-right font-medium text-gray-600">CAR Rate</th>
-                    <th className="px-4 py-3 text-right font-medium text-gray-600">SLA Breach</th>
-                    <th className="px-4 py-3 text-right font-medium text-gray-600">Avg Client Score</th>
-                    <th className="px-4 py-3 text-center font-medium text-gray-600">Trend</th>
+                    <th className="px-4 py-3 text-left font-medium text-muted-foreground w-12">Rank</th>
+                    <th className="px-4 py-3 text-left font-medium text-muted-foreground">DPCO Name</th>
+                    <th className="px-4 py-3 text-left font-medium text-muted-foreground">Tier</th>
+                    <th className="px-4 py-3 text-right font-medium text-muted-foreground">Score</th>
+                    <th className="px-4 py-3 text-right font-medium text-muted-foreground">Clients</th>
+                    <th className="px-4 py-3 text-right font-medium text-muted-foreground">CAR Rate</th>
+                    <th className="px-4 py-3 text-right font-medium text-muted-foreground">SLA Breach</th>
+                    <th className="px-4 py-3 text-right font-medium text-muted-foreground">Avg Client Score</th>
+                    <th className="px-4 py-3 text-center font-medium text-muted-foreground">Trend</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
                   {paginated.map((row, i) => {
                     const globalRank = (page - 1) * PAGE_SIZE + i + 1;
                     return (
-                      <tr key={row.id} className="hover:bg-gray-50 transition-colors">
+                      <tr key={row.id} className="hover:bg-muted transition-colors">
                         <td className="px-4 py-3">
                           <RankBadge rank={globalRank} />
                         </td>
                         <td className="px-4 py-3">
-                          <div className="font-medium text-gray-900">{row.name}</div>
+                          <div className="font-medium text-foreground">{row.name}</div>
                           <div className="text-xs text-gray-400">{row.licenceNumber} · {row.state}</div>
                         </td>
                         <td className="px-4 py-3">
@@ -277,7 +277,7 @@ export default function DpcoScorecard() {
                         <td className="px-4 py-3 text-right">
                           <div className="flex items-center justify-end gap-2">
                             <Progress value={row.composite} className="w-16 h-1.5" />
-                            <span className="font-bold text-gray-900 w-8">{row.composite}</span>
+                            <span className="font-bold text-foreground w-8">{row.composite}</span>
                           </div>
                         </td>
                         <td className="px-4 py-3 text-right">
@@ -326,7 +326,7 @@ export default function DpcoScorecard() {
           <Button variant="outline" size="sm" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}>
             Previous
           </Button>
-          <span className="text-sm text-gray-600">Page {page} of {totalPages}</span>
+          <span className="text-sm text-muted-foreground">Page {page} of {totalPages}</span>
           <Button variant="outline" size="sm" onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}>
             Next
           </Button>
@@ -341,19 +341,19 @@ export default function DpcoScorecard() {
             <div>
               <div className="font-medium text-blue-900 mb-1">Composite Score Methodology</div>
               <div className="text-sm text-blue-800 grid grid-cols-2 md:grid-cols-4 gap-2 mt-2">
-                <div className="bg-white rounded p-2 border border-blue-100">
+                <div className="bg-background rounded p-2 border border-blue-100">
                   <div className="font-bold">40%</div>
                   <div className="text-xs">Average client NDPA compliance score</div>
                 </div>
-                <div className="bg-white rounded p-2 border border-blue-100">
+                <div className="bg-background rounded p-2 border border-blue-100">
                   <div className="font-bold">30%</div>
                   <div className="text-xs">CAR submission rate (on-time filing)</div>
                 </div>
-                <div className="bg-white rounded p-2 border border-blue-100">
+                <div className="bg-background rounded p-2 border border-blue-100">
                   <div className="font-bold">20%</div>
                   <div className="text-xs">SLA compliance (72h NDPC notification)</div>
                 </div>
-                <div className="bg-white rounded p-2 border border-blue-100">
+                <div className="bg-background rounded p-2 border border-blue-100">
                   <div className="font-bold">10%</div>
                   <div className="text-xs">Active client portfolio size (capped at 50)</div>
                 </div>

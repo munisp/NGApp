@@ -61,13 +61,13 @@ export default function GitopsConfig() {
           </thead>
           <tbody>
             {(snapshots as any[]).length === 0 ? (
-              <tr><td colSpan={7} className="text-center py-12 text-gray-500"><GitBranch className="w-8 h-8 mx-auto mb-2 opacity-30" /><p>No config snapshots yet</p></td></tr>
+              <tr><td colSpan={7} className="text-center py-12 text-muted-foreground"><GitBranch className="w-8 h-8 mx-auto mb-2 opacity-30" /><p>No config snapshots yet</p></td></tr>
             ) : (snapshots as any[]).map((s: any) => (
               <tr key={s.id} className="border-b border-border/50 hover:bg-muted/30">
                 <td className="px-4 py-3 font-mono text-xs text-violet-400">CS-{String(s.id).padStart(6, "0")}</td>
                 <td className="px-4 py-3"><Badge variant="outline" className="text-xs border-border text-muted-foreground">{s.configType}</Badge></td>
                 <td className="px-4 py-3 font-mono text-xs text-muted-foreground">{s.version}</td>
-                <td className="px-4 py-3 font-mono text-xs text-gray-500 max-w-xs truncate">{s.contentHash?.slice(0, 16)}...</td>
+                <td className="px-4 py-3 font-mono text-xs text-muted-foreground max-w-xs truncate">{s.contentHash?.slice(0, 16)}...</td>
                 <td className="px-4 py-3"><Badge className={`text-xs ${s.status === "applied" ? "bg-green-500/20 text-green-400" : s.status === "pending" ? "bg-yellow-500/20 text-yellow-400" : "bg-red-500/20 text-red-400"}`}>{s.status}</Badge></td>
                 <td className="px-4 py-3 text-xs text-muted-foreground">{s.createdAt ? new Date(s.createdAt).toLocaleString() : "—"}</td>
                 <td className="px-4 py-3 flex gap-1">

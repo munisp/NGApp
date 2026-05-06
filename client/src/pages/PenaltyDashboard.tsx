@@ -37,7 +37,7 @@ const formatNGN = (v: number | string) => {
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
     return (
-      <div className="bg-white border border-gray-200 rounded-lg p-3 shadow-lg text-sm">
+      <div className="bg-background border border-border rounded-lg p-3 shadow-lg text-sm">
         <p className="font-semibold text-gray-800 mb-1">{label}</p>
         {payload.map((p: any) => (
           <p key={p.name} style={{ color: p.color }}>
@@ -166,8 +166,8 @@ export default function PenaltyDashboard() {
       <div className="p-6 space-y-6">
         {/* Header */}
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Penalty Calculations Dashboard</h1>
-          <p className="text-sm text-gray-500 mt-1">
+          <h1 className="text-2xl font-bold text-foreground">Penalty Calculations Dashboard</h1>
+          <p className="text-sm text-muted-foreground mt-1">
             NDPA 2023 Section 48 — Penalty metrics, violation trends, and enforcement analytics
           </p>
         </div>
@@ -190,7 +190,7 @@ export default function PenaltyDashboard() {
                       </div>
                       <div className="min-w-0">
                         <p className="text-xl font-bold truncate">{value}</p>
-                        <p className="text-xs text-gray-500 leading-tight">{label}</p>
+                        <p className="text-xs text-muted-foreground leading-tight">{label}</p>
                       </div>
                     </div>
                   </CardContent>
@@ -318,7 +318,7 @@ export default function PenaltyDashboard() {
                               <div className="flex items-center gap-2">
                                 <span className="text-gray-400 w-4 text-right">{i + 1}.</span>
                                 <span className="font-medium truncate max-w-32">{org.org_name}</span>
-                                <Badge className="bg-gray-100 text-gray-600 text-xs">{org.case_count} cases</Badge>
+                                <Badge className="bg-gray-100 text-muted-foreground text-xs">{org.case_count} cases</Badge>
                               </div>
                               <span className="font-semibold text-red-600">{formatNGN(parseFloat(org.total_penalties ?? "0"))}</span>
                             </div>

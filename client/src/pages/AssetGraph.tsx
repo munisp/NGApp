@@ -79,7 +79,7 @@ function AssetDrawer({ node, onClose }: { node: GraphNode; onClose: () => void }
           <div className="w-5 h-5 rounded-full" style={{ backgroundColor: TYPE_COLORS[node.assetType] ?? "#6b7280" }} />
           <div>
             <div className="font-semibold text-foreground">{node.name}</div>
-            <div className="text-xs text-gray-500">Asset #{node.id} · {node.assetType}</div>
+            <div className="text-xs text-muted-foreground">Asset #{node.id} · {node.assetType}</div>
           </div>
         </div>
         <Button size="sm" variant="ghost" className="text-muted-foreground hover:text-foreground" onClick={onClose}>
@@ -91,7 +91,7 @@ function AssetDrawer({ node, onClose }: { node: GraphNode; onClose: () => void }
         {/* Status Overview */}
         <div className="grid grid-cols-2 gap-3">
           <div className="bg-card rounded-lg p-3">
-            <div className="text-xs text-gray-500">Compliance</div>
+            <div className="text-xs text-muted-foreground">Compliance</div>
             <Badge className={`text-xs mt-1 ${
               node.status === "compliant" ? "bg-green-500/20 text-green-400" :
               node.status === "non_compliant" ? "bg-red-500/20 text-red-400" :
@@ -101,7 +101,7 @@ function AssetDrawer({ node, onClose }: { node: GraphNode; onClose: () => void }
             </Badge>
           </div>
           <div className="bg-card rounded-lg p-3">
-            <div className="text-xs text-gray-500">Organization</div>
+            <div className="text-xs text-muted-foreground">Organization</div>
             <div className="text-sm text-muted-foreground mt-1">#{node.orgId ?? "—"}</div>
           </div>
         </div>
@@ -114,14 +114,14 @@ function AssetDrawer({ node, onClose }: { node: GraphNode; onClose: () => void }
             <Badge className="text-[10px] bg-orange-500/20 text-orange-400">{nodeAlerts.length}</Badge>
           </div>
           {nodeAlerts.length === 0 ? (
-            <p className="text-xs text-gray-600 italic">No active alerts for this organization</p>
+            <p className="text-xs text-muted-foreground italic">No active alerts for this organization</p>
           ) : nodeAlerts.map((a: any) => (
             <div key={a.id} className="bg-card rounded-lg p-2.5 mb-2 border border-border">
               <div className="flex items-center justify-between">
                 <span className="text-xs text-muted-foreground font-medium">{a.title}</span>
                 <Badge className={`text-[10px] ${a.severity === "critical" ? "bg-red-500/20 text-red-400" : "bg-yellow-500/20 text-yellow-400"}`}>{a.severity}</Badge>
               </div>
-              <div className="text-[11px] text-gray-500 mt-1">{a.alertType} · {a.detectedAt ? new Date(a.detectedAt).toLocaleDateString() : "—"}</div>
+              <div className="text-[11px] text-muted-foreground mt-1">{a.alertType} · {a.detectedAt ? new Date(a.detectedAt).toLocaleDateString() : "—"}</div>
             </div>
           ))}
         </div>
@@ -134,14 +134,14 @@ function AssetDrawer({ node, onClose }: { node: GraphNode; onClose: () => void }
             <Badge className="text-[10px] bg-red-500/20 text-red-400">{nodeViolations.length}</Badge>
           </div>
           {nodeViolations.length === 0 ? (
-            <p className="text-xs text-gray-600 italic">No violations for this organization</p>
+            <p className="text-xs text-muted-foreground italic">No violations for this organization</p>
           ) : nodeViolations.map((v: any) => (
             <div key={v.id} className="bg-card rounded-lg p-2.5 mb-2 border border-border">
               <div className="flex items-center justify-between">
                 <span className="text-xs text-muted-foreground font-medium truncate max-w-[200px]">{v.title}</span>
                 <Badge className={`text-[10px] shrink-0 ${v.severity === "critical" ? "bg-red-500/20 text-red-400" : v.severity === "high" ? "bg-orange-500/20 text-orange-400" : "bg-yellow-500/20 text-yellow-400"}`}>{v.severity}</Badge>
               </div>
-              <div className="text-[11px] text-gray-500 mt-1">{v.status} · {v.detectedAt ? new Date(v.detectedAt).toLocaleDateString() : "—"}</div>
+              <div className="text-[11px] text-muted-foreground mt-1">{v.status} · {v.detectedAt ? new Date(v.detectedAt).toLocaleDateString() : "—"}</div>
             </div>
           ))}
         </div>
@@ -154,14 +154,14 @@ function AssetDrawer({ node, onClose }: { node: GraphNode; onClose: () => void }
             <Badge className="text-[10px] bg-emerald-500/20 text-emerald-400">{nodeEvidence.length}</Badge>
           </div>
           {nodeEvidence.length === 0 ? (
-            <p className="text-xs text-gray-600 italic">No evidence packages linked to this asset</p>
+            <p className="text-xs text-muted-foreground italic">No evidence packages linked to this asset</p>
           ) : nodeEvidence.map((e: any) => (
             <div key={e.id} className="bg-card rounded-lg p-2.5 mb-2 border border-border">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-mono text-blue-400">EP-{String(e.id).padStart(6, "0")}</span>
                 <Badge className={`text-[10px] ${e.status === "ready" ? "bg-green-500/20 text-green-400" : "bg-red-500/20 text-red-400"}`}>{e.status}</Badge>
               </div>
-              <div className="text-[11px] text-gray-500 mt-1">{e.packageType} · {e.createdAt ? new Date(e.createdAt).toLocaleDateString() : "—"}</div>
+              <div className="text-[11px] text-muted-foreground mt-1">{e.packageType} · {e.createdAt ? new Date(e.createdAt).toLocaleDateString() : "—"}</div>
             </div>
           ))}
         </div>
@@ -169,10 +169,10 @@ function AssetDrawer({ node, onClose }: { node: GraphNode; onClose: () => void }
         {/* Compliance Timeline hint */}
         <div className="bg-card/50 rounded-lg p-3 border border-border/50">
           <div className="flex items-center gap-2 mb-1">
-            <Clock className="w-3 h-3 text-gray-500" />
-            <span className="text-xs text-gray-500">Compliance Timeline</span>
+            <Clock className="w-3 h-3 text-muted-foreground" />
+            <span className="text-xs text-muted-foreground">Compliance Timeline</span>
           </div>
-          <p className="text-[11px] text-gray-600">
+          <p className="text-[11px] text-muted-foreground">
             Full compliance history is available in the Compliance Engine and Audit Log pages filtered by Organization #{node.orgId ?? "—"}.
           </p>
         </div>
@@ -399,18 +399,18 @@ export default function AssetGraph() {
       {/* Graph Canvas */}
       <div className="flex-1 bg-background rounded-xl border border-border relative overflow-hidden" style={{ minHeight: 480 }}>
         {isLoading ? (
-          <div className="absolute inset-0 flex items-center justify-center text-gray-500">
+          <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
             <Network className="w-8 h-8 animate-pulse" />
           </div>
         ) : (assets as any[]).length === 0 ? (
-          <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-500">
+          <div className="absolute inset-0 flex flex-col items-center justify-center text-muted-foreground">
             <Network className="w-10 h-10 mb-2 opacity-30" />
             <p>No assets found. Discover assets to populate the graph.</p>
           </div>
         ) : (
           <svg ref={svgRef} className="w-full h-full" style={{ minHeight: 480 }} />
         )}
-        <div className="absolute bottom-3 right-3 text-xs text-gray-600 font-mono">
+        <div className="absolute bottom-3 right-3 text-xs text-muted-foreground font-mono">
           {Math.round(zoom * 100)}% zoom · drag to pan · scroll to zoom · click node to inspect
         </div>
       </div>

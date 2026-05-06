@@ -91,14 +91,14 @@ export default function AiGovernance() {
           </thead>
           <tbody>
             {(systems as any[]).length === 0 ? (
-              <tr><td colSpan={7} className="text-center py-12 text-gray-500"><Bot className="w-8 h-8 mx-auto mb-2 opacity-30" /><p>No AI systems registered yet</p></td></tr>
+              <tr><td colSpan={7} className="text-center py-12 text-muted-foreground"><Bot className="w-8 h-8 mx-auto mb-2 opacity-30" /><p>No AI systems registered yet</p></td></tr>
             ) : (systems as any[]).map((s: any) => (
               <tr key={s.id} className="border-b border-border/50 hover:bg-muted/30">
                 <td className="px-4 py-3 text-foreground font-medium">{s.name}</td>
                 <td className="px-4 py-3 text-muted-foreground">{s.vendor || "—"}</td>
                 <td className="px-4 py-3 text-muted-foreground max-w-xs truncate">{s.purpose || "—"}</td>
                 <td className="px-4 py-3"><Badge className={`text-xs border ${RISK_COLORS[s.riskLevel] || "bg-muted text-muted-foreground"}`}>{s.riskLevel}</Badge></td>
-                <td className="px-4 py-3">{s.personalDataProcessed ? <CheckCircle className="w-4 h-4 text-orange-400" /> : <span className="text-gray-600">—</span>}</td>
+                <td className="px-4 py-3">{s.personalDataProcessed ? <CheckCircle className="w-4 h-4 text-orange-400" /> : <span className="text-muted-foreground">—</span>}</td>
                 <td className="px-4 py-3"><Badge variant="outline" className={`text-xs ${s.status === "approved" ? "border-green-500/50 text-green-400" : s.status === "suspended" ? "border-red-500/50 text-red-400" : "border-yellow-500/50 text-yellow-400"}`}>{s.status}</Badge></td>
                 <td className="px-4 py-3 flex gap-2">
                   <Button size="sm" variant="outline" className="text-xs border-border" onClick={() => { setShowUpdate(s); setUpdateForm({ status: s.status, riskLevel: s.riskLevel, auditNotes: s.auditNotes || "" }); }}>Review</Button>

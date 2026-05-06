@@ -172,7 +172,7 @@ export default function DataFlowVisualization() {
       <div className="grid grid-cols-2 gap-6">
         <div className="bg-card rounded-xl border border-border p-6">
           <h2 className="text-foreground font-semibold mb-4 flex items-center gap-2"><Globe className="w-5 h-5 text-blue-400" /> Jurisdiction Flow Map</h2>
-          {isLoading ? <div className="h-64 flex items-center justify-center text-gray-500">Loading flows...</div> : <ChordDiagram flows={flows} />}
+          {isLoading ? <div className="h-64 flex items-center justify-center text-muted-foreground">Loading flows...</div> : <ChordDiagram flows={flows} />}
           <div className="flex gap-3 mt-4 justify-center text-xs">
             <span className="flex items-center gap-1"><span className="w-3 h-0.5 bg-blue-500 inline-block" /> Approved</span>
             <span className="flex items-center gap-1"><span className="w-3 h-0.5 bg-red-500 inline-block border-dashed border-t border-red-500" /> Blocked/High Risk</span>
@@ -182,7 +182,7 @@ export default function DataFlowVisualization() {
           <div className="bg-card rounded-xl border border-border p-5">
             <h2 className="text-foreground font-semibold mb-4 flex items-center gap-2"><Activity className="w-5 h-5 text-green-400" /> Top Transfer Routes</h2>
             <div className="space-y-2">
-              {topRoutes.length === 0 ? <p className="text-gray-500 text-sm">No transfer data available</p> : topRoutes.map(([route, count]) => (
+              {topRoutes.length === 0 ? <p className="text-muted-foreground text-sm">No transfer data available</p> : topRoutes.map(([route, count]) => (
                 <div key={route} className="flex items-center justify-between">
                   <span className="text-sm text-muted-foreground">{route}</span>
                   <div className="flex items-center gap-2">
@@ -199,7 +199,7 @@ export default function DataFlowVisualization() {
             <h2 className="text-foreground font-semibold mb-4 flex items-center gap-2"><AlertTriangle className="w-5 h-5 text-red-400" /> Recent Blocked Flows</h2>
             <div className="space-y-2">
               {(transfers as any[]).filter((t: any) => t.status === "rejected").slice(0, 5).length === 0 ? (
-                <p className="text-gray-500 text-sm">No blocked flows</p>
+                <p className="text-muted-foreground text-sm">No blocked flows</p>
               ) : (transfers as any[]).filter((t: any) => t.status === "rejected").slice(0, 5).map((t: any) => (
                 <div key={t.id} className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">{t.sourceJurisdiction || "NG"} → {t.destinationJurisdiction || "???"}</span>

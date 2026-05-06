@@ -133,8 +133,8 @@ export default function BankingDashboard() {
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Banking Services</h1>
-          <p className="text-sm text-gray-500 mt-1">
+          <h1 className="text-2xl font-bold text-foreground">Banking Services</h1>
+          <p className="text-sm text-muted-foreground mt-1">
             CBN-regulated financial institution oversight — KYC, AML, NIP/RTGS, SWIFT, Fraud, Correspondent Banking
           </p>
         </div>
@@ -147,25 +147,25 @@ export default function BankingDashboard() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card className="border-l-4 border-l-blue-500">
           <CardContent className="pt-4">
-            <p className="text-xs text-gray-500">Licensed Institutions</p>
+            <p className="text-xs text-muted-foreground">Licensed Institutions</p>
             <p className="text-2xl font-bold text-blue-700">{(instStats as any)?.licensed ?? "—"}</p>
           </CardContent>
         </Card>
         <Card className="border-l-4 border-l-red-500">
           <CardContent className="pt-4">
-            <p className="text-xs text-gray-500">Open AML Cases</p>
+            <p className="text-xs text-muted-foreground">Open AML Cases</p>
             <p className="text-2xl font-bold text-red-700">{(amlStats as any)?.open_cases ?? "—"}</p>
           </CardContent>
         </Card>
         <Card className="border-l-4 border-l-orange-500">
           <CardContent className="pt-4">
-            <p className="text-xs text-gray-500">Fraud Alerts (Open)</p>
+            <p className="text-xs text-muted-foreground">Fraud Alerts (Open)</p>
             <p className="text-2xl font-bold text-orange-700">{(fraudStats as any)?.open_alerts ?? "—"}</p>
           </CardContent>
         </Card>
         <Card className="border-l-4 border-l-teal-500">
           <CardContent className="pt-4">
-            <p className="text-xs text-gray-500">CBN Reports Overdue</p>
+            <p className="text-xs text-muted-foreground">CBN Reports Overdue</p>
             <p className="text-2xl font-bold text-teal-700">{(cbnStats as any)?.overdue ?? "—"}</p>
           </CardContent>
         </Card>
@@ -192,7 +192,7 @@ export default function BankingDashboard() {
                       <p className={`text-lg font-bold ${s.alert ? "text-red-600" : "text-gray-800"}`}>
                         {s.value}
                       </p>
-                      <p className="text-xs text-gray-500">{s.label}</p>
+                      <p className="text-xs text-muted-foreground">{s.label}</p>
                     </div>
                   ))}
                 </div>

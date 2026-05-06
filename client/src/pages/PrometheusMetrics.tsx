@@ -141,7 +141,7 @@ export default function PrometheusMetrics() {
             <Activity className="w-3 h-3" />
             {healthyWorkers}/{totalWorkers} workers healthy
           </Badge>
-          <span className="text-xs text-gray-500">
+          <span className="text-xs text-muted-foreground">
             Scraped: {lastRefresh.toLocaleTimeString()}
           </span>
           <Button variant="outline" size="sm" onClick={refresh} className="gap-2">
@@ -164,7 +164,7 @@ export default function PrometheusMetrics() {
             value={Math.round((healthyWorkers / Math.max(totalWorkers, 1)) * 100)}
             className="h-2"
           />
-          <div className="flex gap-4 mt-3 text-xs text-gray-500">
+          <div className="flex gap-4 mt-3 text-xs text-muted-foreground">
             <span>Organizations: {dashStats?.orgStats?.total ?? 0}</span>
             <span>·</span>
             <span>Assets: {dashStats?.assetStats?.total ?? 0}</span>
@@ -215,7 +215,7 @@ export default function PrometheusMetrics() {
                       <div className="mt-2">
                         <Progress value={pct} className="h-1" />
                       </div>
-                      <div className="mt-1 font-mono text-xs text-gray-600 truncate">
+                      <div className="mt-1 font-mono text-xs text-muted-foreground truncate">
                         {metric.key}
                       </div>
                     </div>
@@ -276,7 +276,7 @@ export default function PrometheusMetrics() {
                         </Badge>
                       )}
                     </td>
-                    <td className="px-4 py-2 text-xs text-gray-500">
+                    <td className="px-4 py-2 text-xs text-muted-foreground">
                       {lastRefresh.toLocaleTimeString()}
                     </td>
                   </tr>

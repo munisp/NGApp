@@ -22,8 +22,8 @@ function EditableText({
     return (
       <span className="inline-flex flex-col gap-1 w-full">
         {multiline
-          ? <Textarea value={draft} onChange={e => setDraft(e.target.value)} className="text-inherit bg-white/10 border-white/30 text-sm min-h-[80px]" autoFocus />
-          : <Input value={draft} onChange={e => setDraft(e.target.value)} className="text-inherit bg-white/10 border-white/30 h-7 text-sm" autoFocus
+          ? <Textarea value={draft} onChange={e => setDraft(e.target.value)} className="text-inherit bg-background/10 border-white/30 text-sm min-h-[80px]" autoFocus />
+          : <Input value={draft} onChange={e => setDraft(e.target.value)} className="text-inherit bg-background/10 border-white/30 h-7 text-sm" autoFocus
               onKeyDown={e => { if (e.key === "Enter") save(); if (e.key === "Escape") cancel(); }} />
         }
         <span className="flex gap-1">
@@ -107,7 +107,7 @@ export default function DpcoBrochure() {
   return (
     <div className="min-h-screen bg-slate-100">
       {/* Editor Toolbar */}
-      <div className="sticky top-0 z-50 bg-white border-b border-slate-200 px-6 py-2 flex items-center gap-3 shadow-sm print:hidden">
+      <div className="sticky top-0 z-50 bg-background border-b border-border px-6 py-2 flex items-center gap-3 shadow-sm print:hidden">
         <div className="flex items-center gap-2">
           <Pencil className="w-4 h-4 text-violet-500" />
           <span className="text-sm font-medium text-slate-700">Brochure Editor</span>
@@ -166,12 +166,12 @@ export default function DpcoBrochure() {
         </section>
 
         {/* ── PLATFORM MODULES ────────────────────────────────────────────── */}
-        <section className="bg-white px-16 py-14">
+        <section className="bg-background px-16 py-14">
           <h2 className="text-2xl font-bold text-slate-900 mb-2">Everything You Need. Nothing You Don't.</h2>
           <p className="text-slate-500 text-sm mb-10">Eight purpose-built modules covering the complete DPCO business lifecycle.</p>
           <div className="grid grid-cols-2 gap-6">
             {c.modules.map((m, i) => (
-              <div key={i} className="border border-slate-200 rounded-xl p-5 hover:border-emerald-300 transition-colors">
+              <div key={i} className="border border-border rounded-xl p-5 hover:border-emerald-300 transition-colors">
                 <div className="flex items-start gap-3">
                   <div className="w-8 h-8 rounded-lg bg-emerald-50 border border-emerald-100 flex items-center justify-center shrink-0 mt-0.5">
                     <span className="text-emerald-600 font-bold text-xs">{String(i + 1).padStart(2, "0")}</span>
@@ -219,12 +219,12 @@ export default function DpcoBrochure() {
         </section>
 
         {/* ── PRICING ─────────────────────────────────────────────────────── */}
-        <section className="bg-white px-16 py-14">
+        <section className="bg-background px-16 py-14">
           <h2 className="text-2xl font-bold text-slate-900 mb-2">Transparent Pricing. No Hidden Fees.</h2>
           <p className="text-slate-500 text-sm mb-10">Choose the tier that matches your practice size. All tiers include NDPC integration and full audit trail.</p>
           <div className="grid grid-cols-3 gap-6">
             {c.tiers.map((tier, i) => (
-              <div key={i} className={`rounded-xl border-2 p-6 flex flex-col ${tier.highlight ? "border-emerald-500 bg-emerald-50" : "border-slate-200 bg-white"}`}>
+              <div key={i} className={`rounded-xl border-2 p-6 flex flex-col ${tier.highlight ? "border-emerald-500 bg-emerald-50" : "border-border bg-background"}`}>
                 <div className="mb-4">
                   <h3 className="font-bold text-slate-900 text-lg">
                     <EditableText value={tier.name} onChange={v => updateTier(i, "name", v)} className="font-bold text-slate-900 text-lg" />

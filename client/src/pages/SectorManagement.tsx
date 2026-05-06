@@ -47,7 +47,7 @@ export default function SectorManagement() {
           </thead>
           <tbody>
             {(sectors as any[]).length === 0 ? (
-              <tr><td colSpan={6} className="text-center py-12 text-gray-500"><Building2 className="w-8 h-8 mx-auto mb-2 opacity-30" /><p>No sectors defined yet</p></td></tr>
+              <tr><td colSpan={6} className="text-center py-12 text-muted-foreground"><Building2 className="w-8 h-8 mx-auto mb-2 opacity-30" /><p>No sectors defined yet</p></td></tr>
             ) : (sectors as any[]).map((s: any) => (
               <tr key={s.id} className="border-b border-border/50 hover:bg-muted/30">
                 <td className="px-4 py-3 text-foreground font-medium flex items-center gap-2"><Building2 className="w-4 h-4 text-indigo-400" />{s.name}</td>

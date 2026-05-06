@@ -14,7 +14,7 @@ const STATUS_COLORS: Record<string, string> = {
   open: "bg-red-100 text-red-800",
   investigating: "bg-yellow-100 text-yellow-800",
   resolved: "bg-green-100 text-green-800",
-  false_positive: "bg-gray-100 text-gray-700",
+  false_positive: "bg-gray-100 text-foreground",
   escalated: "bg-purple-100 text-purple-800",
 };
 
@@ -68,8 +68,8 @@ export default function FraudAlerts() {
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Fraud Alerts</h1>
-          <p className="text-sm text-gray-500 mt-1">Real-time fraud detection — ML anomaly detection, velocity checks, geo-anomaly analysis</p>
+          <h1 className="text-2xl font-bold text-foreground">Fraud Alerts</h1>
+          <p className="text-sm text-muted-foreground mt-1">Real-time fraud detection — ML anomaly detection, velocity checks, geo-anomaly analysis</p>
         </div>
         <Dialog open={createOpen} onOpenChange={setCreateOpen}>
           <DialogTrigger asChild>
@@ -151,7 +151,7 @@ export default function FraudAlerts() {
       {stats && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[
-            { label: "Total Alerts", value: (stats as any).total ?? 0, icon: Shield, color: "text-gray-600" },
+            { label: "Total Alerts", value: (stats as any).total ?? 0, icon: Shield, color: "text-muted-foreground" },
             { label: "Open", value: (stats as any).open ?? 0, icon: AlertTriangle, color: "text-red-600" },
             { label: "Investigating", value: (stats as any).investigating ?? 0, icon: Search, color: "text-yellow-600" },
             { label: "Auto Blocked", value: (stats as any).auto_blocked ?? 0, icon: Lock, color: "text-purple-600" },
@@ -162,7 +162,7 @@ export default function FraudAlerts() {
                   <Icon className={`h-8 w-8 ${color}`} />
                   <div>
                     <p className="text-2xl font-bold">{value}</p>
-                    <p className="text-xs text-gray-500">{label}</p>
+                    <p className="text-xs text-muted-foreground">{label}</p>
                   </div>
                 </div>
               </CardContent>
@@ -199,10 +199,10 @@ export default function FraudAlerts() {
         <CardContent className="p-0">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-gray-50 border-b">
+              <thead className="bg-muted border-b">
                 <tr>
                   {["Alert Ref", "Type", "Account", "Amount", "Risk Score", "ML Model", "Status", "Blocked", "Created", "Actions"].map(h => (
-                    <th key={h} className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{h}</th>
+                    <th key={h} className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">{h}</th>
                   ))}
                 </tr>
               </thead>
@@ -212,7 +212,7 @@ export default function FraudAlerts() {
                 ) : rows.length === 0 ? (
                   <tr><td colSpan={10} className="px-4 py-8 text-center text-gray-400">No fraud alerts found</td></tr>
                 ) : rows.map((r: any) => (
-                  <tr key={r.id} className="hover:bg-gray-50">
+                  <tr key={r.id} className="hover:bg-muted">
                     <td className="px-4 py-3 font-mono text-xs">{r.alert_ref}</td>
                     <td className="px-4 py-3 text-xs">{r.alert_type?.replace(/_/g, " ")}</td>
                     <td className="px-4 py-3 font-mono text-xs">{r.account_number || "—"}</td>
@@ -222,16 +222,16 @@ export default function FraudAlerts() {
                         {r.risk_score}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-xs text-gray-500">{r.ml_model || "—"}</td>
+                    <td className="px-4 py-3 text-xs text-muted-foreground">{r.ml_model || "—"}</td>
                     <td className="px-4 py-3">
-                      <Badge className={STATUS_COLORS[r.status] || "bg-gray-100 text-gray-700"}>
+                      <Badge className={STATUS_COLORS[r.status] || "bg-gray-100 text-foreground"}>
                         {r.status?.replace(/_/g, " ")}
                       </Badge>
                     </td>
                     <td className="px-4 py-3">
                       {r.blocked_at ? <Lock className="h-4 w-4 text-red-500" /> : <span className="text-gray-300">—</span>}
                     </td>
-                    <td className="px-4 py-3 text-xs text-gray-500">{r.created_at ? new Date(r.created_at).toLocaleDateString() : "—"}</td>
+                    <td className="px-4 py-3 text-xs text-muted-foreground">{r.created_at ? new Date(r.created_at).toLocaleDateString() : "—"}</td>
                     <td className="px-4 py-3">
                       {r.status === "open" && (
                         <div className="flex gap-1">
@@ -265,7 +265,7 @@ export default function FraudAlerts() {
           </div>
           {total > 20 && (
             <div className="flex items-center justify-between px-4 py-3 border-t">
-              <span className="text-sm text-gray-500">Page {page} of {Math.ceil(total / 20)}</span>
+              <span className="text-sm text-muted-foreground">Page {page} of {Math.ceil(total / 20)}</span>
               <div className="flex gap-2">
                 <Button size="sm" variant="outline" disabled={page === 1} onClick={() => setPage(p => p - 1)}>Previous</Button>
                 <Button size="sm" variant="outline" disabled={page * 20 >= total} onClick={() => setPage(p => p + 1)}>Next</Button>

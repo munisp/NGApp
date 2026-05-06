@@ -117,7 +117,7 @@ export default function CertificateVerify() {
   const loading = isLoading || isFetching;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 flex flex-col items-center justify-start pt-16 px-4 print:bg-white print:pt-0">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 flex flex-col items-center justify-start pt-16 px-4 print:bg-background print:pt-0">
       {/* Print area — hidden on screen, visible when printing */}
       {data?.valid && (
         <CertificatePrintView data={data} />
@@ -142,7 +142,7 @@ export default function CertificateVerify() {
         </div>
 
         {/* Search box */}
-        <div className="w-full max-w-lg bg-white/5 backdrop-blur border border-white/10 rounded-2xl p-6 mb-6">
+        <div className="w-full max-w-lg bg-background/5 backdrop-blur border border-white/10 rounded-2xl p-6 mb-6">
           <label className="block text-sm font-medium text-slate-300 mb-2">Certificate Token</label>
           <div className="flex gap-2">
             <Input
@@ -150,7 +150,7 @@ export default function CertificateVerify() {
               onChange={e => setInputToken(e.target.value)}
               onKeyDown={e => e.key === "Enter" && handleVerify()}
               placeholder="e.g. SUB-1234567890-ABCDEF"
-              className="bg-white/10 border-white/20 text-white placeholder:text-slate-500 focus:border-blue-400"
+              className="bg-background/10 border-white/20 text-white placeholder:text-slate-500 focus:border-blue-400"
             />
             <Button onClick={handleVerify} disabled={!inputToken.trim() || loading} className="bg-blue-600 hover:bg-blue-700 shrink-0">
               {loading ? (

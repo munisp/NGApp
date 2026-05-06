@@ -76,8 +76,8 @@ export default function CorrespondentBanks() {
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Correspondent Banks</h1>
-          <p className="text-sm text-gray-500 mt-1">Nostro/Vostro relationships, FATF due diligence, AML risk ratings, daily/monthly limits</p>
+          <h1 className="text-2xl font-bold text-foreground">Correspondent Banks</h1>
+          <p className="text-sm text-muted-foreground mt-1">Nostro/Vostro relationships, FATF due diligence, AML risk ratings, daily/monthly limits</p>
         </div>
         <Dialog open={createOpen} onOpenChange={setCreateOpen}>
           <DialogTrigger asChild>
@@ -197,7 +197,7 @@ export default function CorrespondentBanks() {
                   <Icon className={`h-8 w-8 ${color}`} />
                   <div>
                     <p className="text-2xl font-bold">{value}</p>
-                    <p className="text-xs text-gray-500">{label}</p>
+                    <p className="text-xs text-muted-foreground">{label}</p>
                   </div>
                 </div>
               </CardContent>
@@ -234,10 +234,10 @@ export default function CorrespondentBanks() {
         <CardContent className="p-0">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-gray-50 border-b">
+              <thead className="bg-muted border-b">
                 <tr>
                   {["Name", "BIC", "Country", "Currency", "Type", "AML Risk", "KYC", "Daily Limit", "Status", "Actions"].map(h => (
-                    <th key={h} className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{h}</th>
+                    <th key={h} className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">{h}</th>
                   ))}
                 </tr>
               </thead>
@@ -247,14 +247,14 @@ export default function CorrespondentBanks() {
                 ) : rows.length === 0 ? (
                   <tr><td colSpan={10} className="px-4 py-8 text-center text-gray-400">No correspondent banks found</td></tr>
                 ) : rows.map((r: any) => (
-                  <tr key={r.id} className="hover:bg-gray-50">
+                  <tr key={r.id} className="hover:bg-muted">
                     <td className="px-4 py-3 font-medium">{r.correspondent_name}</td>
                     <td className="px-4 py-3 font-mono text-xs">{r.correspondent_bic}</td>
                     <td className="px-4 py-3 text-xs">{r.country}</td>
                     <td className="px-4 py-3 text-xs">{r.currency}</td>
                     <td className="px-4 py-3 text-xs uppercase">{r.relationship_type}</td>
                     <td className="px-4 py-3">
-                      <Badge className={RISK_COLORS[r.aml_risk_rating] || "bg-gray-100 text-gray-700"}>
+                      <Badge className={RISK_COLORS[r.aml_risk_rating] || "bg-gray-100 text-foreground"}>
                         {r.aml_risk_rating?.replace("_"," ")}
                       </Badge>
                     </td>
@@ -265,7 +265,7 @@ export default function CorrespondentBanks() {
                     </td>
                     <td className="px-4 py-3 text-xs">{r.daily_limit ? `$${Number(r.daily_limit).toLocaleString()}` : "—"}</td>
                     <td className="px-4 py-3">
-                      <Badge className={STATUS_COLORS[r.status] || "bg-gray-100 text-gray-700"}>
+                      <Badge className={STATUS_COLORS[r.status] || "bg-gray-100 text-foreground"}>
                         {r.status?.replace(/_/g, " ")}
                       </Badge>
                     </td>
@@ -290,7 +290,7 @@ export default function CorrespondentBanks() {
           </div>
           {total > 20 && (
             <div className="flex items-center justify-between px-4 py-3 border-t">
-              <span className="text-sm text-gray-500">Page {page} of {Math.ceil(total / 20)}</span>
+              <span className="text-sm text-muted-foreground">Page {page} of {Math.ceil(total / 20)}</span>
               <div className="flex gap-2">
                 <Button size="sm" variant="outline" disabled={page === 1} onClick={() => setPage(p => p - 1)}>Previous</Button>
                 <Button size="sm" variant="outline" disabled={page * 20 >= total} onClick={() => setPage(p => p + 1)}>Next</Button>

@@ -42,7 +42,7 @@ const TIER_META: Record<
 > = {
   starter: {
     color: "text-muted-foreground",
-    border: "border-slate-200",
+    border: "border-border",
     bg: "bg-slate-50",
     icon: Shield,
     badge: "bg-slate-100 text-muted-foreground",
@@ -387,7 +387,7 @@ export default function DpcoSubscription() {
       )}
 
       {/* Fee rate explainer */}
-      <Card className="border-slate-200">
+      <Card className="border-border">
         <CardHeader className="pb-2">
           <CardTitle className="text-base flex items-center gap-2">
             <Percent className="h-4 w-4 text-muted-foreground" />

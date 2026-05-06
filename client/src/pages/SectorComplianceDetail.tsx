@@ -338,7 +338,7 @@ export default function SectorComplianceDetail() {
                 <Activity className="w-3 h-3 mr-1" />Live Monitor
               </Badge>
             ) : (
-              <Badge className="bg-gray-500/20 text-gray-400 border-gray-500/30">
+              <Badge className="bg-muted0/20 text-gray-400 border-gray-500/30">
                 Monitor Stopped
               </Badge>
             )}

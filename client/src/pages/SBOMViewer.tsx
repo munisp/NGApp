@@ -17,7 +17,7 @@ const severityColor: Record<string, string> = {
   high: "bg-orange-100 text-orange-800",
   moderate: "bg-yellow-100 text-yellow-800",
   low: "bg-blue-100 text-blue-800",
-  info: "bg-gray-100 text-gray-700",
+  info: "bg-gray-100 text-foreground",
 };
 
 export default function SBOMViewer() {
@@ -138,7 +138,7 @@ export default function SBOMViewer() {
                     </td>
                     <td className="p-3"><Badge className={severityColor[v.severity] ?? "bg-gray-100"}>{v.severity}</Badge></td>
                     <td className="p-3 text-xs max-w-xs truncate">{v.description}</td>
-                    <td className="p-3">{v.fix_available ? <Badge className="bg-green-100 text-green-800">Yes</Badge> : <Badge className="bg-gray-100 text-gray-700">No</Badge>}</td>
+                    <td className="p-3">{v.fix_available ? <Badge className="bg-green-100 text-green-800">Yes</Badge> : <Badge className="bg-gray-100 text-foreground">No</Badge>}</td>
                   </tr>
                 ))}
               </tbody>

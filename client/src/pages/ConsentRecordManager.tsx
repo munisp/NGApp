@@ -49,7 +49,7 @@ export default function ConsentRecordManager() {
         </Dialog>
       </div>
       <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
-        {[{l:"Total",v:stats?.total??0,I:Users,c:"text-blue-600"},{l:"Active",v:stats?.active??0,I:CheckCircle,c:"text-green-600"},{l:"Withdrawn",v:stats?.withdrawn??0,I:XCircle,c:"text-red-600"},{l:"Expired",v:stats?.expired??0,I:Clock,c:"text-gray-600"},{l:"Expiring Soon",v:stats?.expiring_soon??0,I:Clock,c:"text-orange-600"},{l:"Cross-Border",v:stats?.cross_border??0,I:Users,c:"text-purple-600"}].map(({l,v,I,c})=>(
+        {[{l:"Total",v:stats?.total??0,I:Users,c:"text-blue-600"},{l:"Active",v:stats?.active??0,I:CheckCircle,c:"text-green-600"},{l:"Withdrawn",v:stats?.withdrawn??0,I:XCircle,c:"text-red-600"},{l:"Expired",v:stats?.expired??0,I:Clock,c:"text-muted-foreground"},{l:"Expiring Soon",v:stats?.expiring_soon??0,I:Clock,c:"text-orange-600"},{l:"Cross-Border",v:stats?.cross_border??0,I:Users,c:"text-purple-600"}].map(({l,v,I,c})=>(
           <Card key={l}><CardContent className="pt-4"><div className="flex items-center gap-2"><I className={`h-4 w-4 ${c}`}/><div><p className="text-xs text-muted-foreground">{l}</p><p className="text-lg font-bold">{v}</p></div></div></CardContent></Card>
         ))}
       </div>

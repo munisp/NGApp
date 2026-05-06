@@ -11,6 +11,13 @@ import { toast } from "sonner";
 import { ExportButton } from "@/components/ExportButton";
 import { Heart, AlertTriangle, CheckCircle, XCircle, FlaskConical, Building2 } from "lucide-react";
 
+function fmtDate(v: any, len = 10): string {
+  if (!v) return "—";
+  if (typeof v === "string") return v.slice(0, len);
+  if (v instanceof Date) return v.toISOString().slice(0, len);
+  return String(v).slice(0, len);
+}
+
 function StatCard({ label, value, sub, color }: { label: string; value: string | number; sub?: string; color?: string }) {
   return (
     <div className="bg-card border border-border rounded-lg p-4">
@@ -213,7 +220,7 @@ export default function HealthcareDashboard() {
                     <td className="px-3 py-2">{c.cross_border_transfer ? <Badge className="bg-red-100 text-red-800">Yes</Badge> : "No"}</td>
                     <td className="px-3 py-2">{fmt(c.records_affected ?? 0)}</td>
                     <td className="px-3 py-2">{statusBadge(c.status)}</td>
-                    <td className="px-3 py-2 text-xs">{c.checked_at?.slice(0, 10)}</td>
+                    <td className="px-3 py-2 text-xs">{fmtDate(c.checked_at)}</td>
                   </tr>
                 ))}
               </tbody>

@@ -41,7 +41,7 @@ export default function ModelRegistry() {
   const statusColor = (s: string) =>
     s === "deployed" || s === "active" ? "bg-green-500/10 text-green-700 border-green-500/30" :
     s === "staging" ? "bg-yellow-500/10 text-yellow-700 border-yellow-500/30" :
-    s === "retired" ? "bg-gray-500/10 text-gray-500 border-gray-500/30" :
+    s === "retired" ? "bg-muted0/10 text-muted-foreground border-gray-500/30" :
     "bg-blue-500/10 text-blue-700 border-blue-500/30";
 
   const handleRegister = () => {

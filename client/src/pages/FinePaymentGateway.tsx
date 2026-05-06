@@ -19,7 +19,7 @@ const statusColor: Record<string, string> = {
   paid: "bg-green-100 text-green-800",
   overdue: "bg-red-100 text-red-800",
   partial: "bg-blue-100 text-blue-800",
-  waived: "bg-gray-100 text-gray-700",
+  waived: "bg-gray-100 text-foreground",
 };
 
 export default function FinePaymentGateway() {
@@ -119,7 +119,7 @@ export default function FinePaymentGateway() {
                   <td className="p-3 font-mono">{formatNGN(f.amount)}</td>
                   <td className="p-3 font-mono">{formatNGN(f.amount_paid ?? 0)}</td>
                   <td className="p-3">{f.due_date ? new Date(f.due_date).toLocaleDateString() : '-'}</td>
-                  <td className="p-3"><Badge className={statusColor[f.status] ?? "bg-gray-100 text-gray-700"}>{f.status}</Badge></td>
+                  <td className="p-3"><Badge className={statusColor[f.status] ?? "bg-gray-100 text-foreground"}>{f.status}</Badge></td>
                   <td className="p-3">
                     {f.status !== 'paid' && (
                       <Button size="sm" onClick={() => { setSelectedFine(f); setPayAmount(String(f.amount - (f.amount_paid ?? 0))); setPayRef(""); setPayOpen(true); }}>

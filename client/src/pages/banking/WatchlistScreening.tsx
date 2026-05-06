@@ -89,8 +89,8 @@ export default function WatchlistScreening() {
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Watchlist Screening</h1>
-          <p className="text-sm text-gray-500 mt-1">OFAC / UN / EU Sanctions — PEP & Adverse Media Screening</p>
+          <h1 className="text-2xl font-bold text-foreground">Watchlist Screening</h1>
+          <p className="text-sm text-muted-foreground mt-1">OFAC / UN / EU Sanctions — PEP & Adverse Media Screening</p>
         </div>
         <div className="flex gap-2">
           <Dialog open={screenOpen} onOpenChange={v => { setScreenOpen(v); if (!v) setScreenResult(null); }}>
@@ -120,9 +120,9 @@ export default function WatchlistScreening() {
                       </span>
                     </div>
                     {screenResult.matches?.map((m: any, i: number) => (
-                      <div key={i} className="text-sm mt-2 p-2 bg-white rounded border">
+                      <div key={i} className="text-sm mt-2 p-2 bg-background rounded border">
                         <p className="font-medium">{m.primary_name}</p>
-                        <p className="text-xs text-gray-500">{m.category} · {m.source} · {m.nationality || "Global"}</p>
+                        <p className="text-xs text-muted-foreground">{m.category} · {m.source} · {m.nationality || "Global"}</p>
                       </div>
                     ))}
                   </div>
@@ -235,7 +235,7 @@ export default function WatchlistScreening() {
                   <Icon className={`h-8 w-8 ${color}`} />
                   <div>
                     <p className="text-2xl font-bold">{value ?? 0}</p>
-                    <p className="text-xs text-gray-500">{label}</p>
+                    <p className="text-xs text-muted-foreground">{label}</p>
                   </div>
                 </div>
               </CardContent>
@@ -271,10 +271,10 @@ export default function WatchlistScreening() {
         <CardContent className="p-0">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-gray-50 border-b">
+              <thead className="bg-muted border-b">
                 <tr>
                   {["Name", "Entity Type", "Category", "Source", "Nationality", "Passport/ID", "Status", "Listed", "Actions"].map(h => (
-                    <th key={h} className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{h}</th>
+                    <th key={h} className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">{h}</th>
                   ))}
                 </tr>
               </thead>
@@ -284,11 +284,11 @@ export default function WatchlistScreening() {
                 ) : rows.length === 0 ? (
                   <tr><td colSpan={9} className="px-4 py-8 text-center text-gray-400">No watchlist entries found</td></tr>
                 ) : rows.map((r: any) => (
-                  <tr key={r.id} className="hover:bg-gray-50">
+                  <tr key={r.id} className="hover:bg-muted">
                     <td className="px-4 py-3 font-medium">{r.primary_name}</td>
                     <td className="px-4 py-3 text-xs capitalize">{r.entity_type}</td>
                     <td className="px-4 py-3">
-                      <Badge className={CATEGORY_COLORS[r.category] || "bg-gray-100 text-gray-700"}>
+                      <Badge className={CATEGORY_COLORS[r.category] || "bg-gray-100 text-foreground"}>
                         {r.category?.replace(/_/g, " ")}
                       </Badge>
                     </td>
@@ -298,9 +298,9 @@ export default function WatchlistScreening() {
                     <td className="px-4 py-3">
                       {r.is_active
                         ? <Badge className="bg-red-100 text-red-700">Listed</Badge>
-                        : <Badge className="bg-gray-100 text-gray-500">Delisted</Badge>}
+                        : <Badge className="bg-gray-100 text-muted-foreground">Delisted</Badge>}
                     </td>
-                    <td className="px-4 py-3 text-xs text-gray-500">
+                    <td className="px-4 py-3 text-xs text-muted-foreground">
                       {r.listing_date ? new Date(r.listing_date).toLocaleDateString() : "—"}
                     </td>
                     <td className="px-4 py-3">
@@ -318,7 +318,7 @@ export default function WatchlistScreening() {
           </div>
           {total > 20 && (
             <div className="flex items-center justify-between px-4 py-3 border-t">
-              <span className="text-sm text-gray-500">Showing {((page - 1) * 20) + 1}–{Math.min(page * 20, total)} of {total}</span>
+              <span className="text-sm text-muted-foreground">Showing {((page - 1) * 20) + 1}–{Math.min(page * 20, total)} of {total}</span>
               <div className="flex gap-2">
                 <Button size="sm" variant="outline" disabled={page === 1} onClick={() => setPage(p => p - 1)}>Previous</Button>
                 <Button size="sm" variant="outline" disabled={page * 20 >= total} onClick={() => setPage(p => p + 1)}>Next</Button>

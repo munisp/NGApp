@@ -97,8 +97,8 @@ export default function AmlCases() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">AML Cases</h1>
-          <p className="text-sm text-gray-500 mt-1">NFIU AML/CFT Guidelines 2022 — Anti-Money Laundering Monitoring</p>
+          <h1 className="text-2xl font-bold text-foreground">AML Cases</h1>
+          <p className="text-sm text-muted-foreground mt-1">NFIU AML/CFT Guidelines 2022 — Anti-Money Laundering Monitoring</p>
         </div>
         <Dialog open={createOpen} onOpenChange={setCreateOpen}>
           <DialogTrigger asChild>
@@ -180,7 +180,7 @@ export default function AmlCases() {
                   <Icon className={`h-8 w-8 ${color}`} />
                   <div>
                     <p className="text-2xl font-bold">{value ?? 0}</p>
-                    <p className="text-xs text-gray-500">{label}</p>
+                    <p className="text-xs text-muted-foreground">{label}</p>
                   </div>
                 </div>
               </CardContent>
@@ -217,7 +217,7 @@ export default function AmlCases() {
           )}
         </Button>
         {(searchInput || hasActiveFilters) && (
-          <Button variant="ghost" size="sm" onClick={clearAllFilters} className="gap-1 text-gray-500">
+          <Button variant="ghost" size="sm" onClick={clearAllFilters} className="gap-1 text-muted-foreground">
             <X className="h-3 w-3" /> Clear
           </Button>
         )}
@@ -278,7 +278,7 @@ export default function AmlCases() {
       )}
 
       {/* Results summary */}
-      <div className="flex items-center justify-between text-sm text-gray-500">
+      <div className="flex items-center justify-between text-sm text-muted-foreground">
         <span>
           {isLoading ? "Searching..." : `${total} case${total !== 1 ? "s" : ""} found`}
           {debouncedSearch && <span className="ml-1 text-blue-600">for "{debouncedSearch}"</span>}
@@ -298,10 +298,10 @@ export default function AmlCases() {
         <CardContent className="p-0">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-gray-50 border-b">
+              <thead className="bg-muted border-b">
                 <tr>
                   {["Case Ref", "Subject", "Case Type", "Risk", "Amount", "Status", "STR", "Assigned", "Date", "Actions"].map(h => (
-                    <th key={h} className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{h}</th>
+                    <th key={h} className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">{h}</th>
                   ))}
                 </tr>
               </thead>
@@ -318,7 +318,7 @@ export default function AmlCases() {
                     No AML cases match your search criteria
                   </td></tr>
                 ) : rows.map((c: any) => (
-                  <tr key={c.id} className="hover:bg-gray-50">
+                  <tr key={c.id} className="hover:bg-muted">
                     <td className="px-4 py-3 font-mono text-xs">{c.case_ref}</td>
                     <td className="px-4 py-3 text-xs font-medium">
                       {c.subject_name}
@@ -338,15 +338,15 @@ export default function AmlCases() {
                       {c.transaction_amount ? `₦${(parseInt(c.transaction_amount) / 100).toLocaleString()}` : "—"}
                     </td>
                     <td className="px-4 py-3">
-                      <Badge className={STATUS_COLORS[c.status] || "bg-gray-100 text-gray-700"}>
+                      <Badge className={STATUS_COLORS[c.status] || "bg-gray-100 text-foreground"}>
                         {c.status?.replace(/_/g, " ")}
                       </Badge>
                     </td>
                     <td className="px-4 py-3">
                       {c.str_reference ? <Badge className="bg-blue-100 text-blue-700">Filed</Badge> : <span className="text-gray-400">—</span>}
                     </td>
-                    <td className="px-4 py-3 text-xs text-gray-500">{c.assigned_to || "Unassigned"}</td>
-                    <td className="px-4 py-3 text-xs text-gray-500">
+                    <td className="px-4 py-3 text-xs text-muted-foreground">{c.assigned_to || "Unassigned"}</td>
+                    <td className="px-4 py-3 text-xs text-muted-foreground">
                       {c.created_at ? new Date(c.created_at).toLocaleDateString() : "—"}
                     </td>
                     <td className="px-4 py-3">
@@ -359,7 +359,7 @@ export default function AmlCases() {
           </div>
           {total > 20 && (
             <div className="flex items-center justify-between px-4 py-3 border-t">
-              <span className="text-sm text-gray-500">Showing {((page - 1) * 20) + 1}–{Math.min(page * 20, total)} of {total}</span>
+              <span className="text-sm text-muted-foreground">Showing {((page - 1) * 20) + 1}–{Math.min(page * 20, total)} of {total}</span>
               <div className="flex gap-2">
                 <Button size="sm" variant="outline" disabled={page === 1} onClick={() => setPage(p => p - 1)}>Previous</Button>
                 <Button size="sm" variant="outline" disabled={page * 20 >= total} onClick={() => setPage(p => p + 1)}>Next</Button>
@@ -389,15 +389,15 @@ export default function AmlCases() {
                   ["STR Reference", selectedCase.str_reference || "Not filed"],
                 ] as [string, string][]).map(([label, value]) => (
                   <div key={label}>
-                    <p className="text-xs text-gray-500">{label}</p>
+                    <p className="text-xs text-muted-foreground">{label}</p>
                     <p className="font-medium">{value}</p>
                   </div>
                 ))}
               </div>
               {selectedCase.narrative && (
                 <div>
-                  <p className="text-xs text-gray-500 mb-1">Narrative</p>
-                  <p className="text-sm bg-gray-50 p-3 rounded">{selectedCase.narrative}</p>
+                  <p className="text-xs text-muted-foreground mb-1">Narrative</p>
+                  <p className="text-sm bg-muted p-3 rounded">{selectedCase.narrative}</p>
                 </div>
               )}
               <div className="space-y-2">

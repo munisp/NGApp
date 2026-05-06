@@ -89,7 +89,7 @@ function StepIndicator({ current }: { current: number }) {
               <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all
                 ${done ? "bg-green-600 border-green-600 text-white" :
                   active ? "bg-blue-600 border-blue-600 text-white" :
-                  "bg-white border-gray-300 text-gray-400"}`}>
+                  "bg-background border-border text-gray-400"}`}>
                 {done ? <CheckCircle className="w-5 h-5" /> : <Icon className="w-5 h-5" />}
               </div>
               <div className={`text-xs mt-1 font-medium text-center max-w-[80px] leading-tight
@@ -113,7 +113,7 @@ function MultiSelect({ label, options, value, onChange }: {
   return (
     <div>
       <Label className="mb-2 block">{label}</Label>
-      <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto border rounded p-3 bg-gray-50">
+      <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto border rounded p-3 bg-muted">
         {options.map(opt => (
           <div key={opt} className="flex items-center gap-2">
             <Checkbox
@@ -225,9 +225,9 @@ export default function DpcoOnboard() {
             <p className="text-green-800 mb-4">
               Your DPCO licence application has been received by the NDPC. You will be notified within 30 working days.
             </p>
-            <div className="bg-white rounded-lg border border-green-200 p-4 mb-6 inline-block">
-              <div className="text-xs text-gray-500 mb-1">Application Reference Number</div>
-              <div className="text-xl font-mono font-bold text-gray-900">{refNumber}</div>
+            <div className="bg-background rounded-lg border border-green-200 p-4 mb-6 inline-block">
+              <div className="text-xs text-muted-foreground mb-1">Application Reference Number</div>
+              <div className="text-xl font-mono font-bold text-foreground">{refNumber}</div>
             </div>
             <div className="text-sm text-green-700 space-y-1">
               <p>✓ Confirmation email sent to <strong>{form.email}</strong></p>
@@ -247,11 +247,11 @@ export default function DpcoOnboard() {
     <div className="p-6 max-w-3xl mx-auto space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+        <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
           <Shield className="w-6 h-6 text-blue-600" />
           DPCO Licence Application
         </h1>
-        <p className="text-sm text-gray-500 mt-1">
+        <p className="text-sm text-muted-foreground mt-1">
           Apply for a Data Protection Compliance Organisation licence under NDPA 2023 Section 33
         </p>
       </div>
@@ -262,7 +262,7 @@ export default function DpcoOnboard() {
       <Card>
         <CardHeader>
           <CardTitle className="text-lg">{STEPS[step - 1].title}</CardTitle>
-          <p className="text-sm text-gray-500">{STEPS[step - 1].desc}</p>
+          <p className="text-sm text-muted-foreground">{STEPS[step - 1].desc}</p>
         </CardHeader>
         <CardContent className="space-y-4">
 
@@ -442,9 +442,9 @@ export default function DpcoOnboard() {
                   rows={3}
                 />
               </div>
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+              <div className="border-2 border-dashed border-border rounded-lg p-6 text-center">
                 <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                <p className="text-sm text-gray-600 font-medium">Upload Supporting Documents</p>
+                <p className="text-sm text-muted-foreground font-medium">Upload Supporting Documents</p>
                 <p className="text-xs text-gray-400 mt-1">CAC Certificate, Insurance Certificate, DPO Qualification Certificates (PDF, max 10MB each)</p>
                 <Button variant="outline" size="sm" className="mt-3" onClick={() => toast.info("Document upload will be available after account creation")}>
                   Select Files
@@ -456,16 +456,16 @@ export default function DpcoOnboard() {
           {/* Step 5: Declaration */}
           {step === 5 && (
             <>
-              <div className="bg-gray-50 border rounded-lg p-4 space-y-3 text-sm">
-                <h3 className="font-semibold text-gray-900">Application Summary</h3>
+              <div className="bg-muted border rounded-lg p-4 space-y-3 text-sm">
+                <h3 className="font-semibold text-foreground">Application Summary</h3>
                 <div className="grid grid-cols-2 gap-2 text-xs">
-                  <div><span className="text-gray-500">Organisation:</span> <span className="font-medium">{form.orgName}</span></div>
-                  <div><span className="text-gray-500">RC Number:</span> <span className="font-medium">{form.rcNumber}</span></div>
-                  <div><span className="text-gray-500">State:</span> <span className="font-medium">{form.state}</span></div>
-                  <div><span className="text-gray-500">DPO:</span> <span className="font-medium">{form.dpoName}</span></div>
-                  <div><span className="text-gray-500">Services:</span> <span className="font-medium">{form.services.length} selected</span></div>
-                  <div><span className="text-gray-500">Sectors:</span> <span className="font-medium">{form.sectors.length} selected</span></div>
-                  <div><span className="text-gray-500">Indemnity:</span> <span className="font-medium">₦{form.indemnityAmount} ({form.indemnityInsurer})</span></div>
+                  <div><span className="text-muted-foreground">Organisation:</span> <span className="font-medium">{form.orgName}</span></div>
+                  <div><span className="text-muted-foreground">RC Number:</span> <span className="font-medium">{form.rcNumber}</span></div>
+                  <div><span className="text-muted-foreground">State:</span> <span className="font-medium">{form.state}</span></div>
+                  <div><span className="text-muted-foreground">DPO:</span> <span className="font-medium">{form.dpoName}</span></div>
+                  <div><span className="text-muted-foreground">Services:</span> <span className="font-medium">{form.services.length} selected</span></div>
+                  <div><span className="text-muted-foreground">Sectors:</span> <span className="font-medium">{form.sectors.length} selected</span></div>
+                  <div><span className="text-muted-foreground">Indemnity:</span> <span className="font-medium">₦{form.indemnityAmount} ({form.indemnityInsurer})</span></div>
                 </div>
               </div>
               <div className="space-y-4 pt-2">

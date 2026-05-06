@@ -239,7 +239,7 @@ export default function SectorComplianceDashboard() {
       case "running": return <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30 text-xs"><Activity className="w-2 h-2 mr-1" />Live</Badge>;
       case "starting": return <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30 text-xs">Starting</Badge>;
       case "crashed": return <Badge className="bg-red-500/20 text-red-400 border-red-500/30 text-xs"><XCircle className="w-2 h-2 mr-1" />Crashed</Badge>;
-      default: return <Badge className="bg-gray-500/20 text-gray-400 border-gray-500/30 text-xs">Stopped</Badge>;
+      default: return <Badge className="bg-muted0/20 text-gray-400 border-gray-500/30 text-xs">Stopped</Badge>;
     }
   };
 

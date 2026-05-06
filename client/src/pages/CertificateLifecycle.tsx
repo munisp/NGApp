@@ -18,7 +18,7 @@ import { Award, RefreshCw, XCircle, Search, Plus, AlertTriangle, CheckCircle2, C
 const statusColor: Record<string, string> = {
   active: "bg-green-100 text-green-800",
   expired: "bg-red-100 text-red-800",
-  revoked: "bg-gray-100 text-gray-700",
+  revoked: "bg-gray-100 text-foreground",
   expiring_soon: "bg-yellow-100 text-yellow-800",
 };
 
@@ -108,7 +108,7 @@ export default function CertificateLifecycle() {
             { label: "Active", value: statsData?.active ?? 0, icon: CheckCircle2, color: "text-green-600" },
             { label: "Expiring Soon", value: statsData?.expiring_soon ?? 0, icon: AlertTriangle, color: "text-yellow-600" },
             { label: "Expired", value: statsData?.expired ?? 0, icon: Clock, color: "text-red-600" },
-            { label: "Revoked", value: statsData?.revoked ?? 0, icon: XCircle, color: "text-gray-600" },
+            { label: "Revoked", value: statsData?.revoked ?? 0, icon: XCircle, color: "text-muted-foreground" },
           ].map(s => (
             <div key={s.label} className="border rounded-lg p-4 flex items-center gap-3">
               <s.icon className={`w-8 h-8 ${s.color}`} />
@@ -163,7 +163,7 @@ export default function CertificateLifecycle() {
                   <td className="p-3">{c.issued_at ? new Date(c.issued_at).toLocaleDateString() : '-'}</td>
                   <td className="p-3">{c.expires_at ? new Date(c.expires_at).toLocaleDateString() : '-'}</td>
                   <td className="p-3">
-                    <Badge className={statusColor[c.status] ?? "bg-gray-100 text-gray-700"}>
+                    <Badge className={statusColor[c.status] ?? "bg-gray-100 text-foreground"}>
                       {c.status?.replace(/_/g, ' ')}
                     </Badge>
                   </td>

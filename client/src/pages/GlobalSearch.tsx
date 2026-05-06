@@ -79,7 +79,7 @@ export default function GlobalSearch() {
         </div>
 
         <div className="relative mb-6">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
           <Input
             value={query}
             onChange={handleChange}
@@ -93,14 +93,14 @@ export default function GlobalSearch() {
         </div>
 
         {debouncedQuery.length >= 2 && !isLoading && (results as any[] ?? []).length === 0 && (
-          <div className="text-center py-16 text-gray-500">
+          <div className="text-center py-16 text-muted-foreground">
             <Search className="w-12 h-12 mx-auto mb-3 opacity-30" />
             <p>No results found for "<span className="text-muted-foreground">{debouncedQuery}</span>"</p>
           </div>
         )}
 
         {debouncedQuery.length < 2 && (
-          <div className="text-center py-16 text-gray-600">
+          <div className="text-center py-16 text-muted-foreground">
             <Search className="w-12 h-12 mx-auto mb-3 opacity-20" />
             <p>Start typing to search across the platform</p>
           </div>
@@ -139,7 +139,7 @@ export default function GlobalSearch() {
                     <span className={`px-2 py-0.5 rounded text-xs font-medium ${TYPE_COLORS[type] ?? "bg-card text-muted-foreground"}`}>
                       {TYPE_LABELS[type] ?? type}
                     </span>
-                    <ArrowRight className="w-3.5 h-3.5 text-gray-600 group-hover:text-muted-foreground transition-colors" />
+                    <ArrowRight className="w-3.5 h-3.5 text-muted-foreground group-hover:text-muted-foreground transition-colors" />
                   </div>
                 </button>
               ))}

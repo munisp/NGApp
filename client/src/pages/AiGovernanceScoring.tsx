@@ -125,7 +125,7 @@ export default function AiGovernanceScoring() {
                 {form.useCases.map((uc, i) => (
                   <span key={i} className="bg-card border border-border text-muted-foreground text-xs px-2 py-1 rounded-full flex items-center gap-1">
                     {uc}
-                    <button type="button" onClick={() => setForm(p => ({ ...p, useCases: p.useCases.filter((_, j) => j !== i) }))} className="text-gray-500 hover:text-red-400"><XCircle className="w-3 h-3" /></button>
+                    <button type="button" onClick={() => setForm(p => ({ ...p, useCases: p.useCases.filter((_, j) => j !== i) }))} className="text-muted-foreground hover:text-red-400"><XCircle className="w-3 h-3" /></button>
                   </span>
                 ))}
               </div>
@@ -159,7 +159,7 @@ export default function AiGovernanceScoring() {
         {/* Scores list */}
         <div className="space-y-4">
           {(scores as any[]).length === 0 && !showForm && (
-            <div className="text-center py-16 text-gray-500">
+            <div className="text-center py-16 text-muted-foreground">
               <Brain className="w-12 h-12 mx-auto mb-3 opacity-30" />
               <p>No AI systems assessed yet. Click "Score New System" to begin.</p>
             </div>
@@ -193,7 +193,7 @@ export default function AiGovernanceScoring() {
                   NDPA Art. 24 {s.ndpa_article24_compliant ? "Compliant" : "Non-Compliant"}
                 </span>
                 {s.next_review_date && (
-                  <span className="text-xs text-gray-500">Next review: {new Date(s.next_review_date).toLocaleDateString()}</span>
+                  <span className="text-xs text-muted-foreground">Next review: {new Date(s.next_review_date).toLocaleDateString()}</span>
                 )}
               </div>
               {(s.findings as any[])?.length > 0 && (
@@ -203,7 +203,7 @@ export default function AiGovernanceScoring() {
                     {(s.findings as any[]).slice(0, 2).map((f: any, i: number) => (
                       <div key={i} className="flex items-start gap-2 text-xs text-muted-foreground">
                         <AlertTriangle className="w-3 h-3 text-orange-400 mt-0.5 flex-shrink-0" />
-                        {f.issue} <span className="text-gray-500 ml-1">({f.ndpaArticle})</span>
+                        {f.issue} <span className="text-muted-foreground ml-1">({f.ndpaArticle})</span>
                       </div>
                     ))}
                   </div>

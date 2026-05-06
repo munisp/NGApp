@@ -134,7 +134,7 @@ export default function CitizenRightsPortal() {
                       onClick={() => { setForm(f => ({ ...f, requestType: rt.value })); setShowSubmit(true); }}>
                       <div className="flex items-start justify-between mb-2">
                         <h3 className="font-semibold text-foreground text-sm">{rt.label}</h3>
-                        <ChevronRight className="w-4 h-4 text-gray-600 group-hover:text-teal-400 transition-colors" />
+                        <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-teal-400 transition-colors" />
                       </div>
                       <p className="text-xs text-muted-foreground leading-relaxed">{rt.desc}</p>
                       <div className="mt-3"><span className="text-xs text-teal-400 font-mono">Section 34 NDPA</span></div>
@@ -218,7 +218,7 @@ export default function CitizenRightsPortal() {
               </div>
               {trackingResults !== null && (
                 trackingResults.length === 0 ? (
-                  <div className="text-center py-8 text-gray-500"><Users className="w-8 h-8 mx-auto mb-2 opacity-40" /><p className="text-sm">No requests found for this email address.</p></div>
+                  <div className="text-center py-8 text-muted-foreground"><Users className="w-8 h-8 mx-auto mb-2 opacity-40" /><p className="text-sm">No requests found for this email address.</p></div>
                 ) : (
                   <div className="space-y-3">
                     <p className="text-xs text-muted-foreground">{trackingResults.length} request(s) found</p>
@@ -255,7 +255,7 @@ export default function CitizenRightsPortal() {
             </div>
             <div className="flex gap-3 mb-4 flex-wrap">
               <div className="relative flex-1 min-w-48">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder="Search by name, email, type..." className="bg-background border-border text-foreground pl-9" />
               </div>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
@@ -275,9 +275,9 @@ export default function CitizenRightsPortal() {
                 </thead>
                 <tbody>
                   {isLoading ? (
-                    <tr><td colSpan={6} className="text-center py-8 text-gray-500">Loading...</td></tr>
+                    <tr><td colSpan={6} className="text-center py-8 text-muted-foreground">Loading...</td></tr>
                   ) : filteredRequests.length === 0 ? (
-                    <tr><td colSpan={6} className="text-center py-8 text-gray-500"><Users className="w-8 h-8 mx-auto mb-2 opacity-30" /><p>No requests found</p></td></tr>
+                    <tr><td colSpan={6} className="text-center py-8 text-muted-foreground"><Users className="w-8 h-8 mx-auto mb-2 opacity-30" /><p>No requests found</p></td></tr>
                   ) : filteredRequests.map((r: any) => (
                     <tr key={r.id} className="border-b border-border/60 hover:bg-card/30">
                       <td className="px-4 py-3"><div className="font-medium text-foreground text-sm">{r.citizenName}</div><div className="text-xs text-muted-foreground">{r.citizenEmail}</div></td>

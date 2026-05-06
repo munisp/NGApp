@@ -39,14 +39,14 @@ function RankBadge({ rank }: { rank: number }) {
   if (rank === 1) return <span className="text-lg">🥇</span>;
   if (rank === 2) return <span className="text-lg">🥈</span>;
   if (rank === 3) return <span className="text-lg">🥉</span>;
-  return <span className="text-sm font-bold text-gray-500 tabular-nums w-6 text-center">{rank}</span>;
+  return <span className="text-sm font-bold text-muted-foreground tabular-nums w-6 text-center">{rank}</span>;
 }
 
 function Sparkline({ orgId, score }: { orgId: number; score: number }) {
   const { data = [] } = trpc.leaderboard.scoreTrend.useQuery({ orgId });
   const color = score >= 85 ? "#16a34a" : score >= 60 ? "#d97706" : "#dc2626";
   if (data.length === 0) {
-    return <div className="w-24 h-8 bg-gray-50 rounded animate-pulse" />;
+    return <div className="w-24 h-8 bg-muted rounded animate-pulse" />;
   }
   return (
     <ResponsiveContainer width={96} height={32}>
@@ -81,7 +81,7 @@ function LeaderboardRow({ org, expanded, onToggle }: {
   return (
     <div className="border-b border-gray-100 last:border-0">
       <div
-        className="flex items-center gap-4 px-5 py-3 hover:bg-gray-50 transition-colors cursor-pointer"
+        className="flex items-center gap-4 px-5 py-3 hover:bg-muted transition-colors cursor-pointer"
         onClick={onToggle}
       >
         <div className="w-8 flex justify-center shrink-0">
@@ -89,7 +89,7 @@ function LeaderboardRow({ org, expanded, onToggle }: {
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="font-medium text-gray-900 text-sm truncate">{org.name}</span>
+            <span className="font-medium text-foreground text-sm truncate">{org.name}</span>
             {org.certified && (
               <Badge className="bg-emerald-100 text-emerald-800 text-[10px] px-1.5 py-0 flex items-center gap-0.5">
                 <Shield className="h-2.5 w-2.5" /> Certified
@@ -109,7 +109,7 @@ function LeaderboardRow({ org, expanded, onToggle }: {
           <ScoreBar score={org.complianceScore} />
         </div>
         <div className="w-28 shrink-0 hidden sm:block">
-          <Badge className={`text-[10px] px-2 py-0.5 flex items-center gap-1 w-fit ${statusColor[org.complianceStatus] ?? "bg-gray-100 text-gray-700"}`}>
+          <Badge className={`text-[10px] px-2 py-0.5 flex items-center gap-1 w-fit ${statusColor[org.complianceStatus] ?? "bg-gray-100 text-foreground"}`}>
             {statusIcon[org.complianceStatus]}
             {org.complianceStatus?.replace(/_/g, " ")}
           </Badge>
@@ -124,24 +124,24 @@ function LeaderboardRow({ org, expanded, onToggle }: {
         </div>
       </div>
       {expanded && (
-        <div className="px-5 pb-4 bg-gray-50 border-t border-gray-100">
+        <div className="px-5 pb-4 bg-muted border-t border-gray-100">
           <div className="pt-3">
-            <p className="text-xs font-semibold text-gray-600 mb-2">30-Day Compliance Score Trend</p>
-            <div className="bg-white border border-gray-200 rounded-lg p-3">
+            <p className="text-xs font-semibold text-muted-foreground mb-2">30-Day Compliance Score Trend</p>
+            <div className="bg-background border border-border rounded-lg p-3">
               <SparklineExpanded orgId={org.id} score={org.complianceScore} sector={org.sector} />
             </div>
             <div className="grid grid-cols-3 gap-3 mt-3">
-              <div className="bg-white border border-gray-200 rounded p-2 text-center">
-                <p className="text-xs text-gray-500">Compliance Score</p>
-                <p className="text-lg font-bold text-gray-900">{org.complianceScore}</p>
+              <div className="bg-background border border-border rounded p-2 text-center">
+                <p className="text-xs text-muted-foreground">Compliance Score</p>
+                <p className="text-lg font-bold text-foreground">{org.complianceScore}</p>
               </div>
-              <div className="bg-white border border-gray-200 rounded p-2 text-center">
-                <p className="text-xs text-gray-500">Risk Score</p>
+              <div className="bg-background border border-border rounded p-2 text-center">
+                <p className="text-xs text-muted-foreground">Risk Score</p>
                 <p className={`text-lg font-bold ${org.riskScore > 70 ? "text-red-600" : org.riskScore > 40 ? "text-amber-600" : "text-emerald-600"}`}>{org.riskScore}</p>
               </div>
-              <div className="bg-white border border-gray-200 rounded p-2 text-center">
-                <p className="text-xs text-gray-500">Status</p>
-                <p className="text-sm font-semibold text-gray-700 capitalize">{org.complianceStatus?.replace(/_/g, " ")}</p>
+              <div className="bg-background border border-border rounded p-2 text-center">
+                <p className="text-xs text-muted-foreground">Status</p>
+                <p className="text-sm font-semibold text-foreground capitalize">{org.complianceStatus?.replace(/_/g, " ")}</p>
               </div>
             </div>
           </div>
@@ -177,7 +177,7 @@ function SparklineExpanded({ orgId, score, sector }: { orgId: number; score: num
           />
         </LineChart>
       </ResponsiveContainer>
-      <div className="flex items-center gap-4 mt-1 text-[10px] text-gray-500">
+      <div className="flex items-center gap-4 mt-1 text-[10px] text-muted-foreground">
         <span className="flex items-center gap-1"><span className="inline-block w-4 h-0.5" style={{ background: color }} /> This organisation</span>
         <span className="flex items-center gap-1"><span className="inline-block w-4 h-0.5 border-t border-dashed border-gray-400" /> Sector average</span>
       </div>
@@ -215,18 +215,18 @@ export default function ComplianceLeaderboard() {
       {/* Header */}
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+          <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
             <Award className="h-6 w-6 text-amber-500" />
             Compliance Leaderboard
           </h1>
-          <p className="text-sm text-gray-500 mt-1">
+          <p className="text-sm text-muted-foreground mt-1">
             Public ranking of organisations by NDSEP compliance score — updated every 15 minutes. Click any row to see the 30-day trend.
           </p>
         </div>
         <div className="flex items-center gap-4 flex-wrap">
           <div className="flex items-center gap-2">
             <Switch id="anon" checked={anonymise} onCheckedChange={setAnonymise} />
-            <Label htmlFor="anon" className="text-sm text-gray-600 cursor-pointer">Anonymise names</Label>
+            <Label htmlFor="anon" className="text-sm text-muted-foreground cursor-pointer">Anonymise names</Label>
           </div>
           <Button
             variant="outline"
@@ -260,10 +260,10 @@ export default function ComplianceLeaderboard() {
           { icon: TrendingUp, label: "Avg Score", value: `${stats?.avgScore ?? 0}/100`, color: "text-indigo-600" },
           { icon: Star, label: "Sectors", value: sectors.length, color: "text-amber-600" },
         ].map(({ icon: Icon, label, value, color }) => (
-          <div key={label} className="bg-white border border-gray-200 rounded-lg p-4">
+          <div key={label} className="bg-background border border-border rounded-lg p-4">
             <div className="flex items-center gap-2 mb-1">
               <Icon className={`h-4 w-4 ${color}`} />
-              <span className="text-xs text-gray-500">{label}</span>
+              <span className="text-xs text-muted-foreground">{label}</span>
             </div>
             <p className={`text-2xl font-bold ${color}`}>{value}</p>
           </div>
@@ -278,11 +278,11 @@ export default function ComplianceLeaderboard() {
           </h2>
           <div className="flex gap-4 flex-wrap">
             {topCertified.map(org => (
-              <div key={org.id} className="flex items-center gap-2 bg-white border border-amber-200 rounded-lg px-3 py-2 shadow-sm">
+              <div key={org.id} className="flex items-center gap-2 bg-background border border-amber-200 rounded-lg px-3 py-2 shadow-sm">
                 <RankBadge rank={org.rank} />
                 <div>
-                  <p className="text-sm font-semibold text-gray-900">{org.name}</p>
-                  <p className="text-xs text-gray-500">{org.sector} · Score: {org.complianceScore}</p>
+                  <p className="text-sm font-semibold text-foreground">{org.name}</p>
+                  <p className="text-xs text-muted-foreground">{org.sector} · Score: {org.complianceScore}</p>
                 </div>
                 <Shield className="h-4 w-4 text-emerald-500 ml-1" />
               </div>
@@ -292,9 +292,9 @@ export default function ComplianceLeaderboard() {
       )}
 
       {/* Leaderboard table with sparklines */}
-      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-        <div className="px-5 py-3 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
-          <span className="text-sm font-semibold text-gray-700">Full Rankings</span>
+      <div className="bg-background border border-border rounded-xl overflow-hidden">
+        <div className="px-5 py-3 border-b border-gray-100 bg-muted flex items-center justify-between">
+          <span className="text-sm font-semibold text-foreground">Full Rankings</span>
           <div className="flex items-center gap-4">
             <span className="text-xs text-gray-400 hidden lg:block">30-Day Trend</span>
             <span className="text-xs text-gray-400">{rows.length} organisations</span>

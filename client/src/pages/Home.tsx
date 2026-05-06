@@ -38,7 +38,7 @@ export default function Home() {
           </div>
           <div>
             <div className="font-bold text-sm tracking-wide">NDSEP</div>
-            <div className="text-[10px] text-gray-500 uppercase tracking-widest">National Data Sovereignty Enforcement Platform</div>
+            <div className="text-[10px] text-muted-foreground uppercase tracking-widest">National Data Sovereignty Enforcement Platform</div>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -96,7 +96,7 @@ export default function Home() {
               <Play className="w-4 h-4 text-amber-400" />
               <span className="text-sm font-semibold text-amber-400 uppercase tracking-widest">Live Demo — No Login Required</span>
             </div>
-            <p className="text-xs text-gray-500 mb-5">
+            <p className="text-xs text-muted-foreground mb-5">
               Explore the full platform with pre-loaded Nigerian data protection demo data. No account needed.
             </p>
             <div className="flex gap-3 flex-wrap justify-center">
@@ -130,7 +130,7 @@ export default function Home() {
                 Reset Demo Data
               </Button>
             </div>
-            <p className="text-[10px] text-gray-600 mt-4">
+            <p className="text-[10px] text-muted-foreground mt-4">
               Demo sessions use read-write access with pre-seeded Nigerian organisations, enforcement cases, and DPCO data.
             </p>
           </div>
@@ -141,20 +141,20 @@ export default function Home() {
           <div className="flex gap-8 mt-12 flex-wrap justify-center">
             <div className="text-center">
               <div className="text-3xl font-bold text-emerald-400">{totalOrgs.toLocaleString()}</div>
-              <div className="text-xs text-gray-500 mt-1 flex items-center gap-1 justify-center"><Building2 className="w-3 h-3" /> Organisations Monitored</div>
+              <div className="text-xs text-muted-foreground mt-1 flex items-center gap-1 justify-center"><Building2 className="w-3 h-3" /> Organisations Monitored</div>
             </div>
             <div className="text-center">
               <div className="text-3xl font-bold text-blue-400">{avgScore}%</div>
-              <div className="text-xs text-gray-500 mt-1 flex items-center gap-1 justify-center"><TrendingUp className="w-3 h-3" /> Avg Compliance Score</div>
+              <div className="text-xs text-muted-foreground mt-1 flex items-center gap-1 justify-center"><TrendingUp className="w-3 h-3" /> Avg Compliance Score</div>
             </div>
             <div className="text-center">
               <div className="text-3xl font-bold text-purple-400">{totalRegistered.toLocaleString()}</div>
-              <div className="text-xs text-gray-500 mt-1">NDPC Registered</div>
+              <div className="text-xs text-muted-foreground mt-1">NDPC Registered</div>
             </div>
             {Array.isArray(sectorStats) && (
               <div className="text-center">
                 <div className="text-3xl font-bold text-amber-400">{sectorStats.length}</div>
-                <div className="text-xs text-gray-500 mt-1">Sectors Covered</div>
+                <div className="text-xs text-muted-foreground mt-1">Sectors Covered</div>
               </div>
             )}
           </div>
@@ -169,12 +169,12 @@ export default function Home() {
             <div key={title} className={`rounded-xl border p-5 ${bg}`}>
               <Icon className={`w-6 h-6 ${color} mb-3`} />
               <h3 className="font-semibold text-sm mb-2">{title}</h3>
-              <p className="text-xs text-gray-500 leading-relaxed">{desc}</p>
+              <p className="text-xs text-muted-foreground leading-relaxed">{desc}</p>
             </div>
           ))}
         </div>
       </main>
-      <footer className="border-t border-border px-6 py-4 text-center text-xs text-gray-600">
+      <footer className="border-t border-border px-6 py-4 text-center text-xs text-muted-foreground">
         NDSEP · National Information Technology Development Agency (NITDA) · Nigeria Data Protection Regulation
       </footer>
     </div>

@@ -126,8 +126,8 @@ export default function KycManagement() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">KYC Management</h1>
-          <p className="text-sm text-gray-500 mt-1">CBN KYC Manual 2023 — Customer Due Diligence</p>
+          <h1 className="text-2xl font-bold text-foreground">KYC Management</h1>
+          <p className="text-sm text-muted-foreground mt-1">CBN KYC Manual 2023 — Customer Due Diligence</p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" className="gap-2" onClick={handleExportCsv} disabled={isExporting}>
@@ -201,7 +201,7 @@ export default function KycManagement() {
                   <Icon className={`h-8 w-8 ${color}`} />
                   <div>
                     <p className="text-2xl font-bold">{value ?? 0}</p>
-                    <p className="text-xs text-gray-500">{label}</p>
+                    <p className="text-xs text-muted-foreground">{label}</p>
                   </div>
                 </div>
               </CardContent>
@@ -273,10 +273,10 @@ export default function KycManagement() {
         <CardContent className="p-0">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-gray-50 border-b">
+              <thead className="bg-muted border-b">
                 <tr>
                   {["Ref ID", "Customer Ref", "Full Name", "BVN", "Tier", "Status", "Risk Score", "PEP", "Sanctions", "Created", "Actions"].map(h => (
-                    <th key={h} className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{h}</th>
+                    <th key={h} className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">{h}</th>
                   ))}
                 </tr>
               </thead>
@@ -286,16 +286,16 @@ export default function KycManagement() {
                 ) : rows.length === 0 ? (
                   <tr><td colSpan={11} className="px-4 py-8 text-center text-gray-400">No KYC records found</td></tr>
                 ) : rows.map((r: any) => (
-                  <tr key={r.id} className="hover:bg-gray-50">
+                  <tr key={r.id} className="hover:bg-muted">
                     <td className="px-4 py-3 font-mono text-xs">{r.reference_id}</td>
-                    <td className="px-4 py-3 font-mono text-xs text-gray-500">{r.customer_ref || "—"}</td>
+                    <td className="px-4 py-3 font-mono text-xs text-muted-foreground">{r.customer_ref || "—"}</td>
                     <td className="px-4 py-3 font-medium">{r.full_name}</td>
                     <td className="px-4 py-3 font-mono text-xs">{r.bvn ? r.bvn.replace(/(\d{3})\d{5}(\d{3})/, "$1*****$2") : "—"}</td>
                     <td className="px-4 py-3">
                       <Badge className="bg-blue-100 text-blue-700">{r.tier?.toUpperCase() || "—"}</Badge>
                     </td>
                     <td className="px-4 py-3">
-                      <Badge className={STATUS_COLORS[r.status] || "bg-gray-100 text-gray-700"}>
+                      <Badge className={STATUS_COLORS[r.status] || "bg-gray-100 text-foreground"}>
                         {r.status?.replace(/_/g, " ") || "—"}
                       </Badge>
                     </td>
@@ -310,7 +310,7 @@ export default function KycManagement() {
                     <td className="px-4 py-3">
                       {r.sanctions_flag ? <Badge className="bg-red-100 text-red-700">MATCH</Badge> : <span className="text-gray-400 text-xs">Clear</span>}
                     </td>
-                    <td className="px-4 py-3 text-xs text-gray-500">
+                    <td className="px-4 py-3 text-xs text-muted-foreground">
                       {r.created_at ? new Date(r.created_at).toLocaleDateString() : "—"}
                     </td>
                     <td className="px-4 py-3">
@@ -333,7 +333,7 @@ export default function KycManagement() {
           </div>
           {total > 20 && (
             <div className="flex items-center justify-between px-4 py-3 border-t">
-              <span className="text-sm text-gray-500">
+              <span className="text-sm text-muted-foreground">
                 Showing {((page - 1) * 20) + 1}–{Math.min(page * 20, total)} of {total} records
               </span>
               <div className="flex gap-2">
@@ -370,12 +370,12 @@ export default function KycManagement() {
                 ["Created At", viewRecord.created_at ? new Date(viewRecord.created_at).toLocaleString() : "—"],
               ] as [string, string][]).map(([label, value]) => (
                 <div key={label}>
-                  <p className="text-xs text-gray-500">{label}</p>
+                  <p className="text-xs text-muted-foreground">{label}</p>
                   <p className="font-medium">{value}</p>
                 </div>
               ))}
               <div className="col-span-2">
-                <p className="text-xs text-gray-500">Address</p>
+                <p className="text-xs text-muted-foreground">Address</p>
                 <p className="font-medium">{viewRecord.address || "—"}</p>
               </div>
               {viewRecord.rejection_reason && (

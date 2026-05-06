@@ -85,7 +85,7 @@ export default function DpcoPerformanceScorecard() {
   return (
     <div className="flex flex-col h-full bg-slate-50">
       {/* Header */}
-      <div className="bg-white border-b border-slate-200 px-6 py-4">
+      <div className="bg-background border-b border-border px-6 py-4">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-lg font-semibold text-slate-900 flex items-center gap-2">
@@ -106,7 +106,7 @@ export default function DpcoPerformanceScorecard() {
                 className="pl-8 h-8 text-xs w-56"
               />
             </div>
-            <Badge className="bg-slate-100 text-slate-600 border-slate-200 text-xs">
+            <Badge className="bg-slate-100 text-slate-600 border-border text-xs">
               {sorted.length} Active DPCOs
             </Badge>
           </div>
@@ -114,7 +114,7 @@ export default function DpcoPerformanceScorecard() {
       </div>
 
       {/* Legend */}
-      <div className="bg-white border-b border-slate-100 px-6 py-2 flex items-center gap-6">
+      <div className="bg-background border-b border-slate-100 px-6 py-2 flex items-center gap-6">
         <span className="text-xs text-slate-500 font-medium">Metrics explained:</span>
         <span className="text-xs text-slate-500 flex items-center gap-1.5"><TrendingUp className="w-3 h-3 text-emerald-500" />CAR Acceptance Rate — % of CARs approved by NDPC without revision</span>
         <span className="text-xs text-slate-500 flex items-center gap-1.5"><Clock className="w-3 h-3 text-blue-500" />Avg Audit Cycle — average days from Initiated to CAR Filed</span>
@@ -133,7 +133,7 @@ export default function DpcoPerformanceScorecard() {
             <p className="text-sm">No accredited DPCOs found</p>
           </div>
         ) : (
-          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+          <div className="bg-background rounded-xl border border-border overflow-hidden">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-slate-100 bg-slate-50">

@@ -242,7 +242,7 @@ export default function FrameworkDashboard() {
                     <span className="font-bold text-foreground text-lg">{fw.name}</span>
                     <Badge variant="outline" className="text-[10px] border-border text-muted-foreground">{fw.authority}</Badge>
                   </div>
-                  <p className="text-gray-500 text-xs mt-0.5">{fw.fullName}</p>
+                  <p className="text-muted-foreground text-xs mt-0.5">{fw.fullName}</p>
                 </div>
                 <div className="text-right">
                   <div className="text-2xl font-bold" style={{ color: fw.color }}>{score}%</div>
@@ -266,19 +266,19 @@ export default function FrameworkDashboard() {
                   const articleScore = Math.min(100, Math.max(0, score + articleOffset));
                   return (
                     <div key={article.id} className="flex items-center gap-3">
-                      <span className="text-[10px] font-mono text-gray-500 w-12 shrink-0">{article.id}</span>
+                      <span className="text-[10px] font-mono text-muted-foreground w-12 shrink-0">{article.id}</span>
                       <span className="text-xs text-muted-foreground flex-1 truncate">{article.title}</span>
                       <div className="w-24 shrink-0">
                         <ScoreBar score={articleScore} color={fw.color} />
                       </div>
-                      <span className="text-[10px] text-gray-500 w-8 text-right shrink-0">{articleScore}%</span>
+                      <span className="text-[10px] text-muted-foreground w-8 text-right shrink-0">{articleScore}%</span>
                     </div>
                   );
                 })}
               </div>
 
               {/* Footer */}
-              <div className="pt-2 border-t border-border flex items-center justify-between text-xs text-gray-500">
+              <div className="pt-2 border-t border-border flex items-center justify-between text-xs text-muted-foreground">
                 <span>Weight: {fw.articles.reduce((s, a) => s + a.weight, 0)} pts</span>
                 <span>{fw.articles.filter(() => score >= 80).length}/{fw.articles.length} controls passing</span>
               </div>
@@ -291,7 +291,7 @@ export default function FrameworkDashboard() {
       <div className="bg-card rounded-xl border border-border overflow-hidden">
         <div className="px-5 py-3 border-b border-border">
           <h2 className="text-sm font-semibold text-foreground">Cross-Framework Control Mapping</h2>
-          <p className="text-xs text-gray-500 mt-0.5">Common control domains across all 4 frameworks</p>
+          <p className="text-xs text-muted-foreground mt-0.5">Common control domains across all 4 frameworks</p>
         </div>
         <table className="w-full text-xs">
           <thead className="border-b border-border bg-background/50">
@@ -318,7 +318,7 @@ export default function FrameworkDashboard() {
                   return (
                     <td key={i} className="px-4 py-3 text-center">
                       <div className="flex flex-col items-center gap-1">
-                        <span className="font-mono text-gray-500">{ref}</span>
+                        <span className="font-mono text-muted-foreground">{ref}</span>
                         <StatusIcon score={score} />
                       </div>
                     </td>

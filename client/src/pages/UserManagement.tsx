@@ -16,7 +16,7 @@ const ROLE_COLORS: Record<string, string> = {
   government_staff: "bg-purple-100 text-purple-700 border-purple-200",
   org_admin: "bg-blue-100 text-blue-700 border-blue-200",
   auditor: "bg-yellow-100 text-yellow-700 border-yellow-200",
-  user: "bg-gray-100 text-gray-700 border-gray-200",
+  user: "bg-gray-100 text-foreground border-border",
 };
 
 export default function UserManagement() {

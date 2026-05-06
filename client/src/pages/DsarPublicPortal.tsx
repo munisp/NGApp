@@ -298,7 +298,7 @@ export default function DsarPublicPortal() {
                     <div className="text-foreground text-sm">{trackResult.response_notes}</div>
                   </div>
                 )}
-                <div className="mt-4 pt-4 border-t border-border flex items-center gap-2 text-xs text-gray-500">
+                <div className="mt-4 pt-4 border-t border-border flex items-center gap-2 text-xs text-muted-foreground">
                   <Clock className="w-3.5 h-3.5" />
                   If your request is overdue, you may escalate to NITDA at <a href="mailto:dpo@nitda.gov.ng" className="text-blue-400 hover:underline ml-1">dpo@nitda.gov.ng</a>
                 </div>

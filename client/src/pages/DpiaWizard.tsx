@@ -28,7 +28,7 @@ function ScoreSelector({ label, value, onChange }: { label: string; value: numbe
             {v}
           </button>
         ))}
-        <span className={`ml-2 self-center text-sm font-medium ${value ? RISK_COLORS[value - 1] : "text-gray-500"}`}>
+        <span className={`ml-2 self-center text-sm font-medium ${value ? RISK_COLORS[value - 1] : "text-muted-foreground"}`}>
           {value ? RISK_LABELS[value - 1] : "Not set"}
         </span>
       </div>
@@ -117,11 +117,11 @@ export default function DpiaWizard() {
         <div className="flex items-center gap-2 mb-8">
           {steps.map((s, i) => (
             <div key={i} className="flex items-center gap-2">
-              <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-all ${i < step ? "bg-green-600 text-foreground" : i === step ? "bg-blue-600 text-foreground" : "bg-card text-gray-500"}`}>
+              <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-all ${i < step ? "bg-green-600 text-foreground" : i === step ? "bg-blue-600 text-foreground" : "bg-card text-muted-foreground"}`}>
                 {i < step ? <CheckCircle2 className="w-4 h-4" /> : i + 1}
               </div>
-              <span className={`text-xs ${i === step ? "text-foreground font-medium" : "text-gray-500"}`}>{s}</span>
-              {i < steps.length - 1 && <ChevronRight className="w-3 h-3 text-gray-700" />}
+              <span className={`text-xs ${i === step ? "text-foreground font-medium" : "text-muted-foreground"}`}>{s}</span>
+              {i < steps.length - 1 && <ChevronRight className="w-3 h-3 text-foreground" />}
             </div>
           ))}
         </div>
@@ -208,7 +208,7 @@ export default function DpiaWizard() {
                   {aiResult.riskFactors?.slice(0, 3).map((rf: any, i: number) => (
                     <div key={i} className="flex items-start gap-2 text-xs text-muted-foreground mb-1">
                       <AlertTriangle className="w-3 h-3 text-orange-400 mt-0.5 flex-shrink-0" />
-                      {rf.factor} <span className="text-gray-500">({rf.ndpaArticle})</span>
+                      {rf.factor} <span className="text-muted-foreground">({rf.ndpaArticle})</span>
                     </div>
                   ))}
                 </div>
@@ -239,7 +239,7 @@ export default function DpiaWizard() {
                   <div key={i} className="flex items-center gap-2 bg-card rounded-lg px-3 py-2 text-sm">
                     <AlertTriangle className="w-3.5 h-3.5 text-orange-400 flex-shrink-0" />
                     <span className="text-muted-foreground flex-1">{rf.factor ?? rf}</span>
-                    <button onClick={() => setForm(p => ({ ...p, riskFactors: p.riskFactors.filter((_, j) => j !== i) }))} className="text-gray-600 hover:text-red-400"><X className="w-3.5 h-3.5" /></button>
+                    <button onClick={() => setForm(p => ({ ...p, riskFactors: p.riskFactors.filter((_, j) => j !== i) }))} className="text-muted-foreground hover:text-red-400"><X className="w-3.5 h-3.5" /></button>
                   </div>
                 ))}
               </div>
@@ -255,7 +255,7 @@ export default function DpiaWizard() {
                   <div key={i} className="flex items-center gap-2 bg-card rounded-lg px-3 py-2 text-sm">
                     <CheckCircle2 className="w-3.5 h-3.5 text-green-400 flex-shrink-0" />
                     <span className="text-muted-foreground flex-1">{m.action ?? m}</span>
-                    <button onClick={() => setForm(p => ({ ...p, mitigations: p.mitigations.filter((_, j) => j !== i) }))} className="text-gray-600 hover:text-red-400"><X className="w-3.5 h-3.5" /></button>
+                    <button onClick={() => setForm(p => ({ ...p, mitigations: p.mitigations.filter((_, j) => j !== i) }))} className="text-muted-foreground hover:text-red-400"><X className="w-3.5 h-3.5" /></button>
                   </div>
                 ))}
               </div>

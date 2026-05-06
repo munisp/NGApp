@@ -21,7 +21,7 @@ const RISK_COLORS: Record<string, string> = {
 };
 
 const STATUS_COLORS: Record<string, string> = {
-  draft: "bg-gray-500/20 text-muted-foreground",
+  draft: "bg-muted0/20 text-muted-foreground",
   under_review: "bg-blue-500/20 text-blue-400",
   approved: "bg-green-500/20 text-green-400",
   rejected: "bg-red-500/20 text-red-400",
@@ -177,7 +177,7 @@ export default function TiaAssessments() {
                   className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
                     activeTab === tab.key
                       ? `border-blue-500 ${tab.color}`
-                      : "border-transparent text-gray-500 hover:text-muted-foreground"
+                      : "border-transparent text-muted-foreground hover:text-muted-foreground"
                   }`}
                 >
                   {tab.key === "pending" && <ListChecks className="w-3.5 h-3.5" />}
@@ -221,7 +221,7 @@ export default function TiaAssessments() {
                 <tbody>
                   {visibleList.length === 0 ? (
                     <tr>
-                      <td colSpan={9} className="text-center py-12 text-gray-500">
+                      <td colSpan={9} className="text-center py-12 text-muted-foreground">
                         <Globe className="w-8 h-8 mx-auto mb-2 opacity-30" />
                         <p>{activeTab === "pending" ? "No TIAs awaiting review." : activeTab === "all" ? "No TIA assessments yet. Create one to evaluate cross-border transfer risks." : `No ${activeTab} assessments.`}</p>
                       </td>
@@ -232,7 +232,7 @@ export default function TiaAssessments() {
                 <td className="px-4 py-3 text-muted-foreground text-xs">{a.organizationId ?? "—"}</td>
                 <td className="px-4 py-3 text-muted-foreground text-xs">
                   <div className="flex items-center gap-1">
-                    <Globe className="w-3 h-3 text-gray-500" />
+                    <Globe className="w-3 h-3 text-muted-foreground" />
                     {a.destinationCountry}
                   </div>
                 </td>
@@ -242,22 +242,22 @@ export default function TiaAssessments() {
                       <Badge key={c} variant="outline" className="text-[9px] border-border text-muted-foreground">{c}</Badge>
                     ))}
                     {(a.dataCategories ?? []).length > 2 && (
-                      <Badge variant="outline" className="text-[9px] border-border text-gray-500">+{(a.dataCategories ?? []).length - 2}</Badge>
+                      <Badge variant="outline" className="text-[9px] border-border text-muted-foreground">+{(a.dataCategories ?? []).length - 2}</Badge>
                     )}
                   </div>
                 </td>
                 <td className="px-4 py-3 text-muted-foreground text-xs max-w-xs truncate">{a.legalBasis}</td>
                 <td className="px-4 py-3">
-                  <Badge className={`text-xs ${RISK_COLORS[a.riskLevel] ?? "bg-gray-500/20 text-muted-foreground"}`}>
+                  <Badge className={`text-xs ${RISK_COLORS[a.riskLevel] ?? "bg-muted0/20 text-muted-foreground"}`}>
                     {a.riskLevel}
                   </Badge>
                 </td>
                 <td className="px-4 py-3">
-                  <Badge className={`text-xs ${STATUS_COLORS[a.status] ?? "bg-gray-500/20 text-muted-foreground"}`}>
+                  <Badge className={`text-xs ${STATUS_COLORS[a.status] ?? "bg-muted0/20 text-muted-foreground"}`}>
                     {a.status?.replace("_", " ")}
                   </Badge>
                 </td>
-                <td className="px-4 py-3 text-gray-500 text-xs">
+                <td className="px-4 py-3 text-muted-foreground text-xs">
                   {a.createdAt ? new Date(a.createdAt).toLocaleDateString() : "—"}
                 </td>
                 <td className="px-4 py-3">

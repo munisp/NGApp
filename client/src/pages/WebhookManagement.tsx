@@ -126,7 +126,7 @@ export default function WebhookManagement() {
         {/* Subscriptions list */}
         <div className="space-y-4">
           {(subscriptions as any[]).length === 0 && !showForm && (
-            <div className="text-center py-16 text-gray-500">
+            <div className="text-center py-16 text-muted-foreground">
               <Webhook className="w-12 h-12 mx-auto mb-3 opacity-30" />
               <p>No webhook subscriptions yet. Create one to start receiving events.</p>
             </div>
@@ -156,7 +156,7 @@ export default function WebhookManagement() {
                     <span key={ev} className="bg-card text-muted-foreground text-xs font-mono px-2 py-0.5 rounded">{ev}</span>
                   ))}
                 </div>
-                <div className="flex gap-4 mt-3 text-xs text-gray-500">
+                <div className="flex gap-4 mt-3 text-xs text-muted-foreground">
                   <span>{sub.delivery_count ?? 0} deliveries</span>
                   <span>{sub.failure_count ?? 0} failures</span>
                   {sub.last_delivery_at && <span>Last: {new Date(sub.last_delivery_at).toLocaleString()}</span>}
@@ -166,7 +166,7 @@ export default function WebhookManagement() {
                 <div className="border-t border-border bg-gray-950">
                   <div className="px-5 py-3 text-xs text-muted-foreground font-medium uppercase tracking-wide">Recent Deliveries</div>
                   {(deliveries as any[]).length === 0 ? (
-                    <div className="px-5 pb-4 text-gray-500 text-sm">No deliveries yet.</div>
+                    <div className="px-5 pb-4 text-muted-foreground text-sm">No deliveries yet.</div>
                   ) : (
                     <div className="divide-y divide-gray-800">
                       {(deliveries as any[]).slice(0, 10).map((d: any) => (
@@ -180,7 +180,7 @@ export default function WebhookManagement() {
                             {d.http_status && <span className={`text-xs ${d.http_status < 300 ? "text-green-400" : "text-red-400"}`}>HTTP {d.http_status}</span>}
                           </div>
                           <div className="flex items-center gap-2">
-                            <span className="text-xs text-gray-500">{new Date(d.created_at).toLocaleString()}</span>
+                            <span className="text-xs text-muted-foreground">{new Date(d.created_at).toLocaleString()}</span>
                             {d.status === "failed" && (
                               <Button size="sm" variant="outline" onClick={() => toast.info("Retry queued")} className="border-border text-muted-foreground text-xs h-6 px-2">
                                 <RefreshCw className="w-3 h-3 mr-1" /> Retry

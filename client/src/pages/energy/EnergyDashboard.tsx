@@ -7,6 +7,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CheckCircle, XCircle, Zap } from "lucide-react";
 
+function fmtDate(v: any, len = 10): string {
+  if (!v) return "—";
+  if (typeof v === "string") return v.slice(0, len);
+  if (v instanceof Date) return v.toISOString().slice(0, len);
+  return String(v).slice(0, len);
+}
+
 function StatCard({ label, value, sub, color }: { label: string; value: string | number; sub?: string; color?: string }) {
   return (
     <div className="bg-card border border-border rounded-lg p-4">
@@ -138,8 +145,8 @@ export default function EnergyDashboard() {
                     <td className="px-3 py-2">{l.authorized_capacity_mw ? fmt(l.authorized_capacity_mw) : "—"}</td>
                     <td className="px-3 py-2 text-xs">{l.geographic_scope}</td>
                     <td className="px-3 py-2">{l.annual_fee_ngn ? fmtNgn(l.annual_fee_ngn) : "—"}</td>
-                    <td className="px-3 py-2 text-xs">{l.issued_at?.slice(0, 10)}</td>
-                    <td className="px-3 py-2 text-xs">{l.expires_at?.slice(0, 10)}</td>
+                    <td className="px-3 py-2 text-xs">{fmtDate(l.issued_at)}</td>
+                    <td className="px-3 py-2 text-xs">{fmtDate(l.expires_at)}</td>
                     <td className="px-3 py-2">{l.data_localisation_condition ? <CheckCircle className="h-4 w-4 text-green-600" /> : <XCircle className="h-4 w-4 text-red-500" />}</td>
                     <td className="px-3 py-2">{l.cyber_security_compliant ? <CheckCircle className="h-4 w-4 text-green-600" /> : <XCircle className="h-4 w-4 text-red-500" />}</td>
                     <td className="px-3 py-2">{statusBadge(l.status)}</td>
@@ -188,7 +195,7 @@ export default function EnergyDashboard() {
                     <td className="px-3 py-2 text-xs">{e.export_destination ?? "—"}</td>
                     <td className="px-3 py-2">{e.data_localisation_violation ? <Badge className="bg-red-100 text-red-800">VIOLATION</Badge> : <Badge className="bg-green-100 text-green-800">OK</Badge>}</td>
                     <td className="px-3 py-2">{e.reported_to_nerc ? <CheckCircle className="h-4 w-4 text-green-600" /> : <XCircle className="h-4 w-4 text-red-500" />}</td>
-                    <td className="px-3 py-2 text-xs">{e.occurred_at?.slice(0, 16)}</td>
+                    <td className="px-3 py-2 text-xs">{fmtDate(e.occurred_at, 16)}</td>
                   </tr>
                 ))}
               </tbody>

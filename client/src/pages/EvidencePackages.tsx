@@ -91,7 +91,7 @@ export default function EvidencePackages() {
               {isVerifying ? "Verifying signature..." : verifyResult?.valid ? "Signature verified — package is authentic and untampered" : "Signature verification failed — package may be tampered"}
             </p>
             {verifyResult && !isVerifying && (
-              <p className="text-xs text-gray-500 font-mono mt-0.5">Hash: {verifyTarget.contentHash.slice(0, 32)}...</p>
+              <p className="text-xs text-muted-foreground font-mono mt-0.5">Hash: {verifyTarget.contentHash.slice(0, 32)}...</p>
             )}
           </div>
           <Button size="sm" variant="ghost" className="text-xs text-muted-foreground" onClick={() => setVerifyTarget(null)}>Dismiss</Button>
@@ -108,7 +108,7 @@ export default function EvidencePackages() {
           <tbody>
             {(packages as any[]).length === 0 ? (
               <tr>
-                <td colSpan={7} className="text-center py-12 text-gray-500">
+                <td colSpan={7} className="text-center py-12 text-muted-foreground">
                   <Shield className="w-8 h-8 mx-auto mb-2 opacity-30" />
                   <p>No evidence packages generated yet</p>
                 </td>
@@ -120,7 +120,7 @@ export default function EvidencePackages() {
                   <Badge variant="outline" className="text-xs border-border text-muted-foreground">{p.packageType}</Badge>
                 </td>
                 <td className="px-4 py-3 text-muted-foreground text-xs">{p.referenceType || "—"} #{p.referenceId || "—"}</td>
-                <td className="px-4 py-3 font-mono text-xs text-gray-500 max-w-xs truncate">{p.hmacSignature?.slice(0, 20)}...</td>
+                <td className="px-4 py-3 font-mono text-xs text-muted-foreground max-w-xs truncate">{p.hmacSignature?.slice(0, 20)}...</td>
                 <td className="px-4 py-3">
                   <Badge className={`text-xs ${p.status === "ready" ? "bg-green-500/20 text-green-400" : "bg-red-500/20 text-red-400"}`}>{p.status}</Badge>
                 </td>

@@ -132,7 +132,7 @@ export default function CarAutomation() {
         <div>
           <h2 className="font-semibold text-foreground mb-3">Historical CARs</h2>
           {(cars as any[]).length === 0 ? (
-            <div className="text-center py-10 text-gray-500 bg-background border border-border rounded-xl">
+            <div className="text-center py-10 text-muted-foreground bg-background border border-border rounded-xl">
               <FileText className="w-10 h-10 mx-auto mb-2 opacity-30" />
               <p>No CARs generated yet for this organisation.</p>
             </div>

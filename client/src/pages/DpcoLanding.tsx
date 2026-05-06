@@ -111,7 +111,7 @@ function DpcoSearchWidget() {
         <button onClick={() => setSelectedDpco(null)} className="text-xs text-emerald-600 hover:underline mb-4 flex items-center gap-1">
           ← Back to results
         </button>
-        <div className="bg-slate-50 rounded-xl border border-slate-200 p-5 mb-5">
+        <div className="bg-slate-50 rounded-xl border border-border p-5 mb-5">
           <div className="flex items-start gap-3">
             <div className="w-10 h-10 rounded-lg bg-emerald-700 flex items-center justify-center shrink-0">
               <Building2 className="w-5 h-5 text-foreground" />
@@ -133,7 +133,7 @@ function DpcoSearchWidget() {
             value={message}
             onChange={e => setMessage(e.target.value)}
             rows={3}
-            className="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-none"
+            className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-none"
           />
           <Button
             className="w-full bg-emerald-700 hover:bg-emerald-800 text-foreground text-sm h-9"
@@ -171,7 +171,7 @@ function DpcoSearchWidget() {
         <select
           value={sector}
           onChange={e => setSector(e.target.value)}
-          className="rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-600 h-10 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+          className="rounded-md border border-border bg-background px-3 text-sm text-slate-600 h-10 focus:outline-none focus:ring-2 focus:ring-emerald-500"
         >
           {SECTORS.map(s => <option key={s} value={s === "All Sectors" ? "" : s}>{s}</option>)}
         </select>
@@ -202,7 +202,7 @@ function DpcoSearchWidget() {
       {results && results.length > 0 && (
         <div className="grid grid-cols-3 gap-4">
           {results.map(dpco => (
-            <div key={dpco.id} className="bg-white rounded-xl border border-slate-200 p-5 hover:shadow-md transition-shadow">
+            <div key={dpco.id} className="bg-background rounded-xl border border-border p-5 hover:shadow-md transition-shadow">
               <div className="flex items-start justify-between mb-3">
                 <div className="w-9 h-9 rounded-lg bg-emerald-700 flex items-center justify-center">
                   <Building2 className="w-4.5 h-4.5 text-foreground" />
@@ -233,9 +233,9 @@ function DpcoSearchWidget() {
 
 export default function DpcoLanding() {
   return (
-    <div className="min-h-screen bg-white text-slate-900 font-sans">
+    <div className="min-h-screen bg-background text-slate-900 font-sans">
       {/* Nav */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur border-b border-slate-100">
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur border-b border-slate-100">
         <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="w-7 h-7 rounded-lg bg-emerald-700 flex items-center justify-center">
@@ -310,7 +310,7 @@ export default function DpcoLanding() {
           </div>
           <div className="grid grid-cols-4 gap-5">
             {MODULES.map(m => (
-              <div key={m.title} className="bg-white rounded-xl border border-slate-200 p-5 hover:shadow-md transition-shadow">
+              <div key={m.title} className="bg-background rounded-xl border border-border p-5 hover:shadow-md transition-shadow">
                 <div className="w-9 h-9 rounded-lg bg-emerald-50 flex items-center justify-center mb-3">
                   <m.icon className="w-4.5 h-4.5 text-emerald-700" />
                 </div>
@@ -359,7 +359,7 @@ export default function DpcoLanding() {
       </section>
 
       {/* How It Works */}
-      <section className="py-20 bg-white">
+      <section className="py-20 bg-background">
         <div className="max-w-5xl mx-auto px-6">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-slate-900 mb-3">How DPCOs Onboard</h2>
@@ -383,7 +383,7 @@ export default function DpcoLanding() {
       </section>
 
       {/* DPCO Registry Search */}
-      <section id="find-dpco" className="py-20 bg-white border-t border-slate-100">
+      <section id="find-dpco" className="py-20 bg-background border-t border-slate-100">
         <div className="max-w-5xl mx-auto px-6">
           <div className="text-center mb-10">
             <h2 className="text-3xl font-bold text-slate-900 mb-3">Find an Accredited DPCO</h2>
@@ -404,7 +404,7 @@ export default function DpcoLanding() {
           </div>
           <div className="grid grid-cols-3 gap-6">
             {TIERS.map(t => (
-              <div key={t.name} className={`rounded-2xl border p-6 flex flex-col ${t.highlight ? "border-emerald-500 bg-emerald-700 text-foreground shadow-xl shadow-emerald-900/20" : "border-slate-200 bg-white"}`}>
+              <div key={t.name} className={`rounded-2xl border p-6 flex flex-col ${t.highlight ? "border-emerald-500 bg-emerald-700 text-foreground shadow-xl shadow-emerald-900/20" : "border-border bg-background"}`}>
                 <div className="mb-4">
                   <p className={`text-xs font-semibold uppercase tracking-widest mb-1 ${t.highlight ? "text-emerald-200" : "text-emerald-600"}`}>{t.name}</p>
                   <div className="flex items-end gap-1">
@@ -422,7 +422,7 @@ export default function DpcoLanding() {
                   ))}
                 </ul>
                 <Link href="/dpco/apply">
-                  <Button className={`w-full text-sm h-9 ${t.highlight ? "bg-white text-emerald-700 hover:bg-emerald-50" : "bg-emerald-700 hover:bg-emerald-800 text-foreground"}`}>
+                  <Button className={`w-full text-sm h-9 ${t.highlight ? "bg-background text-emerald-700 hover:bg-emerald-50" : "bg-emerald-700 hover:bg-emerald-800 text-foreground"}`}>
                     {t.cta}
                   </Button>
                 </Link>
@@ -442,7 +442,7 @@ export default function DpcoLanding() {
           </p>
           <div className="flex items-center justify-center gap-4">
             <Link href="/dpco/apply">
-              <Button className="bg-white text-emerald-700 hover:bg-emerald-50 font-semibold px-8 h-11 text-sm">
+              <Button className="bg-background text-emerald-700 hover:bg-emerald-50 font-semibold px-8 h-11 text-sm">
                 Apply for Accreditation <ArrowRight className="w-4 h-4 ml-1" />
               </Button>
             </Link>

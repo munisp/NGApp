@@ -80,7 +80,7 @@ const STATUS_COLORS: Record<string, string> = {
   COMPLETED: "bg-green-500/20 text-green-400 border-green-500/30",
   FAILED: "bg-red-500/20 text-red-400 border-red-500/30",
   TIMED_OUT: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
-  CANCELLED: "bg-gray-500/20 text-muted-foreground border-gray-500/30",
+  CANCELLED: "bg-muted0/20 text-muted-foreground border-gray-500/30",
 };
 
 const STATUS_ICONS: Record<string, React.ElementType> = {
@@ -174,7 +174,7 @@ export default function TemporalWorkflows() {
           </p>
         </div>
         <div className="flex items-center gap-3 flex-wrap">
-          <span className="text-xs text-gray-500">
+          <span className="text-xs text-muted-foreground">
             Last refresh: {lastRefresh.toLocaleTimeString()}
           </span>
           <select
@@ -249,14 +249,14 @@ export default function TemporalWorkflows() {
                     <Icon className={`w-4 h-4 ${wt.color}`} />
                     <span className="text-sm font-medium text-foreground">{wt.name}</span>
                   </div>
-                  <p className="text-xs text-gray-500 mb-3">{wt.description}</p>
+                  <p className="text-xs text-muted-foreground mb-3">{wt.description}</p>
                   <div className="flex gap-2 text-xs">
                     <span className="text-blue-400">{wt.running} running</span>
-                    <span className="text-gray-600">·</span>
+                    <span className="text-muted-foreground">·</span>
                     <span className="text-green-400">{wt.completed} done</span>
                     {wt.failed > 0 && (
                       <>
-                        <span className="text-gray-600">·</span>
+                        <span className="text-muted-foreground">·</span>
                         <span className="text-red-400">{wt.failed} failed</span>
                       </>
                     )}
@@ -281,7 +281,7 @@ export default function TemporalWorkflows() {
         </CardHeader>
         <CardContent className="p-0">
           {runs.length === 0 ? (
-            <div className="px-4 py-8 text-center text-gray-500 text-sm">
+            <div className="px-4 py-8 text-center text-muted-foreground text-sm">
               No workflow runs found. Trigger a workflow above to get started.
             </div>
           ) : (
@@ -329,7 +329,7 @@ export default function TemporalWorkflows() {
                           </div>
                         </td>
                         <td className="px-4 py-2 font-mono text-xs text-muted-foreground">{run.currentStep ?? "—"}</td>
-                        <td className="px-4 py-2 text-xs text-gray-500">
+                        <td className="px-4 py-2 text-xs text-muted-foreground">
                           {run.startedAt ? new Date(run.startedAt).toLocaleString() : "—"}
                         </td>
                       </tr>

@@ -11,7 +11,7 @@ import { toast } from "sonner";
 import { Plus, Search, FileText, AlertTriangle, CheckCircle, Clock } from "lucide-react";
 
 const STATUS_COLORS: Record<string, string> = {
-  draft: "bg-gray-100 text-gray-700",
+  draft: "bg-gray-100 text-foreground",
   pending_review: "bg-yellow-100 text-yellow-800",
   submitted: "bg-blue-100 text-blue-800",
   acknowledged: "bg-green-100 text-green-800",
@@ -64,8 +64,8 @@ export default function CbnReports() {
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">CBN Regulatory Reports</h1>
-          <p className="text-sm text-gray-500 mt-1">Currency Transaction Reports (CTR), Suspicious Transaction Reports (STR), SAR, Prudential Returns</p>
+          <h1 className="text-2xl font-bold text-foreground">CBN Regulatory Reports</h1>
+          <p className="text-sm text-muted-foreground mt-1">Currency Transaction Reports (CTR), Suspicious Transaction Reports (STR), SAR, Prudential Returns</p>
         </div>
         <Dialog open={createOpen} onOpenChange={setCreateOpen}>
           <DialogTrigger asChild>
@@ -146,7 +146,7 @@ export default function CbnReports() {
                   <Icon className={`h-8 w-8 ${color}`} />
                   <div>
                     <p className="text-2xl font-bold">{value}</p>
-                    <p className="text-xs text-gray-500">{label}</p>
+                    <p className="text-xs text-muted-foreground">{label}</p>
                   </div>
                 </div>
               </CardContent>
@@ -183,10 +183,10 @@ export default function CbnReports() {
         <CardContent className="p-0">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-gray-50 border-b">
+              <thead className="bg-muted border-b">
                 <tr>
                   {["Report Ref", "Type", "Period", "Total Txns", "Total Amount", "Suspicious", "Status", "Deadline", "Actions"].map(h => (
-                    <th key={h} className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{h}</th>
+                    <th key={h} className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">{h}</th>
                   ))}
                 </tr>
               </thead>
@@ -198,7 +198,7 @@ export default function CbnReports() {
                 ) : rows.map((r: any) => {
                   const isOverdue = r.filing_deadline && new Date(r.filing_deadline) < new Date() && !["submitted","acknowledged"].includes(r.status);
                   return (
-                    <tr key={r.id} className={`hover:bg-gray-50 ${isOverdue ? "bg-red-50" : ""}`}>
+                    <tr key={r.id} className={`hover:bg-muted ${isOverdue ? "bg-red-50" : ""}`}>
                       <td className="px-4 py-3 font-mono text-xs">{r.report_ref}</td>
                       <td className="px-4 py-3"><Badge className="bg-blue-100 text-blue-700">{r.report_type?.toUpperCase()}</Badge></td>
                       <td className="px-4 py-3 text-xs">
@@ -213,12 +213,12 @@ export default function CbnReports() {
                         ) : "0"}
                       </td>
                       <td className="px-4 py-3">
-                        <Badge className={STATUS_COLORS[isOverdue ? "overdue" : r.status] || "bg-gray-100 text-gray-700"}>
+                        <Badge className={STATUS_COLORS[isOverdue ? "overdue" : r.status] || "bg-gray-100 text-foreground"}>
                           {isOverdue ? "overdue" : r.status?.replace(/_/g, " ")}
                         </Badge>
                       </td>
                       <td className="px-4 py-3 text-xs">
-                        <span className={isOverdue ? "text-red-600 font-medium" : "text-gray-500"}>
+                        <span className={isOverdue ? "text-red-600 font-medium" : "text-muted-foreground"}>
                           {r.filing_deadline ? new Date(r.filing_deadline).toLocaleDateString() : "—"}
                         </span>
                       </td>
@@ -238,7 +238,7 @@ export default function CbnReports() {
           </div>
           {total > 20 && (
             <div className="flex items-center justify-between px-4 py-3 border-t">
-              <span className="text-sm text-gray-500">Page {page} of {Math.ceil(total / 20)}</span>
+              <span className="text-sm text-muted-foreground">Page {page} of {Math.ceil(total / 20)}</span>
               <div className="flex gap-2">
                 <Button size="sm" variant="outline" disabled={page === 1} onClick={() => setPage(p => p - 1)}>Previous</Button>
                 <Button size="sm" variant="outline" disabled={page * 20 >= total} onClick={() => setPage(p => p + 1)}>Next</Button>
