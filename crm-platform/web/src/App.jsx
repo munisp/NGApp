@@ -78,6 +78,48 @@ const EPRKGQAChat = lazy(() => import('./components/EPRKGQAChat'))
 const ARTSecurity = lazy(() => import('./components/ARTSecurity'))
 const OllamaInference = lazy(() => import('./components/OllamaInference'))
 
+// Next-Gen CRM — Tier 1: AI-Native
+const CustomerHealthScore = lazy(() => import('./components/CustomerHealthScore'))
+const OmnichannelInbox = lazy(() => import('./components/OmnichannelInbox'))
+const ConversationIntelligence = lazy(() => import('./components/ConversationIntelligence'))
+const DealScoring = lazy(() => import('./components/DealScoring'))
+const SmartComposer = lazy(() => import('./components/SmartComposer'))
+
+// Next-Gen CRM — Tier 2: Relationship Intelligence
+const RelationshipMapping = lazy(() => import('./components/RelationshipMapping'))
+const CustomerTimeline = lazy(() => import('./components/CustomerTimeline'))
+const JourneyReplay = lazy(() => import('./components/JourneyReplay'))
+const NextBestAction = lazy(() => import('./components/NextBestAction'))
+const SentimentAnalysis = lazy(() => import('./components/SentimentAnalysis'))
+
+// Next-Gen CRM — Tier 3: Engagement
+const DigitalSalesRoom = lazy(() => import('./components/DigitalSalesRoom'))
+const MutualActionPlan = lazy(() => import('./components/MutualActionPlan'))
+const KnowledgeBase = lazy(() => import('./components/KnowledgeBase'))
+const OnboardingTours = lazy(() => import('./components/OnboardingTours'))
+const FeedbackLoop = lazy(() => import('./components/FeedbackLoop'))
+
+// Next-Gen CRM — Tier 4: Automation
+const WorkflowBuilder = lazy(() => import('./components/WorkflowBuilder'))
+const SmartTaskAutomation = lazy(() => import('./components/SmartTaskAutomation'))
+const DocGeneration = lazy(() => import('./components/DocGeneration'))
+const DataEnrichment = lazy(() => import('./components/DataEnrichment'))
+const DuplicateDetection = lazy(() => import('./components/DuplicateDetection'))
+
+// Next-Gen CRM — Tier 5: Analytics
+const RevenueIntelligence = lazy(() => import('./components/RevenueIntelligence'))
+const CohortStudio = lazy(() => import('./components/CohortStudio'))
+const WinLossAnalysis = lazy(() => import('./components/WinLossAnalysis'))
+const MultiTouchAttribution = lazy(() => import('./components/MultiTouchAttribution'))
+const ExecutiveCockpit = lazy(() => import('./components/ExecutiveCockpit'))
+
+// Next-Gen CRM — Tier 6: Ecosystem
+const CustomerAppBuilder = lazy(() => import('./components/CustomerAppBuilder'))
+const PluginMarketplace = lazy(() => import('./components/PluginMarketplace'))
+const WhiteLabelConfig = lazy(() => import('./components/WhiteLabelConfig'))
+const MobileCRM = lazy(() => import('./components/MobileCRM'))
+const AICoPilot = lazy(() => import('./components/AICoPilot'))
+
 // Operations & Security
 const AuditLog = lazy(() => import('./components/AuditLog'))
 const SecurityDashboard = lazy(() => import('./components/SecurityDashboard'))
@@ -289,6 +331,48 @@ function App() {
                         <Route path="/search" element={<P><AdvancedSearch /></P>} />
                         <Route path="/calendar" element={<P><CalendarView /></P>} />
                         <Route path="/customize-dashboard" element={<P><DashboardCustomization /></P>} />
+
+                        {/* Next-Gen CRM — Tier 1: AI-Native */}
+                        <Route path="/health-scoring" element={<P><CustomerHealthScore /></P>} />
+                        <Route path="/omnichannel-inbox" element={<P><OmnichannelInbox /></P>} />
+                        <Route path="/conversation-intelligence" element={<P><ConversationIntelligence /></P>} />
+                        <Route path="/deal-scoring" element={<P><DealScoring /></P>} />
+                        <Route path="/smart-composer" element={<P><SmartComposer /></P>} />
+
+                        {/* Next-Gen CRM — Tier 2: Relationship Intelligence */}
+                        <Route path="/relationship-mapping" element={<P><RelationshipMapping /></P>} />
+                        <Route path="/customer-timeline" element={<P><CustomerTimeline /></P>} />
+                        <Route path="/journey-replay" element={<P><JourneyReplay /></P>} />
+                        <Route path="/next-best-action" element={<P><NextBestAction /></P>} />
+                        <Route path="/sentiment-analysis" element={<P><SentimentAnalysis /></P>} />
+
+                        {/* Next-Gen CRM — Tier 3: Engagement */}
+                        <Route path="/digital-sales-room" element={<P><DigitalSalesRoom /></P>} />
+                        <Route path="/mutual-action-plans" element={<P><MutualActionPlan /></P>} />
+                        <Route path="/knowledge-base" element={<P><KnowledgeBase /></P>} />
+                        <Route path="/onboarding-tours" element={<P><OnboardingTours /></P>} />
+                        <Route path="/feedback" element={<P><FeedbackLoop /></P>} />
+
+                        {/* Next-Gen CRM — Tier 4: Automation */}
+                        <Route path="/workflow-builder" element={<P><WorkflowBuilder /></P>} />
+                        <Route path="/smart-tasks" element={<P><SmartTaskAutomation /></P>} />
+                        <Route path="/doc-generation" element={<P><DocGeneration /></P>} />
+                        <Route path="/data-enrichment" element={<P><DataEnrichment /></P>} />
+                        <Route path="/duplicate-detection" element={<P><DuplicateDetection /></P>} />
+
+                        {/* Next-Gen CRM — Tier 5: Analytics */}
+                        <Route path="/revenue-intelligence" element={<P><RevenueIntelligence /></P>} />
+                        <Route path="/cohort-studio" element={<P><CohortStudio /></P>} />
+                        <Route path="/win-loss" element={<P><WinLossAnalysis /></P>} />
+                        <Route path="/attribution" element={<P><MultiTouchAttribution /></P>} />
+                        <Route path="/executive-cockpit" element={<P><ExecutiveCockpit /></P>} />
+
+                        {/* Next-Gen CRM — Tier 6: Ecosystem */}
+                        <Route path="/app-builder" element={<P><CustomerAppBuilder /></P>} />
+                        <Route path="/marketplace" element={<P><PluginMarketplace /></P>} />
+                        <Route path="/white-label" element={<P><WhiteLabelConfig /></P>} />
+                        <Route path="/mobile-crm" element={<P><MobileCRM /></P>} />
+                        <Route path="/ai-copilot" element={<P><AICoPilot /></P>} />
                       </Routes>
                     </div>
                   </Router>

@@ -56,6 +56,7 @@ import {
   UserPlus,
   Brain,
   Cpu,
+  Clock,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useTheme } from '@/contexts/ThemeContext'
@@ -73,6 +74,12 @@ const Sidebar = ({ isOpen, onToggle }) => {
     retention: true,
     banking: true,
     intelligence: true,
+    crmAiNative: true,
+    crmRelationship: false,
+    crmEngagement: false,
+    crmAutomation: false,
+    crmAnalytics: false,
+    crmEcosystem: false,
     developer: true,
     operations: true,
     tenant: true,
@@ -144,6 +151,72 @@ const Sidebar = ({ isOpen, onToggle }) => {
         { i18nKey: 'nav.kgqa', href: '/epr-kgqa', icon: MessageSquare, description: 'Knowledge graph question answering' },
         { i18nKey: 'nav.artSecurity', href: '/art-security', icon: ShieldCheck, description: 'Adversarial robustness testing' },
         { i18nKey: 'nav.ollama', href: '/ollama', icon: Cpu, description: 'Local LLM inference engine' },
+      ]
+    },
+    {
+      section: 'crmAiNative',
+      titleKey: 'sections.crmAiNative',
+      items: [
+        { i18nKey: 'nav.healthScoring', href: '/health-scoring', icon: Activity, description: 'Real-time customer health scores' },
+        { i18nKey: 'nav.omnichannelInbox', href: '/omnichannel-inbox', icon: MessageSquare, description: 'Unified inbox across all channels' },
+        { i18nKey: 'nav.conversationIntel', href: '/conversation-intelligence', icon: Phone, description: 'Call transcription & sentiment' },
+        { i18nKey: 'nav.dealScoring', href: '/deal-scoring', icon: Target, description: 'AI deal win probability' },
+        { i18nKey: 'nav.smartComposer', href: '/smart-composer', icon: Send, description: 'AI-powered email & message drafting' },
+      ]
+    },
+    {
+      section: 'crmRelationship',
+      titleKey: 'sections.crmRelationship',
+      items: [
+        { i18nKey: 'nav.relationshipMapping', href: '/relationship-mapping', icon: Users, description: 'Stakeholder maps & influence' },
+        { i18nKey: 'nav.customerTimeline', href: '/customer-timeline', icon: Clock, description: 'Unified chronological feed' },
+        { i18nKey: 'nav.journeyReplay', href: '/journey-replay', icon: Monitor, description: 'Visual journey replay & bottlenecks' },
+        { i18nKey: 'nav.nextBestAction', href: '/next-best-action', icon: Zap, description: 'Predictive action recommendations' },
+        { i18nKey: 'nav.sentimentAi', href: '/sentiment-analysis', icon: Activity, description: 'Emotion & sentiment tracking' },
+      ]
+    },
+    {
+      section: 'crmEngagement',
+      titleKey: 'sections.crmEngagement',
+      items: [
+        { i18nKey: 'nav.digitalSalesRoom', href: '/digital-sales-room', icon: Monitor, description: 'Deal rooms with engagement tracking' },
+        { i18nKey: 'nav.mutualActionPlan', href: '/mutual-action-plans', icon: ClipboardList, description: 'Collaborative deal plans' },
+        { i18nKey: 'nav.knowledgeBase', href: '/knowledge-base', icon: FileText, description: 'Self-service articles & FAQ' },
+        { i18nKey: 'nav.onboardingTours', href: '/onboarding-tours', icon: MapPin, description: 'Guided product tours' },
+        { i18nKey: 'nav.feedbackLoop', href: '/feedback', icon: MessageSquare, description: 'NPS, CSAT & CES surveys' },
+      ]
+    },
+    {
+      section: 'crmAutomation',
+      titleKey: 'sections.crmAutomation',
+      items: [
+        { i18nKey: 'nav.workflowBuilder', href: '/workflow-builder', icon: GitBranch, description: 'Visual workflow automation' },
+        { i18nKey: 'nav.smartTasks', href: '/smart-tasks', icon: ClipboardList, description: 'AI task creation & routing' },
+        { i18nKey: 'nav.docGeneration', href: '/doc-generation', icon: FileText, description: 'Document generation & e-sign' },
+        { i18nKey: 'nav.dataEnrichment', href: '/data-enrichment', icon: Database, description: 'Auto data enrichment' },
+        { i18nKey: 'nav.duplicateDetection', href: '/duplicate-detection', icon: Shield, description: 'ML duplicate detection & merge' },
+      ]
+    },
+    {
+      section: 'crmAnalytics',
+      titleKey: 'sections.crmAnalytics',
+      items: [
+        { i18nKey: 'nav.revenueIntelligence', href: '/revenue-intelligence', icon: DollarSign, description: 'Pipeline analytics & forecast' },
+        { i18nKey: 'nav.cohortStudio', href: '/cohort-studio', icon: Users, description: 'Dynamic customer segmentation' },
+        { i18nKey: 'nav.winLoss', href: '/win-loss', icon: Target, description: 'Deal outcome analysis' },
+        { i18nKey: 'nav.attribution', href: '/attribution', icon: BarChart3, description: 'Multi-touch attribution modeling' },
+        { i18nKey: 'nav.executiveCockpit', href: '/executive-cockpit', icon: Monitor, description: 'C-suite real-time dashboard' },
+      ]
+    },
+    {
+      section: 'crmEcosystem',
+      titleKey: 'sections.crmEcosystem',
+      items: [
+        { i18nKey: 'nav.appBuilder', href: '/app-builder', icon: LayoutGrid, description: 'Customer mini-app builder' },
+        { i18nKey: 'nav.marketplace', href: '/marketplace', icon: Layers, description: 'Plugin marketplace' },
+        { i18nKey: 'nav.whiteLabel', href: '/white-label', icon: Monitor, description: 'White-label CRM configuration' },
+        { i18nKey: 'nav.mobileCrm', href: '/mobile-crm', icon: Phone, description: 'Native mobile CRM with offline' },
+        { i18nKey: 'nav.aiCopilot', href: '/ai-copilot', icon: Brain, description: 'AI assistant across all pages' },
       ]
     },
     {
