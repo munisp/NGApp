@@ -26,6 +26,8 @@ import {
   Calendar
 } from 'lucide-react'
 import { useNotification } from '../contexts/NotificationContext'
+import { LoadingState, ErrorState, EmptyState, FallbackBadge, ExportButton } from '@/components/ui/DataStates'
+import { useTranslation } from '@/lib/i18n/useTranslation'
 
 const NotificationCenter = () => {
   const { notifications, unreadCount, markAsRead, markAllAsRead, deleteNotification } = useNotification()

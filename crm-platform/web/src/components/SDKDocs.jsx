@@ -181,6 +181,8 @@ status, err := client.Banking.Transactions.Get(ctx, txn.ID)
 fmt.Printf("Status: %s, Amount: %.2f\\n", status.Status, status.Amount)`,
     webhooks: `// Verify webhook signature (net/http)
 import "github.com/banking-crm/sdk-go/webhooks"
+import { LoadingState, ErrorState, EmptyState, FallbackBadge, ExportButton } from '@/components/ui/DataStates'
+import { useTranslation } from '@/lib/i18n/useTranslation'
 
 func webhookHandler(w http.ResponseWriter, r *http.Request) {
     payload, _ := io.ReadAll(r.Body)
@@ -277,7 +279,7 @@ const SDKDocs = () => {
   const tabs = ['quickstart', 'api-reference', 'sdks']
 
   return (
-    <div className="space-y-6">
+    <div role="region" aria-label="SDKDocs"  className="space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-3">
           <div className="p-3 bg-violet-100 dark:bg-violet-900/30 rounded-xl">
@@ -314,7 +316,7 @@ const SDKDocs = () => {
           </div>
 
           {/* Install */}
-          <div className="bg-white dark:bg-gray-800 rounded-xl border p-4">
+          <div tabIndex="0" className="bg-white dark:bg-gray-800 rounded-xl border p-4">
             <h3 className="font-semibold flex items-center space-x-2 mb-3">
               <Terminal className="w-5 h-5 text-gray-500" />
               <span>Installation</span>

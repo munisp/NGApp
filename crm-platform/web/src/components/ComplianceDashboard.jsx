@@ -1,6 +1,8 @@
 import { useState, useContext, useEffect } from 'react';
 import { ClipboardCheck, FileText, AlertTriangle, CheckCircle, XCircle, TrendingUp, Download, Shield } from 'lucide-react';
 import { TenantContext } from '../contexts/TenantContext';
+import { LoadingState, ErrorState, EmptyState, FallbackBadge, ExportButton } from '@/components/ui/DataStates'
+import { useTranslation } from '@/lib/i18n/useTranslation'
 
 const FRAMEWORKS = [
   { id: 'ndpr', name: 'NDPR', full: 'Nigeria Data Protection Regulation', score: 93.8, total: 8, compliant: 7, partial: 1, non: 0, color: 'bg-green-500' },
@@ -21,6 +23,7 @@ const AML_DATA = {
 };
 
 export default function ComplianceDashboard() {
+  const { t } = useTranslation()
   const { tenantId } = useContext(TenantContext);
   const [activeTab, setActiveTab] = useState('overview');
   const [selectedFramework, setSelectedFramework] = useState(null);
@@ -35,7 +38,7 @@ export default function ComplianceDashboard() {
   ];
 
   return (
-    <div className="p-6 max-w-full">
+    <div role="region" aria-label="ComplianceDashboard"  className="p-6 max-w-full">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <ClipboardCheck className="w-8 h-8 text-emerald-600" />

@@ -10,6 +10,8 @@ import { unifiedCustomerService } from '../services/unifiedCustomerService'
 import { coreBankingAdapter } from '../services/coreBankingAdapter'
 import { agentBankingAdapter } from '../services/agentBankingAdapter'
 import { remittanceAdapter } from '../services/remittanceAdapter'
+import { LoadingState, ErrorState, EmptyState, FallbackBadge, ExportButton } from '@/components/ui/DataStates'
+import { useTranslation } from '@/lib/i18n/useTranslation'
 
 const COLORS = ['#3b82f6', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444', '#ec4899', '#06b6d4', '#84cc16']
 
@@ -67,7 +69,7 @@ const CrossSystemAnalytics = () => {
 
   if (loading || !metrics) {
     return (
-      <div className="flex items-center justify-center h-64">
+      <div role="region" aria-label="CrossSystemAnalytics"  className="flex items-center justify-center h-64">
         <RefreshCw className="w-8 h-8 text-blue-500 animate-spin" />
       </div>
     )
@@ -133,7 +135,7 @@ const CrossSystemAnalytics = () => {
       </div>
 
       {/* CLV by Segment */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
+      <div tabIndex="0" className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Customer Lifetime Value by Segment</h3>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <ResponsiveContainer width="100%" height={300}>

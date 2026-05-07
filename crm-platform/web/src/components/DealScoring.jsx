@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { Target, TrendingUp, TrendingDown, DollarSign, Clock, Users, BarChart3, ArrowRight, AlertTriangle, CheckCircle, Eye, Mail, Calendar, Phone } from 'lucide-react'
 import { useTenant } from '@/contexts/TenantContext'
+import { LoadingState, ErrorState, EmptyState, FallbackBadge, ExportButton } from '@/components/ui/DataStates'
+import { useTranslation } from '@/lib/i18n/useTranslation'
 
 const tenantData = {
   'acme-bank': {
@@ -50,12 +52,13 @@ const tenantData = {
 const riskBadge = { none: null, competitor: { label: 'Competitor', color: 'bg-orange-100 text-orange-700' }, slow: { label: 'Slow Moving', color: 'bg-amber-100 text-amber-700' }, stalled: { label: 'Stalled', color: 'bg-red-100 text-red-700' }, dead: { label: 'At Risk', color: 'bg-red-100 text-red-700' } }
 
 export default function DealScoring() {
+  const { t } = useTranslation()
   const { tenant } = useTenant()
   const [activeTab, setActiveTab] = useState('pipeline')
   const data = tenantData[tenant?.slug] || tenantData['acme-bank']
 
   return (
-    <div className="space-y-6">
+    <div role="region" aria-label="DealScoring"  className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
           <Target className="w-7 h-7 text-purple-600" /> AI Deal Scoring & Pipeline Intelligence
@@ -79,7 +82,7 @@ export default function DealScoring() {
       </div>
 
       {/* Pipeline Funnel */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
+      <div tabIndex="0" className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
         <h3 className="font-semibold text-gray-900 dark:text-white mb-4">Pipeline Stages</h3>
         <div className="flex items-end gap-2">
           {data.stages.map((s, i) => (

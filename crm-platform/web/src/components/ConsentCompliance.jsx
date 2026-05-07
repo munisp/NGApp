@@ -6,6 +6,8 @@ import {
   Download, Filter, BarChart3, Bell, Globe, Smartphone,
   MessageSquare, Send, Phone, Mail
 } from 'lucide-react';
+import { LoadingState, ErrorState, EmptyState, FallbackBadge, ExportButton } from '@/components/ui/DataStates'
+import { useTranslation } from '@/lib/i18n/useTranslation'
 
 const CHANNEL_CONSENT = [
   { channel: 'SMS', icon: Smartphone, optedIn: 38200, optedOut: 4800, pending: 2100, total: 45100, rate: 84.7 },
@@ -47,6 +49,7 @@ const SUPPRESSION_LISTS = [
 ];
 
 export default function ConsentCompliance() {
+  const { t } = useTranslation()
   const [activeTab, setActiveTab] = useState('overview');
 
   const totalOptedIn = CHANNEL_CONSENT.reduce((s, c) => s + c.optedIn, 0);
@@ -55,7 +58,7 @@ export default function ConsentCompliance() {
   const complianceScore = Math.round((compliantChecks / COMPLIANCE_CHECKS.length) * 100);
 
   return (
-    <div className="p-6 space-y-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
+    <div role="region" aria-label="ConsentCompliance"  className="p-6 space-y-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
@@ -80,7 +83,7 @@ export default function ConsentCompliance() {
           { label: 'Checks Passing', value: `${compliantChecks}/${COMPLIANCE_CHECKS.length}`, icon: Lock, color: 'blue' },
         ].map((m, i) => (
           <motion.div key={m.label} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}
-            className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-200 dark:border-gray-700">
+            tabIndex="0" className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-200 dark:border-gray-700">
             <div className="flex items-center gap-3">
               <div className={`p-2 rounded-lg bg-${m.color}-100 dark:bg-${m.color}-900/30`}>
                 <m.icon className={`w-5 h-5 text-${m.color}-600`} />

@@ -5,6 +5,8 @@ import {
   ArrowUpRight, CheckCircle2, TrendingUp, Globe, Crosshair,
   Zap, BarChart3, Send, MessageSquare, Smartphone
 } from 'lucide-react';
+import { LoadingState, ErrorState, EmptyState, FallbackBadge, ExportButton } from '@/components/ui/DataStates'
+import { useTranslation } from '@/lib/i18n/useTranslation'
 
 const REGIONS = [
   {
@@ -80,6 +82,7 @@ const REGIONS = [
 const HEAT_COLORS = ['bg-green-200', 'bg-green-300', 'bg-yellow-300', 'bg-orange-300', 'bg-red-300', 'bg-red-400'];
 
 export default function GeoTargeting() {
+  const { t } = useTranslation()
   const [selectedRegion, setSelectedRegion] = useState(null);
   const [activeTab, setActiveTab] = useState('map');
   const [selectedMetric, setSelectedMetric] = useState('customers');
@@ -90,7 +93,7 @@ export default function GeoTargeting() {
   const maxCustomers = Math.max(...REGIONS.map(r => r.customers));
 
   return (
-    <div className="p-6 space-y-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
+    <div role="region" aria-label="GeoTargeting"  className="p-6 space-y-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
@@ -113,7 +116,7 @@ export default function GeoTargeting() {
           { label: 'Campaign Revenue', value: `₦${(totalRevenue / 1000000).toFixed(1)}M`, icon: TrendingUp, color: 'emerald' },
         ].map((m, i) => (
           <motion.div key={m.label} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}
-            className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-200 dark:border-gray-700">
+            tabIndex="0" className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-200 dark:border-gray-700">
             <div className="flex items-center gap-3">
               <div className={`p-2 rounded-lg bg-${m.color}-100 dark:bg-${m.color}-900/30`}>
                 <m.icon className={`w-5 h-5 text-${m.color}-600`} />

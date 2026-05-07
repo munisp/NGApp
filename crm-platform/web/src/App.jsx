@@ -283,51 +283,51 @@ function App() {
 
                         {/* Campaign & Engagement */}
                         <Route path="/campaigns" element={<P permission="campaigns:read"><CampaignManager /></P>} />
-                        <Route path="/realtime" element={<P><RealTimeDashboard /></P>} />
-                        <Route path="/journeys" element={<P><JourneyOrchestrator /></P>} />
-                        <Route path="/churn" element={<P><ChurnPrevention /></P>} />
-                        <Route path="/conversational" element={<P><ConversationalFlows /></P>} />
-                        <Route path="/geo-targeting" element={<P><GeoTargeting /></P>} />
-                        <Route path="/ab-testing" element={<P><ABTestAutomation /></P>} />
-                        <Route path="/compliance" element={<P><ConsentCompliance /></P>} />
+                        <Route path="/realtime" element={<P permission="analytics:read"><RealTimeDashboard /></P>} />
+                        <Route path="/journeys" element={<P permission="campaigns:read"><JourneyOrchestrator /></P>} />
+                        <Route path="/churn" element={<P permission="analytics:read"><ChurnPrevention /></P>} />
+                        <Route path="/conversational" element={<P permission="campaigns:read"><ConversationalFlows /></P>} />
+                        <Route path="/geo-targeting" element={<P permission="campaigns:read"><GeoTargeting /></P>} />
+                        <Route path="/ab-testing" element={<P permission="campaigns:read"><ABTestAutomation /></P>} />
+                        <Route path="/compliance" element={<P permission="compliance:read"><ConsentCompliance /></P>} />
                         <Route path="/preferences" element={<P><NotificationPreferences /></P>} />
                         <Route path="/revenue" element={<P permission="analytics:read"><RevenueAttribution /></P>} />
-                        <Route path="/gamification" element={<P><AgentGamification /></P>} />
+                        <Route path="/gamification" element={<P permission="campaigns:read"><AgentGamification /></P>} />
                         <Route path="/tenant-admin" element={<P permission="admin:full"><TenantAdmin /></P>} />
 
                         {/* Developer Portal */}
-                        <Route path="/api-keys" element={<P><APIKeyManager /></P>} />
-                        <Route path="/usage" element={<P><UsageMetering /></P>} />
+                        <Route path="/api-keys" element={<P permission="admin:full"><APIKeyManager /></P>} />
+                        <Route path="/usage" element={<P permission="analytics:read"><UsageMetering /></P>} />
                         <Route path="/sdk-docs" element={<P><SDKDocs /></P>} />
-                        <Route path="/webhooks" element={<P><WebhookManager /></P>} />
-                        <Route path="/sandbox" element={<P><SandboxManager /></P>} />
+                        <Route path="/webhooks" element={<P permission="admin:full"><WebhookManager /></P>} />
+                        <Route path="/sandbox" element={<P permission="admin:full"><SandboxManager /></P>} />
 
                         {/* Intelligence & AI */}
-                        <Route path="/channel-value" element={<P><ChannelValueAnalysis /></P>} />
-                        <Route path="/acquisition" element={<P><AcquisitionEngine /></P>} />
-                        <Route path="/social-media" element={<P><SocialMediaHub /></P>} />
-                        <Route path="/mdm-360" element={<P><MDMCustomer360 /></P>} />
-                        <Route path="/agentic-ai" element={<P><AgenticAI /></P>} />
+                        <Route path="/channel-value" element={<P permission="analytics:read"><ChannelValueAnalysis /></P>} />
+                        <Route path="/acquisition" element={<P permission="campaigns:read"><AcquisitionEngine /></P>} />
+                        <Route path="/social-media" element={<P permission="campaigns:read"><SocialMediaHub /></P>} />
+                        <Route path="/mdm-360" element={<P permission="customers:read"><MDMCustomer360 /></P>} />
+                        <Route path="/agentic-ai" element={<P permission="analytics:read"><AgenticAI /></P>} />
 
                         {/* AI/ML Stack */}
-                        <Route path="/gnn-neo4j" element={<P><GNNNeo4j /></P>} />
-                        <Route path="/falkordb" element={<P><FalkorDBGraph /></P>} />
-                        <Route path="/mcmc-risk" element={<P><MCMCRisk /></P>} />
-                        <Route path="/cocoindex" element={<P><CocoIndexPipeline /></P>} />
-                        <Route path="/epr-kgqa" element={<P><EPRKGQAChat /></P>} />
+                        <Route path="/gnn-neo4j" element={<P permission="analytics:read"><GNNNeo4j /></P>} />
+                        <Route path="/falkordb" element={<P permission="analytics:read"><FalkorDBGraph /></P>} />
+                        <Route path="/mcmc-risk" element={<P permission="analytics:read"><MCMCRisk /></P>} />
+                        <Route path="/cocoindex" element={<P permission="analytics:read"><CocoIndexPipeline /></P>} />
+                        <Route path="/epr-kgqa" element={<P permission="analytics:read"><EPRKGQAChat /></P>} />
                         <Route path="/art-security" element={<P permission="security:read"><ARTSecurity /></P>} />
-                        <Route path="/ollama" element={<P><OllamaInference /></P>} />
+                        <Route path="/ollama" element={<P permission="analytics:read"><OllamaInference /></P>} />
 
                         {/* Operations & Security */}
                         <Route path="/audit-log" element={<P permission="audit:read"><AuditLog /></P>} />
                         <Route path="/security-dashboard" element={<P permission="security:read"><SecurityDashboard /></P>} />
-                        <Route path="/compliance-dashboard" element={<P><ComplianceDashboard /></P>} />
+                        <Route path="/compliance-dashboard" element={<P permission="compliance:read"><ComplianceDashboard /></P>} />
                         <Route path="/documents" element={<P><DocumentManager /></P>} />
                         <Route path="/tasks" element={<P><TaskManager /></P>} />
-                        <Route path="/sla-monitor" element={<P><SLAMonitor /></P>} />
+                        <Route path="/sla-monitor" element={<P permission="analytics:read"><SLAMonitor /></P>} />
                         <Route path="/incidents" element={<P permission="security:read"><IncidentManager /></P>} />
-                        <Route path="/data-export" element={<P><DataExport /></P>} />
-                        <Route path="/bulk-operations" element={<P><BulkOperations /></P>} />
+                        <Route path="/data-export" element={<P permission="admin:full"><DataExport /></P>} />
+                        <Route path="/bulk-operations" element={<P permission="admin:full"><BulkOperations /></P>} />
                         <Route path="/search" element={<P><AdvancedSearch /></P>} />
                         <Route path="/calendar" element={<P><CalendarView /></P>} />
                         <Route path="/customize-dashboard" element={<P><DashboardCustomization /></P>} />
@@ -368,9 +368,9 @@ function App() {
                         <Route path="/executive-cockpit" element={<P><ExecutiveCockpit /></P>} />
 
                         {/* Next-Gen CRM — Tier 6: Ecosystem */}
-                        <Route path="/app-builder" element={<P><CustomerAppBuilder /></P>} />
+                        <Route path="/app-builder" element={<P permission="admin:full"><CustomerAppBuilder /></P>} />
                         <Route path="/marketplace" element={<P><PluginMarketplace /></P>} />
-                        <Route path="/white-label" element={<P><WhiteLabelConfig /></P>} />
+                        <Route path="/white-label" element={<P permission="admin:full"><WhiteLabelConfig /></P>} />
                         <Route path="/mobile-crm" element={<P><MobileCRM /></P>} />
                         <Route path="/ai-copilot" element={<P><AICoPilot /></P>} />
                       </Routes>

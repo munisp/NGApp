@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import { useTenant } from '../contexts/TenantContext'
+import { LoadingState, ErrorState, EmptyState, FallbackBadge, ExportButton } from '@/components/ui/DataStates'
+import { useTranslation } from '@/lib/i18n/useTranslation'
 
 const ARTSecurity = () => {
   const { tenant } = useTenant()
@@ -65,7 +67,7 @@ const ARTSecurity = () => {
   ]
 
   return (
-    <div className="space-y-6" data-tenant={tenant?.id}>
+    <div role="region" aria-label="ARTSecurity"  className="space-y-6" data-tenant={tenant?.id}>
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">ART — ML Model Security</h1>

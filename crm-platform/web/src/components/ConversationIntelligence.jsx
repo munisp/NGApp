@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { Mic, Phone, TrendingUp, TrendingDown, AlertTriangle, Clock, Users, BarChart3, MessageSquare, ThumbsUp, ThumbsDown, Play, Search, Filter, Star } from 'lucide-react'
 import { useTenant } from '@/contexts/TenantContext'
+import { LoadingState, ErrorState, EmptyState, FallbackBadge, ExportButton } from '@/components/ui/DataStates'
+import { useTranslation } from '@/lib/i18n/useTranslation'
 
 const tenantData = {
   'acme-bank': {
@@ -38,12 +40,13 @@ const tenantData = {
 }
 
 export default function ConversationIntelligence() {
+  const { t } = useTranslation()
   const { tenant } = useTenant()
   const [activeTab, setActiveTab] = useState('calls')
   const data = tenantData[tenant?.slug] || tenantData['acme-bank']
 
   return (
-    <div className="space-y-6">
+    <div role="region" aria-label="ConversationIntelligence"  className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
           <Mic className="w-7 h-7 text-indigo-600" /> Conversation Intelligence
@@ -79,7 +82,7 @@ export default function ConversationIntelligence() {
       </div>
 
       {activeTab === 'calls' && (
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
+        <div tabIndex="0" className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
           <table className="w-full">
             <thead className="bg-gray-50 dark:bg-gray-700">
               <tr>

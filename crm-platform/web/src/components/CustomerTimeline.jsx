@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { Clock, Mail, Phone, MessageSquare, DollarSign, FileText, Shield, AlertTriangle, CheckCircle, Users, Search, Filter, Activity, CreditCard, Building2 } from 'lucide-react'
 import { useTenant } from '@/contexts/TenantContext'
+import { LoadingState, ErrorState, EmptyState, FallbackBadge, ExportButton } from '@/components/ui/DataStates'
+import { useTranslation } from '@/lib/i18n/useTranslation'
 const events = [
   { id: 1, type: 'transaction', icon: DollarSign, color: 'bg-emerald-500', title: 'Transfer Completed', desc: '₦500,000 sent to GTBank (TRX-0412-8834)', customer: 'Chinedu Okafor', time: '10:23 AM Today', system: 'Core Banking' },
   { id: 2, type: 'support', icon: MessageSquare, color: 'bg-blue-500', title: 'WhatsApp Message Received', desc: 'Customer reported failed transfer — auto-ticket created', customer: 'Chinedu Okafor', time: '10:25 AM Today', system: 'CRM' },
@@ -15,11 +17,12 @@ const events = [
 ]
 const typeFilters = ['All', 'Transaction', 'Support', 'CRM', 'Email', 'Call', 'Compliance', 'Banking', 'Deal', 'Marketing', 'Agent']
 export default function CustomerTimeline() {
+  const { t } = useTranslation()
   const [filterType, setFilterType] = useState('All')
   const [searchQuery, setSearchQuery] = useState('')
   const filtered = events.filter(e => (filterType === 'All' || e.type === filterType.toLowerCase()) && (searchQuery === '' || e.title.toLowerCase().includes(searchQuery.toLowerCase()) || e.customer.toLowerCase().includes(searchQuery.toLowerCase())))
   return (
-    <div className="space-y-6">
+    <div role="region" aria-label="CustomerTimeline"  className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2"><Clock className="w-7 h-7 text-indigo-600" /> Unified Customer Timeline</h1>
         <p className="text-gray-500 dark:text-gray-400 mt-1">Every interaction across every system in one chronological feed</p>

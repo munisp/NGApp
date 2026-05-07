@@ -8,6 +8,8 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useTenant } from '@/contexts/TenantContext'
+import { LoadingState, ErrorState, EmptyState, FallbackBadge, ExportButton } from '@/components/ui/DataStates'
+import { useTranslation } from '@/lib/i18n/useTranslation'
 
 const productIcons = {
   core_banking: Landmark,
@@ -75,7 +77,7 @@ const TenantAdmin = () => {
   }, [allTenants])
 
   return (
-    <div className="space-y-6">
+    <div role="region" aria-label="TenantAdmin"  className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -102,7 +104,7 @@ const TenantAdmin = () => {
           { label: 'Product Subscriptions', value: platformStats.totalProducts, icon: Package, color: 'text-purple-600' },
           { label: 'Total Customers', value: platformStats.totalCustomers.toLocaleString(), icon: Users, color: 'text-indigo-600' },
         ].map(stat => (
-          <div key={stat.label} className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700">
+          <div key={stat.label} tabIndex="0" className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700">
             <div className="flex items-center justify-between mb-2">
               <stat.icon className={cn('w-5 h-5', stat.color)} />
             </div>

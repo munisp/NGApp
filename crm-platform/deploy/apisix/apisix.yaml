@@ -1,0 +1,292 @@
+# APISIX Gateway — Route configuration for all CRM backend services
+# Maps frontend API paths to backend microservice upstreams
+
+upstreams:
+  - id: crm-services
+    type: roundrobin
+    nodes:
+      "crm-services:8080": 1
+    checks:
+      active:
+        http_path: /health
+        healthy:
+          interval: 5
+          successes: 2
+        unhealthy:
+          interval: 2
+          http_failures: 3
+
+  - id: gnn-neo4j
+    type: roundrobin
+    nodes:
+      "gnn-neo4j:8090": 1
+    checks:
+      active:
+        http_path: /health
+
+  - id: falkordb-graph
+    type: roundrobin
+    nodes:
+      "falkordb-graph:8091": 1
+    checks:
+      active:
+        http_path: /health
+
+  - id: mcmc-engine
+    type: roundrobin
+    nodes:
+      "mcmc-engine:8092": 1
+    checks:
+      active:
+        http_path: /health
+
+  - id: cocoindex-pipeline
+    type: roundrobin
+    nodes:
+      "cocoindex-pipeline:8093": 1
+    checks:
+      active:
+        http_path: /health
+
+  - id: epr-kgqa
+    type: roundrobin
+    nodes:
+      "epr-kgqa:8094": 1
+    checks:
+      active:
+        http_path: /health
+
+  - id: art-security
+    type: roundrobin
+    nodes:
+      "art-security:8095": 1
+    checks:
+      active:
+        http_path: /health
+
+  - id: ollama-inference
+    type: roundrobin
+    nodes:
+      "ollama-inference:8096": 1
+    checks:
+      active:
+        http_path: /health
+
+  - id: acquisition-engine
+    type: roundrobin
+    nodes:
+      "acquisition-engine:8097": 1
+
+  - id: social-media
+    type: roundrobin
+    nodes:
+      "social-media:8098": 1
+
+  - id: telephony
+    type: roundrobin
+    nodes:
+      "telephony:8099": 1
+
+  - id: bulk-sender
+    type: roundrobin
+    nodes:
+      "bulk-sender:8100": 1
+
+  - id: waf-engine
+    type: roundrobin
+    nodes:
+      "waf-engine:8101": 1
+
+  - id: anomaly-detection
+    type: roundrobin
+    nodes:
+      "anomaly-detection:8102": 1
+
+  - id: campaign-analytics
+    type: roundrobin
+    nodes:
+      "campaign-analytics:8103": 1
+
+  - id: compliance-reporting
+    type: roundrobin
+    nodes:
+      "compliance-reporting:8104": 1
+
+  - id: lakehouse-analytics
+    type: roundrobin
+    nodes:
+      "lakehouse-analytics:8105": 1
+
+  - id: threat-detection
+    type: roundrobin
+    nodes:
+      "threat-detection:8106": 1
+
+routes:
+  # CRM Core APIs
+  - uri: /api/v1/customers*
+    upstream_id: crm-services
+    plugins:
+      cors:
+        allow_origins: "*"
+        allow_methods: "GET,POST,PUT,DELETE,PATCH"
+        allow_headers: "Authorization,Content-Type,X-Tenant-ID,X-Request-ID"
+      limit-req:
+        rate: 100
+        burst: 50
+        key_type: var
+        key: remote_addr
+      prometheus:
+        prefer_name: true
+
+  - uri: /api/v1/campaigns*
+    upstream_id: crm-services
+    plugins:
+      cors:
+        allow_origins: "*"
+      limit-req:
+        rate: 50
+        burst: 20
+        key_type: var
+        key: remote_addr
+
+  - uri: /api/v1/analytics*
+    upstream_id: crm-services
+    plugins:
+      cors:
+        allow_origins: "*"
+      limit-req:
+        rate: 30
+        burst: 10
+        key_type: var
+        key: remote_addr
+
+  - uri: /api/v1/banking*
+    upstream_id: crm-services
+    plugins:
+      cors:
+        allow_origins: "*"
+      limit-req:
+        rate: 100
+        burst: 50
+        key_type: var
+        key: remote_addr
+
+  - uri: /api/v1/tenants*
+    upstream_id: crm-services
+    plugins:
+      cors:
+        allow_origins: "*"
+      limit-req:
+        rate: 20
+        burst: 5
+        key_type: var
+        key: remote_addr
+
+  - uri: /api/v1/tasks*
+    upstream_id: crm-services
+  - uri: /api/v1/documents*
+    upstream_id: crm-services
+  - uri: /api/v1/audit*
+    upstream_id: crm-services
+  - uri: /api/v1/security*
+    upstream_id: crm-services
+  - uri: /api/v1/inventory*
+    upstream_id: crm-services
+  - uri: /api/v1/api-keys*
+    upstream_id: crm-services
+  - uri: /api/v1/webhooks*
+    upstream_id: crm-services
+  - uri: /api/v1/search*
+    upstream_id: crm-services
+
+  # AI/ML Stack routes
+  - uri: /api/v1/ai/gnn/*
+    upstream_id: gnn-neo4j
+    plugins:
+      cors:
+        allow_origins: "*"
+      limit-req:
+        rate: 20
+        burst: 10
+        key_type: var
+        key: remote_addr
+
+  - uri: /api/v1/ai/graphrag/*
+    upstream_id: falkordb-graph
+    plugins:
+      cors:
+        allow_origins: "*"
+
+  - uri: /api/v1/ai/mcmc/*
+    upstream_id: mcmc-engine
+    plugins:
+      cors:
+        allow_origins: "*"
+
+  - uri: /api/v1/ai/cocoindex/*
+    upstream_id: cocoindex-pipeline
+    plugins:
+      cors:
+        allow_origins: "*"
+
+  - uri: /api/v1/ai/kgqa/*
+    upstream_id: epr-kgqa
+    plugins:
+      cors:
+        allow_origins: "*"
+
+  - uri: /api/v1/ai/art/*
+    upstream_id: art-security
+    plugins:
+      cors:
+        allow_origins: "*"
+
+  - uri: /api/v1/ai/ollama/*
+    upstream_id: ollama-inference
+    plugins:
+      cors:
+        allow_origins: "*"
+
+  # Other service routes
+  - uri: /api/v1/acquisition/*
+    upstream_id: acquisition-engine
+  - uri: /api/v1/social/*
+    upstream_id: social-media
+  - uri: /api/v1/telephony/*
+    upstream_id: telephony
+  - uri: /api/v1/bulk/*
+    upstream_id: bulk-sender
+  - uri: /api/v1/anomaly/*
+    upstream_id: anomaly-detection
+  - uri: /api/v1/campaign-analytics/*
+    upstream_id: campaign-analytics
+  - uri: /api/v1/compliance/*
+    upstream_id: compliance-reporting
+  - uri: /api/v1/lakehouse/*
+    upstream_id: lakehouse-analytics
+  - uri: /api/v1/threats/*
+    upstream_id: threat-detection
+
+  # WAF (Web Application Firewall)
+  - uri: /api/v1/waf/*
+    upstream_id: waf-engine
+
+  # Auth routes (no rate limit on health, strict on login)
+  - uri: /auth/*
+    upstream_id: crm-services
+    plugins:
+      limit-req:
+        rate: 10
+        burst: 5
+        key_type: var
+        key: remote_addr
+
+global_rules:
+  - id: 1
+    plugins:
+      prometheus:
+        prefer_name: true
+      request-id:
+        header_name: X-Request-ID
+        include_in_response: true

@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { Play, MapPin, ArrowRight, CheckCircle, XCircle, Clock, AlertTriangle, Users, Search, Filter, BarChart3 } from 'lucide-react'
 import { useTenant } from '@/contexts/TenantContext'
+import { LoadingState, ErrorState, EmptyState, FallbackBadge, ExportButton } from '@/components/ui/DataStates'
+import { useTranslation } from '@/lib/i18n/useTranslation'
 const journeys = [
   { id: 'J-001', customer: 'Chinedu Okafor', type: 'SME Loan Onboarding', status: 'completed', startDate: 'Jan 15', endDate: 'Feb 12', days: 28, designedDays: 14, steps: [
     { name: 'Application Received', status: 'completed', actual: 'Jan 15', designed: 'Day 1', duration: '0d', channel: 'Web' },
@@ -27,10 +29,11 @@ const journeys = [
 ]
 const stats = { totalJourneys: 4280, completed: 3420, inProgress: 640, dropped: 220, avgDuration: '18 days', designedAvg: '10 days', bottleneckRate: '34%' }
 export default function JourneyReplay() {
+  const { t } = useTranslation()
   const [selectedJourney, setSelectedJourney] = useState('J-001')
   const journey = journeys.find(j => j.id === selectedJourney)
   return (
-    <div className="space-y-6">
+    <div role="region" aria-label="JourneyReplay"  className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2"><Play className="w-7 h-7 text-cyan-600" /> Customer Journey Replay</h1>
         <p className="text-gray-500 dark:text-gray-400 mt-1">Visual replay of actual vs designed customer journeys</p>
@@ -49,7 +52,7 @@ export default function JourneyReplay() {
         ))}
       </div>
       {journey && (
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
+        <div tabIndex="0" className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
           <div className="flex items-center justify-between mb-6">
             <div>
               <h3 className="font-semibold text-gray-900 dark:text-white">{journey.customer} — {journey.type}</h3>

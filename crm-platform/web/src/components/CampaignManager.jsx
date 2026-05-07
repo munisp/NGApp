@@ -6,6 +6,8 @@ import {
   TrendingUp, ChevronRight, Clock, AlertCircle, CheckCircle2, X,
   Smartphone, Zap, Globe, ArrowUpRight
 } from 'lucide-react';
+import { LoadingState, ErrorState, EmptyState, FallbackBadge, ExportButton } from '@/components/ui/DataStates'
+import { useTranslation } from '@/lib/i18n/useTranslation'
 
 const CHANNELS = [
   { id: 'sms', label: 'SMS', icon: Smartphone, color: 'blue' },
@@ -113,6 +115,7 @@ const AB_TEST_RESULTS = {
 };
 
 export default function CampaignManager() {
+  const { t } = useTranslation()
   const [campaigns, setCampaigns] = useState(SAMPLE_CAMPAIGNS);
   const [selectedCampaign, setSelectedCampaign] = useState(null);
   const [activeTab, setActiveTab] = useState('campaigns');
@@ -129,7 +132,7 @@ export default function CampaignManager() {
   const totalRevenue = campaigns.reduce((s, c) => s + c.revenueGenerated, 0);
 
   return (
-    <div className="p-6 space-y-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
+    <div role="region" aria-label="CampaignManager"  className="p-6 space-y-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -162,7 +165,7 @@ export default function CampaignManager() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.1 }}
-            className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-200 dark:border-gray-700"
+            tabIndex="0" className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-200 dark:border-gray-700"
           >
             <div className="flex items-center gap-3">
               <div className={`p-2 rounded-lg bg-${metric.color}-100 dark:bg-${metric.color}-900/30`}>

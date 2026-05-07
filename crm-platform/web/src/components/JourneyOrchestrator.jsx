@@ -5,6 +5,8 @@ import {
   Phone, Mail, Send, Smartphone, CheckCircle2, XCircle, AlertCircle,
   Eye, Zap, Users, Target, Edit3, Trash2, Copy
 } from 'lucide-react';
+import { LoadingState, ErrorState, EmptyState, FallbackBadge, ExportButton } from '@/components/ui/DataStates'
+import { useTranslation } from '@/lib/i18n/useTranslation'
 
 const STEP_TYPES = [
   { id: 'sms', label: 'Send SMS', icon: Smartphone, color: 'blue' },
@@ -84,6 +86,7 @@ const STATUS_COLORS = {
 };
 
 export default function JourneyOrchestrator() {
+  const { t } = useTranslation()
   const [journeys] = useState(SAMPLE_JOURNEYS);
   const [selectedJourney, setSelectedJourney] = useState(null);
   const [activeTab, setActiveTab] = useState('journeys');
@@ -93,7 +96,7 @@ export default function JourneyOrchestrator() {
   const totalInProgress = journeys.reduce((s, j) => s + j.inProgress, 0);
 
   return (
-    <div className="p-6 space-y-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
+    <div role="region" aria-label="JourneyOrchestrator"  className="p-6 space-y-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
@@ -116,7 +119,7 @@ export default function JourneyOrchestrator() {
           { label: 'Completed', value: totalCompleted.toLocaleString(), icon: CheckCircle2, color: 'purple' },
         ].map((m, i) => (
           <motion.div key={m.label} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}
-            className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-200 dark:border-gray-700">
+            tabIndex="0" className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-200 dark:border-gray-700">
             <div className="flex items-center gap-3">
               <div className={`p-2 rounded-lg bg-${m.color}-100 dark:bg-${m.color}-900/30`}>
                 <m.icon className={`w-5 h-5 text-${m.color}-600`} />

@@ -1,6 +1,8 @@
 import { useState, useContext, useEffect } from 'react';
 import { AlertOctagon, Plus, Search, Clock, CheckCircle, ArrowUp, AlertTriangle, Users, Shield } from 'lucide-react';
 import { TenantContext } from '../contexts/TenantContext';
+import { LoadingState, ErrorState, EmptyState, FallbackBadge, ExportButton } from '@/components/ui/DataStates'
+import { useTranslation } from '@/lib/i18n/useTranslation'
 
 const SEED_INCIDENTS = {
   'tenant-acme-bank': [
@@ -16,6 +18,7 @@ const SEVERITY_COLORS = { critical: 'bg-red-100 text-red-700', high: 'bg-orange-
 const STATUS_COLORS = { open: 'bg-blue-100 text-blue-700', investigating: 'bg-purple-100 text-purple-700', resolved: 'bg-green-100 text-green-700', closed: 'bg-gray-100 text-gray-500' };
 
 export default function IncidentManager() {
+  const { t } = useTranslation()
   const { tenantId } = useContext(TenantContext);
   const [incidents, setIncidents] = useState(SEED_INCIDENTS[tenantId] || []);
   const [searchQuery, setSearchQuery] = useState('');
@@ -39,7 +42,7 @@ export default function IncidentManager() {
   };
 
   return (
-    <div className="p-6 max-w-full">
+    <div role="region" aria-label="IncidentManager"  className="p-6 max-w-full">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <AlertOctagon className="w-8 h-8 text-red-600" />

@@ -4,6 +4,8 @@ import {
   CheckCircle, XCircle, AlertTriangle, Activity, Server, Smartphone
 } from 'lucide-react'
 import { useTenant } from '../contexts/TenantContext'
+import { LoadingState, ErrorState, EmptyState, FallbackBadge, ExportButton } from '@/components/ui/DataStates'
+import { useTranslation } from '@/lib/i18n/useTranslation'
 
 const PERMISSIONS = [
   'customers:read', 'customers:write', 'transactions:read', 'transactions:write',
@@ -86,7 +88,7 @@ const APIKeyManager = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div role="region" aria-label="APIKeyManager"  className="space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-3">
           <div className="p-3 bg-amber-100 dark:bg-amber-900/30 rounded-xl">
@@ -124,7 +126,7 @@ const APIKeyManager = () => {
       </div>
 
       {/* Keys Table */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl border overflow-hidden">
+      <div tabIndex="0" className="bg-white dark:bg-gray-800 rounded-xl border overflow-hidden">
         <table className="w-full">
           <thead className="bg-gray-50 dark:bg-gray-700">
             <tr>

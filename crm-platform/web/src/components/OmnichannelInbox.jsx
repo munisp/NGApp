@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { Inbox, Mail, MessageSquare, Phone, Send, Search, Filter, Star, Clock, CheckCircle, AlertCircle, User, Paperclip, Smile, MoreHorizontal } from 'lucide-react'
 import { useTenant } from '@/contexts/TenantContext'
+import { LoadingState, ErrorState, EmptyState, FallbackBadge, ExportButton } from '@/components/ui/DataStates'
+import { useTranslation } from '@/lib/i18n/useTranslation'
 
 const tenantInboxData = {
   'acme-bank': {
@@ -42,6 +44,7 @@ const channelColors = { whatsapp: 'text-green-600 bg-green-100', email: 'text-bl
 const priorityColors = { high: 'bg-red-100 text-red-700', medium: 'bg-amber-100 text-amber-700', low: 'bg-gray-100 text-gray-700' }
 
 export default function OmnichannelInbox() {
+  const { t } = useTranslation()
   const { tenant } = useTenant()
   const [selectedConv, setSelectedConv] = useState('conv-1')
   const [filterChannel, setFilterChannel] = useState('all')
@@ -52,7 +55,7 @@ export default function OmnichannelInbox() {
   const channels = ['all', ...new Set(data.conversations.map(c => c.channel))]
 
   return (
-    <div className="space-y-4">
+    <div role="region" aria-label="OmnichannelInbox"  className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">

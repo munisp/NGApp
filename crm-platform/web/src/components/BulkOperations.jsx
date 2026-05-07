@@ -1,6 +1,8 @@
 import { useState, useContext } from 'react';
 import { Layers, Upload, CheckSquare, Send, UserPlus, RefreshCw, AlertTriangle, FileText, ArrowRight } from 'lucide-react';
 import { TenantContext } from '../contexts/TenantContext';
+import { LoadingState, ErrorState, EmptyState, FallbackBadge, ExportButton } from '@/components/ui/DataStates'
+import { useTranslation } from '@/lib/i18n/useTranslation'
 
 const OPERATIONS = [
   { id: 'import_customers', name: 'Bulk Customer Import', icon: UserPlus, desc: 'Import customer records from CSV/XLSX', fields: ['name', 'phone', 'email', 'bvn', 'address', 'kyc_level'] },
@@ -17,13 +19,14 @@ const RECENT_JOBS = [
 ];
 
 export default function BulkOperations() {
+  const { t } = useTranslation()
   const { tenantId } = useContext(TenantContext);
   const [selectedOp, setSelectedOp] = useState(null);
   const [activeTab, setActiveTab] = useState('operations');
   const [uploadFile, setUploadFile] = useState(null);
 
   return (
-    <div className="p-6 max-w-full">
+    <div role="region" aria-label="BulkOperations"  className="p-6 max-w-full">
       <div className="flex items-center gap-3 mb-6">
         <Layers className="w-8 h-8 text-violet-600" />
         <div>

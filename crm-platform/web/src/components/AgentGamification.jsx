@@ -5,6 +5,8 @@ import {
   MapPin, ArrowUpRight, Crown, Flame, Zap, Gift, BarChart3,
   Calendar, Clock, CheckCircle2, Smartphone, DollarSign, Megaphone
 } from 'lucide-react';
+import { LoadingState, ErrorState, EmptyState, FallbackBadge, ExportButton } from '@/components/ui/DataStates'
+import { useTranslation } from '@/lib/i18n/useTranslation'
 
 const LEADERBOARD = [
   {
@@ -93,6 +95,7 @@ const INCENTIVES = [
 ];
 
 export default function AgentGamification() {
+  const { t } = useTranslation()
   const [activeTab, setActiveTab] = useState('leaderboard');
   const [selectedAgent, setSelectedAgent] = useState(null);
   const [timeRange, setTimeRange] = useState('month');
@@ -102,7 +105,7 @@ export default function AgentGamification() {
   const totalRevenue = LEADERBOARD.reduce((s, a) => s + a.revenue, 0);
 
   return (
-    <div className="p-6 space-y-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
+    <div role="region" aria-label="AgentGamification"  className="p-6 space-y-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
@@ -163,7 +166,7 @@ export default function AgentGamification() {
           { label: 'Revenue Generated', value: `₦${(totalRevenue / 1000000).toFixed(1)}M`, icon: DollarSign, color: 'emerald' },
         ].map((m, i) => (
           <motion.div key={m.label} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
-            className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-200 dark:border-gray-700">
+            tabIndex="0" className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-200 dark:border-gray-700">
             <div className="flex items-center gap-3">
               <div className={`p-2 rounded-lg bg-${m.color}-100 dark:bg-${m.color}-900/30`}>
                 <m.icon className={`w-5 h-5 text-${m.color}-600`} />

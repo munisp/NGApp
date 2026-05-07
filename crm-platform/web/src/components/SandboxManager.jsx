@@ -4,6 +4,8 @@ import {
   RefreshCw, Zap, Shield, Terminal, FileText, ChevronRight
 } from 'lucide-react'
 import { useTenant } from '../contexts/TenantContext'
+import { LoadingState, ErrorState, EmptyState, FallbackBadge, ExportButton } from '@/components/ui/DataStates'
+import { useTranslation } from '@/lib/i18n/useTranslation'
 
 const SANDBOX_DATA = {
   'tenant-acme-bank': { customers: 500, agents: 200, txns: 5000, accounts: 1000, corridors: 8, status: 'active', expires: '2025-07-25' },
@@ -57,7 +59,7 @@ const SandboxManager = () => {
   const tabs = ['environment', 'certification', 'sessions']
 
   return (
-    <div className="space-y-6">
+    <div role="region" aria-label="SandboxManager"  className="space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-3">
           <div className="p-3 bg-orange-100 dark:bg-orange-900/30 rounded-xl">
@@ -103,7 +105,7 @@ const SandboxManager = () => {
       {tab === 'environment' && (
         <div className="space-y-4">
           {/* Sandbox Config */}
-          <div className="bg-white dark:bg-gray-800 rounded-xl border p-6">
+          <div tabIndex="0" className="bg-white dark:bg-gray-800 rounded-xl border p-6">
             <h3 className="font-semibold mb-4 flex items-center space-x-2">
               <Server className="w-5 h-5 text-orange-600" />
               <span>Sandbox Configuration</span>

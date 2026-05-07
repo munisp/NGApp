@@ -1,6 +1,8 @@
 import { useState, useContext } from 'react';
 import { Calendar, Plus, Clock, Users, MapPin, Video, ChevronLeft, ChevronRight } from 'lucide-react';
 import { TenantContext } from '../contexts/TenantContext';
+import { LoadingState, ErrorState, EmptyState, FallbackBadge, ExportButton } from '@/components/ui/DataStates'
+import { useTranslation } from '@/lib/i18n/useTranslation'
 
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -17,6 +19,7 @@ const SEED_EVENTS = [
 ];
 
 export default function CalendarView() {
+  const { t } = useTranslation()
   const { tenantId } = useContext(TenantContext);
   const [currentDate, setCurrentDate] = useState(new Date(2025, 4, 1)); // May 2025
   const [selectedDate, setSelectedDate] = useState(null);
@@ -44,7 +47,7 @@ export default function CalendarView() {
   const nextMonth = () => setCurrentDate(new Date(year, month + 1, 1));
 
   return (
-    <div className="p-6 max-w-full">
+    <div role="region" aria-label="CalendarView"  className="p-6 max-w-full">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <Calendar className="w-8 h-8 text-blue-600" />

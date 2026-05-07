@@ -6,6 +6,8 @@ import {
   CreditCard, Send, UserCheck, AlertTriangle, CheckCircle, X, Eye
 } from 'lucide-react'
 import { unifiedCustomerService } from '../services/unifiedCustomerService'
+import { LoadingState, ErrorState, EmptyState, FallbackBadge, ExportButton } from '@/components/ui/DataStates'
+import { useTranslation } from '@/lib/i18n/useTranslation'
 
 const SourceBadge = ({ source }) => {
   const config = {
@@ -38,7 +40,7 @@ const CustomerDetail = ({ customer, onClose }) => {
     <motion.div
       initial={{ opacity: 0, x: 20 }}
       animate={{ opacity: 1, x: 0 }}
-      className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden"
+      tabIndex="0" className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden"
     >
       {/* Customer Header */}
       <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-6 text-white">
@@ -226,7 +228,7 @@ const Customer360 = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div role="region" aria-label="Customer360"  className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Customer 360°</h1>
         <p className="text-gray-500 dark:text-gray-400 mt-1">Unified view of all customer profiles across systems</p>

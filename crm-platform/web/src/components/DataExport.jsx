@@ -1,6 +1,8 @@
 import { useState, useContext } from 'react';
 import { Download, Database, FileText, Table, Settings, Clock, CheckCircle, Play, Trash2 } from 'lucide-react';
 import { TenantContext } from '../contexts/TenantContext';
+import { LoadingState, ErrorState, EmptyState, FallbackBadge, ExportButton } from '@/components/ui/DataStates'
+import { useTranslation } from '@/lib/i18n/useTranslation'
 
 const EXPORT_TYPES = [
   { id: 'customers', name: 'Customer Records', icon: '👤', fields: ['customer_id', 'name', 'email', 'phone', 'bvn_hash', 'status', 'risk_score', 'kyc_level', 'products', 'created_at'], estimated: '45,230 records' },
@@ -24,6 +26,7 @@ const RECENT_EXPORTS = [
 ];
 
 export default function DataExport() {
+  const { t } = useTranslation()
   const { tenantId } = useContext(TenantContext);
   const [selectedType, setSelectedType] = useState(null);
   const [selectedFormat, setSelectedFormat] = useState('csv');
@@ -41,7 +44,7 @@ export default function DataExport() {
   };
 
   return (
-    <div className="p-6 max-w-full">
+    <div role="region" aria-label="DataExport"  className="p-6 max-w-full">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <Download className="w-8 h-8 text-teal-600" />

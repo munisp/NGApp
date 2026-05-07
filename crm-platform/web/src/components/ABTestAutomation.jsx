@@ -5,6 +5,8 @@ import {
   TrendingUp, Users, Target, BarChart3, ArrowUpRight, ArrowDownRight,
   Clock, Plus, Eye, Trophy, Zap, RefreshCw
 } from 'lucide-react';
+import { LoadingState, ErrorState, EmptyState, FallbackBadge, ExportButton } from '@/components/ui/DataStates'
+import { useTranslation } from '@/lib/i18n/useTranslation'
 
 const TESTS = [
   {
@@ -66,6 +68,7 @@ const STATUS_CONFIG = {
 };
 
 export default function ABTestAutomation() {
+  const { t } = useTranslation()
   const [tests] = useState(TESTS);
   const [selectedTest, setSelectedTest] = useState(null);
   const [activeTab, setActiveTab] = useState('tests');
@@ -76,7 +79,7 @@ export default function ABTestAutomation() {
   const avgImprovement = tests.filter(t => t.improvement).reduce((s, t) => s + t.improvement, 0) / concluded;
 
   return (
-    <div className="p-6 space-y-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
+    <div role="region" aria-label="ABTestAutomation"  className="p-6 space-y-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
@@ -93,7 +96,7 @@ export default function ABTestAutomation() {
       </div>
 
       {/* Config Bar */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-200 dark:border-gray-700 flex items-center justify-between">
+      <div tabIndex="0" className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-200 dark:border-gray-700 flex items-center justify-between">
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
             <Zap className="w-4 h-4 text-violet-600" />

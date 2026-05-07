@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import { useTenant } from '../contexts/TenantContext'
+import { LoadingState, ErrorState, EmptyState, FallbackBadge, ExportButton } from '@/components/ui/DataStates'
+import { useTranslation } from '@/lib/i18n/useTranslation'
 
 const GNNNeo4j = () => {
   const { tenant } = useTenant()
@@ -52,7 +54,7 @@ const GNNNeo4j = () => {
   const riskColors = { critical: 'bg-red-100 text-red-800', high: 'bg-orange-100 text-orange-800', medium: 'bg-yellow-100 text-yellow-800', low: 'bg-green-100 text-green-800' }
 
   return (
-    <div className="space-y-6" data-tenant={tenant?.id}>
+    <div role="region" aria-label="GNNNeo4j"  className="space-y-6" data-tenant={tenant?.id}>
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">GNN + Neo4j — Graph Neural Networks</h1>

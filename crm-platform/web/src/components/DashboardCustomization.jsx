@@ -1,6 +1,8 @@
 import { useState, useContext } from 'react';
 import { LayoutGrid, Settings, Plus, GripVertical, Eye, EyeOff, Save, RotateCcw, Palette } from 'lucide-react';
 import { TenantContext } from '../contexts/TenantContext';
+import { LoadingState, ErrorState, EmptyState, FallbackBadge, ExportButton } from '@/components/ui/DataStates'
+import { useTranslation } from '@/lib/i18n/useTranslation'
 
 const AVAILABLE_WIDGETS = [
   { id: 'customer-overview', name: 'Customer Overview', category: 'customers', size: '2x1', desc: 'Total customers, growth trend, active/dormant ratio' },
@@ -41,6 +43,7 @@ const ROLE_PRESETS = [
 ];
 
 export default function DashboardCustomization() {
+  const { t } = useTranslation()
   const { tenantId } = useContext(TenantContext);
   const [layout, setLayout] = useState(DEFAULT_LAYOUT);
   const [activeTab, setActiveTab] = useState('layout');
@@ -59,7 +62,7 @@ export default function DashboardCustomization() {
   const visibleCount = layout.filter(l => l.visible).length;
 
   return (
-    <div className="p-6 max-w-full">
+    <div role="region" aria-label="DashboardCustomization"  className="p-6 max-w-full">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <LayoutGrid className="w-8 h-8 text-gray-700" />

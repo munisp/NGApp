@@ -4,6 +4,8 @@ import {
   AlertTriangle, Activity, Eye, Shield, Zap, RefreshCw
 } from 'lucide-react'
 import { useTenant } from '../contexts/TenantContext'
+import { LoadingState, ErrorState, EmptyState, FallbackBadge, ExportButton } from '@/components/ui/DataStates'
+import { useTranslation } from '@/lib/i18n/useTranslation'
 
 const EVENT_CATEGORIES = {
   Customer: ['customer.created', 'customer.updated', 'customer.deleted'],
@@ -92,7 +94,7 @@ const WebhookManager = () => {
   const tabs = ['subscriptions', 'deliveries', 'signature']
 
   return (
-    <div className="space-y-6">
+    <div role="region" aria-label="WebhookManager"  className="space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-3">
           <div className="p-3 bg-teal-100 dark:bg-teal-900/30 rounded-xl">
@@ -140,7 +142,7 @@ const WebhookManager = () => {
       </div>
 
       {tab === 'subscriptions' && (
-        <div className="bg-white dark:bg-gray-800 rounded-xl border overflow-hidden">
+        <div tabIndex="0" className="bg-white dark:bg-gray-800 rounded-xl border overflow-hidden">
           {subs.length === 0 ? (
             <div className="p-8 text-center text-gray-500">
               <Webhook className="w-12 h-12 mx-auto mb-3 opacity-30" />

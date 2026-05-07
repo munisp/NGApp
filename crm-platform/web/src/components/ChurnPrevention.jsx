@@ -5,6 +5,8 @@ import {
   Phone, MessageSquare, Send, Mail, Smartphone, Clock, Target,
   CheckCircle2, XCircle, Filter, Eye, BarChart3, RefreshCw
 } from 'lucide-react';
+import { LoadingState, ErrorState, EmptyState, FallbackBadge, ExportButton } from '@/components/ui/DataStates'
+import { useTranslation } from '@/lib/i18n/useTranslation'
 
 const RISK_SEGMENTS = [
   { id: 'critical', label: 'Critical Risk', color: 'red', customers: 842, churnProb: '85-100%', icon: XCircle },
@@ -78,6 +80,7 @@ const MODEL_FEATURES = [
 ];
 
 export default function ChurnPrevention() {
+  const { t } = useTranslation()
   const [selectedSegment, setSelectedSegment] = useState(null);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [activeTab, setActiveTab] = useState('overview');
@@ -90,7 +93,7 @@ export default function ChurnPrevention() {
   const criticalValue = AT_RISK_CUSTOMERS.filter(c => c.segment === 'critical').reduce((s, c) => s + c.lifetimeValue, 0);
 
   return (
-    <div className="p-6 space-y-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
+    <div role="region" aria-label="ChurnPrevention"  className="p-6 space-y-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
@@ -141,7 +144,7 @@ export default function ChurnPrevention() {
       <AnimatePresence mode="wait">
         {activeTab === 'overview' && (
           <motion.div key="overview" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
+            <div tabIndex="0" className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Churn Prediction Summary</h3>
               <div className="space-y-4">
                 <div className="flex items-center justify-between">

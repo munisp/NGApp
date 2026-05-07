@@ -1,6 +1,8 @@
 import { useState, useContext, useEffect } from 'react';
 import { ShieldAlert, ShieldCheck, Lock, Eye, AlertTriangle, Ban, Activity, Globe, Cpu, Zap, Server, Shield } from 'lucide-react';
 import { TenantContext } from '../contexts/TenantContext';
+import { LoadingState, ErrorState, EmptyState, FallbackBadge, ExportButton } from '@/components/ui/DataStates'
+import { useTranslation } from '@/lib/i18n/useTranslation'
 
 const SEED_SECURITY = {
   'tenant-acme-bank': {
@@ -38,6 +40,7 @@ const OWASP_LABELS = {
 };
 
 export default function SecurityDashboard() {
+  const { t } = useTranslation()
   const { tenantId } = useContext(TenantContext);
   const [data, setData] = useState(SEED_SECURITY[tenantId] || SEED_SECURITY['tenant-acme-bank']);
   const [activeTab, setActiveTab] = useState('overview');
@@ -54,7 +57,7 @@ export default function SecurityDashboard() {
   ];
 
   return (
-    <div className="p-6 max-w-full">
+    <div role="region" aria-label="SecurityDashboard"  className="p-6 max-w-full">
       <div className="flex items-center gap-3 mb-6">
         <ShieldAlert className="w-8 h-8 text-red-600" />
         <div>

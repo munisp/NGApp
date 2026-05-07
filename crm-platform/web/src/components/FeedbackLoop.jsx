@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { Star, ThumbsUp, ThumbsDown, BarChart3, TrendingUp, TrendingDown, MessageSquare, Users, Clock, Target, AlertTriangle } from 'lucide-react'
 import { useTenant } from '@/contexts/TenantContext'
+import { LoadingState, ErrorState, EmptyState, FallbackBadge, ExportButton } from '@/components/ui/DataStates'
+import { useTranslation } from '@/lib/i18n/useTranslation'
 const data = {
   nps: { score: 42, promoters: 52, passives: 28, detractors: 20, responses: 4280, trend: '+3' },
   csat: { score: 4.2, responses: 8940, trend: '+0.1' },
@@ -21,12 +23,13 @@ const data = {
   ],
 }
 export default function FeedbackLoop() {
+  const { t } = useTranslation()
   const [activeTab, setActiveTab] = useState('overview')
   return (
-    <div className="space-y-6">
+    <div role="region" aria-label="FeedbackLoop"  className="space-y-6">
       <div><h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2"><Star className="w-7 h-7 text-yellow-500" /> Customer Feedback Loop</h1><p className="text-gray-500 dark:text-gray-400 mt-1">NPS, CSAT, and CES tracking across all touchpoints</p></div>
       <div className="grid grid-cols-3 gap-4">
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 text-center"><p className="text-xs text-gray-500 mb-1">NPS Score</p><p className="text-4xl font-bold text-blue-600">{data.nps.score}</p><p className="text-xs text-emerald-600 mt-1">{data.nps.trend} vs last month</p><div className="flex justify-center gap-4 mt-3 text-xs"><span className="text-emerald-600">{data.nps.promoters}% promoters</span><span className="text-gray-500">{data.nps.passives}% passive</span><span className="text-red-600">{data.nps.detractors}% detractors</span></div></div>
+        <div tabIndex="0" className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 text-center"><p className="text-xs text-gray-500 mb-1">NPS Score</p><p className="text-4xl font-bold text-blue-600">{data.nps.score}</p><p className="text-xs text-emerald-600 mt-1">{data.nps.trend} vs last month</p><div className="flex justify-center gap-4 mt-3 text-xs"><span className="text-emerald-600">{data.nps.promoters}% promoters</span><span className="text-gray-500">{data.nps.passives}% passive</span><span className="text-red-600">{data.nps.detractors}% detractors</span></div></div>
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 text-center"><p className="text-xs text-gray-500 mb-1">CSAT</p><p className="text-4xl font-bold text-emerald-600">{data.csat.score}/5</p><p className="text-xs text-emerald-600 mt-1">{data.csat.trend} vs last month</p><p className="text-xs text-gray-500 mt-2">{data.csat.responses.toLocaleString()} responses</p></div>
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 text-center"><p className="text-xs text-gray-500 mb-1">CES (Customer Effort)</p><p className="text-4xl font-bold text-amber-600">{data.ces.score}/5</p><p className="text-xs text-red-600 mt-1">{data.ces.trend} vs last month</p><p className="text-xs text-gray-500 mt-2">{data.ces.responses.toLocaleString()} responses</p></div>
       </div>

@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { Heart, TrendingUp, TrendingDown, AlertTriangle, CheckCircle, Users, Phone, Mail, MessageSquare, Activity, ArrowUpRight, ArrowDownRight, Clock, Target, Shield, DollarSign, BarChart3 } from 'lucide-react'
 import { useTenant } from '@/contexts/TenantContext'
+import { LoadingState, ErrorState, EmptyState, FallbackBadge, ExportButton } from '@/components/ui/DataStates'
+import { useTranslation } from '@/lib/i18n/useTranslation'
 
 const tenantHealthData = {
   'acme-bank': {
@@ -92,6 +94,7 @@ const getScoreBg = (score) => {
 }
 
 export default function CustomerHealthScore() {
+  const { t } = useTranslation()
   const { tenant } = useTenant()
   const [activeTab, setActiveTab] = useState('overview')
   const data = tenantHealthData[tenant?.slug] || tenantHealthData['acme-bank']
@@ -104,7 +107,7 @@ export default function CustomerHealthScore() {
   ]
 
   return (
-    <div className="space-y-6">
+    <div role="region" aria-label="CustomerHealthScore"  className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
@@ -153,7 +156,7 @@ export default function CustomerHealthScore() {
       {activeTab === 'overview' && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Distribution */}
-          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
+          <div tabIndex="0" className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
             <h3 className="font-semibold text-gray-900 dark:text-white mb-4">Score Distribution</h3>
             <div className="space-y-3">
               {data.distribution.map(d => (

@@ -1,6 +1,8 @@
 import { useState, useContext } from 'react';
 import { TenantContext } from '../contexts/TenantContext';
 import { Building2, Users, Globe, CreditCard, TrendingUp, DollarSign, Target, BarChart3, ArrowUpRight, ArrowDownRight, Zap, Shield, Landmark, PieChart, Star } from 'lucide-react';
+import { LoadingState, ErrorState, EmptyState, FallbackBadge, ExportButton } from '@/components/ui/DataStates'
+import { useTranslation } from '@/lib/i18n/useTranslation'
 
 const CHANNELS = {
   core_banking: {
@@ -86,6 +88,7 @@ const BG_MAP = { blue: 'bg-blue-50', green: 'bg-green-50', purple: 'bg-purple-50
 const TEXT_MAP = { blue: 'text-blue-700', green: 'text-green-700', purple: 'text-purple-700', orange: 'text-orange-700' };
 
 export default function ChannelValueAnalysis() {
+  const { t } = useTranslation()
   const { tenantId } = useContext(TenantContext);
   const [selectedChannel, setSelectedChannel] = useState('core_banking');
   const [compareMode, setCompareMode] = useState(false);
@@ -96,7 +99,7 @@ export default function ChannelValueAnalysis() {
   const formatCurrency = (v) => v >= 1000000 ? `₦${(v/1000000).toFixed(1)}M` : v >= 1000 ? `₦${(v/1000).toFixed(0)}K` : `₦${v.toLocaleString()}`;
 
   return (
-    <div className="space-y-6">
+    <div role="region" aria-label="ChannelValueAnalysis"  className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
@@ -126,7 +129,7 @@ export default function ChannelValueAnalysis() {
 
       {compareMode ? (
         /* Compare All Channels */
-        <div className="bg-white dark:bg-gray-800 rounded-xl border p-6">
+        <div tabIndex="0" className="bg-white dark:bg-gray-800 rounded-xl border p-6">
           <h2 className="text-lg font-bold mb-4">Channel Comparison Matrix</h2>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">

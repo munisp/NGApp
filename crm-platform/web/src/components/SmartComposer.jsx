@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { PenTool, Sparkles, Send, Copy, RotateCw, Globe, Users, Sliders, Mail, MessageSquare, FileText, Clock, CheckCircle, TrendingUp } from 'lucide-react'
 import { useTenant } from '@/contexts/TenantContext'
+import { LoadingState, ErrorState, EmptyState, FallbackBadge, ExportButton } from '@/components/ui/DataStates'
+import { useTranslation } from '@/lib/i18n/useTranslation'
 
 const templates = [
   { id: 'follow-up', name: 'Follow-Up Email', desc: 'After meeting or call', icon: Mail },
@@ -64,6 +66,7 @@ const recentDrafts = [
 ]
 
 export default function SmartComposer() {
+  const { t } = useTranslation()
   const [selectedTemplate, setSelectedTemplate] = useState('follow-up')
   const [tone, setTone] = useState('Professional')
   const [language, setLanguage] = useState('English')
@@ -77,7 +80,7 @@ export default function SmartComposer() {
   }
 
   return (
-    <div className="space-y-6">
+    <div role="region" aria-label="SmartComposer"  className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
           <PenTool className="w-7 h-7 text-violet-600" /> Smart Email & Message Composer
@@ -114,7 +117,7 @@ export default function SmartComposer() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Controls */}
           <div className="space-y-4">
-            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+            <div tabIndex="0" className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
               <h3 className="font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2"><Sparkles className="w-4 h-4 text-violet-600" /> AI Settings</h3>
               <div className="space-y-3">
                 <div>

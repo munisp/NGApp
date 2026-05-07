@@ -1,6 +1,8 @@
 import { useState, useContext } from 'react';
 import { Search, Filter, Save, Clock, User, CreditCard, Briefcase, MapPin, Star, X } from 'lucide-react';
 import { TenantContext } from '../contexts/TenantContext';
+import { LoadingState, ErrorState, EmptyState, FallbackBadge, ExportButton } from '@/components/ui/DataStates'
+import { useTranslation } from '@/lib/i18n/useTranslation'
 
 const SEARCH_FIELDS = [
   { id: 'name', label: 'Name', type: 'text', icon: User },
@@ -32,6 +34,7 @@ const SAVED_SEARCHES = [
 ];
 
 export default function AdvancedSearch() {
+  const { t } = useTranslation()
   const { tenantId } = useContext(TenantContext);
   const [activeFilters, setActiveFilters] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -57,7 +60,7 @@ export default function AdvancedSearch() {
   };
 
   return (
-    <div className="p-6 max-w-full">
+    <div role="region" aria-label="AdvancedSearch"  className="p-6 max-w-full">
       <div className="flex items-center gap-3 mb-6">
         <Search className="w-8 h-8 text-indigo-600" />
         <div>

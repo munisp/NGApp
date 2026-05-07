@@ -6,6 +6,8 @@ import {
 } from 'lucide-react'
 import { BarChart, Bar, Cell, ResponsiveContainer, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts'
 import { eventBus } from '../services/eventBus'
+import { LoadingState, ErrorState, EmptyState, FallbackBadge, ExportButton } from '@/components/ui/DataStates'
+import { useTranslation } from '@/lib/i18n/useTranslation'
 
 const TOPIC_COLORS = {
   'core-banking': '#3b82f6',
@@ -32,7 +34,7 @@ const IntegrationHub = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
+      <div role="region" aria-label="IntegrationHub"  className="flex items-center justify-center h-64">
         <RefreshCw className="w-8 h-8 text-blue-500 animate-spin" />
       </div>
     )
@@ -215,7 +217,7 @@ const IntegrationHub = () => {
       </div>
 
       {/* Kafka Topic Stats */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
+      <div tabIndex="0" className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Kafka Topic Throughput</h3>
         <ResponsiveContainer width="100%" height={260}>
           <BarChart data={topicData}>

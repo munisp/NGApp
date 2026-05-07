@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import { useTenant } from '../contexts/TenantContext'
+import { LoadingState, ErrorState, EmptyState, FallbackBadge, ExportButton } from '@/components/ui/DataStates'
+import { useTranslation } from '@/lib/i18n/useTranslation'
 
 const OllamaInference = () => {
   const { tenant } = useTenant()
@@ -76,7 +78,7 @@ const OllamaInference = () => {
   ]
 
   return (
-    <div className="space-y-6" data-tenant={tenant?.id}>
+    <div role="region" aria-label="OllamaInference"  className="space-y-6" data-tenant={tenant?.id}>
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Ollama — Local LLM Inference</h1>

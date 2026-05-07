@@ -1,6 +1,8 @@
 import { useState, useContext, useEffect } from 'react';
 import { Shield, Search, Filter, Download, AlertTriangle, CheckCircle, XCircle, Clock, Eye, ChevronDown, ChevronRight, RefreshCw, FileText } from 'lucide-react';
 import { TenantContext } from '../contexts/TenantContext';
+import { LoadingState, ErrorState, EmptyState, FallbackBadge, ExportButton } from '@/components/ui/DataStates'
+import { useTranslation } from '@/lib/i18n/useTranslation'
 
 const SEED_EVENTS = {
   'tenant-acme-bank': [
@@ -34,6 +36,7 @@ const CATEGORY_LABELS = {
 };
 
 export default function AuditLog() {
+  const { t } = useTranslation()
   const { tenantId } = useContext(TenantContext);
   const [events, setEvents] = useState(SEED_EVENTS[tenantId] || []);
   const [searchQuery, setSearchQuery] = useState('');
@@ -64,7 +67,7 @@ export default function AuditLog() {
   };
 
   return (
-    <div className="p-6 max-w-full">
+    <div role="region" aria-label="AuditLog"  className="p-6 max-w-full">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <Shield className="w-8 h-8 text-indigo-600" />

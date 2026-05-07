@@ -1,6 +1,8 @@
 import { useState, useContext, useEffect } from 'react';
 import { TenantContext } from '../contexts/TenantContext';
 import { UserPlus, Target, TrendingUp, Filter, Search, BarChart3, ArrowRight, Phone, Mail, MessageSquare, Users, Zap, DollarSign, Clock, Star, ChevronDown, ChevronUp, Globe } from 'lucide-react';
+import { LoadingState, ErrorState, EmptyState, FallbackBadge, ExportButton } from '@/components/ui/DataStates'
+import { useTranslation } from '@/lib/i18n/useTranslation'
 
 const LEAD_SOURCES = [
   { id: 'facebook', name: 'Facebook', icon: Globe, color: 'bg-blue-500', leads: 3200, conv: 6.0, cpa: 1250, roas: 12.0 },
@@ -43,6 +45,7 @@ const STAGE_COLORS = {
 };
 
 export default function AcquisitionEngine() {
+  const { t } = useTranslation()
   const { tenantId } = useContext(TenantContext);
   const [activeTab, setActiveTab] = useState('funnel');
   const [searchQuery, setSearchQuery] = useState('');
@@ -70,7 +73,7 @@ export default function AcquisitionEngine() {
   ];
 
   return (
-    <div className="space-y-6">
+    <div role="region" aria-label="AcquisitionEngine"  className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
@@ -89,7 +92,7 @@ export default function AcquisitionEngine() {
           { label: 'Avg CPA', value: `₦${avgCPA.toLocaleString()}`, icon: DollarSign, color: 'text-orange-600' },
           { label: 'ROI', value: `${roi}%`, icon: Zap, color: 'text-indigo-600' },
         ].map((kpi, i) => (
-          <div key={i} className="bg-white dark:bg-gray-800 rounded-xl border p-4">
+          <div key={i} tabIndex="0" className="bg-white dark:bg-gray-800 rounded-xl border p-4">
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs text-gray-500">{kpi.label}</span>
               <kpi.icon className={`w-4 h-4 ${kpi.color}`} />

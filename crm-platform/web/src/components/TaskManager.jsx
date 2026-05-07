@@ -1,6 +1,8 @@
 import { useState, useContext, useEffect } from 'react';
 import { CheckSquare, Plus, Search, Clock, AlertTriangle, User, Filter, Calendar, Flag } from 'lucide-react';
 import { TenantContext } from '../contexts/TenantContext';
+import { LoadingState, ErrorState, EmptyState, FallbackBadge, ExportButton } from '@/components/ui/DataStates'
+import { useTranslation } from '@/lib/i18n/useTranslation'
 
 const SEED_TASKS = {
   'tenant-acme-bank': [
@@ -22,6 +24,7 @@ const PRIORITY_COLORS = { critical: 'bg-red-100 text-red-700', high: 'bg-orange-
 const STATUS_COLORS = { open: 'bg-blue-50 text-blue-700', in_progress: 'bg-yellow-50 text-yellow-700', review: 'bg-purple-50 text-purple-700', done: 'bg-green-50 text-green-700', blocked: 'bg-red-50 text-red-700', cancelled: 'bg-gray-50 text-gray-400' };
 
 export default function TaskManager() {
+  const { t } = useTranslation()
   const { tenantId } = useContext(TenantContext);
   const [tasks, setTasks] = useState(SEED_TASKS[tenantId] || []);
   const [statusFilter, setStatusFilter] = useState('all');
@@ -56,7 +59,7 @@ export default function TaskManager() {
   };
 
   return (
-    <div className="p-6 max-w-full">
+    <div role="region" aria-label="TaskManager"  className="p-6 max-w-full">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <CheckSquare className="w-8 h-8 text-purple-600" />

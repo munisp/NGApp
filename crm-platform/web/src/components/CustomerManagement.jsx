@@ -26,6 +26,8 @@ import {
   Tag,
   Globe
 } from 'lucide-react'
+import { LoadingState, ErrorState, EmptyState, FallbackBadge, ExportButton } from '@/components/ui/DataStates'
+import { useTranslation } from '@/lib/i18n/useTranslation'
 
 const CustomerManagement = () => {
   const [customers, setCustomers] = useState([])
@@ -195,7 +197,7 @@ const CustomerManagement = () => {
           initial={{ scale: 0.95, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           exit={{ scale: 0.95, opacity: 0 }}
-          className="bg-white dark:bg-gray-800 rounded-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto"
+          tabIndex="0" className="bg-white dark:bg-gray-800 rounded-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto"
           onClick={(e) => e.stopPropagation()}
         >
           <div className="p-6 border-b border-gray-200 dark:border-gray-700">
@@ -379,7 +381,7 @@ const CustomerManagement = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-96">
+      <div role="region" aria-label="CustomerManagement"  className="flex items-center justify-center h-96">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
       </div>
     )

@@ -1,6 +1,8 @@
 import { useState, useContext } from 'react';
 import { TenantContext } from '../contexts/TenantContext';
 import { Database, Users, Shield, TrendingUp, Search, CheckCircle, AlertTriangle, XCircle, BarChart3, Layers, GitMerge, Fingerprint, Star, ArrowUpRight, Clock, Zap } from 'lucide-react';
+import { LoadingState, ErrorState, EmptyState, FallbackBadge, ExportButton } from '@/components/ui/DataStates'
+import { useTranslation } from '@/lib/i18n/useTranslation'
 
 const MDM_STATS = {
   totalSourceRecords: 142500,
@@ -58,6 +60,7 @@ const PRODUCT_AFFINITIES = [
 const QUALITY_ICON = (score) => score >= 90 ? <CheckCircle className="w-4 h-4 text-green-500" /> : score >= 70 ? <AlertTriangle className="w-4 h-4 text-yellow-500" /> : <XCircle className="w-4 h-4 text-red-500" />;
 
 export default function MDMCustomer360() {
+  const { t } = useTranslation()
   const { tenantId } = useContext(TenantContext);
   const [activeTab, setActiveTab] = useState('overview');
   const [selectedRecord, setSelectedRecord] = useState(null);
@@ -72,7 +75,7 @@ export default function MDMCustomer360() {
   ];
 
   return (
-    <div className="space-y-6">
+    <div role="region" aria-label="MDMCustomer360"  className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
@@ -91,7 +94,7 @@ export default function MDMCustomer360() {
           { label: 'Merge Rate', value: `${MDM_STATS.mergeRate}%`, icon: Fingerprint, color: 'text-purple-600' },
           { label: 'Avg Quality', value: `${MDM_STATS.avgQualityScore}%`, icon: Shield, color: 'text-green-600' },
         ].map((kpi, i) => (
-          <div key={i} className="bg-white dark:bg-gray-800 rounded-xl border p-4">
+          <div key={i} tabIndex="0" className="bg-white dark:bg-gray-800 rounded-xl border p-4">
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs text-gray-500">{kpi.label}</span>
               <kpi.icon className={`w-4 h-4 ${kpi.color}`} />

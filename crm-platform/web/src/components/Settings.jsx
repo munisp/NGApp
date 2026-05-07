@@ -41,6 +41,8 @@ import {
 import { useAuth } from '../contexts/AuthContext'
 import { useTheme } from '../contexts/ThemeContext'
 import { useNotification } from '../contexts/NotificationContext'
+import { LoadingState, ErrorState, EmptyState, FallbackBadge, ExportButton } from '@/components/ui/DataStates'
+import { useTranslation } from '@/lib/i18n/useTranslation'
 
 const Settings = () => {
   const { currentUser, updateProfile } = useAuth()
@@ -251,7 +253,7 @@ const Settings = () => {
   ]
 
   return (
-    <div className="space-y-6">
+    <div role="region" aria-label="Settings"  className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

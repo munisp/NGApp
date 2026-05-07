@@ -6,6 +6,8 @@ import {
   Phone, Mail, Smartphone, MapPin, Clock, CheckCircle2,
   Eye, Filter, Calendar, Zap
 } from 'lucide-react';
+import { LoadingState, ErrorState, EmptyState, FallbackBadge, ExportButton } from '@/components/ui/DataStates'
+import { useTranslation } from '@/lib/i18n/useTranslation'
 
 const CAMPAIGN_ROI = [
   {
@@ -72,6 +74,7 @@ const PRODUCT_ATTRIBUTION = [
 ];
 
 export default function RevenueAttribution() {
+  const { t } = useTranslation()
   const [activeTab, setActiveTab] = useState('overview');
   const [attributionModel, setAttributionModel] = useState('lastTouch');
 
@@ -81,7 +84,7 @@ export default function RevenueAttribution() {
   const overallROI = ((totalRevenue - totalSpend) / totalSpend * 100).toFixed(0);
 
   return (
-    <div className="p-6 space-y-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
+    <div role="region" aria-label="RevenueAttribution"  className="p-6 space-y-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
@@ -110,7 +113,7 @@ export default function RevenueAttribution() {
           { label: 'Avg Conv. Value', value: `₦${(totalRevenue / totalConversions / 1000).toFixed(0)}K`, icon: Target, color: 'amber' },
         ].map((m, i) => (
           <motion.div key={m.label} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
-            className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-200 dark:border-gray-700">
+            tabIndex="0" className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-200 dark:border-gray-700">
             <div className="flex items-center gap-3">
               <div className={`p-2 rounded-lg bg-${m.color}-100 dark:bg-${m.color}-900/30`}>
                 <m.icon className={`w-5 h-5 text-${m.color}-600`} />

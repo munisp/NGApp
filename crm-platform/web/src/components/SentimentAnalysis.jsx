@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { Smile, Frown, Meh, TrendingUp, TrendingDown, BarChart3, MessageSquare, Phone, Mail, AlertTriangle, ThumbsUp, ThumbsDown } from 'lucide-react'
 import { useTenant } from '@/contexts/TenantContext'
+import { LoadingState, ErrorState, EmptyState, FallbackBadge, ExportButton } from '@/components/ui/DataStates'
+import { useTranslation } from '@/lib/i18n/useTranslation'
 const tenantData = {
   'acme-bank': {
     overall: { positive: 62.4, neutral: 24.1, negative: 13.5, trend: '+2.3%' },
@@ -34,11 +36,12 @@ const tenantData = {
   },
 }
 export default function SentimentAnalysis() {
+  const { t } = useTranslation()
   const { tenant } = useTenant()
   const [activeTab, setActiveTab] = useState('overview')
   const data = tenantData[tenant?.slug] || tenantData['acme-bank']
   return (
-    <div className="space-y-6">
+    <div role="region" aria-label="SentimentAnalysis"  className="space-y-6">
       <div><h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2"><Smile className="w-7 h-7 text-yellow-500" /> Sentiment & Emotion AI</h1><p className="text-gray-500 dark:text-gray-400 mt-1">Real-time customer sentiment across all channels</p></div>
       <div className="grid grid-cols-4 gap-4">
         <div className="bg-emerald-50 dark:bg-emerald-900/20 rounded-xl p-4 text-center"><Smile className="w-8 h-8 text-emerald-500 mx-auto mb-1" /><p className="text-2xl font-bold text-emerald-600">{data.overall.positive}%</p><p className="text-xs text-gray-500">Positive</p></div>
@@ -47,7 +50,7 @@ export default function SentimentAnalysis() {
         <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-4 text-center"><TrendingUp className="w-8 h-8 text-blue-500 mx-auto mb-1" /><p className="text-2xl font-bold text-blue-600">{data.overall.trend}</p><p className="text-xs text-gray-500">30-Day Trend</p></div>
       </div>
       <div className="border-b border-gray-200 dark:border-gray-700"><div className="flex space-x-6">{['overview', 'alerts', 'topics'].map(t => (<button key={t} onClick={() => setActiveTab(t)} className={`pb-3 text-sm font-medium capitalize border-b-2 ${activeTab === t ? 'border-yellow-500 text-yellow-600' : 'border-transparent text-gray-500'}`}>{t === 'overview' ? 'By Channel' : t}</button>))}</div></div>
-      {activeTab === 'overview' && (<div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden"><table className="w-full"><thead className="bg-gray-50 dark:bg-gray-700"><tr>{['Channel', 'Volume', 'Positive', 'Neutral', 'Negative', 'Distribution'].map(h => (<th key={h} className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{h}</th>))}</tr></thead><tbody className="divide-y divide-gray-200 dark:divide-gray-700">{data.channels.map(ch => (<tr key={ch.name}><td className="px-4 py-3 font-medium text-sm text-gray-900 dark:text-white">{ch.name}</td><td className="px-4 py-3 text-sm text-gray-600">{ch.volume.toLocaleString()}</td><td className="px-4 py-3 text-sm text-emerald-600 font-medium">{ch.positive}%</td><td className="px-4 py-3 text-sm text-gray-500">{ch.neutral}%</td><td className="px-4 py-3 text-sm text-red-600 font-medium">{ch.negative}%</td><td className="px-4 py-3"><div className="flex h-4 rounded-full overflow-hidden w-32"><div className="bg-emerald-500" style={{width: `${ch.positive}%`}} /><div className="bg-gray-300" style={{width: `${ch.neutral}%`}} /><div className="bg-red-500" style={{width: `${ch.negative}%`}} /></div></td></tr>))}</tbody></table></div>)}
+      {activeTab === 'overview' && (<div tabIndex="0" className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden"><table className="w-full"><thead className="bg-gray-50 dark:bg-gray-700"><tr>{['Channel', 'Volume', 'Positive', 'Neutral', 'Negative', 'Distribution'].map(h => (<th key={h} className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{h}</th>))}</tr></thead><tbody className="divide-y divide-gray-200 dark:divide-gray-700">{data.channels.map(ch => (<tr key={ch.name}><td className="px-4 py-3 font-medium text-sm text-gray-900 dark:text-white">{ch.name}</td><td className="px-4 py-3 text-sm text-gray-600">{ch.volume.toLocaleString()}</td><td className="px-4 py-3 text-sm text-emerald-600 font-medium">{ch.positive}%</td><td className="px-4 py-3 text-sm text-gray-500">{ch.neutral}%</td><td className="px-4 py-3 text-sm text-red-600 font-medium">{ch.negative}%</td><td className="px-4 py-3"><div className="flex h-4 rounded-full overflow-hidden w-32"><div className="bg-emerald-500" style={{width: `${ch.positive}%`}} /><div className="bg-gray-300" style={{width: `${ch.neutral}%`}} /><div className="bg-red-500" style={{width: `${ch.negative}%`}} /></div></td></tr>))}</tbody></table></div>)}
       {activeTab === 'alerts' && (<div className="space-y-3">{data.alerts.map((a, i) => (<div key={i} className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-4"><div className="flex items-center justify-between"><div><h4 className="font-medium text-gray-900 dark:text-white text-sm">{a.customer}</h4><p className="text-xs text-gray-600 dark:text-gray-400 mt-1">{a.text}</p></div><div className="text-right"><span className="text-lg font-bold text-red-600">{a.sentiment}</span><p className="text-xs text-gray-500">{a.channel} · {a.time}</p></div></div></div>))}</div>)}
       {activeTab === 'topics' && (<div className="space-y-3">{data.topics.map(t => (<div key={t.topic} className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 flex items-center gap-4"><div className="flex-1"><h4 className="font-medium text-gray-900 dark:text-white text-sm">{t.topic}</h4><p className="text-xs text-gray-500">{t.mentions.toLocaleString()} mentions</p></div><div className="w-32 h-3 bg-gray-100 dark:bg-gray-700 rounded-full"><div className={`h-full rounded-full ${t.sentiment >= 60 ? 'bg-emerald-500' : t.sentiment >= 40 ? 'bg-amber-500' : 'bg-red-500'}`} style={{width: `${t.sentiment}%`}} /></div><span className={`text-lg font-bold ${t.sentiment >= 60 ? 'text-emerald-600' : t.sentiment >= 40 ? 'text-amber-600' : 'text-red-600'}`}>{t.sentiment}</span></div>))}</div>)}
     </div>

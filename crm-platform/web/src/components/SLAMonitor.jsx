@@ -1,6 +1,8 @@
 import { useState, useContext, useEffect } from 'react';
 import { Timer, AlertTriangle, CheckCircle, TrendingUp, Clock, ArrowUpRight, ArrowDownRight } from 'lucide-react';
 import { TenantContext } from '../contexts/TenantContext';
+import { LoadingState, ErrorState, EmptyState, FallbackBadge, ExportButton } from '@/components/ui/DataStates'
+import { useTranslation } from '@/lib/i18n/useTranslation'
 
 const SLA_DATA = {
   'tenant-acme-bank': {
@@ -24,6 +26,7 @@ const SLA_DATA = {
 };
 
 export default function SLAMonitor() {
+  const { t } = useTranslation()
   const { tenantId } = useContext(TenantContext);
   const [data, setData] = useState(SLA_DATA[tenantId] || SLA_DATA['tenant-acme-bank']);
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -34,7 +37,7 @@ export default function SLAMonitor() {
   const totalBreached = data.categories.reduce((s, c) => s + c.breached, 0);
 
   return (
-    <div className="p-6 max-w-full">
+    <div role="region" aria-label="SLAMonitor"  className="p-6 max-w-full">
       <div className="flex items-center gap-3 mb-6">
         <Timer className="w-8 h-8 text-orange-600" />
         <div>

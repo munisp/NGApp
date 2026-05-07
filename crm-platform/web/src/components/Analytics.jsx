@@ -46,6 +46,8 @@ import {
   PolarRadiusAxis,
   Radar
 } from 'recharts'
+import { LoadingState, ErrorState, EmptyState, FallbackBadge, ExportButton } from '@/components/ui/DataStates'
+import { useTranslation } from '@/lib/i18n/useTranslation'
 
 const Analytics = () => {
   const [loading, setLoading] = useState(true)
@@ -163,7 +165,7 @@ const Analytics = () => {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         whileHover={{ scale: 1.02 }}
-        className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700 cursor-pointer"
+        tabIndex="0" className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700 cursor-pointer"
       >
         <div className="flex items-center justify-between mb-4">
           <div className="p-3 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg">
@@ -196,7 +198,7 @@ const Analytics = () => {
     const isOnTarget = percentage >= 100
 
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+      <div role="region" aria-label="Analytics"  className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
         <div className="flex items-center justify-between mb-3">
           <h4 className="font-medium text-gray-900 dark:text-gray-100">{metric.metric}</h4>
           <span className={`text-sm font-medium ${

@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { GitBranch, Users, Star, AlertTriangle, TrendingUp, Mail, Phone, Calendar, Eye, UserCheck, UserX, Crown, Shield } from 'lucide-react'
 import { useTenant } from '@/contexts/TenantContext'
+import { LoadingState, ErrorState, EmptyState, FallbackBadge, ExportButton } from '@/components/ui/DataStates'
+import { useTranslation } from '@/lib/i18n/useTranslation'
 const tenantData = {
   'acme-bank': {
     accounts: [
@@ -33,12 +35,13 @@ const tenantData = {
 }
 const typeIcons = { champion: { icon: Crown, color: 'text-emerald-600 bg-emerald-100' }, influencer: { icon: Star, color: 'text-blue-600 bg-blue-100' }, neutral: { icon: UserCheck, color: 'text-gray-600 bg-gray-100' }, blocker: { icon: Shield, color: 'text-red-600 bg-red-100' } }
 export default function RelationshipMapping() {
+  const { t } = useTranslation()
   const { tenant } = useTenant()
   const [selectedAccount, setSelectedAccount] = useState(0)
   const data = tenantData[tenant?.slug] || tenantData['acme-bank']
   const account = data.accounts[selectedAccount]
   return (
-    <div className="space-y-6">
+    <div role="region" aria-label="RelationshipMapping"  className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2"><GitBranch className="w-7 h-7 text-teal-600" /> Relationship Mapping & Stakeholder Intelligence</h1>
         <p className="text-gray-500 dark:text-gray-400 mt-1">{data.stats.totalAccounts} accounts · {data.stats.strongRelationships} strong relationships</p>
@@ -55,7 +58,7 @@ export default function RelationshipMapping() {
           <button key={a.name} onClick={() => setSelectedAccount(i)} className={`px-3 py-1.5 text-sm rounded-full ${selectedAccount === i ? 'bg-teal-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-600'}`}>{a.name}</button>
         ))}
       </div>
-      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
+      <div tabIndex="0" className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
         <h3 className="font-semibold text-gray-900 dark:text-white mb-4">{account.name} — {account.stakeholders.length} Stakeholders</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {account.stakeholders.map(s => {

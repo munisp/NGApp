@@ -8,6 +8,8 @@ import {
 import { AreaChart, Area, BarChart, Bar, PieChart as RechartPie, Pie, Cell,
   ResponsiveContainer, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts'
 import { coreBankingAdapter } from '../services/coreBankingAdapter'
+import { LoadingState, ErrorState, EmptyState, FallbackBadge, ExportButton } from '@/components/ui/DataStates'
+import { useTranslation } from '@/lib/i18n/useTranslation'
 
 const COLORS = ['#3b82f6', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444', '#ec4899', '#06b6d4', '#84cc16']
 
@@ -51,7 +53,7 @@ const CoreBankingView = () => {
 
   if (loading || !metrics) {
     return (
-      <div className="flex items-center justify-center h-64">
+      <div role="region" aria-label="CoreBankingView"  className="flex items-center justify-center h-64">
         <RefreshCw className="w-8 h-8 text-blue-500 animate-spin" />
       </div>
     )
@@ -102,7 +104,7 @@ const CoreBankingView = () => {
           { label: 'NPL Ratio', value: `${metrics.nplRatio}%`, icon: AlertTriangle, color: 'bg-red-600' },
         ].map((m, i) => (
           <motion.div key={i} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
-            className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+            tabIndex="0" className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-gray-500">{m.label}</p>

@@ -5,6 +5,8 @@ import {
 } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area, PieChart, Pie, Cell } from 'recharts'
 import { useTenant } from '../contexts/TenantContext'
+import { LoadingState, ErrorState, EmptyState, FallbackBadge, ExportButton } from '@/components/ui/DataStates'
+import { useTranslation } from '@/lib/i18n/useTranslation'
 
 const TIER_QUOTAS = {
   trial: { monthly: 10000, daily: 500, rps: 10, bandwidth: 1, price: 0, overage: 0 },
@@ -88,7 +90,7 @@ const UsageMetering = () => {
   const tabs = ['overview', 'endpoints', 'billing']
 
   return (
-    <div className="space-y-6">
+    <div role="region" aria-label="UsageMetering"  className="space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-3">
           <div className="p-3 bg-indigo-100 dark:bg-indigo-900/30 rounded-xl">
@@ -115,7 +117,7 @@ const UsageMetering = () => {
         <>
           {/* Quota Cards */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="bg-white dark:bg-gray-800 rounded-xl border p-4">
+            <div tabIndex="0" className="bg-white dark:bg-gray-800 rounded-xl border p-4">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm text-gray-500">API Calls</span>
                 <Activity className="w-4 h-4 text-indigo-500" />

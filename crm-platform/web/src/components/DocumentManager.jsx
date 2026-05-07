@@ -1,6 +1,8 @@
 import { useState, useContext, useEffect } from 'react';
 import { FileText, Upload, Search, Filter, Download, Trash2, Eye, CheckCircle, Clock, XCircle, FolderOpen } from 'lucide-react';
 import { TenantContext } from '../contexts/TenantContext';
+import { LoadingState, ErrorState, EmptyState, FallbackBadge, ExportButton } from '@/components/ui/DataStates'
+import { useTranslation } from '@/lib/i18n/useTranslation'
 
 const SEED_DOCS = {
   'tenant-acme-bank': [
@@ -33,6 +35,7 @@ const STATUS_CONFIG = {
 };
 
 export default function DocumentManager() {
+  const { t } = useTranslation()
   const { tenantId } = useContext(TenantContext);
   const [docs, setDocs] = useState(SEED_DOCS[tenantId] || []);
   const [searchQuery, setSearchQuery] = useState('');
@@ -57,7 +60,7 @@ export default function DocumentManager() {
   };
 
   return (
-    <div className="p-6 max-w-full">
+    <div role="region" aria-label="DocumentManager"  className="p-6 max-w-full">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <FileText className="w-8 h-8 text-blue-600" />

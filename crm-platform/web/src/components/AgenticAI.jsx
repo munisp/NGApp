@@ -1,6 +1,8 @@
 import { useState, useContext } from 'react';
 import { TenantContext } from '../contexts/TenantContext';
 import { Bot, Brain, Shield, TrendingUp, Users, Zap, Activity, AlertTriangle, CheckCircle, Clock, DollarSign, Eye, Settings, Play, Pause, BarChart3, Target, Cpu, MessageSquare, Search as SearchIcon, FileText } from 'lucide-react';
+import { LoadingState, ErrorState, EmptyState, FallbackBadge, ExportButton } from '@/components/ui/DataStates'
+import { useTranslation } from '@/lib/i18n/useTranslation'
 
 const AGENTS = [
   {
@@ -65,6 +67,7 @@ const AUTONOMY_COLORS = { 'Level 2': 'bg-blue-100 text-blue-700', 'Level 3': 'bg
 const STATUS_COLORS = { active: 'bg-green-100 text-green-700', paused: 'bg-yellow-100 text-yellow-700', maintenance: 'bg-gray-100 text-gray-600' };
 
 export default function AgenticAI() {
+  const { t } = useTranslation()
   const { tenantId } = useContext(TenantContext);
   const [activeTab, setActiveTab] = useState('agents');
   const [selectedAgent, setSelectedAgent] = useState(null);
@@ -80,7 +83,7 @@ export default function AgenticAI() {
   ];
 
   return (
-    <div className="space-y-6">
+    <div role="region" aria-label="AgenticAI"  className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
@@ -99,7 +102,7 @@ export default function AgenticAI() {
           { label: 'Cost Savings', value: '₦462M/mo', icon: DollarSign, color: 'text-orange-600' },
           { label: 'Human Escalations', value: '142', icon: Users, color: 'text-red-600' },
         ].map((kpi, i) => (
-          <div key={i} className="bg-white dark:bg-gray-800 rounded-xl border p-4">
+          <div key={i} tabIndex="0" className="bg-white dark:bg-gray-800 rounded-xl border p-4">
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs text-gray-500">{kpi.label}</span>
               <kpi.icon className={`w-4 h-4 ${kpi.color}`} />

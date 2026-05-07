@@ -1,6 +1,8 @@
 import { useState, useContext } from 'react';
 import { TenantContext } from '../contexts/TenantContext';
 import { Share2, Globe, MessageSquare, TrendingUp, DollarSign, Eye, MousePointer, Users, Target, Megaphone, BarChart3, Calendar, Play, Pause, Plus, ArrowUpRight, Heart, Repeat2 } from 'lucide-react';
+import { LoadingState, ErrorState, EmptyState, FallbackBadge, ExportButton } from '@/components/ui/DataStates'
+import { useTranslation } from '@/lib/i18n/useTranslation'
 
 const PLATFORMS = [
   { id: 'facebook', name: 'Facebook', color: 'bg-blue-600', textColor: 'text-blue-600', bgLight: 'bg-blue-50', followers: '125K', engagement: '4.2%', reach: '450K' },
@@ -32,6 +34,7 @@ const CONTENT_CALENDAR = [
 const STATUS_COLORS = { active: 'bg-green-100 text-green-700', paused: 'bg-yellow-100 text-yellow-700', completed: 'bg-gray-100 text-gray-600', draft: 'bg-blue-100 text-blue-700', scheduled: 'bg-purple-100 text-purple-700', approved: 'bg-teal-100 text-teal-700' };
 
 export default function SocialMediaHub() {
+  const { t } = useTranslation()
   const { tenantId } = useContext(TenantContext);
   const [activeTab, setActiveTab] = useState('overview');
   const [selectedCampaign, setSelectedCampaign] = useState(null);
@@ -49,7 +52,7 @@ export default function SocialMediaHub() {
   ];
 
   return (
-    <div className="space-y-6">
+    <div role="region" aria-label="SocialMediaHub"  className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
@@ -65,7 +68,7 @@ export default function SocialMediaHub() {
       {/* Platform Overview Cards */}
       <div className="grid grid-cols-6 gap-3">
         {PLATFORMS.map(p => (
-          <div key={p.id} className="bg-white dark:bg-gray-800 rounded-xl border p-3 text-center">
+          <div key={p.id} tabIndex="0" className="bg-white dark:bg-gray-800 rounded-xl border p-3 text-center">
             <div className={`w-8 h-8 ${p.color} rounded-lg flex items-center justify-center mx-auto mb-2`}>
               <Globe className="w-4 h-4 text-white" />
             </div>
