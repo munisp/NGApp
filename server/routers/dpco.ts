@@ -7,6 +7,7 @@ import { emitEvent, logAuditEvent, broadcastEvent, cacheGetJson, cacheSetJson, c
 import { emitComplianceEvent, opensearchIndex, lakehouseIngest, daprPublish, fluvioPublish, permifyCheck } from "../middlewareExtensions";
 import { emitMutationEvent, EVENTS } from "../middlewareIntegration";
 import { getPgSslConfig } from "../dbSslConfig";
+import { encryptField } from "../encryption";
 
 const { Pool } = pg;
 let _dpcoPool: InstanceType<typeof Pool> | null = null;
@@ -101,14 +102,14 @@ async function upsertDpcoClient(data: any) {
   if (data.id) {
     await q(
       `UPDATE dpco_clients SET org_name=COALESCE(?,org_name), org_sector=COALESCE(?,org_sector), org_location=COALESCE(?,org_location), contact_name=COALESCE(?,contact_name), contact_email=COALESCE(?,contact_email), contact_phone=COALESCE(?,contact_phone), status=COALESCE(?,status), risk_level=COALESCE(?,risk_level), updated_at=NOW() WHERE id=?`,
-      [data.orgName, data.orgSector, data.orgLocation, data.contactName, data.contactEmail, data.contactPhone, data.status, data.riskLevel, data.id]
+      [data.orgName, data.orgSector, data.orgLocation, data.contactName ? encryptField(data.contactName) : data.contactName, data.contactEmail ? encryptField(data.contactEmail) : data.contactEmail, data.contactPhone ? encryptField(data.contactPhone) : data.contactPhone, data.status, data.riskLevel, data.id]
     );
     const [row] = await q("SELECT * FROM dpco_clients WHERE id = ?", [data.id]);
     return row;
   }
   const [result] = await q<any>(
     `INSERT INTO dpco_clients (dpco_org_id, org_name, org_sector, org_location, contact_name, contact_email, contact_phone, status, risk_level) VALUES (?,?,?,?,?,?,?,?,?) RETURNING id`,
-    [data.dpcoOrganisationId ?? data.dpcoOrgId, data.orgName ?? data.organisationName ?? 'New Client', data.orgSector, data.orgLocation, data.contactName, data.contactEmail, data.contactPhone, data.status ?? 'active', data.riskLevel ?? 'medium']
+    [data.dpcoOrganisationId ?? data.dpcoOrgId, data.orgName ?? data.organisationName ?? 'New Client', data.orgSector, data.orgLocation, data.contactName ? encryptField(data.contactName) : null, data.contactEmail ? encryptField(data.contactEmail) : null, data.contactPhone ? encryptField(data.contactPhone) : null, data.status ?? 'active', data.riskLevel ?? 'medium']
   );
   const [row] = await q("SELECT * FROM dpco_clients WHERE id = ?", [result.id]);
   return row;

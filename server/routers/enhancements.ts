@@ -13,6 +13,7 @@ import crypto from "crypto";
 import { emitComplianceEvent, opensearchIndex, lakehouseIngest, daprPublish, fluvioPublish, permifyCheck } from "../middlewareExtensions";
 import { emitMutationEvent, EVENTS } from "../middlewareIntegration";
 import { autoDecryptRows } from "../encryptionMiddleware";
+import { encryptField, isEncryptionEnabled } from "../encryption";
 import { getPgSslConfig } from "../dbSslConfig";
 
 const { Pool } = pg;
@@ -75,6 +76,10 @@ export const dsarRouter = router({
       const referenceNumber = `NDSEP-CR-${String(id).padStart(6, "0")}`;
       const responseDeadline = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
 
+      // Encrypt PII at the database write point (after Zod validation)
+      const dbEmail = encryptField(input.citizenEmail);
+      const dbNin = input.citizenNin ? encryptField(input.citizenNin) : null;
+
       await pool.query(
         `INSERT INTO citizen_requests
           (id, citizen_name, citizen_email, citizen_nin, request_type, status,
@@ -84,8 +89,8 @@ export const dsarRouter = router({
         [
           id,
           input.citizenName,
-          input.citizenEmail,
-          input.citizenNin ?? null,
+          dbEmail,
+          dbNin,
           input.requestType,
           input.organizationId ?? null,
           input.description,
@@ -109,20 +114,30 @@ export const dsarRouter = router({
     )
     .query(async ({ input }) => {
       const pool = getPool();
+      // AES-256-GCM uses random IVs so the same plaintext encrypts
+      // differently each time — we cannot do equality comparison in SQL.
+      // Fetch by reference_number, then verify email in application code
+      // after the Proxy auto-decrypts the row.
       const { rows } = await pool.query(
         `SELECT id, reference_number, request_type, status, submitted_at,
-                response_deadline, completed_at, response_notes
+                response_deadline, completed_at, response_notes, citizen_email
          FROM citizen_requests
-         WHERE reference_number = $1 AND citizen_email = $2`,
-        [input.referenceNumber, input.citizenEmail]
+         WHERE reference_number = $1`,
+        [input.referenceNumber]
       );
-      if (!rows.length) {
+      const match = rows.find(
+        (r: Record<string, unknown>) =>
+          (r.citizen_email as string)?.toLowerCase() === input.citizenEmail.toLowerCase()
+      );
+      if (!match) {
         throw new TRPCError({
           code: "NOT_FOUND",
           message: "No request found with that reference number and email.",
         });
       }
-      return rows[0];
+      // Strip PII from the response (citizen_email was only needed for verification)
+      const { citizen_email: _e, ...safe } = match as Record<string, unknown>;
+      return safe;
     }),
 
   /** Protected: list all DSARs with deadline tracking */

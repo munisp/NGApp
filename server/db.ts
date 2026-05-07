@@ -3,6 +3,7 @@ import { and, desc, eq, gte, ilike, isNotNull, lt, lte, or, sql, SQL } from "dri
 import { drizzle } from "drizzle-orm/node-postgres";
 import pg from "pg";
 import { getPgSslConfig } from "./dbSslConfig";
+import { encryptField } from "./encryption";
 import {
   assets,
   auditLogs,
@@ -776,7 +777,7 @@ export async function createPortalSubmission(data: {
        RETURNING id, submission_token`,
       [
         token, data.orgName, data.orgSector, data.orgCountry, data.regulatoryId || null,
-        data.contactName, data.contactEmail, data.contactPhone || null,
+        encryptField(data.contactName), encryptField(data.contactEmail), data.contactPhone ? encryptField(data.contactPhone) : null,
         data.assets.reduce((a, x) => a + x.count, 0),
         data.datasets.length,
         data.selfAssessmentScore,

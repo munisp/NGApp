@@ -28,28 +28,18 @@ const logger = pino({ name: "ndsep-encryption" });
 // ─── Express Middleware ─────────────────────────────────────────────────────
 
 /**
- * Middleware: automatically encrypt PII fields in request bodies before
- * they reach tRPC procedures. This catches create/update mutations.
+ * Middleware: pass-through placeholder.
+ *
+ * Encryption of PII is NOT done at the Express/request level because the
+ * middleware runs BEFORE tRPC's Zod input validation. Encrypting fields
+ * like email before validation causes `.email()` checks to reject the
+ * `enc:v1:...` ciphertext.
+ *
+ * Instead, PII encryption happens at the database write point:
+ * - Raw SQL routers: use encryptField() on PII values before INSERT/UPDATE
+ * - Query results: autoDecryptRows() handles transparent decryption on read
  */
-export function encryptRequestPii(req: Request, _res: Response, next: NextFunction): void {
-  if (!isEncryptionEnabled()) { next(); return; }
-  if (req.method !== "POST" && req.method !== "PUT" && req.method !== "PATCH") {
-    next();
-    return;
-  }
-
-  // Note: this middleware is mounted via app.use("/api/trpc", encryptRequestPii)
-  // so Express has already stripped the mount prefix — req.path is just the
-  // procedure name (e.g. "/user.create"). No additional path check needed.
-
-  try {
-    if (req.body && typeof req.body === "object") {
-      encryptPiiInObject(req.body);
-    }
-  } catch (err) {
-    logger.warn({ err }, "[Encryption] Failed to encrypt request PII — passing through");
-  }
-
+export function encryptRequestPii(_req: Request, _res: Response, next: NextFunction): void {
   next();
 }
 
