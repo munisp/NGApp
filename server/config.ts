@@ -48,8 +48,7 @@ const envSchema = z.object({
   // Local PostgreSQL (NDSEP primary DB)
   NDSEP_DB_URL: z
     .string()
-    .optional()
-    .default("postgresql://ndsep_user:changeme@127.0.0.1:5432/ndsep_db"),
+    .optional(),
   NDSEP_DB_POOL_MIN: z.coerce.number().int().min(1).default(2),
   NDSEP_DB_POOL_MAX: z.coerce.number().int().min(2).default(20),
   NDSEP_DB_IDLE_TIMEOUT_MS: z.coerce.number().int().default(30000),
@@ -94,3 +93,31 @@ export function getConfig(): AppConfig {
 }
 
 export default getConfig;
+
+/**
+ * Centralized database URL resolver.
+ * In production, requires an explicit env var — no fallback credentials.
+ * In development, falls back to a local default with a warning.
+ */
+const DEV_FALLBACK_URL = "postgresql://ndsep_user:changeme@127.0.0.1:5432/ndsep_db";
+let _dbUrlWarned = false;
+
+export function getDatabaseUrl(): string {
+  const url = process.env.LOCAL_DATABASE_URL
+    ?? process.env.NDSEP_PG_URL
+    ?? process.env.DATABASE_URL;
+  if (url) return url;
+
+  if (process.env.NODE_ENV === "production") {
+    throw new Error(
+      "DATABASE_URL, LOCAL_DATABASE_URL, or NDSEP_PG_URL must be set in production. " +
+      "Refusing to start with default credentials."
+    );
+  }
+
+  if (!_dbUrlWarned) {
+    logger.warn("[Config] No DATABASE_URL set — using local dev fallback. Do NOT use in production.");
+    _dbUrlWarned = true;
+  }
+  return DEV_FALLBACK_URL;
+}

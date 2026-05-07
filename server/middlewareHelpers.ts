@@ -26,7 +26,7 @@ let _mwPool: InstanceType<typeof Pool> | null = null;
 function getMwPool(): InstanceType<typeof Pool> {
   if (!_mwPool) {
     _mwPool = new Pool({
-      connectionString: process.env.NDSEP_PG_URL ?? process.env.LOCAL_DATABASE_URL ?? process.env.DATABASE_URL ?? "postgresql://ndsep_user:changeme@127.0.0.1:5432/ndsep_db",
+      connectionString: getDatabaseUrl(),
       ssl: getPgSslConfig(),
     });
   }
@@ -219,3 +219,4 @@ export const proxyRateLimit = checkRateLimitRust;
 
 // MIDDLEWARE_CACHE_URL alias
 import { getPgSslConfig } from "./dbSslConfig";
+import { getDatabaseUrl } from "./config";

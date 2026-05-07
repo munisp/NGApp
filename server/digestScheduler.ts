@@ -19,8 +19,9 @@ import { Pool } from "pg";
 import { ENV } from "./_core/env";
 import { saveNdpaComplianceSnapshot } from "./db";
 import { getPgSslConfig } from "./dbSslConfig";
+import { getDatabaseUrl } from "./config";
 
-const PG_URL = process.env.LOCAL_DATABASE_URL ?? process.env.DATABASE_URL ?? "postgresql://ndsep_user:changeme@127.0.0.1:5432/ndsep_db";
+const PG_URL = getDatabaseUrl();
 
 // ─── Email helper (reuses the same Forge API channel) ─────────────────────────
 async function sendDigestEmail(payload: {

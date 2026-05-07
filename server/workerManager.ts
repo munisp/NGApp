@@ -24,6 +24,7 @@
 import { spawn, ChildProcess } from "child_process";
 import path from "path";
 import { fileURLToPath } from "url";
+import { getDatabaseUrl } from "./config";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const WORKERS_DIR = path.join(__dirname, "..", "workers");
@@ -47,7 +48,7 @@ export interface WorkerDef {
   technology: string;
 }
 
-const DB_URL = (process.env.NDSEP_PG_URL ?? process.env.LOCAL_DATABASE_URL ?? process.env.DATABASE_URL ?? "postgresql://ndsep_user:changeme@127.0.0.1:5432/ndsep_db") + "?sslmode=disable";
+const DB_URL = getDatabaseUrl() + "?sslmode=disable";
 const RELAY_URL = "http://localhost:3000/api/workers/event";
 
 export const WORKER_DEFS: WorkerDef[] = [
@@ -113,7 +114,7 @@ export const WORKER_DEFS: WorkerDef[] = [
     port: 8085,
     env: {
       ML_PORT: "8085",
-      WORKER_DATABASE_URL: process.env.LOCAL_DATABASE_URL ?? process.env.DATABASE_URL ?? "postgresql://ndsep_user:changeme@127.0.0.1:5432/ndsep_db",
+      WORKER_DATABASE_URL: getDatabaseUrl(),
       WORKER_RELAY_URL: RELAY_URL,
     },
     description:
@@ -130,7 +131,7 @@ export const WORKER_DEFS: WorkerDef[] = [
     port: 8086,
     env: {
       SIEM_PORT: "8086",
-      WORKER_DATABASE_URL: process.env.LOCAL_DATABASE_URL ?? process.env.DATABASE_URL ?? "postgresql://ndsep_user:changeme@127.0.0.1:5432/ndsep_db",
+      WORKER_DATABASE_URL: getDatabaseUrl(),
       WORKER_RELAY_URL: RELAY_URL,
     },
     description:
@@ -147,7 +148,7 @@ export const WORKER_DEFS: WorkerDef[] = [
     port: 8087,
     env: {
       FLUVIO_PORT: "8087",
-      WORKER_DATABASE_URL: process.env.LOCAL_DATABASE_URL ?? process.env.DATABASE_URL ?? "postgresql://ndsep_user:changeme@127.0.0.1:5432/ndsep_db",
+      WORKER_DATABASE_URL: getDatabaseUrl(),
       WORKER_RELAY_URL: RELAY_URL,
     },
     description:
@@ -188,7 +189,7 @@ export const WORKER_DEFS: WorkerDef[] = [
     args: [path.join(PYTHON_DIR, "falco_steampipe.py")],
     port: 8093,
     env: {
-      WORKER_DATABASE_URL: process.env.LOCAL_DATABASE_URL ?? process.env.DATABASE_URL ?? "postgresql://ndsep_user:changeme@127.0.0.1:5432/ndsep_db",
+      WORKER_DATABASE_URL: getDatabaseUrl(),
       WORKER_RELAY_URL: RELAY_URL,
     },
     description: "Falco cloud-native runtime threat detection (syscall monitoring, container drift, privilege escalation) + Steampipe live SaaS/cloud API querying for asset discovery.",
@@ -203,7 +204,7 @@ export const WORKER_DEFS: WorkerDef[] = [
     args: [path.join(PYTHON_DIR, "egeria_openlineage.py")],
     port: 8094,
     env: {
-      WORKER_DATABASE_URL: process.env.LOCAL_DATABASE_URL ?? process.env.DATABASE_URL ?? "postgresql://ndsep_user:changeme@127.0.0.1:5432/ndsep_db",
+      WORKER_DATABASE_URL: getDatabaseUrl(),
       WORKER_RELAY_URL: RELAY_URL,
     },
     description: "Apache Egeria vendor-neutral metadata exchange + OpenLineage pipeline lineage capture from Airflow, Spark, and dbt. Tracks PII data flow and schema changes.",

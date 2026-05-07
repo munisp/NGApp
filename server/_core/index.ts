@@ -45,6 +45,7 @@ import { storagePut } from "../storage";
 import { uploadLimiter, dsarPublicLimiter, bgpSseLimiter, developerApiLimiter } from "../rateLimiter";
 import { bodySanitizer, paramPollutionGuard, suspiciousRequestGuard, securityAuditLogger, demoLoginGuard, strictJsonLimit, requestIdMiddleware, authFailureTracker } from "../security";
 import { encryptRequestPii, logEncryptionStatus } from "../encryptionMiddleware";
+import { encryptField } from "../encryption";
 import { ddosSlowDown, bruteForceProtection, ransomwareProtection, requestTimeoutMiddleware, botDetectionMiddleware, oversizedPayloadGuard, financialSecurityHeaders, perUserRateLimit } from "../security/threatProtection";
 import { requireSession, requireAdmin } from "../authMiddleware";
 import { generateAuditReturnData } from "../db";
@@ -260,7 +261,7 @@ async function startServer() {
           `INSERT INTO users (open_id, name, role, dpco_org_id, created_at, updated_at)
            VALUES ($1, $2, $3, $4, NOW(), NOW())
            ON CONFLICT (open_id) DO UPDATE SET name = EXCLUDED.name, dpco_org_id = EXCLUDED.dpco_org_id, updated_at = NOW()`,
-          [DEMO_OPEN_ID, DEMO_NAME, isAdmin ? "admin" : "user", isAdmin ? null : 1]
+          [DEMO_OPEN_ID, encryptField(DEMO_NAME), isAdmin ? "admin" : "user", isAdmin ? null : 1]
         );
       }
       const token = await sdk.createSessionToken(DEMO_OPEN_ID, { name: DEMO_NAME, expiresInMs: ONE_YEAR_MS });

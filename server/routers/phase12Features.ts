@@ -10,17 +10,14 @@ import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { router, publicProcedure, protectedProcedure, adminProcedure } from "../_core/trpc";
 import { getPool } from "../db";
-
-const PG_URL =
-  process.env.LOCAL_DATABASE_URL ??
-  process.env.DATABASE_URL ??
-  process.env.LOCAL_DATABASE_URL ?? process.env.NDSEP_PG_URL ?? "postgresql://ndsep_user:changeme@127.0.0.1:5432/ndsep_db";
-
 import pg from "pg";
 import { emitEvent, logAuditEvent, broadcastEvent, cacheGetJson, cacheSetJson, cacheDel, triggerWorkflow } from "../middlewareHelpers";
 import { emitComplianceEvent, opensearchIndex, lakehouseIngest, daprPublish, fluvioPublish, permifyCheck } from "../middlewareExtensions";
 import { emitMutationEvent, EVENTS } from "../middlewareIntegration";
 import { getPgSslConfig } from "../dbSslConfig";
+import { getDatabaseUrl } from "../config";
+
+const PG_URL = getDatabaseUrl();
 const { Pool } = pg;
 
 function pool() {

@@ -61,9 +61,8 @@ const { Pool } = pg;
 let _db: ReturnType<typeof drizzle> | null = null;
 let _pool: InstanceType<typeof Pool> | null = null;
 
-// Prefer LOCAL_DATABASE_URL (PostgreSQL) over DATABASE_URL which may point to MySQL/TiDB
-const _rawDbUrl = process.env.DATABASE_URL ?? "";
-const PG_URL = process.env.LOCAL_DATABASE_URL ?? (_rawDbUrl.startsWith("postgresql") ? _rawDbUrl : undefined) ?? "postgresql://ndsep_user:changeme@localhost:5432/ndsep_db";
+import { getDatabaseUrl } from "./config";
+const PG_URL = getDatabaseUrl();
 
 export async function getDb() {
   // Reinitialize if pool was ended (e.g., after graceful shutdown or test teardown)
@@ -3525,8 +3524,6 @@ export async function generateAuditReturnData(year: number) {
 
 // ─── Breach incidents for a specific day (heatmap drill-down) ─────────────────
 export async function getBreachesForDay(date: string) {
-  const PG_URL = process.env.LOCAL_DATABASE_URL ?? process.env.DATABASE_URL ?? "postgresql://ndsep_user:changeme@localhost:5432/ndsep_db";
-  const { Pool } = await import("pg");
   const pool = getSharedPool();
   const result = await pool.query(`
     SELECT

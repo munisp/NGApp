@@ -6,12 +6,12 @@ import { emitEvent, logAuditEvent, broadcastEvent, cacheGetJson, cacheSetJson, c
 import { emitComplianceEvent, opensearchIndex, lakehouseIngest, daprPublish, fluvioPublish, permifyCheck } from "../middlewareExtensions";
 import { emitMutationEvent, EVENTS } from "../middlewareIntegration";
 import { getPgSslConfig } from "../dbSslConfig";
+import { getDatabaseUrl } from "../config";
 const { Pool } = pg;
 let _aiPool: InstanceType<typeof Pool> | null = null;
 function getPool() {
   if (!_aiPool) {
-    const url = process.env.LOCAL_DATABASE_URL ?? process.env.NDSEP_PG_URL ?? "postgresql://ndsep_user:changeme@127.0.0.1:5432/ndsep_db";
-    _aiPool = new Pool({ connectionString: url, max: 5, ssl: getPgSslConfig() });
+    _aiPool = new Pool({ connectionString: getDatabaseUrl(), max: 5, ssl: getPgSslConfig() });
   }
   return _aiPool;
 }

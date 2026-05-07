@@ -19,13 +19,10 @@ import { Pool } from "pg";
 import { notifyOwner } from "./_core/notification";
 import { logger } from "./logger";
 import { getPgSslConfig } from "./dbSslConfig";
+import { getDatabaseUrl } from "./config";
 
 // ─── Configuration ────────────────────────────────────────────────────────────
-const PG_URL =
-  process.env.NDSEP_PG_URL ??
-  process.env.LOCAL_DATABASE_URL ??
-  process.env.DATABASE_URL ??
-  "postgresql://ndsep_user:changeme@127.0.0.1:5432/ndsep_db";
+const PG_URL = getDatabaseUrl();
 
 /** How often to run the overdue check (default: every 24 hours) */
 const INTERVAL_MS =

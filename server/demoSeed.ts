@@ -7,6 +7,7 @@
  */
 
 import type { Pool } from "pg";
+import { encryptField } from "./encryption";
 
 const DEMO_DPCO_OPEN_ID = "demo-dpco-user-001";
 const DEMO_ADMIN_OPEN_ID = "demo-admin-user-001";
@@ -24,7 +25,7 @@ export async function resetDemoData(pool: Pool): Promise<{ seeded: Record<string
       `INSERT INTO users (open_id, name, role, created_at, updated_at)
        VALUES ($1, $2, 'user', NOW(), NOW()), ($3, $4, 'admin', NOW(), NOW())
        ON CONFLICT (open_id) DO UPDATE SET name = EXCLUDED.name, updated_at = NOW()`,
-      [DEMO_DPCO_OPEN_ID, DEMO_DPCO_NAME, DEMO_ADMIN_OPEN_ID, DEMO_ADMIN_NAME]
+      [DEMO_DPCO_OPEN_ID, encryptField(DEMO_DPCO_NAME), DEMO_ADMIN_OPEN_ID, encryptField(DEMO_ADMIN_NAME)]
     );
 
     const { rows: [dpcoUser] } = await client.query(
