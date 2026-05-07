@@ -28,8 +28,9 @@ async function fetchJson(path: string, options?: RequestInit): Promise<{ status:
     ...options,
     headers: { "Content-Type": "application/json", ...options?.headers },
   });
+  const text = await res.text();
   let body: unknown;
-  try { body = await res.json(); } catch { body = await res.text(); }
+  try { body = JSON.parse(text); } catch { body = text; }
   return { status: res.status, body };
 }
 
