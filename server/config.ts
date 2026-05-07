@@ -58,7 +58,7 @@ export function loadConfig(): NdsepConfig {
   }
 
   const config: NdsepConfig = {
-    databaseUrl: required("DATABASE_URL") || `postgresql://${optional("PG_USER", "ndsep_user")}:${optional("PG_PASSWORD", "ndsep_secure_2026")}@${optional("PG_HOST", "localhost")}:${optional("PG_PORT", "5432")}/${optional("PG_DATABASE", "ndsep_db")}`,
+    databaseUrl: required("DATABASE_URL") || `postgresql://${optional("PG_USER", "ndsep_user")}:${required("PG_PASSWORD")}@${optional("PG_HOST", "localhost")}:${optional("PG_PORT", "5432")}/${optional("PG_DATABASE", "ndsep_db")}`,
     databaseReplicaUrl: env.DATABASE_REPLICA_URL ?? null,
     jwtSecret: required("JWT_SECRET") || "dev-jwt-secret-not-for-production",
     fieldEncryptionKey: env.FIELD_ENCRYPTION_KEY ?? null,
@@ -99,5 +99,5 @@ export function loadConfig(): NdsepConfig {
 
 /** Backwards-compatible export used by existing code */
 export function getDatabaseUrl(): string {
-  return process.env.DATABASE_URL ?? `postgresql://${process.env.PG_USER ?? "ndsep_user"}:${process.env.PG_PASSWORD ?? "ndsep_secure_2026"}@${process.env.PG_HOST ?? "localhost"}:${parseInt(process.env.PG_PORT ?? "5432", 10)}/${process.env.PG_DATABASE ?? "ndsep_db"}`;
+  return process.env.DATABASE_URL ?? `postgresql://${process.env.PG_USER ?? "ndsep_user"}:${process.env.PG_PASSWORD ?? ""}@${process.env.PG_HOST ?? "localhost"}:${parseInt(process.env.PG_PORT ?? "5432", 10)}/${process.env.PG_DATABASE ?? "ndsep_db"}`;
 }
