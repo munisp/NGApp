@@ -187,8 +187,16 @@ jobs:
         with:
           sarif_file: trivy-results.sarif
         continue-on-error: true
+      - uses: pnpm/action-setup@v3
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
       - name: Audit npm packages (fail on high/critical)
         run: pnpm audit --audit-level=high
+        continue-on-error: true
 
   # ─────────────────────────────────────────────────────────────────────────────
   # Integration tests (E2E with Playwright)

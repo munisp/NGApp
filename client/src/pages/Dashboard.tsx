@@ -24,21 +24,21 @@ function MetricCard({
   icon: React.ComponentType<any>; trend?: "up" | "down" | "neutral"; color?: string;
 }) {
   return (
-    <Card className="relative overflow-hidden border border-border/60">
-      <div className="absolute inset-0 blueprint-grid opacity-30" />
+    <Card className="relative overflow-hidden border border-border/40 transition-all duration-300 hover:shadow-md hover:border-border/80 hover:-translate-y-0.5 group">
+      <div className="absolute inset-0 blueprint-grid opacity-20 group-hover:opacity-30 transition-opacity" />
       <CardContent className="relative p-4">
         <div className="flex items-start justify-between">
           <div className="flex-1 min-w-0">
-            <p className="data-label mb-1">{label}</p>
-            <p className="metric-value text-2xl font-bold text-foreground">{value}</p>
+            <p className="data-label mb-1.5">{label}</p>
+            <p className="metric-value text-2xl font-bold text-foreground tracking-tight">{value}</p>
             {sub && <p className="text-xs text-muted-foreground mt-1 mono">{sub}</p>}
           </div>
-          <div className={`p-2 rounded-lg bg-primary/10 shrink-0`}>
+          <div className="p-2.5 rounded-xl bg-primary/8 group-hover:bg-primary/12 transition-colors shrink-0">
             <Icon className="h-5 w-5 text-primary" />
           </div>
         </div>
         {trend && (
-          <div className="flex items-center gap-1 mt-2">
+          <div className="flex items-center gap-1.5 mt-3 pt-2 border-t border-border/30">
             {trend === "up" ? <TrendingUp className="h-3 w-3 text-green-600" /> : trend === "down" ? <TrendingDown className="h-3 w-3 text-red-500" /> : <Activity className="h-3 w-3 text-muted-foreground" />}
             <span className={`text-xs mono ${trend === "up" ? "text-green-600" : trend === "down" ? "text-red-500" : "text-muted-foreground"}`}>
               {trend === "up" ? "Improving" : trend === "down" ? "Degrading" : "Stable"}

@@ -3,23 +3,34 @@
 
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5, viewport-fit=cover" />
     <title>NDSEP — National Data Sovereignty Enforcement Platform</title>
     <meta name="description" content="National Data Sovereignty Enforcement Platform — real-time compliance monitoring, enforcement, and audit management for financial institutions and regulated entities." />
-    <meta name="theme-color" content="#00d4ff" />
+    <meta name="theme-color" content="#f8fafc" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0f172a" media="(prefers-color-scheme: dark)" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="NDSEP" />
+    <meta name="color-scheme" content="light dark" />
     <!-- Open Graph -->
     <meta property="og:title" content="NDSEP — National Data Sovereignty Enforcement Platform" />
     <meta property="og:description" content="Real-time compliance monitoring, enforcement, and audit management." />
     <meta property="og:type" content="website" />
     <!-- PWA Manifest -->
     <link rel="manifest" href="/manifest.json" />
-    <!-- Fonts: JetBrains Mono (blueprint aesthetic) + Inter (UI) -->
+    <!-- Fonts: Inter (UI) + Space Grotesk (headers) + JetBrains Mono (data) -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <!-- Prevent FOUC on dark mode -->
+    <script>
+      (function() {
+        var t = localStorage.getItem('ndsep_theme');
+        if (t === 'dark' || (t === 'auto' || !t) && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+          document.documentElement.classList.add('dark');
+        }
+      })();
+    </script>
   </head>
 
   <body>
@@ -28,10 +39,8 @@
     <!-- Service Worker Registration -->
     <script>
       if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/sw.js').catch(() => {
-            // Service worker registration failed — app still works online
-          });
+        window.addEventListener('load', function() {
+          navigator.serviceWorker.register('/sw.js').catch(function() {});
         });
       }
     </script>

@@ -49,6 +49,8 @@ import { LanguageSelector } from "./LanguageSelector";
 import ThemeToggle from "@/components/ThemeToggle";
 import { WhatsNewModal } from "@/components/WhatsNewModal";
 import GlobalSearchWidget from "@/components/GlobalSearch";
+import { PwaInstallPrompt } from "@/components/PwaInstallPrompt";
+import { PageTransition } from "@/components/PageTransition";
 
 // ── Grouped sidebar menu ──────────────────────────────────────────────────────
 type MenuItem = { icon: any; label: string; path: string };
@@ -345,7 +347,7 @@ function NotificationsHeader({ isMobile, activeMenuLabel }: { isMobile: boolean;
                          "bg-slate-500/20 text-slate-400";
 
   return (
-    <div className="flex border-b h-14 items-center justify-between bg-background/95 px-4 backdrop-blur supports-[backdrop-filter]:backdrop-blur sticky top-0 z-40">
+    <div className="flex border-b h-14 items-center justify-between bg-background/80 px-4 backdrop-blur-xl supports-[backdrop-filter]:backdrop-blur-xl sticky top-0 z-40 transition-colors">
       <div className="flex items-center gap-2 shrink-0">
         {isMobile && <SidebarTrigger className="h-9 w-9 rounded-lg bg-background" />}
         <span className="tracking-tight text-foreground font-medium hidden sm:block">
@@ -358,7 +360,7 @@ function NotificationsHeader({ isMobile, activeMenuLabel }: { isMobile: boolean;
       </div>
       <div className="flex items-center gap-1">
         <LanguageSelector />
-        <ThemeToggle size="sm" />
+        <ThemeToggle variant="dropdown" />
         <div className="relative">
         <DropdownMenu open={open} onOpenChange={setOpen}>
           <DropdownMenuTrigger asChild>
@@ -733,7 +735,7 @@ function DashboardLayoutContent({
                             isActive={isActive}
                             onClick={() => setLocation(item.path)}
                             tooltip={item.label}
-                            className="h-8 transition-all font-normal"
+                            className={`h-8 transition-all duration-200 font-normal ${isActive ? "bg-accent shadow-sm" : "hover:translate-x-0.5"}`}
                             aria-label={item.label}
                             aria-current={isActive ? "page" : undefined}
                             role="link"
@@ -801,7 +803,10 @@ function DashboardLayoutContent({
         <OnboardingBanner />
         <FloatingChatBubble />
         <WhatsNewModal />
-        <main className="flex-1 min-h-0 overflow-hidden">{children}</main>
+        <PwaInstallPrompt />
+        <main className="flex-1 min-h-0 overflow-hidden">
+          <PageTransition>{children}</PageTransition>
+        </main>
       </SidebarInset>
     </>
   );

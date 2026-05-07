@@ -10,7 +10,17 @@ import { lazy, Suspense } from "react";
 import DashboardLayout from "./components/DashboardLayout";
 
 function PageLoader() {
-  return <div className="flex items-center justify-center h-full min-h-[200px]"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div></div>;
+  return (
+    <div className="flex items-center justify-center h-full min-h-[200px] animate-fade-in">
+      <div className="flex flex-col items-center gap-3">
+        <div className="relative h-10 w-10">
+          <div className="absolute inset-0 rounded-full border-2 border-muted" />
+          <div className="absolute inset-0 rounded-full border-2 border-t-primary animate-spin" />
+        </div>
+        <span className="text-xs text-muted-foreground font-medium tracking-wide">Loading...</span>
+      </div>
+    </div>
+  );
 }
 
 const Dashboard = lazy(() => import("./pages/Dashboard"));
@@ -457,7 +467,7 @@ function Router() {
 function App() {
   return (
     <ErrorBoundary>
-      <ThemeProvider defaultTheme="light" switchable>
+      <ThemeProvider>
         <TooltipProvider>
           <Toaster />
           <Router />
