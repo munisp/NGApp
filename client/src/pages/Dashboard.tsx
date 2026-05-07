@@ -15,7 +15,15 @@ import {
   TrendingUp, TrendingDown, Activity, Globe, Zap, Server, CheckCircle2, XCircle, Clock, FileSearch, Gavel, Download
 } from "lucide-react";
 
-const COLORS = ["#2563eb", "#ec4899", "#10b981", "#f59e0b", "#ef4444"];
+const COLORS = ["oklch(0.55 0.22 250)", "oklch(0.62 0.20 330)", "oklch(0.60 0.20 160)", "oklch(0.72 0.18 80)", "oklch(0.58 0.24 25)"];
+
+const METRIC_GRADIENTS: Record<string, string> = {
+  blue: "from-[oklch(0.55_0.22_250)] to-[oklch(0.58_0.20_290)]",
+  green: "from-[oklch(0.60_0.20_160)] to-[oklch(0.55_0.18_180)]",
+  red: "from-[oklch(0.58_0.24_25)] to-[oklch(0.60_0.22_350)]",
+  amber: "from-[oklch(0.72_0.18_80)] to-[oklch(0.65_0.20_60)]",
+  purple: "from-[oklch(0.58_0.20_290)] to-[oklch(0.55_0.22_320)]",
+};
 
 function MetricCard({
   label, value, sub, icon: Icon, trend, color = "blue"
@@ -24,29 +32,31 @@ function MetricCard({
   icon: React.ComponentType<any>; trend?: "up" | "down" | "neutral"; color?: string;
 }) {
   return (
-    <Card className="relative overflow-hidden border border-border/40 transition-all duration-300 hover:shadow-md hover:border-border/80 hover:-translate-y-0.5 group">
-      <div className="absolute inset-0 blueprint-grid opacity-20 group-hover:opacity-30 transition-opacity" />
-      <CardContent className="relative p-4">
-        <div className="flex items-start justify-between">
+    <div className="metric-card group">
+      <div className="relative p-5">
+        <div className="absolute top-0 right-0 w-24 h-24 opacity-[0.03] group-hover:opacity-[0.06] transition-opacity">
+          <Icon className="w-full h-full" />
+        </div>
+        <div className="flex items-start justify-between relative">
           <div className="flex-1 min-w-0">
-            <p className="data-label mb-1.5">{label}</p>
-            <p className="metric-value text-2xl font-bold text-foreground tracking-tight">{value}</p>
-            {sub && <p className="text-xs text-muted-foreground mt-1 mono">{sub}</p>}
+            <p className="data-label mb-2">{label}</p>
+            <p className="metric-value text-3xl text-foreground">{value}</p>
+            {sub && <p className="text-xs text-muted-foreground mt-1.5 mono tracking-tight">{sub}</p>}
           </div>
-          <div className="p-2.5 rounded-xl bg-primary/8 group-hover:bg-primary/12 transition-colors shrink-0">
-            <Icon className="h-5 w-5 text-primary" />
+          <div className={`p-2.5 rounded-xl bg-gradient-to-br ${METRIC_GRADIENTS[color] || METRIC_GRADIENTS.blue} shadow-lg group-hover:shadow-xl group-hover:scale-105 transition-all duration-300 shrink-0`}>
+            <Icon className="h-5 w-5 text-white" />
           </div>
         </div>
         {trend && (
-          <div className="flex items-center gap-1.5 mt-3 pt-2 border-t border-border/30">
-            {trend === "up" ? <TrendingUp className="h-3 w-3 text-green-600" /> : trend === "down" ? <TrendingDown className="h-3 w-3 text-red-500" /> : <Activity className="h-3 w-3 text-muted-foreground" />}
-            <span className={`text-xs mono ${trend === "up" ? "text-green-600" : trend === "down" ? "text-red-500" : "text-muted-foreground"}`}>
+          <div className="flex items-center gap-1.5 mt-4 pt-3 border-t border-border/30">
+            {trend === "up" ? <TrendingUp className="h-3.5 w-3.5 text-green-500" /> : trend === "down" ? <TrendingDown className="h-3.5 w-3.5 text-red-500" /> : <Activity className="h-3.5 w-3.5 text-muted-foreground" />}
+            <span className={`text-xs font-medium ${trend === "up" ? "text-green-500" : trend === "down" ? "text-red-500" : "text-muted-foreground"}`}>
               {trend === "up" ? "Improving" : trend === "down" ? "Degrading" : "Stable"}
             </span>
           </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
 
@@ -169,7 +179,7 @@ export default function Dashboard() {
   const enfSettled = enfCasesList.filter((c: any) => c.status === "settled" || c.status === "closed").length;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-6 overflow-y-auto h-full stagger-children">
       {/* Orchestration Health Bar — hidden for demo presentation */}
       {false && orchServices.length > 0 && (
         <div className={`rounded-lg border px-4 py-2.5 flex items-center gap-4 flex-wrap ${
@@ -211,12 +221,12 @@ export default function Dashboard() {
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>
-          <div className="flex items-center gap-2 mb-1">
+          <div className="flex items-center gap-2.5 mb-2">
             <span className="layer-badge">LAYER 6</span>
             <span className="data-label">Government Executive Dashboard</span>
           </div>
-          <h1 className="text-3xl font-bold tracking-tight text-foreground">National Data Sovereignty</h1>
-          <p className="text-muted-foreground mono text-sm mt-0.5">Real-time situational awareness · National risk assessment · Enforcement overview</p>
+          <h1 className="heading-display text-3xl text-foreground">National Data Sovereignty</h1>
+          <p className="caption mt-1">Real-time situational awareness &middot; National risk assessment &middot; Enforcement overview</p>
         </div>
         <div className="flex items-center gap-3">
           <button
@@ -281,7 +291,7 @@ export default function Dashboard() {
 
       {/* National Risk Score — Hero */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
-        <Card className="lg:col-span-1 relative overflow-hidden border-2" style={{ borderColor: riskColor + "40" }}>
+        <Card className="lg:col-span-1 relative overflow-hidden border modern-card" style={{ borderColor: riskColor + "40" }}>
           <div className="absolute inset-0 blueprint-grid opacity-20" />
           <CardContent className="relative p-6 flex flex-col items-center justify-center text-center">
             <p className="data-label mb-3">National Risk Score</p>
@@ -317,7 +327,7 @@ export default function Dashboard() {
       {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Risk & Compliance Trend */}
-        <Card className="lg:col-span-2 border border-border/60">
+        <Card className="lg:col-span-2 modern-card">
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
               <CardTitle className="text-sm font-semibold">National Risk & Compliance Trend</CardTitle>
@@ -349,7 +359,7 @@ export default function Dashboard() {
         </Card>
 
         {/* Compliance Breakdown */}
-        <Card className="border border-border/60">
+        <Card className="modern-card">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-semibold">Compliance Status</CardTitle>
           </CardHeader>
@@ -382,7 +392,7 @@ export default function Dashboard() {
       {/* Network Traffic + ML Predictions */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Network Traffic */}
-        <Card className="border border-border/60">
+        <Card className="modern-card">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-semibold">Network Traffic (24h)</CardTitle>
           </CardHeader>
@@ -402,7 +412,7 @@ export default function Dashboard() {
         </Card>
 
         {/* ML Risk Predictions */}
-        <Card className="border border-border/60">
+        <Card className="modern-card">
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
               <CardTitle className="text-sm font-semibold">ML Risk Predictions</CardTitle>
@@ -438,7 +448,7 @@ export default function Dashboard() {
       </div>
 
       {/* Financial Summary */}
-      <Card className="border border-border/60">
+      <Card className="modern-card">
         <CardHeader className="pb-2">
           <div className="flex items-center justify-between">
             <CardTitle className="text-sm font-semibold">Financial Enforcement Summary</CardTitle>
@@ -463,7 +473,7 @@ export default function Dashboard() {
       </Card>
 
       {/* Enforcement Cases Summary */}
-      <Card className="border border-border/60">
+      <Card className="modern-card">
         <CardHeader className="pb-2">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -490,7 +500,7 @@ export default function Dashboard() {
         </CardContent>
       </Card>
       {/* Compliance Leaderboard */}
-      <Card className="border border-border/60">
+      <Card className="modern-card">
         <CardHeader className="pb-2">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -531,7 +541,7 @@ export default function Dashboard() {
       </Card>
 
       {/* Recent Audit Activity */}
-      <Card className="border border-border/60">
+      <Card className="modern-card">
         <CardHeader className="pb-2">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -692,7 +702,7 @@ export default function Dashboard() {
       </div>
 
       {/* Geospatial Compliance Heatmap */}
-      <Card className="border border-border/60">
+      <Card className="modern-card">
         <CardHeader className="pb-2">
           <div className="flex items-center justify-between">
             <div>

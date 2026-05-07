@@ -59,7 +59,7 @@ type MenuSection = { title: string; color: string; items: MenuItem[] };
 const menuSections: MenuSection[] = [
   {
     title: "Core Platform",
-    color: "#6366f1",
+    color: "oklch(0.55 0.22 250)",
     items: [
       { icon: LayoutDashboard, label: "Gov Dashboard", path: "/" },
       { icon: Search, label: "Discovery Engine", path: "/discovery" },
@@ -73,7 +73,7 @@ const menuSections: MenuSection[] = [
   },
   {
     title: "Enforcement & Finance",
-    color: "#ef4444",
+    color: "oklch(0.58 0.24 25)",
     items: [
       { icon: Gavel, label: "Enforcement Cases", path: "/enforcement-cases" },
       { icon: Wallet, label: "Financial Enforcement", path: "/financial" },
@@ -85,7 +85,7 @@ const menuSections: MenuSection[] = [
   },
   {
     title: "Compliance Management",
-    color: "#0ea5e9",
+    color: "oklch(0.62 0.18 210)",
     items: [
       { icon: HandMetal, label: "Consent Management", path: "/consent" },
       { icon: AlertTriangle, label: "Breach Notification", path: "/breach-notification" },
@@ -113,7 +113,7 @@ const menuSections: MenuSection[] = [
   },
   {
     title: "DPCO Portal",
-    color: "#7c3aed",
+    color: "oklch(0.58 0.20 290)",
     items: [
       { icon: Award, label: "DPCO Portal", path: "/dpco" },
       { icon: ClipboardSignature, label: "DPCO Registry", path: "/dpco/registry" },
@@ -131,7 +131,7 @@ const menuSections: MenuSection[] = [
   },
   {
     title: "Organizations & IAM",
-    color: "#10b981",
+    color: "oklch(0.60 0.20 160)",
     items: [
       { icon: Building2, label: "Organizations", path: "/organizations" },
       { icon: Users, label: "Role Management", path: "/roles" },
@@ -144,7 +144,7 @@ const menuSections: MenuSection[] = [
   },
   {
     title: "AI & Intelligence",
-    color: "#8b5cf6",
+    color: "oklch(0.62 0.18 290)",
     items: [
       { icon: Bot, label: "AI Advisor", path: "/ai-assistant" },
       { icon: BrainCircuit, label: "AI Governance", path: "/ai-governance" },
@@ -161,7 +161,7 @@ const menuSections: MenuSection[] = [
   },
   {
     title: "Operations & Infrastructure",
-    color: "#f59e0b",
+    color: "oklch(0.72 0.18 80)",
     items: [
       { icon: Waves, label: "Streaming Events", path: "/streaming" },
       { icon: Zap, label: "Event Bus Monitor", path: "/event-bus" },
@@ -179,7 +179,7 @@ const menuSections: MenuSection[] = [
   },
   {
     title: "Banking & Sectors",
-    color: "#0284c7",
+    color: "oklch(0.55 0.18 230)",
     items: [
       { icon: Banknote, label: "Banking Overview", path: "/banking" },
       { icon: ScanFace, label: "KYC Management", path: "/banking/kyc" },
@@ -201,7 +201,7 @@ const menuSections: MenuSection[] = [
   },
   {
     title: "Governance & Reporting",
-    color: "#64748b",
+    color: "oklch(0.55 0.04 250)",
     items: [
       { icon: CheckSquare, label: "Transfer Approvals", path: "/transfers" },
       { icon: BadgeCheck, label: "Verify Certificate", path: "/verify" },
@@ -221,7 +221,7 @@ const menuSections: MenuSection[] = [
   },
   {
     title: "Advanced Features",
-    color: "#d97706",
+    color: "oklch(0.65 0.18 60)",
     items: [
       { icon: MessageSquare, label: "DSAR Portal", path: "/dsar" },
       { icon: Wand2, label: "DPIA Wizard", path: "/dpia-wizard" },
@@ -246,7 +246,7 @@ const menuSections: MenuSection[] = [
   },
   {
     title: "Admin & Settings",
-    color: "#dc2626",
+    color: "oklch(0.55 0.24 25)",
     items: [
       { icon: TrendingUp, label: "Platform Revenue", path: "/admin/revenue" },
       { icon: ClipboardList, label: "DPCO Registrations", path: "/admin/registrations" },
@@ -347,7 +347,7 @@ function NotificationsHeader({ isMobile, activeMenuLabel }: { isMobile: boolean;
                          "bg-slate-500/20 text-slate-400";
 
   return (
-    <div className="flex border-b h-14 items-center justify-between bg-background/80 px-4 backdrop-blur-xl supports-[backdrop-filter]:backdrop-blur-xl sticky top-0 z-40 transition-colors">
+    <div className="flex h-14 items-center justify-between px-4 sticky top-0 z-40 transition-colors header-bar">
       <div className="flex items-center gap-2 shrink-0">
         {isMobile && <SidebarTrigger className="h-9 w-9 rounded-lg bg-background" />}
         <span className="tracking-tight text-foreground font-medium hidden sm:block">
@@ -531,35 +531,41 @@ export default function DashboardLayout({
 
   if (!user) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800">
-        <div className="flex flex-col items-center gap-8 p-8 max-w-md w-full">
-          {/* NDSEP Branding */}
-          <div className="flex flex-col items-center gap-3">
-            <div className="flex items-center gap-2 mb-1">
-              <div className="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center">
-                <Shield className="w-5 h-5 text-emerald-400" />
+      <div className="flex items-center justify-center min-h-screen relative overflow-hidden" style={{ background: 'linear-gradient(135deg, oklch(0.10 0.04 265), oklch(0.08 0.03 250), oklch(0.10 0.03 290))' }}>
+        {/* Animated gradient orbs */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-1/4 left-1/4 w-96 h-96 rounded-full opacity-20 blur-3xl animate-float" style={{ background: 'radial-gradient(circle, oklch(0.55 0.22 250 / 0.4), transparent 70%)' }} />
+          <div className="absolute bottom-1/3 right-1/4 w-80 h-80 rounded-full opacity-15 blur-3xl" style={{ background: 'radial-gradient(circle, oklch(0.58 0.20 290 / 0.35), transparent 70%)', animation: 'float 4s ease-in-out infinite reverse' }} />
+          <div className="absolute top-1/2 right-1/3 w-64 h-64 rounded-full opacity-10 blur-3xl" style={{ background: 'radial-gradient(circle, oklch(0.60 0.20 160 / 0.3), transparent 70%)', animation: 'float 5s ease-in-out infinite 1s' }} />
+        </div>
+        <div className="flex flex-col items-center gap-8 p-8 max-w-md w-full relative z-10">
+          <div className="flex flex-col items-center gap-4">
+            <div className="flex items-center gap-3 mb-1">
+              <div className="w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg" style={{ background: 'linear-gradient(135deg, oklch(0.55 0.22 250), oklch(0.58 0.20 290))' }}>
+                <Shield className="w-6 h-6 text-white" />
               </div>
-              <span className="text-lg font-bold text-white tracking-tight">NDSEP</span>
+              <span className="text-xl font-bold text-white tracking-tight heading-display">NDSEP</span>
             </div>
-            <h1 className="text-2xl font-semibold tracking-tight text-center text-white">
+            <h1 className="text-2xl font-semibold tracking-tight text-center text-white heading-display">
               Sign in to continue
             </h1>
-            <p className="text-sm text-slate-400 text-center max-w-sm">
+            <p className="text-sm text-slate-400 text-center max-w-sm leading-relaxed">
               Access to this dashboard requires authentication. Sign in with your Manus account or preview the DPCO portal in demo mode.
             </p>
           </div>
-          <div className="flex flex-col gap-3 w-full">
+          <div className="flex flex-col gap-3 w-full glass-card p-6" style={{ background: 'oklch(0.15 0.02 265 / 0.5)' }}>
             <Button
               onClick={() => { window.location.href = getLoginUrl(); }}
               size="lg"
-              className="w-full bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg"
+              className="w-full text-white shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-[1.01]"
+              style={{ background: 'linear-gradient(135deg, oklch(0.55 0.22 250), oklch(0.58 0.20 290))' }}
             >
               Sign in with Manus
             </Button>
-            <div className="relative flex items-center gap-2">
-              <div className="flex-1 h-px bg-slate-700" />
+            <div className="relative flex items-center gap-2 my-1">
+              <div className="flex-1 h-px bg-slate-700/50" />
               <span className="text-xs text-slate-500">or</span>
-              <div className="flex-1 h-px bg-slate-700" />
+              <div className="flex-1 h-px bg-slate-700/50" />
             </div>
             <Button
               variant="outline"
@@ -568,7 +574,7 @@ export default function DashboardLayout({
                 const returnTo = window.location.pathname + window.location.search;
                 window.location.href = `/api/demo-login?returnTo=${encodeURIComponent(returnTo)}`;
               }}
-              className="w-full border-slate-600 text-slate-300 hover:bg-slate-800 hover:text-white"
+              className="w-full border-slate-600/60 text-slate-300 hover:bg-slate-700/30 hover:text-white transition-all duration-200"
             >
               Preview as Demo DPCO
             </Button>
@@ -578,12 +584,12 @@ export default function DashboardLayout({
               onClick={() => {
                 window.location.href = `/api/demo-login?role=admin`;
               }}
-              className="w-full border-violet-700 text-violet-300 hover:bg-violet-950 hover:text-violet-100"
+              className="w-full border-primary/40 text-primary hover:bg-primary/10 transition-all duration-200"
             >
               Preview as NDPC Admin
             </Button>
-            <p className="text-xs text-slate-500 text-center">
-              Demo mode uses sample accounts — no real credentials required. DPCO: DataGuard Ltd · Admin: NDPC Staff.
+            <p className="text-xs text-slate-500 text-center mt-1 leading-relaxed">
+              Demo mode uses sample accounts — no real credentials required. DPCO: DataGuard Ltd &middot; Admin: NDPC Staff.
             </p>
           </div>
         </div>
@@ -681,20 +687,23 @@ function DashboardLayoutContent({
           className="border-r-0"
           disableTransition={isResizing}
         >
-          <SidebarHeader className="h-16 justify-center">
+          <SidebarHeader className="h-16 justify-center sidebar-brand">
             <div className="flex items-center gap-3 px-2 transition-all w-full">
               <button
                 onClick={toggleSidebar}
-                className="h-8 w-8 flex items-center justify-center hover:bg-accent rounded-lg transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring shrink-0"
+                className="h-8 w-8 flex items-center justify-center hover:bg-accent rounded-lg transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring shrink-0"
                 aria-label="Toggle navigation"
               >
-                <PanelLeft className="h-4 w-4 text-muted-foreground" />
+                <PanelLeft className="h-4 w-4 text-primary" />
               </button>
               {!isCollapsed ? (
-                <div className="flex items-center gap-2 min-w-0">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="h-7 w-7 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                    <Shield className="h-3.5 w-3.5 text-primary" />
+                  </div>
                   <div className="flex flex-col min-w-0">
-                    <span className="font-bold text-sm tracking-tight truncate text-foreground">NDSEP</span>
-                    <span className="mono text-[9px] text-muted-foreground tracking-widest uppercase truncate">Data Sovereignty Platform</span>
+                    <span className="heading-display text-sm tracking-tight truncate gradient-text">NDSEP</span>
+                    <span className="mono text-[8px] text-muted-foreground tracking-[0.15em] uppercase truncate">Data Sovereignty</span>
                   </div>
                 </div>
               ) : null}
@@ -735,7 +744,7 @@ function DashboardLayoutContent({
                             isActive={isActive}
                             onClick={() => setLocation(item.path)}
                             tooltip={item.label}
-                            className={`h-8 transition-all duration-200 font-normal ${isActive ? "bg-accent shadow-sm" : "hover:translate-x-0.5"}`}
+                            className={`h-8 transition-all duration-200 font-normal rounded-lg ${isActive ? "sidebar-item-active shadow-sm font-medium" : "hover:translate-x-0.5 hover:bg-accent/40"}`}
                             aria-label={item.label}
                             aria-current={isActive ? "page" : undefined}
                             role="link"
@@ -804,8 +813,10 @@ function DashboardLayoutContent({
         <FloatingChatBubble />
         <WhatsNewModal />
         <PwaInstallPrompt />
-        <main className="flex-1 min-h-0 overflow-hidden">
-          <PageTransition>{children}</PageTransition>
+        <main className="flex-1 min-h-0 overflow-hidden gradient-mesh">
+          <div className="relative z-10 h-full">
+            <PageTransition>{children}</PageTransition>
+          </div>
         </main>
       </SidebarInset>
     </>

@@ -4,7 +4,7 @@ export function DashboardLayoutSkeleton() {
   return (
     <div className="flex min-h-screen bg-background animate-fade-in">
       {/* Sidebar skeleton */}
-      <div className="w-[280px] border-r border-border bg-sidebar p-4 space-y-6 hidden md:block">
+      <div className="w-[280px] border-r border-sidebar-border bg-sidebar p-4 space-y-6 hidden md:block">
         <div className="flex items-center gap-3 px-2">
           <Skeleton className="h-8 w-8 rounded-lg" />
           <div className="space-y-1.5">
@@ -40,7 +40,7 @@ export function DashboardLayoutSkeleton() {
       {/* Main content */}
       <div className="flex-1 flex flex-col">
         {/* Header bar */}
-        <div className="h-14 border-b flex items-center justify-between px-4">
+        <div className="h-14 flex items-center justify-between px-4 header-bar">
           <Skeleton className="h-5 w-32" />
           <div className="flex items-center gap-2">
             <Skeleton className="h-8 w-8 rounded-full" />
