@@ -114,9 +114,20 @@ jobs:
           pip install flake8 pytest pytest-asyncio
           find orchestration -name requirements.txt -exec pip install -r {} \;
       - name: Lint with flake8
-        run: flake8 orchestration/ --max-line-length=120 --ignore=E501,W503 || true
+        run: flake8 orchestration/ workers/python/ --max-line-length=120 --ignore=E501,W503
+        continue-on-error: true
       - name: Run Python tests
-        run: pytest orchestration/ -v --tb=short || true
+        run: pytest orchestration/ -v --tb=short
+        continue-on-error: true
+      - name: Python security scan (bandit)
+        run: |
+          pip install bandit
+          bandit -r workers/python/ orchestration/ -ll -ii --format json -o bandit-results.json || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: python-security
+          path: bandit-results.json
 
   # ─────────────────────────────────────────────────────────────────────────────
   # Rust workers
@@ -134,10 +145,16 @@ jobs:
           workspaces: workers/rust -> target
       - name: Rust format check
         working-directory: workers/rust
-        run: cargo fmt --check || true
-      - name: Rust clippy
+        run: cargo fmt --check
+        continue-on-error: true
+      - name: Rust clippy (deny warnings)
         working-directory: workers/rust
-        run: cargo clippy -- -D warnings || true
+        run: cargo clippy -- -D warnings
+        continue-on-error: true
+      - name: Rust security audit
+        run: |
+          cargo install cargo-audit 2>/dev/null || true
+          cd workers/rust && cargo audit || true
       - name: Rust build
         working-directory: workers/rust
         run: cargo build --release
@@ -167,9 +184,8 @@ jobs:
         with:
           sarif_file: trivy-results.sarif
         continue-on-error: true
-      - name: Audit npm packages
-        run: pnpm audit --audit-level=high || true
-        continue-on-error: true
+      - name: Audit npm packages (fail on high/critical)
+        run: pnpm audit --audit-level=high
 
   # ─────────────────────────────────────────────────────────────────────────────
   # Integration tests (E2E with Playwright)

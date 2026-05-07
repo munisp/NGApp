@@ -13,25 +13,46 @@
  */
 
 import crypto from "crypto";
+import { getDataEncryptionKey, initializeKms } from "./kms";
 
 const ALGORITHM = "aes-256-gcm";
 const IV_BYTES = 12; // GCM recommended IV length
 const TAG_BYTES = 16;
 const PREFIX = "enc:v1:";
 
-let _key: Buffer | null = null;
+/**
+ * Initialize encryption subsystem.
+ * Attempts KMS-based key retrieval first, falls back to FIELD_ENCRYPTION_KEY env var.
+ * Call once at application startup.
+ */
+export async function initializeEncryption(): Promise<void> {
+  try {
+    await initializeKms();
+  } catch (err) {
+    // KMS initialization failed — fall back to local key
+    const hex = process.env.FIELD_ENCRYPTION_KEY ?? "";
+    if (hex.length === 64) {
+      console.log("[Encryption] KMS unavailable, using FIELD_ENCRYPTION_KEY fallback");
+    } else {
+      console.warn("[Encryption] No encryption key available — PII will be stored in plaintext");
+    }
+  }
+}
 
 function getKey(): Buffer {
-  if (_key) return _key;
-  const hex = process.env.FIELD_ENCRYPTION_KEY ?? "";
-  if (hex.length !== 64) {
-    throw new Error(
-      "[Encryption] FIELD_ENCRYPTION_KEY must be a 64-char hex string (32 bytes). " +
-      "Generate with: node -e \"console.log(require('crypto').randomBytes(32).toString('hex'))\""
-    );
+  // Try KMS-managed key first
+  try {
+    return getDataEncryptionKey();
+  } catch {
+    // Fall back to direct env var
+    const hex = process.env.FIELD_ENCRYPTION_KEY ?? "";
+    if (hex.length !== 64) {
+      throw new Error(
+        "[Encryption] No encryption key available. Configure KMS_PROVIDER or FIELD_ENCRYPTION_KEY."
+      );
+    }
+    return Buffer.from(hex, "hex");
   }
-  _key = Buffer.from(hex, "hex");
-  return _key;
 }
 
 /**

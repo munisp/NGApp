@@ -757,15 +757,71 @@ services:
     networks:
       - ndsep-internal
 
+  # ─── WAF (Web Application Firewall) — OpenAppSec / ModSecurity ────────────────
+  # Provides layer-7 application firewall with OWASP CRS ruleset.
+  # All external traffic passes through WAF before reaching nginx.
+  # Learning mode: first 2 weeks in detection-only, then switch to prevention.
+  waf:
+    image: openappsec/open-appsec-nginx:latest
+    container_name: ndsep-waf
+    <<: *default-restart
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      # WAF mode: detect-learn (2 weeks) → prevent (production)
+      OPEN_APPSEC_MODE: ${WAF_MODE:-detect-learn}
+      # Backend upstream
+      UPSTREAM_HOST: nginx
+      UPSTREAM_PORT: "8080"
+      # Logging
+      LOG_LEVEL: info
+      # OWASP Core Rule Set
+      CRS_ENABLED: "true"
+      CRS_PARANOIA_LEVEL: "2"
+      # Trust forwarded headers from load balancer
+      REAL_IP_HEADER: X-Forwarded-For
+      TRUSTED_SOURCES: ${WAF_TRUSTED_CIDRS:-10.0.0.0/8,172.16.0.0/12}
+      # Rate limiting at WAF level (defense-in-depth)
+      RATE_LIMIT_ENABLED: "true"
+      RATE_LIMIT_REQUESTS: "1000"
+      RATE_LIMIT_WINDOW: "60"
+      # Bot protection
+      BOT_PROTECTION: "true"
+      # Anti-automation
+      ANTI_AUTOMATION: "true"
+    volumes:
+      - waf-config:/etc/open-appsec
+      - waf-logs:/var/log/open-appsec
+      - tls-certs:/etc/nginx/ssl:ro
+    depends_on:
+      nginx:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80/api/health"]
+      <<: *hc-defaults
+    logging: *default-logging
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 1g
+        reservations:
+          cpus: "0.25"
+          memory: 256m
+    networks:
+      - ndsep-public
+
   # ─── Nginx Reverse Proxy (TLS Termination) ────────────────────────────────────
+  # Now sits behind WAF — only accepts traffic from WAF container.
   nginx:
     <<: *resource-defaults
     image: nginx:1.25-alpine
     container_name: ndsep-nginx
     <<: *default-restart
-    ports:
-      - "80:80"
-      - "443:443"
+    # No longer exposed to host — WAF handles external ports
+    expose:
+      - "8080"
     volumes:
       - ./infra/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./infra/nginx/conf.d:/etc/nginx/conf.d:ro
@@ -1921,6 +1977,10 @@ volumes:
   prometheus-data:
     driver: local
   grafana-data:
+    driver: local
+  waf-config:
+    driver: local
+  waf-logs:
     driver: local
   tls-certs:
     driver: local
