@@ -22,7 +22,7 @@ function parseMysqlUrl(url: string) {
     user: u.username,
     password: u.password,
     database: u.pathname.replace(/^\//, "").split("?")[0],
-    ssl: { rejectUnauthorized: false },
+    ssl: process.env.NODE_ENV === "production" ? { rejectUnauthorized: process.env.DB_SSL_REJECT_UNAUTHORIZED !== "false" } : undefined,
     multipleStatements: false,
   };
 }

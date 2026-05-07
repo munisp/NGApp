@@ -44,6 +44,7 @@ import multer from "multer";
 import { storagePut } from "../storage";
 import { uploadLimiter, dsarPublicLimiter, bgpSseLimiter, developerApiLimiter } from "../rateLimiter";
 import { bodySanitizer, paramPollutionGuard, suspiciousRequestGuard, securityAuditLogger, demoLoginGuard, strictJsonLimit, requestIdMiddleware, authFailureTracker } from "../security";
+import { encryptRequestPii, logEncryptionStatus } from "../encryptionMiddleware";
 import { ddosSlowDown, bruteForceProtection, ransomwareProtection, requestTimeoutMiddleware, botDetectionMiddleware, oversizedPayloadGuard, financialSecurityHeaders, perUserRateLimit } from "../security/threatProtection";
 import { requireSession, requireAdmin } from "../authMiddleware";
 import { generateAuditReturnData } from "../db";
@@ -222,6 +223,7 @@ async function startServer() {
   app.use(suspiciousRequestGuard);        // Block SQL injection / XSS in URLs
   app.use("/api/trpc", strictJsonLimit);  // Tighter limit for tRPC calls
   app.use("/api/trpc", bodySanitizer);    // Sanitize all tRPC inputs
+  app.use("/api/trpc", encryptRequestPii); // Encrypt PII fields before DB writes (AES-256-GCM)
   // ── Threat Protection (DDoS / Ransomware / Financial Attacks) ────────────
   app.use(requestTimeoutMiddleware(30_000));  // 30s timeout — slow-loris defence
   app.use(botDetectionMiddleware);            // Block known scanner/bot user-agents
@@ -744,6 +746,7 @@ async function startServer() {
 
   server.listen(port, () => {
     logger.info({ port, env: process.env.NODE_ENV }, "🚀 NDSEP API server started");
+    logEncryptionStatus();
   });
 
   setBroadcastFn(broadcastEvent);

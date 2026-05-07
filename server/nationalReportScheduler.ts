@@ -10,9 +10,11 @@
  * In production, replace with a Temporal cron workflow for durability.
  */
 import { Pool } from "pg";
+
 import { ENV } from "./_core/env";
 import { generateNationalReportPdf } from "./nationalReportPdf";
 import { notifyOwner } from "./_core/notification";
+import { getPgSslConfig } from "./dbSslConfig";
 
 const PG_URL =
   process.env.LOCAL_DATABASE_URL ??
@@ -97,7 +99,7 @@ export async function runNationalReportJob(): Promise<{ sent: number; error?: st
     }
 
     // Update last sent timestamp in DB
-    const pool = new Pool({ connectionString: PG_URL, ssl: process.env.DATABASE_URL?.includes('sslmode=require') || process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false, max: 2 });
+    const pool = new Pool({ connectionString: PG_URL, ssl: getPgSslConfig(), max: 2 });
     try {
       await pool.query(
         `INSERT INTO platform_config (key, value, updated_at)

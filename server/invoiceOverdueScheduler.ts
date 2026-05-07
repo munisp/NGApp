@@ -15,8 +15,10 @@
  */
 
 import { Pool } from "pg";
+
 import { notifyOwner } from "./_core/notification";
 import { logger } from "./logger";
+import { getPgSslConfig } from "./dbSslConfig";
 
 // ─── Configuration ────────────────────────────────────────────────────────────
 const PG_URL =
@@ -42,7 +44,7 @@ export interface OverdueRunResult {
 
 export async function runInvoiceOverdueCheck(): Promise<OverdueRunResult> {
   if (!pool) {
-    pool = new Pool({ connectionString: PG_URL, ssl: process.env.DATABASE_URL?.includes('sslmode=require') || process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false, max: 3 });
+    pool = new Pool({ connectionString: PG_URL, ssl: getPgSslConfig(), max: 3 });
   }
 
   const client = await pool.connect();

@@ -15,8 +15,10 @@
  */
 
 import { Pool } from "pg";
+
 import { ENV } from "./_core/env";
 import { saveNdpaComplianceSnapshot } from "./db";
+import { getPgSslConfig } from "./dbSslConfig";
 
 const PG_URL = process.env.LOCAL_DATABASE_URL ?? process.env.DATABASE_URL ?? "postgresql://ndsep_user:changeme@127.0.0.1:5432/ndsep_db";
 
@@ -68,7 +70,7 @@ export interface OrgDigestData {
 }
 
 export async function fetchDigestData(): Promise<OrgDigestData[]> {
-  const pool = new Pool({ connectionString: PG_URL, ssl: process.env.DATABASE_URL?.includes('sslmode=require') || process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false });
+  const pool = new Pool({ connectionString: PG_URL, ssl: getPgSslConfig() });
   try {
     const r = await pool.query<OrgDigestData>(`
       SELECT
@@ -248,7 +250,7 @@ function msUntilMidnightWAT(): number {
 
 /** Compare today's NDPA Index against the 30-day rolling average and alert if drop > 10 points. */
 async function checkNdpaIndexTrend(): Promise<void> {
-  const pool = new Pool({ connectionString: PG_URL, ssl: process.env.DATABASE_URL?.includes('sslmode=require') || process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false });
+  const pool = new Pool({ connectionString: PG_URL, ssl: getPgSslConfig() });
   try {
     // Get today's snapshot score and 30-day rolling average
     const r = await pool.query<{ today_score: number; avg_30d: number; min_score: number; max_score: number }>(`
@@ -402,7 +404,7 @@ export function stopDigestScheduler(): void {
 let renewalTimer: NodeJS.Timeout | null = null;
 
 async function sendDpcoRenewalReminders(): Promise<void> {
-  const pool = new Pool({ connectionString: PG_URL, ssl: process.env.DATABASE_URL?.includes('sslmode=require') || process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false });
+  const pool = new Pool({ connectionString: PG_URL, ssl: getPgSslConfig() });
   try {
     const thresholds = [90, 60, 30];
     for (const days of thresholds) {

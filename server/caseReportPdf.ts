@@ -1,10 +1,12 @@
 import PDFDocument from "pdfkit";
+
 import { Pool } from "pg";
+import { getPgSslConfig } from "./dbSslConfig";
 
 const PG_URL = process.env.DATABASE_URL ?? process.env.POSTGRES_URL ?? "postgresql://postgres:postgres@localhost:5432/ndsep_db";
 
 export async function generateCaseReportPdf(caseId: number): Promise<Buffer> {
-  const pool = new Pool({ connectionString: PG_URL, ssl: process.env.DATABASE_URL?.includes('sslmode=require') || process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false });
+  const pool = new Pool({ connectionString: PG_URL, ssl: getPgSslConfig() });
   let caseData: any;
   try {
     const result = await pool.query(

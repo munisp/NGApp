@@ -4,6 +4,7 @@
  * sector benchmarking, webhook delivery, full-text search, i18n
  */
 import { z } from "zod";
+
 import { router, publicProcedure, protectedProcedure, adminProcedure, exportProcedure, deleteProcedure, approveProcedure} from "../_core/trpc";
 import { TRPCError } from "@trpc/server";
 import pg from "pg";
@@ -11,6 +12,7 @@ import { invokeLLM } from "../_core/llm";
 import crypto from "crypto";
 import { emitComplianceEvent, opensearchIndex, lakehouseIngest, daprPublish, fluvioPublish, permifyCheck } from "../middlewareExtensions";
 import { emitMutationEvent, EVENTS } from "../middlewareIntegration";
+import { getPgSslConfig } from "../dbSslConfig";
 
 const { Pool } = pg;
 let _pool: InstanceType<typeof Pool> | null = null;
@@ -20,7 +22,7 @@ function getPool(): InstanceType<typeof Pool> {
       connectionString:
         process.env.NDSEP_PG_URL ??
         process.env.LOCAL_DATABASE_URL ?? process.env.NDSEP_PG_URL ?? "postgresql://ndsep_user:changeme@127.0.0.1:5432/ndsep_db",
-      ssl: process.env.DATABASE_URL?.includes('sslmode=require') || process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+      ssl: getPgSslConfig(),
     });
   }
   return _pool;

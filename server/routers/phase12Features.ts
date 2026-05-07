@@ -6,6 +6,7 @@
  * PIA Assessments, Platform Notifications
  */
 import { z } from "zod";
+
 import { TRPCError } from "@trpc/server";
 import { router, publicProcedure, protectedProcedure, adminProcedure } from "../_core/trpc";
 import { getPool } from "../db";
@@ -19,14 +20,13 @@ import pg from "pg";
 import { emitEvent, logAuditEvent, broadcastEvent, cacheGetJson, cacheSetJson, cacheDel, triggerWorkflow } from "../middlewareHelpers";
 import { emitComplianceEvent, opensearchIndex, lakehouseIngest, daprPublish, fluvioPublish, permifyCheck } from "../middlewareExtensions";
 import { emitMutationEvent, EVENTS } from "../middlewareIntegration";
+import { getPgSslConfig } from "../dbSslConfig";
 const { Pool } = pg;
 
 function pool() {
   return new Pool({
     connectionString: PG_URL,
-    ssl: process.env.DATABASE_URL?.includes("sslmode=require") || process.env.NODE_ENV === "production"
-      ? { rejectUnauthorized: false }
-      : false,
+    ssl: getPgSslConfig(),
   });
 }
 

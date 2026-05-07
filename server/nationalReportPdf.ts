@@ -1,5 +1,7 @@
 import PDFDocument from "pdfkit";
+
 import { Pool } from "pg";
+import { getPgSslConfig } from "./dbSslConfig";
 
 const PG_URL =
   process.env.DATABASE_URL ??
@@ -7,7 +9,7 @@ const PG_URL =
   "postgresql://postgres:postgres@localhost:5432/ndsep_db";
 
 export async function generateNationalReportPdf(): Promise<Buffer> {
-  const pool = new Pool({ connectionString: PG_URL, ssl: process.env.DATABASE_URL?.includes('sslmode=require') || process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false });
+  const pool = new Pool({ connectionString: PG_URL, ssl: getPgSslConfig() });
 
   let orgs: any[] = [];
   let penalties: any[] = [];

@@ -12,7 +12,9 @@
  *   - QR code verification URL
  */
 import PDFDocument from "pdfkit";
+
 import { Pool } from "pg";
+import { getPgSslConfig } from "./dbSslConfig";
 
 const PG_URL =
   process.env.LOCAL_DATABASE_URL ??
@@ -35,7 +37,7 @@ export interface CertificateData {
 }
 
 export async function getCertificateData(orgId: number, baseUrl: string): Promise<CertificateData | null> {
-  const pool = new Pool({ connectionString: PG_URL, ssl: process.env.DATABASE_URL?.includes('sslmode=require') || process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false, max: 2 });
+  const pool = new Pool({ connectionString: PG_URL, ssl: getPgSslConfig(), max: 2 });
   try {
     const { rows } = await pool.query<{
       id: number;

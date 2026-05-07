@@ -13,6 +13,7 @@
  * All functions degrade gracefully — middleware failures never break the primary operation.
  */
 import { kafkaProduce } from "./kafka";
+
 import { cacheGet, cacheSet, cacheDel, cacheGetJson, cacheSetJson } from "./cache";
 import { withCache, withSWR, CK, TTL, invalidateOrgCaches, invalidateComplianceCaches, invalidateCertificateCaches, invalidateAccreditationCaches, invalidateBgpCaches } from "./queryCache";
 import { broadcastEvent as wsBroadcast } from "./websocket";
@@ -26,7 +27,7 @@ function getMwPool(): InstanceType<typeof Pool> {
   if (!_mwPool) {
     _mwPool = new Pool({
       connectionString: process.env.NDSEP_PG_URL ?? process.env.LOCAL_DATABASE_URL ?? process.env.DATABASE_URL ?? "postgresql://ndsep_user:changeme@127.0.0.1:5432/ndsep_db",
-      ssl: process.env.NODE_ENV === "production" ? { rejectUnauthorized: false } : false,
+      ssl: getPgSslConfig(),
     });
   }
   return _mwPool;
@@ -217,4 +218,4 @@ export async function checkRateLimitRust(
 export const proxyRateLimit = checkRateLimitRust;
 
 // MIDDLEWARE_CACHE_URL alias
-export const MIDDLEWARE_CACHE_URL = process.env.MIDDLEWARE_CACHE_URL ?? "http://localhost:8141";
+import { getPgSslConfig } from "./dbSslConfig";

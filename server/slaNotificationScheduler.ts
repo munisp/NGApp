@@ -19,10 +19,12 @@
  */
 
 import mysql from "mysql2/promise";
+
 import { notifyOwner } from "./_core/notification";
 import { sendMail } from "./mailer";
 import { ENV } from "./_core/env";
 import pino from "pino";
+
 
 const logger = pino({ name: "sla-notification-scheduler" });
 
@@ -52,7 +54,7 @@ function getMysqlPool() {
     user: u.username,
     password: u.password,
     database: u.pathname.slice(1),
-    ssl: { rejectUnauthorized: false },
+    ssl: process.env.NODE_ENV === "production" ? { rejectUnauthorized: process.env.DB_SSL_REJECT_UNAUTHORIZED !== "false" } : undefined,
     connectionLimit: 3,
   });
 }

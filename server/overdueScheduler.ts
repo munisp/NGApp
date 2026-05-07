@@ -11,9 +11,11 @@
  * (J16 — Regulatory Report Generation) for durability.
  */
 import { Pool } from "pg";
+
 import { ENV } from "./_core/env";
 import { sendPenaltyNotice } from "./emailNotification";
 import { notifyOwner } from "./_core/notification";
+import { getPgSslConfig } from "./dbSslConfig";
 
 const PG_URL = process.env.LOCAL_DATABASE_URL ?? process.env.DATABASE_URL ?? "postgresql://ndsep_user:changeme@127.0.0.1:5432/ndsep_db";
 
@@ -22,7 +24,7 @@ let overdueTimer: NodeJS.Timeout | null = null;
 // ─── Core job ─────────────────────────────────────────────────────────────────
 
 export async function runOverdueCheck(): Promise<{ marked: number; notified: number }> {
-  const pool = new Pool({ connectionString: PG_URL, ssl: process.env.DATABASE_URL?.includes('sslmode=require') || process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false, max: 3 });
+  const pool = new Pool({ connectionString: PG_URL, ssl: getPgSslConfig(), max: 3 });
   let marked = 0;
   let notified = 0;
 

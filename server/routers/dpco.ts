@@ -1,10 +1,12 @@
 import { z } from "zod";
+
 import { router, protectedProcedure, publicProcedure, deleteProcedure } from "../_core/trpc";
 import { TRPCError } from "@trpc/server";
 import pg from "pg";
 import { emitEvent, logAuditEvent, broadcastEvent, cacheGetJson, cacheSetJson, cacheDel, triggerWorkflow } from "../middlewareHelpers";
 import { emitComplianceEvent, opensearchIndex, lakehouseIngest, daprPublish, fluvioPublish, permifyCheck } from "../middlewareExtensions";
 import { emitMutationEvent, EVENTS } from "../middlewareIntegration";
+import { getPgSslConfig } from "../dbSslConfig";
 
 const { Pool } = pg;
 let _dpcoPool: InstanceType<typeof Pool> | null = null;
@@ -12,7 +14,7 @@ let _dpcoPool: InstanceType<typeof Pool> | null = null;
 function getPool(): InstanceType<typeof Pool> {
   if (!_dpcoPool) {
     const url = process.env.LOCAL_DATABASE_URL ?? process.env.NDSEP_PG_URL ?? "postgresql://ndsep_user:changeme@127.0.0.1:5432/ndsep_db";
-    _dpcoPool = new Pool({ connectionString: url, ssl: process.env.DATABASE_URL?.includes('sslmode=require') || process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false });
+    _dpcoPool = new Pool({ connectionString: url, ssl: getPgSslConfig() });
   }
   return _dpcoPool;
 }

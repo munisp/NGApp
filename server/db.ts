@@ -2,6 +2,7 @@ import crypto from "crypto";
 import { and, desc, eq, gte, ilike, isNotNull, lt, lte, or, sql, SQL } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
 import pg from "pg";
+import { getPgSslConfig } from "./dbSslConfig";
 import {
   assets,
   auditLogs,
@@ -72,7 +73,7 @@ export async function getDb() {
     try {
       _pool = new Pool({
         connectionString: PG_URL,
-        ssl: process.env.DATABASE_URL?.includes('sslmode=require') || process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+        ssl: getPgSslConfig(),
         max: 20,
         idleTimeoutMillis: 30000,
         connectionTimeoutMillis: 5000,
@@ -3822,9 +3823,7 @@ export function getSharedPool(): InstanceType<typeof Pool> {
   if (!_pool) {
     _pool = new Pool({
       connectionString: PG_URL,
-      ssl: process.env.DATABASE_URL?.includes("sslmode=require") || process.env.NODE_ENV === "production"
-        ? { rejectUnauthorized: false }
-        : false,
+      ssl: getPgSslConfig(),
       max: 20,
       idleTimeoutMillis: 30000,
       connectionTimeoutMillis: 5000,
