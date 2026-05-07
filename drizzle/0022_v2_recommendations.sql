@@ -131,6 +131,37 @@ EXCEPTION WHEN undefined_table THEN
   NULL;
 END $$;
 
+-- E8: Bulk operations with progress tracking and undo
+CREATE TABLE IF NOT EXISTS bulk_operations (
+  id TEXT PRIMARY KEY,
+  operation_type TEXT NOT NULL,
+  total_items INTEGER NOT NULL,
+  processed_items INTEGER DEFAULT 0,
+  success_count INTEGER DEFAULT 0,
+  failure_count INTEGER DEFAULT 0,
+  status TEXT DEFAULT 'pending',
+  started_at TIMESTAMPTZ DEFAULT NOW(),
+  completed_at TIMESTAMPTZ,
+  undo_available BOOLEAN DEFAULT true,
+  undo_expires_at TIMESTAMPTZ,
+  undo_data JSONB,
+  created_by TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_bulk_ops_status ON bulk_operations(status);
+
+-- M11: Data retention purge audit log
+CREATE TABLE IF NOT EXISTS retention_purge_log (
+  id SERIAL PRIMARY KEY,
+  category TEXT NOT NULL,
+  table_name TEXT NOT NULL,
+  records_purged INTEGER NOT NULL,
+  records_anonymized INTEGER DEFAULT 0,
+  purged_at TIMESTAMPTZ DEFAULT NOW(),
+  policy_days INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_retention_log_category ON retention_purge_log(category);
+CREATE INDEX IF NOT EXISTS idx_retention_log_purged_at ON retention_purge_log(purged_at);
+
 -- M3: Cursor-based pagination support indexes
 CREATE INDEX IF NOT EXISTS idx_organizations_id_cursor ON organizations(id);
 CREATE INDEX IF NOT EXISTS idx_enforcement_cases_id_cursor ON enforcement_cases(id);

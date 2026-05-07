@@ -9,6 +9,7 @@
 
 import type { Request, Response, NextFunction } from "express";
 import crypto from "crypto";
+import { parse as parseCookieHeader } from "cookie";
 import { logger } from "./logger";
 
 const CSRF_COOKIE = "ndsep_csrf";
@@ -24,8 +25,16 @@ function generateToken(): string {
  * Middleware: Set CSRF cookie if not already present.
  * The cookie is SameSite=Strict, httpOnly=false (client JS needs to read it).
  */
+/** Parse a named cookie from the raw Cookie header (no cookie-parser dependency). */
+function getCookie(req: Request, name: string): string | undefined {
+  const header = req.headers.cookie;
+  if (!header) return undefined;
+  const parsed = parseCookieHeader(header);
+  return parsed[name];
+}
+
 export function csrfCookieMiddleware(req: Request, res: Response, next: NextFunction): void {
-  if (!req.cookies?.[CSRF_COOKIE]) {
+  if (!getCookie(req, CSRF_COOKIE)) {
     const token = generateToken();
     res.cookie(CSRF_COOKIE, token, {
       httpOnly: false,       // Client JS must read this to set the header
@@ -63,7 +72,7 @@ export function csrfValidationMiddleware(req: Request, res: Response, next: Next
     return next();
   }
 
-  const cookieToken = req.cookies?.[CSRF_COOKIE];
+  const cookieToken = getCookie(req, CSRF_COOKIE);
   const headerToken = req.headers[CSRF_HEADER] as string | undefined;
 
   if (!cookieToken || !headerToken) {
