@@ -1,26 +1,40 @@
+/**
+ * Playwright E2E Test Configuration
+ * ===================================
+ * Recommendation H8: Configure Playwright for executable E2E tests
+ */
+
 import { defineConfig, devices } from "@playwright/test";
 
 export default defineConfig({
   testDir: "./e2e",
-  fullyParallel: false,
+  timeout: 60_000,
+  expect: { timeout: 10_000 },
+  fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
-  workers: 1,
-  reporter: [["list"], ["html", { open: "never", outputFolder: "playwright-report" }]],
+  workers: process.env.CI ? 1 : undefined,
+  reporter: process.env.CI ? "github" : "html",
   use: {
-    baseURL: process.env.E2E_BASE_URL || "http://localhost:3000",
+    baseURL: process.env.BASE_URL ?? "http://localhost:3000",
     trace: "on-first-retry",
     screenshot: "only-on-failure",
-    video: "off",
-    // Accept all cookies and bypass auth where possible
-    ignoreHTTPSErrors: true,
+    video: "retain-on-failure",
   },
   projects: [
     {
       name: "chromium",
       use: { ...devices["Desktop Chrome"] },
     },
+    {
+      name: "mobile",
+      use: { ...devices["iPhone 14"] },
+    },
   ],
-  // Do not start a web server — tests run against the already-running dev server
-  webServer: undefined,
+  webServer: process.env.CI ? {
+    command: "pnpm run dev",
+    url: "http://localhost:3000/api/health",
+    reuseExistingServer: !process.env.CI,
+    timeout: 120_000,
+  } : undefined,
 });

@@ -260,6 +260,18 @@ export default defineConfig({
   build: {
     outDir: path.resolve(import.meta.dirname, "dist/public"),
     emptyOutDir: true,
+    // QW5: Production source maps for error debugging
+    sourcemap: process.env.NODE_ENV === "production" ? "hidden" : true,
+    // M14: Bundle analysis — run with ANALYZE=true pnpm build
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ["react", "react-dom"],
+          ui: ["@radix-ui/react-dialog", "@radix-ui/react-dropdown-menu", "@radix-ui/react-tabs"],
+          charts: ["recharts"],
+        },
+      },
+    },
   },
   server: {
     host: true,

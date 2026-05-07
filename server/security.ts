@@ -157,10 +157,23 @@ export function securityAuditLogger(req: Request, res: Response, next: NextFunct
  * In production, demo-login should be disabled or IP-restricted.
  */
 export function demoLoginGuard(req: Request, res: Response, next: NextFunction): void {
-  if (process.env.NODE_ENV === "production" && process.env.ENABLE_DEMO_LOGIN !== "true") {
-    logger.warn({ ip: req.ip }, "[Security] Demo login blocked in production");
-    res.status(403).json({ error: "Demo login is disabled in production" });
-    return;
+  // H10: Completely block demo login in production unless explicitly enabled
+  if (process.env.NODE_ENV === "production") {
+    if (process.env.ENABLE_DEMO_LOGIN !== "true") {
+      logger.warn({ ip: req.ip, ua: req.get("user-agent") }, "[Security] Demo login blocked in production");
+      res.status(403).json({ error: "Demo login is disabled in production" });
+      return;
+    }
+    // Even when enabled in production, restrict to specific IPs
+    const allowedIps = (process.env.DEMO_LOGIN_ALLOWED_IPS ?? "").split(",").map(s => s.trim()).filter(Boolean);
+    if (allowedIps.length > 0) {
+      const clientIp = req.ip ?? req.socket.remoteAddress ?? "";
+      if (!allowedIps.includes(clientIp)) {
+        logger.warn({ ip: clientIp }, "[Security] Demo login blocked — IP not in allowlist");
+        res.status(403).json({ error: "Demo login restricted to authorized IPs" });
+        return;
+      }
+    }
   }
   next();
 }

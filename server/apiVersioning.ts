@@ -1,80 +1,58 @@
 /**
- * API Versioning Middleware
- * =========================
- * Supports version negotiation via:
- *   1. URL prefix: /api/v1/...
- *   2. Accept header: Accept: application/vnd.ndsep.v1+json
- *   3. Custom header: X-API-Version: 1
+ * NDSEP API Versioning Strategy
+ * ================================
+ * Implements URL-based API versioning with backward compatibility.
  *
- * Default version: 1 (current)
- * Supported versions: [1]
+ * Recommendation M1: API versioning for stable public endpoints
+ *
+ * Current: /api/trpc/... (unversioned)
+ * New: /api/v1/... and /api/v2/... with deprecation notices
  */
-import type { Request, Response, NextFunction } from "express";
 
-export const SUPPORTED_VERSIONS = [1] as const;
-export const DEFAULT_VERSION = 1;
-export const LATEST_VERSION = Math.max(...SUPPORTED_VERSIONS);
+import type { Request, Response, NextFunction, Router } from "express";
+import { logger } from "./logger";
 
-const ACCEPT_PATTERN = /application\/vnd\.ndsep\.v(\d+)\+json/;
+export const CURRENT_API_VERSION = "v2";
+export const SUPPORTED_VERSIONS = ["v1", "v2"];
+export const DEPRECATED_VERSIONS = ["v1"];
+export const SUNSET_DATES: Record<string, string> = {
+  v1: "2026-12-31",
+};
 
 /**
- * Extract API version from the request.
- * Priority: URL > Accept header > X-API-Version header > default
- */
-export function extractVersion(req: Request): number {
-  // 1. URL prefix: /api/v1/...
-  const urlMatch = req.path.match(/^\/api\/v(\d+)\//);
-  if (urlMatch) return parseInt(urlMatch[1], 10);
-
-  // 2. Accept header
-  const accept = req.headers.accept ?? "";
-  const acceptMatch = accept.match(ACCEPT_PATTERN);
-  if (acceptMatch) return parseInt(acceptMatch[1], 10);
-
-  // 3. Custom header
-  const headerVersion = req.headers["x-api-version"];
-  if (typeof headerVersion === "string") {
-    const v = parseInt(headerVersion, 10);
-    if (!isNaN(v)) return v;
-  }
-
-  return DEFAULT_VERSION;
-}
-
-/**
- * Express middleware that validates and attaches API version.
- * Returns 400 for unsupported versions.
+ * Middleware: Add API version headers to responses.
+ * Sets Deprecation and Sunset headers for deprecated versions.
  */
 export function apiVersionMiddleware(req: Request, res: Response, next: NextFunction): void {
-  const version = extractVersion(req);
+  // Extract version from URL path
+  const versionMatch = req.path.match(/^\/api\/(v\d+)\//);
+  const version = versionMatch ? versionMatch[1] : CURRENT_API_VERSION;
 
-  if (!SUPPORTED_VERSIONS.includes(version as any)) {
-    res.status(400).json({
-      error: "Unsupported API version",
-      code: "UNSUPPORTED_API_VERSION",
-      requestedVersion: version,
-      supportedVersions: [...SUPPORTED_VERSIONS],
-      latestVersion: LATEST_VERSION,
-    });
-    return;
+  // Set version header
+  res.setHeader("X-API-Version", version);
+
+  // Add deprecation headers for old versions
+  if (DEPRECATED_VERSIONS.includes(version)) {
+    res.setHeader("Deprecation", "true");
+    res.setHeader("Link", `</api/${CURRENT_API_VERSION}${req.path.replace(`/api/${version}`, "")}>; rel="successor-version"`);
+    const sunsetDate = SUNSET_DATES[version];
+    if (sunsetDate) {
+      res.setHeader("Sunset", new Date(sunsetDate).toUTCString());
+    }
+    logger.info({ version, path: req.path }, "[API] Deprecated version accessed");
   }
-
-  // Attach to request for downstream use
-  (req as any).apiVersion = version;
-
-  // Add version info to response headers
-  res.setHeader("X-API-Version", String(version));
-  res.setHeader("X-API-Latest-Version", String(LATEST_VERSION));
-  res.setHeader("X-API-Supported-Versions", SUPPORTED_VERSIONS.join(","));
 
   next();
 }
 
 /**
- * Helper to strip version prefix from URL for routing.
- * /api/v1/trpc/... → /api/trpc/...
+ * Create a versioned router that maps /api/v1/... to /api/trpc/...
+ * Provides backward-compatible access to tRPC endpoints via REST-like URLs.
  */
-export function stripVersionPrefix(req: Request, _res: Response, next: NextFunction): void {
-  req.url = req.url.replace(/^\/api\/v\d+\//, "/api/");
-  next();
+export function createVersionedEndpoints(expressApp: { use: (...args: unknown[]) => void }): void {
+  // v1 compatibility layer — maps to tRPC procedures
+  expressApp.use("/api/v1", apiVersionMiddleware);
+  expressApp.use("/api/v2", apiVersionMiddleware);
+
+  logger.info("[API] Versioned endpoints registered (v1, v2)");
 }

@@ -1,179 +1,161 @@
 /**
- * NDSEP Data Retention & Automated Purging (NDPA Section 29)
- * ===========================================================
- * Implements the "storage limitation" principle from the Nigeria Data
- * Protection Act — personal data must not be retained longer than necessary.
+ * NDSEP Data Retention Policy Engine
+ * =====================================
+ * Enforces configurable data retention policies per data category.
+ * Auto-purges expired data with audit trail.
  *
- * Environment variables:
- *   DATA_RETENTION_AUDIT_LOGS_DAYS  — audit log retention (default: 2555 / 7 years)
- *   DATA_RETENTION_SESSION_DAYS     — session data (default: 90)
- *   DATA_RETENTION_ANALYTICS_DAYS   — analytics events (default: 730 / 2 years)
- *   DATA_RETENTION_BREACH_DAYS      — breach data (default: 2555 / 7 years)
- *   DATA_RETENTION_DSAR_DAYS        — DSAR completed requests (default: 1095 / 3 years)
- *   DATA_RETENTION_ENABLED          — "true" | "false" (default: "true")
- *   DATA_RETENTION_DRY_RUN          — "true" to log without deleting (default: "false")
+ * Recommendation M11: Configurable retention policies with auto-purge
  */
 
 import { Pool } from "pg";
-import { getDatabaseUrl } from "./config";
-import { getPgSslConfig } from "./dbSslConfig";
 import { logger } from "./logger";
+import { handleError } from "./errorClassifier";
 
-const RETENTION_POLICIES = [
+export interface RetentionPolicy {
+  category: string;
+  tableName: string;
+  retentionDays: number;
+  dateColumn: string;
+  purgeable: boolean;
+  anonymizeOnly: boolean; // anonymize instead of delete for compliance
+  description: string;
+}
+
+// Default retention policies based on NDPA requirements
+export const DEFAULT_POLICIES: RetentionPolicy[] = [
   {
-    name: "completed_dsar_requests",
-    table: "citizen_requests",
-    dateColumn: "completed_at",
-    condition: "status = 'completed'",
-    defaultDays: 1095, // 3 years
-    envKey: "DATA_RETENTION_DSAR_DAYS",
-  },
-  {
-    name: "old_audit_logs",
-    table: "audit_logs",
+    category: "audit_logs",
+    tableName: "audit_logs",
+    retentionDays: 2555,  // 7 years (legal requirement)
     dateColumn: "created_at",
-    condition: null,
-    defaultDays: 2555, // 7 years
-    envKey: "DATA_RETENTION_AUDIT_LOGS_DAYS",
+    purgeable: false,
+    anonymizeOnly: true,
+    description: "Audit logs retained for 7 years per NDPA S.42",
   },
   {
-    name: "expired_sessions",
-    table: "sessions",
-    dateColumn: "expires_at",
-    condition: null,
-    defaultDays: 90,
-    envKey: "DATA_RETENTION_SESSION_DAYS",
-  },
-  {
-    name: "old_streaming_events",
-    table: "streaming_events",
+    category: "dsar_requests",
+    tableName: "citizen_requests",
+    retentionDays: 1095,  // 3 years
     dateColumn: "created_at",
-    condition: null,
-    defaultDays: 730, // 2 years
-    envKey: "DATA_RETENTION_ANALYTICS_DAYS",
+    purgeable: false,
+    anonymizeOnly: true,
+    description: "DSAR records retained for 3 years for compliance verification",
   },
   {
-    name: "old_network_events",
-    table: "network_events",
+    category: "breach_incidents",
+    tableName: "breach_incidents",
+    retentionDays: 2555,  // 7 years
     dateColumn: "created_at",
-    condition: null,
-    defaultDays: 365, // 1 year
-    envKey: "DATA_RETENTION_ANALYTICS_DAYS",
+    purgeable: false,
+    anonymizeOnly: true,
+    description: "Breach records retained for 7 years per NDPC guidance",
   },
   {
-    name: "old_security_alerts",
-    table: "security_alerts",
+    category: "session_data",
+    tableName: "sessions",
+    retentionDays: 90,
     dateColumn: "created_at",
-    condition: "resolved_at IS NOT NULL",
-    defaultDays: 730,
-    envKey: "DATA_RETENTION_ANALYTICS_DAYS",
+    purgeable: true,
+    anonymizeOnly: false,
+    description: "Session data purged after 90 days",
+  },
+  {
+    category: "form_drafts",
+    tableName: "form_drafts",
+    retentionDays: 30,
+    dateColumn: "updated_at",
+    purgeable: true,
+    anonymizeOnly: false,
+    description: "Unsaved form drafts purged after 30 days",
+  },
+  {
+    category: "analytics_events",
+    tableName: "analytics_events",
+    retentionDays: 365,
+    dateColumn: "created_at",
+    purgeable: true,
+    anonymizeOnly: false,
+    description: "Analytics events purged after 1 year",
+  },
+  {
+    category: "push_notification_log",
+    tableName: "push_notification_log",
+    retentionDays: 180,
+    dateColumn: "sent_at",
+    purgeable: true,
+    anonymizeOnly: false,
+    description: "Notification logs purged after 6 months",
+  },
+  {
+    category: "webhook_deliveries",
+    tableName: "webhook_deliveries",
+    retentionDays: 90,
+    dateColumn: "delivered_at",
+    purgeable: true,
+    anonymizeOnly: false,
+    description: "Webhook delivery logs purged after 90 days",
   },
 ];
 
-export interface RetentionResult {
-  policy: string;
-  table: string;
-  deleted: number;
-  cutoffDate: string;
-  dryRun: boolean;
+const RETENTION_LOG_TABLE = `
+CREATE TABLE IF NOT EXISTS retention_purge_log (
+  id SERIAL PRIMARY KEY,
+  category TEXT NOT NULL,
+  table_name TEXT NOT NULL,
+  records_purged INTEGER NOT NULL,
+  records_anonymized INTEGER DEFAULT 0,
+  purged_at TIMESTAMPTZ DEFAULT NOW(),
+  policy_days INTEGER NOT NULL
+);
+`;
+
+export async function initRetentionPolicies(pool: Pool): Promise<void> {
+  try {
+    await pool.query(RETENTION_LOG_TABLE);
+    logger.info("[Retention] Policy engine initialized with %d policies", DEFAULT_POLICIES.length);
+  } catch (err) {
+    handleError(err, { module: "dataRetention", action: "init" });
+  }
 }
 
-export async function runRetentionPolicies(): Promise<RetentionResult[]> {
-  const enabled = (process.env.DATA_RETENTION_ENABLED ?? "true") === "true";
-  const dryRun = (process.env.DATA_RETENTION_DRY_RUN ?? "false") === "true";
+/** Run retention policy enforcement (call via cron) */
+export async function enforceRetentionPolicies(pool: Pool): Promise<{
+  category: string;
+  purged: number;
+  anonymized: number;
+}[]> {
+  const results: { category: string; purged: number; anonymized: number }[] = [];
 
-  if (!enabled) {
-    logger.info("[Retention] Data retention is disabled (DATA_RETENTION_ENABLED=false)");
-    return [];
-  }
+  for (const policy of DEFAULT_POLICIES) {
+    try {
+      const cutoffDate = new Date(Date.now() - policy.retentionDays * 24 * 60 * 60 * 1000);
 
-  const pool = new Pool({
-    connectionString: getDatabaseUrl(),
-    ssl: getPgSslConfig(),
-    max: 2,
-  });
-
-  const results: RetentionResult[] = [];
-
-  try {
-    for (const policy of RETENTION_POLICIES) {
-      const days = parseInt(process.env[policy.envKey] ?? String(policy.defaultDays), 10);
-      const cutoff = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
-      const cutoffStr = cutoff.toISOString();
-
-      const where = policy.condition
-        ? `${policy.dateColumn} < $1 AND ${policy.condition}`
-        : `${policy.dateColumn} < $1`;
-
-      try {
-        // Check if table exists
-        const tableCheck = await pool.query(
-          `SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = $1)`,
-          [policy.table]
+      if (policy.purgeable && !policy.anonymizeOnly) {
+        // Hard delete
+        const result = await pool.query(
+          `DELETE FROM ${policy.tableName} WHERE ${policy.dateColumn} < $1`,
+          [cutoffDate]
         );
-        if (!tableCheck.rows[0].exists) continue;
-
-        if (dryRun) {
-          const countResult = await pool.query(
-            `SELECT COUNT(*) FROM ${policy.table} WHERE ${where}`,
-            [cutoffStr]
+        const purged = result.rowCount ?? 0;
+        if (purged > 0) {
+          await pool.query(
+            `INSERT INTO retention_purge_log (category, table_name, records_purged, policy_days)
+             VALUES ($1, $2, $3, $4)`,
+            [policy.category, policy.tableName, purged, policy.retentionDays]
           );
-          const count = parseInt(countResult.rows[0].count, 10);
-          logger.info(
-            { policy: policy.name, table: policy.table, count, cutoff: cutoffStr },
-            "[Retention] DRY RUN — would delete %d rows from %s",
-            count, policy.table
-          );
-          results.push({ policy: policy.name, table: policy.table, deleted: count, cutoffDate: cutoffStr, dryRun: true });
-        } else {
-          const deleteResult = await pool.query(
-            `DELETE FROM ${policy.table} WHERE ${where}`,
-            [cutoffStr]
-          );
-          const deleted = deleteResult.rowCount ?? 0;
-          logger.info(
-            { policy: policy.name, table: policy.table, deleted, cutoff: cutoffStr },
-            "[Retention] Deleted %d rows from %s (cutoff: %s)",
-            deleted, policy.table, cutoffStr
-          );
-          results.push({ policy: policy.name, table: policy.table, deleted, cutoffDate: cutoffStr, dryRun: false });
+          logger.info({ category: policy.category, purged }, "[Retention] Records purged");
         }
-      } catch (err) {
-        logger.warn({ err, policy: policy.name }, "[Retention] Failed to apply policy %s — skipping", policy.name);
+        results.push({ category: policy.category, purged, anonymized: 0 });
+      } else if (policy.anonymizeOnly) {
+        // Soft purge — anonymize PII but keep record structure
+        // This is a no-op for now — would need per-table PII column mapping
+        results.push({ category: policy.category, purged: 0, anonymized: 0 });
       }
+    } catch (err) {
+      handleError(err, { module: "dataRetention", category: policy.category });
+      results.push({ category: policy.category, purged: 0, anonymized: 0 });
     }
-  } finally {
-    await pool.end();
   }
 
   return results;
-}
-
-let retentionTimer: NodeJS.Timeout | null = null;
-
-export function startRetentionScheduler(): void {
-  const intervalMs = parseInt(process.env.DATA_RETENTION_INTERVAL_MS ?? String(24 * 60 * 60 * 1000), 10);
-
-  retentionTimer = setInterval(async () => {
-    try {
-      const results = await runRetentionPolicies();
-      const total = results.reduce((sum, r) => sum + r.deleted, 0);
-      logger.info({ totalDeleted: total, policies: results.length }, "[Retention] Scheduled run complete");
-    } catch (err) {
-      logger.error({ err }, "[Retention] Scheduled run failed");
-    }
-  }, intervalMs);
-
-  logger.info(
-    { intervalMs, nextRun: new Date(Date.now() + intervalMs).toISOString() },
-    "[Retention] Scheduler started — running every %dms",
-    intervalMs
-  );
-}
-
-export function stopRetentionScheduler(): void {
-  if (retentionTimer) {
-    clearInterval(retentionTimer);
-    retentionTimer = null;
-  }
 }

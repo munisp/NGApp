@@ -27,6 +27,7 @@ import { registerOAuthRoutes } from "./oauth";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
+import { registerOpenApiDocs } from "../openapi";
 import { initWebSocketServer, broadcast } from "../websocket";
 import { startAllWorkers, stopAllWorkers, getWorkerStatuses, setBroadcastFn } from "../workerManager";
 import { startDigestScheduler, stopDigestScheduler, startNdpaSnapshotScheduler, stopNdpaSnapshotScheduler, startDpcoRenewalScheduler, stopDpcoRenewalScheduler } from "../digestScheduler";
@@ -44,6 +45,8 @@ import multer from "multer";
 import { storagePut } from "../storage";
 import { uploadLimiter, dsarPublicLimiter, bgpSseLimiter, developerApiLimiter } from "../rateLimiter";
 import { bodySanitizer, paramPollutionGuard, suspiciousRequestGuard, securityAuditLogger, demoLoginGuard, strictJsonLimit, requestIdMiddleware, authFailureTracker } from "../security";
+import { csrfCookieMiddleware, csrfValidationMiddleware } from "../csrf";
+import { pinoRedactionConfig } from "../piiRedaction";
 import { encryptRequestPii, logEncryptionStatus } from "../encryptionMiddleware";
 import { encryptField } from "../encryption";
 import { ddosSlowDown, bruteForceProtection, ransomwareProtection, requestTimeoutMiddleware, botDetectionMiddleware, oversizedPayloadGuard, financialSecurityHeaders, perUserRateLimit } from "../security/threatProtection";
@@ -135,6 +138,8 @@ async function startServer() {
           if (res.statusCode >= 400) return "warn";
           return "info";
         },
+        // M2: PII redaction — prevent sensitive data from appearing in logs
+        redact: pinoRedactionConfig,
         serializers: {
           req: (req) => ({ method: req.method, url: req.url, remoteAddress: req.remoteAddress }),
           res: (res) => ({ statusCode: res.statusCode }),
@@ -225,6 +230,12 @@ async function startServer() {
   app.use("/api/trpc", strictJsonLimit);  // Tighter limit for tRPC calls
   app.use("/api/trpc", bodySanitizer);    // Sanitize all tRPC inputs
   app.use("/api/trpc", encryptRequestPii); // Encrypt PII fields before DB writes (AES-256-GCM)
+  // ── CSRF Protection (H3) ─────────────────────────────────────────────────
+  app.use(csrfCookieMiddleware);           // Set CSRF cookie if not present
+  app.use("/api/trpc", csrfValidationMiddleware); // Validate CSRF on tRPC mutations
+  // ── Public tRPC Rate Limiting (H2) ────────────────────────────────────────
+  app.use("/api/trpc/dsar.publicSubmit", dsarPublicLimiter);
+  app.use("/api/trpc/dsar.publicTrack", dsarPublicLimiter);
   // ── Threat Protection (DDoS / Ransomware / Financial Attacks) ────────────
   app.use(requestTimeoutMiddleware(30_000));  // 30s timeout — slow-loris defence
   app.use(botDetectionMiddleware);            // Block known scanner/bot user-agents
@@ -317,10 +328,19 @@ async function startServer() {
 
     let redisOk = false;
     try {
-      const { cacheGet } = await import("../cache");
-      await cacheGet("__healthcheck__");
-      redisOk = true;
-    } catch { /* redis not ready */ }
+      const redis = await import("../cache");
+      // Direct ping test — bypasses graceful degradation to detect actual connectivity
+      if (typeof (redis as any).cacheClient?.ping === "function") {
+        await (redis as any).cacheClient.ping();
+        redisOk = true;
+      } else {
+        // Fallback: attempt a write+read round-trip to verify real connectivity
+        const testKey = "__redis_health_" + Date.now();
+        await redis.cacheSet(testKey, "1", 5);
+        const val = await redis.cacheGet(testKey);
+        redisOk = val === "1";
+      }
+    } catch { /* redis genuinely not available */ }
 
     const workers = getWorkerStatuses() as Array<{ status: string; [key: string]: unknown }>;
     const runningWorkers = workers.filter(w => w.status === "running").length;
@@ -381,6 +401,9 @@ async function startServer() {
 
   // ── OAuth routes ──────────────────────────────────────────────────────────
   registerOAuthRoutes(app);
+
+  // ── OpenAPI / Swagger UI ──────────────────────────────────────────────────
+  registerOpenApiDocs(app);
 
   // ── tRPC API ──────────────────────────────────────────────────────────────
   app.use(
