@@ -11,11 +11,12 @@ import { ENV } from "../_core/env";
 import { emitEvent, logAuditEvent, broadcastEvent, cacheGetJson, cacheSetJson, cacheDel, triggerWorkflow } from "../middlewareHelpers";
 import { emitComplianceEvent, opensearchIndex, lakehouseIngest, daprPublish, fluvioPublish, permifyCheck } from "../middlewareExtensions";
 import { emitMutationEvent, EVENTS } from "../middlewareIntegration";
+import { autoDecryptRows } from "../encryptionMiddleware";
 
 async function exec(sql: string, params: any[] = []): Promise<any[]> {
   const db = await getDb();
   const [rows] = await (db as any).execute(sql, params);
-  return rows as any[];
+  return autoDecryptRows(sql, rows as any[]);
 }
 
 // ── Onboarding checklist steps ────────────────────────────────────────────────

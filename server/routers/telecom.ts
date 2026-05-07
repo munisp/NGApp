@@ -5,6 +5,7 @@ import pg from "pg";
 import { emitEvent, logAuditEvent, broadcastEvent, cacheGetJson, cacheSetJson, cacheDel, triggerWorkflow } from "../middlewareHelpers";
 import { emitComplianceEvent, opensearchIndex, lakehouseIngest, daprPublish, fluvioPublish, permifyCheck } from "../middlewareExtensions";
 import { emitMutationEvent, EVENTS } from "../middlewareIntegration";
+import { autoDecryptRows } from "../encryptionMiddleware";
 import { getPgSslConfig } from "../dbSslConfig";
 const { Pool } = pg;
 let _pool: InstanceType<typeof Pool> | null = null;
@@ -20,7 +21,7 @@ function getPool(): InstanceType<typeof Pool> {
 async function q(sql: string, params: unknown[] = []): Promise<any[]> {
   const pool = getPool();
   const res = await pool.query(sql, params);
-  return res.rows;
+  return autoDecryptRows(sql, res.rows);
 }
 
 export const telecomRouter = router({

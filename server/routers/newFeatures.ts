@@ -5,11 +5,14 @@ import { sql } from "drizzle-orm";
 import { emitEvent, logAuditEvent, broadcastEvent, cacheGetJson, cacheSetJson, cacheDel, triggerWorkflow } from "../middlewareHelpers";
 import { emitComplianceEvent, opensearchIndex, lakehouseIngest, daprPublish, fluvioPublish, permifyCheck } from "../middlewareExtensions";
 import { emitMutationEvent, EVENTS } from "../middlewareIntegration";
+import { autoDecryptRows } from "../encryptionMiddleware";
 
 async function exec(query: any): Promise<[any[], any]> {
   const db = await getDb();
   if (!db) return [[] as any[], null] as [any[], any];
-  const result = await db.execute(query); return result as unknown as [any[], any];
+  const result = await db.execute(query);
+  const [rows, meta] = result as unknown as [any[], any];
+  return [autoDecryptRows(String(query), rows ?? []), meta] as [any[], any];
 }
 
 async function execRaw(rawSql: string, params?: any[]): Promise<[any[], any]> {
@@ -19,10 +22,12 @@ async function execRaw(rawSql: string, params?: any[]): Promise<[any[], any]> {
     const pool = (db as any).$client ?? (db as any).client;
     if (pool && typeof pool.query === 'function') {
       const res = await pool.query(rawSql, params);
-      return [res.rows ?? [], res] as [any[], any];
+      return [autoDecryptRows(rawSql, res.rows ?? []), res] as [any[], any];
     }
   }
-  const result = await db.execute(sql.raw(rawSql)); return result as unknown as [any[], any];
+  const result = await db.execute(sql.raw(rawSql));
+  const [rows, meta] = result as unknown as [any[], any];
+  return [autoDecryptRows(rawSql, rows ?? []), meta] as [any[], any];
 }
 
 // ─── NDPA Compliance Dashboard ───────────────────────────────────────────────

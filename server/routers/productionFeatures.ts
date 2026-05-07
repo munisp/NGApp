@@ -8,15 +8,17 @@ import { notifyOwner } from "../_core/notification";
 import { emitEvent, logAuditEvent, broadcastEvent, cacheGetJson, cacheSetJson, cacheDel, triggerWorkflow } from "../middlewareHelpers";
 import { emitComplianceEvent, opensearchIndex, lakehouseIngest, daprPublish, fluvioPublish, permifyCheck } from "../middlewareExtensions";
 import { emitMutationEvent, EVENTS } from "../middlewareIntegration";
+import { autoDecryptRows } from "../encryptionMiddleware";
 
 // ── Helper: execute raw SQL ───────────────────────────────────────────────────
 async function exec(rawSql: string, params?: unknown[]): Promise<Record<string, unknown>[]> {
   if (params && params.length > 0) {
     const pg = await import("pg");
-    const pool = new pg.Pool({ connectionString: process.env.LOCAL_DATABASE_URL });
+    const { getPgSslConfig: getSsl } = await import("../dbSslConfig");
+    const pool = new pg.Pool({ connectionString: process.env.LOCAL_DATABASE_URL, ssl: getSsl() });
     try {
       const pgResult = await pool.query(rawSql, params);
-      return (pgResult.rows ?? []) as Record<string, unknown>[];
+      return autoDecryptRows(rawSql, (pgResult.rows ?? []) as Record<string, unknown>[]);
     } finally {
       await pool.end();
     }
@@ -25,7 +27,7 @@ async function exec(rawSql: string, params?: unknown[]): Promise<Record<string, 
   if (!db) return [];
   const result = await db.execute(sql.raw(rawSql));
   const rows = (result as unknown as { rows?: unknown[] }).rows ?? (result as unknown as unknown[]);
-  return (rows ?? []) as Record<string, unknown>[];
+  return autoDecryptRows(rawSql, (rows ?? []) as Record<string, unknown>[]);
 }
 
 // ── Helper: send Termii SMS ───────────────────────────────────────────────────

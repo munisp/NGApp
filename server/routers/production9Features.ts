@@ -18,6 +18,7 @@ import { notifyOwner } from "../_core/notification";
 import { logger } from "../logger";
 import { emitComplianceEvent, opensearchIndex, lakehouseIngest, daprPublish, fluvioPublish, permifyCheck } from "../middlewareExtensions";
 import { emitMutationEvent, EVENTS } from "../middlewareIntegration";
+import { autoDecryptRows } from "../encryptionMiddleware";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 async function exec(query: string, params: unknown[] = []): Promise<any[]> {
@@ -25,7 +26,8 @@ async function exec(query: string, params: unknown[] = []): Promise<any[]> {
   if (!pool) return [];
   try {
     const result = await pool.query(query, params);
-    return result.rows ?? [];
+    const rows = result.rows ?? [];
+    return autoDecryptRows(query, rows);
   } catch (err) {
     logger.error({ err, query: query.slice(0, 200) }, "[p9] DB query error");
     return [];

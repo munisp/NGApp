@@ -10,6 +10,7 @@ import { router, protectedProcedure, adminProcedure, exportProcedure, deleteProc
 import { emitEvent, logAuditEvent, broadcastEvent, broadcastUpdate, cacheGetJson, cacheSetJson, cacheDel, recordFinancialTransaction, triggerWorkflow } from "../middlewareHelpers";
 import { emitComplianceEvent, opensearchIndex, lakehouseIngest, daprPublish, fluvioPublish, permifyCheck } from "../middlewareExtensions";
 import { emitMutationEvent, EVENTS } from "../middlewareIntegration";
+import { autoDecryptRows } from "../encryptionMiddleware";
 import { TRPCError } from "@trpc/server";
 import pg from "pg";
 import { getPgSslConfig } from "../dbSslConfig";
@@ -28,13 +29,11 @@ function getPool(): InstanceType<typeof Pool> {
 }
 async function query(sql: string, params: unknown[] = []): Promise<any[]> {
   const pool = getPool();
-  // Convert MySQL-style ? placeholders to PostgreSQL $1, $2, ...
   let idx = 0;
   const pgSql = sql.replace(/\?/g, () => `$${++idx}`);
-  // Convert LIKE to ILIKE for case-insensitive search in PostgreSQL
   const finalSql = pgSql.replace(/\bLIKE\b/g, 'ILIKE');
   const { rows } = await pool.query(finalSql, params);
-  return rows;
+  return autoDecryptRows(finalSql, rows);
 }
 
 // ─── Helper: generate unique references ──────────────────────────────────────

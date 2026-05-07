@@ -12,6 +12,7 @@ import { invokeLLM } from "../_core/llm";
 import crypto from "crypto";
 import { emitComplianceEvent, opensearchIndex, lakehouseIngest, daprPublish, fluvioPublish, permifyCheck } from "../middlewareExtensions";
 import { emitMutationEvent, EVENTS } from "../middlewareIntegration";
+import { autoDecryptRows } from "../encryptionMiddleware";
 import { getPgSslConfig } from "../dbSslConfig";
 
 const { Pool } = pg;
@@ -25,7 +26,21 @@ function getPool(): InstanceType<typeof Pool> {
       ssl: getPgSslConfig(),
     });
   }
-  return _pool;
+  // Return a proxied pool whose query method auto-decrypts PII
+  return new Proxy(_pool, {
+    get(target, prop) {
+      if (prop === "query") {
+        return async (sql: string, params?: unknown[]) => {
+          const result = await target.query(sql, params);
+          if (result.rows) {
+            result.rows = autoDecryptRows(sql, result.rows);
+          }
+          return result;
+        };
+      }
+      return (target as any)[prop];
+    },
+  }) as InstanceType<typeof Pool>;
 }
 
 // ─── DSAR (Data Subject Access Request) Public Router ────────────────────────

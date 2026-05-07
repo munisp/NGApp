@@ -21,6 +21,7 @@ import { getPool } from "../db";
 import { emitEvent, logAuditEvent, broadcastEvent, cacheGetJson, cacheSetJson, cacheDel, triggerWorkflow } from "../middlewareHelpers";
 import { emitComplianceEvent, opensearchIndex, lakehouseIngest, daprPublish, fluvioPublish, permifyCheck } from "../middlewareExtensions";
 import { emitMutationEvent, EVENTS } from "../middlewareIntegration";
+import { autoDecryptRows } from "../encryptionMiddleware";
 
 // ── Helper: raw SQL query ─────────────────────────────────────────────────────
 async function exec(query: string, params: unknown[] = []): Promise<any[]> {
@@ -28,7 +29,8 @@ async function exec(query: string, params: unknown[] = []): Promise<any[]> {
   if (!pool) return [];
   try {
     const result = await pool.query(query, params);
-    return result.rows ?? [];
+    const rows = result.rows ?? [];
+    return autoDecryptRows(query, rows);
   } catch (err: any) {
     console.error("[aiml] DB query error:", err.message);
     return [];

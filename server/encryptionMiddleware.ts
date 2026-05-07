@@ -38,8 +38,9 @@ export function encryptRequestPii(req: Request, _res: Response, next: NextFuncti
     return;
   }
 
-  // Only process tRPC mutation payloads
-  if (!req.path.includes("/api/trpc/")) { next(); return; }
+  // Note: this middleware is mounted via app.use("/api/trpc", encryptRequestPii)
+  // so Express has already stripped the mount prefix — req.path is just the
+  // procedure name (e.g. "/user.create"). No additional path check needed.
 
   try {
     if (req.body && typeof req.body === "object") {
@@ -135,6 +136,81 @@ export function encryptForInsert<T extends Record<string, unknown>>(tableName: s
 export function decryptFromSelect<T extends Record<string, unknown>>(tableName: string, row: T | undefined): T | undefined {
   if (!row) return row;
   return decryptRow(tableName, row);
+}
+
+// ─── Auto-Decrypt for Raw SQL Results ────────────────────────────────────────
+
+/**
+ * Parse a SQL query to extract table names referenced in FROM / JOIN clauses,
+ * then decrypt PII fields for any matching tables in PII_FIELDS.
+ *
+ * This enables transparent decryption when using raw pool.query() calls
+ * without requiring each router to explicitly call decryptQueryResults().
+ */
+export function autoDecryptRows<T extends Record<string, unknown>>(sql: string, rows: T[]): T[] {
+  if (!isEncryptionEnabled() || !rows || rows.length === 0) return rows;
+
+  const tables = extractTableNames(sql);
+  if (tables.length === 0) return rows;
+
+  return rows.map(row => {
+    let decrypted = { ...row };
+    for (const table of tables) {
+      const fields = PII_FIELDS[table];
+      if (!fields) continue;
+      for (const field of fields) {
+        const val = decrypted[field];
+        if (typeof val === "string") {
+          (decrypted as Record<string, unknown>)[field] = decryptField(val);
+        }
+        // Also check camelCase version of the field name
+        const camelField = snakeToCamel(field);
+        const camelVal = decrypted[camelField];
+        if (typeof camelVal === "string") {
+          (decrypted as Record<string, unknown>)[camelField] = decryptField(camelVal);
+        }
+      }
+    }
+    return decrypted;
+  });
+}
+
+/**
+ * Extract table names from a SQL query by matching FROM and JOIN clauses.
+ * Handles aliases (e.g., "FROM users u" → "users").
+ */
+function extractTableNames(sql: string): string[] {
+  const normalized = sql.replace(/\s+/g, " ").toLowerCase();
+  const tables = new Set<string>();
+  // Match: FROM <table>, JOIN <table>, INTO <table>, UPDATE <table>
+  const patterns = [
+    /\bfrom\s+(\w+)/g,
+    /\bjoin\s+(\w+)/g,
+    /\binto\s+(\w+)/g,
+    /\bupdate\s+(\w+)/g,
+  ];
+  for (const pattern of patterns) {
+    let m;
+    while ((m = pattern.exec(normalized)) !== null) {
+      const table = m[1];
+      if (PII_FIELDS[table]) tables.add(table);
+    }
+  }
+  return Array.from(tables);
+}
+
+/**
+ * Encrypt PII fields in a values object before a raw SQL INSERT/UPDATE.
+ * Detects the table name from the SQL and encrypts matching fields.
+ */
+export function autoEncryptParams<T extends Record<string, unknown>>(sql: string, values: T): T {
+  if (!isEncryptionEnabled()) return values;
+  const tables = extractTableNames(sql);
+  let encrypted = { ...values };
+  for (const table of tables) {
+    encrypted = encryptRow(table, encrypted);
+  }
+  return encrypted;
 }
 
 // ─── Logging ──────────────────────────────────────────────────────────────────

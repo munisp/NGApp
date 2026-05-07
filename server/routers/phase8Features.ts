@@ -10,6 +10,7 @@ import { sql } from "drizzle-orm";
 import { emitEvent, logAuditEvent, broadcastEvent, cacheGetJson, cacheSetJson, cacheDel, triggerWorkflow } from "../middlewareHelpers";
 import { emitComplianceEvent, opensearchIndex, lakehouseIngest, daprPublish, fluvioPublish, permifyCheck } from "../middlewareExtensions";
 import { emitMutationEvent, EVENTS } from "../middlewareIntegration";
+import { autoDecryptRows } from "../encryptionMiddleware";
 
 // ─// ── Helper: execute raw SQL ───────────────────────────────────────────────
 async function exec(rawSql: string, params?: unknown[]): Promise<Record<string, unknown>[]> {
@@ -18,13 +19,13 @@ async function exec(rawSql: string, params?: unknown[]): Promise<Record<string, 
     const pool = getPool();
     if (!pool) return [];
     const r = await pool.query(rawSql, params);
-    return (r.rows ?? []) as Record<string, unknown>[];
+    return autoDecryptRows(rawSql, (r.rows ?? []) as Record<string, unknown>[]);
   }
   const db = await getDb();
   if (!db) return [];
   const result = await db.execute(sql.raw(rawSql));
   const rows = (result as unknown as { rows?: unknown[] }).rows ?? (result as unknown as unknown[]);
-  return (rows ?? []) as Record<string, unknown>[];
+  return autoDecryptRows(rawSql, (rows ?? []) as Record<string, unknown>[]);
 }
 
 // ─── Changelog Admin Router ────────────────────────────────────────────────────

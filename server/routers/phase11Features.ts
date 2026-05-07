@@ -11,13 +11,15 @@ import { router, protectedProcedure, publicProcedure, deleteProcedure } from "..
 import { TRPCError } from "@trpc/server";
 import { emitComplianceEvent, opensearchIndex, lakehouseIngest, daprPublish, fluvioPublish, permifyCheck } from "../middlewareExtensions";
 import { emitMutationEvent, EVENTS } from "../middlewareIntegration";
+import { autoDecryptRows } from "../encryptionMiddleware";
 
 const rawQuery = async (sql: string, params: unknown[] = []): Promise<any[]> => {
   const pool = getPool();
   if (!pool) return [];
   try {
     const result = await pool.query(sql, params);
-    return result.rows ?? [];
+    const rows = result.rows ?? [];
+    return autoDecryptRows(sql, rows);
   } catch {
     return [];
   }

@@ -92,8 +92,10 @@ services:
       POSTGRES_INITDB_ARGS: "--encoding=UTF8 --lc-collate=C --lc-ctype=C --data-checksums"
     volumes:
       - postgres-data:/var/lib/postgresql/data
+      - backup-data:/var/backups/ndsep
       - ./drizzle/production-indexes.sql:/docker-entrypoint-initdb.d/02-indexes.sql:ro
       - ./drizzle/0019_field_encryption.sql:/docker-entrypoint-initdb.d/03-encryption.sql:ro
+      - ./drizzle/0020_citizen_requests_columns.sql:/docker-entrypoint-initdb.d/04-citizen-requests.sql:ro
       - ./infra/postgres/server.crt:/var/lib/postgresql/server.crt:ro
       - ./infra/postgres/server.key:/var/lib/postgresql/server.key:ro
     healthcheck:
@@ -124,6 +126,10 @@ services:
       -c ssl=on
       -c ssl_cert_file=/var/lib/postgresql/server.crt
       -c ssl_key_file=/var/lib/postgresql/server.key
+      -c wal_level=replica
+      -c archive_mode=on
+      -c archive_command='test ! -f /var/backups/ndsep/wal/%f && cp %p /var/backups/ndsep/wal/%f'
+      -c archive_timeout=300
 
   # ─── Redis ───────────────────────────────────────────────────────────────────
   redis:
@@ -149,6 +155,48 @@ services:
     healthcheck:
       test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
       <<: *hc-defaults
+    logging: *default-logging
+    networks:
+      - ndsep-internal
+
+  # ─── PostgreSQL Backup Service ──────────────────────────────────────────────
+  pg-backup:
+    <<: *resource-defaults
+    image: postgres:16-alpine
+    container_name: ndsep-pg-backup
+    <<: *default-restart
+    environment:
+      PG_HOST: postgres
+      PG_PORT: "5432"
+      PG_USER: ndsep_user
+      PG_DB: ndsep_db
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      BACKUP_DIR: /var/backups/ndsep
+      BACKUP_RETENTION: "30"
+      S3_BUCKET: ${BACKUP_S3_BUCKET:-}
+      S3_PREFIX: ndsep-backups
+      ENCRYPTION_KEY: ${BACKUP_ENCRYPTION_KEY:-}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+      AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION:-af-south-1}
+    volumes:
+      - ./scripts/backup-postgres.sh:/opt/ndsep/scripts/backup-postgres.sh:ro
+      - ./scripts/restore-postgres.sh:/opt/ndsep/scripts/restore-postgres.sh:ro
+      - backup-data:/var/backups/ndsep
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        apk add --no-cache aws-cli bash
+        chmod +x /opt/ndsep/scripts/*.sh
+        mkdir -p /var/backups/ndsep/wal /var/log/ndsep
+        echo "0 * * * * /opt/ndsep/scripts/backup-postgres.sh --upload-s3 >> /var/log/ndsep/backup.log 2>&1" | crontab -
+        echo "0 3 * * 0 /opt/ndsep/scripts/backup-postgres.sh --verify >> /var/log/ndsep/backup-verify.log 2>&1" >> /tmp/cron
+        cat /tmp/cron | crontab -
+        /opt/ndsep/scripts/backup-postgres.sh
+        crond -f
+    depends_on:
+      postgres:
+        condition: service_healthy
     logging: *default-logging
     networks:
       - ndsep-internal
@@ -1862,6 +1910,8 @@ volumes:
       o: bind
       # Same encrypted filesystem recommendation as PostgreSQL
       device: ${REDIS_DATA_DIR:-/var/lib/ndsep/redis-data}
+  backup-data:
+    driver: local
   kafka-data:
     driver: local
   zookeeper-data:

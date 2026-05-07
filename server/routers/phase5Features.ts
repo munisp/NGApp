@@ -12,12 +12,13 @@ import { invokeLLM, type MessageContent } from "../_core/llm";
 import { emitEvent, logAuditEvent, broadcastEvent, cacheGetJson, cacheSetJson, cacheDel, triggerWorkflow } from "../middlewareHelpers";
 import { emitComplianceEvent, opensearchIndex, lakehouseIngest, daprPublish, fluvioPublish, permifyCheck } from "../middlewareExtensions";
 import { emitMutationEvent, EVENTS } from "../middlewareIntegration";
+import { autoDecryptRows } from "../encryptionMiddleware";
 
 // ── Helper: raw SQL exec ──────────────────────────────────────────────────────
 async function exec(sql: string, params: unknown[] = []): Promise<Record<string, unknown>[]> {
   const db = await getDb();
   const [rows] = await (db as any).execute(sql, params);
-  return rows as Record<string, unknown>[];
+  return autoDecryptRows(sql, rows as Record<string, unknown>[]);
 }
 
 // ── Widget Dashboard Router ───────────────────────────────────────────────────

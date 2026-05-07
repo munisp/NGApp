@@ -4,6 +4,7 @@ import { getPool } from "../db";
 import { logger } from "../logger";
 import { emitComplianceEvent, opensearchIndex, lakehouseIngest, daprPublish, fluvioPublish, permifyCheck } from "../middlewareExtensions";
 import { emitMutationEvent, EVENTS } from "../middlewareIntegration";
+import { autoDecryptRows } from "../encryptionMiddleware";
 
 async function exec(query: string, params: unknown[] = []): Promise<any[]> {
   const pool = getPool();
@@ -16,7 +17,8 @@ async function exec(query: string, params: unknown[] = []): Promise<any[]> {
         : p
     );
     const result = await pool.query(query, safeParams);
-    return result.rows ?? [];
+    const rows = result.rows ?? [];
+    return autoDecryptRows(query, rows);
   } catch (err) {
     logger.error({ err, query: query.slice(0, 200) }, "[p13] DB query error");
     return [];
