@@ -16,7 +16,7 @@ import { kafkaProduce } from "./kafka";
 
 import { cacheGet, cacheSet, cacheDel, cacheGetJson, cacheSetJson } from "./cache";
 import { withCache, withSWR, CK, TTL, invalidateOrgCaches, invalidateComplianceCaches, invalidateCertificateCaches, invalidateAccreditationCaches, invalidateBgpCaches } from "./queryCache";
-import { broadcastEvent as wsBroadcast } from "./websocket";
+import { broadcast as wsBroadcast } from "./websocket";
 import { createTigerBeetleTransaction, type TbTransactionType } from "./tigerbeetle";
 import { startWorkflow } from "./temporal";
 import { permifyCheck, type PermifyAction } from "./permify";

@@ -27,7 +27,7 @@ import { registerOAuthRoutes } from "./oauth";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
-import { initWebSocket, broadcastEvent } from "../websocket";
+import { initWebSocketServer, broadcast } from "../websocket";
 import { startAllWorkers, stopAllWorkers, getWorkerStatuses, setBroadcastFn } from "../workerManager";
 import { startDigestScheduler, stopDigestScheduler, startNdpaSnapshotScheduler, stopNdpaSnapshotScheduler, startDpcoRenewalScheduler, stopDpcoRenewalScheduler } from "../digestScheduler";
 import { startOverdueScheduler, stopOverdueScheduler } from "../overdueScheduler";
@@ -315,6 +315,13 @@ async function startServer() {
       }
     } catch { /* db not ready */ }
 
+    let redisOk = false;
+    try {
+      const { cacheGet } = await import("../cache");
+      await cacheGet("__healthcheck__");
+      redisOk = true;
+    } catch { /* redis not ready */ }
+
     const workers = getWorkerStatuses() as Array<{ status: string; [key: string]: unknown }>;
     const runningWorkers = workers.filter(w => w.status === "running").length;
     const totalWorkers = workers.length;
@@ -324,6 +331,7 @@ async function startServer() {
       status: ready ? "ready" : "not_ready",
       checks: {
         database: dbOk ? "ok" : "unavailable",
+        redis: redisOk ? "ok" : "unavailable",
         workers: `${runningWorkers}/${totalWorkers} running`,
       },
       timestamp: new Date().toISOString(),
@@ -391,7 +399,7 @@ async function startServer() {
   // ── Worker event relay endpoint ───────────────────────────────────────────
   app.post("/api/workers/event", (req, res) => {
     const { event, data } = req.body;
-    if (event && data) broadcastEvent(event, data);
+    if (event && data) broadcast(event, data);
     res.json({ ok: true });
   });
 
@@ -743,14 +751,14 @@ async function startServer() {
     logger.warn({ err }, "[DB] Pool initialization failed — running without database");
   }
 
-  initWebSocket(server);
+  initWebSocketServer(server);
 
   server.listen(port, () => {
     logger.info({ port, env: process.env.NODE_ENV }, "🚀 NDSEP API server started");
     logEncryptionStatus();
   });
 
-  setBroadcastFn(broadcastEvent);
+  setBroadcastFn((event: string, data: unknown) => broadcast(event, data as Record<string, unknown>));
 
   if (process.env.NODE_ENV !== "test") {
     setTimeout(() => startAllWorkers(), 3000);

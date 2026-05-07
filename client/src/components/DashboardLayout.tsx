@@ -700,7 +700,7 @@ function DashboardLayoutContent({
           </SidebarHeader>
 
           <SidebarContent className="gap-0">
-            <SidebarMenu className="px-2 py-1">
+            <SidebarMenu className="px-2 py-1" role="navigation" aria-label="Main navigation">
               {menuSections.map(section => {
                 const isSectionCollapsed = collapsedSections.has(section.title);
                 const hasActiveItem = section.items.some(item => item.path === location);
@@ -710,6 +710,9 @@ function DashboardLayoutContent({
                       <button
                         onClick={() => toggleSection(section.title)}
                         className="flex items-center gap-2 w-full px-2 py-1.5 text-left group/header hover:bg-accent/30 rounded-md transition-colors"
+                        aria-expanded={!isSectionCollapsed}
+                        aria-controls={`section-${section.title.replace(/\s+/g, '-').toLowerCase()}`}
+                        aria-label={`${section.title} section, ${section.items.length} items`}
                       >
                         <span
                           className="inline-block w-2 h-2 rounded-full shrink-0"
@@ -731,6 +734,9 @@ function DashboardLayoutContent({
                             onClick={() => setLocation(item.path)}
                             tooltip={item.label}
                             className="h-8 transition-all font-normal"
+                            aria-label={item.label}
+                            aria-current={isActive ? "page" : undefined}
+                            role="link"
                             data-tour={
                               item.path === "/dpco/billing" ? "dpco-nav-billing" :
                               item.path === "/dpco/audit" ? "dpco-nav-audit" :

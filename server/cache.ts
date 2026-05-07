@@ -12,9 +12,12 @@
  */
 
 import Redis from "ioredis";
+import fs from "fs";
 
 const REDIS_URL = process.env.REDIS_URL ?? "redis://localhost:6379";
 const REDIS_ENABLED = (process.env.REDIS_ENABLED ?? "true") === "true";
+const REDIS_TLS_ENABLED = process.env.REDIS_TLS === "true";
+const REDIS_TLS_CA = process.env.REDIS_TLS_CA_PATH;
 
 let hits = 0;
 let misses = 0;
@@ -22,6 +25,17 @@ let sets = 0;
 let dels = 0;
 let errors = 0;
 let connected = false;
+
+function getRedisTlsOptions(): Record<string, unknown> | undefined {
+  if (!REDIS_TLS_ENABLED) return undefined;
+  const opts: Record<string, unknown> = {
+    rejectUnauthorized: process.env.REDIS_TLS_REJECT_UNAUTHORIZED !== "false",
+  };
+  if (REDIS_TLS_CA && fs.existsSync(REDIS_TLS_CA)) {
+    opts.ca = [fs.readFileSync(REDIS_TLS_CA)];
+  }
+  return opts;
+}
 
 let redis: Redis | null = null;
 
@@ -31,6 +45,7 @@ if (REDIS_ENABLED) {
     maxRetriesPerRequest: 1,
     retryStrategy: (times) => Math.min(times * 500, 30_000),
     reconnectOnError: () => true,
+    tls: getRedisTlsOptions() as any,
   });
 
   redis.on("connect", () => {
