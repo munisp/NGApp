@@ -1,39 +1,64 @@
-import { Shield } from 'lucide-react'
+import { KeyRound } from 'lucide-react'
+import { useTenant } from '@/contexts/TenantContext'
 import { FallbackBadge } from '@/components/ui/DataStates'
 
-const consents = [
-  { id: 'CON-001', customer: 'Dangote Industries', tpp: 'PayStack', scope: ['Account Balance', 'Transactions'], status: 'active', granted: '2026-01-15', expires: '2026-07-15', accessCount: 1842 },
-  { id: 'CON-002', customer: 'MTN Nigeria', tpp: 'Flutterwave', scope: ['Account Balance', 'Transactions', 'Standing Orders'], status: 'active', granted: '2026-02-01', expires: '2026-08-01', accessCount: 942 },
-  { id: 'CON-003', customer: 'Kano Textiles', tpp: 'Mono', scope: ['Account Balance'], status: 'revoked', granted: '2025-11-20', expires: '2026-05-20', accessCount: 124 },
-  { id: 'CON-004', customer: 'Shoprite Nigeria', tpp: 'Stitch', scope: ['Account Balance', 'Payments'], status: 'active', granted: '2026-03-10', expires: '2026-09-10', accessCount: 568 },
-  { id: 'CON-005', customer: 'Total Energies', tpp: 'Okra', scope: ['Account Balance', 'Transactions', 'Identity'], status: 'expired', granted: '2025-08-01', expires: '2026-02-01', accessCount: 2400 },
+const rows = [
+    { id: 'CON-84271', cells: ['CON-84271', 'Dangote Corp', 'Paystack', 'Accounts + Transactions', 'Active', '2026-01-15', '2027-01-15', '2 min ago'] },
+    { id: 'CON-84272', cells: ['CON-84272', 'MTN Enterprise', 'Flutterwave', 'Accounts Only', 'Active', '2025-11-20', '2026-11-20', '1 hour ago'] },
+    { id: 'CON-84273', cells: ['CON-84273', 'Kano Textiles', 'Mono', 'Full Access', 'Pending', '—', '—', '—'] },
+    { id: 'CON-84274', cells: ['CON-84274', 'Shoprite NG', 'Okra', 'Balance + Transactions', 'Revoked', '2025-06-10', '2026-06-10', '2026-04-28'] },
+    { id: 'CON-84275', cells: ['CON-84275', 'Total Energies', 'Stitch', 'Payments', 'Active', '2026-03-01', '2027-03-01', '5 min ago'] },
 ]
 
+const headers = ['Consent ID', 'Customer', 'TPP', 'Scope', 'Status', 'Granted', 'Expires', 'Last Access']
+
+function statusColor(s) {
+  switch (s) {
+      case 'Active': return 'text-emerald-600 bg-emerald-50 dark:text-emerald-400 dark:bg-emerald-900/20'
+      case 'Pending': return 'text-amber-600 bg-amber-50 dark:text-amber-400 dark:bg-amber-900/20'
+      case 'Revoked': return 'text-amber-600 bg-amber-50 dark:text-amber-400 dark:bg-amber-900/20'
+      default: return 'text-gray-600 bg-gray-50 dark:text-gray-400 dark:bg-gray-900/20'
+  }
+}
+
 export default function OpenBankingConsent() {
+  const { tenant } = useTenant()
   return (
     <div role="region" aria-label="OpenBankingConsent" className="space-y-6">
       <div className="flex items-center justify-between">
-        <div><h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2"><Shield className="w-7 h-7 text-indigo-600" /> Open Banking Consent Manager</h1><p className="text-gray-500 dark:text-gray-400 mt-1">Manage third-party provider access consents</p></div>
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+            <KeyRound className="w-7 h-7 text-violet-600" /> Open Banking Consent
+          </h1>
+          <p className="text-gray-500 dark:text-gray-400 mt-1">Manage third-party data sharing consents for {tenant?.name || 'Platform'}</p>
+        </div>
         <FallbackBadge />
       </div>
       <div className="grid grid-cols-4 gap-3">
-        {[{ l: 'Total Consents', v: consents.length }, { l: 'Active', v: consents.filter(c => c.status === 'active').length }, { l: 'TPPs Connected', v: [...new Set(consents.map(c => c.tpp))].length }, { l: 'API Calls (30d)', v: consents.reduce((s, c) => s + c.accessCount, 0).toLocaleString() }].map(s => (
-          <div key={s.l} className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-3"><p className="text-xs text-gray-500">{s.l}</p><p className="text-xl font-bold text-gray-900 dark:text-white">{s.v}</p></div>
-        ))}
-      </div>
-      <div className="space-y-2">
-        {consents.map(c => (
-          <div key={c.id} className={`bg-white dark:bg-gray-800 rounded-xl border p-4 ${c.status === 'active' ? 'border-gray-200 dark:border-gray-700' : 'border-gray-200 dark:border-gray-700 opacity-60'}`}>
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="flex items-center gap-2"><h4 className="font-semibold text-gray-900 dark:text-white">{c.customer}</h4><span className="text-xs text-gray-400">via</span><span className="text-sm font-medium text-indigo-600">{c.tpp}</span><span className={`text-xs px-2 py-0.5 rounded ${c.status === 'active' ? 'bg-emerald-100 text-emerald-700' : c.status === 'revoked' ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-600'}`}>{c.status}</span></div>
-                <div className="flex items-center gap-3 text-xs text-gray-500 mt-1"><span>Granted: {c.granted}</span><span>Expires: {c.expires}</span><span>{c.accessCount.toLocaleString()} API calls</span></div>
-                <div className="flex gap-1 mt-1.5">{c.scope.map(s => <span key={s} className="text-xs px-2 py-0.5 rounded bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-400">{s}</span>)}</div>
-              </div>
-              {c.status === 'active' && <button className="px-3 py-1.5 border border-red-200 text-red-600 rounded text-xs hover:bg-red-50 dark:border-red-800 dark:hover:bg-red-900/20">Revoke</button>}
-            </div>
+        {[{ l: 'Active Consents', v: '12,847' }, { l: 'Pending', v: '342' }, { l: 'Revoked (MTD)', v: '89' }, { l: 'TPPs Connected', v: '24' }].map(s => (
+          <div key={s.l} className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-3">
+            <p className="text-xs text-gray-500">{s.l}</p>
+            <p className="text-xl font-bold text-gray-900 dark:text-white">{s.v}</p>
           </div>
         ))}
+      </div>
+      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <table className="w-full">
+          <thead className="bg-gray-50 dark:bg-gray-700">
+            <tr>{headers.map(h => <th key={h} className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{h}</th>)}</tr>
+          </thead>
+          <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+            {rows.map(r => (
+              <tr key={r.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                {r.cells.map((c, j) => (
+                  <td key={j} className={`px-4 py-3 text-sm ${j === 0 ? 'font-semibold text-gray-900 dark:text-white' : j === 4 ? statusColor(c) + ' font-medium' : 'text-gray-500 dark:text-gray-400'}`}>
+                    {j === 4 ? <span className={`px-2 py-0.5 rounded-full text-xs ${statusColor(c)}`}>{c}</span> : c}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
     </div>
   )

@@ -1,31 +1,64 @@
-import { Shield } from 'lucide-react'
+import { AlertTriangle } from 'lucide-react'
 import { useTenant } from '@/contexts/TenantContext'
 import { FallbackBadge } from '@/components/ui/DataStates'
 
+const rows = [
+    { id: 'CP-001', cells: ['Shell Trading', 'AA-', '$420M', '$500M', '84%', '0.12%', 'Oil & Gas', 'Normal'] },
+    { id: 'CP-002', cells: ['Vitol Group', 'A+', '$380M', '$400M', '95%', '0.28%', 'Oil & Gas', 'Watch'] },
+    { id: 'CP-003', cells: ['Cargill', 'AA', '$290M', '$600M', '48%', '0.08%', 'Agriculture', 'Normal'] },
+    { id: 'CP-004', cells: ['Trafigura', 'BBB+', '$520M', '$500M', '104%', '0.45%', 'Metals', 'Breach'] },
+    { id: 'CP-005', cells: ['Glencore', 'A-', '$340M', '$450M', '76%', '0.31%', 'Diversified', 'Normal'] },
+]
+
+const headers = ['Counterparty', 'Rating', 'Exposure', 'Limit', 'Utilization', 'PD (MCMC)', 'Sector', 'Watch']
+
+function statusColor(s) {
+  switch (s) {
+      case 'Normal': return 'text-emerald-600 bg-emerald-50 dark:text-emerald-400 dark:bg-emerald-900/20'
+      case 'Watch': return 'text-amber-600 bg-amber-50 dark:text-amber-400 dark:bg-amber-900/20'
+      case 'Breach': return 'text-amber-600 bg-amber-50 dark:text-amber-400 dark:bg-amber-900/20'
+      default: return 'text-gray-600 bg-gray-50 dark:text-gray-400 dark:bg-gray-900/20'
+  }
+}
+
 export default function CounterpartyRisk() {
   const { tenant } = useTenant()
-  const data = [('CP-001', 'Shell Trading', 'AA+', '$2.4B', '0.02%', '$480K', 'Low'), ('CP-002', 'Vitol Group', 'A', '$1.8B', '0.08%', '$1.44M', 'Medium'), ('CP-003', 'Glencore', 'A-', '$3.2B', '0.12%', '$3.84M', 'Medium'), ('CP-004', 'Trafigura', 'BBB+', '$890M', '0.25%', '$2.23M', 'High'), ('CP-005', 'Local Trader X', 'BB', '$120M', '1.80%', '$2.16M', 'Critical')]
   return (
     <div role="region" aria-label="CounterpartyRisk" className="space-y-6">
       <div className="flex items-center justify-between">
-        <div><h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2"><Shield className="w-7 h-7 text-orange-600" /> Counterparty Credit Risk</h1><p className="text-gray-500 dark:text-gray-400 mt-1">MCMC-powered counterparty risk assessment</p></div>
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+            <AlertTriangle className="w-7 h-7 text-amber-600" /> Counterparty Risk
+          </h1>
+          <p className="text-gray-500 dark:text-gray-400 mt-1">Credit exposure and counterparty risk monitoring for {tenant?.name || 'Platform'}</p>
+        </div>
         <FallbackBadge />
       </div>
       <div className="grid grid-cols-4 gap-3">
-        {[{ l: 'Total Records', v: data.length }, { l: 'Active', v: data.length }, { l: 'Updated', v: 'Just now' }, { l: 'Platform', v: tenant?.name || 'Platform' }].map(s => (
-          <div key={s.l} className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-3"><p className="text-xs text-gray-500">{s.l}</p><p className="text-xl font-bold text-gray-900 dark:text-white">{s.v}</p></div>
-        ))}
-      </div>
-      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 divide-y divide-gray-200 dark:divide-gray-700">
-        {data.map((row, i) => (
-          <div key={i} className="p-4 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700/50">
-            <div>
-              <div className="flex items-center gap-2"><span className="text-xs text-gray-400 font-mono">{row[0]}</span><h4 className="text-sm font-semibold text-gray-900 dark:text-white">{row[1]}</h4></div>
-              <div className="flex items-center gap-3 text-xs text-gray-500 mt-1">{row.slice(2).map((cell, j) => <span key={j}>{String(cell)}</span>)}</div>
-            </div>
-            <button className="px-3 py-1.5 border border-gray-200 dark:border-gray-600 rounded text-xs text-gray-700 dark:text-gray-300">View</button>
+        {[{ l: 'Counterparties', v: '142' }, { l: 'Total Exposure', v: '$2.4B' }, { l: 'Avg Rating', v: 'BBB+' }, { l: 'Breaches', v: '3' }].map(s => (
+          <div key={s.l} className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-3">
+            <p className="text-xs text-gray-500">{s.l}</p>
+            <p className="text-xl font-bold text-gray-900 dark:text-white">{s.v}</p>
           </div>
         ))}
+      </div>
+      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <table className="w-full">
+          <thead className="bg-gray-50 dark:bg-gray-700">
+            <tr>{headers.map(h => <th key={h} className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{h}</th>)}</tr>
+          </thead>
+          <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+            {rows.map(r => (
+              <tr key={r.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                {r.cells.map((c, j) => (
+                  <td key={j} className={`px-4 py-3 text-sm ${j === 0 ? 'font-semibold text-gray-900 dark:text-white' : j === 7 ? statusColor(c) + ' font-medium' : 'text-gray-500 dark:text-gray-400'}`}>
+                    {j === 7 ? <span className={`px-2 py-0.5 rounded-full text-xs ${statusColor(c)}`}>{c}</span> : c}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
     </div>
   )
