@@ -134,6 +134,47 @@ const WhiteLabelConfig = lazy(() => import('./components/WhiteLabelConfig'))
 const MobileCRM = lazy(() => import('./components/MobileCRM'))
 const AICoPilot = lazy(() => import('./components/AICoPilot'))
 
+// v2 Improvements — Tier 2: Agentic AI
+const SemanticSearch = lazy(() => import('./components/SemanticSearch'))
+const AgentGovernanceDashboard = lazy(() => import('./components/AgentGovernanceDashboard'))
+const SalesAgentDashboard = lazy(() => import('./components/SalesAgentDashboard'))
+const CustomerSuccessAgent = lazy(() => import('./components/CustomerSuccessAgent'))
+const PredictiveAnalytics = lazy(() => import('./components/PredictiveAnalytics'))
+const WorkflowRuntime = lazy(() => import('./components/WorkflowRuntime'))
+const EmbeddedAnalytics = lazy(() => import('./components/EmbeddedAnalytics'))
+
+// v2 Improvements — Tier 3: Vertical Deepening — Telco
+const TelcoCellSiteMap = lazy(() => import('./components/TelcoCellSiteMap'))
+const TelcoSIMLifecycle = lazy(() => import('./components/TelcoSIMLifecycle'))
+const TelcoRevenueAssurance = lazy(() => import('./components/TelcoRevenueAssurance'))
+const TelcoNCCCompliance = lazy(() => import('./components/TelcoNCCCompliance'))
+const TelcoNumberPortability = lazy(() => import('./components/TelcoNumberPortability'))
+const TelcoUSSDReplay = lazy(() => import('./components/TelcoUSSDReplay'))
+
+// v2 Improvements — Tier 3: Vertical Deepening — Commodity
+const CommodityPriceFeed = lazy(() => import('./components/CommodityPriceFeed'))
+const CommodityTradeBlotter = lazy(() => import('./components/CommodityTradeBlotter'))
+const CommodityCounterpartyRisk = lazy(() => import('./components/CommodityCounterpartyRisk'))
+const CommodityCFTCReporting = lazy(() => import('./components/CommodityCFTCReporting'))
+const CommodityMarkToMarket = lazy(() => import('./components/CommodityMarkToMarket'))
+
+// v2 Improvements — Tier 3: Vertical Deepening — CPaaS
+const CPaaSAPIExplorer = lazy(() => import('./components/CPaaSAPIExplorer'))
+const CPaaSMessageInspector = lazy(() => import('./components/CPaaSMessageInspector'))
+const CPaaSA2PCompliance = lazy(() => import('./components/CPaaSA2PCompliance'))
+const CPaaSChannelAnalytics = lazy(() => import('./components/CPaaSChannelAnalytics'))
+const CPaaSWebhookTester = lazy(() => import('./components/CPaaSWebhookTester'))
+
+// v2 Improvements — Tier 3: Vertical Deepening — Banking
+const BankingOpenBankingConsent = lazy(() => import('./components/BankingOpenBankingConsent'))
+const BankingNIPPayments = lazy(() => import('./components/BankingNIPPayments'))
+const BankingRegulatoryReports = lazy(() => import('./components/BankingRegulatoryReports'))
+const BankingFXRateManager = lazy(() => import('./components/BankingFXRateManager'))
+
+// v2 Improvements — Tier 4: RevOps
+const RevOpsPipeline = lazy(() => import('./components/RevOpsPipeline'))
+const CDPProfiles = lazy(() => import('./components/CDPProfiles'))
+
 // Operations & Security
 const AuditLog = lazy(() => import('./components/AuditLog'))
 const SecurityDashboard = lazy(() => import('./components/SecurityDashboard'))
@@ -401,6 +442,47 @@ function App() {
                         <Route path="/white-label" element={<P permission="admin:full"><WhiteLabelConfig /></P>} />
                         <Route path="/mobile-crm" element={<P><MobileCRM /></P>} />
                         <Route path="/ai-copilot" element={<P><AICoPilot /></P>} />
+
+                        {/* v2 — Agentic AI */}
+                        <Route path="/semantic-search" element={<P><SemanticSearch /></P>} />
+                        <Route path="/agent-governance" element={<P permission="admin:full"><AgentGovernanceDashboard /></P>} />
+                        <Route path="/sales-agent" element={<P><SalesAgentDashboard /></P>} />
+                        <Route path="/cs-agent" element={<P><CustomerSuccessAgent /></P>} />
+                        <Route path="/predictive-analytics" element={<P permission="analytics:read"><PredictiveAnalytics /></P>} />
+                        <Route path="/workflow-runtime" element={<P><WorkflowRuntime /></P>} />
+                        <Route path="/embedded-analytics" element={<P permission="admin:full"><EmbeddedAnalytics /></P>} />
+
+                        {/* v2 — Telco Deepening */}
+                        <Route path="/telco-cell-sites" element={<P><TelcoCellSiteMap /></P>} />
+                        <Route path="/telco-sim-lifecycle" element={<P><TelcoSIMLifecycle /></P>} />
+                        <Route path="/telco-revenue-assurance" element={<P><TelcoRevenueAssurance /></P>} />
+                        <Route path="/telco-ncc-compliance" element={<P><TelcoNCCCompliance /></P>} />
+                        <Route path="/telco-number-portability" element={<P><TelcoNumberPortability /></P>} />
+                        <Route path="/telco-ussd-replay" element={<P><TelcoUSSDReplay /></P>} />
+
+                        {/* v2 — Commodity Deepening */}
+                        <Route path="/commodity-price-feed" element={<P><CommodityPriceFeed /></P>} />
+                        <Route path="/commodity-trade-blotter" element={<P><CommodityTradeBlotter /></P>} />
+                        <Route path="/commodity-counterparty-risk" element={<P><CommodityCounterpartyRisk /></P>} />
+                        <Route path="/commodity-cftc-reporting" element={<P><CommodityCFTCReporting /></P>} />
+                        <Route path="/commodity-mark-to-market" element={<P><CommodityMarkToMarket /></P>} />
+
+                        {/* v2 — CPaaS Deepening */}
+                        <Route path="/cpaas-api-explorer" element={<P><CPaaSAPIExplorer /></P>} />
+                        <Route path="/cpaas-message-inspector" element={<P><CPaaSMessageInspector /></P>} />
+                        <Route path="/cpaas-a2p-compliance" element={<P><CPaaSA2PCompliance /></P>} />
+                        <Route path="/cpaas-channel-analytics" element={<P><CPaaSChannelAnalytics /></P>} />
+                        <Route path="/cpaas-webhook-tester" element={<P><CPaaSWebhookTester /></P>} />
+
+                        {/* v2 — Banking Deepening */}
+                        <Route path="/banking-open-banking" element={<P permission="banking:read"><BankingOpenBankingConsent /></P>} />
+                        <Route path="/banking-nip-payments" element={<P permission="banking:read"><BankingNIPPayments /></P>} />
+                        <Route path="/banking-regulatory-reports" element={<P permission="compliance:read"><BankingRegulatoryReports /></P>} />
+                        <Route path="/banking-fx-rates" element={<P permission="banking:read"><BankingFXRateManager /></P>} />
+
+                        {/* v2 — RevOps */}
+                        <Route path="/revops-pipeline" element={<P permission="analytics:read"><RevOpsPipeline /></P>} />
+                        <Route path="/cdp-profiles" element={<P permission="analytics:read"><CDPProfiles /></P>} />
                       </Routes>
                     </div>
                   </Router>

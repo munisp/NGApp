@@ -1,0 +1,81 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cdp-engine
+  namespace: crm
+  labels:
+    app: cdp-engine
+    tier: crm
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: cdp-engine
+  template:
+    metadata:
+      labels:
+        app: cdp-engine
+    spec:
+      containers:
+        - name: cdp-engine
+          image: crm/cdp-engine:latest
+          ports:
+            - containerPort: 8095
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: crm-db-credentials
+                  key: url
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8095
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8095
+            initialDelaySeconds: 5
+            periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cdp-engine
+  namespace: crm
+spec:
+  selector:
+    app: cdp-engine
+  ports:
+    - port: 8095
+      targetPort: 8095
+  type: ClusterIP
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: cdp-engine
+  namespace: crm
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: cdp-engine
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70

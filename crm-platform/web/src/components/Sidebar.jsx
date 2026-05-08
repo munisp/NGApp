@@ -57,6 +57,7 @@ import {
   Brain,
   Cpu,
   Clock,
+  Signal,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useTheme } from '@/contexts/ThemeContext'
@@ -83,6 +84,12 @@ const Sidebar = ({ isOpen, onToggle }) => {
     crmAutomation: false,
     crmAnalytics: false,
     crmEcosystem: false,
+    agenticAi: true,
+    telcoDeep: false,
+    commodityDeep: false,
+    cpaasDeep: false,
+    bankingDeep: false,
+    revops: true,
     developer: true,
     operations: true,
     tenant: true,
@@ -246,6 +253,71 @@ const Sidebar = ({ isOpen, onToggle }) => {
         { i18nKey: 'nav.whiteLabel', href: '/white-label', icon: Monitor, description: 'White-label CRM configuration' },
         { i18nKey: 'nav.mobileCrm', href: '/mobile-crm', icon: Phone, description: 'Native mobile CRM with offline' },
         { i18nKey: 'nav.aiCopilot', href: '/ai-copilot', icon: Brain, description: 'AI assistant across all pages' },
+      ]
+    },
+    {
+      section: 'agenticAi',
+      titleKey: 'sections.agenticAi',
+      items: [
+        { i18nKey: 'nav.salesAgent', href: '/sales-agent', icon: Brain, description: 'Autonomous prospect research & outreach' },
+        { i18nKey: 'nav.csAgent', href: '/cs-agent', icon: Shield, description: 'Health monitoring & retention playbooks' },
+        { i18nKey: 'nav.agentGovernance', href: '/agent-governance', icon: Lock, description: 'Permission tiers, audit & kill switch' },
+        { i18nKey: 'nav.semanticSearch', href: '/semantic-search', icon: Search, description: 'Natural language cross-vertical search' },
+        { i18nKey: 'nav.predictiveAnalytics', href: '/predictive-analytics', icon: TrendingUp, description: 'Win/churn/LTV predictions' },
+        { i18nKey: 'nav.workflowRuntime', href: '/workflow-runtime', icon: Zap, description: 'Workflow execution engine' },
+        { i18nKey: 'nav.embeddedAnalytics', href: '/embedded-analytics', icon: BarChart3, description: 'Customer-facing embeddable dashboards' },
+      ]
+    },
+    {
+      section: 'telcoDeep',
+      titleKey: 'sections.telcoDeep',
+      items: [
+        { i18nKey: 'nav.cellSiteMap', href: '/telco-cell-sites', icon: Signal, description: 'Tower health & coverage', requiredProduct: 'network_ops' },
+        { i18nKey: 'nav.simLifecycle', href: '/telco-sim-lifecycle', icon: Wifi, description: 'Activation, swap & porting', requiredProduct: 'subscriber_mgmt' },
+        { i18nKey: 'nav.revenueAssurance', href: '/telco-revenue-assurance', icon: DollarSign, description: 'CDR reconciliation & billing', requiredProduct: 'subscriber_mgmt' },
+        { i18nKey: 'nav.nccCompliance', href: '/telco-ncc-compliance', icon: Shield, description: 'NCC regulatory compliance', requiredProduct: 'subscriber_mgmt' },
+        { i18nKey: 'nav.numberPortability', href: '/telco-number-portability', icon: Phone, description: 'Number porting workflow', requiredProduct: 'subscriber_mgmt' },
+        { i18nKey: 'nav.ussdReplay', href: '/telco-ussd-replay', icon: MessageSquare, description: 'USSD session replay', requiredProduct: 'subscriber_mgmt' },
+      ]
+    },
+    {
+      section: 'commodityDeep',
+      titleKey: 'sections.commodityDeep',
+      items: [
+        { i18nKey: 'nav.priceFeed', href: '/commodity-price-feed', icon: Activity, description: 'Live price streaming', requiredProduct: 'trading' },
+        { i18nKey: 'nav.tradeBlotter', href: '/commodity-trade-blotter', icon: ClipboardList, description: 'Order book & fills', requiredProduct: 'trading' },
+        { i18nKey: 'nav.counterpartyRisk', href: '/commodity-counterparty-risk', icon: Shield, description: 'MCMC credit risk', requiredProduct: 'risk_mgmt' },
+        { i18nKey: 'nav.cftcReporting', href: '/commodity-cftc-reporting', icon: FileText, description: 'CFTC/EMIR reporting', requiredProduct: 'trading' },
+        { i18nKey: 'nav.markToMarket', href: '/commodity-mark-to-market', icon: DollarSign, description: 'End-of-day P&L', requiredProduct: 'trading' },
+      ]
+    },
+    {
+      section: 'cpaasDeep',
+      titleKey: 'sections.cpaasDeep',
+      items: [
+        { i18nKey: 'nav.apiExplorer', href: '/cpaas-api-explorer', icon: Code2, description: 'Interactive API docs', requiredProduct: 'api_platform' },
+        { i18nKey: 'nav.messageInspector', href: '/cpaas-message-inspector', icon: MessageSquare, description: 'Real-time message monitoring', requiredProduct: 'messaging' },
+        { i18nKey: 'nav.a2pCompliance', href: '/cpaas-a2p-compliance', icon: Shield, description: '10DLC & sender ID mgmt', requiredProduct: 'messaging' },
+        { i18nKey: 'nav.channelAnalytics', href: '/cpaas-channel-analytics', icon: BarChart3, description: 'Per-channel delivery funnel', requiredProduct: 'messaging' },
+        { i18nKey: 'nav.webhookTester', href: '/cpaas-webhook-tester', icon: Webhook, description: 'Test webhook events', requiredProduct: 'api_platform' },
+      ]
+    },
+    {
+      section: 'bankingDeep',
+      titleKey: 'sections.bankingDeep',
+      items: [
+        { i18nKey: 'nav.openBanking', href: '/banking-open-banking', icon: Globe, description: 'CBN Open Banking consents', requiredProduct: 'core_banking' },
+        { i18nKey: 'nav.nipPayments', href: '/banking-nip-payments', icon: Zap, description: 'NIBSS NIP 3.0 instant payments', requiredProduct: 'payments' },
+        { i18nKey: 'nav.regulatoryReports', href: '/banking-regulatory-reports', icon: FileText, description: 'CBN/NDIC auto-returns', requiredProduct: 'core_banking' },
+        { i18nKey: 'nav.fxRates', href: '/banking-fx-rates', icon: DollarSign, description: 'Multi-currency & CBN rates', requiredProduct: 'core_banking' },
+      ]
+    },
+    {
+      section: 'revops',
+      titleKey: 'sections.revops',
+      items: [
+        { i18nKey: 'nav.revopsPipeline', href: '/revops-pipeline', icon: Target, description: 'Cross-vertical revenue pipeline' },
+        { i18nKey: 'nav.cdpProfiles', href: '/cdp-profiles', icon: Users, description: 'Unified customer data platform' },
       ]
     },
     {
