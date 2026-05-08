@@ -1,46 +1,32 @@
-import { useState } from 'react'
-import { motion } from 'framer-motion'
-import { Activity, MapPin, Signal, AlertTriangle, CheckCircle, Clock, RefreshCw } from 'lucide-react'
+import { CreditCard } from 'lucide-react'
 import { useTenant } from '@/contexts/TenantContext'
-import { useTranslation } from '@/lib/i18n/useTranslation'
-import { LoadingState, ErrorState, EmptyState, FallbackBadge } from '@/components/ui/DataStates'
+import { FallbackBadge } from '@/components/ui/DataStates'
 
-const seedData = { totalSIMs: 24800000, active: 21200000, suspended: 1800000, deactivated: 1400000, ported: 400000,
-    recentEvents: [
-      { iccid: '8923401...', msisdn: '+234801...', action: 'activated', timestamp: '2 min ago' },
-      { iccid: '8923402...', msisdn: '+234802...', action: 'ported_out', timestamp: '15 min ago' },
-      { iccid: '8923403...', msisdn: '+234803...', action: 'suspended', timestamp: '1 hr ago', reason: 'Non-payment' },
-    ] }
-
-const TelcoSIMLifecycle = () => {
+export default function TelcoSIMLifecycle() {
   const { tenant } = useTenant()
-  const { t } = useTranslation()
-  const [loading, setLoading] = useState(false)
-  const data = seedData
-
+  const data = [('SIM-001', '09012345678', 'Active', 'eSIM', 'Dangote Corp', '2026-01-15', '4G/5G', '24.8 GB'), ('SIM-002', '08098765432', 'Active', 'Physical', 'MTN Employee', '2025-11-20', '5G', '48.2 GB'), ('SIM-003', '07011223344', 'Suspended', 'Physical', 'Kano Textiles', '2024-06-10', '3G', '0.2 GB'), ('SIM-004', '09055667788', 'Pre-Active', 'eSIM', 'New Customer', '2026-05-01', '4G', '0 GB'), ('SIM-005', '08033445566', 'Deactivated', 'Physical', 'Former Sub', '2023-08-15', '2G', '0 GB')]
   return (
-    <div role="region" aria-label="TelcoSIMLifecycle">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">SIM Lifecycle Management</h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-1">Activation, swap, suspension, and porting workflows</p>
-        </div>
+    <div role="region" aria-label="SIMLifecycle" className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div><h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2"><CreditCard className="w-7 h-7 text-teal-600" /> SIM Lifecycle Management</h1><p className="text-gray-500 dark:text-gray-400 mt-1">Track SIM provisioning, activation, and deactivation</p></div>
         <FallbackBadge />
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        {Object.entries(data).filter(([k, v]) => typeof v === 'number').slice(0, 4).map(([key, value]) => (
-          <motion.div key={key} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-white dark:bg-gray-800 rounded-xl p-5 shadow-sm border border-gray-200 dark:border-gray-700">
-            <p className="text-sm text-gray-600 dark:text-gray-400 capitalize">{key.replace(/([A-Z])/g, ' $1')}</p>
-            <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1">{typeof value === 'number' && value > 1000 ? value.toLocaleString() : value}</p>
-          </motion.div>
+      <div className="grid grid-cols-4 gap-3">
+        {[{ l: 'Total Records', v: data.length }, { l: 'Active', v: data.filter(d => d[5] === 'Active' || d[5] === 'completed' || d[5] === 'submitted').length }, { l: 'Pending', v: data.filter(d => d[5] === 'pending' || d[5] === 'in_progress' || d[5] === 'open').length }, { l: 'Platform', v: tenant?.name || 'Telco' }].map(s => (
+          <div key={s.l} className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-3"><p className="text-xs text-gray-500">{s.l}</p><p className="text-xl font-bold text-gray-900 dark:text-white">{s.v}</p></div>
         ))}
       </div>
-      <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Details</h2>
-        <pre className="text-xs text-gray-600 dark:text-gray-400 overflow-auto max-h-96">{JSON.stringify(data, null, 2)}</pre>
+      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 divide-y divide-gray-200 dark:divide-gray-700">
+        {data.map((row, i) => (
+          <div key={i} className="p-4 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700/50">
+            <div>
+              <div className="flex items-center gap-2"><span className="text-xs text-gray-400 font-mono">{row[0]}</span><h4 className="text-sm font-semibold text-gray-900 dark:text-white">{row[1]}</h4></div>
+              <div className="flex items-center gap-3 text-xs text-gray-500 mt-1">{row.slice(2).map((cell, j) => <span key={j}>{String(cell)}</span>)}</div>
+            </div>
+            <button className="px-3 py-1.5 border border-gray-200 dark:border-gray-600 rounded text-xs text-gray-700 dark:text-gray-300">View</button>
+          </div>
+        ))}
       </div>
     </div>
   )
 }
-
-export default TelcoSIMLifecycle

@@ -1,46 +1,32 @@
-import { useState } from 'react'
-import { motion } from 'framer-motion'
-import { Activity, MapPin, Signal, AlertTriangle, CheckCircle, Clock, RefreshCw } from 'lucide-react'
+import { ArrowLeftRight } from 'lucide-react'
 import { useTenant } from '@/contexts/TenantContext'
-import { useTranslation } from '@/lib/i18n/useTranslation'
-import { LoadingState, ErrorState, EmptyState, FallbackBadge } from '@/components/ui/DataStates'
+import { FallbackBadge } from '@/components/ui/DataStates'
 
-const seedData = { totalPortRequests: 42800, pending: 1200, approved: 38400, rejected: 2400, inProgress: 800,
-    avgProcessingDays: 2.4, targetDays: 3,
-    recentRequests: [
-      { msisdn: '+234801...', fromOperator: 'MTN', toOperator: 'AeroTel', status: 'approved', days: 1 },
-      { msisdn: '+234802...', fromOperator: 'Airtel', toOperator: 'AeroTel', status: 'in_progress', days: 2 },
-    ] }
-
-const TelcoNumberPortability = () => {
+export default function TelcoNumberPortability() {
   const { tenant } = useTenant()
-  const { t } = useTranslation()
-  const [loading, setLoading] = useState(false)
-  const data = seedData
-
+  const data = [('MNP-001', '09012345678', 'Port-In', 'MTN → AeroTel', 'pending', '2 hours ago'), ('MNP-002', '08098765432', 'Port-In', 'Glo → AeroTel', 'completed', '1 day ago'), ('MNP-003', '07011223344', 'Port-Out', 'AeroTel → 9Mobile', 'rejected', '3 days ago'), ('MNP-004', '09055667788', 'Port-In', 'Airtel → AeroTel', 'in_progress', '4 hours ago'), ('MNP-005', '08033445566', 'Port-Out', 'AeroTel → MTN', 'completed', '1 week ago')]
   return (
-    <div role="region" aria-label="TelcoNumberPortability">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Number Portability</h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-1">NCC-compliant porting workflow with status tracking</p>
-        </div>
+    <div role="region" aria-label="NumberPortability" className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div><h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2"><ArrowLeftRight className="w-7 h-7 text-purple-600" /> Number Portability</h1><p className="text-gray-500 dark:text-gray-400 mt-1">Mobile Number Portability (MNP) request management</p></div>
         <FallbackBadge />
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        {Object.entries(data).filter(([k, v]) => typeof v === 'number').slice(0, 4).map(([key, value]) => (
-          <motion.div key={key} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-white dark:bg-gray-800 rounded-xl p-5 shadow-sm border border-gray-200 dark:border-gray-700">
-            <p className="text-sm text-gray-600 dark:text-gray-400 capitalize">{key.replace(/([A-Z])/g, ' $1')}</p>
-            <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1">{typeof value === 'number' && value > 1000 ? value.toLocaleString() : value}</p>
-          </motion.div>
+      <div className="grid grid-cols-4 gap-3">
+        {[{ l: 'Total Records', v: data.length }, { l: 'Active', v: data.filter(d => d[3] === 'Active' || d[3] === 'completed' || d[3] === 'submitted').length }, { l: 'Pending', v: data.filter(d => d[3] === 'pending' || d[3] === 'in_progress' || d[3] === 'open').length }, { l: 'Platform', v: tenant?.name || 'Telco' }].map(s => (
+          <div key={s.l} className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-3"><p className="text-xs text-gray-500">{s.l}</p><p className="text-xl font-bold text-gray-900 dark:text-white">{s.v}</p></div>
         ))}
       </div>
-      <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Details</h2>
-        <pre className="text-xs text-gray-600 dark:text-gray-400 overflow-auto max-h-96">{JSON.stringify(data, null, 2)}</pre>
+      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 divide-y divide-gray-200 dark:divide-gray-700">
+        {data.map((row, i) => (
+          <div key={i} className="p-4 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700/50">
+            <div>
+              <div className="flex items-center gap-2"><span className="text-xs text-gray-400 font-mono">{row[0]}</span><h4 className="text-sm font-semibold text-gray-900 dark:text-white">{row[1]}</h4></div>
+              <div className="flex items-center gap-3 text-xs text-gray-500 mt-1">{row.slice(2).map((cell, j) => <span key={j}>{String(cell)}</span>)}</div>
+            </div>
+            <button className="px-3 py-1.5 border border-gray-200 dark:border-gray-600 rounded text-xs text-gray-700 dark:text-gray-300">View</button>
+          </div>
+        ))}
       </div>
     </div>
   )
 }
-
-export default TelcoNumberPortability
