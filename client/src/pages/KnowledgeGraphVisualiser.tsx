@@ -6,7 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Network, Search, RefreshCw, ZoomIn, ZoomOut, Maximize2, Info } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Network, Search, RefreshCw, ZoomIn, ZoomOut, Maximize2, Info, AlertTriangle } from "lucide-react";
 
 // Node and edge types for the KG
 interface KGNode {
@@ -68,6 +69,7 @@ export default function KnowledgeGraphVisualiser() {
   const [filterType, setFilterType] = useState<string>("all");
   const [kgData, setKgData] = useState<KGData>({ nodes: [], edges: [] });
   const [nodePositions, setNodePositions] = useState<Map<string, { x: number; y: number }>>(new Map());
+  const [isDemoData, setIsDemoData] = useState(false);
 
   // Use the knowledgeGraph tRPC router
   const [kgqaQuestion, setKgqaQuestion] = useState("Show all organisations and their violations");
@@ -88,12 +90,14 @@ export default function KnowledgeGraphVisualiser() {
         });
       });
       setNodePositions(positions);
+      setIsDemoData(false);
       toast.success(`Graph loaded: ${result.nodes.length} nodes, ${result.edges.length} edges`);
     },
     onError: (err: any) => {
-      // Generate mock data for demo when FalkorDB is not running
+      // Generate demo data when FalkorDB is not running
       const mockData = generateMockKGData();
       setKgData(mockData);
+      setIsDemoData(true);
       const positions = new Map<string, { x: number; y: number }>();
       const centerX = 600, centerY = 350;
       mockData.nodes.forEach((node: KGNode, i: number) => {
@@ -272,6 +276,17 @@ export default function KnowledgeGraphVisualiser() {
             <p className="text-sm text-muted-foreground">FalkorDB + EPR-KGQA — NDPA entity relationship explorer</p>
           </div>
         </div>
+
+        {/* Demo data warning banner */}
+        {isDemoData && (
+          <Alert className="border-amber-500/50 bg-amber-500/10">
+            <AlertTriangle className="h-4 w-4 text-amber-500" />
+            <AlertDescription className="text-amber-600 dark:text-amber-400">
+              <strong>Demo Data</strong> — FalkorDB is offline. The graph below shows sample data for demonstration purposes.
+              Connect FalkorDB and re-run a query to see real entity relationships.
+            </AlertDescription>
+          </Alert>
+        )}
 
         {/* Query bar */}
         <Card>

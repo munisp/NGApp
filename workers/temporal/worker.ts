@@ -8,14 +8,25 @@
  *   3. Start this worker: npx ts-node workers/temporal/worker.ts
  *
  * Environment variables:
- *   TEMPORAL_ADDRESS  — default: localhost:7233
+ *   TEMPORAL_ADDRESS   — default: localhost:7233
  *   TEMPORAL_NAMESPACE — default: default
+ *   TEMPORAL_TLS_CERT  — PEM client certificate (Temporal Cloud mTLS)
+ *   TEMPORAL_TLS_KEY   — PEM client private key  (Temporal Cloud mTLS)
+ *   TEMPORAL_API_KEY   — Temporal Cloud API key (alternative to mTLS)
  */
 
-// ─── Stub implementation (replace with actual Temporal imports when deploying) ─
+import { logger } from "../../server/logger";
 
 const TEMPORAL_ADDRESS = process.env.TEMPORAL_ADDRESS ?? "localhost:7233";
 const TEMPORAL_NAMESPACE = process.env.TEMPORAL_NAMESPACE ?? "default";
+const TEMPORAL_TLS_CERT = process.env.TEMPORAL_TLS_CERT;
+const TEMPORAL_TLS_KEY = process.env.TEMPORAL_TLS_KEY;
+const TEMPORAL_API_KEY = process.env.TEMPORAL_API_KEY;
+
+const IS_TEMPORAL_CLOUD =
+  TEMPORAL_ADDRESS.includes(".tmprl.cloud") ||
+  !!(TEMPORAL_TLS_CERT && TEMPORAL_TLS_KEY) ||
+  !!TEMPORAL_API_KEY;
 
 export const temporalConfig = {
   address: TEMPORAL_ADDRESS,
@@ -30,50 +41,98 @@ export const temporalConfig = {
 
 /**
  * Start the Temporal worker.
- * Uncomment and adapt when @temporalio/worker is installed.
+ * Dynamically imports @temporalio/worker — if not installed, logs and exits.
  */
 export async function startTemporalWorker(): Promise<void> {
-  console.log(`[Temporal] Worker stub — connect to ${TEMPORAL_ADDRESS} namespace=${TEMPORAL_NAMESPACE}`);
-  console.log("[Temporal] Install @temporalio/worker and uncomment the implementation below.");
+  logger.info(
+    { address: TEMPORAL_ADDRESS, namespace: TEMPORAL_NAMESPACE, isCloud: IS_TEMPORAL_CLOUD },
+    "[Temporal] Starting worker"
+  );
 
-  // ── Actual implementation (uncomment when @temporalio/worker is installed) ──
-  //
-  // const { Worker } = await import("@temporalio/worker");
-  // const worker = await Worker.create({
-  //   workflowsPath: require.resolve("./workflows"),
-  //   activities: {
-  //     ...accreditationActivities,
-  //     ...breachNotificationActivities,
-  //     ...dsarActivities,
-  //     ...carActivities,
-  //   },
-  //   taskQueue: temporalConfig.taskQueues.accreditation,
-  //   connection: await NativeConnection.connect({ address: TEMPORAL_ADDRESS }),
-  //   namespace: TEMPORAL_NAMESPACE,
-  // });
-  // await worker.run();
+  let Worker: typeof import("@temporalio/worker").Worker;
+  let NativeConnection: typeof import("@temporalio/worker").NativeConnection;
+  try {
+    const mod = await import("@temporalio/worker");
+    Worker = mod.Worker;
+    NativeConnection = mod.NativeConnection;
+  } catch {
+    logger.warn(
+      "[Temporal] @temporalio/worker not installed — worker cannot start. " +
+      "Install with: pnpm add @temporalio/worker @temporalio/workflow @temporalio/activity"
+    );
+    return;
+  }
+
+  const connectionOptions: Record<string, unknown> = { address: TEMPORAL_ADDRESS };
+  if (IS_TEMPORAL_CLOUD) {
+    if (TEMPORAL_TLS_CERT && TEMPORAL_TLS_KEY) {
+      connectionOptions.tls = {
+        clientCertPair: {
+          crt: Buffer.from(TEMPORAL_TLS_CERT),
+          key: Buffer.from(TEMPORAL_TLS_KEY),
+        },
+      };
+    } else if (TEMPORAL_API_KEY) {
+      connectionOptions.apiKey = TEMPORAL_API_KEY;
+      connectionOptions.tls = {};
+    }
+  }
+
+  const connection = await NativeConnection.connect(
+    connectionOptions as Parameters<typeof NativeConnection.connect>[0]
+  );
+
+  const worker = await Worker.create({
+    workflowsPath: require.resolve("./workflows"),
+    taskQueue: temporalConfig.taskQueues.accreditation,
+    connection,
+    namespace: TEMPORAL_NAMESPACE,
+  });
+
+  logger.info(
+    { taskQueue: temporalConfig.taskQueues.accreditation, namespace: TEMPORAL_NAMESPACE },
+    "[Temporal] Worker started — listening for tasks"
+  );
+
+  await worker.run();
 }
 
 /**
- * Temporal client helper for starting workflows from tRPC procedures.
- * Returns a stub client when Temporal is not available.
+ * Temporal client helper for starting workflows.
+ * Dynamically imports @temporalio/client — returns null if unavailable.
  */
 export async function getTemporalClient() {
   try {
-    // Attempt real connection
-    // const { Client, Connection } = await import("@temporalio/client");
-    // const connection = await Connection.connect({ address: TEMPORAL_ADDRESS });
-    // return new Client({ connection, namespace: TEMPORAL_NAMESPACE });
-    return null; // stub
+    const { Client, Connection } = await import("@temporalio/client");
+
+    const connectionOptions: Record<string, unknown> = { address: TEMPORAL_ADDRESS };
+    if (IS_TEMPORAL_CLOUD) {
+      if (TEMPORAL_TLS_CERT && TEMPORAL_TLS_KEY) {
+        connectionOptions.tls = {
+          clientCertPair: {
+            crt: Buffer.from(TEMPORAL_TLS_CERT),
+            key: Buffer.from(TEMPORAL_TLS_KEY),
+          },
+        };
+      } else if (TEMPORAL_API_KEY) {
+        connectionOptions.apiKey = TEMPORAL_API_KEY;
+        connectionOptions.tls = {};
+      }
+    }
+
+    const connection = await Connection.connect(
+      connectionOptions as Parameters<typeof Connection.connect>[0]
+    );
+    return new Client({ connection, namespace: TEMPORAL_NAMESPACE });
   } catch {
-    console.warn("[Temporal] Client unavailable — workflows will not be orchestrated");
+    logger.warn("[Temporal] Client unavailable — workflows will not be orchestrated");
     return null;
   }
 }
 
 /**
  * Start an accreditation workflow.
- * No-ops gracefully when Temporal is not available.
+ * Gracefully degrades when Temporal is not available.
  */
 export async function startAccreditationWorkflow(params: {
   applicationId: number;
@@ -82,21 +141,30 @@ export async function startAccreditationWorkflow(params: {
 }): Promise<{ workflowId: string | null }> {
   const client = await getTemporalClient();
   if (!client) {
-    console.log(`[Temporal] Stub: would start accreditation workflow for application ${params.applicationId}`);
+    logger.info(
+      { applicationId: params.applicationId },
+      "[Temporal] Client unavailable — accreditation workflow not started"
+    );
     return { workflowId: null };
   }
-  // const handle = await client.workflow.start("accreditationWorkflow", {
-  //   taskQueue: temporalConfig.taskQueues.accreditation,
-  //   workflowId: `accreditation-${params.applicationId}`,
-  //   args: [{ applicationId: params.applicationId, dpcoOrgId: params.dpcoOrgId, applicantEmail: params.applicantEmail, submittedAt: new Date().toISOString() }],
-  // });
-  // return { workflowId: handle.workflowId };
-  return { workflowId: null };
+
+  const workflowId = `accreditation-${params.applicationId}`;
+  const handle = await client.workflow.start("accreditationWorkflow", {
+    taskQueue: temporalConfig.taskQueues.accreditation,
+    workflowId,
+    args: [{
+      applicationId: params.applicationId,
+      dpcoOrgId: params.dpcoOrgId,
+      applicantEmail: params.applicantEmail,
+      submittedAt: new Date().toISOString(),
+    }],
+  });
+  return { workflowId: handle.workflowId };
 }
 
 /**
  * Start a breach notification workflow.
- * No-ops gracefully when Temporal is not available.
+ * Gracefully degrades when Temporal is not available.
  */
 export async function startBreachNotificationWorkflow(params: {
   breachId: number;
@@ -108,10 +176,28 @@ export async function startBreachNotificationWorkflow(params: {
 }): Promise<{ workflowId: string | null }> {
   const client = await getTemporalClient();
   if (!client) {
-    console.log(`[Temporal] Stub: would start breach notification workflow for breach ${params.breachId}`);
+    logger.info(
+      { breachId: params.breachId },
+      "[Temporal] Client unavailable — breach notification workflow not started"
+    );
     return { workflowId: null };
   }
-  return { workflowId: null };
+
+  const workflowId = `breach-notification-${params.breachId}`;
+  const handle = await client.workflow.start("breachNotificationWorkflow", {
+    taskQueue: temporalConfig.taskQueues.breach,
+    workflowId,
+    args: [{
+      breachId: params.breachId,
+      orgId: params.orgId,
+      dpoEmail: params.dpoEmail,
+      ceoEmail: params.ceoEmail,
+      severity: params.severity,
+      estimatedAffectedRecords: params.estimatedAffectedRecords,
+      detectedAt: new Date().toISOString(),
+    }],
+  });
+  return { workflowId: handle.workflowId };
 }
 
 if (require.main === module) {

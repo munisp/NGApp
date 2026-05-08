@@ -121,33 +121,37 @@ const SECTOR_DEFS = [
   },
 ];
 
-// ─── Mock compliance data (will be replaced by real tRPC calls) ───────────────
-function generateSectorData(def: typeof SECTOR_DEFS[0], workerRunning: boolean, lastScanOverride?: string): SectorStatus {
-  // Deterministic scores based on sector
-  const scores: Record<string, number> = {
-    "fintech-monitor": 87,
-    "healthcare-monitor": 92,
-    "energy-monitor": 78,
-    "insurance-monitor": 84,
-    "telecom-monitor": 81,
-  };
-  const violations: Record<string, number> = {
-    "fintech-monitor": 3,
-    "healthcare-monitor": 1,
-    "energy-monitor": 7,
-    "insurance-monitor": 2,
-    "telecom-monitor": 4,
-  };
-  const score = scores[def.id] ?? 80;
-  const viol = violations[def.id] ?? 2;
+// ─── Build sector compliance status from real DB stats ────────────────────────
+function buildSectorData(
+  def: typeof SECTOR_DEFS[0],
+  workerRunning: boolean,
+  lastScanOverride: string | undefined,
+  statsForSector: Array<{ severity: string; resolved: boolean; count: number }>,
+): SectorStatus {
+  // Compute violations and score from real event data
+  const totalEvents = statsForSector.reduce((s, r) => s + r.count, 0);
+  const unresolvedViolations = statsForSector
+    .filter(r => !r.resolved && (r.severity === "high" || r.severity === "critical" || r.severity === "medium"))
+    .reduce((s, r) => s + r.count, 0);
+  const criticalUnresolved = statsForSector
+    .filter(r => !r.resolved && (r.severity === "critical" || r.severity === "high"))
+    .reduce((s, r) => s + r.count, 0);
+
+  // Score: 100 baseline, deduct per unresolved event by severity
+  const score = Math.max(0, Math.min(100, Math.round(
+    100 - (criticalUnresolved * 8) - (unresolvedViolations * 3)
+  )));
+
   return {
     ...def,
     workerStatus: workerRunning ? "running" : "stopped",
-    complianceScore: score,
-    violations: viol,
-    alerts: Math.floor(viol * 1.5),
+    complianceScore: totalEvents === 0 && !workerRunning ? 0 : score,
+    violations: unresolvedViolations,
+    alerts: criticalUnresolved,
     lastScan: lastScanOverride ?? new Date(Date.now() - 60000).toISOString(),
-    status: score >= 90 ? "compliant" : score >= 75 ? "warning" : "non_compliant",
+    status: totalEvents === 0 && !workerRunning
+      ? "warning"
+      : score >= 90 ? "compliant" : score >= 75 ? "warning" : "non_compliant",
   };
 }
 
@@ -194,6 +198,11 @@ export default function SectorComplianceDashboard() {
   const sectorEventsQuery = trpc.sectorEvents.list.useQuery({ limit: 100 }, {
     refetchInterval: 60000,
   });
+  // Get real compliance stats from DB (grouped by sector/severity/resolved)
+  const statsQuery = trpc.sectorEvents.stats.useQuery(undefined, {
+    refetchInterval: 60000,
+  });
+
   // Build a map of sector id -> most recent event createdAt
   const sectorLastScanMap = new Map<string, string>();
   for (const ev of (sectorEventsQuery.data ?? [])) {
@@ -204,12 +213,25 @@ export default function SectorComplianceDashboard() {
     }
   }
 
+  // Group stats by sector for score computation
+  const statsBySector = new Map<string, Array<{ severity: string; resolved: boolean; count: number }>>();
+  for (const row of (statsQuery.data ?? [])) {
+    const key = `${row.sector}-monitor`;
+    if (!statsBySector.has(key)) statsBySector.set(key, []);
+    statsBySector.get(key)!.push({ severity: row.severity, resolved: row.resolved ?? false, count: row.count });
+  }
+
   const workerMap = new Map<string, string>(
     ((workersQuery.data ?? []) as Array<{ id: string; status: string }>).map((w) => [w.id, w.status])
   );
 
   const sectors: SectorStatus[] = SECTOR_DEFS.map(def =>
-    generateSectorData(def, workerMap.get(def.id) === "running", sectorLastScanMap.get(def.id))
+    buildSectorData(
+      def,
+      workerMap.get(def.id) === "running",
+      sectorLastScanMap.get(def.id),
+      statsBySector.get(def.id) ?? [],
+    )
   );
 
   const totalViolations = sectors.reduce((s, x) => s + x.violations, 0);
@@ -219,7 +241,7 @@ export default function SectorComplianceDashboard() {
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    await Promise.all([workersQuery.refetch(), sectorEventsQuery.refetch()]);
+    await Promise.all([workersQuery.refetch(), sectorEventsQuery.refetch(), statsQuery.refetch()]);
     setLastRefresh(new Date());
     setRefreshing(false);
     toast.success("Sector compliance data updated.");

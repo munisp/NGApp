@@ -57,6 +57,7 @@ import cors from "cors";
 import { getPool, closeDb, getUserByOpenId, getDb } from "../db";
 import { getAllCircuitBreakerStates } from "../resilience";
 import { logger } from "../logger";
+import { validateEnvironment } from "../envValidation";
 import { sdk } from "./sdk";
 import { COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
 import { getSessionCookieOptions } from "./cookies";
@@ -121,6 +122,9 @@ const workerLimiter = rateLimit({
 });;
 
 async function startServer() {
+  // Validate security-critical environment variables before anything else
+  validateEnvironment();
+
   const app = express();
   const server = createServer(app);
 
