@@ -1,27 +1,54 @@
 import { useState } from 'react'
-import { Target, BarChart3, Users, TrendingUp, Clock, Search, Filter, CheckCircle, AlertTriangle, Settings, ArrowRight } from 'lucide-react'
+import { Target, TrendingUp, TrendingDown, BarChart3, Users, Clock, CheckCircle, XCircle, ArrowUpRight, ArrowDownRight } from 'lucide-react'
 import { useTenant } from '@/contexts/TenantContext'
-import { LoadingState, ErrorState, EmptyState, FallbackBadge, ExportButton } from '@/components/ui/DataStates'
+import { FallbackBadge } from '@/components/ui/DataStates'
 import { useTranslation } from '@/lib/i18n/useTranslation'
-const tabs = ['Overview', 'Details', 'Settings']
-const items = [
-  { id: 1, name: 'Item Alpha', status: 'active', value: 'High', updated: '2 hours ago' },
-  { id: 2, name: 'Item Beta', status: 'active', value: 'Medium', updated: '4 hours ago' },
-  { id: 3, name: 'Item Gamma', status: 'pending', value: 'High', updated: '1 day ago' },
-  { id: 4, name: 'Item Delta', status: 'active', value: 'Low', updated: '2 days ago' },
-  { id: 5, name: 'Item Epsilon', status: 'inactive', value: 'Medium', updated: '3 days ago' },
+
+const deals = [
+  { deal: 'Dangote Trade Finance', outcome: 'won', value: '\u20A62.5B', cycle: '38 days', competitors: ['GTBank', 'Zenith'], factors: [{ f: 'CEO relationship', impact: '+' }, { f: 'Competitive pricing', impact: '+' }, { f: 'Fast POC delivery', impact: '+' }] },
+  { deal: 'NNPC Infrastructure', outcome: 'lost', value: '\u20A61.8B', cycle: '92 days', competitors: ['First Bank'], factors: [{ f: 'Price too high', impact: '-' }, { f: 'Slow response time', impact: '-' }, { f: 'Missing compliance cert', impact: '-' }] },
+  { deal: 'Lafarge Cement', outcome: 'won', value: '\u20A6450M', cycle: '28 days', competitors: ['Access Bank'], factors: [{ f: 'Industry expertise', impact: '+' }, { f: 'Referral from Dangote', impact: '+' }, { f: 'Flexible terms', impact: '+' }] },
+  { deal: 'Coca-Cola Nigeria', outcome: 'lost', value: '\u20A6890M', cycle: '120 days', competitors: ['Stanbic', 'UBA'], factors: [{ f: 'No executive sponsor', impact: '-' }, { f: 'Feature gap in FX', impact: '-' }, { f: 'Bundled competitor pricing', impact: '-' }] },
+  { deal: 'MTN Payroll', outcome: 'won', value: '\u20A6890M', cycle: '42 days', competitors: ['Zenith'], factors: [{ f: 'CFO champion', impact: '+' }, { f: 'POC success', impact: '+' }] },
 ]
+
 export default function WinLossAnalysis() {
+  const { tenant } = useTenant()
   const { t } = useTranslation()
-  const [activeTab, setActiveTab] = useState('Overview')
+  const [filter, setFilter] = useState('all')
+
+  const filtered = filter === 'all' ? deals : deals.filter(d => d.outcome === filter)
+  const wins = deals.filter(d => d.outcome === 'won')
+  const losses = deals.filter(d => d.outcome === 'lost')
+
   return (
-    <div role="region" aria-label="WinLossAnalysis"  className="space-y-6">
-      <div><h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2"><Target className="w-7 h-7 text-white p-1 rounded-lg bg-orange-600" /> Post-deal analysis with AI-categorized reasons</h1></div>
-      <div className="grid grid-cols-4 gap-3">{[{ l: "Deals Analyzed", v: "342" }, { l: "Win Rate", v: "34.2%" }, { l: "Top Loss Reason", v: "Pricing" }, { l: "Avg Cycle", v: "34 days" }, ].flat().map(s => (<div key={s.l} className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-3"><p className="text-xs text-gray-500">{s.l}</p><p className="text-xl font-bold text-gray-900 dark:text-white">{s.v}</p></div>))}</div>
-      <div className="border-b border-gray-200 dark:border-gray-700"><div className="flex space-x-6">{tabs.map(t => (<button key={t} onClick={() => setActiveTab(t)} className={`pb-3 text-sm font-medium border-b-2 ${activeTab === t ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500'}`}>{t}</button>))}</div></div>
-      {activeTab === 'Overview' && (<div tabIndex="0" className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700"><table className="w-full"><thead className="bg-gray-50 dark:bg-gray-700"><tr>{['Name', 'Status', 'Value', 'Updated', 'Action'].map(h => (<th key={h} className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{h}</th>))}</tr></thead><tbody className="divide-y divide-gray-200 dark:divide-gray-700">{items.map(item => (<tr key={item.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50"><td className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-white">{item.name}</td><td className="px-4 py-3"><span className={`text-xs px-2 py-0.5 rounded-full ${item.status === 'active' ? 'bg-emerald-100 text-emerald-700' : item.status === 'pending' ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-600'}`}>{item.status}</span></td><td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">{item.value}</td><td className="px-4 py-3 text-xs text-gray-500">{item.updated}</td><td className="px-4 py-3"><button className="text-xs text-blue-600 hover:text-blue-700">View</button></td></tr>))}</tbody></table></div>)}
-      {activeTab === 'Details' && (<div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6"><h3 className="font-semibold text-gray-900 dark:text-white mb-4">Detailed Analytics</h3><p className="text-sm text-gray-600 dark:text-gray-400">Comprehensive analytics and detailed breakdowns for this module. Configure settings and view historical trends.</p></div>)}
-      {activeTab === 'Settings' && (<div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6"><h3 className="font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2"><Settings className="w-5 h-5" /> Configuration</h3><p className="text-sm text-gray-600 dark:text-gray-400">Manage settings, integrations, and automation rules for this module.</p></div>)}
+    <div role="region" aria-label="WinLossAnalysis" className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div><h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2"><Target className="w-7 h-7 text-rose-600" /> Win/Loss Analysis</h1><p className="text-gray-500 dark:text-gray-400 mt-1">Analyze deal outcomes to improve win rates</p></div>
+        <FallbackBadge />
+      </div>
+      <div className="grid grid-cols-5 gap-3">
+        {[{ l: 'Total Deals', v: deals.length }, { l: 'Won', v: wins.length }, { l: 'Lost', v: losses.length }, { l: 'Win Rate', v: Math.round(wins.length / deals.length * 100) + '%' }, { l: 'Avg Cycle', v: Math.round(deals.reduce((s, d) => s + parseInt(d.cycle), 0) / deals.length) + 'd' }].map(s => (
+          <div key={s.l} className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-3"><p className="text-xs text-gray-500">{s.l}</p><p className="text-xl font-bold text-gray-900 dark:text-white">{s.v}</p></div>
+        ))}
+      </div>
+      <div className="flex gap-1">
+        {['all', 'won', 'lost'].map(f => (
+          <button key={f} onClick={() => setFilter(f)} className={`px-3 py-1.5 rounded-lg text-xs font-medium capitalize ${filter === f ? 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400' : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700'}`}>{f}</button>
+        ))}
+      </div>
+      <div className="space-y-2">
+        {filtered.map(d => (
+          <div key={d.deal} className={`bg-white dark:bg-gray-800 rounded-xl border-l-4 ${d.outcome === 'won' ? 'border-l-emerald-500' : 'border-l-red-500'} border border-gray-200 dark:border-gray-700 p-4`}>
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2"><h4 className="font-semibold text-gray-900 dark:text-white">{d.deal}</h4><span className={`text-xs px-2 py-0.5 rounded ${d.outcome === 'won' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>{d.outcome}</span></div>
+              <div className="flex items-center gap-3 text-sm"><span className="font-medium text-gray-900 dark:text-white">{d.value}</span><span className="text-gray-400">{d.cycle}</span></div>
+            </div>
+            <div className="flex items-center gap-3 mb-2"><span className="text-xs text-gray-400">Competitors:</span>{d.competitors.map(c => <span key={c} className="text-xs px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400">{c}</span>)}</div>
+            <div className="flex flex-wrap gap-1">{d.factors.map(f => <span key={f.f} className={`text-xs px-2 py-0.5 rounded ${f.impact === '+' ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400' : 'bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400'}`}>{f.impact === '+' ? '\u2713' : '\u2717'} {f.f}</span>)}</div>
+          </div>
+        ))}
+      </div>
     </div>
   )
 }

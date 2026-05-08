@@ -1,42 +1,49 @@
 import { useState } from 'react'
-import { Star, ThumbsUp, ThumbsDown, BarChart3, TrendingUp, TrendingDown, MessageSquare, Users, Clock, Target, AlertTriangle } from 'lucide-react'
-import { useTenant } from '@/contexts/TenantContext'
-import { LoadingState, ErrorState, EmptyState, FallbackBadge, ExportButton } from '@/components/ui/DataStates'
-import { useTranslation } from '@/lib/i18n/useTranslation'
-const data = {
-  nps: { score: 42, promoters: 52, passives: 28, detractors: 20, responses: 4280, trend: '+3' },
-  csat: { score: 4.2, responses: 8940, trend: '+0.1' },
-  ces: { score: 3.8, responses: 2140, trend: '-0.2' },
-  recent: [
-    { id: 1, customer: 'Chinedu Okafor', type: 'NPS', score: 9, comment: 'Fast resolution of my transfer issue. Sarah was very helpful!', date: '2 hours ago', segment: 'Commercial' },
-    { id: 2, customer: 'Kano Textiles', type: 'CSAT', score: 2, comment: 'Third time calling about same issue. Nobody follows up.', date: '4 hours ago', segment: 'Enterprise' },
-    { id: 3, customer: 'Ngozi Eze', type: 'NPS', score: 10, comment: 'Best banking experience. Your Victoria Island branch is excellent.', date: '1 day ago', segment: 'Commercial' },
-    { id: 4, customer: 'Bala Mohammed', type: 'CES', score: 5, comment: 'Account opening process was too complicated. Too many documents.', date: '1 day ago', segment: 'Retail' },
-    { id: 5, customer: 'Olumide Adeyemi', type: 'NPS', score: 4, comment: 'Fraud response was slow. Expected better from a premium bank.', date: '2 days ago', segment: 'Enterprise' },
-  ],
-  byProduct: [
-    { product: 'Current Account', nps: 48, csat: 4.3 },
-    { product: 'SME Loan', nps: 35, csat: 3.9 },
-    { product: 'POS Terminal', nps: 52, csat: 4.4 },
-    { product: 'Mobile Banking', nps: 56, csat: 4.5 },
-    { product: 'Trade Finance', nps: 44, csat: 4.1 },
-  ],
-}
+import { MessageCircle } from 'lucide-react'
+import { FallbackBadge } from '@/components/ui/DataStates'
+
+const feedback = [
+  { id: 'FB-001', source: 'NPS Survey', customer: 'Dangote Industries', score: 9, category: 'Product', comment: 'Trade finance platform has transformed our operations. The real-time FX rates are game-changing.', sentiment: 'positive', date: '2 days ago' },
+  { id: 'FB-002', source: 'Support Ticket', customer: 'Kano Textiles', score: 3, category: 'Support', comment: 'Response time is unacceptable. Waited 5 days for a resolution on a billing issue.', sentiment: 'negative', date: '3 days ago' },
+  { id: 'FB-003', source: 'In-App', customer: 'MTN Nigeria', score: 8, category: 'UX', comment: 'The new dashboard is intuitive. Would love to see mobile app improvements.', sentiment: 'positive', date: '1 day ago' },
+  { id: 'FB-004', source: 'QBR', customer: 'Shoprite', score: 6, category: 'Feature', comment: 'Need better POS integration. Current process requires too many manual steps.', sentiment: 'neutral', date: '1 week ago' },
+  { id: 'FB-005', source: 'NPS Survey', customer: 'Total Energies', score: 2, category: 'Reliability', comment: 'Two outages in the last month during peak trading hours. This is unacceptable for FX operations.', sentiment: 'negative', date: '5 days ago' },
+]
+
 export default function FeedbackLoop() {
-  const { t } = useTranslation()
-  const [activeTab, setActiveTab] = useState('overview')
+  const [filter, setFilter] = useState('all')
+
+  const filtered = filter === 'all' ? feedback : feedback.filter(f => f.sentiment === filter)
+  const nps = Math.round((feedback.filter(f => f.score >= 9).length - feedback.filter(f => f.score <= 6).length) / feedback.length * 100)
+
   return (
-    <div role="region" aria-label="FeedbackLoop"  className="space-y-6">
-      <div><h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2"><Star className="w-7 h-7 text-yellow-500" /> Customer Feedback Loop</h1><p className="text-gray-500 dark:text-gray-400 mt-1">NPS, CSAT, and CES tracking across all touchpoints</p></div>
-      <div className="grid grid-cols-3 gap-4">
-        <div tabIndex="0" className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 text-center"><p className="text-xs text-gray-500 mb-1">NPS Score</p><p className="text-4xl font-bold text-blue-600">{data.nps.score}</p><p className="text-xs text-emerald-600 mt-1">{data.nps.trend} vs last month</p><div className="flex justify-center gap-4 mt-3 text-xs"><span className="text-emerald-600">{data.nps.promoters}% promoters</span><span className="text-gray-500">{data.nps.passives}% passive</span><span className="text-red-600">{data.nps.detractors}% detractors</span></div></div>
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 text-center"><p className="text-xs text-gray-500 mb-1">CSAT</p><p className="text-4xl font-bold text-emerald-600">{data.csat.score}/5</p><p className="text-xs text-emerald-600 mt-1">{data.csat.trend} vs last month</p><p className="text-xs text-gray-500 mt-2">{data.csat.responses.toLocaleString()} responses</p></div>
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 text-center"><p className="text-xs text-gray-500 mb-1">CES (Customer Effort)</p><p className="text-4xl font-bold text-amber-600">{data.ces.score}/5</p><p className="text-xs text-red-600 mt-1">{data.ces.trend} vs last month</p><p className="text-xs text-gray-500 mt-2">{data.ces.responses.toLocaleString()} responses</p></div>
+    <div role="region" aria-label="FeedbackLoop" className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div><h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2"><MessageCircle className="w-7 h-7 text-violet-600" /> Feedback Loop</h1><p className="text-gray-500 dark:text-gray-400 mt-1">Customer feedback collection and sentiment analysis</p></div>
+        <FallbackBadge />
       </div>
-      <div className="border-b border-gray-200 dark:border-gray-700"><div className="flex space-x-6">{['overview', 'responses', 'by product'].map(t => (<button key={t} onClick={() => setActiveTab(t)} className={`pb-3 text-sm font-medium capitalize border-b-2 ${activeTab === t ? 'border-yellow-500 text-yellow-600' : 'border-transparent text-gray-500'}`}>{t}</button>))}</div></div>
-      {activeTab === 'responses' && (<div className="space-y-3">{data.recent.map(r => (<div key={r.id} className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4"><div className="flex items-center justify-between mb-2"><div className="flex items-center gap-2"><span className="font-medium text-gray-900 dark:text-white text-sm">{r.customer}</span><span className="text-xs bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded-full">{r.segment}</span></div><div className="flex items-center gap-2"><span className="text-xs text-gray-500">{r.type}</span><span className={`text-sm font-bold ${r.score >= 8 ? 'text-emerald-600' : r.score >= 5 ? 'text-amber-600' : 'text-red-600'}`}>{r.score}{r.type === 'NPS' ? '/10' : '/5'}</span></div></div><p className="text-sm text-gray-600 dark:text-gray-400 italic">"{r.comment}"</p><p className="text-xs text-gray-500 mt-2">{r.date}</p></div>))}</div>)}
-      {activeTab === 'by product' && (<div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden"><table className="w-full"><thead className="bg-gray-50 dark:bg-gray-700"><tr>{['Product', 'NPS', 'CSAT'].map(h => (<th key={h} className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{h}</th>))}</tr></thead><tbody className="divide-y divide-gray-200 dark:divide-gray-700">{data.byProduct.map(p => (<tr key={p.product}><td className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-white">{p.product}</td><td className="px-4 py-3"><span className={`text-sm font-bold ${p.nps >= 50 ? 'text-emerald-600' : p.nps >= 30 ? 'text-amber-600' : 'text-red-600'}`}>{p.nps}</span></td><td className="px-4 py-3 text-sm">{p.csat}/5</td></tr>))}</tbody></table></div>)}
-      {activeTab === 'overview' && (<div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6"><h3 className="font-semibold mb-4">NPS Distribution</h3><div className="flex h-8 rounded-full overflow-hidden"><div className="bg-emerald-500 flex items-center justify-center text-white text-xs font-medium" style={{width: `${data.nps.promoters}%`}}>{data.nps.promoters}%</div><div className="bg-gray-300 flex items-center justify-center text-gray-700 text-xs font-medium" style={{width: `${data.nps.passives}%`}}>{data.nps.passives}%</div><div className="bg-red-500 flex items-center justify-center text-white text-xs font-medium" style={{width: `${data.nps.detractors}%`}}>{data.nps.detractors}%</div></div><div className="flex justify-between mt-2 text-xs text-gray-500"><span>Promoters (9-10)</span><span>Passives (7-8)</span><span>Detractors (0-6)</span></div></div>)}
+      <div className="grid grid-cols-5 gap-3">
+        {[{ l: 'Total Feedback', v: feedback.length }, { l: 'NPS', v: nps > 0 ? `+${nps}` : nps }, { l: 'Positive', v: feedback.filter(f => f.sentiment === 'positive').length }, { l: 'Negative', v: feedback.filter(f => f.sentiment === 'negative').length }, { l: 'Avg Score', v: (feedback.reduce((s, f) => s + f.score, 0) / feedback.length).toFixed(1) }].map(s => (
+          <div key={s.l} className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-3"><p className="text-xs text-gray-500">{s.l}</p><p className="text-xl font-bold text-gray-900 dark:text-white">{s.v}</p></div>
+        ))}
+      </div>
+      <div className="flex gap-1">
+        {['all', 'positive', 'neutral', 'negative'].map(f => (
+          <button key={f} onClick={() => setFilter(f)} className={`px-3 py-1.5 rounded-lg text-xs font-medium capitalize ${filter === f ? 'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400' : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700'}`}>{f}</button>
+        ))}
+      </div>
+      <div className="space-y-2">
+        {filtered.map(fb => (
+          <div key={fb.id} className={`bg-white dark:bg-gray-800 rounded-xl border-l-4 ${fb.sentiment === 'positive' ? 'border-l-emerald-500' : fb.sentiment === 'negative' ? 'border-l-red-500' : 'border-l-amber-500'} border border-gray-200 dark:border-gray-700 p-4`}>
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2"><h4 className="font-semibold text-gray-900 dark:text-white">{fb.customer}</h4><span className="text-xs px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400">{fb.source}</span><span className="text-xs px-2 py-0.5 rounded bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400">{fb.category}</span></div>
+              <div className="flex items-center gap-1">{Array.from({ length: 10 }, (_, i) => <div key={i} className={`w-2 h-2 rounded-full ${i < fb.score ? (fb.score >= 9 ? 'bg-emerald-500' : fb.score >= 7 ? 'bg-amber-500' : 'bg-red-500') : 'bg-gray-200 dark:bg-gray-700'}`} />)}<span className="text-sm font-bold ml-1 text-gray-900 dark:text-white">{fb.score}</span></div>
+            </div>
+            <p className="text-sm text-gray-600 dark:text-gray-400 italic">&ldquo;{fb.comment}&rdquo;</p>
+            <span className="text-xs text-gray-400 mt-1 inline-block">{fb.date}</span>
+          </div>
+        ))}
+      </div>
     </div>
   )
 }
