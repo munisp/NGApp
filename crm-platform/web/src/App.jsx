@@ -41,6 +41,20 @@ const RemittanceView = lazy(() => import('./components/RemittanceView'))
 const IntegrationHub = lazy(() => import('./components/IntegrationHub'))
 const CrossSystemAnalytics = lazy(() => import('./components/CrossSystemAnalytics'))
 
+// Telco vertical
+const TelcoSubscriberManagement = lazy(() => import('./components/TelcoSubscriberManagement'))
+const TelcoFieldOps = lazy(() => import('./components/TelcoFieldOps'))
+const TelcoInterconnect = lazy(() => import('./components/TelcoInterconnect'))
+
+// Commodity vertical
+const CommodityTradingDesk = lazy(() => import('./components/CommodityTradingDesk'))
+const CommodityBrokerPortal = lazy(() => import('./components/CommodityBrokerPortal'))
+const CommoditySettlement = lazy(() => import('./components/CommoditySettlement'))
+
+// CPaaS vertical
+const CPaaSChannelDashboard = lazy(() => import('./components/CPaaSChannelDashboard'))
+const CPaaSDeveloperOnboarding = lazy(() => import('./components/CPaaSDeveloperOnboarding'))
+
 // Campaign & Engagement
 const CampaignManager = lazy(() => import('./components/CampaignManager'))
 const RealTimeDashboard = lazy(() => import('./components/RealTimeDashboard'))
@@ -278,6 +292,20 @@ function App() {
                         <Route path="/core-banking" element={<P permission="banking:read"><CoreBankingView /></P>} />
                         <Route path="/agent-banking" element={<P permission="banking:read"><AgentBankingView /></P>} />
                         <Route path="/remittance" element={<P permission="banking:read"><RemittanceView /></P>} />
+                        {/* Telco Vertical */}
+                        <Route path="/telco-subscribers" element={<P><TelcoSubscriberManagement /></P>} />
+                        <Route path="/telco-field-ops" element={<P><TelcoFieldOps /></P>} />
+                        <Route path="/telco-interconnect" element={<P><TelcoInterconnect /></P>} />
+
+                        {/* Commodity Vertical */}
+                        <Route path="/commodity-trading" element={<P><CommodityTradingDesk /></P>} />
+                        <Route path="/commodity-broker" element={<P><CommodityBrokerPortal /></P>} />
+                        <Route path="/commodity-settlement" element={<P><CommoditySettlement /></P>} />
+
+                        {/* CPaaS Vertical */}
+                        <Route path="/cpaas-channels" element={<P><CPaaSChannelDashboard /></P>} />
+                        <Route path="/cpaas-developers" element={<P><CPaaSDeveloperOnboarding /></P>} />
+
                         <Route path="/integrations" element={<P><IntegrationHub /></P>} />
                         <Route path="/cross-analytics" element={<P permission="analytics:read"><CrossSystemAnalytics /></P>} />
 

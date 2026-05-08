@@ -73,6 +73,9 @@ const Sidebar = ({ isOpen, onToggle }) => {
     hub: true,
     retention: true,
     banking: true,
+    telco: true,
+    commodity: true,
+    cpaas: true,
     intelligence: true,
     crmAiNative: true,
     crmRelationship: false,
@@ -133,6 +136,32 @@ const Sidebar = ({ isOpen, onToggle }) => {
         { i18nKey: 'nav.coreBanking', href: '/core-banking', icon: Landmark, description: 'T24/Finacle customer data', badge: '48.9K', requiredProduct: 'core_banking' },
         { i18nKey: 'nav.agentBanking', href: '/agent-banking', icon: MapPin, description: 'Field agents & registrations', badge: '1,538', requiredProduct: 'agent_banking' },
         { i18nKey: 'nav.remittance', href: '/remittance', icon: Globe, description: 'Cross-border transfers', badge: '8 corridors', requiredProduct: 'remittance' },
+      ]
+    },
+    {
+      section: 'telco',
+      titleKey: 'sections.telco',
+      items: [
+        { i18nKey: 'nav.telcoSubscribers', href: '/telco-subscribers', icon: Users, description: 'Subscriber lifecycle & plans', requiredProduct: 'subscriber_mgmt' },
+        { i18nKey: 'nav.telcoFieldOps', href: '/telco-field-ops', icon: MapPin, description: 'Network maintenance & dispatch', requiredProduct: 'field_ops' },
+        { i18nKey: 'nav.telcoInterconnect', href: '/telco-interconnect', icon: Globe, description: 'Carrier settlements & roaming', requiredProduct: 'interconnect' },
+      ]
+    },
+    {
+      section: 'commodity',
+      titleKey: 'sections.commodity',
+      items: [
+        { i18nKey: 'nav.commodityTrading', href: '/commodity-trading', icon: TrendingUp, description: 'Positions, P&L & risk', requiredProduct: 'trading' },
+        { i18nKey: 'nav.commodityBroker', href: '/commodity-broker', icon: Users, description: 'Counterparty management', requiredProduct: 'broker_portal' },
+        { i18nKey: 'nav.commoditySettlement', href: '/commodity-settlement', icon: DollarSign, description: 'Trade settlements & clearing', requiredProduct: 'settlement' },
+      ]
+    },
+    {
+      section: 'cpaas',
+      titleKey: 'sections.cpaas',
+      items: [
+        { i18nKey: 'nav.cpaasChannels', href: '/cpaas-channels', icon: MessageSquare, description: 'SMS/Voice/Video analytics', requiredProduct: 'messaging' },
+        { i18nKey: 'nav.cpaasDeveloperOnboarding', href: '/cpaas-developers', icon: Code2, description: 'Developer acquisition & activation', requiredProduct: 'developer_portal' },
       ]
     },
     {

@@ -9,16 +9,33 @@
  */
 import { createContext, useContext, useState, useCallback, useMemo } from 'react'
 
-// All available product modules
+// All available product modules (multi-vertical)
 const ALL_PRODUCTS = {
-  core_banking: { label: 'Core Banking', icon: 'Building2', color: 'blue' },
-  agent_banking: { label: 'Agent Banking', icon: 'Users', color: 'green' },
-  remittance: { label: 'Remittance', icon: 'Globe', color: 'purple' },
-  payments: { label: 'Payments', icon: 'CreditCard', color: 'orange' },
-  lending: { label: 'Lending', icon: 'Landmark', color: 'cyan' },
-  insurance: { label: 'Insurance', icon: 'Shield', color: 'teal' },
-  investments: { label: 'Investments', icon: 'TrendingUp', color: 'indigo' },
-  cards: { label: 'Cards', icon: 'CreditCard', color: 'rose' },
+  // Banking vertical
+  core_banking: { label: 'Core Banking', icon: 'Building2', color: 'blue', vertical: 'banking' },
+  agent_banking: { label: 'Agent Banking', icon: 'Users', color: 'green', vertical: 'banking' },
+  remittance: { label: 'Remittance', icon: 'Globe', color: 'purple', vertical: 'banking' },
+  payments: { label: 'Payments', icon: 'CreditCard', color: 'orange', vertical: 'banking' },
+  lending: { label: 'Lending', icon: 'Landmark', color: 'cyan', vertical: 'banking' },
+  insurance: { label: 'Insurance', icon: 'Shield', color: 'teal', vertical: 'banking' },
+  investments: { label: 'Investments', icon: 'TrendingUp', color: 'indigo', vertical: 'banking' },
+  cards: { label: 'Cards', icon: 'CreditCard', color: 'rose', vertical: 'banking' },
+  // Telco vertical
+  subscriber_mgmt: { label: 'Subscriber Management', icon: 'Users', color: 'blue', vertical: 'telco' },
+  field_ops: { label: 'Field Operations', icon: 'Wrench', color: 'green', vertical: 'telco' },
+  interconnect: { label: 'Interconnect & Settlement', icon: 'Globe', color: 'purple', vertical: 'telco' },
+  network_ops: { label: 'Network Operations', icon: 'Signal', color: 'cyan', vertical: 'telco' },
+  device_mgmt: { label: 'Device Management', icon: 'Smartphone', color: 'orange', vertical: 'telco' },
+  // Commodity vertical
+  trading: { label: 'Trading Desk', icon: 'TrendingUp', color: 'blue', vertical: 'commodity' },
+  broker_portal: { label: 'Broker Portal', icon: 'Users', color: 'green', vertical: 'commodity' },
+  settlement: { label: 'Trade Settlement', icon: 'DollarSign', color: 'purple', vertical: 'commodity' },
+  risk_mgmt: { label: 'Risk Management', icon: 'Shield', color: 'red', vertical: 'commodity' },
+  // CPaaS vertical
+  messaging: { label: 'Messaging Channels', icon: 'MessageSquare', color: 'blue', vertical: 'cpaas' },
+  voice_platform: { label: 'Voice Platform', icon: 'Phone', color: 'green', vertical: 'cpaas' },
+  developer_portal: { label: 'Developer Portal', icon: 'Code2', color: 'purple', vertical: 'cpaas' },
+  api_platform: { label: 'API Platform', icon: 'Globe', color: 'cyan', vertical: 'cpaas' },
 }
 
 // Sample tenants matching the Go service seed data
@@ -185,6 +202,221 @@ const TENANTS = {
       totalCustomers: 850,
       activeAgents: 42,
       monthlyVolume: '₦12.4M',
+    },
+  },
+  // --- Telco vertical tenants ---
+  'tenant-aerotel': {
+    id: 'tenant-aerotel',
+    name: 'AeroTel Communications',
+    slug: 'aerotel',
+    status: 'active',
+    vertical: 'telco',
+    subscriptionTier: 'enterprise',
+    products: {
+      subscriber_mgmt: true,
+      field_ops: true,
+      interconnect: true,
+      network_ops: true,
+      device_mgmt: true,
+    },
+    branding: {
+      primaryColor: '#0EA5E9',
+      accentColor: '#8B5CF6',
+      companyName: 'AeroTel',
+    },
+    settings: {
+      defaultCurrency: 'USD',
+      supportedCurrencies: ['USD', 'NGN', 'GBP'],
+      timezone: 'Africa/Lagos',
+      maxUsers: 1000,
+      apiRateLimit: 5000,
+    },
+    limits: {
+      maxSubscribers: 50000000,
+      maxCellSites: 10000,
+    },
+    stats: {
+      totalSubscribers: 18400000,
+      activeTechnicians: 842,
+      monthlyRevenue: '$127.7M',
+    },
+  },
+  'tenant-netwave': {
+    id: 'tenant-netwave',
+    name: 'NetWave Mobile',
+    slug: 'netwave',
+    status: 'active',
+    vertical: 'telco',
+    subscriptionTier: 'growth',
+    products: {
+      subscriber_mgmt: true,
+      field_ops: true,
+      interconnect: true,
+      network_ops: false,
+      device_mgmt: false,
+    },
+    branding: {
+      primaryColor: '#059669',
+      accentColor: '#F59E0B',
+      companyName: 'NetWave',
+    },
+    settings: {
+      defaultCurrency: 'USD',
+      supportedCurrencies: ['USD', 'NGN'],
+      timezone: 'Africa/Lagos',
+      maxUsers: 200,
+      apiRateLimit: 1000,
+    },
+    limits: {
+      maxSubscribers: 10000000,
+      maxCellSites: 2000,
+    },
+    stats: {
+      totalSubscribers: 4200000,
+      activeTechnicians: 248,
+      monthlyRevenue: '$21.1M',
+    },
+  },
+  // --- Commodity vertical tenants ---
+  'tenant-petromark': {
+    id: 'tenant-petromark',
+    name: 'PetroMark Trading',
+    slug: 'petromark',
+    status: 'active',
+    vertical: 'commodity',
+    subscriptionTier: 'enterprise',
+    products: {
+      trading: true,
+      broker_portal: true,
+      settlement: true,
+      risk_mgmt: true,
+    },
+    branding: {
+      primaryColor: '#DC2626',
+      accentColor: '#F59E0B',
+      companyName: 'PetroMark',
+    },
+    settings: {
+      defaultCurrency: 'USD',
+      supportedCurrencies: ['USD', 'EUR', 'GBP', 'NGN'],
+      timezone: 'UTC',
+      maxUsers: 500,
+      apiRateLimit: 3000,
+    },
+    limits: {
+      maxCounterparties: 1000,
+      maxDailyTrades: 50000,
+    },
+    stats: {
+      totalPositions: '$2.4B',
+      counterparties: 342,
+      dailyPnL: '+$18.2M',
+    },
+  },
+  'tenant-agriflow': {
+    id: 'tenant-agriflow',
+    name: 'AgriFlow Commodities',
+    slug: 'agriflow',
+    status: 'active',
+    vertical: 'commodity',
+    subscriptionTier: 'growth',
+    products: {
+      trading: true,
+      broker_portal: true,
+      settlement: true,
+      risk_mgmt: false,
+    },
+    branding: {
+      primaryColor: '#059669',
+      accentColor: '#84CC16',
+      companyName: 'AgriFlow',
+    },
+    settings: {
+      defaultCurrency: 'USD',
+      supportedCurrencies: ['USD', 'NGN', 'GHS'],
+      timezone: 'Africa/Lagos',
+      maxUsers: 100,
+      apiRateLimit: 1000,
+    },
+    limits: {
+      maxCounterparties: 500,
+      maxDailyTrades: 5000,
+    },
+    stats: {
+      totalPositions: '$420M',
+      counterparties: 98,
+      dailyPnL: '+$2.8M',
+    },
+  },
+  // --- CPaaS vertical tenants ---
+  'tenant-messageflow': {
+    id: 'tenant-messageflow',
+    name: 'MessageFlow CPaaS',
+    slug: 'messageflow',
+    status: 'active',
+    vertical: 'cpaas',
+    subscriptionTier: 'enterprise',
+    products: {
+      messaging: true,
+      voice_platform: true,
+      developer_portal: true,
+      api_platform: true,
+    },
+    branding: {
+      primaryColor: '#7C3AED',
+      accentColor: '#3B82F6',
+      companyName: 'MessageFlow',
+    },
+    settings: {
+      defaultCurrency: 'USD',
+      supportedCurrencies: ['USD', 'EUR', 'NGN'],
+      timezone: 'UTC',
+      maxUsers: 200,
+      apiRateLimit: 10000,
+    },
+    limits: {
+      maxDevelopers: 50000,
+      maxApiCallsPerSec: 50000,
+    },
+    stats: {
+      totalMessages: 48200000,
+      activeDevelopers: 1923,
+      monthlyRevenue: '$2.4M',
+    },
+  },
+  'tenant-connecthub': {
+    id: 'tenant-connecthub',
+    name: 'ConnectHub Communications',
+    slug: 'connecthub',
+    status: 'active',
+    vertical: 'cpaas',
+    subscriptionTier: 'growth',
+    products: {
+      messaging: true,
+      voice_platform: true,
+      developer_portal: true,
+      api_platform: false,
+    },
+    branding: {
+      primaryColor: '#0EA5E9',
+      accentColor: '#10B981',
+      companyName: 'ConnectHub',
+    },
+    settings: {
+      defaultCurrency: 'USD',
+      supportedCurrencies: ['USD', 'NGN'],
+      timezone: 'Africa/Lagos',
+      maxUsers: 50,
+      apiRateLimit: 2000,
+    },
+    limits: {
+      maxDevelopers: 10000,
+      maxApiCallsPerSec: 10000,
+    },
+    stats: {
+      totalMessages: 12800000,
+      activeDevelopers: 567,
+      monthlyRevenue: '$680K',
     },
   },
 }
