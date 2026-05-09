@@ -1,0 +1,42 @@
+version: "3.9"
+
+# 54Bank Banking Vertical Microservices
+# Start all services: docker compose -f docker-compose.services.yml up --build
+# Start specific service: docker compose -f docker-compose.services.yml up agriculture-banking
+
+services:
+  agriculture-banking:
+    build: ./services/agriculture-banking-rs
+    ports:
+      - "8090:8090"
+    environment:
+      - ADDR=0.0.0.0:8090
+      - TENANT_ID=54bank-platform-prod
+    restart: unless-stopped
+
+  teller-operations:
+    build: ./services/teller-operations-go
+    ports:
+      - "8091:8091"
+    environment:
+      - ADDR=:8091
+      - TENANT_ID=54bank-platform-prod
+    restart: unless-stopped
+
+  islamic-banking:
+    build: ./services/islamic-banking-py
+    ports:
+      - "8092:8092"
+    environment:
+      - PORT=8092
+      - TENANT_ID=54bank-platform-prod
+    restart: unless-stopped
+
+  trade-finance:
+    build: ./services/trade-finance-go
+    ports:
+      - "8093:8093"
+    environment:
+      - ADDR=:8093
+      - TENANT_ID=54bank-platform-prod
+    restart: unless-stopped

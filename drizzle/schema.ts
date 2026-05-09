@@ -727,3 +727,375 @@ export type PartnerOnboardingRecord = typeof partnerOnboardingRecords.$inferSele
 export type InsertPartnerOnboardingRecord = typeof partnerOnboardingRecords.$inferInsert;
 export type PartnerApprovalRecord = typeof partnerApprovalRecords.$inferSelect;
 export type InsertPartnerApprovalRecord = typeof partnerApprovalRecords.$inferInsert;
+
+// ── Agriculture Banking ──
+
+export const farmers = mysqlTable("farmers", {
+  id: int("id").autoincrement().primaryKey(),
+  farmerId: varchar("farmerId", { length: 32 }).notNull().unique(),
+  tenantId: varchar("tenantId", { length: 64 }).notNull(),
+  name: varchar("name", { length: 200 }).notNull(),
+  bvn: varchar("bvn", { length: 11 }).notNull(),
+  phone: varchar("phone", { length: 15 }).notNull(),
+  region: varchar("region", { length: 100 }).notNull(),
+  localGovernment: varchar("localGovernment", { length: 100 }).notNull(),
+  farmSizeHectares: double("farmSizeHectares").notNull(),
+  primaryCrop: varchar("primaryCrop", { length: 100 }).notNull(),
+  secondaryCrops: json("secondaryCrops").$type<string[]>().notNull(),
+  cooperativeId: varchar("cooperativeId", { length: 64 }),
+  cooperativeName: varchar("cooperativeName", { length: 200 }),
+  bankAccountNumber: varchar("bankAccountNumber", { length: 20 }),
+  riskScore: double("riskScore").notNull(),
+  riskTier: varchar("riskTier", { length: 20 }).notNull(),
+  status: varchar("status", { length: 20 }).notNull().default("active"),
+  geoCoordinates: json("geoCoordinates").$type<{ latitude: number; longitude: number }>(),
+  registrationChannel: varchar("registrationChannel", { length: 50 }).notNull().default("platform"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (table) => [
+  index("farmers_tenant_idx").on(table.tenantId),
+  index("farmers_region_idx").on(table.region),
+]);
+
+export const agriLoans = mysqlTable("agriLoans", {
+  id: int("id").autoincrement().primaryKey(),
+  loanId: varchar("loanId", { length: 32 }).notNull().unique(),
+  tenantId: varchar("tenantId", { length: 64 }).notNull(),
+  farmerId: varchar("farmerId", { length: 32 }).notNull(),
+  loanType: varchar("loanType", { length: 50 }).notNull(),
+  productCode: varchar("productCode", { length: 50 }).notNull(),
+  principalAmount: double("principalAmount").notNull(),
+  interestRateBps: int("interestRateBps").notNull(),
+  tenorMonths: int("tenorMonths").notNull(),
+  currency: varchar("currency", { length: 3 }).notNull().default("NGN"),
+  purpose: text("purpose").notNull(),
+  collateralType: varchar("collateralType", { length: 100 }).notNull(),
+  collateralValue: double("collateralValue").notNull(),
+  cropCycle: varchar("cropCycle", { length: 50 }).notNull(),
+  expectedHarvestDate: varchar("expectedHarvestDate", { length: 20 }).notNull(),
+  disbursementDate: varchar("disbursementDate", { length: 30 }),
+  maturityDate: varchar("maturityDate", { length: 30 }),
+  outstandingBalance: double("outstandingBalance").notNull(),
+  totalRepaid: double("totalRepaid").notNull().default(0),
+  status: varchar("status", { length: 30 }).notNull().default("pending_approval"),
+  approvalStatus: varchar("approvalStatus", { length: 30 }).notNull().default("pending"),
+  riskGrade: varchar("riskGrade", { length: 5 }).notNull(),
+  repaymentSchedule: json("repaymentSchedule").$type<object[]>().notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (table) => [
+  index("agriLoans_tenant_idx").on(table.tenantId),
+  index("agriLoans_farmer_idx").on(table.farmerId),
+]);
+
+export const cropInsurancePolicies = mysqlTable("cropInsurancePolicies", {
+  id: int("id").autoincrement().primaryKey(),
+  policyId: varchar("policyId", { length: 32 }).notNull().unique(),
+  tenantId: varchar("tenantId", { length: 64 }).notNull(),
+  farmerId: varchar("farmerId", { length: 32 }).notNull(),
+  policyType: varchar("policyType", { length: 50 }).notNull(),
+  cropCovered: varchar("cropCovered", { length: 100 }).notNull(),
+  coverageAreaHectares: double("coverageAreaHectares").notNull(),
+  sumInsured: double("sumInsured").notNull(),
+  premiumAmount: double("premiumAmount").notNull(),
+  premiumFrequency: varchar("premiumFrequency", { length: 20 }).notNull().default("annual"),
+  policyStart: varchar("policyStart", { length: 20 }).notNull(),
+  policyEnd: varchar("policyEnd", { length: 20 }).notNull(),
+  weatherTrigger: json("weatherTrigger").$type<object>(),
+  claims: json("claims").$type<object[]>().notNull(),
+  status: varchar("status", { length: 20 }).notNull().default("active"),
+  underwriter: varchar("underwriter", { length: 200 }).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (table) => [
+  index("cropIns_tenant_idx").on(table.tenantId),
+  index("cropIns_farmer_idx").on(table.farmerId),
+]);
+
+export const valueChainContracts = mysqlTable("valueChainContracts", {
+  id: int("id").autoincrement().primaryKey(),
+  contractId: varchar("contractId", { length: 32 }).notNull().unique(),
+  tenantId: varchar("tenantId", { length: 64 }).notNull(),
+  contractType: varchar("contractType", { length: 50 }).notNull(),
+  buyerName: varchar("buyerName", { length: 200 }).notNull(),
+  buyerId: varchar("buyerId", { length: 64 }).notNull(),
+  sellerFarmerId: varchar("sellerFarmerId", { length: 32 }).notNull(),
+  commodity: varchar("commodity", { length: 100 }).notNull(),
+  quantityTonnes: double("quantityTonnes").notNull(),
+  pricePerTonne: double("pricePerTonne").notNull(),
+  totalValue: double("totalValue").notNull(),
+  currency: varchar("currency", { length: 3 }).notNull().default("NGN"),
+  deliveryLocation: varchar("deliveryLocation", { length: 200 }).notNull(),
+  deliveryDeadline: varchar("deliveryDeadline", { length: 20 }).notNull(),
+  warehouseReceiptId: varchar("warehouseReceiptId", { length: 32 }),
+  qualityGrade: varchar("qualityGrade", { length: 20 }).notNull().default("Grade A"),
+  milestones: json("milestones").$type<object[]>().notNull(),
+  status: varchar("status", { length: 20 }).notNull().default("active"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (table) => [
+  index("vcc_tenant_idx").on(table.tenantId),
+  index("vcc_seller_idx").on(table.sellerFarmerId),
+]);
+
+// ── Teller Operations ──
+
+export const tellerSessions = mysqlTable("tellerSessions", {
+  id: int("id").autoincrement().primaryKey(),
+  sessionId: varchar("sessionId", { length: 32 }).notNull().unique(),
+  tenantId: varchar("tenantId", { length: 64 }).notNull(),
+  tellerId: varchar("tellerId", { length: 64 }).notNull(),
+  tellerName: varchar("tellerName", { length: 200 }).notNull(),
+  branchCode: varchar("branchCode", { length: 20 }).notNull(),
+  branchName: varchar("branchName", { length: 200 }).notNull(),
+  windowNumber: int("windowNumber").notNull(),
+  status: varchar("status", { length: 20 }).notNull().default("open"),
+  openedAt: varchar("openedAt", { length: 30 }).notNull(),
+  closedAt: varchar("closedAt", { length: 30 }),
+  openingBalance: double("openingBalance").notNull(),
+  currentBalance: double("currentBalance").notNull(),
+  transactionCount: int("transactionCount").notNull().default(0),
+  cashDrawer: json("cashDrawer").$type<object>().notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (table) => [
+  index("teller_tenant_idx").on(table.tenantId),
+  index("teller_branch_idx").on(table.branchCode),
+]);
+
+export const tellerTransactions = mysqlTable("tellerTransactions", {
+  id: int("id").autoincrement().primaryKey(),
+  txnId: varchar("txnId", { length: 32 }).notNull().unique(),
+  sessionId: varchar("sessionId", { length: 32 }).notNull(),
+  tenantId: varchar("tenantId", { length: 64 }).notNull(),
+  txnType: varchar("txnType", { length: 30 }).notNull(),
+  customerId: varchar("customerId", { length: 64 }).notNull(),
+  amount: double("amount").notNull(),
+  currency: varchar("currency", { length: 3 }).notNull().default("NGN"),
+  reference: varchar("reference", { length: 100 }),
+  status: varchar("status", { length: 20 }).notNull().default("completed"),
+  processedAt: varchar("processedAt", { length: 30 }).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => [
+  index("ttxn_session_idx").on(table.sessionId),
+  index("ttxn_tenant_idx").on(table.tenantId),
+]);
+
+export const vaultOperations = mysqlTable("vaultOperations", {
+  id: int("id").autoincrement().primaryKey(),
+  operationId: varchar("operationId", { length: 32 }).notNull().unique(),
+  tenantId: varchar("tenantId", { length: 64 }).notNull(),
+  operationType: varchar("operationType", { length: 30 }).notNull(),
+  fromLocation: varchar("fromLocation", { length: 100 }).notNull(),
+  toLocation: varchar("toLocation", { length: 100 }).notNull(),
+  amount: double("amount").notNull(),
+  currency: varchar("currency", { length: 3 }).notNull().default("NGN"),
+  authorizedBy: varchar("authorizedBy", { length: 100 }).notNull(),
+  dualControlBy: varchar("dualControlBy", { length: 100 }),
+  status: varchar("status", { length: 30 }).notNull().default("completed"),
+  reason: text("reason").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => [
+  index("vault_tenant_idx").on(table.tenantId),
+]);
+
+// ── Islamic Banking ──
+
+export const murabahaContracts = mysqlTable("murabahaContracts", {
+  id: int("id").autoincrement().primaryKey(),
+  contractId: varchar("contractId", { length: 32 }).notNull().unique(),
+  tenantId: varchar("tenantId", { length: 64 }).notNull(),
+  customerId: varchar("customerId", { length: 64 }).notNull(),
+  customerName: varchar("customerName", { length: 200 }).notNull(),
+  assetDescription: text("assetDescription").notNull(),
+  assetCategory: varchar("assetCategory", { length: 50 }).notNull(),
+  costPrice: double("costPrice").notNull(),
+  profitMarginPct: double("profitMarginPct").notNull(),
+  sellingPrice: double("sellingPrice").notNull(),
+  currency: varchar("currency", { length: 3 }).notNull().default("NGN"),
+  tenorMonths: int("tenorMonths").notNull(),
+  instalmentAmount: double("instalmentAmount").notNull(),
+  totalPaid: double("totalPaid").notNull().default(0),
+  outstandingBalance: double("outstandingBalance").notNull(),
+  disbursementDate: varchar("disbursementDate", { length: 30 }),
+  maturityDate: varchar("maturityDate", { length: 30 }),
+  status: varchar("status", { length: 30 }).notNull().default("pending_sharia_review"),
+  shariaCompliance: varchar("shariaCompliance", { length: 30 }).notNull(),
+  shariaBoardReference: text("shariaBoardReference"),
+  instalmentSchedule: json("instalmentSchedule").$type<object[]>().notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (table) => [
+  index("murabaha_tenant_idx").on(table.tenantId),
+  index("murabaha_customer_idx").on(table.customerId),
+]);
+
+export const ijaraContracts = mysqlTable("ijaraContracts", {
+  id: int("id").autoincrement().primaryKey(),
+  contractId: varchar("contractId", { length: 32 }).notNull().unique(),
+  tenantId: varchar("tenantId", { length: 64 }).notNull(),
+  customerId: varchar("customerId", { length: 64 }).notNull(),
+  customerName: varchar("customerName", { length: 200 }).notNull(),
+  assetDescription: text("assetDescription").notNull(),
+  assetCategory: varchar("assetCategory", { length: 50 }).notNull(),
+  assetValue: double("assetValue").notNull(),
+  rentalAmount: double("rentalAmount").notNull(),
+  rentalFrequency: varchar("rentalFrequency", { length: 20 }).notNull().default("monthly"),
+  currency: varchar("currency", { length: 3 }).notNull().default("NGN"),
+  leaseStart: varchar("leaseStart", { length: 20 }).notNull(),
+  leaseEnd: varchar("leaseEnd", { length: 20 }).notNull(),
+  tenorMonths: int("tenorMonths").notNull(),
+  residualValue: double("residualValue").notNull(),
+  purchaseOption: int("purchaseOption").notNull().default(1),
+  purchasePrice: double("purchasePrice"),
+  totalRentPaid: double("totalRentPaid").notNull().default(0),
+  status: varchar("status", { length: 30 }).notNull().default("active"),
+  shariaCompliance: varchar("shariaCompliance", { length: 30 }).notNull(),
+  maintenanceResponsibility: varchar("maintenanceResponsibility", { length: 20 }).notNull().default("lessor"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (table) => [
+  index("ijara_tenant_idx").on(table.tenantId),
+  index("ijara_customer_idx").on(table.customerId),
+]);
+
+export const mudarabahContracts = mysqlTable("mudarabahContracts", {
+  id: int("id").autoincrement().primaryKey(),
+  contractId: varchar("contractId", { length: 32 }).notNull().unique(),
+  tenantId: varchar("tenantId", { length: 64 }).notNull(),
+  investorId: varchar("investorId", { length: 64 }).notNull(),
+  investorName: varchar("investorName", { length: 200 }).notNull(),
+  fundManagerId: varchar("fundManagerId", { length: 64 }).notNull(),
+  investmentPurpose: text("investmentPurpose").notNull(),
+  capitalAmount: double("capitalAmount").notNull(),
+  currency: varchar("currency", { length: 3 }).notNull().default("NGN"),
+  profitSharingRatioInvestor: double("profitSharingRatioInvestor").notNull(),
+  profitSharingRatioManager: double("profitSharingRatioManager").notNull(),
+  investmentPeriodMonths: int("investmentPeriodMonths").notNull(),
+  startDate: varchar("startDate", { length: 20 }).notNull(),
+  maturityDate: varchar("maturityDate", { length: 20 }).notNull(),
+  realizedProfit: double("realizedProfit").notNull().default(0),
+  realizedLoss: double("realizedLoss").notNull().default(0),
+  distributions: json("distributions").$type<object[]>().notNull(),
+  status: varchar("status", { length: 30 }).notNull().default("active"),
+  shariaCompliance: varchar("shariaCompliance", { length: 30 }).notNull(),
+  riskCategory: varchar("riskCategory", { length: 30 }).notNull().default("moderate"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (table) => [
+  index("mudarabah_tenant_idx").on(table.tenantId),
+  index("mudarabah_investor_idx").on(table.investorId),
+]);
+
+// ── Trade Finance ──
+
+export const lettersOfCredit = mysqlTable("lettersOfCredit", {
+  id: int("id").autoincrement().primaryKey(),
+  lcId: varchar("lcId", { length: 32 }).notNull().unique(),
+  tenantId: varchar("tenantId", { length: 64 }).notNull(),
+  lcType: varchar("lcType", { length: 30 }).notNull().default("irrevocable"),
+  applicantId: varchar("applicantId", { length: 64 }).notNull(),
+  applicantName: varchar("applicantName", { length: 200 }).notNull(),
+  beneficiaryName: varchar("beneficiaryName", { length: 200 }).notNull(),
+  beneficiaryBank: varchar("beneficiaryBank", { length: 200 }),
+  beneficiaryCountry: varchar("beneficiaryCountry", { length: 100 }),
+  issuingBank: varchar("issuingBank", { length: 200 }).notNull().default("54Bank"),
+  advisingBank: varchar("advisingBank", { length: 200 }),
+  amount: double("amount").notNull(),
+  currency: varchar("currency", { length: 3 }).notNull().default("USD"),
+  commodity: varchar("commodity", { length: 200 }),
+  incoterm: varchar("incoterm", { length: 10 }),
+  portOfLoading: varchar("portOfLoading", { length: 200 }),
+  portOfDischarge: varchar("portOfDischarge", { length: 200 }),
+  latestShipDate: varchar("latestShipDate", { length: 20 }),
+  expiryDate: varchar("expiryDate", { length: 20 }).notNull(),
+  documentsRequired: json("documentsRequired").$type<string[]>().notNull(),
+  amendments: json("amendments").$type<object[]>().notNull(),
+  status: varchar("status", { length: 30 }).notNull().default("draft"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (table) => [
+  index("lc_tenant_idx").on(table.tenantId),
+  index("lc_applicant_idx").on(table.applicantId),
+]);
+
+export const warehouseReceipts = mysqlTable("warehouseReceipts", {
+  id: int("id").autoincrement().primaryKey(),
+  receiptId: varchar("receiptId", { length: 32 }).notNull().unique(),
+  tenantId: varchar("tenantId", { length: 64 }).notNull(),
+  depositorId: varchar("depositorId", { length: 64 }).notNull(),
+  depositorName: varchar("depositorName", { length: 200 }).notNull(),
+  warehouseId: varchar("warehouseId", { length: 64 }).notNull(),
+  warehouseName: varchar("warehouseName", { length: 200 }),
+  location: varchar("location", { length: 200 }).notNull(),
+  commodity: varchar("commodity", { length: 100 }).notNull(),
+  quantity: double("quantity").notNull(),
+  quantityUnit: varchar("quantityUnit", { length: 20 }).notNull().default("tonnes"),
+  qualityGrade: varchar("qualityGrade", { length: 20 }).notNull().default("Grade A"),
+  storageStartDate: varchar("storageStartDate", { length: 20 }).notNull(),
+  expiryDate: varchar("expiryDate", { length: 20 }),
+  marketValue: double("marketValue").notNull(),
+  currency: varchar("currency", { length: 3 }).notNull().default("NGN"),
+  pledgedAsCollateral: int("pledgedAsCollateral").notNull().default(0),
+  collateralLoanId: varchar("collateralLoanId", { length: 32 }),
+  insurancePolicyId: varchar("insurancePolicyId", { length: 32 }),
+  status: varchar("status", { length: 20 }).notNull().default("active"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (table) => [
+  index("whr_tenant_idx").on(table.tenantId),
+  index("whr_depositor_idx").on(table.depositorId),
+]);
+
+export const bankGuarantees = mysqlTable("bankGuarantees", {
+  id: int("id").autoincrement().primaryKey(),
+  guaranteeId: varchar("guaranteeId", { length: 32 }).notNull().unique(),
+  tenantId: varchar("tenantId", { length: 64 }).notNull(),
+  guaranteeType: varchar("guaranteeType", { length: 30 }).notNull().default("performance"),
+  applicantId: varchar("applicantId", { length: 64 }).notNull(),
+  applicantName: varchar("applicantName", { length: 200 }).notNull(),
+  beneficiaryName: varchar("beneficiaryName", { length: 200 }).notNull(),
+  amount: double("amount").notNull(),
+  currency: varchar("currency", { length: 3 }).notNull().default("USD"),
+  purpose: text("purpose").notNull(),
+  effectiveDate: varchar("effectiveDate", { length: 20 }).notNull(),
+  expiryDate: varchar("expiryDate", { length: 20 }).notNull(),
+  claimDeadline: varchar("claimDeadline", { length: 20 }),
+  commissionRate: double("commissionRate").notNull(),
+  commissionAmount: double("commissionAmount").notNull(),
+  status: varchar("status", { length: 20 }).notNull().default("active"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (table) => [
+  index("bg_tenant_idx").on(table.tenantId),
+  index("bg_applicant_idx").on(table.applicantId),
+]);
+
+// ── Type Exports (Banking Verticals) ──
+
+export type Farmer = typeof farmers.$inferSelect;
+export type InsertFarmer = typeof farmers.$inferInsert;
+export type AgriLoan = typeof agriLoans.$inferSelect;
+export type InsertAgriLoan = typeof agriLoans.$inferInsert;
+export type CropInsurancePolicy = typeof cropInsurancePolicies.$inferSelect;
+export type InsertCropInsurancePolicy = typeof cropInsurancePolicies.$inferInsert;
+export type ValueChainContract = typeof valueChainContracts.$inferSelect;
+export type InsertValueChainContract = typeof valueChainContracts.$inferInsert;
+export type TellerSession = typeof tellerSessions.$inferSelect;
+export type InsertTellerSession = typeof tellerSessions.$inferInsert;
+export type TellerTransaction = typeof tellerTransactions.$inferSelect;
+export type InsertTellerTransaction = typeof tellerTransactions.$inferInsert;
+export type VaultOperation = typeof vaultOperations.$inferSelect;
+export type InsertVaultOperation = typeof vaultOperations.$inferInsert;
+export type MurabahaContract = typeof murabahaContracts.$inferSelect;
+export type InsertMurabahaContract = typeof murabahaContracts.$inferInsert;
+export type IjaraContract = typeof ijaraContracts.$inferSelect;
+export type InsertIjaraContract = typeof ijaraContracts.$inferInsert;
+export type MudarabahContract = typeof mudarabahContracts.$inferSelect;
+export type InsertMudarabahContract = typeof mudarabahContracts.$inferInsert;
+export type LetterOfCredit = typeof lettersOfCredit.$inferSelect;
+export type InsertLetterOfCredit = typeof lettersOfCredit.$inferInsert;
+export type WarehouseReceipt = typeof warehouseReceipts.$inferSelect;
+export type InsertWarehouseReceipt = typeof warehouseReceipts.$inferInsert;
+export type BankGuarantee = typeof bankGuarantees.$inferSelect;
+export type InsertBankGuarantee = typeof bankGuarantees.$inferInsert;

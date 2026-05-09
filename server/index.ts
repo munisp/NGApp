@@ -4718,6 +4718,167 @@ async function startServer() {
     res.json(buildDomainOverview("virtual-accounts", "/virtual-accounts"));
   });
 
+  // ── Microservice Proxy Configuration ──
+  // Each banking vertical is implemented as a standalone microservice:
+  //   - agriculture-banking-rs  (Rust/Actix)  → :8090
+  //   - teller-operations-go    (Go)          → :8091
+  //   - islamic-banking-py      (Python)      → :8092
+  //   - trade-finance-go        (Go)          → :8093
+  // In production, APISIX or an API gateway handles routing.
+  // Below we register proxy-passthrough endpoints that forward to the
+  // microservices when they are running, or return service-unavailable status.
+
+  const AGRICULTURE_SERVICE_URL = process.env.AGRICULTURE_SERVICE_URL || "http://localhost:8090";
+  const TELLER_SERVICE_URL = process.env.TELLER_SERVICE_URL || "http://localhost:8091";
+  const ISLAMIC_BANKING_SERVICE_URL = process.env.ISLAMIC_BANKING_SERVICE_URL || "http://localhost:8092";
+  const TRADE_FINANCE_SERVICE_URL = process.env.TRADE_FINANCE_SERVICE_URL || "http://localhost:8093";
+
+  async function proxyToService(serviceUrl: string, servicePath: string, req: Request, res: express.Response): Promise<void> {
+    try {
+      const url = `${serviceUrl}${servicePath}`;
+      const headers: Record<string, string> = { "content-type": "application/json" };
+      const fetchOptions: RequestInit = {
+        method: req.method,
+        headers,
+      };
+      if (req.method !== "GET" && req.method !== "HEAD") {
+        fetchOptions.body = JSON.stringify(req.body);
+      }
+      const upstream = await fetch(url, fetchOptions);
+      const data = await upstream.text();
+      res.status(upstream.status).set("content-type", "application/json").send(data);
+    } catch {
+      res.status(503).json({
+        message: "Banking service unavailable — start the microservice or configure the upstream URL",
+        service: serviceUrl,
+        path: servicePath,
+        hint: "Run the service with Docker or directly, then retry",
+      });
+    }
+  }
+
+  // Agriculture Banking proxy routes
+  app.all("/api/platform/agriculture/farmers", (req, res) => {
+    void proxyToService(AGRICULTURE_SERVICE_URL, "/v1/agriculture/farmers", req, res);
+  });
+  app.all("/api/platform/agriculture/farmers/:id", (req, res) => {
+    void proxyToService(AGRICULTURE_SERVICE_URL, `/v1/agriculture/farmers/${req.params.id}`, req, res);
+  });
+  app.all("/api/platform/agriculture/loans", (req, res) => {
+    void proxyToService(AGRICULTURE_SERVICE_URL, "/v1/agriculture/loans", req, res);
+  });
+  app.all("/api/platform/agriculture/loans/:id", (req, res) => {
+    void proxyToService(AGRICULTURE_SERVICE_URL, `/v1/agriculture/loans/${req.params.id}`, req, res);
+  });
+  app.all("/api/platform/agriculture/loans/:id/disburse", (req, res) => {
+    void proxyToService(AGRICULTURE_SERVICE_URL, `/v1/agriculture/loans/${req.params.id}/disburse`, req, res);
+  });
+  app.all("/api/platform/agriculture/loans/:id/repay", (req, res) => {
+    void proxyToService(AGRICULTURE_SERVICE_URL, `/v1/agriculture/loans/${req.params.id}/repay`, req, res);
+  });
+  app.all("/api/platform/agriculture/insurance", (req, res) => {
+    void proxyToService(AGRICULTURE_SERVICE_URL, "/v1/agriculture/insurance", req, res);
+  });
+  app.all("/api/platform/agriculture/insurance/:id", (req, res) => {
+    void proxyToService(AGRICULTURE_SERVICE_URL, `/v1/agriculture/insurance/${req.params.id}`, req, res);
+  });
+  app.all("/api/platform/agriculture/insurance/:id/claim", (req, res) => {
+    void proxyToService(AGRICULTURE_SERVICE_URL, `/v1/agriculture/insurance/${req.params.id}/claim`, req, res);
+  });
+  app.all("/api/platform/agriculture/value-chain", (req, res) => {
+    void proxyToService(AGRICULTURE_SERVICE_URL, "/v1/agriculture/value-chain", req, res);
+  });
+  app.all("/api/platform/agriculture/value-chain/:id", (req, res) => {
+    void proxyToService(AGRICULTURE_SERVICE_URL, `/v1/agriculture/value-chain/${req.params.id}`, req, res);
+  });
+  app.all("/api/platform/agriculture/value-chain/:id/milestone", (req, res) => {
+    void proxyToService(AGRICULTURE_SERVICE_URL, `/v1/agriculture/value-chain/${req.params.id}/milestone`, req, res);
+  });
+
+  // Teller Operations proxy routes
+  app.all("/api/platform/teller/sessions", (req, res) => {
+    void proxyToService(TELLER_SERVICE_URL, "/v1/teller/sessions", req, res);
+  });
+  app.all("/api/platform/teller/sessions/:id", (req, res) => {
+    void proxyToService(TELLER_SERVICE_URL, `/v1/teller/sessions/${req.params.id}`, req, res);
+  });
+  app.all("/api/platform/teller/sessions/:id/close", (req, res) => {
+    void proxyToService(TELLER_SERVICE_URL, `/v1/teller/sessions/${req.params.id}/close`, req, res);
+  });
+  app.all("/api/platform/teller/sessions/:id/transaction", (req, res) => {
+    void proxyToService(TELLER_SERVICE_URL, `/v1/teller/sessions/${req.params.id}/transaction`, req, res);
+  });
+  app.all("/api/platform/teller/sessions/:id/cash-count", (req, res) => {
+    void proxyToService(TELLER_SERVICE_URL, `/v1/teller/sessions/${req.params.id}/cash-count`, req, res);
+  });
+  app.all("/api/platform/teller/vault", (req, res) => {
+    void proxyToService(TELLER_SERVICE_URL, "/v1/teller/vault", req, res);
+  });
+
+  // Islamic Banking proxy routes
+  app.all("/api/platform/islamic-banking/murabaha", (req, res) => {
+    void proxyToService(ISLAMIC_BANKING_SERVICE_URL, "/v1/islamic-banking/murabaha", req, res);
+  });
+  app.all("/api/platform/islamic-banking/murabaha/:id", (req, res) => {
+    void proxyToService(ISLAMIC_BANKING_SERVICE_URL, `/v1/islamic-banking/murabaha/${req.params.id}`, req, res);
+  });
+  app.all("/api/platform/islamic-banking/murabaha/:id/disburse", (req, res) => {
+    void proxyToService(ISLAMIC_BANKING_SERVICE_URL, `/v1/islamic-banking/murabaha/${req.params.id}/disburse`, req, res);
+  });
+  app.all("/api/platform/islamic-banking/murabaha/:id/repay", (req, res) => {
+    void proxyToService(ISLAMIC_BANKING_SERVICE_URL, `/v1/islamic-banking/murabaha/${req.params.id}/repay`, req, res);
+  });
+  app.all("/api/platform/islamic-banking/ijara", (req, res) => {
+    void proxyToService(ISLAMIC_BANKING_SERVICE_URL, "/v1/islamic-banking/ijara", req, res);
+  });
+  app.all("/api/platform/islamic-banking/ijara/:id", (req, res) => {
+    void proxyToService(ISLAMIC_BANKING_SERVICE_URL, `/v1/islamic-banking/ijara/${req.params.id}`, req, res);
+  });
+  app.all("/api/platform/islamic-banking/mudarabah", (req, res) => {
+    void proxyToService(ISLAMIC_BANKING_SERVICE_URL, "/v1/islamic-banking/mudarabah", req, res);
+  });
+  app.all("/api/platform/islamic-banking/mudarabah/:id", (req, res) => {
+    void proxyToService(ISLAMIC_BANKING_SERVICE_URL, `/v1/islamic-banking/mudarabah/${req.params.id}`, req, res);
+  });
+  app.all("/api/platform/islamic-banking/mudarabah/:id/distribute", (req, res) => {
+    void proxyToService(ISLAMIC_BANKING_SERVICE_URL, `/v1/islamic-banking/mudarabah/${req.params.id}/distribute`, req, res);
+  });
+
+  // Trade Finance proxy routes
+  app.all("/api/platform/trade-finance/letters-of-credit", (req, res) => {
+    void proxyToService(TRADE_FINANCE_SERVICE_URL, "/v1/trade-finance/letters-of-credit", req, res);
+  });
+  app.all("/api/platform/trade-finance/letters-of-credit/:id", (req, res) => {
+    void proxyToService(TRADE_FINANCE_SERVICE_URL, `/v1/trade-finance/letters-of-credit/${req.params.id}`, req, res);
+  });
+  app.all("/api/platform/trade-finance/letters-of-credit/:id/issue", (req, res) => {
+    void proxyToService(TRADE_FINANCE_SERVICE_URL, `/v1/trade-finance/letters-of-credit/${req.params.id}/issue`, req, res);
+  });
+  app.all("/api/platform/trade-finance/letters-of-credit/:id/amend", (req, res) => {
+    void proxyToService(TRADE_FINANCE_SERVICE_URL, `/v1/trade-finance/letters-of-credit/${req.params.id}/amend`, req, res);
+  });
+  app.all("/api/platform/trade-finance/letters-of-credit/:id/present-documents", (req, res) => {
+    void proxyToService(TRADE_FINANCE_SERVICE_URL, `/v1/trade-finance/letters-of-credit/${req.params.id}/present-documents`, req, res);
+  });
+  app.all("/api/platform/trade-finance/letters-of-credit/:id/settle", (req, res) => {
+    void proxyToService(TRADE_FINANCE_SERVICE_URL, `/v1/trade-finance/letters-of-credit/${req.params.id}/settle`, req, res);
+  });
+  app.all("/api/platform/trade-finance/warehouse-receipts", (req, res) => {
+    void proxyToService(TRADE_FINANCE_SERVICE_URL, "/v1/trade-finance/warehouse-receipts", req, res);
+  });
+  app.all("/api/platform/trade-finance/warehouse-receipts/:id", (req, res) => {
+    void proxyToService(TRADE_FINANCE_SERVICE_URL, `/v1/trade-finance/warehouse-receipts/${req.params.id}`, req, res);
+  });
+  app.all("/api/platform/trade-finance/warehouse-receipts/:id/pledge", (req, res) => {
+    void proxyToService(TRADE_FINANCE_SERVICE_URL, `/v1/trade-finance/warehouse-receipts/${req.params.id}/pledge`, req, res);
+  });
+  app.all("/api/platform/trade-finance/warehouse-receipts/:id/release", (req, res) => {
+    void proxyToService(TRADE_FINANCE_SERVICE_URL, `/v1/trade-finance/warehouse-receipts/${req.params.id}/release`, req, res);
+  });
+  app.all("/api/platform/trade-finance/guarantees", (req, res) => {
+    void proxyToService(TRADE_FINANCE_SERVICE_URL, "/v1/trade-finance/guarantees", req, res);
+  });
+
   app.use(globalErrorHandler);
 
   const staticPath = process.env.NODE_ENV === "production" ? path.resolve(__dirname, "public") : path.resolve(__dirname, "..", "dist", "public");
