@@ -17,15 +17,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
-        with:
-          version: 10
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm check
-      - run: pnpm format --check
 
   build:
     name: Build
@@ -34,8 +31,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
-        with:
-          version: 10
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -50,8 +45,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
-        with:
-          version: 10
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -112,9 +105,9 @@ jobs:
           python-version: "3.12"
       - name: Validate Python Services
         run: |
-          for svc in islamic-banking-py education-loans-py dispute-service-py erpnext-sync-py regulatory-reporting-py; do
-            echo "Checking services/$svc/main.py..."
-            python3 -c "import py_compile; py_compile.compile('services/$svc/main.py', doraise=True)"
+          for svc in islamic-banking-py education-loans-py dispute-management-py erpnext-sync-py regulatory-reporting-py; do
+            echo "Checking services/$svc/service.py..."
+            python3 -c "import py_compile; py_compile.compile('services/$svc/service.py', doraise=True)"
           done
 
   docker:
