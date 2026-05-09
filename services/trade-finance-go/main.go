@@ -519,6 +519,9 @@ func main() {
 		}
 	})
 
+	// B3: Register trade finance enhancements
+	RegisterTradeEnhancements(mux)
+
 	addr := os.Getenv("ADDR")
 	if addr == "" {
 		addr = ":8093"

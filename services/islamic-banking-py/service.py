@@ -241,7 +241,14 @@ class IslamicBankingHandler(BaseHTTPRequestHandler):
                 self._respond(404, {"message": "Mudarabah contract not found"})
 
         else:
-            self._respond(404, {"message": "Not found"})
+            # B2: Check enhancement routes (Sukuk, Takaful, Wakala, Istisna, Sharia)
+            from enhancements import ENHANCEMENT_ROUTES
+            handler = ENHANCEMENT_ROUTES.get(path)
+            if handler:
+                status, data = handler("GET", {})
+                self._respond(status, data)
+            else:
+                self._respond(404, {"message": "Not found"})
 
     def do_POST(self):
         path = self.path.split("?")[0].rstrip("/")
@@ -269,7 +276,14 @@ class IslamicBankingHandler(BaseHTTPRequestHandler):
             self._distribute_mudarabah(cid, body)
 
         else:
-            self._respond(404, {"message": "Not found"})
+            # B2: Check enhancement routes
+            from enhancements import ENHANCEMENT_ROUTES
+            handler = ENHANCEMENT_ROUTES.get(path)
+            if handler:
+                status, data = handler("POST", body)
+                self._respond(status, data)
+            else:
+                self._respond(404, {"message": "Not found"})
 
     def _create_murabaha(self, body: dict):
         customer_id = body.get("customerId", "")

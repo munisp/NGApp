@@ -120,7 +120,13 @@ class Handler(BaseHTTPRequestHandler):
         elif path == "/v1/education-loans/repayments":
             respond_json(self, 200, {"items": repayments, "total": len(repayments)})
         else:
-            respond_json(self, 404, {"message": "Not found"})
+            from enhancements import ENHANCEMENT_ROUTES
+            handler = ENHANCEMENT_ROUTES.get(path)
+            if handler:
+                status, data = handler("GET", {})
+                respond_json(self, status, data)
+            else:
+                respond_json(self, 404, {"message": "Not found"})
 
     def do_POST(self):
         path = self.path.split("?")[0]
@@ -147,7 +153,13 @@ class Handler(BaseHTTPRequestHandler):
                 else:
                     respond_json(self, 404, {"message": "Unknown action"})
         else:
-            respond_json(self, 404, {"message": "Not found"})
+            from enhancements import ENHANCEMENT_ROUTES
+            handler = ENHANCEMENT_ROUTES.get(path)
+            if handler:
+                status, data = handler("POST", body)
+                respond_json(self, status, data)
+            else:
+                respond_json(self, 404, {"message": "Not found"})
 
     def do_PUT(self):
         path = self.path.split("?")[0]

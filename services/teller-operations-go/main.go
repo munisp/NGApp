@@ -370,6 +370,9 @@ func main() {
 		}
 	})
 
+	// B1: Register enhanced routes (cash reconciliation, reversals, queue, receipts, till limits)
+	RegisterEnhancedRoutes(mux)
+
 	addr := os.Getenv("ADDR")
 	if addr == "" {
 		addr = ":8091"

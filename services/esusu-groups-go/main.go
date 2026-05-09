@@ -158,6 +158,9 @@ func main() {
 		}
 	})
 
+	// B7: Register esusu enhancements
+	RegisterEsusuEnhancements(mx)
+
 	fmt.Printf("Esusu Groups service listening on %s\n", addr)
 	http.ListenAndServe(addr, mw.CORSMiddleware(mx))
 }

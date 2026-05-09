@@ -73,7 +73,13 @@ class Handler(BaseHTTPRequestHandler):
         elif path == "/v1/disputes/categories":
             respond_json(self, 200, {"categories": DISPUTE_CATEGORIES})
         else:
-            respond_json(self, 404, {"message": "Not found"})
+            from enhancements import ENHANCEMENT_ROUTES
+            handler = ENHANCEMENT_ROUTES.get(path)
+            if handler:
+                status, data = handler("GET", {})
+                respond_json(self, status, data)
+            else:
+                respond_json(self, 404, {"message": "Not found"})
 
     def do_POST(self):
         path = self.path.split("?")[0]
@@ -100,7 +106,13 @@ class Handler(BaseHTTPRequestHandler):
                 elif action == "chargeback":
                     self._process_chargeback(did, body)
         else:
-            respond_json(self, 404, {"message": "Not found"})
+            from enhancements import ENHANCEMENT_ROUTES
+            handler = ENHANCEMENT_ROUTES.get(path)
+            if handler:
+                status, data = handler("POST", body)
+                respond_json(self, status, data)
+            else:
+                respond_json(self, 404, {"message": "Not found"})
 
     def do_PUT(self):
         path = self.path.split("?")[0]

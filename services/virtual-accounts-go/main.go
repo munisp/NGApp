@@ -145,6 +145,9 @@ func main() {
 		mw.RespondJSON(w, 200, map[string]any{"items": transactions, "total": len(transactions)})
 	})
 
+	// B6: Register VA enhancements
+	RegisterVAEnhancements(mx)
+
 	fmt.Printf("Virtual Accounts service listening on %s\n", addr)
 	http.ListenAndServe(addr, mw.CORSMiddleware(mx))
 }

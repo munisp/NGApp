@@ -5592,6 +5592,40 @@ async function startServer() {
     void proxyToService(FRAUD_DETECTION_URL, `/v1/fraud/profiles/${req.params.customerId}`, req, res);
   });
 
+  // B1: Teller Operations enhanced routes
+  app.all("/api/platform/teller/reconciliation", (req, res) => {
+    void proxyToService(TELLER_SERVICE_URL, "/v1/teller/reconciliation", req, res);
+  });
+  app.all("/api/platform/teller/reversals", (req, res) => {
+    void proxyToService(TELLER_SERVICE_URL, "/v1/teller/reversals", req, res);
+  });
+  app.all("/api/platform/teller/queue", (req, res) => {
+    void proxyToService(TELLER_SERVICE_URL, "/v1/teller/queue", req, res);
+  });
+  app.all("/api/platform/teller/till-limits", (req, res) => {
+    void proxyToService(TELLER_SERVICE_URL, "/v1/teller/till-limits", req, res);
+  });
+  app.all("/api/platform/teller/receipts", (req, res) => {
+    void proxyToService(TELLER_SERVICE_URL, "/v1/teller/receipts", req, res);
+  });
+
+  // B2: Islamic Banking enhanced routes
+  app.all("/api/platform/islamic/sukuk", (req, res) => {
+    void proxyToService(ISLAMIC_BANKING_SERVICE_URL, "/v1/islamic/sukuk", req, res);
+  });
+  app.all("/api/platform/islamic/takaful", (req, res) => {
+    void proxyToService(ISLAMIC_BANKING_SERVICE_URL, "/v1/islamic/takaful", req, res);
+  });
+  app.all("/api/platform/islamic/wakala", (req, res) => {
+    void proxyToService(ISLAMIC_BANKING_SERVICE_URL, "/v1/islamic/wakala", req, res);
+  });
+  app.all("/api/platform/islamic/istisna", (req, res) => {
+    void proxyToService(ISLAMIC_BANKING_SERVICE_URL, "/v1/islamic/istisna", req, res);
+  });
+  app.all("/api/platform/islamic/sharia-review", (req, res) => {
+    void proxyToService(ISLAMIC_BANKING_SERVICE_URL, "/v1/islamic/sharia-review", req, res);
+  });
+
   app.use(globalErrorHandler);
 
   const staticPath = process.env.NODE_ENV === "production" ? path.resolve(__dirname, "public") : path.resolve(__dirname, "..", "dist", "public");

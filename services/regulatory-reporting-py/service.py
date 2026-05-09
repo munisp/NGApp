@@ -113,7 +113,13 @@ class Handler(BaseHTTPRequestHandler):
         elif path == "/v1/regulatory/ctr-filings":
             respond_json(self, 200, {"items": ctr_filings, "total": len(ctr_filings)})
         else:
-            respond_json(self, 404, {"message": "Not found"})
+            from enhancements import ENHANCEMENT_ROUTES
+            handler = ENHANCEMENT_ROUTES.get(path)
+            if handler:
+                status, data = handler("GET", {})
+                respond_json(self, status, data)
+            else:
+                respond_json(self, 404, {"message": "Not found"})
 
     def do_POST(self):
         path = self.path.split("?")[0]
@@ -140,7 +146,13 @@ class Handler(BaseHTTPRequestHandler):
             if len(parts) > 1 and parts[1] == "submit":
                 self._submit_report(rid)
         else:
-            respond_json(self, 404, {"message": "Not found"})
+            from enhancements import ENHANCEMENT_ROUTES
+            handler = ENHANCEMENT_ROUTES.get(path)
+            if handler:
+                status, data = handler("POST", body)
+                respond_json(self, status, data)
+            else:
+                respond_json(self, 404, {"message": "Not found"})
 
     def _generate_report(self, body: dict):
         report_type = body.get("reportType")
