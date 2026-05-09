@@ -63,6 +63,12 @@ const TellerWorkspace = lazy(() => import("@/pages/TellerWorkspace"));
 const TradeFinanceWorkspace = lazy(() => import("@/pages/TradeFinanceWorkspace"));
 const AdminDashboard = lazy(() => import("@/pages/AdminDashboard"));
 const BillingEngineWorkspace = lazy(() => import("@/pages/BillingEngineWorkspace"));
+const PaymentsHubWorkspace = lazy(() => import("@/pages/PaymentsHubWorkspace"));
+const SavingsProductsWorkspace = lazy(() => import("@/pages/SavingsProductsWorkspace"));
+const CardManagementWorkspace = lazy(() => import("@/pages/CardManagementWorkspace"));
+const TreasuryWorkspace = lazy(() => import("@/pages/TreasuryWorkspace"));
+const CustomerEngagementWorkspace = lazy(() => import("@/pages/CustomerEngagementWorkspace"));
+const FraudDetectionWorkspace = lazy(() => import("@/pages/FraudDetectionWorkspace"));
 const AdminAnalyticsPage = lazy(() => import("@/pages/AdminModulePages").then((module) => ({ default: module.AdminAnalyticsPage })));
 const AdminBankingOpsPage = lazy(() => import("@/pages/AdminModulePages").then((module) => ({ default: module.AdminBankingOpsPage })));
 const AdminFeatureFlagsPage = lazy(() => import("@/pages/AdminModulePages").then((module) => ({ default: module.AdminFeatureFlagsPage })));
@@ -180,6 +186,12 @@ export default function App() {
         <Route path="/erpnext-sync" component={renderInAdminShell(ERPNextWorkspace)} />
         <Route path="/identity-channels" component={renderInAdminShell(IdentityChannelsWorkspace)} />
         <Route path="/islamic-banking" component={renderInAdminShell(IslamicBankingWorkspace)} />
+        <Route path="/payments-hub" component={renderInAdminShell(PaymentsHubWorkspace)} />
+        <Route path="/savings-products" component={renderInAdminShell(SavingsProductsWorkspace)} />
+        <Route path="/card-management" component={renderInAdminShell(CardManagementWorkspace)} />
+        <Route path="/treasury" component={renderInAdminShell(TreasuryWorkspace)} />
+        <Route path="/customer-engagement" component={renderInAdminShell(CustomerEngagementWorkspace)} />
+        <Route path="/fraud-detection" component={renderInAdminShell(FraudDetectionWorkspace)} />
 
         <Route component={NotFound} />
       </Switch>

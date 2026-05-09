@@ -76,6 +76,14 @@ jobs:
         run: cd services/group-lending-go && go build -o group-lending-service main.go
       - name: Build Identity Channels Service
         run: cd services/identity-channels-go && go build -o identity-channels-service main.go
+      - name: Build Payments Hub
+        run: cd services/payments-hub-go && go build -o payments-hub main.go
+      - name: Build Savings Products
+        run: cd services/savings-products-go && go build -o savings-products main.go
+      - name: Build Card Management
+        run: cd services/card-management-go && go build -o card-management main.go
+      - name: Build Middleware
+        run: cd services/middleware-go && go build ./...
 
   rust-services:
     name: Rust Services
@@ -90,6 +98,7 @@ jobs:
             services/agriculture-banking-rs
             services/mortgage-servicing-rs
             services/ledger-reconciliation-rs
+            services/fraud-detection-rs
       - name: Build Resilience Service
         run: cd services/resilience-service-rs && cargo build --release
       - name: Build Agriculture Banking Service
@@ -98,6 +107,8 @@ jobs:
         run: cd services/mortgage-servicing-rs && cargo build --release
       - name: Build Ledger Reconciliation Service
         run: cd services/ledger-reconciliation-rs && cargo build --release
+      - name: Build Fraud Detection Service
+        run: cd services/fraud-detection-rs && cargo build --release
 
   python-services:
     name: Python Services
@@ -109,7 +120,7 @@ jobs:
           python-version: "3.12"
       - name: Validate Python Services
         run: |
-          for svc in islamic-banking-py education-loans-py dispute-management-py erpnext-sync-py regulatory-reporting-py; do
+          for svc in islamic-banking-py education-loans-py dispute-management-py erpnext-sync-py regulatory-reporting-py treasury-liquidity-py customer-engagement-py; do
             echo "Checking services/$svc/service.py..."
             python3 -c "import py_compile; py_compile.compile('services/$svc/service.py', doraise=True)"
           done

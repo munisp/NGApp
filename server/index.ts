@@ -4945,6 +4945,12 @@ async function startServer() {
   const REGULATORY_SERVICE_URL = process.env.REGULATORY_SERVICE_URL || "http://localhost:8104";
   const SECURITY_GATEWAY_URL = process.env.SECURITY_GATEWAY_URL || "http://localhost:8105";
   const RESILIENCE_SERVICE_URL = process.env.RESILIENCE_SERVICE_URL || "http://localhost:8106";
+  const PAYMENTS_HUB_URL = process.env.PAYMENTS_HUB_URL || "http://localhost:8107";
+  const SAVINGS_PRODUCTS_URL = process.env.SAVINGS_PRODUCTS_URL || "http://localhost:8108";
+  const CARD_MANAGEMENT_URL = process.env.CARD_MANAGEMENT_URL || "http://localhost:8109";
+  const TREASURY_LIQUIDITY_URL = process.env.TREASURY_LIQUIDITY_URL || "http://localhost:8110";
+  const CUSTOMER_ENGAGEMENT_URL = process.env.CUSTOMER_ENGAGEMENT_URL || "http://localhost:8111";
+  const FRAUD_DETECTION_URL = process.env.FRAUD_DETECTION_URL || "http://localhost:8112";
 
   // Register all services for health aggregation (#8)
   Object.assign(serviceUrls, {
@@ -4965,6 +4971,12 @@ async function startServer() {
     "regulatory": REGULATORY_SERVICE_URL,
     "security-gateway": SECURITY_GATEWAY_URL,
     "resilience": RESILIENCE_SERVICE_URL,
+    "payments-hub": PAYMENTS_HUB_URL,
+    "savings-products": SAVINGS_PRODUCTS_URL,
+    "card-management": CARD_MANAGEMENT_URL,
+    "treasury-liquidity": TREASURY_LIQUIDITY_URL,
+    "customer-engagement": CUSTOMER_ENGAGEMENT_URL,
+    "fraud-detection": FRAUD_DETECTION_URL,
   });
 
   async function proxyToService(serviceUrl: string, servicePath: string, req: Request, res: express.Response): Promise<void> {
@@ -5449,6 +5461,135 @@ async function startServer() {
   });
   app.all("/api/platform/resilience/config", (req, res) => {
     void proxyToService(RESILIENCE_SERVICE_URL, "/v1/resilience/config", req, res);
+  });
+
+  // Payments Hub proxy routes (Go :8107)
+  app.all("/api/platform/payments/nip", (req, res) => {
+    void proxyToService(PAYMENTS_HUB_URL, "/v1/payments/nip", req, res);
+  });
+  app.all("/api/platform/payments/ussd", (req, res) => {
+    void proxyToService(PAYMENTS_HUB_URL, "/v1/payments/ussd", req, res);
+  });
+  app.all("/api/platform/payments/qr/merchants", (req, res) => {
+    void proxyToService(PAYMENTS_HUB_URL, "/v1/payments/qr/merchants", req, res);
+  });
+  app.all("/api/platform/payments/qr/pay", (req, res) => {
+    void proxyToService(PAYMENTS_HUB_URL, "/v1/payments/qr/pay", req, res);
+  });
+  app.all("/api/platform/payments/billers", (req, res) => {
+    void proxyToService(PAYMENTS_HUB_URL, "/v1/payments/billers", req, res);
+  });
+  app.all("/api/platform/payments/bill-pay", (req, res) => {
+    void proxyToService(PAYMENTS_HUB_URL, "/v1/payments/bill-pay", req, res);
+  });
+  app.all("/api/platform/payments/remittance", (req, res) => {
+    void proxyToService(PAYMENTS_HUB_URL, "/v1/payments/remittance", req, res);
+  });
+  app.all("/api/platform/payments", (req, res) => {
+    void proxyToService(PAYMENTS_HUB_URL, "/v1/payments", req, res);
+  });
+
+  // Savings Products proxy routes (Go :8108)
+  app.all("/api/platform/savings/accounts", (req, res) => {
+    void proxyToService(SAVINGS_PRODUCTS_URL, "/v1/savings/accounts", req, res);
+  });
+  app.all("/api/platform/savings/deposit", (req, res) => {
+    void proxyToService(SAVINGS_PRODUCTS_URL, "/v1/savings/deposit", req, res);
+  });
+  app.all("/api/platform/savings/withdraw", (req, res) => {
+    void proxyToService(SAVINGS_PRODUCTS_URL, "/v1/savings/withdraw", req, res);
+  });
+  app.all("/api/platform/savings/interest/calculate", (req, res) => {
+    void proxyToService(SAVINGS_PRODUCTS_URL, "/v1/savings/interest/calculate", req, res);
+  });
+  app.all("/api/platform/savings/transactions", (req, res) => {
+    void proxyToService(SAVINGS_PRODUCTS_URL, "/v1/savings/transactions", req, res);
+  });
+
+  // Card Management proxy routes (Go :8109)
+  app.all("/api/platform/cards", (req, res) => {
+    void proxyToService(CARD_MANAGEMENT_URL, "/v1/cards", req, res);
+  });
+  app.all("/api/platform/cards/virtual", (req, res) => {
+    void proxyToService(CARD_MANAGEMENT_URL, "/v1/cards/virtual", req, res);
+  });
+  app.all("/api/platform/cards/pin", (req, res) => {
+    void proxyToService(CARD_MANAGEMENT_URL, "/v1/cards/pin", req, res);
+  });
+  app.all("/api/platform/cards/limits", (req, res) => {
+    void proxyToService(CARD_MANAGEMENT_URL, "/v1/cards/limits", req, res);
+  });
+  app.all("/api/platform/cards/controls", (req, res) => {
+    void proxyToService(CARD_MANAGEMENT_URL, "/v1/cards/controls", req, res);
+  });
+  app.all("/api/platform/cards/tokenize", (req, res) => {
+    void proxyToService(CARD_MANAGEMENT_URL, "/v1/cards/tokenize", req, res);
+  });
+  app.all("/api/platform/cards/authorize", (req, res) => {
+    void proxyToService(CARD_MANAGEMENT_URL, "/v1/cards/authorize", req, res);
+  });
+  app.all("/api/platform/cards/transactions", (req, res) => {
+    void proxyToService(CARD_MANAGEMENT_URL, "/v1/cards/transactions", req, res);
+  });
+
+  // Treasury & Liquidity proxy routes (Python :8110)
+  app.all("/api/platform/treasury/forecasts", (req, res) => {
+    void proxyToService(TREASURY_LIQUIDITY_URL, "/v1/treasury/forecasts", req, res);
+  });
+  app.all("/api/platform/treasury/placements", (req, res) => {
+    void proxyToService(TREASURY_LIQUIDITY_URL, "/v1/treasury/placements", req, res);
+  });
+  app.all("/api/platform/treasury/fx/rates", (req, res) => {
+    void proxyToService(TREASURY_LIQUIDITY_URL, "/v1/treasury/fx/rates", req, res);
+  });
+  app.all("/api/platform/treasury/fx/deals", (req, res) => {
+    void proxyToService(TREASURY_LIQUIDITY_URL, "/v1/treasury/fx/deals", req, res);
+  });
+  app.all("/api/platform/treasury/investments", (req, res) => {
+    void proxyToService(TREASURY_LIQUIDITY_URL, "/v1/treasury/investments", req, res);
+  });
+  app.all("/api/platform/treasury/alm", (req, res) => {
+    void proxyToService(TREASURY_LIQUIDITY_URL, "/v1/treasury/alm", req, res);
+  });
+
+  // Customer Engagement proxy routes (Python :8111)
+  app.all("/api/platform/engagement/messages", (req, res) => {
+    void proxyToService(CUSTOMER_ENGAGEMENT_URL, "/v1/engagement/messages", req, res);
+  });
+  app.all("/api/platform/engagement/messages/bulk", (req, res) => {
+    void proxyToService(CUSTOMER_ENGAGEMENT_URL, "/v1/engagement/messages/bulk", req, res);
+  });
+  app.all("/api/platform/engagement/recommendations/:customerId", (req, res) => {
+    void proxyToService(CUSTOMER_ENGAGEMENT_URL, `/v1/engagement/recommendations/${req.params.customerId}`, req, res);
+  });
+  app.all("/api/platform/engagement/customer360/:customerId", (req, res) => {
+    void proxyToService(CUSTOMER_ENGAGEMENT_URL, `/v1/engagement/customer360/${req.params.customerId}`, req, res);
+  });
+  app.all("/api/platform/engagement/surveys", (req, res) => {
+    void proxyToService(CUSTOMER_ENGAGEMENT_URL, "/v1/engagement/surveys", req, res);
+  });
+  app.all("/api/platform/engagement/surveys/analytics", (req, res) => {
+    void proxyToService(CUSTOMER_ENGAGEMENT_URL, "/v1/engagement/surveys/analytics", req, res);
+  });
+  app.all("/api/platform/engagement/referrals", (req, res) => {
+    void proxyToService(CUSTOMER_ENGAGEMENT_URL, "/v1/engagement/referrals", req, res);
+  });
+  app.all("/api/platform/engagement/referrals/:id/convert", (req, res) => {
+    void proxyToService(CUSTOMER_ENGAGEMENT_URL, `/v1/engagement/referrals/${req.params.id}/convert`, req, res);
+  });
+
+  // Fraud Detection proxy routes (Rust :8112)
+  app.all("/api/platform/fraud/screen", (req, res) => {
+    void proxyToService(FRAUD_DETECTION_URL, "/v1/fraud/screen", req, res);
+  });
+  app.all("/api/platform/fraud/screenings", (req, res) => {
+    void proxyToService(FRAUD_DETECTION_URL, "/v1/fraud/screenings", req, res);
+  });
+  app.all("/api/platform/fraud/watchlist", (req, res) => {
+    void proxyToService(FRAUD_DETECTION_URL, "/v1/fraud/watchlist", req, res);
+  });
+  app.all("/api/platform/fraud/profiles/:customerId", (req, res) => {
+    void proxyToService(FRAUD_DETECTION_URL, `/v1/fraud/profiles/${req.params.customerId}`, req, res);
   });
 
   app.use(globalErrorHandler);

@@ -221,6 +221,52 @@ services:
       PORT: "8106"
     restart: unless-stopped
 
+  payments-hub:
+    build: ./services/payments-hub-go
+    environment:
+      <<: *common-env
+      PORT: "8107"
+    restart: unless-stopped
+
+  savings-products:
+    build: ./services/savings-products-go
+    environment:
+      <<: *common-env
+      PORT: "8108"
+    restart: unless-stopped
+
+  card-management:
+    build: ./services/card-management-go
+    environment:
+      <<: *common-env
+      PORT: "8109"
+    restart: unless-stopped
+
+  treasury-liquidity:
+    build:
+      context: .
+      dockerfile: ./services/treasury-liquidity-py/Dockerfile
+    environment:
+      <<: *common-env
+      PORT: "8110"
+    restart: unless-stopped
+
+  customer-engagement:
+    build:
+      context: .
+      dockerfile: ./services/customer-engagement-py/Dockerfile
+    environment:
+      <<: *common-env
+      PORT: "8111"
+    restart: unless-stopped
+
+  fraud-detection:
+    build: ./services/fraud-detection-rs
+    environment:
+      <<: *common-env
+      PORT: "8112"
+    restart: unless-stopped
+
 volumes:
   pgdata:
   redisdata:

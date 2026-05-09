@@ -63,6 +63,36 @@ upstreams:
     nodes:
       "127.0.0.1:8106": 1
 
+  - id: payments-hub
+    type: roundrobin
+    nodes:
+      "127.0.0.1:8107": 1
+
+  - id: savings-products
+    type: roundrobin
+    nodes:
+      "127.0.0.1:8108": 1
+
+  - id: card-management
+    type: roundrobin
+    nodes:
+      "127.0.0.1:8109": 1
+
+  - id: treasury-liquidity
+    type: roundrobin
+    nodes:
+      "127.0.0.1:8110": 1
+
+  - id: customer-engagement
+    type: roundrobin
+    nodes:
+      "127.0.0.1:8111": 1
+
+  - id: fraud-detection
+    type: roundrobin
+    nodes:
+      "127.0.0.1:8112": 1
+
 routes:
   # HTTP → HTTPS redirect
   - id: http-redirect
