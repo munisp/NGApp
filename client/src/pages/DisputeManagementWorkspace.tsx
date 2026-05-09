@@ -26,7 +26,10 @@ const config: CrudConfig = {
     { key: "caseId", label: "Case ID" },
     { key: "category", label: "Category", render: (v) => String(v).replace(/_/g, " ") },
     { key: "channel", label: "Channel" },
-    { key: "amount", label: "Amount", render: (v) => `₦${Number(v).toLocaleString()}` },
+    { key: "disputedAmount", label: "Amount", render: (v, row) => {
+      const amt = Number(v ?? row.transactionAmount ?? row.amount ?? 0);
+      return isNaN(amt) ? "\u2014" : `\u20a6${amt.toLocaleString()}`;
+    }},
     { key: "status", label: "Status" },
   ],
   actions: [

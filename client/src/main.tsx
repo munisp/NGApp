@@ -7,6 +7,7 @@ import { createRoot } from "react-dom/client";
 import superjson from "superjson";
 
 import App from "./App";
+import StatusBar from "./components/StatusBar";
 import { getLoginUrl } from "./const";
 import "./index.css";
 
@@ -66,6 +67,7 @@ createRoot(document.getElementById("root")!).render(
     <QueryClientProvider client={queryClient}>
       <CustomerSessionProvider>
         <App />
+        <StatusBar />
       </CustomerSessionProvider>
     </QueryClientProvider>
   </trpc.Provider>,

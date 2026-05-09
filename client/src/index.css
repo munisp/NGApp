@@ -29,6 +29,29 @@
   --radius: 1.2rem;
 }
 
+/* Dark mode theme (#24) */
+.dark {
+  --background: oklch(0.15 0.012 85);
+  --foreground: oklch(0.88 0.012 85);
+  --card: oklch(0.18 0.01 82);
+  --card-foreground: oklch(0.88 0.01 82);
+  --popover: oklch(0.17 0.008 82);
+  --popover-foreground: oklch(0.88 0.01 82);
+  --primary: oklch(0.58 0.1 146);
+  --primary-foreground: oklch(0.15 0.005 80);
+  --secondary: oklch(0.22 0.015 80);
+  --secondary-foreground: oklch(0.82 0.02 80);
+  --muted: oklch(0.2 0.01 82);
+  --muted-foreground: oklch(0.6 0.015 69);
+  --accent: oklch(0.45 0.06 82);
+  --accent-foreground: oklch(0.88 0.01 82);
+  --destructive: oklch(0.55 0.22 28);
+  --destructive-foreground: oklch(0.95 0.01 80);
+  --border: oklch(0.28 0.015 80);
+  --input: oklch(0.22 0.012 80);
+  --ring: oklch(0.55 0.08 146);
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -1123,5 +1146,53 @@
   .site-footer {
     flex-direction: column;
     align-items: flex-start;
+  }
+}
+
+/* Mobile PWA responsive breakpoints (#27) */
+@media (max-width: 480px) {
+  .max-w-7xl {
+    padding-inline: 0.75rem;
+  }
+}
+
+/* Status bar safe area for PWA standalone mode */
+@media (display-mode: standalone) {
+  body {
+    padding-bottom: env(safe-area-inset-bottom, 0);
+    padding-top: env(safe-area-inset-top, 0);
+  }
+}
+
+/* RTL support for Arabic (#26) */
+[dir="rtl"] {
+  direction: rtl;
+  text-align: right;
+}
+
+[dir="rtl"] .flex {
+  flex-direction: row-reverse;
+}
+
+/* Smooth transitions for dark mode (#24) */
+html {
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.dark body {
+  background-image:
+    radial-gradient(circle at top left, rgba(40, 60, 30, 0.2), transparent 28%),
+    linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+}
+
+/* Print styles */
+@media print {
+  .fixed, .sticky, nav, footer, .status-bar {
+    display: none !important;
+  }
+  body {
+    background: white !important;
+    color: black !important;
   }
 }

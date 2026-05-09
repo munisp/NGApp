@@ -1,0 +1,127 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint-typecheck:
+    name: Lint & Typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm check
+      - run: pnpm format --check
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    needs: lint-typecheck
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+
+  test:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    needs: lint-typecheck
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm test
+
+  go-services:
+    name: Go Services
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.22"
+      - name: Build Security Gateway
+        run: cd services/security-gateway-go && go build -o security-gateway main.go
+      - name: Build Teller Service
+        run: cd services/teller-service-go && go build -o teller-service main.go
+      - name: Build Trade Finance Service
+        run: cd services/trade-finance-go && go build -o trade-finance-service main.go
+      - name: Build Esusu Service
+        run: cd services/esusu-service-go && go build -o esusu-service main.go
+      - name: Build Virtual Accounts Service
+        run: cd services/virtual-accounts-go && go build -o virtual-accounts-service main.go
+      - name: Build Agent Banking Service
+        run: cd services/agent-banking-go && go build -o agent-banking-service main.go
+      - name: Build Group Lending Service
+        run: cd services/group-lending-go && go build -o group-lending-service main.go
+      - name: Build Identity Channels Service
+        run: cd services/identity-channels-go && go build -o identity-channels-service main.go
+
+  rust-services:
+    name: Rust Services
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: services/resilience-service-rs
+      - name: Build Resilience Service
+        run: cd services/resilience-service-rs && cargo build --release
+      - name: Build Agriculture Service
+        run: cd services/agriculture-service-rs && cargo build --release
+      - name: Build Mortgage Service
+        run: cd services/mortgage-service-rs && cargo build --release
+      - name: Build Ledger Reconciliation Service
+        run: cd services/ledger-reconciliation-rs && cargo build --release
+
+  python-services:
+    name: Python Services
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Validate Python Services
+        run: |
+          for svc in islamic-banking-py education-loans-py dispute-service-py erpnext-sync-py regulatory-reporting-py; do
+            echo "Checking services/$svc/main.py..."
+            python3 -c "import py_compile; py_compile.compile('services/$svc/main.py', doraise=True)"
+          done
+
+  docker:
+    name: Docker Build
+    runs-on: ubuntu-latest
+    needs: [build, go-services, rust-services, python-services]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build Docker Image
+        run: docker build -t 54bank-platform:ci .

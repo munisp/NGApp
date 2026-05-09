@@ -13,6 +13,12 @@ import { globalErrorHandler } from "./lib/errorHandler";
 import { logger } from "./lib/logger";
 import { requestLogger } from "./lib/requestLogger";
 import { validateBody, customerCreateSchema, customerUpdateSchema, transferCreateSchema, billingUsageEventSchema, billingRateCardCreateSchema, partnerOnboardingCreateSchema } from "./lib/validation";
+import { authMiddleware, requireRole, requirePermission } from "./lib/auth";
+import { validateAndLog } from "./lib/envValidation";
+import { auditLog } from "./lib/auditLog";
+import { metricsMiddleware, metricsEndpoint, registry } from "./lib/metrics";
+import { generateOpenAPISpec } from "./lib/openapi";
+import { WebSocketServer, WebSocket } from "ws";
 
 import {
   ensurePlatformSeed,
@@ -2611,8 +2617,28 @@ function buildTigerBeetleSurfaces(): MiddlewareSurface[] {
 }
 
 async function startServer() {
+  // Environment validation (fail-fast in production)
+  const resolvedEnv = validateAndLog();
+
   const app = express();
   const server = createServer(app);
+
+  // WebSocket server for real-time updates (#17)
+  const wss = new WebSocketServer({ server, path: "/ws" });
+  const wsClients = new Set<WebSocket>();
+  wss.on("connection", (ws) => {
+    wsClients.add(ws);
+    ws.on("close", () => wsClients.delete(ws));
+    ws.send(JSON.stringify({ type: "connected", timestamp: new Date().toISOString() }));
+  });
+  function broadcastEvent(event: { type: string; domain?: string; data?: unknown }) {
+    const msg = JSON.stringify({ ...event, timestamp: new Date().toISOString() });
+    Array.from(wsClients).forEach((client) => {
+      if (client.readyState === WebSocket.OPEN) {
+        client.send(msg);
+      }
+    });
+  }
 
   app.disable("x-powered-by");
   app.set("trust proxy", true);
@@ -2665,6 +2691,27 @@ async function startServer() {
     message: { error: "Write rate limit exceeded" },
     skip: (req) => !["POST", "PUT", "PATCH", "DELETE"].includes(req.method),
   }));
+
+  // Prometheus metrics middleware (#12)
+  app.use(metricsMiddleware());
+
+  // Correlation ID middleware (#11)
+  app.use((req, _res, next) => {
+    if (!req.headers["x-correlation-id"]) {
+      req.headers["x-correlation-id"] = randomUUID();
+    }
+    next();
+  });
+
+  // Authentication middleware (#3) — enabled via ENABLE_AUTH=true
+  app.use(authMiddleware());
+
+  // API versioning header (#15)
+  app.use("/api/", (_req, res, next) => {
+    res.setHeader("X-API-Version", "v1");
+    res.setHeader("X-Platform-Version", "1.0.0");
+    next();
+  });
 
   app.use(
     compression({
@@ -4781,6 +4828,106 @@ async function startServer() {
   // Below we register proxy-passthrough endpoints that forward to the
   // microservices when they are running, or return service-unavailable status.
 
+  // --- Prometheus metrics endpoint (#12) ---
+  app.get("/metrics", metricsEndpoint);
+
+  // --- OpenAPI / Swagger (#28) ---
+  app.get("/api/docs", (_req, res) => {
+    res.json(generateOpenAPISpec());
+  });
+  app.get("/api/docs/ui", (_req, res) => {
+    res.setHeader("Content-Type", "text/html");
+    res.send(`<!DOCTYPE html><html><head><title>54Bank API Documentation</title>
+      <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swagger-ui-dist/swagger-ui.css" />
+      </head><body><div id="swagger-ui"></div>
+      <script src="https://cdn.jsdelivr.net/npm/swagger-ui-dist/swagger-ui-bundle.js"></script>
+      <script>SwaggerUIBundle({ url: "/api/docs", dom_id: "#swagger-ui" });</script>
+      </body></html>`);
+  });
+
+  // --- Aggregated health check (#8) ---
+  const serviceUrls: Record<string, string> = {};
+  const healthCheckServices = () => Object.entries(serviceUrls);
+
+  app.get("/healthz/services", async (_req, res) => {
+    const results: Record<string, { status: string; latencyMs: number }> = {};
+    const checks = healthCheckServices().map(async ([name, url]) => {
+      const start = Date.now();
+      try {
+        const resp = await fetch(`${url}/healthz`, { signal: AbortSignal.timeout(3000) });
+        results[name] = { status: resp.ok ? "healthy" : "degraded", latencyMs: Date.now() - start };
+      } catch {
+        results[name] = { status: "down", latencyMs: Date.now() - start };
+      }
+    });
+    await Promise.allSettled(checks);
+    const allHealthy = Object.values(results).every((r) => r.status === "healthy");
+    res.status(allHealthy ? 200 : 207).json({
+      status: allHealthy ? "healthy" : "degraded",
+      services: results,
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+      wsClients: wsClients.size,
+    });
+  });
+
+  // --- Audit trail endpoints (#16) ---
+  app.get("/api/platform/audit", (_req, res) => {
+    const filters = {
+      domain: _req.query.domain as string | undefined,
+      userId: _req.query.userId as string | undefined,
+      action: _req.query.action as string | undefined,
+      from: _req.query.from as string | undefined,
+      to: _req.query.to as string | undefined,
+      limit: _req.query.limit ? Number(_req.query.limit) : undefined,
+    };
+    res.json(auditLog.query(filters));
+  });
+  app.get("/api/platform/audit/stats", (_req, res) => {
+    res.json(auditLog.getStats());
+  });
+
+  // --- Full-text search across domains (#20) ---
+  app.get("/api/platform/search", async (req, res) => {
+    const query = String(req.query.q ?? "").toLowerCase().trim();
+    if (!query) {
+      res.status(400).json({ error: "Query parameter 'q' is required" });
+      return;
+    }
+    const domain = req.query.domain as string | undefined;
+    const limit = Math.min(Number(req.query.limit ?? 50), 200);
+
+    const searchDomains: { name: string; url: string }[] = [];
+    if (!domain || domain === "disputes") searchDomains.push({ name: "disputes", url: `${DISPUTE_SERVICE_URL}/v1/disputes/cases` });
+    if (!domain || domain === "customers") searchDomains.push({ name: "customers", url: "" });
+
+    const results: Array<{ domain: string; id: string; match: string; score: number }> = [];
+    for (const d of searchDomains) {
+      try {
+        if (!d.url) continue;
+        const resp = await fetch(d.url, { signal: AbortSignal.timeout(5000) });
+        if (!resp.ok) continue;
+        const data = await resp.json() as Record<string, unknown>[];
+        const items = Array.isArray(data) ? data : [];
+        for (const item of items) {
+          const text = JSON.stringify(item).toLowerCase();
+          if (text.includes(query)) {
+            results.push({
+              domain: d.name,
+              id: String((item as Record<string, unknown>).id ?? ""),
+              match: text.slice(0, 200),
+              score: (text.match(new RegExp(query, "g")) ?? []).length,
+            });
+          }
+        }
+      } catch { /* service not available */ }
+    }
+
+    results.sort((a, b) => b.score - a.score);
+    res.json({ query, results: results.slice(0, limit), total: results.length });
+  });
+
+  // Service URL registry
   const AGRICULTURE_SERVICE_URL = process.env.AGRICULTURE_SERVICE_URL || "http://localhost:8090";
   const TELLER_SERVICE_URL = process.env.TELLER_SERVICE_URL || "http://localhost:8091";
   const ISLAMIC_BANKING_SERVICE_URL = process.env.ISLAMIC_BANKING_SERVICE_URL || "http://localhost:8092";
@@ -4799,23 +4946,53 @@ async function startServer() {
   const SECURITY_GATEWAY_URL = process.env.SECURITY_GATEWAY_URL || "http://localhost:8105";
   const RESILIENCE_SERVICE_URL = process.env.RESILIENCE_SERVICE_URL || "http://localhost:8106";
 
+  // Register all services for health aggregation (#8)
+  Object.assign(serviceUrls, {
+    "agriculture": AGRICULTURE_SERVICE_URL,
+    "teller": TELLER_SERVICE_URL,
+    "islamic-banking": ISLAMIC_BANKING_SERVICE_URL,
+    "trade-finance": TRADE_FINANCE_SERVICE_URL,
+    "mortgage": MORTGAGE_SERVICE_URL,
+    "esusu": ESUSU_SERVICE_URL,
+    "virtual-accounts": VIRTUAL_ACCOUNTS_SERVICE_URL,
+    "agent-banking": AGENT_BANKING_SERVICE_URL,
+    "group-lending": GROUP_LENDING_SERVICE_URL,
+    "education-loans": EDUCATION_LOANS_SERVICE_URL,
+    "ledger-recon": LEDGER_RECON_SERVICE_URL,
+    "identity-channels": IDENTITY_CHANNELS_SERVICE_URL,
+    "disputes": DISPUTE_SERVICE_URL,
+    "erpnext-sync": ERPNEXT_SYNC_SERVICE_URL,
+    "regulatory": REGULATORY_SERVICE_URL,
+    "security-gateway": SECURITY_GATEWAY_URL,
+    "resilience": RESILIENCE_SERVICE_URL,
+  });
+
   async function proxyToService(serviceUrl: string, servicePath: string, req: Request, res: express.Response): Promise<void> {
     try {
       const url = `${serviceUrl}${servicePath}`;
-      const headers: Record<string, string> = { "content-type": "application/json" };
+      const correlationId = req.headers["x-correlation-id"] as string || randomUUID();
+      const headers: Record<string, string> = {
+        "content-type": "application/json",
+        "x-correlation-id": correlationId,
+        "x-tenant-id": req.tenantId ?? "default",
+        "x-forwarded-for": req.ip ?? "unknown",
+      };
       const fetchOptions: RequestInit = {
         method: req.method,
         headers,
+        signal: AbortSignal.timeout(10_000),
       };
       if (req.method !== "GET" && req.method !== "HEAD") {
         fetchOptions.body = JSON.stringify(req.body);
       }
       const upstream = await fetch(url, fetchOptions);
       const data = await upstream.text();
+      res.set("x-correlation-id", correlationId);
       res.status(upstream.status).set("content-type", "application/json").send(data);
-    } catch {
+    } catch (err) {
+      const isTimeout = err instanceof DOMException && err.name === "TimeoutError";
       res.status(503).json({
-        message: "Banking service unavailable — start the microservice or configure the upstream URL",
+        message: isTimeout ? "Service request timed out (10s)" : "Banking service unavailable — start the microservice or configure the upstream URL",
         service: serviceUrl,
         path: servicePath,
         hint: "Run the service with Docker or directly, then retry",
