@@ -21,7 +21,7 @@ jobs:
         with:
           node-version: 22
           cache: pnpm
-      - run: pnpm install --frozen-lockfile
+      - run: pnpm install
       - run: pnpm check
 
   build:
@@ -35,7 +35,7 @@ jobs:
         with:
           node-version: 22
           cache: pnpm
-      - run: pnpm install --frozen-lockfile
+      - run: pnpm install
       - run: pnpm build
 
   test:
@@ -49,7 +49,7 @@ jobs:
         with:
           node-version: 22
           cache: pnpm
-      - run: pnpm install --frozen-lockfile
+      - run: pnpm install
       - run: pnpm test
 
   go-services:
@@ -62,12 +62,12 @@ jobs:
           go-version: "1.22"
       - name: Build Security Gateway
         run: cd services/security-gateway-go && go build -o security-gateway main.go
-      - name: Build Teller Service
-        run: cd services/teller-service-go && go build -o teller-service main.go
+      - name: Build Teller Operations
+        run: cd services/teller-operations-go && go build -o teller-service main.go
       - name: Build Trade Finance Service
         run: cd services/trade-finance-go && go build -o trade-finance-service main.go
-      - name: Build Esusu Service
-        run: cd services/esusu-service-go && go build -o esusu-service main.go
+      - name: Build Esusu Groups Service
+        run: cd services/esusu-groups-go && go build -o esusu-service main.go
       - name: Build Virtual Accounts Service
         run: cd services/virtual-accounts-go && go build -o virtual-accounts-service main.go
       - name: Build Agent Banking Service
@@ -85,13 +85,17 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
         with:
-          workspaces: services/resilience-service-rs
+          workspaces: |
+            services/resilience-service-rs
+            services/agriculture-banking-rs
+            services/mortgage-servicing-rs
+            services/ledger-reconciliation-rs
       - name: Build Resilience Service
         run: cd services/resilience-service-rs && cargo build --release
-      - name: Build Agriculture Service
-        run: cd services/agriculture-service-rs && cargo build --release
-      - name: Build Mortgage Service
-        run: cd services/mortgage-service-rs && cargo build --release
+      - name: Build Agriculture Banking Service
+        run: cd services/agriculture-banking-rs && cargo build --release
+      - name: Build Mortgage Servicing
+        run: cd services/mortgage-servicing-rs && cargo build --release
       - name: Build Ledger Reconciliation Service
         run: cd services/ledger-reconciliation-rs && cargo build --release
 
