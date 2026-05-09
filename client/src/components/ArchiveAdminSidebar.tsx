@@ -34,6 +34,9 @@ import {
   BarChart3,
   Handshake,
   X,
+  Clock,
+  Layers,
+  UserPlus,
 } from "lucide-react";
 
 const menuItems = [
@@ -80,6 +83,14 @@ const menuItems = [
   { path: "/education-loans", label: "Education Loans", icon: FileText },
   { path: "/esusu", label: "Esusu Groups", icon: Users },
   { path: "/virtual-accounts", label: "Virtual Accounts", icon: Coins },
+  { path: "/notification-center", label: "Notifications", icon: Bell },
+  { path: "/account-opening", label: "Account Opening", icon: UserPlus },
+  { path: "/standing-orders", label: "Standing Orders", icon: Clock },
+  { path: "/beneficiary-management", label: "Beneficiaries", icon: Users },
+  { path: "/loan-calculator", label: "Loan Calculator", icon: Calculator },
+  { path: "/batch-processing", label: "Batch Processing", icon: Layers },
+  { path: "/fx-rates", label: "FX & Rates", icon: TrendingUp },
+  { path: "/branch-operations", label: "Branch Ops", icon: Building2 },
 ] as const;
 
 export default function ArchiveAdminSidebar() {

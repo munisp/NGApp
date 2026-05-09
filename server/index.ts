@@ -4951,6 +4951,12 @@ async function startServer() {
   const TREASURY_LIQUIDITY_URL = process.env.TREASURY_LIQUIDITY_URL || "http://localhost:8110";
   const CUSTOMER_ENGAGEMENT_URL = process.env.CUSTOMER_ENGAGEMENT_URL || "http://localhost:8111";
   const FRAUD_DETECTION_URL = process.env.FRAUD_DETECTION_URL || "http://localhost:8112";
+  const NOTIFICATION_SERVICE_URL = process.env.NOTIFICATION_SERVICE_URL || "http://localhost:8113";
+  const ACCOUNT_OPENING_URL = process.env.ACCOUNT_OPENING_URL || "http://localhost:8114";
+  const STANDING_ORDERS_URL = process.env.STANDING_ORDERS_URL || "http://localhost:8115";
+  const BENEFICIARY_MGMT_URL = process.env.BENEFICIARY_MGMT_URL || "http://localhost:8116";
+  const BATCH_PROCESSING_URL = process.env.BATCH_PROCESSING_URL || "http://localhost:8117";
+  const FX_RATES_URL = process.env.FX_RATES_URL || "http://localhost:8118";
 
   // Register all services for health aggregation (#8)
   Object.assign(serviceUrls, {
@@ -5727,6 +5733,130 @@ async function startServer() {
   });
   app.all("/api/platform/islamic/sharia-review", (req, res) => {
     void proxyToService(ISLAMIC_BANKING_SERVICE_URL, "/v1/islamic/sharia-review", req, res);
+  });
+
+  // Teller cheque management routes
+  app.all("/api/platform/teller/cheque-books", (req, res) => {
+    void proxyToService(TELLER_SERVICE_URL, "/v1/teller/cheque-books", req, res);
+  });
+  app.all("/api/platform/teller/cheque-clearance", (req, res) => {
+    void proxyToService(TELLER_SERVICE_URL, "/v1/teller/cheque-clearance", req, res);
+  });
+
+  // Trade Finance bank guarantee routes
+  app.all("/api/platform/trade/bank-guarantees", (req, res) => {
+    void proxyToService(TRADE_FINANCE_SERVICE_URL, "/v1/trade/bank-guarantees", req, res);
+  });
+  app.all("/api/platform/trade/bank-guarantees/claim", (req, res) => {
+    void proxyToService(TRADE_FINANCE_SERVICE_URL, "/v1/trade/bank-guarantees/claim", req, res);
+  });
+
+  // Notification Service proxy routes (Go :8113)
+  app.all("/api/platform/notifications", (req, res) => {
+    void proxyToService(NOTIFICATION_SERVICE_URL, "/v1/notifications", req, res);
+  });
+  app.all("/api/platform/notifications/send", (req, res) => {
+    void proxyToService(NOTIFICATION_SERVICE_URL, "/v1/notifications/send", req, res);
+  });
+  app.all("/api/platform/notifications/bulk", (req, res) => {
+    void proxyToService(NOTIFICATION_SERVICE_URL, "/v1/notifications/bulk", req, res);
+  });
+  app.all("/api/platform/notifications/templates", (req, res) => {
+    void proxyToService(NOTIFICATION_SERVICE_URL, "/v1/notifications/templates", req, res);
+  });
+  app.all("/api/platform/notifications/preferences", (req, res) => {
+    void proxyToService(NOTIFICATION_SERVICE_URL, "/v1/notifications/preferences", req, res);
+  });
+  app.all("/api/platform/notifications/stats", (req, res) => {
+    void proxyToService(NOTIFICATION_SERVICE_URL, "/v1/notifications/stats", req, res);
+  });
+
+  // Account Opening proxy routes (Go :8114)
+  app.all("/api/platform/accounts/products", (req, res) => {
+    void proxyToService(ACCOUNT_OPENING_URL, "/v1/accounts/products", req, res);
+  });
+  app.all("/api/platform/accounts/applications", (req, res) => {
+    void proxyToService(ACCOUNT_OPENING_URL, "/v1/accounts/applications", req, res);
+  });
+  app.all("/api/platform/accounts/applications/approve", (req, res) => {
+    void proxyToService(ACCOUNT_OPENING_URL, "/v1/accounts/applications/approve", req, res);
+  });
+  app.all("/api/platform/accounts/applications/reject", (req, res) => {
+    void proxyToService(ACCOUNT_OPENING_URL, "/v1/accounts/applications/reject", req, res);
+  });
+  app.all("/api/platform/accounts/kyc/verify", (req, res) => {
+    void proxyToService(ACCOUNT_OPENING_URL, "/v1/accounts/kyc/verify", req, res);
+  });
+  app.all("/api/platform/accounts/tier-limits", (req, res) => {
+    void proxyToService(ACCOUNT_OPENING_URL, "/v1/accounts/tier-limits", req, res);
+  });
+
+  // Standing Orders proxy routes (Go :8115)
+  app.all("/api/platform/standing-orders", (req, res) => {
+    void proxyToService(STANDING_ORDERS_URL, "/v1/standing-orders", req, res);
+  });
+  app.all("/api/platform/standing-orders/pause", (req, res) => {
+    void proxyToService(STANDING_ORDERS_URL, "/v1/standing-orders/pause", req, res);
+  });
+  app.all("/api/platform/standing-orders/resume", (req, res) => {
+    void proxyToService(STANDING_ORDERS_URL, "/v1/standing-orders/resume", req, res);
+  });
+  app.all("/api/platform/mandates", (req, res) => {
+    void proxyToService(STANDING_ORDERS_URL, "/v1/mandates", req, res);
+  });
+  app.all("/api/platform/mandates/revoke", (req, res) => {
+    void proxyToService(STANDING_ORDERS_URL, "/v1/mandates/revoke", req, res);
+  });
+  app.all("/api/platform/scheduled-payments", (req, res) => {
+    void proxyToService(STANDING_ORDERS_URL, "/v1/scheduled-payments", req, res);
+  });
+
+  // Beneficiary Management proxy routes (Go :8116)
+  app.all("/api/platform/beneficiaries", (req, res) => {
+    void proxyToService(BENEFICIARY_MGMT_URL, "/v1/beneficiaries", req, res);
+  });
+  app.all("/api/platform/beneficiaries/verify", (req, res) => {
+    void proxyToService(BENEFICIARY_MGMT_URL, "/v1/beneficiaries/verify", req, res);
+  });
+  app.all("/api/platform/beneficiaries/favorite", (req, res) => {
+    void proxyToService(BENEFICIARY_MGMT_URL, "/v1/beneficiaries/favorite", req, res);
+  });
+  app.all("/api/platform/beneficiaries/banks", (req, res) => {
+    void proxyToService(BENEFICIARY_MGMT_URL, "/v1/beneficiaries/banks", req, res);
+  });
+  app.all("/api/platform/beneficiaries/limits", (req, res) => {
+    void proxyToService(BENEFICIARY_MGMT_URL, "/v1/beneficiaries/limits", req, res);
+  });
+
+  // Batch Processing proxy routes (Python :8117)
+  app.all("/api/platform/batch/jobs", (req, res) => {
+    void proxyToService(BATCH_PROCESSING_URL, "/v1/batch/jobs", req, res);
+  });
+  app.all("/api/platform/batch/accruals", (req, res) => {
+    void proxyToService(BATCH_PROCESSING_URL, "/v1/batch/accruals", req, res);
+  });
+  app.all("/api/platform/batch/statements", (req, res) => {
+    void proxyToService(BATCH_PROCESSING_URL, "/v1/batch/statements", req, res);
+  });
+  app.all("/api/platform/batch/dormancy", (req, res) => {
+    void proxyToService(BATCH_PROCESSING_URL, "/v1/batch/dormancy", req, res);
+  });
+  app.all("/api/platform/batch/schedule", (req, res) => {
+    void proxyToService(BATCH_PROCESSING_URL, "/v1/batch/schedule", req, res);
+  });
+
+  // FX & Rates Engine proxy routes (Rust :8118)
+  app.all("/api/platform/fx/rates", (req, res) => {
+    void proxyToService(FX_RATES_URL, "/v1/fx/rates", req, res);
+  });
+  app.all("/api/platform/fx/convert", (req, res) => {
+    void proxyToService(FX_RATES_URL, "/v1/fx/convert", req, res);
+  });
+  app.all("/api/platform/fx/deals", (req, res) => {
+    void proxyToService(FX_RATES_URL, "/v1/fx/deals", req, res);
+  });
+  app.all("/api/platform/fx/alerts", (req, res) => {
+    void proxyToService(FX_RATES_URL, "/v1/fx/alerts", req, res);
   });
 
   app.use(globalErrorHandler);

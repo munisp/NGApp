@@ -62,12 +62,29 @@ type DocumentaryCollection struct {
 	Status        string  `json:"status"` // presented, accepted, paid, refused
 }
 
+type BankGuarantee struct {
+	ID              string    `json:"id"`
+	GuaranteeType   string    `json:"guaranteeType"` // performance, financial, advance_payment, bid_bond
+	ApplicantName   string    `json:"applicantName"`
+	BeneficiaryName string    `json:"beneficiaryName"`
+	Amount          float64   `json:"amount"`
+	Currency        string    `json:"currency"`
+	IssuedDate      string    `json:"issuedDate"`
+	ExpiryDate      string    `json:"expiryDate"`
+	Status          string    `json:"status"` // draft, issued, amended, claimed, expired, cancelled
+	ClaimAmount     float64   `json:"claimAmount,omitempty"`
+	ClaimDate       string    `json:"claimDate,omitempty"`
+	ClaimReason     string    `json:"claimReason,omitempty"`
+	CreatedAt       time.Time `json:"createdAt"`
+}
+
 var (
-	tfEnhMu    sync.RWMutex
-	swiftMsgs  []SWIFTMessage
-	syndLCs    []SyndicatedLC
-	tradeIns   []TradeInsurance
+	tfEnhMu        sync.RWMutex
+	swiftMsgs      []SWIFTMessage
+	syndLCs        []SyndicatedLC
+	tradeIns       []TradeInsurance
 	docCollections []DocumentaryCollection
+	bankGuarantees []BankGuarantee
 )
 
 func RegisterTradeEnhancements(mux *http.ServeMux) {
@@ -159,5 +176,83 @@ func RegisterTradeEnhancements(mux *http.ServeMux) {
 		tfEnhMu.RLock()
 		defer tfEnhMu.RUnlock()
 		json.NewEncoder(w).Encode(docCollections)
+	})
+
+	// Bank Guarantee Lifecycle
+	mux.HandleFunc("/v1/trade/bank-guarantees", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if r.Method == "POST" {
+			var bg BankGuarantee
+			json.NewDecoder(r.Body).Decode(&bg)
+			validTypes := map[string]bool{"performance": true, "financial": true, "advance_payment": true, "bid_bond": true}
+			if !validTypes[bg.GuaranteeType] {
+				http.Error(w, `{"error":"guaranteeType must be performance, financial, advance_payment, or bid_bond"}`, 400)
+				return
+			}
+			if bg.Amount <= 0 {
+				http.Error(w, `{"error":"amount must be greater than 0"}`, 400)
+				return
+			}
+			if bg.ApplicantName == "" || bg.BeneficiaryName == "" {
+				http.Error(w, `{"error":"applicantName and beneficiaryName are required"}`, 400)
+				return
+			}
+			bg.ID = fmt.Sprintf("BG-%d", time.Now().UnixNano())
+			bg.Status = "draft"
+			bg.CreatedAt = time.Now()
+			if bg.Currency == "" {
+				bg.Currency = "NGN"
+			}
+			tfEnhMu.Lock()
+			bankGuarantees = append(bankGuarantees, bg)
+			tfEnhMu.Unlock()
+			w.WriteHeader(201)
+			json.NewEncoder(w).Encode(bg)
+			return
+		}
+		tfEnhMu.RLock()
+		defer tfEnhMu.RUnlock()
+		json.NewEncoder(w).Encode(map[string]interface{}{"guarantees": bankGuarantees, "total": len(bankGuarantees)})
+	})
+
+	// Bank Guarantee Claim
+	mux.HandleFunc("/v1/trade/bank-guarantees/claim", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if r.Method != "POST" {
+			w.WriteHeader(405)
+			return
+		}
+		var body struct {
+			GuaranteeID string  `json:"guaranteeId"`
+			ClaimAmount float64 `json:"claimAmount"`
+			Reason      string  `json:"reason"`
+		}
+		json.NewDecoder(r.Body).Decode(&body)
+		if body.Reason == "" {
+			http.Error(w, `{"error":"claim reason is required"}`, 400)
+			return
+		}
+		tfEnhMu.Lock()
+		defer tfEnhMu.Unlock()
+		for i := range bankGuarantees {
+			if bankGuarantees[i].ID == body.GuaranteeID {
+				if bankGuarantees[i].Status != "issued" {
+					http.Error(w, `{"error":"can only claim issued guarantees"}`, 400)
+					return
+				}
+				if body.ClaimAmount > bankGuarantees[i].Amount {
+					http.Error(w, `{"error":"claim amount exceeds guarantee amount"}`, 400)
+					return
+				}
+				bankGuarantees[i].Status = "claimed"
+				bankGuarantees[i].ClaimAmount = body.ClaimAmount
+				bankGuarantees[i].ClaimDate = time.Now().Format(time.RFC3339)
+				bankGuarantees[i].ClaimReason = body.Reason
+				json.NewEncoder(w).Encode(bankGuarantees[i])
+				return
+			}
+		}
+		w.WriteHeader(404)
+		json.NewEncoder(w).Encode(map[string]string{"error": "guarantee not found"})
 	})
 }
