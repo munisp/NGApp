@@ -1,0 +1,29 @@
+version: "3.9"
+services:
+  54bank-ui:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: 54bank-ui:latest
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      PLATFORM_TENANT_ID: 54bank-platform-prod
+      TENANT_ID: 54bank-platform-prod
+      TENANT_SECRET: ${TENANT_SECRET:?set TENANT_SECRET}
+      DEFAULT_OPERATOR_ROLE: operations
+      DEFAULT_OPERATOR_ID: ops.runtime
+      UPSTREAM_PLATFORM_URL: ${UPSTREAM_PLATFORM_URL:?set UPSTREAM_PLATFORM_URL}
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET}
+      TELLER_SERVICE_URL: http://teller-service:8096
+      RECONCILIATION_SERVICE_URL: http://reconciliation-service:8092
+      ERPNEXT_SERVICE_URL: http://erpnext-integration-service:8098
+      ISLAMIC_BANKING_SERVICE_URL: http://islamic-banking-service:8097
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3000/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 20s

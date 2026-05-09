@@ -1,0 +1,188 @@
+// The recovered admin portal keeps its top-level route structure and sidebar-led shell,
+// while the customer PWA remains a separate reference surface under /customer so both
+// recovered archive applications can coexist in one active project.
+
+import { lazy, Suspense, type ComponentType, type ReactNode } from "react";
+import { Route, Switch } from "wouter";
+
+const ArchiveAdminSidebar = lazy(() => import("@/components/ArchiveAdminSidebar"));
+
+const AdminAgentBankingPage = lazy(() => import("@/pages/ArchiveAdminRoutes").then((module) => ({ default: module.AdminAgentBankingPage })));
+const AdminAlertRulesPage = lazy(() => import("@/pages/ArchiveAdminRoutes").then((module) => ({ default: module.AdminAlertRulesPage })));
+const AdminAlertsPage = lazy(() => import("@/pages/ArchiveAdminRoutes").then((module) => ({ default: module.AdminAlertsPage })));
+const AdminAlertSettingsPage = lazy(() => import("@/pages/ArchiveAdminRoutes").then((module) => ({ default: module.AdminAlertSettingsPage })));
+const AdminBanksPage = lazy(() => import("@/pages/ArchiveAdminRoutes").then((module) => ({ default: module.AdminBanksPage })));
+const AdminBillingPage = lazy(() => import("@/pages/ArchiveAdminRoutes").then((module) => ({ default: module.AdminBillingPage })));
+const AdminCurriculumPage = lazy(() => import("@/pages/ArchiveAdminRoutes").then((module) => ({ default: module.AdminCurriculumPage })));
+const AdminInfrastructurePage = lazy(() => import("@/pages/ArchiveAdminRoutes").then((module) => ({ default: module.AdminInfrastructurePage })));
+const AdminLabsPage = lazy(() => import("@/pages/ArchiveAdminRoutes").then((module) => ({ default: module.AdminLabsPage })));
+const AdminLoginPage = lazy(() => import("@/pages/ArchiveAdminRoutes").then((module) => ({ default: module.AdminLoginPage })));
+const AdminMonitoringPage = lazy(() => import("@/pages/ArchiveAdminRoutes").then((module) => ({ default: module.AdminMonitoringPage })));
+const AdminOnboardingPage = lazy(() => import("@/pages/ArchiveAdminRoutes").then((module) => ({ default: module.AdminOnboardingPage })));
+const AdminQuickReferencePage = lazy(() => import("@/pages/ArchiveAdminRoutes").then((module) => ({ default: module.AdminQuickReferencePage })));
+const AdminRegulatoryReportingPage = lazy(() => import("@/pages/ArchiveAdminRoutes").then((module) => ({ default: module.AdminRegulatoryReportingPage })));
+const AdminResourcesPage = lazy(() => import("@/pages/ArchiveAdminRoutes").then((module) => ({ default: module.AdminResourcesPage })));
+const AdminUsageAnalyticsPage = lazy(() => import("@/pages/ArchiveAdminRoutes").then((module) => ({ default: module.AdminUsageAnalyticsPage })));
+const AdminGroupLendingPage = lazy(() => import("@/pages/ArchiveAdminRoutes").then((module) => ({ default: module.AdminGroupLendingPage })));
+
+const AgricultureAgtechPage = lazy(() => import("@/pages/ArchiveAgricultureRoutes").then((module) => ({ default: module.AgricultureAgtechPage })));
+const AgricultureAnalyticsPage = lazy(() => import("@/pages/ArchiveAgricultureRoutes").then((module) => ({ default: module.AgricultureAnalyticsPage })));
+const AgricultureCompliancePage = lazy(() => import("@/pages/ArchiveAgricultureRoutes").then((module) => ({ default: module.AgricultureCompliancePage })));
+const AgricultureFarmersPage = lazy(() => import("@/pages/ArchiveAgricultureRoutes").then((module) => ({ default: module.AgricultureFarmersPage })));
+const AgricultureLoansPage = lazy(() => import("@/pages/ArchiveAgricultureRoutes").then((module) => ({ default: module.AgricultureLoansPage })));
+const AgricultureOverviewPage = lazy(() => import("@/pages/ArchiveAgricultureRoutes").then((module) => ({ default: module.AgricultureOverviewPage })));
+const AgricultureRiskPage = lazy(() => import("@/pages/ArchiveAgricultureRoutes").then((module) => ({ default: module.AgricultureRiskPage })));
+const AgricultureValueChainPage = lazy(() => import("@/pages/ArchiveAgricultureRoutes").then((module) => ({ default: module.AgricultureValueChainPage })));
+
+const CustomerBills = lazy(() => import("@/pages/CustomerBills"));
+const CustomerCards = lazy(() => import("@/pages/CustomerCards"));
+const CustomerDashboard = lazy(() => import("@/pages/CustomerDashboard"));
+const CustomerLoans = lazy(() => import("@/pages/CustomerLoans"));
+const CustomerNotifications = lazy(() => import("@/pages/CustomerNotifications"));
+const CustomerQr = lazy(() => import("@/pages/CustomerQr"));
+const CustomerSavings = lazy(() => import("@/pages/CustomerSavings"));
+const CustomerSettings = lazy(() => import("@/pages/CustomerSettings"));
+const CustomerStatements = lazy(() => import("@/pages/CustomerStatements"));
+const CustomerTransfers = lazy(() => import("@/pages/CustomerTransfers"));
+const DisputeManagementWorkspace = lazy(() => import("@/pages/DisputeManagementWorkspace"));
+const ERPNextWorkspace = lazy(() => import("@/pages/ERPNextWorkspace"));
+const EducationLoansWorkspace = lazy(() => import("@/pages/EducationLoansWorkspace"));
+const EsusuWorkspace = lazy(() => import("@/pages/EsusuWorkspace"));
+const Home = lazy(() => import("@/pages/Home"));
+const VirtualAccountsWorkspace = lazy(() => import("@/pages/VirtualAccountsWorkspace"));
+const IdentityChannelsWorkspace = lazy(() => import("@/pages/IdentityChannelsWorkspace"));
+const IslamicBankingWorkspace = lazy(() => import("@/pages/IslamicBankingWorkspace"));
+const LedgerSyncWorkspace = lazy(() => import("@/pages/LedgerSyncWorkspace"));
+const MortgageWorkspace = lazy(() => import("@/pages/MortgageWorkspace"));
+const NotFound = lazy(() => import("@/pages/NotFound"));
+const OperationsCenter = lazy(() => import("@/pages/OperationsCenter"));
+const PartnerOnboardingAdminPage = lazy(() => import("@/pages/PartnerOnboardingAdminPage"));
+const PartnerOnboardingPortalPage = lazy(() => import("@/pages/PartnerOnboardingPortalPage"));
+const PricingModelWorkspace = lazy(() => import("@/pages/PricingModelWorkspace"));
+const TellerWorkspace = lazy(() => import("@/pages/TellerWorkspace"));
+const TradeFinanceWorkspace = lazy(() => import("@/pages/TradeFinanceWorkspace"));
+const AdminDashboard = lazy(() => import("@/pages/AdminDashboard"));
+const BillingEngineWorkspace = lazy(() => import("@/pages/BillingEngineWorkspace"));
+const AdminAnalyticsPage = lazy(() => import("@/pages/AdminModulePages").then((module) => ({ default: module.AdminAnalyticsPage })));
+const AdminBankingOpsPage = lazy(() => import("@/pages/AdminModulePages").then((module) => ({ default: module.AdminBankingOpsPage })));
+const AdminFeatureFlagsPage = lazy(() => import("@/pages/AdminModulePages").then((module) => ({ default: module.AdminFeatureFlagsPage })));
+const AdminSecurityPage = lazy(() => import("@/pages/AdminModulePages").then((module) => ({ default: module.AdminSecurityPage })));
+const AdminUsersPage = lazy(() => import("@/pages/AdminModulePages").then((module) => ({ default: module.AdminUsersPage })));
+
+function RouteFallback() {
+  return <div className="min-h-screen bg-slate-50" />;
+}
+
+function AdminShell({ children }: { children: ReactNode }) {
+  return (
+    <div className="min-h-screen bg-slate-50 lg:flex">
+      <ArchiveAdminSidebar />
+      <div className="min-w-0 flex-1">{children}</div>
+    </div>
+  );
+}
+
+function renderInAdminShell(Page: ComponentType) {
+  return () => (
+    <AdminShell>
+      <Page />
+    </AdminShell>
+  );
+}
+
+export default function App() {
+  return (
+    <Suspense fallback={<RouteFallback />}>
+      <Switch>
+        <Route path="/login" component={AdminLoginPage} />
+
+        <Route path="/customer/dashboard" component={CustomerDashboard} />
+        <Route path="/customer/transfers" component={CustomerTransfers} />
+        <Route path="/customer/cards" component={CustomerCards} />
+        <Route path="/customer/savings" component={CustomerSavings} />
+        <Route path="/customer/loans" component={CustomerLoans} />
+        <Route path="/customer/bills" component={CustomerBills} />
+        <Route path="/customer/statements" component={CustomerStatements} />
+        <Route path="/customer/notifications" component={CustomerNotifications} />
+        <Route path="/customer/settings" component={CustomerSettings} />
+        <Route path="/customer/qr" component={CustomerQr} />
+
+        <Route path="/" component={renderInAdminShell(AdminDashboard)} />
+        <Route path="/banks" component={renderInAdminShell(AdminBanksPage)} />
+        <Route path="/features" component={renderInAdminShell(AdminFeatureFlagsPage)} />
+        <Route path="/billing" component={renderInAdminShell(AdminBillingPage)} />
+        <Route path="/billing-engine" component={renderInAdminShell(BillingEngineWorkspace)} />
+        <Route path="/pricing-model" component={renderInAdminShell(PricingModelWorkspace)} />
+        <Route path="/monitoring" component={renderInAdminShell(AdminMonitoringPage)} />
+        <Route path="/usage-analytics" component={renderInAdminShell(AdminUsageAnalyticsPage)} />
+        <Route path="/alert-settings" component={renderInAdminShell(AdminAlertSettingsPage)} />
+        <Route path="/alerts" component={renderInAdminShell(AdminAlertsPage)} />
+        <Route path="/alert-rules" component={renderInAdminShell(AdminAlertRulesPage)} />
+        <Route path="/group-lending" component={renderInAdminShell(AdminGroupLendingPage)} />
+        <Route path="/agent-banking" component={renderInAdminShell(AdminAgentBankingPage)} />
+        <Route path="/regulatory-reporting" component={renderInAdminShell(AdminRegulatoryReportingPage)} />
+        <Route path="/onboarding" component={renderInAdminShell(PartnerOnboardingAdminPage)} />
+        <Route path="/partner/onboarding" component={PartnerOnboardingPortalPage} />
+        <Route path="/home" component={renderInAdminShell(AdminDashboard)} />
+        <Route path="/curriculum" component={renderInAdminShell(AdminCurriculumPage)} />
+        <Route path="/infrastructure" component={renderInAdminShell(AdminInfrastructurePage)} />
+        <Route path="/resources" component={renderInAdminShell(AdminResourcesPage)} />
+        <Route path="/quick-reference" component={renderInAdminShell(AdminQuickReferencePage)} />
+        <Route path="/labs" component={renderInAdminShell(AdminLabsPage)} />
+        <Route path="/agriculture" component={renderInAdminShell(AgricultureOverviewPage)} />
+        <Route path="/agriculture/farmers" component={renderInAdminShell(AgricultureFarmersPage)} />
+        <Route path="/agriculture/loans" component={renderInAdminShell(AgricultureLoansPage)} />
+        <Route path="/agriculture/risk" component={renderInAdminShell(AgricultureRiskPage)} />
+        <Route path="/agriculture/agtech" component={renderInAdminShell(AgricultureAgtechPage)} />
+        <Route path="/agriculture/value-chain" component={renderInAdminShell(AgricultureValueChainPage)} />
+        <Route path="/agriculture/regulatory" component={renderInAdminShell(AgricultureCompliancePage)} />
+        <Route path="/agriculture/compliance" component={renderInAdminShell(AgricultureCompliancePage)} />
+        <Route path="/agriculture/analytics" component={renderInAdminShell(AgricultureAnalyticsPage)} />
+
+        <Route path="/admin" component={renderInAdminShell(AdminDashboard)} />
+        <Route path="/admin/login" component={AdminLoginPage} />
+        <Route path="/admin/feature-flags" component={renderInAdminShell(AdminFeatureFlagsPage)} />
+        <Route path="/admin/features" component={renderInAdminShell(AdminFeatureFlagsPage)} />
+        <Route path="/admin/security" component={renderInAdminShell(AdminSecurityPage)} />
+        <Route path="/admin/banking" component={renderInAdminShell(AdminBankingOpsPage)} />
+        <Route path="/admin/analytics" component={renderInAdminShell(AdminAnalyticsPage)} />
+        <Route path="/admin/users" component={renderInAdminShell(AdminUsersPage)} />
+        <Route path="/admin/banks" component={renderInAdminShell(AdminBanksPage)} />
+        <Route path="/admin/billing" component={renderInAdminShell(AdminBillingPage)} />
+        <Route path="/admin/billing-engine" component={renderInAdminShell(BillingEngineWorkspace)} />
+        <Route path="/admin/pricing-model" component={renderInAdminShell(PricingModelWorkspace)} />
+        <Route path="/admin/monitoring" component={renderInAdminShell(AdminMonitoringPage)} />
+        <Route path="/admin/usage-analytics" component={renderInAdminShell(AdminUsageAnalyticsPage)} />
+        <Route path="/admin/alerts" component={renderInAdminShell(AdminAlertsPage)} />
+        <Route path="/admin/alert-settings" component={renderInAdminShell(AdminAlertSettingsPage)} />
+        <Route path="/admin/alert-rules" component={renderInAdminShell(AdminAlertRulesPage)} />
+        <Route path="/admin/group-lending" component={renderInAdminShell(AdminGroupLendingPage)} />
+        <Route path="/admin/agent-banking" component={renderInAdminShell(AdminAgentBankingPage)} />
+        <Route path="/admin/regulatory-reporting" component={renderInAdminShell(AdminRegulatoryReportingPage)} />
+        <Route path="/admin/onboarding" component={renderInAdminShell(PartnerOnboardingAdminPage)} />
+        <Route path="/admin/curriculum" component={renderInAdminShell(AdminCurriculumPage)} />
+        <Route path="/admin/infrastructure" component={renderInAdminShell(AdminInfrastructurePage)} />
+        <Route path="/admin/resources" component={renderInAdminShell(AdminResourcesPage)} />
+        <Route path="/admin/quick-reference" component={renderInAdminShell(AdminQuickReferencePage)} />
+        <Route path="/admin/labs" component={renderInAdminShell(AdminLabsPage)} />
+
+        <Route path="/control-center" component={renderInAdminShell(Home)} />
+        <Route path="/operations" component={renderInAdminShell(OperationsCenter)} />
+        <Route path="/teller" component={renderInAdminShell(TellerWorkspace)} />
+        <Route path="/trade-finance" component={renderInAdminShell(TradeFinanceWorkspace)} />
+        <Route path="/mortgage" component={renderInAdminShell(MortgageWorkspace)} />
+        <Route path="/education-loans" component={renderInAdminShell(EducationLoansWorkspace)} />
+        <Route path="/esusu" component={renderInAdminShell(EsusuWorkspace)} />
+        <Route path="/virtual-accounts" component={renderInAdminShell(VirtualAccountsWorkspace)} />
+        <Route path="/disputes" component={renderInAdminShell(DisputeManagementWorkspace)} />
+        <Route path="/agricultural-insurance" component={renderInAdminShell(AgricultureOverviewPage)} />
+        <Route path="/ledger-sync" component={renderInAdminShell(LedgerSyncWorkspace)} />
+        <Route path="/erpnext-sync" component={renderInAdminShell(ERPNextWorkspace)} />
+        <Route path="/identity-channels" component={renderInAdminShell(IdentityChannelsWorkspace)} />
+        <Route path="/islamic-banking" component={renderInAdminShell(IslamicBankingWorkspace)} />
+
+        <Route component={NotFound} />
+      </Switch>
+    </Suspense>
+  );
+}
