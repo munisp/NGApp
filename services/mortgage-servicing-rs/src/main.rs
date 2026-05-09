@@ -19,6 +19,7 @@ use uuid::Uuid;
 use chrono::Utc;
 
 mod models;
+mod enhancements;
 use models::*;
 
 struct AppState {
@@ -33,6 +34,7 @@ async fn main() -> std::io::Result<()> {
         mortgages: Mutex::new(Vec::new()),
         payments: Mutex::new(Vec::new()),
     });
+    let enh_data = web::Data::new(enhancements::MortgageEnhState::new());
 
     println!("Mortgage Servicing service listening on :{}", port);
     HttpServer::new(move || {
@@ -40,6 +42,7 @@ async fn main() -> std::io::Result<()> {
             .wrap(Logger::default())
             .wrap(Cors::permissive())
             .app_data(data.clone())
+            .app_data(enh_data.clone())
             .route("/healthz", web::get().to(healthz))
             .service(
                 web::scope("/v1/mortgage")
@@ -53,6 +56,15 @@ async fn main() -> std::io::Result<()> {
                     .route("/applications/{id}/prepay", web::post().to(prepay_mortgage))
                     .route("/applications/{id}/schedule", web::get().to(get_schedule))
                     .route("/payments", web::get().to(list_payments))
+                    // B5: NHF, Rate Adjustments, Foreclosure, Valuations
+                    .route("/nhf", web::get().to(enhancements::list_nhf))
+                    .route("/nhf", web::post().to(enhancements::create_nhf))
+                    .route("/rate-adjustments", web::get().to(enhancements::list_rate_adjustments))
+                    .route("/rate-adjustments", web::post().to(enhancements::create_rate_adjustment))
+                    .route("/foreclosures", web::get().to(enhancements::list_foreclosures))
+                    .route("/foreclosures", web::post().to(enhancements::initiate_foreclosure))
+                    .route("/valuations", web::get().to(enhancements::list_valuations))
+                    .route("/valuations", web::post().to(enhancements::create_valuation))
             )
     })
     .bind(("0.0.0.0", port))?

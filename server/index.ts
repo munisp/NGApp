@@ -5609,6 +5609,109 @@ async function startServer() {
     void proxyToService(TELLER_SERVICE_URL, "/v1/teller/receipts", req, res);
   });
 
+  // B3: Trade Finance enhanced routes
+  app.all("/api/platform/trade/swift", (req, res) => {
+    void proxyToService(TRADE_FINANCE_SERVICE_URL, "/v1/trade/swift", req, res);
+  });
+  app.all("/api/platform/trade/syndicated-lc", (req, res) => {
+    void proxyToService(TRADE_FINANCE_SERVICE_URL, "/v1/trade/syndicated-lc", req, res);
+  });
+  app.all("/api/platform/trade/insurance", (req, res) => {
+    void proxyToService(TRADE_FINANCE_SERVICE_URL, "/v1/trade/insurance", req, res);
+  });
+  app.all("/api/platform/trade/documentary-collection", (req, res) => {
+    void proxyToService(TRADE_FINANCE_SERVICE_URL, "/v1/trade/documentary-collection", req, res);
+  });
+
+  // B4: Agriculture enhanced routes
+  app.all("/api/platform/agriculture/weather", (req, res) => {
+    void proxyToService(AGRICULTURE_SERVICE_URL, "/v1/agriculture/weather", req, res);
+  });
+  app.all("/api/platform/agriculture/ussd", (req, res) => {
+    void proxyToService(AGRICULTURE_SERVICE_URL, "/v1/agriculture/ussd", req, res);
+  });
+  app.all("/api/platform/agriculture/warehouse-receipts", (req, res) => {
+    void proxyToService(AGRICULTURE_SERVICE_URL, "/v1/agriculture/warehouse-receipts", req, res);
+  });
+
+  // B5: Mortgage enhanced routes
+  app.all("/api/platform/mortgage/nhf", (req, res) => {
+    void proxyToService(MORTGAGE_SERVICE_URL, "/v1/mortgage/nhf", req, res);
+  });
+  app.all("/api/platform/mortgage/rate-adjustments", (req, res) => {
+    void proxyToService(MORTGAGE_SERVICE_URL, "/v1/mortgage/rate-adjustments", req, res);
+  });
+  app.all("/api/platform/mortgage/foreclosures", (req, res) => {
+    void proxyToService(MORTGAGE_SERVICE_URL, "/v1/mortgage/foreclosures", req, res);
+  });
+  app.all("/api/platform/mortgage/valuations", (req, res) => {
+    void proxyToService(MORTGAGE_SERVICE_URL, "/v1/mortgage/valuations", req, res);
+  });
+
+  // B6: Virtual Accounts enhanced routes
+  app.all("/api/platform/virtual-accounts/sub-accounts", (req, res) => {
+    void proxyToService(VIRTUAL_ACCOUNTS_SERVICE_URL, "/v1/virtual-accounts/sub-accounts", req, res);
+  });
+  app.all("/api/platform/virtual-accounts/sweep", (req, res) => {
+    void proxyToService(VIRTUAL_ACCOUNTS_SERVICE_URL, "/v1/virtual-accounts/sweep", req, res);
+  });
+  app.all("/api/platform/virtual-accounts/auto-settlement", (req, res) => {
+    void proxyToService(VIRTUAL_ACCOUNTS_SERVICE_URL, "/v1/virtual-accounts/auto-settlement", req, res);
+  });
+
+  // B7: Esusu enhanced routes
+  app.all("/api/platform/esusu/penalties", (req, res) => {
+    void proxyToService(ESUSU_SERVICE_URL, "/v1/esusu/penalties", req, res);
+  });
+  app.all("/api/platform/esusu/rotation-schedule", (req, res) => {
+    void proxyToService(ESUSU_SERVICE_URL, "/v1/esusu/rotation-schedule", req, res);
+  });
+  app.all("/api/platform/esusu/analytics", (req, res) => {
+    void proxyToService(ESUSU_SERVICE_URL, "/v1/esusu/analytics", req, res);
+  });
+
+  // B8: Education Loans enhanced routes
+  app.all("/api/platform/education/institutions", (req, res) => {
+    void proxyToService(EDUCATION_LOANS_SERVICE_URL, "/v1/education/institutions", req, res);
+  });
+  app.all("/api/platform/education/grace-periods", (req, res) => {
+    void proxyToService(EDUCATION_LOANS_SERVICE_URL, "/v1/education/grace-periods", req, res);
+  });
+  app.all("/api/platform/education/scholarships", (req, res) => {
+    void proxyToService(EDUCATION_LOANS_SERVICE_URL, "/v1/education/scholarships", req, res);
+  });
+  app.all("/api/platform/education/income-repayment", (req, res) => {
+    void proxyToService(EDUCATION_LOANS_SERVICE_URL, "/v1/education/income-repayment", req, res);
+  });
+
+  // B9: Disputes enhanced routes
+  app.all("/api/platform/disputes/chargebacks", (req, res) => {
+    void proxyToService(DISPUTE_SERVICE_URL, "/v1/disputes/chargebacks", req, res);
+  });
+  app.all("/api/platform/disputes/arbitration", (req, res) => {
+    void proxyToService(DISPUTE_SERVICE_URL, "/v1/disputes/arbitration", req, res);
+  });
+  app.all("/api/platform/disputes/sla", (req, res) => {
+    void proxyToService(DISPUTE_SERVICE_URL, "/v1/disputes/sla", req, res);
+  });
+  app.all("/api/platform/disputes/evidence", (req, res) => {
+    void proxyToService(DISPUTE_SERVICE_URL, "/v1/disputes/evidence", req, res);
+  });
+
+  // B10: Regulatory enhanced routes
+  app.all("/api/platform/regulatory/ndic", (req, res) => {
+    void proxyToService(REGULATORY_SERVICE_URL, "/v1/regulatory/ndic", req, res);
+  });
+  app.all("/api/platform/regulatory/firs-tax", (req, res) => {
+    void proxyToService(REGULATORY_SERVICE_URL, "/v1/regulatory/firs-tax", req, res);
+  });
+  app.all("/api/platform/regulatory/aml-screening", (req, res) => {
+    void proxyToService(REGULATORY_SERVICE_URL, "/v1/regulatory/aml-screening", req, res);
+  });
+  app.all("/api/platform/regulatory/basel-iii", (req, res) => {
+    void proxyToService(REGULATORY_SERVICE_URL, "/v1/regulatory/basel-iii", req, res);
+  });
+
   // B2: Islamic Banking enhanced routes
   app.all("/api/platform/islamic/sukuk", (req, res) => {
     void proxyToService(ISLAMIC_BANKING_SERVICE_URL, "/v1/islamic/sukuk", req, res);
