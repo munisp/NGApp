@@ -40,3 +40,110 @@ services:
       - ADDR=:8093
       - TENANT_ID=54bank-platform-prod
     restart: unless-stopped
+
+  mortgage-servicing:
+    build: ./services/mortgage-servicing-rs
+    ports:
+      - "8094:8094"
+    environment:
+      - PORT=8094
+      - TENANT_ID=54bank-platform-prod
+    restart: unless-stopped
+
+  esusu-groups:
+    build: ./services/esusu-groups-go
+    ports:
+      - "8095:8095"
+    environment:
+      - ADDR=:8095
+      - TENANT_ID=54bank-platform-prod
+    restart: unless-stopped
+
+  virtual-accounts:
+    build: ./services/virtual-accounts-go
+    ports:
+      - "8096:8096"
+    environment:
+      - ADDR=:8096
+      - TENANT_ID=54bank-platform-prod
+    restart: unless-stopped
+
+  agent-banking:
+    build: ./services/agent-banking-go
+    ports:
+      - "8097:8097"
+    environment:
+      - ADDR=:8097
+      - TENANT_ID=54bank-platform-prod
+    restart: unless-stopped
+
+  group-lending:
+    build: ./services/group-lending-go
+    ports:
+      - "8098:8098"
+    environment:
+      - ADDR=:8098
+      - TENANT_ID=54bank-platform-prod
+    restart: unless-stopped
+
+  education-loans:
+    build:
+      context: .
+      dockerfile: ./services/education-loans-py/Dockerfile
+    ports:
+      - "8099:8099"
+    environment:
+      - PORT=8099
+      - TENANT_ID=54bank-platform-prod
+    restart: unless-stopped
+
+  ledger-reconciliation:
+    build: ./services/ledger-reconciliation-rs
+    ports:
+      - "8100:8100"
+    environment:
+      - PORT=8100
+      - TENANT_ID=54bank-platform-prod
+    restart: unless-stopped
+
+  identity-channels:
+    build: ./services/identity-channels-go
+    ports:
+      - "8101:8101"
+    environment:
+      - ADDR=:8101
+      - TENANT_ID=54bank-platform-prod
+    restart: unless-stopped
+
+  dispute-management:
+    build:
+      context: .
+      dockerfile: ./services/dispute-management-py/Dockerfile
+    ports:
+      - "8102:8102"
+    environment:
+      - PORT=8102
+      - TENANT_ID=54bank-platform-prod
+    restart: unless-stopped
+
+  erpnext-sync:
+    build:
+      context: .
+      dockerfile: ./services/erpnext-sync-py/Dockerfile
+    ports:
+      - "8103:8103"
+    environment:
+      - PORT=8103
+      - TENANT_ID=54bank-platform-prod
+    restart: unless-stopped
+
+  regulatory-reporting:
+    build:
+      context: .
+      dockerfile: ./services/regulatory-reporting-py/Dockerfile
+    ports:
+      - "8104:8104"
+    environment:
+      - PORT=8104
+      - TENANT_ID=54bank-platform-prod
+    restart: unless-stopped

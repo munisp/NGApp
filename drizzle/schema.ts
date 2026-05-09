@@ -1099,3 +1099,305 @@ export type WarehouseReceipt = typeof warehouseReceipts.$inferSelect;
 export type InsertWarehouseReceipt = typeof warehouseReceipts.$inferInsert;
 export type BankGuarantee = typeof bankGuarantees.$inferSelect;
 export type InsertBankGuarantee = typeof bankGuarantees.$inferInsert;
+
+// ── Mortgage Servicing ──────────────────────────────────────────────────────
+
+export const mortgageApplications = mysqlTable("mortgageApplications", {
+  id: int("id").autoincrement().primaryKey(),
+  mortgageId: varchar("mortgageId", { length: 64 }).notNull().unique(),
+  tenantId: varchar("tenantId", { length: 128 }).notNull(),
+  applicantId: varchar("applicantId", { length: 64 }).notNull(),
+  applicantName: varchar("applicantName", { length: 255 }).notNull(),
+  propertyValue: double("propertyValue").notNull(),
+  loanAmount: double("loanAmount").notNull(),
+  downPayment: double("downPayment").notNull(),
+  interestRatePct: double("interestRatePct").notNull(),
+  tenorMonths: int("tenorMonths").notNull(),
+  mortgageType: varchar("mortgageType", { length: 32 }).notNull(),
+  emi: double("emi").notNull(),
+  ltvPct: double("ltvPct").notNull(),
+  ltvGrade: varchar("ltvGrade", { length: 2 }).notNull(),
+  dtiRatio: double("dtiRatio").notNull(),
+  propertyAddress: text("propertyAddress"),
+  propertyType: varchar("propertyType", { length: 32 }),
+  status: varchar("status", { length: 32 }).notNull().default("pending"),
+  disbursedAt: timestamp("disbursedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+}, (table) => [
+  index("idx_mortgage_tenant").on(table.tenantId),
+  index("idx_mortgage_applicant").on(table.applicantId),
+  index("idx_mortgage_status").on(table.status),
+]);
+
+// ── Education Loans ─────────────────────────────────────────────────────────
+
+export const educationLoans = mysqlTable("educationLoans", {
+  id: int("id").autoincrement().primaryKey(),
+  loanId: varchar("loanId", { length: 64 }).notNull().unique(),
+  tenantId: varchar("tenantId", { length: 128 }).notNull(),
+  studentId: varchar("studentId", { length: 64 }),
+  studentName: varchar("studentName", { length: 255 }).notNull(),
+  institutionName: varchar("institutionName", { length: 255 }).notNull(),
+  programName: varchar("programName", { length: 255 }),
+  loanAmount: double("loanAmount").notNull(),
+  interestRate: double("interestRate").notNull(),
+  tenorMonths: int("tenorMonths").notNull(),
+  graceMonths: int("graceMonths").notNull(),
+  emi: double("emi").notNull(),
+  totalDisbursed: double("totalDisbursed").default(0),
+  totalRepaid: double("totalRepaid").default(0),
+  outstandingBalance: double("outstandingBalance").notNull(),
+  cosignerName: varchar("cosignerName", { length: 255 }),
+  cosignerType: varchar("cosignerType", { length: 32 }),
+  status: varchar("status", { length: 32 }).notNull().default("pending"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+}, (table) => [
+  index("idx_edloan_tenant").on(table.tenantId),
+  index("idx_edloan_student").on(table.studentId),
+]);
+
+// ── Esusu Groups ────────────────────────────────────────────────────────────
+
+export const esusuGroups = mysqlTable("esusuGroups", {
+  id: int("id").autoincrement().primaryKey(),
+  groupId: varchar("groupId", { length: 64 }).notNull().unique(),
+  tenantId: varchar("tenantId", { length: 128 }).notNull(),
+  name: varchar("name", { length: 255 }).notNull(),
+  organiserId: varchar("organiserId", { length: 64 }).notNull(),
+  organiserName: varchar("organiserName", { length: 255 }).notNull(),
+  contributionAmount: double("contributionAmount").notNull(),
+  currency: varchar("currency", { length: 3 }).notNull().default("NGN"),
+  frequency: varchar("frequency", { length: 16 }).notNull(),
+  maxMembers: int("maxMembers").notNull(),
+  currentCycle: int("currentCycle").default(0),
+  totalCycles: int("totalCycles").default(0),
+  status: varchar("status", { length: 32 }).notNull().default("forming"),
+  startDate: timestamp("startDate"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+}, (table) => [
+  index("idx_esusu_tenant").on(table.tenantId),
+  index("idx_esusu_organiser").on(table.organiserId),
+]);
+
+// ── Virtual Accounts ────────────────────────────────────────────────────────
+
+export const virtualAccounts = mysqlTable("virtualAccounts", {
+  id: int("id").autoincrement().primaryKey(),
+  accountId: varchar("accountId", { length: 64 }).notNull().unique(),
+  tenantId: varchar("tenantId", { length: 128 }).notNull(),
+  van: varchar("van", { length: 20 }).notNull().unique(),
+  parentAccountId: varchar("parentAccountId", { length: 64 }),
+  ownerId: varchar("ownerId", { length: 64 }).notNull(),
+  ownerName: varchar("ownerName", { length: 255 }).notNull(),
+  ownerType: varchar("ownerType", { length: 32 }).notNull(),
+  purpose: text("purpose"),
+  currency: varchar("currency", { length: 3 }).notNull().default("NGN"),
+  balance: double("balance").default(0),
+  availableBalance: double("availableBalance").default(0),
+  holdAmount: double("holdAmount").default(0),
+  dailyLimit: double("dailyLimit"),
+  monthlyLimit: double("monthlyLimit"),
+  status: varchar("status", { length: 16 }).notNull().default("active"),
+  expiryDate: timestamp("expiryDate"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+}, (table) => [
+  index("idx_van_tenant").on(table.tenantId),
+  index("idx_van_owner").on(table.ownerId),
+  uniqueIndex("idx_van_number").on(table.van),
+]);
+
+// ── Agent Banking ───────────────────────────────────────────────────────────
+
+export const agentBankingAgents = mysqlTable("agentBankingAgents", {
+  id: int("id").autoincrement().primaryKey(),
+  agentId: varchar("agentId", { length: 64 }).notNull().unique(),
+  tenantId: varchar("tenantId", { length: 128 }).notNull(),
+  agentCode: varchar("agentCode", { length: 20 }).notNull().unique(),
+  businessName: varchar("businessName", { length: 255 }).notNull(),
+  ownerName: varchar("ownerName", { length: 255 }).notNull(),
+  phoneNumber: varchar("phoneNumber", { length: 20 }).notNull(),
+  email: varchar("email", { length: 255 }),
+  bvn: varchar("bvn", { length: 11 }),
+  lga: varchar("lga", { length: 128 }),
+  state: varchar("state", { length: 64 }),
+  agentType: varchar("agentType", { length: 20 }).notNull(),
+  superAgentId: varchar("superAgentId", { length: 64 }),
+  floatBalance: double("floatBalance").default(0),
+  commissionEarned: double("commissionEarned").default(0),
+  transactionCount: int("transactionCount").default(0),
+  kycStatus: varchar("kycStatus", { length: 16 }).default("pending"),
+  status: varchar("status", { length: 16 }).notNull().default("active"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+}, (table) => [
+  index("idx_agent_tenant").on(table.tenantId),
+  index("idx_agent_code").on(table.agentCode),
+]);
+
+// ── Group Lending ───────────────────────────────────────────────────────────
+
+export const lendingGroups = mysqlTable("lendingGroups", {
+  id: int("id").autoincrement().primaryKey(),
+  groupId: varchar("groupId", { length: 64 }).notNull().unique(),
+  tenantId: varchar("tenantId", { length: 128 }).notNull(),
+  name: varchar("name", { length: 255 }).notNull(),
+  purpose: text("purpose"),
+  groupLeaderId: varchar("groupLeaderId", { length: 64 }).notNull(),
+  groupLeaderName: varchar("groupLeaderName", { length: 255 }),
+  maxMembers: int("maxMembers").notNull(),
+  liabilityType: varchar("liabilityType", { length: 32 }).notNull(),
+  status: varchar("status", { length: 32 }).notNull().default("forming"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+}, (table) => [
+  index("idx_lgroup_tenant").on(table.tenantId),
+  index("idx_lgroup_leader").on(table.groupLeaderId),
+]);
+
+// ── Identity & Channels ─────────────────────────────────────────────────────
+
+export const identityProfiles = mysqlTable("identityProfiles", {
+  id: int("id").autoincrement().primaryKey(),
+  profileId: varchar("profileId", { length: 64 }).notNull().unique(),
+  tenantId: varchar("tenantId", { length: 128 }).notNull(),
+  customerId: varchar("customerId", { length: 64 }).notNull(),
+  customerName: varchar("customerName", { length: 255 }),
+  email: varchar("email", { length: 255 }),
+  phoneNumber: varchar("phoneNumber", { length: 20 }).notNull(),
+  bvn: varchar("bvn", { length: 11 }),
+  nin: varchar("nin", { length: 11 }),
+  mfaEnabled: int("mfaEnabled").default(0),
+  mfaMethods: json("mfaMethods"),
+  activeChannels: json("activeChannels"),
+  status: varchar("status", { length: 16 }).notNull().default("active"),
+  lastLoginAt: timestamp("lastLoginAt"),
+  failedAttempts: int("failedAttempts").default(0),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+}, (table) => [
+  index("idx_identity_tenant").on(table.tenantId),
+  index("idx_identity_customer").on(table.customerId),
+]);
+
+// ── Dispute Management ──────────────────────────────────────────────────────
+
+export const disputeCases = mysqlTable("disputeCases", {
+  id: int("id").autoincrement().primaryKey(),
+  disputeId: varchar("disputeId", { length: 64 }).notNull().unique(),
+  tenantId: varchar("tenantId", { length: 128 }).notNull(),
+  customerId: varchar("customerId", { length: 64 }),
+  customerName: varchar("customerName", { length: 255 }).notNull(),
+  category: varchar("category", { length: 64 }).notNull(),
+  description: text("description"),
+  transactionId: varchar("transactionId", { length: 64 }),
+  transactionAmount: double("transactionAmount"),
+  disputedAmount: double("disputedAmount"),
+  channel: varchar("channel", { length: 16 }),
+  priority: varchar("priority", { length: 16 }).default("medium"),
+  status: varchar("status", { length: 32 }).notNull().default("filed"),
+  slaDeadline: timestamp("slaDeadline"),
+  assignedTo: varchar("assignedTo", { length: 64 }),
+  resolution: varchar("resolution", { length: 32 }),
+  resolutionAmount: double("resolutionAmount"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+}, (table) => [
+  index("idx_dispute_tenant").on(table.tenantId),
+  index("idx_dispute_customer").on(table.customerId),
+  index("idx_dispute_status").on(table.status),
+]);
+
+// ── Ledger Reconciliation ───────────────────────────────────────────────────
+
+export const reconciliationRuns = mysqlTable("reconciliationRuns", {
+  id: int("id").autoincrement().primaryKey(),
+  runId: varchar("runId", { length: 64 }).notNull().unique(),
+  tenantId: varchar("tenantId", { length: 128 }).notNull(),
+  runType: varchar("runType", { length: 16 }).notNull(),
+  scope: varchar("scope", { length: 32 }).notNull(),
+  status: varchar("status", { length: 48 }).notNull(),
+  totalEntriesChecked: int("totalEntriesChecked").default(0),
+  matches: int("matches").default(0),
+  discrepancies: int("discrepancies").default(0),
+  autoRepaired: int("autoRepaired").default(0),
+  manualTriage: int("manualTriage").default(0),
+  durationMs: int("durationMs"),
+  startTime: timestamp("startTime"),
+  endTime: timestamp("endTime"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => [
+  index("idx_recon_tenant").on(table.tenantId),
+  index("idx_recon_status").on(table.status),
+]);
+
+// ── ERPNext Sync ────────────────────────────────────────────────────────────
+
+export const erpnextSyncJobs = mysqlTable("erpnextSyncJobs", {
+  id: int("id").autoincrement().primaryKey(),
+  jobId: varchar("jobId", { length: 64 }).notNull().unique(),
+  tenantId: varchar("tenantId", { length: 128 }).notNull(),
+  syncType: varchar("syncType", { length: 32 }).notNull(),
+  direction: varchar("direction", { length: 16 }).notNull(),
+  status: varchar("status", { length: 32 }).notNull(),
+  recordsProcessed: int("recordsProcessed").default(0),
+  recordsFailed: int("recordsFailed").default(0),
+  recordsSkipped: int("recordsSkipped").default(0),
+  retryCount: int("retryCount").default(0),
+  startedAt: timestamp("startedAt"),
+  completedAt: timestamp("completedAt"),
+  errorMessage: text("errorMessage"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+}, (table) => [
+  index("idx_erpnext_tenant").on(table.tenantId),
+  index("idx_erpnext_status").on(table.status),
+]);
+
+// ── Regulatory Reporting ────────────────────────────────────────────────────
+
+export const regulatoryReports = mysqlTable("regulatoryReports", {
+  id: int("id").autoincrement().primaryKey(),
+  reportId: varchar("reportId", { length: 64 }).notNull().unique(),
+  tenantId: varchar("tenantId", { length: 128 }).notNull(),
+  reportType: varchar("reportType", { length: 48 }).notNull(),
+  period: varchar("period", { length: 10 }).notNull(),
+  status: varchar("status", { length: 16 }).notNull().default("generated"),
+  submittedTo: varchar("submittedTo", { length: 16 }),
+  submittedAt: timestamp("submittedAt"),
+  data: json("data"),
+  summary: json("summary"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+}, (table) => [
+  index("idx_regrep_tenant").on(table.tenantId),
+  index("idx_regrep_type").on(table.reportType),
+]);
+
+// ── New Type Exports ────────────────────────────────────────────────────────
+
+export type MortgageApplication = typeof mortgageApplications.$inferSelect;
+export type InsertMortgageApplication = typeof mortgageApplications.$inferInsert;
+export type EducationLoan = typeof educationLoans.$inferSelect;
+export type InsertEducationLoan = typeof educationLoans.$inferInsert;
+export type EsusuGroup = typeof esusuGroups.$inferSelect;
+export type InsertEsusuGroup = typeof esusuGroups.$inferInsert;
+export type VirtualAccount = typeof virtualAccounts.$inferSelect;
+export type InsertVirtualAccount = typeof virtualAccounts.$inferInsert;
+export type AgentBankingAgent = typeof agentBankingAgents.$inferSelect;
+export type InsertAgentBankingAgent = typeof agentBankingAgents.$inferInsert;
+export type LendingGroup = typeof lendingGroups.$inferSelect;
+export type InsertLendingGroup = typeof lendingGroups.$inferInsert;
+export type IdentityProfile = typeof identityProfiles.$inferSelect;
+export type InsertIdentityProfile = typeof identityProfiles.$inferInsert;
+export type DisputeCase = typeof disputeCases.$inferSelect;
+export type InsertDisputeCase = typeof disputeCases.$inferInsert;
+export type ReconciliationRun = typeof reconciliationRuns.$inferSelect;
+export type InsertReconciliationRun = typeof reconciliationRuns.$inferInsert;
+export type ErpnextSyncJob = typeof erpnextSyncJobs.$inferSelect;
+export type InsertErpnextSyncJob = typeof erpnextSyncJobs.$inferInsert;
+export type RegulatoryReport = typeof regulatoryReports.$inferSelect;
+export type InsertRegulatoryReport = typeof regulatoryReports.$inferInsert;

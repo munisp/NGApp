@@ -4732,6 +4732,17 @@ async function startServer() {
   const TELLER_SERVICE_URL = process.env.TELLER_SERVICE_URL || "http://localhost:8091";
   const ISLAMIC_BANKING_SERVICE_URL = process.env.ISLAMIC_BANKING_SERVICE_URL || "http://localhost:8092";
   const TRADE_FINANCE_SERVICE_URL = process.env.TRADE_FINANCE_SERVICE_URL || "http://localhost:8093";
+  const MORTGAGE_SERVICE_URL = process.env.MORTGAGE_SERVICE_URL || "http://localhost:8094";
+  const ESUSU_SERVICE_URL = process.env.ESUSU_SERVICE_URL || "http://localhost:8095";
+  const VIRTUAL_ACCOUNTS_SERVICE_URL = process.env.VIRTUAL_ACCOUNTS_SERVICE_URL || "http://localhost:8096";
+  const AGENT_BANKING_SERVICE_URL = process.env.AGENT_BANKING_SERVICE_URL || "http://localhost:8097";
+  const GROUP_LENDING_SERVICE_URL = process.env.GROUP_LENDING_SERVICE_URL || "http://localhost:8098";
+  const EDUCATION_LOANS_SERVICE_URL = process.env.EDUCATION_LOANS_SERVICE_URL || "http://localhost:8099";
+  const LEDGER_RECON_SERVICE_URL = process.env.LEDGER_RECON_SERVICE_URL || "http://localhost:8100";
+  const IDENTITY_CHANNELS_SERVICE_URL = process.env.IDENTITY_CHANNELS_SERVICE_URL || "http://localhost:8101";
+  const DISPUTE_SERVICE_URL = process.env.DISPUTE_SERVICE_URL || "http://localhost:8102";
+  const ERPNEXT_SYNC_SERVICE_URL = process.env.ERPNEXT_SYNC_SERVICE_URL || "http://localhost:8103";
+  const REGULATORY_SERVICE_URL = process.env.REGULATORY_SERVICE_URL || "http://localhost:8104";
 
   async function proxyToService(serviceUrl: string, servicePath: string, req: Request, res: express.Response): Promise<void> {
     try {
@@ -4877,6 +4888,289 @@ async function startServer() {
   });
   app.all("/api/platform/trade-finance/guarantees", (req, res) => {
     void proxyToService(TRADE_FINANCE_SERVICE_URL, "/v1/trade-finance/guarantees", req, res);
+  });
+
+  // Mortgage Servicing proxy routes (Rust :8094)
+  app.all("/api/platform/mortgage/applications", (req, res) => {
+    void proxyToService(MORTGAGE_SERVICE_URL, "/v1/mortgage/applications", req, res);
+  });
+  app.all("/api/platform/mortgage/applications/:id", (req, res) => {
+    void proxyToService(MORTGAGE_SERVICE_URL, `/v1/mortgage/applications/${req.params.id}`, req, res);
+  });
+  app.all("/api/platform/mortgage/applications/:id/approve", (req, res) => {
+    void proxyToService(MORTGAGE_SERVICE_URL, `/v1/mortgage/applications/${req.params.id}/approve`, req, res);
+  });
+  app.all("/api/platform/mortgage/applications/:id/disburse", (req, res) => {
+    void proxyToService(MORTGAGE_SERVICE_URL, `/v1/mortgage/applications/${req.params.id}/disburse`, req, res);
+  });
+  app.all("/api/platform/mortgage/applications/:id/repay", (req, res) => {
+    void proxyToService(MORTGAGE_SERVICE_URL, `/v1/mortgage/applications/${req.params.id}/repay`, req, res);
+  });
+  app.all("/api/platform/mortgage/applications/:id/prepay", (req, res) => {
+    void proxyToService(MORTGAGE_SERVICE_URL, `/v1/mortgage/applications/${req.params.id}/prepay`, req, res);
+  });
+  app.all("/api/platform/mortgage/applications/:id/schedule", (req, res) => {
+    void proxyToService(MORTGAGE_SERVICE_URL, `/v1/mortgage/applications/${req.params.id}/schedule`, req, res);
+  });
+  app.all("/api/platform/mortgage/payments", (req, res) => {
+    void proxyToService(MORTGAGE_SERVICE_URL, "/v1/mortgage/payments", req, res);
+  });
+
+  // Esusu Groups proxy routes (Go :8095)
+  app.all("/api/platform/esusu/groups", (req, res) => {
+    void proxyToService(ESUSU_SERVICE_URL, "/v1/esusu/groups", req, res);
+  });
+  app.all("/api/platform/esusu/groups/:id", (req, res) => {
+    void proxyToService(ESUSU_SERVICE_URL, `/v1/esusu/groups/${req.params.id}`, req, res);
+  });
+  app.all("/api/platform/esusu/groups/:id/members", (req, res) => {
+    void proxyToService(ESUSU_SERVICE_URL, `/v1/esusu/groups/${req.params.id}/members`, req, res);
+  });
+  app.all("/api/platform/esusu/groups/:id/activate", (req, res) => {
+    void proxyToService(ESUSU_SERVICE_URL, `/v1/esusu/groups/${req.params.id}/activate`, req, res);
+  });
+  app.all("/api/platform/esusu/groups/:id/contribute", (req, res) => {
+    void proxyToService(ESUSU_SERVICE_URL, `/v1/esusu/groups/${req.params.id}/contribute`, req, res);
+  });
+  app.all("/api/platform/esusu/groups/:id/disburse", (req, res) => {
+    void proxyToService(ESUSU_SERVICE_URL, `/v1/esusu/groups/${req.params.id}/disburse`, req, res);
+  });
+  app.all("/api/platform/esusu/contributions", (req, res) => {
+    void proxyToService(ESUSU_SERVICE_URL, "/v1/esusu/contributions", req, res);
+  });
+
+  // Virtual Accounts proxy routes (Go :8096)
+  app.all("/api/platform/virtual-accounts/accounts", (req, res) => {
+    void proxyToService(VIRTUAL_ACCOUNTS_SERVICE_URL, "/v1/virtual-accounts/accounts", req, res);
+  });
+  app.all("/api/platform/virtual-accounts/accounts/:id", (req, res) => {
+    void proxyToService(VIRTUAL_ACCOUNTS_SERVICE_URL, `/v1/virtual-accounts/accounts/${req.params.id}`, req, res);
+  });
+  app.all("/api/platform/virtual-accounts/accounts/:id/credit", (req, res) => {
+    void proxyToService(VIRTUAL_ACCOUNTS_SERVICE_URL, `/v1/virtual-accounts/accounts/${req.params.id}/credit`, req, res);
+  });
+  app.all("/api/platform/virtual-accounts/accounts/:id/debit", (req, res) => {
+    void proxyToService(VIRTUAL_ACCOUNTS_SERVICE_URL, `/v1/virtual-accounts/accounts/${req.params.id}/debit`, req, res);
+  });
+  app.all("/api/platform/virtual-accounts/accounts/:id/hold", (req, res) => {
+    void proxyToService(VIRTUAL_ACCOUNTS_SERVICE_URL, `/v1/virtual-accounts/accounts/${req.params.id}/hold`, req, res);
+  });
+  app.all("/api/platform/virtual-accounts/accounts/:id/release", (req, res) => {
+    void proxyToService(VIRTUAL_ACCOUNTS_SERVICE_URL, `/v1/virtual-accounts/accounts/${req.params.id}/release`, req, res);
+  });
+  app.all("/api/platform/virtual-accounts/accounts/:id/close", (req, res) => {
+    void proxyToService(VIRTUAL_ACCOUNTS_SERVICE_URL, `/v1/virtual-accounts/accounts/${req.params.id}/close`, req, res);
+  });
+  app.all("/api/platform/virtual-accounts/accounts/:id/transactions", (req, res) => {
+    void proxyToService(VIRTUAL_ACCOUNTS_SERVICE_URL, `/v1/virtual-accounts/accounts/${req.params.id}/transactions`, req, res);
+  });
+  app.all("/api/platform/virtual-accounts/transactions", (req, res) => {
+    void proxyToService(VIRTUAL_ACCOUNTS_SERVICE_URL, "/v1/virtual-accounts/transactions", req, res);
+  });
+
+  // Agent Banking proxy routes (Go :8097)
+  app.all("/api/platform/agent-banking/agents", (req, res) => {
+    void proxyToService(AGENT_BANKING_SERVICE_URL, "/v1/agent-banking/agents", req, res);
+  });
+  app.all("/api/platform/agent-banking/agents/:id", (req, res) => {
+    void proxyToService(AGENT_BANKING_SERVICE_URL, `/v1/agent-banking/agents/${req.params.id}`, req, res);
+  });
+  app.all("/api/platform/agent-banking/agents/:id/float-topup", (req, res) => {
+    void proxyToService(AGENT_BANKING_SERVICE_URL, `/v1/agent-banking/agents/${req.params.id}/float-topup`, req, res);
+  });
+  app.all("/api/platform/agent-banking/agents/:id/transaction", (req, res) => {
+    void proxyToService(AGENT_BANKING_SERVICE_URL, `/v1/agent-banking/agents/${req.params.id}/transaction`, req, res);
+  });
+  app.all("/api/platform/agent-banking/agents/:id/terminals", (req, res) => {
+    void proxyToService(AGENT_BANKING_SERVICE_URL, `/v1/agent-banking/agents/${req.params.id}/terminals`, req, res);
+  });
+  app.all("/api/platform/agent-banking/agents/:id/transactions", (req, res) => {
+    void proxyToService(AGENT_BANKING_SERVICE_URL, `/v1/agent-banking/agents/${req.params.id}/transactions`, req, res);
+  });
+  app.all("/api/platform/agent-banking/agents/:id/verify-kyc", (req, res) => {
+    void proxyToService(AGENT_BANKING_SERVICE_URL, `/v1/agent-banking/agents/${req.params.id}/verify-kyc`, req, res);
+  });
+  app.all("/api/platform/agent-banking/transactions", (req, res) => {
+    void proxyToService(AGENT_BANKING_SERVICE_URL, "/v1/agent-banking/transactions", req, res);
+  });
+
+  // Group Lending proxy routes (Go :8098)
+  app.all("/api/platform/group-lending/groups", (req, res) => {
+    void proxyToService(GROUP_LENDING_SERVICE_URL, "/v1/group-lending/groups", req, res);
+  });
+  app.all("/api/platform/group-lending/groups/:id", (req, res) => {
+    void proxyToService(GROUP_LENDING_SERVICE_URL, `/v1/group-lending/groups/${req.params.id}`, req, res);
+  });
+  app.all("/api/platform/group-lending/groups/:id/members", (req, res) => {
+    void proxyToService(GROUP_LENDING_SERVICE_URL, `/v1/group-lending/groups/${req.params.id}/members`, req, res);
+  });
+  app.all("/api/platform/group-lending/groups/:id/apply", (req, res) => {
+    void proxyToService(GROUP_LENDING_SERVICE_URL, `/v1/group-lending/groups/${req.params.id}/apply`, req, res);
+  });
+  app.all("/api/platform/group-lending/groups/:id/approve", (req, res) => {
+    void proxyToService(GROUP_LENDING_SERVICE_URL, `/v1/group-lending/groups/${req.params.id}/approve`, req, res);
+  });
+  app.all("/api/platform/group-lending/groups/:id/disburse", (req, res) => {
+    void proxyToService(GROUP_LENDING_SERVICE_URL, `/v1/group-lending/groups/${req.params.id}/disburse`, req, res);
+  });
+  app.all("/api/platform/group-lending/groups/:id/repay", (req, res) => {
+    void proxyToService(GROUP_LENDING_SERVICE_URL, `/v1/group-lending/groups/${req.params.id}/repay`, req, res);
+  });
+
+  // Education Loans proxy routes (Python :8099)
+  app.all("/api/platform/education-loans/loans", (req, res) => {
+    void proxyToService(EDUCATION_LOANS_SERVICE_URL, "/v1/education-loans/loans", req, res);
+  });
+  app.all("/api/platform/education-loans/loans/:id", (req, res) => {
+    void proxyToService(EDUCATION_LOANS_SERVICE_URL, `/v1/education-loans/loans/${req.params.id}`, req, res);
+  });
+  app.all("/api/platform/education-loans/loans/:id/approve", (req, res) => {
+    void proxyToService(EDUCATION_LOANS_SERVICE_URL, `/v1/education-loans/loans/${req.params.id}/approve`, req, res);
+  });
+  app.all("/api/platform/education-loans/loans/:id/disburse", (req, res) => {
+    void proxyToService(EDUCATION_LOANS_SERVICE_URL, `/v1/education-loans/loans/${req.params.id}/disburse`, req, res);
+  });
+  app.all("/api/platform/education-loans/loans/:id/repay", (req, res) => {
+    void proxyToService(EDUCATION_LOANS_SERVICE_URL, `/v1/education-loans/loans/${req.params.id}/repay`, req, res);
+  });
+  app.all("/api/platform/education-loans/loans/:id/defer", (req, res) => {
+    void proxyToService(EDUCATION_LOANS_SERVICE_URL, `/v1/education-loans/loans/${req.params.id}/defer`, req, res);
+  });
+  app.all("/api/platform/education-loans/loans/:id/schedule", (req, res) => {
+    void proxyToService(EDUCATION_LOANS_SERVICE_URL, `/v1/education-loans/loans/${req.params.id}/schedule`, req, res);
+  });
+  app.all("/api/platform/education-loans/loans/:id/disbursements", (req, res) => {
+    void proxyToService(EDUCATION_LOANS_SERVICE_URL, `/v1/education-loans/loans/${req.params.id}/disbursements`, req, res);
+  });
+  app.all("/api/platform/education-loans/repayments", (req, res) => {
+    void proxyToService(EDUCATION_LOANS_SERVICE_URL, "/v1/education-loans/repayments", req, res);
+  });
+
+  // Ledger Reconciliation proxy routes (Rust :8100)
+  app.all("/api/platform/reconciliation/runs", (req, res) => {
+    void proxyToService(LEDGER_RECON_SERVICE_URL, "/v1/reconciliation/runs", req, res);
+  });
+  app.all("/api/platform/reconciliation/runs/:id", (req, res) => {
+    void proxyToService(LEDGER_RECON_SERVICE_URL, `/v1/reconciliation/runs/${req.params.id}`, req, res);
+  });
+  app.all("/api/platform/reconciliation/discrepancies", (req, res) => {
+    void proxyToService(LEDGER_RECON_SERVICE_URL, "/v1/reconciliation/discrepancies", req, res);
+  });
+  app.all("/api/platform/reconciliation/discrepancies/:id", (req, res) => {
+    void proxyToService(LEDGER_RECON_SERVICE_URL, `/v1/reconciliation/discrepancies/${req.params.id}`, req, res);
+  });
+  app.all("/api/platform/reconciliation/discrepancies/:id/resolve", (req, res) => {
+    void proxyToService(LEDGER_RECON_SERVICE_URL, `/v1/reconciliation/discrepancies/${req.params.id}/resolve`, req, res);
+  });
+  app.all("/api/platform/reconciliation/discrepancies/:id/escalate", (req, res) => {
+    void proxyToService(LEDGER_RECON_SERVICE_URL, `/v1/reconciliation/discrepancies/${req.params.id}/escalate`, req, res);
+  });
+  app.all("/api/platform/reconciliation/gl-assertions", (req, res) => {
+    void proxyToService(LEDGER_RECON_SERVICE_URL, "/v1/reconciliation/gl-assertions", req, res);
+  });
+
+  // Identity & Channels proxy routes (Go :8101)
+  app.all("/api/platform/identity/profiles", (req, res) => {
+    void proxyToService(IDENTITY_CHANNELS_SERVICE_URL, "/v1/identity/profiles", req, res);
+  });
+  app.all("/api/platform/identity/profiles/:id", (req, res) => {
+    void proxyToService(IDENTITY_CHANNELS_SERVICE_URL, `/v1/identity/profiles/${req.params.id}`, req, res);
+  });
+  app.all("/api/platform/identity/profiles/:id/devices", (req, res) => {
+    void proxyToService(IDENTITY_CHANNELS_SERVICE_URL, `/v1/identity/profiles/${req.params.id}/devices`, req, res);
+  });
+  app.all("/api/platform/identity/profiles/:id/enable-mfa", (req, res) => {
+    void proxyToService(IDENTITY_CHANNELS_SERVICE_URL, `/v1/identity/profiles/${req.params.id}/enable-mfa`, req, res);
+  });
+  app.all("/api/platform/identity/profiles/:id/otp", (req, res) => {
+    void proxyToService(IDENTITY_CHANNELS_SERVICE_URL, `/v1/identity/profiles/${req.params.id}/otp`, req, res);
+  });
+  app.all("/api/platform/identity/profiles/:id/verify-otp", (req, res) => {
+    void proxyToService(IDENTITY_CHANNELS_SERVICE_URL, `/v1/identity/profiles/${req.params.id}/verify-otp`, req, res);
+  });
+  app.all("/api/platform/identity/profiles/:id/sessions", (req, res) => {
+    void proxyToService(IDENTITY_CHANNELS_SERVICE_URL, `/v1/identity/profiles/${req.params.id}/sessions`, req, res);
+  });
+  app.all("/api/platform/identity/sessions", (req, res) => {
+    void proxyToService(IDENTITY_CHANNELS_SERVICE_URL, "/v1/identity/sessions", req, res);
+  });
+
+  // Dispute Management proxy routes (Python :8102)
+  app.all("/api/platform/disputes/cases", (req, res) => {
+    void proxyToService(DISPUTE_SERVICE_URL, "/v1/disputes/cases", req, res);
+  });
+  app.all("/api/platform/disputes/cases/:id", (req, res) => {
+    void proxyToService(DISPUTE_SERVICE_URL, `/v1/disputes/cases/${req.params.id}`, req, res);
+  });
+  app.all("/api/platform/disputes/cases/:id/evidence", (req, res) => {
+    void proxyToService(DISPUTE_SERVICE_URL, `/v1/disputes/cases/${req.params.id}/evidence`, req, res);
+  });
+  app.all("/api/platform/disputes/cases/:id/investigate", (req, res) => {
+    void proxyToService(DISPUTE_SERVICE_URL, `/v1/disputes/cases/${req.params.id}/investigate`, req, res);
+  });
+  app.all("/api/platform/disputes/cases/:id/resolve", (req, res) => {
+    void proxyToService(DISPUTE_SERVICE_URL, `/v1/disputes/cases/${req.params.id}/resolve`, req, res);
+  });
+  app.all("/api/platform/disputes/cases/:id/escalate", (req, res) => {
+    void proxyToService(DISPUTE_SERVICE_URL, `/v1/disputes/cases/${req.params.id}/escalate`, req, res);
+  });
+  app.all("/api/platform/disputes/cases/:id/chargeback", (req, res) => {
+    void proxyToService(DISPUTE_SERVICE_URL, `/v1/disputes/cases/${req.params.id}/chargeback`, req, res);
+  });
+  app.all("/api/platform/disputes/categories", (req, res) => {
+    void proxyToService(DISPUTE_SERVICE_URL, "/v1/disputes/categories", req, res);
+  });
+
+  // ERPNext Sync proxy routes (Python :8103)
+  app.all("/api/platform/erpnext/sync-jobs", (req, res) => {
+    void proxyToService(ERPNEXT_SYNC_SERVICE_URL, "/v1/erpnext/sync-jobs", req, res);
+  });
+  app.all("/api/platform/erpnext/sync-jobs/:id", (req, res) => {
+    void proxyToService(ERPNEXT_SYNC_SERVICE_URL, `/v1/erpnext/sync-jobs/${req.params.id}`, req, res);
+  });
+  app.all("/api/platform/erpnext/sync-jobs/:id/execute", (req, res) => {
+    void proxyToService(ERPNEXT_SYNC_SERVICE_URL, `/v1/erpnext/sync-jobs/${req.params.id}/execute`, req, res);
+  });
+  app.all("/api/platform/erpnext/sync-jobs/:id/retry", (req, res) => {
+    void proxyToService(ERPNEXT_SYNC_SERVICE_URL, `/v1/erpnext/sync-jobs/${req.params.id}/retry`, req, res);
+  });
+  app.all("/api/platform/erpnext/journal-entries", (req, res) => {
+    void proxyToService(ERPNEXT_SYNC_SERVICE_URL, "/v1/erpnext/journal-entries", req, res);
+  });
+  app.all("/api/platform/erpnext/coa-mappings", (req, res) => {
+    void proxyToService(ERPNEXT_SYNC_SERVICE_URL, "/v1/erpnext/coa-mappings", req, res);
+  });
+  app.all("/api/platform/erpnext/coa-mappings/:id", (req, res) => {
+    void proxyToService(ERPNEXT_SYNC_SERVICE_URL, `/v1/erpnext/coa-mappings/${req.params.id}`, req, res);
+  });
+
+  // Regulatory Reporting proxy routes (Python :8104)
+  app.all("/api/platform/regulatory/reports", (req, res) => {
+    void proxyToService(REGULATORY_SERVICE_URL, "/v1/regulatory/reports", req, res);
+  });
+  app.all("/api/platform/regulatory/reports/:id", (req, res) => {
+    void proxyToService(REGULATORY_SERVICE_URL, `/v1/regulatory/reports/${req.params.id}`, req, res);
+  });
+  app.all("/api/platform/regulatory/reports/:id/submit", (req, res) => {
+    void proxyToService(REGULATORY_SERVICE_URL, `/v1/regulatory/reports/${req.params.id}/submit`, req, res);
+  });
+  app.all("/api/platform/regulatory/report-types", (req, res) => {
+    void proxyToService(REGULATORY_SERVICE_URL, "/v1/regulatory/report-types", req, res);
+  });
+  app.all("/api/platform/regulatory/str-filings", (req, res) => {
+    void proxyToService(REGULATORY_SERVICE_URL, "/v1/regulatory/str-filings", req, res);
+  });
+  app.all("/api/platform/regulatory/ctr-filings", (req, res) => {
+    void proxyToService(REGULATORY_SERVICE_URL, "/v1/regulatory/ctr-filings", req, res);
+  });
+  app.all("/api/platform/regulatory/capital-adequacy", (req, res) => {
+    void proxyToService(REGULATORY_SERVICE_URL, "/v1/regulatory/capital-adequacy", req, res);
+  });
+  app.all("/api/platform/regulatory/liquidity-ratio", (req, res) => {
+    void proxyToService(REGULATORY_SERVICE_URL, "/v1/regulatory/liquidity-ratio", req, res);
+  });
+  app.all("/api/platform/regulatory/ecl-provision", (req, res) => {
+    void proxyToService(REGULATORY_SERVICE_URL, "/v1/regulatory/ecl-provision", req, res);
   });
 
   app.use(globalErrorHandler);
