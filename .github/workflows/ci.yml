@@ -61,27 +61,27 @@ jobs:
         with:
           go-version: "1.22"
       - name: Build Security Gateway
-        run: cd services/security-gateway-go && go build -o security-gateway main.go
+        run: cd services/security-gateway-go && go build -o security-gateway .
       - name: Build Teller Operations
-        run: cd services/teller-operations-go && go build -o teller-service main.go
+        run: cd services/teller-operations-go && go build -o teller-service .
       - name: Build Trade Finance Service
-        run: cd services/trade-finance-go && go build -o trade-finance-service main.go
+        run: cd services/trade-finance-go && go build -o trade-finance-service .
       - name: Build Esusu Groups Service
-        run: cd services/esusu-groups-go && go build -o esusu-service main.go
+        run: cd services/esusu-groups-go && go build -o esusu-service .
       - name: Build Virtual Accounts Service
-        run: cd services/virtual-accounts-go && go build -o virtual-accounts-service main.go
+        run: cd services/virtual-accounts-go && go build -o virtual-accounts-service .
       - name: Build Agent Banking Service
-        run: cd services/agent-banking-go && go build -o agent-banking-service main.go
+        run: cd services/agent-banking-go && go build -o agent-banking-service .
       - name: Build Group Lending Service
-        run: cd services/group-lending-go && go build -o group-lending-service main.go
+        run: cd services/group-lending-go && go build -o group-lending-service .
       - name: Build Identity Channels Service
-        run: cd services/identity-channels-go && go build -o identity-channels-service main.go
+        run: cd services/identity-channels-go && go build -o identity-channels-service .
       - name: Build Payments Hub
-        run: cd services/payments-hub-go && go build -o payments-hub main.go
+        run: cd services/payments-hub-go && go build -o payments-hub .
       - name: Build Savings Products
-        run: cd services/savings-products-go && go build -o savings-products main.go
+        run: cd services/savings-products-go && go build -o savings-products .
       - name: Build Card Management
-        run: cd services/card-management-go && go build -o card-management main.go
+        run: cd services/card-management-go && go build -o card-management .
       - name: Build Middleware
         run: cd services/middleware-go && go build ./...
 
