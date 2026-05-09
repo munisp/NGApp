@@ -147,3 +147,26 @@ services:
       - PORT=8104
       - TENANT_ID=54bank-platform-prod
     restart: unless-stopped
+
+  security-gateway:
+    build: ./services/security-gateway-go
+    ports:
+      - "8105:8105"
+    environment:
+      - PORT=8105
+      - TENANT_ID=54bank-platform-prod
+      - PERMIFY_URL=http://permify:3476
+      - KEYCLOAK_ISSUER_URL=https://identity.54bank.app/realms/54bank
+      - REDIS_URL=redis://redis-master:6379/0
+    restart: unless-stopped
+
+  resilience-service:
+    build: ./services/resilience-service-rs
+    ports:
+      - "8106:8106"
+    environment:
+      - PORT=8106
+      - TENANT_ID=54bank-platform-prod
+      - REDIS_URL=redis://redis-master:6379/0
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+    restart: unless-stopped

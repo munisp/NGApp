@@ -2,8 +2,11 @@ import { randomUUID } from "crypto";
 import compression from "compression";
 import express, { type Request } from "express";
 import fs from "fs";
+import helmet from "helmet";
+import hpp from "hpp";
 import { createServer } from "http";
 import path from "path";
+import rateLimit from "express-rate-limit";
 import { fileURLToPath } from "url";
 
 import { globalErrorHandler } from "./lib/errorHandler";
@@ -2613,6 +2616,56 @@ async function startServer() {
 
   app.disable("x-powered-by");
   app.set("trust proxy", true);
+
+  // Security: Helmet (comprehensive HTTP security headers)
+  app.use(helmet({
+    contentSecurityPolicy: runtimeEnvironment === "production" ? {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'", "'unsafe-inline'"],
+        styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+        fontSrc: ["'self'", "data:", "https://fonts.gstatic.com"],
+        imgSrc: ["'self'", "data:", "https:"],
+        connectSrc: ["'self'", "https:"],
+        frameAncestors: ["'none'"],
+        baseUri: ["'self'"],
+        formAction: ["'self'"],
+      },
+    } : false,
+    crossOriginEmbedderPolicy: false,
+    crossOriginOpenerPolicy: { policy: "same-origin" },
+    crossOriginResourcePolicy: { policy: "same-origin" },
+    dnsPrefetchControl: { allow: false },
+    frameguard: { action: "deny" },
+    hsts: { maxAge: 31536000, includeSubDomains: true },
+    referrerPolicy: { policy: "strict-origin-when-cross-origin" },
+    xContentTypeOptions: true,
+    xPermittedCrossDomainPolicies: { permittedPolicies: "none" },
+  }));
+
+  // Security: HTTP Parameter Pollution protection
+  app.use(hpp());
+
+  // Security: Global rate limiter (reads)
+  app.use("/api/", rateLimit({
+    windowMs: 60 * 1000,
+    max: 300,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: "Too many requests, please try again later" },
+    skip: (req) => req.method === "OPTIONS",
+  }));
+
+  // Security: Stricter rate limiter for mutations
+  app.use("/api/", rateLimit({
+    windowMs: 60 * 1000,
+    max: rateLimitMaxWrites,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: "Write rate limit exceeded" },
+    skip: (req) => !["POST", "PUT", "PATCH", "DELETE"].includes(req.method),
+  }));
+
   app.use(
     compression({
       threshold: 1024,
@@ -4743,6 +4796,8 @@ async function startServer() {
   const DISPUTE_SERVICE_URL = process.env.DISPUTE_SERVICE_URL || "http://localhost:8102";
   const ERPNEXT_SYNC_SERVICE_URL = process.env.ERPNEXT_SYNC_SERVICE_URL || "http://localhost:8103";
   const REGULATORY_SERVICE_URL = process.env.REGULATORY_SERVICE_URL || "http://localhost:8104";
+  const SECURITY_GATEWAY_URL = process.env.SECURITY_GATEWAY_URL || "http://localhost:8105";
+  const RESILIENCE_SERVICE_URL = process.env.RESILIENCE_SERVICE_URL || "http://localhost:8106";
 
   async function proxyToService(serviceUrl: string, servicePath: string, req: Request, res: express.Response): Promise<void> {
     try {
@@ -5171,6 +5226,52 @@ async function startServer() {
   });
   app.all("/api/platform/regulatory/ecl-provision", (req, res) => {
     void proxyToService(REGULATORY_SERVICE_URL, "/v1/regulatory/ecl-provision", req, res);
+  });
+
+  // Security Gateway proxy routes
+  app.all("/api/platform/security/evaluate", (req, res) => {
+    void proxyToService(SECURITY_GATEWAY_URL, "/v1/security/evaluate", req, res);
+  });
+  app.all("/api/platform/security/policies", (req, res) => {
+    void proxyToService(SECURITY_GATEWAY_URL, "/v1/security/policies", req, res);
+  });
+  app.all("/api/platform/security/roles", (req, res) => {
+    void proxyToService(SECURITY_GATEWAY_URL, "/v1/security/roles", req, res);
+  });
+  app.all("/api/platform/security/role-bindings", (req, res) => {
+    void proxyToService(SECURITY_GATEWAY_URL, "/v1/security/role-bindings", req, res);
+  });
+  app.all("/api/platform/security/vulnerability-scan", (req, res) => {
+    void proxyToService(SECURITY_GATEWAY_URL, "/v1/security/vulnerability-scan", req, res);
+  });
+  app.all("/api/platform/security/traffic-stats", (req, res) => {
+    void proxyToService(SECURITY_GATEWAY_URL, "/v1/security/traffic-stats", req, res);
+  });
+  app.all("/api/platform/security/events", (req, res) => {
+    void proxyToService(SECURITY_GATEWAY_URL, "/v1/security/events", req, res);
+  });
+  app.all("/api/platform/security/config", (req, res) => {
+    void proxyToService(SECURITY_GATEWAY_URL, "/v1/security/config", req, res);
+  });
+
+  // Resilience Service proxy routes
+  app.all("/api/platform/resilience/queue", (req, res) => {
+    void proxyToService(RESILIENCE_SERVICE_URL, "/v1/resilience/queue", req, res);
+  });
+  app.all("/api/platform/resilience/queue/process", (req, res) => {
+    void proxyToService(RESILIENCE_SERVICE_URL, "/v1/resilience/queue/process", req, res);
+  });
+  app.all("/api/platform/resilience/queue/stats", (req, res) => {
+    void proxyToService(RESILIENCE_SERVICE_URL, "/v1/resilience/queue/stats", req, res);
+  });
+  app.all("/api/platform/resilience/sync", (req, res) => {
+    void proxyToService(RESILIENCE_SERVICE_URL, "/v1/resilience/sync", req, res);
+  });
+  app.all("/api/platform/resilience/conflicts/resolve", (req, res) => {
+    void proxyToService(RESILIENCE_SERVICE_URL, "/v1/resilience/conflicts/resolve", req, res);
+  });
+  app.all("/api/platform/resilience/config", (req, res) => {
+    void proxyToService(RESILIENCE_SERVICE_URL, "/v1/resilience/config", req, res);
   });
 
   app.use(globalErrorHandler);
