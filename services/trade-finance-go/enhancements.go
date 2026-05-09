@@ -62,20 +62,11 @@ type DocumentaryCollection struct {
 	Status        string  `json:"status"` // presented, accepted, paid, refused
 }
 
-type BankGuarantee struct {
-	ID              string    `json:"id"`
-	GuaranteeType   string    `json:"guaranteeType"` // performance, financial, advance_payment, bid_bond
-	ApplicantName   string    `json:"applicantName"`
-	BeneficiaryName string    `json:"beneficiaryName"`
-	Amount          float64   `json:"amount"`
-	Currency        string    `json:"currency"`
-	IssuedDate      string    `json:"issuedDate"`
-	ExpiryDate      string    `json:"expiryDate"`
-	Status          string    `json:"status"` // draft, issued, amended, claimed, expired, cancelled
-	ClaimAmount     float64   `json:"claimAmount,omitempty"`
-	ClaimDate       string    `json:"claimDate,omitempty"`
-	ClaimReason     string    `json:"claimReason,omitempty"`
-	CreatedAt       time.Time `json:"createdAt"`
+type GuaranteeClaim struct {
+	GuaranteeID string  `json:"guaranteeId"`
+	ClaimAmount float64 `json:"claimAmount"`
+	Reason      string  `json:"reason"`
+	ClaimDate   string  `json:"claimDate"`
 }
 
 var (
@@ -84,7 +75,8 @@ var (
 	syndLCs        []SyndicatedLC
 	tradeIns       []TradeInsurance
 	docCollections []DocumentaryCollection
-	bankGuarantees []BankGuarantee
+	enhGuarantees  []BankGuarantee
+	guaranteeClaims []GuaranteeClaim
 )
 
 func RegisterTradeEnhancements(mux *http.ServeMux) {
@@ -178,7 +170,7 @@ func RegisterTradeEnhancements(mux *http.ServeMux) {
 		json.NewEncoder(w).Encode(docCollections)
 	})
 
-	// Bank Guarantee Lifecycle
+	// Bank Guarantee Lifecycle (enhanced)
 	mux.HandleFunc("/v1/trade/bank-guarantees", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		if r.Method == "POST" {
@@ -199,12 +191,16 @@ func RegisterTradeEnhancements(mux *http.ServeMux) {
 			}
 			bg.ID = fmt.Sprintf("BG-%d", time.Now().UnixNano())
 			bg.Status = "draft"
-			bg.CreatedAt = time.Now()
+			bg.CreatedAt = nowISO()
+			bg.UpdatedAt = nowISO()
 			if bg.Currency == "" {
 				bg.Currency = "NGN"
 			}
+			bg.CommissionRate = 0.02
+			bg.CommissionAmount = bg.Amount * bg.CommissionRate
+			bg.Middleware = []string{"Kafka", "TigerBeetle", "Temporal"}
 			tfEnhMu.Lock()
-			bankGuarantees = append(bankGuarantees, bg)
+			enhGuarantees = append(enhGuarantees, bg)
 			tfEnhMu.Unlock()
 			w.WriteHeader(201)
 			json.NewEncoder(w).Encode(bg)
@@ -212,7 +208,7 @@ func RegisterTradeEnhancements(mux *http.ServeMux) {
 		}
 		tfEnhMu.RLock()
 		defer tfEnhMu.RUnlock()
-		json.NewEncoder(w).Encode(map[string]interface{}{"guarantees": bankGuarantees, "total": len(bankGuarantees)})
+		json.NewEncoder(w).Encode(map[string]interface{}{"guarantees": enhGuarantees, "total": len(enhGuarantees)})
 	})
 
 	// Bank Guarantee Claim
@@ -222,11 +218,7 @@ func RegisterTradeEnhancements(mux *http.ServeMux) {
 			w.WriteHeader(405)
 			return
 		}
-		var body struct {
-			GuaranteeID string  `json:"guaranteeId"`
-			ClaimAmount float64 `json:"claimAmount"`
-			Reason      string  `json:"reason"`
-		}
+		var body GuaranteeClaim
 		json.NewDecoder(r.Body).Decode(&body)
 		if body.Reason == "" {
 			http.Error(w, `{"error":"claim reason is required"}`, 400)
@@ -234,21 +226,21 @@ func RegisterTradeEnhancements(mux *http.ServeMux) {
 		}
 		tfEnhMu.Lock()
 		defer tfEnhMu.Unlock()
-		for i := range bankGuarantees {
-			if bankGuarantees[i].ID == body.GuaranteeID {
-				if bankGuarantees[i].Status != "issued" {
+		for i := range enhGuarantees {
+			if enhGuarantees[i].ID == body.GuaranteeID {
+				if enhGuarantees[i].Status != "issued" {
 					http.Error(w, `{"error":"can only claim issued guarantees"}`, 400)
 					return
 				}
-				if body.ClaimAmount > bankGuarantees[i].Amount {
+				if body.ClaimAmount > enhGuarantees[i].Amount {
 					http.Error(w, `{"error":"claim amount exceeds guarantee amount"}`, 400)
 					return
 				}
-				bankGuarantees[i].Status = "claimed"
-				bankGuarantees[i].ClaimAmount = body.ClaimAmount
-				bankGuarantees[i].ClaimDate = time.Now().Format(time.RFC3339)
-				bankGuarantees[i].ClaimReason = body.Reason
-				json.NewEncoder(w).Encode(bankGuarantees[i])
+				enhGuarantees[i].Status = "claimed"
+				enhGuarantees[i].UpdatedAt = time.Now().Format(time.RFC3339)
+				body.ClaimDate = time.Now().Format(time.RFC3339)
+				guaranteeClaims = append(guaranteeClaims, body)
+				json.NewEncoder(w).Encode(enhGuarantees[i])
 				return
 			}
 		}
