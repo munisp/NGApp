@@ -1,8 +1,5 @@
-use actix_web::{web, App, HttpServer, HttpResponse, middleware};
-use chrono::Utc;
-use serde::{Deserialize, Serialize};
+use actix_web::{web, App, HttpServer};
 use std::sync::Mutex;
-use uuid::Uuid;
 
 mod models;
 mod handlers;

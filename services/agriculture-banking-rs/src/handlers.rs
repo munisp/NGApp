@@ -471,7 +471,8 @@ fn compute_farmer_risk_score(farm_hectares: f64, has_cooperative: bool) -> f64 {
         else if farm_hectares >= 10.0 { 50.0 }
         else { 70.0 };
     let coop_bonus = if has_cooperative { -10.0 } else { 0.0 };
-    (base + coop_bonus).clamp(0.0, 100.0)
+    let score: f64 = base + coop_bonus;
+    score.clamp(0.0, 100.0)
 }
 
 fn risk_tier_from_score(score: f64) -> String {
