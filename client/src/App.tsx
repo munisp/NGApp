@@ -105,6 +105,10 @@ const ReportingWorkspace = lazy(() => import("@/pages/ReportingWorkspace"));
 const PaymentTransactionsWorkspace = lazy(() => import("@/pages/PaymentTransactionsWorkspace"));
 const LoanProductsWorkspace = lazy(() => import("@/pages/LoanProductsWorkspace"));
 const LoanAccountsWorkspace = lazy(() => import("@/pages/LoanAccountsWorkspace"));
+const AnalyticsWidgetsWorkspace = lazy(() => import("@/pages/AnalyticsWidgetsWorkspace"));
+const ETLPipelinesWorkspace = lazy(() => import("@/pages/ETLPipelinesWorkspace"));
+const FraudRulesWorkspace = lazy(() => import("@/pages/FraudRulesWorkspace"));
+const FraudAlertsWorkspace = lazy(() => import("@/pages/FraudAlertsWorkspace"));
 const AdminAnalyticsPage = lazy(() => import("@/pages/AdminModulePages").then((module) => ({ default: module.AdminAnalyticsPage })));
 const AdminBankingOpsPage = lazy(() => import("@/pages/AdminModulePages").then((module) => ({ default: module.AdminBankingOpsPage })));
 const AdminFeatureFlagsPage = lazy(() => import("@/pages/AdminModulePages").then((module) => ({ default: module.AdminFeatureFlagsPage })));
@@ -264,6 +268,10 @@ export default function App() {
         <Route path="/payment-transactions" component={renderInAdminShell(PaymentTransactionsWorkspace)} />
         <Route path="/loan-products" component={renderInAdminShell(LoanProductsWorkspace)} />
         <Route path="/loan-accounts" component={renderInAdminShell(LoanAccountsWorkspace)} />
+        <Route path="/analytics" component={renderInAdminShell(AnalyticsWidgetsWorkspace)} />
+        <Route path="/etl-pipelines" component={renderInAdminShell(ETLPipelinesWorkspace)} />
+        <Route path="/fraud-rules" component={renderInAdminShell(FraudRulesWorkspace)} />
+        <Route path="/fraud-alerts" component={renderInAdminShell(FraudAlertsWorkspace)} />
 
         <Route component={NotFound} />
       </Switch>

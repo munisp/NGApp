@@ -131,6 +131,10 @@ const menuItems = [
   { path: "/payment-transactions", label: "Payment Txns", icon: ArrowRightLeft },
   { path: "/loan-products", label: "Loan Products", icon: Landmark },
   { path: "/loan-accounts", label: "Loan Accounts", icon: Receipt },
+  { path: "/analytics", label: "Analytics", icon: BarChart3 },
+  { path: "/etl-pipelines", label: "ETL Pipelines", icon: Database },
+  { path: "/fraud-rules", label: "Fraud Rules", icon: Shield },
+  { path: "/fraud-alerts", label: "Fraud Alerts", icon: AlertTriangle },
 ] as const;
 
 export default function ArchiveAdminSidebar() {

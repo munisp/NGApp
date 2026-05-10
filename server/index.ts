@@ -6536,6 +6536,40 @@ async function startServer() {
     res.json(getGeneratedReports());
   });
 
+  // F1-F3: Analytics & BI endpoints
+  app.get("/api/platform/analytics/widgets", (req, res) => {
+    const { getDashboardWidgets, getWidgetsByCategory } = require("./lib/analyticsEngine");
+    const category = req.query.category as string;
+    if (category) {
+      res.json(getWidgetsByCategory(category));
+      return;
+    }
+    const widgets = getDashboardWidgets();
+    res.json({ items: widgets, total: widgets.length });
+  });
+  app.get("/api/platform/analytics/etl-pipelines", (_req, res) => {
+    const { getETLPipelines } = require("./lib/analyticsEngine");
+    const pipelines = getETLPipelines();
+    res.json({ items: pipelines, total: pipelines.length });
+  });
+
+  // D5: Fraud detection endpoints
+  app.get("/api/platform/fraud/rules", (_req, res) => {
+    const { getFraudRules } = require("./lib/fraudDetection");
+    const rules = getFraudRules();
+    res.json({ items: rules, total: rules.length });
+  });
+  app.get("/api/platform/fraud/alerts", (_req, res) => {
+    const { getFraudAlerts } = require("./lib/fraudDetection");
+    const alerts = getFraudAlerts();
+    res.json({ items: alerts, total: alerts.length });
+  });
+  app.post("/api/platform/fraud/score-transaction", (req, res) => {
+    const { scoreTransaction } = require("./lib/fraudDetection");
+    const { amount, channel, hour, isNewDevice, isNewBeneficiary } = req.body;
+    res.json(scoreTransaction(amount || 0, channel || "nip", hour || 12, !!isNewDevice, !!isNewBeneficiary));
+  });
+
   // OTP endpoint for transaction signing (C8)
   app.post("/api/platform/otp/generate", (req, res) => {
     const userId = req.user?.sub ?? req.body?.userId ?? "anonymous";
