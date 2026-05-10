@@ -2752,6 +2752,15 @@ async function startServer() {
   );
   app.use(express.json({ limit: "1mb" }));
   app.use(express.urlencoded({ extended: true, limit: "1mb" }));
+
+  // JWT Authentication & Multi-tenancy middleware (applied to all 550+ routes)
+  const { jwtAuthMiddleware, multiTenancyMiddleware, getAuthConfig } = require("./lib/jwtAuthMiddleware");
+  app.use(jwtAuthMiddleware);
+  app.use(multiTenancyMiddleware);
+
+  // Auth configuration endpoint
+  app.get("/api/platform/auth/config", (_req: any, res: any) => { res.json(getAuthConfig()); });
+
   app.use(requestLogger);
   app.use((req, res, next) => {
     const requestId = req.header("x-request-id") || randomUUID();
@@ -7581,6 +7590,78 @@ async function startServer() {
     const transactions = req.body.transactions ?? [];
     res.json(generateCTR(transactions));
   });
+
+  // ========= PRODUCTION INFRASTRUCTURE SERVICES (ports 8200-8206) =========
+
+  // PostgreSQL Persistence (Rust :8200)
+  const POSTGRES_PERSISTENCE_URL = process.env.POSTGRES_PERSISTENCE_URL || "http://localhost:8200";
+  app.get("/api/platform/infra/postgres/health", (req, res) => { void proxyToService(POSTGRES_PERSISTENCE_URL, "/healthz", req, res); });
+  app.get("/api/platform/infra/postgres/records/:table", (req, res) => { void proxyToService(POSTGRES_PERSISTENCE_URL, `/v1/records/${req.params.table}?${new URLSearchParams(req.query as Record<string, string>).toString()}`, req, res); });
+  app.get("/api/platform/infra/postgres/records/:table/:id", (req, res) => { void proxyToService(POSTGRES_PERSISTENCE_URL, `/v1/records/${req.params.table}/${req.params.id}`, req, res); });
+  app.post("/api/platform/infra/postgres/records", (req, res) => { void proxyToService(POSTGRES_PERSISTENCE_URL, "/v1/records", req, res); });
+  app.put("/api/platform/infra/postgres/records/:table/:id", (req, res) => { void proxyToService(POSTGRES_PERSISTENCE_URL, `/v1/records/${req.params.table}/${req.params.id}`, req, res); });
+  app.delete("/api/platform/infra/postgres/records/:table/:id", (req, res) => { void proxyToService(POSTGRES_PERSISTENCE_URL, `/v1/records/${req.params.table}/${req.params.id}`, req, res); });
+  app.post("/api/platform/infra/postgres/migrate", (req, res) => { void proxyToService(POSTGRES_PERSISTENCE_URL, "/v1/migrate", req, res); });
+  app.get("/api/platform/infra/postgres/stats", (req, res) => { void proxyToService(POSTGRES_PERSISTENCE_URL, "/v1/stats", req, res); });
+  app.get("/api/platform/infra/postgres/audit", (req, res) => { void proxyToService(POSTGRES_PERSISTENCE_URL, "/v1/audit", req, res); });
+
+  // Kafka Broker (Go :8201)
+  const KAFKA_BROKER_URL = process.env.KAFKA_BROKER_URL || "http://localhost:8201";
+  app.get("/api/platform/infra/kafka/health", (req, res) => { void proxyToService(KAFKA_BROKER_URL, "/healthz", req, res); });
+  app.get("/api/platform/infra/kafka/topics", (req, res) => { void proxyToService(KAFKA_BROKER_URL, "/v1/topics", req, res); });
+  app.get("/api/platform/infra/kafka/events", (req, res) => { void proxyToService(KAFKA_BROKER_URL, `/v1/events?${new URLSearchParams(req.query as Record<string, string>).toString()}`, req, res); });
+  app.post("/api/platform/infra/kafka/publish", (req, res) => { void proxyToService(KAFKA_BROKER_URL, "/v1/publish", req, res); });
+  app.get("/api/platform/infra/kafka/consumer-groups", (req, res) => { void proxyToService(KAFKA_BROKER_URL, "/v1/consumer-groups", req, res); });
+  app.get("/api/platform/infra/kafka/dlq", (req, res) => { void proxyToService(KAFKA_BROKER_URL, "/v1/dlq", req, res); });
+  app.get("/api/platform/infra/kafka/schemas", (req, res) => { void proxyToService(KAFKA_BROKER_URL, "/v1/schemas", req, res); });
+  app.get("/api/platform/infra/kafka/stats", (req, res) => { void proxyToService(KAFKA_BROKER_URL, "/v1/stats", req, res); });
+
+  // Redis Cache (Rust :8202)
+  const REDIS_CACHE_URL = process.env.REDIS_CACHE_URL || "http://localhost:8202";
+  app.get("/api/platform/infra/redis/health", (req, res) => { void proxyToService(REDIS_CACHE_URL, "/healthz", req, res); });
+  app.get("/api/platform/infra/redis/cache/:key", (req, res) => { void proxyToService(REDIS_CACHE_URL, `/v1/cache/${req.params.key}`, req, res); });
+  app.post("/api/platform/infra/redis/cache", (req, res) => { void proxyToService(REDIS_CACHE_URL, "/v1/cache", req, res); });
+  app.get("/api/platform/infra/redis/cache-keys", (req, res) => { void proxyToService(REDIS_CACHE_URL, "/v1/cache/keys", req, res); });
+  app.get("/api/platform/infra/redis/sessions", (req, res) => { void proxyToService(REDIS_CACHE_URL, "/v1/sessions", req, res); });
+  app.post("/api/platform/infra/redis/sessions", (req, res) => { void proxyToService(REDIS_CACHE_URL, "/v1/sessions", req, res); });
+  app.post("/api/platform/infra/redis/rate-limit/check", (req, res) => { void proxyToService(REDIS_CACHE_URL, "/v1/rate-limit/check", req, res); });
+  app.get("/api/platform/infra/redis/pubsub", (req, res) => { void proxyToService(REDIS_CACHE_URL, "/v1/pubsub/channels", req, res); });
+  app.get("/api/platform/infra/redis/stats", (req, res) => { void proxyToService(REDIS_CACHE_URL, "/v1/stats", req, res); });
+
+  // Temporal Workflows (Go :8203)
+  const TEMPORAL_WORKER_URL = process.env.TEMPORAL_WORKER_URL || "http://localhost:8203";
+  app.get("/api/platform/infra/temporal/health", (req, res) => { void proxyToService(TEMPORAL_WORKER_URL, "/healthz", req, res); });
+  app.get("/api/platform/infra/temporal/workflows", (req, res) => { void proxyToService(TEMPORAL_WORKER_URL, "/v1/workflows", req, res); });
+  app.get("/api/platform/infra/temporal/executions", (req, res) => { void proxyToService(TEMPORAL_WORKER_URL, `/v1/executions?${new URLSearchParams(req.query as Record<string, string>).toString()}`, req, res); });
+  app.get("/api/platform/infra/temporal/task-queues", (req, res) => { void proxyToService(TEMPORAL_WORKER_URL, "/v1/task-queues", req, res); });
+  app.get("/api/platform/infra/temporal/stats", (req, res) => { void proxyToService(TEMPORAL_WORKER_URL, "/v1/stats", req, res); });
+
+  // OpenSearch Indexer (Python :8204)
+  const OPENSEARCH_INDEXER_URL = process.env.OPENSEARCH_INDEXER_URL || "http://localhost:8204";
+  app.get("/api/platform/infra/opensearch/health", (req, res) => { void proxyToService(OPENSEARCH_INDEXER_URL, "/healthz", req, res); });
+  app.get("/api/platform/infra/opensearch/indices", (req, res) => { void proxyToService(OPENSEARCH_INDEXER_URL, "/v1/indices", req, res); });
+  app.get("/api/platform/infra/opensearch/search-templates", (req, res) => { void proxyToService(OPENSEARCH_INDEXER_URL, "/v1/search-templates", req, res); });
+  app.get("/api/platform/infra/opensearch/alerting-rules", (req, res) => { void proxyToService(OPENSEARCH_INDEXER_URL, "/v1/alerting-rules", req, res); });
+  app.get("/api/platform/infra/opensearch/aggregations", (req, res) => { void proxyToService(OPENSEARCH_INDEXER_URL, "/v1/aggregations", req, res); });
+  app.post("/api/platform/infra/opensearch/search", (req, res) => { void proxyToService(OPENSEARCH_INDEXER_URL, "/v1/search", req, res); });
+  app.get("/api/platform/infra/opensearch/stats", (req, res) => { void proxyToService(OPENSEARCH_INDEXER_URL, "/v1/stats", req, res); });
+
+  // TigerBeetle Ledger (Rust :8205)
+  const TIGERBEETLE_ADAPTER_URL = process.env.TIGERBEETLE_ADAPTER_URL || "http://localhost:8205";
+  app.get("/api/platform/infra/tigerbeetle/health", (req, res) => { void proxyToService(TIGERBEETLE_ADAPTER_URL, "/healthz", req, res); });
+  app.get("/api/platform/infra/tigerbeetle/accounts", (req, res) => { void proxyToService(TIGERBEETLE_ADAPTER_URL, "/v1/accounts", req, res); });
+  app.get("/api/platform/infra/tigerbeetle/transfers", (req, res) => { void proxyToService(TIGERBEETLE_ADAPTER_URL, "/v1/transfers", req, res); });
+  app.get("/api/platform/infra/tigerbeetle/trial-balance", (req, res) => { void proxyToService(TIGERBEETLE_ADAPTER_URL, "/v1/trial-balance", req, res); });
+  app.get("/api/platform/infra/tigerbeetle/stats", (req, res) => { void proxyToService(TIGERBEETLE_ADAPTER_URL, "/v1/stats", req, res); });
+
+  // Lakehouse ETL (Python :8206)
+  const LAKEHOUSE_ETL_URL = process.env.LAKEHOUSE_ETL_URL || "http://localhost:8206";
+  app.get("/api/platform/infra/lakehouse/health", (req, res) => { void proxyToService(LAKEHOUSE_ETL_URL, "/healthz", req, res); });
+  app.get("/api/platform/infra/lakehouse/tables", (req, res) => { void proxyToService(LAKEHOUSE_ETL_URL, "/v1/tables", req, res); });
+  app.get("/api/platform/infra/lakehouse/etl-jobs", (req, res) => { void proxyToService(LAKEHOUSE_ETL_URL, "/v1/etl-jobs", req, res); });
+  app.get("/api/platform/infra/lakehouse/data-quality", (req, res) => { void proxyToService(LAKEHOUSE_ETL_URL, "/v1/data-quality", req, res); });
+  app.get("/api/platform/infra/lakehouse/lineage", (req, res) => { void proxyToService(LAKEHOUSE_ETL_URL, "/v1/lineage", req, res); });
+  app.get("/api/platform/infra/lakehouse/stats", (req, res) => { void proxyToService(LAKEHOUSE_ETL_URL, "/v1/stats", req, res); });
 
   app.use(globalErrorHandler);
 

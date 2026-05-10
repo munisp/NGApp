@@ -212,6 +212,13 @@ const LCAmendmentsWorkspace = lazy(() => import("@/pages/LCAmendmentsWorkspace")
 const ChequeImagingWorkspace = lazy(() => import("@/pages/ChequeImagingWorkspace"));
 const IntegrationTestsWorkspace = lazy(() => import("@/pages/IntegrationTestsWorkspace"));
 const SeedRegistryWorkspace = lazy(() => import("@/pages/SeedRegistryWorkspace"));
+const InfraPostgresWorkspace = lazy(() => import("@/pages/InfraPostgresWorkspace"));
+const InfraKafkaWorkspace = lazy(() => import("@/pages/InfraKafkaWorkspace"));
+const InfraRedisWorkspace = lazy(() => import("@/pages/InfraRedisWorkspace"));
+const InfraTemporalWorkspace = lazy(() => import("@/pages/InfraTemporalWorkspace"));
+const InfraOpenSearchWorkspace = lazy(() => import("@/pages/InfraOpenSearchWorkspace"));
+const InfraTigerBeetleWorkspace = lazy(() => import("@/pages/InfraTigerBeetleWorkspace"));
+const InfraLakehouseWorkspace = lazy(() => import("@/pages/InfraLakehouseWorkspace"));
 const AdminAnalyticsPage = lazy(() => import("@/pages/AdminModulePages").then((module) => ({ default: module.AdminAnalyticsPage })));
 const AdminBankingOpsPage = lazy(() => import("@/pages/AdminModulePages").then((module) => ({ default: module.AdminBankingOpsPage })));
 const AdminFeatureFlagsPage = lazy(() => import("@/pages/AdminModulePages").then((module) => ({ default: module.AdminFeatureFlagsPage })));
@@ -478,6 +485,13 @@ export default function App() {
         <Route path="/cheque-imaging" component={renderInAdminShell(ChequeImagingWorkspace)} />
         <Route path="/integration-tests" component={renderInAdminShell(IntegrationTestsWorkspace)} />
         <Route path="/seed-registry" component={renderInAdminShell(SeedRegistryWorkspace)} />
+        <Route path="/infra-postgres" component={renderInAdminShell(InfraPostgresWorkspace)} />
+        <Route path="/infra-kafka" component={renderInAdminShell(InfraKafkaWorkspace)} />
+        <Route path="/infra-redis" component={renderInAdminShell(InfraRedisWorkspace)} />
+        <Route path="/infra-temporal" component={renderInAdminShell(InfraTemporalWorkspace)} />
+        <Route path="/infra-opensearch" component={renderInAdminShell(InfraOpenSearchWorkspace)} />
+        <Route path="/infra-tigerbeetle" component={renderInAdminShell(InfraTigerBeetleWorkspace)} />
+        <Route path="/infra-lakehouse" component={renderInAdminShell(InfraLakehouseWorkspace)} />
 
         <Route component={NotFound} />
       </Switch>

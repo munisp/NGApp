@@ -168,6 +168,10 @@ jobs:
         run: cd services/locker-go && go build -o locker .
       - name: Build Standing Charges Service
         run: cd services/standing-charges-go && go build -o standing-charges .
+      - name: Build Kafka Broker Service
+        run: cd services/kafka-broker-go && go build -o kafka-broker .
+      - name: Build Temporal Worker Service
+        run: cd services/temporal-worker-go && go build -o temporal-worker .
 
   rust-services:
     name: Rust Services
@@ -208,6 +212,9 @@ jobs:
             services/trust-estate-rs
             services/fatca-crs-rs
             services/biometric-auth-rs
+            services/postgres-persistence-rs
+            services/redis-cache-rs
+            services/tigerbeetle-adapter-rs
       - name: Build Resilience Service
         run: cd services/resilience-service-rs && cargo build --release
       - name: Build Agriculture Banking Service
@@ -270,6 +277,12 @@ jobs:
         run: cd services/biometric-auth-rs && cargo build --release
       - name: Check Middleware Library
         run: cd services/middleware-rs && cargo check
+      - name: Build PostgreSQL Persistence Service
+        run: cd services/postgres-persistence-rs && cargo build --release
+      - name: Build Redis Cache Service
+        run: cd services/redis-cache-rs && cargo build --release
+      - name: Build TigerBeetle Adapter Service
+        run: cd services/tigerbeetle-adapter-rs && cargo build --release
 
   python-services:
     name: Python Services
@@ -284,6 +297,10 @@ jobs:
           for svc in islamic-banking-py education-loans-py dispute-management-py erpnext-sync-py regulatory-reporting-py treasury-liquidity-py customer-engagement-py batch-processing-py workflow-engine-py opensearch-analytics-py keycloak-identity-py customer-360-py diaspora-banking-py kyc-aml-screening-py savings-products-py customer-insights-py document-management-py customer-feedback-py wealth-mgmt-py chatbot-py microfinance-py inventory-py insurance-py pension-py; do
             echo "Checking services/$svc/service.py..."
             python3 -c "import py_compile; py_compile.compile('services/$svc/service.py', doraise=True)"
+          done
+          for svc in opensearch-indexer-py lakehouse-etl-py; do
+            echo "Checking services/$svc/main.py..."
+            python3 -c "import py_compile; py_compile.compile('services/$svc/main.py', doraise=True)"
           done
 
   docker:

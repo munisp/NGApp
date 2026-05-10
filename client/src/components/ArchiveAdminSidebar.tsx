@@ -273,6 +273,13 @@ const menuItems = [
   { path: "/cheque-imaging", label: "Cheque Imaging", icon: FileBarChart },
   { path: "/integration-tests", label: "Integration Tests", icon: Activity },
   { path: "/seed-registry", label: "Seed Registry", icon: Database },
+  { path: "/infra-postgres", label: "PostgreSQL Persistence", icon: Database },
+  { path: "/infra-kafka", label: "Kafka Event Broker", icon: Activity },
+  { path: "/infra-redis", label: "Redis Cache", icon: Zap },
+  { path: "/infra-temporal", label: "Temporal Workflows", icon: GitBranch },
+  { path: "/infra-opensearch", label: "OpenSearch Analytics", icon: Search },
+  { path: "/infra-tigerbeetle", label: "TigerBeetle Ledger", icon: Shield },
+  { path: "/infra-lakehouse", label: "Lakehouse ETL", icon: Database },
 ] as const;
 
 export default function ArchiveAdminSidebar() {
