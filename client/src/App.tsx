@@ -219,6 +219,26 @@ const InfraTemporalWorkspace = lazy(() => import("@/pages/InfraTemporalWorkspace
 const InfraOpenSearchWorkspace = lazy(() => import("@/pages/InfraOpenSearchWorkspace"));
 const InfraTigerBeetleWorkspace = lazy(() => import("@/pages/InfraTigerBeetleWorkspace"));
 const InfraLakehouseWorkspace = lazy(() => import("@/pages/InfraLakehouseWorkspace"));
+// Gap Closure — Batch 1 (CRITICAL)
+const EODProcessorWorkspace = lazy(() => import("@/pages/EODProcessorWorkspace"));
+const ProductFactoryWorkspace = lazy(() => import("@/pages/ProductFactoryWorkspace"));
+const AccountingRulesWorkspace = lazy(() => import("@/pages/AccountingRulesWorkspace"));
+const MakerCheckerWorkspace = lazy(() => import("@/pages/MakerCheckerWorkspace"));
+const FXRevaluationWorkspace = lazy(() => import("@/pages/FXRevaluationWorkspace"));
+const DBAdminWorkspace = lazy(() => import("@/pages/DBAdminWorkspace"));
+// Gap Closure — Batch 2 (HIGH)
+const CBNReturnsWorkspace = lazy(() => import("@/pages/CBNReturnsWorkspace"));
+const CreditFacilitiesWorkspace = lazy(() => import("@/pages/CreditFacilitiesWorkspace"));
+const StatementGeneratorWorkspace = lazy(() => import("@/pages/StatementGeneratorWorkspace"));
+const RateCascadeWorkspace = lazy(() => import("@/pages/RateCascadeWorkspace"));
+const LCRNSFRWorkspace = lazy(() => import("@/pages/LCRNSFRWorkspace"));
+// Gap Closure — Batch 3 (MEDIUM)
+const RelationshipPricingWorkspace = lazy(() => import("@/pages/RelationshipPricingWorkspace"));
+const KafkaStreamingWorkspace = lazy(() => import("@/pages/KafkaStreamingWorkspace"));
+const TemporalSagasWorkspace = lazy(() => import("@/pages/TemporalSagasWorkspace"));
+const MandateManagementWorkspace = lazy(() => import("@/pages/MandateManagementWorkspace"));
+const CIFManagementWorkspace = lazy(() => import("@/pages/CIFManagementWorkspace"));
+const ExamManagementWorkspace = lazy(() => import("@/pages/ExamManagementWorkspace"));
 const AdminAnalyticsPage = lazy(() => import("@/pages/AdminModulePages").then((module) => ({ default: module.AdminAnalyticsPage })));
 const AdminBankingOpsPage = lazy(() => import("@/pages/AdminModulePages").then((module) => ({ default: module.AdminBankingOpsPage })));
 const AdminFeatureFlagsPage = lazy(() => import("@/pages/AdminModulePages").then((module) => ({ default: module.AdminFeatureFlagsPage })));
@@ -492,6 +512,26 @@ export default function App() {
         <Route path="/infra-opensearch" component={renderInAdminShell(InfraOpenSearchWorkspace)} />
         <Route path="/infra-tigerbeetle" component={renderInAdminShell(InfraTigerBeetleWorkspace)} />
         <Route path="/infra-lakehouse" component={renderInAdminShell(InfraLakehouseWorkspace)} />
+        {/* Gap Closure — Batch 1 (CRITICAL) */}
+        <Route path="/eod-processor" component={renderInAdminShell(EODProcessorWorkspace)} />
+        <Route path="/product-factory" component={renderInAdminShell(ProductFactoryWorkspace)} />
+        <Route path="/accounting-rules" component={renderInAdminShell(AccountingRulesWorkspace)} />
+        <Route path="/maker-checker" component={renderInAdminShell(MakerCheckerWorkspace)} />
+        <Route path="/fx-revaluation" component={renderInAdminShell(FXRevaluationWorkspace)} />
+        <Route path="/db-admin" component={renderInAdminShell(DBAdminWorkspace)} />
+        {/* Gap Closure — Batch 2 (HIGH) */}
+        <Route path="/cbn-returns" component={renderInAdminShell(CBNReturnsWorkspace)} />
+        <Route path="/credit-facilities" component={renderInAdminShell(CreditFacilitiesWorkspace)} />
+        <Route path="/statement-generator" component={renderInAdminShell(StatementGeneratorWorkspace)} />
+        <Route path="/rate-cascade" component={renderInAdminShell(RateCascadeWorkspace)} />
+        <Route path="/lcr-nsfr" component={renderInAdminShell(LCRNSFRWorkspace)} />
+        {/* Gap Closure — Batch 3 (MEDIUM) */}
+        <Route path="/relationship-pricing" component={renderInAdminShell(RelationshipPricingWorkspace)} />
+        <Route path="/kafka-streaming" component={renderInAdminShell(KafkaStreamingWorkspace)} />
+        <Route path="/temporal-sagas" component={renderInAdminShell(TemporalSagasWorkspace)} />
+        <Route path="/mandate-management" component={renderInAdminShell(MandateManagementWorkspace)} />
+        <Route path="/cif-management" component={renderInAdminShell(CIFManagementWorkspace)} />
+        <Route path="/exam-management" component={renderInAdminShell(ExamManagementWorkspace)} />
 
         <Route component={NotFound} />
       </Switch>

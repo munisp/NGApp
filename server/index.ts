@@ -8,6 +8,9 @@ import { createServer } from "http";
 import path from "path";
 import rateLimit from "express-rate-limit";
 import { fileURLToPath } from "url";
+import { createRequire } from "module";
+
+const require = createRequire(import.meta.url);
 
 import { globalErrorHandler } from "./lib/errorHandler";
 import { logger } from "./lib/logger";
@@ -7662,6 +7665,141 @@ async function startServer() {
   app.get("/api/platform/infra/lakehouse/data-quality", (req, res) => { void proxyToService(LAKEHOUSE_ETL_URL, "/v1/data-quality", req, res); });
   app.get("/api/platform/infra/lakehouse/lineage", (req, res) => { void proxyToService(LAKEHOUSE_ETL_URL, "/v1/lineage", req, res); });
   app.get("/api/platform/infra/lakehouse/stats", (req, res) => { void proxyToService(LAKEHOUSE_ETL_URL, "/v1/stats", req, res); });
+
+  // ========= GAP CLOSURE SERVICES — BATCH 1 (CRITICAL) ports 8207-8212 =========
+
+  // EOD/BOD Processor (Go :8207)
+  const EOD_PROCESSOR_URL = process.env.EOD_PROCESSOR_URL || "http://localhost:8207";
+  app.get("/api/platform/eod/health", (req, res) => { void proxyToService(EOD_PROCESSOR_URL, "/healthz", req, res); });
+  app.get("/api/platform/eod/runs", (req, res) => { void proxyToService(EOD_PROCESSOR_URL, "/v1/eod-runs", req, res); });
+  app.get("/api/platform/eod/runs/:id", (req, res) => { void proxyToService(EOD_PROCESSOR_URL, `/v1/eod-runs/${req.params.id}`, req, res); });
+  app.get("/api/platform/eod/pipeline", (req, res) => { void proxyToService(EOD_PROCESSOR_URL, "/v1/pipeline", req, res); });
+  app.get("/api/platform/eod/stats", (req, res) => { void proxyToService(EOD_PROCESSOR_URL, "/v1/stats", req, res); });
+  app.post("/api/platform/eod/runs/trigger", (req, res) => { void proxyToService(EOD_PROCESSOR_URL, "/v1/eod-runs/trigger", req, res); });
+
+  // Product Factory (Rust :8208)
+  const PRODUCT_FACTORY_URL = process.env.PRODUCT_FACTORY_URL || "http://localhost:8208";
+  app.get("/api/platform/products/health", (req, res) => { void proxyToService(PRODUCT_FACTORY_URL, "/healthz", req, res); });
+  app.get("/api/platform/products/catalog", (req, res) => { void proxyToService(PRODUCT_FACTORY_URL, "/v1/products", req, res); });
+  app.get("/api/platform/products/catalog/:id", (req, res) => { void proxyToService(PRODUCT_FACTORY_URL, `/v1/products/${req.params.id}`, req, res); });
+  app.get("/api/platform/products/stats", (req, res) => { void proxyToService(PRODUCT_FACTORY_URL, "/v1/stats", req, res); });
+
+  // Accounting Rules Engine (Rust :8209)
+  const ACCOUNTING_RULES_URL = process.env.ACCOUNTING_RULES_URL || "http://localhost:8209";
+  app.get("/api/platform/accounting/health", (req, res) => { void proxyToService(ACCOUNTING_RULES_URL, "/healthz", req, res); });
+  app.get("/api/platform/accounting/rules", (req, res) => { void proxyToService(ACCOUNTING_RULES_URL, "/v1/rules", req, res); });
+  app.get("/api/platform/accounting/entries", (req, res) => { void proxyToService(ACCOUNTING_RULES_URL, "/v1/entries", req, res); });
+  app.get("/api/platform/accounting/balances", (req, res) => { void proxyToService(ACCOUNTING_RULES_URL, "/v1/balances", req, res); });
+  app.get("/api/platform/accounting/stats", (req, res) => { void proxyToService(ACCOUNTING_RULES_URL, "/v1/stats", req, res); });
+
+  // Maker-Checker Approval (Go :8210)
+  const MAKER_CHECKER_URL = process.env.MAKER_CHECKER_URL || "http://localhost:8210";
+  app.get("/api/platform/approvals/health", (req, res) => { void proxyToService(MAKER_CHECKER_URL, "/healthz", req, res); });
+  app.get("/api/platform/approvals/requests", (req, res) => { void proxyToService(MAKER_CHECKER_URL, "/v1/approvals", req, res); });
+  app.get("/api/platform/approvals/requests/:id", (req, res) => { void proxyToService(MAKER_CHECKER_URL, `/v1/approvals/${req.params.id}`, req, res); });
+  app.get("/api/platform/approvals/rules", (req, res) => { void proxyToService(MAKER_CHECKER_URL, "/v1/rules", req, res); });
+  app.get("/api/platform/approvals/stats", (req, res) => { void proxyToService(MAKER_CHECKER_URL, "/v1/stats", req, res); });
+
+  // Multi-Currency Revaluation (Rust :8211)
+  const MULTICURRENCY_URL = process.env.MULTICURRENCY_URL || "http://localhost:8211";
+  app.get("/api/platform/fx-reval/health", (req, res) => { void proxyToService(MULTICURRENCY_URL, "/healthz", req, res); });
+  app.get("/api/platform/fx-reval/currencies", (req, res) => { void proxyToService(MULTICURRENCY_URL, "/v1/currencies", req, res); });
+  app.get("/api/platform/fx-reval/rates", (req, res) => { void proxyToService(MULTICURRENCY_URL, "/v1/rates", req, res); });
+  app.get("/api/platform/fx-reval/positions", (req, res) => { void proxyToService(MULTICURRENCY_URL, "/v1/positions", req, res); });
+  app.get("/api/platform/fx-reval/runs", (req, res) => { void proxyToService(MULTICURRENCY_URL, "/v1/revaluation-runs", req, res); });
+  app.get("/api/platform/fx-reval/stats", (req, res) => { void proxyToService(MULTICURRENCY_URL, "/v1/stats", req, res); });
+
+  // PostgreSQL Adapter (Go :8212)
+  const POSTGRES_ADAPTER_URL = process.env.POSTGRES_ADAPTER_URL || "http://localhost:8212";
+  app.get("/api/platform/db-admin/health", (req, res) => { void proxyToService(POSTGRES_ADAPTER_URL, "/healthz", req, res); });
+  app.get("/api/platform/db-admin/migrations", (req, res) => { void proxyToService(POSTGRES_ADAPTER_URL, "/v1/migrations", req, res); });
+  app.get("/api/platform/db-admin/tables", (req, res) => { void proxyToService(POSTGRES_ADAPTER_URL, "/v1/tables", req, res); });
+  app.get("/api/platform/db-admin/pools", (req, res) => { void proxyToService(POSTGRES_ADAPTER_URL, "/v1/pools", req, res); });
+  app.get("/api/platform/db-admin/stats", (req, res) => { void proxyToService(POSTGRES_ADAPTER_URL, "/v1/stats", req, res); });
+
+  // ========= GAP CLOSURE SERVICES — BATCH 2 (HIGH) ports 8213-8217 =========
+
+  // CBN Regulatory Returns (Python :8213)
+  const CBN_RETURNS_URL = process.env.CBN_RETURNS_URL || "http://localhost:8213";
+  app.get("/api/platform/regulatory/health", (req, res) => { void proxyToService(CBN_RETURNS_URL, "/healthz", req, res); });
+  app.get("/api/platform/regulatory/returns", (req, res) => { void proxyToService(CBN_RETURNS_URL, "/v1/returns", req, res); });
+  app.get("/api/platform/regulatory/returns/:id", (req, res) => { void proxyToService(CBN_RETURNS_URL, `/v1/returns/${req.params.id}`, req, res); });
+  app.get("/api/platform/regulatory/deadlines", (req, res) => { void proxyToService(CBN_RETURNS_URL, "/v1/deadlines", req, res); });
+  app.get("/api/platform/regulatory/stats", (req, res) => { void proxyToService(CBN_RETURNS_URL, "/v1/stats", req, res); });
+
+  // Credit Facility / ELCM (Go :8214)
+  const CREDIT_FACILITY_URL = process.env.CREDIT_FACILITY_URL || "http://localhost:8214";
+  app.get("/api/platform/facilities/health", (req, res) => { void proxyToService(CREDIT_FACILITY_URL, "/healthz", req, res); });
+  app.get("/api/platform/facilities/list", (req, res) => { void proxyToService(CREDIT_FACILITY_URL, "/v1/facilities", req, res); });
+  app.get("/api/platform/facilities/list/:id", (req, res) => { void proxyToService(CREDIT_FACILITY_URL, `/v1/facilities/${req.params.id}`, req, res); });
+  app.get("/api/platform/facilities/stats", (req, res) => { void proxyToService(CREDIT_FACILITY_URL, "/v1/stats", req, res); });
+
+  // Statement Generator (Python :8215)
+  const STATEMENT_GEN_URL = process.env.STATEMENT_GEN_URL || "http://localhost:8215";
+  app.get("/api/platform/statements/health", (req, res) => { void proxyToService(STATEMENT_GEN_URL, "/healthz", req, res); });
+  app.get("/api/platform/statements/list", (req, res) => { void proxyToService(STATEMENT_GEN_URL, "/v1/statements", req, res); });
+  app.get("/api/platform/statements/list/:id", (req, res) => { void proxyToService(STATEMENT_GEN_URL, `/v1/statements/${req.params.id}`, req, res); });
+  app.get("/api/platform/statements/stats", (req, res) => { void proxyToService(STATEMENT_GEN_URL, "/v1/stats", req, res); });
+
+  // Rate Cascade (Rust :8216)
+  const RATE_CASCADE_URL = process.env.RATE_CASCADE_URL || "http://localhost:8216";
+  app.get("/api/platform/rate-cascade/health", (req, res) => { void proxyToService(RATE_CASCADE_URL, "/healthz", req, res); });
+  app.get("/api/platform/rate-cascade/benchmarks", (req, res) => { void proxyToService(RATE_CASCADE_URL, "/v1/benchmarks", req, res); });
+  app.get("/api/platform/rate-cascade/runs", (req, res) => { void proxyToService(RATE_CASCADE_URL, "/v1/cascade-runs", req, res); });
+  app.get("/api/platform/rate-cascade/stats", (req, res) => { void proxyToService(RATE_CASCADE_URL, "/v1/stats", req, res); });
+
+  // LCR/NSFR Calculator (Rust :8217)
+  const LCR_NSFR_URL = process.env.LCR_NSFR_URL || "http://localhost:8217";
+  app.get("/api/platform/liquidity/health", (req, res) => { void proxyToService(LCR_NSFR_URL, "/healthz", req, res); });
+  app.get("/api/platform/liquidity/lcr", (req, res) => { void proxyToService(LCR_NSFR_URL, "/v1/lcr", req, res); });
+  app.get("/api/platform/liquidity/nsfr", (req, res) => { void proxyToService(LCR_NSFR_URL, "/v1/nsfr", req, res); });
+  app.get("/api/platform/liquidity/history", (req, res) => { void proxyToService(LCR_NSFR_URL, "/v1/history", req, res); });
+  app.get("/api/platform/liquidity/stats", (req, res) => { void proxyToService(LCR_NSFR_URL, "/v1/stats", req, res); });
+
+  // ========= GAP CLOSURE SERVICES — BATCH 3 (MEDIUM) ports 8218-8223 =========
+
+  // Relationship Pricing (Rust :8218)
+  const REL_PRICING_URL = process.env.REL_PRICING_URL || "http://localhost:8218";
+  app.get("/api/platform/pricing/health", (req, res) => { void proxyToService(REL_PRICING_URL, "/healthz", req, res); });
+  app.get("/api/platform/pricing/profiles", (req, res) => { void proxyToService(REL_PRICING_URL, "/v1/profiles", req, res); });
+  app.get("/api/platform/pricing/tiers", (req, res) => { void proxyToService(REL_PRICING_URL, "/v1/tiers", req, res); });
+  app.get("/api/platform/pricing/stats", (req, res) => { void proxyToService(REL_PRICING_URL, "/v1/stats", req, res); });
+
+  // Kafka Event Streaming (Go :8219)
+  const KAFKA_STREAM_URL = process.env.KAFKA_STREAM_URL || "http://localhost:8219";
+  app.get("/api/platform/kafka/health", (req, res) => { void proxyToService(KAFKA_STREAM_URL, "/healthz", req, res); });
+  app.get("/api/platform/kafka/topics", (req, res) => { void proxyToService(KAFKA_STREAM_URL, "/v1/topics", req, res); });
+  app.get("/api/platform/kafka/consumer-groups", (req, res) => { void proxyToService(KAFKA_STREAM_URL, "/v1/consumer-groups", req, res); });
+  app.get("/api/platform/kafka/dlq", (req, res) => { void proxyToService(KAFKA_STREAM_URL, "/v1/dlq", req, res); });
+  app.get("/api/platform/kafka/stats", (req, res) => { void proxyToService(KAFKA_STREAM_URL, "/v1/stats", req, res); });
+
+  // Temporal Saga Workflows (Go :8220)
+  const TEMPORAL_SAGAS_URL = process.env.TEMPORAL_SAGAS_URL || "http://localhost:8220";
+  app.get("/api/platform/sagas/health", (req, res) => { void proxyToService(TEMPORAL_SAGAS_URL, "/healthz", req, res); });
+  app.get("/api/platform/sagas/definitions", (req, res) => { void proxyToService(TEMPORAL_SAGAS_URL, "/v1/definitions", req, res); });
+  app.get("/api/platform/sagas/executions", (req, res) => { void proxyToService(TEMPORAL_SAGAS_URL, "/v1/executions", req, res); });
+  app.get("/api/platform/sagas/stats", (req, res) => { void proxyToService(TEMPORAL_SAGAS_URL, "/v1/stats", req, res); });
+
+  // Mandate Management (Go :8221)
+  const MANDATE_URL = process.env.MANDATE_URL || "http://localhost:8221";
+  app.get("/api/platform/mandates/health", (req, res) => { void proxyToService(MANDATE_URL, "/healthz", req, res); });
+  app.get("/api/platform/mandates/list", (req, res) => { void proxyToService(MANDATE_URL, "/v1/mandates", req, res); });
+  app.get("/api/platform/mandates/stats", (req, res) => { void proxyToService(MANDATE_URL, "/v1/stats", req, res); });
+
+  // CIF Management (Go :8222)
+  const CIF_URL = process.env.CIF_URL || "http://localhost:8222";
+  app.get("/api/platform/cif/health", (req, res) => { void proxyToService(CIF_URL, "/healthz", req, res); });
+  app.get("/api/platform/cif/customers", (req, res) => { void proxyToService(CIF_URL, "/v1/customers", req, res); });
+  app.get("/api/platform/cif/customers/:id", (req, res) => { void proxyToService(CIF_URL, `/v1/customers/${req.params.id}`, req, res); });
+  app.get("/api/platform/cif/stats", (req, res) => { void proxyToService(CIF_URL, "/v1/stats", req, res); });
+
+  // Exam Management (Python :8223)
+  const EXAM_URL = process.env.EXAM_URL || "http://localhost:8223";
+  app.get("/api/platform/exams/health", (req, res) => { void proxyToService(EXAM_URL, "/healthz", req, res); });
+  app.get("/api/platform/exams/list", (req, res) => { void proxyToService(EXAM_URL, "/v1/exams", req, res); });
+  app.get("/api/platform/exams/list/:id", (req, res) => { void proxyToService(EXAM_URL, `/v1/exams/${req.params.id}`, req, res); });
+  app.get("/api/platform/exams/findings", (req, res) => { void proxyToService(EXAM_URL, "/v1/findings", req, res); });
+  app.get("/api/platform/exams/stats", (req, res) => { void proxyToService(EXAM_URL, "/v1/stats", req, res); });
 
   app.use(globalErrorHandler);
 

@@ -83,6 +83,9 @@ import {
   ListChecks,
   ScrollText,
   PlayCircle,
+  CheckSquare,
+  DollarSign,
+  BarChart2,
 } from "lucide-react";
 
 const menuItems = [
@@ -280,6 +283,26 @@ const menuItems = [
   { path: "/infra-opensearch", label: "OpenSearch Analytics", icon: Search },
   { path: "/infra-tigerbeetle", label: "TigerBeetle Ledger", icon: Shield },
   { path: "/infra-lakehouse", label: "Lakehouse ETL", icon: Database },
+  // Gap Closure — Batch 1 (CRITICAL)
+  { path: "/eod-processor", label: "EOD/BOD Processing", icon: Clock },
+  { path: "/product-factory", label: "Product Factory", icon: Layers },
+  { path: "/accounting-rules", label: "Accounting Rules Engine", icon: BookOpen },
+  { path: "/maker-checker", label: "Maker-Checker Approvals", icon: CheckSquare },
+  { path: "/fx-revaluation", label: "Multi-Currency Revaluation", icon: TrendingUp },
+  { path: "/db-admin", label: "Database Administration", icon: Database },
+  // Gap Closure — Batch 2 (HIGH)
+  { path: "/cbn-returns", label: "CBN Regulatory Returns", icon: FileText },
+  { path: "/credit-facilities", label: "Credit Facilities / ELCM", icon: CreditCard },
+  { path: "/statement-generator", label: "Statement Generator", icon: FileText },
+  { path: "/rate-cascade", label: "Rate Cascade Engine", icon: TrendingUp },
+  { path: "/lcr-nsfr", label: "LCR / NSFR Calculator", icon: BarChart2 },
+  // Gap Closure — Batch 3 (MEDIUM)
+  { path: "/relationship-pricing", label: "Relationship Pricing", icon: DollarSign },
+  { path: "/kafka-streaming", label: "Kafka Event Streaming", icon: Activity },
+  { path: "/temporal-sagas", label: "Temporal Saga Workflows", icon: GitBranch },
+  { path: "/mandate-management", label: "Mandate Management", icon: FileText },
+  { path: "/cif-management", label: "CIF / Address Management", icon: Users },
+  { path: "/exam-management", label: "Regulatory Exam Tracking", icon: AlertTriangle },
 ] as const;
 
 export default function ArchiveAdminSidebar() {

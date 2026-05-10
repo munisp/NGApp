@@ -172,6 +172,22 @@ jobs:
         run: cd services/kafka-broker-go && go build -o kafka-broker .
       - name: Build Temporal Worker Service
         run: cd services/temporal-worker-go && go build -o temporal-worker .
+      - name: Build EOD Processor
+        run: cd services/eod-processor-go && go build -o eod-processor .
+      - name: Build Maker-Checker Approval
+        run: cd services/maker-checker-go && go build -o maker-checker .
+      - name: Build PostgreSQL Adapter
+        run: cd services/postgres-adapter-go && go build -o postgres-adapter .
+      - name: Build Credit Facility / ELCM
+        run: cd services/credit-facility-go && go build -o credit-facility .
+      - name: Build Kafka Event Streaming
+        run: cd services/kafka-streaming-go && go build -o kafka-streaming .
+      - name: Build Temporal Sagas
+        run: cd services/temporal-sagas-go && go build -o temporal-sagas .
+      - name: Build Mandate Management
+        run: cd services/mandate-management-go && go build -o mandate-management .
+      - name: Build CIF Management
+        run: cd services/cif-management-go && go build -o cif-management .
 
   rust-services:
     name: Rust Services
@@ -215,6 +231,12 @@ jobs:
             services/postgres-persistence-rs
             services/redis-cache-rs
             services/tigerbeetle-adapter-rs
+            services/product-factory-rs
+            services/accounting-rules-rs
+            services/multicurrency-revaluation-rs
+            services/rate-cascade-rs
+            services/lcr-nsfr-rs
+            services/relationship-pricing-rs
       - name: Build Resilience Service
         run: cd services/resilience-service-rs && cargo build --release
       - name: Build Agriculture Banking Service
@@ -283,6 +305,18 @@ jobs:
         run: cd services/redis-cache-rs && cargo build --release
       - name: Build TigerBeetle Adapter Service
         run: cd services/tigerbeetle-adapter-rs && cargo build --release
+      - name: Build Product Factory
+        run: cd services/product-factory-rs && cargo build --release
+      - name: Build Accounting Rules Engine
+        run: cd services/accounting-rules-rs && cargo build --release
+      - name: Build Multi-Currency Revaluation
+        run: cd services/multicurrency-revaluation-rs && cargo build --release
+      - name: Build Rate Cascade Engine
+        run: cd services/rate-cascade-rs && cargo build --release
+      - name: Build LCR/NSFR Calculator
+        run: cd services/lcr-nsfr-rs && cargo build --release
+      - name: Build Relationship Pricing Engine
+        run: cd services/relationship-pricing-rs && cargo build --release
 
   python-services:
     name: Python Services
@@ -298,7 +332,7 @@ jobs:
             echo "Checking services/$svc/service.py..."
             python3 -c "import py_compile; py_compile.compile('services/$svc/service.py', doraise=True)"
           done
-          for svc in opensearch-indexer-py lakehouse-etl-py; do
+          for svc in opensearch-indexer-py lakehouse-etl-py cbn-returns-py statement-generator-py exam-management-py; do
             echo "Checking services/$svc/main.py..."
             python3 -c "import py_compile; py_compile.compile('services/$svc/main.py', doraise=True)"
           done
