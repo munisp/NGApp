@@ -45,6 +45,9 @@ import {
   Database,
   Zap,
   Key,
+  ArrowRightLeft,
+  Landmark,
+  Receipt,
 } from "lucide-react";
 
 const menuItems = [
@@ -122,6 +125,12 @@ const menuItems = [
   { path: "/savings-products", label: "Savings Products", icon: PiggyBank },
   { path: "/treasury-liquidity", label: "Treasury & Liquidity", icon: TrendingUp },
   { path: "/agent-banking-v2", label: "Agent Banking", icon: MapPin },
+  { path: "/chart-of-accounts", label: "Chart of Accounts", icon: BookOpen },
+  { path: "/journal-entries", label: "Journal Entries", icon: FileText },
+  { path: "/reporting", label: "Reports", icon: FileBarChart },
+  { path: "/payment-transactions", label: "Payment Txns", icon: ArrowRightLeft },
+  { path: "/loan-products", label: "Loan Products", icon: Landmark },
+  { path: "/loan-accounts", label: "Loan Accounts", icon: Receipt },
 ] as const;
 
 export default function ArchiveAdminSidebar() {

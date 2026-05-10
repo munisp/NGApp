@@ -6442,6 +6442,100 @@ async function startServer() {
     void proxyToService(AGENT_BANK_URL, "/v1/agents/activate", req, res);
   });
 
+  // B2: Payments Hub endpoints
+  app.get("/api/platform/payments/transactions", (_req, res) => {
+    const { getPaymentTransactions } = require("./lib/paymentsHub");
+    const txns = getPaymentTransactions();
+    res.json({ items: txns, total: txns.length });
+  });
+  app.get("/api/platform/payments/limits", (_req, res) => {
+    const { getPaymentLimits } = require("./lib/paymentsHub");
+    const limits = getPaymentLimits();
+    res.json({ items: limits, total: limits.length });
+  });
+  app.post("/api/platform/payments/calculate-fee", (req, res) => {
+    const { calculateFee } = require("./lib/paymentsHub");
+    const { type, amount } = req.body;
+    if (!type || !amount) { res.status(400).json({ error: "type and amount required", code: "VALIDATION_ERROR" }); return; }
+    res.json(calculateFee(type, amount));
+  });
+  app.post("/api/platform/payments/check-limit", (req, res) => {
+    const { checkLimit } = require("./lib/paymentsHub");
+    const { channel, tier, amount } = req.body;
+    if (!channel || !tier || !amount) { res.status(400).json({ error: "channel, tier, and amount required", code: "VALIDATION_ERROR" }); return; }
+    res.json(checkLimit(channel, tier, amount));
+  });
+
+  // B3: Loan lifecycle endpoints
+  app.get("/api/platform/loans/products", (_req, res) => {
+    const { getLoanProducts } = require("./lib/loanLifecycle");
+    const products = getLoanProducts();
+    res.json({ items: products, total: products.length });
+  });
+  app.get("/api/platform/loans/accounts", (_req, res) => {
+    const { getLoanAccounts } = require("./lib/loanLifecycle");
+    const accounts = getLoanAccounts();
+    res.json({ items: accounts, total: accounts.length });
+  });
+  app.post("/api/platform/loans/classify", (req, res) => {
+    const { classifyLoan } = require("./lib/loanLifecycle");
+    const { daysInArrears } = req.body;
+    res.json(classifyLoan(daysInArrears || 0));
+  });
+  app.post("/api/platform/loans/amortization", (req, res) => {
+    const { computeAmortization } = require("./lib/loanLifecycle");
+    const { principal, annualRate, tenorMonths } = req.body;
+    if (!principal || !annualRate || !tenorMonths) {
+      res.status(400).json({ error: "principal, annualRate, and tenorMonths required", code: "VALIDATION_ERROR" });
+      return;
+    }
+    res.json({ schedule: computeAmortization(principal, annualRate, tenorMonths) });
+  });
+
+  // B1: Double-entry ledger endpoints
+  app.get("/api/platform/ledger/chart-of-accounts", (_req, res) => {
+    const { getChartOfAccounts } = require("./lib/doubleEntryLedger");
+    const accounts = getChartOfAccounts();
+    res.json({ items: accounts, total: accounts.length });
+  });
+  app.get("/api/platform/ledger/journal-entries", (_req, res) => {
+    const { getJournalEntries } = require("./lib/doubleEntryLedger");
+    const entries = getJournalEntries();
+    res.json({ items: entries, total: entries.length });
+  });
+  app.get("/api/platform/ledger/trial-balance", (_req, res) => {
+    const { computeTrialBalance } = require("./lib/doubleEntryLedger");
+    res.json(computeTrialBalance());
+  });
+  app.post("/api/platform/ledger/journal-entries", (req, res) => {
+    const { addJournalEntry, validateJournalBalance } = require("./lib/doubleEntryLedger");
+    const entry = req.body;
+    if (!entry.entries || entry.entries.length === 0) {
+      res.status(400).json({ error: "Journal entry must have at least one line", code: "LEDGER_EMPTY_ENTRY" });
+      return;
+    }
+    const balance = validateJournalBalance(entry.entries);
+    if (!balance.valid) {
+      res.status(400).json({ error: `Journal entry not balanced: debit=${balance.totalDebit} credit=${balance.totalCredit} diff=${balance.difference}`, code: "LEDGER_UNBALANCED" });
+      return;
+    }
+    entry.id = `JE-${Date.now()}`;
+    entry.status = "posted";
+    entry.postedAt = new Date().toISOString();
+    addJournalEntry(entry);
+    res.status(201).json(entry);
+  });
+
+  // E3: Reporting engine endpoints
+  app.get("/api/platform/reports/definitions", (_req, res) => {
+    const { getReportDefinitions } = require("./lib/reportingEngine");
+    res.json(getReportDefinitions());
+  });
+  app.get("/api/platform/reports/generated", (_req, res) => {
+    const { getGeneratedReports } = require("./lib/reportingEngine");
+    res.json(getGeneratedReports());
+  });
+
   // OTP endpoint for transaction signing (C8)
   app.post("/api/platform/otp/generate", (req, res) => {
     const userId = req.user?.sub ?? req.body?.userId ?? "anonymous";

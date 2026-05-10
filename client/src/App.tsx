@@ -99,6 +99,12 @@ const BulkPaymentsWorkspace = lazy(() => import("@/pages/BulkPaymentsWorkspace")
 const CardManagementWorkspace2 = lazy(() => import("@/pages/CardManagementWorkspace2"));
 const TreasuryLiquidityWorkspace = lazy(() => import("@/pages/TreasuryLiquidityWorkspace"));
 const AgentBankingWorkspace2 = lazy(() => import("@/pages/AgentBankingWorkspace2"));
+const ChartOfAccountsWorkspace = lazy(() => import("@/pages/ChartOfAccountsWorkspace"));
+const JournalEntriesWorkspace = lazy(() => import("@/pages/JournalEntriesWorkspace"));
+const ReportingWorkspace = lazy(() => import("@/pages/ReportingWorkspace"));
+const PaymentTransactionsWorkspace = lazy(() => import("@/pages/PaymentTransactionsWorkspace"));
+const LoanProductsWorkspace = lazy(() => import("@/pages/LoanProductsWorkspace"));
+const LoanAccountsWorkspace = lazy(() => import("@/pages/LoanAccountsWorkspace"));
 const AdminAnalyticsPage = lazy(() => import("@/pages/AdminModulePages").then((module) => ({ default: module.AdminAnalyticsPage })));
 const AdminBankingOpsPage = lazy(() => import("@/pages/AdminModulePages").then((module) => ({ default: module.AdminBankingOpsPage })));
 const AdminFeatureFlagsPage = lazy(() => import("@/pages/AdminModulePages").then((module) => ({ default: module.AdminFeatureFlagsPage })));
@@ -252,6 +258,12 @@ export default function App() {
         <Route path="/card-management-v2" component={renderInAdminShell(CardManagementWorkspace2)} />
         <Route path="/treasury-liquidity" component={renderInAdminShell(TreasuryLiquidityWorkspace)} />
         <Route path="/agent-banking-v2" component={renderInAdminShell(AgentBankingWorkspace2)} />
+        <Route path="/chart-of-accounts" component={renderInAdminShell(ChartOfAccountsWorkspace)} />
+        <Route path="/journal-entries" component={renderInAdminShell(JournalEntriesWorkspace)} />
+        <Route path="/reporting" component={renderInAdminShell(ReportingWorkspace)} />
+        <Route path="/payment-transactions" component={renderInAdminShell(PaymentTransactionsWorkspace)} />
+        <Route path="/loan-products" component={renderInAdminShell(LoanProductsWorkspace)} />
+        <Route path="/loan-accounts" component={renderInAdminShell(LoanAccountsWorkspace)} />
 
         <Route component={NotFound} />
       </Switch>

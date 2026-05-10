@@ -1,42 +1,35 @@
+# 54Bank Core Banking Platform — Docker Compose
+# A6: Container orchestration with all infrastructure dependencies
+#
+# Usage:
+#   docker compose up -d                          # Start all infrastructure
+#   docker compose up -d postgres redis kafka      # Start just infra
+#   docker compose --profile services up -d        # Start services too
+
 version: "3.9"
 
-# 54Bank Full Production Stack
-# Usage: docker compose up --build -d
-
-x-common-env: &common-env
-  TENANT_ID: 54bank-platform-prod
-  REDIS_URL: redis://redis:6379/0
-  KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-  POSTGRES_URL: postgresql://ndsep_user:ndsep_secure_2026@postgres:5432/ndsep_db
-  KEYCLOAK_ISSUER_URL: https://identity.54bank.app/realms/54bank
-  PERMIFY_URL: http://permify:3476
-
 services:
-  # ====== Infrastructure ======
+  # ── Infrastructure ──
+
   postgres:
     image: postgres:16-alpine
     environment:
-      POSTGRES_DB: ndsep_db
-      POSTGRES_USER: ndsep_user
-      POSTGRES_PASSWORD: ndsep_secure_2026
-    ports:
-      - "5432:5432"
+      POSTGRES_DB: banking54
+      POSTGRES_USER: banking
+      POSTGRES_PASSWORD: banking_dev_password
+    ports: ["5432:5432"]
     volumes:
       - pgdata:/var/lib/postgresql/data
-    restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ndsep_user -d ndsep_db"]
+      test: ["CMD-SHELL", "pg_isready -U banking -d banking54"]
       interval: 10s
       timeout: 5s
       retries: 5
 
   redis:
     image: redis:7-alpine
-    ports:
-      - "6379:6379"
-    volumes:
-      - redisdata:/data
-    restart: unless-stopped
+    ports: ["6379:6379"]
+    command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
@@ -44,230 +37,159 @@ services:
       retries: 5
 
   kafka:
-    image: bitnami/kafka:3.7
-    ports:
-      - "9092:9092"
+    image: confluentinc/cp-kafka:7.6.0
     environment:
-      KAFKA_CFG_NODE_ID: 0
-      KAFKA_CFG_PROCESS_ROLES: controller,broker
-      KAFKA_CFG_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
-      KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
-      KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: 0@kafka:9093
-      KAFKA_CFG_CONTROLLER_LISTENER_NAMES: CONTROLLER
-      KAFKA_CFG_LOG_RETENTION_HOURS: 168
+      KAFKA_NODE_ID: 1
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      CLUSTER_ID: "54bank-kafka-dev-cluster"
+    ports: ["9092:9092"]
+    healthcheck:
+      test: ["CMD-SHELL", "kafka-topics --bootstrap-server localhost:9092 --list"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+
+  opensearch:
+    image: opensearchproject/opensearch:2.12.0
+    environment:
+      - discovery.type=single-node
+      - "OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m"
+      - DISABLE_SECURITY_PLUGIN=true
+    ports: ["9200:9200"]
     volumes:
-      - kafkadata:/bitnami/kafka
-    restart: unless-stopped
+      - osdata:/usr/share/opensearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:9200/_cluster/health || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
 
-  # ====== Core Platform ======
+  # ── Express Gateway (BFF) ──
+
   gateway:
-    build: .
-    ports:
-      - "3000:3000"
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports: ["3000:3000"]
     environment:
-      <<: *common-env
-      PORT: "3000"
       NODE_ENV: production
-      DATABASE_URL: postgresql://ndsep_user:ndsep_secure_2026@postgres:5432/ndsep_db
-      AGRICULTURE_SERVICE_URL: http://agriculture-banking:8090
-      TELLER_SERVICE_URL: http://teller-operations:8091
-      ISLAMIC_BANKING_SERVICE_URL: http://islamic-banking:8092
-      TRADE_FINANCE_SERVICE_URL: http://trade-finance:8093
-      MORTGAGE_SERVICE_URL: http://mortgage-servicing:8094
-      ESUSU_SERVICE_URL: http://esusu-groups:8095
-      VIRTUAL_ACCOUNTS_SERVICE_URL: http://virtual-accounts:8096
-      AGENT_BANKING_SERVICE_URL: http://agent-banking:8097
-      GROUP_LENDING_SERVICE_URL: http://group-lending:8098
-      EDUCATION_LOANS_SERVICE_URL: http://education-loans:8099
-      LEDGER_RECON_SERVICE_URL: http://ledger-reconciliation:8100
-      IDENTITY_CHANNELS_SERVICE_URL: http://identity-channels:8101
-      DISPUTE_SERVICE_URL: http://dispute-management:8102
-      ERPNEXT_SYNC_SERVICE_URL: http://erpnext-sync:8103
-      REGULATORY_SERVICE_URL: http://regulatory-reporting:8104
-      SECURITY_GATEWAY_URL: http://security-gateway:8105
-      RESILIENCE_SERVICE_URL: http://resilience-service:8106
+      PORT: "3000"
+      DATABASE_URL: "postgresql://banking:banking_dev_password@postgres:5432/banking54"
+      REDIS_URL: "redis://redis:6379"
+      KAFKA_BROKERS: "kafka:9092"
     depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    restart: unless-stopped
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    profiles: ["gateway"]
 
-  # ====== Microservices ======
-  agriculture-banking:
-    build: ./services/agriculture-banking-rs
-    environment:
-      <<: *common-env
-      ADDR: "0.0.0.0:8090"
-    restart: unless-stopped
+  # ── Go Services ──
 
   teller-operations:
-    build: ./services/teller-operations-go
-    environment:
-      <<: *common-env
-      ADDR: ":8091"
-    restart: unless-stopped
-
-  islamic-banking:
-    build: ./services/islamic-banking-py
-    environment:
-      <<: *common-env
-      PORT: "8092"
-    restart: unless-stopped
-
-  trade-finance:
-    build: ./services/trade-finance-go
-    environment:
-      <<: *common-env
-      ADDR: ":8093"
-    restart: unless-stopped
-
-  mortgage-servicing:
-    build: ./services/mortgage-servicing-rs
-    environment:
-      <<: *common-env
-      PORT: "8094"
-    restart: unless-stopped
-
-  esusu-groups:
-    build: ./services/esusu-groups-go
-    environment:
-      <<: *common-env
-      ADDR: ":8095"
-    restart: unless-stopped
-
-  virtual-accounts:
-    build: ./services/virtual-accounts-go
-    environment:
-      <<: *common-env
-      ADDR: ":8096"
-    restart: unless-stopped
-
-  agent-banking:
-    build: ./services/agent-banking-go
-    environment:
-      <<: *common-env
-      ADDR: ":8097"
-    restart: unless-stopped
-
-  group-lending:
-    build: ./services/group-lending-go
-    environment:
-      <<: *common-env
-      ADDR: ":8098"
-    restart: unless-stopped
-
-  education-loans:
-    build:
-      context: .
-      dockerfile: ./services/education-loans-py/Dockerfile
-    environment:
-      <<: *common-env
-      PORT: "8099"
-    restart: unless-stopped
-
-  ledger-reconciliation:
-    build: ./services/ledger-reconciliation-rs
-    environment:
-      <<: *common-env
-      PORT: "8100"
-    restart: unless-stopped
-
-  identity-channels:
-    build: ./services/identity-channels-go
-    environment:
-      <<: *common-env
-      ADDR: ":8101"
-    restart: unless-stopped
-
-  dispute-management:
-    build:
-      context: .
-      dockerfile: ./services/dispute-management-py/Dockerfile
-    environment:
-      <<: *common-env
-      PORT: "8102"
-    restart: unless-stopped
-
-  erpnext-sync:
-    build:
-      context: .
-      dockerfile: ./services/erpnext-sync-py/Dockerfile
-    environment:
-      <<: *common-env
-      PORT: "8103"
-    restart: unless-stopped
-
-  regulatory-reporting:
-    build:
-      context: .
-      dockerfile: ./services/regulatory-reporting-py/Dockerfile
-    environment:
-      <<: *common-env
-      PORT: "8104"
-    restart: unless-stopped
-
-  security-gateway:
-    build: ./services/security-gateway-go
-    environment:
-      <<: *common-env
-      PORT: "8105"
-    restart: unless-stopped
-
-  resilience-service:
-    build: ./services/resilience-service-rs
-    environment:
-      <<: *common-env
-      PORT: "8106"
-    restart: unless-stopped
+    build: { context: ., dockerfile: docker/Dockerfile.go, args: { SERVICE: teller-operations-go } }
+    environment: { PORT: "8090" }
+    ports: ["8090:8090"]
+    profiles: ["services"]
 
   payments-hub:
-    build: ./services/payments-hub-go
-    environment:
-      <<: *common-env
-      PORT: "8107"
-    restart: unless-stopped
+    build: { context: ., dockerfile: docker/Dockerfile.go, args: { SERVICE: payments-hub-go } }
+    environment: { PORT: "8091" }
+    ports: ["8091:8091"]
+    profiles: ["services"]
 
-  savings-products:
-    build: ./services/savings-products-go
-    environment:
-      <<: *common-env
-      PORT: "8108"
-    restart: unless-stopped
+  trade-finance:
+    build: { context: ., dockerfile: docker/Dockerfile.go, args: { SERVICE: trade-finance-go } }
+    environment: { PORT: "8093" }
+    ports: ["8093:8093"]
+    profiles: ["services"]
+
+  esusu-groups:
+    build: { context: ., dockerfile: docker/Dockerfile.go, args: { SERVICE: esusu-groups-go } }
+    environment: { PORT: "8095" }
+    ports: ["8095:8095"]
+    profiles: ["services"]
+
+  group-lending:
+    build: { context: ., dockerfile: docker/Dockerfile.go, args: { SERVICE: group-lending-go } }
+    environment: { PORT: "8096" }
+    ports: ["8096:8096"]
+    profiles: ["services"]
+
+  virtual-accounts:
+    build: { context: ., dockerfile: docker/Dockerfile.go, args: { SERVICE: virtual-accounts-go } }
+    environment: { PORT: "8097" }
+    ports: ["8097:8097"]
+    profiles: ["services"]
+
+  cheque-clearing:
+    build: { context: ., dockerfile: docker/Dockerfile.go, args: { SERVICE: cheque-clearing-go } }
+    environment: { PORT: "8132" }
+    ports: ["8132:8132"]
+    profiles: ["services"]
+
+  nibss-direct-debit:
+    build: { context: ., dockerfile: docker/Dockerfile.go, args: { SERVICE: nibss-direct-debit-go } }
+    environment: { PORT: "8134" }
+    ports: ["8134:8134"]
+    profiles: ["services"]
 
   card-management:
-    build: ./services/card-management-go
-    environment:
-      <<: *common-env
-      PORT: "8109"
-    restart: unless-stopped
+    build: { context: ., dockerfile: docker/Dockerfile.go, args: { SERVICE: card-management-go } }
+    environment: { PORT: "8140" }
+    ports: ["8140:8140"]
+    profiles: ["services"]
+
+  agent-banking:
+    build: { context: ., dockerfile: docker/Dockerfile.go, args: { SERVICE: agent-banking-go } }
+    environment: { PORT: "8143" }
+    ports: ["8143:8143"]
+    profiles: ["services"]
+
+  # ── Python Services ──
+
+  islamic-banking:
+    build: { context: ., dockerfile: docker/Dockerfile.python, args: { SERVICE: islamic-banking-py } }
+    environment: { PORT: "8092" }
+    ports: ["8092:8092"]
+    profiles: ["services"]
+
+  batch-processing:
+    build: { context: ., dockerfile: docker/Dockerfile.python, args: { SERVICE: batch-processing-py } }
+    environment: { PORT: "8117" }
+    ports: ["8117:8117"]
+    profiles: ["services"]
+
+  customer-360:
+    build: { context: ., dockerfile: docker/Dockerfile.python, args: { SERVICE: customer-360-py } }
+    environment: { PORT: "8133" }
+    ports: ["8133:8133"]
+    profiles: ["services"]
+
+  kyc-aml:
+    build: { context: ., dockerfile: docker/Dockerfile.python, args: { SERVICE: kyc-aml-screening-py } }
+    environment: { PORT: "8136" }
+    ports: ["8136:8136"]
+    profiles: ["services"]
+
+  # ── Rust Services ──
+
+  bulk-payments:
+    build: { context: ., dockerfile: docker/Dockerfile.rust, args: { SERVICE: bulk-payments-rs } }
+    environment: { PORT: "8139" }
+    ports: ["8139:8139"]
+    profiles: ["services"]
 
   treasury-liquidity:
-    build:
-      context: .
-      dockerfile: ./services/treasury-liquidity-py/Dockerfile
-    environment:
-      <<: *common-env
-      PORT: "8110"
-    restart: unless-stopped
-
-  customer-engagement:
-    build:
-      context: .
-      dockerfile: ./services/customer-engagement-py/Dockerfile
-    environment:
-      <<: *common-env
-      PORT: "8111"
-    restart: unless-stopped
-
-  fraud-detection:
-    build: ./services/fraud-detection-rs
-    environment:
-      <<: *common-env
-      PORT: "8112"
-    restart: unless-stopped
+    build: { context: ., dockerfile: docker/Dockerfile.rust, args: { SERVICE: treasury-liquidity-rs } }
+    environment: { PORT: "8142" }
+    ports: ["8142:8142"]
+    profiles: ["services"]
 
 volumes:
   pgdata:
-  redisdata:
-  kafkadata:
+  osdata:
