@@ -39,7 +39,7 @@ export function registerSeedDataResetRoutes(app: Express): void {
       byLanguage[svc.language] = (byLanguage[svc.language] || 0) + 1;
     }
     res.json({
-      services: serviceRegistry, totalServices: serviceRegistry.length,
+      items: serviceRegistry, total: serviceRegistry.length,
       totalSeededRecords: totalSeeded, byLanguage,
     });
   });

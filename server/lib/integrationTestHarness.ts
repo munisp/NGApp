@@ -72,7 +72,7 @@ const testSuite: TestCase[] = [
   {
     name: "Seed Registry — List", service: "gateway", method: "GET",
     endpoint: "/api/admin/seed-registry", expectedStatus: 200,
-    assertions: [{ field: "totalServices", operator: "gte", value: 10 }],
+    assertions: [{ field: "total", operator: "gte", value: 10 }],
   },
   {
     name: "MICR Validation — Valid", service: "gateway", method: "POST",
@@ -114,7 +114,7 @@ function checkAssertion(data: Record<string, unknown>, assertion: { field: strin
 
 export function registerIntegrationTestRoutes(app: Express): void {
   app.get("/api/admin/integration-tests", (_req: Request, res: Response) => {
-    res.json({ tests: testSuite, total: testSuite.length });
+    res.json({ items: testSuite, total: testSuite.length });
   });
 
   app.post("/api/admin/integration-tests/run", async (_req: Request, res: Response) => {

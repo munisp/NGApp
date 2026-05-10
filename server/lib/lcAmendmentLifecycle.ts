@@ -87,19 +87,33 @@ const LIFECYCLE_STAGES = [
 ];
 
 export function registerLCAmendmentRoutes(app: Express): void {
-  app.get("/api/platform/trade-finance/lc-amendments", (_req: Request, res: Response) => {
-    res.json({ items: amendments, total: amendments.length });
+  app.get("/api/platform/trade-finance/lc-amendments/lifecycle-stages", (_req: Request, res: Response) => {
+    res.json({ stages: LIFECYCLE_STAGES, count: LIFECYCLE_STAGES.length });
   });
 
-  app.get("/api/platform/trade-finance/lc-amendments/:id", (req: Request, res: Response) => {
-    const amnd = amendments.find(a => a.id === req.params.id);
-    if (!amnd) return res.status(404).json({ error: "Amendment not found" });
-    res.json(amnd);
+  app.get("/api/platform/trade-finance/lc-amendments/stats", (_req: Request, res: Response) => {
+    const byStatus: Record<string, number> = {};
+    const byType: Record<string, number> = {};
+    let totalAmountImpact = 0;
+    for (const a of amendments) {
+      byStatus[a.status] = (byStatus[a.status] || 0) + 1;
+      byType[a.amendmentType] = (byType[a.amendmentType] || 0) + 1;
+      totalAmountImpact += a.impactOnAmount;
+    }
+    res.json({
+      total: amendments.length,
+      byStatus, byType, totalAmountImpact,
+      avgProcessingDays: 2.3,
+    });
   });
 
   app.get("/api/platform/trade-finance/lc-amendments/by-lc/:lcNumber", (req: Request, res: Response) => {
     const lcAmendments = amendments.filter(a => a.lcNumber === req.params.lcNumber);
     res.json({ items: lcAmendments, total: lcAmendments.length, lcNumber: req.params.lcNumber });
+  });
+
+  app.get("/api/platform/trade-finance/lc-amendments", (_req: Request, res: Response) => {
+    res.json({ items: amendments, total: amendments.length });
   });
 
   app.post("/api/platform/trade-finance/lc-amendments", (req: Request, res: Response) => {
@@ -128,23 +142,9 @@ export function registerLCAmendmentRoutes(app: Express): void {
     res.status(201).json(newAmendment);
   });
 
-  app.get("/api/platform/trade-finance/lc-amendments/lifecycle-stages", (_req: Request, res: Response) => {
-    res.json({ stages: LIFECYCLE_STAGES, count: LIFECYCLE_STAGES.length });
-  });
-
-  app.get("/api/platform/trade-finance/lc-amendments/stats", (_req: Request, res: Response) => {
-    const byStatus: Record<string, number> = {};
-    const byType: Record<string, number> = {};
-    let totalAmountImpact = 0;
-    for (const a of amendments) {
-      byStatus[a.status] = (byStatus[a.status] || 0) + 1;
-      byType[a.amendmentType] = (byType[a.amendmentType] || 0) + 1;
-      totalAmountImpact += a.impactOnAmount;
-    }
-    res.json({
-      total: amendments.length,
-      byStatus, byType, totalAmountImpact,
-      avgProcessingDays: 2.3,
-    });
+  app.get("/api/platform/trade-finance/lc-amendments/:id", (req: Request, res: Response) => {
+    const amnd = amendments.find(a => a.id === req.params.id);
+    if (!amnd) return res.status(404).json({ error: "Amendment not found" });
+    res.json(amnd);
   });
 }
