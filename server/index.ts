@@ -23,6 +23,8 @@ import { listSecrets, getSecretAuditLog } from "./lib/secretsManager";
 import { runComplianceChecks, pciResponseSanitizer, pciAuditHeaders } from "./lib/pciCompliance";
 import { SEED_KPIS } from "./lib/dashboardKPIs";
 import { appCache, CACHE_TTL } from "./lib/cache";
+import { computeSLAStatus } from "./lib/disputeSLA";
+import { REPORT_SCHEDULES, computeCAR, generateCTR } from "./lib/regulatoryAutomation";
 import { WebSocketServer, WebSocket } from "ws";
 
 import {
@@ -6322,6 +6324,31 @@ async function startServer() {
   // B3: Cache stats endpoint
   app.get("/api/platform/cache/stats", (_req, res) => {
     res.json(appCache.stats());
+  });
+
+  // D5: Dispute SLA tracking
+  app.get("/api/platform/disputes/sla/:disputeId", (req, res) => {
+    const sla = computeSLAStatus(
+      req.params.disputeId,
+      (req.query.category as string) || "default",
+      new Date((req.query.createdAt as string) || Date.now() - 48 * 60 * 60 * 1000),
+      req.query.acknowledgedAt ? new Date(req.query.acknowledgedAt as string) : null,
+      req.query.resolvedAt ? new Date(req.query.resolvedAt as string) : null,
+    );
+    res.json(sla);
+  });
+
+  // D6: Regulatory report schedules & automated generation
+  app.get("/api/platform/regulatory/schedules", (_req, res) => {
+    res.json(REPORT_SCHEDULES);
+  });
+  app.post("/api/platform/regulatory/car/compute", (req, res) => {
+    const { tier1Capital, tier2Capital, riskWeightedAssets } = req.body;
+    res.json(computeCAR(tier1Capital ?? 0, tier2Capital ?? 0, riskWeightedAssets ?? 0));
+  });
+  app.post("/api/platform/regulatory/ctr/generate", (req, res) => {
+    const transactions = req.body.transactions ?? [];
+    res.json(generateCTR(transactions));
   });
 
   app.use(globalErrorHandler);
