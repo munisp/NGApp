@@ -5073,6 +5073,32 @@ async function startServer() {
     }
   }
 
+  // ── Lib module registrations (BEFORE proxy routes so specific routes match first) ──
+  // B6: Islamic Banking Expansion (Sukuk, Takaful, Wakala, Sharia Compliance)
+  registerIslamicBankingExpansion(app);
+  // B7: Agent Banking Intelligence (Float optimization, scoring, geo-mapping, commissions)
+  registerAgentBankingIntelligence(app);
+  // B8: KYC/AML Enhancement (Continuous monitoring, SAR filing, PEP database)
+  registerKYCAMLEnhancement(app);
+  // B9: Card Management Enhancement (PIN, 3D Secure, tokenization, fraud rules)
+  registerCardManagementEnhancement(app);
+  // B10: Account Statement Enhancement (PDF, MT940, tax certificates)
+  registerAccountStatementEnhancement(app);
+  // E4: Customer Self-Service Portal (transactions, card controls, dispute filing)
+  registerSelfServicePortal(app);
+  // E6: Workflow Automation (definitions, instances, SLA dashboard)
+  registerWorkflowAutomation(app);
+  // G9+G10: Health Dashboard & Seed Reset
+  registerHealthDashboard(app);
+  // D1: Keycloak SSO endpoints
+  registerSSOEndpoints(app);
+  // D3: Field-level encryption for PII
+  registerFieldEncryption(app);
+  // C1+C4: Performance configuration endpoints
+  registerPerformanceEnhancements(app);
+  // G3: Swagger per microservice
+  registerSwaggerPerService(app);
+
   // Agriculture Banking proxy routes
   app.all("/api/platform/agriculture/farmers", (req, res) => {
     void proxyToService(AGRICULTURE_SERVICE_URL, "/v1/agriculture/farmers", req, res);
@@ -7540,31 +7566,6 @@ async function startServer() {
     const transactions = req.body.transactions ?? [];
     res.json(generateCTR(transactions));
   });
-
-  // B6: Islamic Banking Expansion (Sukuk, Takaful, Wakala, Sharia Compliance)
-  registerIslamicBankingExpansion(app);
-  // B7: Agent Banking Intelligence (Float optimization, scoring, geo-mapping, commissions)
-  registerAgentBankingIntelligence(app);
-  // B8: KYC/AML Enhancement (Continuous monitoring, SAR filing, PEP database)
-  registerKYCAMLEnhancement(app);
-  // B9: Card Management Enhancement (PIN, 3D Secure, tokenization, fraud rules)
-  registerCardManagementEnhancement(app);
-  // B10: Account Statement Enhancement (PDF, MT940, tax certificates)
-  registerAccountStatementEnhancement(app);
-  // E4: Customer Self-Service Portal (transactions, card controls, dispute filing)
-  registerSelfServicePortal(app);
-  // E6: Workflow Automation (definitions, instances, SLA dashboard)
-  registerWorkflowAutomation(app);
-  // G9+G10: Health Dashboard & Seed Reset
-  registerHealthDashboard(app);
-  // D1: Keycloak SSO endpoints
-  registerSSOEndpoints(app);
-  // D3: Field-level encryption for PII
-  registerFieldEncryption(app);
-  // C1+C4: Performance configuration endpoints
-  registerPerformanceEnhancements(app);
-  // G3: Swagger per microservice
-  registerSwaggerPerService(app);
 
   app.use(globalErrorHandler);
 
