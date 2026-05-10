@@ -6442,6 +6442,94 @@ async function startServer() {
     void proxyToService(AGENT_BANK_URL, "/v1/agents/activate", req, res);
   });
 
+  // G2: Webhook engine endpoints
+  app.get("/api/platform/webhooks/subscriptions", (_req, res) => {
+    const { getWebhookSubscriptions } = require("./lib/webhookEngine");
+    const subs = getWebhookSubscriptions();
+    res.json({ items: subs, total: subs.length });
+  });
+  app.get("/api/platform/webhooks/deliveries", (_req, res) => {
+    const { getWebhookDeliveries } = require("./lib/webhookEngine");
+    const deliveries = getWebhookDeliveries();
+    res.json({ items: deliveries, total: deliveries.length });
+  });
+  app.get("/api/platform/webhooks/events", (_req, res) => {
+    const { getWebhookEvents } = require("./lib/webhookEngine");
+    res.json({ events: getWebhookEvents() });
+  });
+
+  // D4: Audit trail endpoints
+  app.get("/api/platform/audit/entries", (_req, res) => {
+    const { getAuditEntries } = require("./lib/auditTrail");
+    const entries = getAuditEntries();
+    res.json({ items: entries, total: entries.length });
+  });
+  app.get("/api/platform/audit/stats", (_req, res) => {
+    const { getAuditStats } = require("./lib/auditTrail");
+    res.json(getAuditStats());
+  });
+
+  // C10: Compliance scoring endpoints
+  app.get("/api/platform/compliance/checks", (_req, res) => {
+    const { getComplianceChecks } = require("./lib/complianceScoring");
+    const checks = getComplianceChecks();
+    res.json({ items: checks, total: checks.length });
+  });
+  app.get("/api/platform/compliance/score", (_req, res) => {
+    const { getComplianceScore } = require("./lib/complianceScoring");
+    res.json(getComplianceScore());
+  });
+  app.get("/api/platform/compliance/calendar", (_req, res) => {
+    const { getRegulatoryCalendar } = require("./lib/complianceScoring");
+    const calendar = getRegulatoryCalendar();
+    res.json({ items: calendar, total: calendar.length });
+  });
+
+  // E5: Customer onboarding endpoints
+  app.get("/api/platform/onboarding/applications", (_req, res) => {
+    const { getOnboardingApplications } = require("./lib/customerOnboarding");
+    const apps = getOnboardingApplications();
+    res.json({ items: apps, total: apps.length });
+  });
+  app.post("/api/platform/onboarding/validate-bvn", (req, res) => {
+    const { validateBVN } = require("./lib/customerOnboarding");
+    res.json(validateBVN(req.body.bvn || ""));
+  });
+  app.post("/api/platform/onboarding/validate-nin", (req, res) => {
+    const { validateNIN } = require("./lib/customerOnboarding");
+    res.json(validateNIN(req.body.nin || ""));
+  });
+
+  // B5: FX dealing room endpoints
+  app.get("/api/platform/fx/rates", (_req, res) => {
+    const { getFXRates } = require("./lib/fxDealingRoom");
+    const rates = getFXRates();
+    res.json({ items: rates, total: rates.length });
+  });
+  app.get("/api/platform/fx/deals-v2", (_req, res) => {
+    const { getFXDeals } = require("./lib/fxDealingRoom");
+    const deals = getFXDeals();
+    res.json({ items: deals, total: deals.length });
+  });
+  app.get("/api/platform/fx/positions", (_req, res) => {
+    const { getFXPositions } = require("./lib/fxDealingRoom");
+    const positions = getFXPositions();
+    res.json({ items: positions, total: positions.length });
+  });
+  app.post("/api/platform/fx/convert", (req, res) => {
+    const { convertCurrency } = require("./lib/fxDealingRoom");
+    const { amount, pair } = req.body;
+    if (!amount || !pair) { res.status(400).json({ error: "amount and pair required", code: "VALIDATION_ERROR" }); return; }
+    res.json(convertCurrency(amount, pair));
+  });
+
+  // B4: Trade finance documentary collections
+  app.get("/api/platform/trade-finance/collections", (_req, res) => {
+    const { getDocumentaryCollections } = require("./lib/tradeFinanceDocCollections");
+    const collections = getDocumentaryCollections();
+    res.json({ items: collections, total: collections.length });
+  });
+
   // B2: Payments Hub endpoints
   app.get("/api/platform/payments/transactions", (_req, res) => {
     const { getPaymentTransactions } = require("./lib/paymentsHub");

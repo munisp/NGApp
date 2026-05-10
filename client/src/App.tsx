@@ -109,6 +109,15 @@ const AnalyticsWidgetsWorkspace = lazy(() => import("@/pages/AnalyticsWidgetsWor
 const ETLPipelinesWorkspace = lazy(() => import("@/pages/ETLPipelinesWorkspace"));
 const FraudRulesWorkspace = lazy(() => import("@/pages/FraudRulesWorkspace"));
 const FraudAlertsWorkspace = lazy(() => import("@/pages/FraudAlertsWorkspace"));
+const WebhookSubscriptionsWorkspace = lazy(() => import("@/pages/WebhookSubscriptionsWorkspace"));
+const WebhookDeliveriesWorkspace = lazy(() => import("@/pages/WebhookDeliveriesWorkspace"));
+const AuditTrailWorkspace = lazy(() => import("@/pages/AuditTrailWorkspace"));
+const ComplianceChecksWorkspace = lazy(() => import("@/pages/ComplianceChecksWorkspace"));
+const RegulatoryCalendarWorkspace = lazy(() => import("@/pages/RegulatoryCalendarWorkspace"));
+const CustomerOnboardingWorkspace = lazy(() => import("@/pages/CustomerOnboardingWorkspace"));
+const FXDealingRoomWorkspace = lazy(() => import("@/pages/FXDealingRoomWorkspace"));
+const FXPositionsWorkspace = lazy(() => import("@/pages/FXPositionsWorkspace"));
+const DocCollectionsWorkspace = lazy(() => import("@/pages/DocCollectionsWorkspace"));
 const AdminAnalyticsPage = lazy(() => import("@/pages/AdminModulePages").then((module) => ({ default: module.AdminAnalyticsPage })));
 const AdminBankingOpsPage = lazy(() => import("@/pages/AdminModulePages").then((module) => ({ default: module.AdminBankingOpsPage })));
 const AdminFeatureFlagsPage = lazy(() => import("@/pages/AdminModulePages").then((module) => ({ default: module.AdminFeatureFlagsPage })));
@@ -272,6 +281,15 @@ export default function App() {
         <Route path="/etl-pipelines" component={renderInAdminShell(ETLPipelinesWorkspace)} />
         <Route path="/fraud-rules" component={renderInAdminShell(FraudRulesWorkspace)} />
         <Route path="/fraud-alerts" component={renderInAdminShell(FraudAlertsWorkspace)} />
+        <Route path="/webhook-subscriptions" component={renderInAdminShell(WebhookSubscriptionsWorkspace)} />
+        <Route path="/webhook-deliveries" component={renderInAdminShell(WebhookDeliveriesWorkspace)} />
+        <Route path="/audit-trail" component={renderInAdminShell(AuditTrailWorkspace)} />
+        <Route path="/compliance-checks" component={renderInAdminShell(ComplianceChecksWorkspace)} />
+        <Route path="/regulatory-calendar" component={renderInAdminShell(RegulatoryCalendarWorkspace)} />
+        <Route path="/customer-onboarding" component={renderInAdminShell(CustomerOnboardingWorkspace)} />
+        <Route path="/fx-dealing-room" component={renderInAdminShell(FXDealingRoomWorkspace)} />
+        <Route path="/fx-positions" component={renderInAdminShell(FXPositionsWorkspace)} />
+        <Route path="/doc-collections" component={renderInAdminShell(DocCollectionsWorkspace)} />
 
         <Route component={NotFound} />
       </Switch>

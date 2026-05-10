@@ -135,6 +135,15 @@ const menuItems = [
   { path: "/etl-pipelines", label: "ETL Pipelines", icon: Database },
   { path: "/fraud-rules", label: "Fraud Rules", icon: Shield },
   { path: "/fraud-alerts", label: "Fraud Alerts", icon: AlertTriangle },
+  { path: "/webhook-subscriptions", label: "Webhooks", icon: Radio },
+  { path: "/webhook-deliveries", label: "Webhook Deliveries", icon: Zap },
+  { path: "/audit-trail", label: "Audit Trail", icon: FileText },
+  { path: "/compliance-checks", label: "Compliance", icon: Shield },
+  { path: "/regulatory-calendar", label: "Reg Calendar", icon: Clock },
+  { path: "/customer-onboarding", label: "Onboarding", icon: UserPlus },
+  { path: "/fx-dealing-room", label: "FX Dealing Room", icon: TrendingUp },
+  { path: "/fx-positions", label: "FX Positions", icon: Coins },
+  { path: "/doc-collections", label: "Doc Collections", icon: FileText },
 ] as const;
 
 export default function ArchiveAdminSidebar() {
