@@ -81,6 +81,12 @@ const LedgerWorkspace = lazy(() => import("@/pages/LedgerWorkspace"));
 const EventBusWorkspace = lazy(() => import("@/pages/EventBusWorkspace"));
 const WorkflowEngineWorkspace = lazy(() => import("@/pages/WorkflowEngineWorkspace"));
 const MojaloopWorkspace = lazy(() => import("@/pages/MojaloopWorkspace"));
+const OpenSearchWorkspace = lazy(() => import("@/pages/OpenSearchWorkspace"));
+const LakehouseWorkspace = lazy(() => import("@/pages/LakehouseWorkspace"));
+const FluvioStreamsWorkspace = lazy(() => import("@/pages/FluvioStreamsWorkspace"));
+const DaprSidecarWorkspace = lazy(() => import("@/pages/DaprSidecarWorkspace"));
+const PermifyWorkspace = lazy(() => import("@/pages/PermifyWorkspace"));
+const KeycloakWorkspace = lazy(() => import("@/pages/KeycloakWorkspace"));
 const AdminAnalyticsPage = lazy(() => import("@/pages/AdminModulePages").then((module) => ({ default: module.AdminAnalyticsPage })));
 const AdminBankingOpsPage = lazy(() => import("@/pages/AdminModulePages").then((module) => ({ default: module.AdminBankingOpsPage })));
 const AdminFeatureFlagsPage = lazy(() => import("@/pages/AdminModulePages").then((module) => ({ default: module.AdminFeatureFlagsPage })));
@@ -216,6 +222,12 @@ export default function App() {
         <Route path="/event-bus" component={renderInAdminShell(EventBusWorkspace)} />
         <Route path="/workflow-engine" component={renderInAdminShell(WorkflowEngineWorkspace)} />
         <Route path="/mojaloop" component={renderInAdminShell(MojaloopWorkspace)} />
+        <Route path="/opensearch" component={renderInAdminShell(OpenSearchWorkspace)} />
+        <Route path="/lakehouse" component={renderInAdminShell(LakehouseWorkspace)} />
+        <Route path="/fluvio-streams" component={renderInAdminShell(FluvioStreamsWorkspace)} />
+        <Route path="/dapr" component={renderInAdminShell(DaprSidecarWorkspace)} />
+        <Route path="/permify" component={renderInAdminShell(PermifyWorkspace)} />
+        <Route path="/keycloak" component={renderInAdminShell(KeycloakWorkspace)} />
 
         <Route component={NotFound} />
       </Switch>

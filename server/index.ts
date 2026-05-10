@@ -4973,6 +4973,12 @@ async function startServer() {
   const EVENT_BUS_URL = process.env.EVENT_BUS_URL || "http://localhost:8122";
   const WORKFLOW_ENGINE_URL = process.env.WORKFLOW_ENGINE_URL || "http://localhost:8123";
   const MOJALOOP_CONNECTOR_URL = process.env.MOJALOOP_CONNECTOR_URL || "http://localhost:8124";
+  const OPENSEARCH_ANALYTICS_URL = process.env.OPENSEARCH_ANALYTICS_URL || "http://localhost:8125";
+  const LAKEHOUSE_URL = process.env.LAKEHOUSE_URL || "http://localhost:8126";
+  const FLUVIO_STREAMS_URL = process.env.FLUVIO_STREAMS_URL || "http://localhost:8127";
+  const DAPR_SIDECAR_URL = process.env.DAPR_SIDECAR_URL || "http://localhost:8128";
+  const PERMIFY_AUTHZ_URL = process.env.PERMIFY_AUTHZ_URL || "http://localhost:8129";
+  const KEYCLOAK_IDENTITY_URL = process.env.KEYCLOAK_IDENTITY_URL || "http://localhost:8130";
 
   // Register all services for health aggregation (#8)
   Object.assign(serviceUrls, {
@@ -5005,6 +5011,12 @@ async function startServer() {
     "event-bus": EVENT_BUS_URL,
     "workflow-engine": WORKFLOW_ENGINE_URL,
     "mojaloop-connector": MOJALOOP_CONNECTOR_URL,
+    "opensearch-analytics": OPENSEARCH_ANALYTICS_URL,
+    "lakehouse": LAKEHOUSE_URL,
+    "fluvio-streams": FLUVIO_STREAMS_URL,
+    "dapr-sidecar": DAPR_SIDECAR_URL,
+    "permify-authz": PERMIFY_AUTHZ_URL,
+    "keycloak-identity": KEYCLOAK_IDENTITY_URL,
   });
 
   async function proxyToService(serviceUrl: string, servicePath: string, req: Request, res: express.Response): Promise<void> {
@@ -6042,6 +6054,132 @@ async function startServer() {
   });
   app.all("/api/platform/mojaloop/stats", (req, res) => {
     void proxyToService(MOJALOOP_CONNECTOR_URL, "/v1/mojaloop/stats", req, res);
+  });
+
+  // OpenSearch Analytics proxy routes (Python :8125)
+  app.all("/api/platform/search/indices", (req, res) => {
+    void proxyToService(OPENSEARCH_ANALYTICS_URL, "/v1/search/indices", req, res);
+  });
+  app.all("/api/platform/search/query", (req, res) => {
+    void proxyToService(OPENSEARCH_ANALYTICS_URL, "/v1/search/query", req, res);
+  });
+  app.all("/api/platform/search/bulk-ingest", (req, res) => {
+    void proxyToService(OPENSEARCH_ANALYTICS_URL, "/v1/search/bulk-ingest", req, res);
+  });
+  app.all("/api/platform/search/dashboards", (req, res) => {
+    void proxyToService(OPENSEARCH_ANALYTICS_URL, "/v1/search/dashboards", req, res);
+  });
+  app.all("/api/platform/search/alerts", (req, res) => {
+    void proxyToService(OPENSEARCH_ANALYTICS_URL, "/v1/search/alerts", req, res);
+  });
+  app.all("/api/platform/search/stats", (req, res) => {
+    void proxyToService(OPENSEARCH_ANALYTICS_URL, "/v1/search/stats", req, res);
+  });
+
+  // Lakehouse proxy routes (Rust :8126)
+  app.all("/api/platform/lakehouse/datasets", (req, res) => {
+    void proxyToService(LAKEHOUSE_URL, "/v1/lakehouse/datasets", req, res);
+  });
+  app.all("/api/platform/lakehouse/ingest", (req, res) => {
+    void proxyToService(LAKEHOUSE_URL, "/v1/lakehouse/ingest", req, res);
+  });
+  app.all("/api/platform/lakehouse/query", (req, res) => {
+    void proxyToService(LAKEHOUSE_URL, "/v1/lakehouse/query", req, res);
+  });
+  app.all("/api/platform/lakehouse/pipelines", (req, res) => {
+    void proxyToService(LAKEHOUSE_URL, "/v1/lakehouse/pipelines", req, res);
+  });
+  app.all("/api/platform/lakehouse/ingestions", (req, res) => {
+    void proxyToService(LAKEHOUSE_URL, "/v1/lakehouse/ingestions", req, res);
+  });
+  app.all("/api/platform/lakehouse/queries", (req, res) => {
+    void proxyToService(LAKEHOUSE_URL, "/v1/lakehouse/queries", req, res);
+  });
+
+  // Fluvio Streams proxy routes (Rust :8127)
+  app.all("/api/platform/streams/topics", (req, res) => {
+    void proxyToService(FLUVIO_STREAMS_URL, "/v1/streams/topics", req, res);
+  });
+  app.all("/api/platform/streams/smart-modules", (req, res) => {
+    void proxyToService(FLUVIO_STREAMS_URL, "/v1/streams/smart-modules", req, res);
+  });
+  app.all("/api/platform/streams/connectors", (req, res) => {
+    void proxyToService(FLUVIO_STREAMS_URL, "/v1/streams/connectors", req, res);
+  });
+  app.all("/api/platform/streams/stats", (req, res) => {
+    void proxyToService(FLUVIO_STREAMS_URL, "/v1/streams/stats", req, res);
+  });
+
+  // Dapr Sidecar proxy routes (Go :8128)
+  app.all("/api/platform/dapr/apps", (req, res) => {
+    void proxyToService(DAPR_SIDECAR_URL, "/v1/dapr/apps", req, res);
+  });
+  app.all("/api/platform/dapr/state", (req, res) => {
+    void proxyToService(DAPR_SIDECAR_URL, "/v1/dapr/state", req, res);
+  });
+  app.all("/api/platform/dapr/publish", (req, res) => {
+    void proxyToService(DAPR_SIDECAR_URL, "/v1/dapr/publish", req, res);
+  });
+  app.all("/api/platform/dapr/messages", (req, res) => {
+    void proxyToService(DAPR_SIDECAR_URL, "/v1/dapr/messages", req, res);
+  });
+  app.all("/api/platform/dapr/bindings", (req, res) => {
+    void proxyToService(DAPR_SIDECAR_URL, "/v1/dapr/bindings", req, res);
+  });
+  app.all("/api/platform/dapr/secrets", (req, res) => {
+    void proxyToService(DAPR_SIDECAR_URL, "/v1/dapr/secrets", req, res);
+  });
+  app.all("/api/platform/dapr/invoke", (req, res) => {
+    void proxyToService(DAPR_SIDECAR_URL, "/v1/dapr/invoke", req, res);
+  });
+  app.all("/api/platform/dapr/stats", (req, res) => {
+    void proxyToService(DAPR_SIDECAR_URL, "/v1/dapr/stats", req, res);
+  });
+
+  // Permify Authorization proxy routes (Go :8129)
+  app.all("/api/platform/authz/check", (req, res) => {
+    void proxyToService(PERMIFY_AUTHZ_URL, "/v1/authz/check", req, res);
+  });
+  app.all("/api/platform/authz/roles", (req, res) => {
+    void proxyToService(PERMIFY_AUTHZ_URL, "/v1/authz/roles", req, res);
+  });
+  app.all("/api/platform/authz/policies", (req, res) => {
+    void proxyToService(PERMIFY_AUTHZ_URL, "/v1/authz/policies", req, res);
+  });
+  app.all("/api/platform/authz/permissions", (req, res) => {
+    void proxyToService(PERMIFY_AUTHZ_URL, "/v1/authz/permissions", req, res);
+  });
+  app.all("/api/platform/authz/stats", (req, res) => {
+    void proxyToService(PERMIFY_AUTHZ_URL, "/v1/authz/stats", req, res);
+  });
+
+  // Keycloak Identity proxy routes (Python :8130)
+  app.all("/api/platform/identity/realms", (req, res) => {
+    void proxyToService(KEYCLOAK_IDENTITY_URL, "/v1/identity/realms", req, res);
+  });
+  app.all("/api/platform/identity/clients", (req, res) => {
+    void proxyToService(KEYCLOAK_IDENTITY_URL, "/v1/identity/clients", req, res);
+  });
+  app.all("/api/platform/identity/users", (req, res) => {
+    void proxyToService(KEYCLOAK_IDENTITY_URL, "/v1/identity/users", req, res);
+  });
+  app.all("/api/platform/identity/providers", (req, res) => {
+    void proxyToService(KEYCLOAK_IDENTITY_URL, "/v1/identity/providers", req, res);
+  });
+  app.all("/api/platform/identity/sessions", (req, res) => {
+    void proxyToService(KEYCLOAK_IDENTITY_URL, "/v1/identity/sessions", req, res);
+  });
+  app.all("/api/platform/identity/token", (req, res) => {
+    void proxyToService(KEYCLOAK_IDENTITY_URL, "/v1/identity/token", req, res);
+  });
+  app.all("/api/platform/identity/token/introspect", (req, res) => {
+    void proxyToService(KEYCLOAK_IDENTITY_URL, "/v1/identity/token/introspect", req, res);
+  });
+  app.all("/api/platform/identity/logout", (req, res) => {
+    void proxyToService(KEYCLOAK_IDENTITY_URL, "/v1/identity/logout", req, res);
+  });
+  app.all("/api/platform/identity/stats", (req, res) => {
+    void proxyToService(KEYCLOAK_IDENTITY_URL, "/v1/identity/stats", req, res);
   });
 
   app.use(globalErrorHandler);

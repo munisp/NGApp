@@ -41,6 +41,10 @@ import {
   Radio,
   GitBranch,
   Globe,
+  Search,
+  Database,
+  Zap,
+  Key,
 } from "lucide-react";
 
 const menuItems = [
@@ -99,6 +103,12 @@ const menuItems = [
   { path: "/event-bus", label: "Event Bus", icon: Radio },
   { path: "/workflow-engine", label: "Workflows", icon: GitBranch },
   { path: "/mojaloop", label: "Mojaloop", icon: Globe },
+  { path: "/opensearch", label: "OpenSearch", icon: Search },
+  { path: "/lakehouse", label: "Lakehouse", icon: Database },
+  { path: "/fluvio-streams", label: "Streams", icon: Zap },
+  { path: "/dapr", label: "Dapr Mesh", icon: Layers },
+  { path: "/permify", label: "Authorization", icon: Shield },
+  { path: "/keycloak", label: "Identity", icon: Key },
 ] as const;
 
 export default function ArchiveAdminSidebar() {

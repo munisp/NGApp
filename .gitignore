@@ -120,6 +120,8 @@ services/loan-calculator-go/loan-calculator
 services/security-gateway-go/security-gateway
 services/teller-operations-go/teller-operations
 services/trade-finance-go/trade-finance
+services/dapr-sidecar-go/dapr-sidecar
+services/permify-authz-go/permify-authz
 
 # Rust build artifacts
 **/target/
