@@ -133,3 +133,7 @@ services/permify-authz-go/permify-authz
 # Go binaries
 services/*/agent-banking
 services/*/card-management
+*.exe
+# Go binaries
+services/*-go/*-go
+services/*-go/*.exe

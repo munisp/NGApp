@@ -6616,6 +6616,173 @@ async function startServer() {
     void proxyToService(FEEDBACK_URL, "/v1/feedback/submit", req, res);
   });
 
+  // ========= GAP ANALYSIS BATCH 1 SERVICES (ports 8156-8165) =========
+
+  // Money Market (Rust :8156)
+  const MONEY_MARKET_URL = process.env.MONEY_MARKET_URL || "http://localhost:8156";
+  app.all("/api/platform/money-market/deals", (req, res) => {
+    void proxyToService(MONEY_MARKET_URL, "/v1/money-market/deals", req, res);
+  });
+  app.all("/api/platform/money-market/calculate", (req, res) => {
+    void proxyToService(MONEY_MARKET_URL, "/v1/money-market/calculate", req, res);
+  });
+  app.all("/api/platform/money-market/stats", (req, res) => {
+    void proxyToService(MONEY_MARKET_URL, "/v1/money-market/stats", req, res);
+  });
+  app.all("/api/platform/money-market/healthz", (req, res) => {
+    void proxyToService(MONEY_MARKET_URL, "/healthz", req, res);
+  });
+
+  // Securities Trading (Rust :8157)
+  const SECURITIES_URL = process.env.SECURITIES_URL || "http://localhost:8157";
+  app.all("/api/platform/securities/list", (req, res) => {
+    void proxyToService(SECURITIES_URL, "/v1/securities", req, res);
+  });
+  app.all("/api/platform/securities/orders", (req, res) => {
+    void proxyToService(SECURITIES_URL, "/v1/securities/orders", req, res);
+  });
+  app.all("/api/platform/securities/holdings", (req, res) => {
+    void proxyToService(SECURITIES_URL, "/v1/securities/holdings", req, res);
+  });
+  app.all("/api/platform/securities/corporate-actions", (req, res) => {
+    void proxyToService(SECURITIES_URL, "/v1/securities/corporate-actions", req, res);
+  });
+  app.all("/api/platform/securities/stats", (req, res) => {
+    void proxyToService(SECURITIES_URL, "/v1/securities/stats", req, res);
+  });
+  app.all("/api/platform/securities/healthz", (req, res) => {
+    void proxyToService(SECURITIES_URL, "/healthz", req, res);
+  });
+
+  // Supply Chain Finance (Go :8158)
+  const SCF_URL = process.env.SCF_URL || "http://localhost:8158";
+  app.all("/api/platform/scf/invoices", (req, res) => {
+    void proxyToService(SCF_URL, "/v1/scf/invoices", req, res);
+  });
+  app.all("/api/platform/scf/programs", (req, res) => {
+    void proxyToService(SCF_URL, "/v1/scf/programs", req, res);
+  });
+  app.all("/api/platform/scf/stats", (req, res) => {
+    void proxyToService(SCF_URL, "/v1/scf/stats", req, res);
+  });
+  app.all("/api/platform/scf/healthz", (req, res) => {
+    void proxyToService(SCF_URL, "/healthz", req, res);
+  });
+
+  // Cash Pooling (Go :8159)
+  const CASH_POOLING_URL = process.env.CASH_POOLING_URL || "http://localhost:8159";
+  app.all("/api/platform/cash-pooling/pools", (req, res) => {
+    void proxyToService(CASH_POOLING_URL, "/v1/cash-pooling/pools", req, res);
+  });
+  app.all("/api/platform/cash-pooling/sweeps", (req, res) => {
+    void proxyToService(CASH_POOLING_URL, "/v1/cash-pooling/sweeps", req, res);
+  });
+  app.all("/api/platform/cash-pooling/stats", (req, res) => {
+    void proxyToService(CASH_POOLING_URL, "/v1/cash-pooling/stats", req, res);
+  });
+  app.all("/api/platform/cash-pooling/healthz", (req, res) => {
+    void proxyToService(CASH_POOLING_URL, "/healthz", req, res);
+  });
+
+  // Bank Guarantees (Go :8160)
+  const GUARANTEES_URL = process.env.GUARANTEES_URL || "http://localhost:8160";
+  app.all("/api/platform/guarantees/list", (req, res) => {
+    void proxyToService(GUARANTEES_URL, "/v1/guarantees", req, res);
+  });
+  app.all("/api/platform/guarantees/stats", (req, res) => {
+    void proxyToService(GUARANTEES_URL, "/v1/guarantees/stats", req, res);
+  });
+  app.all("/api/platform/guarantees/healthz", (req, res) => {
+    void proxyToService(GUARANTEES_URL, "/healthz", req, res);
+  });
+
+  // OTC Derivatives (Rust :8161)
+  const DERIVATIVES_URL = process.env.DERIVATIVES_URL || "http://localhost:8161";
+  app.all("/api/platform/derivatives/list", (req, res) => {
+    void proxyToService(DERIVATIVES_URL, "/v1/derivatives", req, res);
+  });
+  app.all("/api/platform/derivatives/price", (req, res) => {
+    void proxyToService(DERIVATIVES_URL, "/v1/derivatives/price", req, res);
+  });
+  app.all("/api/platform/derivatives/risk", (req, res) => {
+    void proxyToService(DERIVATIVES_URL, "/v1/derivatives/risk", req, res);
+  });
+  app.all("/api/platform/derivatives/healthz", (req, res) => {
+    void proxyToService(DERIVATIVES_URL, "/healthz", req, res);
+  });
+
+  // ISO 20022 Hub (Rust :8162)
+  const ISO20022_URL = process.env.ISO20022_URL || "http://localhost:8162";
+  app.all("/api/platform/iso20022/messages", (req, res) => {
+    void proxyToService(ISO20022_URL, "/v1/iso20022/messages", req, res);
+  });
+  app.all("/api/platform/iso20022/rules", (req, res) => {
+    void proxyToService(ISO20022_URL, "/v1/iso20022/rules", req, res);
+  });
+  app.all("/api/platform/iso20022/parse", (req, res) => {
+    void proxyToService(ISO20022_URL, "/v1/iso20022/parse", req, res);
+  });
+  app.all("/api/platform/iso20022/stats", (req, res) => {
+    void proxyToService(ISO20022_URL, "/v1/iso20022/stats", req, res);
+  });
+  app.all("/api/platform/iso20022/healthz", (req, res) => {
+    void proxyToService(ISO20022_URL, "/healthz", req, res);
+  });
+
+  // Basel III/IV Engine (Rust :8163)
+  const BASEL_URL = process.env.BASEL_URL || "http://localhost:8163";
+  app.all("/api/platform/basel/exposures", (req, res) => {
+    void proxyToService(BASEL_URL, "/v1/basel/exposures", req, res);
+  });
+  app.all("/api/platform/basel/capital", (req, res) => {
+    void proxyToService(BASEL_URL, "/v1/basel/capital", req, res);
+  });
+  app.all("/api/platform/basel/calculate-rwa", (req, res) => {
+    void proxyToService(BASEL_URL, "/v1/basel/calculate-rwa", req, res);
+  });
+  app.all("/api/platform/basel/pillar3", (req, res) => {
+    void proxyToService(BASEL_URL, "/v1/basel/pillar3", req, res);
+  });
+  app.all("/api/platform/basel/healthz", (req, res) => {
+    void proxyToService(BASEL_URL, "/healthz", req, res);
+  });
+
+  // IFRS 9 Engine (Rust :8164)
+  const IFRS9_URL = process.env.IFRS9_URL || "http://localhost:8164";
+  app.all("/api/platform/ifrs9/exposures", (req, res) => {
+    void proxyToService(IFRS9_URL, "/v1/ifrs9/exposures", req, res);
+  });
+  app.all("/api/platform/ifrs9/transition-matrix", (req, res) => {
+    void proxyToService(IFRS9_URL, "/v1/ifrs9/transition-matrix", req, res);
+  });
+  app.all("/api/platform/ifrs9/calculate-ecl", (req, res) => {
+    void proxyToService(IFRS9_URL, "/v1/ifrs9/calculate-ecl", req, res);
+  });
+  app.all("/api/platform/ifrs9/summary", (req, res) => {
+    void proxyToService(IFRS9_URL, "/v1/ifrs9/summary", req, res);
+  });
+  app.all("/api/platform/ifrs9/healthz", (req, res) => {
+    void proxyToService(IFRS9_URL, "/healthz", req, res);
+  });
+
+  // Open Banking (Go :8165)
+  const OPEN_BANKING_URL = process.env.OPEN_BANKING_URL || "http://localhost:8165";
+  app.all("/api/platform/open-banking/consents", (req, res) => {
+    void proxyToService(OPEN_BANKING_URL, "/v1/open-banking/consents", req, res);
+  });
+  app.all("/api/platform/open-banking/tpps", (req, res) => {
+    void proxyToService(OPEN_BANKING_URL, "/v1/open-banking/tpps", req, res);
+  });
+  app.all("/api/platform/open-banking/api-catalog", (req, res) => {
+    void proxyToService(OPEN_BANKING_URL, "/v1/open-banking/api-catalog", req, res);
+  });
+  app.all("/api/platform/open-banking/stats", (req, res) => {
+    void proxyToService(OPEN_BANKING_URL, "/v1/open-banking/stats", req, res);
+  });
+  app.all("/api/platform/open-banking/healthz", (req, res) => {
+    void proxyToService(OPEN_BANKING_URL, "/healthz", req, res);
+  });
+
   // GL Account Management endpoints
   app.get("/api/platform/gl/accounts", (_req, res) => {
     const { getGLAccounts } = require("./lib/glAccountManagement");

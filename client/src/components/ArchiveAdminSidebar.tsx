@@ -71,6 +71,8 @@ import {
   Smartphone,
   Scale,
   Star,
+  Sigma,
+  ShieldCheck,
 } from "lucide-react";
 
 const menuItems = [
@@ -200,6 +202,16 @@ const menuItems = [
   { path: "/pos-terminals", label: "POS Terminals", icon: Smartphone },
   { path: "/collateral-valuation", label: "Collateral Valuation", icon: Scale },
   { path: "/customer-feedback", label: "Feedback & NPS", icon: Star },
+  { path: "/money-market", label: "Money Market", icon: Banknote },
+  { path: "/securities-trading", label: "Securities Trading", icon: TrendingUp },
+  { path: "/supply-chain-finance", label: "Supply Chain Finance", icon: Link2 },
+  { path: "/cash-pooling", label: "Cash Pooling", icon: Layers },
+  { path: "/bank-guarantees", label: "Bank Guarantees", icon: ShieldCheck },
+  { path: "/otc-derivatives", label: "OTC Derivatives", icon: Sigma },
+  { path: "/iso20022-hub", label: "ISO 20022 Hub", icon: FileText },
+  { path: "/basel-engine", label: "Basel III/IV Engine", icon: Scale },
+  { path: "/ifrs9-engine", label: "IFRS 9 Engine", icon: Calculator },
+  { path: "/open-banking", label: "Open Banking", icon: Globe },
 ] as const;
 
 export default function ArchiveAdminSidebar() {

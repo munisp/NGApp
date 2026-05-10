@@ -126,6 +126,14 @@ jobs:
         run: cd services/salary-processing-go && go build -o salary-processing .
       - name: Build POS Terminal Management Service
         run: cd services/pos-terminal-go && go build -o pos-terminal .
+      - name: Build Supply Chain Finance Service
+        run: cd services/supply-chain-finance-go && go build -o supply-chain-finance .
+      - name: Build Cash Pooling Service
+        run: cd services/cash-pooling-go && go build -o cash-pooling .
+      - name: Build Bank Guarantees Service
+        run: cd services/bank-guarantees-go && go build -o bank-guarantees .
+      - name: Build Open Banking Service
+        run: cd services/open-banking-go && go build -o open-banking .
 
   rust-services:
     name: Rust Services
@@ -151,6 +159,12 @@ jobs:
             services/data-export-rs
             services/credit-bureau-rs
             services/collateral-valuation-rs
+            services/money-market-rs
+            services/securities-trading-rs
+            services/otc-derivatives-rs
+            services/iso20022-hub-rs
+            services/basel-engine-rs
+            services/ifrs9-engine-rs
       - name: Build Resilience Service
         run: cd services/resilience-service-rs && cargo build --release
       - name: Build Agriculture Banking Service
@@ -181,6 +195,18 @@ jobs:
         run: cd services/credit-bureau-rs && cargo build --release
       - name: Build Collateral Valuation Engine
         run: cd services/collateral-valuation-rs && cargo build --release
+      - name: Build Money Market Service
+        run: cd services/money-market-rs && cargo build --release
+      - name: Build Securities Trading Service
+        run: cd services/securities-trading-rs && cargo build --release
+      - name: Build OTC Derivatives Service
+        run: cd services/otc-derivatives-rs && cargo build --release
+      - name: Build ISO 20022 Hub
+        run: cd services/iso20022-hub-rs && cargo build --release
+      - name: Build Basel III/IV Engine
+        run: cd services/basel-engine-rs && cargo build --release
+      - name: Build IFRS 9 Engine
+        run: cd services/ifrs9-engine-rs && cargo build --release
 
   python-services:
     name: Python Services

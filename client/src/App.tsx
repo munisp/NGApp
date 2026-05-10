@@ -151,6 +151,16 @@ const DocumentManagementWorkspace = lazy(() => import("@/pages/DocumentManagemen
 const POSTerminalWorkspace = lazy(() => import("@/pages/POSTerminalWorkspace"));
 const CollateralValuationWorkspace = lazy(() => import("@/pages/CollateralValuationWorkspace"));
 const CustomerFeedbackWorkspace = lazy(() => import("@/pages/CustomerFeedbackWorkspace"));
+const MoneyMarketWorkspace = lazy(() => import("@/pages/MoneyMarketWorkspace"));
+const SecuritiesTradingWorkspace = lazy(() => import("@/pages/SecuritiesTradingWorkspace"));
+const SupplyChainFinanceWorkspace = lazy(() => import("@/pages/SupplyChainFinanceWorkspace"));
+const CashPoolingWorkspace = lazy(() => import("@/pages/CashPoolingWorkspace"));
+const BankGuaranteesWorkspace = lazy(() => import("@/pages/BankGuaranteesWorkspace"));
+const OtcDerivativesWorkspace = lazy(() => import("@/pages/OtcDerivativesWorkspace"));
+const ISO20022HubWorkspace = lazy(() => import("@/pages/ISO20022HubWorkspace"));
+const BaselEngineWorkspace = lazy(() => import("@/pages/BaselEngineWorkspace"));
+const IFRS9EngineWorkspace = lazy(() => import("@/pages/IFRS9EngineWorkspace"));
+const OpenBankingWorkspace = lazy(() => import("@/pages/OpenBankingWorkspace"));
 const AdminAnalyticsPage = lazy(() => import("@/pages/AdminModulePages").then((module) => ({ default: module.AdminAnalyticsPage })));
 const AdminBankingOpsPage = lazy(() => import("@/pages/AdminModulePages").then((module) => ({ default: module.AdminBankingOpsPage })));
 const AdminFeatureFlagsPage = lazy(() => import("@/pages/AdminModulePages").then((module) => ({ default: module.AdminFeatureFlagsPage })));
@@ -356,6 +366,16 @@ export default function App() {
         <Route path="/pos-terminals" component={renderInAdminShell(POSTerminalWorkspace)} />
         <Route path="/collateral-valuation" component={renderInAdminShell(CollateralValuationWorkspace)} />
         <Route path="/customer-feedback" component={renderInAdminShell(CustomerFeedbackWorkspace)} />
+        <Route path="/money-market" component={renderInAdminShell(MoneyMarketWorkspace)} />
+        <Route path="/securities-trading" component={renderInAdminShell(SecuritiesTradingWorkspace)} />
+        <Route path="/supply-chain-finance" component={renderInAdminShell(SupplyChainFinanceWorkspace)} />
+        <Route path="/cash-pooling" component={renderInAdminShell(CashPoolingWorkspace)} />
+        <Route path="/bank-guarantees" component={renderInAdminShell(BankGuaranteesWorkspace)} />
+        <Route path="/otc-derivatives" component={renderInAdminShell(OtcDerivativesWorkspace)} />
+        <Route path="/iso20022-hub" component={renderInAdminShell(ISO20022HubWorkspace)} />
+        <Route path="/basel-engine" component={renderInAdminShell(BaselEngineWorkspace)} />
+        <Route path="/ifrs9-engine" component={renderInAdminShell(IFRS9EngineWorkspace)} />
+        <Route path="/open-banking" component={renderInAdminShell(OpenBankingWorkspace)} />
 
         <Route component={NotFound} />
       </Switch>
