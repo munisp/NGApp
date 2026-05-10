@@ -52,6 +52,9 @@ import {
   AlertCircle,
   GitCompare,
   BellRing,
+  Moon,
+  Percent,
+  Gauge,
 } from "lucide-react";
 
 const menuItems = [
@@ -154,6 +157,9 @@ const menuItems = [
   { path: "/reconciliation", label: "Reconciliation", icon: GitCompare },
   { path: "/fee-schedules", label: "Fee Schedules", icon: Receipt },
   { path: "/notification-preferences", label: "Notif Preferences", icon: BellRing },
+  { path: "/dormancy", label: "Dormancy", icon: Moon },
+  { path: "/interest-accrual", label: "Interest Accrual", icon: Percent },
+  { path: "/limit-management", label: "Limits", icon: Gauge },
 ] as const;
 
 export default function ArchiveAdminSidebar() {

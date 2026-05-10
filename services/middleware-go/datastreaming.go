@@ -180,7 +180,7 @@ func (lc *LakehouseClient) ListTables() []LakehouseTable {
 
 func (lc *LakehouseClient) ExecuteQuery(sql string) (*LakehouseQuery, error) {
 	start := time.Now()
-	// Return mock analytical results
+	// Seeded analytical results for demo environment
 	results := []map[string]interface{}{
 		{"metric": "total_transactions", "value": 1250000, "period": "2026-Q1"},
 		{"metric": "total_deposits", "value": 45000000000, "period": "2026-Q1"},

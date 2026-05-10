@@ -6442,6 +6442,48 @@ async function startServer() {
     void proxyToService(AGENT_BANK_URL, "/v1/agents/activate", req, res);
   });
 
+  // Dormancy engine endpoints
+  app.get("/api/platform/dormancy/accounts", (_req, res) => {
+    const { getDormantAccounts } = require("./lib/dormancyEngine");
+    const accounts = getDormantAccounts();
+    res.json({ items: accounts, total: accounts.length });
+  });
+  app.get("/api/platform/dormancy/stats", (_req, res) => {
+    const { getDormancyStats } = require("./lib/dormancyEngine");
+    res.json(getDormancyStats());
+  });
+
+  // Interest accrual engine endpoints
+  app.get("/api/platform/interest-accrual/records", (_req, res) => {
+    const { getAccrualRecords } = require("./lib/interestAccrualEngine");
+    const records = getAccrualRecords();
+    res.json({ items: records, total: records.length });
+  });
+  app.post("/api/platform/interest-accrual/compute", (req, res) => {
+    const { computeDailyAccrual } = require("./lib/interestAccrualEngine");
+    const { principal, annualRate, basis } = req.body;
+    if (!principal || !annualRate) { res.status(400).json({ error: "principal and annualRate required", code: "VALIDATION_ERROR" }); return; }
+    res.json({ dailyAccrual: computeDailyAccrual(principal, annualRate, basis || "365") });
+  });
+
+  // Limit management endpoints
+  app.get("/api/platform/limits/config", (_req, res) => {
+    const { getTransactionLimits } = require("./lib/limitManagement");
+    const limits = getTransactionLimits();
+    res.json({ items: limits, total: limits.length });
+  });
+  app.get("/api/platform/limits/utilization", (_req, res) => {
+    const { getLimitUtilizations } = require("./lib/limitManagement");
+    const util = getLimitUtilizations();
+    res.json({ items: util, total: util.length });
+  });
+  app.post("/api/platform/limits/check", (req, res) => {
+    const { checkLimit } = require("./lib/limitManagement");
+    const { tier, channel, amount } = req.body;
+    if (!tier || !channel || !amount) { res.status(400).json({ error: "tier, channel, and amount required", code: "VALIDATION_ERROR" }); return; }
+    res.json(checkLimit(tier, channel, amount));
+  });
+
   // B6: Treasury portfolio endpoints
   app.get("/api/platform/treasury/investments", (_req, res) => {
     const { getInvestments } = require("./lib/treasuryPortfolio");

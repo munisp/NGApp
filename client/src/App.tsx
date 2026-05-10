@@ -124,6 +124,9 @@ const CreditRiskWorkspace = lazy(() => import("@/pages/CreditRiskWorkspace"));
 const ReconciliationWorkspace = lazy(() => import("@/pages/ReconciliationWorkspace"));
 const FeeSchedulesWorkspace = lazy(() => import("@/pages/FeeSchedulesWorkspace"));
 const NotificationPreferencesWorkspace = lazy(() => import("@/pages/NotificationPreferencesWorkspace"));
+const DormancyWorkspace = lazy(() => import("@/pages/DormancyWorkspace"));
+const InterestAccrualWorkspace = lazy(() => import("@/pages/InterestAccrualWorkspace"));
+const LimitManagementWorkspace = lazy(() => import("@/pages/LimitManagementWorkspace"));
 const AdminAnalyticsPage = lazy(() => import("@/pages/AdminModulePages").then((module) => ({ default: module.AdminAnalyticsPage })));
 const AdminBankingOpsPage = lazy(() => import("@/pages/AdminModulePages").then((module) => ({ default: module.AdminBankingOpsPage })));
 const AdminFeatureFlagsPage = lazy(() => import("@/pages/AdminModulePages").then((module) => ({ default: module.AdminFeatureFlagsPage })));
@@ -302,6 +305,9 @@ export default function App() {
         <Route path="/reconciliation" component={renderInAdminShell(ReconciliationWorkspace)} />
         <Route path="/fee-schedules" component={renderInAdminShell(FeeSchedulesWorkspace)} />
         <Route path="/notification-preferences" component={renderInAdminShell(NotificationPreferencesWorkspace)} />
+        <Route path="/dormancy" component={renderInAdminShell(DormancyWorkspace)} />
+        <Route path="/interest-accrual" component={renderInAdminShell(InterestAccrualWorkspace)} />
+        <Route path="/limit-management" component={renderInAdminShell(LimitManagementWorkspace)} />
 
         <Route component={NotFound} />
       </Switch>
