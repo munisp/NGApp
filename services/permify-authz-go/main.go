@@ -192,7 +192,38 @@ func handleCheck(w http.ResponseWriter, r *http.Request) {
 						}
 					}
 					if ck == "amount" {
-						// Skip complex amount checks in this simplified version
+						if req.Context != nil {
+							ctxAmt, hasAmt := req.Context["amount"]
+							if hasAmt {
+								var threshold float64
+								op := ">"
+								cvStr := cv
+								if len(cvStr) > 0 && (cvStr[0] == '>' || cvStr[0] == '<') {
+									op = string(cvStr[0])
+									cvStr = cvStr[1:]
+								}
+								_, err := fmt.Sscanf(cvStr, "%f", &threshold)
+								if err != nil {
+									conditionMatch = false
+									continue
+								}
+								var actualAmt float64
+								_, amtErr := fmt.Sscanf(ctxAmt, "%f", &actualAmt)
+								if amtErr != nil {
+									conditionMatch = false
+									continue
+								}
+								if op == ">" && actualAmt <= threshold {
+									conditionMatch = false
+								} else if op == "<" && actualAmt >= threshold {
+									conditionMatch = false
+								}
+							} else {
+								conditionMatch = false
+							}
+						} else {
+							conditionMatch = false
+						}
 					}
 				}
 				if conditionMatch {

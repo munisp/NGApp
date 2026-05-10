@@ -41,6 +41,7 @@ import {
   serializePartnerOnboardingState,
   submitPartnerOnboarding,
   updatePartnerOnboardingDraft,
+  type PartnerOnboardingState,
 } from "./partnerOnboardingRuntime";
 import {
   notifyPartnerApprovalDecision,
@@ -1704,8 +1705,8 @@ async function refreshPartnerOnboardingRuntimeFromDb() {
   const parsed = await loadRuntimeStateFromDb();
   if (!parsed) return;
   hydratePartnerOnboardingState({
-    partnerOnboardingRecords: parsed.partnerOnboardingRecords,
-    partnerApprovalRecords: parsed.partnerApprovalRecords,
+    partnerOnboardingRecords: parsed.partnerOnboardingRecords as PartnerOnboardingState["partnerOnboardingRecords"],
+    partnerApprovalRecords: parsed.partnerApprovalRecords as PartnerOnboardingState["partnerApprovalRecords"],
   });
 }
 

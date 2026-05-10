@@ -1,37 +1,37 @@
 import {
-  double,
-  int,
-  json,
+  doublePrecision,
+  integer,
+  jsonb,
   index,
-  mysqlEnum,
-  mysqlTable,
+  pgTable,
+  serial,
   text,
   timestamp,
   uniqueIndex,
   varchar,
-} from "drizzle-orm/mysql-core";
+} from "drizzle-orm/pg-core";
 
-export const users = mysqlTable("users", {
-  id: int("id").autoincrement().primaryKey(),
+export const users = pgTable("users", {
+  id: serial("id").primaryKey(),
   openId: varchar("openId", { length: 64 }).notNull().unique(),
   name: text("name"),
   email: varchar("email", { length: 320 }),
   loginMethod: varchar("loginMethod", { length: 64 }),
-  role: mysqlEnum("role", ["user", "admin"]).default("user").notNull(),
+  role: text("role").default("user").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
   lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),
 });
 
-export const tenants = mysqlTable("tenants", {
-  id: int("id").autoincrement().primaryKey(),
+export const tenants = pgTable("tenants", {
+  id: serial("id").primaryKey(),
   tenantId: varchar("tenantId", { length: 64 }).notNull().unique(),
   name: varchar("name", { length: 191 }).notNull(),
-  onboardingStatus: mysqlEnum("onboardingStatus", ["draft", "active", "restricted"]).notNull(),
-  segment: mysqlEnum("segment", ["retail", "operations", "growth"]).notNull(),
+  onboardingStatus: text("onboardingStatus").notNull(),
+  segment: text("segment").notNull(),
   region: varchar("region", { length: 96 }).notNull(),
-  enabledModules: json("enabledModules").$type<string[]>().notNull(),
-  whiteLabel: json("whiteLabel")
+  enabledModules: jsonb("enabledModules").$type<string[]>().notNull(),
+  whiteLabel: jsonb("whiteLabel")
     .$type<{
       displayName: string;
       legalEntity: string;
@@ -44,29 +44,29 @@ export const tenants = mysqlTable("tenants", {
     }>()
     .notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 });
 
-export const tenantFeatureFlags = mysqlTable("tenantFeatureFlags", {
-  id: int("id").autoincrement().primaryKey(),
+export const tenantFeatureFlags = pgTable("tenantFeatureFlags", {
+  id: serial("id").primaryKey(),
   tenantId: varchar("tenantId", { length: 64 }).notNull(),
   featureKey: varchar("featureKey", { length: 96 }).notNull(),
   label: varchar("label", { length: 191 }).notNull(),
-  category: mysqlEnum("category", ["onboarding", "payments", "cards", "operations", "compliance", "platform"]).notNull(),
+  category: text("category").notNull(),
   description: text("description").notNull(),
-  enabled: int("enabled").default(0).notNull(),
-  rolloutStage: mysqlEnum("rolloutStage", ["pilot", "controlled", "general"]).notNull(),
-  adminManaged: int("adminManaged").default(1).notNull(),
-  dependsOn: json("dependsOn").$type<string[]>().notNull(),
+  enabled: integer("enabled").default(0).notNull(),
+  rolloutStage: text("rolloutStage").notNull(),
+  adminManaged: integer("adminManaged").default(1).notNull(),
+  dependsOn: jsonb("dependsOn").$type<string[]>().notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 }, (table) => ({
   tenantFeatureLookupIdx: uniqueIndex("tenant_feature_lookup_idx").on(table.tenantId, table.featureKey),
   tenantFeatureCategoryIdx: index("tenant_feature_category_idx").on(table.tenantId, table.category, table.enabled),
 }));
 
-export const customers = mysqlTable("customers", {
-  id: int("id").autoincrement().primaryKey(),
+export const customers = pgTable("customers", {
+  id: serial("id").primaryKey(),
   customerId: varchar("customerId", { length: 64 }).notNull().unique(),
   tenantId: varchar("tenantId", { length: 64 }).notNull(),
   name: varchar("name", { length: 191 }).notNull(),
@@ -75,93 +75,93 @@ export const customers = mysqlTable("customers", {
   location: varchar("location", { length: 128 }).notNull(),
   relationshipManager: varchar("relationshipManager", { length: 128 }).notNull(),
   risk: varchar("risk", { length: 64 }).notNull(),
-  status: mysqlEnum("status", ["Active", "Pending", "Review", "Dormant"]).notNull(),
+  status: text("status").notNull(),
   bvn: varchar("bvn", { length: 32 }).notNull(),
   phone: varchar("phone", { length: 32 }).notNull(),
-  balance: double("balance").default(0).notNull(),
+  balance: doublePrecision("balance").default(0).notNull(),
   lastTouchpointLabel: varchar("lastTouchpointLabel", { length: 128 }).notNull(),
   lastTouchpointAt: timestamp("lastTouchpointAt").defaultNow().notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 }, (table) => ({
   customerTenantStatusIdx: index("customer_tenant_status_idx").on(table.tenantId, table.status, table.segment),
   customerManagerTouchpointIdx: index("customer_manager_touchpoint_idx").on(table.relationshipManager, table.lastTouchpointAt),
   customerBvnIdx: uniqueIndex("customer_bvn_idx").on(table.bvn),
 }));
 
-export const customerCards = mysqlTable("customerCards", {
-  id: int("id").autoincrement().primaryKey(),
+export const customerCards = pgTable("customerCards", {
+  id: serial("id").primaryKey(),
   cardId: varchar("cardId", { length: 64 }).notNull().unique(),
   customerId: varchar("customerId", { length: 64 }).notNull(),
-  cardType: mysqlEnum("cardType", ["virtual", "physical"]).notNull(),
-  brand: mysqlEnum("brand", ["visa", "mastercard"]).notNull(),
+  cardType: text("cardType").notNull(),
+  brand: text("brand").notNull(),
   lastFour: varchar("lastFour", { length: 4 }).notNull(),
   expiryDate: varchar("expiryDate", { length: 16 }).notNull(),
   cardHolder: varchar("cardHolder", { length: 191 }).notNull(),
-  balance: double("balance").default(0).notNull(),
-  isLocked: int("isLocked").default(0).notNull(),
-  controls: json("controls").$type<{ online: boolean; atm: boolean; international: boolean }>().notNull(),
-  spendingLimits: json("spendingLimits").$type<{ daily: number; atm: number; online: number }>().notNull(),
-  colorTone: mysqlEnum("colorTone", ["blue", "graphite"]).notNull(),
+  balance: doublePrecision("balance").default(0).notNull(),
+  isLocked: integer("isLocked").default(0).notNull(),
+  controls: jsonb("controls").$type<{ online: boolean; atm: boolean; international: boolean }>().notNull(),
+  spendingLimits: jsonb("spendingLimits").$type<{ daily: number; atm: number; online: number }>().notNull(),
+  colorTone: text("colorTone").notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 
-export const customerCardEvents = mysqlTable("customerCardEvents", {
-  id: int("id").autoincrement().primaryKey(),
+export const customerCardEvents = pgTable("customerCardEvents", {
+  id: serial("id").primaryKey(),
   eventId: varchar("eventId", { length: 64 }).notNull().unique(),
   cardId: varchar("cardId", { length: 64 }).notNull(),
   customerId: varchar("customerId", { length: 64 }).notNull(),
   title: varchar("title", { length: 191 }).notNull(),
   detail: text("detail").notNull(),
-  severity: mysqlEnum("severity", ["info", "warning", "success"]).notNull(),
+  severity: text("severity").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 
-export const customerSavedBillers = mysqlTable("customerSavedBillers", {
-  id: int("id").autoincrement().primaryKey(),
+export const customerSavedBillers = pgTable("customerSavedBillers", {
+  id: serial("id").primaryKey(),
   billerRecordId: varchar("billerRecordId", { length: 64 }).notNull().unique(),
   customerId: varchar("customerId", { length: 64 }).notNull(),
-  category: mysqlEnum("category", ["electricity", "water", "internet", "school", "airtime"]).notNull(),
+  category: text("category").notNull(),
   provider: varchar("provider", { length: 191 }).notNull(),
   billerId: varchar("billerId", { length: 96 }).notNull(),
   customerReference: varchar("customerReference", { length: 128 }).notNull(),
   nickname: varchar("nickname", { length: 128 }).notNull(),
-  lastAmount: double("lastAmount").default(0).notNull(),
+  lastAmount: doublePrecision("lastAmount").default(0).notNull(),
   verifiedName: varchar("verifiedName", { length: 191 }),
   lastPaidAt: timestamp("lastPaidAt"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 
-export const customerBillPayments = mysqlTable("customerBillPayments", {
-  id: int("id").autoincrement().primaryKey(),
+export const customerBillPayments = pgTable("customerBillPayments", {
+  id: serial("id").primaryKey(),
   paymentId: varchar("paymentId", { length: 64 }).notNull().unique(),
   customerId: varchar("customerId", { length: 64 }).notNull(),
-  category: mysqlEnum("category", ["electricity", "water", "internet", "school", "airtime"]).notNull(),
+  category: text("category").notNull(),
   provider: varchar("provider", { length: 191 }).notNull(),
-  amount: double("amount").default(0).notNull(),
-  status: mysqlEnum("status", ["scheduled", "paid", "pending"]).notNull(),
+  amount: doublePrecision("amount").default(0).notNull(),
+  status: text("status").notNull(),
   paidAt: timestamp("paidAt").defaultNow().notNull(),
   reference: varchar("reference", { length: 128 }).notNull(),
   billerId: varchar("billerId", { length: 96 }),
   customerReference: varchar("customerReference", { length: 128 }),
   customerName: varchar("customerName", { length: 191 }),
   scheduledFor: timestamp("scheduledFor"),
-  evidenceStatus: mysqlEnum("evidenceStatus", ["verified", "ready", "scheduled"]),
-  channel: mysqlEnum("channel", ["self-service", "saved-biller", "operator-assisted"]),
+  evidenceStatus: text("evidenceStatus"),
+  channel: text("channel"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 
-export const customerTransfers = mysqlTable("customerTransfers", {
-  id: int("id").autoincrement().primaryKey(),
+export const customerTransfers = pgTable("customerTransfers", {
+  id: serial("id").primaryKey(),
   transferId: varchar("transferId", { length: 64 }).notNull().unique(),
   customerId: varchar("customerId", { length: 64 }).notNull(),
   beneficiaryId: varchar("beneficiaryId", { length: 64 }),
   beneficiaryName: varchar("beneficiaryName", { length: 191 }).notNull(),
-  amount: double("amount").default(0).notNull(),
+  amount: doublePrecision("amount").default(0).notNull(),
   narration: text("narration"),
-  transferType: mysqlEnum("transferType", ["bank", "wallet", "workflow"]).notNull(),
-  status: mysqlEnum("status", ["draft", "otp_pending", "submitted", "completed", "failed"]).notNull(),
+  transferType: text("transferType").notNull(),
+  status: text("status").notNull(),
   bankCode: varchar("bankCode", { length: 32 }),
   bankName: varchar("bankName", { length: 96 }),
   accountNumber: varchar("accountNumber", { length: 32 }),
@@ -170,25 +170,25 @@ export const customerTransfers = mysqlTable("customerTransfers", {
   otpReference: varchar("otpReference", { length: 64 }),
   otpIssuedAt: timestamp("otpIssuedAt"),
   confirmedAt: timestamp("confirmedAt"),
-  approvalState: mysqlEnum("approvalState", ["not_required", "pending_review", "approved"]),
+  approvalState: text("approvalState"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 }, (table) => ({
   transferCustomerStatusIdx: index("transfer_customer_status_idx").on(table.customerId, table.status, table.createdAt),
   transferApprovalIdx: index("transfer_approval_idx").on(table.customerId, table.approvalState, table.updatedAt),
   transferOtpIdx: index("transfer_otp_idx").on(table.otpReference, table.status),
 }));
 
-export const customerApprovals = mysqlTable("customerApprovals", {
-  id: int("id").autoincrement().primaryKey(),
+export const customerApprovals = pgTable("customerApprovals", {
+  id: serial("id").primaryKey(),
   approvalId: varchar("approvalId", { length: 64 }).notNull().unique(),
   customerId: varchar("customerId", { length: 64 }).notNull(),
-  entityType: mysqlEnum("entityType", ["card_control", "scheduled_bill", "statement_export"]).notNull(),
+  entityType: text("entityType").notNull(),
   entityId: varchar("entityId", { length: 64 }).notNull(),
   title: varchar("title", { length: 191 }).notNull(),
   detail: text("detail").notNull(),
   route: varchar("route", { length: 191 }).notNull(),
-  state: mysqlEnum("state", ["pending", "approved", "rejected"]).notNull(),
+  state: text("state").notNull(),
   requestedAt: timestamp("requestedAt").defaultNow().notNull(),
   requestedByRole: varchar("requestedByRole", { length: 64 }).notNull(),
   requestedById: varchar("requestedById", { length: 96 }).notNull(),
@@ -200,27 +200,27 @@ export const customerApprovals = mysqlTable("customerApprovals", {
   approvalRoleStateIdx: index("approval_role_state_idx").on(table.approvalRole, table.state, table.requestedAt),
 }));
 
-export const customerStatementExports = mysqlTable("customerStatementExports", {
-  id: int("id").autoincrement().primaryKey(),
+export const customerStatementExports = pgTable("customerStatementExports", {
+  id: serial("id").primaryKey(),
   exportRequestId: varchar("exportRequestId", { length: 64 }).notNull().unique(),
   customerId: varchar("customerId", { length: 64 }).notNull(),
   exportJobId: varchar("exportJobId", { length: 64 }).notNull(),
-  format: mysqlEnum("format", ["csv", "xlsx"]).notNull(),
-  rowCount: int("rowCount").default(0).notNull(),
+  format: text("format").notNull(),
+  rowCount: integer("rowCount").default(0).notNull(),
   title: varchar("title", { length: 191 }).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 
-export const customerStatements = mysqlTable("customerStatements", {
-  id: int("id").autoincrement().primaryKey(),
+export const customerStatements = pgTable("customerStatements", {
+  id: serial("id").primaryKey(),
   statementId: varchar("statementId", { length: 64 }).notNull().unique(),
   customerId: varchar("customerId", { length: 64 }).notNull(),
   title: varchar("title", { length: 191 }).notNull(),
   detail: text("detail").notNull(),
-  amount: double("amount").default(0).notNull(),
-  direction: mysqlEnum("direction", ["credit", "debit"]).notNull(),
-  statementType: mysqlEnum("statementType", ["transfer", "bill_payment", "workflow", "deposit"]).notNull(),
-  status: mysqlEnum("status", ["completed", "pending", "prepared"]).notNull(),
+  amount: doublePrecision("amount").default(0).notNull(),
+  direction: text("direction").notNull(),
+  statementType: text("statementType").notNull(),
+  status: text("status").notNull(),
   occurredAt: timestamp("occurredAt").defaultNow().notNull(),
   reference: varchar("reference", { length: 128 }),
   category: varchar("category", { length: 96 }),
@@ -230,52 +230,52 @@ export const customerStatements = mysqlTable("customerStatements", {
   statementCustomerTypeIdx: index("statement_customer_type_idx").on(table.customerId, table.statementType, table.status),
 }));
 
-export const customerNotifications = mysqlTable("customerNotifications", {
-  id: int("id").autoincrement().primaryKey(),
+export const customerNotifications = pgTable("customerNotifications", {
+  id: serial("id").primaryKey(),
   notificationId: varchar("notificationId", { length: 64 }).notNull().unique(),
   customerId: varchar("customerId", { length: 64 }).notNull(),
   title: varchar("title", { length: 191 }).notNull(),
   message: text("message").notNull(),
-  notificationType: mysqlEnum("notificationType", ["info", "success", "warning", "error"]).notNull(),
-  isRead: int("isRead").default(0).notNull(),
+  notificationType: text("notificationType").notNull(),
+  isRead: integer("isRead").default(0).notNull(),
   actionUrl: varchar("actionUrl", { length: 191 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 }, (table) => ({
   notificationCustomerReadIdx: index("notification_customer_read_idx").on(table.customerId, table.isRead, table.createdAt),
 }));
 
-export const customerSessionPreferences = mysqlTable("customerSessionPreferences", {
-  id: int("id").autoincrement().primaryKey(),
+export const customerSessionPreferences = pgTable("customerSessionPreferences", {
+  id: serial("id").primaryKey(),
   actorId: varchar("actorId", { length: 96 }).notNull(),
   actorRole: varchar("actorRole", { length: 64 }).notNull(),
   tenantId: varchar("tenantId", { length: 64 }).notNull(),
   activeCustomerId: varchar("activeCustomerId", { length: 64 }).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 }, (table) => ({
   sessionActorLookupIdx: uniqueIndex("session_actor_lookup_idx").on(table.actorId, table.actorRole, table.tenantId),
 }));
 
-export const workflowCases = mysqlTable("workflowCases", {
-  id: int("id").autoincrement().primaryKey(),
+export const workflowCases = pgTable("workflowCases", {
+  id: serial("id").primaryKey(),
   workflowId: varchar("workflowId", { length: 64 }).notNull().unique(),
   customer: varchar("customer", { length: 191 }).notNull(),
   product: varchar("product", { length: 128 }).notNull(),
   stage: varchar("stage", { length: 128 }).notNull(),
   status: varchar("status", { length: 64 }).notNull(),
   channel: varchar("channel", { length: 96 }).notNull(),
-  amount: double("amount").default(0).notNull(),
+  amount: doublePrecision("amount").default(0).notNull(),
   nextAction: text("nextAction").notNull(),
-  slaHours: int("slaHours").default(0).notNull(),
+  slaHours: integer("slaHours").default(0).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 }, (table) => ({
   workflowStageStatusIdx: index("workflow_stage_status_idx").on(table.stage, table.status, table.updatedAt),
   workflowProductStatusIdx: index("workflow_product_status_idx").on(table.product, table.status, table.createdAt),
 }));
 
-export const operatorActions = mysqlTable("operatorActions", {
-  id: int("id").autoincrement().primaryKey(),
+export const operatorActions = pgTable("operatorActions", {
+  id: serial("id").primaryKey(),
   actionId: varchar("actionId", { length: 64 }).notNull().unique(),
   domainKey: varchar("domainKey", { length: 96 }).notNull(),
   title: varchar("title", { length: 191 }).notNull(),
@@ -283,17 +283,17 @@ export const operatorActions = mysqlTable("operatorActions", {
   owner: varchar("owner", { length: 128 }).notNull(),
   dueAt: timestamp("dueAt").notNull(),
   route: varchar("route", { length: 191 }).notNull(),
-  status: mysqlEnum("status", ["Pending", "In progress", "Done"]).notNull(),
-  roles: json("roles").$type<string[]>().notNull(),
+  status: text("status").notNull(),
+  roles: jsonb("roles").$type<string[]>().notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 }, (table) => ({
   operatorDomainStatusIdx: index("operator_domain_status_idx").on(table.domainKey, table.status, table.dueAt),
   operatorRouteStatusIdx: index("operator_route_status_idx").on(table.route, table.status, table.dueAt),
 }));
 
-export const auditEntries = mysqlTable("auditEntries", {
-  id: int("id").autoincrement().primaryKey(),
+export const auditEntries = pgTable("auditEntries", {
+  id: serial("id").primaryKey(),
   auditId: varchar("auditId", { length: 64 }).notNull().unique(),
   timestampAt: timestamp("timestampAt").defaultNow().notNull(),
   actorRole: varchar("actorRole", { length: 64 }).notNull(),
@@ -302,99 +302,99 @@ export const auditEntries = mysqlTable("auditEntries", {
   entityId: varchar("entityId", { length: 96 }).notNull(),
   action: varchar("action", { length: 96 }).notNull(),
   outcome: text("outcome").notNull(),
-  severity: mysqlEnum("severity", ["info", "warning", "critical"]).notNull(),
+  severity: text("severity").notNull(),
   route: varchar("route", { length: 191 }).notNull(),
-  middleware: json("middleware").$type<string[]>().notNull(),
+  middleware: jsonb("middleware").$type<string[]>().notNull(),
   detail: text("detail").notNull(),
 }, (table) => ({
   auditRouteTimestampIdx: index("audit_route_timestamp_idx").on(table.route, table.timestampAt),
   auditSeverityTimestampIdx: index("audit_severity_timestamp_idx").on(table.severity, table.timestampAt),
 }));
 
-export const exportJobs = mysqlTable("exportJobs", {
-  id: int("id").autoincrement().primaryKey(),
+export const exportJobs = pgTable("exportJobs", {
+  id: serial("id").primaryKey(),
   exportJobId: varchar("exportJobId", { length: 64 }).notNull().unique(),
   domainKey: varchar("domainKey", { length: 96 }).notNull(),
   title: varchar("title", { length: 191 }).notNull(),
-  format: mysqlEnum("format", ["csv", "json", "xlsx"]).notNull(),
-  status: mysqlEnum("status", ["Ready", "Queued", "Failed"]).notNull(),
+  format: text("format").notNull(),
+  status: text("status").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   requestedByRole: varchar("requestedByRole", { length: 64 }).notNull(),
   route: varchar("route", { length: 191 }).notNull(),
-  rowCount: int("rowCount").default(0).notNull(),
-  approvalState: mysqlEnum("approvalState", ["Signed", "Pending review"]).notNull(),
+  rowCount: integer("rowCount").default(0).notNull(),
+  approvalState: text("approvalState").notNull(),
   approvalSignature: varchar("approvalSignature", { length: 191 }).notNull(),
   downloadUrl: varchar("downloadUrl", { length: 255 }).notNull(),
   retainedUntil: timestamp("retainedUntil"),
   reportVersion: varchar("reportVersion", { length: 96 }),
-  approvalChain: json("approvalChain").$type<string[]>().notNull(),
-  signedBy: json("signedBy").$type<string[]>().notNull(),
+  approvalChain: jsonb("approvalChain").$type<string[]>().notNull(),
+  signedBy: jsonb("signedBy").$type<string[]>().notNull(),
 }, (table) => ({
   exportDomainApprovalIdx: index("export_domain_approval_idx").on(table.domainKey, table.approvalState, table.createdAt),
   exportRouteStatusIdx: index("export_route_status_idx").on(table.route, table.status, table.createdAt),
 }));
 
-export const billingAccounts = mysqlTable("billingAccounts", {
-  id: int("id").autoincrement().primaryKey(),
+export const billingAccounts = pgTable("billingAccounts", {
+  id: serial("id").primaryKey(),
   billingAccountId: varchar("billingAccountId", { length: 64 }).notNull().unique(),
   tenantId: varchar("tenantId", { length: 64 }).notNull(),
   accountName: varchar("accountName", { length: 191 }).notNull(),
-  billingModel: mysqlEnum("billingModel", ["subscription", "usage", "hybrid", "revenue_share"]).notNull(),
+  billingModel: text("billingModel").notNull(),
   currency: varchar("currency", { length: 3 }).notNull(),
-  status: mysqlEnum("status", ["draft", "active", "suspended", "closed"]).notNull(),
+  status: text("status").notNull(),
   contractStartAt: timestamp("contractStartAt").notNull(),
   contractEndAt: timestamp("contractEndAt"),
   defaultRateCardId: varchar("defaultRateCardId", { length: 64 }).notNull(),
-  minimumCommitAmount: double("minimumCommitAmount").default(0).notNull(),
-  defaultBillingPeriodType: mysqlEnum("defaultBillingPeriodType", ["monthly", "quarterly", "semi_annual", "annual", "custom"]).default("monthly").notNull(),
-  invoiceDueDays: int("invoiceDueDays").default(14).notNull(),
+  minimumCommitAmount: doublePrecision("minimumCommitAmount").default(0).notNull(),
+  defaultBillingPeriodType: text("defaultBillingPeriodType").default("monthly").notNull(),
+  invoiceDueDays: integer("invoiceDueDays").default(14).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 }, (table) => ({
   billingAccountTenantIdx: index("billing_account_tenant_idx").on(table.tenantId, table.status),
 }));
 
-export const billingRateCards = mysqlTable("billingRateCards", {
-  id: int("id").autoincrement().primaryKey(),
+export const billingRateCards = pgTable("billingRateCards", {
+  id: serial("id").primaryKey(),
   rateCardId: varchar("rateCardId", { length: 64 }).notNull().unique(),
   billingAccountId: varchar("billingAccountId", { length: 64 }),
   name: varchar("name", { length: 191 }).notNull(),
-  version: int("version").default(1).notNull(),
-  status: mysqlEnum("status", ["draft", "approved", "active", "retired"]).notNull(),
+  version: integer("version").default(1).notNull(),
+  status: text("status").notNull(),
   effectiveFrom: timestamp("effectiveFrom").notNull(),
   effectiveTo: timestamp("effectiveTo"),
   pricingCurrency: varchar("pricingCurrency", { length: 3 }).notNull(),
   createdBy: varchar("createdBy", { length: 96 }).notNull(),
-  approvalState: mysqlEnum("approvalState", ["pending", "approved", "rejected"]).notNull(),
+  approvalState: text("approvalState").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 }, (table) => ({
   billingRateCardLookupIdx: index("billing_rate_card_lookup_idx").on(table.billingAccountId, table.status, table.effectiveFrom),
 }));
 
-export const billingRateCardLines = mysqlTable("billingRateCardLines", {
-  id: int("id").autoincrement().primaryKey(),
+export const billingRateCardLines = pgTable("billingRateCardLines", {
+  id: serial("id").primaryKey(),
   rateCardLineId: varchar("rateCardLineId", { length: 64 }).notNull().unique(),
   rateCardId: varchar("rateCardId", { length: 64 }).notNull(),
   meterKey: varchar("meterKey", { length: 96 }).notNull(),
   productKey: varchar("productKey", { length: 96 }).notNull(),
-  chargeType: mysqlEnum("chargeType", ["flat", "per_unit", "tiered", "minimum", "percentage"]).notNull(),
-  unitPrice: double("unitPrice").default(0).notNull(),
-  includedUnits: int("includedUnits").default(0).notNull(),
-  tierStart: int("tierStart"),
-  tierEnd: int("tierEnd"),
-  minimumCharge: double("minimumCharge"),
-  maximumCharge: double("maximumCharge"),
-  pricingFormula: json("pricingFormula").$type<Record<string, unknown>>(),
+  chargeType: text("chargeType").notNull(),
+  unitPrice: doublePrecision("unitPrice").default(0).notNull(),
+  includedUnits: integer("includedUnits").default(0).notNull(),
+  tierStart: integer("tierStart"),
+  tierEnd: integer("tierEnd"),
+  minimumCharge: doublePrecision("minimumCharge"),
+  maximumCharge: doublePrecision("maximumCharge"),
+  pricingFormula: jsonb("pricingFormula").$type<Record<string, unknown>>(),
   settlementLedgerCode: varchar("settlementLedgerCode", { length: 96 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 }, (table) => ({
   billingRateCardLineLookupIdx: index("billing_rate_card_line_lookup_idx").on(table.rateCardId, table.meterKey, table.productKey),
 }));
 
-export const billingUsageEvents = mysqlTable("billingUsageEvents", {
-  id: int("id").autoincrement().primaryKey(),
+export const billingUsageEvents = pgTable("billingUsageEvents", {
+  id: serial("id").primaryKey(),
   usageEventId: varchar("usageEventId", { length: 64 }).notNull().unique(),
   idempotencyKey: varchar("idempotencyKey", { length: 128 }).notNull(),
   tenantId: varchar("tenantId", { length: 64 }).notNull(),
@@ -403,16 +403,16 @@ export const billingUsageEvents = mysqlTable("billingUsageEvents", {
   sourceEventType: varchar("sourceEventType", { length: 96 }).notNull(),
   meterKey: varchar("meterKey", { length: 96 }).notNull(),
   productKey: varchar("productKey", { length: 96 }).notNull(),
-  quantity: int("quantity").default(0).notNull(),
-  unitAmount: double("unitAmount"),
+  quantity: integer("quantity").default(0).notNull(),
+  unitAmount: doublePrecision("unitAmount"),
   currency: varchar("currency", { length: 3 }).notNull(),
   eventTimestamp: timestamp("eventTimestamp").notNull(),
   ingestedAt: timestamp("ingestedAt").defaultNow().notNull(),
   correlationId: varchar("correlationId", { length: 128 }),
   actorId: varchar("actorId", { length: 96 }),
   resourceId: varchar("resourceId", { length: 96 }),
-  payload: json("payload").$type<Record<string, unknown>>().notNull(),
-  status: mysqlEnum("status", ["pending", "rated", "ignored", "failed"]).notNull(),
+  payload: jsonb("payload").$type<Record<string, unknown>>().notNull(),
+  status: text("status").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 }, (table) => ({
   billingUsageTenantIdx: index("billing_usage_tenant_idx").on(table.tenantId, table.eventTimestamp),
@@ -420,186 +420,186 @@ export const billingUsageEvents = mysqlTable("billingUsageEvents", {
   billingUsageIdempotencyIdx: uniqueIndex("billing_usage_idempotency_idx").on(table.idempotencyKey),
 }));
 
-export const billingRatedEvents = mysqlTable("billingRatedEvents", {
-  id: int("id").autoincrement().primaryKey(),
+export const billingRatedEvents = pgTable("billingRatedEvents", {
+  id: serial("id").primaryKey(),
   ratedEventId: varchar("ratedEventId", { length: 64 }).notNull().unique(),
   usageEventId: varchar("usageEventId", { length: 64 }).notNull(),
   rateCardId: varchar("rateCardId", { length: 64 }).notNull(),
   rateCardLineId: varchar("rateCardLineId", { length: 64 }).notNull(),
   billingPeriodKey: varchar("billingPeriodKey", { length: 32 }).notNull(),
-  quantityRated: int("quantityRated").default(0).notNull(),
-  billableUnits: double("billableUnits").default(0).notNull(),
-  amountAccrued: double("amountAccrued").default(0).notNull(),
+  quantityRated: integer("quantityRated").default(0).notNull(),
+  billableUnits: doublePrecision("billableUnits").default(0).notNull(),
+  amountAccrued: doublePrecision("amountAccrued").default(0).notNull(),
   currency: varchar("currency", { length: 3 }).notNull(),
-  ratingExplanation: json("ratingExplanation").$type<Record<string, unknown>>().notNull(),
+  ratingExplanation: jsonb("ratingExplanation").$type<Record<string, unknown>>().notNull(),
   ratedAt: timestamp("ratedAt").defaultNow().notNull(),
 }, (table) => ({
   billingRatedEventLookupIdx: index("billing_rated_event_lookup_idx").on(table.billingPeriodKey, table.rateCardId, table.ratedAt),
 }));
 
-export const billingAccrualSnapshots = mysqlTable("billingAccrualSnapshots", {
-  id: int("id").autoincrement().primaryKey(),
+export const billingAccrualSnapshots = pgTable("billingAccrualSnapshots", {
+  id: serial("id").primaryKey(),
   accrualSnapshotId: varchar("accrualSnapshotId", { length: 64 }).notNull().unique(),
   tenantId: varchar("tenantId", { length: 64 }).notNull(),
   billingAccountId: varchar("billingAccountId", { length: 64 }).notNull(),
   billingPeriodKey: varchar("billingPeriodKey", { length: 32 }).notNull(),
   meterKey: varchar("meterKey", { length: 96 }).notNull(),
   productKey: varchar("productKey", { length: 96 }).notNull(),
-  ratedEventCount: int("ratedEventCount").default(0).notNull(),
-  usageQuantity: int("usageQuantity").default(0).notNull(),
-  accruedAmount: double("accruedAmount").default(0).notNull(),
-  unratedEventCount: int("unratedEventCount").default(0).notNull(),
+  ratedEventCount: integer("ratedEventCount").default(0).notNull(),
+  usageQuantity: integer("usageQuantity").default(0).notNull(),
+  accruedAmount: doublePrecision("accruedAmount").default(0).notNull(),
+  unratedEventCount: integer("unratedEventCount").default(0).notNull(),
   lastUsageAt: timestamp("lastUsageAt"),
   lastRatedAt: timestamp("lastRatedAt"),
-  snapshotStatus: mysqlEnum("snapshotStatus", ["healthy", "lagging", "review"]).notNull(),
+  snapshotStatus: text("snapshotStatus").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 }, (table) => ({
   billingAccrualTenantIdx: index("billing_accrual_tenant_idx").on(table.tenantId, table.billingPeriodKey, table.accruedAmount),
   billingAccrualMeterIdx: index("billing_accrual_meter_idx").on(table.meterKey, table.productKey, table.billingPeriodKey),
 }));
 
-export const billingContractOverrides = mysqlTable("billingContractOverrides", {
-  id: int("id").autoincrement().primaryKey(),
+export const billingContractOverrides = pgTable("billingContractOverrides", {
+  id: serial("id").primaryKey(),
   contractOverrideId: varchar("contractOverrideId", { length: 64 }).notNull().unique(),
   billingAccountId: varchar("billingAccountId", { length: 64 }).notNull(),
   tenantId: varchar("tenantId", { length: 64 }).notNull(),
-  overrideType: mysqlEnum("overrideType", ["unit_price", "included_units", "minimum_commit", "billing_model", "billing_period"]).notNull(),
+  overrideType: text("overrideType").notNull(),
   meterKey: varchar("meterKey", { length: 96 }),
   productKey: varchar("productKey", { length: 96 }),
-  valueNumber: double("valueNumber"),
+  valueNumber: doublePrecision("valueNumber"),
   valueText: varchar("valueText", { length: 96 }),
   effectiveFrom: timestamp("effectiveFrom").notNull(),
   effectiveTo: timestamp("effectiveTo"),
-  status: mysqlEnum("status", ["draft", "active", "expired"]).notNull(),
+  status: text("status").notNull(),
   createdBy: varchar("createdBy", { length: 96 }).notNull(),
   notes: text("notes"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 }, (table) => ({
   billingContractOverrideLookupIdx: index("billing_contract_override_lookup_idx").on(table.billingAccountId, table.overrideType, table.status, table.effectiveFrom),
 }));
 
-export const billingDiscountRules = mysqlTable("billingDiscountRules", {
-  id: int("id").autoincrement().primaryKey(),
+export const billingDiscountRules = pgTable("billingDiscountRules", {
+  id: serial("id").primaryKey(),
   discountRuleId: varchar("discountRuleId", { length: 64 }).notNull().unique(),
   billingAccountId: varchar("billingAccountId", { length: 64 }).notNull(),
   tenantId: varchar("tenantId", { length: 64 }).notNull(),
   name: varchar("name", { length: 191 }).notNull(),
-  discountType: mysqlEnum("discountType", ["percentage", "fixed", "threshold_percentage"]).notNull(),
+  discountType: text("discountType").notNull(),
   meterKey: varchar("meterKey", { length: 96 }),
   productKey: varchar("productKey", { length: 96 }),
-  percentage: double("percentage"),
-  fixedAmount: double("fixedAmount"),
-  thresholdAmount: double("thresholdAmount"),
+  percentage: doublePrecision("percentage"),
+  fixedAmount: doublePrecision("fixedAmount"),
+  thresholdAmount: doublePrecision("thresholdAmount"),
   effectiveFrom: timestamp("effectiveFrom").notNull(),
   effectiveTo: timestamp("effectiveTo"),
-  status: mysqlEnum("status", ["draft", "active", "expired"]).notNull(),
+  status: text("status").notNull(),
   createdBy: varchar("createdBy", { length: 96 }).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 }, (table) => ({
   billingDiscountRuleLookupIdx: index("billing_discount_rule_lookup_idx").on(table.billingAccountId, table.status, table.effectiveFrom),
 }));
 
-export const billingRevenueShareRules = mysqlTable("billingRevenueShareRules", {
-  id: int("id").autoincrement().primaryKey(),
+export const billingRevenueShareRules = pgTable("billingRevenueShareRules", {
+  id: serial("id").primaryKey(),
   revenueShareRuleId: varchar("revenueShareRuleId", { length: 64 }).notNull().unique(),
   billingAccountId: varchar("billingAccountId", { length: 64 }).notNull(),
   tenantId: varchar("tenantId", { length: 64 }).notNull(),
   name: varchar("name", { length: 191 }).notNull(),
-  target: mysqlEnum("target", ["platform", "partner_bank", "aggregator", "reseller"]).notNull(),
-  percentage: double("percentage").default(0).notNull(),
+  target: text("target").notNull(),
+  percentage: doublePrecision("percentage").default(0).notNull(),
   beneficiaryName: varchar("beneficiaryName", { length: 191 }).notNull(),
   settlementLedgerCode: varchar("settlementLedgerCode", { length: 96 }),
   effectiveFrom: timestamp("effectiveFrom").notNull(),
   effectiveTo: timestamp("effectiveTo"),
-  status: mysqlEnum("status", ["draft", "active", "expired"]).notNull(),
+  status: text("status").notNull(),
   createdBy: varchar("createdBy", { length: 96 }).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 }, (table) => ({
   billingRevenueShareLookupIdx: index("billing_revenue_share_lookup_idx").on(table.billingAccountId, table.status, table.effectiveFrom),
 }));
 
-export const billingInvoices = mysqlTable("billingInvoices", {
-  id: int("id").autoincrement().primaryKey(),
+export const billingInvoices = pgTable("billingInvoices", {
+  id: serial("id").primaryKey(),
   billingInvoiceId: varchar("billingInvoiceId", { length: 64 }).notNull().unique(),
   invoiceNumber: varchar("invoiceNumber", { length: 96 }).notNull().unique(),
   tenantId: varchar("tenantId", { length: 64 }).notNull(),
   billingAccountId: varchar("billingAccountId", { length: 64 }).notNull(),
   billingPeriodKey: varchar("billingPeriodKey", { length: 32 }).notNull(),
-  billingPeriodType: mysqlEnum("billingPeriodType", ["monthly", "quarterly", "semi_annual", "annual", "custom"]).notNull(),
+  billingPeriodType: text("billingPeriodType").notNull(),
   periodStartAt: timestamp("periodStartAt").notNull(),
   periodEndAt: timestamp("periodEndAt").notNull(),
   currency: varchar("currency", { length: 3 }).notNull(),
-  subtotalAmount: double("subtotalAmount").default(0).notNull(),
-  discountAmount: double("discountAmount").default(0).notNull(),
-  revenueShareAmount: double("revenueShareAmount").default(0).notNull(),
-  minimumCommitAdjustment: double("minimumCommitAdjustment").default(0).notNull(),
-  taxAmount: double("taxAmount").default(0).notNull(),
-  totalAmount: double("totalAmount").default(0).notNull(),
-  status: mysqlEnum("status", ["draft", "pending_approval", "approved", "rejected", "issued", "paid", "void"]).notNull(),
-  approvalStatus: mysqlEnum("approvalStatus", ["pending", "approved", "rejected", "skipped"]).notNull(),
+  subtotalAmount: doublePrecision("subtotalAmount").default(0).notNull(),
+  discountAmount: doublePrecision("discountAmount").default(0).notNull(),
+  revenueShareAmount: doublePrecision("revenueShareAmount").default(0).notNull(),
+  minimumCommitAdjustment: doublePrecision("minimumCommitAdjustment").default(0).notNull(),
+  taxAmount: doublePrecision("taxAmount").default(0).notNull(),
+  totalAmount: doublePrecision("totalAmount").default(0).notNull(),
+  status: text("status").notNull(),
+  approvalStatus: text("approvalStatus").notNull(),
   generatedAt: timestamp("generatedAt").defaultNow().notNull(),
   dueAt: timestamp("dueAt").notNull(),
-  approvalStepCount: int("approvalStepCount").default(0).notNull(),
+  approvalStepCount: integer("approvalStepCount").default(0).notNull(),
   issuedAt: timestamp("issuedAt"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 }, (table) => ({
   billingInvoiceLookupIdx: index("billing_invoice_lookup_idx").on(table.billingAccountId, table.billingPeriodKey, table.status),
 }));
 
-export const billingInvoiceLines = mysqlTable("billingInvoiceLines", {
-  id: int("id").autoincrement().primaryKey(),
+export const billingInvoiceLines = pgTable("billingInvoiceLines", {
+  id: serial("id").primaryKey(),
   billingInvoiceLineId: varchar("billingInvoiceLineId", { length: 96 }).notNull().unique(),
   billingInvoiceId: varchar("billingInvoiceId", { length: 64 }).notNull(),
-  lineType: mysqlEnum("lineType", ["usage", "discount", "revenue_share", "minimum_commit", "tax"]).notNull(),
+  lineType: text("lineType").notNull(),
   meterKey: varchar("meterKey", { length: 96 }),
   productKey: varchar("productKey", { length: 96 }),
   description: varchar("description", { length: 191 }).notNull(),
-  quantity: double("quantity").default(0).notNull(),
-  unitPrice: double("unitPrice").default(0).notNull(),
-  amount: double("amount").default(0).notNull(),
-  metadata: json("metadata").$type<Record<string, unknown>>(),
+  quantity: doublePrecision("quantity").default(0).notNull(),
+  unitPrice: doublePrecision("unitPrice").default(0).notNull(),
+  amount: doublePrecision("amount").default(0).notNull(),
+  metadata: jsonb("metadata").$type<Record<string, unknown>>(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 }, (table) => ({
   billingInvoiceLineLookupIdx: index("billing_invoice_line_lookup_idx").on(table.billingInvoiceId, table.lineType),
 }));
 
-export const billingInvoiceApprovals = mysqlTable("billingInvoiceApprovals", {
-  id: int("id").autoincrement().primaryKey(),
+export const billingInvoiceApprovals = pgTable("billingInvoiceApprovals", {
+  id: serial("id").primaryKey(),
   billingInvoiceApprovalId: varchar("billingInvoiceApprovalId", { length: 96 }).notNull().unique(),
   billingInvoiceId: varchar("billingInvoiceId", { length: 64 }).notNull(),
   stageKey: varchar("stageKey", { length: 96 }).notNull(),
-  actorRole: mysqlEnum("actorRole", ["operations", "treasury", "compliance", "branch"]).notNull(),
-  status: mysqlEnum("status", ["pending", "approved", "rejected", "skipped"]).notNull(),
+  actorRole: text("actorRole").notNull(),
+  status: text("status").notNull(),
   actedAt: timestamp("actedAt"),
   note: text("note"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 }, (table) => ({
   billingInvoiceApprovalLookupIdx: index("billing_invoice_approval_lookup_idx").on(table.billingInvoiceId, table.status, table.actorRole),
 }));
 
-export const partnerOnboardingRecords = mysqlTable("partnerOnboardingRecords", {
-  id: int("id").autoincrement().primaryKey(),
+export const partnerOnboardingRecords = pgTable("partnerOnboardingRecords", {
+  id: serial("id").primaryKey(),
   partnerId: varchar("partnerId", { length: 64 }).notNull().unique(),
   tenantId: varchar("tenantId", { length: 64 }).notNull(),
   partnerName: varchar("partnerName", { length: 191 }).notNull(),
   legalEntity: varchar("legalEntity", { length: 191 }).notNull(),
-  partnerType: mysqlEnum("partnerType", ["mfb", "fintech", "cooperative", "agency", "enterprise"]).notNull(),
+  partnerType: text("partnerType").notNull(),
   region: varchar("region", { length: 96 }).notNull(),
-  stage: mysqlEnum("stage", ["draft", "submitted", "compliance_review", "commercial_review", "operations_review", "approved", "provisioning", "launch_ready", "launched"]).notNull(),
-  requestedModules: json("requestedModules").$type<string[]>().notNull(),
-  primaryContact: json("primaryContact")
+  stage: text("stage").notNull(),
+  requestedModules: jsonb("requestedModules").$type<string[]>().notNull(),
+  primaryContact: jsonb("primaryContact")
     .$type<{ name: string; role: string; email: string; phone: string }>()
     .notNull(),
-  operationsContact: json("operationsContact")
+  operationsContact: jsonb("operationsContact")
     .$type<{ name: string; role: string; email: string; phone: string }>()
     .notNull(),
-  commercial: json("commercial")
+  commercial: jsonb("commercial")
     .$type<{
       plan: "starter" | "growth" | "enterprise";
       billingModel: string;
@@ -611,7 +611,7 @@ export const partnerOnboardingRecords = mysqlTable("partnerOnboardingRecords", {
       goLiveTarget?: string;
     }>()
     .notNull(),
-  compliance: json("compliance")
+  compliance: jsonb("compliance")
     .$type<{
       kybStatus: "not_started" | "in_review" | "approved" | "rejected";
       requiredDocumentCount: number;
@@ -621,7 +621,7 @@ export const partnerOnboardingRecords = mysqlTable("partnerOnboardingRecords", {
       lastReviewedAt?: string;
     }>()
     .notNull(),
-  branding: json("branding")
+  branding: jsonb("branding")
     .$type<{
       displayName: string;
       supportEmail: string;
@@ -632,13 +632,13 @@ export const partnerOnboardingRecords = mysqlTable("partnerOnboardingRecords", {
       customDomain?: string;
     }>()
     .notNull(),
-  checklist: json("checklist")
+  checklist: jsonb("checklist")
     .$type<Array<{ key: string; label: string; owner: "partner" | "compliance" | "operations"; completed: boolean }>>()
     .notNull(),
-  blockers: json("blockers").$type<string[]>().notNull(),
-  readinessScore: int("readinessScore").default(0).notNull(),
+  blockers: jsonb("blockers").$type<string[]>().notNull(),
+  readinessScore: integer("readinessScore").default(0).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
   submittedAt: timestamp("submittedAt"),
   launchedAt: timestamp("launchedAt"),
   lastSubmittedBy: varchar("lastSubmittedBy", { length: 96 }),
@@ -647,15 +647,15 @@ export const partnerOnboardingRecords = mysqlTable("partnerOnboardingRecords", {
   partnerReadinessIdx: index("partner_readiness_idx").on(table.stage, table.readinessScore),
 }));
 
-export const partnerApprovalRecords = mysqlTable("partnerApprovalRecords", {
-  id: int("id").autoincrement().primaryKey(),
+export const partnerApprovalRecords = pgTable("partnerApprovalRecords", {
+  id: serial("id").primaryKey(),
   approvalId: varchar("approvalId", { length: 64 }).notNull().unique(),
   partnerId: varchar("partnerId", { length: 64 }).notNull(),
-  stage: mysqlEnum("stage", ["compliance_review", "commercial_review", "operations_review", "launch_signoff"]).notNull(),
+  stage: text("stage").notNull(),
   title: varchar("title", { length: 191 }).notNull(),
   detail: text("detail").notNull(),
-  state: mysqlEnum("state", ["pending", "approved", "rejected"]).notNull(),
-  requiredRole: mysqlEnum("requiredRole", ["branch", "operations", "treasury", "compliance"]).notNull(),
+  state: text("state").notNull(),
+  requiredRole: text("requiredRole").notNull(),
   requestedAt: timestamp("requestedAt").defaultNow().notNull(),
   requestedById: varchar("requestedById", { length: 96 }).notNull(),
   resolvedAt: timestamp("resolvedAt"),
@@ -730,8 +730,8 @@ export type InsertPartnerApprovalRecord = typeof partnerApprovalRecords.$inferIn
 
 // ── Agriculture Banking ──
 
-export const farmers = mysqlTable("farmers", {
-  id: int("id").autoincrement().primaryKey(),
+export const farmers = pgTable("farmers", {
+  id: serial("id").primaryKey(),
   farmerId: varchar("farmerId", { length: 32 }).notNull().unique(),
   tenantId: varchar("tenantId", { length: 64 }).notNull(),
   name: varchar("name", { length: 200 }).notNull(),
@@ -739,81 +739,81 @@ export const farmers = mysqlTable("farmers", {
   phone: varchar("phone", { length: 15 }).notNull(),
   region: varchar("region", { length: 100 }).notNull(),
   localGovernment: varchar("localGovernment", { length: 100 }).notNull(),
-  farmSizeHectares: double("farmSizeHectares").notNull(),
+  farmSizeHectares: doublePrecision("farmSizeHectares").notNull(),
   primaryCrop: varchar("primaryCrop", { length: 100 }).notNull(),
-  secondaryCrops: json("secondaryCrops").$type<string[]>().notNull(),
+  secondaryCrops: jsonb("secondaryCrops").$type<string[]>().notNull(),
   cooperativeId: varchar("cooperativeId", { length: 64 }),
   cooperativeName: varchar("cooperativeName", { length: 200 }),
   bankAccountNumber: varchar("bankAccountNumber", { length: 20 }),
-  riskScore: double("riskScore").notNull(),
+  riskScore: doublePrecision("riskScore").notNull(),
   riskTier: varchar("riskTier", { length: 20 }).notNull(),
   status: varchar("status", { length: 20 }).notNull().default("active"),
-  geoCoordinates: json("geoCoordinates").$type<{ latitude: number; longitude: number }>(),
+  geoCoordinates: jsonb("geoCoordinates").$type<{ latitude: number; longitude: number }>(),
   registrationChannel: varchar("registrationChannel", { length: 50 }).notNull().default("platform"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 }, (table) => [
   index("farmers_tenant_idx").on(table.tenantId),
   index("farmers_region_idx").on(table.region),
 ]);
 
-export const agriLoans = mysqlTable("agriLoans", {
-  id: int("id").autoincrement().primaryKey(),
+export const agriLoans = pgTable("agriLoans", {
+  id: serial("id").primaryKey(),
   loanId: varchar("loanId", { length: 32 }).notNull().unique(),
   tenantId: varchar("tenantId", { length: 64 }).notNull(),
   farmerId: varchar("farmerId", { length: 32 }).notNull(),
   loanType: varchar("loanType", { length: 50 }).notNull(),
   productCode: varchar("productCode", { length: 50 }).notNull(),
-  principalAmount: double("principalAmount").notNull(),
-  interestRateBps: int("interestRateBps").notNull(),
-  tenorMonths: int("tenorMonths").notNull(),
+  principalAmount: doublePrecision("principalAmount").notNull(),
+  interestRateBps: integer("interestRateBps").notNull(),
+  tenorMonths: integer("tenorMonths").notNull(),
   currency: varchar("currency", { length: 3 }).notNull().default("NGN"),
   purpose: text("purpose").notNull(),
   collateralType: varchar("collateralType", { length: 100 }).notNull(),
-  collateralValue: double("collateralValue").notNull(),
+  collateralValue: doublePrecision("collateralValue").notNull(),
   cropCycle: varchar("cropCycle", { length: 50 }).notNull(),
   expectedHarvestDate: varchar("expectedHarvestDate", { length: 20 }).notNull(),
   disbursementDate: varchar("disbursementDate", { length: 30 }),
   maturityDate: varchar("maturityDate", { length: 30 }),
-  outstandingBalance: double("outstandingBalance").notNull(),
-  totalRepaid: double("totalRepaid").notNull().default(0),
+  outstandingBalance: doublePrecision("outstandingBalance").notNull(),
+  totalRepaid: doublePrecision("totalRepaid").notNull().default(0),
   status: varchar("status", { length: 30 }).notNull().default("pending_approval"),
   approvalStatus: varchar("approvalStatus", { length: 30 }).notNull().default("pending"),
   riskGrade: varchar("riskGrade", { length: 5 }).notNull(),
-  repaymentSchedule: json("repaymentSchedule").$type<object[]>().notNull(),
+  repaymentSchedule: jsonb("repaymentSchedule").$type<object[]>().notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 }, (table) => [
   index("agriLoans_tenant_idx").on(table.tenantId),
   index("agriLoans_farmer_idx").on(table.farmerId),
 ]);
 
-export const cropInsurancePolicies = mysqlTable("cropInsurancePolicies", {
-  id: int("id").autoincrement().primaryKey(),
+export const cropInsurancePolicies = pgTable("cropInsurancePolicies", {
+  id: serial("id").primaryKey(),
   policyId: varchar("policyId", { length: 32 }).notNull().unique(),
   tenantId: varchar("tenantId", { length: 64 }).notNull(),
   farmerId: varchar("farmerId", { length: 32 }).notNull(),
   policyType: varchar("policyType", { length: 50 }).notNull(),
   cropCovered: varchar("cropCovered", { length: 100 }).notNull(),
-  coverageAreaHectares: double("coverageAreaHectares").notNull(),
-  sumInsured: double("sumInsured").notNull(),
-  premiumAmount: double("premiumAmount").notNull(),
+  coverageAreaHectares: doublePrecision("coverageAreaHectares").notNull(),
+  sumInsured: doublePrecision("sumInsured").notNull(),
+  premiumAmount: doublePrecision("premiumAmount").notNull(),
   premiumFrequency: varchar("premiumFrequency", { length: 20 }).notNull().default("annual"),
   policyStart: varchar("policyStart", { length: 20 }).notNull(),
   policyEnd: varchar("policyEnd", { length: 20 }).notNull(),
-  weatherTrigger: json("weatherTrigger").$type<object>(),
-  claims: json("claims").$type<object[]>().notNull(),
+  weatherTrigger: jsonb("weatherTrigger").$type<object>(),
+  claims: jsonb("claims").$type<object[]>().notNull(),
   status: varchar("status", { length: 20 }).notNull().default("active"),
   underwriter: varchar("underwriter", { length: 200 }).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 }, (table) => [
   index("cropIns_tenant_idx").on(table.tenantId),
   index("cropIns_farmer_idx").on(table.farmerId),
 ]);
 
-export const valueChainContracts = mysqlTable("valueChainContracts", {
-  id: int("id").autoincrement().primaryKey(),
+export const valueChainContracts = pgTable("valueChainContracts", {
+  id: serial("id").primaryKey(),
   contractId: varchar("contractId", { length: 32 }).notNull().unique(),
   tenantId: varchar("tenantId", { length: 64 }).notNull(),
   contractType: varchar("contractType", { length: 50 }).notNull(),
@@ -821,18 +821,18 @@ export const valueChainContracts = mysqlTable("valueChainContracts", {
   buyerId: varchar("buyerId", { length: 64 }).notNull(),
   sellerFarmerId: varchar("sellerFarmerId", { length: 32 }).notNull(),
   commodity: varchar("commodity", { length: 100 }).notNull(),
-  quantityTonnes: double("quantityTonnes").notNull(),
-  pricePerTonne: double("pricePerTonne").notNull(),
-  totalValue: double("totalValue").notNull(),
+  quantityTonnes: doublePrecision("quantityTonnes").notNull(),
+  pricePerTonne: doublePrecision("pricePerTonne").notNull(),
+  totalValue: doublePrecision("totalValue").notNull(),
   currency: varchar("currency", { length: 3 }).notNull().default("NGN"),
   deliveryLocation: varchar("deliveryLocation", { length: 200 }).notNull(),
   deliveryDeadline: varchar("deliveryDeadline", { length: 20 }).notNull(),
   warehouseReceiptId: varchar("warehouseReceiptId", { length: 32 }),
   qualityGrade: varchar("qualityGrade", { length: 20 }).notNull().default("Grade A"),
-  milestones: json("milestones").$type<object[]>().notNull(),
+  milestones: jsonb("milestones").$type<object[]>().notNull(),
   status: varchar("status", { length: 20 }).notNull().default("active"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 }, (table) => [
   index("vcc_tenant_idx").on(table.tenantId),
   index("vcc_seller_idx").on(table.sellerFarmerId),
@@ -840,37 +840,37 @@ export const valueChainContracts = mysqlTable("valueChainContracts", {
 
 // ── Teller Operations ──
 
-export const tellerSessions = mysqlTable("tellerSessions", {
-  id: int("id").autoincrement().primaryKey(),
+export const tellerSessions = pgTable("tellerSessions", {
+  id: serial("id").primaryKey(),
   sessionId: varchar("sessionId", { length: 32 }).notNull().unique(),
   tenantId: varchar("tenantId", { length: 64 }).notNull(),
   tellerId: varchar("tellerId", { length: 64 }).notNull(),
   tellerName: varchar("tellerName", { length: 200 }).notNull(),
   branchCode: varchar("branchCode", { length: 20 }).notNull(),
   branchName: varchar("branchName", { length: 200 }).notNull(),
-  windowNumber: int("windowNumber").notNull(),
+  windowNumber: integer("windowNumber").notNull(),
   status: varchar("status", { length: 20 }).notNull().default("open"),
   openedAt: varchar("openedAt", { length: 30 }).notNull(),
   closedAt: varchar("closedAt", { length: 30 }),
-  openingBalance: double("openingBalance").notNull(),
-  currentBalance: double("currentBalance").notNull(),
-  transactionCount: int("transactionCount").notNull().default(0),
-  cashDrawer: json("cashDrawer").$type<object>().notNull(),
+  openingBalance: doublePrecision("openingBalance").notNull(),
+  currentBalance: doublePrecision("currentBalance").notNull(),
+  transactionCount: integer("transactionCount").notNull().default(0),
+  cashDrawer: jsonb("cashDrawer").$type<object>().notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 }, (table) => [
   index("teller_tenant_idx").on(table.tenantId),
   index("teller_branch_idx").on(table.branchCode),
 ]);
 
-export const tellerTransactions = mysqlTable("tellerTransactions", {
-  id: int("id").autoincrement().primaryKey(),
+export const tellerTransactions = pgTable("tellerTransactions", {
+  id: serial("id").primaryKey(),
   txnId: varchar("txnId", { length: 32 }).notNull().unique(),
   sessionId: varchar("sessionId", { length: 32 }).notNull(),
   tenantId: varchar("tenantId", { length: 64 }).notNull(),
   txnType: varchar("txnType", { length: 30 }).notNull(),
   customerId: varchar("customerId", { length: 64 }).notNull(),
-  amount: double("amount").notNull(),
+  amount: doublePrecision("amount").notNull(),
   currency: varchar("currency", { length: 3 }).notNull().default("NGN"),
   reference: varchar("reference", { length: 100 }),
   status: varchar("status", { length: 20 }).notNull().default("completed"),
@@ -881,14 +881,14 @@ export const tellerTransactions = mysqlTable("tellerTransactions", {
   index("ttxn_tenant_idx").on(table.tenantId),
 ]);
 
-export const vaultOperations = mysqlTable("vaultOperations", {
-  id: int("id").autoincrement().primaryKey(),
+export const vaultOperations = pgTable("vaultOperations", {
+  id: serial("id").primaryKey(),
   operationId: varchar("operationId", { length: 32 }).notNull().unique(),
   tenantId: varchar("tenantId", { length: 64 }).notNull(),
   operationType: varchar("operationType", { length: 30 }).notNull(),
   fromLocation: varchar("fromLocation", { length: 100 }).notNull(),
   toLocation: varchar("toLocation", { length: 100 }).notNull(),
-  amount: double("amount").notNull(),
+  amount: doublePrecision("amount").notNull(),
   currency: varchar("currency", { length: 3 }).notNull().default("NGN"),
   authorizedBy: varchar("authorizedBy", { length: 100 }).notNull(),
   dualControlBy: varchar("dualControlBy", { length: 100 }),
@@ -901,87 +901,87 @@ export const vaultOperations = mysqlTable("vaultOperations", {
 
 // ── Islamic Banking ──
 
-export const murabahaContracts = mysqlTable("murabahaContracts", {
-  id: int("id").autoincrement().primaryKey(),
+export const murabahaContracts = pgTable("murabahaContracts", {
+  id: serial("id").primaryKey(),
   contractId: varchar("contractId", { length: 32 }).notNull().unique(),
   tenantId: varchar("tenantId", { length: 64 }).notNull(),
   customerId: varchar("customerId", { length: 64 }).notNull(),
   customerName: varchar("customerName", { length: 200 }).notNull(),
   assetDescription: text("assetDescription").notNull(),
   assetCategory: varchar("assetCategory", { length: 50 }).notNull(),
-  costPrice: double("costPrice").notNull(),
-  profitMarginPct: double("profitMarginPct").notNull(),
-  sellingPrice: double("sellingPrice").notNull(),
+  costPrice: doublePrecision("costPrice").notNull(),
+  profitMarginPct: doublePrecision("profitMarginPct").notNull(),
+  sellingPrice: doublePrecision("sellingPrice").notNull(),
   currency: varchar("currency", { length: 3 }).notNull().default("NGN"),
-  tenorMonths: int("tenorMonths").notNull(),
-  instalmentAmount: double("instalmentAmount").notNull(),
-  totalPaid: double("totalPaid").notNull().default(0),
-  outstandingBalance: double("outstandingBalance").notNull(),
+  tenorMonths: integer("tenorMonths").notNull(),
+  instalmentAmount: doublePrecision("instalmentAmount").notNull(),
+  totalPaid: doublePrecision("totalPaid").notNull().default(0),
+  outstandingBalance: doublePrecision("outstandingBalance").notNull(),
   disbursementDate: varchar("disbursementDate", { length: 30 }),
   maturityDate: varchar("maturityDate", { length: 30 }),
   status: varchar("status", { length: 30 }).notNull().default("pending_sharia_review"),
   shariaCompliance: varchar("shariaCompliance", { length: 30 }).notNull(),
   shariaBoardReference: text("shariaBoardReference"),
-  instalmentSchedule: json("instalmentSchedule").$type<object[]>().notNull(),
+  instalmentSchedule: jsonb("instalmentSchedule").$type<object[]>().notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 }, (table) => [
   index("murabaha_tenant_idx").on(table.tenantId),
   index("murabaha_customer_idx").on(table.customerId),
 ]);
 
-export const ijaraContracts = mysqlTable("ijaraContracts", {
-  id: int("id").autoincrement().primaryKey(),
+export const ijaraContracts = pgTable("ijaraContracts", {
+  id: serial("id").primaryKey(),
   contractId: varchar("contractId", { length: 32 }).notNull().unique(),
   tenantId: varchar("tenantId", { length: 64 }).notNull(),
   customerId: varchar("customerId", { length: 64 }).notNull(),
   customerName: varchar("customerName", { length: 200 }).notNull(),
   assetDescription: text("assetDescription").notNull(),
   assetCategory: varchar("assetCategory", { length: 50 }).notNull(),
-  assetValue: double("assetValue").notNull(),
-  rentalAmount: double("rentalAmount").notNull(),
+  assetValue: doublePrecision("assetValue").notNull(),
+  rentalAmount: doublePrecision("rentalAmount").notNull(),
   rentalFrequency: varchar("rentalFrequency", { length: 20 }).notNull().default("monthly"),
   currency: varchar("currency", { length: 3 }).notNull().default("NGN"),
   leaseStart: varchar("leaseStart", { length: 20 }).notNull(),
   leaseEnd: varchar("leaseEnd", { length: 20 }).notNull(),
-  tenorMonths: int("tenorMonths").notNull(),
-  residualValue: double("residualValue").notNull(),
-  purchaseOption: int("purchaseOption").notNull().default(1),
-  purchasePrice: double("purchasePrice"),
-  totalRentPaid: double("totalRentPaid").notNull().default(0),
+  tenorMonths: integer("tenorMonths").notNull(),
+  residualValue: doublePrecision("residualValue").notNull(),
+  purchaseOption: integer("purchaseOption").notNull().default(1),
+  purchasePrice: doublePrecision("purchasePrice"),
+  totalRentPaid: doublePrecision("totalRentPaid").notNull().default(0),
   status: varchar("status", { length: 30 }).notNull().default("active"),
   shariaCompliance: varchar("shariaCompliance", { length: 30 }).notNull(),
   maintenanceResponsibility: varchar("maintenanceResponsibility", { length: 20 }).notNull().default("lessor"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 }, (table) => [
   index("ijara_tenant_idx").on(table.tenantId),
   index("ijara_customer_idx").on(table.customerId),
 ]);
 
-export const mudarabahContracts = mysqlTable("mudarabahContracts", {
-  id: int("id").autoincrement().primaryKey(),
+export const mudarabahContracts = pgTable("mudarabahContracts", {
+  id: serial("id").primaryKey(),
   contractId: varchar("contractId", { length: 32 }).notNull().unique(),
   tenantId: varchar("tenantId", { length: 64 }).notNull(),
   investorId: varchar("investorId", { length: 64 }).notNull(),
   investorName: varchar("investorName", { length: 200 }).notNull(),
   fundManagerId: varchar("fundManagerId", { length: 64 }).notNull(),
   investmentPurpose: text("investmentPurpose").notNull(),
-  capitalAmount: double("capitalAmount").notNull(),
+  capitalAmount: doublePrecision("capitalAmount").notNull(),
   currency: varchar("currency", { length: 3 }).notNull().default("NGN"),
-  profitSharingRatioInvestor: double("profitSharingRatioInvestor").notNull(),
-  profitSharingRatioManager: double("profitSharingRatioManager").notNull(),
-  investmentPeriodMonths: int("investmentPeriodMonths").notNull(),
+  profitSharingRatioInvestor: doublePrecision("profitSharingRatioInvestor").notNull(),
+  profitSharingRatioManager: doublePrecision("profitSharingRatioManager").notNull(),
+  investmentPeriodMonths: integer("investmentPeriodMonths").notNull(),
   startDate: varchar("startDate", { length: 20 }).notNull(),
   maturityDate: varchar("maturityDate", { length: 20 }).notNull(),
-  realizedProfit: double("realizedProfit").notNull().default(0),
-  realizedLoss: double("realizedLoss").notNull().default(0),
-  distributions: json("distributions").$type<object[]>().notNull(),
+  realizedProfit: doublePrecision("realizedProfit").notNull().default(0),
+  realizedLoss: doublePrecision("realizedLoss").notNull().default(0),
+  distributions: jsonb("distributions").$type<object[]>().notNull(),
   status: varchar("status", { length: 30 }).notNull().default("active"),
   shariaCompliance: varchar("shariaCompliance", { length: 30 }).notNull(),
   riskCategory: varchar("riskCategory", { length: 30 }).notNull().default("moderate"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 }, (table) => [
   index("mudarabah_tenant_idx").on(table.tenantId),
   index("mudarabah_investor_idx").on(table.investorId),
@@ -989,8 +989,8 @@ export const mudarabahContracts = mysqlTable("mudarabahContracts", {
 
 // ── Trade Finance ──
 
-export const lettersOfCredit = mysqlTable("lettersOfCredit", {
-  id: int("id").autoincrement().primaryKey(),
+export const lettersOfCredit = pgTable("lettersOfCredit", {
+  id: serial("id").primaryKey(),
   lcId: varchar("lcId", { length: 32 }).notNull().unique(),
   tenantId: varchar("tenantId", { length: 64 }).notNull(),
   lcType: varchar("lcType", { length: 30 }).notNull().default("irrevocable"),
@@ -1001,7 +1001,7 @@ export const lettersOfCredit = mysqlTable("lettersOfCredit", {
   beneficiaryCountry: varchar("beneficiaryCountry", { length: 100 }),
   issuingBank: varchar("issuingBank", { length: 200 }).notNull().default("54Bank"),
   advisingBank: varchar("advisingBank", { length: 200 }),
-  amount: double("amount").notNull(),
+  amount: doublePrecision("amount").notNull(),
   currency: varchar("currency", { length: 3 }).notNull().default("USD"),
   commodity: varchar("commodity", { length: 200 }),
   incoterm: varchar("incoterm", { length: 10 }),
@@ -1009,18 +1009,18 @@ export const lettersOfCredit = mysqlTable("lettersOfCredit", {
   portOfDischarge: varchar("portOfDischarge", { length: 200 }),
   latestShipDate: varchar("latestShipDate", { length: 20 }),
   expiryDate: varchar("expiryDate", { length: 20 }).notNull(),
-  documentsRequired: json("documentsRequired").$type<string[]>().notNull(),
-  amendments: json("amendments").$type<object[]>().notNull(),
+  documentsRequired: jsonb("documentsRequired").$type<string[]>().notNull(),
+  amendments: jsonb("amendments").$type<object[]>().notNull(),
   status: varchar("status", { length: 30 }).notNull().default("draft"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 }, (table) => [
   index("lc_tenant_idx").on(table.tenantId),
   index("lc_applicant_idx").on(table.applicantId),
 ]);
 
-export const warehouseReceipts = mysqlTable("warehouseReceipts", {
-  id: int("id").autoincrement().primaryKey(),
+export const warehouseReceipts = pgTable("warehouseReceipts", {
+  id: serial("id").primaryKey(),
   receiptId: varchar("receiptId", { length: 32 }).notNull().unique(),
   tenantId: varchar("tenantId", { length: 64 }).notNull(),
   depositorId: varchar("depositorId", { length: 64 }).notNull(),
@@ -1029,43 +1029,43 @@ export const warehouseReceipts = mysqlTable("warehouseReceipts", {
   warehouseName: varchar("warehouseName", { length: 200 }),
   location: varchar("location", { length: 200 }).notNull(),
   commodity: varchar("commodity", { length: 100 }).notNull(),
-  quantity: double("quantity").notNull(),
+  quantity: doublePrecision("quantity").notNull(),
   quantityUnit: varchar("quantityUnit", { length: 20 }).notNull().default("tonnes"),
   qualityGrade: varchar("qualityGrade", { length: 20 }).notNull().default("Grade A"),
   storageStartDate: varchar("storageStartDate", { length: 20 }).notNull(),
   expiryDate: varchar("expiryDate", { length: 20 }),
-  marketValue: double("marketValue").notNull(),
+  marketValue: doublePrecision("marketValue").notNull(),
   currency: varchar("currency", { length: 3 }).notNull().default("NGN"),
-  pledgedAsCollateral: int("pledgedAsCollateral").notNull().default(0),
+  pledgedAsCollateral: integer("pledgedAsCollateral").notNull().default(0),
   collateralLoanId: varchar("collateralLoanId", { length: 32 }),
   insurancePolicyId: varchar("insurancePolicyId", { length: 32 }),
   status: varchar("status", { length: 20 }).notNull().default("active"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 }, (table) => [
   index("whr_tenant_idx").on(table.tenantId),
   index("whr_depositor_idx").on(table.depositorId),
 ]);
 
-export const bankGuarantees = mysqlTable("bankGuarantees", {
-  id: int("id").autoincrement().primaryKey(),
+export const bankGuarantees = pgTable("bankGuarantees", {
+  id: serial("id").primaryKey(),
   guaranteeId: varchar("guaranteeId", { length: 32 }).notNull().unique(),
   tenantId: varchar("tenantId", { length: 64 }).notNull(),
   guaranteeType: varchar("guaranteeType", { length: 30 }).notNull().default("performance"),
   applicantId: varchar("applicantId", { length: 64 }).notNull(),
   applicantName: varchar("applicantName", { length: 200 }).notNull(),
   beneficiaryName: varchar("beneficiaryName", { length: 200 }).notNull(),
-  amount: double("amount").notNull(),
+  amount: doublePrecision("amount").notNull(),
   currency: varchar("currency", { length: 3 }).notNull().default("USD"),
   purpose: text("purpose").notNull(),
   effectiveDate: varchar("effectiveDate", { length: 20 }).notNull(),
   expiryDate: varchar("expiryDate", { length: 20 }).notNull(),
   claimDeadline: varchar("claimDeadline", { length: 20 }),
-  commissionRate: double("commissionRate").notNull(),
-  commissionAmount: double("commissionAmount").notNull(),
+  commissionRate: doublePrecision("commissionRate").notNull(),
+  commissionAmount: doublePrecision("commissionAmount").notNull(),
   status: varchar("status", { length: 20 }).notNull().default("active"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 }, (table) => [
   index("bg_tenant_idx").on(table.tenantId),
   index("bg_applicant_idx").on(table.applicantId),
@@ -1102,22 +1102,22 @@ export type InsertBankGuarantee = typeof bankGuarantees.$inferInsert;
 
 // ── Mortgage Servicing ──────────────────────────────────────────────────────
 
-export const mortgageApplications = mysqlTable("mortgageApplications", {
-  id: int("id").autoincrement().primaryKey(),
+export const mortgageApplications = pgTable("mortgageApplications", {
+  id: serial("id").primaryKey(),
   mortgageId: varchar("mortgageId", { length: 64 }).notNull().unique(),
   tenantId: varchar("tenantId", { length: 128 }).notNull(),
   applicantId: varchar("applicantId", { length: 64 }).notNull(),
   applicantName: varchar("applicantName", { length: 255 }).notNull(),
-  propertyValue: double("propertyValue").notNull(),
-  loanAmount: double("loanAmount").notNull(),
-  downPayment: double("downPayment").notNull(),
-  interestRatePct: double("interestRatePct").notNull(),
-  tenorMonths: int("tenorMonths").notNull(),
+  propertyValue: doublePrecision("propertyValue").notNull(),
+  loanAmount: doublePrecision("loanAmount").notNull(),
+  downPayment: doublePrecision("downPayment").notNull(),
+  interestRatePct: doublePrecision("interestRatePct").notNull(),
+  tenorMonths: integer("tenorMonths").notNull(),
   mortgageType: varchar("mortgageType", { length: 32 }).notNull(),
-  emi: double("emi").notNull(),
-  ltvPct: double("ltvPct").notNull(),
+  emi: doublePrecision("emi").notNull(),
+  ltvPct: doublePrecision("ltvPct").notNull(),
   ltvGrade: varchar("ltvGrade", { length: 2 }).notNull(),
-  dtiRatio: double("dtiRatio").notNull(),
+  dtiRatio: doublePrecision("dtiRatio").notNull(),
   propertyAddress: text("propertyAddress"),
   propertyType: varchar("propertyType", { length: 32 }),
   status: varchar("status", { length: 32 }).notNull().default("pending"),
@@ -1132,22 +1132,22 @@ export const mortgageApplications = mysqlTable("mortgageApplications", {
 
 // ── Education Loans ─────────────────────────────────────────────────────────
 
-export const educationLoans = mysqlTable("educationLoans", {
-  id: int("id").autoincrement().primaryKey(),
+export const educationLoans = pgTable("educationLoans", {
+  id: serial("id").primaryKey(),
   loanId: varchar("loanId", { length: 64 }).notNull().unique(),
   tenantId: varchar("tenantId", { length: 128 }).notNull(),
   studentId: varchar("studentId", { length: 64 }),
   studentName: varchar("studentName", { length: 255 }).notNull(),
   institutionName: varchar("institutionName", { length: 255 }).notNull(),
   programName: varchar("programName", { length: 255 }),
-  loanAmount: double("loanAmount").notNull(),
-  interestRate: double("interestRate").notNull(),
-  tenorMonths: int("tenorMonths").notNull(),
-  graceMonths: int("graceMonths").notNull(),
-  emi: double("emi").notNull(),
-  totalDisbursed: double("totalDisbursed").default(0),
-  totalRepaid: double("totalRepaid").default(0),
-  outstandingBalance: double("outstandingBalance").notNull(),
+  loanAmount: doublePrecision("loanAmount").notNull(),
+  interestRate: doublePrecision("interestRate").notNull(),
+  tenorMonths: integer("tenorMonths").notNull(),
+  graceMonths: integer("graceMonths").notNull(),
+  emi: doublePrecision("emi").notNull(),
+  totalDisbursed: doublePrecision("totalDisbursed").default(0),
+  totalRepaid: doublePrecision("totalRepaid").default(0),
+  outstandingBalance: doublePrecision("outstandingBalance").notNull(),
   cosignerName: varchar("cosignerName", { length: 255 }),
   cosignerType: varchar("cosignerType", { length: 32 }),
   status: varchar("status", { length: 32 }).notNull().default("pending"),
@@ -1160,19 +1160,19 @@ export const educationLoans = mysqlTable("educationLoans", {
 
 // ── Esusu Groups ────────────────────────────────────────────────────────────
 
-export const esusuGroups = mysqlTable("esusuGroups", {
-  id: int("id").autoincrement().primaryKey(),
+export const esusuGroups = pgTable("esusuGroups", {
+  id: serial("id").primaryKey(),
   groupId: varchar("groupId", { length: 64 }).notNull().unique(),
   tenantId: varchar("tenantId", { length: 128 }).notNull(),
   name: varchar("name", { length: 255 }).notNull(),
   organiserId: varchar("organiserId", { length: 64 }).notNull(),
   organiserName: varchar("organiserName", { length: 255 }).notNull(),
-  contributionAmount: double("contributionAmount").notNull(),
+  contributionAmount: doublePrecision("contributionAmount").notNull(),
   currency: varchar("currency", { length: 3 }).notNull().default("NGN"),
   frequency: varchar("frequency", { length: 16 }).notNull(),
-  maxMembers: int("maxMembers").notNull(),
-  currentCycle: int("currentCycle").default(0),
-  totalCycles: int("totalCycles").default(0),
+  maxMembers: integer("maxMembers").notNull(),
+  currentCycle: integer("currentCycle").default(0),
+  totalCycles: integer("totalCycles").default(0),
   status: varchar("status", { length: 32 }).notNull().default("forming"),
   startDate: timestamp("startDate"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
@@ -1184,8 +1184,8 @@ export const esusuGroups = mysqlTable("esusuGroups", {
 
 // ── Virtual Accounts ────────────────────────────────────────────────────────
 
-export const virtualAccounts = mysqlTable("virtualAccounts", {
-  id: int("id").autoincrement().primaryKey(),
+export const virtualAccounts = pgTable("virtualAccounts", {
+  id: serial("id").primaryKey(),
   accountId: varchar("accountId", { length: 64 }).notNull().unique(),
   tenantId: varchar("tenantId", { length: 128 }).notNull(),
   van: varchar("van", { length: 20 }).notNull().unique(),
@@ -1195,11 +1195,11 @@ export const virtualAccounts = mysqlTable("virtualAccounts", {
   ownerType: varchar("ownerType", { length: 32 }).notNull(),
   purpose: text("purpose"),
   currency: varchar("currency", { length: 3 }).notNull().default("NGN"),
-  balance: double("balance").default(0),
-  availableBalance: double("availableBalance").default(0),
-  holdAmount: double("holdAmount").default(0),
-  dailyLimit: double("dailyLimit"),
-  monthlyLimit: double("monthlyLimit"),
+  balance: doublePrecision("balance").default(0),
+  availableBalance: doublePrecision("availableBalance").default(0),
+  holdAmount: doublePrecision("holdAmount").default(0),
+  dailyLimit: doublePrecision("dailyLimit"),
+  monthlyLimit: doublePrecision("monthlyLimit"),
   status: varchar("status", { length: 16 }).notNull().default("active"),
   expiryDate: timestamp("expiryDate"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
@@ -1212,8 +1212,8 @@ export const virtualAccounts = mysqlTable("virtualAccounts", {
 
 // ── Agent Banking ───────────────────────────────────────────────────────────
 
-export const agentBankingAgents = mysqlTable("agentBankingAgents", {
-  id: int("id").autoincrement().primaryKey(),
+export const agentBankingAgents = pgTable("agentBankingAgents", {
+  id: serial("id").primaryKey(),
   agentId: varchar("agentId", { length: 64 }).notNull().unique(),
   tenantId: varchar("tenantId", { length: 128 }).notNull(),
   agentCode: varchar("agentCode", { length: 20 }).notNull().unique(),
@@ -1226,9 +1226,9 @@ export const agentBankingAgents = mysqlTable("agentBankingAgents", {
   state: varchar("state", { length: 64 }),
   agentType: varchar("agentType", { length: 20 }).notNull(),
   superAgentId: varchar("superAgentId", { length: 64 }),
-  floatBalance: double("floatBalance").default(0),
-  commissionEarned: double("commissionEarned").default(0),
-  transactionCount: int("transactionCount").default(0),
+  floatBalance: doublePrecision("floatBalance").default(0),
+  commissionEarned: doublePrecision("commissionEarned").default(0),
+  transactionCount: integer("transactionCount").default(0),
   kycStatus: varchar("kycStatus", { length: 16 }).default("pending"),
   status: varchar("status", { length: 16 }).notNull().default("active"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
@@ -1240,15 +1240,15 @@ export const agentBankingAgents = mysqlTable("agentBankingAgents", {
 
 // ── Group Lending ───────────────────────────────────────────────────────────
 
-export const lendingGroups = mysqlTable("lendingGroups", {
-  id: int("id").autoincrement().primaryKey(),
+export const lendingGroups = pgTable("lendingGroups", {
+  id: serial("id").primaryKey(),
   groupId: varchar("groupId", { length: 64 }).notNull().unique(),
   tenantId: varchar("tenantId", { length: 128 }).notNull(),
   name: varchar("name", { length: 255 }).notNull(),
   purpose: text("purpose"),
   groupLeaderId: varchar("groupLeaderId", { length: 64 }).notNull(),
   groupLeaderName: varchar("groupLeaderName", { length: 255 }),
-  maxMembers: int("maxMembers").notNull(),
+  maxMembers: integer("maxMembers").notNull(),
   liabilityType: varchar("liabilityType", { length: 32 }).notNull(),
   status: varchar("status", { length: 32 }).notNull().default("forming"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
@@ -1260,8 +1260,8 @@ export const lendingGroups = mysqlTable("lendingGroups", {
 
 // ── Identity & Channels ─────────────────────────────────────────────────────
 
-export const identityProfiles = mysqlTable("identityProfiles", {
-  id: int("id").autoincrement().primaryKey(),
+export const identityProfiles = pgTable("identityProfiles", {
+  id: serial("id").primaryKey(),
   profileId: varchar("profileId", { length: 64 }).notNull().unique(),
   tenantId: varchar("tenantId", { length: 128 }).notNull(),
   customerId: varchar("customerId", { length: 64 }).notNull(),
@@ -1270,12 +1270,12 @@ export const identityProfiles = mysqlTable("identityProfiles", {
   phoneNumber: varchar("phoneNumber", { length: 20 }).notNull(),
   bvn: varchar("bvn", { length: 11 }),
   nin: varchar("nin", { length: 11 }),
-  mfaEnabled: int("mfaEnabled").default(0),
-  mfaMethods: json("mfaMethods"),
-  activeChannels: json("activeChannels"),
+  mfaEnabled: integer("mfaEnabled").default(0),
+  mfaMethods: jsonb("mfaMethods"),
+  activeChannels: jsonb("activeChannels"),
   status: varchar("status", { length: 16 }).notNull().default("active"),
   lastLoginAt: timestamp("lastLoginAt"),
-  failedAttempts: int("failedAttempts").default(0),
+  failedAttempts: integer("failedAttempts").default(0),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 }, (table) => [
@@ -1285,8 +1285,8 @@ export const identityProfiles = mysqlTable("identityProfiles", {
 
 // ── Dispute Management ──────────────────────────────────────────────────────
 
-export const disputeCases = mysqlTable("disputeCases", {
-  id: int("id").autoincrement().primaryKey(),
+export const disputeCases = pgTable("disputeCases", {
+  id: serial("id").primaryKey(),
   disputeId: varchar("disputeId", { length: 64 }).notNull().unique(),
   tenantId: varchar("tenantId", { length: 128 }).notNull(),
   customerId: varchar("customerId", { length: 64 }),
@@ -1294,15 +1294,15 @@ export const disputeCases = mysqlTable("disputeCases", {
   category: varchar("category", { length: 64 }).notNull(),
   description: text("description"),
   transactionId: varchar("transactionId", { length: 64 }),
-  transactionAmount: double("transactionAmount"),
-  disputedAmount: double("disputedAmount"),
+  transactionAmount: doublePrecision("transactionAmount"),
+  disputedAmount: doublePrecision("disputedAmount"),
   channel: varchar("channel", { length: 16 }),
   priority: varchar("priority", { length: 16 }).default("medium"),
   status: varchar("status", { length: 32 }).notNull().default("filed"),
   slaDeadline: timestamp("slaDeadline"),
   assignedTo: varchar("assignedTo", { length: 64 }),
   resolution: varchar("resolution", { length: 32 }),
-  resolutionAmount: double("resolutionAmount"),
+  resolutionAmount: doublePrecision("resolutionAmount"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 }, (table) => [
@@ -1313,19 +1313,19 @@ export const disputeCases = mysqlTable("disputeCases", {
 
 // ── Ledger Reconciliation ───────────────────────────────────────────────────
 
-export const reconciliationRuns = mysqlTable("reconciliationRuns", {
-  id: int("id").autoincrement().primaryKey(),
+export const reconciliationRuns = pgTable("reconciliationRuns", {
+  id: serial("id").primaryKey(),
   runId: varchar("runId", { length: 64 }).notNull().unique(),
   tenantId: varchar("tenantId", { length: 128 }).notNull(),
   runType: varchar("runType", { length: 16 }).notNull(),
   scope: varchar("scope", { length: 32 }).notNull(),
   status: varchar("status", { length: 48 }).notNull(),
-  totalEntriesChecked: int("totalEntriesChecked").default(0),
-  matches: int("matches").default(0),
-  discrepancies: int("discrepancies").default(0),
-  autoRepaired: int("autoRepaired").default(0),
-  manualTriage: int("manualTriage").default(0),
-  durationMs: int("durationMs"),
+  totalEntriesChecked: integer("totalEntriesChecked").default(0),
+  matches: integer("matches").default(0),
+  discrepancies: integer("discrepancies").default(0),
+  autoRepaired: integer("autoRepaired").default(0),
+  manualTriage: integer("manualTriage").default(0),
+  durationMs: integer("durationMs"),
   startTime: timestamp("startTime"),
   endTime: timestamp("endTime"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
@@ -1336,17 +1336,17 @@ export const reconciliationRuns = mysqlTable("reconciliationRuns", {
 
 // ── ERPNext Sync ────────────────────────────────────────────────────────────
 
-export const erpnextSyncJobs = mysqlTable("erpnextSyncJobs", {
-  id: int("id").autoincrement().primaryKey(),
+export const erpnextSyncJobs = pgTable("erpnextSyncJobs", {
+  id: serial("id").primaryKey(),
   jobId: varchar("jobId", { length: 64 }).notNull().unique(),
   tenantId: varchar("tenantId", { length: 128 }).notNull(),
   syncType: varchar("syncType", { length: 32 }).notNull(),
   direction: varchar("direction", { length: 16 }).notNull(),
   status: varchar("status", { length: 32 }).notNull(),
-  recordsProcessed: int("recordsProcessed").default(0),
-  recordsFailed: int("recordsFailed").default(0),
-  recordsSkipped: int("recordsSkipped").default(0),
-  retryCount: int("retryCount").default(0),
+  recordsProcessed: integer("recordsProcessed").default(0),
+  recordsFailed: integer("recordsFailed").default(0),
+  recordsSkipped: integer("recordsSkipped").default(0),
+  retryCount: integer("retryCount").default(0),
   startedAt: timestamp("startedAt"),
   completedAt: timestamp("completedAt"),
   errorMessage: text("errorMessage"),
@@ -1359,8 +1359,8 @@ export const erpnextSyncJobs = mysqlTable("erpnextSyncJobs", {
 
 // ── Regulatory Reporting ────────────────────────────────────────────────────
 
-export const regulatoryReports = mysqlTable("regulatoryReports", {
-  id: int("id").autoincrement().primaryKey(),
+export const regulatoryReports = pgTable("regulatoryReports", {
+  id: serial("id").primaryKey(),
   reportId: varchar("reportId", { length: 64 }).notNull().unique(),
   tenantId: varchar("tenantId", { length: 128 }).notNull(),
   reportType: varchar("reportType", { length: 48 }).notNull(),
@@ -1368,8 +1368,8 @@ export const regulatoryReports = mysqlTable("regulatoryReports", {
   status: varchar("status", { length: 16 }).notNull().default("generated"),
   submittedTo: varchar("submittedTo", { length: 16 }),
   submittedAt: timestamp("submittedAt"),
-  data: json("data"),
-  summary: json("summary"),
+  data: jsonb("data"),
+  summary: jsonb("summary"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 }, (table) => [

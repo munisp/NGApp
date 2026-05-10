@@ -68,7 +68,7 @@ services:
       <<: *common-env
       PORT: "3000"
       NODE_ENV: production
-      DATABASE_URL: mysql://ndsep_user:ndsep_secure_2026@mysql:3306/ndsep_db
+      DATABASE_URL: postgresql://ndsep_user:ndsep_secure_2026@postgres:5432/ndsep_db
       AGRICULTURE_SERVICE_URL: http://agriculture-banking:8090
       TELLER_SERVICE_URL: http://teller-operations:8091
       ISLAMIC_BANKING_SERVICE_URL: http://islamic-banking:8092

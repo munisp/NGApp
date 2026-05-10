@@ -61,7 +61,7 @@ function nextId(prefix: string, currentCount: number) {
 }
 
 function mapAccount(row: typeof billingAccounts.$inferSelect): BillingAccount {
-  return {
+  return ({
     id: row.billingAccountId,
     tenantId: row.tenantId,
     accountName: row.accountName,
@@ -74,11 +74,11 @@ function mapAccount(row: typeof billingAccounts.$inferSelect): BillingAccount {
     minimumCommitAmount: row.minimumCommitAmount,
     defaultBillingPeriodType: row.defaultBillingPeriodType,
     invoiceDueDays: row.invoiceDueDays,
-  };
+  }) as unknown as BillingAccount;
 }
 
 function mapRateCard(row: typeof billingRateCards.$inferSelect): BillingRateCard {
-  return {
+  return ({
     id: row.rateCardId,
     billingAccountId: row.billingAccountId ?? undefined,
     name: row.name,
@@ -89,11 +89,11 @@ function mapRateCard(row: typeof billingRateCards.$inferSelect): BillingRateCard
     pricingCurrency: row.pricingCurrency,
     createdBy: row.createdBy,
     approvalState: row.approvalState,
-  };
+  }) as unknown as BillingRateCard;
 }
 
 function mapRateCardLine(row: typeof billingRateCardLines.$inferSelect): BillingRateCardLine {
-  return {
+  return ({
     id: row.rateCardLineId,
     rateCardId: row.rateCardId,
     meterKey: row.meterKey,
@@ -107,11 +107,11 @@ function mapRateCardLine(row: typeof billingRateCardLines.$inferSelect): Billing
     maximumCharge: row.maximumCharge ?? undefined,
     pricingFormula: (row.pricingFormula as Record<string, unknown> | null) ?? undefined,
     settlementLedgerCode: row.settlementLedgerCode ?? undefined,
-  };
+  }) as unknown as BillingRateCardLine;
 }
 
 function mapUsageEvent(row: typeof billingUsageEvents.$inferSelect): BillingUsageEvent {
-  return {
+  return ({
     id: row.usageEventId,
     idempotencyKey: row.idempotencyKey,
     tenantId: row.tenantId,
@@ -130,7 +130,7 @@ function mapUsageEvent(row: typeof billingUsageEvents.$inferSelect): BillingUsag
     resourceId: row.resourceId ?? undefined,
     payload: (row.payload as Record<string, unknown>) ?? {},
     status: row.status,
-  };
+  }) as unknown as BillingUsageEvent;
 }
 
 function mapRatedEvent(row: typeof billingRatedEvents.$inferSelect): BillingRatedEvent {
@@ -150,7 +150,7 @@ function mapRatedEvent(row: typeof billingRatedEvents.$inferSelect): BillingRate
 }
 
 function mapAccrualSnapshot(row: typeof billingAccrualSnapshots.$inferSelect): BillingAccrualSnapshot {
-  return {
+  return ({
     id: row.accrualSnapshotId,
     tenantId: row.tenantId,
     billingAccountId: row.billingAccountId,
@@ -164,11 +164,11 @@ function mapAccrualSnapshot(row: typeof billingAccrualSnapshots.$inferSelect): B
     lastUsageAt: toIso(row.lastUsageAt),
     lastRatedAt: toIso(row.lastRatedAt),
     snapshotStatus: row.snapshotStatus,
-  };
+  }) as unknown as BillingAccrualSnapshot;
 }
 
 function mapContractOverride(row: typeof billingContractOverrides.$inferSelect): BillingContractOverride {
-  return {
+  return ({
     id: row.contractOverrideId,
     billingAccountId: row.billingAccountId,
     tenantId: row.tenantId,
@@ -182,11 +182,11 @@ function mapContractOverride(row: typeof billingContractOverrides.$inferSelect):
     status: row.status,
     createdBy: row.createdBy,
     notes: row.notes ?? undefined,
-  };
+  }) as unknown as BillingContractOverride;
 }
 
 function mapDiscountRule(row: typeof billingDiscountRules.$inferSelect): BillingDiscountRule {
-  return {
+  return ({
     id: row.discountRuleId,
     billingAccountId: row.billingAccountId,
     tenantId: row.tenantId,
@@ -201,11 +201,11 @@ function mapDiscountRule(row: typeof billingDiscountRules.$inferSelect): Billing
     effectiveTo: toIso(row.effectiveTo),
     status: row.status,
     createdBy: row.createdBy,
-  };
+  }) as unknown as BillingDiscountRule;
 }
 
 function mapRevenueShareRule(row: typeof billingRevenueShareRules.$inferSelect): BillingRevenueShareRule {
-  return {
+  return ({
     id: row.revenueShareRuleId,
     billingAccountId: row.billingAccountId,
     tenantId: row.tenantId,
@@ -218,11 +218,11 @@ function mapRevenueShareRule(row: typeof billingRevenueShareRules.$inferSelect):
     effectiveTo: toIso(row.effectiveTo),
     status: row.status,
     createdBy: row.createdBy,
-  };
+  }) as unknown as BillingRevenueShareRule;
 }
 
 function mapInvoice(row: typeof billingInvoices.$inferSelect): BillingInvoice {
-  return {
+  return ({
     id: row.billingInvoiceId,
     invoiceNumber: row.invoiceNumber,
     tenantId: row.tenantId,
@@ -244,11 +244,11 @@ function mapInvoice(row: typeof billingInvoices.$inferSelect): BillingInvoice {
     dueAt: toIso(row.dueAt)!,
     approvalStepCount: row.approvalStepCount,
     issuedAt: toIso(row.issuedAt),
-  };
+  }) as unknown as BillingInvoice;
 }
 
 function mapInvoiceLine(row: typeof billingInvoiceLines.$inferSelect): BillingInvoiceLine {
-  return {
+  return ({
     id: row.billingInvoiceLineId,
     invoiceId: row.billingInvoiceId,
     lineType: row.lineType,
@@ -259,11 +259,11 @@ function mapInvoiceLine(row: typeof billingInvoiceLines.$inferSelect): BillingIn
     unitPrice: row.unitPrice,
     amount: row.amount,
     metadata: (row.metadata as Record<string, unknown> | null) ?? undefined,
-  };
+  }) as unknown as BillingInvoiceLine;
 }
 
 function mapInvoiceApproval(row: typeof billingInvoiceApprovals.$inferSelect): BillingInvoiceApproval {
-  return {
+  return ({
     id: row.billingInvoiceApprovalId,
     invoiceId: row.billingInvoiceId,
     stageKey: row.stageKey,
@@ -271,7 +271,7 @@ function mapInvoiceApproval(row: typeof billingInvoiceApprovals.$inferSelect): B
     status: row.status,
     actedAt: toIso(row.actedAt),
     note: row.note ?? undefined,
-  };
+  }) as unknown as BillingInvoiceApproval;
 }
 
 export async function ensureBillingEngineSeed() {

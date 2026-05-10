@@ -1,12 +1,12 @@
 import { eq } from "drizzle-orm";
-import { drizzle } from "drizzle-orm/mysql2";
-import mysql from "mysql2/promise";
+import { drizzle } from "drizzle-orm/node-postgres";
+import pg from "pg";
 import { InsertUser, users } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 import { logger } from "./lib/logger";
 
 let _db: ReturnType<typeof drizzle> | null = null;
-let _pool: mysql.Pool | null = null;
+let _pool: pg.Pool | null = null;
 
 function parsePositiveInt(value: string | undefined, fallback: number) {
   const parsed = Number.parseInt(value ?? "", 10);
@@ -18,15 +18,11 @@ function getPool() {
     return _pool;
   }
 
-  _pool = mysql.createPool({
-    uri: ENV.databaseUrl,
-    waitForConnections: true,
-    connectionLimit: parsePositiveInt(process.env.DB_POOL_MAX, 10),
-    maxIdle: parsePositiveInt(process.env.DB_POOL_IDLE_MAX, 10),
-    idleTimeout: parsePositiveInt(process.env.DB_POOL_IDLE_TIMEOUT_MS, 60_000),
-    queueLimit: parsePositiveInt(process.env.DB_POOL_QUEUE_LIMIT, 100),
-    enableKeepAlive: true,
-    keepAliveInitialDelay: parsePositiveInt(process.env.DB_POOL_KEEPALIVE_DELAY_MS, 10_000),
+  _pool = new pg.Pool({
+    connectionString: ENV.databaseUrl,
+    max: parsePositiveInt(process.env.DB_POOL_MAX, 10),
+    idleTimeoutMillis: parsePositiveInt(process.env.DB_POOL_IDLE_TIMEOUT_MS, 60_000),
+    connectionTimeoutMillis: parsePositiveInt(process.env.DB_POOL_QUEUE_LIMIT, 10_000),
   });
 
   return _pool;
@@ -40,7 +36,7 @@ export async function getDb() {
       if (!pool) {
         return null;
       }
-      _db = drizzle(pool as any, { mode: "default" }) as ReturnType<typeof drizzle>;
+      _db = drizzle(pool as any) as ReturnType<typeof drizzle>;
     } catch (error) {
       logger.warn("Failed to connect to database", { error: String(error) });
       _db = null;
@@ -108,7 +104,9 @@ export async function upsertUser(user: InsertUser): Promise<void> {
       updateSet.lastSignedIn = new Date();
     }
 
-    await db.insert(users).values(values).onDuplicateKeyUpdate({
+    // Use PostgreSQL ON CONFLICT instead of MySQL onDuplicateKeyUpdate
+    await db.insert(users).values(values).onConflictDoUpdate({
+      target: users.openId,
       set: updateSet,
     });
   } catch (error) {
