@@ -6442,6 +6442,99 @@ async function startServer() {
     void proxyToService(AGENT_BANK_URL, "/v1/agents/activate", req, res);
   });
 
+  // SMS/Email Gateway proxy routes (Go :8144)
+  const SMS_EMAIL_URL = process.env.SMS_EMAIL_URL || "http://localhost:8144";
+  app.all("/api/platform/sms-email-gateway/v1/messaging/templates", (req, res) => {
+    void proxyToService(SMS_EMAIL_URL, "/v1/messaging/templates", req, res);
+  });
+  app.all("/api/platform/sms-email-gateway/v1/messaging/send", (req, res) => {
+    void proxyToService(SMS_EMAIL_URL, "/v1/messaging/send", req, res);
+  });
+  app.all("/api/platform/sms-email-gateway/v1/messaging/deliveries", (req, res) => {
+    void proxyToService(SMS_EMAIL_URL, "/v1/messaging/deliveries", req, res);
+  });
+  app.all("/api/platform/sms-email-gateway/v1/messaging/stats", (req, res) => {
+    void proxyToService(SMS_EMAIL_URL, "/v1/messaging/stats", req, res);
+  });
+
+  // Risk Scoring Engine proxy routes (Rust :8145)
+  const RISK_SCORE_URL = process.env.RISK_SCORE_URL || "http://localhost:8145";
+  app.all("/api/platform/risk-scoring/v1/risk/assessments", (req, res) => {
+    void proxyToService(RISK_SCORE_URL, "/v1/risk/assessments", req, res);
+  });
+  app.all("/api/platform/risk-scoring/v1/risk/score", (req, res) => {
+    void proxyToService(RISK_SCORE_URL, "/v1/risk/score", req, res);
+  });
+  app.all("/api/platform/risk-scoring/v1/risk/portfolio", (req, res) => {
+    void proxyToService(RISK_SCORE_URL, "/v1/risk/portfolio", req, res);
+  });
+
+  // Regulatory Reporting proxy routes (Python :8146)
+  const REG_REPORT_URL = process.env.REG_REPORT_URL || "http://localhost:8146";
+  app.all("/api/platform/regulatory-reporting/v1/regulatory/reports", (req, res) => {
+    void proxyToService(REG_REPORT_URL, "/v1/regulatory/reports", req, res);
+  });
+  app.all("/api/platform/regulatory-reporting/v1/regulatory/ctr", (req, res) => {
+    void proxyToService(REG_REPORT_URL, "/v1/regulatory/ctr", req, res);
+  });
+  app.all("/api/platform/regulatory-reporting/v1/regulatory/basel", (req, res) => {
+    void proxyToService(REG_REPORT_URL, "/v1/regulatory/basel", req, res);
+  });
+  app.all("/api/platform/regulatory-reporting/v1/regulatory/compliance-dashboard", (req, res) => {
+    void proxyToService(REG_REPORT_URL, "/v1/regulatory/compliance-dashboard", req, res);
+  });
+  app.all("/api/platform/regulatory-reporting/v1/regulatory/ctr/check", (req, res) => {
+    void proxyToService(REG_REPORT_URL, "/v1/regulatory/ctr/check", req, res);
+  });
+  app.all("/api/platform/regulatory-reporting/v1/regulatory/basel/compute-car", (req, res) => {
+    void proxyToService(REG_REPORT_URL, "/v1/regulatory/basel/compute-car", req, res);
+  });
+
+  // ATM Management proxy routes (Go :8147)
+  const ATM_MGMT_URL = process.env.ATM_MGMT_URL || "http://localhost:8147";
+  app.all("/api/platform/atm-management/v1/atm/terminals", (req, res) => {
+    void proxyToService(ATM_MGMT_URL, "/v1/atm/terminals", req, res);
+  });
+  app.all("/api/platform/atm-management/v1/atm/faults", (req, res) => {
+    void proxyToService(ATM_MGMT_URL, "/v1/atm/faults", req, res);
+  });
+  app.all("/api/platform/atm-management/v1/atm/stats", (req, res) => {
+    void proxyToService(ATM_MGMT_URL, "/v1/atm/stats", req, res);
+  });
+
+  // Data Export Engine proxy routes (Rust :8148)
+  const DATA_EXPORT_URL = process.env.DATA_EXPORT_URL || "http://localhost:8148";
+  app.all("/api/platform/data-export/v1/exports/jobs", (req, res) => {
+    void proxyToService(DATA_EXPORT_URL, "/v1/exports/jobs", req, res);
+  });
+  app.all("/api/platform/data-export/v1/exports/schedules", (req, res) => {
+    void proxyToService(DATA_EXPORT_URL, "/v1/exports/schedules", req, res);
+  });
+  app.all("/api/platform/data-export/v1/exports/stats", (req, res) => {
+    void proxyToService(DATA_EXPORT_URL, "/v1/exports/stats", req, res);
+  });
+
+  // Customer Insights/ML proxy routes (Python :8149)
+  const INSIGHTS_URL = process.env.INSIGHTS_URL || "http://localhost:8149";
+  app.all("/api/platform/customer-insights/v1/insights/churn", (req, res) => {
+    void proxyToService(INSIGHTS_URL, "/v1/insights/churn", req, res);
+  });
+  app.all("/api/platform/customer-insights/v1/insights/cross-sell", (req, res) => {
+    void proxyToService(INSIGHTS_URL, "/v1/insights/cross-sell", req, res);
+  });
+  app.all("/api/platform/customer-insights/v1/insights/anomalies", (req, res) => {
+    void proxyToService(INSIGHTS_URL, "/v1/insights/anomalies", req, res);
+  });
+  app.all("/api/platform/customer-insights/v1/insights/dashboard", (req, res) => {
+    void proxyToService(INSIGHTS_URL, "/v1/insights/dashboard", req, res);
+  });
+  app.all("/api/platform/customer-insights/v1/insights/clv", (req, res) => {
+    void proxyToService(INSIGHTS_URL, "/v1/insights/clv", req, res);
+  });
+  app.all("/api/platform/customer-insights/v1/insights/score-churn", (req, res) => {
+    void proxyToService(INSIGHTS_URL, "/v1/insights/score-churn", req, res);
+  });
+
   // GL Account Management endpoints
   app.get("/api/platform/gl/accounts", (_req, res) => {
     const { getGLAccounts } = require("./lib/glAccountManagement");

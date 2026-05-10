@@ -139,6 +139,12 @@ const CashManagementWorkspace = lazy(() => import("@/pages/CashManagementWorkspa
 const CorrespondentBankingWorkspace = lazy(() => import("@/pages/CorrespondentBankingWorkspace"));
 const ProductCatalogWorkspace = lazy(() => import("@/pages/ProductCatalogWorkspace"));
 const CustomerSegmentsWorkspace = lazy(() => import("@/pages/CustomerSegmentsWorkspace"));
+const SMSEmailGatewayWorkspace = lazy(() => import("@/pages/SMSEmailGatewayWorkspace"));
+const RiskScoringWorkspace = lazy(() => import("@/pages/RiskScoringWorkspace"));
+const RegulatoryReportingWorkspace = lazy(() => import("@/pages/RegulatoryReportingWorkspace"));
+const ATMManagementWorkspace = lazy(() => import("@/pages/ATMManagementWorkspace"));
+const DataExportWorkspace = lazy(() => import("@/pages/DataExportWorkspace"));
+const CustomerInsightsWorkspace = lazy(() => import("@/pages/CustomerInsightsWorkspace"));
 const AdminAnalyticsPage = lazy(() => import("@/pages/AdminModulePages").then((module) => ({ default: module.AdminAnalyticsPage })));
 const AdminBankingOpsPage = lazy(() => import("@/pages/AdminModulePages").then((module) => ({ default: module.AdminBankingOpsPage })));
 const AdminFeatureFlagsPage = lazy(() => import("@/pages/AdminModulePages").then((module) => ({ default: module.AdminFeatureFlagsPage })));
@@ -332,6 +338,12 @@ export default function App() {
         <Route path="/correspondent-banking" component={renderInAdminShell(CorrespondentBankingWorkspace)} />
         <Route path="/product-catalog" component={renderInAdminShell(ProductCatalogWorkspace)} />
         <Route path="/customer-segments" component={renderInAdminShell(CustomerSegmentsWorkspace)} />
+        <Route path="/messaging-gateway" component={renderInAdminShell(SMSEmailGatewayWorkspace)} />
+        <Route path="/risk-scoring" component={renderInAdminShell(RiskScoringWorkspace)} />
+        <Route path="/regulatory-reporting" component={renderInAdminShell(RegulatoryReportingWorkspace)} />
+        <Route path="/atm-management" component={renderInAdminShell(ATMManagementWorkspace)} />
+        <Route path="/data-export" component={renderInAdminShell(DataExportWorkspace)} />
+        <Route path="/customer-insights" component={renderInAdminShell(CustomerInsightsWorkspace)} />
 
         <Route component={NotFound} />
       </Switch>

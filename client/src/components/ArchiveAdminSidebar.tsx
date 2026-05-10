@@ -61,6 +61,10 @@ import {
   Banknote,
   Package,
   PieChart,
+  Mail,
+  ShieldAlert,
+  Download,
+  Brain,
 } from "lucide-react";
 
 const menuItems = [
@@ -178,6 +182,12 @@ const menuItems = [
   { path: "/correspondent-banking", label: "Correspondents", icon: Globe },
   { path: "/product-catalog", label: "Product Catalog", icon: Package },
   { path: "/customer-segments", label: "Segments", icon: PieChart },
+  { path: "/messaging-gateway", label: "Messaging Gateway", icon: Mail },
+  { path: "/risk-scoring", label: "Risk Scoring", icon: ShieldAlert },
+  { path: "/regulatory-reporting", label: "Regulatory Reports", icon: FileText },
+  { path: "/atm-management", label: "ATM Management", icon: CreditCard },
+  { path: "/data-export", label: "Data Export", icon: Download },
+  { path: "/customer-insights", label: "Customer Insights", icon: Brain },
 ] as const;
 
 export default function ArchiveAdminSidebar() {

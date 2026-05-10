@@ -118,6 +118,10 @@ jobs:
         run: cd services/card-management-go && go build -o card-management .
       - name: Build Agent Banking Service
         run: cd services/agent-banking-go && go build -o agent-banking .
+      - name: Build SMS/Email Gateway Service
+        run: cd services/sms-email-gateway-go && go build -o sms-email-gateway .
+      - name: Build ATM Management Service
+        run: cd services/atm-management-go && go build -o atm-management .
 
   rust-services:
     name: Rust Services
@@ -161,6 +165,10 @@ jobs:
         run: cd services/bulk-payments-rs && cargo build --release
       - name: Build Treasury Liquidity Service
         run: cd services/treasury-liquidity-rs && cargo build --release
+      - name: Build Risk Scoring Engine
+        run: cd services/risk-scoring-rs && cargo build --release
+      - name: Build Data Export Engine
+        run: cd services/data-export-rs && cargo build --release
 
   python-services:
     name: Python Services
@@ -172,7 +180,7 @@ jobs:
           python-version: "3.12"
       - name: Validate Python Services
         run: |
-          for svc in islamic-banking-py education-loans-py dispute-management-py erpnext-sync-py regulatory-reporting-py treasury-liquidity-py customer-engagement-py batch-processing-py workflow-engine-py opensearch-analytics-py keycloak-identity-py customer-360-py diaspora-banking-py kyc-aml-screening-py savings-products-py; do
+          for svc in islamic-banking-py education-loans-py dispute-management-py erpnext-sync-py regulatory-reporting-py treasury-liquidity-py customer-engagement-py batch-processing-py workflow-engine-py opensearch-analytics-py keycloak-identity-py customer-360-py diaspora-banking-py kyc-aml-screening-py savings-products-py customer-insights-py; do
             echo "Checking services/$svc/service.py..."
             python3 -c "import py_compile; py_compile.compile('services/$svc/service.py', doraise=True)"
           done
