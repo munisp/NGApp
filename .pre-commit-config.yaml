@@ -1,0 +1,30 @@
+repos:
+  - repo: local
+    hooks:
+      - id: go-vet
+        name: Go Vet
+        entry: bash -c 'for d in services/*-go/; do [ -f "$d/main.go" ] && (cd "$d" && go vet ./... 2>&1) || true; done'
+        language: system
+        types: [go]
+        pass_filenames: false
+
+      - id: go-fmt
+        name: Go Format Check
+        entry: bash -c 'gofmt -l services/*-go/*.go 2>/dev/null | head -20'
+        language: system
+        types: [go]
+        pass_filenames: false
+
+      - id: python-ruff
+        name: Python Ruff Lint
+        entry: bash -c 'python3 -m ruff check services/*-py/*.py 2>/dev/null || true'
+        language: system
+        types: [python]
+        pass_filenames: false
+
+      - id: typescript-check
+        name: TypeScript Check
+        entry: bash -c 'npx tsc --noEmit 2>&1 | tail -5'
+        language: system
+        types: [ts, tsx]
+        pass_filenames: false

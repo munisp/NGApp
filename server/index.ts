@@ -25,6 +25,19 @@ import { SEED_KPIS } from "./lib/dashboardKPIs";
 import { appCache, CACHE_TTL } from "./lib/cache";
 import { computeSLAStatus } from "./lib/disputeSLA";
 import { REPORT_SCHEDULES, computeCAR, generateCTR } from "./lib/regulatoryAutomation";
+import { registerIslamicBankingExpansion } from "./lib/islamicBankingExpansion";
+import { registerAgentBankingIntelligence } from "./lib/agentBankingIntelligence";
+import { registerKYCAMLEnhancement } from "./lib/kycAmlEnhancement";
+import { registerCardManagementEnhancement } from "./lib/cardManagementEnhancement";
+import { registerAccountStatementEnhancement } from "./lib/accountStatementEnhancement";
+import { registerSelfServicePortal } from "./lib/selfServicePortal";
+import { registerWorkflowAutomation } from "./lib/workflowAutomation";
+import { registerHealthDashboard } from "./lib/healthDashboard";
+import { keycloakSSOMiddleware, rbacMiddleware, registerSSOEndpoints } from "./lib/keycloakSSOEnforcement";
+import { registerFieldEncryption } from "./lib/fieldEncryption";
+import { registerPerformanceEnhancements } from "./lib/performanceEnhancements";
+import { validateQueryMiddleware } from "./lib/requestValidationMiddleware";
+import { registerSwaggerPerService } from "./lib/swaggerPerService";
 import { WebSocketServer, WebSocket } from "ws";
 
 import {
@@ -7527,6 +7540,31 @@ async function startServer() {
     const transactions = req.body.transactions ?? [];
     res.json(generateCTR(transactions));
   });
+
+  // B6: Islamic Banking Expansion (Sukuk, Takaful, Wakala, Sharia Compliance)
+  registerIslamicBankingExpansion(app);
+  // B7: Agent Banking Intelligence (Float optimization, scoring, geo-mapping, commissions)
+  registerAgentBankingIntelligence(app);
+  // B8: KYC/AML Enhancement (Continuous monitoring, SAR filing, PEP database)
+  registerKYCAMLEnhancement(app);
+  // B9: Card Management Enhancement (PIN, 3D Secure, tokenization, fraud rules)
+  registerCardManagementEnhancement(app);
+  // B10: Account Statement Enhancement (PDF, MT940, tax certificates)
+  registerAccountStatementEnhancement(app);
+  // E4: Customer Self-Service Portal (transactions, card controls, dispute filing)
+  registerSelfServicePortal(app);
+  // E6: Workflow Automation (definitions, instances, SLA dashboard)
+  registerWorkflowAutomation(app);
+  // G9+G10: Health Dashboard & Seed Reset
+  registerHealthDashboard(app);
+  // D1: Keycloak SSO endpoints
+  registerSSOEndpoints(app);
+  // D3: Field-level encryption for PII
+  registerFieldEncryption(app);
+  // C1+C4: Performance configuration endpoints
+  registerPerformanceEnhancements(app);
+  // G3: Swagger per microservice
+  registerSwaggerPerService(app);
 
   app.use(globalErrorHandler);
 

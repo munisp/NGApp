@@ -82,6 +82,7 @@ import {
   FolderLock,
   ListChecks,
   ScrollText,
+  PlayCircle,
 } from "lucide-react";
 
 const menuItems = [
@@ -253,6 +254,20 @@ const menuItems = [
   { path: "/pension", label: "Pension", icon: Landmark },
   { path: "/locker", label: "Digital Locker", icon: FolderLock },
   { path: "/standing-charges", label: "Standing Charges", icon: ListChecks },
+  { path: "/sukuk-management", label: "Sukuk Bonds", icon: Landmark },
+  { path: "/takaful-management", label: "Takaful Insurance", icon: Heart },
+  { path: "/wakala-investments", label: "Wakala Investments", icon: TrendingUp },
+  { path: "/agent-performance", label: "Agent Performance", icon: Users },
+  { path: "/watchlist-screening", label: "Watchlist Screening", icon: AlertTriangle },
+  { path: "/sar-reports", label: "SAR Reports", icon: FileText },
+  { path: "/pep-database", label: "PEP Database", icon: Shield },
+  { path: "/card-tokens", label: "Card Tokens", icon: Smartphone },
+  { path: "/card-fraud-rules", label: "Card Fraud Rules", icon: ShieldAlert },
+  { path: "/statement-history", label: "Statement History", icon: FileBarChart },
+  { path: "/workflow-definitions", label: "Workflows", icon: GitBranch },
+  { path: "/workflow-instances", label: "Workflow Instances", icon: PlayCircle },
+  { path: "/my-transactions", label: "My Transactions", icon: Receipt },
+  { path: "/service-health", label: "Service Health", icon: Activity },
 ] as const;
 
 export default function ArchiveAdminSidebar() {

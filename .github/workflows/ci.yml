@@ -268,6 +268,8 @@ jobs:
         run: cd services/fatca-crs-rs && cargo build --release
       - name: Build Biometric Auth Service
         run: cd services/biometric-auth-rs && cargo build --release
+      - name: Check Middleware Library
+        run: cd services/middleware-rs && cargo check
 
   python-services:
     name: Python Services

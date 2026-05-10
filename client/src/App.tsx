@@ -193,6 +193,20 @@ const InsuranceWorkspace = lazy(() => import("@/pages/InsuranceWorkspace"));
 const PensionWorkspace = lazy(() => import("@/pages/PensionWorkspace"));
 const LockerWorkspace = lazy(() => import("@/pages/LockerWorkspace"));
 const StandingChargesWorkspace = lazy(() => import("@/pages/StandingChargesWorkspace"));
+const SukukManagementWorkspace = lazy(() => import("@/pages/SukukManagementWorkspace"));
+const TakafulManagementWorkspace = lazy(() => import("@/pages/TakafulManagementWorkspace"));
+const WakalaInvestmentWorkspace = lazy(() => import("@/pages/WakalaInvestmentWorkspace"));
+const AgentPerformanceWorkspace = lazy(() => import("@/pages/AgentPerformanceWorkspace"));
+const WatchlistWorkspace = lazy(() => import("@/pages/WatchlistWorkspace"));
+const SARReportsWorkspace = lazy(() => import("@/pages/SARReportsWorkspace"));
+const PEPDatabaseWorkspace = lazy(() => import("@/pages/PEPDatabaseWorkspace"));
+const CardTokensWorkspace = lazy(() => import("@/pages/CardTokensWorkspace"));
+const CardFraudRulesWorkspace = lazy(() => import("@/pages/CardFraudRulesWorkspace"));
+const StatementHistoryWorkspace = lazy(() => import("@/pages/StatementHistoryWorkspace"));
+const WorkflowDefinitionsWorkspace = lazy(() => import("@/pages/WorkflowDefinitionsWorkspace"));
+const WorkflowInstancesWorkspace = lazy(() => import("@/pages/WorkflowInstancesWorkspace"));
+const SelfServiceTransactionsWorkspace = lazy(() => import("@/pages/SelfServiceTransactionsWorkspace"));
+const ServiceHealthWorkspace = lazy(() => import("@/pages/ServiceHealthWorkspace"));
 const AdminAnalyticsPage = lazy(() => import("@/pages/AdminModulePages").then((module) => ({ default: module.AdminAnalyticsPage })));
 const AdminBankingOpsPage = lazy(() => import("@/pages/AdminModulePages").then((module) => ({ default: module.AdminBankingOpsPage })));
 const AdminFeatureFlagsPage = lazy(() => import("@/pages/AdminModulePages").then((module) => ({ default: module.AdminFeatureFlagsPage })));
@@ -440,6 +454,20 @@ export default function App() {
         <Route path="/pension" component={renderInAdminShell(PensionWorkspace)} />
         <Route path="/locker" component={renderInAdminShell(LockerWorkspace)} />
         <Route path="/standing-charges" component={renderInAdminShell(StandingChargesWorkspace)} />
+        <Route path="/sukuk-management" component={renderInAdminShell(SukukManagementWorkspace)} />
+        <Route path="/takaful-management" component={renderInAdminShell(TakafulManagementWorkspace)} />
+        <Route path="/wakala-investments" component={renderInAdminShell(WakalaInvestmentWorkspace)} />
+        <Route path="/agent-performance" component={renderInAdminShell(AgentPerformanceWorkspace)} />
+        <Route path="/watchlist-screening" component={renderInAdminShell(WatchlistWorkspace)} />
+        <Route path="/sar-reports" component={renderInAdminShell(SARReportsWorkspace)} />
+        <Route path="/pep-database" component={renderInAdminShell(PEPDatabaseWorkspace)} />
+        <Route path="/card-tokens" component={renderInAdminShell(CardTokensWorkspace)} />
+        <Route path="/card-fraud-rules" component={renderInAdminShell(CardFraudRulesWorkspace)} />
+        <Route path="/statement-history" component={renderInAdminShell(StatementHistoryWorkspace)} />
+        <Route path="/workflow-definitions" component={renderInAdminShell(WorkflowDefinitionsWorkspace)} />
+        <Route path="/workflow-instances" component={renderInAdminShell(WorkflowInstancesWorkspace)} />
+        <Route path="/my-transactions" component={renderInAdminShell(SelfServiceTransactionsWorkspace)} />
+        <Route path="/service-health" component={renderInAdminShell(ServiceHealthWorkspace)} />
 
         <Route component={NotFound} />
       </Switch>
