@@ -58,6 +58,9 @@ import {
   Lock,
   MessageSquare,
   ArrowLeftRight,
+  Banknote,
+  Package,
+  PieChart,
 } from "lucide-react";
 
 const menuItems = [
@@ -169,6 +172,12 @@ const menuItems = [
   { path: "/interbank-settlement", label: "Settlement", icon: ArrowLeftRight },
   { path: "/staff-management", label: "Staff", icon: Users },
   { path: "/channel-management", label: "Channels", icon: Radio },
+  { path: "/fixed-deposits", label: "Fixed Deposits", icon: Landmark },
+  { path: "/standing-instructions", label: "Standing Instructions", icon: Clock },
+  { path: "/cash-management", label: "Cash & Liquidity", icon: Banknote },
+  { path: "/correspondent-banking", label: "Correspondents", icon: Globe },
+  { path: "/product-catalog", label: "Product Catalog", icon: Package },
+  { path: "/customer-segments", label: "Segments", icon: PieChart },
 ] as const;
 
 export default function ArchiveAdminSidebar() {

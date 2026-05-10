@@ -6512,6 +6512,77 @@ async function startServer() {
     res.json(getChannelSummary());
   });
 
+  // Fixed deposit management endpoints
+  app.get("/api/platform/fixed-deposits", (_req, res) => {
+    const { getFixedDeposits } = require("./lib/fixedDepositManagement");
+    const deposits = getFixedDeposits();
+    res.json({ items: deposits, total: deposits.length });
+  });
+  app.get("/api/platform/fixed-deposits/summary", (_req, res) => {
+    const { getFixedDepositSummary } = require("./lib/fixedDepositManagement");
+    res.json(getFixedDepositSummary());
+  });
+
+  // Standing instruction endpoints
+  app.get("/api/platform/standing-instructions", (_req, res) => {
+    const { getStandingInstructions } = require("./lib/standingInstructionEngine");
+    const instructions = getStandingInstructions();
+    res.json({ items: instructions, total: instructions.length });
+  });
+  app.get("/api/platform/standing-instructions/stats", (_req, res) => {
+    const { getStandingInstructionStats } = require("./lib/standingInstructionEngine");
+    res.json(getStandingInstructionStats());
+  });
+
+  // Cash management endpoints
+  app.get("/api/platform/cash/positions", (_req, res) => {
+    const { getCashPositions } = require("./lib/cashManagement");
+    const positions = getCashPositions();
+    res.json({ items: positions, total: positions.length });
+  });
+  app.get("/api/platform/cash/forecasts", (_req, res) => {
+    const { getLiquidityForecasts } = require("./lib/cashManagement");
+    const forecasts = getLiquidityForecasts();
+    res.json({ items: forecasts, total: forecasts.length });
+  });
+  app.get("/api/platform/cash/summary", (_req, res) => {
+    const { getCashSummary } = require("./lib/cashManagement");
+    res.json(getCashSummary());
+  });
+
+  // Correspondent banking endpoints
+  app.get("/api/platform/correspondent-banks", (_req, res) => {
+    const { getCorrespondentBanks } = require("./lib/correspondentBanking");
+    const banks = getCorrespondentBanks();
+    res.json({ items: banks, total: banks.length });
+  });
+  app.get("/api/platform/correspondent-banks/summary", (_req, res) => {
+    const { getCorrespondentSummary } = require("./lib/correspondentBanking");
+    res.json(getCorrespondentSummary());
+  });
+
+  // Product catalog endpoints
+  app.get("/api/platform/products", (_req, res) => {
+    const { getProducts } = require("./lib/productCatalog");
+    const products = getProducts();
+    res.json({ items: products, total: products.length });
+  });
+  app.get("/api/platform/products/stats", (_req, res) => {
+    const { getProductStats } = require("./lib/productCatalog");
+    res.json(getProductStats());
+  });
+
+  // Customer segmentation endpoints
+  app.get("/api/platform/segments", (_req, res) => {
+    const { getCustomerSegments } = require("./lib/customerSegmentation");
+    const segments = getCustomerSegments();
+    res.json({ items: segments, total: segments.length });
+  });
+  app.get("/api/platform/segments/stats", (_req, res) => {
+    const { getSegmentStats } = require("./lib/customerSegmentation");
+    res.json(getSegmentStats());
+  });
+
   // Dormancy engine endpoints
   app.get("/api/platform/dormancy/accounts", (_req, res) => {
     const { getDormantAccounts } = require("./lib/dormancyEngine");

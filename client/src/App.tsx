@@ -133,6 +133,12 @@ const ComplaintsWorkspace = lazy(() => import("@/pages/ComplaintsWorkspace"));
 const InterbankSettlementWorkspace = lazy(() => import("@/pages/InterbankSettlementWorkspace"));
 const StaffManagementWorkspace = lazy(() => import("@/pages/StaffManagementWorkspace"));
 const ChannelManagementWorkspace = lazy(() => import("@/pages/ChannelManagementWorkspace"));
+const FixedDepositsWorkspace = lazy(() => import("@/pages/FixedDepositsWorkspace"));
+const StandingInstructionsWorkspace = lazy(() => import("@/pages/StandingInstructionsWorkspace"));
+const CashManagementWorkspace = lazy(() => import("@/pages/CashManagementWorkspace"));
+const CorrespondentBankingWorkspace = lazy(() => import("@/pages/CorrespondentBankingWorkspace"));
+const ProductCatalogWorkspace = lazy(() => import("@/pages/ProductCatalogWorkspace"));
+const CustomerSegmentsWorkspace = lazy(() => import("@/pages/CustomerSegmentsWorkspace"));
 const AdminAnalyticsPage = lazy(() => import("@/pages/AdminModulePages").then((module) => ({ default: module.AdminAnalyticsPage })));
 const AdminBankingOpsPage = lazy(() => import("@/pages/AdminModulePages").then((module) => ({ default: module.AdminBankingOpsPage })));
 const AdminFeatureFlagsPage = lazy(() => import("@/pages/AdminModulePages").then((module) => ({ default: module.AdminFeatureFlagsPage })));
@@ -320,6 +326,12 @@ export default function App() {
         <Route path="/interbank-settlement" component={renderInAdminShell(InterbankSettlementWorkspace)} />
         <Route path="/staff-management" component={renderInAdminShell(StaffManagementWorkspace)} />
         <Route path="/channel-management" component={renderInAdminShell(ChannelManagementWorkspace)} />
+        <Route path="/fixed-deposits" component={renderInAdminShell(FixedDepositsWorkspace)} />
+        <Route path="/standing-instructions" component={renderInAdminShell(StandingInstructionsWorkspace)} />
+        <Route path="/cash-management" component={renderInAdminShell(CashManagementWorkspace)} />
+        <Route path="/correspondent-banking" component={renderInAdminShell(CorrespondentBankingWorkspace)} />
+        <Route path="/product-catalog" component={renderInAdminShell(ProductCatalogWorkspace)} />
+        <Route path="/customer-segments" component={renderInAdminShell(CustomerSegmentsWorkspace)} />
 
         <Route component={NotFound} />
       </Switch>
