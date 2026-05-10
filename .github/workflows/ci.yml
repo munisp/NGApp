@@ -92,6 +92,14 @@ jobs:
         run: cd services/standing-orders-go && go build -o standing-orders .
       - name: Build Beneficiary Management Service
         run: cd services/beneficiary-management-go && go build -o beneficiary-management .
+      - name: Build Loan Calculator Service
+        run: cd services/loan-calculator-go && go build -o loan-calculator .
+      - name: Build Branch Operations Service
+        run: cd services/branch-operations-go && go build -o branch-operations .
+      - name: Build Event Bus Service
+        run: cd services/event-bus-go && go build -o event-bus .
+      - name: Build Mojaloop Connector Service
+        run: cd services/mojaloop-connector-go && go build -o mojaloop-connector .
 
   rust-services:
     name: Rust Services
@@ -108,6 +116,7 @@ jobs:
             services/ledger-reconciliation-rs
             services/fraud-detection-rs
             services/fx-rates-engine-rs
+            services/tigerbeetle-ledger-rs
       - name: Build Resilience Service
         run: cd services/resilience-service-rs && cargo build --release
       - name: Build Agriculture Banking Service
@@ -120,6 +129,8 @@ jobs:
         run: cd services/fraud-detection-rs && cargo build --release
       - name: Build FX Rates Engine
         run: cd services/fx-rates-engine-rs && cargo build --release
+      - name: Build TigerBeetle Ledger Service
+        run: cd services/tigerbeetle-ledger-rs && cargo build --release
 
   python-services:
     name: Python Services
@@ -131,7 +142,7 @@ jobs:
           python-version: "3.12"
       - name: Validate Python Services
         run: |
-          for svc in islamic-banking-py education-loans-py dispute-management-py erpnext-sync-py regulatory-reporting-py treasury-liquidity-py customer-engagement-py batch-processing-py; do
+          for svc in islamic-banking-py education-loans-py dispute-management-py erpnext-sync-py regulatory-reporting-py treasury-liquidity-py customer-engagement-py batch-processing-py workflow-engine-py; do
             echo "Checking services/$svc/service.py..."
             python3 -c "import py_compile; py_compile.compile('services/$svc/service.py', doraise=True)"
           done

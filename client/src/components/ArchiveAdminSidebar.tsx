@@ -37,6 +37,10 @@ import {
   Clock,
   Layers,
   UserPlus,
+  BookOpen,
+  Radio,
+  GitBranch,
+  Globe,
 } from "lucide-react";
 
 const menuItems = [
@@ -91,6 +95,10 @@ const menuItems = [
   { path: "/batch-processing", label: "Batch Processing", icon: Layers },
   { path: "/fx-rates", label: "FX & Rates", icon: TrendingUp },
   { path: "/branch-operations", label: "Branch Ops", icon: Building2 },
+  { path: "/ledger", label: "Ledger", icon: BookOpen },
+  { path: "/event-bus", label: "Event Bus", icon: Radio },
+  { path: "/workflow-engine", label: "Workflows", icon: GitBranch },
+  { path: "/mojaloop", label: "Mojaloop", icon: Globe },
 ] as const;
 
 export default function ArchiveAdminSidebar() {

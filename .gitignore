@@ -112,6 +112,15 @@ temp/
 # Manus version file (auto-generated, not part of source)
 client/public/__manus__/version.json
 
+# Go compiled binaries
+services/event-bus-go/event-bus
+services/mojaloop-connector-go/mojaloop-connector
+services/branch-operations-go/branch-operations
+services/loan-calculator-go/loan-calculator
+services/security-gateway-go/security-gateway
+services/teller-operations-go/teller-operations
+services/trade-finance-go/trade-finance
+
 # Rust build artifacts
 **/target/
 

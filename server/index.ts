@@ -3189,46 +3189,56 @@ async function startServer() {
   });
 
   app.get("/api/platform/customer-servicing/session-preference", async (req, res) => {
-    const role = readRole(req);
-    const actorId = readActorId(req, role);
-    const tenantScope = String(req.query.tenantId || tenantId);
-    const preference = await getCustomerSessionPreference({ actorId, actorRole: role, tenantId: tenantScope });
-    res.json(preference);
+    try {
+      const role = readRole(req);
+      const actorId = readActorId(req, role);
+      const tenantScope = String(req.query.tenantId || tenantId);
+      const preference = await getCustomerSessionPreference({ actorId, actorRole: role, tenantId: tenantScope });
+      res.json(preference);
+    } catch (err) {
+      logger.warn("Session preference read failed", { error: String(err) });
+      res.json(null);
+    }
   });
 
   app.put("/api/platform/customer-servicing/session-preference", async (req, res) => {
-    const role = readRole(req);
-    const actorId = readActorId(req, role);
-    const tenantScope = String(req.body?.tenantId || req.query.tenantId || tenantId);
-    const payload = req.body as { activeCustomerId?: string };
-    const requestedCustomerId = payload.activeCustomerId;
+    try {
+      const role = readRole(req);
+      const actorId = readActorId(req, role);
+      const tenantScope = String(req.body?.tenantId || req.query.tenantId || tenantId);
+      const payload = req.body as { activeCustomerId?: string };
+      const requestedCustomerId = payload.activeCustomerId;
 
-    if (!requestedCustomerId || !customers.some((item) => item.id === requestedCustomerId)) {
-      res.status(400).json({ message: "activeCustomerId must reference an existing customer" });
-      return;
+      if (!requestedCustomerId || !customers.some((item) => item.id === requestedCustomerId)) {
+        res.status(400).json({ message: "activeCustomerId must reference an existing customer" });
+        return;
+      }
+
+      const preference = await upsertCustomerSessionPreference({
+        actorId,
+        actorRole: role,
+        tenantId: tenantScope,
+        activeCustomerId: requestedCustomerId,
+      });
+
+      recordAudit({
+        actorRole: role,
+        actorId,
+        entityType: "customer_session",
+        entityId: requestedCustomerId,
+        action: "active_customer_selected",
+        outcome: `Active customer context was updated to ${requestedCustomerId}.`,
+        severity: "info",
+        route: "/customer/dashboard",
+        middleware: ["Postgres", "Session preference"],
+        detail: "The customer shell persisted the active customer selection through the database-backed session preference endpoint.",
+      });
+
+      res.json(preference);
+    } catch (err) {
+      logger.warn("Session preference upsert failed", { error: String(err) });
+      res.status(500).json({ message: "Session preference temporarily unavailable" });
     }
-
-    const preference = await upsertCustomerSessionPreference({
-      actorId,
-      actorRole: role,
-      tenantId: tenantScope,
-      activeCustomerId: requestedCustomerId,
-    });
-
-    recordAudit({
-      actorRole: role,
-      actorId,
-      entityType: "customer_session",
-      entityId: requestedCustomerId,
-      action: "active_customer_selected",
-      outcome: `Active customer context was updated to ${requestedCustomerId}.`,
-      severity: "info",
-      route: "/customer/dashboard",
-      middleware: ["Postgres", "Session preference"],
-      detail: "The customer shell persisted the active customer selection through the database-backed session preference endpoint.",
-    });
-
-    res.json(preference);
   });
 
   app.get("/api/platform/customer-servicing/beneficiaries", (req, res) => {
@@ -4957,6 +4967,12 @@ async function startServer() {
   const BENEFICIARY_MGMT_URL = process.env.BENEFICIARY_MGMT_URL || "http://localhost:8116";
   const BATCH_PROCESSING_URL = process.env.BATCH_PROCESSING_URL || "http://localhost:8117";
   const FX_RATES_URL = process.env.FX_RATES_URL || "http://localhost:8118";
+  const LOAN_CALCULATOR_URL = process.env.LOAN_CALCULATOR_URL || "http://localhost:8119";
+  const BRANCH_OPERATIONS_URL = process.env.BRANCH_OPERATIONS_URL || "http://localhost:8120";
+  const TIGERBEETLE_LEDGER_URL = process.env.TIGERBEETLE_LEDGER_URL || "http://localhost:8121";
+  const EVENT_BUS_URL = process.env.EVENT_BUS_URL || "http://localhost:8122";
+  const WORKFLOW_ENGINE_URL = process.env.WORKFLOW_ENGINE_URL || "http://localhost:8123";
+  const MOJALOOP_CONNECTOR_URL = process.env.MOJALOOP_CONNECTOR_URL || "http://localhost:8124";
 
   // Register all services for health aggregation (#8)
   Object.assign(serviceUrls, {
@@ -4983,6 +4999,12 @@ async function startServer() {
     "treasury-liquidity": TREASURY_LIQUIDITY_URL,
     "customer-engagement": CUSTOMER_ENGAGEMENT_URL,
     "fraud-detection": FRAUD_DETECTION_URL,
+    "loan-calculator": LOAN_CALCULATOR_URL,
+    "branch-operations": BRANCH_OPERATIONS_URL,
+    "tigerbeetle-ledger": TIGERBEETLE_LEDGER_URL,
+    "event-bus": EVENT_BUS_URL,
+    "workflow-engine": WORKFLOW_ENGINE_URL,
+    "mojaloop-connector": MOJALOOP_CONNECTOR_URL,
   });
 
   async function proxyToService(serviceUrl: string, servicePath: string, req: Request, res: express.Response): Promise<void> {
@@ -5105,7 +5127,44 @@ async function startServer() {
     void proxyToService(ISLAMIC_BANKING_SERVICE_URL, `/v1/islamic-banking/mudarabah/${req.params.id}/distribute`, req, res);
   });
 
-  // Trade Finance proxy routes
+  // Islamic Banking shorthand routes (frontend uses /api/platform/islamic/...)
+  app.all("/api/platform/islamic/murabaha", (req, res) => {
+    void proxyToService(ISLAMIC_BANKING_SERVICE_URL, "/v1/islamic-banking/murabaha", req, res);
+  });
+  app.all("/api/platform/islamic/murabaha/:id", (req, res) => {
+    void proxyToService(ISLAMIC_BANKING_SERVICE_URL, `/v1/islamic-banking/murabaha/${req.params.id}`, req, res);
+  });
+  app.all("/api/platform/islamic/ijara", (req, res) => {
+    void proxyToService(ISLAMIC_BANKING_SERVICE_URL, "/v1/islamic-banking/ijara", req, res);
+  });
+  app.all("/api/platform/islamic/mudarabah", (req, res) => {
+    void proxyToService(ISLAMIC_BANKING_SERVICE_URL, "/v1/islamic-banking/mudarabah", req, res);
+  });
+
+  // Ledger Reconciliation proxy routes (Rust :8100)
+  app.all("/api/platform/ledger-recon/runs", (req, res) => {
+    void proxyToService(LEDGER_RECON_SERVICE_URL, "/v1/reconciliation/runs", req, res);
+  });
+  app.all("/api/platform/ledger-recon/runs/:id", (req, res) => {
+    void proxyToService(LEDGER_RECON_SERVICE_URL, `/v1/reconciliation/runs/${req.params.id}`, req, res);
+  });
+  app.all("/api/platform/ledger-recon/discrepancies", (req, res) => {
+    void proxyToService(LEDGER_RECON_SERVICE_URL, "/v1/reconciliation/discrepancies", req, res);
+  });
+  app.all("/api/platform/ledger-recon/discrepancies/:id", (req, res) => {
+    void proxyToService(LEDGER_RECON_SERVICE_URL, `/v1/reconciliation/discrepancies/${req.params.id}`, req, res);
+  });
+  app.all("/api/platform/ledger-recon/discrepancies/:id/resolve", (req, res) => {
+    void proxyToService(LEDGER_RECON_SERVICE_URL, `/v1/reconciliation/discrepancies/${req.params.id}/resolve`, req, res);
+  });
+  app.all("/api/platform/ledger-recon/gl-assertions", (req, res) => {
+    void proxyToService(LEDGER_RECON_SERVICE_URL, "/v1/reconciliation/gl-assertions", req, res);
+  });
+
+  // Trade Finance proxy routes (shorthand alias)
+  app.all("/api/platform/trade-finance/lcs", (req, res) => {
+    void proxyToService(TRADE_FINANCE_SERVICE_URL, "/v1/trade-finance/letters-of-credit", req, res);
+  });
   app.all("/api/platform/trade-finance/letters-of-credit", (req, res) => {
     void proxyToService(TRADE_FINANCE_SERVICE_URL, "/v1/trade-finance/letters-of-credit", req, res);
   });
@@ -5859,6 +5918,132 @@ async function startServer() {
     void proxyToService(FX_RATES_URL, "/v1/fx/alerts", req, res);
   });
 
+  // Loan Calculator proxy routes (Go :8119)
+  app.all("/api/platform/loan-calculator", (req, res) => {
+    void proxyToService(LOAN_CALCULATOR_URL, "/v1/loan-calculator", req, res);
+  });
+  app.all("/api/platform/loan-calculator/schedule", (req, res) => {
+    void proxyToService(LOAN_CALCULATOR_URL, "/v1/loan-calculator/schedule", req, res);
+  });
+  app.all("/api/platform/loan-calculator/compare", (req, res) => {
+    void proxyToService(LOAN_CALCULATOR_URL, "/v1/loan-calculator/compare", req, res);
+  });
+  app.all("/api/platform/loan-calculator/affordability", (req, res) => {
+    void proxyToService(LOAN_CALCULATOR_URL, "/v1/loan-calculator/affordability", req, res);
+  });
+
+  // Branch Operations proxy routes (Go :8120)
+  app.all("/api/platform/branches", (req, res) => {
+    void proxyToService(BRANCH_OPERATIONS_URL, "/v1/branches", req, res);
+  });
+  app.all("/api/platform/branches/cash-position", (req, res) => {
+    void proxyToService(BRANCH_OPERATIONS_URL, "/v1/branches/cash-position", req, res);
+  });
+  app.all("/api/platform/branches/atm-status", (req, res) => {
+    void proxyToService(BRANCH_OPERATIONS_URL, "/v1/branches/atm-status", req, res);
+  });
+  app.all("/api/platform/branches/queue", (req, res) => {
+    void proxyToService(BRANCH_OPERATIONS_URL, "/v1/branches/queue", req, res);
+  });
+  app.all("/api/platform/branches/action", (req, res) => {
+    void proxyToService(BRANCH_OPERATIONS_URL, "/v1/branches/action", req, res);
+  });
+
+  // TigerBeetle Ledger proxy routes (Rust :8121)
+  app.all("/api/platform/ledger/accounts", (req, res) => {
+    void proxyToService(TIGERBEETLE_LEDGER_URL, "/v1/ledger/accounts", req, res);
+  });
+  app.all("/api/platform/ledger/accounts/:id/balance", (req, res) => {
+    void proxyToService(TIGERBEETLE_LEDGER_URL, `/v1/ledger/accounts/${req.params.id}/balance`, req, res);
+  });
+  app.all("/api/platform/ledger/transfers", (req, res) => {
+    void proxyToService(TIGERBEETLE_LEDGER_URL, "/v1/ledger/transfers", req, res);
+  });
+  app.all("/api/platform/ledger/journals", (req, res) => {
+    void proxyToService(TIGERBEETLE_LEDGER_URL, "/v1/ledger/journals", req, res);
+  });
+  app.all("/api/platform/ledger/journals/:id/post", (req, res) => {
+    void proxyToService(TIGERBEETLE_LEDGER_URL, `/v1/ledger/journals/${req.params.id}/post`, req, res);
+  });
+  app.all("/api/platform/ledger/trial-balance", (req, res) => {
+    void proxyToService(TIGERBEETLE_LEDGER_URL, "/v1/ledger/trial-balance", req, res);
+  });
+
+  // Event Bus proxy routes (Go :8122)
+  app.all("/api/platform/events/topics", (req, res) => {
+    void proxyToService(EVENT_BUS_URL, "/v1/events/topics", req, res);
+  });
+  app.all("/api/platform/events/publish", (req, res) => {
+    void proxyToService(EVENT_BUS_URL, "/v1/events/publish", req, res);
+  });
+  app.all("/api/platform/events", (req, res) => {
+    void proxyToService(EVENT_BUS_URL, "/v1/events", req, res);
+  });
+  app.all("/api/platform/events/consumers", (req, res) => {
+    void proxyToService(EVENT_BUS_URL, "/v1/events/consumers", req, res);
+  });
+  app.all("/api/platform/events/subscriptions", (req, res) => {
+    void proxyToService(EVENT_BUS_URL, "/v1/events/subscriptions", req, res);
+  });
+  app.all("/api/platform/events/dlq", (req, res) => {
+    void proxyToService(EVENT_BUS_URL, "/v1/events/dlq", req, res);
+  });
+  app.all("/api/platform/events/replay", (req, res) => {
+    void proxyToService(EVENT_BUS_URL, "/v1/events/replay", req, res);
+  });
+  app.all("/api/platform/events/stats", (req, res) => {
+    void proxyToService(EVENT_BUS_URL, "/v1/events/stats", req, res);
+  });
+
+  // Workflow Engine proxy routes (Python :8123)
+  app.all("/api/platform/workflows", (req, res) => {
+    void proxyToService(WORKFLOW_ENGINE_URL, "/v1/workflows", req, res);
+  });
+  app.all("/api/platform/workflows/templates", (req, res) => {
+    void proxyToService(WORKFLOW_ENGINE_URL, "/v1/workflows/templates", req, res);
+  });
+  app.all("/api/platform/workflows/signal", (req, res) => {
+    void proxyToService(WORKFLOW_ENGINE_URL, "/v1/workflows/signal", req, res);
+  });
+  app.all("/api/platform/workflows/signals", (req, res) => {
+    void proxyToService(WORKFLOW_ENGINE_URL, "/v1/workflows/signals", req, res);
+  });
+  app.all("/api/platform/workflows/stats", (req, res) => {
+    void proxyToService(WORKFLOW_ENGINE_URL, "/v1/workflows/stats", req, res);
+  });
+  app.all("/api/platform/workflows/:id", (req, res) => {
+    void proxyToService(WORKFLOW_ENGINE_URL, `/v1/workflows/${req.params.id}`, req, res);
+  });
+  app.all("/api/platform/workflows/:id/advance", (req, res) => {
+    void proxyToService(WORKFLOW_ENGINE_URL, `/v1/workflows/${req.params.id}/advance`, req, res);
+  });
+  app.all("/api/platform/workflows/:id/fail", (req, res) => {
+    void proxyToService(WORKFLOW_ENGINE_URL, `/v1/workflows/${req.params.id}/fail`, req, res);
+  });
+  app.all("/api/platform/workflows/:id/cancel", (req, res) => {
+    void proxyToService(WORKFLOW_ENGINE_URL, `/v1/workflows/${req.params.id}/cancel`, req, res);
+  });
+
+  // Mojaloop Connector proxy routes (Go :8124)
+  app.all("/api/platform/mojaloop/participants", (req, res) => {
+    void proxyToService(MOJALOOP_CONNECTOR_URL, "/v1/mojaloop/participants", req, res);
+  });
+  app.all("/api/platform/mojaloop/parties/lookup", (req, res) => {
+    void proxyToService(MOJALOOP_CONNECTOR_URL, "/v1/mojaloop/parties/lookup", req, res);
+  });
+  app.all("/api/platform/mojaloop/quotes", (req, res) => {
+    void proxyToService(MOJALOOP_CONNECTOR_URL, "/v1/mojaloop/quotes", req, res);
+  });
+  app.all("/api/platform/mojaloop/transfers", (req, res) => {
+    void proxyToService(MOJALOOP_CONNECTOR_URL, "/v1/mojaloop/transfers", req, res);
+  });
+  app.all("/api/platform/mojaloop/settlements", (req, res) => {
+    void proxyToService(MOJALOOP_CONNECTOR_URL, "/v1/mojaloop/settlements", req, res);
+  });
+  app.all("/api/platform/mojaloop/stats", (req, res) => {
+    void proxyToService(MOJALOOP_CONNECTOR_URL, "/v1/mojaloop/stats", req, res);
+  });
+
   app.use(globalErrorHandler);
 
   const staticPath = process.env.NODE_ENV === "production" ? path.resolve(__dirname, "public") : path.resolve(__dirname, "..", "dist", "public");
@@ -5899,6 +6084,14 @@ async function startServer() {
     await closeDbPool();
     process.exit(0);
   };
+
+  process.on("unhandledRejection", (reason) => {
+    logger.error("Unhandled promise rejection", { error: String(reason) });
+  });
+
+  process.on("uncaughtException", (err) => {
+    logger.error("Uncaught exception", { error: String(err) });
+  });
 
   process.once("SIGTERM", () => {
     void shutdown("SIGTERM");

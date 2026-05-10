@@ -77,6 +77,10 @@ const LoanCalculatorWorkspace = lazy(() => import("@/pages/LoanCalculatorWorkspa
 const BatchProcessingWorkspace = lazy(() => import("@/pages/BatchProcessingWorkspace"));
 const FXRatesWorkspace = lazy(() => import("@/pages/FXRatesWorkspace"));
 const BranchOperationsWorkspace = lazy(() => import("@/pages/BranchOperationsWorkspace"));
+const LedgerWorkspace = lazy(() => import("@/pages/LedgerWorkspace"));
+const EventBusWorkspace = lazy(() => import("@/pages/EventBusWorkspace"));
+const WorkflowEngineWorkspace = lazy(() => import("@/pages/WorkflowEngineWorkspace"));
+const MojaloopWorkspace = lazy(() => import("@/pages/MojaloopWorkspace"));
 const AdminAnalyticsPage = lazy(() => import("@/pages/AdminModulePages").then((module) => ({ default: module.AdminAnalyticsPage })));
 const AdminBankingOpsPage = lazy(() => import("@/pages/AdminModulePages").then((module) => ({ default: module.AdminBankingOpsPage })));
 const AdminFeatureFlagsPage = lazy(() => import("@/pages/AdminModulePages").then((module) => ({ default: module.AdminFeatureFlagsPage })));
@@ -208,6 +212,10 @@ export default function App() {
         <Route path="/batch-processing" component={renderInAdminShell(BatchProcessingWorkspace)} />
         <Route path="/fx-rates" component={renderInAdminShell(FXRatesWorkspace)} />
         <Route path="/branch-operations" component={renderInAdminShell(BranchOperationsWorkspace)} />
+        <Route path="/ledger" component={renderInAdminShell(LedgerWorkspace)} />
+        <Route path="/event-bus" component={renderInAdminShell(EventBusWorkspace)} />
+        <Route path="/workflow-engine" component={renderInAdminShell(WorkflowEngineWorkspace)} />
+        <Route path="/mojaloop" component={renderInAdminShell(MojaloopWorkspace)} />
 
         <Route component={NotFound} />
       </Switch>
