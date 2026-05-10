@@ -1,7 +1,3 @@
-module github.com/54bank/agent-banking-go
+module agent-banking-go
 
-go 1.22
-
-require github.com/54bank/middleware-go v0.0.0
-
-replace github.com/54bank/middleware-go => ../middleware-go
+go 1.21

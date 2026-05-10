@@ -1,39 +1,38 @@
+import CrudWorkspace from "@/components/CrudWorkspace";
 import { PiggyBank } from "lucide-react";
-import CrudWorkspace, { type CrudConfig } from "@/components/CrudWorkspace";
-
-const config: CrudConfig = {
-  domainKey: "savings-products",
-  title: "Savings Accounts",
-  subtitle: "Fixed deposits, target savings, joint accounts, children's savings, flexi savings",
-  icon: PiggyBank,
-  accentColor: "bg-emerald-600",
-  idField: "id",
-  statusField: "status",
-  searchFields: ["id", "customerId", "accountName", "accountType"],
-  apiBase: "/api/platform/savings/accounts",
-  fields: [
-    { key: "customerId", label: "Customer ID", type: "text", required: true },
-    { key: "accountType", label: "Account Type", type: "select", options: ["fixed_deposit", "target_savings", "joint", "children", "flexi"], required: true },
-    { key: "accountName", label: "Account Name", type: "text", required: true, placeholder: "e.g. My Target Savings" },
-    { key: "targetAmount", label: "Target Amount (₦)", type: "number" },
-    { key: "tenorDays", label: "Tenor (Days)", type: "number", placeholder: "For fixed deposits" },
-    { key: "guardianId", label: "Guardian ID", type: "text", placeholder: "For children accounts" },
-  ],
-  columns: [
-    { key: "id", label: "Account ID" },
-    { key: "accountType", label: "Type", render: (v) => String(v).replace(/_/g, " ") },
-    { key: "accountName", label: "Name" },
-    { key: "balance", label: "Balance", render: (v) => `₦${Number(v).toLocaleString()}` },
-    { key: "interestRate", label: "Rate", render: (v) => `${v}%` },
-    { key: "status", label: "Status" },
-  ],
-  actions: [
-    { label: "Deposit", key: "deposit", condition: (r) => r.status === "active" },
-    { label: "Withdraw", key: "withdraw", condition: (r) => r.status === "active" && r.accountType !== "fixed_deposit" },
-    { label: "Close", key: "close", condition: (r) => Number(r.balance) === 0 },
-  ],
-};
 
 export default function SavingsProductsWorkspace() {
-  return <CrudWorkspace config={config} />;
+  return (
+    <CrudWorkspace
+      config={{
+        domainKey: "savings-products",
+        title: "Savings Products",
+        subtitle: "Fixed deposits, target savings, junior savings — interest computation, early withdrawal, and auto-renewal",
+        icon: PiggyBank,
+        accentColor: "text-emerald-600",
+        idField: "id",
+        statusField: "status",
+        searchFields: ["name", "type", "currency"],
+        apiBase: "/api/platform/savings/v1/savings/products",
+        pageSize: 25,
+        columns: [
+          { key: "id", label: "Product ID", sortable: true },
+          { key: "name", label: "Product Name", sortable: true },
+          { key: "type", label: "Type", sortable: true },
+          { key: "minAmount", label: "Min Amount", sortable: true, render: (v) => `₦${Number(v).toLocaleString()}` },
+          { key: "interestRate", label: "Interest Rate", sortable: true, render: (v) => `${Number(v).toFixed(1)}%` },
+          { key: "penaltyRate", label: "Penalty (%)" },
+          { key: "currency", label: "Currency" },
+          { key: "status", label: "Status" },
+        ],
+        fields: [
+          { key: "name", label: "Product Name", type: "text", required: true },
+          { key: "type", label: "Type", type: "select", options: ["fixed_deposit", "target_savings", "junior_savings"], required: true },
+          { key: "minAmount", label: "Minimum Amount", type: "number", required: true, min: 0 },
+          { key: "interestRate", label: "Interest Rate (%)", type: "number", required: true, min: 0, max: 100 },
+          { key: "currency", label: "Currency", type: "select", options: ["NGN", "USD", "GBP", "EUR"], required: true },
+        ],
+      }}
+    />
+  );
 }

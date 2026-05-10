@@ -1,360 +1,356 @@
-// 54Bank Agent Banking Service
-//
-// Implements agent/POS banking operations:
-//   - Agent registration and KYC management
-//   - Float management (top-up, deduction, balance)
-//   - POS transaction processing (cash-in, cash-out, bill payment, transfer)
-//   - Commission calculation and settlement
-//   - Territory and super-agent hierarchy management
-//
-// Middleware: Kafka, Redis, TigerBeetle, Postgres, Mojaloop, APISIX, Permify, Keycloak
 package main
 
 import (
-	"fmt"
+	"encoding/json"
+	"log"
+	"math"
 	"net/http"
-	"strings"
+	"os"
 	"sync"
 	"time"
-
-	mw "github.com/54bank/middleware-go"
 )
 
 type Agent struct {
 	ID              string  `json:"id"`
-	TenantID        string  `json:"tenantId"`
-	AgentCode       string  `json:"agentCode"`
 	BusinessName    string  `json:"businessName"`
 	OwnerName       string  `json:"ownerName"`
-	PhoneNumber     string  `json:"phoneNumber"`
-	Email           string  `json:"email"`
-	BVN             string  `json:"bvn"`
+	Location        string  `json:"location"`
 	LGA             string  `json:"lga"`
 	State           string  `json:"state"`
-	Address         string  `json:"address"`
-	AgentType       string  `json:"agentType"` // individual, super_agent, corporate
-	SuperAgentID    string  `json:"superAgentId,omitempty"`
+	TerminalID      string  `json:"terminalId"`
 	FloatBalance    float64 `json:"floatBalance"`
 	CommissionEarned float64 `json:"commissionEarned"`
 	TransactionCount int    `json:"transactionCount"`
-	KYCStatus       string  `json:"kycStatus"` // pending, verified, rejected
-	Status          string  `json:"status"`    // active, suspended, deactivated
-	Terminals       []Terminal `json:"terminals"`
-	CreatedAt       string  `json:"createdAt"`
-	UpdatedAt       string  `json:"updatedAt"`
-}
-
-type Terminal struct {
-	TerminalID string `json:"terminalId"`
-	DeviceType string `json:"deviceType"` // pos, mobile, mpos
-	SerialNo   string `json:"serialNo"`
-	Status     string `json:"status"` // active, inactive, faulty
-	AssignedAt string `json:"assignedAt"`
+	Status          string  `json:"status"`
+	Tier            string  `json:"tier"`
+	OnboardedAt     string  `json:"onboardedAt"`
 }
 
 type AgentTransaction struct {
-	ID              string  `json:"id"`
-	AgentID         string  `json:"agentId"`
-	TerminalID      string  `json:"terminalId"`
-	Type            string  `json:"type"` // cash_in, cash_out, bill_payment, transfer, airtime
-	CustomerAccount string  `json:"customerAccount"`
-	Amount          float64 `json:"amount"`
-	Fee             float64 `json:"fee"`
-	Commission      float64 `json:"commission"`
-	FloatBefore     float64 `json:"floatBefore"`
-	FloatAfter      float64 `json:"floatAfter"`
-	Reference       string  `json:"reference"`
-	Status          string  `json:"status"` // completed, failed, reversed
-	CreatedAt       string  `json:"createdAt"`
+	ID          string  `json:"id"`
+	AgentID     string  `json:"agentId"`
+	Type        string  `json:"type"`
+	Amount      float64 `json:"amount"`
+	Commission  float64 `json:"commission"`
+	CustomerBVN string  `json:"customerBVN"`
+	Status      string  `json:"status"`
+	CreatedAt   string  `json:"createdAt"`
 }
 
 var (
-	agents       = make(map[string]*Agent)
-	agentTxns    []AgentTransaction
-	mu           sync.RWMutex
-	bundle       *mw.Bundle
+	mu      sync.RWMutex
+	agents  []Agent
+	agentTx []AgentTransaction
 )
 
-func commissionRate(txnType string, amount float64) float64 {
-	switch txnType {
+func commissionRate(txType string, amount float64) float64 {
+	switch txType {
 	case "cash_in":
-		if amount >= 100000 { return 0.005 }
-		return 0.0075
+		if amount <= 5000 {
+			return 25
+		}
+		if amount <= 50000 {
+			return 50
+		}
+		return 100
 	case "cash_out":
-		if amount >= 100000 { return 0.0075 }
-		return 0.01
-	case "bill_payment":
-		return 0.003
+		if amount <= 5000 {
+			return 30
+		}
+		if amount <= 50000 {
+			return 75
+		}
+		return 150
+	case "bills_payment":
+		return math.Round(amount * 0.005)
 	case "transfer":
-		return 0.002
-	case "airtime":
-		return 0.025
+		return 25
 	default:
-		return 0.005
+		return 0
+	}
+}
+
+func init() {
+	agents = []Agent{
+		{ID: "AGT-001", BusinessName: "Mama Ngozi POS", OwnerName: "Ngozi Eze", Location: "Oshodi Market, Lagos", LGA: "Oshodi-Isolo", State: "Lagos", TerminalID: "TRM-001", FloatBalance: 2500000, CommissionEarned: 185000, TransactionCount: 3420, Status: "active", Tier: "super_agent", OnboardedAt: "2025-01-15T10:00:00Z"},
+		{ID: "AGT-002", BusinessName: "Baba Audu Phones", OwnerName: "Audu Mohammed", Location: "Wuse Market, Abuja", LGA: "Municipal", State: "FCT", TerminalID: "TRM-002", FloatBalance: 850000, CommissionEarned: 72000, TransactionCount: 1205, Status: "active", Tier: "agent", OnboardedAt: "2025-06-20T09:00:00Z"},
+		{ID: "AGT-003", BusinessName: "Sister's Shop", OwnerName: "Amina Yusuf", Location: "Sabon Gari, Kano", LGA: "Kano Municipal", State: "Kano", TerminalID: "TRM-003", FloatBalance: 150000, CommissionEarned: 12000, TransactionCount: 245, Status: "suspended", Tier: "agent", OnboardedAt: "2025-11-01T08:00:00Z"},
+	}
+	agentTx = []AgentTransaction{
+		{ID: "ATX-001", AgentID: "AGT-001", Type: "cash_in", Amount: 50000, Commission: 50, CustomerBVN: "22012345678", Status: "completed", CreatedAt: "2026-04-01T10:00:00Z"},
+		{ID: "ATX-002", AgentID: "AGT-001", Type: "cash_out", Amount: 100000, Commission: 150, CustomerBVN: "22087654321", Status: "completed", CreatedAt: "2026-04-01T10:15:00Z"},
+		{ID: "ATX-003", AgentID: "AGT-002", Type: "bills_payment", Amount: 20000, Commission: 100, CustomerBVN: "22011223344", Status: "completed", CreatedAt: "2026-04-01T11:00:00Z"},
 	}
 }
 
 func main() {
-	bundle = mw.NewBundle()
-	addr := mw.EnvOr("ADDR", ":8097")
-	mx := http.NewServeMux()
-
-	mx.HandleFunc("/healthz", func(w http.ResponseWriter, _ *http.Request) {
-		mw.RespondJSON(w, 200, map[string]any{
-			"status":    "ok",
-			"service":   "agent-banking-go",
-			"timestamp": mw.NowISO(),
-			"middleware": []string{"Kafka", "Redis", "TigerBeetle", "Postgres", "Mojaloop", "APISIX", "Permify", "Keycloak"},
-			"health":    bundle.HealthMap(),
-		})
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8143"
+	}
+	mux := http.NewServeMux()
+	mux.HandleFunc("/healthz", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]string{"status": "ok", "service": "agent-banking", "port": port})
 	})
+	mux.HandleFunc("/v1/agents", handleAgents)
+	mux.HandleFunc("/v1/agents/onboard", handleOnboard)
+	mux.HandleFunc("/v1/agents/transactions", handleTransactions)
+	mux.HandleFunc("/v1/agents/perform-transaction", handlePerformTx)
+	mux.HandleFunc("/v1/agents/float-topup", handleFloatTopup)
+	mux.HandleFunc("/v1/agents/commission-report", handleCommissionReport)
+	mux.HandleFunc("/v1/agents/suspend", handleSuspend)
+	mux.HandleFunc("/v1/agents/activate", handleActivate)
 
-	mx.HandleFunc("/v1/agent-banking/agents", func(w http.ResponseWriter, r *http.Request) {
-		switch r.Method {
-		case "GET":
-			mu.RLock()
-			items := make([]*Agent, 0, len(agents))
-			for _, a := range agents { items = append(items, a) }
-			mu.RUnlock()
-			mw.RespondJSON(w, 200, map[string]any{"items": items, "total": len(items)})
-		case "POST":
-			createAgent(w, r)
-		}
-	})
-
-	mx.HandleFunc("/v1/agent-banking/agents/", func(w http.ResponseWriter, r *http.Request) {
-		parts := strings.Split(strings.TrimPrefix(r.URL.Path, "/v1/agent-banking/agents/"), "/")
-		id := parts[0]
-		if len(parts) == 1 {
-			switch r.Method {
-			case "GET":
-				mu.RLock()
-				a, ok := agents[id]
-				mu.RUnlock()
-				if !ok { mw.RespondJSON(w, 404, map[string]string{"message": "Agent not found"}); return }
-				mw.RespondJSON(w, 200, a)
-			case "PUT":
-				updateAgent(w, r, id)
-			}
-		} else {
-			switch parts[1] {
-			case "float-topup":
-				floatTopup(w, r, id)
-			case "transaction":
-				processTransaction(w, r, id)
-			case "terminals":
-				assignTerminal(w, r, id)
-			case "transactions":
-				listAgentTxns(w, id)
-			case "verify-kyc":
-				verifyKYC(w, id)
-			}
-		}
-	})
-
-	mx.HandleFunc("/v1/agent-banking/transactions", func(w http.ResponseWriter, _ *http.Request) {
-		mu.RLock()
-		defer mu.RUnlock()
-		mw.RespondJSON(w, 200, map[string]any{"items": agentTxns, "total": len(agentTxns)})
-	})
-
-	fmt.Printf("Agent Banking service listening on %s\n", addr)
-	http.ListenAndServe(addr, mw.CORSMiddleware(mx))
+	log.Printf("Agent Banking Service listening on :%s", port)
+	log.Fatal(http.ListenAndServe(":"+port, mux))
 }
 
-func createAgent(w http.ResponseWriter, r *http.Request) {
+func handleAgents(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	mu.RLock()
+	defer mu.RUnlock()
+	json.NewEncoder(w).Encode(map[string]interface{}{"items": agents, "total": len(agents)})
+}
+
+func handleOnboard(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	if r.Method != http.MethodPost {
+		http.Error(w, `{"error":"POST required"}`, 405)
+		return
+	}
 	var req struct {
 		BusinessName string `json:"businessName"`
 		OwnerName    string `json:"ownerName"`
-		PhoneNumber  string `json:"phoneNumber"`
-		Email        string `json:"email"`
-		BVN          string `json:"bvn"`
+		Location     string `json:"location"`
 		LGA          string `json:"lga"`
 		State        string `json:"state"`
-		Address      string `json:"address"`
-		AgentType    string `json:"agentType"`
-		SuperAgentID string `json:"superAgentId"`
 	}
-	mw.DecodeBody(r, &req)
-	if req.BusinessName == "" || req.OwnerName == "" || req.PhoneNumber == "" {
-		mw.RespondJSON(w, 400, map[string]string{"message": "businessName, ownerName, and phoneNumber required"})
+	json.NewDecoder(r.Body).Decode(&req)
+	if req.BusinessName == "" || req.OwnerName == "" || req.State == "" {
+		w.WriteHeader(400)
+		json.NewEncoder(w).Encode(map[string]string{"error": "businessName, ownerName, and state are required"})
 		return
 	}
-	if req.AgentType == "" { req.AgentType = "individual" }
 
-	a := &Agent{
-		ID:           mw.GenID("AGT"),
-		TenantID:     mw.DefaultTenant(),
-		AgentCode:    fmt.Sprintf("54AGT%06d", time.Now().UnixMilli()%1000000),
+	mu.Lock()
+	defer mu.Unlock()
+	agent := Agent{
+		ID:           "AGT-" + time.Now().Format("20060102150405"),
 		BusinessName: req.BusinessName,
 		OwnerName:    req.OwnerName,
-		PhoneNumber:  req.PhoneNumber,
-		Email:        req.Email,
-		BVN:          req.BVN,
+		Location:     req.Location,
 		LGA:          req.LGA,
 		State:        req.State,
-		Address:      req.Address,
-		AgentType:    req.AgentType,
-		SuperAgentID: req.SuperAgentID,
+		TerminalID:   "TRM-" + time.Now().Format("20060102150405"),
 		FloatBalance: 0,
-		KYCStatus:    "pending",
 		Status:       "active",
-		Terminals:    []Terminal{},
-		CreatedAt:    mw.NowISO(),
-		UpdatedAt:    mw.NowISO(),
+		Tier:         "agent",
+		OnboardedAt:  time.Now().Format(time.RFC3339),
 	}
-
-	mu.Lock()
-	agents[a.ID] = a
-	mu.Unlock()
-
-	bundle.Kafka.Publish("agent-banking.agent.created", a.ID, a)
-	mw.RespondJSON(w, 201, a)
+	agents = append(agents, agent)
+	w.WriteHeader(201)
+	json.NewEncoder(w).Encode(agent)
 }
 
-func updateAgent(w http.ResponseWriter, r *http.Request, id string) {
-	mu.Lock()
-	defer mu.Unlock()
-	a, ok := agents[id]
-	if !ok { mw.RespondJSON(w, 404, map[string]string{"message": "Agent not found"}); return }
-	var req map[string]any
-	mw.DecodeBody(r, &req)
-	if v, ok := req["businessName"].(string); ok { a.BusinessName = v }
-	if v, ok := req["status"].(string); ok { a.Status = v }
-	a.UpdatedAt = mw.NowISO()
-	mw.RespondJSON(w, 200, a)
-}
-
-func verifyKYC(w http.ResponseWriter, id string) {
-	mu.Lock()
-	defer mu.Unlock()
-	a, ok := agents[id]
-	if !ok { mw.RespondJSON(w, 404, map[string]string{"message": "Agent not found"}); return }
-	a.KYCStatus = "verified"
-	a.UpdatedAt = mw.NowISO()
-	bundle.Kafka.Publish("agent-banking.kyc.verified", a.ID, a)
-	mw.RespondJSON(w, 200, map[string]any{"agent": a, "kycStatus": "verified"})
-}
-
-func floatTopup(w http.ResponseWriter, r *http.Request, id string) {
-	mu.Lock()
-	defer mu.Unlock()
-	a, ok := agents[id]
-	if !ok { mw.RespondJSON(w, 404, map[string]string{"message": "Agent not found"}); return }
-
-	var req struct {
-		Amount    float64 `json:"amount"`
-		Reference string  `json:"reference"`
-	}
-	mw.DecodeBody(r, &req)
-	if req.Amount <= 0 {
-		mw.RespondJSON(w, 400, map[string]string{"message": "amount must be positive"})
-		return
-	}
-	a.FloatBalance += req.Amount
-	a.UpdatedAt = mw.NowISO()
-
-	bundle.TigerBeetle.CreateTransfer(r_ctx(), mw.LedgerEntry{
-		DebitAccount: "agent-float-funding", CreditAccount: "agent:" + id,
-		Amount: req.Amount, Code: "float-topup",
-	})
-	mw.RespondJSON(w, 200, map[string]any{"agent": a, "floatBalance": a.FloatBalance})
-}
-
-func processTransaction(w http.ResponseWriter, r *http.Request, id string) {
-	mu.Lock()
-	defer mu.Unlock()
-	a, ok := agents[id]
-	if !ok { mw.RespondJSON(w, 404, map[string]string{"message": "Agent not found"}); return }
-	if a.Status != "active" {
-		mw.RespondJSON(w, 400, map[string]string{"message": "Agent is not active"})
-		return
-	}
-
-	var req struct {
-		Type            string  `json:"type"`
-		CustomerAccount string  `json:"customerAccount"`
-		Amount          float64 `json:"amount"`
-		TerminalID      string  `json:"terminalId"`
-		Reference       string  `json:"reference"`
-	}
-	mw.DecodeBody(r, &req)
-	if req.Type == "" || req.Amount <= 0 {
-		mw.RespondJSON(w, 400, map[string]string{"message": "type and amount (>0) required"})
-		return
-	}
-
-	// Cash-out requires float
-	if req.Type == "cash_out" && a.FloatBalance < req.Amount {
-		mw.RespondJSON(w, 400, map[string]string{"message": "Insufficient float balance"})
-		return
-	}
-
-	commission := req.Amount * commissionRate(req.Type, req.Amount)
-	fee := commission * 0.3 // 30% of commission is fee to customer
-
-	floatBefore := a.FloatBalance
-	switch req.Type {
-	case "cash_in":
-		a.FloatBalance += req.Amount
-	case "cash_out":
-		a.FloatBalance -= req.Amount
-	}
-	a.CommissionEarned += commission
-	a.TransactionCount++
-	a.UpdatedAt = mw.NowISO()
-
-	txn := AgentTransaction{
-		ID: mw.GenID("ATX"), AgentID: id, TerminalID: req.TerminalID,
-		Type: req.Type, CustomerAccount: req.CustomerAccount,
-		Amount: req.Amount, Fee: fee, Commission: commission,
-		FloatBefore: floatBefore, FloatAfter: a.FloatBalance,
-		Reference: req.Reference, Status: "completed", CreatedAt: mw.NowISO(),
-	}
-	agentTxns = append(agentTxns, txn)
-
-	bundle.TigerBeetle.CreateTransfer(r_ctx(), mw.LedgerEntry{
-		DebitAccount: "agent:" + id, CreditAccount: "customer:" + req.CustomerAccount,
-		Amount: req.Amount, Code: "agent-" + req.Type,
-	})
-	bundle.Kafka.Publish("agent-banking.transaction", txn.ID, txn)
-	mw.RespondJSON(w, 201, map[string]any{"transaction": txn, "agent": a})
-}
-
-func assignTerminal(w http.ResponseWriter, r *http.Request, id string) {
-	mu.Lock()
-	defer mu.Unlock()
-	a, ok := agents[id]
-	if !ok { mw.RespondJSON(w, 404, map[string]string{"message": "Agent not found"}); return }
-
-	var req struct {
-		DeviceType string `json:"deviceType"`
-		SerialNo   string `json:"serialNo"`
-	}
-	mw.DecodeBody(r, &req)
-	if req.SerialNo == "" { mw.RespondJSON(w, 400, map[string]string{"message": "serialNo required"}); return }
-	if req.DeviceType == "" { req.DeviceType = "pos" }
-
-	t := Terminal{
-		TerminalID: mw.GenID("TRM"), DeviceType: req.DeviceType,
-		SerialNo: req.SerialNo, Status: "active", AssignedAt: mw.NowISO(),
-	}
-	a.Terminals = append(a.Terminals, t)
-	a.UpdatedAt = mw.NowISO()
-	mw.RespondJSON(w, 201, map[string]any{"terminal": t, "agent": a})
-}
-
-func listAgentTxns(w http.ResponseWriter, id string) {
+func handleTransactions(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
 	mu.RLock()
 	defer mu.RUnlock()
-	var items []AgentTransaction
-	for _, t := range agentTxns { if t.AgentID == id { items = append(items, t) } }
-	mw.RespondJSON(w, 200, map[string]any{"items": items, "total": len(items)})
+	agentID := r.URL.Query().Get("agentId")
+	if agentID == "" {
+		json.NewEncoder(w).Encode(map[string]interface{}{"items": agentTx, "total": len(agentTx)})
+		return
+	}
+	var filtered []AgentTransaction
+	for _, tx := range agentTx {
+		if tx.AgentID == agentID {
+			filtered = append(filtered, tx)
+		}
+	}
+	json.NewEncoder(w).Encode(map[string]interface{}{"items": filtered, "total": len(filtered)})
 }
 
-func r_ctx() __context { return __context{} }
-type __context struct{}
-func (_ __context) Deadline() (time.Time, bool) { return time.Time{}, false }
-func (_ __context) Done() <-chan struct{}        { return nil }
-func (_ __context) Err() error                   { return nil }
-func (_ __context) Value(any) any                { return nil }
+func handlePerformTx(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	if r.Method != http.MethodPost {
+		http.Error(w, `{"error":"POST required"}`, 405)
+		return
+	}
+	var req struct {
+		AgentID     string  `json:"agentId"`
+		Type        string  `json:"type"`
+		Amount      float64 `json:"amount"`
+		CustomerBVN string  `json:"customerBVN"`
+	}
+	json.NewDecoder(r.Body).Decode(&req)
+
+	validTypes := map[string]bool{"cash_in": true, "cash_out": true, "bills_payment": true, "transfer": true}
+	if !validTypes[req.Type] {
+		w.WriteHeader(400)
+		json.NewEncoder(w).Encode(map[string]interface{}{"error": "invalid transaction type", "valid": []string{"cash_in", "cash_out", "bills_payment", "transfer"}})
+		return
+	}
+	if req.Amount <= 0 {
+		w.WriteHeader(400)
+		json.NewEncoder(w).Encode(map[string]string{"error": "amount must be positive"})
+		return
+	}
+
+	mu.Lock()
+	defer mu.Unlock()
+
+	var agent *Agent
+	for i := range agents {
+		if agents[i].ID == req.AgentID {
+			agent = &agents[i]
+			break
+		}
+	}
+	if agent == nil {
+		http.Error(w, `{"error":"agent not found"}`, 404)
+		return
+	}
+	if agent.Status != "active" {
+		w.WriteHeader(400)
+		json.NewEncoder(w).Encode(map[string]string{"error": "agent is " + agent.Status + ", must be active"})
+		return
+	}
+
+	if req.Type == "cash_out" && agent.FloatBalance < req.Amount {
+		w.WriteHeader(400)
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"error":        "insufficient float balance",
+			"floatBalance": agent.FloatBalance,
+			"requested":    req.Amount,
+		})
+		return
+	}
+
+	comm := commissionRate(req.Type, req.Amount)
+	tx := AgentTransaction{
+		ID:          "ATX-" + time.Now().Format("20060102150405"),
+		AgentID:     req.AgentID,
+		Type:        req.Type,
+		Amount:      req.Amount,
+		Commission:  comm,
+		CustomerBVN: req.CustomerBVN,
+		Status:      "completed",
+		CreatedAt:   time.Now().Format(time.RFC3339),
+	}
+
+	if req.Type == "cash_in" {
+		agent.FloatBalance += req.Amount
+	} else if req.Type == "cash_out" {
+		agent.FloatBalance -= req.Amount
+	}
+	agent.CommissionEarned += comm
+	agent.TransactionCount++
+	agentTx = append(agentTx, tx)
+
+	json.NewEncoder(w).Encode(map[string]interface{}{"transaction": tx, "newFloatBalance": agent.FloatBalance})
+}
+
+func handleFloatTopup(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	if r.Method != http.MethodPost {
+		http.Error(w, `{"error":"POST required"}`, 405)
+		return
+	}
+	var req struct {
+		AgentID string  `json:"agentId"`
+		Amount  float64 `json:"amount"`
+	}
+	json.NewDecoder(r.Body).Decode(&req)
+	if req.Amount <= 0 {
+		w.WriteHeader(400)
+		json.NewEncoder(w).Encode(map[string]string{"error": "amount must be positive"})
+		return
+	}
+	mu.Lock()
+	defer mu.Unlock()
+	for i := range agents {
+		if agents[i].ID == req.AgentID {
+			agents[i].FloatBalance += req.Amount
+			json.NewEncoder(w).Encode(map[string]interface{}{"agent": agents[i], "topupAmount": req.Amount})
+			return
+		}
+	}
+	http.Error(w, `{"error":"agent not found"}`, 404)
+}
+
+func handleCommissionReport(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	mu.RLock()
+	defer mu.RUnlock()
+	agentID := r.URL.Query().Get("agentId")
+	if agentID == "" {
+		w.WriteHeader(400)
+		json.NewEncoder(w).Encode(map[string]string{"error": "agentId required"})
+		return
+	}
+	var total float64
+	var count int
+	for _, tx := range agentTx {
+		if tx.AgentID == agentID {
+			total += tx.Commission
+			count++
+		}
+	}
+	json.NewEncoder(w).Encode(map[string]interface{}{"agentId": agentID, "totalCommission": total, "transactionCount": count})
+}
+
+func handleSuspend(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	if r.Method != http.MethodPost {
+		http.Error(w, `{"error":"POST required"}`, 405)
+		return
+	}
+	var req struct {
+		AgentID string `json:"agentId"`
+		Reason  string `json:"reason"`
+	}
+	json.NewDecoder(r.Body).Decode(&req)
+	mu.Lock()
+	defer mu.Unlock()
+	for i := range agents {
+		if agents[i].ID == req.AgentID {
+			if agents[i].Status == "suspended" {
+				w.WriteHeader(400)
+				json.NewEncoder(w).Encode(map[string]string{"error": "agent already suspended"})
+				return
+			}
+			agents[i].Status = "suspended"
+			json.NewEncoder(w).Encode(map[string]interface{}{"agent": agents[i], "reason": req.Reason})
+			return
+		}
+	}
+	http.Error(w, `{"error":"agent not found"}`, 404)
+}
+
+func handleActivate(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	if r.Method != http.MethodPost {
+		http.Error(w, `{"error":"POST required"}`, 405)
+		return
+	}
+	var req struct {
+		AgentID string `json:"agentId"`
+	}
+	json.NewDecoder(r.Body).Decode(&req)
+	mu.Lock()
+	defer mu.Unlock()
+	for i := range agents {
+		if agents[i].ID == req.AgentID {
+			if agents[i].Status != "suspended" {
+				w.WriteHeader(400)
+				json.NewEncoder(w).Encode(map[string]string{"error": "agent is not suspended"})
+				return
+			}
+			agents[i].Status = "active"
+			json.NewEncoder(w).Encode(map[string]interface{}{"agent": agents[i]})
+			return
+		}
+	}
+	http.Error(w, `{"error":"agent not found"}`, 404)
+}

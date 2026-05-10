@@ -6358,6 +6358,90 @@ async function startServer() {
     void proxyToService(BULK_PAY_URL, "/v1/bulk-payments/reconcile", req, res);
   });
 
+  // Card Management Service (Go :8140)
+  const CARD_MGMT_URL = process.env.CARD_MGMT_URL || "http://localhost:8140";
+  app.all("/api/platform/card-mgmt/v1/cards", (req, res) => {
+    void proxyToService(CARD_MGMT_URL, "/v1/cards", req, res);
+  });
+  app.all("/api/platform/card-mgmt/v1/cards/requests", (req, res) => {
+    void proxyToService(CARD_MGMT_URL, "/v1/cards/requests", req, res);
+  });
+  app.all("/api/platform/card-mgmt/v1/cards/block", (req, res) => {
+    void proxyToService(CARD_MGMT_URL, "/v1/cards/block", req, res);
+  });
+  app.all("/api/platform/card-mgmt/v1/cards/unblock", (req, res) => {
+    void proxyToService(CARD_MGMT_URL, "/v1/cards/unblock", req, res);
+  });
+  app.all("/api/platform/card-mgmt/v1/cards/set-limit", (req, res) => {
+    void proxyToService(CARD_MGMT_URL, "/v1/cards/set-limit", req, res);
+  });
+  app.all("/api/platform/card-mgmt/v1/cards/toggle-international", (req, res) => {
+    void proxyToService(CARD_MGMT_URL, "/v1/cards/toggle-international", req, res);
+  });
+  app.all("/api/platform/card-mgmt/v1/cards/tokenize", (req, res) => {
+    void proxyToService(CARD_MGMT_URL, "/v1/cards/tokenize", req, res);
+  });
+  app.all("/api/platform/card-mgmt/v1/cards/replace", (req, res) => {
+    void proxyToService(CARD_MGMT_URL, "/v1/cards/replace", req, res);
+  });
+
+  // Savings Products Service (Python :8141)
+  const SAVINGS_URL = process.env.SAVINGS_URL || "http://localhost:8141";
+  app.all("/api/platform/savings/v1/savings/products", (req, res) => {
+    void proxyToService(SAVINGS_URL, "/v1/savings/products", req, res);
+  });
+  app.all("/api/platform/savings/v1/savings/accounts", (req, res) => {
+    void proxyToService(SAVINGS_URL, "/v1/savings/accounts", req, res);
+  });
+  app.all("/api/platform/savings/v1/savings/calculate-interest", (req, res) => {
+    void proxyToService(SAVINGS_URL, "/v1/savings/calculate-interest", req, res);
+  });
+  app.all("/api/platform/savings/v1/savings/open-account", (req, res) => {
+    void proxyToService(SAVINGS_URL, "/v1/savings/open-account", req, res);
+  });
+  app.all("/api/platform/savings/v1/savings/early-withdrawal", (req, res) => {
+    void proxyToService(SAVINGS_URL, "/v1/savings/early-withdrawal", req, res);
+  });
+
+  // Treasury & Liquidity Service (Rust :8142)
+  const TREASURY_URL = process.env.TREASURY_URL || "http://localhost:8142";
+  app.all("/api/platform/treasury/v1/treasury/fx-positions", (req, res) => {
+    void proxyToService(TREASURY_URL, "/v1/treasury/fx-positions", req, res);
+  });
+  app.all("/api/platform/treasury/v1/treasury/money-market", (req, res) => {
+    void proxyToService(TREASURY_URL, "/v1/treasury/money-market", req, res);
+  });
+  app.all("/api/platform/treasury/v1/treasury/liquidity", (req, res) => {
+    void proxyToService(TREASURY_URL, "/v1/treasury/liquidity", req, res);
+  });
+
+  // Agent Banking Service (Go :8143)
+  const AGENT_BANK_URL = process.env.AGENT_BANK_URL || "http://localhost:8143";
+  app.all("/api/platform/agent-banking/v1/agents", (req, res) => {
+    void proxyToService(AGENT_BANK_URL, "/v1/agents", req, res);
+  });
+  app.all("/api/platform/agent-banking/v1/agents/onboard", (req, res) => {
+    void proxyToService(AGENT_BANK_URL, "/v1/agents/onboard", req, res);
+  });
+  app.all("/api/platform/agent-banking/v1/agents/transactions", (req, res) => {
+    void proxyToService(AGENT_BANK_URL, "/v1/agents/transactions", req, res);
+  });
+  app.all("/api/platform/agent-banking/v1/agents/perform-transaction", (req, res) => {
+    void proxyToService(AGENT_BANK_URL, "/v1/agents/perform-transaction", req, res);
+  });
+  app.all("/api/platform/agent-banking/v1/agents/float-topup", (req, res) => {
+    void proxyToService(AGENT_BANK_URL, "/v1/agents/float-topup", req, res);
+  });
+  app.all("/api/platform/agent-banking/v1/agents/commission-report", (req, res) => {
+    void proxyToService(AGENT_BANK_URL, "/v1/agents/commission-report", req, res);
+  });
+  app.all("/api/platform/agent-banking/v1/agents/suspend", (req, res) => {
+    void proxyToService(AGENT_BANK_URL, "/v1/agents/suspend", req, res);
+  });
+  app.all("/api/platform/agent-banking/v1/agents/activate", (req, res) => {
+    void proxyToService(AGENT_BANK_URL, "/v1/agents/activate", req, res);
+  });
+
   // OTP endpoint for transaction signing (C8)
   app.post("/api/platform/otp/generate", (req, res) => {
     const userId = req.user?.sub ?? req.body?.userId ?? "anonymous";

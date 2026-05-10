@@ -96,6 +96,9 @@ const KYCAMLWorkspace = lazy(() => import("@/pages/KYCAMLWorkspace"));
 const LoanOriginationWorkspace = lazy(() => import("@/pages/LoanOriginationWorkspace"));
 const AccountStatementsWorkspace = lazy(() => import("@/pages/AccountStatementsWorkspace"));
 const BulkPaymentsWorkspace = lazy(() => import("@/pages/BulkPaymentsWorkspace"));
+const CardManagementWorkspace2 = lazy(() => import("@/pages/CardManagementWorkspace2"));
+const TreasuryLiquidityWorkspace = lazy(() => import("@/pages/TreasuryLiquidityWorkspace"));
+const AgentBankingWorkspace2 = lazy(() => import("@/pages/AgentBankingWorkspace2"));
 const AdminAnalyticsPage = lazy(() => import("@/pages/AdminModulePages").then((module) => ({ default: module.AdminAnalyticsPage })));
 const AdminBankingOpsPage = lazy(() => import("@/pages/AdminModulePages").then((module) => ({ default: module.AdminBankingOpsPage })));
 const AdminFeatureFlagsPage = lazy(() => import("@/pages/AdminModulePages").then((module) => ({ default: module.AdminFeatureFlagsPage })));
@@ -246,6 +249,9 @@ export default function App() {
         <Route path="/loan-origination" component={renderInAdminShell(LoanOriginationWorkspace)} />
         <Route path="/account-statements" component={renderInAdminShell(AccountStatementsWorkspace)} />
         <Route path="/bulk-payments" component={renderInAdminShell(BulkPaymentsWorkspace)} />
+        <Route path="/card-management-v2" component={renderInAdminShell(CardManagementWorkspace2)} />
+        <Route path="/treasury-liquidity" component={renderInAdminShell(TreasuryLiquidityWorkspace)} />
+        <Route path="/agent-banking-v2" component={renderInAdminShell(AgentBankingWorkspace2)} />
 
         <Route component={NotFound} />
       </Switch>

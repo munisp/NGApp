@@ -118,6 +118,10 @@ const menuItems = [
   { path: "/loan-origination", label: "Loan Origination", icon: FileBarChart },
   { path: "/account-statements", label: "Account Statements", icon: FileText },
   { path: "/bulk-payments", label: "Bulk Payments", icon: Layers },
+  { path: "/card-management-v2", label: "Card Mgmt", icon: CreditCard },
+  { path: "/savings-products", label: "Savings Products", icon: PiggyBank },
+  { path: "/treasury-liquidity", label: "Treasury & Liquidity", icon: TrendingUp },
+  { path: "/agent-banking-v2", label: "Agent Banking", icon: MapPin },
 ] as const;
 
 export default function ArchiveAdminSidebar() {

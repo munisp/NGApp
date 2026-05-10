@@ -1,3 +1,3 @@
-module github.com/54bank/card-management
+module card-management-go
 
-go 1.22
+go 1.21

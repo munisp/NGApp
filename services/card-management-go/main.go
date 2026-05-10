@@ -1,10 +1,7 @@
 package main
 
 import (
-	"crypto/rand"
-	"encoding/hex"
 	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -12,241 +9,234 @@ import (
 	"time"
 )
 
-// F3: Card Management — Issuance, PIN, limits, controls, tokenization, virtual cards
-// Language: Go (concurrent card operations, real-time limit enforcement)
-// Port: 8109
-
 type Card struct {
-	ID              string    `json:"id"`
-	CustomerID      string    `json:"customerId"`
-	CardType        string    `json:"cardType"` // debit, credit, prepaid, virtual
-	CardNumber      string    `json:"cardNumber"` // masked
-	ExpiryDate      string    `json:"expiryDate"`
-	Status          string    `json:"status"` // requested, approved, personalized, dispatched, active, blocked, expired
-	NameOnCard      string    `json:"nameOnCard"`
-	BIN             string    `json:"bin"`
-	Network         string    `json:"network"` // visa, mastercard, verve
-	DailyLimit      float64   `json:"dailyLimit"`
-	WeeklyLimit     float64   `json:"weeklyLimit"`
-	MonthlyLimit    float64   `json:"monthlyLimit"`
-	DailySpent      float64   `json:"dailySpent"`
-	OnlineEnabled   bool      `json:"onlineEnabled"`
-	POSEnabled      bool      `json:"posEnabled"`
-	ATMEnabled      bool      `json:"atmEnabled"`
-	IntlEnabled     bool      `json:"intlEnabled"`
-	ContactlessEnabled bool   `json:"contactlessEnabled"`
-	GeoBlocking     []string  `json:"geoBlocking,omitempty"` // blocked countries
-	MCCBlocking     []string  `json:"mccBlocking,omitempty"` // blocked merchant categories
-	TokenID         string    `json:"tokenId,omitempty"` // Apple/Google Pay token
-	PINSet          bool      `json:"pinSet"`
-	CreatedAt       time.Time `json:"createdAt"`
+	ID             string `json:"id"`
+	CardNumber     string `json:"cardNumber"`
+	MaskedPAN      string `json:"maskedPAN"`
+	AccountNumber  string `json:"accountNumber"`
+	CustomerName   string `json:"customerName"`
+	CardType       string `json:"cardType"`
+	Scheme         string `json:"scheme"`
+	Status         string `json:"status"`
+	ExpiryDate     string `json:"expiryDate"`
+	IssuedAt       string `json:"issuedAt"`
+	DailyLimit     float64 `json:"dailyLimit"`
+	InternationalEnabled bool `json:"internationalEnabled"`
+	ContactlessEnabled   bool `json:"contactlessEnabled"`
+	TokenizedDevices     int  `json:"tokenizedDevices"`
 }
 
-type CardTransaction struct {
-	ID        string    `json:"id"`
-	CardID    string    `json:"cardId"`
-	Type      string    `json:"type"` // purchase, withdrawal, refund, reversal
-	Amount    float64   `json:"amount"`
-	Currency  string    `json:"currency"`
-	Merchant  string    `json:"merchant"`
-	MCC       string    `json:"mcc"`
-	Channel   string    `json:"channel"` // pos, atm, online, contactless
-	Country   string    `json:"country"`
-	Status    string    `json:"status"` // approved, declined, pending, reversed
-	DeclineReason string `json:"declineReason,omitempty"`
-	Timestamp time.Time `json:"timestamp"`
+type CardRequest struct {
+	ID            string `json:"id"`
+	AccountNumber string `json:"accountNumber"`
+	CustomerName  string `json:"customerName"`
+	CardType      string `json:"cardType"`
+	Scheme        string `json:"scheme"`
+	Status        string `json:"status"`
+	RequestedAt   string `json:"requestedAt"`
+	ProcessedAt   string `json:"processedAt,omitempty"`
+	Reason        string `json:"reason,omitempty"`
 }
 
 var (
-	mu    sync.RWMutex
-	cards []Card
-	ctxns []CardTransaction
-	seq   int
+	mu       sync.RWMutex
+	cards    []Card
+	requests []CardRequest
 )
 
-func main() {
-	mux := http.NewServeMux()
-
-	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
-		json.NewEncoder(w).Encode(map[string]interface{}{
-			"service": "card-management", "status": "healthy", "port": 8109,
-			"middleware": []string{"kafka", "redis", "keycloak", "permify", "opensearch", "postgres"},
-		})
-	})
-
-	mux.HandleFunc("/v1/cards", handleCards)
-	mux.HandleFunc("/v1/cards/virtual", handleVirtualCard)
-	mux.HandleFunc("/v1/cards/pin", handlePIN)
-	mux.HandleFunc("/v1/cards/limits", handleLimits)
-	mux.HandleFunc("/v1/cards/controls", handleControls)
-	mux.HandleFunc("/v1/cards/tokenize", handleTokenize)
-	mux.HandleFunc("/v1/cards/authorize", handleAuthorize)
-	mux.HandleFunc("/v1/cards/transactions", handleCardTxns)
-
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "8109"
+func init() {
+	cards = []Card{
+		{ID: "CARD-001", CardNumber: "5199XXXXXXXX4567", MaskedPAN: "5199****4567", AccountNumber: "0012345678", CustomerName: "Fatima Abdullahi", CardType: "debit", Scheme: "mastercard", Status: "active", ExpiryDate: "2028-12", IssuedAt: "2025-12-15T10:00:00Z", DailyLimit: 500000, InternationalEnabled: true, ContactlessEnabled: true, TokenizedDevices: 2},
+		{ID: "CARD-002", CardNumber: "4065XXXXXXXX8901", MaskedPAN: "4065****8901", AccountNumber: "3034567890", CustomerName: "Ibrahim Musa", CardType: "credit", Scheme: "visa", Status: "active", ExpiryDate: "2027-06", IssuedAt: "2025-06-01T09:00:00Z", DailyLimit: 1000000, InternationalEnabled: true, ContactlessEnabled: true, TokenizedDevices: 1},
+		{ID: "CARD-003", CardNumber: "5061XXXXXXXX2345", MaskedPAN: "5061****2345", AccountNumber: "2098765432", CustomerName: "Chioma Okafor", CardType: "debit", Scheme: "verve", Status: "blocked", ExpiryDate: "2026-09", IssuedAt: "2024-09-20T14:00:00Z", DailyLimit: 200000, InternationalEnabled: false, ContactlessEnabled: false, TokenizedDevices: 0},
 	}
-	log.Printf("[CardManagement] Starting on :%s", port)
-	log.Fatal(http.ListenAndServe(":"+port, mux))
+	requests = []CardRequest{
+		{ID: "REQ-001", AccountNumber: "0012345678", CustomerName: "Fatima Abdullahi", CardType: "prepaid", Scheme: "mastercard", Status: "pending", RequestedAt: "2026-04-01T11:00:00Z"},
+	}
 }
 
-func generateMaskedCard() string {
-	return fmt.Sprintf("5399 **** **** %04d", time.Now().UnixNano()%10000)
+func main() {
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8140"
+	}
+	mux := http.NewServeMux()
+	mux.HandleFunc("/healthz", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]string{"status": "ok", "service": "card-management", "port": port})
+	})
+	mux.HandleFunc("/v1/cards", handleCards)
+	mux.HandleFunc("/v1/cards/requests", handleCardRequests)
+	mux.HandleFunc("/v1/cards/block", handleBlock)
+	mux.HandleFunc("/v1/cards/unblock", handleUnblock)
+	mux.HandleFunc("/v1/cards/set-limit", handleSetLimit)
+	mux.HandleFunc("/v1/cards/toggle-international", handleToggleInternational)
+	mux.HandleFunc("/v1/cards/tokenize", handleTokenize)
+	mux.HandleFunc("/v1/cards/replace", handleReplace)
+
+	log.Printf("Card Management Service listening on :%s", port)
+	log.Fatal(http.ListenAndServe(":"+port, mux))
 }
 
 func handleCards(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	if r.Method == "POST" {
-		var req Card
-		json.NewDecoder(r.Body).Decode(&req)
-		validTypes := map[string]bool{"debit": true, "credit": true, "prepaid": true, "virtual": true}
-		if !validTypes[req.CardType] {
-			http.Error(w, `{"error":"invalid card type"}`, 400)
-			return
-		}
-		mu.Lock()
-		seq++
-		req.ID = fmt.Sprintf("CRD-%06d", seq)
-		req.CardNumber = generateMaskedCard()
-		req.ExpiryDate = time.Now().AddDate(3, 0, 0).Format("01/06")
-		req.Status = "requested"
-		req.BIN = "539983"
-		req.Network = "mastercard"
-		if req.DailyLimit == 0 { req.DailyLimit = 500000 }
-		if req.WeeklyLimit == 0 { req.WeeklyLimit = 2000000 }
-		if req.MonthlyLimit == 0 { req.MonthlyLimit = 5000000 }
-		req.OnlineEnabled = true
-		req.POSEnabled = true
-		req.ATMEnabled = true
-		req.ContactlessEnabled = true
-		req.CreatedAt = time.Now()
-		cards = append(cards, req)
-		mu.Unlock()
-		w.WriteHeader(201)
-		json.NewEncoder(w).Encode(req)
-		return
-	}
 	mu.RLock()
 	defer mu.RUnlock()
-	json.NewEncoder(w).Encode(cards)
+	json.NewEncoder(w).Encode(map[string]interface{}{"items": cards, "total": len(cards)})
 }
 
-func handleVirtualCard(w http.ResponseWriter, r *http.Request) {
-	if r.Method != "POST" {
-		http.Error(w, `{"error":"method not allowed"}`, 405)
-		return
-	}
-	var req struct {
-		CustomerID string `json:"customerId"`
-		Currency   string `json:"currency"`
-	}
-	json.NewDecoder(r.Body).Decode(&req)
-
-	mu.Lock()
-	seq++
-	card := Card{
-		ID: fmt.Sprintf("VCR-%06d", seq), CustomerID: req.CustomerID,
-		CardType: "virtual", CardNumber: generateMaskedCard(),
-		ExpiryDate: time.Now().AddDate(1, 0, 0).Format("01/06"),
-		Status: "active", Network: "visa", BIN: "408408",
-		DailyLimit: 200000, WeeklyLimit: 1000000, MonthlyLimit: 3000000,
-		OnlineEnabled: true, POSEnabled: false, ATMEnabled: false,
-		ContactlessEnabled: false, CreatedAt: time.Now(),
-	}
-	cards = append(cards, card)
-	mu.Unlock()
-
+func handleCardRequests(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
+	if r.Method == http.MethodGet {
+		mu.RLock()
+		defer mu.RUnlock()
+		json.NewEncoder(w).Encode(map[string]interface{}{"items": requests, "total": len(requests)})
+		return
+	}
+	if r.Method != http.MethodPost {
+		http.Error(w, `{"error":"POST or GET required"}`, 405)
+		return
+	}
+	var req struct {
+		AccountNumber string `json:"accountNumber"`
+		CustomerName  string `json:"customerName"`
+		CardType      string `json:"cardType"`
+		Scheme        string `json:"scheme"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, `{"error":"invalid body"}`, 400)
+		return
+	}
+	validTypes := map[string]bool{"debit": true, "credit": true, "prepaid": true}
+	if !validTypes[req.CardType] {
+		w.WriteHeader(400)
+		json.NewEncoder(w).Encode(map[string]interface{}{"error": "invalid cardType", "valid": []string{"debit", "credit", "prepaid"}})
+		return
+	}
+	validSchemes := map[string]bool{"visa": true, "mastercard": true, "verve": true}
+	if !validSchemes[req.Scheme] {
+		w.WriteHeader(400)
+		json.NewEncoder(w).Encode(map[string]interface{}{"error": "invalid scheme", "valid": []string{"visa", "mastercard", "verve"}})
+		return
+	}
+
+	mu.Lock()
+	defer mu.Unlock()
+	cr := CardRequest{
+		ID:            "REQ-" + time.Now().Format("20060102150405"),
+		AccountNumber: req.AccountNumber,
+		CustomerName:  req.CustomerName,
+		CardType:      req.CardType,
+		Scheme:        req.Scheme,
+		Status:        "pending",
+		RequestedAt:   time.Now().Format(time.RFC3339),
+	}
+	requests = append(requests, cr)
 	w.WriteHeader(201)
-	json.NewEncoder(w).Encode(card)
+	json.NewEncoder(w).Encode(cr)
 }
 
-func handlePIN(w http.ResponseWriter, r *http.Request) {
-	if r.Method != "POST" {
-		http.Error(w, `{"error":"method not allowed"}`, 405)
+func handleBlock(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	if r.Method != http.MethodPost {
+		http.Error(w, `{"error":"POST required"}`, 405)
 		return
 	}
 	var req struct {
-		CardID     string `json:"cardId"`
-		EncryptedPIN string `json:"encryptedPin"`
+		CardID string `json:"cardId"`
+		Reason string `json:"reason"`
 	}
 	json.NewDecoder(r.Body).Decode(&req)
-
 	mu.Lock()
 	defer mu.Unlock()
 	for i := range cards {
 		if cards[i].ID == req.CardID {
-			cards[i].PINSet = true
-			if cards[i].Status == "requested" {
-				cards[i].Status = "active"
+			if cards[i].Status == "blocked" {
+				w.WriteHeader(400)
+				json.NewEncoder(w).Encode(map[string]string{"error": "card already blocked"})
+				return
 			}
-			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(map[string]interface{}{"status": "pin_set", "cardId": req.CardID})
+			cards[i].Status = "blocked"
+			json.NewEncoder(w).Encode(map[string]interface{}{"card": cards[i], "blockedAt": time.Now().Format(time.RFC3339), "reason": req.Reason})
 			return
 		}
 	}
 	http.Error(w, `{"error":"card not found"}`, 404)
 }
 
-func handleLimits(w http.ResponseWriter, r *http.Request) {
-	if r.Method != "PUT" && r.Method != "POST" {
-		http.Error(w, `{"error":"method not allowed"}`, 405)
+func handleUnblock(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	if r.Method != http.MethodPost {
+		http.Error(w, `{"error":"POST required"}`, 405)
 		return
 	}
 	var req struct {
-		CardID       string  `json:"cardId"`
-		DailyLimit   float64 `json:"dailyLimit"`
-		WeeklyLimit  float64 `json:"weeklyLimit"`
-		MonthlyLimit float64 `json:"monthlyLimit"`
+		CardID string `json:"cardId"`
 	}
 	json.NewDecoder(r.Body).Decode(&req)
-
 	mu.Lock()
 	defer mu.Unlock()
 	for i := range cards {
 		if cards[i].ID == req.CardID {
-			if req.DailyLimit > 0 { cards[i].DailyLimit = req.DailyLimit }
-			if req.WeeklyLimit > 0 { cards[i].WeeklyLimit = req.WeeklyLimit }
-			if req.MonthlyLimit > 0 { cards[i].MonthlyLimit = req.MonthlyLimit }
-			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(cards[i])
+			if cards[i].Status != "blocked" {
+				w.WriteHeader(400)
+				json.NewEncoder(w).Encode(map[string]string{"error": "card is not blocked"})
+				return
+			}
+			cards[i].Status = "active"
+			json.NewEncoder(w).Encode(map[string]interface{}{"card": cards[i], "unblockedAt": time.Now().Format(time.RFC3339)})
 			return
 		}
 	}
 	http.Error(w, `{"error":"card not found"}`, 404)
 }
 
-func handleControls(w http.ResponseWriter, r *http.Request) {
-	if r.Method != "PUT" && r.Method != "POST" {
-		http.Error(w, `{"error":"method not allowed"}`, 405)
+func handleSetLimit(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	if r.Method != http.MethodPost {
+		http.Error(w, `{"error":"POST required"}`, 405)
 		return
 	}
 	var req struct {
-		CardID             string   `json:"cardId"`
-		OnlineEnabled      *bool    `json:"onlineEnabled,omitempty"`
-		POSEnabled         *bool    `json:"posEnabled,omitempty"`
-		ATMEnabled         *bool    `json:"atmEnabled,omitempty"`
-		IntlEnabled        *bool    `json:"intlEnabled,omitempty"`
-		ContactlessEnabled *bool    `json:"contactlessEnabled,omitempty"`
-		GeoBlocking        []string `json:"geoBlocking,omitempty"`
-		MCCBlocking        []string `json:"mccBlocking,omitempty"`
+		CardID     string  `json:"cardId"`
+		DailyLimit float64 `json:"dailyLimit"`
 	}
 	json.NewDecoder(r.Body).Decode(&req)
-
+	if req.DailyLimit <= 0 || req.DailyLimit > 10000000 {
+		w.WriteHeader(400)
+		json.NewEncoder(w).Encode(map[string]string{"error": "dailyLimit must be between 1 and 10,000,000"})
+		return
+	}
 	mu.Lock()
 	defer mu.Unlock()
 	for i := range cards {
 		if cards[i].ID == req.CardID {
-			if req.OnlineEnabled != nil { cards[i].OnlineEnabled = *req.OnlineEnabled }
-			if req.POSEnabled != nil { cards[i].POSEnabled = *req.POSEnabled }
-			if req.ATMEnabled != nil { cards[i].ATMEnabled = *req.ATMEnabled }
-			if req.IntlEnabled != nil { cards[i].IntlEnabled = *req.IntlEnabled }
-			if req.ContactlessEnabled != nil { cards[i].ContactlessEnabled = *req.ContactlessEnabled }
-			if req.GeoBlocking != nil { cards[i].GeoBlocking = req.GeoBlocking }
-			if req.MCCBlocking != nil { cards[i].MCCBlocking = req.MCCBlocking }
-			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(cards[i])
+			old := cards[i].DailyLimit
+			cards[i].DailyLimit = req.DailyLimit
+			json.NewEncoder(w).Encode(map[string]interface{}{"card": cards[i], "previousLimit": old})
+			return
+		}
+	}
+	http.Error(w, `{"error":"card not found"}`, 404)
+}
+
+func handleToggleInternational(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	if r.Method != http.MethodPost {
+		http.Error(w, `{"error":"POST required"}`, 405)
+		return
+	}
+	var req struct {
+		CardID  string `json:"cardId"`
+		Enabled bool   `json:"enabled"`
+	}
+	json.NewDecoder(r.Body).Decode(&req)
+	mu.Lock()
+	defer mu.Unlock()
+	for i := range cards {
+		if cards[i].ID == req.CardID {
+			cards[i].InternationalEnabled = req.Enabled
+			json.NewEncoder(w).Encode(map[string]interface{}{"card": cards[i]})
 			return
 		}
 	}
@@ -254,27 +244,36 @@ func handleControls(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleTokenize(w http.ResponseWriter, r *http.Request) {
-	if r.Method != "POST" {
-		http.Error(w, `{"error":"method not allowed"}`, 405)
+	w.Header().Set("Content-Type", "application/json")
+	if r.Method != http.MethodPost {
+		http.Error(w, `{"error":"POST required"}`, 405)
 		return
 	}
 	var req struct {
-		CardID   string `json:"cardId"`
-		Platform string `json:"platform"` // apple_pay, google_pay, samsung_pay
+		CardID     string `json:"cardId"`
+		DeviceName string `json:"deviceName"`
+		DeviceType string `json:"deviceType"`
 	}
 	json.NewDecoder(r.Body).Decode(&req)
-
 	mu.Lock()
 	defer mu.Unlock()
 	for i := range cards {
 		if cards[i].ID == req.CardID {
-			tokenBytes := make([]byte, 16)
-			rand.Read(tokenBytes)
-			cards[i].TokenID = fmt.Sprintf("tok_%s_%s", req.Platform, hex.EncodeToString(tokenBytes))
-			w.Header().Set("Content-Type", "application/json")
+			if cards[i].Status != "active" {
+				w.WriteHeader(400)
+				json.NewEncoder(w).Encode(map[string]string{"error": "only active cards can be tokenized"})
+				return
+			}
+			if cards[i].TokenizedDevices >= 5 {
+				w.WriteHeader(400)
+				json.NewEncoder(w).Encode(map[string]string{"error": "maximum 5 tokenized devices reached"})
+				return
+			}
+			cards[i].TokenizedDevices++
 			json.NewEncoder(w).Encode(map[string]interface{}{
-				"cardId": req.CardID, "tokenId": cards[i].TokenID,
-				"platform": req.Platform, "status": "provisioned",
+				"card":        cards[i],
+				"tokenizedAt": time.Now().Format(time.RFC3339),
+				"device":      req.DeviceName,
 			})
 			return
 		}
@@ -282,104 +281,36 @@ func handleTokenize(w http.ResponseWriter, r *http.Request) {
 	http.Error(w, `{"error":"card not found"}`, 404)
 }
 
-func handleAuthorize(w http.ResponseWriter, r *http.Request) {
-	if r.Method != "POST" {
-		http.Error(w, `{"error":"method not allowed"}`, 405)
+func handleReplace(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	if r.Method != http.MethodPost {
+		http.Error(w, `{"error":"POST required"}`, 405)
 		return
 	}
 	var req struct {
-		CardID   string  `json:"cardId"`
-		Amount   float64 `json:"amount"`
-		Merchant string  `json:"merchant"`
-		MCC      string  `json:"mcc"`
-		Channel  string  `json:"channel"` // pos, atm, online, contactless
-		Country  string  `json:"country"`
+		CardID string `json:"cardId"`
+		Reason string `json:"reason"`
 	}
 	json.NewDecoder(r.Body).Decode(&req)
-
+	validReasons := map[string]bool{"lost": true, "stolen": true, "damaged": true, "expired": true}
+	if !validReasons[req.Reason] {
+		w.WriteHeader(400)
+		json.NewEncoder(w).Encode(map[string]interface{}{"error": "invalid reason", "valid": []string{"lost", "stolen", "damaged", "expired"}})
+		return
+	}
 	mu.Lock()
 	defer mu.Unlock()
-
 	for i := range cards {
 		if cards[i].ID == req.CardID {
-			// Check card status
-			if cards[i].Status != "active" {
-				txn := recordDecline(req, "card_not_active")
-				w.Header().Set("Content-Type", "application/json")
-				w.WriteHeader(400)
-				json.NewEncoder(w).Encode(txn)
-				return
-			}
-			// Check channel controls
-			if req.Channel == "online" && !cards[i].OnlineEnabled {
-				txn := recordDecline(req, "online_disabled")
-				w.WriteHeader(400)
-				json.NewEncoder(w).Encode(txn)
-				return
-			}
-			if req.Channel == "atm" && !cards[i].ATMEnabled {
-				txn := recordDecline(req, "atm_disabled")
-				w.WriteHeader(400)
-				json.NewEncoder(w).Encode(txn)
-				return
-			}
-			// Check daily limit
-			if cards[i].DailySpent+req.Amount > cards[i].DailyLimit {
-				txn := recordDecline(req, "daily_limit_exceeded")
-				w.WriteHeader(400)
-				json.NewEncoder(w).Encode(txn)
-				return
-			}
-			// Check geo blocking
-			for _, blocked := range cards[i].GeoBlocking {
-				if blocked == req.Country {
-					txn := recordDecline(req, "geo_blocked")
-					w.WriteHeader(400)
-					json.NewEncoder(w).Encode(txn)
-					return
-				}
-			}
-
-			// Approve
-			cards[i].DailySpent += req.Amount
-			txn := CardTransaction{
-				ID: fmt.Sprintf("CTX-%d", time.Now().UnixNano()),
-				CardID: req.CardID, Type: "purchase", Amount: req.Amount,
-				Currency: "NGN", Merchant: req.Merchant, MCC: req.MCC,
-				Channel: req.Channel, Country: req.Country,
-				Status: "approved", Timestamp: time.Now(),
-			}
-			ctxns = append(ctxns, txn)
-			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(txn)
+			cards[i].Status = "replaced"
+			json.NewEncoder(w).Encode(map[string]interface{}{
+				"oldCard":     cards[i],
+				"replacedAt":  time.Now().Format(time.RFC3339),
+				"reason":      req.Reason,
+				"message":     "Replacement card will be issued within 5 business days",
+			})
 			return
 		}
 	}
 	http.Error(w, `{"error":"card not found"}`, 404)
-}
-
-func recordDecline(req struct {
-	CardID   string  `json:"cardId"`
-	Amount   float64 `json:"amount"`
-	Merchant string  `json:"merchant"`
-	MCC      string  `json:"mcc"`
-	Channel  string  `json:"channel"`
-	Country  string  `json:"country"`
-}, reason string) CardTransaction {
-	txn := CardTransaction{
-		ID: fmt.Sprintf("CTX-%d", time.Now().UnixNano()),
-		CardID: req.CardID, Type: "purchase", Amount: req.Amount,
-		Currency: "NGN", Merchant: req.Merchant, MCC: req.MCC,
-		Channel: req.Channel, Country: req.Country,
-		Status: "declined", DeclineReason: reason, Timestamp: time.Now(),
-	}
-	ctxns = append(ctxns, txn)
-	return txn
-}
-
-func handleCardTxns(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	mu.RLock()
-	defer mu.RUnlock()
-	json.NewEncoder(w).Encode(ctxns)
 }
