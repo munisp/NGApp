@@ -268,6 +268,11 @@ const menuItems = [
   { path: "/workflow-instances", label: "Workflow Instances", icon: PlayCircle },
   { path: "/my-transactions", label: "My Transactions", icon: Receipt },
   { path: "/service-health", label: "Service Health", icon: Activity },
+  { path: "/murabaha-calculator", label: "Murabaha Calculator", icon: Calculator },
+  { path: "/lc-amendments", label: "LC Amendments", icon: FileText },
+  { path: "/cheque-imaging", label: "Cheque Imaging", icon: FileBarChart },
+  { path: "/integration-tests", label: "Integration Tests", icon: Activity },
+  { path: "/seed-registry", label: "Seed Registry", icon: Database },
 ] as const;
 
 export default function ArchiveAdminSidebar() {

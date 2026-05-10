@@ -63,6 +63,31 @@ func init() {
 	}
 }
 
+func envOr(key, fallback string) string {
+	v := os.Getenv(key)
+	if v == "" {
+		return fallback
+	}
+	return v
+}
+
+var middlewareConfig = map[string]interface{}{
+	"kafka":       map[string]string{"broker": envOr("KAFKA_BROKER", "localhost:9092")},
+	"redis":       map[string]string{"url": envOr("REDIS_URL", "redis://localhost:6379")},
+	"postgres":    map[string]string{"url": envOr("DATABASE_URL", "postgresql://ndsep_user:ndsep_secure_2026@localhost:5432/ndsep_db")},
+	"opensearch":  map[string]string{"url": envOr("OPENSEARCH_URL", "http://localhost:9200")},
+	"keycloak":    map[string]string{"url": envOr("KEYCLOAK_URL", "http://localhost:8080"), "realm": "54bank"},
+	"permify":     map[string]string{"url": envOr("PERMIFY_URL", "http://localhost:3476")},
+	"dapr":        map[string]string{"url": envOr("DAPR_URL", "http://localhost:3500")},
+	"fluvio":      map[string]string{"url": envOr("FLUVIO_URL", "localhost:9003")},
+	"temporal":    map[string]string{"url": envOr("TEMPORAL_URL", "localhost:7233")},
+	"mojaloop":    map[string]string{"url": envOr("MOJALOOP_URL", "http://localhost:3002")},
+	"tigerbeetle": map[string]string{"url": envOr("TIGERBEETLE_URL", "localhost:3000")},
+	"lakehouse":   map[string]string{"url": envOr("LAKEHOUSE_URL", "http://localhost:8181")},
+	"apisix":      map[string]string{"url": envOr("APISIX_URL", "http://localhost:9080")},
+	"openappsec":  map[string]string{"url": envOr("OPENAPPSEC_URL", "http://localhost:4000")},
+}
+
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" {

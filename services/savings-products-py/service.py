@@ -1,9 +1,28 @@
+import os
 """54Bank Savings Products Service — fixed deposits, target savings, group savings, interest computation."""
 
 import json
 import math
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from datetime import datetime, timedelta
+
+
+MIDDLEWARE_CONFIG = {
+    "kafka": {"broker": os.environ.get("KAFKA_BROKER", "localhost:9092")},
+    "redis": {"url": os.environ.get("REDIS_URL", "redis://localhost:6379")},
+    "postgres": {"url": os.environ.get("DATABASE_URL", "postgresql://ndsep_user:ndsep_secure_2026@localhost:5432/ndsep_db")},
+    "opensearch": {"url": os.environ.get("OPENSEARCH_URL", "http://localhost:9200")},
+    "keycloak": {"url": os.environ.get("KEYCLOAK_URL", "http://localhost:8080"), "realm": "54bank"},
+    "permify": {"url": os.environ.get("PERMIFY_URL", "http://localhost:3476")},
+    "dapr": {"url": os.environ.get("DAPR_URL", "http://localhost:3500")},
+    "fluvio": {"url": os.environ.get("FLUVIO_URL", "localhost:9003")},
+    "temporal": {"url": os.environ.get("TEMPORAL_URL", "localhost:7233")},
+    "mojaloop": {"url": os.environ.get("MOJALOOP_URL", "http://localhost:3002")},
+    "tigerbeetle": {"url": os.environ.get("TIGERBEETLE_URL", "localhost:3000")},
+    "lakehouse": {"url": os.environ.get("LAKEHOUSE_URL", "http://localhost:8181")},
+    "apisix": {"url": os.environ.get("APISIX_URL", "http://localhost:9080")},
+    "openappsec": {"url": os.environ.get("OPENAPPSEC_URL", "http://localhost:4000")},
+}
 
 PORT = 8141
 
@@ -54,7 +73,7 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         if self.path == "/healthz":
-            return self._json(200, {"status": "ok", "service": "savings-products", "port": str(PORT)})
+            return self._json(200, {"status": "ok", "service": "savings-products", "port": str(PORT), "middleware": MIDDLEWARE_CONFIG})
         if self.path == "/v1/savings/products":
             return self._json(200, {"items": SAVINGS_PRODUCTS, "total": len(SAVINGS_PRODUCTS)})
         if self.path == "/v1/savings/accounts":

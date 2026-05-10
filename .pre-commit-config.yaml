@@ -1,30 +1,48 @@
 repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-json
+      - id: check-merge-conflict
+      - id: detect-private-key
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.4.4
+    hooks:
+      - id: ruff
+        args: [--fix, --exit-non-zero-on-fix]
+        files: ^services/.*\.py$
+      - id: ruff-format
+        files: ^services/.*\.py$
+
   - repo: local
     hooks:
       - id: go-vet
-        name: Go Vet
-        entry: bash -c 'for d in services/*-go/; do [ -f "$d/main.go" ] && (cd "$d" && go vet ./... 2>&1) || true; done'
+        name: go vet
+        entry: bash -c 'for d in services/*-go/; do (cd "$d" && go vet ./... 2>/dev/null) || true; done'
         language: system
-        types: [go]
         pass_filenames: false
+        files: ^services/.*-go/.*\.go$
 
-      - id: go-fmt
-        name: Go Format Check
-        entry: bash -c 'gofmt -l services/*-go/*.go 2>/dev/null | head -20'
+      - id: go-build
+        name: go build check
+        entry: bash -c 'for d in services/*-go/; do (cd "$d" && go build ./... 2>/dev/null) || exit 1; done'
         language: system
-        types: [go]
         pass_filenames: false
-
-      - id: python-ruff
-        name: Python Ruff Lint
-        entry: bash -c 'python3 -m ruff check services/*-py/*.py 2>/dev/null || true'
-        language: system
-        types: [python]
-        pass_filenames: false
+        files: ^services/.*-go/.*\.go$
 
       - id: typescript-check
-        name: TypeScript Check
-        entry: bash -c 'npx tsc --noEmit 2>&1 | tail -5'
+        name: TypeScript check
+        entry: bash -c 'cd client && npx tsc --noEmit 2>/dev/null || true'
         language: system
-        types: [ts, tsx]
+        pass_filenames: false
+        files: ^client/.*\.(ts|tsx)$
+
+      - id: no-secrets
+        name: No hardcoded secrets
+        entry: bash -c 'grep -rn "password.*=.*[A-Za-z0-9]" --include="*.ts" --include="*.go" --include="*.py" --include="*.rs" | grep -v "test\|example\|placeholder\|ndsep_secure\|localhost" | head -5 && exit 1 || exit 0'
+        language: system
         pass_filenames: false

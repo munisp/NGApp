@@ -38,6 +38,11 @@ import { registerFieldEncryption } from "./lib/fieldEncryption";
 import { registerPerformanceEnhancements } from "./lib/performanceEnhancements";
 import { validateQueryMiddleware } from "./lib/requestValidationMiddleware";
 import { registerSwaggerPerService } from "./lib/swaggerPerService";
+import { registerMurabahaCalculatorRoutes } from "./lib/murabahaCalculator";
+import { registerLCAmendmentRoutes } from "./lib/lcAmendmentLifecycle";
+import { registerChequeImagingRoutes } from "./lib/chequeImaging";
+import { registerSeedDataResetRoutes } from "./lib/seedDataReset";
+import { registerIntegrationTestRoutes } from "./lib/integrationTestHarness";
 import { WebSocketServer, WebSocket } from "ws";
 
 import {
@@ -5098,6 +5103,16 @@ async function startServer() {
   registerPerformanceEnhancements(app);
   // G3: Swagger per microservice
   registerSwaggerPerService(app);
+  // Islamic Murabaha Calculator
+  registerMurabahaCalculatorRoutes(app);
+  // LC Amendment Lifecycle (Trade Finance)
+  registerLCAmendmentRoutes(app);
+  // Cheque Imaging & Truncation
+  registerChequeImagingRoutes(app);
+  // Seed Data Reset (Admin)
+  registerSeedDataResetRoutes(app);
+  // Integration Test Harness (Admin)
+  registerIntegrationTestRoutes(app);
 
   // Agriculture Banking proxy routes
   app.all("/api/platform/agriculture/farmers", (req, res) => {

@@ -207,6 +207,11 @@ const WorkflowDefinitionsWorkspace = lazy(() => import("@/pages/WorkflowDefiniti
 const WorkflowInstancesWorkspace = lazy(() => import("@/pages/WorkflowInstancesWorkspace"));
 const SelfServiceTransactionsWorkspace = lazy(() => import("@/pages/SelfServiceTransactionsWorkspace"));
 const ServiceHealthWorkspace = lazy(() => import("@/pages/ServiceHealthWorkspace"));
+const MurabahaCalculatorWorkspace = lazy(() => import("@/pages/MurabahaCalculatorWorkspace"));
+const LCAmendmentsWorkspace = lazy(() => import("@/pages/LCAmendmentsWorkspace"));
+const ChequeImagingWorkspace = lazy(() => import("@/pages/ChequeImagingWorkspace"));
+const IntegrationTestsWorkspace = lazy(() => import("@/pages/IntegrationTestsWorkspace"));
+const SeedRegistryWorkspace = lazy(() => import("@/pages/SeedRegistryWorkspace"));
 const AdminAnalyticsPage = lazy(() => import("@/pages/AdminModulePages").then((module) => ({ default: module.AdminAnalyticsPage })));
 const AdminBankingOpsPage = lazy(() => import("@/pages/AdminModulePages").then((module) => ({ default: module.AdminBankingOpsPage })));
 const AdminFeatureFlagsPage = lazy(() => import("@/pages/AdminModulePages").then((module) => ({ default: module.AdminFeatureFlagsPage })));
@@ -468,6 +473,11 @@ export default function App() {
         <Route path="/workflow-instances" component={renderInAdminShell(WorkflowInstancesWorkspace)} />
         <Route path="/my-transactions" component={renderInAdminShell(SelfServiceTransactionsWorkspace)} />
         <Route path="/service-health" component={renderInAdminShell(ServiceHealthWorkspace)} />
+        <Route path="/murabaha-calculator" component={renderInAdminShell(MurabahaCalculatorWorkspace)} />
+        <Route path="/lc-amendments" component={renderInAdminShell(LCAmendmentsWorkspace)} />
+        <Route path="/cheque-imaging" component={renderInAdminShell(ChequeImagingWorkspace)} />
+        <Route path="/integration-tests" component={renderInAdminShell(IntegrationTestsWorkspace)} />
+        <Route path="/seed-registry" component={renderInAdminShell(SeedRegistryWorkspace)} />
 
         <Route component={NotFound} />
       </Switch>

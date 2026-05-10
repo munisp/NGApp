@@ -65,9 +65,29 @@ fn seed_mm() -> Vec<MoneyMarketDeal> {
     ]
 }
 
+fn env_or(key: &str, fallback: &str) -> String {
+    std::env::var(key).unwrap_or_else(|_| fallback.to_string())
+}
+
 async fn healthz() -> HttpResponse {
     HttpResponse::Ok().json(serde_json::json!({
-        "status": "ok", "service": "treasury-liquidity", "port": "8142"
+        "status": "ok", "service": "treasury-liquidity", "port": "8142",
+        "middleware": {
+            "kafka": {"broker": env_or("KAFKA_BROKER", "localhost:9092")},
+            "redis": {"url": env_or("REDIS_URL", "redis://localhost:6379")},
+            "postgres": {"url": env_or("DATABASE_URL", "postgresql://ndsep_user:ndsep_secure_2026@localhost:5432/ndsep_db")},
+            "opensearch": {"url": env_or("OPENSEARCH_URL", "http://localhost:9200")},
+            "keycloak": {"url": env_or("KEYCLOAK_URL", "http://localhost:8080"), "realm": "54bank"},
+            "permify": {"url": env_or("PERMIFY_URL", "http://localhost:3476")},
+            "dapr": {"url": env_or("DAPR_URL", "http://localhost:3500")},
+            "fluvio": {"url": env_or("FLUVIO_URL", "localhost:9003")},
+            "temporal": {"url": env_or("TEMPORAL_URL", "localhost:7233")},
+            "mojaloop": {"url": env_or("MOJALOOP_URL", "http://localhost:3002")},
+            "tigerbeetle": {"url": env_or("TIGERBEETLE_URL", "localhost:3000")},
+            "lakehouse": {"url": env_or("LAKEHOUSE_URL", "http://localhost:8181")},
+            "apisix": {"url": env_or("APISIX_URL", "http://localhost:9080")},
+            "openappsec": {"url": env_or("OPENAPPSEC_URL", "http://localhost:4000")}
+        }
     }))
 }
 
