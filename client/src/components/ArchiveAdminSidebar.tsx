@@ -114,6 +114,10 @@ const menuItems = [
   { path: "/customer-360", label: "Customer 360", icon: Users },
   { path: "/nibss-direct-debit", label: "NIBSS Direct Debit", icon: CreditCard },
   { path: "/diaspora-banking", label: "Diaspora Banking", icon: Globe },
+  { path: "/kyc-aml", label: "KYC/AML Screening", icon: Shield },
+  { path: "/loan-origination", label: "Loan Origination", icon: FileBarChart },
+  { path: "/account-statements", label: "Account Statements", icon: FileText },
+  { path: "/bulk-payments", label: "Bulk Payments", icon: Layers },
 ] as const;
 
 export default function ArchiveAdminSidebar() {

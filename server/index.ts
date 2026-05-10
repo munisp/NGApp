@@ -6277,6 +6277,87 @@ async function startServer() {
     void proxyToService(DIASPORA_URL, "/v1/diaspora/stats", req, res);
   });
 
+  // KYC/AML Screening Service (Python :8136)
+  const KYC_AML_URL = process.env.KYC_AML_URL || "http://localhost:8136";
+  app.all("/api/platform/kyc-aml/v1/kyc/records", (req, res) => {
+    void proxyToService(KYC_AML_URL, "/v1/kyc/records", req, res);
+  });
+  app.all("/api/platform/kyc-aml/v1/kyc/records/:id", (req, res) => {
+    void proxyToService(KYC_AML_URL, `/v1/kyc/records/${req.params.id}`, req, res);
+  });
+  app.all("/api/platform/kyc-aml/v1/kyc/verify-bvn", (req, res) => {
+    void proxyToService(KYC_AML_URL, "/v1/kyc/verify-bvn", req, res);
+  });
+  app.all("/api/platform/kyc-aml/v1/kyc/tiers", (req, res) => {
+    void proxyToService(KYC_AML_URL, "/v1/kyc/tiers", req, res);
+  });
+  app.all("/api/platform/kyc-aml/v1/kyc/upgrade-tier", (req, res) => {
+    void proxyToService(KYC_AML_URL, "/v1/kyc/upgrade-tier", req, res);
+  });
+  app.all("/api/platform/kyc-aml/v1/kyc/risk-score", (req, res) => {
+    void proxyToService(KYC_AML_URL, "/v1/kyc/risk-score", req, res);
+  });
+  app.all("/api/platform/kyc-aml/v1/aml/screen", (req, res) => {
+    void proxyToService(KYC_AML_URL, "/v1/aml/screen", req, res);
+  });
+  app.all("/api/platform/kyc-aml/v1/aml/screenings", (req, res) => {
+    void proxyToService(KYC_AML_URL, "/v1/aml/screenings", req, res);
+  });
+  app.all("/api/platform/kyc-aml/v1/aml/batch-screen", (req, res) => {
+    void proxyToService(KYC_AML_URL, "/v1/aml/batch-screen", req, res);
+  });
+
+  // Loan Origination Engine (Go :8137)
+  const LOAN_ORIG_URL = process.env.LOAN_ORIG_URL || "http://localhost:8137";
+  app.all("/api/platform/loan-origination/v1/loans/applications", (req, res) => {
+    void proxyToService(LOAN_ORIG_URL, "/v1/loans/applications", req, res);
+  });
+  app.all("/api/platform/loan-origination/v1/loans/credit-score", (req, res) => {
+    void proxyToService(LOAN_ORIG_URL, "/v1/loans/credit-score", req, res);
+  });
+  app.all("/api/platform/loan-origination/v1/loans/approve", (req, res) => {
+    void proxyToService(LOAN_ORIG_URL, "/v1/loans/approve", req, res);
+  });
+  app.all("/api/platform/loan-origination/v1/loans/reject", (req, res) => {
+    void proxyToService(LOAN_ORIG_URL, "/v1/loans/reject", req, res);
+  });
+  app.all("/api/platform/loan-origination/v1/loans/disburse", (req, res) => {
+    void proxyToService(LOAN_ORIG_URL, "/v1/loans/disburse", req, res);
+  });
+  app.all("/api/platform/loan-origination/v1/loans/amortization", (req, res) => {
+    void proxyToService(LOAN_ORIG_URL, "/v1/loans/amortization", req, res);
+  });
+
+  // Account Statement Service (Go :8138)
+  const ACCT_STMT_URL = process.env.ACCT_STMT_URL || "http://localhost:8138";
+  app.all("/api/platform/account-statements/v1/statements/accounts", (req, res) => {
+    void proxyToService(ACCT_STMT_URL, "/v1/statements/accounts", req, res);
+  });
+  app.all("/api/platform/account-statements/v1/statements/generate", (req, res) => {
+    void proxyToService(ACCT_STMT_URL, "/v1/statements/generate", req, res);
+  });
+  app.all("/api/platform/account-statements/v1/statements/transactions", (req, res) => {
+    void proxyToService(ACCT_STMT_URL, "/v1/statements/transactions", req, res);
+  });
+  app.all("/api/platform/account-statements/v1/statements/summary", (req, res) => {
+    void proxyToService(ACCT_STMT_URL, "/v1/statements/summary", req, res);
+  });
+  app.all("/api/platform/account-statements/v1/statements/balance-trend", (req, res) => {
+    void proxyToService(ACCT_STMT_URL, "/v1/statements/balance-trend", req, res);
+  });
+
+  // Bulk Payments Processor (Rust :8139)
+  const BULK_PAY_URL = process.env.BULK_PAY_URL || "http://localhost:8139";
+  app.all("/api/platform/bulk-payments/v1/bulk-payments/batches", (req, res) => {
+    void proxyToService(BULK_PAY_URL, "/v1/bulk-payments/batches", req, res);
+  });
+  app.all("/api/platform/bulk-payments/v1/bulk-payments/process", (req, res) => {
+    void proxyToService(BULK_PAY_URL, "/v1/bulk-payments/process", req, res);
+  });
+  app.all("/api/platform/bulk-payments/v1/bulk-payments/reconcile", (req, res) => {
+    void proxyToService(BULK_PAY_URL, "/v1/bulk-payments/reconcile", req, res);
+  });
+
   // OTP endpoint for transaction signing (C8)
   app.post("/api/platform/otp/generate", (req, res) => {
     const userId = req.user?.sub ?? req.body?.userId ?? "anonymous";

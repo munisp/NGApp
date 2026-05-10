@@ -92,6 +92,10 @@ const ChequeClearingWorkspace = lazy(() => import("@/pages/ChequeClearingWorkspa
 const Customer360Workspace = lazy(() => import("@/pages/Customer360Workspace"));
 const NIBSSDirectDebitWorkspace = lazy(() => import("@/pages/NIBSSDirectDebitWorkspace"));
 const DiasporaBankingWorkspace = lazy(() => import("@/pages/DiasporaBankingWorkspace"));
+const KYCAMLWorkspace = lazy(() => import("@/pages/KYCAMLWorkspace"));
+const LoanOriginationWorkspace = lazy(() => import("@/pages/LoanOriginationWorkspace"));
+const AccountStatementsWorkspace = lazy(() => import("@/pages/AccountStatementsWorkspace"));
+const BulkPaymentsWorkspace = lazy(() => import("@/pages/BulkPaymentsWorkspace"));
 const AdminAnalyticsPage = lazy(() => import("@/pages/AdminModulePages").then((module) => ({ default: module.AdminAnalyticsPage })));
 const AdminBankingOpsPage = lazy(() => import("@/pages/AdminModulePages").then((module) => ({ default: module.AdminBankingOpsPage })));
 const AdminFeatureFlagsPage = lazy(() => import("@/pages/AdminModulePages").then((module) => ({ default: module.AdminFeatureFlagsPage })));
@@ -238,6 +242,10 @@ export default function App() {
         <Route path="/customer-360" component={renderInAdminShell(Customer360Workspace)} />
         <Route path="/nibss-direct-debit" component={renderInAdminShell(NIBSSDirectDebitWorkspace)} />
         <Route path="/diaspora-banking" component={renderInAdminShell(DiasporaBankingWorkspace)} />
+        <Route path="/kyc-aml" component={renderInAdminShell(KYCAMLWorkspace)} />
+        <Route path="/loan-origination" component={renderInAdminShell(LoanOriginationWorkspace)} />
+        <Route path="/account-statements" component={renderInAdminShell(AccountStatementsWorkspace)} />
+        <Route path="/bulk-payments" component={renderInAdminShell(BulkPaymentsWorkspace)} />
 
         <Route component={NotFound} />
       </Switch>

@@ -110,6 +110,10 @@ jobs:
         run: cd services/cheque-clearing-go && go build -o cheque-clearing .
       - name: Build NIBSS Direct Debit Service
         run: cd services/nibss-direct-debit-go && go build -o nibss-direct-debit .
+      - name: Build Loan Origination Engine
+        run: cd services/loan-origination-go && go build -o loan-origination .
+      - name: Build Account Statement Service
+        run: cd services/account-statement-go && go build -o account-statement .
 
   rust-services:
     name: Rust Services
@@ -129,6 +133,7 @@ jobs:
             services/tigerbeetle-ledger-rs
             services/lakehouse-rs
             services/fluvio-streams-rs
+            services/bulk-payments-rs
       - name: Build Resilience Service
         run: cd services/resilience-service-rs && cargo build --release
       - name: Build Agriculture Banking Service
@@ -147,6 +152,8 @@ jobs:
         run: cd services/lakehouse-rs && cargo build --release
       - name: Build Fluvio Streams Service
         run: cd services/fluvio-streams-rs && cargo build --release
+      - name: Build Bulk Payments Processor
+        run: cd services/bulk-payments-rs && cargo build --release
 
   python-services:
     name: Python Services
@@ -158,7 +165,7 @@ jobs:
           python-version: "3.12"
       - name: Validate Python Services
         run: |
-          for svc in islamic-banking-py education-loans-py dispute-management-py erpnext-sync-py regulatory-reporting-py treasury-liquidity-py customer-engagement-py batch-processing-py workflow-engine-py opensearch-analytics-py keycloak-identity-py customer-360-py diaspora-banking-py; do
+          for svc in islamic-banking-py education-loans-py dispute-management-py erpnext-sync-py regulatory-reporting-py treasury-liquidity-py customer-engagement-py batch-processing-py workflow-engine-py opensearch-analytics-py keycloak-identity-py customer-360-py diaspora-banking-py kyc-aml-screening-py; do
             echo "Checking services/$svc/service.py..."
             python3 -c "import py_compile; py_compile.compile('services/$svc/service.py', doraise=True)"
           done
