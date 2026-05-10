@@ -77,10 +77,21 @@ class Referral(BaseModel):
     created_at: str = ""
 
 # --- Storage ---
-messages: list[InAppMessage] = []
+messages: list[InAppMessage] = [
+    InAppMessage(id="MSG-001", customer_id="CUST-001", title="Welcome to 54Bank!", body="Your account is set up and ready. Explore our savings products.", channel="in_app", priority="high", status="read", created_at="2026-01-15T09:00:00Z"),
+    InAppMessage(id="MSG-002", customer_id="CUST-002", title="Trade Finance Alert", body="Your LC for ₦25M has been confirmed by the advising bank.", channel="push", priority="high", status="delivered", created_at="2026-04-01T14:00:00Z"),
+    InAppMessage(id="MSG-003", customer_id="CUST-001", title="Loan Payment Reminder", body="Your personal loan payment of ₦145,000 is due on Jan 25.", channel="sms", priority="medium", status="sent", created_at="2026-01-20T08:00:00Z"),
+]
 recommendations: list[ProductRecommendation] = []
-surveys: list[SurveyResponse] = []
-referrals: list[Referral] = []
+surveys: list[SurveyResponse] = [
+    SurveyResponse(id="SRV-001", customer_id="CUST-001", survey_type="nps", score=9, feedback="Excellent mobile app experience", channel="mobile", interaction_type="mobile", created_at="2026-03-15T10:00:00Z"),
+    SurveyResponse(id="SRV-002", customer_id="CUST-002", survey_type="csat", score=4, feedback="Fast LC processing", channel="internet_banking", interaction_type="call_center", created_at="2026-04-02T11:00:00Z"),
+    SurveyResponse(id="SRV-003", customer_id="CUST-003", survey_type="nps", score=6, feedback="Branch wait times could improve", channel="in_app", interaction_type="teller", created_at="2026-04-10T15:00:00Z"),
+]
+referrals: list[Referral] = [
+    Referral(id="REF-001", referrer_id="CUST-001", referee_name="Halima Yusuf", referee_phone="+2348065551234", referee_email="halima@example.ng", status="converted", reward_amount=2000, product_opened="savings_account", created_at="2026-02-01T09:00:00Z"),
+    Referral(id="REF-002", referrer_id="CUST-002", referee_name="Taiwo Ogunleye", referee_phone="+2348077778899", referee_email="taiwo@corp.ng", status="registered", reward_amount=0, product_opened="", created_at="2026-03-20T14:00:00Z"),
+]
 
 @app.get("/healthz")
 def healthz():
@@ -93,9 +104,8 @@ def healthz():
 
 @app.get("/v1/engagement/messages")
 def list_messages(customer_id: str = ""):
-    if customer_id:
-        return [m for m in messages if m.customer_id == customer_id]
-    return messages
+    filtered = [m for m in messages if m.customer_id == customer_id] if customer_id else messages
+    return {"items": filtered, "total": len(filtered)}
 
 @app.post("/v1/engagement/messages", status_code=201)
 def send_message(req: InAppMessage):
@@ -178,7 +188,7 @@ def customer_360(customer_id: str):
 
 @app.get("/v1/engagement/surveys")
 def list_surveys():
-    return surveys
+    return {"items": surveys, "total": len(surveys)}
 
 @app.post("/v1/engagement/surveys", status_code=201)
 def submit_survey(req: SurveyResponse):

@@ -25,9 +25,60 @@ from middleware import (
 )
 
 bundle = Bundle()
-loans: dict[str, dict] = {}
-disbursements: list[dict] = []
-repayments: list[dict] = []
+loans: dict[str, dict] = {
+    "EDU-001": {
+        "id": "EDU-001", "tenantId": default_tenant(), "studentName": "Aisha Mohammed",
+        "institutionName": "University of Lagos", "institutionCode": "UNILAG",
+        "program": "MSc Computer Science", "level": "postgraduate",
+        "loanAmount": 5000000, "currency": "NGN", "annualRate": 9.0,
+        "tenorMonths": 48, "graceMonths": 24, "monthlyPayment": 208333.33,
+        "totalRepayable": 6800000, "amountDisbursed": 2500000, "amountRepaid": 0,
+        "outstandingBalance": 5000000, "status": "disbursing",
+        "sponsorName": "ABC Corp Ltd", "sponsorType": "employer",
+        "startDate": "2026-01-15", "graduationDate": "2028-01-15",
+        "repaymentStartDate": "2028-02-15",
+        "middleware": ["kafka", "redis", "postgres", "temporal"],
+        "createdAt": "2025-12-01T10:00:00Z", "updatedAt": "2026-03-15T14:00:00Z",
+    },
+    "EDU-002": {
+        "id": "EDU-002", "tenantId": default_tenant(), "studentName": "Chukwuemeka Obi",
+        "institutionName": "Covenant University", "institutionCode": "CU",
+        "program": "BEng Electrical Engineering", "level": "undergraduate",
+        "loanAmount": 8000000, "currency": "NGN", "annualRate": 7.5,
+        "tenorMonths": 72, "graceMonths": 48, "monthlyPayment": 333333.33,
+        "totalRepayable": 11200000, "amountDisbursed": 6000000, "amountRepaid": 0,
+        "outstandingBalance": 8000000, "status": "disbursing",
+        "sponsorName": None, "sponsorType": "self",
+        "startDate": "2024-09-01", "graduationDate": "2028-07-15",
+        "repaymentStartDate": "2028-10-01",
+        "middleware": ["kafka", "redis", "postgres"],
+        "createdAt": "2024-08-01T09:00:00Z", "updatedAt": "2026-01-15T11:00:00Z",
+    },
+    "EDU-003": {
+        "id": "EDU-003", "tenantId": default_tenant(), "studentName": "Ngozi Eze",
+        "institutionName": "Pan-Atlantic University", "institutionCode": "PAU",
+        "program": "MBA", "level": "postgraduate",
+        "loanAmount": 12000000, "currency": "NGN", "annualRate": 10.0,
+        "tenorMonths": 36, "graceMonths": 18, "monthlyPayment": 666666.67,
+        "totalRepayable": 15600000, "amountDisbursed": 12000000, "amountRepaid": 4000000,
+        "outstandingBalance": 8000000, "status": "repaying",
+        "sponsorName": "Dangote Foundation", "sponsorType": "scholarship_partial",
+        "startDate": "2025-01-15", "graduationDate": "2026-07-15",
+        "repaymentStartDate": "2026-08-15",
+        "middleware": ["kafka", "redis", "postgres", "temporal"],
+        "createdAt": "2024-12-01T08:00:00Z", "updatedAt": "2026-05-01T16:00:00Z",
+    },
+}
+disbursements: list[dict] = [
+    {"id": "DSB-001", "loanId": "EDU-001", "amount": 2500000, "semester": "2026-Spring", "date": "2026-01-20", "status": "completed"},
+    {"id": "DSB-002", "loanId": "EDU-002", "amount": 2000000, "semester": "2025-Fall", "date": "2025-09-05", "status": "completed"},
+    {"id": "DSB-003", "loanId": "EDU-002", "amount": 2000000, "semester": "2026-Spring", "date": "2026-01-10", "status": "completed"},
+    {"id": "DSB-004", "loanId": "EDU-002", "amount": 2000000, "semester": "2026-Fall", "date": "2026-09-01", "status": "pending"},
+]
+repayments: list[dict] = [
+    {"id": "RPY-001", "loanId": "EDU-003", "amount": 2000000, "date": "2026-09-15", "type": "regular", "status": "completed"},
+    {"id": "RPY-002", "loanId": "EDU-003", "amount": 2000000, "date": "2026-10-15", "type": "regular", "status": "completed"},
+]
 
 
 def compute_education_loan_schedule(

@@ -133,9 +133,57 @@ class MudarabahContract:
 
 # ── State ──
 
-murabaha_contracts: list[MurabahaContract] = []
-ijara_contracts: list[IjaraContract] = []
-mudarabah_contracts: list[MudarabahContract] = []
+murabaha_contracts: list[MurabahaContract] = [
+    MurabahaContract(
+        id="MRB-001", tenant_id=default_tenant(), customer_id="CUST-001", customer_name="Fatima Abdullahi",
+        asset_description="Toyota Hilux 2026", asset_category="vehicle", cost_price=35000000,
+        profit_margin_pct=15.0, selling_price=40250000, currency="NGN", tenor_months=48,
+        instalment_amount=838541.67, total_paid=5031250.0, outstanding_balance=35218750.0,
+        disbursement_date="2026-01-15", maturity_date="2030-01-15",
+        status="active", sharia_compliance="compliant", sharia_board_reference="SB-2026-001",
+        instalment_schedule=[], middleware=["kafka", "redis", "postgres"],
+        created_at="2026-01-10T09:00:00Z", updated_at="2026-04-15T10:00:00Z",
+    ),
+    MurabahaContract(
+        id="MRB-002", tenant_id=default_tenant(), customer_id="CUST-003", customer_name="Jumoke Adeyemi",
+        asset_description="Commercial Property - Lekki Phase 1", asset_category="real_estate",
+        cost_price=120000000, profit_margin_pct=12.0, selling_price=134400000, currency="NGN",
+        tenor_months=120, instalment_amount=1120000.0, total_paid=0, outstanding_balance=134400000,
+        disbursement_date=None, maturity_date=None,
+        status="pending_sharia_review", sharia_compliance="pending", sharia_board_reference=None,
+        instalment_schedule=[], middleware=["kafka", "redis", "postgres"],
+        created_at="2026-04-01T14:00:00Z", updated_at="2026-04-01T14:00:00Z",
+    ),
+]
+
+ijara_contracts: list[IjaraContract] = [
+    IjaraContract(
+        id="IJR-001", tenant_id=default_tenant(), customer_id="CUST-002", customer_name="Ibrahim Musa",
+        asset_description="Office Equipment Package", asset_category="equipment",
+        asset_value=15000000, rental_amount=350000, rental_frequency="monthly", currency="NGN",
+        lease_start="2026-02-01", lease_end="2028-02-01", tenor_months=24,
+        residual_value=3000000, purchase_option=True, purchase_price=3500000,
+        total_rent_paid=1050000, status="active", sharia_compliance="compliant",
+        maintenance_responsibility="lessee",
+        middleware=["kafka", "redis", "postgres"],
+        created_at="2026-01-25T11:00:00Z", updated_at="2026-04-01T09:00:00Z",
+    ),
+]
+
+mudarabah_contracts: list[MudarabahContract] = [
+    MudarabahContract(
+        id="MDR-001", tenant_id=default_tenant(), investor_id="CUST-002", investor_name="Ibrahim Musa",
+        fund_manager_id="FM-001", investment_purpose="SME Growth Fund",
+        capital_amount=50000000, currency="NGN",
+        profit_sharing_ratio_investor=70, profit_sharing_ratio_manager=30,
+        investment_period_months=12, start_date="2026-01-01", maturity_date="2027-01-01",
+        realized_profit=2500000, realized_loss=0,
+        distributions=[{"date": "2026-04-01", "amount": 875000, "type": "quarterly_profit"}],
+        status="active", sharia_compliance="compliant", risk_category="moderate",
+        middleware=["kafka", "redis", "postgres"],
+        created_at="2025-12-20T10:00:00Z", updated_at="2026-04-01T12:00:00Z",
+    ),
+]
 
 
 # ── Business Logic ──
