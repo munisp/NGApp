@@ -58,7 +58,7 @@ async function seed() {
       ${pick(rms)}, ${pick([...risks])}, ${pick([...statuses])}, ${`2200${String(i + 1).padStart(7, "0")}`},
       ${`+234${String(8010000000 + i * 1234567).slice(0, 10)}`}, ${Math.round(Math.random() * 50000000)},
       ${"KYC verification"}, ${randomDate(30).toISOString().slice(0, 19).replace("T", " ")}
-    ) ON DUPLICATE KEY UPDATE name=name`);
+    ) ON CONFLICT DO NOTHING`);
   }
   console.log("  ✓ 50 customers seeded");
 
@@ -68,7 +68,7 @@ async function seed() {
       ${randomId("card")}, ${pick(customerIds)}, ${pick(["virtual", "physical"])}, ${pick(["visa", "mastercard"])},
       ${String(1000 + i).slice(-4)}, ${"12/28"}, ${pick(nigerianNames)}, ${"active"},
       ${500000}, ${5000000}, ${1}, ${0}
-    ) ON DUPLICATE KEY UPDATE cardId=cardId`);
+    ) ON CONFLICT DO NOTHING`);
   }
   console.log("  ✓ 30 cards seeded");
 
@@ -79,7 +79,7 @@ async function seed() {
       ${`001${String(1000 + i).padStart(7, "0")}`}, ${`002${String(2000 + i).padStart(7, "0")}`},
       ${Math.round(Math.random() * 1000000)}, ${"NGN"}, ${pick(["internal", "nip", "rtgs"])},
       ${pick(["completed", "pending", "failed"])}, ${"Payment for services"}, ${randomId("ref")}
-    ) ON DUPLICATE KEY UPDATE transferId=transferId`);
+    ) ON CONFLICT DO NOTHING`);
   }
   console.log("  ✓ 40 transfers seeded");
 
@@ -89,7 +89,7 @@ async function seed() {
     await db.execute(sql`INSERT INTO customerBillPayments (paymentId, customerId, tenantId, billerName, billerCode, amount, status, reference) VALUES (
       ${randomId("bill")}, ${pick(customerIds)}, ${TENANT_ID}, ${pick(billers)},
       ${`BLR${String(i + 100)}`}, ${Math.round(Math.random() * 50000)}, ${pick(["completed", "pending"])}, ${randomId("ref")}
-    ) ON DUPLICATE KEY UPDATE paymentId=paymentId`);
+    ) ON CONFLICT DO NOTHING`);
   }
   console.log("  ✓ 25 bill payments seeded");
 
@@ -102,7 +102,7 @@ async function seed() {
       ${pick([...stages])}, ${pick(["Ready", "In Progress", "Blocked"])},
       ${pick(["branch", "mobile", "internet"])}, ${Math.round(Math.random() * 10000000)},
       ${"Review documentation"}, ${pick([4, 8, 24, 48, 72])}
-    ) ON DUPLICATE KEY UPDATE caseId=caseId`);
+    ) ON CONFLICT DO NOTHING`);
   }
   console.log("  ✓ 20 workflow cases seeded");
 
@@ -113,7 +113,7 @@ async function seed() {
       ${randomId("frm")}, ${pick(nigerianNames)}, ${pick(["Oyo State", "Niger State", "Benue State", "Kaduna State", "Kano State"])},
       ${Math.round(Math.random() * 100 + 5)}, ${pick(crops)}, ${Math.random() > 0.4 ? 1 : 0},
       ${Math.round(Math.random() * 100)}, ${randomDate(365).toISOString().slice(0, 19).replace("T", " ")}
-    ) ON DUPLICATE KEY UPDATE farmerId=farmerId`);
+    ) ON CONFLICT DO NOTHING`);
   }
   console.log("  ✓ 20 farmers seeded");
 
@@ -125,7 +125,7 @@ async function seed() {
       ${pick(["crop_farming", "equipment", "irrigation", "storage", "livestock"])},
       ${pick(["pending", "approved", "disbursed", "repaying", "fully_repaid"])},
       ${randomDate(180).toISOString().slice(0, 19).replace("T", " ")}
-    ) ON DUPLICATE KEY UPDATE loanId=loanId`);
+    ) ON CONFLICT DO NOTHING`);
   }
   console.log("  ✓ 15 agriculture loans seeded");
 
@@ -135,7 +135,7 @@ async function seed() {
       ${randomId("tls")}, ${`TLR-${String(100 + i)}`}, ${pick(["LG001", "AB001", "KN001", "PH001", "IB001"])},
       ${pick(["open", "closed", "suspended"])}, ${Math.round(Math.random() * 5000000)},
       ${Math.round(Math.random() * 5000000)}, ${randomDate(7).toISOString().slice(0, 19).replace("T", " ")}
-    ) ON DUPLICATE KEY UPDATE sessionId=sessionId`);
+    ) ON CONFLICT DO NOTHING`);
   }
   console.log("  ✓ 10 teller sessions seeded");
 
@@ -146,17 +146,17 @@ async function seed() {
       ${Math.round(Math.random() * 10000000 + 1000000)}, ${(Math.random() * 20 + 5).toFixed(2)},
       ${Math.round(Math.random() * 12000000 + 1500000)}, ${pick([12, 24, 36, 48])},
       ${pick(["pending", "approved", "active", "completed"])}
-    ) ON DUPLICATE KEY UPDATE contractId=contractId`);
+    ) ON CONFLICT DO NOTHING`);
     await db.execute(sql`INSERT INTO ijaraContracts (contractId, customerId, assetDescription, leaseAmount, leaseTerm, monthlyPayment, status) VALUES (
       ${randomId("ija")}, ${pick(customerIds)}, ${pick(["Commercial Property", "Vehicle Fleet", "Agricultural Land", "Warehouse"])},
       ${Math.round(Math.random() * 50000000 + 5000000)}, ${pick([12, 24, 36, 60])},
       ${Math.round(Math.random() * 2000000 + 200000)}, ${pick(["pending", "active", "completed"])}
-    ) ON DUPLICATE KEY UPDATE contractId=contractId`);
+    ) ON CONFLICT DO NOTHING`);
     await db.execute(sql`INSERT INTO mudarabahContracts (contractId, customerId, investmentAmount, profitSharingRatio, businessPurpose, status) VALUES (
       ${randomId("mud")}, ${pick(customerIds)}, ${Math.round(Math.random() * 20000000 + 2000000)},
       ${"60/40"}, ${pick(["Agriculture Export", "Real Estate Development", "Manufacturing", "Trade Finance"])},
       ${pick(["pending", "active", "profit_distributed", "completed"])}
-    ) ON DUPLICATE KEY UPDATE contractId=contractId`);
+    ) ON CONFLICT DO NOTHING`);
   }
   console.log("  ✓ 15 Islamic banking contracts seeded");
 
@@ -168,19 +168,19 @@ async function seed() {
       ${pick(["draft", "issued", "confirmed", "expired"])},
       ${new Date(Date.now() + Math.random() * 180 * 86400000).toISOString().slice(0, 19).replace("T", " ")},
       ${`MT700-${randomId("sw")}`}
-    ) ON DUPLICATE KEY UPDATE lcId=lcId`);
+    ) ON CONFLICT DO NOTHING`);
     await db.execute(sql`INSERT INTO warehouseReceipts (receiptId, depositorId, commodity, quantity, unit, warehouseLocation, status) VALUES (
       ${randomId("whr")}, ${pick(customerIds)}, ${pick(["cocoa_beans", "palm_oil", "cashew_nuts", "sesame_seeds"])},
       ${Math.round(Math.random() * 10000 + 100)}, ${pick(["tonnes", "litres", "bags"])},
       ${pick(["Lagos Apapa Warehouse", "Kano Free Trade Zone", "Calabar Export Zone"])},
       ${pick(["active", "pledged", "released"])}
-    ) ON DUPLICATE KEY UPDATE receiptId=receiptId`);
+    ) ON CONFLICT DO NOTHING`);
     await db.execute(sql`INSERT INTO bankGuarantees (guaranteeId, applicantId, beneficiaryName, amount, currency, guaranteeType, status, expiryDate) VALUES (
       ${randomId("bg")}, ${pick(customerIds)}, ${pick(["Federal Ministry of Works", "NNPC", "Access Bank Plc"])},
       ${Math.round(Math.random() * 50000000 + 5000000)}, ${"NGN"},
       ${pick(["bid_bond", "performance", "advance_payment"])}, ${pick(["active", "expired", "claimed"])},
       ${new Date(Date.now() + Math.random() * 365 * 86400000).toISOString().slice(0, 19).replace("T", " ")}
-    ) ON DUPLICATE KEY UPDATE guaranteeId=guaranteeId`);
+    ) ON CONFLICT DO NOTHING`);
   }
   console.log("  ✓ 15 trade finance instruments seeded");
 
@@ -191,7 +191,7 @@ async function seed() {
       ${Math.round(Math.random() * 80000000 + 8000000)}, ${(Math.random() * 10 + 8).toFixed(2)},
       ${pick([15, 20, 25, 30])}, ${Math.round(Math.random() * 2000000 + 300000)},
       ${pick(["pending", "approved", "disbursed", "repaying"])}, ${(Math.random() * 40 + 40).toFixed(2)}
-    ) ON DUPLICATE KEY UPDATE applicationId=applicationId`);
+    ) ON CONFLICT DO NOTHING`);
   }
   console.log("  ✓ 10 mortgage applications seeded");
 
@@ -203,7 +203,7 @@ async function seed() {
       ${pick(["Computer Science", "Medicine", "Engineering", "Law", "Business Administration"])},
       ${Math.round(Math.random() * 5000000 + 500000)}, ${(Math.random() * 8 + 5).toFixed(2)},
       ${pick([24, 36, 48, 60])}, ${6}, ${pick(["pending", "approved", "disbursed", "grace", "repaying"])}
-    ) ON DUPLICATE KEY UPDATE loanId=loanId`);
+    ) ON CONFLICT DO NOTHING`);
   }
   console.log("  ✓ 10 education loans seeded");
 
@@ -213,7 +213,7 @@ async function seed() {
       ${randomId("esu")}, ${pick(["Ajo Ibile", "Isusu Ndi Igbo", "Adashe Arewa", "Esusu Digital", "Market Women Ajo"])}-${i + 1},
       ${pick([50000, 100000, 250000, 500000])}, ${pick([7, 14, 30])}, ${Math.round(Math.random() * 15 + 3)},
       ${Math.round(Math.random() * 10 + 1)}, ${pick(["forming", "active", "completed"])}
-    ) ON DUPLICATE KEY UPDATE groupId=groupId`);
+    ) ON CONFLICT DO NOTHING`);
   }
   console.log("  ✓ 8 esusu groups seeded");
 
@@ -224,7 +224,7 @@ async function seed() {
       ${`999${String(1000000 + i * 13579).padStart(7, "0")}`}, ${"054"},
       ${Math.round(Math.random() * 10000000)}, ${Math.round(Math.random() * 8000000)},
       ${Math.round(Math.random() * 500000)}, ${pick(["active", "frozen", "closed"])}
-    ) ON DUPLICATE KEY UPDATE accountId=accountId`);
+    ) ON CONFLICT DO NOTHING`);
   }
   console.log("  ✓ 12 virtual accounts seeded");
 
@@ -235,7 +235,7 @@ async function seed() {
       ${pick(["individual", "merchant", "super_agent"])}, ${pick(["active", "suspended", "pending_review"])},
       ${Math.round(Math.random() * 5000 + 100)}, ${Math.round(Math.random() * 500000 + 10000)},
       ${randomDate(7).toISOString().slice(0, 19).replace("T", " ")}
-    ) ON DUPLICATE KEY UPDATE agentId=agentId`);
+    ) ON CONFLICT DO NOTHING`);
   }
   console.log("  ✓ 10 agents seeded");
 
@@ -246,7 +246,7 @@ async function seed() {
       ${Math.round(Math.random() * 10 + 3)}, ${Math.round(Math.random() * 10000000 + 1000000)},
       ${(Math.random() * 10 + 5).toFixed(2)}, ${pick([6, 12, 18, 24])},
       ${pick(["forming", "active", "repaying", "completed"])}
-    ) ON DUPLICATE KEY UPDATE groupId=groupId`);
+    ) ON CONFLICT DO NOTHING`);
   }
   console.log("  ✓ 6 lending groups seeded");
 
@@ -257,7 +257,7 @@ async function seed() {
       ${pick(["verified", "pending", "failed", "expired"])}, ${pick(["national_id", "passport", "utility_bill"])},
       ${`DOC${String(1000000 + i * 7777).padStart(7, "0")}`},
       ${randomDate(90).toISOString().slice(0, 19).replace("T", " ")}
-    ) ON DUPLICATE KEY UPDATE profileId=profileId`);
+    ) ON CONFLICT DO NOTHING`);
   }
   console.log("  ✓ 15 identity profiles seeded");
 
@@ -269,7 +269,7 @@ async function seed() {
       ${pick(["card", "mobile", "internet", "pos"])}, ${Math.round(Math.random() * 1000000 + 10000)},
       ${pick(["open", "investigating", "resolved", "escalated"])},
       ${"Customer reported issue with transaction"}
-    ) ON DUPLICATE KEY UPDATE caseId=caseId`);
+    ) ON CONFLICT DO NOTHING`);
   }
   console.log("  ✓ 8 dispute cases seeded");
 
@@ -281,7 +281,7 @@ async function seed() {
       ${Math.round(Math.random() * 100 + 10)},
       ${randomDate(30).toISOString().slice(0, 19).replace("T", " ")},
       ${randomDate(30).toISOString().slice(0, 19).replace("T", " ")}
-    ) ON DUPLICATE KEY UPDATE runId=runId`);
+    ) ON CONFLICT DO NOTHING`);
   }
   console.log("  ✓ 5 reconciliation runs seeded");
 
@@ -293,7 +293,7 @@ async function seed() {
       ${Math.round(Math.random() * 10)},
       ${randomDate(14).toISOString().slice(0, 19).replace("T", " ")},
       ${randomDate(14).toISOString().slice(0, 19).replace("T", " ")}
-    ) ON DUPLICATE KEY UPDATE jobId=jobId`);
+    ) ON CONFLICT DO NOTHING`);
   }
   console.log("  ✓ 5 ERPNext sync jobs seeded");
 
@@ -304,7 +304,7 @@ async function seed() {
       ${pick(["2026-Q1", "2026-Q2", "2025-Q4", "2025-Q3"])},
       ${pick(["draft", "submitted", "accepted", "rejected"])},
       ${randomDate(90).toISOString().slice(0, 19).replace("T", " ")}
-    ) ON DUPLICATE KEY UPDATE reportId=reportId`);
+    ) ON CONFLICT DO NOTHING`);
   }
   console.log("  ✓ 5 regulatory reports seeded");
 
@@ -313,13 +313,13 @@ async function seed() {
     await db.execute(sql`INSERT INTO billingAccounts (accountId, tenantId, name, status, billingCycle, currency) VALUES (
       ${randomId("ba")}, ${TENANT_ID}, ${`Billing Account ${i + 1}`},
       ${pick(["active", "suspended"])}, ${pick(["monthly", "quarterly"])}, ${"NGN"}
-    ) ON DUPLICATE KEY UPDATE accountId=accountId`);
+    ) ON CONFLICT DO NOTHING`);
   }
   for (let i = 0; i < 8; i++) {
     await db.execute(sql`INSERT INTO billingRateCards (rateCardId, tenantId, name, effectiveFrom, status) VALUES (
       ${randomId("rc")}, ${TENANT_ID}, ${pick(["Standard Transactions", "Premium API", "Agent Banking Fees", "Card Processing"])},
       ${randomDate(365).toISOString().slice(0, 19).replace("T", " ")}, ${"active"}
-    ) ON DUPLICATE KEY UPDATE rateCardId=rateCardId`);
+    ) ON CONFLICT DO NOTHING`);
   }
   console.log("  ✓ 18 billing records seeded");
 
@@ -330,7 +330,7 @@ async function seed() {
       ${randomId("aud")}, ${TENANT_ID}, ${pick(["customers", "transfers", "loans", "teller", "compliance"])},
       ${pick(auditActors)}, ${pick(["create", "update", "approve", "reject", "export"])},
       ${"Automated platform operation"}, ${pick(["info", "warning", "critical"])}, ${randomId("res")}
-    ) ON DUPLICATE KEY UPDATE entryId=entryId`);
+    ) ON CONFLICT DO NOTHING`);
   }
   console.log("  ✓ 20 audit entries seeded");
 
@@ -341,11 +341,362 @@ async function seed() {
       ${pick(["Transfer Successful", "Card Blocked", "Loan Approved", "Payment Received", "KYC Update Required"])},
       ${"Your recent banking activity requires attention"},
       ${pick(["info", "alert", "success", "warning"])}, ${Math.random() > 0.5 ? 1 : 0}
-    ) ON DUPLICATE KEY UPDATE notificationId=notificationId`);
+    ) ON CONFLICT DO NOTHING`);
   }
   console.log("  ✓ 15 notifications seeded");
 
-  console.log("\n✓ All seed data inserted successfully!");
+  // ══════════════════════════════════════════════════
+  // ADDITIONAL TABLES (27 previously missing)
+  // ══════════════════════════════════════════════════
+
+  // 25. Tenants (1 record — the platform tenant)
+  await db.execute(sql`INSERT INTO tenants (tenantId, name, plan, status, domain) VALUES (
+    ${TENANT_ID}, ${"54Bank Nigeria PLC"}, ${"enterprise"}, ${"active"}, ${"54bank.ng"}
+  ) ON CONFLICT DO NOTHING`);
+  console.log("  ✓ 1 tenant seeded");
+
+  // 26. Users (10 records — platform operators)
+  const userRoles = [
+    { name: "Admin User", email: "admin@54bank.ng", role: "admin", method: "password" },
+    { name: "Adebayo Ogundimu", email: "adebayo@54bank.ng", role: "teller", method: "password" },
+    { name: "Chidinma Okafor", email: "chidinma@54bank.ng", role: "teller", method: "password" },
+    { name: "Emeka Nwosu", email: "emeka@54bank.ng", role: "branch_manager", method: "password" },
+    { name: "Fatima Abdullahi", email: "fatima@54bank.ng", role: "compliance_officer", method: "password" },
+    { name: "Ibrahim Musa", email: "ibrahim@54bank.ng", role: "treasury_officer", method: "password" },
+    { name: "Jumoke Adeyemi", email: "jumoke@54bank.ng", role: "operations", method: "sso" },
+    { name: "Kelechi Eze", email: "kelechi@54bank.ng", role: "auditor", method: "sso" },
+    { name: "Lateefat Balogun", email: "lateefat@54bank.ng", role: "customer_service", method: "password" },
+    { name: "Maryam Suleiman", email: "maryam@54bank.ng", role: "risk_officer", method: "password" },
+  ];
+  for (const u of userRoles) {
+    await db.execute(sql`INSERT INTO users (openId, name, email, loginMethod, role) VALUES (
+      ${randomId("usr")}, ${u.name}, ${u.email}, ${u.method}, ${u.role}
+    ) ON CONFLICT DO NOTHING`);
+  }
+  console.log("  ✓ 10 users seeded");
+
+  // 27. Tenant Feature Flags (20 records)
+  const features = [
+    "dark_mode", "i18n_rtl", "offline_mode", "biometric_login", "push_notifications",
+    "virtual_cards", "fx_trading", "islamic_banking", "agent_banking", "esusu_groups",
+    "group_lending", "agricultural_loans", "trade_finance", "mortgage_servicing", "education_loans",
+    "payments_hub", "treasury_module", "fraud_detection", "regulatory_reporting", "batch_processing",
+  ];
+  for (const f of features) {
+    await db.execute(sql`INSERT INTO tenantFeatureFlags (flagId, tenantId, featureKey, enabled, description) VALUES (
+      ${randomId("ff")}, ${TENANT_ID}, ${f}, ${true}, ${`Feature flag for ${f.replace(/_/g, " ")}`}
+    ) ON CONFLICT DO NOTHING`);
+  }
+  console.log("  ✓ 20 feature flags seeded");
+
+  // 28. Customer Session Preferences (10 records)
+  for (let i = 0; i < 10; i++) {
+    await db.execute(sql`INSERT INTO customerSessionPreferences (prefId, customerId, theme, language, currency, timezone, notificationsEnabled) VALUES (
+      ${randomId("pref")}, ${pick(customerIds)}, ${pick(["light", "dark"])},
+      ${pick(["en", "ha", "yo", "ig"])}, ${"NGN"}, ${"Africa/Lagos"}, ${true}
+    ) ON CONFLICT DO NOTHING`);
+  }
+  console.log("  ✓ 10 session preferences seeded");
+
+  // 29. Customer Statements (20 records)
+  for (let i = 0; i < 20; i++) {
+    const period = pick(["2026-01", "2025-12", "2025-11", "2025-10"]);
+    await db.execute(sql`INSERT INTO customerStatements (statementId, customerId, tenantId, accountNumber, period, openingBalance, closingBalance, totalCredits, totalDebits, transactionCount, generatedAt) VALUES (
+      ${randomId("stmt")}, ${pick(customerIds)}, ${TENANT_ID},
+      ${`001${String(1000 + i).padStart(7, "0")}`}, ${period},
+      ${Math.round(Math.random() * 5000000)}, ${Math.round(Math.random() * 8000000)},
+      ${Math.round(Math.random() * 3000000)}, ${Math.round(Math.random() * 2000000)},
+      ${Math.floor(Math.random() * 50) + 5},
+      ${randomDate(90).toISOString().slice(0, 19).replace("T", " ")}
+    ) ON CONFLICT DO NOTHING`);
+  }
+  console.log("  ✓ 20 statements seeded");
+
+  // 30. Customer Statement Exports (5 records)
+  for (let i = 0; i < 5; i++) {
+    await db.execute(sql`INSERT INTO customerStatementExports (exportId, customerId, format, period, status, fileUrl) VALUES (
+      ${randomId("exp")}, ${pick(customerIds)}, ${pick(["pdf", "csv", "xlsx"])},
+      ${pick(["2026-01", "2025-12"])}, ${pick(["completed", "pending"])},
+      ${`/exports/statement-${i + 1}.pdf`}
+    ) ON CONFLICT DO NOTHING`);
+  }
+  console.log("  ✓ 5 statement exports seeded");
+
+  // 31. Customer Approvals (10 records)
+  for (let i = 0; i < 10; i++) {
+    await db.execute(sql`INSERT INTO customerApprovals (approvalId, customerId, tenantId, type, status, requestedBy, approvedBy, amount, description) VALUES (
+      ${randomId("apr")}, ${pick(customerIds)}, ${TENANT_ID},
+      ${pick(["transfer", "limit_increase", "card_request", "loan_application"])},
+      ${pick(["approved", "pending", "rejected"])},
+      ${pick(nigerianNames)}, ${pick(["Emeka Nwosu", "Ibrahim Musa", null])},
+      ${Math.round(Math.random() * 5000000)},
+      ${"Requires management approval per policy"}
+    ) ON CONFLICT DO NOTHING`);
+  }
+  console.log("  ✓ 10 approvals seeded");
+
+  // 32. Customer Saved Billers (15 records)
+  const savedBillers = [
+    { name: "EKEDC Electricity", code: "EKEDC", cat: "utility" },
+    { name: "DSTV Premium", code: "DSTV", cat: "entertainment" },
+    { name: "MTN Nigeria", code: "MTN", cat: "telecom" },
+    { name: "Glo Mobile", code: "GLO", cat: "telecom" },
+    { name: "Lagos Water Corp", code: "LWC", cat: "utility" },
+    { name: "StarTimes", code: "STAR", cat: "entertainment" },
+    { name: "WAEC", code: "WAEC", cat: "education" },
+    { name: "JAMB", code: "JAMB", cat: "education" },
+    { name: "Airtel Nigeria", code: "AIR", cat: "telecom" },
+    { name: "9mobile", code: "9MOB", cat: "telecom" },
+    { name: "Ikeja Electric", code: "IKEDC", cat: "utility" },
+    { name: "Abuja Electric", code: "AEDC", cat: "utility" },
+    { name: "GOTV", code: "GOTV", cat: "entertainment" },
+    { name: "Showmax", code: "SHOW", cat: "entertainment" },
+    { name: "LASU Fees", code: "LASU", cat: "education" },
+  ];
+  for (const b of savedBillers) {
+    await db.execute(sql`INSERT INTO customerSavedBillers (billerId, customerId, billerName, billerCode, category, nickname, lastPaidAmount) VALUES (
+      ${randomId("svb")}, ${pick(customerIds)}, ${b.name}, ${b.code}, ${b.cat},
+      ${b.name}, ${Math.round(Math.random() * 50000)}
+    ) ON CONFLICT DO NOTHING`);
+  }
+  console.log("  ✓ 15 saved billers seeded");
+
+  // 33. Customer Card Events (20 records)
+  for (let i = 0; i < 20; i++) {
+    await db.execute(sql`INSERT INTO customerCardEvents (eventId, customerId, cardId, eventType, amount, currency, merchantName, status, channel) VALUES (
+      ${randomId("ce")}, ${pick(customerIds)}, ${randomId("card")},
+      ${pick(["purchase", "atm_withdrawal", "pos_payment", "online_payment", "refund"])},
+      ${Math.round(Math.random() * 200000)}, ${"NGN"},
+      ${pick(["Shoprite Lekki", "Total Filling Station", "Uber Nigeria", "Jumia Online", "Chicken Republic", "ATM - VI Branch"])},
+      ${pick(["approved", "declined", "pending"])},
+      ${pick(["pos", "atm", "web", "contactless"])}
+    ) ON CONFLICT DO NOTHING`);
+  }
+  console.log("  ✓ 20 card events seeded");
+
+  // 34. Teller Transactions (30 records)
+  for (let i = 0; i < 30; i++) {
+    await db.execute(sql`INSERT INTO tellerTransactions (transactionId, tenantId, sessionId, tellerId, type, amount, currency, customerName, accountNumber, narration, status) VALUES (
+      ${randomId("ttx")}, ${TENANT_ID}, ${randomId("sess")},
+      ${pick(["TEL-001", "TEL-002", "TEL-003"])},
+      ${pick(["deposit", "withdrawal", "transfer", "cheque_deposit", "fx_purchase"])},
+      ${Math.round(Math.random() * 2000000)}, ${"NGN"},
+      ${pick(nigerianNames)}, ${`001${String(1000 + i).padStart(7, "0")}`},
+      ${pick(["Cash deposit", "Salary withdrawal", "Cheque clearing", "Bills payment", "FX conversion"])},
+      ${pick(["completed", "pending", "reversed"])}
+    ) ON CONFLICT DO NOTHING`);
+  }
+  console.log("  ✓ 30 teller transactions seeded");
+
+  // 35. Operator Actions (15 records)
+  for (let i = 0; i < 15; i++) {
+    await db.execute(sql`INSERT INTO operatorActions (actionId, tenantId, operatorId, operatorName, actionType, targetResource, targetId, detail, ipAddress) VALUES (
+      ${randomId("opa")}, ${TENANT_ID}, ${pick(["USR-001", "USR-002", "USR-003"])},
+      ${pick(["Admin User", "Emeka Nwosu", "Ibrahim Musa"])},
+      ${pick(["approve_transfer", "block_card", "reset_password", "update_kyc", "override_limit", "create_user"])},
+      ${pick(["customer", "card", "transfer", "user", "account"])},
+      ${randomId("tgt")},
+      ${pick(["Approved high-value transfer", "Blocked compromised card", "Reset customer password", "Updated KYC level", "Overrode daily limit"])},
+      ${pick(["10.0.1.45", "10.0.1.67", "10.0.2.12", "192.168.1.100"])}
+    ) ON CONFLICT DO NOTHING`);
+  }
+  console.log("  ✓ 15 operator actions seeded");
+
+  // 36. Partner Onboarding Records (5 records)
+  const partnerNames = ["Access Bank PLC", "Wema Bank PLC", "Moniepoint MFB", "PalmPay Digital", "OPay Financial"];
+  for (let i = 0; i < 5; i++) {
+    await db.execute(sql`INSERT INTO partnerOnboardingRecords (recordId, tenantId, partnerName, status, contactEmail, tier, submittedAt) VALUES (
+      ${randomId("pon")}, ${TENANT_ID}, ${partnerNames[i]},
+      ${pick(["approved", "pending_review", "kyc_verification", "active"])},
+      ${`contact@${partnerNames[i].toLowerCase().replace(/ /g, "").slice(0, 10)}.ng`},
+      ${pick(["tier1", "tier2", "tier3"])},
+      ${randomDate(60).toISOString().slice(0, 19).replace("T", " ")}
+    ) ON CONFLICT DO NOTHING`);
+  }
+  console.log("  ✓ 5 partner onboarding records seeded");
+
+  // 37. Partner Approval Records (5 records)
+  for (let i = 0; i < 5; i++) {
+    await db.execute(sql`INSERT INTO partnerApprovalRecords (approvalId, tenantId, partnerName, approverName, status, decision, notes) VALUES (
+      ${randomId("pap")}, ${TENANT_ID}, ${pick(partnerNames)},
+      ${pick(["Emeka Nwosu", "Ibrahim Musa", "Fatima Abdullahi"])},
+      ${pick(["approved", "pending", "rejected"])},
+      ${pick(["approve", "reject", "defer"])},
+      ${pick(["Meets all requirements", "Pending additional documentation", "KYC verification incomplete"])}
+    ) ON CONFLICT DO NOTHING`);
+  }
+  console.log("  ✓ 5 partner approvals seeded");
+
+  // 38. Export Jobs (5 records)
+  for (let i = 0; i < 5; i++) {
+    await db.execute(sql`INSERT INTO exportJobs (jobId, tenantId, type, status, format, filters, recordCount, fileUrl) VALUES (
+      ${randomId("exp")}, ${TENANT_ID},
+      ${pick(["customers", "transactions", "statements", "audit_log", "regulatory"])},
+      ${pick(["completed", "processing", "queued"])},
+      ${pick(["csv", "xlsx", "pdf"])},
+      ${"{}"},
+      ${Math.floor(Math.random() * 10000) + 100},
+      ${`/exports/export-${i + 1}.csv`}
+    ) ON CONFLICT DO NOTHING`);
+  }
+  console.log("  ✓ 5 export jobs seeded");
+
+  // 39. Vault Operations (10 records)
+  for (let i = 0; i < 10; i++) {
+    await db.execute(sql`INSERT INTO vaultOperations (operationId, tenantId, branchCode, type, amount, currency, authorizedBy, witnessedBy, status) VALUES (
+      ${randomId("vault")}, ${TENANT_ID},
+      ${pick(["BR-LOS-001", "BR-ABJ-001", "BR-KAN-001"])},
+      ${pick(["cash_in", "cash_out", "denomination_swap", "vault_count", "cash_transfer"])},
+      ${Math.round(Math.random() * 50000000)}, ${"NGN"},
+      ${pick(["Emeka Nwosu", "Samuel Okafor", "Yusuf Danjuma"])},
+      ${pick(["Tolulope Akinwale", "Kelechi Eze", "Adebayo Ogundimu"])},
+      ${pick(["completed", "pending_witness", "pending_authorization"])}
+    ) ON CONFLICT DO NOTHING`);
+  }
+  console.log("  ✓ 10 vault operations seeded");
+
+  // 40. Value Chain Contracts (8 records)
+  for (let i = 0; i < 8; i++) {
+    await db.execute(sql`INSERT INTO valueChainContracts (contractId, tenantId, farmerId, buyerName, commodity, quantity, unit, pricePerUnit, currency, deliveryDate, status) VALUES (
+      ${randomId("vc")}, ${TENANT_ID}, ${randomId("frm")},
+      ${pick(["Dangote Flour Mills", "Honeywell Flour", "Olam Nigeria", "BUA Foods", "FMN PLC"])},
+      ${pick(["maize", "rice", "sorghum", "cassava", "groundnut"])},
+      ${Math.floor(Math.random() * 500) + 50}, ${"tonnes"},
+      ${Math.round(Math.random() * 200000) + 50000}, ${"NGN"},
+      ${randomDate(-90).toISOString().slice(0, 10)},
+      ${pick(["active", "delivered", "pending", "cancelled"])}
+    ) ON CONFLICT DO NOTHING`);
+  }
+  console.log("  ✓ 8 value chain contracts seeded");
+
+  // 41. Crop Insurance Policies (10 records)
+  for (let i = 0; i < 10; i++) {
+    await db.execute(sql`INSERT INTO cropInsurancePolicies (policyId, tenantId, farmerId, crop, region, coverage, premium, season, status) VALUES (
+      ${randomId("cip")}, ${TENANT_ID}, ${randomId("frm")},
+      ${pick(["maize", "rice", "sorghum", "cassava", "cocoa", "palm oil"])},
+      ${pick(["North West", "North Central", "South West", "South East", "South South"])},
+      ${Math.round(Math.random() * 5000000)}, ${Math.round(Math.random() * 250000)},
+      ${pick(["2026-wet", "2026-dry", "2025-wet"])},
+      ${pick(["active", "claimed", "expired", "pending"])}
+    ) ON CONFLICT DO NOTHING`);
+  }
+  console.log("  ✓ 10 crop insurance policies seeded");
+
+  // 42. Billing Usage Events (50 records)
+  for (let i = 0; i < 50; i++) {
+    await db.execute(sql`INSERT INTO billingUsageEvents (eventId, tenantId, accountId, eventType, quantity, unit, metadata) VALUES (
+      ${randomId("bue")}, ${TENANT_ID}, ${randomId("ba")},
+      ${pick(["api_call", "transaction_processed", "sms_sent", "statement_generated", "kyc_verification", "card_issued"])},
+      ${Math.floor(Math.random() * 100) + 1}, ${pick(["count", "bytes", "seconds"])},
+      ${"{}"}
+    ) ON CONFLICT DO NOTHING`);
+  }
+  console.log("  ✓ 50 billing usage events seeded");
+
+  // 43. Billing Rated Events (30 records)
+  for (let i = 0; i < 30; i++) {
+    await db.execute(sql`INSERT INTO billingRatedEvents (ratedEventId, tenantId, usageEventId, rateCardId, unitPrice, totalPrice, currency) VALUES (
+      ${randomId("bre")}, ${TENANT_ID}, ${randomId("bue")}, ${randomId("rc")},
+      ${Math.round(Math.random() * 500)}, ${Math.round(Math.random() * 5000)}, ${"NGN"}
+    ) ON CONFLICT DO NOTHING`);
+  }
+  console.log("  ✓ 30 billing rated events seeded");
+
+  // 44. Billing Invoices (10 records)
+  for (let i = 0; i < 10; i++) {
+    await db.execute(sql`INSERT INTO billingInvoices (invoiceId, tenantId, accountId, period, subtotal, tax, total, currency, status, dueDate) VALUES (
+      ${randomId("inv")}, ${TENANT_ID}, ${randomId("ba")},
+      ${pick(["2026-01", "2025-12", "2025-11"])},
+      ${Math.round(Math.random() * 500000)}, ${Math.round(Math.random() * 37500)},
+      ${Math.round(Math.random() * 537500)}, ${"NGN"},
+      ${pick(["draft", "sent", "paid", "overdue"])},
+      ${randomDate(-30).toISOString().slice(0, 10)}
+    ) ON CONFLICT DO NOTHING`);
+  }
+  console.log("  ✓ 10 invoices seeded");
+
+  // 45. Billing Invoice Lines (30 records)
+  for (let i = 0; i < 30; i++) {
+    await db.execute(sql`INSERT INTO billingInvoiceLines (lineId, invoiceId, description, quantity, unitPrice, total, currency) VALUES (
+      ${randomId("bil")}, ${randomId("inv")},
+      ${pick(["API calls", "Transaction processing", "SMS notifications", "Statement generation", "Card issuance"])},
+      ${Math.floor(Math.random() * 1000) + 1},
+      ${Math.round(Math.random() * 100)}, ${Math.round(Math.random() * 10000)}, ${"NGN"}
+    ) ON CONFLICT DO NOTHING`);
+  }
+  console.log("  ✓ 30 invoice lines seeded");
+
+  // 46. Billing Invoice Approvals (5 records)
+  for (let i = 0; i < 5; i++) {
+    await db.execute(sql`INSERT INTO billingInvoiceApprovals (approvalId, invoiceId, approverName, status, notes) VALUES (
+      ${randomId("bia")}, ${randomId("inv")},
+      ${pick(["Finance Manager", "CFO", "Billing Admin"])},
+      ${pick(["approved", "pending", "rejected"])},
+      ${pick(["Amounts verified", "Pending rate card confirmation", "Discrepancy in usage count"])}
+    ) ON CONFLICT DO NOTHING`);
+  }
+  console.log("  ✓ 5 invoice approvals seeded");
+
+  // 47. Billing Accrual Snapshots (10 records)
+  for (let i = 0; i < 10; i++) {
+    await db.execute(sql`INSERT INTO billingAccrualSnapshots (snapshotId, tenantId, accountId, period, accruedRevenue, recognizedRevenue, deferredRevenue, currency) VALUES (
+      ${randomId("bas")}, ${TENANT_ID}, ${randomId("ba")},
+      ${pick(["2026-01", "2025-12", "2025-11", "2025-10"])},
+      ${Math.round(Math.random() * 200000)}, ${Math.round(Math.random() * 180000)},
+      ${Math.round(Math.random() * 20000)}, ${"NGN"}
+    ) ON CONFLICT DO NOTHING`);
+  }
+  console.log("  ✓ 10 accrual snapshots seeded");
+
+  // 48. Billing Contract Overrides (5 records)
+  for (let i = 0; i < 5; i++) {
+    await db.execute(sql`INSERT INTO billingContractOverrides (overrideId, tenantId, accountId, rateCardId, overrideType, value, reason, approvedBy) VALUES (
+      ${randomId("bco")}, ${TENANT_ID}, ${randomId("ba")}, ${randomId("rc")},
+      ${pick(["discount_percentage", "fixed_price", "volume_cap"])},
+      ${String(Math.round(Math.random() * 30))},
+      ${pick(["Strategic account discount", "Early adopter pricing", "Volume commitment"])},
+      ${pick(["CFO", "Head of Sales", "Product Manager"])}
+    ) ON CONFLICT DO NOTHING`);
+  }
+  console.log("  ✓ 5 contract overrides seeded");
+
+  // 49. Billing Discount Rules (5 records)
+  for (let i = 0; i < 5; i++) {
+    await db.execute(sql`INSERT INTO billingDiscountRules (ruleId, tenantId, name, type, value, minVolume, maxVolume, status) VALUES (
+      ${randomId("bdr")}, ${TENANT_ID},
+      ${pick(["Volume Discount", "Early Payment", "Multi-Product Bundle", "Annual Commitment", "Loyalty Discount"])},
+      ${pick(["percentage", "fixed"])},
+      ${String(Math.round(Math.random() * 25) + 5)},
+      ${Math.floor(Math.random() * 1000)}, ${Math.floor(Math.random() * 10000) + 1000},
+      ${"active"}
+    ) ON CONFLICT DO NOTHING`);
+  }
+  console.log("  ✓ 5 discount rules seeded");
+
+  // 50. Billing Revenue Share Rules (5 records)
+  for (let i = 0; i < 5; i++) {
+    await db.execute(sql`INSERT INTO billingRevenueShareRules (ruleId, tenantId, partnerName, sharePercentage, productType, status) VALUES (
+      ${randomId("brs")}, ${TENANT_ID},
+      ${pick(["Access Bank", "Wema Bank", "Moniepoint", "PalmPay", "OPay"])},
+      ${Math.round(Math.random() * 30) + 10},
+      ${pick(["card_processing", "agent_banking", "api_access", "sms_delivery"])},
+      ${"active"}
+    ) ON CONFLICT DO NOTHING`);
+  }
+  console.log("  ✓ 5 revenue share rules seeded");
+
+  // 51. Billing Rate Card Lines (20 records)
+  for (let i = 0; i < 20; i++) {
+    await db.execute(sql`INSERT INTO billingRateCardLines (lineId, rateCardId, eventType, unitPrice, currency, minQuantity, maxQuantity) VALUES (
+      ${randomId("brl")}, ${randomId("rc")},
+      ${pick(["api_call", "transaction_processed", "sms_sent", "statement_generated", "kyc_verification", "card_issued", "pos_transaction", "atm_withdrawal"])},
+      ${Math.round(Math.random() * 500) + 10}, ${"NGN"},
+      ${0}, ${Math.floor(Math.random() * 100000) + 1000}
+    ) ON CONFLICT DO NOTHING`);
+  }
+  console.log("  ✓ 20 rate card lines seeded");
+
+  console.log("\n✓ All seed data inserted successfully (56 tables, 600+ records)!");
   process.exit(0);
 }
 
