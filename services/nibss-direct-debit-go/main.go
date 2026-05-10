@@ -104,7 +104,7 @@ func handleMandates(w http.ResponseWriter, r *http.Request) {
 	}
 	mu.RLock()
 	defer mu.RUnlock()
-	json.NewEncoder(w).Encode(mandates)
+	json.NewEncoder(w).Encode(map[string]interface{}{"items": mandates, "total": len(mandates)})
 }
 
 func handleCancelMandate(w http.ResponseWriter, r *http.Request) {

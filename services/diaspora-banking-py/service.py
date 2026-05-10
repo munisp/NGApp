@@ -47,13 +47,13 @@ class Handler(BaseHTTPRequestHandler):
         if self.path == "/healthz":
             return self._json({"status": "ok", "service": "diaspora-banking", "port": "8135"})
         if self.path == "/v1/diaspora/corridors":
-            return self._json(REMITTANCE_CORRIDORS)
+            return self._json({"items": REMITTANCE_CORRIDORS, "total": len(REMITTANCE_CORRIDORS)})
         if self.path == "/v1/diaspora/accounts":
-            return self._json(DIASPORA_ACCOUNTS)
+            return self._json({"items": DIASPORA_ACCOUNTS, "total": len(DIASPORA_ACCOUNTS)})
         if self.path == "/v1/diaspora/remittances":
-            return self._json(REMITTANCES)
+            return self._json({"items": REMITTANCES, "total": len(REMITTANCES)})
         if self.path == "/v1/diaspora/property-schemes":
-            return self._json(PROPERTY_SCHEMES)
+            return self._json({"items": PROPERTY_SCHEMES, "total": len(PROPERTY_SCHEMES)})
         if self.path == "/v1/diaspora/stats":
             total_remitted = sum(r["targetAmount"] for r in REMITTANCES)
             return self._json({

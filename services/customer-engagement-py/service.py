@@ -215,7 +215,7 @@ def survey_analytics():
 
 @app.get("/v1/engagement/referrals")
 def list_referrals():
-    return referrals
+    return {"items": referrals, "total": len(referrals)}
 
 @app.post("/v1/engagement/referrals", status_code=201)
 def create_referral(req: Referral):

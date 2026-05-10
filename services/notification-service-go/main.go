@@ -134,7 +134,7 @@ func handleNotifications(w http.ResponseWriter, r *http.Request) {
 			if recipientID != "" && n.RecipientID != recipientID { continue }
 			filtered = append(filtered, n)
 		}
-		json.NewEncoder(w).Encode(map[string]interface{}{"notifications": filtered, "total": len(filtered)})
+		json.NewEncoder(w).Encode(map[string]interface{}{"items": filtered, "total": len(filtered)})
 		return
 	}
 	w.WriteHeader(405)

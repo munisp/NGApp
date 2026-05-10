@@ -101,7 +101,7 @@ func handleStandingOrders(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "GET" {
 		soMu.RLock()
 		defer soMu.RUnlock()
-		json.NewEncoder(w).Encode(map[string]interface{}{"standingOrders": standingOrders, "total": len(standingOrders)})
+		json.NewEncoder(w).Encode(map[string]interface{}{"items": standingOrders, "total": len(standingOrders)})
 		return
 	}
 	if r.Method == "POST" {
@@ -196,7 +196,7 @@ func handleMandates(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "GET" {
 		soMu.RLock()
 		defer soMu.RUnlock()
-		json.NewEncoder(w).Encode(map[string]interface{}{"mandates": mandates, "total": len(mandates)})
+		json.NewEncoder(w).Encode(map[string]interface{}{"items": mandates, "total": len(mandates)})
 		return
 	}
 	if r.Method == "POST" {

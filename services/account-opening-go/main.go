@@ -132,7 +132,7 @@ func handleApplications(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "GET" {
 		appMu.RLock()
 		defer appMu.RUnlock()
-		json.NewEncoder(w).Encode(map[string]interface{}{"applications": applications, "total": len(applications)})
+		json.NewEncoder(w).Encode(map[string]interface{}{"items": applications, "total": len(applications)})
 		return
 	}
 	if r.Method == "POST" {

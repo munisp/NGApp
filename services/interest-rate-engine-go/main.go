@@ -129,7 +129,7 @@ func handleBaseRates(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(rate)
 		return
 	}
-	json.NewEncoder(w).Encode(baseRates)
+	json.NewEncoder(w).Encode(map[string]interface{}{"items": baseRates, "total": len(baseRates)})
 }
 
 func handleSpreads(w http.ResponseWriter, r *http.Request) {

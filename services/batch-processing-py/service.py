@@ -88,7 +88,7 @@ dormancy_checks: list[DormancyCheck] = []
 
 def handle_batch_jobs(method: str, body: dict) -> tuple[int, dict]:
     if method == "GET":
-        return 200, {"jobs": [j.to_dict() for j in batch_jobs], "total": len(batch_jobs)}
+        return 200, {"items": [j.to_dict() for j in batch_jobs], "total": len(batch_jobs)}
     if method == "POST":
         valid_types = ("eod_processing", "interest_accrual", "statement_generation", "dormancy_check", "gl_reconciliation", "regulatory_return")
         if body.get("job_type") not in valid_types:

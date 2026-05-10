@@ -93,7 +93,7 @@ func handleBeneficiaries(w http.ResponseWriter, r *http.Request) {
 			if customerID != "" && b.CustomerID != customerID { continue }
 			filtered = append(filtered, b)
 		}
-		json.NewEncoder(w).Encode(map[string]interface{}{"beneficiaries": filtered, "total": len(filtered)})
+		json.NewEncoder(w).Encode(map[string]interface{}{"items": filtered, "total": len(filtered)})
 		return
 	}
 	if r.Method == "POST" {

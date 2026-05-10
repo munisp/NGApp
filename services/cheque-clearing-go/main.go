@@ -104,14 +104,14 @@ func handleChequeBooks(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(cb)
 		return
 	}
-	json.NewEncoder(w).Encode(chequeBooks)
+	json.NewEncoder(w).Encode(map[string]interface{}{"items": chequeBooks, "total": len(chequeBooks)})
 }
 
 func handleCheques(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	mu.RLock()
 	defer mu.RUnlock()
-	json.NewEncoder(w).Encode(cheques)
+	json.NewEncoder(w).Encode(map[string]interface{}{"items": cheques, "total": len(cheques)})
 }
 
 func handlePresent(w http.ResponseWriter, r *http.Request) {

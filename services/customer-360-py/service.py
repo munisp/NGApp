@@ -5,6 +5,7 @@ Port: 8133
 """
 
 import json
+import os
 import time
 from http.server import HTTPServer, BaseHTTPRequestHandler
 
@@ -137,7 +138,8 @@ class Handler(BaseHTTPRequestHandler):
             return self._json({"status": "ok", "service": "customer-360", "port": "8133"})
 
         if self.path == "/v1/customer-360/profiles":
-            return self._json(list(SEED_CUSTOMERS.values()))
+            items = list(SEED_CUSTOMERS.values())
+            return self._json({"items": items, "total": len(items)})
 
         if self.path.startswith("/v1/customer-360/profiles/"):
             cid = self.path.split("/")[-1]
@@ -207,5 +209,3 @@ if __name__ == "__main__":
     port = int(sys.argv[1]) if len(sys.argv) > 1 else int(os.environ.get("PORT", "8133"))
     print(f"Customer 360 Service listening on :{port}")
     HTTPServer(("", port), Handler).serve_forever()
-
-import os
