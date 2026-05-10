@@ -81,7 +81,7 @@ func init() {
 		{ID: "MIG-009", Version: "009", Name: "create_fx_positions_table", Service: "multicurrency-revaluation", SQL: "CREATE TABLE fx_positions (id VARCHAR PRIMARY KEY, currency VARCHAR(3), account_type VARCHAR, balance DECIMAL(18,2), local_equivalent DECIMAL(18,2), reval_pnl DECIMAL(18,2), account_count INT, updated_at TIMESTAMPTZ DEFAULT NOW());", Status: "applied", AppliedAt: "2026-05-01T00:08:00Z", DurationMs: 25, Checksum: "g3h4i5j6"},
 		{ID: "MIG-010", Version: "010", Name: "create_audit_log_table", Service: "platform", SQL: "CREATE TABLE audit_log (id UUID PRIMARY KEY DEFAULT gen_random_uuid(), action VARCHAR, entity VARCHAR, entity_id VARCHAR, user_id VARCHAR, user_name VARCHAR, ip_address INET, old_value JSONB, new_value JSONB, timestamp TIMESTAMPTZ DEFAULT NOW()) PARTITION BY RANGE (timestamp);", Status: "applied", AppliedAt: "2026-05-01T00:09:00Z", DurationMs: 30, Checksum: "k7l8m9n0"},
 		{ID: "MIG-011", Version: "011", Name: "create_indexes", Service: "platform", SQL: "CREATE INDEX idx_accounts_customer ON accounts(customer_id); CREATE INDEX idx_transactions_account ON transactions(account_id); CREATE INDEX idx_transactions_date ON transactions(value_date); CREATE INDEX idx_gl_entries_date ON gl_entries(value_date); CREATE INDEX idx_audit_entity ON audit_log(entity, entity_id);", Status: "applied", AppliedAt: "2026-05-01T00:10:00Z", DurationMs: 120, Checksum: "o1p2q3r4"},
-	]
+	}
 
 	tables = []TableSchema{
 		{Name: "customers", Service: "customer-360", Columns: 10, Indexes: 3, RowEstimate: 2500000, SizeKB: 512000, HasAudit: true, Partitioned: false},
