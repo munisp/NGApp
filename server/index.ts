@@ -19,6 +19,10 @@ import { auditLog } from "./lib/auditLog";
 import { metricsMiddleware, metricsEndpoint, registry } from "./lib/metrics";
 import { generateOpenAPISpec } from "./lib/openapi";
 import { generateOTP, verifyOTP } from "./lib/transactionSigning";
+import { listSecrets, getSecretAuditLog } from "./lib/secretsManager";
+import { runComplianceChecks, pciResponseSanitizer, pciAuditHeaders } from "./lib/pciCompliance";
+import { SEED_KPIS } from "./lib/dashboardKPIs";
+import { appCache, CACHE_TTL } from "./lib/cache";
 import { WebSocketServer, WebSocket } from "ws";
 
 import {
@@ -6281,6 +6285,43 @@ async function startServer() {
     const { otpId, code } = req.body;
     const valid = verifyOTP(otpId, code);
     res.json({ valid });
+  });
+
+  // C6: Secrets management endpoints
+  app.get("/api/platform/secrets", (_req, res) => {
+    res.json(listSecrets());
+  });
+  app.get("/api/platform/secrets/:name/audit", (req, res) => {
+    res.json(getSecretAuditLog(req.params.name));
+  });
+
+  // C9: PCI-DSS compliance check
+  app.get("/api/platform/compliance/pci", (_req, res) => {
+    const checks = runComplianceChecks();
+    const passCount = checks.filter((c) => c.status === "pass").length;
+    const failCount = checks.filter((c) => c.status === "fail").length;
+    const warnCount = checks.filter((c) => c.status === "warning").length;
+    res.json({
+      summary: { total: checks.length, pass: passCount, fail: failCount, warning: warnCount },
+      checks,
+      overallStatus: failCount > 0 ? "non_compliant" : warnCount > 0 ? "needs_attention" : "compliant",
+    });
+  });
+
+  // D2: Dashboard KPIs
+  app.get("/api/platform/dashboard/kpis", (_req, res) => {
+    const cached = appCache.get<typeof SEED_KPIS>("dashboard-kpis");
+    if (cached) {
+      res.json(cached);
+      return;
+    }
+    appCache.set("dashboard-kpis", SEED_KPIS, CACHE_TTL.DASHBOARD_KPI);
+    res.json(SEED_KPIS);
+  });
+
+  // B3: Cache stats endpoint
+  app.get("/api/platform/cache/stats", (_req, res) => {
+    res.json(appCache.stats());
   });
 
   app.use(globalErrorHandler);
