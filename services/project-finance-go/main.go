@@ -1,0 +1,86 @@
+package main
+
+import (
+	"encoding/json"
+	"fmt"
+	"net/http"
+	"os"
+	"sync"
+)
+
+func envOr(key, fallback string) string {
+	if v := os.Getenv(key); v != "" { return v }
+	return fallback
+}
+
+type ProjectDeal struct {
+	ID string `json:"id"`
+	ProjectName string `json:"project_name"`
+	Sponsor string `json:"sponsor"`
+	Sector string `json:"sector"`
+	TotalCost float64 `json:"total_cost"`
+	DebtEquityRatio string `json:"debt_equity_ratio"`
+	Currency string `json:"currency"`
+	Tenor string `json:"tenor"`
+	DSCR float64 `json:"dscr"`
+	Status string `json:"status"`
+}
+
+var (
+	mu    sync.RWMutex
+	items = []ProjectDeal{
+		{ID: "PJ-001", ProjectName: "Lekki Deep Sea Port", Sponsor: "Lekki Port LFTZ Enterprise", Sector: "infrastructure", TotalCost: 1500000000.0, DebtEquityRatio: "70:30", Currency: "USD", Tenor: "15 years", DSCR: 1.45, Status: "construction"},
+		{ID: "PJ-002", ProjectName: "Dangote Fertilizer Plant", Sponsor: "Dangote Industries", Sector: "manufacturing", TotalCost: 2500000000.0, DebtEquityRatio: "65:35", Currency: "USD", Tenor: "12 years", DSCR: 1.65, Status: "operational"},
+		{ID: "PJ-003", ProjectName: "Abuja Light Rail Phase 2", Sponsor: "FCT Administration", Sector: "transport", TotalCost: 500000000000.0, DebtEquityRatio: "80:20", Currency: "NGN", Tenor: "20 years", DSCR: 1.2, Status: "pre_construction"},
+		{ID: "PJ-004", ProjectName: "Mambilla Hydropower", Sponsor: "Federal Ministry of Power", Sector: "energy", TotalCost: 5800000000.0, DebtEquityRatio: "75:25", Currency: "USD", Tenor: "25 years", DSCR: 1.35, Status: "feasibility"},
+	}
+)
+
+func healthz(w http.ResponseWriter, _ *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"service": "project-finance-go", "status": "healthy", "version": "1.0.0",
+		"middleware": map[string]interface{}{
+			"kafka":       map[string]interface{}{"broker": envOr("KAFKA_BROKER", "localhost:9092"), "topics": []string{"project.disbursements","project.milestones","project.compliance"}, "usage": "event streaming"},
+			"redis":       map[string]interface{}{"url": envOr("REDIS_URL", "redis://localhost:6379"), "cache_keys": []string{"project-finance-go:cache"}},
+			"postgres":    map[string]interface{}{"url": envOr("DATABASE_URL", "postgresql://ndsep_user:ndsep_secure_2026@localhost:5432/ndsep_db"), "tables": []string{"project_deals","project_milestones","project_disbursements","project_cashflows"}},
+			"opensearch":  map[string]interface{}{"url": envOr("OPENSEARCH_URL", "http://localhost:9200"), "indices": []string{"project-finance","project-audit"}},
+			"keycloak":    map[string]interface{}{"url": envOr("KEYCLOAK_URL", "http://localhost:8080"), "realm": "54bank", "client": "project-finance-go"},
+			"permify":     map[string]interface{}{"url": envOr("PERMIFY_URL", "http://localhost:3476"), "resources": []string{"project-finance-go"}},
+			"dapr":        map[string]interface{}{"url": envOr("DAPR_URL", "http://localhost:3500"), "app_id": "project-finance-go", "pubsub": "project-finance-go-pubsub"},
+			"fluvio":      map[string]interface{}{"url": envOr("FLUVIO_URL", "localhost:9003"), "topics": []string{"project-finance-go-stream"}},
+			"temporal":    map[string]interface{}{"url": envOr("TEMPORAL_URL", "localhost:7233"), "workflows": []string{"ProjectDisbursementWorkflow","MilestoneVerificationWorkflow"}},
+			"mojaloop":    map[string]interface{}{"url": envOr("MOJALOOP_URL", "http://localhost:3002"), "usage": "settlement"},
+			"tigerbeetle": map[string]interface{}{"url": envOr("TIGERBEETLE_URL", "localhost:3000"), "ledgers": []string{"project_escrow","project_disbursement"}},
+			"lakehouse":   map[string]interface{}{"url": envOr("LAKEHOUSE_URL", "http://localhost:8181"), "tables": []string{"project-finance-go_history"}},
+			"apisix":      map[string]interface{}{"url": envOr("APISIX_URL", "http://localhost:9080"), "routes": []string{"/v1/project-finance/deals"}},
+			"openappsec":  map[string]interface{}{"url": envOr("OPENAPPSEC_URL", "http://localhost:4000"), "policy": "project-finance-go-waf"},
+		},
+	})
+}
+
+func listItems(w http.ResponseWriter, _ *http.Request) {
+	mu.RLock()
+	defer mu.RUnlock()
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{"items": items, "total": len(items)})
+}
+
+func getStats(w http.ResponseWriter, _ *http.Request) {
+	mu.RLock()
+	defer mu.RUnlock()
+	var total float64
+for _, d := range items { total += d.TotalCost }
+stats := map[string]interface{}{"total_projects": len(items), "total_investment": total}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(stats)
+}
+
+func main() {
+	port := envOr("PORT", "8172")
+	http.HandleFunc("/healthz", healthz)
+	http.HandleFunc("/v1/project-finance/deals", listItems)
+	http.HandleFunc("/v1/project-finance/stats", getStats)
+	fmt.Printf("Project Finance Service running on port %s\n", port)
+	http.ListenAndServe(":"+port, nil)
+}

@@ -6783,6 +6783,119 @@ async function startServer() {
     void proxyToService(OPEN_BANKING_URL, "/healthz", req, res);
   });
 
+  // ========= GAP ANALYSIS BATCH 2 SERVICES (ports 8166-8184) =========
+
+  // Interbank Lending (Rust :8166)
+  const INTERBANK_URL = process.env.INTERBANK_URL || "http://localhost:8166";
+  app.all("/api/platform/interbank/deals", (req, res) => { void proxyToService(INTERBANK_URL, "/v1/interbank/deals", req, res); });
+  app.all("/api/platform/interbank/stats", (req, res) => { void proxyToService(INTERBANK_URL, "/v1/interbank/stats", req, res); });
+  app.all("/api/platform/interbank/healthz", (req, res) => { void proxyToService(INTERBANK_URL, "/healthz", req, res); });
+
+  // Portfolio Management (Rust :8167)
+  const PORTFOLIO_URL = process.env.PORTFOLIO_URL || "http://localhost:8167";
+  app.all("/api/platform/portfolios/list", (req, res) => { void proxyToService(PORTFOLIO_URL, "/v1/portfolios", req, res); });
+  app.all("/api/platform/portfolios/performance", (req, res) => { void proxyToService(PORTFOLIO_URL, "/v1/portfolios/performance", req, res); });
+  app.all("/api/platform/portfolios/healthz", (req, res) => { void proxyToService(PORTFOLIO_URL, "/healthz", req, res); });
+
+  // Wealth Management (Python :8168)
+  const WEALTH_URL = process.env.WEALTH_URL || "http://localhost:8168";
+  app.all("/api/platform/wealth/clients", (req, res) => { void proxyToService(WEALTH_URL, "/v1/wealth/clients", req, res); });
+  app.all("/api/platform/wealth/stats", (req, res) => { void proxyToService(WEALTH_URL, "/v1/wealth/stats", req, res); });
+  app.all("/api/platform/wealth/healthz", (req, res) => { void proxyToService(WEALTH_URL, "/healthz", req, res); });
+
+  // Custody Services (Go :8169)
+  const CUSTODY_URL = process.env.CUSTODY_URL || "http://localhost:8169";
+  app.all("/api/platform/custody/accounts", (req, res) => { void proxyToService(CUSTODY_URL, "/v1/custody/accounts", req, res); });
+  app.all("/api/platform/custody/stats", (req, res) => { void proxyToService(CUSTODY_URL, "/v1/custody/stats", req, res); });
+  app.all("/api/platform/custody/healthz", (req, res) => { void proxyToService(CUSTODY_URL, "/healthz", req, res); });
+
+  // Factoring (Go :8170)
+  const FACTORING_URL = process.env.FACTORING_URL || "http://localhost:8170";
+  app.all("/api/platform/factoring/deals", (req, res) => { void proxyToService(FACTORING_URL, "/v1/factoring/deals", req, res); });
+  app.all("/api/platform/factoring/stats", (req, res) => { void proxyToService(FACTORING_URL, "/v1/factoring/stats", req, res); });
+  app.all("/api/platform/factoring/healthz", (req, res) => { void proxyToService(FACTORING_URL, "/healthz", req, res); });
+
+  // Syndicated Loans (Go :8171)
+  const SYNDICATED_URL = process.env.SYNDICATED_URL || "http://localhost:8171";
+  app.all("/api/platform/syndicated-loans/facilities", (req, res) => { void proxyToService(SYNDICATED_URL, "/v1/syndicated-loans/facilities", req, res); });
+  app.all("/api/platform/syndicated-loans/stats", (req, res) => { void proxyToService(SYNDICATED_URL, "/v1/syndicated-loans/stats", req, res); });
+  app.all("/api/platform/syndicated-loans/healthz", (req, res) => { void proxyToService(SYNDICATED_URL, "/healthz", req, res); });
+
+  // Project Finance (Go :8172)
+  const PROJECT_FINANCE_URL = process.env.PROJECT_FINANCE_URL || "http://localhost:8172";
+  app.all("/api/platform/project-finance/deals", (req, res) => { void proxyToService(PROJECT_FINANCE_URL, "/v1/project-finance/deals", req, res); });
+  app.all("/api/platform/project-finance/stats", (req, res) => { void proxyToService(PROJECT_FINANCE_URL, "/v1/project-finance/stats", req, res); });
+  app.all("/api/platform/project-finance/healthz", (req, res) => { void proxyToService(PROJECT_FINANCE_URL, "/healthz", req, res); });
+
+  // Leasing (Go :8173)
+  const LEASING_URL = process.env.LEASING_URL || "http://localhost:8173";
+  app.all("/api/platform/leasing/contracts", (req, res) => { void proxyToService(LEASING_URL, "/v1/leasing/contracts", req, res); });
+  app.all("/api/platform/leasing/stats", (req, res) => { void proxyToService(LEASING_URL, "/v1/leasing/stats", req, res); });
+  app.all("/api/platform/leasing/healthz", (req, res) => { void proxyToService(LEASING_URL, "/healthz", req, res); });
+
+  // Contingent Liabilities (Rust :8174)
+  const CONTINGENT_URL = process.env.CONTINGENT_URL || "http://localhost:8174";
+  app.all("/api/platform/contingent-liabilities/list", (req, res) => { void proxyToService(CONTINGENT_URL, "/v1/contingent-liabilities-rs/list", req, res); });
+  app.all("/api/platform/contingent-liabilities/healthz", (req, res) => { void proxyToService(CONTINGENT_URL, "/healthz", req, res); });
+
+  // ETD Trading (Rust :8175)
+  const ETD_URL = process.env.ETD_URL || "http://localhost:8175";
+  app.all("/api/platform/etd/list", (req, res) => { void proxyToService(ETD_URL, "/v1/etd-trading-rs/list", req, res); });
+  app.all("/api/platform/etd/healthz", (req, res) => { void proxyToService(ETD_URL, "/healthz", req, res); });
+
+  // Payment Investigation (Go :8176)
+  const INVESTIGATION_URL = process.env.INVESTIGATION_URL || "http://localhost:8176";
+  app.all("/api/platform/investigations", (req, res) => { void proxyToService(INVESTIGATION_URL, "/v1/investigations", req, res); });
+  app.all("/api/platform/investigations/stats", (req, res) => { void proxyToService(INVESTIGATION_URL, "/v1/investigations/stats", req, res); });
+  app.all("/api/platform/investigations/healthz", (req, res) => { void proxyToService(INVESTIGATION_URL, "/healthz", req, res); });
+
+  // Stress Testing (Rust :8177)
+  const STRESS_URL = process.env.STRESS_URL || "http://localhost:8177";
+  app.all("/api/platform/stress-testing/list", (req, res) => { void proxyToService(STRESS_URL, "/v1/stress-testing-rs/list", req, res); });
+  app.all("/api/platform/stress-testing/healthz", (req, res) => { void proxyToService(STRESS_URL, "/healthz", req, res); });
+
+  // API Marketplace (Go :8178)
+  const MARKETPLACE_URL = process.env.MARKETPLACE_URL || "http://localhost:8178";
+  app.all("/api/platform/marketplace/apis", (req, res) => { void proxyToService(MARKETPLACE_URL, "/v1/marketplace/apis", req, res); });
+  app.all("/api/platform/marketplace/stats", (req, res) => { void proxyToService(MARKETPLACE_URL, "/v1/marketplace/stats", req, res); });
+  app.all("/api/platform/marketplace/healthz", (req, res) => { void proxyToService(MARKETPLACE_URL, "/healthz", req, res); });
+
+  // Chatbot (Python :8179)
+  const CHATBOT_URL = process.env.CHATBOT_URL || "http://localhost:8179";
+  app.all("/api/platform/chatbot/intents", (req, res) => { void proxyToService(CHATBOT_URL, "/v1/chatbot/intents", req, res); });
+  app.all("/api/platform/chatbot/message", (req, res) => { void proxyToService(CHATBOT_URL, "/v1/chatbot/message", req, res); });
+  app.all("/api/platform/chatbot/stats", (req, res) => { void proxyToService(CHATBOT_URL, "/v1/chatbot/stats", req, res); });
+  app.all("/api/platform/chatbot/healthz", (req, res) => { void proxyToService(CHATBOT_URL, "/healthz", req, res); });
+
+  // Signature Verification (Rust :8180)
+  const SIGNATURE_URL = process.env.SIGNATURE_URL || "http://localhost:8180";
+  app.all("/api/platform/signature/list", (req, res) => { void proxyToService(SIGNATURE_URL, "/v1/signature-verification-rs/list", req, res); });
+  app.all("/api/platform/signature/healthz", (req, res) => { void proxyToService(SIGNATURE_URL, "/healthz", req, res); });
+
+  // Remittance (Go :8181)
+  const REMITTANCE_URL = process.env.REMITTANCE_URL || "http://localhost:8181";
+  app.all("/api/platform/remittance/transactions", (req, res) => { void proxyToService(REMITTANCE_URL, "/v1/remittance/transactions", req, res); });
+  app.all("/api/platform/remittance/stats", (req, res) => { void proxyToService(REMITTANCE_URL, "/v1/remittance/stats", req, res); });
+  app.all("/api/platform/remittance/healthz", (req, res) => { void proxyToService(REMITTANCE_URL, "/healthz", req, res); });
+
+  // Microfinance (Python :8182)
+  const MICROFINANCE_URL = process.env.MICROFINANCE_URL || "http://localhost:8182";
+  app.all("/api/platform/microfinance/groups", (req, res) => { void proxyToService(MICROFINANCE_URL, "/v1/microfinance/groups", req, res); });
+  app.all("/api/platform/microfinance/stats", (req, res) => { void proxyToService(MICROFINANCE_URL, "/v1/microfinance/stats", req, res); });
+  app.all("/api/platform/microfinance/healthz", (req, res) => { void proxyToService(MICROFINANCE_URL, "/healthz", req, res); });
+
+  // Utility Payments (Go :8183)
+  const UTILITY_URL = process.env.UTILITY_URL || "http://localhost:8183";
+  app.all("/api/platform/utility-payments/transactions", (req, res) => { void proxyToService(UTILITY_URL, "/v1/utility-payments/transactions", req, res); });
+  app.all("/api/platform/utility-payments/stats", (req, res) => { void proxyToService(UTILITY_URL, "/v1/utility-payments/stats", req, res); });
+  app.all("/api/platform/utility-payments/healthz", (req, res) => { void proxyToService(UTILITY_URL, "/healthz", req, res); });
+
+  // Multi-Entity Management (Go :8184)
+  const MULTI_ENTITY_URL = process.env.MULTI_ENTITY_URL || "http://localhost:8184";
+  app.all("/api/platform/entities", (req, res) => { void proxyToService(MULTI_ENTITY_URL, "/v1/entities", req, res); });
+  app.all("/api/platform/entities/stats", (req, res) => { void proxyToService(MULTI_ENTITY_URL, "/v1/entities/stats", req, res); });
+  app.all("/api/platform/entities/healthz", (req, res) => { void proxyToService(MULTI_ENTITY_URL, "/healthz", req, res); });
+
   // GL Account Management endpoints
   app.get("/api/platform/gl/accounts", (_req, res) => {
     const { getGLAccounts } = require("./lib/glAccountManagement");

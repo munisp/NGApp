@@ -161,6 +161,25 @@ const ISO20022HubWorkspace = lazy(() => import("@/pages/ISO20022HubWorkspace"));
 const BaselEngineWorkspace = lazy(() => import("@/pages/BaselEngineWorkspace"));
 const IFRS9EngineWorkspace = lazy(() => import("@/pages/IFRS9EngineWorkspace"));
 const OpenBankingWorkspace = lazy(() => import("@/pages/OpenBankingWorkspace"));
+const InterbankLendingWorkspace = lazy(() => import("@/pages/InterbankLendingWorkspace"));
+const PortfolioMgmtWorkspace = lazy(() => import("@/pages/PortfolioMgmtWorkspace"));
+const WealthMgmtWorkspace = lazy(() => import("@/pages/WealthMgmtWorkspace"));
+const CustodyServiceWorkspace = lazy(() => import("@/pages/CustodyServiceWorkspace"));
+const FactoringWorkspace = lazy(() => import("@/pages/FactoringWorkspace"));
+const SyndicatedLoansWorkspace = lazy(() => import("@/pages/SyndicatedLoansWorkspace"));
+const ProjectFinanceWorkspace = lazy(() => import("@/pages/ProjectFinanceWorkspace"));
+const LeasingWorkspace = lazy(() => import("@/pages/LeasingWorkspace"));
+const ContingentLiabilitiesWorkspace = lazy(() => import("@/pages/ContingentLiabilitiesWorkspace"));
+const ETDTradingWorkspace = lazy(() => import("@/pages/ETDTradingWorkspace"));
+const PaymentInvestigationWorkspace = lazy(() => import("@/pages/PaymentInvestigationWorkspace"));
+const StressTestingWorkspace = lazy(() => import("@/pages/StressTestingWorkspace"));
+const APIMarketplaceWorkspace = lazy(() => import("@/pages/APIMarketplaceWorkspace"));
+const ChatbotWorkspace = lazy(() => import("@/pages/ChatbotWorkspace"));
+const SignatureVerificationWorkspace = lazy(() => import("@/pages/SignatureVerificationWorkspace"));
+const RemittanceWorkspace = lazy(() => import("@/pages/RemittanceWorkspace"));
+const MicrofinanceWorkspace = lazy(() => import("@/pages/MicrofinanceWorkspace"));
+const UtilityPaymentsWorkspace = lazy(() => import("@/pages/UtilityPaymentsWorkspace"));
+const MultiEntityWorkspace = lazy(() => import("@/pages/MultiEntityWorkspace"));
 const AdminAnalyticsPage = lazy(() => import("@/pages/AdminModulePages").then((module) => ({ default: module.AdminAnalyticsPage })));
 const AdminBankingOpsPage = lazy(() => import("@/pages/AdminModulePages").then((module) => ({ default: module.AdminBankingOpsPage })));
 const AdminFeatureFlagsPage = lazy(() => import("@/pages/AdminModulePages").then((module) => ({ default: module.AdminFeatureFlagsPage })));
@@ -376,6 +395,25 @@ export default function App() {
         <Route path="/basel-engine" component={renderInAdminShell(BaselEngineWorkspace)} />
         <Route path="/ifrs9-engine" component={renderInAdminShell(IFRS9EngineWorkspace)} />
         <Route path="/open-banking" component={renderInAdminShell(OpenBankingWorkspace)} />
+        <Route path="/interbank-lending" component={renderInAdminShell(InterbankLendingWorkspace)} />
+        <Route path="/portfolio-mgmt" component={renderInAdminShell(PortfolioMgmtWorkspace)} />
+        <Route path="/wealth-mgmt" component={renderInAdminShell(WealthMgmtWorkspace)} />
+        <Route path="/custody-service" component={renderInAdminShell(CustodyServiceWorkspace)} />
+        <Route path="/factoring" component={renderInAdminShell(FactoringWorkspace)} />
+        <Route path="/syndicated-loans" component={renderInAdminShell(SyndicatedLoansWorkspace)} />
+        <Route path="/project-finance" component={renderInAdminShell(ProjectFinanceWorkspace)} />
+        <Route path="/leasing" component={renderInAdminShell(LeasingWorkspace)} />
+        <Route path="/contingent-liabilities" component={renderInAdminShell(ContingentLiabilitiesWorkspace)} />
+        <Route path="/etd-trading" component={renderInAdminShell(ETDTradingWorkspace)} />
+        <Route path="/payment-investigation" component={renderInAdminShell(PaymentInvestigationWorkspace)} />
+        <Route path="/stress-testing" component={renderInAdminShell(StressTestingWorkspace)} />
+        <Route path="/api-marketplace" component={renderInAdminShell(APIMarketplaceWorkspace)} />
+        <Route path="/chatbot" component={renderInAdminShell(ChatbotWorkspace)} />
+        <Route path="/signature-verification" component={renderInAdminShell(SignatureVerificationWorkspace)} />
+        <Route path="/remittance" component={renderInAdminShell(RemittanceWorkspace)} />
+        <Route path="/microfinance" component={renderInAdminShell(MicrofinanceWorkspace)} />
+        <Route path="/utility-payments" component={renderInAdminShell(UtilityPaymentsWorkspace)} />
+        <Route path="/multi-entity" component={renderInAdminShell(MultiEntityWorkspace)} />
 
         <Route component={NotFound} />
       </Switch>

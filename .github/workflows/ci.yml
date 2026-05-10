@@ -134,6 +134,26 @@ jobs:
         run: cd services/bank-guarantees-go && go build -o bank-guarantees .
       - name: Build Open Banking Service
         run: cd services/open-banking-go && go build -o open-banking .
+      - name: Build Custody Service
+        run: cd services/custody-service-go && go build -o custody-service .
+      - name: Build Factoring Service
+        run: cd services/factoring-go && go build -o factoring .
+      - name: Build Syndicated Loans Service
+        run: cd services/syndicated-loans-go && go build -o syndicated-loans .
+      - name: Build Project Finance Service
+        run: cd services/project-finance-go && go build -o project-finance .
+      - name: Build Leasing Service
+        run: cd services/leasing-go && go build -o leasing .
+      - name: Build Payment Investigation Service
+        run: cd services/payment-investigation-go && go build -o payment-investigation .
+      - name: Build API Marketplace Service
+        run: cd services/api-marketplace-go && go build -o api-marketplace .
+      - name: Build Remittance Service
+        run: cd services/remittance-go && go build -o remittance .
+      - name: Build Utility Payments Service
+        run: cd services/utility-payments-go && go build -o utility-payments .
+      - name: Build Multi-Entity Service
+        run: cd services/multi-entity-go && go build -o multi-entity .
 
   rust-services:
     name: Rust Services
@@ -165,6 +185,12 @@ jobs:
             services/iso20022-hub-rs
             services/basel-engine-rs
             services/ifrs9-engine-rs
+            services/interbank-lending-rs
+            services/portfolio-mgmt-rs
+            services/contingent-liabilities-rs
+            services/etd-trading-rs
+            services/stress-testing-rs
+            services/signature-verification-rs
       - name: Build Resilience Service
         run: cd services/resilience-service-rs && cargo build --release
       - name: Build Agriculture Banking Service
@@ -207,6 +233,18 @@ jobs:
         run: cd services/basel-engine-rs && cargo build --release
       - name: Build IFRS 9 Engine
         run: cd services/ifrs9-engine-rs && cargo build --release
+      - name: Build Interbank Lending Service
+        run: cd services/interbank-lending-rs && cargo build --release
+      - name: Build Portfolio Management Service
+        run: cd services/portfolio-mgmt-rs && cargo build --release
+      - name: Build Contingent Liabilities Service
+        run: cd services/contingent-liabilities-rs && cargo build --release
+      - name: Build ETD Trading Service
+        run: cd services/etd-trading-rs && cargo build --release
+      - name: Build Stress Testing Engine
+        run: cd services/stress-testing-rs && cargo build --release
+      - name: Build Signature Verification Service
+        run: cd services/signature-verification-rs && cargo build --release
 
   python-services:
     name: Python Services
@@ -218,7 +256,7 @@ jobs:
           python-version: "3.12"
       - name: Validate Python Services
         run: |
-          for svc in islamic-banking-py education-loans-py dispute-management-py erpnext-sync-py regulatory-reporting-py treasury-liquidity-py customer-engagement-py batch-processing-py workflow-engine-py opensearch-analytics-py keycloak-identity-py customer-360-py diaspora-banking-py kyc-aml-screening-py savings-products-py customer-insights-py document-management-py customer-feedback-py; do
+          for svc in islamic-banking-py education-loans-py dispute-management-py erpnext-sync-py regulatory-reporting-py treasury-liquidity-py customer-engagement-py batch-processing-py workflow-engine-py opensearch-analytics-py keycloak-identity-py customer-360-py diaspora-banking-py kyc-aml-screening-py savings-products-py customer-insights-py document-management-py customer-feedback-py wealth-mgmt-py chatbot-py microfinance-py; do
             echo "Checking services/$svc/service.py..."
             python3 -c "import py_compile; py_compile.compile('services/$svc/service.py', doraise=True)"
           done
