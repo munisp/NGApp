@@ -65,6 +65,12 @@ import {
   ShieldAlert,
   Download,
   Brain,
+  Wallet,
+  FileSearch,
+  FolderOpen,
+  Smartphone,
+  Scale,
+  Star,
 } from "lucide-react";
 
 const menuItems = [
@@ -188,6 +194,12 @@ const menuItems = [
   { path: "/atm-management", label: "ATM Management", icon: CreditCard },
   { path: "/data-export", label: "Data Export", icon: Download },
   { path: "/customer-insights", label: "Customer Insights", icon: Brain },
+  { path: "/salary-processing", label: "Salary Processing", icon: Wallet },
+  { path: "/credit-bureau", label: "Credit Bureau", icon: FileSearch },
+  { path: "/document-management", label: "Documents", icon: FolderOpen },
+  { path: "/pos-terminals", label: "POS Terminals", icon: Smartphone },
+  { path: "/collateral-valuation", label: "Collateral Valuation", icon: Scale },
+  { path: "/customer-feedback", label: "Feedback & NPS", icon: Star },
 ] as const;
 
 export default function ArchiveAdminSidebar() {

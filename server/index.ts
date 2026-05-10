@@ -6535,6 +6535,87 @@ async function startServer() {
     void proxyToService(INSIGHTS_URL, "/v1/insights/score-churn", req, res);
   });
 
+  // Salary Processing proxy routes (Go :8150)
+  const SALARY_URL = process.env.SALARY_URL || "http://localhost:8150";
+  app.all("/api/platform/salary/v1/salary/batches", (req, res) => {
+    void proxyToService(SALARY_URL, "/v1/salary/batches", req, res);
+  });
+  app.all("/api/platform/salary/v1/salary/instructions", (req, res) => {
+    void proxyToService(SALARY_URL, "/v1/salary/instructions", req, res);
+  });
+  app.all("/api/platform/salary/v1/salary/stats", (req, res) => {
+    void proxyToService(SALARY_URL, "/v1/salary/stats", req, res);
+  });
+
+  // Credit Bureau Integration proxy routes (Rust :8151)
+  const CREDIT_BUREAU_URL = process.env.CREDIT_BUREAU_URL || "http://localhost:8151";
+  app.all("/api/platform/credit-bureau/v1/credit-bureau/reports", (req, res) => {
+    void proxyToService(CREDIT_BUREAU_URL, "/v1/credit-bureau/reports", req, res);
+  });
+  app.all("/api/platform/credit-bureau/v1/credit-bureau/facilities", (req, res) => {
+    void proxyToService(CREDIT_BUREAU_URL, "/v1/credit-bureau/facilities", req, res);
+  });
+  app.all("/api/platform/credit-bureau/v1/credit-bureau/score-check", (req, res) => {
+    void proxyToService(CREDIT_BUREAU_URL, "/v1/credit-bureau/score-check", req, res);
+  });
+  app.all("/api/platform/credit-bureau/v1/credit-bureau/stats", (req, res) => {
+    void proxyToService(CREDIT_BUREAU_URL, "/v1/credit-bureau/stats", req, res);
+  });
+
+  // Document Management proxy routes (Python :8152)
+  const DOCS_URL = process.env.DOCS_URL || "http://localhost:8152";
+  app.all("/api/platform/documents/v1/documents", (req, res) => {
+    void proxyToService(DOCS_URL, "/v1/documents", req, res);
+  });
+  app.all("/api/platform/documents/v1/documents/stats", (req, res) => {
+    void proxyToService(DOCS_URL, "/v1/documents/stats", req, res);
+  });
+  app.all("/api/platform/documents/v1/documents/expiring", (req, res) => {
+    void proxyToService(DOCS_URL, "/v1/documents/expiring", req, res);
+  });
+  app.all("/api/platform/documents/v1/documents/search", (req, res) => {
+    void proxyToService(DOCS_URL, "/v1/documents/search", req, res);
+  });
+
+  // POS Terminal Management proxy routes (Go :8153)
+  const POS_URL = process.env.POS_URL || "http://localhost:8153";
+  app.all("/api/platform/pos/v1/pos/terminals", (req, res) => {
+    void proxyToService(POS_URL, "/v1/pos/terminals", req, res);
+  });
+  app.all("/api/platform/pos/v1/pos/transactions", (req, res) => {
+    void proxyToService(POS_URL, "/v1/pos/transactions", req, res);
+  });
+  app.all("/api/platform/pos/v1/pos/stats", (req, res) => {
+    void proxyToService(POS_URL, "/v1/pos/stats", req, res);
+  });
+
+  // Collateral Valuation proxy routes (Rust :8154)
+  const COL_VAL_URL = process.env.COL_VAL_URL || "http://localhost:8154";
+  app.all("/api/platform/collateral-valuation/v1/valuations", (req, res) => {
+    void proxyToService(COL_VAL_URL, "/v1/valuations", req, res);
+  });
+  app.all("/api/platform/collateral-valuation/v1/valuations/compute-fsv", (req, res) => {
+    void proxyToService(COL_VAL_URL, "/v1/valuations/compute-fsv", req, res);
+  });
+  app.all("/api/platform/collateral-valuation/v1/valuations/summary", (req, res) => {
+    void proxyToService(COL_VAL_URL, "/v1/valuations/summary", req, res);
+  });
+
+  // Customer Feedback & NPS proxy routes (Python :8155)
+  const FEEDBACK_URL = process.env.FEEDBACK_URL || "http://localhost:8155";
+  app.all("/api/platform/feedback/v1/feedback/entries", (req, res) => {
+    void proxyToService(FEEDBACK_URL, "/v1/feedback/entries", req, res);
+  });
+  app.all("/api/platform/feedback/v1/feedback/nps-trend", (req, res) => {
+    void proxyToService(FEEDBACK_URL, "/v1/feedback/nps-trend", req, res);
+  });
+  app.all("/api/platform/feedback/v1/feedback/dashboard", (req, res) => {
+    void proxyToService(FEEDBACK_URL, "/v1/feedback/dashboard", req, res);
+  });
+  app.all("/api/platform/feedback/v1/feedback/submit", (req, res) => {
+    void proxyToService(FEEDBACK_URL, "/v1/feedback/submit", req, res);
+  });
+
   // GL Account Management endpoints
   app.get("/api/platform/gl/accounts", (_req, res) => {
     const { getGLAccounts } = require("./lib/glAccountManagement");

@@ -122,6 +122,10 @@ jobs:
         run: cd services/sms-email-gateway-go && go build -o sms-email-gateway .
       - name: Build ATM Management Service
         run: cd services/atm-management-go && go build -o atm-management .
+      - name: Build Salary Processing Service
+        run: cd services/salary-processing-go && go build -o salary-processing .
+      - name: Build POS Terminal Management Service
+        run: cd services/pos-terminal-go && go build -o pos-terminal .
 
   rust-services:
     name: Rust Services
@@ -143,6 +147,10 @@ jobs:
             services/fluvio-streams-rs
             services/bulk-payments-rs
             services/treasury-liquidity-rs
+            services/risk-scoring-rs
+            services/data-export-rs
+            services/credit-bureau-rs
+            services/collateral-valuation-rs
       - name: Build Resilience Service
         run: cd services/resilience-service-rs && cargo build --release
       - name: Build Agriculture Banking Service
@@ -169,6 +177,10 @@ jobs:
         run: cd services/risk-scoring-rs && cargo build --release
       - name: Build Data Export Engine
         run: cd services/data-export-rs && cargo build --release
+      - name: Build Credit Bureau Integration
+        run: cd services/credit-bureau-rs && cargo build --release
+      - name: Build Collateral Valuation Engine
+        run: cd services/collateral-valuation-rs && cargo build --release
 
   python-services:
     name: Python Services
@@ -180,7 +192,7 @@ jobs:
           python-version: "3.12"
       - name: Validate Python Services
         run: |
-          for svc in islamic-banking-py education-loans-py dispute-management-py erpnext-sync-py regulatory-reporting-py treasury-liquidity-py customer-engagement-py batch-processing-py workflow-engine-py opensearch-analytics-py keycloak-identity-py customer-360-py diaspora-banking-py kyc-aml-screening-py savings-products-py customer-insights-py; do
+          for svc in islamic-banking-py education-loans-py dispute-management-py erpnext-sync-py regulatory-reporting-py treasury-liquidity-py customer-engagement-py batch-processing-py workflow-engine-py opensearch-analytics-py keycloak-identity-py customer-360-py diaspora-banking-py kyc-aml-screening-py savings-products-py customer-insights-py document-management-py customer-feedback-py; do
             echo "Checking services/$svc/service.py..."
             python3 -c "import py_compile; py_compile.compile('services/$svc/service.py', doraise=True)"
           done

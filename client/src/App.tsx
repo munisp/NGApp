@@ -145,6 +145,12 @@ const RegulatoryReportingWorkspace = lazy(() => import("@/pages/RegulatoryReport
 const ATMManagementWorkspace = lazy(() => import("@/pages/ATMManagementWorkspace"));
 const DataExportWorkspace = lazy(() => import("@/pages/DataExportWorkspace"));
 const CustomerInsightsWorkspace = lazy(() => import("@/pages/CustomerInsightsWorkspace"));
+const SalaryProcessingWorkspace = lazy(() => import("@/pages/SalaryProcessingWorkspace"));
+const CreditBureauWorkspace = lazy(() => import("@/pages/CreditBureauWorkspace"));
+const DocumentManagementWorkspace = lazy(() => import("@/pages/DocumentManagementWorkspace"));
+const POSTerminalWorkspace = lazy(() => import("@/pages/POSTerminalWorkspace"));
+const CollateralValuationWorkspace = lazy(() => import("@/pages/CollateralValuationWorkspace"));
+const CustomerFeedbackWorkspace = lazy(() => import("@/pages/CustomerFeedbackWorkspace"));
 const AdminAnalyticsPage = lazy(() => import("@/pages/AdminModulePages").then((module) => ({ default: module.AdminAnalyticsPage })));
 const AdminBankingOpsPage = lazy(() => import("@/pages/AdminModulePages").then((module) => ({ default: module.AdminBankingOpsPage })));
 const AdminFeatureFlagsPage = lazy(() => import("@/pages/AdminModulePages").then((module) => ({ default: module.AdminFeatureFlagsPage })));
@@ -344,6 +350,12 @@ export default function App() {
         <Route path="/atm-management" component={renderInAdminShell(ATMManagementWorkspace)} />
         <Route path="/data-export" component={renderInAdminShell(DataExportWorkspace)} />
         <Route path="/customer-insights" component={renderInAdminShell(CustomerInsightsWorkspace)} />
+        <Route path="/salary-processing" component={renderInAdminShell(SalaryProcessingWorkspace)} />
+        <Route path="/credit-bureau" component={renderInAdminShell(CreditBureauWorkspace)} />
+        <Route path="/document-management" component={renderInAdminShell(DocumentManagementWorkspace)} />
+        <Route path="/pos-terminals" component={renderInAdminShell(POSTerminalWorkspace)} />
+        <Route path="/collateral-valuation" component={renderInAdminShell(CollateralValuationWorkspace)} />
+        <Route path="/customer-feedback" component={renderInAdminShell(CustomerFeedbackWorkspace)} />
 
         <Route component={NotFound} />
       </Switch>
