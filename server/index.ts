@@ -6442,6 +6442,88 @@ async function startServer() {
     void proxyToService(AGENT_BANK_URL, "/v1/agents/activate", req, res);
   });
 
+  // B6: Treasury portfolio endpoints
+  app.get("/api/platform/treasury/investments", (_req, res) => {
+    const { getInvestments } = require("./lib/treasuryPortfolio");
+    const inv = getInvestments();
+    res.json({ items: inv, total: inv.length });
+  });
+  app.get("/api/platform/treasury/maturity-ladder", (_req, res) => {
+    const { getMaturityLadder } = require("./lib/treasuryPortfolio");
+    res.json({ items: getMaturityLadder(), total: getMaturityLadder().length });
+  });
+  app.get("/api/platform/treasury/portfolio-summary", (_req, res) => {
+    const { getPortfolioSummary } = require("./lib/treasuryPortfolio");
+    res.json(getPortfolioSummary());
+  });
+
+  // B7: SWIFT message center endpoints
+  app.get("/api/platform/swift/messages", (_req, res) => {
+    const { getSWIFTMessages } = require("./lib/swiftMessageCenter");
+    const msgs = getSWIFTMessages();
+    res.json({ items: msgs, total: msgs.length });
+  });
+  app.get("/api/platform/swift/stats", (_req, res) => {
+    const { getSWIFTStats } = require("./lib/swiftMessageCenter");
+    res.json(getSWIFTStats());
+  });
+
+  // B8: Credit risk engine endpoints
+  app.get("/api/platform/credit-risk/assessments", (_req, res) => {
+    const { getCreditAssessments } = require("./lib/creditRiskEngine");
+    const assessments = getCreditAssessments();
+    res.json({ items: assessments, total: assessments.length });
+  });
+  app.get("/api/platform/credit-risk/portfolio", (_req, res) => {
+    const { getPortfolioRiskSummary } = require("./lib/creditRiskEngine");
+    res.json(getPortfolioRiskSummary());
+  });
+  app.post("/api/platform/credit-risk/compute-ecl", (req, res) => {
+    const { computeECL } = require("./lib/creditRiskEngine");
+    const { pd, lgd, ead } = req.body;
+    if (pd === undefined || lgd === undefined || ead === undefined) {
+      res.status(400).json({ error: "pd, lgd, and ead required", code: "VALIDATION_ERROR" });
+      return;
+    }
+    res.json(computeECL(pd, lgd, ead));
+  });
+
+  // B9: Reconciliation engine endpoints
+  app.get("/api/platform/reconciliation/runs", (_req, res) => {
+    const { getReconciliationRuns } = require("./lib/reconciliationEngine");
+    const runs = getReconciliationRuns();
+    res.json({ items: runs, total: runs.length });
+  });
+
+  // B10: Fee & commission engine endpoints
+  app.get("/api/platform/fees/schedules", (_req, res) => {
+    const { getFeeSchedules } = require("./lib/feeCommissionEngine");
+    const schedules = getFeeSchedules();
+    res.json({ items: schedules, total: schedules.length });
+  });
+  app.get("/api/platform/fees/transactions", (_req, res) => {
+    const { getFeeTransactions } = require("./lib/feeCommissionEngine");
+    const txns = getFeeTransactions();
+    res.json({ items: txns, total: txns.length });
+  });
+  app.get("/api/platform/fees/summary", (_req, res) => {
+    const { getFeeSummary } = require("./lib/feeCommissionEngine");
+    res.json(getFeeSummary());
+  });
+  app.post("/api/platform/fees/calculate", (req, res) => {
+    const { calculateFee } = require("./lib/feeCommissionEngine");
+    const { scheduleId, amount } = req.body;
+    if (!scheduleId || !amount) { res.status(400).json({ error: "scheduleId and amount required", code: "VALIDATION_ERROR" }); return; }
+    res.json(calculateFee(scheduleId, amount));
+  });
+
+  // E2: Notification preferences endpoints
+  app.get("/api/platform/notification-preferences", (_req, res) => {
+    const { getNotificationPreferences } = require("./lib/notificationPreferences");
+    const prefs = getNotificationPreferences();
+    res.json({ items: prefs, total: prefs.length });
+  });
+
   // G2: Webhook engine endpoints
   app.get("/api/platform/webhooks/subscriptions", (_req, res) => {
     const { getWebhookSubscriptions } = require("./lib/webhookEngine");

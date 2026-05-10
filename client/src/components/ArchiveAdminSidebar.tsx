@@ -48,6 +48,10 @@ import {
   ArrowRightLeft,
   Landmark,
   Receipt,
+  Send,
+  AlertCircle,
+  GitCompare,
+  BellRing,
 } from "lucide-react";
 
 const menuItems = [
@@ -144,6 +148,12 @@ const menuItems = [
   { path: "/fx-dealing-room", label: "FX Dealing Room", icon: TrendingUp },
   { path: "/fx-positions", label: "FX Positions", icon: Coins },
   { path: "/doc-collections", label: "Doc Collections", icon: FileText },
+  { path: "/treasury-investments", label: "Treasury", icon: Landmark },
+  { path: "/swift-messages", label: "SWIFT Center", icon: Send },
+  { path: "/credit-risk", label: "Credit Risk", icon: AlertCircle },
+  { path: "/reconciliation", label: "Reconciliation", icon: GitCompare },
+  { path: "/fee-schedules", label: "Fee Schedules", icon: Receipt },
+  { path: "/notification-preferences", label: "Notif Preferences", icon: BellRing },
 ] as const;
 
 export default function ArchiveAdminSidebar() {

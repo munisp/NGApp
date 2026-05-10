@@ -118,6 +118,12 @@ const CustomerOnboardingWorkspace = lazy(() => import("@/pages/CustomerOnboardin
 const FXDealingRoomWorkspace = lazy(() => import("@/pages/FXDealingRoomWorkspace"));
 const FXPositionsWorkspace = lazy(() => import("@/pages/FXPositionsWorkspace"));
 const DocCollectionsWorkspace = lazy(() => import("@/pages/DocCollectionsWorkspace"));
+const TreasuryInvestmentsWorkspace = lazy(() => import("@/pages/TreasuryInvestmentsWorkspace"));
+const SWIFTMessagesWorkspace = lazy(() => import("@/pages/SWIFTMessagesWorkspace"));
+const CreditRiskWorkspace = lazy(() => import("@/pages/CreditRiskWorkspace"));
+const ReconciliationWorkspace = lazy(() => import("@/pages/ReconciliationWorkspace"));
+const FeeSchedulesWorkspace = lazy(() => import("@/pages/FeeSchedulesWorkspace"));
+const NotificationPreferencesWorkspace = lazy(() => import("@/pages/NotificationPreferencesWorkspace"));
 const AdminAnalyticsPage = lazy(() => import("@/pages/AdminModulePages").then((module) => ({ default: module.AdminAnalyticsPage })));
 const AdminBankingOpsPage = lazy(() => import("@/pages/AdminModulePages").then((module) => ({ default: module.AdminBankingOpsPage })));
 const AdminFeatureFlagsPage = lazy(() => import("@/pages/AdminModulePages").then((module) => ({ default: module.AdminFeatureFlagsPage })));
@@ -290,6 +296,12 @@ export default function App() {
         <Route path="/fx-dealing-room" component={renderInAdminShell(FXDealingRoomWorkspace)} />
         <Route path="/fx-positions" component={renderInAdminShell(FXPositionsWorkspace)} />
         <Route path="/doc-collections" component={renderInAdminShell(DocCollectionsWorkspace)} />
+        <Route path="/treasury-investments" component={renderInAdminShell(TreasuryInvestmentsWorkspace)} />
+        <Route path="/swift-messages" component={renderInAdminShell(SWIFTMessagesWorkspace)} />
+        <Route path="/credit-risk" component={renderInAdminShell(CreditRiskWorkspace)} />
+        <Route path="/reconciliation" component={renderInAdminShell(ReconciliationWorkspace)} />
+        <Route path="/fee-schedules" component={renderInAdminShell(FeeSchedulesWorkspace)} />
+        <Route path="/notification-preferences" component={renderInAdminShell(NotificationPreferencesWorkspace)} />
 
         <Route component={NotFound} />
       </Switch>
