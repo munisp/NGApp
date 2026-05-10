@@ -6896,6 +6896,83 @@ async function startServer() {
   app.all("/api/platform/entities/stats", (req, res) => { void proxyToService(MULTI_ENTITY_URL, "/v1/entities/stats", req, res); });
   app.all("/api/platform/entities/healthz", (req, res) => { void proxyToService(MULTI_ENTITY_URL, "/healthz", req, res); });
 
+  // ========= GAP ANALYSIS BATCH 3 SERVICES (ports 8185-8197) =========
+
+  // Trust & Estate (Rust :8185)
+  const TRUST_URL = process.env.TRUST_URL || "http://localhost:8185";
+  app.all("/api/platform/trust-estate/list", (req, res) => { void proxyToService(TRUST_URL, "/v1/trust-estate-rs/list", req, res); });
+  app.all("/api/platform/trust-estate/healthz", (req, res) => { void proxyToService(TRUST_URL, "/healthz", req, res); });
+
+  // Escrow (Go :8186)
+  const ESCROW_URL = process.env.ESCROW_URL || "http://localhost:8186";
+  app.all("/api/platform/escrow/list", (req, res) => { void proxyToService(ESCROW_URL, "/v1/escrow-go/list", req, res); });
+  app.all("/api/platform/escrow/stats", (req, res) => { void proxyToService(ESCROW_URL, "/v1/escrow-go/stats", req, res); });
+  app.all("/api/platform/escrow/healthz", (req, res) => { void proxyToService(ESCROW_URL, "/healthz", req, res); });
+
+  // QR Payments (Go :8187)
+  const QR_URL = process.env.QR_URL || "http://localhost:8187";
+  app.all("/api/platform/qr-payments/list", (req, res) => { void proxyToService(QR_URL, "/v1/qr-payments-go/list", req, res); });
+  app.all("/api/platform/qr-payments/stats", (req, res) => { void proxyToService(QR_URL, "/v1/qr-payments-go/stats", req, res); });
+  app.all("/api/platform/qr-payments/healthz", (req, res) => { void proxyToService(QR_URL, "/healthz", req, res); });
+
+  // FATCA/CRS Compliance (Rust :8188)
+  const FATCA_URL = process.env.FATCA_URL || "http://localhost:8188";
+  app.all("/api/platform/fatca-crs/list", (req, res) => { void proxyToService(FATCA_URL, "/v1/fatca-crs-rs/list", req, res); });
+  app.all("/api/platform/fatca-crs/healthz", (req, res) => { void proxyToService(FATCA_URL, "/healthz", req, res); });
+
+  // Biometric Authentication (Rust :8189)
+  const BIOMETRIC_URL = process.env.BIOMETRIC_URL || "http://localhost:8189";
+  app.all("/api/platform/biometric-auth/list", (req, res) => { void proxyToService(BIOMETRIC_URL, "/v1/biometric-auth-rs/list", req, res); });
+  app.all("/api/platform/biometric-auth/healthz", (req, res) => { void proxyToService(BIOMETRIC_URL, "/healthz", req, res); });
+
+  // Safe Deposit Box (Go :8190)
+  const SAFE_DEPOSIT_URL = process.env.SAFE_DEPOSIT_URL || "http://localhost:8190";
+  app.all("/api/platform/safe-deposit/list", (req, res) => { void proxyToService(SAFE_DEPOSIT_URL, "/v1/safe-deposit-go/list", req, res); });
+  app.all("/api/platform/safe-deposit/stats", (req, res) => { void proxyToService(SAFE_DEPOSIT_URL, "/v1/safe-deposit-go/stats", req, res); });
+  app.all("/api/platform/safe-deposit/healthz", (req, res) => { void proxyToService(SAFE_DEPOSIT_URL, "/healthz", req, res); });
+
+  // Fixed Assets (Go :8191)
+  const FIXED_ASSETS_URL = process.env.FIXED_ASSETS_URL || "http://localhost:8191";
+  app.all("/api/platform/fixed-assets/list", (req, res) => { void proxyToService(FIXED_ASSETS_URL, "/v1/fixed-assets-go/list", req, res); });
+  app.all("/api/platform/fixed-assets/stats", (req, res) => { void proxyToService(FIXED_ASSETS_URL, "/v1/fixed-assets-go/stats", req, res); });
+  app.all("/api/platform/fixed-assets/healthz", (req, res) => { void proxyToService(FIXED_ASSETS_URL, "/healthz", req, res); });
+
+  // Expense Management (Go :8192)
+  const EXPENSE_URL = process.env.EXPENSE_URL || "http://localhost:8192";
+  app.all("/api/platform/expense-mgmt/list", (req, res) => { void proxyToService(EXPENSE_URL, "/v1/expense-mgmt-go/list", req, res); });
+  app.all("/api/platform/expense-mgmt/stats", (req, res) => { void proxyToService(EXPENSE_URL, "/v1/expense-mgmt-go/stats", req, res); });
+  app.all("/api/platform/expense-mgmt/healthz", (req, res) => { void proxyToService(EXPENSE_URL, "/healthz", req, res); });
+
+  // Inventory Management (Python :8193)
+  const INVENTORY_URL = process.env.INVENTORY_URL || "http://localhost:8193";
+  app.all("/api/platform/inventory/list", (req, res) => { void proxyToService(INVENTORY_URL, "/v1/inventory-py/inventory_items", req, res); });
+  app.all("/api/platform/inventory/stats", (req, res) => { void proxyToService(INVENTORY_URL, "/v1/inventory-py/stats", req, res); });
+  app.all("/api/platform/inventory/healthz", (req, res) => { void proxyToService(INVENTORY_URL, "/healthz", req, res); });
+
+  // Bancassurance (Python :8194)
+  const INSURANCE_URL = process.env.INSURANCE_URL || "http://localhost:8194";
+  app.all("/api/platform/insurance/list", (req, res) => { void proxyToService(INSURANCE_URL, "/v1/insurance-py/insurance_policies", req, res); });
+  app.all("/api/platform/insurance/stats", (req, res) => { void proxyToService(INSURANCE_URL, "/v1/insurance-py/stats", req, res); });
+  app.all("/api/platform/insurance/healthz", (req, res) => { void proxyToService(INSURANCE_URL, "/healthz", req, res); });
+
+  // Pension Management (Python :8195)
+  const PENSION_URL = process.env.PENSION_URL || "http://localhost:8195";
+  app.all("/api/platform/pension/list", (req, res) => { void proxyToService(PENSION_URL, "/v1/pension-py/pension_accounts", req, res); });
+  app.all("/api/platform/pension/stats", (req, res) => { void proxyToService(PENSION_URL, "/v1/pension-py/stats", req, res); });
+  app.all("/api/platform/pension/healthz", (req, res) => { void proxyToService(PENSION_URL, "/healthz", req, res); });
+
+  // Digital Locker (Go :8196)
+  const LOCKER_URL = process.env.LOCKER_URL || "http://localhost:8196";
+  app.all("/api/platform/locker/list", (req, res) => { void proxyToService(LOCKER_URL, "/v1/locker-go/list", req, res); });
+  app.all("/api/platform/locker/stats", (req, res) => { void proxyToService(LOCKER_URL, "/v1/locker-go/stats", req, res); });
+  app.all("/api/platform/locker/healthz", (req, res) => { void proxyToService(LOCKER_URL, "/healthz", req, res); });
+
+  // Standing Charges (Go :8197)
+  const STANDING_CHARGES_URL = process.env.STANDING_CHARGES_URL || "http://localhost:8197";
+  app.all("/api/platform/standing-charges/list", (req, res) => { void proxyToService(STANDING_CHARGES_URL, "/v1/standing-charges-go/list", req, res); });
+  app.all("/api/platform/standing-charges/stats", (req, res) => { void proxyToService(STANDING_CHARGES_URL, "/v1/standing-charges-go/stats", req, res); });
+  app.all("/api/platform/standing-charges/healthz", (req, res) => { void proxyToService(STANDING_CHARGES_URL, "/healthz", req, res); });
+
   // GL Account Management endpoints
   app.get("/api/platform/gl/accounts", (_req, res) => {
     const { getGLAccounts } = require("./lib/glAccountManagement");

@@ -154,6 +154,20 @@ jobs:
         run: cd services/utility-payments-go && go build -o utility-payments .
       - name: Build Multi-Entity Service
         run: cd services/multi-entity-go && go build -o multi-entity .
+      - name: Build Escrow Service
+        run: cd services/escrow-go && go build -o escrow .
+      - name: Build QR Payments Service
+        run: cd services/qr-payments-go && go build -o qr-payments .
+      - name: Build Safe Deposit Service
+        run: cd services/safe-deposit-go && go build -o safe-deposit .
+      - name: Build Fixed Assets Service
+        run: cd services/fixed-assets-go && go build -o fixed-assets .
+      - name: Build Expense Management Service
+        run: cd services/expense-mgmt-go && go build -o expense-mgmt .
+      - name: Build Digital Locker Service
+        run: cd services/locker-go && go build -o locker .
+      - name: Build Standing Charges Service
+        run: cd services/standing-charges-go && go build -o standing-charges .
 
   rust-services:
     name: Rust Services
@@ -191,6 +205,9 @@ jobs:
             services/etd-trading-rs
             services/stress-testing-rs
             services/signature-verification-rs
+            services/trust-estate-rs
+            services/fatca-crs-rs
+            services/biometric-auth-rs
       - name: Build Resilience Service
         run: cd services/resilience-service-rs && cargo build --release
       - name: Build Agriculture Banking Service
@@ -245,6 +262,12 @@ jobs:
         run: cd services/stress-testing-rs && cargo build --release
       - name: Build Signature Verification Service
         run: cd services/signature-verification-rs && cargo build --release
+      - name: Build Trust & Estate Service
+        run: cd services/trust-estate-rs && cargo build --release
+      - name: Build FATCA/CRS Service
+        run: cd services/fatca-crs-rs && cargo build --release
+      - name: Build Biometric Auth Service
+        run: cd services/biometric-auth-rs && cargo build --release
 
   python-services:
     name: Python Services
@@ -256,7 +279,7 @@ jobs:
           python-version: "3.12"
       - name: Validate Python Services
         run: |
-          for svc in islamic-banking-py education-loans-py dispute-management-py erpnext-sync-py regulatory-reporting-py treasury-liquidity-py customer-engagement-py batch-processing-py workflow-engine-py opensearch-analytics-py keycloak-identity-py customer-360-py diaspora-banking-py kyc-aml-screening-py savings-products-py customer-insights-py document-management-py customer-feedback-py wealth-mgmt-py chatbot-py microfinance-py; do
+          for svc in islamic-banking-py education-loans-py dispute-management-py erpnext-sync-py regulatory-reporting-py treasury-liquidity-py customer-engagement-py batch-processing-py workflow-engine-py opensearch-analytics-py keycloak-identity-py customer-360-py diaspora-banking-py kyc-aml-screening-py savings-products-py customer-insights-py document-management-py customer-feedback-py wealth-mgmt-py chatbot-py microfinance-py inventory-py insurance-py pension-py; do
             echo "Checking services/$svc/service.py..."
             python3 -c "import py_compile; py_compile.compile('services/$svc/service.py', doraise=True)"
           done

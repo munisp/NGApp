@@ -73,6 +73,15 @@ import {
   Star,
   Sigma,
   ShieldCheck,
+  QrCode,
+  FileWarning,
+  Fingerprint,
+  Box,
+  Building,
+  Archive,
+  FolderLock,
+  ListChecks,
+  ScrollText,
 } from "lucide-react";
 
 const menuItems = [
@@ -231,6 +240,19 @@ const menuItems = [
   { path: "/microfinance", label: "Microfinance", icon: Heart },
   { path: "/utility-payments", label: "Utility Payments", icon: Zap },
   { path: "/multi-entity", label: "Multi-Entity", icon: GitBranch },
+  { path: "/trust-estate", label: "Trust & Estate", icon: ScrollText },
+  { path: "/escrow", label: "Escrow", icon: Shield },
+  { path: "/qr-payments", label: "QR Payments", icon: QrCode },
+  { path: "/fatca-crs", label: "FATCA/CRS", icon: FileWarning },
+  { path: "/biometric-auth", label: "Biometric Auth", icon: Fingerprint },
+  { path: "/safe-deposit", label: "Safe Deposit Box", icon: Box },
+  { path: "/fixed-assets", label: "Fixed Assets", icon: Building },
+  { path: "/expense-mgmt", label: "Expense Mgmt", icon: Wallet },
+  { path: "/inventory", label: "Inventory", icon: Archive },
+  { path: "/insurance", label: "Bancassurance", icon: ShieldCheck },
+  { path: "/pension", label: "Pension", icon: Landmark },
+  { path: "/locker", label: "Digital Locker", icon: FolderLock },
+  { path: "/standing-charges", label: "Standing Charges", icon: ListChecks },
 ] as const;
 
 export default function ArchiveAdminSidebar() {

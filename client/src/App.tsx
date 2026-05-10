@@ -180,6 +180,19 @@ const RemittanceWorkspace = lazy(() => import("@/pages/RemittanceWorkspace"));
 const MicrofinanceWorkspace = lazy(() => import("@/pages/MicrofinanceWorkspace"));
 const UtilityPaymentsWorkspace = lazy(() => import("@/pages/UtilityPaymentsWorkspace"));
 const MultiEntityWorkspace = lazy(() => import("@/pages/MultiEntityWorkspace"));
+const TrustEstateWorkspace = lazy(() => import("@/pages/TrustEstateWorkspace"));
+const EscrowWorkspace = lazy(() => import("@/pages/EscrowWorkspace"));
+const QRPaymentsWorkspace = lazy(() => import("@/pages/QRPaymentsWorkspace"));
+const FATCACRSWorkspace = lazy(() => import("@/pages/FATCACRSWorkspace"));
+const BiometricAuthWorkspace = lazy(() => import("@/pages/BiometricAuthWorkspace"));
+const SafeDepositWorkspace = lazy(() => import("@/pages/SafeDepositWorkspace"));
+const FixedAssetsWorkspace = lazy(() => import("@/pages/FixedAssetsWorkspace"));
+const ExpenseMgmtWorkspace = lazy(() => import("@/pages/ExpenseMgmtWorkspace"));
+const InventoryWorkspace = lazy(() => import("@/pages/InventoryWorkspace"));
+const InsuranceWorkspace = lazy(() => import("@/pages/InsuranceWorkspace"));
+const PensionWorkspace = lazy(() => import("@/pages/PensionWorkspace"));
+const LockerWorkspace = lazy(() => import("@/pages/LockerWorkspace"));
+const StandingChargesWorkspace = lazy(() => import("@/pages/StandingChargesWorkspace"));
 const AdminAnalyticsPage = lazy(() => import("@/pages/AdminModulePages").then((module) => ({ default: module.AdminAnalyticsPage })));
 const AdminBankingOpsPage = lazy(() => import("@/pages/AdminModulePages").then((module) => ({ default: module.AdminBankingOpsPage })));
 const AdminFeatureFlagsPage = lazy(() => import("@/pages/AdminModulePages").then((module) => ({ default: module.AdminFeatureFlagsPage })));
@@ -414,6 +427,19 @@ export default function App() {
         <Route path="/microfinance" component={renderInAdminShell(MicrofinanceWorkspace)} />
         <Route path="/utility-payments" component={renderInAdminShell(UtilityPaymentsWorkspace)} />
         <Route path="/multi-entity" component={renderInAdminShell(MultiEntityWorkspace)} />
+        <Route path="/trust-estate" component={renderInAdminShell(TrustEstateWorkspace)} />
+        <Route path="/escrow" component={renderInAdminShell(EscrowWorkspace)} />
+        <Route path="/qr-payments" component={renderInAdminShell(QRPaymentsWorkspace)} />
+        <Route path="/fatca-crs" component={renderInAdminShell(FATCACRSWorkspace)} />
+        <Route path="/biometric-auth" component={renderInAdminShell(BiometricAuthWorkspace)} />
+        <Route path="/safe-deposit" component={renderInAdminShell(SafeDepositWorkspace)} />
+        <Route path="/fixed-assets" component={renderInAdminShell(FixedAssetsWorkspace)} />
+        <Route path="/expense-mgmt" component={renderInAdminShell(ExpenseMgmtWorkspace)} />
+        <Route path="/inventory" component={renderInAdminShell(InventoryWorkspace)} />
+        <Route path="/insurance" component={renderInAdminShell(InsuranceWorkspace)} />
+        <Route path="/pension" component={renderInAdminShell(PensionWorkspace)} />
+        <Route path="/locker" component={renderInAdminShell(LockerWorkspace)} />
+        <Route path="/standing-charges" component={renderInAdminShell(StandingChargesWorkspace)} />
 
         <Route component={NotFound} />
       </Switch>
