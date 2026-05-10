@@ -5,7 +5,7 @@
  *           Enhanced export (CSV), Accessibility (ARIA), Graceful error handling.
  */
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ArrowLeft,
   ArrowUpDown,
@@ -162,6 +162,7 @@ export default function CrudWorkspace({ config }: CrudWorkspaceProps) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showBulkActions, setShowBulkActions] = useState(false);
   const [showExportDialog, setShowExportDialog] = useState(false);
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
 
   const pageSize = config.pageSize ?? 25;
   const Icon = config.icon;
@@ -390,13 +391,37 @@ export default function CrudWorkspace({ config }: CrudWorkspaceProps) {
     }
   };
 
-  const handleExport = (format: "csv" | "json") => {
+  const toggleRowExpand = (id: string) => {
+    setExpandedRows((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const handleExport = (format: "csv" | "json" | "pdf") => {
     if (format === "csv") {
       const csv = [
         config.columns.map((c) => c.label).join(","),
         ...filteredRecords.map((r) => config.columns.map((c) => JSON.stringify(String(r[c.key] ?? ""))).join(",")),
       ].join("\n");
       downloadFile(csv, `${config.domainKey}-export.csv`, "text/csv");
+    } else if (format === "pdf") {
+      const htmlContent = `<!DOCTYPE html><html><head><title>${config.title}</title>
+        <style>body{font-family:Arial,sans-serif;margin:20px}h1{color:#1e293b}table{width:100%;border-collapse:collapse;margin-top:20px}th{background:#0f172a;color:white;padding:10px;text-align:left}td{padding:8px;border-bottom:1px solid #e2e8f0}tr:nth-child(even){background:#f8fafc}.header{display:flex;justify-content:space-between;align-items:center}.stats{color:#64748b;font-size:14px}.footer{margin-top:20px;text-align:center;color:#94a3b8;font-size:12px}</style>
+        </head><body>
+        <div class="header"><h1>${config.title}</h1><div class="stats">${filteredRecords.length} records | Generated ${new Date().toLocaleString()}</div></div>
+        <table><thead><tr>${config.columns.map(c => `<th>${c.label}</th>`).join("")}</tr></thead>
+        <tbody>${filteredRecords.map(r => `<tr>${config.columns.map(c => `<td>${String(r[c.key] ?? "—")}</td>`).join("")}</tr>`).join("")}</tbody></table>
+        <div class="footer">54Bank Core Banking Platform — ${config.title} Export</div>
+        </body></html>`;
+      const blob = new Blob([htmlContent], { type: "text/html" });
+      const url = URL.createObjectURL(blob);
+      const printWindow = window.open(url, "_blank");
+      if (printWindow) {
+        printWindow.onload = () => { printWindow.print(); };
+      }
+      URL.revokeObjectURL(url);
     } else {
       const json = JSON.stringify(filteredRecords, null, 2);
       downloadFile(json, `${config.domainKey}-export.json`, "application/json");
@@ -656,8 +681,10 @@ export default function CrudWorkspace({ config }: CrudWorkspaceProps) {
                   <TableBody>
                     {paginatedRecords.map((record, idx) => {
                       const recordId = String(record[config.idField] ?? idx);
+                      const isExpanded = expandedRows.has(recordId);
                       return (
-                        <TableRow key={recordId} className={`hover:bg-gray-50 ${selectedIds.has(recordId) ? "bg-blue-50" : ""}`}>
+                        <React.Fragment key={recordId}>
+                        <TableRow className={`hover:bg-gray-50 ${selectedIds.has(recordId) ? "bg-blue-50" : ""} ${isExpanded ? "border-b-0" : ""}`}>
                           {config.bulkActions && (
                             <TableCell>
                               <button onClick={() => toggleSelect(recordId)} aria-label={`Select record ${recordId}`}>
@@ -677,6 +704,9 @@ export default function CrudWorkspace({ config }: CrudWorkspaceProps) {
                           ))}
                           <TableCell className="text-right">
                             <div className="flex items-center justify-end gap-1">
+                              <Button variant="ghost" size="sm" onClick={() => toggleRowExpand(recordId)} aria-label={isExpanded ? "Collapse row" : "Expand row"}>
+                                {isExpanded ? <ChevronDown className="h-3.5 w-3.5 text-blue-600" /> : <ChevronRight className="h-3.5 w-3.5" />}
+                              </Button>
                               <Button variant="ghost" size="sm" onClick={() => { setSelectedRecord(record); setShowDetail(true); }} aria-label="View details">
                                 <Eye className="h-3.5 w-3.5" />
                               </Button>
@@ -691,6 +721,21 @@ export default function CrudWorkspace({ config }: CrudWorkspaceProps) {
                             </div>
                           </TableCell>
                         </TableRow>
+                        {isExpanded && (
+                          <TableRow className="bg-slate-50">
+                            <TableCell colSpan={config.columns.length + (config.bulkActions ? 2 : 1)}>
+                              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 p-3">
+                                {Object.entries(record).filter(([k]) => !config.columns.some(c => c.key === k) || true).map(([key, value]) => (
+                                  <div key={key} className="text-sm">
+                                    <span className="text-gray-500 font-medium">{key}: </span>
+                                    <span className="text-gray-900">{value === null || value === undefined ? "—" : typeof value === "object" ? JSON.stringify(value) : String(value)}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        )}
+                        </React.Fragment>
                       );
                     })}
                   </TableBody>
@@ -734,6 +779,9 @@ export default function CrudWorkspace({ config }: CrudWorkspaceProps) {
             </Button>
             <Button variant="outline" onClick={() => handleExport("json")}>
               <Download className="h-4 w-4 mr-2" /> Export as JSON
+            </Button>
+            <Button variant="outline" onClick={() => handleExport("pdf")}>
+              <Download className="h-4 w-4 mr-2" /> Export as PDF (Print)
             </Button>
           </div>
         </DialogContent>
