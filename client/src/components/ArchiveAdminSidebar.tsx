@@ -55,6 +55,9 @@ import {
   Moon,
   Percent,
   Gauge,
+  Lock,
+  MessageSquare,
+  ArrowLeftRight,
 } from "lucide-react";
 
 const menuItems = [
@@ -160,6 +163,12 @@ const menuItems = [
   { path: "/dormancy", label: "Dormancy", icon: Moon },
   { path: "/interest-accrual", label: "Interest Accrual", icon: Percent },
   { path: "/limit-management", label: "Limits", icon: Gauge },
+  { path: "/gl-accounts", label: "General Ledger", icon: BookOpen },
+  { path: "/collateral", label: "Collateral", icon: Lock },
+  { path: "/complaints", label: "Complaints", icon: MessageSquare },
+  { path: "/interbank-settlement", label: "Settlement", icon: ArrowLeftRight },
+  { path: "/staff-management", label: "Staff", icon: Users },
+  { path: "/channel-management", label: "Channels", icon: Radio },
 ] as const;
 
 export default function ArchiveAdminSidebar() {

@@ -127,6 +127,12 @@ const NotificationPreferencesWorkspace = lazy(() => import("@/pages/Notification
 const DormancyWorkspace = lazy(() => import("@/pages/DormancyWorkspace"));
 const InterestAccrualWorkspace = lazy(() => import("@/pages/InterestAccrualWorkspace"));
 const LimitManagementWorkspace = lazy(() => import("@/pages/LimitManagementWorkspace"));
+const GLAccountsWorkspace = lazy(() => import("@/pages/GLAccountsWorkspace"));
+const CollateralWorkspace = lazy(() => import("@/pages/CollateralWorkspace"));
+const ComplaintsWorkspace = lazy(() => import("@/pages/ComplaintsWorkspace"));
+const InterbankSettlementWorkspace = lazy(() => import("@/pages/InterbankSettlementWorkspace"));
+const StaffManagementWorkspace = lazy(() => import("@/pages/StaffManagementWorkspace"));
+const ChannelManagementWorkspace = lazy(() => import("@/pages/ChannelManagementWorkspace"));
 const AdminAnalyticsPage = lazy(() => import("@/pages/AdminModulePages").then((module) => ({ default: module.AdminAnalyticsPage })));
 const AdminBankingOpsPage = lazy(() => import("@/pages/AdminModulePages").then((module) => ({ default: module.AdminBankingOpsPage })));
 const AdminFeatureFlagsPage = lazy(() => import("@/pages/AdminModulePages").then((module) => ({ default: module.AdminFeatureFlagsPage })));
@@ -308,6 +314,12 @@ export default function App() {
         <Route path="/dormancy" component={renderInAdminShell(DormancyWorkspace)} />
         <Route path="/interest-accrual" component={renderInAdminShell(InterestAccrualWorkspace)} />
         <Route path="/limit-management" component={renderInAdminShell(LimitManagementWorkspace)} />
+        <Route path="/gl-accounts" component={renderInAdminShell(GLAccountsWorkspace)} />
+        <Route path="/collateral" component={renderInAdminShell(CollateralWorkspace)} />
+        <Route path="/complaints" component={renderInAdminShell(ComplaintsWorkspace)} />
+        <Route path="/interbank-settlement" component={renderInAdminShell(InterbankSettlementWorkspace)} />
+        <Route path="/staff-management" component={renderInAdminShell(StaffManagementWorkspace)} />
+        <Route path="/channel-management" component={renderInAdminShell(ChannelManagementWorkspace)} />
 
         <Route component={NotFound} />
       </Switch>

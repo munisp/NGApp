@@ -6442,6 +6442,76 @@ async function startServer() {
     void proxyToService(AGENT_BANK_URL, "/v1/agents/activate", req, res);
   });
 
+  // GL Account Management endpoints
+  app.get("/api/platform/gl/accounts", (_req, res) => {
+    const { getGLAccounts } = require("./lib/glAccountManagement");
+    const accounts = getGLAccounts();
+    res.json({ items: accounts, total: accounts.length });
+  });
+  app.get("/api/platform/gl/trial-balance", (_req, res) => {
+    const { getTrialBalance } = require("./lib/glAccountManagement");
+    res.json(getTrialBalance());
+  });
+  app.get("/api/platform/gl/balance-sheet", (_req, res) => {
+    const { getBalanceSheet } = require("./lib/glAccountManagement");
+    res.json(getBalanceSheet());
+  });
+
+  // Collateral management endpoints
+  app.get("/api/platform/collateral/items", (_req, res) => {
+    const { getCollaterals } = require("./lib/collateralManagement");
+    const items = getCollaterals();
+    res.json({ items, total: items.length });
+  });
+  app.get("/api/platform/collateral/summary", (_req, res) => {
+    const { getCollateralSummary } = require("./lib/collateralManagement");
+    res.json(getCollateralSummary());
+  });
+
+  // Complaint management endpoints
+  app.get("/api/platform/complaints", (_req, res) => {
+    const { getComplaints } = require("./lib/complaintManagement");
+    const complaints = getComplaints();
+    res.json({ items: complaints, total: complaints.length });
+  });
+  app.get("/api/platform/complaints/stats", (_req, res) => {
+    const { getComplaintStats } = require("./lib/complaintManagement");
+    res.json(getComplaintStats());
+  });
+
+  // Interbank settlement endpoints
+  app.get("/api/platform/settlement/batches", (_req, res) => {
+    const { getSettlementBatches } = require("./lib/interbankSettlement");
+    const batches = getSettlementBatches();
+    res.json({ items: batches, total: batches.length });
+  });
+  app.get("/api/platform/settlement/summary", (_req, res) => {
+    const { getSettlementSummary } = require("./lib/interbankSettlement");
+    res.json(getSettlementSummary());
+  });
+
+  // Staff management endpoints
+  app.get("/api/platform/staff", (_req, res) => {
+    const { getStaff } = require("./lib/staffManagement");
+    const members = getStaff();
+    res.json({ items: members, total: members.length });
+  });
+  app.get("/api/platform/staff/stats", (_req, res) => {
+    const { getStaffStats } = require("./lib/staffManagement");
+    res.json(getStaffStats());
+  });
+
+  // Channel management endpoints
+  app.get("/api/platform/channels", (_req, res) => {
+    const { getChannels } = require("./lib/channelManagement");
+    const channels = getChannels();
+    res.json({ items: channels, total: channels.length });
+  });
+  app.get("/api/platform/channels/summary", (_req, res) => {
+    const { getChannelSummary } = require("./lib/channelManagement");
+    res.json(getChannelSummary());
+  });
+
   // Dormancy engine endpoints
   app.get("/api/platform/dormancy/accounts", (_req, res) => {
     const { getDormantAccounts } = require("./lib/dormancyEngine");
