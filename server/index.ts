@@ -18,6 +18,7 @@ import { validateAndLog } from "./lib/envValidation";
 import { auditLog } from "./lib/auditLog";
 import { metricsMiddleware, metricsEndpoint, registry } from "./lib/metrics";
 import { generateOpenAPISpec } from "./lib/openapi";
+import { generateOTP, verifyOTP } from "./lib/transactionSigning";
 import { WebSocketServer, WebSocket } from "ws";
 
 import {
@@ -6181,6 +6182,105 @@ async function startServer() {
   });
   app.all("/api/platform/identity/stats", (req, res) => {
     void proxyToService(KEYCLOAK_IDENTITY_URL, "/v1/identity/stats", req, res);
+  });
+
+  // Interest Rate Engine proxy routes (Go :8131)
+  const INTEREST_RATE_URL = process.env.INTEREST_RATE_URL || "http://localhost:8131";
+  app.all("/api/platform/rates/base", (req, res) => {
+    void proxyToService(INTEREST_RATE_URL, "/v1/rates/base", req, res);
+  });
+  app.all("/api/platform/rates/spreads", (req, res) => {
+    void proxyToService(INTEREST_RATE_URL, "/v1/rates/spreads", req, res);
+  });
+  app.all("/api/platform/rates/changes", (req, res) => {
+    void proxyToService(INTEREST_RATE_URL, "/v1/rates/changes", req, res);
+  });
+  app.all("/api/platform/rates/product", (req, res) => {
+    void proxyToService(INTEREST_RATE_URL, "/v1/rates/product", req, res);
+  });
+  app.all("/api/platform/rates/calculate", (req, res) => {
+    void proxyToService(INTEREST_RATE_URL, "/v1/rates/calculate", req, res);
+  });
+  app.all("/api/platform/rates/mpr-update", (req, res) => {
+    void proxyToService(INTEREST_RATE_URL, "/v1/rates/mpr-update", req, res);
+  });
+
+  // Cheque Clearing proxy routes (Go :8132)
+  const CHEQUE_CLEARING_URL = process.env.CHEQUE_CLEARING_URL || "http://localhost:8132";
+  app.all("/api/platform/cheques/books", (req, res) => {
+    void proxyToService(CHEQUE_CLEARING_URL, "/v1/cheques/books", req, res);
+  });
+  app.all("/api/platform/cheques", (req, res) => {
+    void proxyToService(CHEQUE_CLEARING_URL, "/v1/cheques", req, res);
+  });
+  app.all("/api/platform/cheques/present", (req, res) => {
+    void proxyToService(CHEQUE_CLEARING_URL, "/v1/cheques/present", req, res);
+  });
+  app.all("/api/platform/cheques/clear", (req, res) => {
+    void proxyToService(CHEQUE_CLEARING_URL, "/v1/cheques/clear", req, res);
+  });
+  app.all("/api/platform/cheques/return", (req, res) => {
+    void proxyToService(CHEQUE_CLEARING_URL, "/v1/cheques/return", req, res);
+  });
+
+  // Customer 360 proxy routes (Python :8133)
+  const CUSTOMER_360_URL = process.env.CUSTOMER_360_URL || "http://localhost:8133";
+  app.all("/api/platform/customer-360/profiles", (req, res) => {
+    void proxyToService(CUSTOMER_360_URL, "/v1/customer-360/profiles", req, res);
+  });
+  app.all("/api/platform/customer-360/profiles/:id", (req, res) => {
+    void proxyToService(CUSTOMER_360_URL, `/v1/customer-360/profiles/${req.params.id}`, req, res);
+  });
+  app.all("/api/platform/customer-360/segments", (req, res) => {
+    void proxyToService(CUSTOMER_360_URL, "/v1/customer-360/segments", req, res);
+  });
+  app.all("/api/platform/customer-360/cross-sell", (req, res) => {
+    void proxyToService(CUSTOMER_360_URL, "/v1/customer-360/cross-sell", req, res);
+  });
+
+  // NIBSS Direct Debit proxy routes (Go :8134)
+  const NIBSS_DD_URL = process.env.NIBSS_DD_URL || "http://localhost:8134";
+  app.all("/api/platform/nibss/mandates", (req, res) => {
+    void proxyToService(NIBSS_DD_URL, "/v1/nibss/mandates", req, res);
+  });
+  app.all("/api/platform/nibss/mandates/cancel", (req, res) => {
+    void proxyToService(NIBSS_DD_URL, "/v1/nibss/mandates/cancel", req, res);
+  });
+  app.all("/api/platform/nibss/instructions", (req, res) => {
+    void proxyToService(NIBSS_DD_URL, "/v1/nibss/instructions", req, res);
+  });
+  app.all("/api/platform/nibss/instructions/execute", (req, res) => {
+    void proxyToService(NIBSS_DD_URL, "/v1/nibss/instructions/execute", req, res);
+  });
+
+  // Diaspora Banking proxy routes (Python :8135)
+  const DIASPORA_URL = process.env.DIASPORA_URL || "http://localhost:8135";
+  app.all("/api/platform/diaspora/corridors", (req, res) => {
+    void proxyToService(DIASPORA_URL, "/v1/diaspora/corridors", req, res);
+  });
+  app.all("/api/platform/diaspora/accounts", (req, res) => {
+    void proxyToService(DIASPORA_URL, "/v1/diaspora/accounts", req, res);
+  });
+  app.all("/api/platform/diaspora/remittances", (req, res) => {
+    void proxyToService(DIASPORA_URL, "/v1/diaspora/remittances", req, res);
+  });
+  app.all("/api/platform/diaspora/property-schemes", (req, res) => {
+    void proxyToService(DIASPORA_URL, "/v1/diaspora/property-schemes", req, res);
+  });
+  app.all("/api/platform/diaspora/stats", (req, res) => {
+    void proxyToService(DIASPORA_URL, "/v1/diaspora/stats", req, res);
+  });
+
+  // OTP endpoint for transaction signing (C8)
+  app.post("/api/platform/otp/generate", (req, res) => {
+    const userId = req.user?.sub ?? req.body?.userId ?? "anonymous";
+    const result = generateOTP(userId);
+    res.json(result);
+  });
+  app.post("/api/platform/otp/verify", (req, res) => {
+    const { otpId, code } = req.body;
+    const valid = verifyOTP(otpId, code);
+    res.json({ valid });
   });
 
   app.use(globalErrorHandler);

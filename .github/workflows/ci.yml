@@ -104,6 +104,12 @@ jobs:
         run: cd services/dapr-sidecar-go && go build -o dapr-sidecar .
       - name: Build Permify Authorization Service
         run: cd services/permify-authz-go && go build -o permify-authz .
+      - name: Build Interest Rate Engine
+        run: cd services/interest-rate-engine-go && go build -o interest-rate-engine .
+      - name: Build Cheque Clearing Service
+        run: cd services/cheque-clearing-go && go build -o cheque-clearing .
+      - name: Build NIBSS Direct Debit Service
+        run: cd services/nibss-direct-debit-go && go build -o nibss-direct-debit .
 
   rust-services:
     name: Rust Services
@@ -152,7 +158,7 @@ jobs:
           python-version: "3.12"
       - name: Validate Python Services
         run: |
-          for svc in islamic-banking-py education-loans-py dispute-management-py erpnext-sync-py regulatory-reporting-py treasury-liquidity-py customer-engagement-py batch-processing-py workflow-engine-py opensearch-analytics-py keycloak-identity-py; do
+          for svc in islamic-banking-py education-loans-py dispute-management-py erpnext-sync-py regulatory-reporting-py treasury-liquidity-py customer-engagement-py batch-processing-py workflow-engine-py opensearch-analytics-py keycloak-identity-py customer-360-py diaspora-banking-py; do
             echo "Checking services/$svc/service.py..."
             python3 -c "import py_compile; py_compile.compile('services/$svc/service.py', doraise=True)"
           done

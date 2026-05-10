@@ -109,6 +109,11 @@ const menuItems = [
   { path: "/dapr", label: "Dapr Mesh", icon: Layers },
   { path: "/permify", label: "Authorization", icon: Shield },
   { path: "/keycloak", label: "Identity", icon: Key },
+  { path: "/interest-rates", label: "Interest Rates", icon: TrendingUp },
+  { path: "/cheque-clearing", label: "Cheque Clearing", icon: FileText },
+  { path: "/customer-360", label: "Customer 360", icon: Users },
+  { path: "/nibss-direct-debit", label: "NIBSS Direct Debit", icon: CreditCard },
+  { path: "/diaspora-banking", label: "Diaspora Banking", icon: Globe },
 ] as const;
 
 export default function ArchiveAdminSidebar() {

@@ -87,6 +87,11 @@ const FluvioStreamsWorkspace = lazy(() => import("@/pages/FluvioStreamsWorkspace
 const DaprSidecarWorkspace = lazy(() => import("@/pages/DaprSidecarWorkspace"));
 const PermifyWorkspace = lazy(() => import("@/pages/PermifyWorkspace"));
 const KeycloakWorkspace = lazy(() => import("@/pages/KeycloakWorkspace"));
+const InterestRateWorkspace = lazy(() => import("@/pages/InterestRateWorkspace"));
+const ChequeClearingWorkspace = lazy(() => import("@/pages/ChequeClearingWorkspace"));
+const Customer360Workspace = lazy(() => import("@/pages/Customer360Workspace"));
+const NIBSSDirectDebitWorkspace = lazy(() => import("@/pages/NIBSSDirectDebitWorkspace"));
+const DiasporaBankingWorkspace = lazy(() => import("@/pages/DiasporaBankingWorkspace"));
 const AdminAnalyticsPage = lazy(() => import("@/pages/AdminModulePages").then((module) => ({ default: module.AdminAnalyticsPage })));
 const AdminBankingOpsPage = lazy(() => import("@/pages/AdminModulePages").then((module) => ({ default: module.AdminBankingOpsPage })));
 const AdminFeatureFlagsPage = lazy(() => import("@/pages/AdminModulePages").then((module) => ({ default: module.AdminFeatureFlagsPage })));
@@ -228,6 +233,11 @@ export default function App() {
         <Route path="/dapr" component={renderInAdminShell(DaprSidecarWorkspace)} />
         <Route path="/permify" component={renderInAdminShell(PermifyWorkspace)} />
         <Route path="/keycloak" component={renderInAdminShell(KeycloakWorkspace)} />
+        <Route path="/interest-rates" component={renderInAdminShell(InterestRateWorkspace)} />
+        <Route path="/cheque-clearing" component={renderInAdminShell(ChequeClearingWorkspace)} />
+        <Route path="/customer-360" component={renderInAdminShell(Customer360Workspace)} />
+        <Route path="/nibss-direct-debit" component={renderInAdminShell(NIBSSDirectDebitWorkspace)} />
+        <Route path="/diaspora-banking" component={renderInAdminShell(DiasporaBankingWorkspace)} />
 
         <Route component={NotFound} />
       </Switch>
