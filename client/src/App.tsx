@@ -321,6 +321,21 @@ const LakehouseQueryFederationWorkspace = lazy(() => import("@/pages/LakehouseQu
 const LakehouseMaterializedViewsWorkspace = lazy(() => import("@/pages/LakehouseMaterializedViewsWorkspace"));
 const LakehouseLineageNodesWorkspace = lazy(() => import("@/pages/LakehouseLineageNodesWorkspace"));
 const LakehouseLineageEdgesWorkspace = lazy(() => import("@/pages/LakehouseLineageEdgesWorkspace"));
+const PgQueryProfilesWorkspace = lazy(() => import("@/pages/PgQueryProfilesWorkspace"));
+const PgIndexAdvisoryWorkspace = lazy(() => import("@/pages/PgIndexAdvisoryWorkspace"));
+const PgConnectionPoolsWorkspace = lazy(() => import("@/pages/PgConnectionPoolsWorkspace"));
+const PgSlowQueriesWorkspace = lazy(() => import("@/pages/PgSlowQueriesWorkspace"));
+const PgTableStatsWorkspace = lazy(() => import("@/pages/PgTableStatsWorkspace"));
+const PgTuningParamsWorkspace = lazy(() => import("@/pages/PgTuningParamsWorkspace"));
+const ApisixRoutesWorkspace = lazy(() => import("@/pages/ApisixRoutesWorkspace"));
+const ApisixUpstreamsWorkspace = lazy(() => import("@/pages/ApisixUpstreamsWorkspace"));
+const ApisixPluginsWorkspace = lazy(() => import("@/pages/ApisixPluginsWorkspace"));
+const OpenappsecRulesWorkspace = lazy(() => import("@/pages/OpenappsecRulesWorkspace"));
+const OpenappsecEventsWorkspace = lazy(() => import("@/pages/OpenappsecEventsWorkspace"));
+const KeycloakRealmsWorkspace = lazy(() => import("@/pages/KeycloakRealmsWorkspace"));
+const KeycloakClientsWorkspace = lazy(() => import("@/pages/KeycloakClientsWorkspace"));
+const KeycloakRolesWorkspace = lazy(() => import("@/pages/KeycloakRolesWorkspace"));
+const KeycloakIdPsWorkspace = lazy(() => import("@/pages/KeycloakIdPsWorkspace"));
 const MojaloopCallbacksWorkspace = lazy(() => import("@/pages/MojaloopCallbacksWorkspace"));
 const MojaloopCallbackEndpointsWorkspace = lazy(() => import("@/pages/MojaloopCallbackEndpointsWorkspace"));
 const MojaloopILPPacketsWorkspace = lazy(() => import("@/pages/MojaloopILPPacketsWorkspace"));
@@ -706,6 +721,21 @@ export default function App() {
         <Route path="/lakehouse-materialized-views" component={renderInAdminShell(LakehouseMaterializedViewsWorkspace)} />
         <Route path="/lakehouse-lineage-nodes" component={renderInAdminShell(LakehouseLineageNodesWorkspace)} />
         <Route path="/lakehouse-lineage-edges" component={renderInAdminShell(LakehouseLineageEdgesWorkspace)} />
+        <Route path="/pg-query-profiles" component={renderInAdminShell(PgQueryProfilesWorkspace)} />
+        <Route path="/pg-index-advisory" component={renderInAdminShell(PgIndexAdvisoryWorkspace)} />
+        <Route path="/pg-connection-pools" component={renderInAdminShell(PgConnectionPoolsWorkspace)} />
+        <Route path="/pg-slow-queries" component={renderInAdminShell(PgSlowQueriesWorkspace)} />
+        <Route path="/pg-table-stats" component={renderInAdminShell(PgTableStatsWorkspace)} />
+        <Route path="/pg-tuning-params" component={renderInAdminShell(PgTuningParamsWorkspace)} />
+        <Route path="/apisix-routes" component={renderInAdminShell(ApisixRoutesWorkspace)} />
+        <Route path="/apisix-upstreams" component={renderInAdminShell(ApisixUpstreamsWorkspace)} />
+        <Route path="/apisix-plugins" component={renderInAdminShell(ApisixPluginsWorkspace)} />
+        <Route path="/openappsec-rules" component={renderInAdminShell(OpenappsecRulesWorkspace)} />
+        <Route path="/openappsec-events" component={renderInAdminShell(OpenappsecEventsWorkspace)} />
+        <Route path="/keycloak-realms" component={renderInAdminShell(KeycloakRealmsWorkspace)} />
+        <Route path="/keycloak-clients" component={renderInAdminShell(KeycloakClientsWorkspace)} />
+        <Route path="/keycloak-roles" component={renderInAdminShell(KeycloakRolesWorkspace)} />
+        <Route path="/keycloak-identity-providers" component={renderInAdminShell(KeycloakIdPsWorkspace)} />
         <Route path="/mojaloop-callbacks" component={renderInAdminShell(MojaloopCallbacksWorkspace)} />
         <Route path="/mojaloop-callback-endpoints" component={renderInAdminShell(MojaloopCallbackEndpointsWorkspace)} />
         <Route path="/mojaloop-ilp-packets" component={renderInAdminShell(MojaloopILPPacketsWorkspace)} />

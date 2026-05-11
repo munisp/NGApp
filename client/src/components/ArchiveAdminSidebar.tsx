@@ -563,6 +563,47 @@ const categorizedMenu: MenuCategory[] = [
     ],
   },
   {
+    category: "Postgres Optimization",
+    icon: Database,
+    items: [
+      { path: "/pg-query-profiles", label: "Query Profiles", icon: Database },
+      { path: "/pg-index-advisory", label: "Index Advisory", icon: Zap },
+      { path: "/pg-connection-pools", label: "Connection Pools", icon: Layers },
+      { path: "/pg-slow-queries", label: "Slow Queries", icon: AlertTriangle },
+      { path: "/pg-table-stats", label: "Table Statistics", icon: BarChart3 },
+      { path: "/pg-tuning-params", label: "Tuning Parameters", icon: Settings },
+    ],
+  },
+  {
+    category: "APISIX Gateway",
+    icon: Globe,
+    items: [
+      { path: "/apisix-routes", label: "Routes", icon: Globe },
+      { path: "/apisix-upstreams", label: "Upstreams", icon: Satellite },
+      { path: "/apisix-plugins", label: "Plugins", icon: Settings },
+    ],
+  },
+  {
+    category: "OpenAppSec WAF",
+    icon: ShieldAlert,
+    items: [
+      { path: "/openappsec-rules", label: "WAF Rules", icon: Shield },
+      { path: "/openappsec-events", label: "Security Events", icon: AlertTriangle },
+    ],
+  },
+  {
+    category: "Keycloak IAM",
+    icon: Key,
+    items: [
+      { path: "/keycloak", label: "Overview", icon: Key },
+      { path: "/keycloak-realms", label: "Realms", icon: Shield },
+      { path: "/keycloak-clients", label: "Clients", icon: Key },
+      { path: "/keycloak-roles", label: "Roles", icon: Users },
+      { path: "/keycloak-identity-providers", label: "Identity Providers", icon: Link2 },
+      { path: "/jwt-auth", label: "JWT Auth Enforcement", icon: Lock },
+    ],
+  },
+  {
     category: "Mojaloop Interoperability",
     icon: Globe,
     items: [

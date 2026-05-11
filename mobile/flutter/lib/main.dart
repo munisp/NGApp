@@ -12,6 +12,9 @@ import 'screens/agricultural_insurance_screen.dart';
 import 'screens/ai_fraud_detection_screen.dart';
 import 'screens/analytics_widgets_screen.dart';
 import 'screens/api_marketplace_screen.dart';
+import 'screens/apisix_plugins_screen.dart';
+import 'screens/apisix_routes_screen.dart';
+import 'screens/apisix_upstreams_screen.dart';
 import 'screens/approval_workflow_screen.dart';
 import 'screens/atm_management_screen.dart';
 import 'screens/audit_trail_screen.dart';
@@ -148,6 +151,10 @@ import 'screens/kafka_event_bus_screen.dart';
 import 'screens/kafka_streaming_screen.dart';
 import 'screens/keda_autoscaling_screen.dart';
 import 'screens/keda_policies_screen.dart';
+import 'screens/keycloak_clients_screen.dart';
+import 'screens/keycloak_idps_screen.dart';
+import 'screens/keycloak_realms_screen.dart';
+import 'screens/keycloak_roles_screen.dart';
 import 'screens/keycloak_screen.dart';
 import 'screens/kyb_engine_screen.dart';
 import 'screens/kyb_triggers_screen.dart';
@@ -208,6 +215,8 @@ import 'screens/notifications_screen.dart';
 import 'screens/offline_resilience_screen.dart';
 import 'screens/offline_transactions_screen.dart';
 import 'screens/open_banking_screen.dart';
+import 'screens/openappsec_events_screen.dart';
+import 'screens/openappsec_rules_screen.dart';
 import 'screens/opensearch_screen.dart';
 import 'screens/operations_center_screen.dart';
 import 'screens/otc_derivatives_screen.dart';
@@ -222,6 +231,12 @@ import 'screens/pep_database_screen.dart';
 import 'screens/performance_cache_screen.dart';
 import 'screens/performance_metrics_screen.dart';
 import 'screens/permify_screen.dart';
+import 'screens/pg_connection_pools_screen.dart';
+import 'screens/pg_index_advisory_screen.dart';
+import 'screens/pg_query_profiles_screen.dart';
+import 'screens/pg_slow_queries_screen.dart';
+import 'screens/pg_table_stats_screen.dart';
+import 'screens/pg_tuning_params_screen.dart';
 import 'screens/plugin_marketplace_screen.dart';
 import 'screens/portfolio_mgmt_screen.dart';
 import 'screens/pos_terminal_screen.dart';
@@ -317,6 +332,9 @@ class FiftyFourBankApp extends StatelessWidget { const FiftyFourBankApp({super.k
   '/ai-fraud-detection': (context) => const AiFraudDetectionScreen(),
   '/analytics-widgets': (context) => const AnalyticsWidgetsScreen(),
   '/api-marketplace': (context) => const ApiMarketplaceScreen(),
+  '/apisix-plugins': (context) => const ApisixPluginsScreen(),
+  '/apisix-routes': (context) => const ApisixRoutesScreen(),
+  '/apisix-upstreams': (context) => const ApisixUpstreamsScreen(),
   '/approval-workflow': (context) => const ApprovalWorkflowScreen(),
   '/atm-management': (context) => const AtmManagementScreen(),
   '/audit-trail': (context) => const AuditTrailScreen(),
@@ -453,6 +471,10 @@ class FiftyFourBankApp extends StatelessWidget { const FiftyFourBankApp({super.k
   '/kafka-streaming': (context) => const KafkaStreamingScreen(),
   '/keda-autoscaling': (context) => const KedaAutoscalingScreen(),
   '/keda-policies': (context) => const KedaPoliciesScreen(),
+  '/keycloak-clients': (context) => const KeycloakClientsScreen(),
+  '/keycloak-idps': (context) => const KeycloakIdPsScreen(),
+  '/keycloak-realms': (context) => const KeycloakRealmsScreen(),
+  '/keycloak-roles': (context) => const KeycloakRolesScreen(),
   '/keycloak': (context) => const KeycloakScreen(),
   '/kyb-engine': (context) => const KybEngineScreen(),
   '/kyb-triggers': (context) => const KybTriggersScreen(),
@@ -513,6 +535,8 @@ class FiftyFourBankApp extends StatelessWidget { const FiftyFourBankApp({super.k
   '/offline-resilience': (context) => const OfflineResilienceScreen(),
   '/offline-transactions': (context) => const OfflineTransactionsScreen(),
   '/open-banking': (context) => const OpenBankingScreen(),
+  '/openappsec-events': (context) => const OpenappsecEventsScreen(),
+  '/openappsec-rules': (context) => const OpenappsecRulesScreen(),
   '/opensearch': (context) => const OpensearchScreen(),
   '/operations-center': (context) => const OperationsCenterScreen(),
   '/otc-derivatives': (context) => const OtcDerivativesScreen(),
@@ -527,6 +551,12 @@ class FiftyFourBankApp extends StatelessWidget { const FiftyFourBankApp({super.k
   '/performance-cache': (context) => const PerformanceCacheScreen(),
   '/performance-metrics': (context) => const PerformanceMetricsScreen(),
   '/permify': (context) => const PermifyScreen(),
+  '/pg-connection-pools': (context) => const PgConnectionPoolsScreen(),
+  '/pg-index-advisory': (context) => const PgIndexAdvisoryScreen(),
+  '/pg-query-profiles': (context) => const PgQueryProfilesScreen(),
+  '/pg-slow-queries': (context) => const PgSlowQueriesScreen(),
+  '/pg-table-stats': (context) => const PgTableStatsScreen(),
+  '/pg-tuning-params': (context) => const PgTuningParamsScreen(),
   '/plugin-marketplace': (context) => const PluginMarketplaceScreen(),
   '/portfolio-mgmt': (context) => const PortfolioMgmtScreen(),
   '/pos-terminal': (context) => const PosTerminalScreen(),
@@ -621,6 +651,9 @@ class HomeScreen extends StatelessWidget { const HomeScreen({super.key}); @overr
   ListTile(title: const Text('Ai Fraud Detection'), onTap: () => Navigator.pushNamed(context, '/ai-fraud-detection')),
   ListTile(title: const Text('Analytics Widgets'), onTap: () => Navigator.pushNamed(context, '/analytics-widgets')),
   ListTile(title: const Text('Api Marketplace'), onTap: () => Navigator.pushNamed(context, '/api-marketplace')),
+  ListTile(title: const Text('Apisix Plugins'), onTap: () => Navigator.pushNamed(context, '/apisix-plugins')),
+  ListTile(title: const Text('Apisix Routes'), onTap: () => Navigator.pushNamed(context, '/apisix-routes')),
+  ListTile(title: const Text('Apisix Upstreams'), onTap: () => Navigator.pushNamed(context, '/apisix-upstreams')),
   ListTile(title: const Text('Approval Workflow'), onTap: () => Navigator.pushNamed(context, '/approval-workflow')),
   ListTile(title: const Text('Atm Management'), onTap: () => Navigator.pushNamed(context, '/atm-management')),
   ListTile(title: const Text('Audit Trail'), onTap: () => Navigator.pushNamed(context, '/audit-trail')),
@@ -757,6 +790,10 @@ class HomeScreen extends StatelessWidget { const HomeScreen({super.key}); @overr
   ListTile(title: const Text('Kafka Streaming'), onTap: () => Navigator.pushNamed(context, '/kafka-streaming')),
   ListTile(title: const Text('Keda Autoscaling'), onTap: () => Navigator.pushNamed(context, '/keda-autoscaling')),
   ListTile(title: const Text('Keda Policies'), onTap: () => Navigator.pushNamed(context, '/keda-policies')),
+  ListTile(title: const Text('Keycloak Clients'), onTap: () => Navigator.pushNamed(context, '/keycloak-clients')),
+  ListTile(title: const Text('Keycloak Id Ps'), onTap: () => Navigator.pushNamed(context, '/keycloak-idps')),
+  ListTile(title: const Text('Keycloak Realms'), onTap: () => Navigator.pushNamed(context, '/keycloak-realms')),
+  ListTile(title: const Text('Keycloak Roles'), onTap: () => Navigator.pushNamed(context, '/keycloak-roles')),
   ListTile(title: const Text('Keycloak'), onTap: () => Navigator.pushNamed(context, '/keycloak')),
   ListTile(title: const Text('Kyb Engine'), onTap: () => Navigator.pushNamed(context, '/kyb-engine')),
   ListTile(title: const Text('Kyb Triggers'), onTap: () => Navigator.pushNamed(context, '/kyb-triggers')),
@@ -817,6 +854,8 @@ class HomeScreen extends StatelessWidget { const HomeScreen({super.key}); @overr
   ListTile(title: const Text('Offline Resilience'), onTap: () => Navigator.pushNamed(context, '/offline-resilience')),
   ListTile(title: const Text('Offline Transactions'), onTap: () => Navigator.pushNamed(context, '/offline-transactions')),
   ListTile(title: const Text('Open Banking'), onTap: () => Navigator.pushNamed(context, '/open-banking')),
+  ListTile(title: const Text('Openappsec Events'), onTap: () => Navigator.pushNamed(context, '/openappsec-events')),
+  ListTile(title: const Text('Openappsec Rules'), onTap: () => Navigator.pushNamed(context, '/openappsec-rules')),
   ListTile(title: const Text('Opensearch'), onTap: () => Navigator.pushNamed(context, '/opensearch')),
   ListTile(title: const Text('Operations Center'), onTap: () => Navigator.pushNamed(context, '/operations-center')),
   ListTile(title: const Text('Otc Derivatives'), onTap: () => Navigator.pushNamed(context, '/otc-derivatives')),
@@ -831,6 +870,12 @@ class HomeScreen extends StatelessWidget { const HomeScreen({super.key}); @overr
   ListTile(title: const Text('Performance Cache'), onTap: () => Navigator.pushNamed(context, '/performance-cache')),
   ListTile(title: const Text('Performance Metrics'), onTap: () => Navigator.pushNamed(context, '/performance-metrics')),
   ListTile(title: const Text('Permify'), onTap: () => Navigator.pushNamed(context, '/permify')),
+  ListTile(title: const Text('Pg Connection Pools'), onTap: () => Navigator.pushNamed(context, '/pg-connection-pools')),
+  ListTile(title: const Text('Pg Index Advisory'), onTap: () => Navigator.pushNamed(context, '/pg-index-advisory')),
+  ListTile(title: const Text('Pg Query Profiles'), onTap: () => Navigator.pushNamed(context, '/pg-query-profiles')),
+  ListTile(title: const Text('Pg Slow Queries'), onTap: () => Navigator.pushNamed(context, '/pg-slow-queries')),
+  ListTile(title: const Text('Pg Table Stats'), onTap: () => Navigator.pushNamed(context, '/pg-table-stats')),
+  ListTile(title: const Text('Pg Tuning Params'), onTap: () => Navigator.pushNamed(context, '/pg-tuning-params')),
   ListTile(title: const Text('Plugin Marketplace'), onTap: () => Navigator.pushNamed(context, '/plugin-marketplace')),
   ListTile(title: const Text('Portfolio Mgmt'), onTap: () => Navigator.pushNamed(context, '/portfolio-mgmt')),
   ListTile(title: const Text('Pos Terminal'), onTap: () => Navigator.pushNamed(context, '/pos-terminal')),

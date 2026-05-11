@@ -76,6 +76,8 @@ import { registerCircuitBreakerGateway } from "./lib/circuitBreakerGateway";
 import { registerLakehouseIntegration } from "./lib/lakehouseIntegration";
 import { registerTigerbeetlePostgresSync } from "./lib/tigerbeetlePostgresSync";
 import { registerMojaloopDeepIntegration } from "./lib/mojaloopDeepIntegration";
+import { registerPostgresQueryOptimization } from "./lib/postgresQueryOptimization";
+import { registerApisixOpenappsecIntegration } from "./lib/apisixOpenappsecIntegration";
 import { registerPerformanceTuning } from "./lib/performanceTuning";
 import { registerKedaAutoscaling } from "./lib/kedaAutoscaling";
 import { registerHighAvailability } from "./lib/highAvailability";
@@ -5223,6 +5225,8 @@ async function startServer() {
   registerLakehouseIntegration(app);
   registerTigerbeetlePostgresSync(app);
   registerMojaloopDeepIntegration(app);
+  registerPostgresQueryOptimization(app);
+  registerApisixOpenappsecIntegration(app);
   registerPerformanceTuning(app);
   registerKedaAutoscaling(app);
   registerHighAvailability(app);
