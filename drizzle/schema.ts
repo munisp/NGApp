@@ -1799,3 +1799,246 @@ export type CardTransaction = typeof cardTransactions.$inferSelect;
 export type InsertCardTransaction = typeof cardTransactions.$inferInsert;
 export type TrialBalance = typeof trialBalances.$inferSelect;
 export type InsertTrialBalance = typeof trialBalances.$inferInsert;
+
+// ========================================================================
+// KYC/KYB Enhanced Suite — 15 new tables for 22 enhancements (5 phases)
+// ========================================================================
+
+export const kycTiers = pgTable("kyc_tiers", {
+  id: serial("id").primaryKey(),
+  customerId: varchar("customer_id", { length: 64 }).notNull(),
+  customerName: text("customer_name").notNull(),
+  currentTier: integer("current_tier").notNull().default(1),
+  dailyLimitNGN: doublePrecision("daily_limit_ngn").notNull().default(300000),
+  dailyUsedNGN: doublePrecision("daily_used_ngn").notNull().default(0),
+  evaluationScore: doublePrecision("evaluation_score"),
+  riskFlags: jsonb("risk_flags"),
+  status: varchar("status", { length: 32 }).notNull().default("active"),
+  lastEvaluatedAt: timestamp("last_evaluated_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("kyc_tiers_customer_idx").on(table.customerId),
+  index("kyc_tiers_status_idx").on(table.status),
+]);
+
+export const kycTierHistory = pgTable("kyc_tier_history", {
+  id: serial("id").primaryKey(),
+  customerId: varchar("customer_id", { length: 64 }).notNull(),
+  previousTier: integer("previous_tier").notNull(),
+  newTier: integer("new_tier").notNull(),
+  reason: text("reason"),
+  changedBy: varchar("changed_by", { length: 64 }),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("kyc_tier_history_customer_idx").on(table.customerId),
+]);
+
+export const sanctionsScreenings = pgTable("sanctions_screenings", {
+  id: serial("id").primaryKey(),
+  entityName: text("entity_name").notNull(),
+  entityType: varchar("entity_type", { length: 32 }).notNull().default("individual"),
+  listsChecked: jsonb("lists_checked"),
+  matchFound: integer("match_found").notNull().default(0),
+  highestScore: doublePrecision("highest_score"),
+  matchDetails: jsonb("match_details"),
+  status: varchar("status", { length: 32 }).notNull().default("clear"),
+  screenedBy: varchar("screened_by", { length: 64 }),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("sanctions_entity_idx").on(table.entityName),
+  index("sanctions_status_idx").on(table.status),
+]);
+
+export const transactionMonitoringRules = pgTable("transaction_monitoring_rules", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  category: varchar("category", { length: 64 }).notNull(),
+  scenarioCode: varchar("scenario_code", { length: 32 }),
+  description: text("description"),
+  riskScoreImpact: integer("risk_score_impact").notNull().default(10),
+  enabled: integer("enabled").notNull().default(1),
+  cbnPrescribed: integer("cbn_prescribed").notNull().default(0),
+  thresholdConfig: jsonb("threshold_config"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const transactionAlerts = pgTable("transaction_alerts", {
+  id: serial("id").primaryKey(),
+  ruleId: integer("rule_id"),
+  customerId: varchar("customer_id", { length: 64 }).notNull(),
+  alertType: varchar("alert_type", { length: 64 }).notNull(),
+  severity: varchar("severity", { length: 16 }).notNull().default("medium"),
+  amountNGN: doublePrecision("amount_ngn"),
+  description: text("description"),
+  status: varchar("status", { length: 32 }).notNull().default("open"),
+  assignedTo: varchar("assigned_to", { length: 64 }),
+  resolvedAt: timestamp("resolved_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("txn_alerts_customer_idx").on(table.customerId),
+  index("txn_alerts_status_idx").on(table.status),
+  index("txn_alerts_severity_idx").on(table.severity),
+]);
+
+export const uboGraphNodes = pgTable("ubo_graph_nodes", {
+  id: serial("id").primaryKey(),
+  entityName: text("entity_name").notNull(),
+  entityType: varchar("entity_type", { length: 32 }).notNull(),
+  nationality: varchar("nationality", { length: 64 }),
+  riskLevel: varchar("risk_level", { length: 16 }),
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const uboGraphEdges = pgTable("ubo_graph_edges", {
+  id: serial("id").primaryKey(),
+  sourceId: integer("source_id").notNull(),
+  targetId: integer("target_id").notNull(),
+  relationship: varchar("relationship", { length: 64 }).notNull(),
+  ownershipPct: doublePrecision("ownership_pct"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const riskScores = pgTable("risk_scores", {
+  id: serial("id").primaryKey(),
+  customerId: varchar("customer_id", { length: 64 }).notNull(),
+  staticScore: doublePrecision("static_score").notNull().default(0),
+  dynamicScore: doublePrecision("dynamic_score").notNull().default(0),
+  totalScore: doublePrecision("total_score").notNull().default(0),
+  riskTier: varchar("risk_tier", { length: 16 }).notNull().default("low"),
+  factors: jsonb("factors"),
+  lastCalculatedAt: timestamp("last_calculated_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("risk_scores_customer_idx").on(table.customerId),
+  index("risk_scores_tier_idx").on(table.riskTier),
+]);
+
+export const agentKycCaptures = pgTable("agent_kyc_captures", {
+  id: serial("id").primaryKey(),
+  agentId: varchar("agent_id", { length: 64 }).notNull(),
+  agentName: text("agent_name"),
+  customerId: varchar("customer_id", { length: 64 }),
+  customerName: text("customer_name"),
+  lga: varchar("lga", { length: 128 }),
+  state: varchar("state", { length: 64 }),
+  offlineCapture: integer("offline_capture").notNull().default(0),
+  qualityScore: doublePrecision("quality_score"),
+  gpsLat: doublePrecision("gps_lat"),
+  gpsLng: doublePrecision("gps_lng"),
+  syncedAt: timestamp("synced_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("agent_captures_agent_idx").on(table.agentId),
+  index("agent_captures_lga_idx").on(table.lga),
+]);
+
+export const adverseMediaHits = pgTable("adverse_media_hits", {
+  id: serial("id").primaryKey(),
+  entityName: text("entity_name").notNull(),
+  source: varchar("source", { length: 128 }).notNull(),
+  headline: text("headline"),
+  riskImpact: varchar("risk_impact", { length: 16 }).notNull().default("medium"),
+  sentiment: doublePrecision("sentiment"),
+  url: text("url"),
+  detectedAt: timestamp("detected_at").defaultNow(),
+  reviewedAt: timestamp("reviewed_at"),
+  status: varchar("status", { length: 32 }).notNull().default("pending"),
+}, (table) => [
+  index("adverse_media_entity_idx").on(table.entityName),
+  index("adverse_media_status_idx").on(table.status),
+]);
+
+export const corporateMonitoringEvents = pgTable("corporate_monitoring_events", {
+  id: serial("id").primaryKey(),
+  companyId: varchar("company_id", { length: 64 }).notNull(),
+  eventType: varchar("event_type", { length: 64 }).notNull(),
+  description: text("description"),
+  riskImpact: varchar("risk_impact", { length: 16 }).notNull().default("medium"),
+  sourceSystem: varchar("source_system", { length: 64 }),
+  detectedAt: timestamp("detected_at").defaultNow(),
+  acknowledgedAt: timestamp("acknowledged_at"),
+}, (table) => [
+  index("corp_monitoring_company_idx").on(table.companyId),
+]);
+
+export const kycDataQualityMetrics = pgTable("kyc_data_quality_metrics", {
+  id: serial("id").primaryKey(),
+  totalCustomers: integer("total_customers").notNull(),
+  kycComplete: integer("kyc_complete").notNull(),
+  kycCompletePct: doublePrecision("kyc_complete_pct"),
+  expiredDocuments: integer("expired_documents").notNull().default(0),
+  duplicateBVN: integer("duplicate_bvn").notNull().default(0),
+  missingNIN: integer("missing_nin").notNull().default(0),
+  snapshotDate: timestamp("snapshot_date").defaultNow(),
+});
+
+export const efassReturns = pgTable("efass_returns", {
+  id: serial("id").primaryKey(),
+  period: varchar("period", { length: 16 }).notNull(),
+  type: varchar("type", { length: 16 }).notNull(),
+  tier1Count: integer("tier1_count").notNull().default(0),
+  tier2Count: integer("tier2_count").notNull().default(0),
+  tier3Count: integer("tier3_count").notNull().default(0),
+  totalCustomers: integer("total_customers").notNull().default(0),
+  status: varchar("status", { length: 32 }).notNull().default("draft"),
+  submittedAt: timestamp("submitted_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const nfiuFilings = pgTable("nfiu_filings", {
+  id: serial("id").primaryKey(),
+  reportType: varchar("report_type", { length: 8 }).notNull(),
+  customerId: varchar("customer_id", { length: 64 }).notNull(),
+  customerName: text("customer_name"),
+  amountNGN: doublePrecision("amount_ngn").notNull(),
+  transactionType: varchar("transaction_type", { length: 64 }),
+  status: varchar("status", { length: 32 }).notNull().default("pending_review"),
+  cbnReference: varchar("cbn_reference", { length: 64 }),
+  slaDeadline: timestamp("sla_deadline"),
+  filedAt: timestamp("filed_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("nfiu_filings_customer_idx").on(table.customerId),
+  index("nfiu_filings_status_idx").on(table.status),
+]);
+
+export const bureauChecks = pgTable("bureau_checks", {
+  id: serial("id").primaryKey(),
+  customerId: varchar("customer_id", { length: 64 }).notNull(),
+  bureau: varchar("bureau", { length: 32 }).notNull(),
+  creditScore: integer("credit_score"),
+  riskGrade: varchar("risk_grade", { length: 8 }),
+  activeLoans: integer("active_loans").notNull().default(0),
+  defaultHistory: integer("default_history").notNull().default(0),
+  checkedAt: timestamp("checked_at").defaultNow(),
+}, (table) => [
+  index("bureau_checks_customer_idx").on(table.customerId),
+]);
+
+// Type exports for KYC/KYB Enhanced Suite
+export type KYCTier = typeof kycTiers.$inferSelect;
+export type InsertKYCTier = typeof kycTiers.$inferInsert;
+export type SanctionsScreening = typeof sanctionsScreenings.$inferSelect;
+export type InsertSanctionsScreening = typeof sanctionsScreenings.$inferInsert;
+export type TransactionMonitoringRule = typeof transactionMonitoringRules.$inferSelect;
+export type InsertTransactionMonitoringRule = typeof transactionMonitoringRules.$inferInsert;
+export type TransactionAlert = typeof transactionAlerts.$inferSelect;
+export type InsertTransactionAlert = typeof transactionAlerts.$inferInsert;
+export type UBOGraphNode = typeof uboGraphNodes.$inferSelect;
+export type InsertUBOGraphNode = typeof uboGraphNodes.$inferInsert;
+export type RiskScore = typeof riskScores.$inferSelect;
+export type InsertRiskScore = typeof riskScores.$inferInsert;
+export type AgentKycCapture = typeof agentKycCaptures.$inferSelect;
+export type InsertAgentKycCapture = typeof agentKycCaptures.$inferInsert;
+export type AdverseMediaHit = typeof adverseMediaHits.$inferSelect;
+export type InsertAdverseMediaHit = typeof adverseMediaHits.$inferInsert;
+export type NFIUFiling = typeof nfiuFilings.$inferSelect;
+export type InsertNFIUFiling = typeof nfiuFilings.$inferInsert;
+export type BureauCheck = typeof bureauChecks.$inferSelect;
+export type InsertBureauCheck = typeof bureauChecks.$inferInsert;
+export type EFASSReturn = typeof efassReturns.$inferSelect;
+export type InsertEFASSReturn = typeof efassReturns.$inferInsert;

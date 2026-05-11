@@ -127,6 +127,30 @@ const NotificationPreferencesWorkspace = lazy(() => import("@/pages/Notification
 const DormancyWorkspace = lazy(() => import("@/pages/DormancyWorkspace"));
 const InterestAccrualWorkspace = lazy(() => import("@/pages/InterestAccrualWorkspace"));
 const LimitManagementWorkspace = lazy(() => import("@/pages/LimitManagementWorkspace"));
+// KYC/KYB Enhanced Suite — 22 enhancements (5 phases)
+const KYCTieredDashboardWorkspace = lazy(() => import("@/pages/KYCTieredDashboardWorkspace"));
+const BVNNINVerificationWorkspace = lazy(() => import("@/pages/BVNNINVerificationWorkspace"));
+const NFIUCTRSTRFilingWorkspace = lazy(() => import("@/pages/NFIUCTRSTRFilingWorkspace"));
+const SanctionsScreeningWorkspace = lazy(() => import("@/pages/SanctionsScreeningWorkspace"));
+const CACVerificationWorkspace = lazy(() => import("@/pages/CACVerificationWorkspace"));
+const TxnMonitoringRulesWorkspace = lazy(() => import("@/pages/TxnMonitoringRulesWorkspace"));
+const RiskBasedApproachWorkspace = lazy(() => import("@/pages/RiskBasedApproachWorkspace"));
+const PEPEnhancedDDWorkspace = lazy(() => import("@/pages/PEPEnhancedDDWorkspace"));
+const UBOOwnershipGraphWorkspace = lazy(() => import("@/pages/UBOOwnershipGraphWorkspace"));
+const MultiBureauCheckWorkspace = lazy(() => import("@/pages/MultiBureauCheckWorkspace"));
+const AddressVerificationWorkspace = lazy(() => import("@/pages/AddressVerificationWorkspace"));
+const CorporateDocVerifyWorkspace = lazy(() => import("@/pages/CorporateDocVerifyWorkspace"));
+const KYCAnalyticsDashWorkspace = lazy(() => import("@/pages/KYCAnalyticsDashWorkspace"));
+const VideoKYCWorkspace = lazy(() => import("@/pages/VideoKYCWorkspace"));
+const ContinuousLivenessWorkspace = lazy(() => import("@/pages/ContinuousLivenessWorkspace"));
+const KYCWorkflowWorkspace = lazy(() => import("@/pages/KYCWorkflowWorkspace"));
+const KYCSelfServiceWorkspace = lazy(() => import("@/pages/KYCSelfServiceWorkspace"));
+const AgentKYCCaptureWorkspace = lazy(() => import("@/pages/AgentKYCCaptureWorkspace"));
+const AdverseMediaWorkspace = lazy(() => import("@/pages/AdverseMediaWorkspace"));
+const CorporateMonitoringWorkspace = lazy(() => import("@/pages/CorporateMonitoringWorkspace"));
+const KYCDataQualityWorkspace = lazy(() => import("@/pages/KYCDataQualityWorkspace"));
+const EFASSKYCReturnsWorkspace = lazy(() => import("@/pages/EFASSKYCReturnsWorkspace"));
+const KYCEnhancedSummaryWorkspace = lazy(() => import("@/pages/KYCEnhancedSummaryWorkspace"));
 const GLAccountsWorkspace = lazy(() => import("@/pages/GLAccountsWorkspace"));
 const CollateralWorkspace = lazy(() => import("@/pages/CollateralWorkspace"));
 const ComplaintsWorkspace = lazy(() => import("@/pages/ComplaintsWorkspace"));
@@ -659,6 +683,30 @@ export default function App() {
         <Route path="/kyc-event-rules" component={renderInAdminShell(KYCEventRulesWorkspace)} />
         <Route path="/kyc-service-gates" component={renderInAdminShell(KYCServiceGatesWorkspace)} />
         <Route path="/kyc-overrides" component={renderInAdminShell(KYCOverridesWorkspace)} />
+        {/* KYC/KYB Enhanced Suite — 22 enhancements (5 phases, 22 polyglot services) */}
+        <Route path="/kyc-tiered-dashboard" component={renderInAdminShell(KYCTieredDashboardWorkspace)} />
+        <Route path="/bvn-nin-verification" component={renderInAdminShell(BVNNINVerificationWorkspace)} />
+        <Route path="/nfiu-ctr-str-filing" component={renderInAdminShell(NFIUCTRSTRFilingWorkspace)} />
+        <Route path="/sanctions-screening" component={renderInAdminShell(SanctionsScreeningWorkspace)} />
+        <Route path="/cac-verification" component={renderInAdminShell(CACVerificationWorkspace)} />
+        <Route path="/txn-monitoring-rules" component={renderInAdminShell(TxnMonitoringRulesWorkspace)} />
+        <Route path="/risk-based-approach" component={renderInAdminShell(RiskBasedApproachWorkspace)} />
+        <Route path="/pep-enhanced-dd" component={renderInAdminShell(PEPEnhancedDDWorkspace)} />
+        <Route path="/ubo-ownership-graph" component={renderInAdminShell(UBOOwnershipGraphWorkspace)} />
+        <Route path="/multi-bureau-check" component={renderInAdminShell(MultiBureauCheckWorkspace)} />
+        <Route path="/address-verification" component={renderInAdminShell(AddressVerificationWorkspace)} />
+        <Route path="/corporate-doc-verify" component={renderInAdminShell(CorporateDocVerifyWorkspace)} />
+        <Route path="/kyc-analytics-dash" component={renderInAdminShell(KYCAnalyticsDashWorkspace)} />
+        <Route path="/video-kyc" component={renderInAdminShell(VideoKYCWorkspace)} />
+        <Route path="/continuous-liveness" component={renderInAdminShell(ContinuousLivenessWorkspace)} />
+        <Route path="/kyc-workflow" component={renderInAdminShell(KYCWorkflowWorkspace)} />
+        <Route path="/kyc-self-service" component={renderInAdminShell(KYCSelfServiceWorkspace)} />
+        <Route path="/agent-kyc-capture" component={renderInAdminShell(AgentKYCCaptureWorkspace)} />
+        <Route path="/adverse-media" component={renderInAdminShell(AdverseMediaWorkspace)} />
+        <Route path="/corporate-monitoring" component={renderInAdminShell(CorporateMonitoringWorkspace)} />
+        <Route path="/kyc-data-quality" component={renderInAdminShell(KYCDataQualityWorkspace)} />
+        <Route path="/efass-kyc-returns" component={renderInAdminShell(EFASSKYCReturnsWorkspace)} />
+        <Route path="/kyc-enhanced-summary" component={renderInAdminShell(KYCEnhancedSummaryWorkspace)} />
         {/* Multi-Tenant Platform */}
         <Route path="/tenant-isolation" component={renderInAdminShell(TenantIsolationWorkspace)} />
         <Route path="/feature-flag-engine" component={renderInAdminShell(FeatureFlagEngineWorkspace)} />

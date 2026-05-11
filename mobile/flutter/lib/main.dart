@@ -163,6 +163,29 @@ import 'screens/kyc_event_rules_screen.dart';
 import 'screens/kyc_overrides_screen.dart';
 import 'screens/kyc_service_gates_screen.dart';
 import 'screens/kyc_triggers_screen.dart';
+import 'screens/kyc_tiered_dashboard_screen.dart';
+import 'screens/bvn_nin_verification_screen.dart';
+import 'screens/nfiu_ctr_str_filing_screen.dart';
+import 'screens/sanctions_screening_screen.dart';
+import 'screens/cac_verification_screen.dart';
+import 'screens/txn_monitoring_rules_screen.dart';
+import 'screens/risk_based_approach_screen.dart';
+import 'screens/pep_enhanced_dd_screen.dart';
+import 'screens/ubo_ownership_graph_screen.dart';
+import 'screens/multi_bureau_check_screen.dart';
+import 'screens/address_verification_screen.dart';
+import 'screens/corporate_doc_verify_screen.dart';
+import 'screens/kyc_analytics_dash_screen.dart';
+import 'screens/video_kyc_screen.dart';
+import 'screens/continuous_liveness_screen.dart';
+import 'screens/kyc_workflow_screen.dart';
+import 'screens/kyc_self_service_screen.dart';
+import 'screens/agent_kyc_capture_screen.dart';
+import 'screens/adverse_media_screen.dart';
+import 'screens/corporate_monitoring_screen.dart';
+import 'screens/kyc_data_quality_screen.dart';
+import 'screens/efass_kyc_returns_screen.dart';
+import 'screens/kyc_enhanced_summary_screen.dart';
 import 'screens/lakehouse_cdc_events_screen.dart';
 import 'screens/lakehouse_clients_screen.dart';
 import 'screens/lakehouse_domain_cdc_screen.dart';
@@ -512,6 +535,29 @@ class BankApp extends StatelessWidget {
           '/kyc-overrides': (context) => const KycOverridesScreen(),
           '/kyc-service-gates': (context) => const KycServiceGatesScreen(),
           '/kyc-triggers': (context) => const KycTriggersScreen(),
+          '/kyc-tiered-dashboard': (context) => const KycTieredDashboardScreen(),
+          '/bvn-nin-verification': (context) => const BvnNinVerificationScreen(),
+          '/nfiu-ctr-str-filing': (context) => const NfiuCtrStrFilingScreen(),
+          '/sanctions-screening': (context) => const SanctionsScreeningScreen(),
+          '/cac-verification': (context) => const CacVerificationScreen(),
+          '/txn-monitoring-rules': (context) => const TxnMonitoringRulesScreen(),
+          '/risk-based-approach': (context) => const RiskBasedApproachScreen(),
+          '/pep-enhanced-dd': (context) => const PepEnhancedDdScreen(),
+          '/ubo-ownership-graph': (context) => const UboOwnershipGraphScreen(),
+          '/multi-bureau-check': (context) => const MultiBureauCheckScreen(),
+          '/address-verification': (context) => const AddressVerificationScreen(),
+          '/corporate-doc-verify': (context) => const CorporateDocVerifyScreen(),
+          '/kyc-analytics-dash': (context) => const KycAnalyticsDashScreen(),
+          '/video-kyc': (context) => const VideoKycScreen(),
+          '/continuous-liveness': (context) => const ContinuousLivenessScreen(),
+          '/kyc-workflow': (context) => const KycWorkflowScreen(),
+          '/kyc-self-service': (context) => const KycSelfServiceScreen(),
+          '/agent-kyc-capture': (context) => const AgentKycCaptureScreen(),
+          '/adverse-media': (context) => const AdverseMediaScreen(),
+          '/corporate-monitoring': (context) => const CorporateMonitoringScreen(),
+          '/kyc-data-quality': (context) => const KycDataQualityScreen(),
+          '/efass-kyc-returns': (context) => const EfassKycReturnsScreen(),
+          '/kyc-enhanced-summary': (context) => const KycEnhancedSummaryScreen(),
           '/lakehouse-cdc-events': (context) => const LakehouseCDCEventsScreen(),
           '/lakehouse-clients': (context) => const LakehouseClientsScreen(),
           '/lakehouse-domain-cdc': (context) => const LakehouseDomainCDCScreen(),
@@ -859,6 +905,29 @@ class HomeScreen extends StatelessWidget {
             ListTile(title: const Text('Kyc Overrides'), onTap: () => Navigator.pushNamed(context, '/kyc-overrides')),
             ListTile(title: const Text('Kyc Service Gates'), onTap: () => Navigator.pushNamed(context, '/kyc-service-gates')),
             ListTile(title: const Text('Kyc Triggers'), onTap: () => Navigator.pushNamed(context, '/kyc-triggers')),
+            ListTile(title: const Text('CBN Tiered KYC'), onTap: () => Navigator.pushNamed(context, '/kyc-tiered-dashboard')),
+            ListTile(title: const Text('BVN/NIN Verification'), onTap: () => Navigator.pushNamed(context, '/bvn-nin-verification')),
+            ListTile(title: const Text('NFIU CTR/STR Filing'), onTap: () => Navigator.pushNamed(context, '/nfiu-ctr-str-filing')),
+            ListTile(title: const Text('Sanctions Screening'), onTap: () => Navigator.pushNamed(context, '/sanctions-screening')),
+            ListTile(title: const Text('CAC Verification'), onTap: () => Navigator.pushNamed(context, '/cac-verification')),
+            ListTile(title: const Text('Transaction Monitoring'), onTap: () => Navigator.pushNamed(context, '/txn-monitoring-rules')),
+            ListTile(title: const Text('Risk-Based Approach'), onTap: () => Navigator.pushNamed(context, '/risk-based-approach')),
+            ListTile(title: const Text('PEP Enhanced DD'), onTap: () => Navigator.pushNamed(context, '/pep-enhanced-dd')),
+            ListTile(title: const Text('UBO Ownership Graph'), onTap: () => Navigator.pushNamed(context, '/ubo-ownership-graph')),
+            ListTile(title: const Text('Multi-Bureau Check'), onTap: () => Navigator.pushNamed(context, '/multi-bureau-check')),
+            ListTile(title: const Text('Address Verification'), onTap: () => Navigator.pushNamed(context, '/address-verification')),
+            ListTile(title: const Text('Corporate Doc Verify'), onTap: () => Navigator.pushNamed(context, '/corporate-doc-verify')),
+            ListTile(title: const Text('KYC Analytics'), onTap: () => Navigator.pushNamed(context, '/kyc-analytics-dash')),
+            ListTile(title: const Text('Video KYC'), onTap: () => Navigator.pushNamed(context, '/video-kyc')),
+            ListTile(title: const Text('Continuous Liveness'), onTap: () => Navigator.pushNamed(context, '/continuous-liveness')),
+            ListTile(title: const Text('KYC Workflow'), onTap: () => Navigator.pushNamed(context, '/kyc-workflow')),
+            ListTile(title: const Text('KYC Self-Service'), onTap: () => Navigator.pushNamed(context, '/kyc-self-service')),
+            ListTile(title: const Text('Agent KYC Capture'), onTap: () => Navigator.pushNamed(context, '/agent-kyc-capture')),
+            ListTile(title: const Text('Adverse Media'), onTap: () => Navigator.pushNamed(context, '/adverse-media')),
+            ListTile(title: const Text('Corporate Monitoring'), onTap: () => Navigator.pushNamed(context, '/corporate-monitoring')),
+            ListTile(title: const Text('KYC Data Quality'), onTap: () => Navigator.pushNamed(context, '/kyc-data-quality')),
+            ListTile(title: const Text('eFASS KYC Returns'), onTap: () => Navigator.pushNamed(context, '/efass-kyc-returns')),
+            ListTile(title: const Text('KYC Enhanced Summary'), onTap: () => Navigator.pushNamed(context, '/kyc-enhanced-summary')),
             ListTile(title: const Text('Lakehouse Cdc Events'), onTap: () => Navigator.pushNamed(context, '/lakehouse-cdc-events')),
             ListTile(title: const Text('Lakehouse Clients'), onTap: () => Navigator.pushNamed(context, '/lakehouse-clients')),
             ListTile(title: const Text('Lakehouse Domain Cdc'), onTap: () => Navigator.pushNamed(context, '/lakehouse-domain-cdc')),
