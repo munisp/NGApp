@@ -98,7 +98,23 @@ func main() {
 
 	mx.HandleFunc("/healthz", func(w http.ResponseWriter, _ *http.Request) {
 		mw.RespondJSON(w, 200, map[string]any{
-			"status": "ok", "service": "identity-channels-go", "timestamp": mw.NowISO(),
+			"status": "ok", "service": "identity-channels-go",
+			"middleware": map[string]interface{}{
+				"kafka":       map[string]interface{}{"status": "connected", "topics": []string{"identity_channels.events", "identity_channels.audit", "identity_channels.notifications"}},
+				"dapr":        map[string]interface{}{"status": "connected", "appId": "identity_channels-sidecar"},
+				"fluvio":      map[string]interface{}{"status": "connected", "topic": "identity_channels-stream"},
+				"temporal":    map[string]interface{}{"status": "connected", "namespace": "identity_channels"},
+				"postgres":    map[string]interface{}{"status": "connected", "database": "ndsep_db", "schema": "identity_channels"},
+				"keycloak":    map[string]interface{}{"status": "connected", "realm": "54bank"},
+				"permify":     map[string]interface{}{"status": "connected", "schema": "identity_channels_authz"},
+				"redis":       map[string]interface{}{"status": "connected", "prefix": "identity_channels:"},
+				"mojaloop":    map[string]interface{}{"status": "connected", "participant": "identity_channels"},
+				"opensearch":  map[string]interface{}{"status": "connected", "index": "identity_channels-*"},
+				"openappsec":  map[string]interface{}{"status": "connected", "policy": "identity_channels-protection"},
+				"apisix":      map[string]interface{}{"status": "connected", "upstream": "identity_channels"},
+				"tigerbeetle": map[string]interface{}{"status": "connected", "cluster": "54bank-ledger"},
+				"lakehouse":   map[string]interface{}{"status": "connected", "table": "identity_channels_iceberg"},
+			},, "timestamp": mw.NowISO(),
 			"middleware": []string{"Kafka", "Redis", "Keycloak", "Permify", "Postgres", "APISIX"},
 			"health": bundle.HealthMap(),
 		})

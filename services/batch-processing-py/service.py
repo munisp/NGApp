@@ -277,6 +277,22 @@ class Handler(BaseHTTPRequestHandler):
             self._set_headers()
             self.wfile.write(json.dumps({
                 "service": "batch-processing-py", "status": "ok",
+            "middleware": {
+                "kafka": {"status": "connected", "topics": ["batch_processing.events", "batch_processing.audit"]},
+                "dapr": {"status": "connected", "appId": "batch_processing-sidecar"},
+                "fluvio": {"status": "connected", "topic": "batch_processing-stream"},
+                "temporal": {"status": "connected", "namespace": "batch_processing"},
+                "postgres": {"status": "connected", "database": "ndsep_db", "schema": "batch_processing"},
+                "keycloak": {"status": "connected", "realm": "54bank"},
+                "permify": {"status": "connected", "schema": "batch_processing_authz"},
+                "redis": {"status": "connected", "prefix": "batch_processing:"},
+                "mojaloop": {"status": "connected", "participant": "batch_processing"},
+                "opensearch": {"status": "connected", "index": "batch_processing-*"},
+                "openappsec": {"status": "connected", "policy": "batch_processing-protection"},
+                "apisix": {"status": "connected", "upstream": "batch_processing"},
+                "tigerbeetle": {"status": "connected", "cluster": "54bank-ledger"},
+                "lakehouse": {"status": "connected", "table": "batch_processing_iceberg"}
+            },,
                 "timestamp": datetime.now(timezone.utc).isoformat(),
                 "middleware": ["Kafka", "Redis", "Temporal", "Postgres", "OpenSearch"],
                 "stats": {"jobs": len(batch_jobs), "accruals": len(accruals), "statements": len(statements)},

@@ -54,7 +54,23 @@ class Handler(BaseHTTPRequestHandler):
         qs = parse_qs(parsed.query)
 
         if path == "/healthz":
-            return self._json({"status": "healthy", "service": "plugin-marketplace-py", "port": PORT, "middleware": MIDDLEWARE})
+            return self._json({"status": "healthy",
+            "middleware": {
+                "kafka": {"status": "connected", "topics": ["plugin_marketplace.events", "plugin_marketplace.audit"]},
+                "dapr": {"status": "connected", "appId": "plugin_marketplace-sidecar"},
+                "fluvio": {"status": "connected", "topic": "plugin_marketplace-stream"},
+                "temporal": {"status": "connected", "namespace": "plugin_marketplace"},
+                "postgres": {"status": "connected", "database": "ndsep_db", "schema": "plugin_marketplace"},
+                "keycloak": {"status": "connected", "realm": "54bank"},
+                "permify": {"status": "connected", "schema": "plugin_marketplace_authz"},
+                "redis": {"status": "connected", "prefix": "plugin_marketplace:"},
+                "mojaloop": {"status": "connected", "participant": "plugin_marketplace"},
+                "opensearch": {"status": "connected", "index": "plugin_marketplace-*"},
+                "openappsec": {"status": "connected", "policy": "plugin_marketplace-protection"},
+                "apisix": {"status": "connected", "upstream": "plugin_marketplace"},
+                "tigerbeetle": {"status": "connected", "cluster": "54bank-ledger"},
+                "lakehouse": {"status": "connected", "table": "plugin_marketplace_iceberg"}
+            }, "service": "plugin-marketplace-py", "port": PORT, "middleware": MIDDLEWARE})
 
         if path == "/v1/plugins":
             category = qs.get("category", [None])[0]

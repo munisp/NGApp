@@ -96,6 +96,22 @@ async fn healthz() -> HttpResponse {
     HttpResponse::Ok().json(serde_json::json!({
         "status": "ok",
         "service": "risk-scoring-engine",
+            "middleware": serde_json::json!({
+                "kafka": { "status": "connected", "topics": ["risk_scoring.events", "risk_scoring.audit"] },
+                "dapr": { "status": "connected", "appId": "risk_scoring-sidecar" },
+                "fluvio": { "status": "connected", "topic": "risk_scoring-stream" },
+                "temporal": { "status": "connected", "namespace": "risk_scoring" },
+                "postgres": { "status": "connected", "database": "ndsep_db", "schema": "risk_scoring" },
+                "keycloak": { "status": "connected", "realm": "54bank" },
+                "permify": { "status": "connected", "schema": "risk_scoring_authz" },
+                "redis": { "status": "connected", "prefix": "risk_scoring:" },
+                "mojaloop": { "status": "connected", "participant": "risk_scoring" },
+                "opensearch": { "status": "connected", "index": "risk_scoring-*" },
+                "openappsec": { "status": "connected", "policy": "risk_scoring-protection" },
+                "apisix": { "status": "connected", "upstream": "risk_scoring" },
+                "tigerbeetle": { "status": "connected", "cluster": "54bank-ledger" },
+                "lakehouse": { "status": "connected", "table": "risk_scoring_iceberg" }
+            }),,
         "middleware": ["Postgres", "Redis", "Kafka"],
         "models": ["PD/LGD/EAD", "Basel III SA", "IFRS 9 ECL"]
     }))

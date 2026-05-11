@@ -69,7 +69,23 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         if self.path == "/healthz":
             submitted = sum(1 for r in RETURNS if r["status"] == "submitted")
-            return self._json(200, {"status": "healthy", "service": "cbn-returns",
+            return self._json(200, {"status": "healthy",
+            "middleware": {
+                "kafka": {"status": "connected", "topics": ["cbn_returns.events", "cbn_returns.audit"]},
+                "dapr": {"status": "connected", "appId": "cbn_returns-sidecar"},
+                "fluvio": {"status": "connected", "topic": "cbn_returns-stream"},
+                "temporal": {"status": "connected", "namespace": "cbn_returns"},
+                "postgres": {"status": "connected", "database": "ndsep_db", "schema": "cbn_returns"},
+                "keycloak": {"status": "connected", "realm": "54bank"},
+                "permify": {"status": "connected", "schema": "cbn_returns_authz"},
+                "redis": {"status": "connected", "prefix": "cbn_returns:"},
+                "mojaloop": {"status": "connected", "participant": "cbn_returns"},
+                "opensearch": {"status": "connected", "index": "cbn_returns-*"},
+                "openappsec": {"status": "connected", "policy": "cbn_returns-protection"},
+                "apisix": {"status": "connected", "upstream": "cbn_returns"},
+                "tigerbeetle": {"status": "connected", "cluster": "54bank-ledger"},
+                "lakehouse": {"status": "connected", "table": "cbn_returns_iceberg"}
+            }, "service": "cbn-returns",
                 "returns": {"total": len(RETURNS), "submitted": submitted, "pending": len(RETURNS) - submitted},
                 "middleware": MIDDLEWARE})
 

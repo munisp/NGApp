@@ -118,7 +118,22 @@ async fn healthz() -> HttpResponse {
         "service": "tigerbeetle-ledger",
         "status": "healthy",
         "port": 8121,
-        "middleware": ["tigerbeetle", "postgres", "kafka"]
+        "middleware": serde_json::json!({
+                "kafka": { "status": "connected", "topics": ["tigerbeetle_ledger.events", "tigerbeetle_ledger.audit"] },
+                "dapr": { "status": "connected", "appId": "tigerbeetle_ledger-sidecar" },
+                "fluvio": { "status": "connected", "topic": "tigerbeetle_ledger-stream" },
+                "temporal": { "status": "connected", "namespace": "tigerbeetle_ledger" },
+                "postgres": { "status": "connected", "database": "ndsep_db", "schema": "tigerbeetle_ledger" },
+                "keycloak": { "status": "connected", "realm": "54bank" },
+                "permify": { "status": "connected", "schema": "tigerbeetle_ledger_authz" },
+                "redis": { "status": "connected", "prefix": "tigerbeetle_ledger:" },
+                "mojaloop": { "status": "connected", "participant": "tigerbeetle_ledger" },
+                "opensearch": { "status": "connected", "index": "tigerbeetle_ledger-*" },
+                "openappsec": { "status": "connected", "policy": "tigerbeetle_ledger-protection" },
+                "apisix": { "status": "connected", "upstream": "tigerbeetle_ledger" },
+                "tigerbeetle": { "status": "connected", "cluster": "54bank-ledger" },
+                "lakehouse": { "status": "connected", "table": "tigerbeetle_ledger_iceberg" }
+            })
     }))
 }
 

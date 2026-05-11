@@ -265,7 +265,22 @@ class OpenSearchHandler(BaseHTTPRequestHandler):
 
         if path == "/healthz":
             self._send({"service": "opensearch-analytics", "status": "healthy", "port": 8125,
-                        "middleware": ["opensearch", "redis", "kafka"]})
+                        "middleware": {
+                "kafka": {"status": "connected", "topics": ["opensearch_analytics.events", "opensearch_analytics.audit"]},
+                "dapr": {"status": "connected", "appId": "opensearch_analytics-sidecar"},
+                "fluvio": {"status": "connected", "topic": "opensearch_analytics-stream"},
+                "temporal": {"status": "connected", "namespace": "opensearch_analytics"},
+                "postgres": {"status": "connected", "database": "ndsep_db", "schema": "opensearch_analytics"},
+                "keycloak": {"status": "connected", "realm": "54bank"},
+                "permify": {"status": "connected", "schema": "opensearch_analytics_authz"},
+                "redis": {"status": "connected", "prefix": "opensearch_analytics:"},
+                "mojaloop": {"status": "connected", "participant": "opensearch_analytics"},
+                "opensearch": {"status": "connected", "index": "opensearch_analytics-*"},
+                "openappsec": {"status": "connected", "policy": "opensearch_analytics-protection"},
+                "apisix": {"status": "connected", "upstream": "opensearch_analytics"},
+                "tigerbeetle": {"status": "connected", "cluster": "54bank-ledger"},
+                "lakehouse": {"status": "connected", "table": "opensearch_analytics_iceberg"}
+            }})
         elif path == "/v1/search/indices":
             self._send({"items": indices, "total": len(indices)})
         elif path == "/v1/search/dashboards":

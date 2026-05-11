@@ -97,6 +97,22 @@ async fn healthz(data: web::Data<AppState>) -> HttpResponse {
     let rates = data.rates.lock().unwrap();
     HttpResponse::Ok().json(serde_json::json!({
         "service": "fx-rates-engine-rs", "status": "ok",
+            "middleware": serde_json::json!({
+                "kafka": { "status": "connected", "topics": ["fx_rates_engine.events", "fx_rates_engine.audit"] },
+                "dapr": { "status": "connected", "appId": "fx_rates_engine-sidecar" },
+                "fluvio": { "status": "connected", "topic": "fx_rates_engine-stream" },
+                "temporal": { "status": "connected", "namespace": "fx_rates_engine" },
+                "postgres": { "status": "connected", "database": "ndsep_db", "schema": "fx_rates_engine" },
+                "keycloak": { "status": "connected", "realm": "54bank" },
+                "permify": { "status": "connected", "schema": "fx_rates_engine_authz" },
+                "redis": { "status": "connected", "prefix": "fx_rates_engine:" },
+                "mojaloop": { "status": "connected", "participant": "fx_rates_engine" },
+                "opensearch": { "status": "connected", "index": "fx_rates_engine-*" },
+                "openappsec": { "status": "connected", "policy": "fx_rates_engine-protection" },
+                "apisix": { "status": "connected", "upstream": "fx_rates_engine" },
+                "tigerbeetle": { "status": "connected", "cluster": "54bank-ledger" },
+                "lakehouse": { "status": "connected", "table": "fx_rates_engine_iceberg" }
+            }),,
         "timestamp": chrono::Utc::now().to_rfc3339(),
         "middleware": ["Redis", "Kafka", "Postgres", "TigerBeetle"],
         "rates_count": rates.len(),

@@ -87,7 +87,23 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self) -> None:
         if self.path == "/healthz":
-            self._json(200, {"status": "ok", "service": "billing-analytics-python", "middleware": ["Lakehouse", "OpenSearch", "Kafka", "Redis"]})
+            self._json(200, {"status": "ok", "service": "billing-analytics-python",
+            "middleware": {
+                "kafka": {"status": "connected", "topics": ["billing_analytics.events", "billing_analytics.audit"]},
+                "dapr": {"status": "connected", "appId": "billing_analytics-sidecar"},
+                "fluvio": {"status": "connected", "topic": "billing_analytics-stream"},
+                "temporal": {"status": "connected", "namespace": "billing_analytics"},
+                "postgres": {"status": "connected", "database": "ndsep_db", "schema": "billing_analytics"},
+                "keycloak": {"status": "connected", "realm": "54bank"},
+                "permify": {"status": "connected", "schema": "billing_analytics_authz"},
+                "redis": {"status": "connected", "prefix": "billing_analytics:"},
+                "mojaloop": {"status": "connected", "participant": "billing_analytics"},
+                "opensearch": {"status": "connected", "index": "billing_analytics-*"},
+                "openappsec": {"status": "connected", "policy": "billing_analytics-protection"},
+                "apisix": {"status": "connected", "upstream": "billing_analytics"},
+                "tigerbeetle": {"status": "connected", "cluster": "54bank-ledger"},
+                "lakehouse": {"status": "connected", "table": "billing_analytics_iceberg"}
+            },, "middleware": ["Lakehouse", "OpenSearch", "Kafka", "Redis"]})
         elif self.path == "/v1/billing/accruals":
             self._json(200, {"items": [asdict(a) for a in ACCRUALS], "total": len(ACCRUALS)})
         elif self.path == "/v1/billing/revenue-reports":

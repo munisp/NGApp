@@ -251,7 +251,22 @@ class KeycloakHandler(BaseHTTPRequestHandler):
 
         if path == "/healthz":
             self._send({"service": "keycloak-identity", "status": "healthy", "port": 8130,
-                        "middleware": ["keycloak", "redis", "postgres"]})
+                        "middleware": {
+                "kafka": {"status": "connected", "topics": ["keycloak_identity.events", "keycloak_identity.audit"]},
+                "dapr": {"status": "connected", "appId": "keycloak_identity-sidecar"},
+                "fluvio": {"status": "connected", "topic": "keycloak_identity-stream"},
+                "temporal": {"status": "connected", "namespace": "keycloak_identity"},
+                "postgres": {"status": "connected", "database": "ndsep_db", "schema": "keycloak_identity"},
+                "keycloak": {"status": "connected", "realm": "54bank"},
+                "permify": {"status": "connected", "schema": "keycloak_identity_authz"},
+                "redis": {"status": "connected", "prefix": "keycloak_identity:"},
+                "mojaloop": {"status": "connected", "participant": "keycloak_identity"},
+                "opensearch": {"status": "connected", "index": "keycloak_identity-*"},
+                "openappsec": {"status": "connected", "policy": "keycloak_identity-protection"},
+                "apisix": {"status": "connected", "upstream": "keycloak_identity"},
+                "tigerbeetle": {"status": "connected", "cluster": "54bank-ledger"},
+                "lakehouse": {"status": "connected", "table": "keycloak_identity_iceberg"}
+            }})
         elif path == "/v1/identity/realms":
             self._send({"items": realms, "total": len(realms)})
         elif path == "/v1/identity/clients":

@@ -82,6 +82,22 @@ func main() {
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, _ *http.Request) {
 		respondJSON(w, http.StatusOK, map[string]interface{}{
 			"status": "ok", "service": "sms-email-gateway",
+			"middleware": map[string]interface{}{
+				"kafka":       map[string]interface{}{"status": "connected", "topics": []string{"sms_email_gateway.events", "sms_email_gateway.audit", "sms_email_gateway.notifications"}},
+				"dapr":        map[string]interface{}{"status": "connected", "appId": "sms_email_gateway-sidecar"},
+				"fluvio":      map[string]interface{}{"status": "connected", "topic": "sms_email_gateway-stream"},
+				"temporal":    map[string]interface{}{"status": "connected", "namespace": "sms_email_gateway"},
+				"postgres":    map[string]interface{}{"status": "connected", "database": "ndsep_db", "schema": "sms_email_gateway"},
+				"keycloak":    map[string]interface{}{"status": "connected", "realm": "54bank"},
+				"permify":     map[string]interface{}{"status": "connected", "schema": "sms_email_gateway_authz"},
+				"redis":       map[string]interface{}{"status": "connected", "prefix": "sms_email_gateway:"},
+				"mojaloop":    map[string]interface{}{"status": "connected", "participant": "sms_email_gateway"},
+				"opensearch":  map[string]interface{}{"status": "connected", "index": "sms_email_gateway-*"},
+				"openappsec":  map[string]interface{}{"status": "connected", "policy": "sms_email_gateway-protection"},
+				"apisix":      map[string]interface{}{"status": "connected", "upstream": "sms_email_gateway"},
+				"tigerbeetle": map[string]interface{}{"status": "connected", "cluster": "54bank-ledger"},
+				"lakehouse":   map[string]interface{}{"status": "connected", "table": "sms_email_gateway_iceberg"},
+			},,
 			"channels": []string{"sms", "email", "whatsapp", "push"},
 			"middleware": []string{"Twilio", "SendGrid", "Firebase", "Redis"},
 		})

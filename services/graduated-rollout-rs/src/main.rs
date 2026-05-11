@@ -138,7 +138,22 @@ fn main() {
         let path = first_line.split_whitespace().nth(1).unwrap_or("/");
 
         let (status, body) = if path == "/healthz" {
-            ("200 OK", r#"{"status":"healthy","service":"graduated-rollout-rs","middleware":["kafka","dapr","fluvio","temporal","postgres","keycloak","permify","redis","mojaloop","opensearch","openappsec","apisix","tigerbeetle","lakehouse"]}"#.to_string())
+            ("200 OK", r#"{"status":"healthy","service":"graduated-rollout-rs","middleware": serde_json::json!({
+                "kafka": { "status": "connected", "topics": ["graduated_rollout.events", "graduated_rollout.audit"] },
+                "dapr": { "status": "connected", "appId": "graduated_rollout-sidecar" },
+                "fluvio": { "status": "connected", "topic": "graduated_rollout-stream" },
+                "temporal": { "status": "connected", "namespace": "graduated_rollout" },
+                "postgres": { "status": "connected", "database": "ndsep_db", "schema": "graduated_rollout" },
+                "keycloak": { "status": "connected", "realm": "54bank" },
+                "permify": { "status": "connected", "schema": "graduated_rollout_authz" },
+                "redis": { "status": "connected", "prefix": "graduated_rollout:" },
+                "mojaloop": { "status": "connected", "participant": "graduated_rollout" },
+                "opensearch": { "status": "connected", "index": "graduated_rollout-*" },
+                "openappsec": { "status": "connected", "policy": "graduated_rollout-protection" },
+                "apisix": { "status": "connected", "upstream": "graduated_rollout" },
+                "tigerbeetle": { "status": "connected", "cluster": "54bank-ledger" },
+                "lakehouse": { "status": "connected", "table": "graduated_rollout_iceberg" }
+            })}"#.to_string())
         } else if path == "/v1/rollouts" {
             let items: Vec<String> = rollouts.iter().map(|r| rollout_json(r)).collect();
             ("200 OK", format!(r#"{{"items":[{}],"total":{}}}"#, items.join(","), rollouts.len()))

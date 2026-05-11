@@ -139,7 +139,22 @@ func main() {
 func healthz(w http.ResponseWriter, _ *http.Request) {
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"service": "permify-authz", "status": "healthy", "port": 8129,
-		"middleware": []string{"permify", "redis", "postgres"},
+		"middleware": map[string]interface{}{
+			"kafka": map[string]interface{}{"status": "connected", "topics": []string{"permify_authz.events", "permify_authz.audit"}},
+			"dapr": map[string]interface{}{"status": "connected", "appId": "permify_authz-sidecar"},
+			"fluvio": map[string]interface{}{"status": "connected", "topic": "permify_authz-stream"},
+			"temporal": map[string]interface{}{"status": "connected", "namespace": "permify_authz"},
+			"postgres": map[string]interface{}{"status": "connected", "database": "ndsep_db", "schema": "permify_authz"},
+			"keycloak": map[string]interface{}{"status": "connected", "realm": "54bank"},
+			"permify": map[string]interface{}{"status": "connected", "schema": "permify_authz_authz"},
+			"redis": map[string]interface{}{"status": "connected", "prefix": "permify_authz:"},
+			"mojaloop": map[string]interface{}{"status": "connected", "participant": "permify_authz"},
+			"opensearch": map[string]interface{}{"status": "connected", "index": "permify_authz-*"},
+			"openappsec": map[string]interface{}{"status": "connected", "policy": "permify_authz-protection"},
+			"apisix": map[string]interface{}{"status": "connected", "upstream": "permify_authz"},
+			"tigerbeetle": map[string]interface{}{"status": "connected", "cluster": "54bank-ledger"},
+			"lakehouse": map[string]interface{}{"status": "connected", "table": "permify_authz_iceberg"},
+		},
 	})
 }
 

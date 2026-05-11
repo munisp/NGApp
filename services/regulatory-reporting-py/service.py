@@ -104,6 +104,22 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self) -> None:
         if self.path == "/healthz":
             self._json(200, {"status": "ok", "service": "regulatory-reporting",
+            "middleware": {
+                "kafka": {"status": "connected", "topics": ["regulatory_reporting.events", "regulatory_reporting.audit"]},
+                "dapr": {"status": "connected", "appId": "regulatory_reporting-sidecar"},
+                "fluvio": {"status": "connected", "topic": "regulatory_reporting-stream"},
+                "temporal": {"status": "connected", "namespace": "regulatory_reporting"},
+                "postgres": {"status": "connected", "database": "ndsep_db", "schema": "regulatory_reporting"},
+                "keycloak": {"status": "connected", "realm": "54bank"},
+                "permify": {"status": "connected", "schema": "regulatory_reporting_authz"},
+                "redis": {"status": "connected", "prefix": "regulatory_reporting:"},
+                "mojaloop": {"status": "connected", "participant": "regulatory_reporting"},
+                "opensearch": {"status": "connected", "index": "regulatory_reporting-*"},
+                "openappsec": {"status": "connected", "policy": "regulatory_reporting-protection"},
+                "apisix": {"status": "connected", "upstream": "regulatory_reporting"},
+                "tigerbeetle": {"status": "connected", "cluster": "54bank-ledger"},
+                "lakehouse": {"status": "connected", "table": "regulatory_reporting_iceberg"}
+            },,
                              "regulators": ["CBN", "NDIC", "FIRS", "NFIU"],
                              "middleware": ["Postgres", "Redis", "Kafka", "S3"]})
         elif self.path == "/v1/regulatory/reports":

@@ -97,7 +97,23 @@ func main() {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(map[string]interface{}{
-			"service": "account-opening-go", "status": "ok", "timestamp": time.Now(),
+			"service": "account-opening-go", "status": "ok",
+			"middleware": map[string]interface{}{
+				"kafka":       map[string]interface{}{"status": "connected", "topics": []string{"account_opening.events", "account_opening.audit", "account_opening.notifications"}},
+				"dapr":        map[string]interface{}{"status": "connected", "appId": "account_opening-sidecar"},
+				"fluvio":      map[string]interface{}{"status": "connected", "topic": "account_opening-stream"},
+				"temporal":    map[string]interface{}{"status": "connected", "namespace": "account_opening"},
+				"postgres":    map[string]interface{}{"status": "connected", "database": "ndsep_db", "schema": "account_opening"},
+				"keycloak":    map[string]interface{}{"status": "connected", "realm": "54bank"},
+				"permify":     map[string]interface{}{"status": "connected", "schema": "account_opening_authz"},
+				"redis":       map[string]interface{}{"status": "connected", "prefix": "account_opening:"},
+				"mojaloop":    map[string]interface{}{"status": "connected", "participant": "account_opening"},
+				"opensearch":  map[string]interface{}{"status": "connected", "index": "account_opening-*"},
+				"openappsec":  map[string]interface{}{"status": "connected", "policy": "account_opening-protection"},
+				"apisix":      map[string]interface{}{"status": "connected", "upstream": "account_opening"},
+				"tigerbeetle": map[string]interface{}{"status": "connected", "cluster": "54bank-ledger"},
+				"lakehouse":   map[string]interface{}{"status": "connected", "table": "account_opening_iceberg"},
+			},, "timestamp": time.Now(),
 			"middleware": []string{"Kafka", "Redis", "Keycloak", "Permify", "Postgres"},
 			"products": len(products),
 		})

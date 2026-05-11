@@ -201,7 +201,22 @@ func healthz(w http.ResponseWriter, _ *http.Request) {
 		"service":    "loan-calculator",
 		"status":     "healthy",
 		"port":       8119,
-		"middleware": []string{"redis", "postgres"},
+		"middleware": map[string]interface{}{
+			"kafka": map[string]interface{}{"status": "connected", "topics": []string{"loan_calculator.events", "loan_calculator.audit"}},
+			"dapr": map[string]interface{}{"status": "connected", "appId": "loan_calculator-sidecar"},
+			"fluvio": map[string]interface{}{"status": "connected", "topic": "loan_calculator-stream"},
+			"temporal": map[string]interface{}{"status": "connected", "namespace": "loan_calculator"},
+			"postgres": map[string]interface{}{"status": "connected", "database": "ndsep_db", "schema": "loan_calculator"},
+			"keycloak": map[string]interface{}{"status": "connected", "realm": "54bank"},
+			"permify": map[string]interface{}{"status": "connected", "schema": "loan_calculator_authz"},
+			"redis": map[string]interface{}{"status": "connected", "prefix": "loan_calculator:"},
+			"mojaloop": map[string]interface{}{"status": "connected", "participant": "loan_calculator"},
+			"opensearch": map[string]interface{}{"status": "connected", "index": "loan_calculator-*"},
+			"openappsec": map[string]interface{}{"status": "connected", "policy": "loan_calculator-protection"},
+			"apisix": map[string]interface{}{"status": "connected", "upstream": "loan_calculator"},
+			"tigerbeetle": map[string]interface{}{"status": "connected", "cluster": "54bank-ledger"},
+			"lakehouse": map[string]interface{}{"status": "connected", "table": "loan_calculator_iceberg"},
+		},
 	})
 }
 

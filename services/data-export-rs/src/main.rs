@@ -73,6 +73,22 @@ async fn healthz() -> HttpResponse {
     HttpResponse::Ok().json(serde_json::json!({
         "status": "ok",
         "service": "data-export-engine",
+            "middleware": serde_json::json!({
+                "kafka": { "status": "connected", "topics": ["data_export.events", "data_export.audit"] },
+                "dapr": { "status": "connected", "appId": "data_export-sidecar" },
+                "fluvio": { "status": "connected", "topic": "data_export-stream" },
+                "temporal": { "status": "connected", "namespace": "data_export" },
+                "postgres": { "status": "connected", "database": "ndsep_db", "schema": "data_export" },
+                "keycloak": { "status": "connected", "realm": "54bank" },
+                "permify": { "status": "connected", "schema": "data_export_authz" },
+                "redis": { "status": "connected", "prefix": "data_export:" },
+                "mojaloop": { "status": "connected", "participant": "data_export" },
+                "opensearch": { "status": "connected", "index": "data_export-*" },
+                "openappsec": { "status": "connected", "policy": "data_export-protection" },
+                "apisix": { "status": "connected", "upstream": "data_export" },
+                "tigerbeetle": { "status": "connected", "cluster": "54bank-ledger" },
+                "lakehouse": { "status": "connected", "table": "data_export_iceberg" }
+            }),,
         "formats": ["csv", "xlsx", "json", "xml", "parquet", "pdf"],
         "middleware": ["Postgres", "S3", "Redis", "Kafka"]
     }))

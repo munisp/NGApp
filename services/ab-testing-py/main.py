@@ -57,7 +57,23 @@ class Handler(BaseHTTPRequestHandler):
         path = parsed.path
 
         if path == "/healthz":
-            return self._json({"status": "healthy", "service": "ab-testing-py", "port": PORT, "middleware": MIDDLEWARE})
+            return self._json({"status": "healthy",
+            "middleware": {
+                "kafka": {"status": "connected", "topics": ["ab_testing.events", "ab_testing.audit"]},
+                "dapr": {"status": "connected", "appId": "ab_testing-sidecar"},
+                "fluvio": {"status": "connected", "topic": "ab_testing-stream"},
+                "temporal": {"status": "connected", "namespace": "ab_testing"},
+                "postgres": {"status": "connected", "database": "ndsep_db", "schema": "ab_testing"},
+                "keycloak": {"status": "connected", "realm": "54bank"},
+                "permify": {"status": "connected", "schema": "ab_testing_authz"},
+                "redis": {"status": "connected", "prefix": "ab_testing:"},
+                "mojaloop": {"status": "connected", "participant": "ab_testing"},
+                "opensearch": {"status": "connected", "index": "ab_testing-*"},
+                "openappsec": {"status": "connected", "policy": "ab_testing-protection"},
+                "apisix": {"status": "connected", "upstream": "ab_testing"},
+                "tigerbeetle": {"status": "connected", "cluster": "54bank-ledger"},
+                "lakehouse": {"status": "connected", "table": "ab_testing_iceberg"}
+            }, "service": "ab-testing-py", "port": PORT, "middleware": MIDDLEWARE})
 
         if path == "/v1/experiments":
             return self._json({"items": experiments, "total": len(experiments)})

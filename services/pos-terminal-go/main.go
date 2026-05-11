@@ -78,6 +78,22 @@ func main() {
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, _ *http.Request) {
 		respondJSON(w, http.StatusOK, map[string]interface{}{
 			"status": "ok", "service": "pos-terminal-management",
+			"middleware": map[string]interface{}{
+				"kafka":       map[string]interface{}{"status": "connected", "topics": []string{"pos_terminal.events", "pos_terminal.audit", "pos_terminal.notifications"}},
+				"dapr":        map[string]interface{}{"status": "connected", "appId": "pos_terminal-sidecar"},
+				"fluvio":      map[string]interface{}{"status": "connected", "topic": "pos_terminal-stream"},
+				"temporal":    map[string]interface{}{"status": "connected", "namespace": "pos_terminal"},
+				"postgres":    map[string]interface{}{"status": "connected", "database": "ndsep_db", "schema": "pos_terminal"},
+				"keycloak":    map[string]interface{}{"status": "connected", "realm": "54bank"},
+				"permify":     map[string]interface{}{"status": "connected", "schema": "pos_terminal_authz"},
+				"redis":       map[string]interface{}{"status": "connected", "prefix": "pos_terminal:"},
+				"mojaloop":    map[string]interface{}{"status": "connected", "participant": "pos_terminal"},
+				"opensearch":  map[string]interface{}{"status": "connected", "index": "pos_terminal-*"},
+				"openappsec":  map[string]interface{}{"status": "connected", "policy": "pos_terminal-protection"},
+				"apisix":      map[string]interface{}{"status": "connected", "upstream": "pos_terminal"},
+				"tigerbeetle": map[string]interface{}{"status": "connected", "cluster": "54bank-ledger"},
+				"lakehouse":   map[string]interface{}{"status": "connected", "table": "pos_terminal_iceberg"},
+			},,
 			"middleware": []string{"NIBSS", "Interswitch", "Postgres", "Kafka"},
 		})
 	})

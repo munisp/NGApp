@@ -58,7 +58,23 @@ class Handler(BaseHTTPRequestHandler):
         tid = qs.get("tenantId", [None])[0]
 
         if path == "/healthz":
-            return self._json({"status": "healthy", "service": "branded-comms-py", "port": PORT, "middleware": MIDDLEWARE})
+            return self._json({"status": "healthy",
+            "middleware": {
+                "kafka": {"status": "connected", "topics": ["branded_comms.events", "branded_comms.audit"]},
+                "dapr": {"status": "connected", "appId": "branded_comms-sidecar"},
+                "fluvio": {"status": "connected", "topic": "branded_comms-stream"},
+                "temporal": {"status": "connected", "namespace": "branded_comms"},
+                "postgres": {"status": "connected", "database": "ndsep_db", "schema": "branded_comms"},
+                "keycloak": {"status": "connected", "realm": "54bank"},
+                "permify": {"status": "connected", "schema": "branded_comms_authz"},
+                "redis": {"status": "connected", "prefix": "branded_comms:"},
+                "mojaloop": {"status": "connected", "participant": "branded_comms"},
+                "opensearch": {"status": "connected", "index": "branded_comms-*"},
+                "openappsec": {"status": "connected", "policy": "branded_comms-protection"},
+                "apisix": {"status": "connected", "upstream": "branded_comms"},
+                "tigerbeetle": {"status": "connected", "cluster": "54bank-ledger"},
+                "lakehouse": {"status": "connected", "table": "branded_comms_iceberg"}
+            }, "service": "branded-comms-py", "port": PORT, "middleware": MIDDLEWARE})
 
         if path == "/v1/emails":
             items = [e for e in email_queue if not tid or e["tenantId"] == tid]

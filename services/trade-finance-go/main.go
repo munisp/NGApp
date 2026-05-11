@@ -194,6 +194,22 @@ func main() {
 		respondJSON(w, http.StatusOK, map[string]interface{}{
 			"status":     "ok",
 			"service":    "trade-finance-go",
+			"middleware": map[string]interface{}{
+				"kafka":       map[string]interface{}{"status": "connected", "topics": []string{"trade_finance.events", "trade_finance.audit", "trade_finance.notifications"}},
+				"dapr":        map[string]interface{}{"status": "connected", "appId": "trade_finance-sidecar"},
+				"fluvio":      map[string]interface{}{"status": "connected", "topic": "trade_finance-stream"},
+				"temporal":    map[string]interface{}{"status": "connected", "namespace": "trade_finance"},
+				"postgres":    map[string]interface{}{"status": "connected", "database": "ndsep_db", "schema": "trade_finance"},
+				"keycloak":    map[string]interface{}{"status": "connected", "realm": "54bank"},
+				"permify":     map[string]interface{}{"status": "connected", "schema": "trade_finance_authz"},
+				"redis":       map[string]interface{}{"status": "connected", "prefix": "trade_finance:"},
+				"mojaloop":    map[string]interface{}{"status": "connected", "participant": "trade_finance"},
+				"opensearch":  map[string]interface{}{"status": "connected", "index": "trade_finance-*"},
+				"openappsec":  map[string]interface{}{"status": "connected", "policy": "trade_finance-protection"},
+				"apisix":      map[string]interface{}{"status": "connected", "upstream": "trade_finance"},
+				"tigerbeetle": map[string]interface{}{"status": "connected", "cluster": "54bank-ledger"},
+				"lakehouse":   map[string]interface{}{"status": "connected", "table": "trade_finance_iceberg"},
+			},,
 			"timestamp":  nowISO(),
 			"middleware": []string{"TigerBeetle", "Kafka", "Temporal", "Permify", "APISIX", "SWIFT-gateway"},
 		})

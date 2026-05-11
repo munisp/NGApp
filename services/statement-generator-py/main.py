@@ -65,7 +65,23 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         if self.path == "/healthz":
             delivered = sum(1 for s in STATEMENTS if s["status"] == "delivered")
-            return self._json(200, {"status": "healthy", "service": "statement-generator",
+            return self._json(200, {"status": "healthy",
+            "middleware": {
+                "kafka": {"status": "connected", "topics": ["statement_generator.events", "statement_generator.audit"]},
+                "dapr": {"status": "connected", "appId": "statement_generator-sidecar"},
+                "fluvio": {"status": "connected", "topic": "statement_generator-stream"},
+                "temporal": {"status": "connected", "namespace": "statement_generator"},
+                "postgres": {"status": "connected", "database": "ndsep_db", "schema": "statement_generator"},
+                "keycloak": {"status": "connected", "realm": "54bank"},
+                "permify": {"status": "connected", "schema": "statement_generator_authz"},
+                "redis": {"status": "connected", "prefix": "statement_generator:"},
+                "mojaloop": {"status": "connected", "participant": "statement_generator"},
+                "opensearch": {"status": "connected", "index": "statement_generator-*"},
+                "openappsec": {"status": "connected", "policy": "statement_generator-protection"},
+                "apisix": {"status": "connected", "upstream": "statement_generator"},
+                "tigerbeetle": {"status": "connected", "cluster": "54bank-ledger"},
+                "lakehouse": {"status": "connected", "table": "statement_generator_iceberg"}
+            }, "service": "statement-generator",
                 "statements": {"total": len(STATEMENTS), "delivered": delivered, "failed": 1},
                 "formats": ["pdf", "mt940", "mt942", "csv", "excel"],
                 "middleware": MIDDLEWARE})

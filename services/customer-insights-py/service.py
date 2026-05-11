@@ -108,6 +108,22 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self) -> None:
         if self.path == "/healthz":
             self._json(200, {"status": "ok", "service": "customer-insights",
+            "middleware": {
+                "kafka": {"status": "connected", "topics": ["customer_insights.events", "customer_insights.audit"]},
+                "dapr": {"status": "connected", "appId": "customer_insights-sidecar"},
+                "fluvio": {"status": "connected", "topic": "customer_insights-stream"},
+                "temporal": {"status": "connected", "namespace": "customer_insights"},
+                "postgres": {"status": "connected", "database": "ndsep_db", "schema": "customer_insights"},
+                "keycloak": {"status": "connected", "realm": "54bank"},
+                "permify": {"status": "connected", "schema": "customer_insights_authz"},
+                "redis": {"status": "connected", "prefix": "customer_insights:"},
+                "mojaloop": {"status": "connected", "participant": "customer_insights"},
+                "opensearch": {"status": "connected", "index": "customer_insights-*"},
+                "openappsec": {"status": "connected", "policy": "customer_insights-protection"},
+                "apisix": {"status": "connected", "upstream": "customer_insights"},
+                "tigerbeetle": {"status": "connected", "cluster": "54bank-ledger"},
+                "lakehouse": {"status": "connected", "table": "customer_insights_iceberg"}
+            },,
                              "models": ["churn-v3.2", "cross-sell-v2.1", "anomaly-v1.5", "clv-v1.0"],
                              "middleware": ["Postgres", "Redis", "Kafka", "MLflow"]})
         elif self.path == "/v1/insights/churn":

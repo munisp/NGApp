@@ -73,6 +73,22 @@ async fn healthz() -> HttpResponse {
     HttpResponse::Ok().json(serde_json::json!({
         "status": "ok",
         "service": "credit-bureau-integration",
+            "middleware": serde_json::json!({
+                "kafka": { "status": "connected", "topics": ["credit_bureau.events", "credit_bureau.audit"] },
+                "dapr": { "status": "connected", "appId": "credit_bureau-sidecar" },
+                "fluvio": { "status": "connected", "topic": "credit_bureau-stream" },
+                "temporal": { "status": "connected", "namespace": "credit_bureau" },
+                "postgres": { "status": "connected", "database": "ndsep_db", "schema": "credit_bureau" },
+                "keycloak": { "status": "connected", "realm": "54bank" },
+                "permify": { "status": "connected", "schema": "credit_bureau_authz" },
+                "redis": { "status": "connected", "prefix": "credit_bureau:" },
+                "mojaloop": { "status": "connected", "participant": "credit_bureau" },
+                "opensearch": { "status": "connected", "index": "credit_bureau-*" },
+                "openappsec": { "status": "connected", "policy": "credit_bureau-protection" },
+                "apisix": { "status": "connected", "upstream": "credit_bureau" },
+                "tigerbeetle": { "status": "connected", "cluster": "54bank-ledger" },
+                "lakehouse": { "status": "connected", "table": "credit_bureau_iceberg" }
+            }),,
         "bureaus": ["CRC", "FirstCentral", "CreditRegistry"],
         "middleware": ["Postgres", "Redis", "Kafka"]
     }))

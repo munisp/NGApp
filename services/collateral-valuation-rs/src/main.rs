@@ -51,6 +51,22 @@ async fn healthz() -> HttpResponse {
     HttpResponse::Ok().json(serde_json::json!({
         "status": "ok",
         "service": "collateral-valuation",
+            "middleware": serde_json::json!({
+                "kafka": { "status": "connected", "topics": ["collateral_valuation.events", "collateral_valuation.audit"] },
+                "dapr": { "status": "connected", "appId": "collateral_valuation-sidecar" },
+                "fluvio": { "status": "connected", "topic": "collateral_valuation-stream" },
+                "temporal": { "status": "connected", "namespace": "collateral_valuation" },
+                "postgres": { "status": "connected", "database": "ndsep_db", "schema": "collateral_valuation" },
+                "keycloak": { "status": "connected", "realm": "54bank" },
+                "permify": { "status": "connected", "schema": "collateral_valuation_authz" },
+                "redis": { "status": "connected", "prefix": "collateral_valuation:" },
+                "mojaloop": { "status": "connected", "participant": "collateral_valuation" },
+                "opensearch": { "status": "connected", "index": "collateral_valuation-*" },
+                "openappsec": { "status": "connected", "policy": "collateral_valuation-protection" },
+                "apisix": { "status": "connected", "upstream": "collateral_valuation" },
+                "tigerbeetle": { "status": "connected", "cluster": "54bank-ledger" },
+                "lakehouse": { "status": "connected", "table": "collateral_valuation_iceberg" }
+            }),,
         "types": ["property", "vehicle", "equipment", "securities", "cash_deposit", "guarantee"],
         "middleware": ["Postgres", "Redis", "S3"]
     }))

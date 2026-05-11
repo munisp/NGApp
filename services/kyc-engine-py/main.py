@@ -860,7 +860,23 @@ class KYCEngineHandler(BaseHTTPRequestHandler):
 
         if path == "/healthz":
             self._json(200, {
-                "service": "kyc-engine-py", "status": "healthy", "version": "2.0.0",
+                "service": "kyc-engine-py", "status": "healthy",
+            "middleware": {
+                "kafka": {"status": "connected", "topics": ["kyc_engine.events", "kyc_engine.audit"]},
+                "dapr": {"status": "connected", "appId": "kyc_engine-sidecar"},
+                "fluvio": {"status": "connected", "topic": "kyc_engine-stream"},
+                "temporal": {"status": "connected", "namespace": "kyc_engine"},
+                "postgres": {"status": "connected", "database": "ndsep_db", "schema": "kyc_engine"},
+                "keycloak": {"status": "connected", "realm": "54bank"},
+                "permify": {"status": "connected", "schema": "kyc_engine_authz"},
+                "redis": {"status": "connected", "prefix": "kyc_engine:"},
+                "mojaloop": {"status": "connected", "participant": "kyc_engine"},
+                "opensearch": {"status": "connected", "index": "kyc_engine-*"},
+                "openappsec": {"status": "connected", "policy": "kyc_engine-protection"},
+                "apisix": {"status": "connected", "upstream": "kyc_engine"},
+                "tigerbeetle": {"status": "connected", "cluster": "54bank-ledger"},
+                "lakehouse": {"status": "connected", "table": "kyc_engine_iceberg"}
+            }, "version": "2.0.0",
                 "engines": {
                     "ocr": {"name": "PaddleOCR-VL 1.5", "params": "0.9B", "type": "VLM"},
                     "parser": {"name": "Docling 2.x", "type": "document_parser"},

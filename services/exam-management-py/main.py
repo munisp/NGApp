@@ -60,7 +60,23 @@ class Handler(BaseHTTPRequestHandler):
         if self.path == "/healthz":
             total_findings = sum(len(e["findings"]) for e in EXAMS)
             open_findings = sum(1 for e in EXAMS for f in e["findings"] if f["status"] in ("open", "in-progress", "acknowledged"))
-            return self._json(200, {"status": "healthy", "service": "exam-management",
+            return self._json(200, {"status": "healthy",
+            "middleware": {
+                "kafka": {"status": "connected", "topics": ["exam_management.events", "exam_management.audit"]},
+                "dapr": {"status": "connected", "appId": "exam_management-sidecar"},
+                "fluvio": {"status": "connected", "topic": "exam_management-stream"},
+                "temporal": {"status": "connected", "namespace": "exam_management"},
+                "postgres": {"status": "connected", "database": "ndsep_db", "schema": "exam_management"},
+                "keycloak": {"status": "connected", "realm": "54bank"},
+                "permify": {"status": "connected", "schema": "exam_management_authz"},
+                "redis": {"status": "connected", "prefix": "exam_management:"},
+                "mojaloop": {"status": "connected", "participant": "exam_management"},
+                "opensearch": {"status": "connected", "index": "exam_management-*"},
+                "openappsec": {"status": "connected", "policy": "exam_management-protection"},
+                "apisix": {"status": "connected", "upstream": "exam_management"},
+                "tigerbeetle": {"status": "connected", "cluster": "54bank-ledger"},
+                "lakehouse": {"status": "connected", "table": "exam_management_iceberg"}
+            }, "service": "exam-management",
                 "exams": {"total": len(EXAMS), "findings": total_findings, "openFindings": open_findings},
                 "middleware": MIDDLEWARE})
 

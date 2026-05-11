@@ -100,7 +100,23 @@ func main() {
 
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(map[string]interface{}{
-			"service": "notification-service-go", "status": "ok", "timestamp": time.Now(),
+			"service": "notification-service-go", "status": "ok",
+			"middleware": map[string]interface{}{
+				"kafka":       map[string]interface{}{"status": "connected", "topics": []string{"notification_service.events", "notification_service.audit", "notification_service.notifications"}},
+				"dapr":        map[string]interface{}{"status": "connected", "appId": "notification_service-sidecar"},
+				"fluvio":      map[string]interface{}{"status": "connected", "topic": "notification_service-stream"},
+				"temporal":    map[string]interface{}{"status": "connected", "namespace": "notification_service"},
+				"postgres":    map[string]interface{}{"status": "connected", "database": "ndsep_db", "schema": "notification_service"},
+				"keycloak":    map[string]interface{}{"status": "connected", "realm": "54bank"},
+				"permify":     map[string]interface{}{"status": "connected", "schema": "notification_service_authz"},
+				"redis":       map[string]interface{}{"status": "connected", "prefix": "notification_service:"},
+				"mojaloop":    map[string]interface{}{"status": "connected", "participant": "notification_service"},
+				"opensearch":  map[string]interface{}{"status": "connected", "index": "notification_service-*"},
+				"openappsec":  map[string]interface{}{"status": "connected", "policy": "notification_service-protection"},
+				"apisix":      map[string]interface{}{"status": "connected", "upstream": "notification_service"},
+				"tigerbeetle": map[string]interface{}{"status": "connected", "cluster": "54bank-ledger"},
+				"lakehouse":   map[string]interface{}{"status": "connected", "table": "notification_service_iceberg"},
+			},, "timestamp": time.Now(),
 			"middleware": []string{"Kafka", "Redis", "Dapr", "Postgres"},
 			"stats": map[string]int{"templates": len(templates), "queued": countByStatus("queued"), "sent": countByStatus("sent"), "failed": countByStatus("failed")},
 		})

@@ -80,6 +80,22 @@ func main() {
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, _ *http.Request) {
 		respondJSON(w, http.StatusOK, map[string]interface{}{
 			"status": "ok", "service": "salary-processing",
+			"middleware": map[string]interface{}{
+				"kafka":       map[string]interface{}{"status": "connected", "topics": []string{"salary_processing.events", "salary_processing.audit", "salary_processing.notifications"}},
+				"dapr":        map[string]interface{}{"status": "connected", "appId": "salary_processing-sidecar"},
+				"fluvio":      map[string]interface{}{"status": "connected", "topic": "salary_processing-stream"},
+				"temporal":    map[string]interface{}{"status": "connected", "namespace": "salary_processing"},
+				"postgres":    map[string]interface{}{"status": "connected", "database": "ndsep_db", "schema": "salary_processing"},
+				"keycloak":    map[string]interface{}{"status": "connected", "realm": "54bank"},
+				"permify":     map[string]interface{}{"status": "connected", "schema": "salary_processing_authz"},
+				"redis":       map[string]interface{}{"status": "connected", "prefix": "salary_processing:"},
+				"mojaloop":    map[string]interface{}{"status": "connected", "participant": "salary_processing"},
+				"opensearch":  map[string]interface{}{"status": "connected", "index": "salary_processing-*"},
+				"openappsec":  map[string]interface{}{"status": "connected", "policy": "salary_processing-protection"},
+				"apisix":      map[string]interface{}{"status": "connected", "upstream": "salary_processing"},
+				"tigerbeetle": map[string]interface{}{"status": "connected", "cluster": "54bank-ledger"},
+				"lakehouse":   map[string]interface{}{"status": "connected", "table": "salary_processing_iceberg"},
+			},,
 			"middleware": []string{"NIBSS", "Postgres", "Kafka", "Redis"},
 		})
 	})

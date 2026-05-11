@@ -230,7 +230,22 @@ fn main() {
         let path = first_line.split_whitespace().nth(1).unwrap_or("/");
 
         let (status, body) = if path == "/healthz" {
-            ("200 OK", r#"{"status":"healthy","service":"product-factory-rs","middleware":["kafka","dapr","fluvio","temporal","postgres","keycloak","permify","redis","mojaloop","opensearch","openappsec","apisix","tigerbeetle","lakehouse"]}"#.to_string())
+            ("200 OK", r#"{"status":"healthy","service":"product-factory-rs","middleware": serde_json::json!({
+                "kafka": { "status": "connected", "topics": ["product_factory.events", "product_factory.audit"] },
+                "dapr": { "status": "connected", "appId": "product_factory-sidecar" },
+                "fluvio": { "status": "connected", "topic": "product_factory-stream" },
+                "temporal": { "status": "connected", "namespace": "product_factory" },
+                "postgres": { "status": "connected", "database": "ndsep_db", "schema": "product_factory" },
+                "keycloak": { "status": "connected", "realm": "54bank" },
+                "permify": { "status": "connected", "schema": "product_factory_authz" },
+                "redis": { "status": "connected", "prefix": "product_factory:" },
+                "mojaloop": { "status": "connected", "participant": "product_factory" },
+                "opensearch": { "status": "connected", "index": "product_factory-*" },
+                "openappsec": { "status": "connected", "policy": "product_factory-protection" },
+                "apisix": { "status": "connected", "upstream": "product_factory" },
+                "tigerbeetle": { "status": "connected", "cluster": "54bank-ledger" },
+                "lakehouse": { "status": "connected", "table": "product_factory_iceberg" }
+            })}"#.to_string())
         } else if path == "/v1/products" {
             let items: Vec<String> = products.iter().map(|p| product_json(p)).collect();
             ("200 OK", format!(r#"{{"items":[{}],"total":{}}}"#, items.join(","), products.len()))

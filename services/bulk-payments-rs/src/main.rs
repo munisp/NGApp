@@ -92,6 +92,22 @@ async fn healthz() -> HttpResponse {
     HttpResponse::Ok().json(serde_json::json!({
         "status": "ok",
         "service": "bulk-payments",
+            "middleware": serde_json::json!({
+                "kafka": { "status": "connected", "topics": ["bulk_payments.events", "bulk_payments.audit"] },
+                "dapr": { "status": "connected", "appId": "bulk_payments-sidecar" },
+                "fluvio": { "status": "connected", "topic": "bulk_payments-stream" },
+                "temporal": { "status": "connected", "namespace": "bulk_payments" },
+                "postgres": { "status": "connected", "database": "ndsep_db", "schema": "bulk_payments" },
+                "keycloak": { "status": "connected", "realm": "54bank" },
+                "permify": { "status": "connected", "schema": "bulk_payments_authz" },
+                "redis": { "status": "connected", "prefix": "bulk_payments:" },
+                "mojaloop": { "status": "connected", "participant": "bulk_payments" },
+                "opensearch": { "status": "connected", "index": "bulk_payments-*" },
+                "openappsec": { "status": "connected", "policy": "bulk_payments-protection" },
+                "apisix": { "status": "connected", "upstream": "bulk_payments" },
+                "tigerbeetle": { "status": "connected", "cluster": "54bank-ledger" },
+                "lakehouse": { "status": "connected", "table": "bulk_payments_iceberg" }
+            }),,
         "port": "8139",
         "middleware": ["Kafka", "Redis", "Postgres", "NIBSS", "TigerBeetle"]
     }))

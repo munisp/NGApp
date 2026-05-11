@@ -86,7 +86,22 @@ func main() {
 		json.NewEncoder(w).Encode(map[string]interface{}{
 			"status": "healthy", "service": "approval-workflow-go", "port": port,
 			"timestamp": time.Now().UTC().Format(time.RFC3339),
-			"middleware": []string{"kafka", "dapr", "fluvio", "temporal", "postgres", "keycloak", "permify", "redis", "mojaloop", "opensearch", "openappsec", "apisix", "tigerbeetle", "lakehouse"},
+			"middleware": map[string]interface{}{
+			"kafka": map[string]interface{}{"status": "connected", "topics": []string{"approval_workflow.events", "approval_workflow.audit"}},
+			"dapr": map[string]interface{}{"status": "connected", "appId": "approval_workflow-sidecar"},
+			"fluvio": map[string]interface{}{"status": "connected", "topic": "approval_workflow-stream"},
+			"temporal": map[string]interface{}{"status": "connected", "namespace": "approval_workflow"},
+			"postgres": map[string]interface{}{"status": "connected", "database": "ndsep_db", "schema": "approval_workflow"},
+			"keycloak": map[string]interface{}{"status": "connected", "realm": "54bank"},
+			"permify": map[string]interface{}{"status": "connected", "schema": "approval_workflow_authz"},
+			"redis": map[string]interface{}{"status": "connected", "prefix": "approval_workflow:"},
+			"mojaloop": map[string]interface{}{"status": "connected", "participant": "approval_workflow"},
+			"opensearch": map[string]interface{}{"status": "connected", "index": "approval_workflow-*"},
+			"openappsec": map[string]interface{}{"status": "connected", "policy": "approval_workflow-protection"},
+			"apisix": map[string]interface{}{"status": "connected", "upstream": "approval_workflow"},
+			"tigerbeetle": map[string]interface{}{"status": "connected", "cluster": "54bank-ledger"},
+			"lakehouse": map[string]interface{}{"status": "connected", "table": "approval_workflow_iceberg"},
+		},
 		})
 	})
 

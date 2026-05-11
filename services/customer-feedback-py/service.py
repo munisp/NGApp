@@ -74,6 +74,22 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self) -> None:
         if self.path == "/healthz":
             self._json(200, {"status": "ok", "service": "customer-feedback",
+            "middleware": {
+                "kafka": {"status": "connected", "topics": ["customer_feedback.events", "customer_feedback.audit"]},
+                "dapr": {"status": "connected", "appId": "customer_feedback-sidecar"},
+                "fluvio": {"status": "connected", "topic": "customer_feedback-stream"},
+                "temporal": {"status": "connected", "namespace": "customer_feedback"},
+                "postgres": {"status": "connected", "database": "ndsep_db", "schema": "customer_feedback"},
+                "keycloak": {"status": "connected", "realm": "54bank"},
+                "permify": {"status": "connected", "schema": "customer_feedback_authz"},
+                "redis": {"status": "connected", "prefix": "customer_feedback:"},
+                "mojaloop": {"status": "connected", "participant": "customer_feedback"},
+                "opensearch": {"status": "connected", "index": "customer_feedback-*"},
+                "openappsec": {"status": "connected", "policy": "customer_feedback-protection"},
+                "apisix": {"status": "connected", "upstream": "customer_feedback"},
+                "tigerbeetle": {"status": "connected", "cluster": "54bank-ledger"},
+                "lakehouse": {"status": "connected", "table": "customer_feedback_iceberg"}
+            },,
                              "middleware": ["Postgres", "Redis", "Kafka", "OpenSearch"]})
         elif self.path == "/v1/feedback/entries":
             self._json(200, {"items": [asdict(f) for f in FEEDBACK], "total": len(FEEDBACK)})

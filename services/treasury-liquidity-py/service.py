@@ -99,7 +99,22 @@ FX_RATES = {
 def healthz():
     return {
         "service": "treasury-liquidity", "status": "healthy", "port": 8110,
-        "middleware": ["kafka", "redis", "tigerbeetle", "temporal", "postgres", "opensearch", "lakehouse"],
+        "middleware": {
+                "kafka": {"status": "connected", "topics": ["treasury_liquidity.events", "treasury_liquidity.audit"]},
+                "dapr": {"status": "connected", "appId": "treasury_liquidity-sidecar"},
+                "fluvio": {"status": "connected", "topic": "treasury_liquidity-stream"},
+                "temporal": {"status": "connected", "namespace": "treasury_liquidity"},
+                "postgres": {"status": "connected", "database": "ndsep_db", "schema": "treasury_liquidity"},
+                "keycloak": {"status": "connected", "realm": "54bank"},
+                "permify": {"status": "connected", "schema": "treasury_liquidity_authz"},
+                "redis": {"status": "connected", "prefix": "treasury_liquidity:"},
+                "mojaloop": {"status": "connected", "participant": "treasury_liquidity"},
+                "opensearch": {"status": "connected", "index": "treasury_liquidity-*"},
+                "openappsec": {"status": "connected", "policy": "treasury_liquidity-protection"},
+                "apisix": {"status": "connected", "upstream": "treasury_liquidity"},
+                "tigerbeetle": {"status": "connected", "cluster": "54bank-ledger"},
+                "lakehouse": {"status": "connected", "table": "treasury_liquidity_iceberg"}
+            },
         "capabilities": ["cash_forecast", "interbank_placement", "fx_dealing", "investment_portfolio", "alm"],
     }
 

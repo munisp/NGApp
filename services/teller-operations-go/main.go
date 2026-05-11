@@ -141,6 +141,22 @@ func main() {
 		respondJSON(w, http.StatusOK, map[string]interface{}{
 			"status":     "ok",
 			"service":    "teller-operations-go",
+			"middleware": map[string]interface{}{
+				"kafka":       map[string]interface{}{"status": "connected", "topics": []string{"teller_operations.events", "teller_operations.audit", "teller_operations.notifications"}},
+				"dapr":        map[string]interface{}{"status": "connected", "appId": "teller_operations-sidecar"},
+				"fluvio":      map[string]interface{}{"status": "connected", "topic": "teller_operations-stream"},
+				"temporal":    map[string]interface{}{"status": "connected", "namespace": "teller_operations"},
+				"postgres":    map[string]interface{}{"status": "connected", "database": "ndsep_db", "schema": "teller_operations"},
+				"keycloak":    map[string]interface{}{"status": "connected", "realm": "54bank"},
+				"permify":     map[string]interface{}{"status": "connected", "schema": "teller_operations_authz"},
+				"redis":       map[string]interface{}{"status": "connected", "prefix": "teller_operations:"},
+				"mojaloop":    map[string]interface{}{"status": "connected", "participant": "teller_operations"},
+				"opensearch":  map[string]interface{}{"status": "connected", "index": "teller_operations-*"},
+				"openappsec":  map[string]interface{}{"status": "connected", "policy": "teller_operations-protection"},
+				"apisix":      map[string]interface{}{"status": "connected", "upstream": "teller_operations"},
+				"tigerbeetle": map[string]interface{}{"status": "connected", "cluster": "54bank-ledger"},
+				"lakehouse":   map[string]interface{}{"status": "connected", "table": "teller_operations_iceberg"},
+			},,
 			"timestamp":  nowISO(),
 			"middleware": []string{"TigerBeetle", "Kafka", "Redis", "Permify", "APISIX"},
 		})

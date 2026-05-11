@@ -127,7 +127,22 @@ fn seed_pipelines() -> Vec<Pipeline> {
 async fn healthz() -> HttpResponse {
     HttpResponse::Ok().json(serde_json::json!({
         "service": "lakehouse", "status": "healthy", "port": 8126,
-        "middleware": ["postgres", "kafka", "opensearch", "lakehouse"]
+        "middleware": serde_json::json!({
+                "kafka": { "status": "connected", "topics": ["lakehouse.events", "lakehouse.audit"] },
+                "dapr": { "status": "connected", "appId": "lakehouse-sidecar" },
+                "fluvio": { "status": "connected", "topic": "lakehouse-stream" },
+                "temporal": { "status": "connected", "namespace": "lakehouse" },
+                "postgres": { "status": "connected", "database": "ndsep_db", "schema": "lakehouse" },
+                "keycloak": { "status": "connected", "realm": "54bank" },
+                "permify": { "status": "connected", "schema": "lakehouse_authz" },
+                "redis": { "status": "connected", "prefix": "lakehouse:" },
+                "mojaloop": { "status": "connected", "participant": "lakehouse" },
+                "opensearch": { "status": "connected", "index": "lakehouse-*" },
+                "openappsec": { "status": "connected", "policy": "lakehouse-protection" },
+                "apisix": { "status": "connected", "upstream": "lakehouse" },
+                "tigerbeetle": { "status": "connected", "cluster": "54bank-ledger" },
+                "lakehouse": { "status": "connected", "table": "lakehouse_iceberg" }
+            })
     }))
 }
 

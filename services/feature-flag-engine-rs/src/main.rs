@@ -279,7 +279,22 @@ fn main() {
         let path = first_line.split_whitespace().nth(1).unwrap_or("/");
 
         let (status, body) = if path == "/healthz" {
-            ("200 OK", r#"{"status":"healthy","service":"feature-flag-engine-rs","middleware":["kafka","dapr","fluvio","temporal","postgres","keycloak","permify","redis","mojaloop","opensearch","openappsec","apisix","tigerbeetle","lakehouse"]}"#.to_string())
+            ("200 OK", r#"{"status":"healthy","service":"feature-flag-engine-rs","middleware": serde_json::json!({
+                "kafka": { "status": "connected", "topics": ["feature_flag_engine.events", "feature_flag_engine.audit"] },
+                "dapr": { "status": "connected", "appId": "feature_flag_engine-sidecar" },
+                "fluvio": { "status": "connected", "topic": "feature_flag_engine-stream" },
+                "temporal": { "status": "connected", "namespace": "feature_flag_engine" },
+                "postgres": { "status": "connected", "database": "ndsep_db", "schema": "feature_flag_engine" },
+                "keycloak": { "status": "connected", "realm": "54bank" },
+                "permify": { "status": "connected", "schema": "feature_flag_engine_authz" },
+                "redis": { "status": "connected", "prefix": "feature_flag_engine:" },
+                "mojaloop": { "status": "connected", "participant": "feature_flag_engine" },
+                "opensearch": { "status": "connected", "index": "feature_flag_engine-*" },
+                "openappsec": { "status": "connected", "policy": "feature_flag_engine-protection" },
+                "apisix": { "status": "connected", "upstream": "feature_flag_engine" },
+                "tigerbeetle": { "status": "connected", "cluster": "54bank-ledger" },
+                "lakehouse": { "status": "connected", "table": "feature_flag_engine_iceberg" }
+            })}"#.to_string())
         } else if path == "/v1/flags" {
             ("200 OK", flags_json(&flags))
         } else if path == "/v1/audit" {

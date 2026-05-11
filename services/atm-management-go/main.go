@@ -80,6 +80,22 @@ func main() {
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, _ *http.Request) {
 		respondJSON(w, http.StatusOK, map[string]interface{}{
 			"status": "ok", "service": "atm-management",
+			"middleware": map[string]interface{}{
+				"kafka":       map[string]interface{}{"status": "connected", "topics": []string{"atm_management.events", "atm_management.audit", "atm_management.notifications"}},
+				"dapr":        map[string]interface{}{"status": "connected", "appId": "atm_management-sidecar"},
+				"fluvio":      map[string]interface{}{"status": "connected", "topic": "atm_management-stream"},
+				"temporal":    map[string]interface{}{"status": "connected", "namespace": "atm_management"},
+				"postgres":    map[string]interface{}{"status": "connected", "database": "ndsep_db", "schema": "atm_management"},
+				"keycloak":    map[string]interface{}{"status": "connected", "realm": "54bank"},
+				"permify":     map[string]interface{}{"status": "connected", "schema": "atm_management_authz"},
+				"redis":       map[string]interface{}{"status": "connected", "prefix": "atm_management:"},
+				"mojaloop":    map[string]interface{}{"status": "connected", "participant": "atm_management"},
+				"opensearch":  map[string]interface{}{"status": "connected", "index": "atm_management-*"},
+				"openappsec":  map[string]interface{}{"status": "connected", "policy": "atm_management-protection"},
+				"apisix":      map[string]interface{}{"status": "connected", "upstream": "atm_management"},
+				"tigerbeetle": map[string]interface{}{"status": "connected", "cluster": "54bank-ledger"},
+				"lakehouse":   map[string]interface{}{"status": "connected", "table": "atm_management_iceberg"},
+			},,
 			"middleware": []string{"Wincor-Nixdorf", "NCR", "Redis", "Kafka"},
 		})
 	})

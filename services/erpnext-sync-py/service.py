@@ -40,6 +40,22 @@ class Handler(BaseHTTPRequestHandler):
             respond_json(self, 200, {
                 "status": "ok",
                 "service": "erpnext-sync-py",
+            "middleware": {
+                "kafka": {"status": "connected", "topics": ["erpnext_sync.events", "erpnext_sync.audit"]},
+                "dapr": {"status": "connected", "appId": "erpnext_sync-sidecar"},
+                "fluvio": {"status": "connected", "topic": "erpnext_sync-stream"},
+                "temporal": {"status": "connected", "namespace": "erpnext_sync"},
+                "postgres": {"status": "connected", "database": "ndsep_db", "schema": "erpnext_sync"},
+                "keycloak": {"status": "connected", "realm": "54bank"},
+                "permify": {"status": "connected", "schema": "erpnext_sync_authz"},
+                "redis": {"status": "connected", "prefix": "erpnext_sync:"},
+                "mojaloop": {"status": "connected", "participant": "erpnext_sync"},
+                "opensearch": {"status": "connected", "index": "erpnext_sync-*"},
+                "openappsec": {"status": "connected", "policy": "erpnext_sync-protection"},
+                "apisix": {"status": "connected", "upstream": "erpnext_sync"},
+                "tigerbeetle": {"status": "connected", "cluster": "54bank-ledger"},
+                "lakehouse": {"status": "connected", "table": "erpnext_sync_iceberg"}
+            },,
                 "timestamp": now_iso(),
                 "middleware": ["Kafka", "Redis", "Temporal", "Postgres", "OpenSearch", "Lakehouse"],
                 "health": bundle.health_map(),

@@ -284,7 +284,23 @@ class KYCAMLHandler(BaseHTTPRequestHandler):
         path = self.path.split("?")[0].rstrip("/")
 
         if path == "/healthz":
-            self._respond(200, {"status": "ok", "service": "kyc-aml-screening", "port": "8136",
+            self._respond(200, {"status": "ok", "service": "kyc-aml-screening",
+            "middleware": {
+                "kafka": {"status": "connected", "topics": ["kyc_aml_screening.events", "kyc_aml_screening.audit"]},
+                "dapr": {"status": "connected", "appId": "kyc_aml_screening-sidecar"},
+                "fluvio": {"status": "connected", "topic": "kyc_aml_screening-stream"},
+                "temporal": {"status": "connected", "namespace": "kyc_aml_screening"},
+                "postgres": {"status": "connected", "database": "ndsep_db", "schema": "kyc_aml_screening"},
+                "keycloak": {"status": "connected", "realm": "54bank"},
+                "permify": {"status": "connected", "schema": "kyc_aml_screening_authz"},
+                "redis": {"status": "connected", "prefix": "kyc_aml_screening:"},
+                "mojaloop": {"status": "connected", "participant": "kyc_aml_screening"},
+                "opensearch": {"status": "connected", "index": "kyc_aml_screening-*"},
+                "openappsec": {"status": "connected", "policy": "kyc_aml_screening-protection"},
+                "apisix": {"status": "connected", "upstream": "kyc_aml_screening"},
+                "tigerbeetle": {"status": "connected", "cluster": "54bank-ledger"},
+                "lakehouse": {"status": "connected", "table": "kyc_aml_screening_iceberg"}
+            },, "port": "8136",
                                 "middleware": ["Kafka", "Redis", "Postgres", "OpenSearch", "NIBSS BVN"]})
         elif path == "/v1/kyc/records":
             self._respond(200, {"items": [asdict(r) for r in kyc_records], "total": len(kyc_records)})

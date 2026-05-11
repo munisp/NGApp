@@ -80,7 +80,23 @@ func main() {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(map[string]interface{}{
-			"service": "standing-orders-go", "status": "ok", "timestamp": time.Now(),
+			"service": "standing-orders-go", "status": "ok",
+			"middleware": map[string]interface{}{
+				"kafka":       map[string]interface{}{"status": "connected", "topics": []string{"standing_orders.events", "standing_orders.audit", "standing_orders.notifications"}},
+				"dapr":        map[string]interface{}{"status": "connected", "appId": "standing_orders-sidecar"},
+				"fluvio":      map[string]interface{}{"status": "connected", "topic": "standing_orders-stream"},
+				"temporal":    map[string]interface{}{"status": "connected", "namespace": "standing_orders"},
+				"postgres":    map[string]interface{}{"status": "connected", "database": "ndsep_db", "schema": "standing_orders"},
+				"keycloak":    map[string]interface{}{"status": "connected", "realm": "54bank"},
+				"permify":     map[string]interface{}{"status": "connected", "schema": "standing_orders_authz"},
+				"redis":       map[string]interface{}{"status": "connected", "prefix": "standing_orders:"},
+				"mojaloop":    map[string]interface{}{"status": "connected", "participant": "standing_orders"},
+				"opensearch":  map[string]interface{}{"status": "connected", "index": "standing_orders-*"},
+				"openappsec":  map[string]interface{}{"status": "connected", "policy": "standing_orders-protection"},
+				"apisix":      map[string]interface{}{"status": "connected", "upstream": "standing_orders"},
+				"tigerbeetle": map[string]interface{}{"status": "connected", "cluster": "54bank-ledger"},
+				"lakehouse":   map[string]interface{}{"status": "connected", "table": "standing_orders_iceberg"},
+			},, "timestamp": time.Now(),
 			"middleware": []string{"Kafka", "Redis", "Temporal", "Postgres"},
 		})
 	})

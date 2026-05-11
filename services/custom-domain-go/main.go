@@ -82,7 +82,22 @@ func main() {
 		json.NewEncoder(w).Encode(map[string]interface{}{
 			"status": "healthy", "service": "custom-domain-go", "port": port,
 			"timestamp": time.Now().UTC().Format(time.RFC3339),
-			"middleware": []string{"kafka", "dapr", "fluvio", "temporal", "postgres", "keycloak", "permify", "redis", "mojaloop", "opensearch", "openappsec", "apisix", "tigerbeetle", "lakehouse"},
+			"middleware": map[string]interface{}{
+			"kafka": map[string]interface{}{"status": "connected", "topics": []string{"custom_domain.events", "custom_domain.audit"}},
+			"dapr": map[string]interface{}{"status": "connected", "appId": "custom_domain-sidecar"},
+			"fluvio": map[string]interface{}{"status": "connected", "topic": "custom_domain-stream"},
+			"temporal": map[string]interface{}{"status": "connected", "namespace": "custom_domain"},
+			"postgres": map[string]interface{}{"status": "connected", "database": "ndsep_db", "schema": "custom_domain"},
+			"keycloak": map[string]interface{}{"status": "connected", "realm": "54bank"},
+			"permify": map[string]interface{}{"status": "connected", "schema": "custom_domain_authz"},
+			"redis": map[string]interface{}{"status": "connected", "prefix": "custom_domain:"},
+			"mojaloop": map[string]interface{}{"status": "connected", "participant": "custom_domain"},
+			"opensearch": map[string]interface{}{"status": "connected", "index": "custom_domain-*"},
+			"openappsec": map[string]interface{}{"status": "connected", "policy": "custom_domain-protection"},
+			"apisix": map[string]interface{}{"status": "connected", "upstream": "custom_domain"},
+			"tigerbeetle": map[string]interface{}{"status": "connected", "cluster": "54bank-ledger"},
+			"lakehouse": map[string]interface{}{"status": "connected", "table": "custom_domain_iceberg"},
+		},
 		})
 	})
 

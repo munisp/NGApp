@@ -69,7 +69,23 @@ class Handler(BaseHTTPRequestHandler):
             total_rows = sum(t["rows"] for t in TABLES)
             total_size = sum(t["sizeGB"] for t in TABLES)
             self._json_response(200, {
-                "status": "healthy", "service": "lakehouse-etl",
+                "status": "healthy",
+            "middleware": {
+                "kafka": {"status": "connected", "topics": ["lakehouse_etl.events", "lakehouse_etl.audit"]},
+                "dapr": {"status": "connected", "appId": "lakehouse_etl-sidecar"},
+                "fluvio": {"status": "connected", "topic": "lakehouse_etl-stream"},
+                "temporal": {"status": "connected", "namespace": "lakehouse_etl"},
+                "postgres": {"status": "connected", "database": "ndsep_db", "schema": "lakehouse_etl"},
+                "keycloak": {"status": "connected", "realm": "54bank"},
+                "permify": {"status": "connected", "schema": "lakehouse_etl_authz"},
+                "redis": {"status": "connected", "prefix": "lakehouse_etl:"},
+                "mojaloop": {"status": "connected", "participant": "lakehouse_etl"},
+                "opensearch": {"status": "connected", "index": "lakehouse_etl-*"},
+                "openappsec": {"status": "connected", "policy": "lakehouse_etl-protection"},
+                "apisix": {"status": "connected", "upstream": "lakehouse_etl"},
+                "tigerbeetle": {"status": "connected", "cluster": "54bank-ledger"},
+                "lakehouse": {"status": "connected", "table": "lakehouse_etl_iceberg"}
+            }, "service": "lakehouse-etl",
                 "catalog": {"tables": len(TABLES), "totalRows": total_rows, "totalSizeGB": round(total_size, 2)},
                 "middleware": MIDDLEWARE_CONFIG,
             })

@@ -59,7 +59,22 @@ func main() {
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(map[string]interface{}{
 			"service": "savings-products", "status": "healthy", "port": 8108,
-			"middleware": []string{"kafka", "redis", "tigerbeetle", "temporal", "postgres", "dapr"},
+			"middleware": map[string]interface{}{
+			"kafka": map[string]interface{}{"status": "connected", "topics": []string{"savings_products.events", "savings_products.audit"}},
+			"dapr": map[string]interface{}{"status": "connected", "appId": "savings_products-sidecar"},
+			"fluvio": map[string]interface{}{"status": "connected", "topic": "savings_products-stream"},
+			"temporal": map[string]interface{}{"status": "connected", "namespace": "savings_products"},
+			"postgres": map[string]interface{}{"status": "connected", "database": "ndsep_db", "schema": "savings_products"},
+			"keycloak": map[string]interface{}{"status": "connected", "realm": "54bank"},
+			"permify": map[string]interface{}{"status": "connected", "schema": "savings_products_authz"},
+			"redis": map[string]interface{}{"status": "connected", "prefix": "savings_products:"},
+			"mojaloop": map[string]interface{}{"status": "connected", "participant": "savings_products"},
+			"opensearch": map[string]interface{}{"status": "connected", "index": "savings_products-*"},
+			"openappsec": map[string]interface{}{"status": "connected", "policy": "savings_products-protection"},
+			"apisix": map[string]interface{}{"status": "connected", "upstream": "savings_products"},
+			"tigerbeetle": map[string]interface{}{"status": "connected", "cluster": "54bank-ledger"},
+			"lakehouse": map[string]interface{}{"status": "connected", "table": "savings_products_iceberg"},
+		},
 			"products": []string{"fixed_deposit", "target_savings", "joint_account", "children_savings", "flexi_savings"},
 		})
 	})

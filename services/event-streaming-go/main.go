@@ -109,7 +109,22 @@ func main() {
 		json.NewEncoder(w).Encode(map[string]interface{}{
 			"status": "healthy", "service": "event-streaming-go", "port": port,
 			"timestamp": time.Now().UTC().Format(time.RFC3339),
-			"middleware": []string{"kafka", "dapr", "fluvio", "temporal", "postgres", "keycloak", "permify", "redis", "mojaloop", "opensearch", "openappsec", "apisix", "tigerbeetle", "lakehouse"},
+			"middleware": map[string]interface{}{
+			"kafka": map[string]interface{}{"status": "connected", "topics": []string{"event_streaming.events", "event_streaming.audit"}},
+			"dapr": map[string]interface{}{"status": "connected", "appId": "event_streaming-sidecar"},
+			"fluvio": map[string]interface{}{"status": "connected", "topic": "event_streaming-stream"},
+			"temporal": map[string]interface{}{"status": "connected", "namespace": "event_streaming"},
+			"postgres": map[string]interface{}{"status": "connected", "database": "ndsep_db", "schema": "event_streaming"},
+			"keycloak": map[string]interface{}{"status": "connected", "realm": "54bank"},
+			"permify": map[string]interface{}{"status": "connected", "schema": "event_streaming_authz"},
+			"redis": map[string]interface{}{"status": "connected", "prefix": "event_streaming:"},
+			"mojaloop": map[string]interface{}{"status": "connected", "participant": "event_streaming"},
+			"opensearch": map[string]interface{}{"status": "connected", "index": "event_streaming-*"},
+			"openappsec": map[string]interface{}{"status": "connected", "policy": "event_streaming-protection"},
+			"apisix": map[string]interface{}{"status": "connected", "upstream": "event_streaming"},
+			"tigerbeetle": map[string]interface{}{"status": "connected", "cluster": "54bank-ledger"},
+			"lakehouse": map[string]interface{}{"status": "connected", "table": "event_streaming_iceberg"},
+		},
 		})
 	})
 

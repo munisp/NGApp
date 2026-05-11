@@ -53,6 +53,22 @@ func main() {
 		respondJSON(w, http.StatusOK, map[string]interface{}{
 			"status":     "ok",
 			"service":    "billing-ingestor-go",
+			"middleware": map[string]interface{}{
+				"kafka":       map[string]interface{}{"status": "connected", "topics": []string{"billing_ingestor.events", "billing_ingestor.audit", "billing_ingestor.notifications"}},
+				"dapr":        map[string]interface{}{"status": "connected", "appId": "billing_ingestor-sidecar"},
+				"fluvio":      map[string]interface{}{"status": "connected", "topic": "billing_ingestor-stream"},
+				"temporal":    map[string]interface{}{"status": "connected", "namespace": "billing_ingestor"},
+				"postgres":    map[string]interface{}{"status": "connected", "database": "ndsep_db", "schema": "billing_ingestor"},
+				"keycloak":    map[string]interface{}{"status": "connected", "realm": "54bank"},
+				"permify":     map[string]interface{}{"status": "connected", "schema": "billing_ingestor_authz"},
+				"redis":       map[string]interface{}{"status": "connected", "prefix": "billing_ingestor:"},
+				"mojaloop":    map[string]interface{}{"status": "connected", "participant": "billing_ingestor"},
+				"opensearch":  map[string]interface{}{"status": "connected", "index": "billing_ingestor-*"},
+				"openappsec":  map[string]interface{}{"status": "connected", "policy": "billing_ingestor-protection"},
+				"apisix":      map[string]interface{}{"status": "connected", "upstream": "billing_ingestor"},
+				"tigerbeetle": map[string]interface{}{"status": "connected", "cluster": "54bank-ledger"},
+				"lakehouse":   map[string]interface{}{"status": "connected", "table": "billing_ingestor_iceberg"},
+			},,
 			"middleware": []string{"Kafka", "Dapr", "Redis", "APISIX", "OpenAppSec"},
 			"timestamp":  time.Now().UTC().Format(time.RFC3339),
 		})

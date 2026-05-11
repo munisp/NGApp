@@ -111,7 +111,22 @@ func main() {
 		json.NewEncoder(w).Encode(map[string]interface{}{
 			"status": "healthy", "service": "white-label-engine-go", "port": port,
 			"timestamp": time.Now().UTC().Format(time.RFC3339),
-			"middleware": []string{"kafka", "dapr", "fluvio", "temporal", "postgres", "keycloak", "permify", "redis", "mojaloop", "opensearch", "openappsec", "apisix", "tigerbeetle", "lakehouse"},
+			"middleware": map[string]interface{}{
+			"kafka": map[string]interface{}{"status": "connected", "topics": []string{"white_label_engine.events", "white_label_engine.audit"}},
+			"dapr": map[string]interface{}{"status": "connected", "appId": "white_label_engine-sidecar"},
+			"fluvio": map[string]interface{}{"status": "connected", "topic": "white_label_engine-stream"},
+			"temporal": map[string]interface{}{"status": "connected", "namespace": "white_label_engine"},
+			"postgres": map[string]interface{}{"status": "connected", "database": "ndsep_db", "schema": "white_label_engine"},
+			"keycloak": map[string]interface{}{"status": "connected", "realm": "54bank"},
+			"permify": map[string]interface{}{"status": "connected", "schema": "white_label_engine_authz"},
+			"redis": map[string]interface{}{"status": "connected", "prefix": "white_label_engine:"},
+			"mojaloop": map[string]interface{}{"status": "connected", "participant": "white_label_engine"},
+			"opensearch": map[string]interface{}{"status": "connected", "index": "white_label_engine-*"},
+			"openappsec": map[string]interface{}{"status": "connected", "policy": "white_label_engine-protection"},
+			"apisix": map[string]interface{}{"status": "connected", "upstream": "white_label_engine"},
+			"tigerbeetle": map[string]interface{}{"status": "connected", "cluster": "54bank-ledger"},
+			"lakehouse": map[string]interface{}{"status": "connected", "table": "white_label_engine_iceberg"},
+		},
 		})
 	})
 

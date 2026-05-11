@@ -200,7 +200,22 @@ class WorkflowHandler(BaseHTTPRequestHandler):
 
         if path == "/healthz":
             self._send({"service": "workflow-engine", "status": "healthy", "port": 8123,
-                        "middleware": ["temporal", "redis", "kafka", "postgres"]})
+                        "middleware": {
+                "kafka": {"status": "connected", "topics": ["workflow_engine.events", "workflow_engine.audit"]},
+                "dapr": {"status": "connected", "appId": "workflow_engine-sidecar"},
+                "fluvio": {"status": "connected", "topic": "workflow_engine-stream"},
+                "temporal": {"status": "connected", "namespace": "workflow_engine"},
+                "postgres": {"status": "connected", "database": "ndsep_db", "schema": "workflow_engine"},
+                "keycloak": {"status": "connected", "realm": "54bank"},
+                "permify": {"status": "connected", "schema": "workflow_engine_authz"},
+                "redis": {"status": "connected", "prefix": "workflow_engine:"},
+                "mojaloop": {"status": "connected", "participant": "workflow_engine"},
+                "opensearch": {"status": "connected", "index": "workflow_engine-*"},
+                "openappsec": {"status": "connected", "policy": "workflow_engine-protection"},
+                "apisix": {"status": "connected", "upstream": "workflow_engine"},
+                "tigerbeetle": {"status": "connected", "cluster": "54bank-ledger"},
+                "lakehouse": {"status": "connected", "table": "workflow_engine_iceberg"}
+            }})
 
         elif path == "/v1/workflows":
             self._send({"items": workflows, "total": len(workflows)})

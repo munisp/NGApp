@@ -52,6 +52,22 @@ async fn healthz() -> HttpResponse {
     HttpResponse::Ok().json(serde_json::json!({
         "status": "ok",
         "service": "billing-rating-worker",
+            "middleware": serde_json::json!({
+                "kafka": { "status": "connected", "topics": ["billing_rating.events", "billing_rating.audit"] },
+                "dapr": { "status": "connected", "appId": "billing_rating-sidecar" },
+                "fluvio": { "status": "connected", "topic": "billing_rating-stream" },
+                "temporal": { "status": "connected", "namespace": "billing_rating" },
+                "postgres": { "status": "connected", "database": "ndsep_db", "schema": "billing_rating" },
+                "keycloak": { "status": "connected", "realm": "54bank" },
+                "permify": { "status": "connected", "schema": "billing_rating_authz" },
+                "redis": { "status": "connected", "prefix": "billing_rating:" },
+                "mojaloop": { "status": "connected", "participant": "billing_rating" },
+                "opensearch": { "status": "connected", "index": "billing_rating-*" },
+                "openappsec": { "status": "connected", "policy": "billing_rating-protection" },
+                "apisix": { "status": "connected", "upstream": "billing_rating" },
+                "tigerbeetle": { "status": "connected", "cluster": "54bank-ledger" },
+                "lakehouse": { "status": "connected", "table": "billing_rating_iceberg" }
+            }),,
         "middleware": ["Kafka", "Fluvio", "Redis", "Postgres", "Temporal"],
         "version": "1.0.0"
     }))

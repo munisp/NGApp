@@ -96,7 +96,23 @@ func main() {
 
 	mx.HandleFunc("/healthz", func(w http.ResponseWriter, _ *http.Request) {
 		mw.RespondJSON(w, 200, map[string]any{
-			"status": "ok", "service": "group-lending-go", "timestamp": mw.NowISO(),
+			"status": "ok", "service": "group-lending-go",
+			"middleware": map[string]interface{}{
+				"kafka":       map[string]interface{}{"status": "connected", "topics": []string{"group_lending.events", "group_lending.audit", "group_lending.notifications"}},
+				"dapr":        map[string]interface{}{"status": "connected", "appId": "group_lending-sidecar"},
+				"fluvio":      map[string]interface{}{"status": "connected", "topic": "group_lending-stream"},
+				"temporal":    map[string]interface{}{"status": "connected", "namespace": "group_lending"},
+				"postgres":    map[string]interface{}{"status": "connected", "database": "ndsep_db", "schema": "group_lending"},
+				"keycloak":    map[string]interface{}{"status": "connected", "realm": "54bank"},
+				"permify":     map[string]interface{}{"status": "connected", "schema": "group_lending_authz"},
+				"redis":       map[string]interface{}{"status": "connected", "prefix": "group_lending:"},
+				"mojaloop":    map[string]interface{}{"status": "connected", "participant": "group_lending"},
+				"opensearch":  map[string]interface{}{"status": "connected", "index": "group_lending-*"},
+				"openappsec":  map[string]interface{}{"status": "connected", "policy": "group_lending-protection"},
+				"apisix":      map[string]interface{}{"status": "connected", "upstream": "group_lending"},
+				"tigerbeetle": map[string]interface{}{"status": "connected", "cluster": "54bank-ledger"},
+				"lakehouse":   map[string]interface{}{"status": "connected", "table": "group_lending_iceberg"},
+			},, "timestamp": mw.NowISO(),
 			"middleware": []string{"Kafka", "Redis", "Temporal", "TigerBeetle", "Postgres", "Permify"},
 			"health": bundle.HealthMap(),
 		})

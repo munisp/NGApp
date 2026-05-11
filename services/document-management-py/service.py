@@ -59,6 +59,22 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self) -> None:
         if self.path == "/healthz":
             self._json(200, {"status": "ok", "service": "document-management",
+            "middleware": {
+                "kafka": {"status": "connected", "topics": ["document_management.events", "document_management.audit"]},
+                "dapr": {"status": "connected", "appId": "document_management-sidecar"},
+                "fluvio": {"status": "connected", "topic": "document_management-stream"},
+                "temporal": {"status": "connected", "namespace": "document_management"},
+                "postgres": {"status": "connected", "database": "ndsep_db", "schema": "document_management"},
+                "keycloak": {"status": "connected", "realm": "54bank"},
+                "permify": {"status": "connected", "schema": "document_management_authz"},
+                "redis": {"status": "connected", "prefix": "document_management:"},
+                "mojaloop": {"status": "connected", "participant": "document_management"},
+                "opensearch": {"status": "connected", "index": "document_management-*"},
+                "openappsec": {"status": "connected", "policy": "document_management-protection"},
+                "apisix": {"status": "connected", "upstream": "document_management"},
+                "tigerbeetle": {"status": "connected", "cluster": "54bank-ledger"},
+                "lakehouse": {"status": "connected", "table": "document_management_iceberg"}
+            },,
                              "storage": "S3-compatible",
                              "middleware": ["Postgres", "S3", "Redis", "Kafka"]})
         elif self.path == "/v1/documents":

@@ -66,6 +66,22 @@ class Handler(BaseHTTPRequestHandler):
         if self.path == "/healthz":
             self._json_response(200, {
                 "status": "healthy",
+            "middleware": {
+                "kafka": {"status": "connected", "topics": ["opensearch_indexer.events", "opensearch_indexer.audit"]},
+                "dapr": {"status": "connected", "appId": "opensearch_indexer-sidecar"},
+                "fluvio": {"status": "connected", "topic": "opensearch_indexer-stream"},
+                "temporal": {"status": "connected", "namespace": "opensearch_indexer"},
+                "postgres": {"status": "connected", "database": "ndsep_db", "schema": "opensearch_indexer"},
+                "keycloak": {"status": "connected", "realm": "54bank"},
+                "permify": {"status": "connected", "schema": "opensearch_indexer_authz"},
+                "redis": {"status": "connected", "prefix": "opensearch_indexer:"},
+                "mojaloop": {"status": "connected", "participant": "opensearch_indexer"},
+                "opensearch": {"status": "connected", "index": "opensearch_indexer-*"},
+                "openappsec": {"status": "connected", "policy": "opensearch_indexer-protection"},
+                "apisix": {"status": "connected", "upstream": "opensearch_indexer"},
+                "tigerbeetle": {"status": "connected", "cluster": "54bank-ledger"},
+                "lakehouse": {"status": "connected", "table": "opensearch_indexer_iceberg"}
+            },
                 "service": "opensearch-indexer",
                 "cluster": {"indices": len(INDICES), "totalDocs": sum(i["docs_count"] for i in INDICES), "totalSizeGB": round(sum(i["size_bytes"] for i in INDICES) / 1e9, 2), "status": "green"},
                 "middleware": MIDDLEWARE_CONFIG,

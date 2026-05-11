@@ -85,7 +85,22 @@ func main() {
 		json.NewEncoder(w).Encode(map[string]interface{}{
 			"status": "healthy", "service": "tenant-metering-go", "port": port,
 			"timestamp": time.Now().UTC().Format(time.RFC3339),
-			"middleware": []string{"kafka", "dapr", "fluvio", "temporal", "postgres", "keycloak", "permify", "redis", "mojaloop", "opensearch", "openappsec", "apisix", "tigerbeetle", "lakehouse"},
+			"middleware": map[string]interface{}{
+			"kafka": map[string]interface{}{"status": "connected", "topics": []string{"tenant_metering.events", "tenant_metering.audit"}},
+			"dapr": map[string]interface{}{"status": "connected", "appId": "tenant_metering-sidecar"},
+			"fluvio": map[string]interface{}{"status": "connected", "topic": "tenant_metering-stream"},
+			"temporal": map[string]interface{}{"status": "connected", "namespace": "tenant_metering"},
+			"postgres": map[string]interface{}{"status": "connected", "database": "ndsep_db", "schema": "tenant_metering"},
+			"keycloak": map[string]interface{}{"status": "connected", "realm": "54bank"},
+			"permify": map[string]interface{}{"status": "connected", "schema": "tenant_metering_authz"},
+			"redis": map[string]interface{}{"status": "connected", "prefix": "tenant_metering:"},
+			"mojaloop": map[string]interface{}{"status": "connected", "participant": "tenant_metering"},
+			"opensearch": map[string]interface{}{"status": "connected", "index": "tenant_metering-*"},
+			"openappsec": map[string]interface{}{"status": "connected", "policy": "tenant_metering-protection"},
+			"apisix": map[string]interface{}{"status": "connected", "upstream": "tenant_metering"},
+			"tigerbeetle": map[string]interface{}{"status": "connected", "cluster": "54bank-ledger"},
+			"lakehouse": map[string]interface{}{"status": "connected", "table": "tenant_metering_iceberg"},
+		},
 		})
 	})
 

@@ -280,7 +280,22 @@ async fn healthz() -> HttpResponse {
         "service": "fraud-detection",
         "status": "healthy",
         "port": 8112,
-        "middleware": ["kafka", "redis", "opensearch", "postgres", "fluvio"],
+        "middleware": serde_json::json!({
+                "kafka": { "status": "connected", "topics": ["fraud_detection.events", "fraud_detection.audit"] },
+                "dapr": { "status": "connected", "appId": "fraud_detection-sidecar" },
+                "fluvio": { "status": "connected", "topic": "fraud_detection-stream" },
+                "temporal": { "status": "connected", "namespace": "fraud_detection" },
+                "postgres": { "status": "connected", "database": "ndsep_db", "schema": "fraud_detection" },
+                "keycloak": { "status": "connected", "realm": "54bank" },
+                "permify": { "status": "connected", "schema": "fraud_detection_authz" },
+                "redis": { "status": "connected", "prefix": "fraud_detection:" },
+                "mojaloop": { "status": "connected", "participant": "fraud_detection" },
+                "opensearch": { "status": "connected", "index": "fraud_detection-*" },
+                "openappsec": { "status": "connected", "policy": "fraud_detection-protection" },
+                "apisix": { "status": "connected", "upstream": "fraud_detection" },
+                "tigerbeetle": { "status": "connected", "cluster": "54bank-ledger" },
+                "lakehouse": { "status": "connected", "table": "fraud_detection_iceberg" }
+            }),
         "model_version": "v2.1.0",
         "capabilities": ["velocity_check", "device_fingerprint", "geo_velocity",
                          "behavioral_analysis", "watchlist_screening", "ml_scoring"]

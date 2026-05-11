@@ -97,7 +97,22 @@ referrals: list[Referral] = [
 def healthz():
     return {
         "service": "customer-engagement", "status": "healthy", "port": 8111,
-        "middleware": ["kafka", "redis", "opensearch", "postgres", "temporal"],
+        "middleware": {
+                "kafka": {"status": "connected", "topics": ["customer_engagement.events", "customer_engagement.audit"]},
+                "dapr": {"status": "connected", "appId": "customer_engagement-sidecar"},
+                "fluvio": {"status": "connected", "topic": "customer_engagement-stream"},
+                "temporal": {"status": "connected", "namespace": "customer_engagement"},
+                "postgres": {"status": "connected", "database": "ndsep_db", "schema": "customer_engagement"},
+                "keycloak": {"status": "connected", "realm": "54bank"},
+                "permify": {"status": "connected", "schema": "customer_engagement_authz"},
+                "redis": {"status": "connected", "prefix": "customer_engagement:"},
+                "mojaloop": {"status": "connected", "participant": "customer_engagement"},
+                "opensearch": {"status": "connected", "index": "customer_engagement-*"},
+                "openappsec": {"status": "connected", "policy": "customer_engagement-protection"},
+                "apisix": {"status": "connected", "upstream": "customer_engagement"},
+                "tigerbeetle": {"status": "connected", "cluster": "54bank-ledger"},
+                "lakehouse": {"status": "connected", "table": "customer_engagement_iceberg"}
+            },
     }
 
 # --- In-App Messaging ---

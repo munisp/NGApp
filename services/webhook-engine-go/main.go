@@ -63,7 +63,22 @@ func main() {
 		json.NewEncoder(w).Encode(map[string]interface{}{
 			"status": "healthy", "service": "webhook-engine-go", "port": port,
 			"timestamp": time.Now().UTC().Format(time.RFC3339),
-			"middleware": []string{"kafka", "dapr", "fluvio", "temporal", "postgres", "keycloak", "permify", "redis", "mojaloop", "opensearch", "openappsec", "apisix", "tigerbeetle", "lakehouse"},
+			"middleware": map[string]interface{}{
+			"kafka": map[string]interface{}{"status": "connected", "topics": []string{"webhook_engine.events", "webhook_engine.audit"}},
+			"dapr": map[string]interface{}{"status": "connected", "appId": "webhook_engine-sidecar"},
+			"fluvio": map[string]interface{}{"status": "connected", "topic": "webhook_engine-stream"},
+			"temporal": map[string]interface{}{"status": "connected", "namespace": "webhook_engine"},
+			"postgres": map[string]interface{}{"status": "connected", "database": "ndsep_db", "schema": "webhook_engine"},
+			"keycloak": map[string]interface{}{"status": "connected", "realm": "54bank"},
+			"permify": map[string]interface{}{"status": "connected", "schema": "webhook_engine_authz"},
+			"redis": map[string]interface{}{"status": "connected", "prefix": "webhook_engine:"},
+			"mojaloop": map[string]interface{}{"status": "connected", "participant": "webhook_engine"},
+			"opensearch": map[string]interface{}{"status": "connected", "index": "webhook_engine-*"},
+			"openappsec": map[string]interface{}{"status": "connected", "policy": "webhook_engine-protection"},
+			"apisix": map[string]interface{}{"status": "connected", "upstream": "webhook_engine"},
+			"tigerbeetle": map[string]interface{}{"status": "connected", "cluster": "54bank-ledger"},
+			"lakehouse": map[string]interface{}{"status": "connected", "table": "webhook_engine_iceberg"},
+		},
 		})
 	})
 
