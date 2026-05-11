@@ -309,6 +309,11 @@ const menuItems = [
   { path: "/kyb-engine", label: "KYB Company Verification", icon: Building2 },
   { path: "/liveness-detection", label: "Liveness Detection", icon: ShieldCheck },
   { path: "/face-match", label: "Face Match Engine", icon: ScanFace },
+  { path: "/kyc-triggers", label: "KYC Admin Triggers", icon: PlayCircle },
+  { path: "/kyb-triggers", label: "KYB Admin Triggers", icon: Building2 },
+  { path: "/kyc-event-rules", label: "KYC/KYB Event Rules", icon: Zap },
+  { path: "/kyc-service-gates", label: "KYC Service Gates", icon: ShieldCheck },
+  { path: "/kyc-overrides", label: "KYC Overrides", icon: ShieldAlert },
 ] as const;
 
 export default function ArchiveAdminSidebar() {

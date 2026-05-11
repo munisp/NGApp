@@ -46,6 +46,7 @@ import { registerLCAmendmentRoutes } from "./lib/lcAmendmentLifecycle";
 import { registerChequeImagingRoutes } from "./lib/chequeImaging";
 import { registerSeedDataResetRoutes } from "./lib/seedDataReset";
 import { registerIntegrationTestRoutes } from "./lib/integrationTestHarness";
+import { registerKYCKYBIntegration } from "./lib/kycKybIntegration";
 import { WebSocketServer, WebSocket } from "ws";
 
 import {
@@ -5125,6 +5126,8 @@ async function startServer() {
   registerSeedDataResetRoutes(app);
   // Integration Test Harness (Admin)
   registerIntegrationTestRoutes(app);
+  // KYC/KYB Integration Hub (Admin triggers, events, service gates)
+  registerKYCKYBIntegration(app);
 
   // Agriculture Banking proxy routes
   app.all("/api/platform/agriculture/farmers", (req, res) => {

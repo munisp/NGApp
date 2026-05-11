@@ -244,6 +244,11 @@ const KYCEngineWorkspace = lazy(() => import("@/pages/KYCEngineWorkspace"));
 const KYBEngineWorkspace = lazy(() => import("@/pages/KYBEngineWorkspace"));
 const LivenessDetectionWorkspace = lazy(() => import("@/pages/LivenessDetectionWorkspace"));
 const FaceMatchWorkspace = lazy(() => import("@/pages/FaceMatchWorkspace"));
+const KYCTriggersWorkspace = lazy(() => import("@/pages/KYCTriggersWorkspace"));
+const KYBTriggersWorkspace = lazy(() => import("@/pages/KYBTriggersWorkspace"));
+const KYCEventRulesWorkspace = lazy(() => import("@/pages/KYCEventRulesWorkspace"));
+const KYCServiceGatesWorkspace = lazy(() => import("@/pages/KYCServiceGatesWorkspace"));
+const KYCOverridesWorkspace = lazy(() => import("@/pages/KYCOverridesWorkspace"));
 const AdminAnalyticsPage = lazy(() => import("@/pages/AdminModulePages").then((module) => ({ default: module.AdminAnalyticsPage })));
 const AdminBankingOpsPage = lazy(() => import("@/pages/AdminModulePages").then((module) => ({ default: module.AdminBankingOpsPage })));
 const AdminFeatureFlagsPage = lazy(() => import("@/pages/AdminModulePages").then((module) => ({ default: module.AdminFeatureFlagsPage })));
@@ -542,6 +547,12 @@ export default function App() {
         <Route path="/kyb-engine" component={renderInAdminShell(KYBEngineWorkspace)} />
         <Route path="/liveness-detection" component={renderInAdminShell(LivenessDetectionWorkspace)} />
         <Route path="/face-match" component={renderInAdminShell(FaceMatchWorkspace)} />
+        {/* KYC/KYB Integration — Admin Triggers, Events, Service Gates */}
+        <Route path="/kyc-triggers" component={renderInAdminShell(KYCTriggersWorkspace)} />
+        <Route path="/kyb-triggers" component={renderInAdminShell(KYBTriggersWorkspace)} />
+        <Route path="/kyc-event-rules" component={renderInAdminShell(KYCEventRulesWorkspace)} />
+        <Route path="/kyc-service-gates" component={renderInAdminShell(KYCServiceGatesWorkspace)} />
+        <Route path="/kyc-overrides" component={renderInAdminShell(KYCOverridesWorkspace)} />
 
         <Route component={NotFound} />
       </Switch>
