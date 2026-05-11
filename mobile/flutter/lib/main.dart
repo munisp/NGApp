@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'services/api_service.dart';
 import 'services/offline_service.dart';
 import 'services/connectivity_service.dart';
+import 'services/cache_service.dart';
 import 'screens/home_screen.dart';
 import 'screens/customers_screen.dart';
 import 'screens/transfers_screen.dart';
@@ -258,7 +259,11 @@ import 'screens/workflow_definitions_screen.dart';
 import 'screens/workflow_engine_screen.dart';
 import 'screens/workflow_instances_screen.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  // Initialize SQLite cache for offline support
+  await CacheService.instance.database;
+  await CacheService.instance.clearExpired();
   runApp(const Bank54App());
 }
 
