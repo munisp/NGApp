@@ -278,6 +278,8 @@ const PBACEngineWorkspace = lazy(() => import("@/pages/PBACEngineWorkspace"));
 const GLEngineWorkspace = lazy(() => import("@/pages/GLEngineWorkspace"));
 const OfflineResilienceWorkspace = lazy(() => import("@/pages/OfflineResilienceWorkspace"));
 const RegulatoryAutomationWorkspace = lazy(() => import("@/pages/RegulatoryAutomationWorkspace"));
+const ServiceCatalogWorkspace = lazy(() => import("@/pages/ServiceCatalogWorkspace"));
+const WhiteLabelConfigWorkspace = lazy(() => import("@/pages/WhiteLabelConfigWorkspace"));
 
 function RouteFallback() {
   return <div className="min-h-screen bg-slate-50" />;
@@ -581,6 +583,8 @@ export default function App() {
         <Route path="/tenant-isolation" component={renderInAdminShell(TenantIsolationWorkspace)} />
         <Route path="/feature-flag-engine" component={renderInAdminShell(FeatureFlagEngineWorkspace)} />
         <Route path="/white-label-engine" component={renderInAdminShell(WhiteLabelEngineWorkspace)} />
+        <Route path="/white-label-config" component={renderInAdminShell(WhiteLabelConfigWorkspace)} />
+        <Route path="/service-catalog" component={renderInAdminShell(ServiceCatalogWorkspace)} />
         <Route path="/tenant-provisioning" component={renderInAdminShell(TenantProvisioningWorkspace)} />
         <Route path="/branded-comms" component={renderInAdminShell(BrandedCommsWorkspace)} />
         <Route path="/event-streaming" component={renderInAdminShell(EventStreamingWorkspace)} />

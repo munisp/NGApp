@@ -49,7 +49,7 @@ import { registerSeedDataResetRoutes } from "./lib/seedDataReset";
 import { registerIntegrationTestRoutes } from "./lib/integrationTestHarness";
 import { registerKYCKYBIntegration } from "./lib/kycKybIntegration";
 import { registerMultiTenantPlatformRoutes } from "./lib/multiTenantPlatform";
-import { registerSeedDataFallback, getProxyFallback } from "./lib/seedDataFallback";
+import { registerSeedDataFallback, getProxyFallback, registerFeatureFlagEngine, featureFlagMiddleware } from "./lib/seedDataFallback";
 import { WebSocketServer, WebSocket } from "ws";
 
 import {
@@ -5166,6 +5166,10 @@ async function startServer() {
   registerIntegrationTestRoutes(app);
   // KYC/KYB Integration Hub (Admin triggers, events, service gates)
   registerKYCKYBIntegration(app);
+
+  // Feature Flag Engine — tenant-aware service catalog and API gating
+  registerFeatureFlagEngine(app);
+  featureFlagMiddleware(app);
 
   // Seed Data Fallback — inline data for all routes so no page ever shows 503
   // MUST be registered BEFORE proxy routes so seed data handlers match first

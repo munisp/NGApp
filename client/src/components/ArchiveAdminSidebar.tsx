@@ -1,8 +1,9 @@
 // Design philosophy: extracted 54Bank admin portal as canonical base.
 // Sidebar organized into collapsible categories to manage 230+ pages.
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Link, useLocation } from "wouter";
+import { useFeatureFlags, SERVICE_CATALOG } from "@/hooks/useFeatureFlags";
 import {
   Activity,
   Bell,
@@ -394,10 +395,12 @@ const categorizedMenu: MenuCategory[] = [
     icon: Server,
     items: [
       { path: "/admin/onboarding", label: "Partner Onboarding", icon: Handshake },
+      { path: "/service-catalog", label: "Service Catalog", icon: Package },
       { path: "/tenant-isolation", label: "Tenant Isolation", icon: Server },
       { path: "/feature-flag-engine", label: "Feature Flags", icon: ToggleRight },
       { path: "/features", label: "Feature Config", icon: Flag },
       { path: "/white-label-engine", label: "White Labeling", icon: Paintbrush },
+      { path: "/white-label-config", label: "White Label Config", icon: Settings },
       { path: "/tenant-provisioning", label: "Tenant Provisioning", icon: Rocket },
       { path: "/branded-comms", label: "Branded Comms", icon: MessageCircle },
       { path: "/graduated-rollout", label: "Graduated Rollout", icon: Gauge },
@@ -471,15 +474,27 @@ function CategorySection({
   onToggle,
   location,
   onItemClick,
+  isEnabled,
 }: {
   cat: MenuCategory;
   isOpen: boolean;
   onToggle: () => void;
   location: string;
   onItemClick: () => void;
+  isEnabled: (flag: string) => boolean;
 }) {
   const CatIcon = cat.icon;
-  const hasActive = cat.items.some((item) => item.path === location);
+
+  // Filter items based on feature flags — items without a flag mapping are always visible
+  const visibleItems = cat.items.filter((item) => {
+    const flagKey = SERVICE_CATALOG[item.path];
+    return !flagKey || isEnabled(flagKey);
+  });
+
+  // Hide entire category if no items are visible
+  if (visibleItems.length === 0) return null;
+
+  const hasActive = visibleItems.some((item) => item.path === location);
 
   return (
     <div className="mb-1">
@@ -494,13 +509,14 @@ function CategorySection({
       >
         <CatIcon size={14} />
         <span className="flex-1 text-left">{cat.category}</span>
+        <span className="text-xs font-normal text-slate-400 mr-1">{visibleItems.length}</span>
         <span className="text-slate-400">
           {isOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
         </span>
       </button>
       {isOpen && (
         <div className="ml-2 mt-0.5 space-y-0.5 border-l border-slate-200 pl-2">
-          {cat.items.map((item) => {
+          {visibleItems.map((item) => {
             const Icon = item.icon;
             const active = location === item.path;
             return (
@@ -528,6 +544,7 @@ function CategorySection({
 export default function ArchiveAdminSidebar() {
   const [location] = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { isEnabled } = useFeatureFlags();
 
   // Auto-expand the category that contains the active route
   const activeCategory = categorizedMenu.findIndex((cat) =>
@@ -563,6 +580,7 @@ export default function ArchiveAdminSidebar() {
           onToggle={() => toggleCategory(idx)}
           location={location}
           onItemClick={() => setMobileOpen(false)}
+          isEnabled={isEnabled}
         />
       ))}
     </div>

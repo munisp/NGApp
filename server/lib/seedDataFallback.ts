@@ -245,9 +245,10 @@ const tenantMeters = [
 ];
 
 const provisioningJobs = [
-  { id: "PROV-001", tenantName: "Zenith Bank", status: "completed", steps: 12, completedSteps: 12, startedAt: "2026-04-01T08:00:00Z", completedAt: "2026-04-01T08:45:00Z", environment: "production", initiatedBy: "admin@54bank.app" },
-  { id: "PROV-002", tenantName: "UBA Nigeria", status: "completed", steps: 12, completedSteps: 12, startedAt: "2026-04-15T10:00:00Z", completedAt: "2026-04-15T10:30:00Z", environment: "production", initiatedBy: "admin@54bank.app" },
-  { id: "PROV-003", tenantName: "Wema Bank (ALAT)", status: "in_progress", steps: 12, completedSteps: 8, startedAt: "2026-05-09T12:00:00Z", completedAt: null, environment: "staging", initiatedBy: "ops@54bank.app" },
+  { id: "PROV-001", tenantName: "Zenith Bank", tenantId: "TEN-ZENITH", status: "completed", steps: 14, completedSteps: 14, startedAt: "2026-04-01T08:00:00Z", completedAt: "2026-04-01T08:45:00Z", environment: "production", initiatedBy: "admin@54bank.app", featureFlagPackage: "enterprise", modulesEnabled: 18, provisioningSteps: ["create_tenant", "setup_database", "apply_rls_policies", "configure_keycloak", "setup_permify_roles", "create_kafka_topics", "initialize_tigerbeetle_accounts", "setup_opensearch_indices", "configure_redis_cache", "register_dapr_components", "setup_temporal_workflows", "assign_feature_flags", "configure_billing", "deploy_white_label"] },
+  { id: "PROV-002", tenantName: "UBA Nigeria", tenantId: "TEN-UBA", status: "completed", steps: 14, completedSteps: 14, startedAt: "2026-04-15T10:00:00Z", completedAt: "2026-04-15T10:30:00Z", environment: "production", initiatedBy: "admin@54bank.app", featureFlagPackage: "enterprise", modulesEnabled: 18, provisioningSteps: ["create_tenant", "setup_database", "apply_rls_policies", "configure_keycloak", "setup_permify_roles", "create_kafka_topics", "initialize_tigerbeetle_accounts", "setup_opensearch_indices", "configure_redis_cache", "register_dapr_components", "setup_temporal_workflows", "assign_feature_flags", "configure_billing", "deploy_white_label"] },
+  { id: "PROV-003", tenantName: "Wema Bank (ALAT)", tenantId: "TEN-WEMA", status: "in_progress", steps: 14, completedSteps: 10, startedAt: "2026-05-09T12:00:00Z", completedAt: null, environment: "staging", initiatedBy: "ops@54bank.app", featureFlagPackage: "standard", modulesEnabled: 8, provisioningSteps: ["create_tenant", "setup_database", "apply_rls_policies", "configure_keycloak", "setup_permify_roles", "create_kafka_topics", "initialize_tigerbeetle_accounts", "setup_opensearch_indices", "configure_redis_cache", "register_dapr_components", "setup_temporal_workflows", "assign_feature_flags", "configure_billing", "deploy_white_label"] },
+  { id: "PROV-004", tenantName: "Mutual Benefits MFB", tenantId: "TEN-MUTUAL-MFB", status: "completed", steps: 14, completedSteps: 14, startedAt: "2026-05-01T09:00:00Z", completedAt: "2026-05-01T09:25:00Z", environment: "production", initiatedBy: "admin@54bank.app", featureFlagPackage: "microfinance", modulesEnabled: 9, provisioningSteps: ["create_tenant", "setup_database", "apply_rls_policies", "configure_keycloak", "setup_permify_roles", "create_kafka_topics", "initialize_tigerbeetle_accounts", "setup_opensearch_indices", "configure_redis_cache", "register_dapr_components", "setup_temporal_workflows", "assign_feature_flags", "configure_billing", "deploy_white_label"] },
 ];
 
 const customDomains = [
@@ -713,6 +714,299 @@ export function registerSeedDataFallback(app: Express) {
     { id: "STM-001", accountNumber: "0012345678", period: "2026-04", format: "pdf", status: "generated", pages: 12, generatedAt: "2026-05-01T06:00:00Z" },
     { id: "STM-002", accountNumber: "0023456789", period: "2026-04", format: "csv", status: "generated", pages: 0, generatedAt: "2026-05-01T06:05:00Z" },
   ]);
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  FEATURE FLAG TENANT CUSTOMIZATION ENGINE
+// ═══════════════════════════════════════════════════════════════════
+
+// Service catalog flag categories
+const FLAG_CATEGORIES = [
+  "core_banking", "payments", "cards_digital", "mobile_money", "lending",
+  "treasury", "trade_finance", "wealth_management", "accounting",
+  "risk_compliance", "agent_banking", "microfinance", "islamic_banking",
+  "diaspora_banking", "cooperative_banking", "agriculture_banking",
+  "billing", "multi_tenant",
+];
+
+// Route-to-flag mapping for API middleware
+const ROUTE_FLAG_MAP: Record<string, string> = {
+  "/api/account-opening": "core_banking",
+  "/api/customer": "core_banking",
+  "/api/beneficiary": "core_banking",
+  "/api/interest": "core_banking",
+  "/api/fixed-deposit": "core_banking",
+  "/api/savings": "core_banking",
+  "/api/dormancy": "core_banking",
+  "/api/standing": "core_banking",
+  "/api/branch": "core_banking",
+  "/api/teller": "core_banking",
+  "/api/atm": "core_banking",
+  "/api/pos": "core_banking",
+  "/api/channel": "core_banking",
+  "/api/transfer": "payments",
+  "/api/payment": "payments",
+  "/api/bulk-payment": "payments",
+  "/api/utility-payment": "payments",
+  "/api/bill-payment": "payments",
+  "/api/direct-debit": "payments",
+  "/api/mandate": "payments",
+  "/api/collection": "payments",
+  "/api/disbursement": "payments",
+  "/api/card": "cards_digital",
+  "/api/virtual-card": "cards_digital",
+  "/api/qr": "cards_digital",
+  "/api/wallet": "cards_digital",
+  "/api/mobile-money": "mobile_money",
+  "/api/ussd": "mobile_money",
+  "/api/loan": "lending",
+  "/api/credit": "lending",
+  "/api/collateral": "lending",
+  "/api/education-loan": "lending",
+  "/api/group-lending": "lending",
+  "/api/leasing": "lending",
+  "/api/mortgage": "lending",
+  "/api/treasury": "treasury",
+  "/api/fx": "treasury",
+  "/api/money-market": "treasury",
+  "/api/otc": "treasury",
+  "/api/securities": "treasury",
+  "/api/cash-pooling": "treasury",
+  "/api/trade-finance": "trade_finance",
+  "/api/letter-of-credit": "trade_finance",
+  "/api/bank-guarantee": "trade_finance",
+  "/api/project-finance": "trade_finance",
+  "/api/swift": "trade_finance",
+  "/api/iso20022": "trade_finance",
+  "/api/escrow": "trade_finance",
+  "/api/wealth": "wealth_management",
+  "/api/portfolio": "wealth_management",
+  "/api/pension": "wealth_management",
+  "/api/insurance": "wealth_management",
+  "/api/gl": "accounting",
+  "/api/gl-engine": "accounting",
+  "/api/chart-of-accounts": "accounting",
+  "/api/accounting-rules": "accounting",
+  "/api/eod": "accounting",
+  "/api/reconciliation": "accounting",
+  "/api/statement": "accounting",
+  "/api/risk": "risk_compliance",
+  "/api/compliance": "risk_compliance",
+  "/api/regulatory": "risk_compliance",
+  "/api/aml": "risk_compliance",
+  "/api/kyc": "risk_compliance",
+  "/api/kyb": "risk_compliance",
+  "/api/fraud": "risk_compliance",
+  "/api/sanctions": "risk_compliance",
+  "/api/ifrs9": "risk_compliance",
+  "/api/lcr-nsfr": "risk_compliance",
+  "/api/basel": "risk_compliance",
+  "/api/agent-banking": "agent_banking",
+  "/api/microfinance": "microfinance",
+  "/api/islamic": "islamic_banking",
+  "/api/diaspora": "diaspora_banking",
+  "/api/esusu": "cooperative_banking",
+  "/api/agriculture": "agriculture_banking",
+  "/api/farm": "agriculture_banking",
+  "/api/crop": "agriculture_banking",
+  "/api/livestock": "agriculture_banking",
+  "/api/warehouse": "agriculture_banking",
+  "/api/commodity": "agriculture_banking",
+  "/api/billing": "billing",
+  "/api/pricing": "billing",
+  "/api/revenue": "billing",
+};
+
+// In-memory tenant flag store
+interface TenantFlags {
+  tenantId: string;
+  flags: { key: string; enabled: boolean; rolloutPct: number }[];
+}
+
+const tenantFlagStore = new Map<string, TenantFlags>();
+
+// Default: platform admin has everything enabled
+tenantFlagStore.set("TEN-PLATFORM-ADMIN", {
+  tenantId: "TEN-PLATFORM-ADMIN",
+  flags: FLAG_CATEGORIES.map((key) => ({ key, enabled: true, rolloutPct: 100 })),
+});
+// Example tenant with limited modules
+tenantFlagStore.set("TEN-GTBANK", {
+  tenantId: "TEN-GTBANK",
+  flags: FLAG_CATEGORIES.map((key) => ({ key, enabled: true, rolloutPct: 100 })),
+});
+tenantFlagStore.set("TEN-MUTUAL-MFB", {
+  tenantId: "TEN-MUTUAL-MFB",
+  flags: [
+    { key: "core_banking", enabled: true, rolloutPct: 100 },
+    { key: "payments", enabled: true, rolloutPct: 100 },
+    { key: "mobile_money", enabled: true, rolloutPct: 100 },
+    { key: "lending", enabled: true, rolloutPct: 100 },
+    { key: "microfinance", enabled: true, rolloutPct: 100 },
+    { key: "accounting", enabled: true, rolloutPct: 100 },
+    { key: "risk_compliance", enabled: true, rolloutPct: 100 },
+    { key: "billing", enabled: true, rolloutPct: 100 },
+    { key: "cooperative_banking", enabled: true, rolloutPct: 100 },
+    { key: "treasury", enabled: false, rolloutPct: 0 },
+    { key: "trade_finance", enabled: false, rolloutPct: 0 },
+    { key: "wealth_management", enabled: false, rolloutPct: 0 },
+    { key: "cards_digital", enabled: false, rolloutPct: 0 },
+    { key: "agent_banking", enabled: false, rolloutPct: 0 },
+    { key: "islamic_banking", enabled: false, rolloutPct: 0 },
+    { key: "diaspora_banking", enabled: false, rolloutPct: 0 },
+    { key: "agriculture_banking", enabled: false, rolloutPct: 0 },
+    { key: "multi_tenant", enabled: false, rolloutPct: 0 },
+  ],
+});
+
+export function registerFeatureFlagEngine(app: Express) {
+  // GET tenant flags (for sidebar filtering)
+  app.get("/api/feature-flag-engine/v1/tenant-flags", (req: Request, res: Response) => {
+    const tenantId = (req.headers["x-tenant-id"] as string) || "TEN-PLATFORM-ADMIN";
+    const config = tenantFlagStore.get(tenantId) ?? tenantFlagStore.get("TEN-PLATFORM-ADMIN")!;
+    res.json({
+      items: config.flags.map((f) => ({
+        key: f.key,
+        label: FLAG_CATEGORIES.find((c) => c === f.key) ?? f.key,
+        enabled: f.enabled,
+        rolloutPct: f.rolloutPct,
+        category: f.key,
+        tenantId: config.tenantId,
+      })),
+      tenantId: config.tenantId,
+      total: config.flags.length,
+    });
+  });
+
+  // PUT update tenant flags (from Service Catalog UI)
+  app.put("/api/feature-flag-engine/v1/tenant-flags", (req: Request, res: Response) => {
+    const { tenantId, flags } = req.body as { tenantId: string; flags: { key: string; enabled: boolean; rolloutPct: number }[] };
+    if (!tenantId || !flags) {
+      res.status(400).json({ error: "tenantId and flags required" });
+      return;
+    }
+    tenantFlagStore.set(tenantId, { tenantId, flags });
+    res.json({ success: true, tenantId, flagCount: flags.length });
+  });
+
+  // GET all tenants' flag configs (for admin view)
+  app.get("/api/feature-flag-engine/v1/tenant-flags/all", (_: Request, res: Response) => {
+    const all: TenantFlags[] = [];
+    tenantFlagStore.forEach((v) => all.push(v));
+    res.json({ items: all, total: all.length });
+  });
+
+  // White label config endpoint
+  app.put("/api/white-label-engine/v1/config", (req: Request, res: Response) => {
+    const { partnerId, subTenants } = req.body as { partnerId: string; subTenants: unknown[] };
+    res.json({ success: true, partnerId, subTenantCount: subTenants?.length ?? 0 });
+  });
+
+  // POST provision a new tenant with initial feature flags
+  app.post("/api/tenant-provisioning/v1/provision", (req: Request, res: Response) => {
+    const { tenantId, tenantName, package: pkg, customFlags } = req.body as {
+      tenantId: string; tenantName: string; package: string; customFlags?: string[];
+    };
+    if (!tenantId || !tenantName || !pkg) {
+      res.status(400).json({ error: "tenantId, tenantName, and package required" });
+      return;
+    }
+
+    // Preset packages
+    const PRESETS: Record<string, string[]> = {
+      enterprise: FLAG_CATEGORIES,
+      standard: ["core_banking", "payments", "cards_digital", "mobile_money", "lending", "accounting", "risk_compliance", "billing"],
+      basic: ["core_banking", "payments", "mobile_money", "billing"],
+      microfinance: ["core_banking", "payments", "mobile_money", "lending", "microfinance", "accounting", "risk_compliance", "billing", "cooperative_banking"],
+      agent_banking: ["core_banking", "payments", "mobile_money", "agent_banking", "agriculture_banking", "billing"],
+      islamic: ["core_banking", "payments", "lending", "accounting", "risk_compliance", "islamic_banking", "billing"],
+    };
+
+    const enabledKeys = customFlags ?? PRESETS[pkg] ?? PRESETS.basic;
+    const flags = FLAG_CATEGORIES.map((key) => ({
+      key,
+      enabled: enabledKeys.includes(key),
+      rolloutPct: enabledKeys.includes(key) ? 100 : 0,
+    }));
+
+    tenantFlagStore.set(tenantId, { tenantId, flags });
+
+    res.json({
+      success: true,
+      tenantId,
+      tenantName,
+      package: pkg,
+      modulesEnabled: enabledKeys.length,
+      provisioningSteps: [
+        "create_tenant", "setup_database", "apply_rls_policies",
+        "configure_keycloak", "setup_permify_roles", "create_kafka_topics",
+        "initialize_tigerbeetle_accounts", "setup_opensearch_indices",
+        "configure_redis_cache", "register_dapr_components",
+        "setup_temporal_workflows", "assign_feature_flags",
+        "configure_billing", "deploy_white_label",
+      ],
+      flags,
+    });
+  });
+
+  // Service catalog endpoint — list available modules
+  app.get("/api/service-catalog/v1/modules", (_: Request, res: Response) => {
+    res.json({
+      items: FLAG_CATEGORIES.map((key) => ({
+        key,
+        label: key.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()),
+        available: true,
+      })),
+      total: FLAG_CATEGORIES.length,
+    });
+  });
+}
+
+// Feature flag API middleware — checks tenant's enabled flags before routing
+export function featureFlagMiddleware(app: Express) {
+  app.use("/api", (req: Request, res: Response, next: () => void) => {
+    // Skip healthz, feature-flag-engine itself, and non-gated paths
+    if (req.path.includes("/healthz") || req.path.includes("/feature-flag-engine") ||
+        req.path.includes("/service-catalog") || req.path.includes("/white-label") ||
+        req.path.includes("/platform") || req.method === "OPTIONS") {
+      next();
+      return;
+    }
+
+    const tenantId = (req.headers["x-tenant-id"] as string) || "TEN-PLATFORM-ADMIN";
+    const config = tenantFlagStore.get(tenantId);
+
+    // Platform admin bypasses all checks
+    if (!config || tenantId === "TEN-PLATFORM-ADMIN") {
+      next();
+      return;
+    }
+
+    // Find matching flag for this route
+    const routePrefix = Object.keys(ROUTE_FLAG_MAP).find((prefix) =>
+      req.path.startsWith(prefix.replace("/api", "")),
+    );
+
+    if (!routePrefix) {
+      next();
+      return;
+    }
+
+    const flagKey = ROUTE_FLAG_MAP[routePrefix];
+    const flag = config.flags.find((f) => f.key === flagKey);
+
+    if (flag && !flag.enabled) {
+      res.status(403).json({
+        error: "Module not enabled for this tenant",
+        module: flagKey,
+        tenantId,
+        message: `The ${flagKey.replace(/_/g, " ")} module is not enabled for tenant ${tenantId}. Contact your platform administrator to enable this module.`,
+      });
+      return;
+    }
+
+    next();
+  });
 }
 
 // ═══════════════════════════════════════════════════════════════════
