@@ -1,7 +1,5 @@
 // Design philosophy: extracted 54Bank admin portal as canonical base.
-// This sidebar follows the recovered archive information architecture first,
-// including its top-level banking modules and agriculture subtree, while keeping
-// the active project only as an enhancement layer around the canonical navigation.
+// Sidebar organized into collapsible categories to manage 230+ pages.
 
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
@@ -94,9 +92,6 @@ import {
   Rocket,
   MessageCircle,
   Factory,
-
-
-
   BarChart3 as BarChartIcon,
   Webhook,
   CheckCircle,
@@ -104,274 +99,462 @@ import {
   CircuitBoard,
   ShieldPlus,
   Cpu,
+  ChevronDown,
+  ChevronRight,
 } from "lucide-react";
 
-const menuItems = [
-  { path: "/", label: "Dashboard", icon: LayoutDashboard },
-  { path: "/control-center", label: "Control Center", icon: LayoutDashboard },
-  { path: "/operations", label: "Operations Center", icon: Activity },
-  { path: "/banks", label: "Banks", icon: Building2 },
-  { path: "/teller", label: "Teller Ops", icon: Building2 },
-  { path: "/trade-finance", label: "Trade Finance", icon: FileText },
-  { path: "/disputes", label: "Disputes", icon: AlertTriangle },
-  { path: "/ledger-sync", label: "Ledger Sync", icon: Link2 },
-  { path: "/erpnext-sync", label: "ERPNext Sync", icon: FileBarChart },
-  { path: "/identity-channels", label: "Identity & Channels", icon: Settings },
-  { path: "/islamic-banking", label: "Islamic Banking", icon: CreditCard },
-  { path: "/usage-analytics", label: "Usage Analytics", icon: BarChart3 },
-  { path: "/alerts", label: "Alerts", icon: Bell },
-  { path: "/features", label: "Features", icon: Flag },
-  { path: "/billing", label: "Billing", icon: CreditCard },
-  { path: "/admin/billing-engine", label: "Billing Engine", icon: Coins },
-  { path: "/pricing-model", label: "Pricing Model", icon: Calculator },
-  { path: "/monitoring", label: "Monitoring", icon: Activity },
-  { path: "/group-lending", label: "Group Lending", icon: Users },
-  { path: "/agent-banking", label: "Agent Banking", icon: MapPin },
-  { path: "/regulatory-reporting", label: "CBN Reports", icon: FileText },
-  { path: "/admin/onboarding", label: "Partner Onboarding", icon: Handshake },
-  { path: "/alert-settings", label: "Alert Settings", icon: Settings },
-  { path: "/alert-rules", label: "Alert Rules", icon: Flag },
-  { path: "/agriculture", label: "Agriculture", icon: Wheat },
-  { path: "/agricultural-insurance", label: "Agri Insurance", icon: Wheat },
-  { path: "/agriculture/farmers", label: "Farmers", icon: Users },
-  { path: "/agriculture/loans", label: "Agri Loans", icon: Tractor },
-  { path: "/agriculture/risk", label: "Risk Alerts", icon: AlertTriangle },
-  { path: "/agriculture/agtech", label: "AgTech", icon: Satellite },
-  { path: "/agriculture/value-chain", label: "Value Chain", icon: Link2 },
-  { path: "/agriculture/regulatory", label: "Agri Compliance", icon: FileText },
-  { path: "/agriculture/analytics", label: "Agri Analytics", icon: FileBarChart },
-  { path: "/payments-hub", label: "Payments Hub", icon: CreditCard },
-  { path: "/savings-products", label: "Savings Products", icon: PiggyBank },
-  { path: "/card-management", label: "Card Management", icon: CreditCard },
-  { path: "/treasury", label: "Treasury & Liquidity", icon: TrendingUp },
-  { path: "/customer-engagement", label: "Customer Engagement", icon: Heart },
-  { path: "/fraud-detection", label: "Fraud Detection", icon: Shield },
-  { path: "/mortgage", label: "Mortgage Servicing", icon: Building2 },
-  { path: "/education-loans", label: "Education Loans", icon: FileText },
-  { path: "/esusu", label: "Esusu Groups", icon: Users },
-  { path: "/virtual-accounts", label: "Virtual Accounts", icon: Coins },
-  { path: "/notification-center", label: "Notifications", icon: Bell },
-  { path: "/account-opening", label: "Account Opening", icon: UserPlus },
-  { path: "/standing-orders", label: "Standing Orders", icon: Clock },
-  { path: "/beneficiary-management", label: "Beneficiaries", icon: Users },
-  { path: "/loan-calculator", label: "Loan Calculator", icon: Calculator },
-  { path: "/batch-processing", label: "Batch Processing", icon: Layers },
-  { path: "/fx-rates", label: "FX & Rates", icon: TrendingUp },
-  { path: "/branch-operations", label: "Branch Ops", icon: Building2 },
-  { path: "/ledger", label: "Ledger", icon: BookOpen },
-  { path: "/event-bus", label: "Event Bus", icon: Radio },
-  { path: "/workflow-engine", label: "Workflows", icon: GitBranch },
-  { path: "/mojaloop", label: "Mojaloop", icon: Globe },
-  { path: "/opensearch", label: "OpenSearch", icon: Search },
-  { path: "/lakehouse", label: "Lakehouse", icon: Database },
-  { path: "/fluvio-streams", label: "Streams", icon: Zap },
-  { path: "/dapr", label: "Dapr Mesh", icon: Layers },
-  { path: "/permify", label: "Authorization", icon: Shield },
-  { path: "/keycloak", label: "Identity", icon: Key },
-  { path: "/interest-rates", label: "Interest Rates", icon: TrendingUp },
-  { path: "/cheque-clearing", label: "Cheque Clearing", icon: FileText },
-  { path: "/customer-360", label: "Customer 360", icon: Users },
-  { path: "/nibss-direct-debit", label: "NIBSS Direct Debit", icon: CreditCard },
-  { path: "/diaspora-banking", label: "Diaspora Banking", icon: Globe },
-  { path: "/kyc-aml", label: "KYC/AML Screening", icon: Shield },
-  { path: "/loan-origination", label: "Loan Origination", icon: FileBarChart },
-  { path: "/account-statements", label: "Account Statements", icon: FileText },
-  { path: "/bulk-payments", label: "Bulk Payments", icon: Layers },
-  { path: "/card-management-v2", label: "Card Mgmt", icon: CreditCard },
-  { path: "/savings-products", label: "Savings Products", icon: PiggyBank },
-  { path: "/treasury-liquidity", label: "Treasury & Liquidity", icon: TrendingUp },
-  { path: "/agent-banking-v2", label: "Agent Banking", icon: MapPin },
-  { path: "/chart-of-accounts", label: "Chart of Accounts", icon: BookOpen },
-  { path: "/journal-entries", label: "Journal Entries", icon: FileText },
-  { path: "/reporting", label: "Reports", icon: FileBarChart },
-  { path: "/payment-transactions", label: "Payment Txns", icon: ArrowRightLeft },
-  { path: "/loan-products", label: "Loan Products", icon: Landmark },
-  { path: "/loan-accounts", label: "Loan Accounts", icon: Receipt },
-  { path: "/analytics", label: "Analytics", icon: BarChart3 },
-  { path: "/etl-pipelines", label: "ETL Pipelines", icon: Database },
-  { path: "/fraud-rules", label: "Fraud Rules", icon: Shield },
-  { path: "/fraud-alerts", label: "Fraud Alerts", icon: AlertTriangle },
-  { path: "/webhook-subscriptions", label: "Webhooks", icon: Radio },
-  { path: "/webhook-deliveries", label: "Webhook Deliveries", icon: Zap },
-  { path: "/audit-trail", label: "Audit Trail", icon: FileText },
-  { path: "/compliance-checks", label: "Compliance", icon: Shield },
-  { path: "/regulatory-calendar", label: "Reg Calendar", icon: Clock },
-  { path: "/customer-onboarding", label: "Onboarding", icon: UserPlus },
-  { path: "/fx-dealing-room", label: "FX Dealing Room", icon: TrendingUp },
-  { path: "/fx-positions", label: "FX Positions", icon: Coins },
-  { path: "/doc-collections", label: "Doc Collections", icon: FileText },
-  { path: "/treasury-investments", label: "Treasury", icon: Landmark },
-  { path: "/swift-messages", label: "SWIFT Center", icon: Send },
-  { path: "/credit-risk", label: "Credit Risk", icon: AlertCircle },
-  { path: "/reconciliation", label: "Reconciliation", icon: GitCompare },
-  { path: "/fee-schedules", label: "Fee Schedules", icon: Receipt },
-  { path: "/notification-preferences", label: "Notif Preferences", icon: BellRing },
-  { path: "/dormancy", label: "Dormancy", icon: Moon },
-  { path: "/interest-accrual", label: "Interest Accrual", icon: Percent },
-  { path: "/limit-management", label: "Limits", icon: Gauge },
-  { path: "/gl-accounts", label: "General Ledger", icon: BookOpen },
-  { path: "/collateral", label: "Collateral", icon: Lock },
-  { path: "/complaints", label: "Complaints", icon: MessageSquare },
-  { path: "/interbank-settlement", label: "Settlement", icon: ArrowLeftRight },
-  { path: "/staff-management", label: "Staff", icon: Users },
-  { path: "/channel-management", label: "Channels", icon: Radio },
-  { path: "/fixed-deposits", label: "Fixed Deposits", icon: Landmark },
-  { path: "/standing-instructions", label: "Standing Instructions", icon: Clock },
-  { path: "/cash-management", label: "Cash & Liquidity", icon: Banknote },
-  { path: "/correspondent-banking", label: "Correspondents", icon: Globe },
-  { path: "/product-catalog", label: "Product Catalog", icon: Package },
-  { path: "/customer-segments", label: "Segments", icon: PieChart },
-  { path: "/messaging-gateway", label: "Messaging Gateway", icon: Mail },
-  { path: "/risk-scoring", label: "Risk Scoring", icon: ShieldAlert },
-  { path: "/regulatory-reporting", label: "Regulatory Reports", icon: FileText },
-  { path: "/atm-management", label: "ATM Management", icon: CreditCard },
-  { path: "/data-export", label: "Data Export", icon: Download },
-  { path: "/customer-insights", label: "Customer Insights", icon: Brain },
-  { path: "/salary-processing", label: "Salary Processing", icon: Wallet },
-  { path: "/credit-bureau", label: "Credit Bureau", icon: FileSearch },
-  { path: "/document-management", label: "Documents", icon: FolderOpen },
-  { path: "/pos-terminals", label: "POS Terminals", icon: Smartphone },
-  { path: "/collateral-valuation", label: "Collateral Valuation", icon: Scale },
-  { path: "/customer-feedback", label: "Feedback & NPS", icon: Star },
-  { path: "/money-market", label: "Money Market", icon: Banknote },
-  { path: "/securities-trading", label: "Securities Trading", icon: TrendingUp },
-  { path: "/supply-chain-finance", label: "Supply Chain Finance", icon: Link2 },
-  { path: "/cash-pooling", label: "Cash Pooling", icon: Layers },
-  { path: "/bank-guarantees", label: "Bank Guarantees", icon: ShieldCheck },
-  { path: "/otc-derivatives", label: "OTC Derivatives", icon: Sigma },
-  { path: "/iso20022-hub", label: "ISO 20022 Hub", icon: FileText },
-  { path: "/basel-engine", label: "Basel III/IV Engine", icon: Scale },
-  { path: "/ifrs9-engine", label: "IFRS 9 Engine", icon: Calculator },
-  { path: "/open-banking", label: "Open Banking", icon: Globe },
-  { path: "/interbank-lending", label: "Interbank Lending", icon: ArrowLeftRight },
-  { path: "/portfolio-mgmt", label: "Portfolio Mgmt", icon: PieChart },
-  { path: "/wealth-mgmt", label: "Wealth Mgmt", icon: Landmark },
-  { path: "/custody-service", label: "Custody Services", icon: Lock },
-  { path: "/factoring", label: "Factoring", icon: Receipt },
-  { path: "/syndicated-loans", label: "Syndicated Loans", icon: Users },
-  { path: "/project-finance", label: "Project Finance", icon: Building2 },
-  { path: "/leasing", label: "Leasing", icon: Package },
-  { path: "/contingent-liabilities", label: "Contingent Liabilities", icon: AlertTriangle },
-  { path: "/etd-trading", label: "ETD Trading", icon: TrendingUp },
-  { path: "/payment-investigation", label: "Payment Investigation", icon: Search },
-  { path: "/stress-testing", label: "Stress Testing", icon: Gauge },
-  { path: "/api-marketplace", label: "API Marketplace", icon: Globe },
-  { path: "/chatbot", label: "AI Chatbot", icon: MessageSquare },
-  { path: "/signature-verification", label: "Signature Verification", icon: FileSearch },
-  { path: "/remittance", label: "Remittance", icon: Send },
-  { path: "/microfinance", label: "Microfinance", icon: Heart },
-  { path: "/utility-payments", label: "Utility Payments", icon: Zap },
-  { path: "/multi-entity", label: "Multi-Entity", icon: GitBranch },
-  { path: "/trust-estate", label: "Trust & Estate", icon: ScrollText },
-  { path: "/escrow", label: "Escrow", icon: Shield },
-  { path: "/qr-payments", label: "QR Payments", icon: QrCode },
-  { path: "/fatca-crs", label: "FATCA/CRS", icon: FileWarning },
-  { path: "/biometric-auth", label: "Biometric Auth", icon: Fingerprint },
-  { path: "/safe-deposit", label: "Safe Deposit Box", icon: Box },
-  { path: "/fixed-assets", label: "Fixed Assets", icon: Building },
-  { path: "/expense-mgmt", label: "Expense Mgmt", icon: Wallet },
-  { path: "/inventory", label: "Inventory", icon: Archive },
-  { path: "/insurance", label: "Bancassurance", icon: ShieldCheck },
-  { path: "/pension", label: "Pension", icon: Landmark },
-  { path: "/locker", label: "Digital Locker", icon: FolderLock },
-  { path: "/standing-charges", label: "Standing Charges", icon: ListChecks },
-  { path: "/sukuk-management", label: "Sukuk Bonds", icon: Landmark },
-  { path: "/takaful-management", label: "Takaful Insurance", icon: Heart },
-  { path: "/wakala-investments", label: "Wakala Investments", icon: TrendingUp },
-  { path: "/agent-performance", label: "Agent Performance", icon: Users },
-  { path: "/watchlist-screening", label: "Watchlist Screening", icon: AlertTriangle },
-  { path: "/sar-reports", label: "SAR Reports", icon: FileText },
-  { path: "/pep-database", label: "PEP Database", icon: Shield },
-  { path: "/card-tokens", label: "Card Tokens", icon: Smartphone },
-  { path: "/card-fraud-rules", label: "Card Fraud Rules", icon: ShieldAlert },
-  { path: "/statement-history", label: "Statement History", icon: FileBarChart },
-  { path: "/workflow-definitions", label: "Workflows", icon: GitBranch },
-  { path: "/workflow-instances", label: "Workflow Instances", icon: PlayCircle },
-  { path: "/my-transactions", label: "My Transactions", icon: Receipt },
-  { path: "/service-health", label: "Service Health", icon: Activity },
-  { path: "/murabaha-calculator", label: "Murabaha Calculator", icon: Calculator },
-  { path: "/lc-amendments", label: "LC Amendments", icon: FileText },
-  { path: "/cheque-imaging", label: "Cheque Imaging", icon: FileBarChart },
-  { path: "/integration-tests", label: "Integration Tests", icon: Activity },
-  { path: "/seed-registry", label: "Seed Registry", icon: Database },
-  { path: "/infra-postgres", label: "PostgreSQL Persistence", icon: Database },
-  { path: "/infra-kafka", label: "Kafka Event Broker", icon: Activity },
-  { path: "/infra-redis", label: "Redis Cache", icon: Zap },
-  { path: "/infra-temporal", label: "Temporal Workflows", icon: GitBranch },
-  { path: "/infra-opensearch", label: "OpenSearch Analytics", icon: Search },
-  { path: "/infra-tigerbeetle", label: "TigerBeetle Ledger", icon: Shield },
-  { path: "/infra-lakehouse", label: "Lakehouse ETL", icon: Database },
-  // Gap Closure — Batch 1 (CRITICAL)
-  { path: "/eod-processor", label: "EOD/BOD Processing", icon: Clock },
-  { path: "/product-factory", label: "Product Factory", icon: Layers },
-  { path: "/accounting-rules", label: "Accounting Rules Engine", icon: BookOpen },
-  { path: "/maker-checker", label: "Maker-Checker Approvals", icon: CheckSquare },
-  { path: "/fx-revaluation", label: "Multi-Currency Revaluation", icon: TrendingUp },
-  { path: "/db-admin", label: "Database Administration", icon: Database },
-  // Gap Closure — Batch 2 (HIGH)
-  { path: "/cbn-returns", label: "CBN Regulatory Returns", icon: FileText },
-  { path: "/credit-facilities", label: "Credit Facilities / ELCM", icon: CreditCard },
-  { path: "/statement-generator", label: "Statement Generator", icon: FileText },
-  { path: "/rate-cascade", label: "Rate Cascade Engine", icon: TrendingUp },
-  { path: "/lcr-nsfr", label: "LCR / NSFR Calculator", icon: BarChart2 },
-  // Gap Closure — Batch 3 (MEDIUM)
-  { path: "/relationship-pricing", label: "Relationship Pricing", icon: DollarSign },
-  { path: "/kafka-streaming", label: "Kafka Event Streaming", icon: Activity },
-  { path: "/temporal-sagas", label: "Temporal Saga Workflows", icon: GitBranch },
-  { path: "/mandate-management", label: "Mandate Management", icon: FileText },
-  { path: "/cif-management", label: "CIF / Address Management", icon: Users },
-  { path: "/exam-management", label: "Regulatory Exam Tracking", icon: AlertTriangle },
-  { path: "/kyc-engine", label: "KYC Verification Engine", icon: ScanEye },
-  { path: "/kyb-engine", label: "KYB Company Verification", icon: Building2 },
-  { path: "/liveness-detection", label: "Liveness Detection", icon: ShieldCheck },
-  { path: "/face-match", label: "Face Match Engine", icon: ScanFace },
-  { path: "/kyc-triggers", label: "KYC Admin Triggers", icon: PlayCircle },
-  { path: "/kyb-triggers", label: "KYB Admin Triggers", icon: Building2 },
-  { path: "/kyc-event-rules", label: "KYC/KYB Event Rules", icon: Zap },
-  { path: "/kyc-service-gates", label: "KYC Service Gates", icon: ShieldCheck },
-  { path: "/kyc-overrides", label: "KYC Overrides", icon: ShieldAlert },
-  // Multi-Tenant Platform
-  { path: "/tenant-isolation", label: "Tenant Isolation", icon: Server },
-  { path: "/feature-flag-engine", label: "Feature Flag Engine", icon: ToggleRight },
-  { path: "/white-label-engine", label: "White Label Engine", icon: Paintbrush },
-  { path: "/tenant-provisioning", label: "Tenant Provisioning", icon: Rocket },
-  { path: "/branded-comms", label: "Branded Comms", icon: MessageCircle },
-  { path: "/product-factory", label: "Product Factory", icon: Factory },
-  { path: "/event-streaming", label: "Event Streaming", icon: Radio },
-  { path: "/graduated-rollout", label: "Graduated Rollout", icon: Gauge },
-  { path: "/custom-domains", label: "Custom Domains", icon: Globe },
-  { path: "/tenant-metering", label: "Tenant Metering", icon: BarChartIcon },
-  { path: "/webhook-engine", label: "Webhook Engine", icon: Webhook },
-  { path: "/approval-workflows", label: "Approval Workflows", icon: CheckCircle },
-  { path: "/plugin-marketplace", label: "Plugin Marketplace", icon: Store },
-  { path: "/billing-orchestrator", label: "Billing Orchestrator", icon: CircuitBoard },
-  { path: "/billing-rbac", label: "Billing RBAC", icon: ShieldPlus },
-  { path: "/billing-event-processor", label: "Billing Events", icon: Cpu },
-] as const;
+type MenuItem = { path: string; label: string; icon: React.ElementType };
+
+interface MenuCategory {
+  category: string;
+  icon: React.ElementType;
+  items: MenuItem[];
+}
+
+const categorizedMenu: MenuCategory[] = [
+  {
+    category: "Overview",
+    icon: LayoutDashboard,
+    items: [
+      { path: "/", label: "Dashboard", icon: LayoutDashboard },
+      { path: "/control-center", label: "Control Center", icon: LayoutDashboard },
+      { path: "/operations", label: "Operations Center", icon: Activity },
+      { path: "/monitoring", label: "Monitoring", icon: Activity },
+      { path: "/service-health", label: "Service Health", icon: Activity },
+      { path: "/usage-analytics", label: "Usage Analytics", icon: BarChart3 },
+      { path: "/analytics", label: "Analytics", icon: BarChart3 },
+      { path: "/alerts", label: "Alerts", icon: Bell },
+      { path: "/alert-settings", label: "Alert Settings", icon: Settings },
+      { path: "/alert-rules", label: "Alert Rules", icon: Flag },
+    ],
+  },
+  {
+    category: "Core Banking",
+    icon: Building2,
+    items: [
+      { path: "/banks", label: "Banks", icon: Building2 },
+      { path: "/account-opening", label: "Account Opening", icon: UserPlus },
+      { path: "/customer-360", label: "Customer 360", icon: Users },
+      { path: "/customer-onboarding", label: "Onboarding", icon: UserPlus },
+      { path: "/customer-segments", label: "Segments", icon: PieChart },
+      { path: "/customer-engagement", label: "Engagement", icon: Heart },
+      { path: "/customer-insights", label: "Insights", icon: Brain },
+      { path: "/customer-feedback", label: "Feedback & NPS", icon: Star },
+      { path: "/beneficiary-management", label: "Beneficiaries", icon: Users },
+      { path: "/interest-rates", label: "Interest Rates", icon: TrendingUp },
+      { path: "/interest-accrual", label: "Interest Accrual", icon: Percent },
+      { path: "/fixed-deposits", label: "Fixed Deposits", icon: Landmark },
+      { path: "/savings-products", label: "Savings Products", icon: PiggyBank },
+      { path: "/product-catalog", label: "Product Catalog", icon: Package },
+      { path: "/dormancy", label: "Dormancy", icon: Moon },
+      { path: "/standing-orders", label: "Standing Orders", icon: Clock },
+      { path: "/standing-instructions", label: "Standing Instructions", icon: Clock },
+      { path: "/standing-charges", label: "Standing Charges", icon: ListChecks },
+      { path: "/branch-operations", label: "Branch Ops", icon: Building2 },
+      { path: "/teller", label: "Teller Ops", icon: Building2 },
+      { path: "/atm-management", label: "ATM Management", icon: CreditCard },
+      { path: "/pos-terminals", label: "POS Terminals", icon: Smartphone },
+      { path: "/channel-management", label: "Channels", icon: Radio },
+      { path: "/identity-channels", label: "Identity & Channels", icon: Settings },
+    ],
+  },
+  {
+    category: "Payments & Transfers",
+    icon: ArrowRightLeft,
+    items: [
+      { path: "/payments-hub", label: "Payments Hub", icon: CreditCard },
+      { path: "/payment-transactions", label: "Payment Txns", icon: ArrowRightLeft },
+      { path: "/bulk-payments", label: "Bulk Payments", icon: Layers },
+      { path: "/nibss-direct-debit", label: "NIBSS Direct Debit", icon: CreditCard },
+      { path: "/cheque-clearing", label: "Cheque Clearing", icon: FileText },
+      { path: "/cheque-imaging", label: "Cheque Imaging", icon: FileBarChart },
+      { path: "/remittance", label: "Remittance", icon: Send },
+      { path: "/utility-payments", label: "Utility Payments", icon: Zap },
+      { path: "/qr-payments", label: "QR Payments", icon: QrCode },
+      { path: "/salary-processing", label: "Salary Processing", icon: Wallet },
+      { path: "/interbank-settlement", label: "Settlement", icon: ArrowLeftRight },
+      { path: "/payment-investigation", label: "Payment Investigation", icon: Search },
+      { path: "/swift-messages", label: "SWIFT Center", icon: Send },
+      { path: "/iso20022-hub", label: "ISO 20022 Hub", icon: FileText },
+      { path: "/batch-processing", label: "Batch Processing", icon: Layers },
+      { path: "/mojaloop", label: "Mojaloop", icon: Globe },
+    ],
+  },
+  {
+    category: "Cards & Digital",
+    icon: CreditCard,
+    items: [
+      { path: "/card-management", label: "Card Management", icon: CreditCard },
+      { path: "/card-management-v2", label: "Card Mgmt v2", icon: CreditCard },
+      { path: "/card-tokens", label: "Card Tokens", icon: Smartphone },
+      { path: "/card-fraud-rules", label: "Card Fraud Rules", icon: ShieldAlert },
+      { path: "/virtual-accounts", label: "Virtual Accounts", icon: Coins },
+      { path: "/biometric-auth", label: "Biometric Auth", icon: Fingerprint },
+      { path: "/signature-verification", label: "Signature Verification", icon: FileSearch },
+      { path: "/open-banking", label: "Open Banking", icon: Globe },
+      { path: "/api-marketplace", label: "API Marketplace", icon: Globe },
+      { path: "/chatbot", label: "AI Chatbot", icon: MessageSquare },
+      { path: "/locker", label: "Digital Locker", icon: FolderLock },
+    ],
+  },
+  {
+    category: "Lending & Credit",
+    icon: Landmark,
+    items: [
+      { path: "/loan-origination", label: "Loan Origination", icon: FileBarChart },
+      { path: "/loan-products", label: "Loan Products", icon: Landmark },
+      { path: "/loan-accounts", label: "Loan Accounts", icon: Receipt },
+      { path: "/loan-calculator", label: "Loan Calculator", icon: Calculator },
+      { path: "/credit-facilities", label: "Credit Facilities / ELCM", icon: CreditCard },
+      { path: "/credit-risk", label: "Credit Risk", icon: AlertCircle },
+      { path: "/credit-bureau", label: "Credit Bureau", icon: FileSearch },
+      { path: "/collateral", label: "Collateral", icon: Lock },
+      { path: "/collateral-valuation", label: "Collateral Valuation", icon: Scale },
+      { path: "/group-lending", label: "Group Lending", icon: Users },
+      { path: "/education-loans", label: "Education Loans", icon: FileText },
+      { path: "/mortgage", label: "Mortgage Servicing", icon: Building2 },
+      { path: "/microfinance", label: "Microfinance", icon: Heart },
+      { path: "/esusu", label: "Esusu Groups", icon: Users },
+      { path: "/syndicated-loans", label: "Syndicated Loans", icon: Users },
+      { path: "/project-finance", label: "Project Finance", icon: Building2 },
+      { path: "/leasing", label: "Leasing", icon: Package },
+      { path: "/factoring", label: "Factoring", icon: Receipt },
+      { path: "/mandate-management", label: "Mandate Management", icon: FileText },
+    ],
+  },
+  {
+    category: "Treasury & Markets",
+    icon: TrendingUp,
+    items: [
+      { path: "/treasury", label: "Treasury & Liquidity", icon: TrendingUp },
+      { path: "/treasury-liquidity", label: "Treasury Liquidity", icon: TrendingUp },
+      { path: "/treasury-investments", label: "Treasury Investments", icon: Landmark },
+      { path: "/fx-rates", label: "FX & Rates", icon: TrendingUp },
+      { path: "/fx-dealing-room", label: "FX Dealing Room", icon: TrendingUp },
+      { path: "/fx-positions", label: "FX Positions", icon: Coins },
+      { path: "/fx-revaluation", label: "Multi-Currency Reval", icon: TrendingUp },
+      { path: "/money-market", label: "Money Market", icon: Banknote },
+      { path: "/securities-trading", label: "Securities Trading", icon: TrendingUp },
+      { path: "/otc-derivatives", label: "OTC Derivatives", icon: Sigma },
+      { path: "/etd-trading", label: "ETD Trading", icon: TrendingUp },
+      { path: "/interbank-lending", label: "Interbank Lending", icon: ArrowLeftRight },
+      { path: "/cash-management", label: "Cash & Liquidity", icon: Banknote },
+      { path: "/cash-pooling", label: "Cash Pooling", icon: Layers },
+      { path: "/correspondent-banking", label: "Correspondents", icon: Globe },
+      { path: "/rate-cascade", label: "Rate Cascade Engine", icon: TrendingUp },
+    ],
+  },
+  {
+    category: "Trade & Structured Finance",
+    icon: FileText,
+    items: [
+      { path: "/trade-finance", label: "Trade Finance", icon: FileText },
+      { path: "/supply-chain-finance", label: "Supply Chain Finance", icon: Link2 },
+      { path: "/bank-guarantees", label: "Bank Guarantees", icon: ShieldCheck },
+      { path: "/contingent-liabilities", label: "Contingent Liabilities", icon: AlertTriangle },
+      { path: "/lc-amendments", label: "LC Amendments", icon: FileText },
+      { path: "/doc-collections", label: "Doc Collections", icon: FileText },
+      { path: "/escrow", label: "Escrow", icon: Shield },
+    ],
+  },
+  {
+    category: "Wealth & Investment",
+    icon: PieChart,
+    items: [
+      { path: "/wealth-mgmt", label: "Wealth Mgmt", icon: Landmark },
+      { path: "/portfolio-mgmt", label: "Portfolio Mgmt", icon: PieChart },
+      { path: "/custody-service", label: "Custody Services", icon: Lock },
+      { path: "/trust-estate", label: "Trust & Estate", icon: ScrollText },
+      { path: "/insurance", label: "Bancassurance", icon: ShieldCheck },
+      { path: "/pension", label: "Pension", icon: Landmark },
+      { path: "/safe-deposit", label: "Safe Deposit Box", icon: Box },
+    ],
+  },
+  {
+    category: "Accounting & GL",
+    icon: BookOpen,
+    items: [
+      { path: "/ledger", label: "Ledger", icon: BookOpen },
+      { path: "/gl-accounts", label: "General Ledger", icon: BookOpen },
+      { path: "/chart-of-accounts", label: "Chart of Accounts", icon: BookOpen },
+      { path: "/journal-entries", label: "Journal Entries", icon: FileText },
+      { path: "/accounting-rules", label: "Accounting Rules", icon: BookOpen },
+      { path: "/reconciliation", label: "Reconciliation", icon: GitCompare },
+      { path: "/fee-schedules", label: "Fee Schedules", icon: Receipt },
+      { path: "/ledger-sync", label: "Ledger Sync", icon: Link2 },
+      { path: "/erpnext-sync", label: "ERPNext Sync", icon: FileBarChart },
+      { path: "/fixed-assets", label: "Fixed Assets", icon: Building },
+      { path: "/expense-mgmt", label: "Expense Mgmt", icon: Wallet },
+      { path: "/inventory", label: "Inventory", icon: Archive },
+      { path: "/eod-processor", label: "EOD/BOD Processing", icon: Clock },
+      { path: "/account-statements", label: "Account Statements", icon: FileText },
+      { path: "/statement-history", label: "Statement History", icon: FileBarChart },
+      { path: "/statement-generator", label: "Statement Generator", icon: FileText },
+    ],
+  },
+  {
+    category: "Risk & Compliance",
+    icon: Shield,
+    items: [
+      { path: "/fraud-detection", label: "Fraud Detection", icon: Shield },
+      { path: "/fraud-rules", label: "Fraud Rules", icon: Shield },
+      { path: "/fraud-alerts", label: "Fraud Alerts", icon: AlertTriangle },
+      { path: "/kyc-aml", label: "KYC/AML Screening", icon: Shield },
+      { path: "/compliance-checks", label: "Compliance", icon: Shield },
+      { path: "/regulatory-reporting", label: "CBN Reports", icon: FileText },
+      { path: "/regulatory-calendar", label: "Reg Calendar", icon: Clock },
+      { path: "/cbn-returns", label: "CBN Regulatory Returns", icon: FileText },
+      { path: "/risk-scoring", label: "Risk Scoring", icon: ShieldAlert },
+      { path: "/stress-testing", label: "Stress Testing", icon: Gauge },
+      { path: "/watchlist-screening", label: "Watchlist Screening", icon: AlertTriangle },
+      { path: "/sar-reports", label: "SAR Reports", icon: FileText },
+      { path: "/pep-database", label: "PEP Database", icon: Shield },
+      { path: "/fatca-crs", label: "FATCA/CRS", icon: FileWarning },
+      { path: "/basel-engine", label: "Basel III/IV Engine", icon: Scale },
+      { path: "/ifrs9-engine", label: "IFRS 9 Engine", icon: Calculator },
+      { path: "/lcr-nsfr", label: "LCR / NSFR Calculator", icon: BarChart2 },
+      { path: "/exam-management", label: "Regulatory Exams", icon: AlertTriangle },
+      { path: "/audit-trail", label: "Audit Trail", icon: FileText },
+      { path: "/disputes", label: "Disputes", icon: AlertTriangle },
+      { path: "/complaints", label: "Complaints", icon: MessageSquare },
+      { path: "/limit-management", label: "Limits", icon: Gauge },
+    ],
+  },
+  {
+    category: "KYC / KYB / Identity",
+    icon: ScanEye,
+    items: [
+      { path: "/kyc-engine", label: "KYC Verification", icon: ScanEye },
+      { path: "/kyb-engine", label: "KYB Company Verification", icon: Building2 },
+      { path: "/liveness-detection", label: "Liveness Detection", icon: ShieldCheck },
+      { path: "/face-match", label: "Face Match Engine", icon: ScanFace },
+      { path: "/kyc-triggers", label: "KYC Admin Triggers", icon: PlayCircle },
+      { path: "/kyb-triggers", label: "KYB Admin Triggers", icon: Building2 },
+      { path: "/kyc-event-rules", label: "Event Rules", icon: Zap },
+      { path: "/kyc-service-gates", label: "Service Gates", icon: ShieldCheck },
+      { path: "/kyc-overrides", label: "Overrides", icon: ShieldAlert },
+      { path: "/cif-management", label: "CIF / Address Mgmt", icon: Users },
+    ],
+  },
+  {
+    category: "Agent & Specialty Banking",
+    icon: MapPin,
+    items: [
+      { path: "/agent-banking", label: "Agent Banking", icon: MapPin },
+      { path: "/agent-banking-v2", label: "Agent Banking v2", icon: MapPin },
+      { path: "/agent-performance", label: "Agent Performance", icon: Users },
+      { path: "/diaspora-banking", label: "Diaspora Banking", icon: Globe },
+      { path: "/islamic-banking", label: "Islamic Banking", icon: CreditCard },
+      { path: "/murabaha-calculator", label: "Murabaha Calculator", icon: Calculator },
+      { path: "/sukuk-management", label: "Sukuk Bonds", icon: Landmark },
+      { path: "/takaful-management", label: "Takaful Insurance", icon: Heart },
+      { path: "/wakala-investments", label: "Wakala Investments", icon: TrendingUp },
+      { path: "/multi-entity", label: "Multi-Entity", icon: GitBranch },
+    ],
+  },
+  {
+    category: "Agriculture Banking",
+    icon: Wheat,
+    items: [
+      { path: "/agriculture", label: "Agriculture", icon: Wheat },
+      { path: "/agricultural-insurance", label: "Agri Insurance", icon: Wheat },
+      { path: "/agriculture/farmers", label: "Farmers", icon: Users },
+      { path: "/agriculture/loans", label: "Agri Loans", icon: Tractor },
+      { path: "/agriculture/risk", label: "Risk Alerts", icon: AlertTriangle },
+      { path: "/agriculture/agtech", label: "AgTech", icon: Satellite },
+      { path: "/agriculture/value-chain", label: "Value Chain", icon: Link2 },
+      { path: "/agriculture/regulatory", label: "Agri Compliance", icon: FileText },
+      { path: "/agriculture/analytics", label: "Agri Analytics", icon: FileBarChart },
+    ],
+  },
+  {
+    category: "Billing & Revenue",
+    icon: CircuitBoard,
+    items: [
+      { path: "/billing", label: "Billing", icon: CreditCard },
+      { path: "/admin/billing-engine", label: "Billing Engine", icon: Coins },
+      { path: "/pricing-model", label: "Pricing Model", icon: Calculator },
+      { path: "/billing-orchestrator", label: "Billing Orchestrator", icon: CircuitBoard },
+      { path: "/billing-rbac", label: "Billing RBAC", icon: ShieldPlus },
+      { path: "/billing-event-processor", label: "Billing Events", icon: Cpu },
+      { path: "/relationship-pricing", label: "Relationship Pricing", icon: DollarSign },
+    ],
+  },
+  {
+    category: "Multi-Tenant Platform",
+    icon: Server,
+    items: [
+      { path: "/admin/onboarding", label: "Partner Onboarding", icon: Handshake },
+      { path: "/tenant-isolation", label: "Tenant Isolation", icon: Server },
+      { path: "/feature-flag-engine", label: "Feature Flags", icon: ToggleRight },
+      { path: "/features", label: "Feature Config", icon: Flag },
+      { path: "/white-label-engine", label: "White Labeling", icon: Paintbrush },
+      { path: "/tenant-provisioning", label: "Tenant Provisioning", icon: Rocket },
+      { path: "/branded-comms", label: "Branded Comms", icon: MessageCircle },
+      { path: "/graduated-rollout", label: "Graduated Rollout", icon: Gauge },
+      { path: "/custom-domains", label: "Custom Domains", icon: Globe },
+      { path: "/tenant-metering", label: "Tenant Metering", icon: BarChartIcon },
+      { path: "/webhook-engine", label: "Webhook Engine", icon: Webhook },
+      { path: "/approval-workflows", label: "Approval Workflows", icon: CheckCircle },
+      { path: "/plugin-marketplace", label: "Plugin Marketplace", icon: Store },
+      { path: "/product-factory", label: "Product Factory", icon: Factory },
+    ],
+  },
+  {
+    category: "Infrastructure & Middleware",
+    icon: Database,
+    items: [
+      { path: "/infra-postgres", label: "PostgreSQL", icon: Database },
+      { path: "/infra-kafka", label: "Kafka Broker", icon: Activity },
+      { path: "/infra-redis", label: "Redis Cache", icon: Zap },
+      { path: "/infra-temporal", label: "Temporal Workflows", icon: GitBranch },
+      { path: "/infra-opensearch", label: "OpenSearch", icon: Search },
+      { path: "/infra-tigerbeetle", label: "TigerBeetle Ledger", icon: Shield },
+      { path: "/infra-lakehouse", label: "Lakehouse ETL", icon: Database },
+      { path: "/kafka-streaming", label: "Kafka Streaming", icon: Activity },
+      { path: "/temporal-sagas", label: "Temporal Sagas", icon: GitBranch },
+      { path: "/event-streaming", label: "Event Streaming", icon: Radio },
+      { path: "/event-bus", label: "Event Bus", icon: Radio },
+      { path: "/opensearch", label: "OpenSearch Analytics", icon: Search },
+      { path: "/lakehouse", label: "Lakehouse", icon: Database },
+      { path: "/fluvio-streams", label: "Fluvio Streams", icon: Zap },
+      { path: "/dapr", label: "Dapr Mesh", icon: Layers },
+      { path: "/permify", label: "Authorization (Permify)", icon: Shield },
+      { path: "/keycloak", label: "Identity (Keycloak)", icon: Key },
+      { path: "/db-admin", label: "Database Admin", icon: Database },
+      { path: "/etl-pipelines", label: "ETL Pipelines", icon: Database },
+    ],
+  },
+  {
+    category: "Workflows & Operations",
+    icon: GitBranch,
+    items: [
+      { path: "/workflow-engine", label: "Workflows", icon: GitBranch },
+      { path: "/workflow-definitions", label: "Workflow Definitions", icon: GitBranch },
+      { path: "/workflow-instances", label: "Workflow Instances", icon: PlayCircle },
+      { path: "/maker-checker", label: "Maker-Checker Approvals", icon: CheckSquare },
+      { path: "/notification-center", label: "Notifications", icon: Bell },
+      { path: "/notification-preferences", label: "Notif Preferences", icon: BellRing },
+      { path: "/messaging-gateway", label: "Messaging Gateway", icon: Mail },
+      { path: "/webhook-subscriptions", label: "Webhooks", icon: Radio },
+      { path: "/webhook-deliveries", label: "Webhook Deliveries", icon: Zap },
+      { path: "/staff-management", label: "Staff", icon: Users },
+      { path: "/document-management", label: "Documents", icon: FolderOpen },
+      { path: "/data-export", label: "Data Export", icon: Download },
+      { path: "/my-transactions", label: "My Transactions", icon: Receipt },
+      { path: "/reporting", label: "Reports", icon: FileBarChart },
+    ],
+  },
+  {
+    category: "Dev & Testing",
+    icon: Activity,
+    items: [
+      { path: "/integration-tests", label: "Integration Tests", icon: Activity },
+      { path: "/seed-registry", label: "Seed Registry", icon: Database },
+    ],
+  },
+];
+
+function CategorySection({
+  cat,
+  isOpen,
+  onToggle,
+  location,
+  onItemClick,
+}: {
+  cat: MenuCategory;
+  isOpen: boolean;
+  onToggle: () => void;
+  location: string;
+  onItemClick: () => void;
+}) {
+  const CatIcon = cat.icon;
+  const hasActive = cat.items.some((item) => item.path === location);
+
+  return (
+    <div className="mb-1">
+      <button
+        type="button"
+        onClick={onToggle}
+        className={`flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold uppercase tracking-wider transition-colors ${
+          hasActive
+            ? "bg-blue-50 text-blue-700"
+            : "text-slate-500 hover:bg-slate-50 hover:text-slate-700"
+        }`}
+      >
+        <CatIcon size={14} />
+        <span className="flex-1 text-left">{cat.category}</span>
+        <span className="text-slate-400">
+          {isOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+        </span>
+      </button>
+      {isOpen && (
+        <div className="ml-2 mt-0.5 space-y-0.5 border-l border-slate-200 pl-2">
+          {cat.items.map((item) => {
+            const Icon = item.icon;
+            const active = location === item.path;
+            return (
+              <Link
+                key={item.path}
+                href={item.path}
+                onClick={onItemClick}
+                className={`flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm transition-colors ${
+                  active
+                    ? "bg-blue-50 font-medium text-blue-700"
+                    : "text-slate-600 hover:bg-slate-50"
+                }`}
+              >
+                <Icon size={14} />
+                <span className="truncate">{item.label}</span>
+              </Link>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function ArchiveAdminSidebar() {
   const [location] = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
 
+  // Auto-expand the category that contains the active route
+  const activeCategory = categorizedMenu.findIndex((cat) =>
+    cat.items.some((item) => item.path === location),
+  );
+  const [openCategories, setOpenCategories] = useState<Set<number>>(() => {
+    const initial = new Set<number>();
+    // Always open Overview
+    initial.add(0);
+    if (activeCategory >= 0) initial.add(activeCategory);
+    return initial;
+  });
+
+  const toggleCategory = (idx: number) => {
+    setOpenCategories((prev) => {
+      const next = new Set(prev);
+      if (next.has(idx)) {
+        next.delete(idx);
+      } else {
+        next.add(idx);
+      }
+      return next;
+    });
+  };
+
   const navigationItems = (
-    <div className="space-y-1">
-      {menuItems.map((item) => {
-        const Icon = item.icon;
-        const active = location === item.path;
-        return (
-          <Link
-            key={item.path}
-            href={item.path}
-            onClick={() => setMobileOpen(false)}
-            className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm transition-colors ${
-              active ? "bg-blue-50 font-medium text-blue-700" : "text-slate-700 hover:bg-slate-50"
-            }`}
-          >
-            <Icon size={18} />
-            <span>{item.label}</span>
-          </Link>
-        );
-      })}
+    <div className="space-y-0.5">
+      {categorizedMenu.map((cat, idx) => (
+        <CategorySection
+          key={cat.category}
+          cat={cat}
+          isOpen={openCategories.has(idx)}
+          onToggle={() => toggleCategory(idx)}
+          location={location}
+          onItemClick={() => setMobileOpen(false)}
+        />
+      ))}
     </div>
   );
 
@@ -395,7 +578,7 @@ export default function ArchiveAdminSidebar() {
         </div>
         <div className="mt-3 flex items-center gap-2 rounded-2xl bg-slate-100 px-4 py-3 text-xs text-slate-500">
           <span className="inline-flex h-2 w-2 rounded-full bg-emerald-500" />
-          Archive and routed banking workspaces unified
+          {categorizedMenu.length} categories &middot; {categorizedMenu.reduce((s, c) => s + c.items.length, 0)} pages
         </div>
         {mobileOpen ? (
           <div className="mt-3 max-h-[70vh] overflow-y-auto rounded-3xl border border-slate-200 bg-white shadow-2xl">
@@ -439,7 +622,7 @@ export default function ArchiveAdminSidebar() {
           <p className="mt-1 text-xs text-slate-500">Super Admin Console</p>
           <div className="mt-5 flex items-center gap-2 rounded-2xl bg-slate-100 px-4 py-3 text-sm text-slate-500">
             <span className="inline-flex h-2 w-2 rounded-full bg-emerald-500" />
-            Archive and routed banking workspaces unified
+            {categorizedMenu.length} categories &middot; {categorizedMenu.reduce((s, c) => s + c.items.length, 0)} pages
           </div>
         </div>
 
@@ -465,7 +648,10 @@ export default function ArchiveAdminSidebar() {
               <p className="truncate text-xs text-slate-500">admin@54bank.com</p>
             </div>
           </div>
-          <Link href="/login" className="mt-2 flex items-center gap-3 rounded-xl px-4 py-3 text-sm text-slate-700 transition-colors hover:bg-slate-50">
+          <Link
+            href="/login"
+            className="mt-2 flex items-center gap-3 rounded-xl px-4 py-3 text-sm text-slate-700 transition-colors hover:bg-slate-50"
+          >
             <LogOut size={18} />
             Logout
           </Link>
