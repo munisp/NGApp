@@ -2,13 +2,48 @@
  * Seed Data Fallback Registry — provides realistic Nigerian banking seed data
  * for ALL API routes so pages never show 503 errors when microservices are down.
  * Data is served inline by the Express server with no external dependency.
+ * Also provides full CRUD (POST/PUT/DELETE) for all routes.
  */
 import type { Express, Request, Response } from "express";
+import { randomUUID } from "crypto";
 
-// ── Helper to register a GET handler returning { items, total } ──
+// In-memory stores for CRUD operations
+const stores = new Map<string, unknown[]>();
+
+// ── Helper to register full CRUD handlers ──
 function reg(app: Express, path: string, data: unknown[]) {
+  stores.set(path, [...data]);
+
   app.get(path, (_: Request, res: Response) => {
-    res.json({ items: data, total: data.length });
+    const items = stores.get(path) ?? [];
+    res.json({ items, total: items.length });
+  });
+
+  app.post(path, (req: Request, res: Response) => {
+    const items = stores.get(path) ?? [];
+    const record = { id: `REC-${randomUUID().slice(0, 8).toUpperCase()}`, ...req.body, createdAt: new Date().toISOString() };
+    items.push(record);
+    stores.set(path, items);
+    res.status(201).json(record);
+  });
+
+  app.put(`${path}/:id`, (req: Request, res: Response) => {
+    const items = stores.get(path) ?? [];
+    const idx = items.findIndex((r: any) => r.id === req.params.id);
+    if (idx >= 0) {
+      items[idx] = { ...items[idx] as object, ...req.body, updatedAt: new Date().toISOString() };
+      stores.set(path, items);
+      res.json(items[idx]);
+    } else {
+      res.status(404).json({ error: "Record not found" });
+    }
+  });
+
+  app.delete(`${path}/:id`, (req: Request, res: Response) => {
+    const items = stores.get(path) ?? [];
+    const filtered = items.filter((r: any) => r.id !== req.params.id);
+    stores.set(path, filtered);
+    res.json({ success: true, deleted: req.params.id });
   });
 }
 
