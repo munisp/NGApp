@@ -609,6 +609,61 @@ export function registerSeedDataFallback(app: Express) {
   reg(app, "/api/platform/billing-orchestrator/v1/billing/profiles", billingOrchestratorProfiles);
   reg(app, "/api/platform/billing-rbac/v1/billing/rbac/policies", billingRbacPolicies);
   reg(app, "/api/platform/billing-events/v1/billing/events/metering", billingEvents);
+
+  // ── Additional routes for 47 previously unwired services ──
+  const pfData = proxyFallbackData;
+  reg(app, "/api/ab-testing/v1/ab-tests/experiments", pfData["/v1/ab-tests/experiments"] ?? []);
+  reg(app, "/api/api-marketplace/v1/marketplace/apis", pfData["/v1/marketplace/apis"] ?? []);
+  reg(app, "/api/bank-guarantees/v1/guarantees", pfData["/v1/guarantees"] ?? []);
+  reg(app, "/api/basel-engine/v1/basel/capital-adequacy", pfData["/v1/basel/capital-adequacy"] ?? []);
+  reg(app, "/api/batch-processing/v1/batch/jobs", pfData["/v1/batch/jobs"] ?? []);
+  reg(app, "/api/beneficiary-management/v1/beneficiaries", pfData["/v1/beneficiaries"] ?? []);
+  reg(app, "/api/branch-operations/v1/branches", branches);
+  reg(app, "/api/bulk-payments/v1/bulk/batches", [
+    { id: "BP-001", name: "May Salary Run", totalAmount: 850000000, currency: "NGN", count: 12500, status: "completed" },
+    { id: "BP-002", name: "Vendor Payments Q2", totalAmount: 250000000, currency: "NGN", count: 450, status: "processing" },
+  ]);
+  reg(app, "/api/cash-pooling/v1/cash-pools", pfData["/v1/cash-pools"] ?? []);
+  reg(app, "/api/ddos-protection/v1/ddos/rules", ddosRules);
+  reg(app, "/api/dispute-management/v1/disputes", pfData["/v1/disputes"] ?? []);
+  reg(app, "/api/education-loans/v1/education-loans", pfData["/v1/education-loans"] ?? []);
+  reg(app, "/api/erpnext-sync/v1/erp/sync-jobs", pfData["/v1/erp/sync-jobs"] ?? []);
+  reg(app, "/api/esusu-groups/v1/esusu/groups", pfData["/v1/esusu/groups"] ?? []);
+  reg(app, "/api/flag-audit/v1/flag-audits", pfData["/v1/flag-audits"] ?? []);
+  reg(app, "/api/fx-rates-engine/v1/fx/rates", pfData["/v1/fx/rates"] ?? []);
+  reg(app, "/api/gl-engine/v1/gl/accounts", glAccounts);
+  reg(app, "/api/group-lending/v1/group-lending/groups", pfData["/v1/group-lending/groups"] ?? []);
+  reg(app, "/api/identity-channels/v1/identity/channels", pfData["/v1/identity/channels"] ?? []);
+  reg(app, "/api/ifrs9-engine/v1/ifrs9/ecl-models", pfData["/v1/ifrs9/ecl-models"] ?? []);
+  reg(app, "/api/iso20022-hub/v1/iso20022/messages", pfData["/v1/iso20022/messages"] ?? []);
+  reg(app, "/api/kyb-engine/v1/kyb/businesses", pfData["/v1/kyb/businesses"] ?? []);
+  reg(app, "/api/kyc-engine/v1/kyc/verifications", [
+    { id: "KYC-001", customerId: "CUS-001", type: "BVN", status: "verified", bvn: "22100000001", verifiedAt: "2026-05-01T10:00:00Z" },
+    { id: "KYC-002", customerId: "CUS-002", type: "NIN", status: "verified", nin: "10200000002", verifiedAt: "2026-05-02T11:00:00Z" },
+  ]);
+  reg(app, "/api/leasing/v1/leases", pfData["/v1/leases"] ?? []);
+  reg(app, "/api/ledger-reconciliation/v1/reconciliation/reports", pfData["/v1/reconciliation/reports"] ?? []);
+  reg(app, "/api/loan-calculator/v1/loan-calculator/schedules", pfData["/v1/loan-calculator/schedules"] ?? []);
+  reg(app, "/api/microfinance-engine/v1/microfinance/groups", microfinanceGroups);
+  reg(app, "/api/multi-entity/v1/entities", pfData["/v1/entities"] ?? []);
+  reg(app, "/api/notification-service/v1/notifications", pfData["/v1/notifications"] ?? []);
+  reg(app, "/api/offline-resilience/v1/connectivity/profiles", offlineCapabilities);
+  reg(app, "/api/opensearch-analytics/v1/analytics/dashboards", pfData["/v1/analytics/dashboards"] ?? []);
+  reg(app, "/api/otc-derivatives/v1/otc/contracts", pfData["/v1/otc/contracts"] ?? []);
+  reg(app, "/api/payment-investigation/v1/investigations", pfData["/v1/investigations"] ?? []);
+  reg(app, "/api/pbac-engine/v1/pbac/policies", pbacPolicies);
+  reg(app, "/api/project-finance/v1/projects", pfData["/v1/projects"] ?? []);
+  reg(app, "/api/regulatory-automation/v1/regulatory/returns", regulatoryReturns);
+  reg(app, "/api/savings-products/v1/savings/products", pfData["/v1/savings/products"] ?? []);
+  reg(app, "/api/security-hardening/v1/security/policies", securityPolicies);
+  reg(app, "/api/standing-orders/v1/standing-orders", pfData["/v1/standing-orders"] ?? []);
+  reg(app, "/api/swift-messaging/v1/swift/messages", swiftMessages);
+  reg(app, "/api/tenant-billing/v1/billing/records", pfData["/v1/billing/records"] ?? []);
+  reg(app, "/api/tenant-export/v1/exports", pfData["/v1/exports"] ?? []);
+  reg(app, "/api/tenant-ratelimit/v1/rate-limits", pfData["/v1/rate-limits"] ?? []);
+  reg(app, "/api/treasury-liquidity/v1/treasury/liquidity", pfData["/v1/treasury/liquidity"] ?? []);
+  reg(app, "/api/utility-payments/v1/utility-payments", pfData["/v1/utility-payments"] ?? []);
+  reg(app, "/api/workflow-engine/v1/workflow/definitions", pfData["/v1/workflow/definitions"] ?? []);
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -788,6 +843,232 @@ const proxyFallbackData: Record<string, unknown[]> = {
     { id: "SA-001", accountNumber: "0012345678", accountName: "Adebayo Ogunlesi", type: "savings", currency: "NGN", balance: 15000000, lastTransaction: "2026-05-09T14:30:00Z", branch: "Lagos Marina" },
     { id: "SA-002", accountNumber: "0023456789", accountName: "Amina Bello", type: "current", currency: "NGN", balance: 45000000, lastTransaction: "2026-05-09T12:00:00Z", branch: "Abuja Central" },
     { id: "SA-003", accountNumber: "0034567890", accountName: "Emeka Okafor", type: "domiciliary", currency: "USD", balance: 125000, lastTransaction: "2026-05-08T16:00:00Z", branch: "Port Harcourt GRA" },
+  ],
+
+  // ── Additional service fallback data (47 previously unwired services) ──
+
+  // AB Testing
+  "/v1/ab-tests/experiments": [
+    { id: "ABT-001", name: "Mobile Login Flow", status: "active", variants: 3, participants: 12500, startDate: "2026-04-01", tenantId: "TEN-GTBANK" },
+    { id: "ABT-002", name: "Card Application UX", status: "completed", variants: 2, participants: 8400, startDate: "2026-03-15", tenantId: "TEN-FIRSTBANK" },
+  ],
+
+  // API Marketplace
+  "/v1/marketplace/apis": [
+    { id: "API-001", name: "Account Balance API", version: "v2", calls: 2500000, status: "published", category: "core-banking" },
+    { id: "API-002", name: "Payment Initiation API", version: "v1", calls: 1800000, status: "published", category: "payments" },
+    { id: "API-003", name: "KYC Verification API", version: "v1", calls: 950000, status: "published", category: "compliance" },
+  ],
+
+  // Bank Guarantees
+  "/v1/guarantees": [
+    { id: "BG-001", applicant: "Dangote Cement Plc", beneficiary: "FG of Nigeria", amount: 5000000000, currency: "NGN", type: "performance", status: "active", expiryDate: "2027-12-31" },
+    { id: "BG-002", applicant: "Julius Berger Nigeria", beneficiary: "NNPC", amount: 2000000000, currency: "NGN", type: "bid_bond", status: "active", expiryDate: "2026-12-31" },
+  ],
+
+  // Basel Engine
+  "/v1/basel/capital-adequacy": [
+    { id: "BAS-001", metric: "CET1 Ratio", value: 15.8, threshold: 10.0, status: "compliant", reportDate: "2026-03-31" },
+    { id: "BAS-002", metric: "Total Capital Ratio", value: 18.2, threshold: 15.0, status: "compliant", reportDate: "2026-03-31" },
+    { id: "BAS-003", metric: "Leverage Ratio", value: 8.5, threshold: 3.0, status: "compliant", reportDate: "2026-03-31" },
+  ],
+
+  // Batch Processing
+  "/v1/batch/jobs": [
+    { id: "BAT-001", name: "End of Day Processing", type: "scheduled", status: "completed", records: 1250000, duration: 1800, lastRun: "2026-05-09T23:00:00Z" },
+    { id: "BAT-002", name: "Interest Accrual", type: "scheduled", status: "completed", records: 850000, duration: 2400, lastRun: "2026-05-09T23:30:00Z" },
+    { id: "BAT-003", name: "Statement Generation", type: "monthly", status: "pending", records: 0, duration: 0, lastRun: "2026-04-30T23:00:00Z" },
+  ],
+
+  // Beneficiary Management
+  "/v1/beneficiaries": [
+    { id: "BEN-001", name: "Fatima Abdullahi", bank: "First Bank", accountNumber: "3012345678", customerId: "CUS-001", status: "verified" },
+    { id: "BEN-002", name: "Chidi Nwankwo", bank: "GTBank", accountNumber: "0234567890", customerId: "CUS-001", status: "verified" },
+    { id: "BEN-003", name: "Aisha Mohammed", bank: "Access Bank", accountNumber: "0145678901", customerId: "CUS-002", status: "pending" },
+  ],
+
+  // Cash Pooling
+  "/v1/cash-pools": [
+    { id: "CP-001", name: "Dangote Group Master Pool", type: "physical", currency: "NGN", totalBalance: 85000000000, accounts: 12, status: "active" },
+    { id: "CP-002", name: "BUA Group Notional Pool", type: "notional", currency: "NGN", totalBalance: 42000000000, accounts: 8, status: "active" },
+  ],
+
+  // Dispute Management
+  "/v1/disputes": [
+    { id: "DSP-001", customerId: "CUS-001", transactionId: "TXN-50001", amount: 150000, currency: "NGN", reason: "Unauthorized debit", status: "under_investigation", createdAt: "2026-05-08T10:00:00Z" },
+    { id: "DSP-002", customerId: "CUS-002", transactionId: "TXN-50002", amount: 500000, currency: "NGN", reason: "ATM did not dispense", status: "resolved", createdAt: "2026-05-07T14:00:00Z" },
+    { id: "DSP-003", customerId: "CUS-003", transactionId: "TXN-50003", amount: 75000, currency: "NGN", reason: "Duplicate charge", status: "pending_review", createdAt: "2026-05-09T08:00:00Z" },
+  ],
+
+  // Education Loans
+  "/v1/education-loans": [
+    { id: "EDL-001", studentName: "Oluwaseun Adeyemi", institution: "University of Lagos", amount: 2500000, currency: "NGN", status: "disbursed", program: "BSc Computer Science", tenor: 48 },
+    { id: "EDL-002", studentName: "Amara Obi", institution: "Covenant University", amount: 4000000, currency: "NGN", status: "repaying", program: "MBA Finance", tenor: 36 },
+  ],
+
+  // ERP Sync
+  "/v1/erp/sync-jobs": [
+    { id: "ERP-001", system: "SAP S/4HANA", direction: "bidirectional", status: "synced", lastSync: "2026-05-09T15:00:00Z", records: 45000, errors: 0 },
+    { id: "ERP-002", system: "ERPNext", direction: "inbound", status: "synced", lastSync: "2026-05-09T14:30:00Z", records: 12000, errors: 2 },
+  ],
+
+  // Esusu Groups
+  "/v1/esusu/groups": [
+    { id: "ESU-001", name: "Lagos Market Women", members: 20, monthlyContribution: 50000, currency: "NGN", currentRound: 8, status: "active", lga: "Lagos Island" },
+    { id: "ESU-002", name: "Kano Traders Union", members: 15, monthlyContribution: 100000, currency: "NGN", currentRound: 5, status: "active", lga: "Kano Municipal" },
+    { id: "ESU-003", name: "Abuja Professionals", members: 12, monthlyContribution: 200000, currency: "NGN", currentRound: 3, status: "active", lga: "AMAC" },
+  ],
+
+  // Flag Audit
+  "/v1/flag-audits": [
+    { id: "FA-001", flagKey: "mobile_money_v2", action: "enabled", actor: "admin@54bank.ng", oldValue: "false", newValue: "true", tenantId: "TEN-GTBANK", timestamp: "2026-05-09T08:30:00Z" },
+    { id: "FA-002", flagKey: "ussd_fallback", action: "rollout_updated", actor: "ops@54bank.ng", oldValue: "50%", newValue: "80%", tenantId: "TEN-FIRSTBANK", timestamp: "2026-05-09T09:15:00Z" },
+  ],
+
+  // FX Rates Engine
+  "/v1/fx/rates": [
+    { id: "FX-001", pair: "USD/NGN", bid: 1580.50, ask: 1585.00, mid: 1582.75, source: "CBN Official", updatedAt: "2026-05-09T15:00:00Z" },
+    { id: "FX-002", pair: "EUR/NGN", bid: 1720.00, ask: 1725.50, mid: 1722.75, source: "CBN Official", updatedAt: "2026-05-09T15:00:00Z" },
+    { id: "FX-003", pair: "GBP/NGN", bid: 2010.00, ask: 2016.00, mid: 2013.00, source: "CBN Official", updatedAt: "2026-05-09T15:00:00Z" },
+  ],
+
+  // Group Lending
+  "/v1/group-lending/groups": [
+    { id: "GL-001", name: "Aba Women Entrepreneurs", type: "solidarity", members: 10, totalLoan: 15000000, currency: "NGN", repaymentRate: 97.5, status: "active", state: "Abia" },
+    { id: "GL-002", name: "Ibadan Farmers Cooperative", type: "cooperative", members: 25, totalLoan: 30000000, currency: "NGN", repaymentRate: 95.0, status: "active", state: "Oyo" },
+  ],
+
+  // Identity Channels
+  "/v1/identity/channels": [
+    { id: "IDC-001", channel: "BVN", provider: "NIBSS", status: "active", verifications: 850000, avgResponseMs: 450 },
+    { id: "IDC-002", channel: "NIN", provider: "NIMC", status: "active", verifications: 620000, avgResponseMs: 800 },
+    { id: "IDC-003", channel: "Biometric", provider: "54Bank Internal", status: "active", verifications: 350000, avgResponseMs: 200 },
+  ],
+
+  // IFRS9 Engine
+  "/v1/ifrs9/ecl-models": [
+    { id: "ECL-001", portfolio: "Corporate Loans", stage1: 85.2, stage2: 10.5, stage3: 4.3, totalECL: 15800000000, currency: "NGN", reportDate: "2026-03-31" },
+    { id: "ECL-002", portfolio: "Retail Loans", stage1: 90.1, stage2: 7.2, stage3: 2.7, totalECL: 8500000000, currency: "NGN", reportDate: "2026-03-31" },
+  ],
+
+  // ISO20022 Hub
+  "/v1/iso20022/messages": [
+    { id: "ISO-001", messageType: "pacs.008", direction: "outbound", status: "delivered", amount: 50000000, currency: "NGN", sender: "GTBINGLA", receiver: "ABORNGLA" },
+    { id: "ISO-002", messageType: "camt.053", direction: "inbound", status: "processed", amount: 0, currency: "NGN", sender: "CABORNGLA", receiver: "GTBINGLA" },
+  ],
+
+  // KYB Engine
+  "/v1/kyb/businesses": [
+    { id: "KYB-001", businessName: "Dangote Industries", rcNumber: "RC-6789", tinNumber: "TIN-1234567890", status: "verified", riskScore: 15, sector: "Manufacturing", state: "Lagos" },
+    { id: "KYB-002", businessName: "BUA Group", rcNumber: "RC-12345", tinNumber: "TIN-9876543210", status: "verified", riskScore: 12, sector: "Conglomerate", state: "Lagos" },
+    { id: "KYB-003", businessName: "Paystack Payments", rcNumber: "RC-1456789", tinNumber: "TIN-5551234567", status: "pending_review", riskScore: 25, sector: "Fintech", state: "Lagos" },
+  ],
+
+  // Leasing
+  "/v1/leases": [
+    { id: "LSE-001", lessor: "54Bank Leasing", lessee: "Dangote Transport", asset: "Fleet of 20 trucks", value: 500000000, currency: "NGN", tenor: 60, status: "active" },
+    { id: "LSE-002", lessor: "54Bank Leasing", lessee: "Air Peace", asset: "Aircraft E190", value: 15000000000, currency: "NGN", tenor: 120, status: "active" },
+  ],
+
+  // Loan Calculator
+  "/v1/loan-calculator/schedules": [
+    { id: "LC-001", principal: 10000000, rate: 18, tenor: 12, monthlyPayment: 916667, totalInterest: 1000000, totalPayment: 11000000, method: "flat" },
+    { id: "LC-002", principal: 50000000, rate: 15, tenor: 36, monthlyPayment: 1732460, totalInterest: 12368560, totalPayment: 62368560, method: "reducing_balance" },
+  ],
+
+  // Multi Entity
+  "/v1/entities": [
+    { id: "ENT-001", name: "54Bank Nigeria", type: "commercial_bank", country: "Nigeria", currency: "NGN", status: "active", regulatoryId: "CBN/2026/001" },
+    { id: "ENT-002", name: "54Bank Ghana", type: "commercial_bank", country: "Ghana", currency: "GHS", status: "active", regulatoryId: "BOG/2026/055" },
+    { id: "ENT-003", name: "54Bank Kenya", type: "commercial_bank", country: "Kenya", currency: "KES", status: "pending", regulatoryId: "CBK/2026/102" },
+  ],
+
+  // Notification Service
+  "/v1/notifications": [
+    { id: "NOT-001", type: "sms", recipient: "+2348012345678", subject: "Debit Alert", status: "delivered", channel: "Twilio", timestamp: "2026-05-09T14:00:00Z" },
+    { id: "NOT-002", type: "email", recipient: "customer@gmail.com", subject: "Statement Ready", status: "delivered", channel: "SendGrid", timestamp: "2026-05-09T13:00:00Z" },
+    { id: "NOT-003", type: "push", recipient: "device_token_abc", subject: "Transfer Successful", status: "delivered", channel: "FCM", timestamp: "2026-05-09T12:30:00Z" },
+  ],
+
+  // OpenSearch Analytics
+  "/v1/analytics/dashboards": [
+    { id: "ANA-001", name: "Transaction Volume Dashboard", type: "realtime", widgets: 8, refreshInterval: 30, status: "active" },
+    { id: "ANA-002", name: "Customer Acquisition Funnel", type: "daily", widgets: 6, refreshInterval: 86400, status: "active" },
+  ],
+
+  // OTC Derivatives
+  "/v1/otc/contracts": [
+    { id: "OTC-001", type: "interest_rate_swap", notional: 10000000000, currency: "NGN", fixedRate: 12.5, floatingIndex: "NIBOR", tenor: 36, counterparty: "Access Bank", status: "active" },
+    { id: "OTC-002", type: "fx_forward", notional: 5000000, currency: "USD", forwardRate: 1600, settlementDate: "2026-11-09", counterparty: "Stanbic IBTC", status: "active" },
+  ],
+
+  // Payment Investigation
+  "/v1/investigations": [
+    { id: "INV-001", transactionId: "TXN-90001", amount: 25000000, currency: "NGN", reason: "Funds not received", status: "in_progress", initiatedBy: "First Bank", createdAt: "2026-05-08T10:00:00Z" },
+    { id: "INV-002", transactionId: "TXN-90002", amount: 5000000, currency: "NGN", reason: "Wrong account credited", status: "resolved", initiatedBy: "UBA", createdAt: "2026-05-07T14:00:00Z" },
+  ],
+
+  // Project Finance
+  "/v1/projects": [
+    { id: "PF-001", name: "Lekki Deep Sea Port", sector: "Infrastructure", totalFunding: 150000000000, currency: "NGN", status: "disbursing", sponsors: ["APM Terminals", "CCECC"] },
+    { id: "PF-002", name: "Dangote Refinery Phase 2", sector: "Energy", totalFunding: 500000000000, currency: "NGN", status: "monitoring", sponsors: ["Dangote Industries"] },
+  ],
+
+  // Savings Products
+  "/v1/savings/products": [
+    { id: "SAV-001", name: "54Save Regular", type: "regular", minBalance: 1000, interestRate: 4.5, currency: "NGN", status: "active" },
+    { id: "SAV-002", name: "54Save High Yield", type: "high_yield", minBalance: 1000000, interestRate: 12.0, currency: "NGN", status: "active" },
+    { id: "SAV-003", name: "54Save Target", type: "target", minBalance: 5000, interestRate: 8.0, currency: "NGN", status: "active" },
+  ],
+
+  // Standing Orders
+  "/v1/standing-orders": [
+    { id: "SO-001", customerId: "CUS-001", amount: 500000, currency: "NGN", frequency: "monthly", beneficiary: "Lagos State IRS", purpose: "Tax payment", status: "active", nextExecution: "2026-06-01" },
+    { id: "SO-002", customerId: "CUS-002", amount: 200000, currency: "NGN", frequency: "monthly", beneficiary: "FIRS", purpose: "VAT remittance", status: "active", nextExecution: "2026-06-01" },
+  ],
+
+  // Tenant Billing
+  "/v1/billing/records": [
+    { id: "TB-001", tenantId: "TEN-GTBANK", tenantName: "Guaranty Trust Bank", plan: "enterprise", monthlyAmount: 45000000, currency: "NGN", status: "active" },
+    { id: "TB-002", tenantId: "TEN-FIRSTBANK", tenantName: "First Bank of Nigeria", plan: "enterprise", monthlyAmount: 52000000, currency: "NGN", status: "active" },
+    { id: "TB-003", tenantId: "TEN-ACCESS", tenantName: "Access Bank", plan: "enterprise", monthlyAmount: 48000000, currency: "NGN", status: "active" },
+  ],
+
+  // Tenant Export
+  "/v1/exports": [
+    { id: "EXP-001", tenantId: "TEN-GTBANK", format: "csv", scope: "transactions", status: "completed", records: 1250000, sizeBytes: 458000000 },
+    { id: "EXP-002", tenantId: "TEN-FIRSTBANK", format: "json", scope: "customers", status: "completed", records: 850000, sizeBytes: 320000000 },
+  ],
+
+  // Tenant Rate Limit
+  "/v1/rate-limits": [
+    { id: "RL-001", tenantId: "TEN-GTBANK", endpoint: "/api/transfers", requestsPerMinute: 1000, burstLimit: 2000, status: "active" },
+    { id: "RL-002", tenantId: "TEN-FIRSTBANK", endpoint: "/api/payments", requestsPerMinute: 800, burstLimit: 1500, status: "active" },
+  ],
+
+  // Treasury Liquidity
+  "/v1/treasury/liquidity": [
+    { id: "LIQ-001", date: "2026-05-09", totalAssets: 2500000000000, totalLiabilities: 2100000000000, lcrRatio: 185.5, nsfrRatio: 142.3, currency: "NGN", status: "compliant" },
+  ],
+
+  // Utility Payments
+  "/v1/utility-payments": [
+    { id: "UP-001", biller: "IKEDC", category: "electricity", amount: 25000, currency: "NGN", meterNumber: "45123456789", status: "successful", paidAt: "2026-05-09T10:00:00Z" },
+    { id: "UP-002", biller: "Lagos Water Corp", category: "water", amount: 8000, currency: "NGN", accountNumber: "WC-12345", status: "successful", paidAt: "2026-05-09T11:00:00Z" },
+    { id: "UP-003", biller: "DSTV", category: "cable_tv", amount: 21000, currency: "NGN", smartcardNumber: "7012345678", status: "successful", paidAt: "2026-05-09T09:00:00Z" },
+  ],
+
+  // Workflow Engine
+  "/v1/workflow/definitions": [
+    { id: "WF-001", name: "Loan Approval Workflow", steps: 5, status: "active", avgCompletionTime: 48, instances: 1250 },
+    { id: "WF-002", name: "Account Opening Workflow", steps: 3, status: "active", avgCompletionTime: 2, instances: 8500 },
+    { id: "WF-003", name: "Trade Finance LC Workflow", steps: 8, status: "active", avgCompletionTime: 120, instances: 450 },
+  ],
+
+  // Ledger Reconciliation
+  "/v1/reconciliation/reports": [
+    { id: "REC-001", type: "interbank", status: "balanced", matchedTxns: 45000, unmatchedTxns: 12, totalAmount: 85000000000, currency: "NGN", date: "2026-05-09" },
+    { id: "REC-002", type: "nostro", status: "balanced", matchedTxns: 1200, unmatchedTxns: 3, totalAmount: 25000000, currency: "USD", date: "2026-05-09" },
   ],
 };
 
