@@ -12,7 +12,7 @@ export default function PBACEngineWorkspace() {
       .then(r => r.json())
       .then(d => setItems(d.items || []))
       .catch(() => {});
-    fetch("/api/pbac-engine/v1/pbac/policies/stats")
+    fetch("/api/pbac-engine/v1/pbac/stats")
       .then(r => r.json())
       .then(d => setStats(d))
       .catch(() => {});

@@ -12,7 +12,7 @@ export default function SwiftMessagingWorkspace() {
       .then(r => r.json())
       .then(d => setItems(d.items || []))
       .catch(() => {});
-    fetch("/api/swift-messaging/v1/swift/messages/stats")
+    fetch("/api/swift-messaging/v1/swift/stats")
       .then(r => r.json())
       .then(d => setStats(d))
       .catch(() => {});

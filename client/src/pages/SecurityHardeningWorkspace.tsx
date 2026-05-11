@@ -12,7 +12,7 @@ export default function SecurityHardeningWorkspace() {
       .then(r => r.json())
       .then(d => setItems(d.items || []))
       .catch(() => {});
-    fetch("/api/security-hardening/v1/security/policies/stats")
+    fetch("/api/security-hardening/v1/security/stats")
       .then(r => r.json())
       .then(d => setStats(d))
       .catch(() => {});

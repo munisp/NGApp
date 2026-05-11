@@ -12,7 +12,7 @@ export default function MicrofinanceEngineWorkspace() {
       .then(r => r.json())
       .then(d => setItems(d.items || []))
       .catch(() => {});
-    fetch("/api/microfinance-engine/v1/microfinance/groups/stats")
+    fetch("/api/microfinance-engine/v1/microfinance/stats")
       .then(r => r.json())
       .then(d => setStats(d))
       .catch(() => {});

@@ -12,7 +12,7 @@ export default function DDoSProtectionWorkspace() {
       .then(r => r.json())
       .then(d => setItems(d.items || []))
       .catch(() => {});
-    fetch("/api/ddos-protection/v1/ddos/rules/stats")
+    fetch("/api/ddos-protection/v1/ddos/stats")
       .then(r => r.json())
       .then(d => setStats(d))
       .catch(() => {});
