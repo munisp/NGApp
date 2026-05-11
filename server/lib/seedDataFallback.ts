@@ -664,6 +664,55 @@ export function registerSeedDataFallback(app: Express) {
   reg(app, "/api/treasury-liquidity/v1/treasury/liquidity", pfData["/v1/treasury/liquidity"] ?? []);
   reg(app, "/api/utility-payments/v1/utility-payments", pfData["/v1/utility-payments"] ?? []);
   reg(app, "/api/workflow-engine/v1/workflow/definitions", pfData["/v1/workflow/definitions"] ?? []);
+
+  // ── Remaining 11 business services ──
+  reg(app, "/api/accounting-rules/v1/rules", [
+    { id: "AR-001", name: "Revenue Recognition", type: "IFRS15", status: "active", accounts: ["4001", "4002"], description: "Revenue recognition for banking services" },
+    { id: "AR-002", name: "Loan Impairment", type: "IFRS9", status: "active", accounts: ["1501", "5001"], description: "Expected credit loss provisioning" },
+    { id: "AR-003", name: "Depreciation", type: "IAS16", status: "active", accounts: ["1301", "5201"], description: "Fixed asset depreciation - straight line" },
+  ]);
+  reg(app, "/api/billing-event-processor/v1/billing/events", billingEvents);
+  reg(app, "/api/db-migrations/v1/migrations", [
+    { id: "MIG-001", version: "001", name: "create_customers_table", status: "applied", appliedAt: "2026-01-15T10:00:00Z" },
+    { id: "MIG-002", version: "002", name: "create_accounts_table", status: "applied", appliedAt: "2026-01-15T10:01:00Z" },
+    { id: "MIG-003", version: "003", name: "create_transactions_table", status: "applied", appliedAt: "2026-01-15T10:02:00Z" },
+    { id: "MIG-004", version: "004", name: "add_tenant_rls_policies", status: "applied", appliedAt: "2026-02-01T08:00:00Z" },
+    { id: "MIG-005", version: "005", name: "create_audit_trail_table", status: "applied", appliedAt: "2026-03-10T09:00:00Z" },
+  ]);
+  reg(app, "/api/eod-processor/v1/eod/runs", [
+    { id: "EOD-001", date: "2026-05-09", status: "completed", startedAt: "2026-05-09T23:00:00Z", completedAt: "2026-05-09T23:45:00Z", accountsProcessed: 2500000, transactionsSettled: 850000 },
+    { id: "EOD-002", date: "2026-05-08", status: "completed", startedAt: "2026-05-08T23:00:00Z", completedAt: "2026-05-08T23:42:00Z", accountsProcessed: 2480000, transactionsSettled: 820000 },
+  ]);
+  reg(app, "/api/exam-management/v1/exams", [
+    { id: "EXM-001", name: "CBN Regulatory Exam Q2 2026", type: "regulatory", status: "scheduled", date: "2026-06-15", scope: "Capital Adequacy", examiner: "CBN Supervisory Team" },
+    { id: "EXM-002", name: "Annual Internal Audit", type: "internal", status: "completed", date: "2026-03-30", scope: "Full Platform", examiner: "Deloitte Nigeria" },
+  ]);
+  reg(app, "/api/lcr-nsfr/v1/liquidity-ratios", [
+    { id: "LCR-001", metric: "LCR", value: 185.5, threshold: 100, status: "compliant", date: "2026-03-31", currency: "NGN" },
+    { id: "LCR-002", metric: "NSFR", value: 142.3, threshold: 100, status: "compliant", date: "2026-03-31", currency: "NGN" },
+  ]);
+  reg(app, "/api/maker-checker/v1/approvals", [
+    { id: "MC-001", entityType: "transfer", entityId: "TXN-80001", maker: "teller@54bank.ng", checker: "supervisor@54bank.ng", status: "approved", amount: 50000000, currency: "NGN" },
+    { id: "MC-002", entityType: "account_opening", entityId: "ACC-90001", maker: "cso@54bank.ng", checker: "branch_manager@54bank.ng", status: "pending", amount: 0, currency: "NGN" },
+  ]);
+  reg(app, "/api/mandate-management/v1/mandates", [
+    { id: "MAN-001", customerId: "CUS-001", type: "direct_debit", status: "active", beneficiary: "FIRS", maxAmount: 5000000, currency: "NGN", frequency: "monthly" },
+    { id: "MAN-002", customerId: "CUS-002", type: "standing_instruction", status: "active", beneficiary: "Lagos State IRS", maxAmount: 2000000, currency: "NGN", frequency: "monthly" },
+  ]);
+  reg(app, "/api/multicurrency-revaluation/v1/revaluations", [
+    { id: "REVAL-001", currency: "USD", openRate: 1575.50, closeRate: 1582.75, unrealizedPnL: 725000000, date: "2026-05-09", status: "completed" },
+    { id: "REVAL-002", currency: "EUR", openRate: 1710.00, closeRate: 1722.75, unrealizedPnL: 382500000, date: "2026-05-09", status: "completed" },
+    { id: "REVAL-003", currency: "GBP", openRate: 1998.00, closeRate: 2013.00, unrealizedPnL: 450000000, date: "2026-05-09", status: "completed" },
+  ]);
+  reg(app, "/api/relationship-pricing/v1/pricing/tiers", [
+    { id: "RP-001", segment: "Premium", tier: "Platinum", minBalance: 100000000, transferFee: 0, fxSpread: 0.15, loanDiscount: 2.0, currency: "NGN" },
+    { id: "RP-002", segment: "Business", tier: "Gold", minBalance: 25000000, transferFee: 50, fxSpread: 0.25, loanDiscount: 1.0, currency: "NGN" },
+    { id: "RP-003", segment: "Retail", tier: "Standard", minBalance: 0, transferFee: 100, fxSpread: 0.50, loanDiscount: 0, currency: "NGN" },
+  ]);
+  reg(app, "/api/statement-generator/v1/statements", [
+    { id: "STM-001", accountNumber: "0012345678", period: "2026-04", format: "pdf", status: "generated", pages: 12, generatedAt: "2026-05-01T06:00:00Z" },
+    { id: "STM-002", accountNumber: "0023456789", period: "2026-04", format: "csv", status: "generated", pages: 0, generatedAt: "2026-05-01T06:05:00Z" },
+  ]);
 }
 
 // ═══════════════════════════════════════════════════════════════════
