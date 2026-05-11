@@ -70,6 +70,8 @@ import { registerOpenBankingApi } from "./lib/openBankingApi";
 import { registerENairaCbdc } from "./lib/enairaCbdc";
 import { registerEsgBanking } from "./lib/esgBanking";
 import { registerEmbeddedFinanceSdk } from "./lib/embeddedFinanceSdk";
+import { registerRansomwareProtection } from "./lib/ransomwareProtection";
+import { registerOfflineBandwidthResilience } from "./lib/offlineBandwidthResilience";
 import { WebSocketServer, WebSocket } from "ws";
 
 import {
@@ -5208,6 +5210,8 @@ async function startServer() {
   registerENairaCbdc(app);
   registerEsgBanking(app);
   registerEmbeddedFinanceSdk(app);
+  registerRansomwareProtection(app);
+  registerOfflineBandwidthResilience(app);
 
   // Feature Flag Engine — tenant-aware service catalog and API gating
   registerFeatureFlagEngine(app);

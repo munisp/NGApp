@@ -106,6 +106,8 @@ import {
   Sparkles,
   Leaf,
   Code,
+  Phone,
+  Signal,
 } from "lucide-react";
 
 type MenuItem = { path: string; label: string; icon: React.ElementType };
@@ -499,6 +501,17 @@ const categorizedMenu: MenuCategory[] = [
       { path: "/enaira-cbdc", label: "eNaira CBDC", icon: Banknote },
       { path: "/esg-banking", label: "ESG / Carbon Credits", icon: Leaf },
       { path: "/embedded-finance", label: "Embedded Finance SDK", icon: Code },
+    ],
+  },
+  {
+    category: "Security & Resilience",
+    items: [
+      { path: "/ransomware-protection", label: "Ransomware Protection", icon: ShieldAlert },
+      { path: "/resilience-dashboard", label: "Resilience Dashboard", icon: Activity },
+      { path: "/ussd-banking", label: "USSD Banking", icon: Phone },
+      { path: "/sms-banking", label: "SMS Banking", icon: MessageSquare },
+      { path: "/offline-transactions", label: "Offline Transactions", icon: WifiOff },
+      { path: "/bandwidth-adaptation", label: "Bandwidth Adaptation", icon: Signal },
     ],
   },
 ];

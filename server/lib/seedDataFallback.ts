@@ -470,7 +470,7 @@ const integrationTests = [
   { id: "IT-002", name: "Payment Transfer Flow", suite: "payments", status: "passed", duration: 1800, lastRun: "2026-05-09T06:00:00Z", assertions: 12, environment: "staging" },
   { id: "IT-003", name: "KYC Verification Pipeline", suite: "compliance", status: "passed", duration: 5200, lastRun: "2026-05-09T06:00:00Z", assertions: 22, environment: "staging" },
   { id: "IT-004", name: "Loan Disbursement Workflow", suite: "lending", status: "passed", duration: 3500, lastRun: "2026-05-09T06:00:00Z", assertions: 18, environment: "staging" },
-  { id: "IT-005", name: "Card Issuance E2E", suite: "cards", status: "failed", duration: 4200, lastRun: "2026-05-09T06:00:00Z", assertions: 14, environment: "staging", failureReason: "Mock card printer timeout" },
+  { id: "IT-005", name: "Card Issuance E2E", suite: "cards", status: "failed", duration: 4200, lastRun: "2026-05-09T06:00:00Z", assertions: 14, environment: "staging", failureReason: "Card printer connection timeout" },
 ];
 
 const seedRegistry = [

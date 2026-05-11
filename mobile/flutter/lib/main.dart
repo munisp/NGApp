@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import 'services/api_service.dart';
 import 'services/offline_service.dart';
 import 'services/connectivity_service.dart';
-import 'services/cache_service.dart';
 import 'screens/home_screen.dart';
 import 'screens/customers_screen.dart';
 import 'screens/transfers_screen.dart';
@@ -23,6 +22,7 @@ import 'screens/api_marketplace_screen.dart';
 import 'screens/approval_workflow_screen.dart';
 import 'screens/atm_management_screen.dart';
 import 'screens/audit_trail_screen.dart';
+import 'screens/bandwidth_adaptation_screen.dart';
 import 'screens/bank_guarantees_screen.dart';
 import 'screens/basel_engine_screen.dart';
 import 'screens/batch_eod_screen.dart';
@@ -136,6 +136,7 @@ import 'screens/interbank_settlement_screen.dart';
 import 'screens/interest_accrual_screen.dart';
 import 'screens/interest_rate_screen.dart';
 import 'screens/inventory_finance_screen.dart';
+import 'screens/inventory_screen.dart';
 import 'screens/islamic_banking_screen.dart';
 import 'screens/iso20022_hub_screen.dart';
 import 'screens/journal_entries_screen.dart';
@@ -155,6 +156,7 @@ import 'screens/lakehouse_screen.dart';
 import 'screens/lc_amendments_screen.dart';
 import 'screens/lcr_nsfr_screen.dart';
 import 'screens/leasing_screen.dart';
+import 'screens/ledger_screen.dart';
 import 'screens/ledger_sync_screen.dart';
 import 'screens/limit_management_screen.dart';
 import 'screens/liveness_detection_screen.dart';
@@ -179,7 +181,9 @@ import 'screens/nibss_direct_debit_screen.dart';
 import 'screens/notification_center_screen.dart';
 import 'screens/notification_prefs_screen.dart';
 import 'screens/notifications_engine_screen.dart';
+import 'screens/notifications_screen.dart';
 import 'screens/offline_resilience_screen.dart';
+import 'screens/offline_transactions_screen.dart';
 import 'screens/open_banking_screen.dart';
 import 'screens/opensearch_screen.dart';
 import 'screens/operations_center_screen.dart';
@@ -198,8 +202,10 @@ import 'screens/portfolio_mgmt_screen.dart';
 import 'screens/pos_terminal_screen.dart';
 import 'screens/pricing_model_screen.dart';
 import 'screens/product_catalog_screen.dart';
+import 'screens/product_factory_screen.dart';
 import 'screens/project_finance_screen.dart';
 import 'screens/qr_payments_screen.dart';
+import 'screens/ransomware_protection_screen.dart';
 import 'screens/rate_cascade_screen.dart';
 import 'screens/rate_limiting_screen.dart';
 import 'screens/reconciliation_screen.dart';
@@ -210,6 +216,7 @@ import 'screens/relationship_pricing_screen.dart';
 import 'screens/remittance_screen.dart';
 import 'screens/report_generation_screen.dart';
 import 'screens/reporting_screen.dart';
+import 'screens/resilience_dashboard_screen.dart';
 import 'screens/risk_scoring_screen.dart';
 import 'screens/safe_deposit_screen.dart';
 import 'screens/salary_processing_screen.dart';
@@ -222,6 +229,7 @@ import 'screens/self_service_txns_screen.dart';
 import 'screens/service_catalog_screen.dart';
 import 'screens/service_health_screen.dart';
 import 'screens/signature_verification_screen.dart';
+import 'screens/sms_banking_screen.dart';
 import 'screens/sms_email_gateway_screen.dart';
 import 'screens/staff_management_screen.dart';
 import 'screens/standing_charges_screen.dart';
@@ -246,6 +254,7 @@ import 'screens/treasury_investments_screen.dart';
 import 'screens/treasury_liquidity_screen.dart';
 import 'screens/treasury_screen.dart';
 import 'screens/trust_estate_screen.dart';
+import 'screens/ussd_banking_screen.dart';
 import 'screens/utility_payments_screen.dart';
 import 'screens/virtual_accounts_screen.dart';
 import 'screens/wakala_investment_screen.dart';
@@ -255,15 +264,12 @@ import 'screens/webhook_deliveries_screen.dart';
 import 'screens/webhook_engine_screen.dart';
 import 'screens/webhook_subscriptions_screen.dart';
 import 'screens/white_label_config_screen.dart';
+import 'screens/white_label_engine_screen.dart';
 import 'screens/workflow_definitions_screen.dart';
 import 'screens/workflow_engine_screen.dart';
 import 'screens/workflow_instances_screen.dart';
 
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  // Initialize SQLite cache for offline support
-  await CacheService.instance.database;
-  await CacheService.instance.clearExpired();
+void main() {
   runApp(const Bank54App());
 }
 
@@ -310,6 +316,7 @@ class Bank54App extends StatelessWidget {
           '/approval-workflow': (_) => const ApprovalWorkflowScreen(),
           '/atm-management': (_) => const AtmManagementScreen(),
           '/audit-trail': (_) => const AuditTrailScreen(),
+          '/bandwidth-adaptation': (_) => const BandwidthAdaptationScreen(),
           '/bank-guarantees': (_) => const BankGuaranteesScreen(),
           '/basel-engine': (_) => const BaselEngineScreen(),
           '/batch-eod': (_) => const BatchEodScreen(),
@@ -423,6 +430,7 @@ class Bank54App extends StatelessWidget {
           '/interest-accrual': (_) => const InterestAccrualScreen(),
           '/interest-rate': (_) => const InterestRateScreen(),
           '/inventory-finance': (_) => const InventoryFinanceScreen(),
+          '/inventory': (_) => const InventoryScreen(),
           '/islamic-banking': (_) => const IslamicBankingScreen(),
           '/iso20022-hub': (_) => const Iso20022HubScreen(),
           '/journal-entries': (_) => const JournalEntriesScreen(),
@@ -442,6 +450,7 @@ class Bank54App extends StatelessWidget {
           '/lc-amendments': (_) => const LcAmendmentsScreen(),
           '/lcr-nsfr': (_) => const LcrNsfrScreen(),
           '/leasing': (_) => const LeasingScreen(),
+          '/ledger': (_) => const LedgerScreen(),
           '/ledger-sync': (_) => const LedgerSyncScreen(),
           '/limit-management': (_) => const LimitManagementScreen(),
           '/liveness-detection': (_) => const LivenessDetectionScreen(),
@@ -466,7 +475,9 @@ class Bank54App extends StatelessWidget {
           '/notification-center': (_) => const NotificationCenterScreen(),
           '/notification-prefs': (_) => const NotificationPrefsScreen(),
           '/notifications-engine': (_) => const NotificationsEngineScreen(),
+          '/notifications': (_) => const NotificationsScreen(),
           '/offline-resilience': (_) => const OfflineResilienceScreen(),
+          '/offline-transactions': (_) => const OfflineTransactionsScreen(),
           '/open-banking': (_) => const OpenBankingScreen(),
           '/opensearch': (_) => const OpensearchScreen(),
           '/operations-center': (_) => const OperationsCenterScreen(),
@@ -485,8 +496,10 @@ class Bank54App extends StatelessWidget {
           '/pos-terminal': (_) => const PosTerminalScreen(),
           '/pricing-model': (_) => const PricingModelScreen(),
           '/product-catalog': (_) => const ProductCatalogScreen(),
+          '/product-factory': (_) => const ProductFactoryScreen(),
           '/project-finance': (_) => const ProjectFinanceScreen(),
           '/qr-payments': (_) => const QrPaymentsScreen(),
+          '/ransomware-protection': (_) => const RansomwareProtectionScreen(),
           '/rate-cascade': (_) => const RateCascadeScreen(),
           '/rate-limiting': (_) => const RateLimitingScreen(),
           '/reconciliation': (_) => const ReconciliationScreen(),
@@ -497,6 +510,7 @@ class Bank54App extends StatelessWidget {
           '/remittance': (_) => const RemittanceScreen(),
           '/report-generation': (_) => const ReportGenerationScreen(),
           '/reporting': (_) => const ReportingScreen(),
+          '/resilience-dashboard': (_) => const ResilienceDashboardScreen(),
           '/risk-scoring': (_) => const RiskScoringScreen(),
           '/safe-deposit': (_) => const SafeDepositScreen(),
           '/salary-processing': (_) => const SalaryProcessingScreen(),
@@ -509,6 +523,7 @@ class Bank54App extends StatelessWidget {
           '/service-catalog': (_) => const ServiceCatalogScreen(),
           '/service-health': (_) => const ServiceHealthScreen(),
           '/signature-verification': (_) => const SignatureVerificationScreen(),
+          '/sms-banking': (_) => const SmsBankingScreen(),
           '/sms-email-gateway': (_) => const SmsEmailGatewayScreen(),
           '/staff-management': (_) => const StaffManagementScreen(),
           '/standing-charges': (_) => const StandingChargesScreen(),
@@ -533,6 +548,7 @@ class Bank54App extends StatelessWidget {
           '/treasury-liquidity': (_) => const TreasuryLiquidityScreen(),
           '/treasury': (_) => const TreasuryScreen(),
           '/trust-estate': (_) => const TrustEstateScreen(),
+          '/ussd-banking': (_) => const UssdBankingScreen(),
           '/utility-payments': (_) => const UtilityPaymentsScreen(),
           '/virtual-accounts': (_) => const VirtualAccountsScreen(),
           '/wakala-investment': (_) => const WakalaInvestmentScreen(),
@@ -542,6 +558,7 @@ class Bank54App extends StatelessWidget {
           '/webhook-engine': (_) => const WebhookEngineScreen(),
           '/webhook-subscriptions': (_) => const WebhookSubscriptionsScreen(),
           '/white-label-config': (_) => const WhiteLabelConfigScreen(),
+          '/white-label-engine': (_) => const WhiteLabelEngineScreen(),
           '/workflow-definitions': (_) => const WorkflowDefinitionsScreen(),
           '/workflow-engine': (_) => const WorkflowEngineScreen(),
           '/workflow-instances': (_) => const WorkflowInstancesScreen(),
@@ -596,6 +613,7 @@ class BankDrawer extends StatelessWidget {
             ListTile(dense: true, title: Text('Approval Workflow'), onTap: () { Navigator.pop(context); Navigator.pushNamed(context, '/approval-workflow'); }),
             ListTile(dense: true, title: Text('Atm Management'), onTap: () { Navigator.pop(context); Navigator.pushNamed(context, '/atm-management'); }),
             ListTile(dense: true, title: Text('Audit Trail'), onTap: () { Navigator.pop(context); Navigator.pushNamed(context, '/audit-trail'); }),
+            ListTile(dense: true, title: Text('Bandwidth Adaptation'), onTap: () { Navigator.pop(context); Navigator.pushNamed(context, '/bandwidth-adaptation'); }),
             ListTile(dense: true, title: Text('Bank Guarantees'), onTap: () { Navigator.pop(context); Navigator.pushNamed(context, '/bank-guarantees'); }),
             ListTile(dense: true, title: Text('Basel Engine'), onTap: () { Navigator.pop(context); Navigator.pushNamed(context, '/basel-engine'); }),
             ListTile(dense: true, title: Text('Batch Eod'), onTap: () { Navigator.pop(context); Navigator.pushNamed(context, '/batch-eod'); }),
@@ -709,6 +727,7 @@ class BankDrawer extends StatelessWidget {
             ListTile(dense: true, title: Text('Interest Accrual'), onTap: () { Navigator.pop(context); Navigator.pushNamed(context, '/interest-accrual'); }),
             ListTile(dense: true, title: Text('Interest Rate'), onTap: () { Navigator.pop(context); Navigator.pushNamed(context, '/interest-rate'); }),
             ListTile(dense: true, title: Text('Inventory Finance'), onTap: () { Navigator.pop(context); Navigator.pushNamed(context, '/inventory-finance'); }),
+            ListTile(dense: true, title: Text('Inventory'), onTap: () { Navigator.pop(context); Navigator.pushNamed(context, '/inventory'); }),
             ListTile(dense: true, title: Text('Islamic Banking'), onTap: () { Navigator.pop(context); Navigator.pushNamed(context, '/islamic-banking'); }),
             ListTile(dense: true, title: Text('Iso20022 Hub'), onTap: () { Navigator.pop(context); Navigator.pushNamed(context, '/iso20022-hub'); }),
             ListTile(dense: true, title: Text('Journal Entries'), onTap: () { Navigator.pop(context); Navigator.pushNamed(context, '/journal-entries'); }),
@@ -728,6 +747,7 @@ class BankDrawer extends StatelessWidget {
             ListTile(dense: true, title: Text('Lc Amendments'), onTap: () { Navigator.pop(context); Navigator.pushNamed(context, '/lc-amendments'); }),
             ListTile(dense: true, title: Text('Lcr Nsfr'), onTap: () { Navigator.pop(context); Navigator.pushNamed(context, '/lcr-nsfr'); }),
             ListTile(dense: true, title: Text('Leasing'), onTap: () { Navigator.pop(context); Navigator.pushNamed(context, '/leasing'); }),
+            ListTile(dense: true, title: Text('Ledger'), onTap: () { Navigator.pop(context); Navigator.pushNamed(context, '/ledger'); }),
             ListTile(dense: true, title: Text('Ledger Sync'), onTap: () { Navigator.pop(context); Navigator.pushNamed(context, '/ledger-sync'); }),
             ListTile(dense: true, title: Text('Limit Management'), onTap: () { Navigator.pop(context); Navigator.pushNamed(context, '/limit-management'); }),
             ListTile(dense: true, title: Text('Liveness Detection'), onTap: () { Navigator.pop(context); Navigator.pushNamed(context, '/liveness-detection'); }),
@@ -752,7 +772,9 @@ class BankDrawer extends StatelessWidget {
             ListTile(dense: true, title: Text('Notification Center'), onTap: () { Navigator.pop(context); Navigator.pushNamed(context, '/notification-center'); }),
             ListTile(dense: true, title: Text('Notification Prefs'), onTap: () { Navigator.pop(context); Navigator.pushNamed(context, '/notification-prefs'); }),
             ListTile(dense: true, title: Text('Notifications Engine'), onTap: () { Navigator.pop(context); Navigator.pushNamed(context, '/notifications-engine'); }),
+            ListTile(dense: true, title: Text('Notifications'), onTap: () { Navigator.pop(context); Navigator.pushNamed(context, '/notifications'); }),
             ListTile(dense: true, title: Text('Offline Resilience'), onTap: () { Navigator.pop(context); Navigator.pushNamed(context, '/offline-resilience'); }),
+            ListTile(dense: true, title: Text('Offline Transactions'), onTap: () { Navigator.pop(context); Navigator.pushNamed(context, '/offline-transactions'); }),
             ListTile(dense: true, title: Text('Open Banking'), onTap: () { Navigator.pop(context); Navigator.pushNamed(context, '/open-banking'); }),
             ListTile(dense: true, title: Text('Opensearch'), onTap: () { Navigator.pop(context); Navigator.pushNamed(context, '/opensearch'); }),
             ListTile(dense: true, title: Text('Operations Center'), onTap: () { Navigator.pop(context); Navigator.pushNamed(context, '/operations-center'); }),
@@ -771,8 +793,10 @@ class BankDrawer extends StatelessWidget {
             ListTile(dense: true, title: Text('Pos Terminal'), onTap: () { Navigator.pop(context); Navigator.pushNamed(context, '/pos-terminal'); }),
             ListTile(dense: true, title: Text('Pricing Model'), onTap: () { Navigator.pop(context); Navigator.pushNamed(context, '/pricing-model'); }),
             ListTile(dense: true, title: Text('Product Catalog'), onTap: () { Navigator.pop(context); Navigator.pushNamed(context, '/product-catalog'); }),
+            ListTile(dense: true, title: Text('Product Factory'), onTap: () { Navigator.pop(context); Navigator.pushNamed(context, '/product-factory'); }),
             ListTile(dense: true, title: Text('Project Finance'), onTap: () { Navigator.pop(context); Navigator.pushNamed(context, '/project-finance'); }),
             ListTile(dense: true, title: Text('Qr Payments'), onTap: () { Navigator.pop(context); Navigator.pushNamed(context, '/qr-payments'); }),
+            ListTile(dense: true, title: Text('Ransomware Protection'), onTap: () { Navigator.pop(context); Navigator.pushNamed(context, '/ransomware-protection'); }),
             ListTile(dense: true, title: Text('Rate Cascade'), onTap: () { Navigator.pop(context); Navigator.pushNamed(context, '/rate-cascade'); }),
             ListTile(dense: true, title: Text('Rate Limiting'), onTap: () { Navigator.pop(context); Navigator.pushNamed(context, '/rate-limiting'); }),
             ListTile(dense: true, title: Text('Reconciliation'), onTap: () { Navigator.pop(context); Navigator.pushNamed(context, '/reconciliation'); }),
@@ -783,6 +807,7 @@ class BankDrawer extends StatelessWidget {
             ListTile(dense: true, title: Text('Remittance'), onTap: () { Navigator.pop(context); Navigator.pushNamed(context, '/remittance'); }),
             ListTile(dense: true, title: Text('Report Generation'), onTap: () { Navigator.pop(context); Navigator.pushNamed(context, '/report-generation'); }),
             ListTile(dense: true, title: Text('Reporting'), onTap: () { Navigator.pop(context); Navigator.pushNamed(context, '/reporting'); }),
+            ListTile(dense: true, title: Text('Resilience Dashboard'), onTap: () { Navigator.pop(context); Navigator.pushNamed(context, '/resilience-dashboard'); }),
             ListTile(dense: true, title: Text('Risk Scoring'), onTap: () { Navigator.pop(context); Navigator.pushNamed(context, '/risk-scoring'); }),
             ListTile(dense: true, title: Text('Safe Deposit'), onTap: () { Navigator.pop(context); Navigator.pushNamed(context, '/safe-deposit'); }),
             ListTile(dense: true, title: Text('Salary Processing'), onTap: () { Navigator.pop(context); Navigator.pushNamed(context, '/salary-processing'); }),
@@ -795,6 +820,7 @@ class BankDrawer extends StatelessWidget {
             ListTile(dense: true, title: Text('Service Catalog'), onTap: () { Navigator.pop(context); Navigator.pushNamed(context, '/service-catalog'); }),
             ListTile(dense: true, title: Text('Service Health'), onTap: () { Navigator.pop(context); Navigator.pushNamed(context, '/service-health'); }),
             ListTile(dense: true, title: Text('Signature Verification'), onTap: () { Navigator.pop(context); Navigator.pushNamed(context, '/signature-verification'); }),
+            ListTile(dense: true, title: Text('Sms Banking'), onTap: () { Navigator.pop(context); Navigator.pushNamed(context, '/sms-banking'); }),
             ListTile(dense: true, title: Text('Sms Email Gateway'), onTap: () { Navigator.pop(context); Navigator.pushNamed(context, '/sms-email-gateway'); }),
             ListTile(dense: true, title: Text('Staff Management'), onTap: () { Navigator.pop(context); Navigator.pushNamed(context, '/staff-management'); }),
             ListTile(dense: true, title: Text('Standing Charges'), onTap: () { Navigator.pop(context); Navigator.pushNamed(context, '/standing-charges'); }),
@@ -819,6 +845,7 @@ class BankDrawer extends StatelessWidget {
             ListTile(dense: true, title: Text('Treasury Liquidity'), onTap: () { Navigator.pop(context); Navigator.pushNamed(context, '/treasury-liquidity'); }),
             ListTile(dense: true, title: Text('Treasury'), onTap: () { Navigator.pop(context); Navigator.pushNamed(context, '/treasury'); }),
             ListTile(dense: true, title: Text('Trust Estate'), onTap: () { Navigator.pop(context); Navigator.pushNamed(context, '/trust-estate'); }),
+            ListTile(dense: true, title: Text('Ussd Banking'), onTap: () { Navigator.pop(context); Navigator.pushNamed(context, '/ussd-banking'); }),
             ListTile(dense: true, title: Text('Utility Payments'), onTap: () { Navigator.pop(context); Navigator.pushNamed(context, '/utility-payments'); }),
             ListTile(dense: true, title: Text('Virtual Accounts'), onTap: () { Navigator.pop(context); Navigator.pushNamed(context, '/virtual-accounts'); }),
             ListTile(dense: true, title: Text('Wakala Investment'), onTap: () { Navigator.pop(context); Navigator.pushNamed(context, '/wakala-investment'); }),
@@ -828,6 +855,7 @@ class BankDrawer extends StatelessWidget {
             ListTile(dense: true, title: Text('Webhook Engine'), onTap: () { Navigator.pop(context); Navigator.pushNamed(context, '/webhook-engine'); }),
             ListTile(dense: true, title: Text('Webhook Subscriptions'), onTap: () { Navigator.pop(context); Navigator.pushNamed(context, '/webhook-subscriptions'); }),
             ListTile(dense: true, title: Text('White Label Config'), onTap: () { Navigator.pop(context); Navigator.pushNamed(context, '/white-label-config'); }),
+            ListTile(dense: true, title: Text('White Label Engine'), onTap: () { Navigator.pop(context); Navigator.pushNamed(context, '/white-label-engine'); }),
             ListTile(dense: true, title: Text('Workflow Definitions'), onTap: () { Navigator.pop(context); Navigator.pushNamed(context, '/workflow-definitions'); }),
             ListTile(dense: true, title: Text('Workflow Engine'), onTap: () { Navigator.pop(context); Navigator.pushNamed(context, '/workflow-engine'); }),
             ListTile(dense: true, title: Text('Workflow Instances'), onTap: () { Navigator.pop(context); Navigator.pushNamed(context, '/workflow-instances'); }),

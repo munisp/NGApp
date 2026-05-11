@@ -296,6 +296,12 @@ const AIFraudDetectionWorkspace = lazy(() => import("@/pages/AIFraudDetectionWor
 const ENairaWorkspace = lazy(() => import("@/pages/ENairaWorkspace"));
 const ESGBankingWorkspace = lazy(() => import("@/pages/ESGBankingWorkspace"));
 const EmbeddedFinanceWorkspace = lazy(() => import("@/pages/EmbeddedFinanceWorkspace"));
+const RansomwareProtectionWorkspace = lazy(() => import("@/pages/RansomwareProtectionWorkspace"));
+const USSDBankingWorkspace = lazy(() => import("@/pages/USSDBankingWorkspace"));
+const SMSBankingWorkspace = lazy(() => import("@/pages/SMSBankingWorkspace"));
+const OfflineTransactionsWorkspace = lazy(() => import("@/pages/OfflineTransactionsWorkspace"));
+const BandwidthAdaptationWorkspace = lazy(() => import("@/pages/BandwidthAdaptationWorkspace"));
+const ResilienceDashboardWorkspace = lazy(() => import("@/pages/ResilienceDashboardWorkspace"));
 
 function RouteFallback() {
   return <div className="min-h-screen bg-slate-50" />;
@@ -638,6 +644,12 @@ export default function App() {
         <Route path="/enaira-cbdc" component={renderInAdminShell(ENairaWorkspace)} />
         <Route path="/esg-banking" component={renderInAdminShell(ESGBankingWorkspace)} />
         <Route path="/embedded-finance" component={renderInAdminShell(EmbeddedFinanceWorkspace)} />
+        <Route path="/ransomware-protection" component={renderInAdminShell(RansomwareProtectionWorkspace)} />
+        <Route path="/ussd-banking" component={renderInAdminShell(USSDBankingWorkspace)} />
+        <Route path="/sms-banking" component={renderInAdminShell(SMSBankingWorkspace)} />
+        <Route path="/offline-transactions" component={renderInAdminShell(OfflineTransactionsWorkspace)} />
+        <Route path="/bandwidth-adaptation" component={renderInAdminShell(BandwidthAdaptationWorkspace)} />
+        <Route path="/resilience-dashboard" component={renderInAdminShell(ResilienceDashboardWorkspace)} />
 
         <Route component={NotFound} />
       </Switch>
