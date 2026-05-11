@@ -188,6 +188,8 @@ jobs:
         run: cd services/mandate-management-go && go build -o mandate-management .
       - name: Build CIF Management
         run: cd services/cif-management-go && go build -o cif-management .
+      - name: Build KYB Engine
+        run: cd services/kyb-engine-go && go build -o kyb-engine .
 
   rust-services:
     name: Rust Services
@@ -237,6 +239,8 @@ jobs:
             services/rate-cascade-rs
             services/lcr-nsfr-rs
             services/relationship-pricing-rs
+            services/liveness-detection-rs
+            services/face-match-rs
       - name: Build Resilience Service
         run: cd services/resilience-service-rs && cargo build --release
       - name: Build Agriculture Banking Service
@@ -317,6 +321,10 @@ jobs:
         run: cd services/lcr-nsfr-rs && cargo build --release
       - name: Build Relationship Pricing Engine
         run: cd services/relationship-pricing-rs && cargo build --release
+      - name: Build Liveness Detection Engine
+        run: cd services/liveness-detection-rs && cargo build --release
+      - name: Build Face Match Engine
+        run: cd services/face-match-rs && cargo build --release
 
   python-services:
     name: Python Services
@@ -332,7 +340,7 @@ jobs:
             echo "Checking services/$svc/service.py..."
             python3 -c "import py_compile; py_compile.compile('services/$svc/service.py', doraise=True)"
           done
-          for svc in opensearch-indexer-py lakehouse-etl-py cbn-returns-py statement-generator-py exam-management-py; do
+          for svc in opensearch-indexer-py lakehouse-etl-py cbn-returns-py statement-generator-py exam-management-py kyc-engine-py; do
             echo "Checking services/$svc/main.py..."
             python3 -c "import py_compile; py_compile.compile('services/$svc/main.py', doraise=True)"
           done

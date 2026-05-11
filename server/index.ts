@@ -7801,6 +7801,48 @@ async function startServer() {
   app.get("/api/platform/exams/findings", (req, res) => { void proxyToService(EXAM_URL, "/v1/findings", req, res); });
   app.get("/api/platform/exams/stats", (req, res) => { void proxyToService(EXAM_URL, "/v1/stats", req, res); });
 
+  // ========= KYC/KYB WORLD-CLASS IDENTITY VERIFICATION — ports 8224-8227 =========
+
+  // KYC Engine — PaddleOCR-VL + Docling + VLM + Liveness + FaceMatch (Python :8224)
+  const KYC_ENGINE_URL = process.env.KYC_ENGINE_URL || "http://localhost:8224";
+  app.get("/api/platform/kyc-engine/health", (req, res) => { void proxyToService(KYC_ENGINE_URL, "/healthz", req, res); });
+  app.get("/api/platform/kyc-engine/v1/verifications", (req, res) => { void proxyToService(KYC_ENGINE_URL, "/v1/verifications", req, res); });
+  app.get("/api/platform/kyc-engine/v1/verifications/:id", (req, res) => { void proxyToService(KYC_ENGINE_URL, `/v1/verifications/${req.params.id}`, req, res); });
+  app.post("/api/platform/kyc-engine/v1/verify", (req, res) => { void proxyToService(KYC_ENGINE_URL, "/v1/verify", req, res); });
+  app.post("/api/platform/kyc-engine/v1/liveness/check", (req, res) => { void proxyToService(KYC_ENGINE_URL, "/v1/liveness/check", req, res); });
+  app.post("/api/platform/kyc-engine/v1/face-match", (req, res) => { void proxyToService(KYC_ENGINE_URL, "/v1/face-match", req, res); });
+  app.post("/api/platform/kyc-engine/v1/ocr/extract", (req, res) => { void proxyToService(KYC_ENGINE_URL, "/v1/ocr/extract", req, res); });
+  app.get("/api/platform/kyc-engine/v1/liveness/methods", (req, res) => { void proxyToService(KYC_ENGINE_URL, "/v1/liveness/methods", req, res); });
+  app.get("/api/platform/kyc-engine/v1/document-types", (req, res) => { void proxyToService(KYC_ENGINE_URL, "/v1/document-types", req, res); });
+  app.get("/api/platform/kyc-engine/v1/pipeline-info", (req, res) => { void proxyToService(KYC_ENGINE_URL, "/v1/pipeline-info", req, res); });
+  app.get("/api/platform/kyc-engine/v1/stats", (req, res) => { void proxyToService(KYC_ENGINE_URL, "/v1/stats", req, res); });
+
+  // KYB Engine — CAC Registry + UBO Identification + Sanctions (Go :8225)
+  const KYB_ENGINE_URL = process.env.KYB_ENGINE_URL || "http://localhost:8225";
+  app.get("/api/platform/kyb-engine/health", (req, res) => { void proxyToService(KYB_ENGINE_URL, "/healthz", req, res); });
+  app.get("/api/platform/kyb-engine/v1/verifications", (req, res) => { void proxyToService(KYB_ENGINE_URL, "/v1/verifications", req, res); });
+  app.get("/api/platform/kyb-engine/v1/verifications/:id", (req, res) => { void proxyToService(KYB_ENGINE_URL, `/v1/verifications/${req.params.id}`, req, res); });
+  app.post("/api/platform/kyb-engine/v1/verifications", (req, res) => { void proxyToService(KYB_ENGINE_URL, "/v1/verifications", req, res); });
+  app.get("/api/platform/kyb-engine/v1/cac/lookup", (req, res) => { void proxyToService(KYB_ENGINE_URL, `/v1/cac/lookup?${new URLSearchParams(req.query as Record<string, string>)}`, req, res); });
+  app.get("/api/platform/kyb-engine/v1/ubo/identify", (req, res) => { void proxyToService(KYB_ENGINE_URL, `/v1/ubo/identify?${new URLSearchParams(req.query as Record<string, string>)}`, req, res); });
+  app.get("/api/platform/kyb-engine/v1/sanctions/screen", (req, res) => { void proxyToService(KYB_ENGINE_URL, `/v1/sanctions/screen?${new URLSearchParams(req.query as Record<string, string>)}`, req, res); });
+  app.get("/api/platform/kyb-engine/v1/stats", (req, res) => { void proxyToService(KYB_ENGINE_URL, "/v1/stats", req, res); });
+
+  // Liveness Detection Engine — 5-method ensemble, iBeta L2 (Rust :8226)
+  const LIVENESS_URL = process.env.LIVENESS_URL || "http://localhost:8226";
+  app.get("/api/platform/liveness-detection/health", (req, res) => { void proxyToService(LIVENESS_URL, "/healthz", req, res); });
+  app.get("/api/platform/liveness-detection/v1/checks", (req, res) => { void proxyToService(LIVENESS_URL, "/v1/checks", req, res); });
+  app.get("/api/platform/liveness-detection/v1/checks/:id", (req, res) => { void proxyToService(LIVENESS_URL, `/v1/checks/${req.params.id}`, req, res); });
+  app.get("/api/platform/liveness-detection/v1/methods", (req, res) => { void proxyToService(LIVENESS_URL, "/v1/methods", req, res); });
+  app.get("/api/platform/liveness-detection/v1/stats", (req, res) => { void proxyToService(LIVENESS_URL, "/v1/stats", req, res); });
+
+  // Face Match Engine — ArcFace R100, 512-dim cosine similarity (Rust :8227)
+  const FACE_MATCH_URL = process.env.FACE_MATCH_URL || "http://localhost:8227";
+  app.get("/api/platform/face-match/health", (req, res) => { void proxyToService(FACE_MATCH_URL, "/healthz", req, res); });
+  app.get("/api/platform/face-match/v1/matches", (req, res) => { void proxyToService(FACE_MATCH_URL, "/v1/matches", req, res); });
+  app.get("/api/platform/face-match/v1/matches/:id", (req, res) => { void proxyToService(FACE_MATCH_URL, `/v1/matches/${req.params.id}`, req, res); });
+  app.get("/api/platform/face-match/v1/stats", (req, res) => { void proxyToService(FACE_MATCH_URL, "/v1/stats", req, res); });
+
   app.use(globalErrorHandler);
 
   const staticPath = process.env.NODE_ENV === "production" ? path.resolve(__dirname, "public") : path.resolve(__dirname, "..", "dist", "public");

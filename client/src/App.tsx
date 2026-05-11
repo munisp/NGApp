@@ -239,6 +239,11 @@ const TemporalSagasWorkspace = lazy(() => import("@/pages/TemporalSagasWorkspace
 const MandateManagementWorkspace = lazy(() => import("@/pages/MandateManagementWorkspace"));
 const CIFManagementWorkspace = lazy(() => import("@/pages/CIFManagementWorkspace"));
 const ExamManagementWorkspace = lazy(() => import("@/pages/ExamManagementWorkspace"));
+// KYC/KYB — World-Class Identity Verification (PaddleOCR + Docling + VLM + Liveness + ArcFace)
+const KYCEngineWorkspace = lazy(() => import("@/pages/KYCEngineWorkspace"));
+const KYBEngineWorkspace = lazy(() => import("@/pages/KYBEngineWorkspace"));
+const LivenessDetectionWorkspace = lazy(() => import("@/pages/LivenessDetectionWorkspace"));
+const FaceMatchWorkspace = lazy(() => import("@/pages/FaceMatchWorkspace"));
 const AdminAnalyticsPage = lazy(() => import("@/pages/AdminModulePages").then((module) => ({ default: module.AdminAnalyticsPage })));
 const AdminBankingOpsPage = lazy(() => import("@/pages/AdminModulePages").then((module) => ({ default: module.AdminBankingOpsPage })));
 const AdminFeatureFlagsPage = lazy(() => import("@/pages/AdminModulePages").then((module) => ({ default: module.AdminFeatureFlagsPage })));
@@ -532,6 +537,11 @@ export default function App() {
         <Route path="/mandate-management" component={renderInAdminShell(MandateManagementWorkspace)} />
         <Route path="/cif-management" component={renderInAdminShell(CIFManagementWorkspace)} />
         <Route path="/exam-management" component={renderInAdminShell(ExamManagementWorkspace)} />
+        {/* KYC/KYB — World-Class Identity Verification */}
+        <Route path="/kyc-engine" component={renderInAdminShell(KYCEngineWorkspace)} />
+        <Route path="/kyb-engine" component={renderInAdminShell(KYBEngineWorkspace)} />
+        <Route path="/liveness-detection" component={renderInAdminShell(LivenessDetectionWorkspace)} />
+        <Route path="/face-match" component={renderInAdminShell(FaceMatchWorkspace)} />
 
         <Route component={NotFound} />
       </Switch>

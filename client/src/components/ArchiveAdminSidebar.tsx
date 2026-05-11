@@ -86,6 +86,8 @@ import {
   CheckSquare,
   DollarSign,
   BarChart2,
+  ScanEye,
+  ScanFace,
 } from "lucide-react";
 
 const menuItems = [
@@ -303,6 +305,10 @@ const menuItems = [
   { path: "/mandate-management", label: "Mandate Management", icon: FileText },
   { path: "/cif-management", label: "CIF / Address Management", icon: Users },
   { path: "/exam-management", label: "Regulatory Exam Tracking", icon: AlertTriangle },
+  { path: "/kyc-engine", label: "KYC Verification Engine", icon: ScanEye },
+  { path: "/kyb-engine", label: "KYB Company Verification", icon: Building2 },
+  { path: "/liveness-detection", label: "Liveness Detection", icon: ShieldCheck },
+  { path: "/face-match", label: "Face Match Engine", icon: ScanFace },
 ] as const;
 
 export default function ArchiveAdminSidebar() {
