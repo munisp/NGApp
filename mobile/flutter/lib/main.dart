@@ -260,6 +260,14 @@ import 'screens/supply_chain_finance_screen.dart';
 import 'screens/swift_messaging_screen.dart';
 import 'screens/syndicated_loans_screen.dart';
 import 'screens/takaful_management_screen.dart';
+import 'screens/tb_pg_balance_cache_configs_screen.dart';
+import 'screens/tb_pg_balance_cache_entries_screen.dart';
+import 'screens/tb_pg_reconciliation_rules_screen.dart';
+import 'screens/tb_pg_reconciliation_runs_screen.dart';
+import 'screens/tb_pg_saga_definitions_screen.dart';
+import 'screens/tb_pg_saga_executions_screen.dart';
+import 'screens/tb_pg_sync_configs_screen.dart';
+import 'screens/tb_pg_sync_events_screen.dart';
 import 'screens/teller_screen.dart';
 import 'screens/temporal_sagas_screen.dart';
 import 'screens/tenant_isolation_screen.dart';
@@ -563,6 +571,14 @@ class FiftyFourBankApp extends StatelessWidget {
         '/swift-messaging': (context) => const SwiftMessagingScreen(),
         '/syndicated-loans': (context) => const SyndicatedLoansScreen(),
         '/takaful-management': (context) => const TakafulManagementScreen(),
+        '/tb-pg-balance-cache-configs': (context) => const TBPGBalanceCacheConfigsScreen(),
+        '/tb-pg-balance-cache-entries': (context) => const TBPGBalanceCacheEntriesScreen(),
+        '/tb-pg-reconciliation-rules': (context) => const TBPGReconciliationRulesScreen(),
+        '/tb-pg-reconciliation-runs': (context) => const TBPGReconciliationRunsScreen(),
+        '/tb-pg-saga-definitions': (context) => const TBPGSagaDefinitionsScreen(),
+        '/tb-pg-saga-executions': (context) => const TBPGSagaExecutionsScreen(),
+        '/tb-pg-sync-configs': (context) => const TBPGSyncConfigsScreen(),
+        '/tb-pg-sync-events': (context) => const TBPGSyncEventsScreen(),
         '/teller': (context) => const TellerScreen(),
         '/temporal-sagas': (context) => const TemporalSagasScreen(),
         '/tenant-isolation': (context) => const TenantIsolationScreen(),
@@ -863,6 +879,14 @@ class HomeScreen extends StatelessWidget {
             ListTile(title: const Text('Swift Messaging'), onTap: () => Navigator.pushNamed(context, '/swift-messaging')),
             ListTile(title: const Text('Syndicated Loans'), onTap: () => Navigator.pushNamed(context, '/syndicated-loans')),
             ListTile(title: const Text('Takaful Management'), onTap: () => Navigator.pushNamed(context, '/takaful-management')),
+            ListTile(title: const Text('T B P G Balance Cache Configs'), onTap: () => Navigator.pushNamed(context, '/tb-pg-balance-cache-configs')),
+            ListTile(title: const Text('T B P G Balance Cache Entries'), onTap: () => Navigator.pushNamed(context, '/tb-pg-balance-cache-entries')),
+            ListTile(title: const Text('T B P G Reconciliation Rules'), onTap: () => Navigator.pushNamed(context, '/tb-pg-reconciliation-rules')),
+            ListTile(title: const Text('T B P G Reconciliation Runs'), onTap: () => Navigator.pushNamed(context, '/tb-pg-reconciliation-runs')),
+            ListTile(title: const Text('T B P G Saga Definitions'), onTap: () => Navigator.pushNamed(context, '/tb-pg-saga-definitions')),
+            ListTile(title: const Text('T B P G Saga Executions'), onTap: () => Navigator.pushNamed(context, '/tb-pg-saga-executions')),
+            ListTile(title: const Text('T B P G Sync Configs'), onTap: () => Navigator.pushNamed(context, '/tb-pg-sync-configs')),
+            ListTile(title: const Text('T B P G Sync Events'), onTap: () => Navigator.pushNamed(context, '/tb-pg-sync-events')),
             ListTile(title: const Text('Teller'), onTap: () => Navigator.pushNamed(context, '/teller')),
             ListTile(title: const Text('Temporal Sagas'), onTap: () => Navigator.pushNamed(context, '/temporal-sagas')),
             ListTile(title: const Text('Tenant Isolation'), onTap: () => Navigator.pushNamed(context, '/tenant-isolation')),

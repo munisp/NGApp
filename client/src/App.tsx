@@ -321,6 +321,14 @@ const LakehouseQueryFederationWorkspace = lazy(() => import("@/pages/LakehouseQu
 const LakehouseMaterializedViewsWorkspace = lazy(() => import("@/pages/LakehouseMaterializedViewsWorkspace"));
 const LakehouseLineageNodesWorkspace = lazy(() => import("@/pages/LakehouseLineageNodesWorkspace"));
 const LakehouseLineageEdgesWorkspace = lazy(() => import("@/pages/LakehouseLineageEdgesWorkspace"));
+const TBPGSyncConfigsWorkspace = lazy(() => import("@/pages/TBPGSyncConfigsWorkspace"));
+const TBPGSyncEventsWorkspace = lazy(() => import("@/pages/TBPGSyncEventsWorkspace"));
+const TBPGReconciliationRunsWorkspace = lazy(() => import("@/pages/TBPGReconciliationRunsWorkspace"));
+const TBPGReconciliationRulesWorkspace = lazy(() => import("@/pages/TBPGReconciliationRulesWorkspace"));
+const TBPGBalanceCacheConfigsWorkspace = lazy(() => import("@/pages/TBPGBalanceCacheConfigsWorkspace"));
+const TBPGBalanceCacheEntriesWorkspace = lazy(() => import("@/pages/TBPGBalanceCacheEntriesWorkspace"));
+const TBPGSagaDefinitionsWorkspace = lazy(() => import("@/pages/TBPGSagaDefinitionsWorkspace"));
+const TBPGSagaExecutionsWorkspace = lazy(() => import("@/pages/TBPGSagaExecutionsWorkspace"));
 
 function RouteFallback() {
   return <div className="min-h-screen bg-slate-50" />;
@@ -688,6 +696,14 @@ export default function App() {
         <Route path="/lakehouse-materialized-views" component={renderInAdminShell(LakehouseMaterializedViewsWorkspace)} />
         <Route path="/lakehouse-lineage-nodes" component={renderInAdminShell(LakehouseLineageNodesWorkspace)} />
         <Route path="/lakehouse-lineage-edges" component={renderInAdminShell(LakehouseLineageEdgesWorkspace)} />
+        <Route path="/tb-pg-sync-configs" component={renderInAdminShell(TBPGSyncConfigsWorkspace)} />
+        <Route path="/tb-pg-sync-events" component={renderInAdminShell(TBPGSyncEventsWorkspace)} />
+        <Route path="/tb-pg-reconciliation-runs" component={renderInAdminShell(TBPGReconciliationRunsWorkspace)} />
+        <Route path="/tb-pg-reconciliation-rules" component={renderInAdminShell(TBPGReconciliationRulesWorkspace)} />
+        <Route path="/tb-pg-balance-cache-configs" component={renderInAdminShell(TBPGBalanceCacheConfigsWorkspace)} />
+        <Route path="/tb-pg-balance-cache-entries" component={renderInAdminShell(TBPGBalanceCacheEntriesWorkspace)} />
+        <Route path="/tb-pg-saga-definitions" component={renderInAdminShell(TBPGSagaDefinitionsWorkspace)} />
+        <Route path="/tb-pg-saga-executions" component={renderInAdminShell(TBPGSagaExecutionsWorkspace)} />
 
         <Route component={NotFound} />
       </Switch>

@@ -110,6 +110,7 @@ import {
   Signal,
   RotateCcw,
   ArrowUpCircle,
+  RefreshCw,
 } from "lucide-react";
 
 type MenuItem = { path: string; label: string; icon: React.ElementType };
@@ -559,6 +560,20 @@ const categorizedMenu: MenuCategory[] = [
       { path: "/lakehouse-materialized-views", label: "Materialized Views", icon: Layers },
       { path: "/lakehouse-lineage-nodes", label: "Lineage Nodes", icon: GitBranch },
       { path: "/lakehouse-lineage-edges", label: "Lineage Edges", icon: ArrowRightLeft },
+    ],
+  },
+  {
+    category: "TigerBeetle ↔ Postgres Sync",
+    icon: RefreshCw,
+    items: [
+      { path: "/tb-pg-sync-configs", label: "Sync Pipelines", icon: RefreshCw },
+      { path: "/tb-pg-sync-events", label: "Sync Events", icon: Activity },
+      { path: "/tb-pg-reconciliation-runs", label: "Reconciliation Runs", icon: Scale },
+      { path: "/tb-pg-reconciliation-rules", label: "Reconciliation Rules", icon: Shield },
+      { path: "/tb-pg-balance-cache-configs", label: "Balance Cache", icon: Zap },
+      { path: "/tb-pg-balance-cache-entries", label: "Cached Balances", icon: Database },
+      { path: "/tb-pg-saga-definitions", label: "Saga Definitions", icon: GitBranch },
+      { path: "/tb-pg-saga-executions", label: "Saga Executions", icon: PlayCircle },
     ],
   },
 ];
