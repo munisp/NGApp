@@ -108,6 +108,8 @@ import {
   Code,
   Phone,
   Signal,
+  RotateCcw,
+  ArrowUpCircle,
 } from "lucide-react";
 
 type MenuItem = { path: string; label: string; icon: React.ElementType };
@@ -513,6 +515,37 @@ const categorizedMenu: MenuCategory[] = [
       { path: "/sms-banking", label: "SMS Banking", icon: MessageSquare },
       { path: "/offline-transactions", label: "Offline Transactions", icon: WifiOff },
       { path: "/bandwidth-adaptation", label: "Bandwidth Adaptation", icon: Signal },
+    ],
+  },
+  {
+    category: "Fault Tolerance & Error Handling",
+    icon: ShieldCheck,
+    items: [
+      { path: "/circuit-breaker-dashboard", label: "Circuit Breaker Dashboard", icon: CircuitBoard },
+      { path: "/idempotency-dashboard", label: "Idempotency Keys", icon: Fingerprint },
+      { path: "/error-catalog", label: "Error Catalog", icon: AlertCircle },
+      { path: "/notification-center", label: "Notification Center", icon: Bell },
+      { path: "/retry-policies", label: "Retry Policies", icon: RotateCcw },
+      { path: "/error-telemetry", label: "Error Telemetry", icon: BarChart3 },
+    ],
+  },
+  {
+    category: "Performance & Scalability",
+    icon: Zap,
+    items: [
+      { path: "/performance-cache", label: "Cache Dashboard", icon: Database },
+      { path: "/performance-metrics", label: "Performance Metrics", icon: Activity },
+      { path: "/keda-autoscaling", label: "KEDA Autoscaling", icon: ArrowUpCircle },
+      { path: "/keda-policies", label: "Scaling Policies", icon: Layers },
+    ],
+  },
+  {
+    category: "High Availability",
+    icon: Server,
+    items: [
+      { path: "/ha-services", label: "HA Services", icon: Server },
+      { path: "/ha-middleware", label: "HA Middleware", icon: Database },
+      { path: "/ha-zones", label: "HA Zones", icon: Globe },
     ],
   },
 ];

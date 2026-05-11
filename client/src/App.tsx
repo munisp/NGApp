@@ -302,6 +302,18 @@ const SMSBankingWorkspace = lazy(() => import("@/pages/SMSBankingWorkspace"));
 const OfflineTransactionsWorkspace = lazy(() => import("@/pages/OfflineTransactionsWorkspace"));
 const BandwidthAdaptationWorkspace = lazy(() => import("@/pages/BandwidthAdaptationWorkspace"));
 const ResilienceDashboardWorkspace = lazy(() => import("@/pages/ResilienceDashboardWorkspace"));
+const CircuitBreakerDashboardWorkspace = lazy(() => import("@/pages/CircuitBreakerDashboardWorkspace"));
+const IdempotencyDashboardWorkspace = lazy(() => import("@/pages/IdempotencyDashboardWorkspace"));
+const ErrorCatalogWorkspace = lazy(() => import("@/pages/ErrorCatalogWorkspace"));
+const RetryPoliciesWorkspace = lazy(() => import("@/pages/RetryPoliciesWorkspace"));
+const ErrorTelemetryWorkspace = lazy(() => import("@/pages/ErrorTelemetryWorkspace"));
+const PerformanceCacheWorkspace = lazy(() => import("@/pages/PerformanceCacheWorkspace"));
+const PerformanceMetricsWorkspace = lazy(() => import("@/pages/PerformanceMetricsWorkspace"));
+const KedaAutoscalingWorkspace = lazy(() => import("@/pages/KedaAutoscalingWorkspace"));
+const KedaPoliciesWorkspace = lazy(() => import("@/pages/KedaPoliciesWorkspace"));
+const HAServicesWorkspace = lazy(() => import("@/pages/HAServicesWorkspace"));
+const HAMiddlewareWorkspace = lazy(() => import("@/pages/HAMiddlewareWorkspace"));
+const HAZonesWorkspace = lazy(() => import("@/pages/HAZonesWorkspace"));
 
 function RouteFallback() {
   return <div className="min-h-screen bg-slate-50" />;
@@ -650,6 +662,18 @@ export default function App() {
         <Route path="/offline-transactions" component={renderInAdminShell(OfflineTransactionsWorkspace)} />
         <Route path="/bandwidth-adaptation" component={renderInAdminShell(BandwidthAdaptationWorkspace)} />
         <Route path="/resilience-dashboard" component={renderInAdminShell(ResilienceDashboardWorkspace)} />
+        <Route path="/circuit-breaker-dashboard" component={renderInAdminShell(CircuitBreakerDashboardWorkspace)} />
+        <Route path="/idempotency-dashboard" component={renderInAdminShell(IdempotencyDashboardWorkspace)} />
+        <Route path="/error-catalog" component={renderInAdminShell(ErrorCatalogWorkspace)} />
+        <Route path="/retry-policies" component={renderInAdminShell(RetryPoliciesWorkspace)} />
+        <Route path="/error-telemetry" component={renderInAdminShell(ErrorTelemetryWorkspace)} />
+        <Route path="/performance-cache" component={renderInAdminShell(PerformanceCacheWorkspace)} />
+        <Route path="/performance-metrics" component={renderInAdminShell(PerformanceMetricsWorkspace)} />
+        <Route path="/keda-autoscaling" component={renderInAdminShell(KedaAutoscalingWorkspace)} />
+        <Route path="/keda-policies" component={renderInAdminShell(KedaPoliciesWorkspace)} />
+        <Route path="/ha-services" component={renderInAdminShell(HAServicesWorkspace)} />
+        <Route path="/ha-middleware" component={renderInAdminShell(HAMiddlewareWorkspace)} />
+        <Route path="/ha-zones" component={renderInAdminShell(HAZonesWorkspace)} />
 
         <Route component={NotFound} />
       </Switch>

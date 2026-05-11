@@ -72,6 +72,10 @@ import { registerEsgBanking } from "./lib/esgBanking";
 import { registerEmbeddedFinanceSdk } from "./lib/embeddedFinanceSdk";
 import { registerRansomwareProtection } from "./lib/ransomwareProtection";
 import { registerOfflineBandwidthResilience } from "./lib/offlineBandwidthResilience";
+import { registerCircuitBreakerGateway } from "./lib/circuitBreakerGateway";
+import { registerPerformanceTuning } from "./lib/performanceTuning";
+import { registerKedaAutoscaling } from "./lib/kedaAutoscaling";
+import { registerHighAvailability } from "./lib/highAvailability";
 import { WebSocketServer, WebSocket } from "ws";
 
 import {
@@ -5212,6 +5216,10 @@ async function startServer() {
   registerEmbeddedFinanceSdk(app);
   registerRansomwareProtection(app);
   registerOfflineBandwidthResilience(app);
+  registerCircuitBreakerGateway(app);
+  registerPerformanceTuning(app);
+  registerKedaAutoscaling(app);
+  registerHighAvailability(app);
 
   // Feature Flag Engine — tenant-aware service catalog and API gating
   registerFeatureFlagEngine(app);

@@ -8,12 +8,13 @@ class NotificationCenterScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return ApiListScreen(
       title: 'Notification Center',
-      apiEndpoint: '/api/notifications/v1/inbox',
-      columnKeys: const ['id', 'title', 'type', 'read', 'time'],
-      columnLabels: const ['ID', 'Title', 'Type', 'Read', 'Time'],
+      apiEndpoint: '/api/platform/notifications',
+      columnKeys: const ['id', 'type', 'channel', 'title', 'severity'],
+      columnLabels: const ['ID', 'Type', 'Channel', 'Title', 'Severity'],
       seedData: const [
-      {'id': 'NC-001', 'title': 'Transfer Completed', 'type': 'Transaction', 'read': 'Yes', 'time': '14:30'},
-    ],
+              {'id': 'NF-001', 'type': 'circuit_breaker_trip', 'channel': 'push', 'title': 'Circuit Breaker Tripped', 'severity': 'critical'},
+              {'id': 'NF-002', 'type': 'error_spike', 'channel': 'in_app', 'title': 'Error Spike: 98 rate-limit hits', 'severity': 'warning'},
+      ],
     );
   }
 }
