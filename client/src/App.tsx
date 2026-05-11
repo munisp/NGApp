@@ -321,6 +321,16 @@ const LakehouseQueryFederationWorkspace = lazy(() => import("@/pages/LakehouseQu
 const LakehouseMaterializedViewsWorkspace = lazy(() => import("@/pages/LakehouseMaterializedViewsWorkspace"));
 const LakehouseLineageNodesWorkspace = lazy(() => import("@/pages/LakehouseLineageNodesWorkspace"));
 const LakehouseLineageEdgesWorkspace = lazy(() => import("@/pages/LakehouseLineageEdgesWorkspace"));
+const MojaloopCallbacksWorkspace = lazy(() => import("@/pages/MojaloopCallbacksWorkspace"));
+const MojaloopCallbackEndpointsWorkspace = lazy(() => import("@/pages/MojaloopCallbackEndpointsWorkspace"));
+const MojaloopILPPacketsWorkspace = lazy(() => import("@/pages/MojaloopILPPacketsWorkspace"));
+const MojaloopSettlementWindowsWorkspace = lazy(() => import("@/pages/MojaloopSettlementWindowsWorkspace"));
+const MojaloopSettlementModelsWorkspace = lazy(() => import("@/pages/MojaloopSettlementModelsWorkspace"));
+const MojaloopAdminParticipantsWorkspace = lazy(() => import("@/pages/MojaloopAdminParticipantsWorkspace"));
+const MojaloopAdminLimitsWorkspace = lazy(() => import("@/pages/MojaloopAdminLimitsWorkspace"));
+const MojaloopCorridorsWorkspace = lazy(() => import("@/pages/MojaloopCorridorsWorkspace"));
+const MojaloopTBBridgeEntriesWorkspace = lazy(() => import("@/pages/MojaloopTBBridgeEntriesWorkspace"));
+const MojaloopTBBridgeConfigsWorkspace = lazy(() => import("@/pages/MojaloopTBBridgeConfigsWorkspace"));
 const TBPGSyncConfigsWorkspace = lazy(() => import("@/pages/TBPGSyncConfigsWorkspace"));
 const TBPGSyncEventsWorkspace = lazy(() => import("@/pages/TBPGSyncEventsWorkspace"));
 const TBPGReconciliationRunsWorkspace = lazy(() => import("@/pages/TBPGReconciliationRunsWorkspace"));
@@ -696,6 +706,16 @@ export default function App() {
         <Route path="/lakehouse-materialized-views" component={renderInAdminShell(LakehouseMaterializedViewsWorkspace)} />
         <Route path="/lakehouse-lineage-nodes" component={renderInAdminShell(LakehouseLineageNodesWorkspace)} />
         <Route path="/lakehouse-lineage-edges" component={renderInAdminShell(LakehouseLineageEdgesWorkspace)} />
+        <Route path="/mojaloop-callbacks" component={renderInAdminShell(MojaloopCallbacksWorkspace)} />
+        <Route path="/mojaloop-callback-endpoints" component={renderInAdminShell(MojaloopCallbackEndpointsWorkspace)} />
+        <Route path="/mojaloop-ilp-packets" component={renderInAdminShell(MojaloopILPPacketsWorkspace)} />
+        <Route path="/mojaloop-settlement-windows" component={renderInAdminShell(MojaloopSettlementWindowsWorkspace)} />
+        <Route path="/mojaloop-settlement-models" component={renderInAdminShell(MojaloopSettlementModelsWorkspace)} />
+        <Route path="/mojaloop-admin-participants" component={renderInAdminShell(MojaloopAdminParticipantsWorkspace)} />
+        <Route path="/mojaloop-admin-limits" component={renderInAdminShell(MojaloopAdminLimitsWorkspace)} />
+        <Route path="/mojaloop-corridors" component={renderInAdminShell(MojaloopCorridorsWorkspace)} />
+        <Route path="/mojaloop-tb-bridge-entries" component={renderInAdminShell(MojaloopTBBridgeEntriesWorkspace)} />
+        <Route path="/mojaloop-tb-bridge-configs" component={renderInAdminShell(MojaloopTBBridgeConfigsWorkspace)} />
         <Route path="/tb-pg-sync-configs" component={renderInAdminShell(TBPGSyncConfigsWorkspace)} />
         <Route path="/tb-pg-sync-events" component={renderInAdminShell(TBPGSyncEventsWorkspace)} />
         <Route path="/tb-pg-reconciliation-runs" component={renderInAdminShell(TBPGReconciliationRunsWorkspace)} />

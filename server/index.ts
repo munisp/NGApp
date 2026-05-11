@@ -75,6 +75,7 @@ import { registerOfflineBandwidthResilience } from "./lib/offlineBandwidthResili
 import { registerCircuitBreakerGateway } from "./lib/circuitBreakerGateway";
 import { registerLakehouseIntegration } from "./lib/lakehouseIntegration";
 import { registerTigerbeetlePostgresSync } from "./lib/tigerbeetlePostgresSync";
+import { registerMojaloopDeepIntegration } from "./lib/mojaloopDeepIntegration";
 import { registerPerformanceTuning } from "./lib/performanceTuning";
 import { registerKedaAutoscaling } from "./lib/kedaAutoscaling";
 import { registerHighAvailability } from "./lib/highAvailability";
@@ -5221,6 +5222,7 @@ async function startServer() {
   registerCircuitBreakerGateway(app);
   registerLakehouseIntegration(app);
   registerTigerbeetlePostgresSync(app);
+  registerMojaloopDeepIntegration(app);
   registerPerformanceTuning(app);
   registerKedaAutoscaling(app);
   registerHighAvailability(app);

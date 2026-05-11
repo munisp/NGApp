@@ -113,14 +113,22 @@ async fn healthz() -> HttpResponse {
         "status": "ok",
         "service": "ledger-reconciliation-rs",
         "timestamp": Utc::now().to_rfc3339(),
-        "middleware": ["TigerBeetle", "Postgres", "Kafka", "Redis", "Lakehouse", "Fluvio"],
+        "middleware": ["TigerBeetle", "Postgres", "Kafka", "Redis", "Lakehouse", "Fluvio", "Keycloak", "Permify", "Dapr", "Temporal", "Mojaloop", "OpenSearch", "OpenAppSec", "APISIX"],
         "health": {
             "tigerbeetle": "configured",
             "postgres": "configured",
             "kafka": "configured",
             "redis": "configured",
             "lakehouse": "configured",
-            "fluvio": "configured"
+            "fluvio": "configured",
+            "mojaloop": "configured",
+            "keycloak": "configured",
+            "permify": "configured",
+            "dapr": "configured",
+            "temporal": "configured",
+            "opensearch": "configured",
+            "openappsec": "configured",
+            "apisix": "configured"
         }
     }))
 }

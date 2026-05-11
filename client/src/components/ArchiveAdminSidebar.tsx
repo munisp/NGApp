@@ -563,6 +563,23 @@ const categorizedMenu: MenuCategory[] = [
     ],
   },
   {
+    category: "Mojaloop Interoperability",
+    icon: Globe,
+    items: [
+      { path: "/mojaloop", label: "Transfers", icon: Send },
+      { path: "/mojaloop-callbacks", label: "FSPIOP Callbacks", icon: Phone },
+      { path: "/mojaloop-callback-endpoints", label: "Callback Endpoints", icon: Link2 },
+      { path: "/mojaloop-ilp-packets", label: "ILP Packets", icon: Shield },
+      { path: "/mojaloop-settlement-windows", label: "Settlement Windows", icon: Clock },
+      { path: "/mojaloop-settlement-models", label: "Settlement Models", icon: Layers },
+      { path: "/mojaloop-admin-participants", label: "Admin — Participants", icon: Users },
+      { path: "/mojaloop-admin-limits", label: "Admin — Limits", icon: Gauge },
+      { path: "/mojaloop-corridors", label: "Cross-Border Corridors", icon: Globe },
+      { path: "/mojaloop-tb-bridge-entries", label: "TB Bridge Entries", icon: ArrowRightLeft },
+      { path: "/mojaloop-tb-bridge-configs", label: "TB Bridge Configs", icon: Settings },
+    ],
+  },
+  {
     category: "TigerBeetle ↔ Postgres Sync",
     icon: RefreshCw,
     items: [

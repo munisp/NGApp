@@ -252,7 +252,7 @@ class IslamicBankingHandler(BaseHTTPRequestHandler):
                 "status": "ok",
                 "service": "islamic-banking-py",
                 "timestamp": now_iso(),
-                "middleware": ["Kafka", "Redis", "Postgres", "Temporal", "Permify", "sharia-compliance-engine"],
+                "middleware": ["Kafka", "Redis", "Postgres", "Temporal", "Permify", "Keycloak", "Dapr", "Fluvio", "Mojaloop", "OpenSearch", "OpenAppSec", "APISIX", "TigerBeetle", "Lakehouse", "sharia-compliance-engine"],
             })
 
         elif path == "/v1/islamic-banking/murabaha":
