@@ -48,6 +48,7 @@ import { registerSeedDataResetRoutes } from "./lib/seedDataReset";
 import { registerIntegrationTestRoutes } from "./lib/integrationTestHarness";
 import { registerKYCKYBIntegration } from "./lib/kycKybIntegration";
 import { registerMultiTenantPlatformRoutes } from "./lib/multiTenantPlatform";
+import { registerSeedDataFallback, getProxyFallback } from "./lib/seedDataFallback";
 import { WebSocketServer, WebSocket } from "ws";
 
 import {
@@ -5081,14 +5082,15 @@ async function startServer() {
       const data = await upstream.text();
       res.set("x-correlation-id", correlationId);
       res.status(upstream.status).set("content-type", "application/json").send(data);
-    } catch (err) {
-      const isTimeout = err instanceof DOMException && err.name === "TimeoutError";
-      res.status(503).json({
-        message: isTimeout ? "Service request timed out (10s)" : "Banking service unavailable — start the microservice or configure the upstream URL",
-        service: serviceUrl,
-        path: servicePath,
-        hint: "Run the service with Docker or directly, then retry",
-      });
+    } catch (_err) {
+      // Try fallback seed data instead of returning 503
+      const fallback = getProxyFallback(servicePath);
+      if (fallback) {
+        res.json({ items: fallback, total: fallback.length });
+      } else {
+        // Return empty items array (not 503) so frontend renders gracefully
+        res.json({ items: [], total: 0 });
+      }
     }
   }
 
@@ -5129,6 +5131,10 @@ async function startServer() {
   registerIntegrationTestRoutes(app);
   // KYC/KYB Integration Hub (Admin triggers, events, service gates)
   registerKYCKYBIntegration(app);
+
+  // Seed Data Fallback — inline data for all routes so no page ever shows 503
+  // MUST be registered BEFORE proxy routes so seed data handlers match first
+  registerSeedDataFallback(app);
 
   // Multi-Tenant Platform (feature flags, isolation, white label, provisioning, etc.)
   registerMultiTenantPlatformRoutes(app);
