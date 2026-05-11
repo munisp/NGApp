@@ -196,12 +196,6 @@ async fn stats(data: web::Data<AppState>) -> HttpResponse {
             "strict": policies.iter().filter(|p| p.enforcement_mode == "strict").count(),
             "permissive": policies.iter().filter(|p| p.enforcement_mode == "permissive").count(),
             "auditOnly": policies.iter().filter(|p| p.enforcement_mode == "audit_only").count()
-        },
-            "kafka": "connected", "dapr": "connected", "fluvio": "connected",
-            "temporal": "connected", "postgres": "connected", "keycloak": "connected",
-            "permify": "connected", "redis": "connected", "mojaloop": "connected",
-            "opensearch": "connected", "openappsec": "connected", "apisix": "connected",
-            "tigerbeetle": "connected", "lakehouse": "connected"
         }
     }))
 }
